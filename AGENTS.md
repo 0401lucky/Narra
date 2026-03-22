@@ -22,3 +22,10 @@ Kotlin 统一使用 4 空格缩进，遵循 Android Studio 默认格式。类、
 
 ## 配置与安全
 不要提交真实 API Key，也不要依赖已修改的 `local.properties` 作为共享配置。版本号、渠道名和 APK 命名规则以 `app/build.gradle` 为准；发布前确认 `release`、`dev`、`baseline` 三个渠道未混用。
+
+## 发包与更新约定
+- 默认分发与内置更新测试只走 `dev` 渠道，优先执行 `.\gradlew.bat assembleDebug`。
+- 除非用户明确要求并且已经提供正式签名配置，否则不要主动构建或发布正式 `release` 包。
+- 需要给用户可上传的安装包时，默认提供 `app/build/outputs/apk/debug/Narra-v{versionName}-dev-{versionCode}-dev.apk`。
+- 用户提供 GitHub Release 下载链接后，默认同步更新 `docs/updates/dev.json`，用于应用内更新测试。
+- 未拿到最终 APK 下载链接前，不要提前把更新 JSON 改成新版本，避免内置更新指向空地址或错误地址。
