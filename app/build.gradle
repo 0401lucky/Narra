@@ -5,6 +5,30 @@ plugins {
     alias(libs.plugins.ksp)
 }
 
+def localProperties = new Properties()
+def localPropertiesFile = rootProject.file("local.properties")
+if (localPropertiesFile.exists()) {
+    localPropertiesFile.withInputStream { input ->
+        localProperties.load(input)
+    }
+}
+
+def resolveBuildSecret = { String key ->
+    def projectValue = project.findProperty(key)?.toString()?.trim()
+    if (projectValue) {
+        return projectValue
+    }
+    def localValue = localProperties.getProperty(key)?.trim()
+    if (localValue) {
+        return localValue
+    }
+    def envValue = System.getenv(key)?.trim()
+    if (envValue) {
+        return envValue
+    }
+    return ""
+}
+
 def appDisplayName = "Narra"
 def appApplicationId = "com.narra.app"
 def appVersionMajor = ((project.findProperty("appVersionMajorOverride") ?: "1").toString()).toInteger()
@@ -17,6 +41,20 @@ def releaseChannelName = "release"
 def devChannelName = "dev"
 def baselineChannelName = "baseline"
 def appUpdateMetadataBaseUrl = (project.findProperty("appUpdateMetadataBaseUrl") ?: "").toString()
+def releaseStoreFilePath = resolveBuildSecret("NARRA_RELEASE_STORE_FILE")
+def releaseStorePassword = resolveBuildSecret("NARRA_RELEASE_STORE_PASSWORD")
+def releaseKeyAlias = resolveBuildSecret("NARRA_RELEASE_KEY_ALIAS")
+def releaseKeyPassword = resolveBuildSecret("NARRA_RELEASE_KEY_PASSWORD")
+def hasReleaseSigningConfig = [
+        releaseStoreFilePath,
+        releaseStorePassword,
+        releaseKeyAlias,
+        releaseKeyPassword,
+].every { value -> value?.trim() }
+
+if (!hasReleaseSigningConfig) {
+    logger.lifecycle("Narra release signing 未配置，assembleRelease 仍会生成未签名包。请在 local.properties、环境变量或 -P 参数中配置 NARRA_RELEASE_*。")
+}
 
 android {
     namespace 'com.example.myapplication'
@@ -43,11 +81,25 @@ android {
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
     }
 
+    signingConfigs {
+        if (hasReleaseSigningConfig) {
+            release {
+                storeFile file(releaseStoreFilePath)
+                storePassword releaseStorePassword
+                keyAlias releaseKeyAlias
+                keyPassword releaseKeyPassword
+            }
+        }
+    }
+
     buildTypes {
         release {
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
             buildConfigField "String", "APP_CHANNEL", "\"${releaseChannelName}\""
+            if (hasReleaseSigningConfig) {
+                signingConfig signingConfigs.release
+            }
         }
         debug {
             applicationIdSuffix ".dev"
