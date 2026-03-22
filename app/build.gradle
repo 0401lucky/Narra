@@ -7,10 +7,10 @@ plugins {
 
 def appDisplayName = "Narra"
 def appApplicationId = "com.narra.app"
-def appVersionMajor = 1
-def appVersionMinor = 0
-def appVersionPatch = 0
-def appVersionSuffix = ""
+def appVersionMajor = ((project.findProperty("appVersionMajorOverride") ?: "1").toString()).toInteger()
+def appVersionMinor = ((project.findProperty("appVersionMinorOverride") ?: "0").toString()).toInteger()
+def appVersionPatch = ((project.findProperty("appVersionPatchOverride") ?: "0").toString()).toInteger()
+def appVersionSuffix = (project.findProperty("appVersionSuffixOverride") ?: "").toString()
 def appVersionName = "${appVersionMajor}.${appVersionMinor}.${appVersionPatch}${appVersionSuffix}"
 def appVersionCode = (appVersionMajor * 10000) + (appVersionMinor * 100) + appVersionPatch
 def releaseChannelName = "release"
