@@ -5,6 +5,7 @@ import androidx.compose.runtime.Immutable
 enum class RoleplayContentType {
     NARRATION,
     DIALOGUE,
+    SPECIAL_TRANSFER,
     SYSTEM,
 }
 
@@ -25,4 +26,8 @@ data class RoleplayMessageUiModel(
     val emotion: String = "",
     val createdAt: Long = 0L,
     val isStreaming: Boolean = false,
+    val messageStatus: MessageStatus = MessageStatus.COMPLETED,
+    val copyText: String = content,
+    val canRetry: Boolean = false,
+    val specialPart: ChatMessagePart? = null,
 )

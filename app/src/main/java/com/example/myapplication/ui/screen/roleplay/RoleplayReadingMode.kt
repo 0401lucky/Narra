@@ -35,6 +35,7 @@ import androidx.compose.ui.unit.sp
 import com.example.myapplication.model.RoleplayContentType
 import com.example.myapplication.model.RoleplayMessageUiModel
 import com.example.myapplication.model.RoleplaySpeaker
+import com.example.myapplication.ui.component.TransferPlayCard
 
 /**
  * Full-screen reading mode — immersive story log for reviewing all dialogue.
@@ -124,6 +125,7 @@ private fun ReadingModeItem(message: RoleplayMessageUiModel) {
         RoleplayContentType.NARRATION -> NarrationReadingBlock(message)
         RoleplayContentType.SYSTEM -> SystemReadingBlock(message)
         RoleplayContentType.DIALOGUE -> DialogueReadingBlock(message)
+        RoleplayContentType.SPECIAL_TRANSFER -> TransferReadingBlock(message)
     }
 }
 
@@ -213,5 +215,31 @@ private fun SystemReadingBlock(message: RoleplayMessageUiModel) {
                 color = MaterialTheme.colorScheme.onTertiaryContainer,
             )
         }
+    }
+}
+
+@Composable
+private fun TransferReadingBlock(message: RoleplayMessageUiModel) {
+    val specialPart = message.specialPart ?: return
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 8.dp),
+        contentAlignment = if (message.speaker == RoleplaySpeaker.USER) {
+            Alignment.CenterEnd
+        } else {
+            Alignment.CenterStart
+        },
+    ) {
+        TransferPlayCard(
+            part = specialPart,
+            isUserMessage = message.speaker == RoleplaySpeaker.USER,
+            onConfirmTransferReceipt = null,
+            modifier = if (message.speaker == RoleplaySpeaker.USER) {
+                Modifier.fillMaxWidth(0.78f)
+            } else {
+                Modifier.fillMaxWidth()
+            },
+        )
     }
 }

@@ -22,6 +22,13 @@ class ApiServiceFactoryTest {
     }
 
     @Test
+    fun normalizeBaseUrl_convertsGeminiBaseUrlToOpenAiCompatibleEndpoint() {
+        val normalized = factory.normalizeBaseUrl("https://generativelanguage.googleapis.com/v1beta/")
+
+        assertEquals("https://generativelanguage.googleapis.com/v1beta/openai/", normalized)
+    }
+
+    @Test
     fun normalizeBaseUrl_rejectsBlankInput() {
         val error = assertThrows(IllegalArgumentException::class.java) {
             factory.normalizeBaseUrl("   ")

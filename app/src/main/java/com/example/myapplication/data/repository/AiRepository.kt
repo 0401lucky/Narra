@@ -149,10 +149,7 @@ class AiRepository(
             ).listModels()
         }
         if (!response.isSuccessful) {
-            val errorDetail = response.errorBody()?.string().orEmpty()
-            throw IllegalStateException(
-                "模型拉取失败：${response.code()}${if (errorDetail.isNotBlank()) "\n$errorDetail" else ""}",
-            )
+            throw retrofitFailure("模型拉取失败", response)
         }
 
         val models = response.body()?.data.orEmpty().map { it.id }.filter { it.isNotBlank() }
@@ -275,10 +272,7 @@ class AiRepository(
         }
 
         if (!response.isSuccessful) {
-            val errorDetail = response.errorBody()?.string().orEmpty()
-            throw IllegalStateException(
-                "图片生成失败：${response.code()}${if (errorDetail.isNotBlank()) "\n$errorDetail" else ""}",
-            )
+            throw retrofitFailure("图片生成失败", response)
         }
 
         val data = response.body()?.data.orEmpty()
@@ -318,7 +312,7 @@ class AiRepository(
             )
         }
         if (!response.isSuccessful) {
-            throw IllegalStateException("标题生成失败：${response.code()}")
+            throw retrofitFailure("标题生成失败", response)
         }
         val content = extractContentText(
             response.body()?.choices?.firstOrNull()?.message?.content,
@@ -352,7 +346,7 @@ class AiRepository(
             )
         }
         if (!response.isSuccessful) {
-            throw IllegalStateException("建议生成失败：${response.code()}")
+            throw retrofitFailure("建议生成失败", response)
         }
         val content = extractContentText(
             response.body()?.choices?.firstOrNull()?.message?.content,
@@ -392,7 +386,7 @@ class AiRepository(
             )
         }
         if (!response.isSuccessful) {
-            throw IllegalStateException("摘要生成失败：${response.code()}")
+            throw retrofitFailure("摘要生成失败", response)
         }
         val content = extractContentText(
             response.body()?.choices?.firstOrNull()?.message?.content,
@@ -432,7 +426,7 @@ class AiRepository(
             )
         }
         if (!response.isSuccessful) {
-            throw IllegalStateException("记忆提取失败：${response.code()}")
+            throw retrofitFailure("记忆提取失败", response)
         }
         val content = extractContentText(
             response.body()?.choices?.firstOrNull()?.message?.content,
@@ -494,7 +488,7 @@ class AiRepository(
             )
         }
         if (!response.isSuccessful) {
-            throw IllegalStateException("RP 记忆提取失败：${response.code()}")
+            throw retrofitFailure("RP 记忆提取失败", response)
         }
         val content = extractContentText(
             response.body()?.choices?.firstOrNull()?.message?.content,
@@ -560,7 +554,7 @@ class AiRepository(
             )
         }
         if (!response.isSuccessful) {
-            throw IllegalStateException("RP 建议生成失败：${response.code()}")
+            throw retrofitFailure("RP 建议生成失败", response)
         }
         val content = extractContentText(
             response.body()?.choices?.firstOrNull()?.message?.content,
@@ -599,10 +593,7 @@ class AiRepository(
             )
         }
         if (!response.isSuccessful) {
-            val errorDetail = response.errorBody()?.string().orEmpty()
-            throw IllegalStateException(
-                "翻译失败：${response.code()}${if (errorDetail.isNotBlank()) "\n$errorDetail" else ""}",
-            )
+            throw retrofitFailure("翻译失败", response)
         }
 
         val content = extractContentText(
@@ -656,10 +647,7 @@ class AiRepository(
         try {
             response = call.execute()
             if (!response.isSuccessful) {
-                val errorDetail = response.body?.string().orEmpty()
-                throw IllegalStateException(
-                    "翻译失败：${response.code}${if (errorDetail.isNotBlank()) "\n$errorDetail" else ""}",
-                )
+                throw okhttpFailure("翻译失败", response)
             }
 
             val source = response.body?.source()
@@ -736,10 +724,7 @@ class AiRepository(
             )
         }
         if (!response.isSuccessful) {
-            val errorDetail = response.errorBody()?.string().orEmpty()
-            throw IllegalStateException(
-                "翻译失败：${response.code()}${if (errorDetail.isNotBlank()) "\n$errorDetail" else ""}",
-            )
+            throw retrofitFailure("翻译失败", response)
         }
 
         val rawContent = extractContentText(
@@ -810,10 +795,7 @@ class AiRepository(
         }
 
         if (!response.isSuccessful) {
-            val errorDetail = response.errorBody()?.string().orEmpty()
-            throw IllegalStateException(
-                "聊天请求失败：${response.code()}${if (errorDetail.isNotBlank()) "\n$errorDetail" else ""}",
-            )
+            throw retrofitFailure("聊天请求失败", response)
         }
 
         val assistantMessage = response.body()
@@ -881,10 +863,7 @@ class AiRepository(
         try {
             response = call.execute()
             if (!response.isSuccessful) {
-                val errorDetail = response.body?.string().orEmpty()
-                throw IllegalStateException(
-                    "聊天请求失败：${response.code}${if (errorDetail.isNotBlank()) "\n$errorDetail" else ""}",
-                )
+                throw okhttpFailure("聊天请求失败", response)
             }
 
             val source = response.body?.source()
@@ -957,6 +936,75 @@ class AiRepository(
         } catch (exception: Exception) {
             throw exception.toReadableNetworkException()
         }
+    }
+
+    private fun <T> retrofitFailure(
+        operation: String,
+        response: retrofit2.Response<T>,
+    ): IllegalStateException {
+        val errorDetail = response.errorBody()?.string().orEmpty()
+        return buildHttpFailure(
+            operation = operation,
+            code = response.code(),
+            errorDetail = errorDetail,
+            headers = response.headers(),
+        )
+    }
+
+    private fun okhttpFailure(
+        operation: String,
+        response: okhttp3.Response,
+    ): IllegalStateException {
+        val errorDetail = response.body?.string().orEmpty()
+        return buildHttpFailure(
+            operation = operation,
+            code = response.code,
+            errorDetail = errorDetail,
+            headers = response.headers,
+        )
+    }
+
+    private fun buildHttpFailure(
+        operation: String,
+        code: Int,
+        errorDetail: String,
+        headers: okhttp3.Headers,
+    ): IllegalStateException {
+        val guidance = when (code) {
+            400 -> "请求参数或供应商兼容性问题，请检查 Base URL、模型名与请求参数"
+            429 -> "请求过于频繁或额度不足，请稍后重试"
+            else -> ""
+        }
+        val requestId = headers["x-request-id"]
+            ?: headers["request-id"]
+            ?: headers["openai-request-id"]
+            ?: headers["anthropic-request-id"]
+        val retryAfter = headers["retry-after"].orEmpty()
+        return IllegalStateException(
+            buildString {
+                append(operation)
+                append('：')
+                append(code)
+                if (guidance.isNotBlank()) {
+                    append('（')
+                    append(guidance)
+                    append('）')
+                }
+                if (!requestId.isNullOrBlank()) {
+                    append("\nrequest-id: ")
+                    append(requestId)
+                }
+                if (retryAfter.isNotBlank()) {
+                    append("\nretry-after: ")
+                    append(retryAfter)
+                }
+                val normalizedErrorDetail = errorDetail.trim()
+                if (normalizedErrorDetail.isNotBlank()) {
+                    append('\n')
+                    append(normalizedErrorDetail)
+                }
+            },
+        )
     }
 
     private fun Exception.toReadableNetworkException(): Exception {

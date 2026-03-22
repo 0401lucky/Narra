@@ -82,8 +82,7 @@ import com.example.myapplication.model.ChatSpecialType
 import com.example.myapplication.model.MessageAttachment
 import com.example.myapplication.model.MessageRole
 import com.example.myapplication.model.MessageStatus
-import com.example.myapplication.model.TransferDirection
-import com.example.myapplication.model.TransferStatus
+import com.example.myapplication.model.formatTransferAmount
 import com.example.myapplication.model.isTransferPart
 import com.example.myapplication.model.normalizeChatMessageParts
 import com.example.myapplication.model.textMessagePart
@@ -779,7 +778,7 @@ private fun buildMessageCopyPayload(
                 part.isTransferPart() -> {
                     buildString {
                         append("转账：")
-                        append(formatTransferAmount(part.specialAmount))
+                        append(part.formatTransferAmount())
                         append(" · ")
                         append(part.specialCounterparty.ifBlank { "对方" })
                     }
@@ -959,141 +958,6 @@ private fun MessagePartsRenderer(
             }
         }
     }
-}
-
-@Composable
-private fun TransferPlayCard(
-    part: ChatMessagePart,
-    isUserMessage: Boolean,
-    onConfirmTransferReceipt: ((String) -> Unit)?,
-) {
-    if (!part.isTransferPart()) {
-        return
-    }
-
-    val isAssistantToUser = part.specialDirection == TransferDirection.ASSISTANT_TO_USER
-    val canConfirmReceipt = !isUserMessage &&
-        isAssistantToUser &&
-        part.specialStatus == TransferStatus.PENDING &&
-        onConfirmTransferReceipt != null &&
-        part.specialId.isNotBlank()
-    val topColor = if (isUserMessage) {
-        androidx.compose.ui.graphics.Color(0xFFF4C16F)
-    } else {
-        androidx.compose.ui.graphics.Color(0xFFF0B35A)
-    }
-    val bottomColor = if (isUserMessage) {
-        androidx.compose.ui.graphics.Color(0xFFEAAA47)
-    } else {
-        androidx.compose.ui.graphics.Color(0xFFE19A3A)
-    }
-    val contentColor = androidx.compose.ui.graphics.Color.White
-
-    Surface(
-        shape = RoundedCornerShape(22.dp),
-        color = androidx.compose.ui.graphics.Color.Transparent,
-    ) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .background(
-                    brush = Brush.verticalGradient(
-                        colors = listOf(topColor, bottomColor),
-                    ),
-                    shape = RoundedCornerShape(22.dp),
-                )
-                .padding(horizontal = 16.dp, vertical = 16.dp),
-            verticalArrangement = Arrangement.spacedBy(10.dp),
-        ) {
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(10.dp),
-            ) {
-                Box(
-                    modifier = Modifier
-                        .size(36.dp)
-                        .background(
-                            color = androidx.compose.ui.graphics.Color.White.copy(alpha = 0.18f),
-                            shape = CircleShape,
-                        ),
-                    contentAlignment = Alignment.Center,
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.Share,
-                        contentDescription = null,
-                        modifier = Modifier.size(18.dp),
-                        tint = androidx.compose.ui.graphics.Color.White,
-                    )
-                }
-                Text(
-                    text = transferDirectionLabel(part),
-                    style = MaterialTheme.typography.titleMedium,
-                    color = contentColor,
-                    fontWeight = FontWeight.SemiBold,
-                )
-            }
-            Text(
-                text = formatTransferAmount(part.specialAmount),
-                style = MaterialTheme.typography.headlineMedium,
-                fontWeight = FontWeight.Bold,
-                color = contentColor,
-            )
-            if (part.specialNote.isNotBlank()) {
-                Text(
-                    text = part.specialNote,
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = contentColor.copy(alpha = 0.92f),
-                )
-            }
-            HorizontalDivider(color = androidx.compose.ui.graphics.Color.White.copy(alpha = 0.18f))
-            Text(
-                text = transferStatusLabel(
-                    status = part.specialStatus,
-                    direction = part.specialDirection,
-                ),
-                style = MaterialTheme.typography.labelMedium,
-                color = contentColor.copy(alpha = 0.92f),
-            )
-            if (canConfirmReceipt) {
-                FilledTonalButton(
-                    onClick = { onConfirmTransferReceipt?.invoke(part.specialId) },
-                    colors = androidx.compose.material3.ButtonDefaults.filledTonalButtonColors(
-                        containerColor = androidx.compose.ui.graphics.Color.White,
-                        contentColor = androidx.compose.ui.graphics.Color(0xFF8A4B08),
-                    ),
-                ) {
-                    Text("确认收款")
-                }
-            }
-        }
-    }
-}
-
-private fun transferDirectionLabel(part: ChatMessagePart): String {
-    return when (part.specialDirection) {
-        TransferDirection.USER_TO_ASSISTANT -> "转账给 ${part.specialCounterparty.ifBlank { "对方" }}"
-        TransferDirection.ASSISTANT_TO_USER -> "${part.specialCounterparty.ifBlank { "对方" }} 向你转账"
-        null -> "转账"
-    }
-}
-
-private fun transferStatusLabel(
-    status: TransferStatus?,
-    direction: TransferDirection?,
-): String {
-    return when (status) {
-        TransferStatus.PENDING -> when (direction) {
-            TransferDirection.USER_TO_ASSISTANT -> "待对方收款"
-            TransferDirection.ASSISTANT_TO_USER -> "请确认收款"
-            null -> "待收款"
-        }
-        TransferStatus.RECEIVED -> "已收款"
-        null -> "处理中"
-    }
-}
-
-private fun formatTransferAmount(amount: String): String {
-    return if (amount.startsWith("¥")) amount else "¥$amount"
 }
 
 @Composable

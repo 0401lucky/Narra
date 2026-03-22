@@ -65,6 +65,9 @@ import com.example.myapplication.ui.component.roleplay.RoleplayDialoguePanel
 import com.example.myapplication.ui.component.roleplay.RoleplayPortraitSpec
 import com.example.myapplication.ui.component.roleplay.RoleplaySceneBackground
 import com.example.myapplication.ui.screen.chat.ModelPickerSheet
+import com.example.myapplication.ui.screen.chat.SpecialPlaySheet
+import com.example.myapplication.ui.screen.chat.TransferPlayDraft
+import com.example.myapplication.ui.screen.chat.TransferPlaySheet
 
 private data class RoleplayActionRow(
     val title: String,
@@ -105,6 +108,9 @@ fun RoleplayScreen(
     onGenerateSuggestions: () -> Unit,
     onApplySuggestion: (String) -> Unit,
     onClearSuggestions: () -> Unit,
+    onRetryTurn: (String) -> Unit,
+    onSendTransferPlay: (String, String, String) -> Unit,
+    onConfirmTransferReceipt: (String) -> Unit,
     onSend: () -> Unit,
     onCancelSending: () -> Unit,
     onRestartSession: () -> Unit,
@@ -160,7 +166,17 @@ fun RoleplayScreen(
     var showPromptDebugSheet by rememberSaveable { mutableStateOf(false) }
     var showConfirmResetDialog by rememberSaveable { mutableStateOf(false) }
     var showConfirmRestartDialog by rememberSaveable { mutableStateOf(false) }
+    var showSpecialPlaySheet by rememberSaveable { mutableStateOf(false) }
+    var showTransferSheet by rememberSaveable { mutableStateOf(false) }
+    var transferCounterparty by rememberSaveable { mutableStateOf("") }
+    var transferAmount by rememberSaveable { mutableStateOf("") }
+    var transferNote by rememberSaveable { mutableStateOf("") }
     var viewingPortrait by remember { mutableStateOf<RoleplayPortraitSpec?>(null) }
+    val transferDraft = TransferPlayDraft(
+        counterparty = transferCounterparty,
+        amount = transferAmount,
+        note = transferNote,
+    )
 
     val userPortraitSpec = RoleplayPortraitSpec(
         name = userName,
@@ -257,6 +273,14 @@ fun RoleplayScreen(
                 onGenerateSuggestions = onGenerateSuggestions,
                 onApplySuggestion = onApplySuggestion,
                 onClearSuggestions = onClearSuggestions,
+                onRetryTurn = onRetryTurn,
+                onOpenSpecialPlay = {
+                    if (transferCounterparty.isBlank()) {
+                        transferCounterparty = characterName
+                    }
+                    showSpecialPlaySheet = true
+                },
+                onConfirmTransferReceipt = onConfirmTransferReceipt,
                 onSend = onSend,
                 onCancel = { onCancelSending() },
                 modifier = Modifier
@@ -371,6 +395,42 @@ fun RoleplayScreen(
                 }
             }
         }
+    }
+
+    if (showSpecialPlaySheet) {
+        SpecialPlaySheet(
+            onDismissRequest = { showSpecialPlaySheet = false },
+            onOpenTransfer = {
+                showSpecialPlaySheet = false
+                if (transferCounterparty.isBlank()) {
+                    transferCounterparty = characterName
+                }
+                showTransferSheet = true
+            },
+        )
+    }
+
+    if (showTransferSheet) {
+        TransferPlaySheet(
+            draft = transferDraft,
+            onDraftChange = {
+                transferCounterparty = it.counterparty
+                transferAmount = it.amount
+                transferNote = it.note
+            },
+            onDismissRequest = { showTransferSheet = false },
+            onConfirm = {
+                onSendTransferPlay(
+                    transferDraft.counterparty.ifBlank { characterName },
+                    transferDraft.amount,
+                    transferDraft.note,
+                )
+                transferCounterparty = characterName
+                transferAmount = ""
+                transferNote = ""
+                showTransferSheet = false
+            },
+        )
     }
 
     if (showModelSheet) {

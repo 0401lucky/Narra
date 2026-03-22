@@ -373,10 +373,12 @@ class AppSettingsStore(
             return emptyList()
         }
         return listOf(
-            createDefaultProvider(
-                baseUrl = baseUrl,
-                apiKey = apiKey,
-                selectedModel = selectedModel,
+            normalizeProviderFields(
+                createDefaultProvider(
+                    baseUrl = baseUrl,
+                    apiKey = apiKey,
+                    selectedModel = selectedModel,
+                ),
             ),
         )
     }
@@ -386,9 +388,30 @@ class AppSettingsStore(
         val resolvedType = provider.type ?: ProviderType.fromBaseUrl(provider.baseUrl)
         val resolvedModels = provider.models ?: provider.availableModels.map(::inferredModelInfo)
         return provider.copy(
+            baseUrl = normalizeProviderBaseUrl(provider.baseUrl, resolvedType),
             type = resolvedType,
             models = resolvedModels,
         )
+    }
+
+    private fun normalizeProviderBaseUrl(
+        baseUrl: String,
+        providerType: ProviderType,
+    ): String {
+        val trimmed = baseUrl.trim()
+        if (trimmed.isBlank()) {
+            return ""
+        }
+        val normalizedBaseUrl = if (trimmed.endsWith('/')) trimmed else "$trimmed/"
+        if (providerType != ProviderType.GOOGLE) {
+            return normalizedBaseUrl
+        }
+        val lower = normalizedBaseUrl.lowercase()
+        return if (lower.contains("/openai/")) {
+            normalizedBaseUrl
+        } else {
+            "${normalizedBaseUrl}openai/"
+        }
     }
 
     private fun normalizeProvider(

@@ -1,12 +1,12 @@
 package com.example.myapplication.data.repository.context
 
-import android.util.Base64
 import com.example.myapplication.model.ContextDataBundle
 import java.io.ByteArrayOutputStream
 import java.nio.ByteBuffer
 import java.nio.ByteOrder
 import java.nio.charset.Charset
 import java.nio.charset.StandardCharsets
+import java.util.Base64
 import java.util.zip.Inflater
 
 class TavernCharacterImageAdapter(
@@ -147,10 +147,17 @@ class TavernCharacterImageAdapter(
 
     private fun decodeBase64Payload(value: String): String? {
         val sanitized = value.trim().filterNot(Char::isWhitespace)
-        return runCatching {
-            val decodedBytes = Base64.decode(sanitized, Base64.DEFAULT)
-            String(decodedBytes, StandardCharsets.UTF_8)
-        }.getOrNull()
+        if (sanitized.startsWith("{") || sanitized.startsWith("[")) {
+            return sanitized
+        }
+        return sequenceOf(
+            { Base64.getDecoder().decode(sanitized) },
+            { Base64.getUrlDecoder().decode(sanitized) },
+        ).mapNotNull { decoder ->
+            runCatching {
+                String(decoder.invoke(), StandardCharsets.UTF_8)
+            }.getOrNull()
+        }.firstOrNull()
     }
 
     private fun readInt(bytes: ByteArray, offset: Int): Int? {

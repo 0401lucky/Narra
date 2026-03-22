@@ -6,6 +6,7 @@ import androidx.lifecycle.viewModelScope
 import com.example.myapplication.context.PromptContextAssembler
 import com.example.myapplication.data.repository.AiRepository
 import com.example.myapplication.data.repository.ConversationRepository
+import com.example.myapplication.data.repository.TransferUpdateDirective
 import com.example.myapplication.data.repository.context.ConversationSummaryRepository
 import com.example.myapplication.data.repository.context.MemoryRepository
 import com.example.myapplication.data.repository.roleplay.RoleplayRepository
@@ -23,6 +24,8 @@ import com.example.myapplication.model.MessageRole
 import com.example.myapplication.model.MessageStatus
 import com.example.myapplication.model.PromptMode
 import com.example.myapplication.model.ProviderFunction
+import com.example.myapplication.model.TransferDirection
+import com.example.myapplication.model.TransferStatus
 import com.example.myapplication.model.RoleplayContentType
 import com.example.myapplication.model.RoleplayContextStatus
 import com.example.myapplication.model.RoleplayMessageUiModel
@@ -32,8 +35,11 @@ import com.example.myapplication.model.RoleplaySession
 import com.example.myapplication.model.RoleplaySpeaker
 import com.example.myapplication.model.hasSendableContent
 import com.example.myapplication.model.imageMessagePart
+import com.example.myapplication.model.isTransferPart
 import com.example.myapplication.model.normalizeChatMessageParts
 import com.example.myapplication.model.textMessagePart
+import com.example.myapplication.model.toTransferCopyText
+import com.example.myapplication.model.transferMessagePart
 import com.example.myapplication.model.toContentMirror
 import com.example.myapplication.model.toPlainText
 import com.example.myapplication.roleplay.RoleplayOutputParser
@@ -398,9 +404,156 @@ class RoleplayViewModel(
         _uiState.update {
             it.copy(
                 input = text,
+                suggestions = emptyList(),
+                isGeneratingSuggestions = false,
                 errorMessage = null,
                 suggestionErrorMessage = null,
             )
+        }
+    }
+
+    fun retryTurn(sourceMessageId: String) {
+        val state = _uiState.value
+        val scenario = state.currentScenario ?: return
+        val session = state.currentSession ?: return
+        if (state.isSending || sourceMessageId.isBlank()) {
+            return
+        }
+
+        val selectedModel = resolveSelectedModelId(state.settings)
+        val assistant = resolveAssistant(state.settings, scenario.assistantId)
+        sendingJob = viewModelScope.launch {
+            val currentMessages = conversationRepository.listMessages(session.conversationId)
+            val targetIndex = currentMessages.indexOfFirst { message ->
+                message.id == sourceMessageId &&
+                    message.role == MessageRole.ASSISTANT &&
+                    (message.status == MessageStatus.COMPLETED || message.status == MessageStatus.ERROR)
+            }
+            if (targetIndex == -1) {
+                sendingJob = null
+                return@launch
+            }
+
+            val targetMessage = currentMessages[targetIndex]
+            val loadingMessage = targetMessage.copy(
+                content = "",
+                status = MessageStatus.LOADING,
+                reasoningContent = "",
+                parts = emptyList(),
+            )
+            val requestMessages = currentMessages
+                .take(targetIndex)
+                .filter { it.status == MessageStatus.COMPLETED && it.hasSendableContent() }
+            val initialMessages = currentMessages.take(targetIndex) + loadingMessage
+
+            _uiState.update {
+                it.copy(
+                    suggestions = emptyList(),
+                    isGeneratingSuggestions = false,
+                    suggestionErrorMessage = null,
+                    isSending = true,
+                    errorMessage = null,
+                    streamingContent = "",
+                )
+            }
+            currentRawMessages.value = initialMessages
+            executeRoleplayRoundTrip(
+                state = state,
+                scenario = scenario,
+                session = session,
+                selectedModel = selectedModel,
+                assistant = assistant,
+                requestMessages = requestMessages,
+                initialMessages = initialMessages,
+                loadingMessage = loadingMessage,
+                buildFinalMessages = { completedAssistant ->
+                    currentMessages.take(targetIndex) + completedAssistant
+                },
+            )
+        }
+    }
+
+    fun sendTransferPlay(
+        counterparty: String,
+        amount: String,
+        note: String,
+    ) {
+        val state = _uiState.value
+        val scenario = state.currentScenario
+        if (scenario == null) {
+            _uiState.update { it.copy(errorMessage = "当前场景不存在") }
+            return
+        }
+        if (!state.settings.hasRequiredConfig()) {
+            _uiState.update { it.copy(errorMessage = "请先完成模型配置后再开始剧情互动") }
+            return
+        }
+        if (state.isSending) {
+            return
+        }
+
+        val normalizedAmount = amount.trim()
+        if (normalizedAmount.isBlank()) {
+            _uiState.update { it.copy(errorMessage = "请输入转账金额") }
+            return
+        }
+
+        val normalizedCounterparty = counterparty.trim().ifBlank {
+            resolveRoleplayNames(
+                scenario = scenario,
+                assistant = resolveAssistant(state.settings, scenario.assistantId),
+                settings = state.settings,
+            ).second
+        }
+        val transferPart = transferMessagePart(
+            direction = TransferDirection.USER_TO_ASSISTANT,
+            status = TransferStatus.PENDING,
+            counterparty = normalizedCounterparty,
+            amount = normalizedAmount,
+            note = note.trim(),
+        )
+
+        startRoleplaySend(
+            state = state,
+            scenario = scenario,
+            userParts = listOf(transferPart),
+            nextInput = state.input,
+        )
+    }
+
+    fun confirmTransferReceipt(specialId: String) {
+        val state = _uiState.value
+        val session = state.currentSession
+        if (specialId.isBlank() || session == null) {
+            return
+        }
+
+        viewModelScope.launch {
+            val currentMessages = conversationRepository.listMessages(session.conversationId)
+            val updatedMessages = updateTransferStatuses(
+                messages = currentMessages,
+                updates = listOf(
+                    TransferUpdateDirective(
+                        refId = specialId,
+                        status = TransferStatus.RECEIVED,
+                    ),
+                ),
+            )
+            if (updatedMessages == currentMessages) {
+                return@launch
+            }
+            conversationRepository.saveConversationMessages(
+                conversationId = session.conversationId,
+                messages = updatedMessages,
+                selectedModel = resolveSelectedModelId(state.settings),
+            )
+            currentRawMessages.value = updatedMessages
+            _uiState.update {
+                it.copy(
+                    noticeMessage = "已收款",
+                    errorMessage = null,
+                )
+            }
         }
     }
 
@@ -526,11 +679,25 @@ class RoleplayViewModel(
             return
         }
 
+        startRoleplaySend(
+            state = state,
+            scenario = scenario,
+            userParts = listOf(textMessagePart(text)),
+            nextInput = "",
+        )
+    }
+
+    private fun startRoleplaySend(
+        state: RoleplayUiState,
+        scenario: RoleplayScenario,
+        userParts: List<ChatMessagePart>,
+        nextInput: String,
+    ) {
         cancelSuggestionGeneration(resetState = false)
         _uiState.update {
             it.copy(
                 suggestions = emptyList(),
-                input = "",
+                input = nextInput,
                 isSending = true,
                 isGeneratingSuggestions = false,
                 errorMessage = null,
@@ -552,9 +719,10 @@ class RoleplayViewModel(
                 )
             }
             if (startResult?.assistantMismatch == true) {
+                val restoredInput = userParts.toPlainText().ifBlank { nextInput }
                 _uiState.update {
                     it.copy(
-                        input = text,
+                        input = restoredInput,
                         isSending = false,
                         streamingContent = "",
                     )
@@ -562,6 +730,7 @@ class RoleplayViewModel(
                 sendingJob = null
                 return@launch
             }
+
             val session = startResult?.session ?: state.currentSession
                 ?: error("当前剧情会话不存在")
             val selectedModel = resolveSelectedModelId(state.settings)
@@ -570,8 +739,8 @@ class RoleplayViewModel(
             val userMessage = buildMessage(
                 conversationId = session.conversationId,
                 role = MessageRole.USER,
-                content = text,
-                parts = listOf(textMessagePart(text)),
+                content = userParts.toContentMirror(specialFallback = "转账").ifBlank { "剧情互动" },
+                parts = userParts,
             )
             val loadingMessage = buildMessage(
                 conversationId = session.conversationId,
@@ -580,153 +749,186 @@ class RoleplayViewModel(
                 status = MessageStatus.LOADING,
                 modelName = selectedModel,
             )
-            val initialMessages = existingMessages + userMessage + loadingMessage
             val requestMessages = existingMessages.filter {
                 it.status == MessageStatus.COMPLETED && it.hasSendableContent()
             } + userMessage
+            val initialMessages = existingMessages + userMessage + loadingMessage
+            currentRawMessages.value = initialMessages
 
-            try {
-                conversationRepository.saveConversationMessages(
-                    conversationId = session.conversationId,
-                    messages = initialMessages,
-                    selectedModel = selectedModel,
-                )
-                val conversation = conversationRepository.getConversation(session.conversationId)
-                    ?: Conversation(
-                        id = session.conversationId,
-                        createdAt = nowProvider(),
-                        updatedAt = nowProvider(),
-                        assistantId = scenario.assistantId,
-                    )
-                val promptContext = promptContextAssembler.assemble(
-                    settings = state.settings,
-                    assistant = assistant,
-                    conversation = conversation,
-                    userInputText = text,
-                    recentMessages = requestMessages,
-                    promptMode = PromptMode.ROLEPLAY,
-                )
-                val decoratedPrompt = RoleplayPromptDecorator.decorate(
-                    baseSystemPrompt = promptContext.systemPrompt,
-                    scenario = scenario,
-                    assistant = assistant,
-                    settings = state.settings,
-                    includeOpeningNarrationReference = existingMessages.isEmpty(),
-                )
-                _uiState.update {
-                    it.copy(
-                        contextStatus = it.contextStatus.copy(
-                            hasSummary = promptContext.summaryCoveredMessageCount > 0,
-                            summaryCoveredMessageCount = promptContext.summaryCoveredMessageCount,
-                            worldBookHitCount = promptContext.worldBookHitCount,
-                            memoryInjectionCount = promptContext.memoryInjectionCount,
-                        ),
-                        latestPromptDebugDump = buildString {
-                            append(promptContext.debugDump)
-                            if (decoratedPrompt.isNotBlank()) {
-                                append("\n\n【RP 装饰后提示词】\n")
-                                append(decoratedPrompt)
-                            }
-                        },
-                    )
-                }
+            executeRoleplayRoundTrip(
+                state = state,
+                scenario = scenario,
+                session = session,
+                selectedModel = selectedModel,
+                assistant = assistant,
+                requestMessages = requestMessages,
+                initialMessages = initialMessages,
+                loadingMessage = loadingMessage,
+                buildFinalMessages = { completedAssistant ->
+                    existingMessages + userMessage + completedAssistant
+                },
+            )
+        }
+    }
 
-                val effectiveRequestMessages = resolveRequestMessagesForRoundTrip(
-                    conversation = conversation,
-                    assistant = assistant,
-                    requestMessages = requestMessages,
+    private suspend fun executeRoleplayRoundTrip(
+        state: RoleplayUiState,
+        scenario: RoleplayScenario,
+        session: RoleplaySession,
+        selectedModel: String,
+        assistant: Assistant?,
+        requestMessages: List<ChatMessage>,
+        initialMessages: List<ChatMessage>,
+        loadingMessage: ChatMessage,
+        buildFinalMessages: (ChatMessage) -> List<ChatMessage>,
+    ) {
+        try {
+            conversationRepository.saveConversationMessages(
+                conversationId = session.conversationId,
+                messages = initialMessages,
+                selectedModel = selectedModel,
+            )
+            val conversation = conversationRepository.getConversation(session.conversationId)
+                ?: Conversation(
+                    id = session.conversationId,
+                    createdAt = nowProvider(),
+                    updatedAt = nowProvider(),
+                    assistantId = scenario.assistantId,
                 )
-                val fullContent = StringBuilder()
-                val fullReasoning = StringBuilder()
-                val fullParts = mutableListOf<ChatMessagePart>()
-
-                repository.sendMessageStream(
-                    messages = effectiveRequestMessages,
-                    systemPrompt = decoratedPrompt,
-                    promptMode = PromptMode.ROLEPLAY,
-                ).collect { event ->
-                    when (event) {
-                        is ChatStreamEvent.ContentDelta -> {
-                            fullContent.append(event.value)
-                            _uiState.update {
-                                it.copy(
-                                    streamingContent = outputParser.stripMarkup(fullContent.toString()),
-                                )
-                            }
+            val promptContext = promptContextAssembler.assemble(
+                settings = state.settings,
+                assistant = assistant,
+                conversation = conversation,
+                userInputText = resolveLatestUserInputText(requestMessages),
+                recentMessages = requestMessages,
+                promptMode = PromptMode.ROLEPLAY,
+            )
+            val decoratedPrompt = RoleplayPromptDecorator.decorate(
+                baseSystemPrompt = promptContext.systemPrompt,
+                scenario = scenario,
+                assistant = assistant,
+                settings = state.settings,
+                includeOpeningNarrationReference = initialMessages.none { it.role == MessageRole.USER },
+            )
+            _uiState.update {
+                it.copy(
+                    contextStatus = it.contextStatus.copy(
+                        hasSummary = promptContext.summaryCoveredMessageCount > 0,
+                        summaryCoveredMessageCount = promptContext.summaryCoveredMessageCount,
+                        worldBookHitCount = promptContext.worldBookHitCount,
+                        memoryInjectionCount = promptContext.memoryInjectionCount,
+                    ),
+                    latestPromptDebugDump = buildString {
+                        append(promptContext.debugDump)
+                        if (decoratedPrompt.isNotBlank()) {
+                            append("\n\n【RP 装饰后提示词】\n")
+                            append(decoratedPrompt)
                         }
+                    },
+                )
+            }
 
-                        is ChatStreamEvent.ReasoningDelta -> fullReasoning.append(event.value)
-                        is ChatStreamEvent.ImageDelta -> fullParts += imageMessagePart(
+            val effectiveRequestMessages = resolveRequestMessagesForRoundTrip(
+                conversation = conversation,
+                assistant = assistant,
+                requestMessages = requestMessages,
+            )
+            val fullContent = StringBuilder()
+            val fullReasoning = StringBuilder()
+            val fullParts = mutableListOf<ChatMessagePart>()
+
+            repository.sendMessageStream(
+                messages = effectiveRequestMessages,
+                systemPrompt = decoratedPrompt,
+                promptMode = PromptMode.ROLEPLAY,
+            ).collect { event ->
+                when (event) {
+                    is ChatStreamEvent.ContentDelta -> {
+                        fullContent.append(event.value)
+                        _uiState.update {
+                            it.copy(
+                                streamingContent = outputParser.stripMarkup(fullContent.toString()),
+                            )
+                        }
+                    }
+
+                    is ChatStreamEvent.ReasoningDelta -> fullReasoning.append(event.value)
+                    is ChatStreamEvent.ImageDelta -> {
+                        fullParts += imageMessagePart(
                             uri = event.part.uri,
                             mimeType = event.part.mimeType,
                             fileName = event.part.fileName,
                         )
-
-                        ChatStreamEvent.Completed -> Unit
                     }
-                }
 
-                val rawContent = fullContent.toString().trim()
-                val completedParts = normalizeChatMessageParts(
-                    buildList {
-                        if (rawContent.isNotBlank()) {
-                            add(textMessagePart(rawContent))
-                        }
-                        addAll(fullParts)
-                    },
-                )
-                val completedAssistant = loadingMessage.copy(
-                    content = rawContent.ifBlank {
-                        completedParts.toContentMirror(
+                    ChatStreamEvent.Completed -> Unit
+                }
+            }
+
+            val parsedOutput = repository.parseAssistantSpecialOutput(
+                content = fullContent.toString().trim(),
+                existingParts = fullParts,
+            )
+            val completedAssistant = loadingMessage.copy(
+                content = parsedOutput.content.takeIf { it.isNotBlank() }
+                    ?: if (parsedOutput.transferUpdates.isNotEmpty()) {
+                        "已收款"
+                    } else {
+                        parsedOutput.parts.toContentMirror(
                             imageFallback = "角色返回了图片",
                             specialFallback = "角色已回应",
                         ).ifBlank { "模型未返回有效内容" }
                     },
-                    status = MessageStatus.COMPLETED,
-                    reasoningContent = fullReasoning.toString(),
-                    parts = completedParts,
-                )
-                val completedMessages = existingMessages + userMessage + completedAssistant
-                conversationRepository.saveConversationMessages(
-                    conversationId = session.conversationId,
-                    messages = completedMessages,
-                    selectedModel = selectedModel,
-                )
+                status = MessageStatus.COMPLETED,
+                reasoningContent = fullReasoning.toString(),
+                parts = parsedOutput.parts,
+            )
+            val completedMessages = updateTransferStatuses(
+                messages = buildFinalMessages(completedAssistant),
+                updates = parsedOutput.transferUpdates,
+            )
+            conversationRepository.saveConversationMessages(
+                conversationId = session.conversationId,
+                messages = completedMessages,
+                selectedModel = selectedModel,
+            )
+            currentRawMessages.value = completedMessages
+            finishSending(errorMessage = null)
+            launchConversationSummaryGeneration(
+                conversationId = session.conversationId,
+                completedMessages = completedMessages,
+                settings = state.settings,
+                assistant = assistant,
+                scenario = scenario,
+            )
+            launchAutomaticMemoryExtraction(
+                conversationId = session.conversationId,
+                completedMessages = completedMessages,
+                settings = state.settings,
+                assistant = assistant,
+                scenario = scenario,
+            )
+        } catch (throwable: Throwable) {
+            if (throwable is CancellationException) {
                 finishSending(errorMessage = null)
-                launchConversationSummaryGeneration(
-                    conversationId = session.conversationId,
-                    completedMessages = completedMessages,
-                    settings = state.settings,
-                    assistant = assistant,
-                    scenario = scenario,
-                )
-                launchAutomaticMemoryExtraction(
-                    conversationId = session.conversationId,
-                    completedMessages = completedMessages,
-                    settings = state.settings,
-                    assistant = assistant,
-                    scenario = scenario,
-                )
-            } catch (throwable: Throwable) {
-                if (throwable is CancellationException) {
-                    finishSending(errorMessage = null)
-                    throw throwable
-                }
-                val errorText = throwable.message ?: "发送失败"
-                val failedAssistant = loadingMessage.copy(
-                    content = errorText,
-                    status = MessageStatus.ERROR,
-                    parts = emptyList(),
-                )
-                conversationRepository.saveConversationMessages(
-                    conversationId = session.conversationId,
-                    messages = existingMessages + userMessage + failedAssistant,
-                    selectedModel = selectedModel,
-                )
-                finishSending(errorMessage = errorText)
-            } finally {
-                sendingJob = null
+                throw throwable
             }
+            val errorText = throwable.message ?: "发送失败"
+            val failedAssistant = loadingMessage.copy(
+                content = errorText,
+                status = MessageStatus.ERROR,
+                parts = emptyList(),
+            )
+            val failedMessages = buildFinalMessages(failedAssistant)
+            conversationRepository.saveConversationMessages(
+                conversationId = session.conversationId,
+                messages = failedMessages,
+                selectedModel = selectedModel,
+            )
+            currentRawMessages.value = failedMessages
+            finishSending(errorMessage = errorText)
+        } finally {
+            sendingJob = null
         }
     }
 
@@ -882,48 +1084,21 @@ class RoleplayViewModel(
             rawMessages.forEach { message ->
                 when (message.role) {
                     MessageRole.USER -> {
-                        val content = message.parts.toPlainText()
-                            .ifBlank { message.content.trim() }
-                            .ifBlank { "（无文本内容）" }
-                        add(
-                            RoleplayMessageUiModel(
-                                sourceMessageId = message.id,
-                                contentType = RoleplayContentType.DIALOGUE,
-                                speaker = RoleplaySpeaker.USER,
-                                speakerName = userName,
-                                content = content,
-                                createdAt = message.createdAt,
-                            ),
+                        appendRoleplayUserMessages(
+                            target = this,
+                            message = message,
+                            userName = userName,
                         )
                     }
 
                     MessageRole.ASSISTANT -> {
-                        val content = message.parts.toPlainText().ifBlank { message.content.trim() }
-                        if (message.status == MessageStatus.LOADING && content.isBlank()) {
-                            return@forEach
-                        }
-                        outputParser.parseAssistantOutput(
-                            rawContent = content,
+                        appendRoleplayAssistantMessages(
+                            target = this,
+                            message = message,
+                            scenario = scenario,
+                            userName = userName,
                             characterName = characterName,
-                            allowNarration = scenario.enableNarration,
-                        ).forEach { segment ->
-                            add(
-                                RoleplayMessageUiModel(
-                                    sourceMessageId = message.id,
-                                    contentType = segment.contentType,
-                                    speaker = segment.speaker,
-                                    speakerName = when (segment.speaker) {
-                                        RoleplaySpeaker.USER -> userName
-                                        RoleplaySpeaker.CHARACTER -> characterName
-                                        RoleplaySpeaker.NARRATOR -> "旁白"
-                                        RoleplaySpeaker.SYSTEM -> segment.speakerName
-                                    },
-                                    content = segment.content,
-                                    emotion = segment.emotion,
-                                    createdAt = message.createdAt,
-                                ),
-                            )
-                        }
+                        )
                     }
                 }
             }
@@ -937,12 +1112,238 @@ class RoleplayViewModel(
                         content = streamingContent,
                         createdAt = nowProvider(),
                         isStreaming = true,
+                        messageStatus = MessageStatus.LOADING,
+                        copyText = outputParser.stripMarkup(streamingContent),
                     ),
                 )
             }
         }
 
         return mappedMessages
+    }
+
+    private fun appendRoleplayUserMessages(
+        target: MutableList<RoleplayMessageUiModel>,
+        message: ChatMessage,
+        userName: String,
+    ) {
+        val normalizedParts = normalizeChatMessageParts(message.parts)
+        val initialSize = target.size
+        if (normalizedParts.isEmpty()) {
+            val content = message.content.trim().ifBlank { "（无文本内容）" }
+            target += RoleplayMessageUiModel(
+                sourceMessageId = message.id,
+                contentType = RoleplayContentType.DIALOGUE,
+                speaker = RoleplaySpeaker.USER,
+                speakerName = userName,
+                content = content,
+                createdAt = message.createdAt,
+                messageStatus = message.status,
+                copyText = content,
+            )
+            return
+        }
+
+        normalizedParts.forEach { part ->
+            when {
+                part.isTransferPart() -> {
+                    target += RoleplayMessageUiModel(
+                        sourceMessageId = message.id,
+                        contentType = RoleplayContentType.SPECIAL_TRANSFER,
+                        speaker = RoleplaySpeaker.USER,
+                        speakerName = userName,
+                        content = "",
+                        createdAt = message.createdAt,
+                        messageStatus = message.status,
+                        copyText = part.toTransferCopyText(),
+                        specialPart = part,
+                    )
+                }
+
+                part.text.isNotBlank() -> {
+                    val content = part.text.trim()
+                    target += RoleplayMessageUiModel(
+                        sourceMessageId = message.id,
+                        contentType = RoleplayContentType.DIALOGUE,
+                        speaker = RoleplaySpeaker.USER,
+                        speakerName = userName,
+                        content = content,
+                        createdAt = message.createdAt,
+                        messageStatus = message.status,
+                        copyText = content,
+                    )
+                }
+            }
+        }
+        if (target.size == initialSize && message.content.isNotBlank()) {
+            val content = message.content.trim()
+            target += RoleplayMessageUiModel(
+                sourceMessageId = message.id,
+                contentType = RoleplayContentType.DIALOGUE,
+                speaker = RoleplaySpeaker.USER,
+                speakerName = userName,
+                content = content,
+                createdAt = message.createdAt,
+                messageStatus = message.status,
+                copyText = content,
+            )
+        }
+    }
+
+    private fun appendRoleplayAssistantMessages(
+        target: MutableList<RoleplayMessageUiModel>,
+        message: ChatMessage,
+        scenario: RoleplayScenario,
+        userName: String,
+        characterName: String,
+    ) {
+        val normalizedParts = normalizeChatMessageParts(message.parts)
+        val initialSize = target.size
+        val canRetry = !message.id.startsWith("opening-narration:") &&
+            (message.status == MessageStatus.COMPLETED || message.status == MessageStatus.ERROR)
+        if (normalizedParts.isEmpty()) {
+            val content = message.content.trim()
+            if (message.status == MessageStatus.LOADING && content.isBlank()) {
+                return
+            }
+            appendAssistantTextSegments(
+                target = target,
+                sourceMessageId = message.id,
+                rawContent = content,
+                userName = userName,
+                characterName = characterName,
+                allowNarration = scenario.enableNarration,
+                createdAt = message.createdAt,
+                messageStatus = message.status,
+                canRetry = canRetry,
+            )
+            return
+        }
+
+        normalizedParts.forEach { part ->
+            when {
+                part.isTransferPart() -> {
+                    target += RoleplayMessageUiModel(
+                        sourceMessageId = message.id,
+                        contentType = RoleplayContentType.SPECIAL_TRANSFER,
+                        speaker = RoleplaySpeaker.CHARACTER,
+                        speakerName = characterName,
+                        content = "",
+                        createdAt = message.createdAt,
+                        messageStatus = message.status,
+                        copyText = part.toTransferCopyText(),
+                        canRetry = canRetry,
+                        specialPart = part,
+                    )
+                }
+
+                part.text.isNotBlank() -> {
+                    appendAssistantTextSegments(
+                        target = target,
+                        sourceMessageId = message.id,
+                        rawContent = part.text,
+                        userName = userName,
+                        characterName = characterName,
+                        allowNarration = scenario.enableNarration,
+                        createdAt = message.createdAt,
+                        messageStatus = message.status,
+                        canRetry = canRetry,
+                    )
+                }
+            }
+        }
+        if (target.size == initialSize && message.content.isNotBlank()) {
+            appendAssistantTextSegments(
+                target = target,
+                sourceMessageId = message.id,
+                rawContent = message.content,
+                userName = userName,
+                characterName = characterName,
+                allowNarration = scenario.enableNarration,
+                createdAt = message.createdAt,
+                messageStatus = message.status,
+                canRetry = canRetry,
+            )
+        }
+    }
+
+    private fun appendAssistantTextSegments(
+        target: MutableList<RoleplayMessageUiModel>,
+        sourceMessageId: String,
+        rawContent: String,
+        userName: String,
+        characterName: String,
+        allowNarration: Boolean,
+        createdAt: Long,
+        messageStatus: MessageStatus,
+        canRetry: Boolean,
+    ) {
+        val normalizedContent = rawContent.trim()
+        if (normalizedContent.isBlank()) {
+            return
+        }
+        outputParser.parseAssistantOutput(
+            rawContent = normalizedContent,
+            characterName = characterName,
+            allowNarration = allowNarration,
+        ).forEach { segment ->
+            target += RoleplayMessageUiModel(
+                sourceMessageId = sourceMessageId,
+                contentType = segment.contentType,
+                speaker = segment.speaker,
+                speakerName = when (segment.speaker) {
+                    RoleplaySpeaker.USER -> userName
+                    RoleplaySpeaker.CHARACTER -> characterName
+                    RoleplaySpeaker.NARRATOR -> "旁白"
+                    RoleplaySpeaker.SYSTEM -> segment.speakerName
+                },
+                content = segment.content,
+                emotion = segment.emotion,
+                createdAt = createdAt,
+                messageStatus = messageStatus,
+                copyText = segment.content,
+                canRetry = canRetry,
+            )
+        }
+    }
+
+    private fun resolveLatestUserInputText(requestMessages: List<ChatMessage>): String {
+        val latestUserMessage = requestMessages.lastOrNull { it.role == MessageRole.USER } ?: return ""
+        return latestUserMessage.parts.toPlainText()
+            .ifBlank { latestUserMessage.content.trim() }
+    }
+
+    private fun updateTransferStatuses(
+        messages: List<ChatMessage>,
+        updates: List<TransferUpdateDirective>,
+    ): List<ChatMessage> {
+        if (updates.isEmpty()) {
+            return messages
+        }
+
+        var changed = false
+        val updatedMessages = messages.map { message ->
+            val updatedParts = message.parts.map { part ->
+                val update = updates.firstOrNull { it.refId == part.specialId } ?: return@map part
+                if (!part.isTransferPart() || part.specialStatus == update.status) {
+                    return@map part
+                }
+                changed = true
+                part.copy(specialStatus = update.status)
+            }
+            if (updatedParts == message.parts) {
+                message
+            } else {
+                val normalizedUpdatedParts = normalizeChatMessageParts(updatedParts)
+                message.copy(
+                    parts = normalizedUpdatedParts,
+                    content = normalizedUpdatedParts.toContentMirror(
+                        specialFallback = "转账",
+                    ).ifBlank { message.content },
+                )
+            }
+        }
+        return if (changed) updatedMessages else messages
     }
 
     private suspend fun resolveRequestMessagesForRoundTrip(

@@ -24,8 +24,13 @@ import com.example.myapplication.model.MessageRole
 import com.example.myapplication.model.MessageStatus
 import com.example.myapplication.model.ModelsResponse
 import com.example.myapplication.model.ProviderSettings
+import com.example.myapplication.model.RoleplayContentType
 import com.example.myapplication.model.RoleplayScenario
 import com.example.myapplication.model.RoleplaySession
+import com.example.myapplication.model.TransferDirection
+import com.example.myapplication.model.TransferStatus
+import com.example.myapplication.model.isTransferPart
+import com.example.myapplication.model.transferMessagePart
 import com.example.myapplication.testutil.FakeConversationStore
 import com.example.myapplication.testutil.FakeConversationSummaryRepository
 import com.example.myapplication.testutil.FakeMemoryRepository
@@ -430,6 +435,8 @@ class RoleplayViewModelTest {
         assertEquals(3, viewModel.uiState.value.suggestions.size)
 
         viewModel.applySuggestion("你最好把话说清楚。")
+        assertEquals("你最好把话说清楚。", viewModel.uiState.value.input)
+        assertTrue(viewModel.uiState.value.suggestions.isEmpty())
         viewModel.sendMessage()
         assertTrue(viewModel.uiState.value.suggestions.isEmpty())
 
@@ -439,6 +446,249 @@ class RoleplayViewModelTest {
         assertFalse(state.isSending)
         assertTrue(state.suggestions.isEmpty())
         assertTrue(store.listMessages(session.conversationId).any { it.content.contains("你最好把话说清楚") })
+    }
+
+    @Test
+    fun retryTurn_regeneratesAssistantReplyFromSelectedTurn() = runTest(mainDispatcherRule.dispatcher.scheduler) {
+        enqueueStreamResponse("新的剧情回复")
+
+        val assistant = Assistant(
+            id = "assistant-1",
+            name = "陆宴清",
+        )
+        val scenario = RoleplayScenario(
+            id = "scene-1",
+            assistantId = assistant.id,
+            userDisplayNameOverride = "林晚",
+            characterDisplayNameOverride = "陆宴清",
+        )
+        val session = RoleplaySession(
+            id = "session-1",
+            scenarioId = scenario.id,
+            conversationId = "conv-1",
+            createdAt = 1L,
+            updatedAt = 2L,
+        )
+        val store = FakeConversationStore(
+            conversations = listOf(
+                Conversation(
+                    id = session.conversationId,
+                    title = "剧情",
+                    model = "chat-model",
+                    createdAt = 1L,
+                    updatedAt = 2L,
+                    assistantId = assistant.id,
+                ),
+            ),
+            messagesByConversation = mapOf(
+                session.conversationId to listOf(
+                    ChatMessage(
+                        id = "user-1",
+                        conversationId = session.conversationId,
+                        role = MessageRole.USER,
+                        content = "你今晚为什么会在这里？",
+                        createdAt = 10L,
+                    ),
+                    ChatMessage(
+                        id = "assistant-1",
+                        conversationId = session.conversationId,
+                        role = MessageRole.ASSISTANT,
+                        content = "旧回复",
+                        status = MessageStatus.COMPLETED,
+                        createdAt = 11L,
+                        modelName = "chat-model",
+                    ),
+                ),
+            ),
+        )
+        val provider = ProviderSettings(
+            id = "provider-1",
+            name = "测试 Provider",
+            baseUrl = server.url("/v1/").toString(),
+            apiKey = "test-key",
+            selectedModel = "chat-model",
+        )
+        val viewModel = createViewModel(
+            store = store,
+            roleplayRepository = FakeRoleplayRepository(
+                conversationStore = store,
+                scenarios = listOf(scenario),
+                sessions = listOf(session),
+            ),
+            settings = AppSettings(
+                baseUrl = provider.baseUrl,
+                apiKey = provider.apiKey,
+                selectedModel = provider.selectedModel,
+                providers = listOf(provider),
+                selectedProviderId = provider.id,
+                assistants = listOf(assistant),
+                selectedAssistantId = assistant.id,
+            ),
+            promptContextAssembler = fixedPromptAssembler("提示词上下文"),
+        )
+
+        viewModel.enterScenario(scenario.id)
+        advanceUntilIdle()
+        viewModel.retryTurn("assistant-1")
+        advanceUntilIdle()
+
+        val state = viewModel.uiState.value
+        assertFalse(state.isSending)
+        assertEquals(listOf("你今晚为什么会在这里？", "新的剧情回复"), store.listMessages(session.conversationId).map { it.content })
+        assertTrue(state.messages.any { it.sourceMessageId == "assistant-1" && it.content == "新的剧情回复" })
+    }
+
+    @Test
+    fun sendTransferPlay_persistsTransferPartAndMapsTransferCard() = runTest(mainDispatcherRule.dispatcher.scheduler) {
+        enqueueStreamResponse("我收下了。")
+
+        val assistant = Assistant(
+            id = "assistant-1",
+            name = "陆宴清",
+        )
+        val scenario = RoleplayScenario(
+            id = "scene-1",
+            assistantId = assistant.id,
+            userDisplayNameOverride = "林晚",
+            characterDisplayNameOverride = "陆宴清",
+        )
+        val session = RoleplaySession(
+            id = "session-1",
+            scenarioId = scenario.id,
+            conversationId = "conv-1",
+            createdAt = 1L,
+            updatedAt = 2L,
+        )
+        val store = FakeConversationStore(
+            conversations = listOf(
+                Conversation(
+                    id = session.conversationId,
+                    title = "剧情",
+                    model = "chat-model",
+                    createdAt = 1L,
+                    updatedAt = 2L,
+                    assistantId = assistant.id,
+                ),
+            ),
+        )
+        val provider = ProviderSettings(
+            id = "provider-1",
+            name = "测试 Provider",
+            baseUrl = server.url("/v1/").toString(),
+            apiKey = "test-key",
+            selectedModel = "chat-model",
+        )
+        val viewModel = createViewModel(
+            store = store,
+            roleplayRepository = FakeRoleplayRepository(
+                conversationStore = store,
+                scenarios = listOf(scenario),
+                sessions = listOf(session),
+            ),
+            settings = AppSettings(
+                baseUrl = provider.baseUrl,
+                apiKey = provider.apiKey,
+                selectedModel = provider.selectedModel,
+                providers = listOf(provider),
+                selectedProviderId = provider.id,
+                assistants = listOf(assistant),
+                selectedAssistantId = assistant.id,
+            ),
+            promptContextAssembler = fixedPromptAssembler("提示词上下文"),
+        )
+
+        viewModel.enterScenario(scenario.id)
+        advanceUntilIdle()
+        viewModel.sendTransferPlay("陆宴清", "88.00", "晚饭钱")
+        advanceUntilIdle()
+
+        val savedMessages = store.listMessages(session.conversationId)
+        assertTrue(savedMessages.first { it.role == MessageRole.USER }.parts.first().isTransferPart())
+        assertTrue(viewModel.uiState.value.messages.any { it.contentType == RoleplayContentType.SPECIAL_TRANSFER })
+    }
+
+    @Test
+    fun confirmTransferReceipt_updatesPendingTransferStatus() = runTest(mainDispatcherRule.dispatcher.scheduler) {
+        val assistant = Assistant(
+            id = "assistant-1",
+            name = "陆宴清",
+        )
+        val scenario = RoleplayScenario(
+            id = "scene-1",
+            assistantId = assistant.id,
+        )
+        val session = RoleplaySession(
+            id = "session-1",
+            scenarioId = scenario.id,
+            conversationId = "conv-1",
+            createdAt = 1L,
+            updatedAt = 2L,
+        )
+        val transferPart = transferMessagePart(
+            id = "transfer-1",
+            direction = TransferDirection.ASSISTANT_TO_USER,
+            status = TransferStatus.PENDING,
+            counterparty = "陆宴清",
+            amount = "66.00",
+            note = "路费",
+        )
+        val store = FakeConversationStore(
+            conversations = listOf(
+                Conversation(
+                    id = session.conversationId,
+                    title = "剧情",
+                    model = "chat-model",
+                    createdAt = 1L,
+                    updatedAt = 2L,
+                    assistantId = assistant.id,
+                ),
+            ),
+            messagesByConversation = mapOf(
+                session.conversationId to listOf(
+                    ChatMessage(
+                        id = "assistant-1",
+                        conversationId = session.conversationId,
+                        role = MessageRole.ASSISTANT,
+                        content = "转账 66.00",
+                        createdAt = 10L,
+                        parts = listOf(transferPart),
+                    ),
+                ),
+            ),
+        )
+        val provider = ProviderSettings(
+            id = "provider-1",
+            name = "测试 Provider",
+            baseUrl = "https://example.com/v1/",
+            apiKey = "test-key",
+            selectedModel = "chat-model",
+        )
+        val viewModel = createViewModel(
+            store = store,
+            roleplayRepository = FakeRoleplayRepository(
+                conversationStore = store,
+                scenarios = listOf(scenario),
+                sessions = listOf(session),
+            ),
+            settings = AppSettings(
+                baseUrl = provider.baseUrl,
+                apiKey = provider.apiKey,
+                selectedModel = provider.selectedModel,
+                providers = listOf(provider),
+                selectedProviderId = provider.id,
+                assistants = listOf(assistant),
+                selectedAssistantId = assistant.id,
+            ),
+            promptContextAssembler = fixedPromptAssembler("提示词上下文"),
+        )
+
+        viewModel.enterScenario(scenario.id)
+        advanceUntilIdle()
+        viewModel.confirmTransferReceipt("transfer-1")
+        advanceUntilIdle()
+
+        val updatedPart = store.listMessages(session.conversationId).first().parts.first()
+        assertEquals(TransferStatus.RECEIVED, updatedPart.specialStatus)
     }
 
     private fun enqueueStreamResponse(content: String) {

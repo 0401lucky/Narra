@@ -243,3 +243,53 @@ fun ChatMessagePart.isValidTransferPart(): Boolean {
         specialCounterparty.isNotBlank() &&
         specialAmount.isNotBlank()
 }
+
+fun ChatMessagePart.formatTransferAmount(): String {
+    val normalizedAmount = specialAmount.trim()
+    if (normalizedAmount.isBlank()) {
+        return "¥0.00"
+    }
+    return if (normalizedAmount.startsWith("¥")) {
+        normalizedAmount
+    } else {
+        "¥$normalizedAmount"
+    }
+}
+
+fun ChatMessagePart.transferDirectionLabel(): String {
+    return when (specialDirection) {
+        TransferDirection.USER_TO_ASSISTANT -> "转账给 ${specialCounterparty.ifBlank { "对方" }}"
+        TransferDirection.ASSISTANT_TO_USER -> "${specialCounterparty.ifBlank { "对方" }} 向你转账"
+        null -> "转账"
+    }
+}
+
+fun ChatMessagePart.transferStatusLabel(): String {
+    return when (specialStatus) {
+        TransferStatus.PENDING -> when (specialDirection) {
+            TransferDirection.USER_TO_ASSISTANT -> "待对方收款"
+            TransferDirection.ASSISTANT_TO_USER -> "请确认收款"
+            null -> "待收款"
+        }
+
+        TransferStatus.RECEIVED -> "已收款"
+        null -> "处理中"
+    }
+}
+
+fun ChatMessagePart.toTransferCopyText(): String {
+    if (!isTransferPart()) {
+        return ""
+    }
+    return buildString {
+        append(transferDirectionLabel())
+        append('\n')
+        append(formatTransferAmount())
+        if (specialNote.isNotBlank()) {
+            append("\n备注：")
+            append(specialNote)
+        }
+        append('\n')
+        append(transferStatusLabel())
+    }
+}

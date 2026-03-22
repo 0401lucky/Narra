@@ -23,7 +23,7 @@ enum class ProviderType(
     ),
     GOOGLE(
         displayName = "Google Gemini",
-        defaultBaseUrl = "https://generativelanguage.googleapis.com/v1beta/",
+        defaultBaseUrl = "https://generativelanguage.googleapis.com/v1beta/openai/",
         iconRes = R.drawable.ic_model_gemini,
     ),
     ANTHROPIC(

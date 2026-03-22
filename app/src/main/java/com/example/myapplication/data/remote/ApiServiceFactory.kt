@@ -92,6 +92,22 @@ class ApiServiceFactory {
         require(trimmed.startsWith("http://") || trimmed.startsWith("https://")) {
             "Base URL 必须以 http:// 或 https:// 开头"
         }
-        return if (trimmed.endsWith('/')) trimmed else "$trimmed/"
+        val normalizedBaseUrl = if (trimmed.endsWith('/')) trimmed else "$trimmed/"
+        return normalizeGeminiBaseUrl(normalizedBaseUrl)
+    }
+
+    private fun normalizeGeminiBaseUrl(baseUrl: String): String {
+        val lower = baseUrl.lowercase()
+        if (!lower.contains("generativelanguage.googleapis.com")) {
+            return baseUrl
+        }
+        if (lower.contains("/openai/")) {
+            return baseUrl
+        }
+        return if (baseUrl.endsWith('/')) {
+            "${baseUrl}openai/"
+        } else {
+            "$baseUrl/openai/"
+        }
     }
 }

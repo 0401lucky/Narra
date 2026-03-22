@@ -1,12 +1,13 @@
 package com.example.myapplication.ui.component.roleplay
 
+import android.widget.Toast
 import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -16,17 +17,25 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Send
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Share
+import androidx.compose.material.icons.outlined.ContentCopy
+import androidx.compose.material.icons.outlined.Refresh
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.IconButtonDefaults
@@ -38,23 +47,28 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.platform.LocalClipboardManager
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.myapplication.model.RoleplayContentType
 import com.example.myapplication.model.RoleplayMessageUiModel
-import com.example.myapplication.model.RoleplaySuggestionUiModel
 import com.example.myapplication.model.RoleplaySpeaker
+import com.example.myapplication.model.RoleplaySuggestionUiModel
+import com.example.myapplication.ui.component.TransferPlayCard
 
 @Composable
 fun RoleplayDialoguePanel(
@@ -68,6 +82,9 @@ fun RoleplayDialoguePanel(
     onGenerateSuggestions: () -> Unit,
     onApplySuggestion: (String) -> Unit,
     onClearSuggestions: () -> Unit,
+    onRetryTurn: (String) -> Unit,
+    onOpenSpecialPlay: () -> Unit,
+    onConfirmTransferReceipt: (String) -> Unit,
     onSend: () -> Unit,
     onCancel: (() -> Unit)? = null,
     modifier: Modifier = Modifier,
@@ -85,17 +102,11 @@ fun RoleplayDialoguePanel(
             }
         }
     }
-
-    LaunchedEffect(
-        storyMessages.size,
-        storyMessages.lastOrNull()?.content?.length,
-        storyMessages.lastOrNull()?.isStreaming,
-    ) {
+    LaunchedEffect(storyMessages.size, storyMessages.lastOrNull()?.content?.length, storyMessages.lastOrNull()?.isStreaming) {
         if (storyMessages.isNotEmpty() && shouldStickToBottom) {
             listState.animateScrollToItem(storyMessages.lastIndex)
         }
     }
-
     Surface(
         modifier = modifier.fillMaxWidth(),
         shape = RoundedCornerShape(topStart = 30.dp, topEnd = 30.dp, bottomStart = 24.dp, bottomEnd = 24.dp),
@@ -104,50 +115,32 @@ fun RoleplayDialoguePanel(
         shadowElevation = 10.dp,
     ) {
         Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .fillMaxHeight()
-                .background(
-                    brush = Brush.verticalGradient(
-                        colors = listOf(
-                            MaterialTheme.colorScheme.surface.copy(alpha = 0.98f),
-                            MaterialTheme.colorScheme.surfaceContainerLow.copy(alpha = 0.96f),
-                            MaterialTheme.colorScheme.surfaceContainer.copy(alpha = 0.98f),
-                        ),
+            modifier = Modifier.fillMaxWidth().fillMaxHeight().background(
+                brush = Brush.verticalGradient(
+                    colors = listOf(
+                        MaterialTheme.colorScheme.surface.copy(alpha = 0.98f),
+                        MaterialTheme.colorScheme.surfaceContainerLow.copy(alpha = 0.96f),
+                        MaterialTheme.colorScheme.surfaceContainer.copy(alpha = 0.98f),
                     ),
-                )
-                .padding(start = 12.dp, top = 12.dp, end = 12.dp, bottom = 10.dp),
+                ),
+            ).padding(start = 12.dp, top = 12.dp, end = 12.dp, bottom = 10.dp),
             verticalArrangement = Arrangement.spacedBy(10.dp),
         ) {
             if (storyMessages.isEmpty()) {
-                EmptyDialogueState(
-                    modifier = Modifier.weight(1f, fill = true),
-                )
+                EmptyDialogueState(modifier = Modifier.weight(1f, fill = true))
             } else {
                 LazyColumn(
                     state = listState,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .weight(1f, fill = true),
+                    modifier = Modifier.fillMaxWidth().weight(1f, fill = true),
                     contentPadding = PaddingValues(bottom = 8.dp),
                     verticalArrangement = Arrangement.spacedBy(8.dp),
                 ) {
-                    item {
-                        StoryListHeader(messageCount = storyMessages.size)
-                    }
-                    items(
-                        items = storyMessages,
-                        key = { "${it.sourceMessageId}-${it.createdAt}-${it.content.hashCode()}" },
-                    ) { message ->
-                        when {
-                            message.contentType == RoleplayContentType.NARRATION -> NarrationLogItem(message)
-                            message.speaker == RoleplaySpeaker.USER -> UserLogItem(message)
-                            else -> CharacterLogItem(message)
-                        }
+                    item { StoryListHeader(messageCount = storyMessages.size) }
+                    items(storyMessages, key = { "${it.sourceMessageId}-${it.createdAt}-${it.contentType}-${it.copyText.hashCode()}" }) { message ->
+                        RoleplayMessageItem(message, onRetryTurn, onConfirmTransferReceipt)
                     }
                 }
             }
-
             RoleplaySuggestionSection(
                 suggestions = suggestions,
                 isGeneratingSuggestions = isGeneratingSuggestions,
@@ -157,14 +150,7 @@ fun RoleplayDialoguePanel(
                 onApplySuggestion = onApplySuggestion,
                 onClearSuggestions = onClearSuggestions,
             )
-
-            RoleplayInputBar(
-                input = input,
-                isSending = isSending,
-                onInputChange = onInputChange,
-                onSend = onSend,
-                onCancel = onCancel,
-            )
+            RoleplayInputBar(input, isSending, onInputChange, onSend, onCancel, onOpenSpecialPlay)
         }
     }
 }
@@ -182,58 +168,40 @@ private fun RoleplaySuggestionSection(
     val showPanel = suggestions.isNotEmpty() || isGeneratingSuggestions || !suggestionErrorMessage.isNullOrBlank()
     if (!showPanel) {
         Surface(
-            modifier = Modifier
-                .fillMaxWidth()
-                .clickable(enabled = !isSending, onClick = onGenerateSuggestions),
+            modifier = Modifier.fillMaxWidth().combinedClickable(
+                enabled = !isSending,
+                onClick = onGenerateSuggestions,
+                onLongClick = {},
+            ),
             shape = RoundedCornerShape(20.dp),
             color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.32f),
         ) {
             Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 14.dp, vertical = 12.dp),
+                modifier = Modifier.fillMaxWidth().padding(horizontal = 14.dp, vertical = 12.dp),
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                Column(
-                    modifier = Modifier.weight(1f),
-                    verticalArrangement = Arrangement.spacedBy(2.dp),
-                ) {
-                    Text(
-                        text = "AI帮写",
-                        style = MaterialTheme.typography.labelLarge,
-                        color = MaterialTheme.colorScheme.primary,
-                        fontWeight = FontWeight.SemiBold,
-                    )
-                    Text(
-                        text = "不知道写什么？让 AI 帮你续一句",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
+                Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                    Text("AI帮写", style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.SemiBold)
+                    Text("不知道写什么？让 AI 帮你续一句", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
                 Text(
                     text = if (isSending) "发送中" else "生成",
                     style = MaterialTheme.typography.labelMedium,
-                    color = if (isSending) {
-                        MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
-                    } else {
-                        MaterialTheme.colorScheme.primary
-                    },
+                    color = if (isSending) MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f) else MaterialTheme.colorScheme.primary,
                 )
             }
         }
         return
     }
-
+    val suggestionListState = rememberLazyListState()
     Surface(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(22.dp),
         color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.28f),
     ) {
         Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 12.dp, vertical = 12.dp),
+            modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 12.dp),
             verticalArrangement = Arrangement.spacedBy(10.dp),
         ) {
             Row(
@@ -241,87 +209,49 @@ private fun RoleplaySuggestionSection(
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                Column(
-                    modifier = Modifier.weight(1f),
-                    verticalArrangement = Arrangement.spacedBy(2.dp),
-                ) {
-                    Text(
-                        text = "AI帮写",
-                        style = MaterialTheme.typography.labelLarge,
-                        color = MaterialTheme.colorScheme.primary,
-                        fontWeight = FontWeight.SemiBold,
-                    )
-                    Text(
-                        text = "生成几条可继续剧情的输入建议",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
+                Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                    Text("AI帮写", style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.SemiBold)
+                    Text("生成几条可继续剧情的输入建议", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    TextButton(
-                        onClick = onGenerateSuggestions,
-                        enabled = !isSending && !isGeneratingSuggestions,
-                    ) {
-                        Text(if (suggestions.isEmpty()) "重试" else "换一批")
-                    }
-                    TextButton(onClick = onClearSuggestions) {
-                        Text("收起")
-                    }
+                    TextButton(onClick = onGenerateSuggestions, enabled = !isSending && !isGeneratingSuggestions) { Text(if (suggestions.isEmpty()) "重试" else "换一批") }
+                    TextButton(onClick = onClearSuggestions) { Text("收起") }
                 }
             }
-
             if (isGeneratingSuggestions) {
-                Row(
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    CircularProgressIndicator(
-                        modifier = Modifier.size(18.dp),
-                        strokeWidth = 2.dp,
-                        color = MaterialTheme.colorScheme.primary,
-                    )
-                    Text(
-                        text = "正在根据剧情生成输入建议…",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
+                    CircularProgressIndicator(modifier = Modifier.size(18.dp), strokeWidth = 2.dp, color = MaterialTheme.colorScheme.primary)
+                    Text("正在根据剧情生成输入建议…", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
             }
-
             if (!suggestionErrorMessage.isNullOrBlank()) {
-                Text(
-                    text = suggestionErrorMessage,
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.error,
-                )
+                Text(suggestionErrorMessage, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.error)
             }
-
-            suggestions.forEach { suggestion ->
-                Surface(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .clickable(enabled = !isSending, onClick = { onApplySuggestion(suggestion.text) }),
-                    shape = RoundedCornerShape(18.dp),
-                    color = MaterialTheme.colorScheme.surface.copy(alpha = 0.82f),
-                    tonalElevation = 2.dp,
+            if (suggestions.isNotEmpty()) {
+                LazyColumn(
+                    state = suggestionListState,
+                    modifier = Modifier.fillMaxWidth().heightIn(max = 320.dp),
+                    verticalArrangement = Arrangement.spacedBy(10.dp),
                 ) {
-                    Column(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(horizontal = 14.dp, vertical = 12.dp),
-                        verticalArrangement = Arrangement.spacedBy(6.dp),
-                    ) {
-                        Text(
-                            text = suggestion.label,
-                            style = MaterialTheme.typography.labelMedium,
-                            color = MaterialTheme.colorScheme.primary,
-                            fontWeight = FontWeight.SemiBold,
-                        )
-                        Text(
-                            text = suggestion.text,
-                            style = MaterialTheme.typography.bodyMedium.copy(lineHeight = 22.sp),
-                            color = MaterialTheme.colorScheme.onSurface,
-                        )
+                    items(suggestions, key = { it.id }) { suggestion ->
+                        Surface(
+                            modifier = Modifier.fillMaxWidth().combinedClickable(
+                                enabled = !isSending,
+                                onClick = { onApplySuggestion(suggestion.text) },
+                                onLongClick = {},
+                            ),
+                            shape = RoundedCornerShape(18.dp),
+                            color = MaterialTheme.colorScheme.surface.copy(alpha = 0.82f),
+                            tonalElevation = 2.dp,
+                        ) {
+                            Column(
+                                modifier = Modifier.fillMaxWidth().padding(horizontal = 14.dp, vertical = 12.dp),
+                                verticalArrangement = Arrangement.spacedBy(6.dp),
+                            ) {
+                                Text(suggestion.label, style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.SemiBold)
+                                Text(suggestion.text, style = MaterialTheme.typography.bodyMedium.copy(lineHeight = 22.sp), color = MaterialTheme.colorScheme.onSurface)
+                            }
+                        }
                     }
                 }
             }
@@ -337,171 +267,34 @@ private fun StoryListHeader(messageCount: Int) {
         color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.34f),
     ) {
         Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 14.dp, vertical = 10.dp),
+            modifier = Modifier.fillMaxWidth().padding(horizontal = 14.dp, vertical = 10.dp),
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
-                Text(
-                    text = "剧情记录",
-                    style = MaterialTheme.typography.labelLarge,
-                    color = MaterialTheme.colorScheme.primary,
-                    fontWeight = FontWeight.SemiBold,
-                )
-                Text(
-                    text = "默认页可直接浏览全部对话",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
+                Text("剧情记录", style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.SemiBold)
+                Text("默认页可直接浏览全部对话", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
-            Text(
-                text = "$messageCount 条",
-                style = MaterialTheme.typography.labelMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
+            Text("$messageCount 条", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
     }
 }
 
 @Composable
-private fun EmptyDialogueState(
-    modifier: Modifier = Modifier,
-) {
+private fun EmptyDialogueState(modifier: Modifier = Modifier) {
     Surface(
         modifier = modifier.fillMaxWidth(),
         shape = RoundedCornerShape(26.dp),
         color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.24f),
     ) {
         Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 20.dp, vertical = 28.dp),
+            modifier = Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 28.dp),
             verticalArrangement = Arrangement.Center,
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
-            Text(
-                text = "输入第一句对白",
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.SemiBold,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
+            Text("输入第一句对白", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold, color = MaterialTheme.colorScheme.onSurfaceVariant)
             Spacer(modifier = Modifier.height(6.dp))
-            Text(
-                text = "默认页会直接累计显示剧情，不用再切阅读模式",
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.74f),
-                lineHeight = 22.sp,
-            )
-        }
-    }
-}
-
-@Composable
-private fun NarrationLogItem(
-    message: RoleplayMessageUiModel,
-) {
-    Surface(
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(18.dp),
-        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.24f),
-    ) {
-        Column(
-            modifier = Modifier.padding(horizontal = 14.dp, vertical = 12.dp),
-            verticalArrangement = Arrangement.spacedBy(4.dp),
-        ) {
-            Text(
-                text = "旁白",
-                style = MaterialTheme.typography.labelMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                fontWeight = FontWeight.SemiBold,
-            )
-            Text(
-                text = message.content,
-                style = MaterialTheme.typography.bodyMedium.copy(
-                    fontStyle = FontStyle.Italic,
-                    lineHeight = 22.sp,
-                ),
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-        }
-    }
-}
-
-@Composable
-private fun CharacterLogItem(
-    message: RoleplayMessageUiModel,
-) {
-    Surface(
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(20.dp),
-        color = MaterialTheme.colorScheme.surfaceContainerHighest.copy(alpha = 0.88f),
-    ) {
-        Column(
-            modifier = Modifier.padding(horizontal = 14.dp, vertical = 12.dp),
-            verticalArrangement = Arrangement.spacedBy(6.dp),
-        ) {
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-            ) {
-                Text(
-                    text = message.speakerName,
-                    style = MaterialTheme.typography.labelLarge,
-                    fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.primary,
-                )
-                if (message.emotion.isNotBlank()) {
-                    Text(
-                        text = message.emotion,
-                        style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                }
-            }
-            if (message.isStreaming) {
-                StreamingLogText(message.content)
-            } else {
-                Text(
-                    text = message.content,
-                    style = MaterialTheme.typography.bodyLarge.copy(lineHeight = 24.sp),
-                    color = MaterialTheme.colorScheme.onSurface,
-                )
-            }
-        }
-    }
-}
-
-@Composable
-private fun UserLogItem(
-    message: RoleplayMessageUiModel,
-) {
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.End,
-    ) {
-        Surface(
-            modifier = Modifier.fillMaxWidth(0.82f),
-            shape = RoundedCornerShape(20.dp),
-            color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.84f),
-        ) {
-            Column(
-                modifier = Modifier.padding(horizontal = 14.dp, vertical = 12.dp),
-                verticalArrangement = Arrangement.spacedBy(6.dp),
-            ) {
-                Text(
-                    text = message.speakerName,
-                    style = MaterialTheme.typography.labelMedium,
-                    fontWeight = FontWeight.SemiBold,
-                    color = MaterialTheme.colorScheme.primary,
-                )
-                Text(
-                    text = message.content,
-                    style = MaterialTheme.typography.bodyLarge.copy(lineHeight = 24.sp),
-                    color = MaterialTheme.colorScheme.onPrimaryContainer,
-                )
-            }
+            Text("默认页会直接累计显示剧情，不用再切阅读模式", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.74f), lineHeight = 22.sp)
         }
     }
 }
@@ -512,22 +305,13 @@ private fun StreamingLogText(content: String) {
     val cursorAlpha by infiniteTransition.animateFloat(
         initialValue = 1f,
         targetValue = 0f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(durationMillis = 520),
-            repeatMode = RepeatMode.Reverse,
-        ),
+        animationSpec = infiniteRepeatable(animation = tween(durationMillis = 520), repeatMode = RepeatMode.Reverse),
         label = "roleplay_log_cursor_alpha",
     )
-
     Text(
         text = buildAnnotatedString {
             append(content)
-            withStyle(
-                SpanStyle(
-                    color = MaterialTheme.colorScheme.primary.copy(alpha = cursorAlpha),
-                    fontWeight = FontWeight.Bold,
-                ),
-            ) {
+            withStyle(SpanStyle(color = MaterialTheme.colorScheme.primary.copy(alpha = cursorAlpha), fontWeight = FontWeight.Bold)) {
                 append(" ▌")
             }
         },
@@ -543,69 +327,54 @@ private fun RoleplayInputBar(
     onInputChange: (String) -> Unit,
     onSend: () -> Unit,
     onCancel: (() -> Unit)?,
+    onOpenSpecialPlay: () -> Unit,
 ) {
     val canSend = input.isNotBlank() && !isSending
-
-    Surface(
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(24.dp),
-        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.42f),
-    ) {
+    var showActionMenu by remember { mutableStateOf(false) }
+    Surface(modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(24.dp), color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.42f)) {
         Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(start = 16.dp, top = 6.dp, end = 6.dp, bottom = 6.dp),
+            modifier = Modifier.fillMaxWidth().padding(start = 8.dp, top = 6.dp, end = 6.dp, bottom = 6.dp),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(8.dp),
         ) {
+            Box {
+                IconButton(
+                    onClick = { showActionMenu = true },
+                    enabled = !isSending,
+                    modifier = Modifier.size(40.dp).background(color = MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.72f), shape = CircleShape),
+                    colors = IconButtonDefaults.iconButtonColors(containerColor = androidx.compose.ui.graphics.Color.Transparent, contentColor = MaterialTheme.colorScheme.onSecondaryContainer),
+                ) { Icon(Icons.Default.Add, contentDescription = "更多玩法", modifier = Modifier.size(18.dp)) }
+                DropdownMenu(expanded = showActionMenu, onDismissRequest = { showActionMenu = false }) {
+                    DropdownMenuItem(
+                        text = { Text("特殊玩法") },
+                        leadingIcon = { Icon(Icons.Default.Share, contentDescription = null) },
+                        onClick = { showActionMenu = false; onOpenSpecialPlay() },
+                    )
+                }
+            }
             BasicTextField(
                 value = input,
                 onValueChange = onInputChange,
-                modifier = Modifier
-                    .weight(1f)
-                    .padding(vertical = 8.dp),
+                modifier = Modifier.weight(1f).padding(vertical = 8.dp),
                 enabled = !isSending,
                 maxLines = 3,
-                textStyle = MaterialTheme.typography.bodyLarge.copy(
-                    color = MaterialTheme.colorScheme.onSurface,
-                ),
+                textStyle = MaterialTheme.typography.bodyLarge.copy(color = MaterialTheme.colorScheme.onSurface),
                 cursorBrush = SolidColor(MaterialTheme.colorScheme.primary),
                 decorationBox = { innerTextField ->
                     if (input.isEmpty()) {
-                        Text(
-                            text = "输入对白或行动描述…",
-                            style = MaterialTheme.typography.bodyLarge,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f),
-                        )
+                        Text("输入对白或行动描述…", style = MaterialTheme.typography.bodyLarge, color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f))
                     }
                     innerTextField()
                 },
             )
-
             if (isSending && onCancel != null) {
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(4.dp),
-                ) {
-                    CircularProgressIndicator(
-                        modifier = Modifier.size(18.dp),
-                        strokeWidth = 2.dp,
-                        color = MaterialTheme.colorScheme.primary,
-                    )
+                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                    CircularProgressIndicator(modifier = Modifier.size(18.dp), strokeWidth = 2.dp, color = MaterialTheme.colorScheme.primary)
                     IconButton(
                         onClick = onCancel,
                         modifier = Modifier.size(40.dp),
-                        colors = IconButtonDefaults.iconButtonColors(
-                            containerColor = MaterialTheme.colorScheme.errorContainer,
-                            contentColor = MaterialTheme.colorScheme.onErrorContainer,
-                        ),
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.Close,
-                            contentDescription = "取消",
-                            modifier = Modifier.size(18.dp),
-                        )
-                    }
+                        colors = IconButtonDefaults.iconButtonColors(containerColor = MaterialTheme.colorScheme.errorContainer, contentColor = MaterialTheme.colorScheme.onErrorContainer),
+                    ) { Icon(Icons.Default.Close, contentDescription = "取消", modifier = Modifier.size(18.dp)) }
                 }
             } else {
                 IconButton(
@@ -613,24 +382,142 @@ private fun RoleplayInputBar(
                     enabled = canSend,
                     modifier = Modifier.size(40.dp),
                     colors = IconButtonDefaults.iconButtonColors(
-                        containerColor = if (canSend) {
-                            MaterialTheme.colorScheme.primary
-                        } else {
-                            MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)
-                        },
-                        contentColor = if (canSend) {
-                            MaterialTheme.colorScheme.onPrimary
-                        } else {
-                            MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f)
-                        },
+                        containerColor = if (canSend) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f),
+                        contentColor = if (canSend) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f),
                     ),
+                ) { Icon(Icons.AutoMirrored.Filled.Send, contentDescription = "发送", modifier = Modifier.size(18.dp)) }
+            }
+        }
+    }
+}
+
+@Composable
+private fun RoleplayMessageItem(
+    message: RoleplayMessageUiModel,
+    onRetryTurn: (String) -> Unit,
+    onConfirmTransferReceipt: (String) -> Unit,
+) {
+    when (message.contentType) {
+        RoleplayContentType.NARRATION -> RoleplayMessageMenuWrapper(message, onRetryTurn) {
+            Surface(
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(18.dp),
+                color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.24f),
+            ) {
+                Column(modifier = Modifier.padding(horizontal = 14.dp, vertical = 12.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                    Text("旁白", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant, fontWeight = FontWeight.SemiBold)
+                    Text(message.content, style = MaterialTheme.typography.bodyMedium.copy(fontStyle = FontStyle.Italic, lineHeight = 22.sp), color = MaterialTheme.colorScheme.onSurfaceVariant)
+                }
+            }
+        }
+
+        RoleplayContentType.DIALOGUE -> {
+            if (message.speaker == RoleplaySpeaker.USER) {
+                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
+                    RoleplayMessageMenuWrapper(message, onRetryTurn, Modifier.fillMaxWidth(0.82f)) {
+                        Surface(
+                            modifier = Modifier.fillMaxWidth(),
+                            shape = RoundedCornerShape(20.dp),
+                            color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.84f),
+                        ) {
+                            Column(modifier = Modifier.padding(horizontal = 14.dp, vertical = 12.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                                Text(message.speakerName, style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.SemiBold, color = MaterialTheme.colorScheme.primary)
+                                Text(message.content, style = MaterialTheme.typography.bodyLarge.copy(lineHeight = 24.sp), color = MaterialTheme.colorScheme.onPrimaryContainer)
+                            }
+                        }
+                    }
+                }
+            } else {
+                RoleplayMessageMenuWrapper(message, onRetryTurn) {
+                    Surface(
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(20.dp),
+                        color = MaterialTheme.colorScheme.surfaceContainerHighest.copy(alpha = 0.88f),
+                    ) {
+                        Column(modifier = Modifier.padding(horizontal = 14.dp, vertical = 12.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                Text(message.speakerName, style = MaterialTheme.typography.labelLarge, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
+                                if (message.emotion.isNotBlank()) {
+                                    Text(message.emotion, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                }
+                            }
+                            if (message.isStreaming) {
+                                StreamingLogText(message.content)
+                            } else {
+                                Text(message.content, style = MaterialTheme.typography.bodyLarge.copy(lineHeight = 24.sp), color = MaterialTheme.colorScheme.onSurface)
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        RoleplayContentType.SPECIAL_TRANSFER -> {
+            val specialPart = message.specialPart ?: return
+            val isUserMessage = message.speaker == RoleplaySpeaker.USER
+            Box(
+                modifier = Modifier.fillMaxWidth(),
+                contentAlignment = if (isUserMessage) Alignment.CenterEnd else Alignment.CenterStart,
+            ) {
+                RoleplayMessageMenuWrapper(
+                    message = message,
+                    onRetryTurn = onRetryTurn,
+                    modifier = if (isUserMessage) Modifier.fillMaxWidth(0.82f) else Modifier.fillMaxWidth(),
                 ) {
-                    Icon(
-                        imageVector = Icons.AutoMirrored.Filled.Send,
-                        contentDescription = "发送",
-                        modifier = Modifier.size(18.dp),
+                    TransferPlayCard(
+                        part = specialPart,
+                        isUserMessage = isUserMessage,
+                        onConfirmTransferReceipt = onConfirmTransferReceipt,
+                        modifier = Modifier.fillMaxWidth(),
                     )
                 }
+            }
+        }
+
+        RoleplayContentType.SYSTEM -> Unit
+    }
+}
+
+@Composable
+private fun RoleplayMessageMenuWrapper(
+    message: RoleplayMessageUiModel,
+    onRetryTurn: (String) -> Unit,
+    modifier: Modifier = Modifier,
+    content: @Composable () -> Unit,
+) {
+    val clipboardManager = LocalClipboardManager.current
+    val context = LocalContext.current
+    val canCopy = message.copyText.isNotBlank()
+    var showMenu by remember(message.sourceMessageId, message.copyText, message.canRetry) { mutableStateOf(false) }
+    Box(
+        modifier = modifier.combinedClickable(
+            enabled = canCopy || message.canRetry,
+            onClick = {},
+            onLongClick = { showMenu = true },
+        ),
+    ) {
+        content()
+        DropdownMenu(expanded = showMenu, onDismissRequest = { showMenu = false }) {
+            if (canCopy) {
+                DropdownMenuItem(
+                    text = { Text("复制内容") },
+                    leadingIcon = { Icon(Icons.Outlined.ContentCopy, contentDescription = null) },
+                    onClick = {
+                        clipboardManager.setText(AnnotatedString(message.copyText))
+                        Toast.makeText(context, "已复制内容", Toast.LENGTH_SHORT).show()
+                        showMenu = false
+                    },
+                )
+            }
+            if (message.canRetry && message.sourceMessageId.isNotBlank()) {
+                DropdownMenuItem(
+                    text = { Text("重回此回合") },
+                    leadingIcon = { Icon(Icons.Outlined.Refresh, contentDescription = null) },
+                    onClick = {
+                        onRetryTurn(message.sourceMessageId)
+                        showMenu = false
+                    },
+                )
             }
         }
     }
