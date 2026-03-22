@@ -1,0 +1,90 @@
+package com.example.myapplication.viewmodel
+
+import com.example.myapplication.model.WorldBookEntry
+import com.example.myapplication.testutil.FakeWorldBookRepository
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.test.advanceUntilIdle
+import kotlinx.coroutines.test.runTest
+import org.junit.Assert.assertEquals
+import org.junit.Assert.assertTrue
+import org.junit.Rule
+import org.junit.Test
+
+@OptIn(ExperimentalCoroutinesApi::class)
+class WorldBookViewModelTest {
+    @get:Rule
+    val mainDispatcherRule = MainDispatcherRule()
+
+    @Test
+    fun renameBook_updatesAllEntriesInSameBook() = runTest(mainDispatcherRule.dispatcher.scheduler) {
+        val repository = FakeWorldBookRepository(
+            initialEntries = listOf(
+                WorldBookEntry(
+                    id = "entry-1",
+                    title = "璃珠都市",
+                    content = "A",
+                    sourceBookName = "旧书名",
+                ),
+                WorldBookEntry(
+                    id = "entry-2",
+                    title = "夜巡守则",
+                    content = "B",
+                    sourceBookName = "旧书名",
+                ),
+                WorldBookEntry(
+                    id = "entry-3",
+                    title = "独立条目",
+                    content = "C",
+                    sourceBookName = "",
+                ),
+            ),
+        )
+        val viewModel = WorldBookViewModel(repository)
+
+        advanceUntilIdle()
+        viewModel.renameBook("旧书名", "新书名")
+        advanceUntilIdle()
+
+        val entriesById = repository.listEntries().associateBy { it.id }
+        assertEquals("新书名", entriesById["entry-1"]?.sourceBookName)
+        assertEquals("新书名", entriesById["entry-2"]?.sourceBookName)
+        assertEquals("", entriesById["entry-3"]?.sourceBookName)
+        assertEquals("世界书已重命名", viewModel.uiState.value.message)
+    }
+
+    @Test
+    fun deleteBook_removesAllEntriesInSameBookOnly() = runTest(mainDispatcherRule.dispatcher.scheduler) {
+        val repository = FakeWorldBookRepository(
+            initialEntries = listOf(
+                WorldBookEntry(
+                    id = "entry-1",
+                    title = "璃珠都市",
+                    content = "A",
+                    sourceBookName = "目标书",
+                ),
+                WorldBookEntry(
+                    id = "entry-2",
+                    title = "夜巡守则",
+                    content = "B",
+                    sourceBookName = "目标书",
+                ),
+                WorldBookEntry(
+                    id = "entry-3",
+                    title = "白塔城",
+                    content = "C",
+                    sourceBookName = "保留书",
+                ),
+            ),
+        )
+        val viewModel = WorldBookViewModel(repository)
+
+        advanceUntilIdle()
+        viewModel.deleteBook("目标书")
+        advanceUntilIdle()
+
+        val remainingEntries = repository.listEntries()
+        assertEquals(listOf("entry-3"), remainingEntries.map { it.id })
+        assertTrue(remainingEntries.all { it.sourceBookName == "保留书" })
+        assertEquals("整本世界书已删除", viewModel.uiState.value.message)
+    }
+}

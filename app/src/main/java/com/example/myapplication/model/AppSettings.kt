@@ -1,0 +1,100 @@
+package com.example.myapplication.model
+
+data class AppSettings(
+    val baseUrl: String = "",
+    val apiKey: String = "",
+    val selectedModel: String = "",
+    val providers: List<ProviderSettings> = emptyList(),
+    val selectedProviderId: String = "",
+    val themeMode: ThemeMode = ThemeMode.SYSTEM,
+    val messageTextScale: Float = 1f,
+    val reasoningExpandedByDefault: Boolean = true,
+    val showThinkingContent: Boolean = true,
+    val autoCollapseThinking: Boolean = true,
+    val autoPreviewImages: Boolean = true,
+    val codeBlockAutoWrap: Boolean = false,
+    val codeBlockAutoCollapse: Boolean = false,
+    val userDisplayName: String = DEFAULT_USER_DISPLAY_NAME,
+    val userAvatarUri: String = "",
+    val userAvatarUrl: String = "",
+    val translationHistory: List<TranslationHistoryEntry> = emptyList(),
+    val assistants: List<Assistant> = emptyList(),
+    val selectedAssistantId: String = DEFAULT_ASSISTANT_ID,
+    val screenTranslationSettings: ScreenTranslationSettings = ScreenTranslationSettings(),
+) {
+    fun resolvedAssistants(): List<Assistant> {
+        val builtinIds = BUILTIN_ASSISTANTS.map { it.id }.toSet()
+        val customAssistants = assistants.filter { it.id !in builtinIds }
+        return BUILTIN_ASSISTANTS + customAssistants
+    }
+
+    fun activeAssistant(): Assistant? {
+        return resolvedAssistants().firstOrNull { it.id == selectedAssistantId }
+            ?: resolvedAssistants().firstOrNull()
+    }
+
+    fun resolvedProviders(): List<ProviderSettings> {
+        return if (providers.isNotEmpty()) {
+            providers
+        } else {
+            legacyProviderOrNull()?.let(::listOf).orEmpty()
+        }
+    }
+
+    fun enabledProviders(): List<ProviderSettings> {
+        return resolvedProviders().filter { it.enabled }
+    }
+
+    fun activeProvider(): ProviderSettings? {
+        val resolvedProviders = resolvedProviders()
+        if (resolvedProviders.isEmpty()) {
+            return legacyProviderOrNull()
+        }
+
+        val enabledProviders = resolvedProviders.filter { it.enabled }
+        return enabledProviders.firstOrNull { it.id == selectedProviderId }
+            ?: enabledProviders.firstOrNull()
+    }
+
+    fun providerCount(): Int = resolvedProviders().size
+
+    fun hasBaseCredentials(): Boolean {
+        val resolvedProviders = resolvedProviders()
+        if (resolvedProviders.isNotEmpty()) {
+            return activeProvider()?.hasBaseCredentials() == true
+        }
+
+        return baseUrl.isNotBlank() && apiKey.isNotBlank()
+    }
+
+    fun hasRequiredConfig(): Boolean {
+        val resolvedProviders = resolvedProviders()
+        if (resolvedProviders.isNotEmpty()) {
+            return activeProvider()?.hasRequiredConfig() == true
+        }
+
+        return hasBaseCredentials() && selectedModel.isNotBlank()
+    }
+
+    fun resolvedUserDisplayName(): String {
+        return userDisplayName.trim().ifBlank { DEFAULT_USER_DISPLAY_NAME }
+    }
+
+    fun resolvedUserAvatar(): String {
+        return userAvatarUrl.trim().ifBlank { userAvatarUri.trim() }
+    }
+
+    private fun legacyProviderOrNull(): ProviderSettings? {
+        if (baseUrl.isBlank() && apiKey.isBlank() && selectedModel.isBlank()) {
+            return null
+        }
+        return createDefaultProvider(
+            id = LEGACY_PROVIDER_ID,
+            baseUrl = baseUrl,
+            apiKey = apiKey,
+            selectedModel = selectedModel,
+        )
+    }
+}
+
+const val DEFAULT_USER_DISPLAY_NAME = "用户"

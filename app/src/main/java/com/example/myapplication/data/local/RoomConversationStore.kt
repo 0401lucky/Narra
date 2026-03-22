@@ -1,0 +1,154 @@
+package com.example.myapplication.data.local
+
+import com.example.myapplication.data.local.chat.ConversationDao
+import com.example.myapplication.data.local.chat.ConversationEntity
+import com.example.myapplication.data.local.chat.MessageEntity
+import com.example.myapplication.model.ChatMessage
+import com.example.myapplication.model.ChatMessagePart
+import com.example.myapplication.model.Conversation
+import com.example.myapplication.model.MessageAttachment
+import com.example.myapplication.model.MessageRole
+import com.example.myapplication.model.MessageStatus
+import com.example.myapplication.model.normalizeChatMessageParts
+import com.google.gson.Gson
+import com.google.gson.reflect.TypeToken
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.map
+
+class RoomConversationStore(
+    private val conversationDao: ConversationDao,
+) : ConversationStore {
+    private val gson = Gson()
+    private val attachmentListType = object : TypeToken<List<MessageAttachment>>() {}.type
+    private val partListType = object : TypeToken<List<ChatMessagePart>>() {}.type
+
+    override fun observeConversations(): Flow<List<Conversation>> {
+        return conversationDao.observeConversations().map { conversations ->
+            conversations.map { it.toDomain() }
+        }
+    }
+
+    override fun observeConversationsByAssistant(assistantId: String): Flow<List<Conversation>> {
+        return conversationDao.observeConversationsByAssistant(assistantId).map { conversations ->
+            conversations.map { it.toDomain() }
+        }
+    }
+
+    override fun observeMessages(conversationId: String): Flow<List<ChatMessage>> {
+        return conversationDao.observeMessages(conversationId).map { messages ->
+            messages.map { it.toDomain() }
+        }
+    }
+
+    override suspend fun listConversations(): List<Conversation> {
+        return conversationDao.listConversations().map { it.toDomain() }
+    }
+
+    override suspend fun getConversation(conversationId: String): Conversation? {
+        return conversationDao.getConversation(conversationId)?.toDomain()
+    }
+
+    override suspend fun listMessages(conversationId: String): List<ChatMessage> {
+        return conversationDao.listMessages(conversationId).map { it.toDomain() }
+    }
+
+    override suspend fun upsertConversation(conversation: Conversation) {
+        conversationDao.upsertConversation(conversation.toEntity())
+    }
+
+    override suspend fun replaceMessages(conversationId: String, messages: List<ChatMessage>) {
+        conversationDao.replaceMessagesTransaction(conversationId, messages.map { it.toEntity() })
+    }
+
+    override suspend fun saveConversationWithMessages(
+        conversation: Conversation,
+        conversationId: String,
+        messages: List<ChatMessage>,
+    ) {
+        conversationDao.saveConversationWithMessages(
+            conversation = conversation.toEntity(),
+            conversationId = conversationId,
+            messages = messages.map { it.toEntity() },
+        )
+    }
+
+    override suspend fun clearMessagesAndUpdateConversation(
+        conversationId: String,
+        conversation: Conversation,
+    ) {
+        conversationDao.clearMessagesAndUpdateConversation(
+            conversationId = conversationId,
+            conversation = conversation.toEntity(),
+        )
+    }
+
+    override suspend fun appendMessage(message: ChatMessage) {
+        conversationDao.insertMessage(message.toEntity())
+    }
+
+    override suspend fun deleteConversation(conversationId: String) {
+        conversationDao.deleteConversation(conversationId)
+    }
+
+    override suspend fun clearMessages(conversationId: String) {
+        conversationDao.clearMessages(conversationId)
+    }
+
+    private fun ConversationEntity.toDomain(): Conversation {
+        return Conversation(
+            id = id,
+            title = title,
+            model = model,
+            createdAt = createdAt,
+            updatedAt = updatedAt,
+            assistantId = assistantId,
+        )
+    }
+
+    private fun Conversation.toEntity(): ConversationEntity {
+        return ConversationEntity(
+            id = id,
+            title = title,
+            model = model,
+            createdAt = createdAt,
+            updatedAt = updatedAt,
+            assistantId = assistantId,
+        )
+    }
+
+    private fun MessageEntity.toDomain(): ChatMessage {
+        return ChatMessage(
+            id = id,
+            conversationId = conversationId,
+            role = runCatching { MessageRole.valueOf(role) }.getOrDefault(MessageRole.USER),
+            content = content,
+            status = runCatching { MessageStatus.valueOf(status) }.getOrDefault(MessageStatus.COMPLETED),
+            createdAt = createdAt,
+            modelName = modelName,
+            reasoningContent = reasoningContent,
+            attachments = runCatching {
+                gson.fromJson<List<MessageAttachment>>(attachmentsJson, attachmentListType).orEmpty()
+            }.getOrDefault(emptyList()),
+            parts = normalizeChatMessageParts(
+                runCatching {
+                gson.fromJson<List<ChatMessagePart>>(partsJson, partListType).orEmpty()
+                }.getOrDefault(emptyList()),
+            ),
+        )
+    }
+
+    private fun ChatMessage.toEntity(): MessageEntity {
+        return MessageEntity(
+            id = id,
+            conversationId = conversationId,
+            role = role.name,
+            content = content,
+            status = status.name,
+            createdAt = createdAt,
+            modelName = modelName,
+            reasoningContent = reasoningContent,
+            attachmentsJson = gson.toJson(attachments),
+            partsJson = gson.toJson(normalizeChatMessageParts(parts)),
+        )
+    }
+}

@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Narra 更新索引</title>
+  <style>
+    body {
+      margin: 0;
+      font-family: "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+      background: linear-gradient(180deg, #f6f8fb 0%, #eef4ff 100%);
+      color: #1f2937;
+    }
+    main {
+      max-width: 880px;
+      margin: 0 auto;
+      padding: 48px 24px 72px;
+    }
+    h1 {
+      margin: 0 0 12px;
+      font-size: 36px;
+    }
+    p {
+      line-height: 1.7;
+    }
+    .card {
+      margin-top: 24px;
+      padding: 24px;
+      border-radius: 20px;
+      background: rgba(255, 255, 255, 0.92);
+      box-shadow: 0 18px 40px rgba(15, 23, 42, 0.08);
+    }
+    ul {
+      padding-left: 20px;
+      line-height: 1.8;
+    }
+    a {
+      color: #2563eb;
+      text-decoration: none;
+      font-weight: 600;
+    }
+    code {
+      padding: 2px 6px;
+      border-radius: 6px;
+      background: #e5eefc;
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <h1>Narra 更新文件</h1>
+    <p>这个站点用于提供应用内更新所需的元数据 JSON。APK 文件建议放到 GitHub Releases，并将下载链接写入对应 JSON。</p>
+
+    <div class="card">
+      <h2>可直接访问的更新元数据</h2>
+      <ul>
+        <li><a href="./updates/dev.json">dev.json</a></li>
+        <li><a href="./updates/release.json">release.json</a></li>
+        <li><a href="./updates/baseline.json">baseline.json</a></li>
+      </ul>
+    </div>
+
+    <div class="card">
+      <h2>应用里应配置的地址</h2>
+      <p><code>https://0401lucky.github.io/Narra/updates</code></p>
+    </div>
+
+    <div class="card">
+      <h2>说明</h2>
+      <p>如果你刚启用 GitHub Pages，首次发布可能需要等待 1 到 3 分钟。当前仓库内的 JSON 默认记录的是现有版本，不会主动提示更新。</p>
+    </div>
+  </main>
+</body>
+</html>

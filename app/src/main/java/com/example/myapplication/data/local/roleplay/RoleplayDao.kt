@@ -1,0 +1,45 @@
+package com.example.myapplication.data.local.roleplay
+
+import androidx.room.Dao
+import androidx.room.Query
+import androidx.room.Upsert
+import kotlinx.coroutines.flow.Flow
+
+@Dao
+interface RoleplayDao {
+    @Query("SELECT * FROM roleplay_scenarios ORDER BY updatedAt DESC, createdAt DESC")
+    fun observeScenarios(): Flow<List<RoleplayScenarioEntity>>
+
+    @Query("SELECT * FROM roleplay_scenarios WHERE id = :scenarioId LIMIT 1")
+    fun observeScenario(scenarioId: String): Flow<RoleplayScenarioEntity?>
+
+    @Query("SELECT * FROM roleplay_sessions WHERE scenarioId = :scenarioId LIMIT 1")
+    fun observeSessionByScenario(scenarioId: String): Flow<RoleplaySessionEntity?>
+
+    @Query("SELECT * FROM roleplay_sessions ORDER BY updatedAt DESC, createdAt DESC")
+    fun observeSessions(): Flow<List<RoleplaySessionEntity>>
+
+    @Query("SELECT * FROM roleplay_scenarios ORDER BY updatedAt DESC, createdAt DESC")
+    suspend fun listScenarios(): List<RoleplayScenarioEntity>
+
+    @Query("SELECT * FROM roleplay_sessions ORDER BY updatedAt DESC, createdAt DESC")
+    suspend fun listSessions(): List<RoleplaySessionEntity>
+
+    @Query("SELECT * FROM roleplay_scenarios WHERE id = :scenarioId LIMIT 1")
+    suspend fun getScenario(scenarioId: String): RoleplayScenarioEntity?
+
+    @Query("SELECT * FROM roleplay_sessions WHERE scenarioId = :scenarioId LIMIT 1")
+    suspend fun getSessionByScenario(scenarioId: String): RoleplaySessionEntity?
+
+    @Query("SELECT * FROM roleplay_sessions WHERE id = :sessionId LIMIT 1")
+    suspend fun getSession(sessionId: String): RoleplaySessionEntity?
+
+    @Upsert
+    suspend fun upsertScenario(scenario: RoleplayScenarioEntity)
+
+    @Upsert
+    suspend fun upsertSession(session: RoleplaySessionEntity)
+
+    @Query("DELETE FROM roleplay_scenarios WHERE id = :scenarioId")
+    suspend fun deleteScenario(scenarioId: String)
+}

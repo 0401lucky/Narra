@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<lint>
+    <!-- 依赖升级建议单独评审，不把追新版作为日常 lint 门禁。 -->
+    <issue id="GradleDependency" severity="ignore" />
+    <issue id="NewerVersionAvailable" severity="ignore" />
+
+    <!-- Clover 图标属于品牌设计资源，保留现有视觉方案，不把主观图标规范作为阻塞项。 -->
+    <issue id="IconLauncherShape" severity="ignore" />
+    <issue id="IconLocation" severity="ignore" />
+    <issue id="IconDuplicates" severity="ignore" />
+
+    <!-- 这些是历史模板资源，后续可按需再做物理清扫。 -->
+    <issue id="UnusedResources" severity="ignore" />
+</lint>

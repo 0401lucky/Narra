@@ -1,0 +1,4 @@
+<resources>
+    <string name="app_name">Narra</string>
+    <string name="screen_translation_accessibility_description">读取系统外选中文本并提供悬浮翻译入口</string>
+</resources>

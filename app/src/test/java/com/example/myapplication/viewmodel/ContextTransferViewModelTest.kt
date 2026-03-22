@@ -1,0 +1,461 @@
+package com.example.myapplication.viewmodel
+
+import com.example.myapplication.data.remote.ApiServiceFactory
+import com.example.myapplication.data.repository.AiRepository
+import com.example.myapplication.data.repository.context.ContextTransferCodec
+import com.example.myapplication.viewmodel.ContextImportPayload
+import com.example.myapplication.viewmodel.ContextTransferSection
+import com.example.myapplication.model.AppSettings
+import com.example.myapplication.model.Assistant
+import com.example.myapplication.model.ConversationSummary
+import com.example.myapplication.model.MemoryEntry
+import com.example.myapplication.model.MemoryScopeType
+import com.example.myapplication.model.WorldBookEntry
+import com.example.myapplication.testutil.FakeConversationSummaryRepository
+import com.example.myapplication.testutil.FakeMemoryRepository
+import com.example.myapplication.testutil.FakeSettingsStore
+import com.example.myapplication.testutil.FakeWorldBookRepository
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.test.advanceUntilIdle
+import kotlinx.coroutines.test.runTest
+import okhttp3.OkHttpClient
+import org.junit.Assert.assertEquals
+import org.junit.Assert.assertTrue
+import org.junit.Rule
+import org.junit.Test
+import java.io.ByteArrayOutputStream
+import java.nio.ByteBuffer
+import java.nio.ByteOrder
+import java.nio.charset.StandardCharsets
+import java.util.Base64
+
+@OptIn(ExperimentalCoroutinesApi::class)
+class ContextTransferViewModelTest {
+    @get:Rule
+    val mainDispatcherRule = MainDispatcherRule()
+
+    @Test
+    fun importBundleJson_mergesAssistantsWorldBookMemoryAndSummaries() = runTest(mainDispatcherRule.dispatcher.scheduler) {
+        val repository = AiRepository(
+            settingsStore = FakeSettingsStore(
+                AppSettings(
+                    assistants = listOf(
+                        Assistant(
+                            id = "assistant-existing",
+                            name = "现有助手",
+                        ),
+                    ),
+                    selectedAssistantId = "assistant-existing",
+                ),
+            ),
+            apiServiceFactory = ApiServiceFactory(),
+            streamClientProvider = { _, _ -> OkHttpClient.Builder().build() },
+            ioDispatcher = mainDispatcherRule.dispatcher,
+        )
+        val worldBookRepository = FakeWorldBookRepository()
+        val memoryRepository = FakeMemoryRepository()
+        val summaryRepository = FakeConversationSummaryRepository()
+        val viewModel = ContextTransferViewModel(
+            repository = repository,
+            worldBookRepository = worldBookRepository,
+            memoryRepository = memoryRepository,
+            conversationSummaryRepository = summaryRepository,
+        )
+
+        advanceUntilIdle()
+
+        val rawJson = ContextTransferCodec().encode(
+            com.example.myapplication.model.ContextDataBundle(
+                assistants = listOf(
+                    Assistant(
+                        id = "assistant-imported",
+                        name = "导入助手",
+                    ),
+                ),
+                worldBookEntries = listOf(
+                    WorldBookEntry(
+                        id = "world-1",
+                        title = "白塔城",
+                        content = "北境贸易都会",
+                    ),
+                ),
+                memoryEntries = listOf(
+                    MemoryEntry(
+                        id = "memory-1",
+                        scopeType = MemoryScopeType.GLOBAL,
+                        content = "用户喜欢短句回复",
+                    ),
+                ),
+                conversationSummaries = listOf(
+                    ConversationSummary(
+                        conversationId = "c1",
+                        summary = "已经整理好前文摘要。",
+                        coveredMessageCount = 10,
+                    ),
+                ),
+            ),
+        )
+
+        viewModel.previewImportJson(rawJson, ContextTransferSection.ALL)
+        advanceUntilIdle()
+        assertEquals(1, viewModel.uiState.value.importPreview?.assistantCount)
+        assertEquals(1, viewModel.uiState.value.importPreview?.worldBookCount)
+        assertEquals(1, viewModel.uiState.value.importPreview?.memoryCount)
+
+        viewModel.confirmImport()
+        advanceUntilIdle()
+
+        assertTrue(repository.settingsFlow.first().assistants.any { it.id == "assistant-existing" })
+        assertTrue(repository.settingsFlow.first().assistants.any { it.id == "assistant-imported" })
+        assertEquals("白塔城", worldBookRepository.listEntries().single().title)
+        assertEquals("用户喜欢短句回复", memoryRepository.currentEntries().single().content)
+        assertEquals("已经整理好前文摘要。", summaryRepository.getSummary("c1")?.summary)
+        assertEquals("上下文数据已合并导入", viewModel.uiState.value.message)
+    }
+
+    @Test
+    fun exportBundleJson_assistantSectionIncludesCustomAssistants() = runTest(mainDispatcherRule.dispatcher.scheduler) {
+        val repository = AiRepository(
+            settingsStore = FakeSettingsStore(
+                AppSettings(
+                    assistants = listOf(
+                        Assistant(
+                            id = "assistant-export",
+                            name = "导出助手",
+                        ),
+                    ),
+                ),
+            ),
+            apiServiceFactory = ApiServiceFactory(),
+            streamClientProvider = { _, _ -> OkHttpClient.Builder().build() },
+            ioDispatcher = mainDispatcherRule.dispatcher,
+        )
+        val viewModel = ContextTransferViewModel(
+            repository = repository,
+            worldBookRepository = FakeWorldBookRepository(),
+            memoryRepository = FakeMemoryRepository(),
+            conversationSummaryRepository = FakeConversationSummaryRepository(),
+        )
+
+        advanceUntilIdle()
+
+        var exportedJson = ""
+        viewModel.exportBundleJson(ContextTransferSection.ASSISTANTS) { json, _ ->
+            exportedJson = json
+        }
+        advanceUntilIdle()
+
+        val decoded = ContextTransferCodec().decode(exportedJson)
+        assertEquals(listOf("assistant-export"), decoded.assistants.map { it.id })
+        assertEquals(0, decoded.worldBookEntries.size)
+        assertEquals(0, decoded.memoryEntries.size)
+        assertEquals(0, decoded.conversationSummaries.size)
+    }
+
+    @Test
+    fun exportBundleJson_worldBookSectionOnlyIncludesWorldBookEntries() = runTest(mainDispatcherRule.dispatcher.scheduler) {
+        val repository = AiRepository(
+            settingsStore = FakeSettingsStore(AppSettings()),
+            apiServiceFactory = ApiServiceFactory(),
+            streamClientProvider = { _, _ -> OkHttpClient.Builder().build() },
+            ioDispatcher = mainDispatcherRule.dispatcher,
+        )
+        val worldBookRepository = FakeWorldBookRepository(
+            initialEntries = listOf(
+                WorldBookEntry(
+                    id = "world-1",
+                    title = "白塔城",
+                    content = "北境贸易都会",
+                ),
+            ),
+        )
+        val viewModel = ContextTransferViewModel(
+            repository = repository,
+            worldBookRepository = worldBookRepository,
+            memoryRepository = FakeMemoryRepository(
+                initialEntries = listOf(
+                    MemoryEntry(
+                        id = "memory-1",
+                        content = "不会被导出",
+                    ),
+                ),
+            ),
+            conversationSummaryRepository = FakeConversationSummaryRepository(
+                initialSummaries = listOf(
+                    ConversationSummary(
+                        conversationId = "c1",
+                        summary = "不会被导出",
+                    ),
+                ),
+            ),
+        )
+
+        advanceUntilIdle()
+
+        var exportedJson = ""
+        viewModel.exportBundleJson(ContextTransferSection.WORLD_BOOK) { json, _ ->
+            exportedJson = json
+        }
+        advanceUntilIdle()
+
+        val decoded = ContextTransferCodec().decode(exportedJson)
+        assertEquals(0, decoded.assistants.size)
+        assertEquals(1, decoded.worldBookEntries.size)
+        assertEquals(0, decoded.memoryEntries.size)
+        assertEquals(0, decoded.conversationSummaries.size)
+    }
+
+    @Test
+    fun previewImportJson_detectsConflictAndSupportsTavernSource() = runTest(mainDispatcherRule.dispatcher.scheduler) {
+        val repository = AiRepository(
+            settingsStore = FakeSettingsStore(
+                AppSettings(
+                    assistants = listOf(
+                        Assistant(
+                            id = "existing-id",
+                            name = "现有助手",
+                        ),
+                    ),
+                ),
+            ),
+            apiServiceFactory = ApiServiceFactory(),
+            streamClientProvider = { _, _ -> OkHttpClient.Builder().build() },
+            ioDispatcher = mainDispatcherRule.dispatcher,
+        )
+        val viewModel = ContextTransferViewModel(
+            repository = repository,
+            worldBookRepository = FakeWorldBookRepository(),
+            memoryRepository = FakeMemoryRepository(),
+            conversationSummaryRepository = FakeConversationSummaryRepository(),
+        )
+
+        advanceUntilIdle()
+
+        val conflictJson = ContextTransferCodec().encode(
+            com.example.myapplication.model.ContextDataBundle(
+                assistants = listOf(
+                    Assistant(
+                        id = "existing-id",
+                        name = "冲突助手",
+                    ),
+                ),
+            ),
+        )
+
+        viewModel.previewImportJson(conflictJson, ContextTransferSection.ASSISTANTS)
+        advanceUntilIdle()
+
+        assertEquals(1, viewModel.uiState.value.importPreview?.conflicts?.size)
+        assertEquals("角色卡", viewModel.uiState.value.importPreview?.conflicts?.single()?.typeLabel)
+
+        val tavernJson = """
+            {
+              "name": "白塔侦探",
+              "description": "擅长调查失窃案。",
+              "scenario": "你正在白塔城破案。",
+              "first_mes": "先把你知道的都告诉我。"
+            }
+        """.trimIndent()
+
+        viewModel.previewImportJson(tavernJson, ContextTransferSection.ASSISTANTS)
+        advanceUntilIdle()
+
+        assertEquals("Tavern 角色卡", viewModel.uiState.value.importPreview?.sourceLabel)
+        assertEquals(1, viewModel.uiState.value.importPreview?.assistantCount)
+    }
+
+    @Test
+    fun previewImportPayload_supportsTavernImageCard() = runTest(mainDispatcherRule.dispatcher.scheduler) {
+        val repository = AiRepository(
+            settingsStore = FakeSettingsStore(AppSettings()),
+            apiServiceFactory = ApiServiceFactory(),
+            streamClientProvider = { _, _ -> OkHttpClient.Builder().build() },
+            ioDispatcher = mainDispatcherRule.dispatcher,
+        )
+        val viewModel = ContextTransferViewModel(
+            repository = repository,
+            worldBookRepository = FakeWorldBookRepository(),
+            memoryRepository = FakeMemoryRepository(),
+            conversationSummaryRepository = FakeConversationSummaryRepository(),
+        )
+
+        advanceUntilIdle()
+
+        val tavernJson = """
+            {
+              "name": "白塔侦探",
+              "description": "擅长调查失窃案。",
+              "scenario": "你正在白塔城破案。"
+            }
+        """.trimIndent()
+        val pngPayload = ContextImportPayload(
+            fileName = "detective.png",
+            mimeType = "image/png",
+            binaryContent = buildPngCharacterCard(tavernJson),
+        )
+
+        viewModel.previewImportPayload(pngPayload, ContextTransferSection.ASSISTANTS)
+        advanceUntilIdle()
+
+        assertEquals("Tavern 图片角色卡", viewModel.uiState.value.importPreview?.sourceLabel)
+        assertEquals(1, viewModel.uiState.value.importPreview?.assistantCount)
+    }
+
+    @Test
+    fun previewImportPayload_supportsBracketWrappedTavernImageCard() = runTest(mainDispatcherRule.dispatcher.scheduler) {
+        val repository = AiRepository(
+            settingsStore = FakeSettingsStore(AppSettings()),
+            apiServiceFactory = ApiServiceFactory(),
+            streamClientProvider = { _, _ -> OkHttpClient.Builder().build() },
+            ioDispatcher = mainDispatcherRule.dispatcher,
+        )
+        val viewModel = ContextTransferViewModel(
+            repository = repository,
+            worldBookRepository = FakeWorldBookRepository(),
+            memoryRepository = FakeMemoryRepository(),
+            conversationSummaryRepository = FakeConversationSummaryRepository(),
+        )
+
+        advanceUntilIdle()
+
+        val tavernJson = """
+            {
+              "spec": "chara_card_v2",
+              "data": {
+                "name": "夜巡者",
+                "description": "负责守夜的调查员。",
+                "scenario": "你正在旧港追查失踪案。"
+              }
+            }
+        """.trimIndent()
+        val pngPayload = ContextImportPayload(
+            fileName = "night-watch.png",
+            mimeType = "image/png",
+            binaryContent = buildWrappedPngCharacterCard(tavernJson),
+        )
+
+        viewModel.previewImportPayload(pngPayload, ContextTransferSection.ASSISTANTS)
+        advanceUntilIdle()
+
+        assertEquals("Tavern 图片角色卡", viewModel.uiState.value.importPreview?.sourceLabel)
+        assertEquals(1, viewModel.uiState.value.importPreview?.assistantCount)
+    }
+
+    @Test
+    fun confirmImport_tavernImageCardImportsWorldBookAndAvatar() = runTest(mainDispatcherRule.dispatcher.scheduler) {
+        val repository = AiRepository(
+            settingsStore = FakeSettingsStore(AppSettings()),
+            apiServiceFactory = ApiServiceFactory(),
+            streamClientProvider = { _, _ -> OkHttpClient.Builder().build() },
+            ioDispatcher = mainDispatcherRule.dispatcher,
+        )
+        val worldBookRepository = FakeWorldBookRepository()
+        val viewModel = ContextTransferViewModel(
+            repository = repository,
+            worldBookRepository = worldBookRepository,
+            memoryRepository = FakeMemoryRepository(),
+            conversationSummaryRepository = FakeConversationSummaryRepository(),
+            importedAssistantAvatarSaver = { "file:///avatars/${it.assistantId}.png" },
+        )
+
+        advanceUntilIdle()
+
+        val tavernJson = """
+            {
+              "spec": "chara_card_v2",
+              "data": {
+                "name": "夜巡者",
+                "description": "负责守夜的调查员。",
+                "character_book": {
+                  "name": "璃珠都市设定",
+                  "entries": [
+                    {
+                      "name": "璃珠都市",
+                      "keys": ["/璃珠(都|城)市/i"],
+                      "content": "璃珠都市是一座不夜港城。"
+                    },
+                    {
+                      "name": "夜巡守则",
+                      "keys": ["夜巡"],
+                      "secondary_keys": ["午夜"],
+                      "selective": true,
+                      "content": "午夜的旧钟楼区域属于高风险地带。"
+                    }
+                  ]
+                }
+              }
+            }
+        """.trimIndent()
+        val payload = ContextImportPayload(
+            fileName = "night-watch.png",
+            mimeType = "image/png",
+            binaryContent = buildPngCharacterCard(tavernJson),
+        )
+
+        viewModel.previewImportPayload(payload, ContextTransferSection.ALL)
+        advanceUntilIdle()
+        assertEquals(2, viewModel.uiState.value.importPreview?.worldBookCount)
+
+        viewModel.confirmImport()
+        advanceUntilIdle()
+
+        val importedAssistant = repository.settingsFlow.first().assistants.single()
+        assertEquals("file:///avatars/${importedAssistant.id}.png", importedAssistant.avatarUri)
+        assertEquals(listOf("璃珠都市", "夜巡守则"), worldBookRepository.listEntries().map { it.title })
+        assertTrue(worldBookRepository.listEntries().all { it.scopeId == importedAssistant.id })
+    }
+
+    private fun buildPngCharacterCard(json: String): ByteArray {
+        val base64 = Base64.getEncoder().encodeToString(json.toByteArray(StandardCharsets.UTF_8))
+        val output = ByteArrayOutputStream()
+        output.write(
+            byteArrayOf(
+                0x89.toByte(),
+                0x50,
+                0x4E,
+                0x47,
+                0x0D,
+                0x0A,
+                0x1A,
+                0x0A,
+            ),
+        )
+        writeChunk(output, "IHDR", ByteArray(13))
+        writeChunk(output, "tEXt", "chara\u0000$base64".toByteArray(StandardCharsets.ISO_8859_1))
+        writeChunk(output, "IEND", ByteArray(0))
+        return output.toByteArray()
+    }
+
+    private fun buildWrappedPngCharacterCard(json: String): ByteArray {
+        val base64 = Base64.getEncoder().encodeToString(json.toByteArray(StandardCharsets.UTF_8))
+        val output = ByteArrayOutputStream()
+        output.write(
+            byteArrayOf(
+                0x89.toByte(),
+                0x50,
+                0x4E,
+                0x47,
+                0x0D,
+                0x0A,
+                0x1A,
+                0x0A,
+            ),
+        )
+        writeChunk(output, "IHDR", ByteArray(13))
+        writeChunk(output, "tEXt", "Comment\u0000[chara:$base64]".toByteArray(StandardCharsets.ISO_8859_1))
+        writeChunk(output, "IEND", ByteArray(0))
+        return output.toByteArray()
+    }
+
+    private fun writeChunk(
+        output: ByteArrayOutputStream,
+        type: String,
+        data: ByteArray,
+    ) {
+        output.write(ByteBuffer.allocate(4).order(ByteOrder.BIG_ENDIAN).putInt(data.size).array())
+        output.write(type.toByteArray(StandardCharsets.ISO_8859_1))
+        output.write(data)
+        output.write(ByteArray(4))
+    }
+}
