@@ -34,7 +34,7 @@ class AppUpdateRepositoryTest {
     }
 
     @Test
-    fun checkForUpdates_returnsRequiredUpdateWhenMinimumSupportedVersionIsHigherThanCurrentVersion() = runTest {
+    fun checkForUpdates_stillReturnsOptionalUpdateWhenMinimumSupportedVersionIsHigherThanCurrentVersion() = runTest {
         val repository = AppUpdateRepository(
             stateStore = FakeAppUpdateStateStore(),
             metadataFetcher = { requiredUpdateJson() },
@@ -46,12 +46,12 @@ class AppUpdateRepositoryTest {
             manual = true,
         )
 
-        assertEquals(AppUpdateAvailability.REQUIRED, outcome?.availability)
+        assertEquals(AppUpdateAvailability.OPTIONAL, outcome?.availability)
         assertEquals(10100, outcome?.metadata?.latestVersionCode)
     }
 
     @Test
-    fun checkForUpdates_returnsCachedRequiredUpdateOnNetworkFailure() = runTest {
+    fun checkForUpdates_returnsCachedOptionalUpdateOnNetworkFailure() = runTest {
         val store = FakeAppUpdateStateStore(
             AppUpdateLocalState(
                 lastCheckAt = 5_000L,
@@ -69,7 +69,7 @@ class AppUpdateRepositoryTest {
             manual = true,
         )
 
-        assertEquals(AppUpdateAvailability.REQUIRED, outcome?.availability)
+        assertEquals(AppUpdateAvailability.OPTIONAL, outcome?.availability)
         assertTrue(outcome?.fromCache == true)
         assertNotNull(outcome?.errorMessage)
     }

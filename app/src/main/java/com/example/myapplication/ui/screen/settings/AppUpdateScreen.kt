@@ -130,7 +130,7 @@ fun AppUpdateScreen(
                             AppUpdateAvailability.UNKNOWN -> if (uiState.isChecking) "检查中" else "等待检查"
                             AppUpdateAvailability.UP_TO_DATE -> "已是最新版本"
                             AppUpdateAvailability.OPTIONAL -> "发现可选更新"
-                            AppUpdateAvailability.REQUIRED -> "发现强制更新"
+                            AppUpdateAvailability.REQUIRED -> "发现可选更新"
                         },
                         supportingText = buildString {
                             val metadata = uiState.latestMetadata
@@ -150,17 +150,6 @@ fun AppUpdateScreen(
                             showArrow = false,
                         )
                     }
-                }
-            }
-
-            if (uiState.availability == AppUpdateAvailability.REQUIRED) {
-                item {
-                    SettingsNoticeCard(
-                        title = "当前版本已低于最低支持版本",
-                        body = "这是一次强制更新。安装最新版本后才能继续正常使用应用。",
-                        containerColor = MaterialTheme.colorScheme.errorContainer,
-                        contentColor = MaterialTheme.colorScheme.onErrorContainer,
-                    )
                 }
             }
 

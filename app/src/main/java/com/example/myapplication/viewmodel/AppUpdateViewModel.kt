@@ -37,10 +37,10 @@ data class AppUpdateUiState(
         get() = metadataBaseUrl.isNotBlank()
 
     val isForceUpdate: Boolean
-        get() = availability == AppUpdateAvailability.REQUIRED
+        get() = false
 
     val hasAvailableUpdate: Boolean
-        get() = availability == AppUpdateAvailability.OPTIONAL || availability == AppUpdateAvailability.REQUIRED
+        get() = availability == AppUpdateAvailability.OPTIONAL
 }
 
 class AppUpdateViewModel(
@@ -117,13 +117,7 @@ class AppUpdateViewModel(
     }
 
     fun dismissDialog() {
-        _uiState.update { current ->
-            if (current.isForceUpdate) {
-                current
-            } else {
-                current.copy(isDialogVisible = false)
-            }
-        }
+        _uiState.update { current -> current.copy(isDialogVisible = false) }
     }
 
     fun startUpdateDownload() {
@@ -284,10 +278,8 @@ class AppUpdateViewModel(
                     current.downloadSnapshot
                 },
                 isDialogVisible = when {
-                    outcome.availability == AppUpdateAvailability.REQUIRED -> true
                     revealDialog && outcome.availability == AppUpdateAvailability.OPTIONAL -> true
                     outcome.availability == AppUpdateAvailability.UP_TO_DATE -> false
-                    current.isForceUpdate -> true
                     else -> current.isDialogVisible
                 },
                 message = when {

@@ -29,3 +29,4 @@ Kotlin 统一使用 4 空格缩进，遵循 Android Studio 默认格式。类、
 - 需要给用户可上传的安装包时，默认提供 `app/build/outputs/apk/debug/Narra-v{versionName}-dev-{versionCode}-dev.apk`。
 - 用户提供 GitHub Release 下载链接后，默认同步更新 `docs/updates/dev.json`，用于应用内更新测试。
 - 未拿到最终 APK 下载链接前，不要提前把更新 JSON 改成新版本，避免内置更新指向空地址或错误地址。
+- 应用内更新默认只做“可选更新提示”，不要实现或配置成强制更新；`minimum_supported_version_code` 仅保留兼容字段，不作为锁定使用的依据。

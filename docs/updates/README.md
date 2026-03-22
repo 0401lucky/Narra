@@ -58,6 +58,11 @@ https://0401lucky.github.io/Narra/updates
 }
 ```
 
+说明：
+
+- 当前客户端统一按可选更新处理，不会因为 `minimum_supported_version_code` 弹出强制更新。
+- 建议该字段填写 `0`，或保持不高于当前已发布版本。
+
 ## 计算 SHA256
 
 在项目根目录执行：

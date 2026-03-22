@@ -58,18 +58,16 @@ class AppUpdateRepository(
                 fromCache = false,
             )
             stateStore.saveLastCheckAt(now)
-            if (outcome.availability == AppUpdateAvailability.OPTIONAL ||
-                outcome.availability == AppUpdateAvailability.REQUIRED
-            ) {
+            if (outcome.availability == AppUpdateAvailability.OPTIONAL) {
                 stateStore.saveCachedMetadataJson(rawJson)
             } else {
                 stateStore.clearCachedMetadata()
             }
             outcome
         } catch (throwable: Throwable) {
-            val cachedRequiredOutcome = evaluateCachedOutcome(environment)
-                ?.takeIf { it.availability == AppUpdateAvailability.REQUIRED }
-            cachedRequiredOutcome?.copy(
+            val cachedOptionalOutcome = evaluateCachedOutcome(environment)
+                ?.takeIf { it.availability == AppUpdateAvailability.OPTIONAL }
+            cachedOptionalOutcome?.copy(
                 errorMessage = throwable.toUserFacingMessage(),
                 fromCache = true,
             ) ?: AppUpdateCheckOutcome(
@@ -148,7 +146,6 @@ class AppUpdateRepository(
 
         val availability = when {
             metadata.latestVersionCode <= environment.versionCode -> AppUpdateAvailability.UP_TO_DATE
-            metadata.minimumSupportedVersionCode > environment.versionCode -> AppUpdateAvailability.REQUIRED
             else -> AppUpdateAvailability.OPTIONAL
         }
         return AppUpdateCheckOutcome(

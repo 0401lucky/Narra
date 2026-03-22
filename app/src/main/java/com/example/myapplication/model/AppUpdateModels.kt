@@ -78,7 +78,7 @@ fun AppUpdateMetadata.hasUpdateFor(versionCode: Int): Boolean {
 }
 
 fun AppUpdateMetadata.requiresImmediateUpdate(versionCode: Int): Boolean {
-    return minimumSupportedVersionCode > versionCode
+    return false
 }
 
 fun AppUpdateMetadata.normalizedSha256(): String {

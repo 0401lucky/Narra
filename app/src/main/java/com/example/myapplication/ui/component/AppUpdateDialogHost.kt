@@ -50,18 +50,14 @@ fun AppUpdateDialogHost(
     }
 
     AlertDialog(
-        onDismissRequest = {
-            if (!uiState.isForceUpdate) {
-                onDismiss()
-            }
-        },
+        onDismissRequest = onDismiss,
         properties = DialogProperties(
-            dismissOnBackPress = !uiState.isForceUpdate,
-            dismissOnClickOutside = !uiState.isForceUpdate,
+            dismissOnBackPress = true,
+            dismissOnClickOutside = true,
         ),
         title = {
             Text(
-                text = if (uiState.isForceUpdate) "必须更新后才能继续使用" else "发现新版本",
+                text = "发现新版本",
                 style = MaterialTheme.typography.titleLarge,
             )
         },
@@ -105,14 +101,10 @@ fun AppUpdateDialogHost(
                 Text(primaryLabel)
             }
         },
-        dismissButton = if (!uiState.isForceUpdate) {
-            {
-                TextButton(onClick = onDismiss) {
-                    Text("稍后再说")
-                }
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text("稍后再说")
             }
-        } else {
-            null
         },
     )
 }
