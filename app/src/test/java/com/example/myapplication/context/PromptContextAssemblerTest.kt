@@ -151,8 +151,68 @@ class PromptContextAssemblerTest {
         )
 
         assertTrue(result.systemPrompt.contains("【已知信息（记忆）】"))
+        assertTrue(result.systemPrompt.contains("稳定事实、偏好或约束"))
         assertTrue(result.systemPrompt.contains("用户喜欢把回复写成短句。"))
         assertTrue(result.debugDump.contains("记忆注入数：1"))
+    }
+
+    @Test
+    fun assemble_roleplayMemorySectionAddsStrictConsistencyInstruction() = runBlocking {
+        val assembler = DefaultPromptContextAssembler(
+            memoryRepository = object : com.example.myapplication.data.repository.context.MemoryRepository {
+                override fun observeEntries() = kotlinx.coroutines.flow.flowOf(emptyList<MemoryEntry>())
+
+                override suspend fun listEntries(): List<MemoryEntry> {
+                    return listOf(
+                        MemoryEntry(
+                            id = "memory-0",
+                            scopeType = MemoryScopeType.GLOBAL,
+                            scopeId = "",
+                            content = "角色一贯会先试探，再决定是否交底。",
+                            importance = 75,
+                        ),
+                        MemoryEntry(
+                            id = "memory-1",
+                            scopeType = MemoryScopeType.CONVERSATION,
+                            scopeId = "c1",
+                            content = "当前剧情里，角色已经承认自己知道密门位置。",
+                            importance = 80,
+                        ),
+                    )
+                }
+
+                override suspend fun findEntryBySourceMessage(
+                    scopeType: MemoryScopeType,
+                    scopeId: String,
+                    sourceMessageId: String,
+                ): MemoryEntry? = null
+
+                override suspend fun upsertEntry(entry: MemoryEntry) = Unit
+
+                override suspend fun deleteEntry(entryId: String) = Unit
+
+                override suspend fun markEntriesUsed(entryIds: List<String>, timestamp: Long) = Unit
+            },
+        )
+
+        val result = assembler.assemble(
+            settings = AppSettings(),
+            assistant = Assistant(
+                id = "assistant-1",
+                name = "霜岚",
+                systemPrompt = "你要始终维持角色设定。",
+                memoryEnabled = true,
+            ),
+            conversation = Conversation(id = "c1", createdAt = 1L, updatedAt = 1L),
+            userInputText = "继续逼问她",
+            recentMessages = emptyList(),
+            promptMode = com.example.myapplication.model.PromptMode.ROLEPLAY,
+        )
+
+        assertTrue(result.systemPrompt.contains("【角色长期记忆】"))
+        assertTrue(result.systemPrompt.contains("【当前剧情约束】"))
+        assertTrue(result.systemPrompt.contains("必须保持一致"))
+        assertTrue(result.systemPrompt.contains("不要与其冲突"))
     }
 
     @Test

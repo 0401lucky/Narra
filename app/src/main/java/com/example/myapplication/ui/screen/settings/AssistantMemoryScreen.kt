@@ -45,7 +45,7 @@ fun AssistantMemoryScreen(
     assistant: Assistant,
     memories: List<MemoryEntry>,
     onSaveAssistant: (Assistant) -> Unit,
-    onAddMemory: (MemoryEntry) -> Unit,
+    onUpsertMemory: (MemoryEntry) -> Unit,
     onDeleteMemory: (String) -> Unit,
     onTogglePinned: (String) -> Unit,
     onOpenGlobalMemorySettings: () -> Unit,
@@ -54,9 +54,11 @@ fun AssistantMemoryScreen(
     val palette = rememberSettingsPalette()
     val outlineColors = rememberSettingsOutlineColors()
     var memoryEnabled by rememberSaveable { mutableStateOf(assistant.memoryEnabled) }
+    var useGlobalMemory by rememberSaveable { mutableStateOf(assistant.useGlobalMemory) }
     var memoryMaxItemsText by rememberSaveable { mutableStateOf(assistant.memoryMaxItems.toString()) }
-    var showAddDialog by remember { mutableStateOf(false) }
-    var newMemoryContent by rememberSaveable { mutableStateOf("") }
+    var editingMemory by remember { mutableStateOf<MemoryEntry?>(null) }
+    var isCreatingMemory by remember { mutableStateOf(false) }
+    var memoryDraftContent by rememberSaveable { mutableStateOf("") }
 
     Scaffold(
         topBar = {
@@ -97,6 +99,13 @@ fun AssistantMemoryScreen(
                         onCheckedChange = { memoryEnabled = it },
                     )
                     SettingsGroupDivider()
+                    AssistantMemorySettingRow(
+                        title = "共享全局长期记忆",
+                        supporting = "打开后，这个助手新增或自动整理出的长期记忆会写入全局池，并优先使用共享长期记忆。",
+                        checked = useGlobalMemory,
+                        onCheckedChange = { useGlobalMemory = it },
+                    )
+                    SettingsGroupDivider()
                     AssistantMemoryStaticRow(
                         title = "每轮注入条数",
                         supporting = "控制每次最多注入多少条记忆，避免上下文过度膨胀。",
@@ -115,10 +124,23 @@ fun AssistantMemoryScreen(
                     SettingsGroupDivider()
                     AssistantMemoryStaticRow(
                         title = "管理记忆",
-                        supporting = "当前助手下共有 ${memories.size} 条专属记忆，可手动新增、置顶或删除。",
+                        supporting = if (useGlobalMemory) {
+                            "当前助手正在使用全局长期记忆池，共有 ${memories.size} 条可编辑长期记忆。"
+                        } else {
+                            "当前助手下共有 ${memories.size} 条专属记忆，可手动新增、编辑、置顶或删除。"
+                        },
                         trailing = {
                             Surface(
-                                modifier = Modifier.clickable { showAddDialog = true },
+                                modifier = Modifier.clickable {
+                                    isCreatingMemory = true
+                                    editingMemory = MemoryEntry(
+                                        scopeType = if (useGlobalMemory) MemoryScopeType.GLOBAL else MemoryScopeType.ASSISTANT,
+                                        scopeId = if (useGlobalMemory) "" else assistant.id,
+                                        pinned = true,
+                                        importance = 80,
+                                    )
+                                    memoryDraftContent = ""
+                                },
                                 shape = RoundedCornerShape(14.dp),
                                 color = palette.accentSoft,
                             ) {
@@ -148,6 +170,7 @@ fun AssistantMemoryScreen(
                                 onSaveAssistant(
                                     assistant.copy(
                                         memoryEnabled = memoryEnabled,
+                                        useGlobalMemory = useGlobalMemory,
                                         memoryMaxItems = parsePositiveIntOrDefaultForMemory(
                                             rawValue = memoryMaxItemsText,
                                             defaultValue = assistant.memoryMaxItems,
@@ -190,6 +213,11 @@ fun AssistantMemoryScreen(
                 items(memories, key = { it.id }) { memory ->
                     AssistantMemoryEntryCard(
                         memory = memory,
+                        onEdit = {
+                            isCreatingMemory = false
+                            editingMemory = memory
+                            memoryDraftContent = memory.content
+                        },
                         onTogglePinned = { onTogglePinned(memory.id) },
                         onDelete = { onDeleteMemory(memory.id) },
                     )
@@ -198,14 +226,19 @@ fun AssistantMemoryScreen(
         }
     }
 
-    if (showAddDialog) {
+    if (editingMemory != null) {
+        val targetMemory = editingMemory ?: return
         AlertDialog(
-            onDismissRequest = { showAddDialog = false },
-            title = { Text("新增记忆") },
+            onDismissRequest = {
+                editingMemory = null
+                isCreatingMemory = false
+                memoryDraftContent = ""
+            },
+            title = { Text(if (isCreatingMemory) "新增记忆" else "编辑记忆") },
             text = {
                 OutlinedTextField(
-                    value = newMemoryContent,
-                    onValueChange = { newMemoryContent = it },
+                    value = memoryDraftContent,
+                    onValueChange = { memoryDraftContent = it },
                     label = { Text("记忆内容") },
                     modifier = Modifier.fillMaxWidth(),
                     maxLines = 6,
@@ -216,19 +249,30 @@ fun AssistantMemoryScreen(
             confirmButton = {
                 TextButton(
                     onClick = {
-                        val content = newMemoryContent.trim()
+                        val content = memoryDraftContent.trim()
                         if (content.isNotBlank()) {
-                            onAddMemory(
-                                MemoryEntry(
-                                    scopeType = MemoryScopeType.ASSISTANT,
-                                    scopeId = assistant.id,
+                            onUpsertMemory(
+                                targetMemory.copy(
+                                    scopeType = if (useGlobalMemory &&
+                                        targetMemory.scopeType == MemoryScopeType.ASSISTANT
+                                    ) {
+                                        MemoryScopeType.GLOBAL
+                                    } else {
+                                        targetMemory.scopeType
+                                    },
+                                    scopeId = when {
+                                        useGlobalMemory && targetMemory.scopeType != MemoryScopeType.CONVERSATION -> ""
+                                        targetMemory.scopeType == MemoryScopeType.ASSISTANT -> assistant.id
+                                        else -> targetMemory.scopeId
+                                    },
                                     content = content,
-                                    importance = 80,
-                                    pinned = true,
+                                    importance = targetMemory.importance.takeIf { it > 0 } ?: 80,
+                                    pinned = targetMemory.pinned || isCreatingMemory,
                                 ),
                             )
-                            newMemoryContent = ""
-                            showAddDialog = false
+                            memoryDraftContent = ""
+                            editingMemory = null
+                            isCreatingMemory = false
                         }
                     },
                 ) {
@@ -238,8 +282,9 @@ fun AssistantMemoryScreen(
             dismissButton = {
                 TextButton(
                     onClick = {
-                        newMemoryContent = ""
-                        showAddDialog = false
+                        memoryDraftContent = ""
+                        editingMemory = null
+                        isCreatingMemory = false
                     },
                 ) {
                     Text("取消")
@@ -319,6 +364,7 @@ private fun AssistantMemoryStaticRow(
 @Composable
 private fun AssistantMemoryEntryCard(
     memory: MemoryEntry,
+    onEdit: () -> Unit,
     onTogglePinned: () -> Unit,
     onDelete: () -> Unit,
 ) {
@@ -355,6 +401,12 @@ private fun AssistantMemoryEntryCard(
                 )
             }
             Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                Text(
+                    text = "编辑",
+                    color = palette.accent,
+                    modifier = Modifier.clickable(onClick = onEdit),
+                    fontWeight = FontWeight.SemiBold,
+                )
                 Text(
                     text = if (memory.pinned) "取消置顶" else "置顶",
                     color = palette.accent,

@@ -248,7 +248,29 @@ private fun RoleplaySuggestionSection(
                                 modifier = Modifier.fillMaxWidth().padding(horizontal = 14.dp, vertical = 12.dp),
                                 verticalArrangement = Arrangement.spacedBy(6.dp),
                             ) {
-                                Text(suggestion.label, style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.SemiBold)
+                                Row(
+                                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                    verticalAlignment = Alignment.CenterVertically,
+                                ) {
+                                    Surface(
+                                        shape = RoundedCornerShape(999.dp),
+                                        color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.6f),
+                                    ) {
+                                        Text(
+                                            text = suggestion.axis.toReadableLabel(),
+                                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+                                            style = MaterialTheme.typography.labelSmall,
+                                            color = MaterialTheme.colorScheme.primary,
+                                            fontWeight = FontWeight.SemiBold,
+                                        )
+                                    }
+                                    Text(
+                                        suggestion.label,
+                                        style = MaterialTheme.typography.labelMedium,
+                                        color = MaterialTheme.colorScheme.primary,
+                                        fontWeight = FontWeight.SemiBold,
+                                    )
+                                }
                                 Text(suggestion.text, style = MaterialTheme.typography.bodyMedium.copy(lineHeight = 22.sp), color = MaterialTheme.colorScheme.onSurface)
                             }
                         }
@@ -318,6 +340,14 @@ private fun StreamingLogText(content: String) {
         style = MaterialTheme.typography.bodyLarge.copy(lineHeight = 24.sp),
         color = MaterialTheme.colorScheme.onSurface,
     )
+}
+
+private fun com.example.myapplication.model.RoleplaySuggestionAxis.toReadableLabel(): String {
+    return when (this) {
+        com.example.myapplication.model.RoleplaySuggestionAxis.PLOT -> "推进"
+        com.example.myapplication.model.RoleplaySuggestionAxis.INFO -> "探索"
+        com.example.myapplication.model.RoleplaySuggestionAxis.EMOTION -> "情绪"
+    }
 }
 
 @Composable

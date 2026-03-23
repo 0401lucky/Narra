@@ -17,6 +17,9 @@ data class ChatCompletionRequest(
     val model: String,
     val messages: List<ChatMessageDto>,
     val stream: Boolean = false,
+    val temperature: Float? = null,
+    @SerializedName("top_p")
+    val topP: Float? = null,
     @SerializedName("reasoning_effort")
     val reasoningEffort: String? = null,
     val thinking: ThinkingConfigDto? = null,

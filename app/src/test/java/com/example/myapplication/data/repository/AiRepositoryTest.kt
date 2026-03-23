@@ -2,6 +2,7 @@ package com.example.myapplication.data.repository
 
 import com.example.myapplication.data.remote.ApiServiceFactory
 import com.example.myapplication.data.remote.OpenAiCompatibleApi
+import com.example.myapplication.data.repository.RoleplayMemoryCondenseMode
 import com.example.myapplication.model.AppSettings
 import com.example.myapplication.model.AttachmentType
 import com.example.myapplication.model.ChatCompletionRequest
@@ -16,6 +17,7 @@ import com.example.myapplication.model.ModelAbility
 import com.example.myapplication.model.ModelsResponse
 import com.example.myapplication.model.ProviderSettings
 import com.example.myapplication.model.ProviderType
+import com.example.myapplication.model.RoleplaySuggestionAxis
 import com.example.myapplication.model.RoleplaySuggestionUiModel
 import com.example.myapplication.model.TransferDirection
 import com.example.myapplication.model.TransferStatus
@@ -29,6 +31,7 @@ import okhttp3.mockwebserver.MockResponse
 import okhttp3.mockwebserver.MockWebServer
 import org.junit.After
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Assert.assertThrows
 import org.junit.Before
@@ -808,7 +811,7 @@ class AiRepositoryTest {
                       "index": 0,
                       "message": {
                         "role": "assistant",
-                        "content": "[{\"label\":\"试探推进\",\"text\":\"*我抬眼看向他* 你刚才那句话，到底是什么意思？\"},{\"label\":\"信息探索\",\"text\":\"我先压住情绪，低声问：这里之前到底发生过什么？\"},{\"label\":\"情绪拉扯\",\"text\":\"*我没有后退* 既然你早就知道，就别再瞒着我。\"}]"
+                        "content": "[{\"axis\":\"plot\",\"label\":\"逼近真相\",\"text\":\"*我抬眼看向他* 你刚才那句话，到底是什么意思？\"},{\"axis\":\"info\",\"label\":\"追问细节\",\"text\":\"我先压住情绪，低声问：这里之前到底发生过什么？\"},{\"axis\":\"emotion\",\"label\":\"压住退路\",\"text\":\"*我没有后退* 既然你早就知道，就别再瞒着我。\"}]"
                       }
                     }
                   ]
@@ -823,6 +826,7 @@ class AiRepositoryTest {
         val suggestions = repository.generateRoleplaySuggestions(
             conversationExcerpt = "用户：你看起来不太对劲。\n角色：我没事。",
             systemPrompt = "【场景设定】雨夜对峙",
+            playerStyleReference = "- 你最好把话说清楚。\n- 我不想再猜了。",
             baseUrl = server.url("/v1/").toString(),
             apiKey = "test-key",
             modelId = "deepseek-chat",
@@ -830,18 +834,24 @@ class AiRepositoryTest {
 
         assertEquals(3, suggestions.size)
         assertEquals(
-            listOf("试探推进", "信息探索", "情绪拉扯"),
+            listOf("逼近真相", "追问细节", "压住退路"),
             suggestions.map(RoleplaySuggestionUiModel::label),
         )
         assertTrue(suggestions.all { it.id.isNotBlank() })
         assertTrue(suggestions.first().text.contains("你刚才那句话"))
+        assertEquals(RoleplaySuggestionAxis.PLOT, suggestions[0].axis)
+        assertEquals(RoleplaySuggestionAxis.INFO, suggestions[1].axis)
+        assertEquals(RoleplaySuggestionAxis.EMOTION, suggestions[2].axis)
 
         val requestBody = JsonParser.parseString(server.takeRequest().body.readUtf8()).asJsonObject
         assertEquals("deepseek-chat", requestBody["model"].asString)
+        assertEquals(0.9f, requestBody["temperature"].asFloat)
+        assertEquals(0.92f, requestBody["top_p"].asFloat)
         val messages = requestBody.getAsJsonArray("messages")
         assertEquals("system", messages[0].asJsonObject["role"].asString)
         assertTrue(messages[0].asJsonObject["content"].asString.contains("只输出 JSON 数组"))
         assertTrue(messages[1].asJsonObject["content"].asString.contains("【剧情设定与上下文】"))
+        assertTrue(messages[1].asJsonObject["content"].asString.contains("【玩家口吻参考】"))
         assertTrue(messages[1].asJsonObject["content"].asString.contains("【最近剧情】"))
     }
 
@@ -871,6 +881,7 @@ class AiRepositoryTest {
         val suggestions = repository.generateRoleplaySuggestions(
             conversationExcerpt = "用户：你在骗我吗？\n角色：我只是没说全。",
             systemPrompt = "【场景设定】旧宅密谈",
+            playerStyleReference = "- 你别糊弄我。",
             baseUrl = server.url("/v1/").toString(),
             apiKey = "test-key",
             modelId = "deepseek-chat",
@@ -881,6 +892,108 @@ class AiRepositoryTest {
         assertEquals("*我盯着他* 你现在还打算继续瞒我吗？", suggestions[0].text)
         assertEquals("信息探索", suggestions[1].label)
         assertEquals("情绪拉扯", suggestions[2].label)
+        assertEquals(RoleplaySuggestionAxis.PLOT, suggestions[0].axis)
+    }
+
+    @Test
+    fun generateRoleplaySuggestions_retriesWhenSuggestionsAreTooSimilar() = runBlocking {
+        server.enqueue(
+            MockResponse().setResponseCode(200).setBody(
+                """
+                {
+                  "choices": [
+                    {
+                      "index": 0,
+                      "message": {
+                        "role": "assistant",
+                        "content": "[{\"axis\":\"plot\",\"label\":\"试探推进\",\"text\":\"你现在最好解释清楚。\"},{\"axis\":\"info\",\"label\":\"继续追问\",\"text\":\"你现在最好解释清楚。\"},{\"axis\":\"emotion\",\"label\":\"压迫拉扯\",\"text\":\"你现在最好解释清楚。\"}]"
+                      }
+                    }
+                  ]
+                }
+                """.trimIndent(),
+            ),
+        )
+        server.enqueue(
+            MockResponse().setResponseCode(200).setBody(
+                """
+                {
+                  "choices": [
+                    {
+                      "index": 0,
+                      "message": {
+                        "role": "assistant",
+                        "content": "[{\"axis\":\"plot\",\"label\":\"先逼近一步\",\"text\":\"*我往前半步* 别绕了，你现在就把关键那句说完。\"},{\"axis\":\"info\",\"label\":\"补齐细节\",\"text\":\"先告诉我，雨停之前这里到底发生了什么。\"},{\"axis\":\"emotion\",\"label\":\"压住颤意\",\"text\":\"*我盯着他不放* 你明知道我会在意，为什么还要瞒着我？\"}]"
+                      }
+                    }
+                  ]
+                }
+                """.trimIndent(),
+            ),
+        )
+        val repository = createRepository(settings = AppSettings())
+
+        val suggestions = repository.generateRoleplaySuggestions(
+            conversationExcerpt = "用户：你有事瞒着我。\n角色：不是现在。",
+            systemPrompt = "【场景设定】旧仓库对峙",
+            playerStyleReference = "- 你最好现在就说。\n- 我不想再等。",
+            baseUrl = server.url("/v1/").toString(),
+            apiKey = "test-key",
+            modelId = "deepseek-chat",
+        )
+
+        assertEquals(3, suggestions.size)
+        assertTrue(suggestions.map { it.text }.distinct().size == 3)
+        val firstRequest = JsonParser.parseString(server.takeRequest().body.readUtf8()).asJsonObject
+        val secondRequest = JsonParser.parseString(server.takeRequest().body.readUtf8()).asJsonObject
+        assertTrue(secondRequest.getAsJsonArray("messages")[1].asJsonObject["content"].asString.contains("【上一批建议（不要沿用这些句式）】"))
+        assertTrue(firstRequest.getAsJsonArray("messages")[1].asJsonObject["content"].asString.contains("【玩家口吻参考】"))
+    }
+
+    @Test
+    fun generateRoleplaySuggestions_fallsBackWhenProviderRejectsSamplingParameters() = runBlocking {
+        server.enqueue(
+            MockResponse().setResponseCode(400).setBody(
+                """
+                {"error":{"message":"unknown parameter: temperature"}}
+                """.trimIndent(),
+            ),
+        )
+        server.enqueue(
+            MockResponse().setResponseCode(200).setBody(
+                """
+                {
+                  "choices": [
+                    {
+                      "index": 0,
+                      "message": {
+                        "role": "assistant",
+                        "content": "[{\"axis\":\"plot\",\"label\":\"推进一步\",\"text\":\"你刚才那句没说完，继续。\"},{\"axis\":\"info\",\"label\":\"追问现场\",\"text\":\"这里之前到底出了什么事？\"},{\"axis\":\"emotion\",\"label\":\"逼近情绪\",\"text\":\"*我没有躲开* 你是不是从一开始就在骗我？\"}]"
+                      }
+                    }
+                  ]
+                }
+                """.trimIndent(),
+            ),
+        )
+        val repository = createRepository(settings = AppSettings())
+
+        val suggestions = repository.generateRoleplaySuggestions(
+            conversationExcerpt = "用户：你还有多少事瞒着我？\n角色：别逼我。",
+            systemPrompt = "【场景设定】雨夜桥下",
+            playerStyleReference = "- 你别再躲了。",
+            baseUrl = server.url("/v1/").toString(),
+            apiKey = "test-key",
+            modelId = "deepseek-chat",
+        )
+
+        assertEquals(3, suggestions.size)
+        val firstRequest = JsonParser.parseString(server.takeRequest().body.readUtf8()).asJsonObject
+        val secondRequest = JsonParser.parseString(server.takeRequest().body.readUtf8()).asJsonObject
+        assertTrue(firstRequest.has("temperature"))
+        assertTrue(firstRequest.has("top_p"))
+        assertFalse(secondRequest.has("temperature"))
+        assertFalse(secondRequest.has("top_p"))
     }
 
     @Test
@@ -1128,6 +1241,50 @@ class AiRepositoryTest {
             listOf("用户喜欢短句回复", "用户正在调查白塔城失窃案"),
             memories,
         )
+    }
+
+    @Test
+    fun condenseRoleplayMemories_mergesMultipleItemsIntoCompactList() = runBlocking {
+        server.enqueue(
+            MockResponse().setResponseCode(200).setBody(
+                """
+                {
+                  "choices": [
+                    {
+                      "index": 0,
+                      "message": {
+                        "role": "assistant",
+                        "content": "[\"角色已经承认自己知道密门位置。\",\"当前剧情焦点是追问钟楼密门与钥匙去向。\"]"
+                      }
+                    }
+                  ]
+                }
+                """.trimIndent(),
+            ),
+        )
+        val repository = createRepository(settings = AppSettings())
+
+        val result = repository.condenseRoleplayMemories(
+            memoryItems = listOf(
+                "角色知道密门位置。",
+                "角色承认自己知道密门位置。",
+                "当前剧情在追问钟楼密门。",
+                "用户正在逼问钥匙去向。",
+            ),
+            mode = RoleplayMemoryCondenseMode.SCENE,
+            maxItems = 2,
+            baseUrl = server.url("/v1/").toString(),
+            apiKey = "test-key",
+            modelId = "memory-model",
+        )
+
+        assertEquals(
+            listOf("角色已经承认自己知道密门位置。", "当前剧情焦点是追问钟楼密门与钥匙去向。"),
+            result,
+        )
+        val requestBody = JsonParser.parseString(server.takeRequest().body.readUtf8()).asJsonObject
+        assertEquals("memory-model", requestBody["model"].asString)
+        assertTrue(requestBody.getAsJsonArray("messages")[0].asJsonObject["content"].asString.contains("剧情状态记忆整理器"))
     }
 
     @Test

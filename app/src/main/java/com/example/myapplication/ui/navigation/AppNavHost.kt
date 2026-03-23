@@ -531,14 +531,19 @@ fun AppNavHost(
             val assistantId = backStackEntry.arguments?.getString("assistantId").orEmpty()
             val assistant = storedSettings.resolvedAssistants().firstOrNull { it.id == assistantId } ?: return@composable
             val assistantMemories = memoryManagementState.memories.filter { entry ->
-                entry.scopeType == com.example.myapplication.model.MemoryScopeType.ASSISTANT &&
-                    entry.scopeId == assistant.id
+                when (entry.scopeType) {
+                    com.example.myapplication.model.MemoryScopeType.GLOBAL -> assistant.useGlobalMemory
+                    com.example.myapplication.model.MemoryScopeType.ASSISTANT -> {
+                        !assistant.useGlobalMemory && entry.scopeId == assistant.id
+                    }
+                    com.example.myapplication.model.MemoryScopeType.CONVERSATION -> false
+                }
             }
             AssistantMemoryScreen(
                 assistant = assistant,
                 memories = assistantMemories,
                 onSaveAssistant = settingsViewModel::updateAssistant,
-                onAddMemory = memoryManagementViewModel::upsertMemory,
+                onUpsertMemory = memoryManagementViewModel::upsertMemory,
                 onDeleteMemory = memoryManagementViewModel::deleteMemory,
                 onTogglePinned = memoryManagementViewModel::togglePinned,
                 onOpenGlobalMemorySettings = {

@@ -20,12 +20,14 @@ import com.example.myapplication.model.ChatMessage
 import com.example.myapplication.model.Conversation
 import com.example.myapplication.model.ImageGenerationRequest
 import com.example.myapplication.model.ImageGenerationResponse
+import com.example.myapplication.model.MemoryEntry
 import com.example.myapplication.model.MessageRole
 import com.example.myapplication.model.MessageStatus
 import com.example.myapplication.model.ModelsResponse
 import com.example.myapplication.model.ProviderSettings
 import com.example.myapplication.model.RoleplayContentType
 import com.example.myapplication.model.RoleplayScenario
+import com.example.myapplication.model.RoleplaySuggestionAxis
 import com.example.myapplication.model.RoleplaySession
 import com.example.myapplication.model.TransferDirection
 import com.example.myapplication.model.TransferStatus
@@ -35,6 +37,7 @@ import com.example.myapplication.testutil.FakeConversationStore
 import com.example.myapplication.testutil.FakeConversationSummaryRepository
 import com.example.myapplication.testutil.FakeMemoryRepository
 import com.example.myapplication.testutil.FakeSettingsStore
+import com.google.gson.JsonParser
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
@@ -170,9 +173,9 @@ class RoleplayViewModelTest {
                                             role = "assistant",
                                             content = """
                                             [
-                                              {"label":"试探推进","text":"*我抬眼看向他* 你刚才那句话，到底是什么意思？"},
-                                              {"label":"信息探索","text":"先告诉我，这里之前到底发生过什么。"},
-                                              {"label":"情绪拉扯","text":"*我没有退开* 既然你知道，就别再瞒着我。"}
+                                              {"axis":"plot","label":"逼近真相","text":"*我抬眼看向他* 你刚才那句话，到底是什么意思？"},
+                                              {"axis":"info","label":"追问细节","text":"先告诉我，这里之前到底发生过什么。"},
+                                              {"axis":"emotion","label":"压住退路","text":"*我没有退开* 既然你知道，就别再瞒着我。"}
                                             ]
                                             """.trimIndent(),
                                         ),
@@ -198,15 +201,19 @@ class RoleplayViewModelTest {
         val state = viewModel.uiState.value
         assertFalse(state.isGeneratingSuggestions)
         assertEquals(3, state.suggestions.size)
-        assertEquals("试探推进", state.suggestions[0].label)
+        assertEquals("逼近真相", state.suggestions[0].label)
         assertTrue(state.suggestions[0].text.contains("你刚才那句话"))
+        assertEquals(RoleplaySuggestionAxis.PLOT, state.suggestions[0].axis)
 
         val request = lastSuggestionRequest ?: error("未记录到建议请求")
         assertEquals("rp-suggestion-model", request.model)
         assertTrue(request.messages[1].content.toString().contains("【剧情设定与上下文】"))
+        assertTrue(request.messages[1].content.toString().contains("【玩家口吻参考】"))
         assertTrue(request.messages[1].content.toString().contains("【最近剧情】"))
         assertTrue(request.messages[1].content.toString().contains("林晚"))
         assertTrue(request.messages[1].content.toString().contains("陆宴清"))
+        assertEquals(0.9f, request.temperature)
+        assertEquals(0.92f, request.topP)
     }
 
     @Test
@@ -446,6 +453,10 @@ class RoleplayViewModelTest {
         assertFalse(state.isSending)
         assertTrue(state.suggestions.isEmpty())
         assertTrue(store.listMessages(session.conversationId).any { it.content.contains("你最好把话说清楚") })
+        val requestBody = JsonParser.parseString(server.takeRequest().body.readUtf8()).asJsonObject
+        assertEquals(0.9f, requestBody["temperature"].asFloat)
+        assertEquals(0.92f, requestBody["top_p"].asFloat)
+        assertTrue(requestBody.getAsJsonArray("messages")[0].asJsonObject["content"].asString.contains("【本轮导演提示】"))
     }
 
     @Test
@@ -689,6 +700,174 @@ class RoleplayViewModelTest {
 
         val updatedPart = store.listMessages(session.conversationId).first().parts.first()
         assertEquals(TransferStatus.RECEIVED, updatedPart.specialStatus)
+    }
+
+    @Test
+    fun sendMessage_condensesExtractedMemoriesIntoCompactScopeEntries() = runTest(mainDispatcherRule.dispatcher.scheduler) {
+        enqueueStreamResponse("<dialogue speaker=\"character\" emotion=\"克制\">钟楼响过之后，密门就会开。</dialogue>")
+
+        val assistant = Assistant(
+            id = "assistant-1",
+            name = "陆宴清",
+            memoryEnabled = true,
+            memoryMaxItems = 6,
+        )
+        val scenario = RoleplayScenario(
+            id = "scene-1",
+            assistantId = assistant.id,
+            userDisplayNameOverride = "林晚",
+            characterDisplayNameOverride = "陆宴清",
+        )
+        val session = RoleplaySession(
+            id = "session-1",
+            scenarioId = scenario.id,
+            conversationId = "conv-1",
+            createdAt = 1L,
+            updatedAt = 2L,
+        )
+        val store = FakeConversationStore(
+            conversations = listOf(
+                Conversation(
+                    id = session.conversationId,
+                    title = "剧情",
+                    model = "chat-model",
+                    createdAt = 1L,
+                    updatedAt = 2L,
+                    assistantId = assistant.id,
+                ),
+            ),
+            messagesByConversation = mapOf(
+                session.conversationId to listOf(
+                    ChatMessage(
+                        id = "m1",
+                        conversationId = session.conversationId,
+                        role = MessageRole.USER,
+                        content = "钟楼刚才已经响过了，对吗？",
+                        createdAt = 10L,
+                    ),
+                ),
+            ),
+        )
+        val provider = ProviderSettings(
+            id = "provider-1",
+            name = "测试 Provider",
+            baseUrl = server.url("/v1/").toString(),
+            apiKey = "test-key",
+            selectedModel = "chat-model",
+            memoryModel = "memory-model",
+        )
+        val memoryRepository = FakeMemoryRepository(
+            initialEntries = listOf(
+                MemoryEntry(
+                    id = "old-a1",
+                    scopeType = com.example.myapplication.model.MemoryScopeType.ASSISTANT,
+                    scopeId = assistant.id,
+                    content = "角色会先试探再给答案。",
+                    importance = 60,
+                ),
+                MemoryEntry(
+                    id = "old-a2",
+                    scopeType = com.example.myapplication.model.MemoryScopeType.ASSISTANT,
+                    scopeId = assistant.id,
+                    content = "角色已经知道钟楼密门的位置。",
+                    importance = 60,
+                ),
+                MemoryEntry(
+                    id = "old-c1",
+                    scopeType = com.example.myapplication.model.MemoryScopeType.CONVERSATION,
+                    scopeId = session.conversationId,
+                    content = "当前剧情在追问钟楼密门。",
+                    importance = 70,
+                ),
+                MemoryEntry(
+                    id = "old-c2",
+                    scopeType = com.example.myapplication.model.MemoryScopeType.CONVERSATION,
+                    scopeId = session.conversationId,
+                    content = "用户已经听见钟楼响过。",
+                    importance = 70,
+                ),
+            ),
+        )
+        val viewModel = createViewModel(
+            store = store,
+            roleplayRepository = FakeRoleplayRepository(
+                conversationStore = store,
+                scenarios = listOf(scenario),
+                sessions = listOf(session),
+            ),
+            settings = AppSettings(
+                baseUrl = provider.baseUrl,
+                apiKey = provider.apiKey,
+                selectedModel = provider.selectedModel,
+                providers = listOf(provider),
+                selectedProviderId = provider.id,
+                assistants = listOf(assistant),
+                selectedAssistantId = assistant.id,
+            ),
+            promptContextAssembler = fixedPromptAssembler("提示词上下文"),
+            memoryRepository = memoryRepository,
+            messageIdProvider = idProviderOf("m-user", "m-assistant"),
+            apiServiceProvider = { _, _ ->
+                object : OpenAiCompatibleApi {
+                    override suspend fun listModels(): Response<ModelsResponse> {
+                        error("不应调用模型列表")
+                    }
+
+                    override suspend fun createChatCompletion(request: ChatCompletionRequest): Response<ChatCompletionResponse> {
+                        val prompt = request.messages.firstOrNull()?.content.toString()
+                        val content = when {
+                            prompt.contains("沉浸式剧情记忆提取器") -> """
+                                {"persistent_memories":["角色会先试探再给答案。","角色已经承认自己知道密门位置。","角色不愿正面解释动机。"],"scene_state_memories":["当前剧情焦点是钟楼密门与钥匙。","用户已经听见钟楼响过。","角色刚承认钟楼响后密门会开。","双方还在相互试探。"]}
+                            """.trimIndent()
+                            prompt.contains("角色长期记忆整理器") -> """
+                                ["角色习惯先试探再给答案，并避免直接交底。","角色已经承认自己知道钟楼密门位置，但仍在回避动机。","角色在关键问题上仍保持克制和防备。"]
+                            """.trimIndent()
+                            prompt.contains("剧情状态记忆整理器") -> """
+                                ["当前剧情焦点是追问钟楼密门与钥匙去向。","钟楼已经响过，角色也承认密门会因此开启。","双方仍处于逼问与试探并存的僵持状态。","用户正在继续逼近真相。"]
+                            """.trimIndent()
+                            else -> "[]"
+                        }
+                        return Response.success(
+                            ChatCompletionResponse(
+                                choices = listOf(
+                                    ChatChoiceDto(
+                                        index = 0,
+                                        message = AssistantMessageDto(
+                                            role = "assistant",
+                                            content = content,
+                                        ),
+                                    ),
+                                ),
+                            ),
+                        )
+                    }
+
+                    override suspend fun generateImage(request: ImageGenerationRequest): Response<ImageGenerationResponse> {
+                        error("不应调用生图接口")
+                    }
+                }
+            },
+        )
+
+        viewModel.enterScenario(scenario.id)
+        advanceUntilIdle()
+        viewModel.updateInput("那你就把钟楼密门和钥匙的事一次说清楚。")
+        viewModel.sendMessage()
+        advanceUntilIdle()
+
+        val currentEntries = memoryRepository.currentEntries()
+        val assistantMemories = currentEntries.filter {
+            it.scopeType == com.example.myapplication.model.MemoryScopeType.ASSISTANT &&
+                it.scopeId == assistant.id
+        }
+        val sceneMemories = currentEntries.filter {
+            it.scopeType == com.example.myapplication.model.MemoryScopeType.CONVERSATION &&
+                it.scopeId == session.conversationId
+        }
+        assertEquals(3, assistantMemories.size)
+        assertEquals(4, sceneMemories.size)
+        assertTrue(assistantMemories.any { it.content.contains("密门位置") })
+        assertTrue(sceneMemories.any { it.content.contains("钟楼已经响过") })
     }
 
     private fun enqueueStreamResponse(content: String) {

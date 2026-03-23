@@ -11,6 +11,7 @@ object RoleplayPromptDecorator {
         assistant: Assistant?,
         settings: AppSettings,
         includeOpeningNarrationReference: Boolean = true,
+        directorNote: String = "",
     ): String {
         val playerName = scenario.userDisplayNameOverride.trim()
             .ifBlank { settings.resolvedUserDisplayName() }
@@ -66,6 +67,17 @@ object RoleplayPromptDecorator {
                     "【输出要求】\n保持沉浸式角色口吻，默认以角色对白为主，不要跳出设定解释自己是模型。",
                 )
             }
+
+            directorNote.trim()
+                .takeIf { it.isNotBlank() }
+                ?.let { note ->
+                    add(
+                        buildString {
+                            append("【本轮导演提示】\n")
+                            append(note)
+                        },
+                    )
+                }
         }
 
         return sections.joinToString(separator = "\n\n").trim()

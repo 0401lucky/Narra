@@ -23,6 +23,7 @@ import com.example.myapplication.model.ModelInfo
 import com.example.myapplication.model.ProviderFunction
 import com.example.myapplication.model.PromptMode
 import com.example.myapplication.model.ProviderSettings
+import com.example.myapplication.model.RoleplaySuggestionAxis
 import com.example.myapplication.model.RoleplaySuggestionUiModel
 import com.example.myapplication.model.ChatSpecialType
 import com.example.myapplication.model.ScreenTextBlock
@@ -65,6 +66,7 @@ import okhttp3.Request
 import okhttp3.RequestBody.Companion.toRequestBody
 import java.io.IOException
 import java.net.UnknownHostException
+import java.util.Collections
 
 private const val DefaultChatFormattingPrompt = """你是一个注重可读性的中文助手。
 默认使用清晰、克制的 Markdown 排版回答：
@@ -91,6 +93,22 @@ private const val DefaultSpecialPlayPrompt = """
 private val TransferTagRegex = Regex("""<transfer\s+([^>]+)/>""")
 private val TransferUpdateTagRegex = Regex("""<transfer-update\s+([^>]+)/>""")
 private val XmlAttributeRegex = Regex("(\\w+)=\"([^\"]*)\"")
+private val JsonCodeFenceRegex = Regex("""^```(?:json)?\s*([\s\S]*?)\s*```$""")
+
+private const val ROLEPLAY_TEMPERATURE = 0.9f
+private const val ROLEPLAY_TOP_P = 0.92f
+private const val ROLEPLAY_SUGGESTION_COUNT = 3
+
+private val UnsupportedSamplingMessageHints = listOf(
+    "temperature",
+    "top_p",
+    "top p",
+    "unknown parameter",
+    "unknown field",
+    "unrecognized field",
+    "not permitted",
+    "not allowed",
+)
 
 data class ParsedAssistantSpecialOutput(
     val content: String,
@@ -106,6 +124,16 @@ data class TransferUpdateDirective(
 data class StructuredMemoryExtractionResult(
     val persistentMemories: List<String> = emptyList(),
     val sceneStateMemories: List<String> = emptyList(),
+)
+
+enum class RoleplayMemoryCondenseMode {
+    CHARACTER,
+    SCENE,
+}
+
+private data class RoleplaySamplingConfig(
+    val temperature: Float,
+    val topP: Float,
 )
 
 class AiRepository(
@@ -132,6 +160,7 @@ class AiRepository(
     private val ioDispatcher: CoroutineDispatcher = Dispatchers.IO,
 ) {
     private val gson = Gson()
+    private val roleplaySamplingDisabledBaseUrls = Collections.synchronizedSet(mutableSetOf<String>())
 
     val settingsFlow: Flow<AppSettings> = settingsStore.settingsFlow
 
@@ -397,6 +426,123 @@ class AiRepository(
         return content.take(500)
     }
 
+    suspend fun generateRoleplayConversationSummary(
+        conversationText: String,
+        baseUrl: String,
+        apiKey: String,
+        modelId: String,
+    ): String {
+        val prompt = buildString {
+            append("你是沉浸式剧情摘要整理器。")
+            append("请根据下面的剧情记录输出结构化摘要，帮助下一轮扮演保持连续性。")
+            append("严格使用以下 5 个小节，每节 1 到 3 句：")
+            append("【剧情进展】、【当前状态】、【关系变化】、【未解问题】、【近期触发点】。")
+            append("保留明确人物关系、地点、任务进度、情绪转折和悬念。")
+            append("不要输出 XML、不要解释规则、不要省略小节标题：\n")
+            append(conversationText)
+        }
+        val requestMessages = listOf(
+            ChatMessageDto(
+                role = "user",
+                content = prompt,
+            ),
+        )
+        val response = createChatCompletionWithRoleplayFallback(
+            baseUrl = baseUrl,
+            apiKey = apiKey,
+            operation = "RP 摘要生成失败",
+            request = buildRequestWithRoleplaySampling(
+                model = modelId,
+                messages = requestMessages,
+                baseUrl = baseUrl,
+            ),
+        )
+        val content = extractContentText(
+            response.body()?.choices?.firstOrNull()?.message?.content,
+        ).trim()
+        if (content.isBlank()) {
+            throw IllegalStateException("RP 摘要模型未返回有效内容")
+        }
+        return content.take(800)
+    }
+
+    suspend fun condenseRoleplayMemories(
+        memoryItems: List<String>,
+        mode: RoleplayMemoryCondenseMode,
+        maxItems: Int,
+        baseUrl: String,
+        apiKey: String,
+        modelId: String,
+    ): List<String> {
+        val normalizedItems = memoryItems
+            .map { it.trim() }
+            .filter { it.isNotBlank() }
+            .distinct()
+        if (normalizedItems.size <= maxItems.coerceAtLeast(1)) {
+            return normalizedItems
+        }
+        val prompt = buildString {
+            append(
+                when (mode) {
+                    RoleplayMemoryCondenseMode.CHARACTER -> {
+                        "你是角色长期记忆整理器。请把下面多条零散记忆整理为更稳定、更少量的角色事实。"
+                    }
+                    RoleplayMemoryCondenseMode.SCENE -> {
+                        "你是剧情状态记忆整理器。请把下面多条零散剧情状态整理为更稳定、更少量的场景事实。"
+                    }
+                },
+            )
+            append("去掉重复、近义改写和一次性废话，保留必须被后续对话遵守的信息。")
+            append("输出不超过 ")
+            append(maxItems.coerceAtLeast(1))
+            append(" 条简体中文短句。只输出 JSON 数组，不要解释：\n")
+            normalizedItems.forEach { item ->
+                append("- ")
+                append(item)
+                append('\n')
+            }
+        }
+        val requestMessages = listOf(
+            ChatMessageDto(
+                role = "user",
+                content = prompt,
+            ),
+        )
+        val response = runNetworkCall {
+            apiServiceProvider(baseUrl, apiKey.trim()).createChatCompletion(
+                ChatCompletionRequest(
+                    model = modelId,
+                    messages = requestMessages,
+                ),
+            )
+        }
+        if (!response.isSuccessful) {
+            throw retrofitFailure("记忆汇总失败", response)
+        }
+        val content = extractContentText(
+            response.body()?.choices?.firstOrNull()?.message?.content,
+        ).trim()
+        if (content.isBlank()) {
+            return normalizedItems.take(maxItems.coerceAtLeast(1))
+        }
+        val parsedArray = runCatching {
+            JsonParser.parseString(content).asJsonArray.mapNotNull { element ->
+                runCatching { element.asString.trim() }.getOrNull()
+                    ?.takeIf { it.isNotEmpty() }
+            }
+        }.getOrNull()
+        return (parsedArray ?: content.lines()
+            .map { line ->
+                line.trim()
+                    .removePrefix("-")
+                    .removePrefix("•")
+                    .trim()
+            }
+            .filter { it.isNotEmpty() })
+            .distinct()
+            .take(maxItems.coerceAtLeast(1))
+    }
+
     suspend fun generateMemoryEntries(
         conversationExcerpt: String,
         baseUrl: String,
@@ -537,6 +683,7 @@ class AiRepository(
     suspend fun generateRoleplaySuggestions(
         conversationExcerpt: String,
         systemPrompt: String,
+        playerStyleReference: String,
         baseUrl: String,
         apiKey: String,
         modelId: String,
@@ -544,18 +691,48 @@ class AiRepository(
         val requestMessages = buildRoleplaySuggestionMessages(
             conversationExcerpt = conversationExcerpt,
             systemPrompt = systemPrompt,
+            playerStyleReference = playerStyleReference,
         )
-        val response = runNetworkCall {
-            apiServiceProvider(baseUrl, apiKey.trim()).createChatCompletion(
-                ChatCompletionRequest(
-                    model = modelId,
-                    messages = requestMessages,
-                ),
-            )
+        val initialSuggestions = requestRoleplaySuggestions(
+            requestMessages = requestMessages,
+            baseUrl = baseUrl,
+            apiKey = apiKey,
+            modelId = modelId,
+        )
+        if (!shouldRetryRoleplaySuggestions(initialSuggestions)) {
+            return initialSuggestions
         }
-        if (!response.isSuccessful) {
-            throw retrofitFailure("RP 建议生成失败", response)
-        }
+        val retryMessages = buildRoleplaySuggestionMessages(
+            conversationExcerpt = conversationExcerpt,
+            systemPrompt = systemPrompt,
+            playerStyleReference = playerStyleReference,
+            rejectedSuggestions = initialSuggestions,
+        )
+        val retriedSuggestions = requestRoleplaySuggestions(
+            requestMessages = retryMessages,
+            baseUrl = baseUrl,
+            apiKey = apiKey,
+            modelId = modelId,
+        )
+        return retriedSuggestions.ifEmpty { initialSuggestions }
+    }
+
+    private suspend fun requestRoleplaySuggestions(
+        requestMessages: List<ChatMessageDto>,
+        baseUrl: String,
+        apiKey: String,
+        modelId: String,
+    ): List<RoleplaySuggestionUiModel> {
+        val response = createChatCompletionWithRoleplayFallback(
+            baseUrl = baseUrl,
+            apiKey = apiKey,
+            operation = "RP 建议生成失败",
+            request = buildRequestWithRoleplaySampling(
+                model = modelId,
+                messages = requestMessages,
+                baseUrl = baseUrl,
+            ),
+        )
         val content = extractContentText(
             response.body()?.choices?.firstOrNull()?.message?.content,
         ).trim()
@@ -833,23 +1010,24 @@ class AiRepository(
         val requestMessages = toRequestMessages(messages, systemPrompt, promptMode)
         require(requestMessages.isNotEmpty()) { "消息不能为空" }
 
-        val requestBody = ChatCompletionRequest(
+        val normalizedBaseUrl = apiServiceFactory.normalizeBaseUrl(baseUrl)
+
+        val client = streamClientProvider(baseUrl, apiKey)
+        var requestBody = buildRequestWithRoleplaySampling(
             model = selectedModel,
             messages = requestMessages,
+            baseUrl = baseUrl,
             stream = true,
             reasoningEffort = thinkingRequestConfig.reasoningEffort,
             thinking = thinkingRequestConfig.thinking,
+            promptMode = promptMode,
         )
-        val jsonBody = gson.toJson(requestBody)
-        val normalizedBaseUrl = apiServiceFactory.normalizeBaseUrl(baseUrl)
-
-        val httpRequest = Request.Builder()
-            .url("${normalizedBaseUrl}chat/completions")
-            .post(jsonBody.toRequestBody("application/json".toMediaType()))
-            .build()
-
-        val client = streamClientProvider(baseUrl, apiKey)
-        val call = client.newCall(httpRequest)
+        var call = client.newCall(
+            buildStreamingRequest(
+                normalizedBaseUrl = normalizedBaseUrl,
+                requestBody = requestBody,
+            ),
+        )
         var response: okhttp3.Response? = null
         val thinkTagParser = ThinkTagStreamParser()
         val coroutineContext = currentCoroutineContext()
@@ -862,6 +1040,26 @@ class AiRepository(
 
         try {
             response = call.execute()
+            val streamErrorDetail = if (!response.isSuccessful) {
+                response.peekBody(64L * 1024L).string()
+            } else {
+                ""
+            }
+            if (response.code == 400 && shouldRetryWithoutRoleplaySampling(requestBody, streamErrorDetail)) {
+                response.close()
+                markRoleplaySamplingUnsupported(baseUrl)
+                requestBody = requestBody.copy(
+                    temperature = null,
+                    topP = null,
+                )
+                call = client.newCall(
+                    buildStreamingRequest(
+                        normalizedBaseUrl = normalizedBaseUrl,
+                        requestBody = requestBody,
+                    ),
+                )
+                response = call.execute()
+            }
             if (!response.isSuccessful) {
                 throw okhttpFailure("聊天请求失败", response)
             }
@@ -936,6 +1134,122 @@ class AiRepository(
         } catch (exception: Exception) {
             throw exception.toReadableNetworkException()
         }
+    }
+
+    private suspend fun createChatCompletionWithRoleplayFallback(
+        baseUrl: String,
+        apiKey: String,
+        operation: String,
+        request: ChatCompletionRequest,
+    ): retrofit2.Response<com.example.myapplication.model.ChatCompletionResponse> {
+        val normalizedApiKey = apiKey.trim()
+        var currentRequest = request
+        var response = runNetworkCall {
+            apiServiceProvider(baseUrl, normalizedApiKey).createChatCompletion(currentRequest)
+        }
+        var latestErrorDetail = if (!response.isSuccessful) {
+            response.errorBody()?.string().orEmpty()
+        } else {
+            ""
+        }
+        if (response.code() == 400 &&
+            shouldRetryWithoutRoleplaySampling(
+                request = currentRequest,
+                errorDetail = latestErrorDetail,
+            )
+        ) {
+            markRoleplaySamplingUnsupported(baseUrl)
+            currentRequest = currentRequest.copy(
+                temperature = null,
+                topP = null,
+            )
+            response = runNetworkCall {
+                apiServiceProvider(baseUrl, normalizedApiKey).createChatCompletion(currentRequest)
+            }
+            latestErrorDetail = if (!response.isSuccessful) {
+                response.errorBody()?.string().orEmpty()
+            } else {
+                ""
+            }
+        }
+        if (!response.isSuccessful) {
+            throw buildHttpFailure(
+                operation = operation,
+                code = response.code(),
+                errorDetail = latestErrorDetail,
+                headers = response.headers(),
+            )
+        }
+        return response
+    }
+
+    private fun buildRequestWithRoleplaySampling(
+        model: String,
+        messages: List<ChatMessageDto>,
+        baseUrl: String,
+        stream: Boolean = false,
+        reasoningEffort: String? = null,
+        thinking: com.example.myapplication.model.ThinkingConfigDto? = null,
+        promptMode: PromptMode = PromptMode.ROLEPLAY,
+    ): ChatCompletionRequest {
+        val sampling = resolveRoleplaySampling(baseUrl, promptMode)
+        return ChatCompletionRequest(
+            model = model,
+            messages = messages,
+            stream = stream,
+            temperature = sampling?.temperature,
+            topP = sampling?.topP,
+            reasoningEffort = reasoningEffort,
+            thinking = thinking,
+        )
+    }
+
+    private fun resolveRoleplaySampling(
+        baseUrl: String,
+        promptMode: PromptMode,
+    ): RoleplaySamplingConfig? {
+        if (promptMode != PromptMode.ROLEPLAY) {
+            return null
+        }
+        val normalizedBaseUrl = apiServiceFactory.normalizeBaseUrl(baseUrl)
+        if (roleplaySamplingDisabledBaseUrls.contains(normalizedBaseUrl)) {
+            return null
+        }
+        return RoleplaySamplingConfig(
+            temperature = ROLEPLAY_TEMPERATURE,
+            topP = ROLEPLAY_TOP_P,
+        )
+    }
+
+    private fun shouldRetryWithoutRoleplaySampling(
+        request: ChatCompletionRequest,
+        errorDetail: String,
+    ): Boolean {
+        if (request.temperature == null && request.topP == null) {
+            return false
+        }
+        val normalizedError = errorDetail.trim().lowercase()
+        if (normalizedError.isBlank()) {
+            return false
+        }
+        return UnsupportedSamplingMessageHints.any { hint ->
+            normalizedError.contains(hint)
+        }
+    }
+
+    private fun markRoleplaySamplingUnsupported(baseUrl: String) {
+        roleplaySamplingDisabledBaseUrls += apiServiceFactory.normalizeBaseUrl(baseUrl)
+    }
+
+    private fun buildStreamingRequest(
+        normalizedBaseUrl: String,
+        requestBody: ChatCompletionRequest,
+    ): Request {
+        val jsonBody = gson.toJson(requestBody)
+        return Request.Builder()
+            .url("${normalizedBaseUrl}chat/completions")
+            .post(jsonBody.toRequestBody("application/json".toMediaType()))
+            .build()
     }
 
     private fun <T> retrofitFailure(
@@ -1131,6 +1445,8 @@ class AiRepository(
     private fun buildRoleplaySuggestionMessages(
         conversationExcerpt: String,
         systemPrompt: String,
+        playerStyleReference: String,
+        rejectedSuggestions: List<RoleplaySuggestionUiModel> = emptyList(),
     ): List<ChatMessageDto> {
         return listOf(
             ChatMessageDto(
@@ -1144,8 +1460,10 @@ class AiRepository(
                     append("建议内容可以同时包含动作描写和对话；如果包含动作描写，优先使用 *动作* 这种写法。")
                     append("每条建议控制在 1~3 句。")
                     append("不要输出 Markdown，不要输出代码块，不要输出额外解释。")
+                    append("3 条建议的 axis 必须分别覆盖：plot、info、emotion，且各出现一次。")
+                    append("label 由你自由生成，为 2 到 6 个字的短标签，不要复用固定模板。")
                     append("只输出 JSON 数组，格式固定为：")
-                    append("[{\"label\":\"试探推进\",\"text\":\"...\"},{\"label\":\"信息探索\",\"text\":\"...\"},{\"label\":\"情绪拉扯\",\"text\":\"...\"}]")
+                    append("[{\"axis\":\"plot\",\"label\":\"推进试探\",\"text\":\"...\"},{\"axis\":\"info\",\"label\":\"追问细节\",\"text\":\"...\"},{\"axis\":\"emotion\",\"label\":\"情绪逼近\",\"text\":\"...\"}]")
                 },
             ),
             ChatMessageDto(
@@ -1153,8 +1471,20 @@ class AiRepository(
                 content = buildString {
                     append("【剧情设定与上下文】\n")
                     append(systemPrompt.trim().ifBlank { "无" })
+                    append("\n\n【玩家口吻参考】\n")
+                    append(playerStyleReference.trim().ifBlank { "暂无可参考输入，请保持自然克制的第一人称口吻。" })
                     append("\n\n【最近剧情】\n")
                     append(conversationExcerpt.trim().ifBlank { "无" })
+                    if (rejectedSuggestions.isNotEmpty()) {
+                        append("\n\n【上一批建议（不要沿用这些句式）】\n")
+                        rejectedSuggestions.forEach { suggestion ->
+                            append("- [")
+                            append(suggestion.axis.name.lowercase())
+                            append("] ")
+                            append(suggestion.text)
+                            append('\n')
+                        }
+                    }
                     append("\n\n请基于以上内容生成 3 条“用户下一步输入建议”。")
                 },
             ),
@@ -1240,7 +1570,7 @@ class AiRepository(
                 parseFallbackRoleplaySuggestion(block, index)
             }
             if (parsedBlocks.isNotEmpty()) {
-                return parsedBlocks.distinctBy { it.text }.take(3)
+                return parsedBlocks.distinctBy { it.text }.take(ROLEPLAY_SUGGESTION_COUNT)
             }
         }
 
@@ -1260,7 +1590,7 @@ class AiRepository(
                 )
             }
             .distinctBy { it.text }
-            .take(3)
+            .take(ROLEPLAY_SUGGESTION_COUNT)
     }
 
     private fun parseRoleplaySuggestionArray(
@@ -1289,12 +1619,19 @@ class AiRepository(
                 .orEmpty()
                 .trim()
                 .ifBlank { defaultRoleplaySuggestionLabel(index) }
+            val axis = suggestionObject["axis"]
+                ?.let { value -> runCatching { value.asString }.getOrNull() }
+                .orEmpty()
+                .trim()
+                .toRoleplaySuggestionAxisOrNull()
+                ?: defaultRoleplaySuggestionAxis(index)
             RoleplaySuggestionUiModel(
                 id = buildRoleplaySuggestionId(index),
                 label = label,
                 text = text,
+                axis = axis,
             )
-        }.distinctBy { it.text }.take(3)
+        }.distinctBy { it.text }.take(ROLEPLAY_SUGGESTION_COUNT)
     }
 
     private fun parseFallbackRoleplaySuggestion(
@@ -1326,13 +1663,13 @@ class AiRepository(
             id = buildRoleplaySuggestionId(index),
             label = label.ifBlank { defaultRoleplaySuggestionLabel(index) },
             text = text,
+            axis = defaultRoleplaySuggestionAxis(index),
         )
     }
 
     private fun unwrapJsonCodeFence(rawContent: String): String {
         val trimmed = rawContent.trim()
-        val match = Regex("""^```(?:json)?\s*([\s\S]*?)\s*```$""")
-            .find(trimmed)
+        val match = JsonCodeFenceRegex.find(trimmed)
         return match?.groupValues?.get(1)?.trim() ?: trimmed
     }
 
@@ -1346,6 +1683,56 @@ class AiRepository(
             1 -> "信息探索"
             else -> "情绪拉扯"
         }
+    }
+
+    private fun defaultRoleplaySuggestionAxis(index: Int): RoleplaySuggestionAxis {
+        return when (index) {
+            0 -> RoleplaySuggestionAxis.PLOT
+            1 -> RoleplaySuggestionAxis.INFO
+            else -> RoleplaySuggestionAxis.EMOTION
+        }
+    }
+
+    private fun String.toRoleplaySuggestionAxisOrNull(): RoleplaySuggestionAxis? {
+        return when (this.lowercase()) {
+            "plot", "推进", "剧情推进" -> RoleplaySuggestionAxis.PLOT
+            "info", "information", "探索", "信息", "信息探索" -> RoleplaySuggestionAxis.INFO
+            "emotion", "emotional", "情绪", "关系", "情绪拉扯" -> RoleplaySuggestionAxis.EMOTION
+            else -> null
+        }
+    }
+
+    private fun shouldRetryRoleplaySuggestions(
+        suggestions: List<RoleplaySuggestionUiModel>,
+    ): Boolean {
+        if (suggestions.isEmpty()) {
+            return false
+        }
+        if (suggestions.size < ROLEPLAY_SUGGESTION_COUNT) {
+            return true
+        }
+        if (suggestions.map { it.axis }.distinct().size < ROLEPLAY_SUGGESTION_COUNT) {
+            return true
+        }
+        val normalizedSuggestions = suggestions.map { suggestion ->
+            normalizeSuggestionTextForDiversity(suggestion.text)
+        }
+        if (normalizedSuggestions.distinct().size < suggestions.size) {
+            return true
+        }
+        val firstClauses = normalizedSuggestions.map { suggestion ->
+            suggestion.split('，', '。', '！', '？')
+                .firstOrNull()
+                .orEmpty()
+        }
+        return firstClauses.distinct().size < suggestions.size
+    }
+
+    private fun normalizeSuggestionTextForDiversity(text: String): String {
+        return text
+            .replace(Regex("""\*[^*]+\*"""), "")
+            .replace(Regex("""\s+"""), "")
+            .trim()
     }
 
     private fun String.parseXmlAttributes(): Map<String, String> {

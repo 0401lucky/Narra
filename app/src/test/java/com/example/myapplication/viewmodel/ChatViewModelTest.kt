@@ -21,6 +21,7 @@ import com.example.myapplication.model.DEFAULT_CONVERSATION_TITLE
 import com.example.myapplication.model.ImageGenerationRequest
 import com.example.myapplication.model.ImageGenerationDataDto
 import com.example.myapplication.model.ImageGenerationResponse
+import com.example.myapplication.model.MemoryEntry
 import com.example.myapplication.model.MessageRole
 import com.example.myapplication.model.MessageStatus
 import com.example.myapplication.model.MemoryScopeType
@@ -369,6 +370,58 @@ class ChatViewModelTest {
     }
 
     @Test
+    fun toggleMessageMemory_usesGlobalScopeWhenAssistantEnablesSharedMemory() = runTest(mainDispatcherRule.dispatcher.scheduler) {
+        val store = FakeConversationStore(
+            conversations = listOf(
+                Conversation(
+                    id = "c1",
+                    title = DEFAULT_CONVERSATION_TITLE,
+                    model = "",
+                    createdAt = 1L,
+                    updatedAt = 1L,
+                    assistantId = "assistant-1",
+                ),
+            ),
+            messagesByConversation = mapOf(
+                "c1" to listOf(
+                    ChatMessage(
+                        id = "message-1",
+                        conversationId = "c1",
+                        role = MessageRole.USER,
+                        content = "请记住我常用中文和短句。",
+                        createdAt = 1L,
+                    ),
+                ),
+            ),
+        )
+        val memoryRepository = FakeMemoryRepository()
+        val viewModel = createViewModel(
+            store = store,
+            settings = AppSettings(
+                assistants = listOf(
+                    Assistant(
+                        id = "assistant-1",
+                        name = "共享记忆助手",
+                        memoryEnabled = true,
+                        useGlobalMemory = true,
+                    ),
+                ),
+                selectedAssistantId = "assistant-1",
+            ),
+            memoryRepository = memoryRepository,
+        )
+
+        advanceUntilIdle()
+        viewModel.toggleMessageMemory("message-1")
+        advanceUntilIdle()
+
+        val createdEntry = memoryRepository.currentEntries().single()
+        assertEquals(MemoryScopeType.GLOBAL, createdEntry.scopeType)
+        assertEquals("", createdEntry.scopeId)
+        assertEquals("message-1", createdEntry.sourceMessageId)
+    }
+
+    @Test
     fun sendMessage_withConversationSummaryTrimsRequestMessages() = runTest(mainDispatcherRule.dispatcher.scheduler) {
         val existingMessages = (1..8).flatMap { index ->
             listOf(
@@ -534,6 +587,113 @@ class ChatViewModelTest {
         assertEquals(MemoryScopeType.ASSISTANT, memories.single().scopeType)
         assertEquals("assistant-1", memories.single().scopeId)
         assertEquals("用户喜欢短句回复", memories.single().content)
+    }
+
+    @Test
+    fun sendMessage_whenSharedMemoryEnabled_writesCondensedGlobalMemory() = runTest(mainDispatcherRule.dispatcher.scheduler) {
+        val store = FakeConversationStore(
+            conversations = listOf(
+                Conversation(
+                    id = "c1",
+                    title = DEFAULT_CONVERSATION_TITLE,
+                    model = "",
+                    createdAt = 1L,
+                    updatedAt = 1L,
+                    assistantId = "assistant-1",
+                ),
+            ),
+        )
+        enqueueStreamResponse(content = "好的，我会记住你的偏好。")
+        val memoryRepository = FakeMemoryRepository(
+            initialEntries = listOf(
+                MemoryEntry(
+                    id = "old-1",
+                    scopeType = MemoryScopeType.GLOBAL,
+                    scopeId = "",
+                    content = "用户喜欢中文回复。",
+                    importance = 60,
+                ),
+                MemoryEntry(
+                    id = "old-2",
+                    scopeType = MemoryScopeType.GLOBAL,
+                    scopeId = "",
+                    content = "用户偏好短句。",
+                    importance = 60,
+                ),
+            ),
+        )
+        val provider = ProviderSettings(
+            id = "provider-1",
+            name = "Provider",
+            baseUrl = server.url("/v1/").toString(),
+            apiKey = "key",
+            selectedModel = "deepseek-chat",
+            titleSummaryModel = "title-model",
+            chatSuggestionModel = "suggestion-model",
+            memoryModel = "memory-model",
+        )
+        val viewModel = createViewModel(
+            store = store,
+            settings = AppSettings(
+                providers = listOf(provider),
+                selectedProviderId = provider.id,
+                assistants = listOf(
+                    Assistant(
+                        id = "assistant-1",
+                        name = "共享记忆助手",
+                        memoryEnabled = true,
+                        useGlobalMemory = true,
+                    ),
+                ),
+                selectedAssistantId = "assistant-1",
+            ),
+            memoryRepository = memoryRepository,
+            apiServiceProvider = { _, _ ->
+                object : OpenAiCompatibleApi {
+                    override suspend fun listModels(): Response<ModelsResponse> {
+                        error("不应调用模型接口")
+                    }
+
+                    override suspend fun createChatCompletion(request: ChatCompletionRequest): Response<ChatCompletionResponse> {
+                        val prompt = request.messages.firstOrNull()?.content?.toString().orEmpty()
+                        val content = when {
+                            prompt.contains("长期记忆提取器") -> "[\"用户喜欢中文和短句回复\", \"用户更希望我别写太长\"]"
+                            prompt.contains("角色长期记忆整理器") -> "[\"用户长期偏好中文和短句回复。\", \"用户不喜欢过长输出。\"]"
+                            prompt.contains("总结以下对话的主题") -> "偏好总结"
+                            prompt.contains("生成3个简短的后续问题建议") -> "继续聊\n换个话题\n总结一下"
+                            prompt.contains("压缩成一段简洁摘要") -> "用户偏好中文短句。"
+                            else -> "[]"
+                        }
+                        return Response.success(
+                            ChatCompletionResponse(
+                                choices = listOf(
+                                    ChatChoiceDto(
+                                        message = AssistantMessageDto(
+                                            content = content,
+                                        ),
+                                    ),
+                                ),
+                            ),
+                        )
+                    }
+
+                    override suspend fun generateImage(request: ImageGenerationRequest): Response<ImageGenerationResponse> {
+                        error("不应调用生图接口")
+                    }
+                }
+            },
+        )
+
+        advanceUntilIdle()
+        viewModel.updateInput("请记住我常用中文和短句回复，别写太长。")
+        viewModel.sendMessage()
+        advanceUntilIdle()
+
+        val memories = memoryRepository.currentEntries()
+        assertEquals(2, memories.size)
+        assertTrue(memories.all { it.scopeType == MemoryScopeType.GLOBAL })
+        assertTrue(memories.all { it.scopeId.isBlank() })
+        assertTrue(memories.any { it.content.contains("中文和短句") })
     }
 
     @Test

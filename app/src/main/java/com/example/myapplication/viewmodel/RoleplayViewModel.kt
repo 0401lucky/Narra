@@ -7,6 +7,7 @@ import com.example.myapplication.context.PromptContextAssembler
 import com.example.myapplication.data.repository.AiRepository
 import com.example.myapplication.data.repository.ConversationRepository
 import com.example.myapplication.data.repository.TransferUpdateDirective
+import com.example.myapplication.data.repository.RoleplayMemoryCondenseMode
 import com.example.myapplication.data.repository.context.ConversationSummaryRepository
 import com.example.myapplication.data.repository.context.MemoryRepository
 import com.example.myapplication.data.repository.roleplay.RoleplayRepository
@@ -338,12 +339,19 @@ class RoleplayViewModel(
                     recentMessages = recentMessages,
                     promptMode = PromptMode.ROLEPLAY,
                 )
+                val directorNote = buildDynamicDirectorNote(
+                    messages = recentMessages,
+                    scenario = scenario,
+                    assistant = assistant,
+                    settings = latestState.settings,
+                )
                 val decoratedPrompt = RoleplayPromptDecorator.decorate(
                     baseSystemPrompt = promptContext.systemPrompt,
                     scenario = scenario,
                     assistant = assistant,
                     settings = latestState.settings,
                     includeOpeningNarrationReference = allMessages.isEmpty(),
+                    directorNote = directorNote,
                 )
                 val (userName, characterName) = resolveRoleplayNames(
                     scenario = scenario,
@@ -363,6 +371,7 @@ class RoleplayViewModel(
                 val suggestions = repository.generateRoleplaySuggestions(
                     conversationExcerpt = conversationExcerpt,
                     systemPrompt = decoratedPrompt,
+                    playerStyleReference = buildPlayerStyleReference(recentMessages),
                     baseUrl = baseUrl,
                     apiKey = apiKey,
                     modelId = suggestionModel,
@@ -803,12 +812,19 @@ class RoleplayViewModel(
                 recentMessages = requestMessages,
                 promptMode = PromptMode.ROLEPLAY,
             )
+            val directorNote = buildDynamicDirectorNote(
+                messages = requestMessages,
+                scenario = scenario,
+                assistant = assistant,
+                settings = state.settings,
+            )
             val decoratedPrompt = RoleplayPromptDecorator.decorate(
                 baseSystemPrompt = promptContext.systemPrompt,
                 scenario = scenario,
                 assistant = assistant,
                 settings = state.settings,
                 includeOpeningNarrationReference = initialMessages.none { it.role == MessageRole.USER },
+                directorNote = directorNote,
             )
             _uiState.update {
                 it.copy(
@@ -1397,7 +1413,7 @@ class RoleplayViewModel(
                 return@launch
             }
             runCatching {
-                repository.generateConversationSummary(
+                repository.generateRoleplayConversationSummary(
                     conversationText = summaryInput,
                     baseUrl = activeProvider.baseUrl,
                     apiKey = activeProvider.apiKey,
@@ -1466,6 +1482,9 @@ class RoleplayViewModel(
                     latestMessageId = latestMessageId,
                     persistentMemories = memoryResult.persistentMemories,
                     sceneStateMemories = memoryResult.sceneStateMemories,
+                    baseUrl = activeProvider.baseUrl,
+                    apiKey = activeProvider.apiKey,
+                    modelId = memoryModel,
                 )
             }
         }
@@ -1477,16 +1496,34 @@ class RoleplayViewModel(
         latestMessageId: String,
         persistentMemories: List<String>,
         sceneStateMemories: List<String>,
+        baseUrl: String,
+        apiKey: String,
+        modelId: String,
     ) {
         val existingEntries = memoryRepository.listEntries().toMutableList()
+        val longTermScopeType = if (assistant.useGlobalMemory) {
+            MemoryScopeType.GLOBAL
+        } else {
+            MemoryScopeType.ASSISTANT
+        }
+        val longTermScopeId = if (assistant.useGlobalMemory) {
+            ""
+        } else {
+            assistant.id
+        }
         persistMemoryGroup(
             existingEntries = existingEntries,
-            scopeType = MemoryScopeType.ASSISTANT,
-            scopeId = assistant.id,
+            scopeType = longTermScopeType,
+            scopeId = longTermScopeId,
             memoryItems = persistentMemories,
             latestMessageId = latestMessageId,
             importance = 60,
             maxItems = assistant.memoryMaxItems.coerceAtLeast(1),
+            condensedTargetCount = assistant.memoryMaxItems.coerceAtLeast(1).coerceAtMost(3),
+            baseUrl = baseUrl,
+            apiKey = apiKey,
+            modelId = modelId,
+            condenseMode = RoleplayMemoryCondenseMode.CHARACTER,
         )
         persistMemoryGroup(
             existingEntries = existingEntries,
@@ -1496,6 +1533,11 @@ class RoleplayViewModel(
             latestMessageId = latestMessageId,
             importance = 70,
             maxItems = ROLEPLAY_SCENE_MEMORY_MAX_ITEMS,
+            condensedTargetCount = 4,
+            baseUrl = baseUrl,
+            apiKey = apiKey,
+            modelId = modelId,
+            condenseMode = RoleplayMemoryCondenseMode.SCENE,
         )
     }
 
@@ -1507,6 +1549,11 @@ class RoleplayViewModel(
         latestMessageId: String,
         importance: Int,
         maxItems: Int,
+        condensedTargetCount: Int,
+        baseUrl: String,
+        apiKey: String,
+        modelId: String,
+        condenseMode: RoleplayMemoryCondenseMode,
     ) {
         val normalizedScopeId = scopeId.trim()
         if (normalizedScopeId.isBlank() || memoryItems.isEmpty()) {
@@ -1515,22 +1562,38 @@ class RoleplayViewModel(
         val scopeEntries = existingEntries.filter { entry ->
             entry.scopeType == scopeType && entry.resolvedScopeId() == normalizedScopeId
         }
-        val existingNormalized = scopeEntries
-            .mapTo(mutableSetOf()) { entry -> normalizeMemoryContent(entry.content) }
-        val existingSourcePairs = scopeEntries
-            .mapTo(mutableSetOf()) { entry ->
-                entry.sourceMessageId.trim() to normalizeMemoryContent(entry.content)
-            }
+        val pinnedEntries = scopeEntries.filter { it.pinned }
+        val mutableEntries = scopeEntries.filterNot { it.pinned }
         val timestamp = nowProvider()
-        memoryItems
+        val normalizedNewItems = memoryItems
             .map(::normalizeMemoryContent)
             .filter { it.isNotBlank() }
             .distinct()
+        val combinedItems = (mutableEntries.map { entry -> normalizeMemoryContent(entry.content) } + normalizedNewItems)
+            .filter { it.isNotBlank() }
+            .distinct()
+        val condensedItems = if (combinedItems.size > condensedTargetCount.coerceAtLeast(1)) {
+            runCatching {
+                repository.condenseRoleplayMemories(
+                    memoryItems = combinedItems,
+                    mode = condenseMode,
+                    maxItems = condensedTargetCount.coerceAtLeast(1),
+                    baseUrl = baseUrl,
+                    apiKey = apiKey,
+                    modelId = modelId,
+                )
+            }.getOrDefault(combinedItems.take(condensedTargetCount.coerceAtLeast(1)))
+        } else {
+            combinedItems
+        }
+        mutableEntries.forEach { entry ->
+            memoryRepository.deleteEntry(entry.id)
+            existingEntries.removeAll { current -> current.id == entry.id }
+        }
+        val availableSlots = (maxItems - pinnedEntries.size).coerceAtLeast(0)
+        condensedItems
+            .take(availableSlots)
             .forEachIndexed { index, content ->
-                val sourcePair = latestMessageId.trim() to content
-                if (content in existingNormalized || sourcePair in existingSourcePairs) {
-                    return@forEachIndexed
-                }
                 val entry = MemoryEntry(
                     scopeType = scopeType,
                     scopeId = normalizedScopeId,
@@ -1543,8 +1606,6 @@ class RoleplayViewModel(
                 )
                 memoryRepository.upsertEntry(entry)
                 existingEntries += entry
-                existingNormalized += content
-                existingSourcePairs += sourcePair
             }
         pruneMemoryScope(
             existingEntries = existingEntries,
@@ -1634,6 +1695,88 @@ class RoleplayViewModel(
             characterName = characterName,
             allowNarration = scenario.enableNarration,
         ).take(MAX_SUMMARY_INPUT_LENGTH)
+    }
+
+    private fun buildPlayerStyleReference(
+        messages: List<ChatMessage>,
+    ): String {
+        return messages
+            .filter { it.role == MessageRole.USER }
+            .takeLast(3)
+            .mapNotNull { message ->
+                message.parts.toPlainText()
+                    .ifBlank { message.content }
+                    .trim()
+                    .takeIf { it.isNotBlank() }
+            }
+            .joinToString(separator = "\n") { line -> "- $line" }
+    }
+
+    private fun buildDynamicDirectorNote(
+        messages: List<ChatMessage>,
+        scenario: RoleplayScenario,
+        assistant: Assistant?,
+        settings: AppSettings,
+    ): String {
+        val (userName, characterName) = resolveRoleplayNames(
+            scenario = scenario,
+            assistant = assistant,
+            settings = settings,
+        )
+        val recentUserInput = messages
+            .lastOrNull { it.role == MessageRole.USER }
+            ?.parts
+            ?.toPlainText()
+            .orEmpty()
+            .ifBlank { messages.lastOrNull { it.role == MessageRole.USER }?.content.orEmpty() }
+            .trim()
+        val repeatedOpeners = messages
+            .filter { it.role == MessageRole.ASSISTANT }
+            .takeLast(3)
+            .mapNotNull { message ->
+                val plainText = outputParser.stripMarkup(
+                    message.parts.toPlainText()
+                        .ifBlank { message.content },
+                ).trim()
+                plainText.takeIf { it.isNotBlank() }?.take(10)
+            }
+            .distinct()
+        val recentEmotions = messages
+            .filter { it.role == MessageRole.ASSISTANT }
+            .takeLast(3)
+            .flatMap { message ->
+                outputParser.parseAssistantOutput(
+                    rawContent = message.parts.toPlainText().ifBlank { message.content },
+                    characterName = characterName,
+                    allowNarration = scenario.enableNarration,
+                ).mapNotNull { segment ->
+                    segment.emotion.trim().takeIf { it.isNotBlank() }
+                }
+            }
+            .distinct()
+        return buildString {
+            if (recentUserInput.isNotBlank()) {
+                append("优先回应 ")
+                append(userName.ifBlank { "玩家" })
+                append(" 刚刚提到的具体细节：")
+                append(recentUserInput.take(80))
+                append("。\n")
+            }
+            if (repeatedOpeners.isNotEmpty()) {
+                append("避免直接复用最近出现过的起手句或动作模板：")
+                append(repeatedOpeners.joinToString("、"))
+                append("。\n")
+            }
+            if (recentEmotions.isNotEmpty()) {
+                append("减少重复使用这些情绪标签：")
+                append(recentEmotions.joinToString("、"))
+                append("。\n")
+            }
+            append("允许停顿、试探、反问和转折，让 ")
+            append(characterName)
+            append(" 像在临场反应，不要每轮都完整解释动机。\n")
+            append("这一轮至少推进一项：关系、信息或局势。")
+        }.trim()
     }
 
     private fun resolveRoleplayNames(
@@ -1796,7 +1939,7 @@ class RoleplayViewModel(
         private const val SUMMARY_RECENT_MESSAGE_WINDOW = 8
         private const val SUGGESTION_RECENT_MESSAGE_WINDOW = 10
         private const val MAX_SUMMARY_INPUT_LENGTH = 4_000
-        private const val AUTO_MEMORY_MESSAGE_WINDOW = 8
+        private const val AUTO_MEMORY_MESSAGE_WINDOW = 12
         private const val MAX_MEMORY_INPUT_LENGTH = 3_200
         private const val ROLEPLAY_SCENE_MEMORY_MAX_ITEMS = 12
 

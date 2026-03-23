@@ -61,6 +61,8 @@ class DefaultPromptContextAssembler(
             assistant = assistant,
             conversation = conversation,
             promptMode = promptMode,
+            userInputText = userInputText,
+            recentMessages = recentMessages,
         )
         val conversationSummary = conversationSummaryRepository.getSummary(conversation.id)
         memoryRepository.markEntriesUsed(
@@ -91,13 +93,19 @@ class DefaultPromptContextAssembler(
             formatExampleDialoguesSection(assistant?.exampleDialogues.orEmpty())
                 ?.let(::add)
 
-            formatSummarySection(conversationSummary)
+            formatSummarySection(
+                conversationSummary = conversationSummary,
+                promptMode = promptMode,
+            )
                 ?.let(::add)
 
             formatWorldBookSection(matchedWorldBookEntries)
                 ?.let(::add)
 
-            formatMemorySection(selectedMemories)
+            formatMemorySection(
+                entries = selectedMemories,
+                promptMode = promptMode,
+            )
                 ?.let(::add)
         }
 
@@ -210,6 +218,7 @@ class DefaultPromptContextAssembler(
 
     private fun formatSummarySection(
         conversationSummary: ConversationSummary?,
+        promptMode: PromptMode,
     ): String? {
         val summaryText = conversationSummary?.summary
             ?.trim()
@@ -218,19 +227,62 @@ class DefaultPromptContextAssembler(
             return null
         }
         return buildString {
-            append("【对话摘要】\n")
+            append(
+                if (promptMode == PromptMode.ROLEPLAY) {
+                    "【剧情摘要】\n"
+                } else {
+                    "【对话摘要】\n"
+                },
+            )
             append(summaryText)
         }
     }
 
     private fun formatMemorySection(
         entries: List<MemoryEntry>,
+        promptMode: PromptMode,
     ): String? {
         if (entries.isEmpty()) {
             return null
         }
+        if (promptMode == PromptMode.ROLEPLAY) {
+            val longTermEntries = entries.filter { entry ->
+                entry.scopeType == com.example.myapplication.model.MemoryScopeType.ASSISTANT ||
+                    entry.scopeType == com.example.myapplication.model.MemoryScopeType.GLOBAL
+            }
+            val sceneEntries = entries.filter { entry ->
+                entry.scopeType == com.example.myapplication.model.MemoryScopeType.CONVERSATION
+            }
+            return buildString {
+                if (longTermEntries.isNotEmpty()) {
+                    append("【角色长期记忆】\n")
+                    append("以下是角色与用户之间已经稳定成立的长期事实、偏好、关系或约束。")
+                    append("回复时必须保持一致，不要与其冲突。\n")
+                    longTermEntries.forEach { entry ->
+                        append("- ")
+                        append(limitEntryContent(entry.content))
+                        append('\n')
+                    }
+                }
+                if (sceneEntries.isNotEmpty()) {
+                    if (isNotBlank()) {
+                        append('\n')
+                    }
+                    append("【当前剧情约束】\n")
+                    append("以下是当前剧情线已经确认的状态、线索、任务进度或关系变化。")
+                    append("本轮回复必须延续这些信息，不要忽略或自相矛盾。\n")
+                    sceneEntries.forEach { entry ->
+                        append("- ")
+                        append(limitEntryContent(entry.content))
+                        append('\n')
+                    }
+                }
+            }.trim()
+                .takeIf { it.isNotBlank() }
+        }
         return buildString {
-            append("【已知信息（记忆）】")
+            append("【已知信息（记忆）】\n")
+            append("以下信息是当前对话已经确认的稳定事实、偏好或约束，回答时不要与之冲突。")
             entries.forEach { entry ->
                 append("\n- ")
                 append(limitEntryContent(entry.content))

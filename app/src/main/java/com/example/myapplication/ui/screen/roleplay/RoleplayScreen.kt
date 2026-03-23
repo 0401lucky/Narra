@@ -4,6 +4,8 @@ import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -76,7 +78,7 @@ private data class RoleplayActionRow(
     val onClick: () -> Unit,
 )
 
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
 fun RoleplayScreen(
     scenario: RoleplayScenario?,
@@ -261,6 +263,27 @@ fun RoleplayScreen(
                 onCharacterClick = { viewingPortrait = characterPortraitSpec },
                 modifier = Modifier.padding(horizontal = 16.dp),
             )
+
+            Surface(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp),
+                shape = RoundedCornerShape(20.dp),
+                color = MaterialTheme.colorScheme.surface.copy(alpha = 0.7f),
+            ) {
+                FlowRow(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 12.dp, vertical = 10.dp),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp),
+                ) {
+                    ContextStatusPill(text = if (contextStatus.isContinuingSession) "继续剧情" else "新剧情")
+                    ContextStatusPill(text = if (contextStatus.hasSummary) "摘要已注入" else "未摘要")
+                    ContextStatusPill(text = "记忆 ${contextStatus.memoryInjectionCount}")
+                    ContextStatusPill(text = "世界书 ${contextStatus.worldBookHitCount}")
+                }
+            }
 
             RoleplayDialoguePanel(
                 messages = messages,

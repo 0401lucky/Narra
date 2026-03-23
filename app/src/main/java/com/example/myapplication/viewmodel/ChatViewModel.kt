@@ -6,6 +6,7 @@ import androidx.lifecycle.viewModelScope
 import com.example.myapplication.context.PromptContextAssembler
 import com.example.myapplication.data.repository.AiRepository
 import com.example.myapplication.data.repository.ConversationRepository
+import com.example.myapplication.data.repository.RoleplayMemoryCondenseMode
 import com.example.myapplication.data.repository.SavedImageFile
 import com.example.myapplication.data.repository.TransferUpdateDirective
 import com.example.myapplication.data.repository.context.ConversationSummaryRepository
@@ -615,7 +616,9 @@ class ChatViewModel(
             ?.trim()
             .orEmpty()
             .ifBlank { currentAssistantId.value }
-        val scope = if (assistantId.isNotBlank()) {
+        val scope = if (state.currentAssistant?.useGlobalMemory == true) {
+            MemoryScopeType.GLOBAL to ""
+        } else if (assistantId.isNotBlank()) {
             MemoryScopeType.ASSISTANT to assistantId
         } else {
             MemoryScopeType.CONVERSATION to conversationId
@@ -1050,11 +1053,13 @@ class ChatViewModel(
         viewModelScope.launch {
             combine(
                 currentMemoryEntries,
+                _uiState.map { it.currentAssistant?.useGlobalMemory == true },
                 currentAssistantId,
                 currentConversationId,
-            ) { entries, assistantId, conversationId ->
+            ) { entries, useGlobalMemory, assistantId, conversationId ->
                 resolveRememberedMessageIds(
                     entries = entries,
+                    useGlobalMemory = useGlobalMemory,
                     assistantId = assistantId,
                     conversationId = conversationId.orEmpty(),
                 )
@@ -1131,6 +1136,7 @@ class ChatViewModel(
 
     private fun resolveRememberedMessageIds(
         entries: List<MemoryEntry>,
+        useGlobalMemory: Boolean,
         assistantId: String,
         conversationId: String,
     ): Set<String> {
@@ -1138,7 +1144,7 @@ class ChatViewModel(
             .filter { entry ->
                 when (entry.scopeType) {
                     MemoryScopeType.GLOBAL -> true
-                    MemoryScopeType.ASSISTANT -> entry.resolvedScopeId() == assistantId
+                    MemoryScopeType.ASSISTANT -> !useGlobalMemory && entry.resolvedScopeId() == assistantId
                     MemoryScopeType.CONVERSATION -> entry.resolvedScopeId() == conversationId
                 }
             }
@@ -1322,7 +1328,7 @@ class ChatViewModel(
         }
         val latestMessageId = recentMessages.lastOrNull()?.id.orEmpty()
         val assistantId = assistant.id.trim()
-        if (assistantId.isBlank()) {
+        if (assistantId.isBlank() && !assistant.useGlobalMemory) {
             return
         }
 
@@ -1336,33 +1342,14 @@ class ChatViewModel(
                 )
             }.onSuccess { memoryItems ->
                 if (memoryItems.isEmpty()) return@onSuccess
-                val existingEntries = currentMemoryEntries.value
-                    .filter { entry ->
-                        entry.scopeType == MemoryScopeType.ASSISTANT &&
-                            entry.resolvedScopeId() == assistantId
-                    }
-                val existingNormalized = existingEntries.map { entry ->
-                    normalizeMemoryContent(entry.content)
-                }.toSet()
-                val timestamp = nowProvider()
-                memoryItems
-                    .map(::normalizeMemoryContent)
-                    .filter { it.isNotEmpty() && it !in existingNormalized }
-                    .forEachIndexed { index, content ->
-                        memoryRepository.upsertEntry(
-                            MemoryEntry(
-                                scopeType = MemoryScopeType.ASSISTANT,
-                                scopeId = assistantId,
-                                content = content,
-                                importance = 60,
-                                pinned = false,
-                                sourceMessageId = latestMessageId,
-                                lastUsedAt = timestamp + index,
-                                createdAt = timestamp + index,
-                                updatedAt = timestamp + index,
-                            ),
-                        )
-                    }
+                persistLongTermMemories(
+                    assistant = assistant,
+                    latestMessageId = latestMessageId,
+                    memoryItems = memoryItems,
+                    baseUrl = activeProvider.baseUrl,
+                    apiKey = activeProvider.apiKey,
+                    modelId = memoryModel,
+                )
             }
         }
     }
@@ -1401,6 +1388,73 @@ class ChatViewModel(
                 .take(200)
             "$role: $content"
         }.take(MAX_SUMMARY_INPUT_LENGTH)
+    }
+
+    private suspend fun persistLongTermMemories(
+        assistant: Assistant,
+        latestMessageId: String,
+        memoryItems: List<String>,
+        baseUrl: String,
+        apiKey: String,
+        modelId: String,
+    ) {
+        val scopeType = if (assistant.useGlobalMemory) {
+            MemoryScopeType.GLOBAL
+        } else {
+            MemoryScopeType.ASSISTANT
+        }
+        val scopeId = if (assistant.useGlobalMemory) {
+            ""
+        } else {
+            assistant.id.trim()
+        }
+        if (scopeType == MemoryScopeType.ASSISTANT && scopeId.isBlank()) {
+            return
+        }
+        val existingEntries = currentMemoryEntries.value.filter { entry ->
+            entry.scopeType == scopeType && entry.resolvedScopeId() == scopeId
+        }
+        val pinnedEntries = existingEntries.filter { it.pinned }
+        val mutableEntries = existingEntries.filterNot { it.pinned }
+        val normalizedItems = (mutableEntries.map { normalizeMemoryContent(it.content) } + memoryItems.map(::normalizeMemoryContent))
+            .filter { it.isNotBlank() }
+            .distinct()
+        val condensedTargetCount = assistant.memoryMaxItems.coerceAtLeast(1).coerceAtMost(3)
+        val condensedItems = if (normalizedItems.size > condensedTargetCount) {
+            runCatching {
+                repository.condenseRoleplayMemories(
+                    memoryItems = normalizedItems,
+                    mode = RoleplayMemoryCondenseMode.CHARACTER,
+                    maxItems = condensedTargetCount,
+                    baseUrl = baseUrl,
+                    apiKey = apiKey,
+                    modelId = modelId,
+                )
+            }.getOrDefault(normalizedItems.take(condensedTargetCount))
+        } else {
+            normalizedItems
+        }
+        mutableEntries.forEach { entry ->
+            memoryRepository.deleteEntry(entry.id)
+        }
+        val timestamp = nowProvider()
+        condensedItems
+            .take((assistant.memoryMaxItems - pinnedEntries.size).coerceAtLeast(0))
+            .forEachIndexed { index, content ->
+                memoryRepository.upsertEntry(
+                    MemoryEntry(
+                        scopeType = scopeType,
+                        scopeId = scopeId,
+                        content = content,
+                        importance = 60,
+                        pinned = false,
+                        sourceMessageId = latestMessageId,
+                        lastUsedAt = timestamp + index,
+                        createdAt = timestamp + index,
+                        updatedAt = timestamp + index,
+                    ),
+                )
+            }
     }
 
     private suspend fun resolveRequestMessagesForRoundTrip(

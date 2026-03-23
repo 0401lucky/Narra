@@ -15,6 +15,7 @@ data class Assistant(
     val creatorNotes: String = "",
     val linkedWorldBookIds: List<String> = emptyList(),
     val memoryEnabled: Boolean = false,
+    val useGlobalMemory: Boolean = false,
     val memoryMaxItems: Int = DEFAULT_MEMORY_MAX_ITEMS,
     val worldBookMaxEntries: Int = DEFAULT_WORLD_BOOK_MAX_ENTRIES,
     val temperature: Float? = null,
