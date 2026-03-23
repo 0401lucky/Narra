@@ -1,15 +1,15 @@
 {
   "app_id": "com.narra.app.dev",
   "channel": "dev",
-  "latest_version_name": "1.0.2-dev",
-  "latest_version_code": 10002,
+  "latest_version_name": "1.0.3-dev",
+  "latest_version_code": 10003,
   "minimum_supported_version_code": 0,
-  "apk_url": "https://github.com/0401lucky/Narra/releases/download/v1.0.2-dev/Narra-v1.0.2-dev-10002-dev.apk",
-  "apk_sha256": "009DD92127D623FABECAB31308CC6F5003792096B79E8A07780CC40932159EF3",
-  "published_at": "2026-03-22T22:20:00+08:00",
+  "apk_url": "https://github.com/0401lucky/Narra/releases/download/v1.0.3-dev/Narra-v1.0.3-dev-10003-dev.apk",
+  "apk_sha256": "1965434D6493B2F356A051FAB95673C8E69176865FA3D9A4970EFBCC86DBCFF1",
+  "published_at": "2026-03-23T13:00:00+08:00",
   "release_notes": [
-    "沉浸式扮演支持重回此回合、长按复制与转账玩法",
-    "AI帮写建议区支持滚动查看，点选建议后自动写入并收起",
-    "优化 AI 报错提示，修复 Gemini 地址与 Tavern 图片角色卡导入问题"
+    "优化沉浸式扮演回复风格，减少重复句式和模板感",
+    "优化 AI 帮写，建议会更贴近玩家最近的说话口吻",
+    "重构长期记忆与剧情约束注入，支持共享全局长期记忆"
   ]
 }
