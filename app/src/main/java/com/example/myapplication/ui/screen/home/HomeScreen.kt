@@ -1,5 +1,7 @@
 package com.example.myapplication.ui.screen.home
 
+import com.example.myapplication.ui.component.*
+
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.animateFloatAsState
@@ -224,7 +226,7 @@ fun AnimatedHoverButton(
     )
 
     if (isPrimary) {
-        Button(
+        NarraButton(
             onClick = onClick,
             enabled = enabled,
             modifier = Modifier
@@ -242,7 +244,7 @@ fun AnimatedHoverButton(
             Text(text, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
         }
     } else {
-        OutlinedButton(
+        NarraOutlinedButton(
             onClick = onClick,
             enabled = enabled,
             modifier = Modifier

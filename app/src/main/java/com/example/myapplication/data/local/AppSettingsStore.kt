@@ -49,6 +49,7 @@ interface SettingsStore {
         autoPreviewImages: Boolean,
         codeBlockAutoWrap: Boolean,
         codeBlockAutoCollapse: Boolean,
+        showRoleplayAiHelper: Boolean,
     )
 
     suspend fun saveScreenTranslationSettings(
@@ -125,6 +126,7 @@ class AppSettingsStore(
             autoPreviewImages = preferences[PreferencesKeys.autoPreviewImages] ?: true,
             codeBlockAutoWrap = preferences[PreferencesKeys.codeBlockAutoWrap] ?: false,
             codeBlockAutoCollapse = preferences[PreferencesKeys.codeBlockAutoCollapse] ?: false,
+            showRoleplayAiHelper = preferences[PreferencesKeys.showRoleplayAiHelper] ?: true,
             userDisplayName = preferences[PreferencesKeys.userDisplayName]
                 .orEmpty()
                 .ifBlank { com.example.myapplication.model.DEFAULT_USER_DISPLAY_NAME },
@@ -255,6 +257,7 @@ class AppSettingsStore(
         autoPreviewImages: Boolean,
         codeBlockAutoWrap: Boolean,
         codeBlockAutoCollapse: Boolean,
+        showRoleplayAiHelper: Boolean,
     ) {
         context.dataStore.edit { preferences ->
             preferences[PreferencesKeys.themeMode] = themeMode.storageValue
@@ -265,6 +268,7 @@ class AppSettingsStore(
             preferences[PreferencesKeys.autoPreviewImages] = autoPreviewImages
             preferences[PreferencesKeys.codeBlockAutoWrap] = codeBlockAutoWrap
             preferences[PreferencesKeys.codeBlockAutoCollapse] = codeBlockAutoCollapse
+            preferences[PreferencesKeys.showRoleplayAiHelper] = showRoleplayAiHelper
         }
     }
 
@@ -533,6 +537,7 @@ class AppSettingsStore(
         val autoPreviewImages = booleanPreferencesKey("auto_preview_images")
         val codeBlockAutoWrap = booleanPreferencesKey("code_block_auto_wrap")
         val codeBlockAutoCollapse = booleanPreferencesKey("code_block_auto_collapse")
+        val showRoleplayAiHelper = booleanPreferencesKey("show_roleplay_ai_helper")
         val userDisplayName = stringPreferencesKey("user_display_name")
         val userAvatarUri = stringPreferencesKey("user_avatar_uri")
         val userAvatarUrl = stringPreferencesKey("user_avatar_url")

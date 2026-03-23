@@ -1,5 +1,7 @@
 package com.example.myapplication.ui.screen.settings
 
+import com.example.myapplication.ui.component.*
+
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -277,7 +279,7 @@ private fun AssistantCardMinimal(
 
             // More Options (Edit trigger)
             Box {
-                IconButton(
+                NarraIconButton(
                     onClick = { menuExpanded = true },
                     modifier = Modifier.size(32.dp)
                 ) {

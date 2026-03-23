@@ -1,5 +1,7 @@
 package com.example.myapplication.ui.screen.roleplay
 
+import com.example.myapplication.ui.component.*
+
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -36,6 +38,7 @@ import com.example.myapplication.model.RoleplayContentType
 import com.example.myapplication.model.RoleplayMessageUiModel
 import com.example.myapplication.model.RoleplaySpeaker
 import com.example.myapplication.ui.component.TransferPlayCard
+import com.example.myapplication.ui.component.roleplay.RoleplayLongformCard
 
 /**
  * Full-screen reading mode — immersive story log for reviewing all dialogue.
@@ -83,7 +86,7 @@ fun RoleplayReadingMode(
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
                     }
-                    IconButton(onClick = onDismiss) {
+                    NarraIconButton(onClick = onDismiss) {
                         Icon(Icons.Default.Close, contentDescription = "关闭")
                     }
                 }
@@ -125,6 +128,7 @@ private fun ReadingModeItem(message: RoleplayMessageUiModel) {
         RoleplayContentType.NARRATION -> NarrationReadingBlock(message)
         RoleplayContentType.SYSTEM -> SystemReadingBlock(message)
         RoleplayContentType.DIALOGUE -> DialogueReadingBlock(message)
+        RoleplayContentType.LONGFORM -> LongformReadingBlock(message)
         RoleplayContentType.SPECIAL_TRANSFER -> TransferReadingBlock(message)
     }
 }
@@ -193,6 +197,17 @@ private fun DialogueReadingBlock(message: RoleplayMessageUiModel) {
             color = MaterialTheme.colorScheme.onSurface,
         )
     }
+}
+
+@Composable
+private fun LongformReadingBlock(message: RoleplayMessageUiModel) {
+    RoleplayLongformCard(
+        speakerName = message.speakerName,
+        content = message.content,
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 6.dp),
+    )
 }
 
 /** System messages — centered small pill */

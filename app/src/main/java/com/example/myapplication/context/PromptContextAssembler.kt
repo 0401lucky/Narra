@@ -202,6 +202,13 @@ class DefaultPromptContextAssembler(
             matchedWorldBookEntries.forEach { entry ->
                 append("\n  • ")
                 append(entry.title.ifBlank { entry.id })
+                entry.content
+                    .trim()
+                    .takeIf { it.isNotEmpty() }
+                    ?.let { content ->
+                        append("：")
+                        append(limitEntryContent(content))
+                    }
             }
             append("\n- 记忆注入数：")
             append(selectedMemories.size)

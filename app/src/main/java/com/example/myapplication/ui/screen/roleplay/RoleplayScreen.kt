@@ -1,5 +1,7 @@
 package com.example.myapplication.ui.screen.roleplay
 
+import com.example.myapplication.ui.component.*
+
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -221,7 +223,7 @@ fun RoleplayScreen(
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.SpaceBetween,
                 ) {
-                    IconButton(onClick = onNavigateBack) {
+                    NarraIconButton(onClick = onNavigateBack) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "返回")
                     }
 
@@ -248,7 +250,7 @@ fun RoleplayScreen(
                         )
                     }
 
-                    IconButton(onClick = { showActionSheet = true }) {
+                    NarraIconButton(onClick = { showActionSheet = true }) {
                         Icon(Icons.Default.MoreVert, contentDescription = "更多")
                     }
                 }
@@ -290,6 +292,7 @@ fun RoleplayScreen(
                 suggestions = suggestions,
                 isGeneratingSuggestions = isGeneratingSuggestions,
                 suggestionErrorMessage = suggestionErrorMessage,
+                showAiHelper = settings.showRoleplayAiHelper,
                 input = input,
                 isSending = isSending,
                 onInputChange = onInputChange,
@@ -522,7 +525,7 @@ fun RoleplayScreen(
             title = { Text("清空剧情") },
             text = { Text("确定要清空当前剧情的所有对话记录吗？此操作不可撤销。") },
             confirmButton = {
-                TextButton(
+                NarraTextButton(
                     onClick = {
                         showConfirmResetDialog = false
                         onResetSession()
@@ -532,7 +535,7 @@ fun RoleplayScreen(
                 }
             },
             dismissButton = {
-                TextButton(onClick = { showConfirmResetDialog = false }) {
+                NarraTextButton(onClick = { showConfirmResetDialog = false }) {
                     Text("取消")
                 }
             },
@@ -545,7 +548,7 @@ fun RoleplayScreen(
             title = { Text("重开剧情") },
             text = { Text("将创建一条新的剧情线，旧剧情历史不会继续沿用。是否继续？") },
             confirmButton = {
-                TextButton(
+                NarraTextButton(
                     onClick = {
                         showConfirmRestartDialog = false
                         onRestartSession()
@@ -555,7 +558,7 @@ fun RoleplayScreen(
                 }
             },
             dismissButton = {
-                TextButton(onClick = { showConfirmRestartDialog = false }) {
+                NarraTextButton(onClick = { showConfirmRestartDialog = false }) {
                     Text("取消")
                 }
             },
@@ -572,12 +575,12 @@ fun RoleplayScreen(
                 )
             },
             confirmButton = {
-                TextButton(onClick = onRestartSession) {
+                NarraTextButton(onClick = onRestartSession) {
                     Text("重建剧情")
                 }
             },
             dismissButton = {
-                TextButton(onClick = onDismissAssistantMismatch) {
+                NarraTextButton(onClick = onDismissAssistantMismatch) {
                     Text("继续旧剧情")
                 }
             },

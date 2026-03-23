@@ -1,5 +1,7 @@
 package com.example.myapplication.ui.screen.settings
 
+import com.example.myapplication.ui.component.*
+
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -365,7 +367,7 @@ private fun ModelPickerDialog(
         },
         confirmButton = {},
         dismissButton = {
-            TextButton(onClick = onDismissRequest) { Text("取消") }
+            NarraTextButton(onClick = onDismissRequest) { Text("取消") }
         },
     )
 }

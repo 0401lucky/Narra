@@ -102,6 +102,7 @@ class PromptContextAssemblerTest {
         assertTrue(result.systemPrompt.contains("【背景设定（世界书）】"))
         assertTrue(result.systemPrompt.contains("白塔城"))
         assertTrue(result.debugDump.contains("世界书命中数：1"))
+        assertTrue(result.debugDump.contains("白塔城：白塔城是北境最大的贸易都会。"))
     }
 
     @Test

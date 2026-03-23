@@ -1,5 +1,7 @@
 package com.example.myapplication.ui.screen.settings
 
+import com.example.myapplication.ui.component.*
+
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -90,7 +92,7 @@ fun SettingsConnectionScreen(
                             shape = RoundedCornerShape(18.dp),
                             colors = outlineColors,
                             trailingIcon = {
-                                TextButton(onClick = { showApiKey = !showApiKey }) {
+                                NarraTextButton(onClick = { showApiKey = !showApiKey }) {
                                     Text(if (showApiKey) "隐藏" else "显示")
                                 }
                             },

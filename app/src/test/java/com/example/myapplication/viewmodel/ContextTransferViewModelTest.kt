@@ -343,6 +343,73 @@ class ContextTransferViewModelTest {
     }
 
     @Test
+    fun confirmImport_tavernAssistantSectionAlsoImportsScopedWorldBookEntries() = runTest(mainDispatcherRule.dispatcher.scheduler) {
+        val repository = AiRepository(
+            settingsStore = FakeSettingsStore(AppSettings()),
+            apiServiceFactory = ApiServiceFactory(),
+            streamClientProvider = { _, _ -> OkHttpClient.Builder().build() },
+            ioDispatcher = mainDispatcherRule.dispatcher,
+        )
+        val worldBookRepository = FakeWorldBookRepository()
+        val viewModel = ContextTransferViewModel(
+            repository = repository,
+            worldBookRepository = worldBookRepository,
+            memoryRepository = FakeMemoryRepository(),
+            conversationSummaryRepository = FakeConversationSummaryRepository(),
+        )
+
+        advanceUntilIdle()
+
+        val tavernJson = """
+            {
+              "spec": "chara_card_v3",
+              "data": {
+                "name": "夜巡者",
+                "description": "负责守夜的调查员。",
+                "extensions": {
+                  "lore": {
+                    "character_book": {
+                      "name": "璃珠都市设定",
+                      "entries": [
+                        {
+                          "name": "璃珠都市",
+                          "keys": ["璃珠都市", "港城"],
+                          "content": "璃珠都市是一座不夜港城。"
+                        },
+                        {
+                          "name": "夜巡守则",
+                          "keys": ["夜巡", "巡逻"],
+                          "content": "午夜之后必须避开旧钟楼北侧。"
+                        }
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+        """.trimIndent()
+        val payload = ContextImportPayload(
+            fileName = "night-watch.png",
+            mimeType = "image/png",
+            binaryContent = buildPngCharacterCard(tavernJson),
+        )
+
+        viewModel.previewImportPayload(payload, ContextTransferSection.ASSISTANTS)
+        advanceUntilIdle()
+        assertEquals("Tavern 图片角色卡", viewModel.uiState.value.importPreview?.sourceLabel)
+        assertEquals(1, viewModel.uiState.value.importPreview?.assistantCount)
+        assertEquals(2, viewModel.uiState.value.importPreview?.worldBookCount)
+
+        viewModel.confirmImport()
+        advanceUntilIdle()
+
+        val importedAssistant = repository.settingsFlow.first().assistants.single()
+        assertEquals(2, importedAssistant.linkedWorldBookIds.size)
+        assertEquals(listOf("璃珠都市", "夜巡守则"), worldBookRepository.listEntries().map { it.title })
+        assertTrue(worldBookRepository.listEntries().all { it.scopeId == importedAssistant.id })
+    }
+
+    @Test
     fun confirmImport_tavernImageCardImportsWorldBookAndAvatar() = runTest(mainDispatcherRule.dispatcher.scheduler) {
         val repository = AiRepository(
             settingsStore = FakeSettingsStore(AppSettings()),
@@ -404,6 +471,7 @@ class ContextTransferViewModelTest {
         assertEquals("file:///avatars/${importedAssistant.id}.png", importedAssistant.avatarUri)
         assertEquals(listOf("璃珠都市", "夜巡守则"), worldBookRepository.listEntries().map { it.title })
         assertTrue(worldBookRepository.listEntries().all { it.scopeId == importedAssistant.id })
+        assertEquals(2, importedAssistant.linkedWorldBookIds.size)
     }
 
     private fun buildPngCharacterCard(json: String): ByteArray {

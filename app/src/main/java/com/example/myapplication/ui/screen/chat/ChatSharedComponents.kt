@@ -1,5 +1,7 @@
 package com.example.myapplication.ui.screen.chat
 
+import com.example.myapplication.ui.component.*
+
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -104,7 +106,7 @@ internal fun EmptyConversationState(
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     textAlign = TextAlign.Center,
                 )
-                FilledTonalButton(onClick = onPrimaryAction) {
+                NarraFilledTonalButton(onClick = onPrimaryAction) {
                     Text(primaryActionLabel)
                 }
             }

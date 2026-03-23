@@ -144,4 +144,66 @@ class WorldBookMatcherTest {
 
         assertEquals(listOf("璃珠都市", "夜巡守则"), result.entries.map { it.title })
     }
+
+    @Test
+    fun match_supportsCommaSeparatedTavernKeywordsAndPrefersLatestUserInput() {
+        val result = matcher.match(
+            entries = listOf(
+                WorldBookEntry(
+                    id = "entry-weapon",
+                    title = "余罪的配枪",
+                    content = "他随身带着一把黑星手枪。",
+                    keywords = listOf("枪, 武器, 掏出"),
+                    scopeType = WorldBookScopeType.ASSISTANT,
+                    scopeId = "assistant-1",
+                ),
+            ),
+            assistant = Assistant(id = "assistant-1", worldBookMaxEntries = 8),
+            conversation = Conversation(id = "c1", createdAt = 1L, updatedAt = 1L),
+            userInputText = "你身上带武器了吗？",
+            recentMessages = listOf(
+                ChatMessage(
+                    id = "m1",
+                    conversationId = "c1",
+                    role = MessageRole.USER,
+                    content = "昨晚那把枪还在你身上吗？",
+                    createdAt = 1L,
+                ),
+            ),
+        )
+
+        assertEquals(listOf("余罪的配枪"), result.entries.map { it.title })
+        assertEquals("你身上带武器了吗？", result.sourceText)
+    }
+
+    @Test
+    fun match_dropsPreviousHitWhenLatestUserInputNoLongerMatches() {
+        val result = matcher.match(
+            entries = listOf(
+                WorldBookEntry(
+                    id = "entry-weapon",
+                    title = "余罪的配枪",
+                    content = "他随身带着一把黑星手枪。",
+                    keywords = listOf("枪, 武器, 掏出"),
+                    scopeType = WorldBookScopeType.ASSISTANT,
+                    scopeId = "assistant-1",
+                ),
+            ),
+            assistant = Assistant(id = "assistant-1", worldBookMaxEntries = 8),
+            conversation = Conversation(id = "c1", createdAt = 1L, updatedAt = 1L),
+            userInputText = "今天天气不错。",
+            recentMessages = listOf(
+                ChatMessage(
+                    id = "m1",
+                    conversationId = "c1",
+                    role = MessageRole.USER,
+                    content = "你身上带武器了吗？",
+                    createdAt = 1L,
+                ),
+            ),
+        )
+
+        assertTrue(result.entries.isEmpty())
+        assertEquals("今天天气不错。", result.sourceText)
+    }
 }

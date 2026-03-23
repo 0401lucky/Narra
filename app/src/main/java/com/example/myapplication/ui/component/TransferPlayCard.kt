@@ -1,5 +1,7 @@
 package com.example.myapplication.ui.component
 
+import com.example.myapplication.ui.component.*
+
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -132,7 +134,7 @@ fun TransferPlayCard(
             )
 
             if (canConfirmReceipt) {
-                FilledTonalButton(
+                NarraFilledTonalButton(
                     onClick = { onConfirmTransferReceipt?.invoke(part.specialId) },
                     colors = ButtonDefaults.filledTonalButtonColors(
                         containerColor = Color.White,

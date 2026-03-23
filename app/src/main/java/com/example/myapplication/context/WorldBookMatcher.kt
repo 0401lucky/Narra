@@ -63,20 +63,24 @@ class WorldBookMatcher {
         userInputText: String,
         recentMessages: List<ChatMessage>,
     ): String {
-        return buildList {
-            userInputText.trim().takeIf { it.isNotEmpty() }?.let(::add)
-            recentMessages.takeLast(6)
-                .mapNotNull { message ->
-                    val plainText = message.parts.toPlainText()
-                        .ifBlank { message.content.trim() }
-                        .trim()
-                        .takeIf { it.isNotEmpty() }
-                        ?: return@mapNotNull null
-                    val roleLabel = if (message.role == MessageRole.USER) "用户" else "助手"
-                    "$roleLabel: $plainText"
+        val latestUserInput = userInputText.trim()
+        if (latestUserInput.isNotBlank()) {
+            return latestUserInput
+        }
+
+        return recentMessages
+            .asReversed()
+            .mapNotNull { message ->
+                if (message.role != MessageRole.USER) {
+                    return@mapNotNull null
                 }
-                .forEach(::add)
-        }.joinToString(separator = "\n\n")
+                message.parts.toPlainText()
+                    .ifBlank { message.content.trim() }
+                    .trim()
+                    .takeIf { it.isNotEmpty() }
+            }
+            .firstOrNull()
+            .orEmpty()
     }
 
     private fun matchesScope(
@@ -102,10 +106,7 @@ class WorldBookMatcher {
         if (sourceText.isBlank()) {
             return false
         }
-        val primaryMatched = (entry.keywords + entry.aliases)
-            .mapNotNull { keyword ->
-                keyword.trim().takeIf { it.isNotEmpty() }
-            }
+        val primaryMatched = expandKeywordPatterns(entry.keywords + entry.aliases)
             .any { keyword ->
                 matchesPattern(
                     pattern = keyword,
@@ -119,10 +120,7 @@ class WorldBookMatcher {
         if (!entry.selective || entry.secondaryKeywords.isEmpty()) {
             return true
         }
-        return entry.secondaryKeywords
-            .mapNotNull { keyword ->
-                keyword.trim().takeIf { it.isNotEmpty() }
-            }
+        return expandKeywordPatterns(entry.secondaryKeywords)
             .any { keyword ->
                 matchesPattern(
                     pattern = keyword,
@@ -130,6 +128,21 @@ class WorldBookMatcher {
                     caseSensitive = entry.caseSensitive,
                 )
             }
+    }
+
+    private fun expandKeywordPatterns(rawPatterns: List<String>): List<String> {
+        return rawPatterns.flatMap { rawPattern ->
+            val normalized = rawPattern.trim()
+            when {
+                normalized.isBlank() -> emptyList()
+                parseRegexLiteral(normalized) != null -> listOf(normalized)
+                else -> normalized
+                    .split(KeywordDelimiterRegex)
+                    .mapNotNull { token ->
+                        token.trim().takeIf { it.isNotEmpty() }
+                    }
+            }
+        }
     }
 
     private fun matchesPattern(
@@ -178,5 +191,9 @@ class WorldBookMatcher {
         return runCatching {
             Regex(body, options)
         }.getOrNull()
+    }
+
+    private companion object {
+        val KeywordDelimiterRegex = Regex("""\s*[,，]\s*""")
     }
 }

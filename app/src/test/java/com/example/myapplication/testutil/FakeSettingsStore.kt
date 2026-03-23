@@ -52,6 +52,7 @@ class FakeSettingsStore(
             autoPreviewImages = state.value.autoPreviewImages,
             codeBlockAutoWrap = state.value.codeBlockAutoWrap,
             codeBlockAutoCollapse = state.value.codeBlockAutoCollapse,
+            showRoleplayAiHelper = state.value.showRoleplayAiHelper,
             userDisplayName = state.value.userDisplayName,
             userAvatarUri = state.value.userAvatarUri,
             userAvatarUrl = state.value.userAvatarUrl,
@@ -71,6 +72,7 @@ class FakeSettingsStore(
         autoPreviewImages: Boolean,
         codeBlockAutoWrap: Boolean,
         codeBlockAutoCollapse: Boolean,
+        showRoleplayAiHelper: Boolean,
     ) {
         state.value = state.value.copy(
             themeMode = themeMode,
@@ -81,6 +83,7 @@ class FakeSettingsStore(
             autoPreviewImages = autoPreviewImages,
             codeBlockAutoWrap = codeBlockAutoWrap,
             codeBlockAutoCollapse = codeBlockAutoCollapse,
+            showRoleplayAiHelper = showRoleplayAiHelper,
         )
     }
 

@@ -1,5 +1,7 @@
 package com.example.myapplication.ui.component
 
+import com.example.myapplication.ui.component.*
+
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -88,7 +90,7 @@ fun AppUpdateDialogHost(
             }
         },
         confirmButton = {
-            TextButton(
+            NarraTextButton(
                 onClick = {
                     if (uiState.downloadSnapshot.status == AppUpdateDownloadStatus.DOWNLOADED) {
                         onInstall()
@@ -102,7 +104,7 @@ fun AppUpdateDialogHost(
             }
         },
         dismissButton = {
-            TextButton(onClick = onDismiss) {
+            NarraTextButton(onClick = onDismiss) {
                 Text("稍后再说")
             }
         },

@@ -31,13 +31,10 @@ class RoleplayOutputParser {
 
         val matches = tagPattern.findAll(normalized).toList()
         if (matches.isEmpty()) {
-            return listOf(
-                RoleplayParsedSegment(
-                    contentType = RoleplayContentType.DIALOGUE,
-                    speaker = RoleplaySpeaker.CHARACTER,
-                    speakerName = characterName,
-                    content = stripMarkup(normalized),
-                ),
+            return parsePlainTextOutput(
+                rawContent = normalized,
+                characterName = characterName,
+                allowNarration = allowNarration,
             )
         }
 
@@ -123,5 +120,192 @@ class RoleplayOutputParser {
             .associate { match ->
                 match.groupValues[1] to match.groupValues[2]
             }
+    }
+
+    private fun parsePlainTextOutput(
+        rawContent: String,
+        characterName: String,
+        allowNarration: Boolean,
+    ): List<RoleplayParsedSegment> {
+        val explicitSegments = mutableListOf<PlainSegmentCandidate>()
+        var cursor = 0
+        while (cursor < rawContent.length) {
+            val nextMarker = findNextMarker(rawContent, cursor)
+            if (nextMarker == null) {
+                explicitSegments += PlainSegmentCandidate(
+                    kind = PlainSegmentKind.PLAIN,
+                    content = rawContent.substring(cursor),
+                )
+                break
+            }
+
+            if (nextMarker.startIndex > cursor) {
+                explicitSegments += PlainSegmentCandidate(
+                    kind = PlainSegmentKind.PLAIN,
+                    content = rawContent.substring(cursor, nextMarker.startIndex),
+                )
+            }
+
+            explicitSegments += PlainSegmentCandidate(
+                kind = nextMarker.kind,
+                content = nextMarker.content,
+            )
+            cursor = nextMarker.endIndex
+        }
+
+        val hasExplicitDialogue = explicitSegments.any { it.kind == PlainSegmentKind.DIALOGUE }
+        val hasExplicitNarration = explicitSegments.any { it.kind == PlainSegmentKind.NARRATION }
+        if (!hasExplicitDialogue && !hasExplicitNarration) {
+            return listOf(
+                RoleplayParsedSegment(
+                    contentType = RoleplayContentType.DIALOGUE,
+                    speaker = RoleplaySpeaker.CHARACTER,
+                    speakerName = characterName,
+                    content = stripMarkup(rawContent),
+                ),
+            )
+        }
+
+        return explicitSegments
+            .mapNotNull { candidate ->
+                val normalizedContent = stripMarkup(candidate.content)
+                if (normalizedContent.isBlank()) {
+                    return@mapNotNull null
+                }
+                when (candidate.kind) {
+                    PlainSegmentKind.DIALOGUE -> {
+                        RoleplayParsedSegment(
+                            contentType = RoleplayContentType.DIALOGUE,
+                            speaker = RoleplaySpeaker.CHARACTER,
+                            speakerName = characterName,
+                            content = normalizedContent,
+                        )
+                    }
+
+                    PlainSegmentKind.NARRATION -> {
+                        if (allowNarration) {
+                            RoleplayParsedSegment(
+                                contentType = RoleplayContentType.NARRATION,
+                                speaker = RoleplaySpeaker.NARRATOR,
+                                speakerName = "旁白",
+                                content = normalizedContent,
+                            )
+                        } else {
+                            RoleplayParsedSegment(
+                                contentType = RoleplayContentType.DIALOGUE,
+                                speaker = RoleplaySpeaker.CHARACTER,
+                                speakerName = characterName,
+                                content = normalizedContent,
+                            )
+                        }
+                    }
+
+                    PlainSegmentKind.PLAIN -> {
+                        val fallbackKind = when {
+                            hasExplicitDialogue -> PlainSegmentKind.NARRATION
+                            hasExplicitNarration -> PlainSegmentKind.DIALOGUE
+                            else -> PlainSegmentKind.DIALOGUE
+                        }
+                        if (fallbackKind == PlainSegmentKind.NARRATION && allowNarration) {
+                            RoleplayParsedSegment(
+                                contentType = RoleplayContentType.NARRATION,
+                                speaker = RoleplaySpeaker.NARRATOR,
+                                speakerName = "旁白",
+                                content = normalizedContent,
+                            )
+                        } else {
+                            RoleplayParsedSegment(
+                                contentType = RoleplayContentType.DIALOGUE,
+                                speaker = RoleplaySpeaker.CHARACTER,
+                                speakerName = characterName,
+                                content = normalizedContent,
+                            )
+                        }
+                    }
+                }
+            }
+            .fold(mutableListOf<RoleplayParsedSegment>()) { merged, segment ->
+                val previous = merged.lastOrNull()
+                if (previous != null &&
+                    previous.contentType == segment.contentType &&
+                    previous.speaker == segment.speaker &&
+                    previous.speakerName == segment.speakerName &&
+                    previous.emotion == segment.emotion
+                ) {
+                    merged[merged.lastIndex] = previous.copy(
+                        content = "${previous.content}\n${segment.content}".trim(),
+                    )
+                } else {
+                    merged += segment
+                }
+                merged
+            }
+    }
+
+    private fun findNextMarker(
+        value: String,
+        startIndex: Int,
+    ): MarkerMatch? {
+        var bestMatch: MarkerMatch? = null
+        fun register(match: MarkerMatch?) {
+            if (match == null) {
+                return
+            }
+            if (bestMatch == null || match.startIndex < bestMatch!!.startIndex) {
+                bestMatch = match
+            }
+        }
+
+        register(findWrappedMarker(value, startIndex, '*', '*', PlainSegmentKind.NARRATION))
+        register(findWrappedMarker(value, startIndex, '（', '）', PlainSegmentKind.NARRATION))
+        register(findWrappedMarker(value, startIndex, '(', ')', PlainSegmentKind.NARRATION))
+        register(findWrappedMarker(value, startIndex, '“', '”', PlainSegmentKind.DIALOGUE))
+        register(findWrappedMarker(value, startIndex, '"', '"', PlainSegmentKind.DIALOGUE))
+        register(findWrappedMarker(value, startIndex, '\'', '\'', PlainSegmentKind.DIALOGUE))
+        return bestMatch
+    }
+
+    private fun findWrappedMarker(
+        value: String,
+        startIndex: Int,
+        startChar: Char,
+        endChar: Char,
+        kind: PlainSegmentKind,
+    ): MarkerMatch? {
+        var markerStart = value.indexOf(startChar, startIndex)
+        while (markerStart >= 0) {
+            val markerEnd = value.indexOf(endChar, markerStart + 1)
+            if (markerEnd > markerStart + 1) {
+                val content = value.substring(markerStart + 1, markerEnd)
+                if (content.trim().isNotEmpty()) {
+                    return MarkerMatch(
+                        startIndex = markerStart,
+                        endIndex = markerEnd + 1,
+                        kind = kind,
+                        content = content,
+                    )
+                }
+            }
+            markerStart = value.indexOf(startChar, markerStart + 1)
+        }
+        return null
+    }
+
+    private data class PlainSegmentCandidate(
+        val kind: PlainSegmentKind,
+        val content: String,
+    )
+
+    private data class MarkerMatch(
+        val startIndex: Int,
+        val endIndex: Int,
+        val kind: PlainSegmentKind,
+        val content: String,
+    )
+
+    private enum class PlainSegmentKind {
+        PLAIN,
+        NARRATION,
+        DIALOGUE,
     }
 }

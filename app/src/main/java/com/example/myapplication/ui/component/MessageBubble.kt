@@ -1,5 +1,7 @@
 package com.example.myapplication.ui.component
 
+import com.example.myapplication.ui.component.*
+
 import android.util.Log
 import android.widget.Toast
 import androidx.core.net.toUri
@@ -733,7 +735,7 @@ private fun MessageActionIconButton(
     onClick: () -> Unit,
     highlighted: Boolean = false,
 ) {
-    IconButton(
+    NarraIconButton(
         onClick = onClick,
         modifier = Modifier
             .size(MessageActionButtonSize),
@@ -1108,7 +1110,7 @@ private fun ChatMarkdownCodeBlock(
                 }
             }
 
-            IconButton(
+            NarraIconButton(
                 onClick = {
                     clipboardManager.setText(AnnotatedString(normalizedCode))
                     Toast.makeText(context, "已复制代码块", Toast.LENGTH_SHORT).show()

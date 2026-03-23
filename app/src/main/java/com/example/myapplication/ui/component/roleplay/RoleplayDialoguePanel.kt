@@ -1,5 +1,7 @@
 package com.example.myapplication.ui.component.roleplay
 
+import com.example.myapplication.ui.component.*
+
 import android.widget.Toast
 import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.animateFloat
@@ -76,6 +78,7 @@ fun RoleplayDialoguePanel(
     suggestions: List<RoleplaySuggestionUiModel>,
     isGeneratingSuggestions: Boolean,
     suggestionErrorMessage: String?,
+    showAiHelper: Boolean,
     input: String,
     isSending: Boolean,
     onInputChange: (String) -> Unit,
@@ -141,15 +144,17 @@ fun RoleplayDialoguePanel(
                     }
                 }
             }
-            RoleplaySuggestionSection(
-                suggestions = suggestions,
-                isGeneratingSuggestions = isGeneratingSuggestions,
-                suggestionErrorMessage = suggestionErrorMessage,
-                isSending = isSending,
-                onGenerateSuggestions = onGenerateSuggestions,
-                onApplySuggestion = onApplySuggestion,
-                onClearSuggestions = onClearSuggestions,
-            )
+            if (showAiHelper) {
+                RoleplaySuggestionSection(
+                    suggestions = suggestions,
+                    isGeneratingSuggestions = isGeneratingSuggestions,
+                    suggestionErrorMessage = suggestionErrorMessage,
+                    isSending = isSending,
+                    onGenerateSuggestions = onGenerateSuggestions,
+                    onApplySuggestion = onApplySuggestion,
+                    onClearSuggestions = onClearSuggestions,
+                )
+            }
             RoleplayInputBar(input, isSending, onInputChange, onSend, onCancel, onOpenSpecialPlay)
         }
     }
@@ -214,8 +219,8 @@ private fun RoleplaySuggestionSection(
                     Text("生成几条可继续剧情的输入建议", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    TextButton(onClick = onGenerateSuggestions, enabled = !isSending && !isGeneratingSuggestions) { Text(if (suggestions.isEmpty()) "重试" else "换一批") }
-                    TextButton(onClick = onClearSuggestions) { Text("收起") }
+                    NarraTextButton(onClick = onGenerateSuggestions, enabled = !isSending && !isGeneratingSuggestions) { Text(if (suggestions.isEmpty()) "重试" else "换一批") }
+                    NarraTextButton(onClick = onClearSuggestions) { Text("收起") }
                 }
             }
             if (isGeneratingSuggestions) {
@@ -368,7 +373,7 @@ private fun RoleplayInputBar(
             horizontalArrangement = Arrangement.spacedBy(8.dp),
         ) {
             Box {
-                IconButton(
+                NarraIconButton(
                     onClick = { showActionMenu = true },
                     enabled = !isSending,
                     modifier = Modifier.size(40.dp).background(color = MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.72f), shape = CircleShape),
@@ -400,14 +405,14 @@ private fun RoleplayInputBar(
             if (isSending && onCancel != null) {
                 Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
                     CircularProgressIndicator(modifier = Modifier.size(18.dp), strokeWidth = 2.dp, color = MaterialTheme.colorScheme.primary)
-                    IconButton(
+                    NarraIconButton(
                         onClick = onCancel,
                         modifier = Modifier.size(40.dp),
                         colors = IconButtonDefaults.iconButtonColors(containerColor = MaterialTheme.colorScheme.errorContainer, contentColor = MaterialTheme.colorScheme.onErrorContainer),
                     ) { Icon(Icons.Default.Close, contentDescription = "取消", modifier = Modifier.size(18.dp)) }
                 }
             } else {
-                IconButton(
+                NarraIconButton(
                     onClick = onSend,
                     enabled = canSend,
                     modifier = Modifier.size(40.dp),
@@ -479,6 +484,15 @@ private fun RoleplayMessageItem(
                         }
                     }
                 }
+            }
+        }
+
+        RoleplayContentType.LONGFORM -> {
+            RoleplayMessageMenuWrapper(message, onRetryTurn) {
+                RoleplayLongformCard(
+                    speakerName = message.speakerName,
+                    content = message.content,
+                )
             }
         }
 

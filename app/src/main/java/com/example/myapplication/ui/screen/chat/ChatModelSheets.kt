@@ -1,5 +1,7 @@
 package com.example.myapplication.ui.screen.chat
 
+import com.example.myapplication.ui.component.*
+
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.isSystemInDarkTheme
@@ -184,7 +186,7 @@ internal fun ReasoningBudgetSheet(
                 }
 
                 if (!canAdjustThinkingBudget) {
-                    FilledTonalButton(
+                    NarraFilledTonalButton(
                         onClick = onDismissRequest,
                         modifier = Modifier.fillMaxWidth(),
                         enabled = !isSavingModel,

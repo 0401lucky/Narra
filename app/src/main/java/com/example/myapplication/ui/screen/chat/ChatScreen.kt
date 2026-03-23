@@ -1,5 +1,7 @@
 package com.example.myapplication.ui.screen.chat
 
+import com.example.myapplication.ui.component.*
+
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
@@ -743,7 +745,7 @@ fun ChatScreen(
                                 }
 
                                 if (uiState.isSending && !shouldAutoFollowStreaming && !isNearBottom) {
-                                    FilledTonalButton(
+                                    NarraFilledTonalButton(
                                         onClick = {
                                             scope.launch {
                                                 userDisabledAutoFollow = false
@@ -1004,7 +1006,7 @@ private fun ChatTopBar(
 ) {
     TopAppBar(
         navigationIcon = {
-            IconButton(onClick = onOpenConversationDrawer) {
+            NarraIconButton(onClick = onOpenConversationDrawer) {
                 Icon(
                     imageVector = Icons.Default.Menu,
                     contentDescription = "历史记录",
@@ -1020,19 +1022,19 @@ private fun ChatTopBar(
             )
         },
         actions = {
-            IconButton(onClick = onOpenPromptDebugSheet) {
+            NarraIconButton(onClick = onOpenPromptDebugSheet) {
                 Icon(
                     imageVector = Icons.Default.Description,
                     contentDescription = "查看上下文调试信息",
                 )
             }
-            IconButton(onClick = onOpenExportSheet) {
+            NarraIconButton(onClick = onOpenExportSheet) {
                 Icon(
                     imageVector = Icons.Default.Share,
                     contentDescription = "导出与分享",
                 )
             }
-            IconButton(onClick = onCreateConversation) {
+            NarraIconButton(onClick = onCreateConversation) {
                 Icon(
                     imageVector = Icons.Default.Add,
                     contentDescription = "新建会话",

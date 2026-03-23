@@ -98,6 +98,7 @@ fun RoleplayScenarioEditScreen(
     var openingNarration by rememberSaveable(baseScenario.id) { mutableStateOf(baseScenario.openingNarration) }
     var enableNarration by rememberSaveable(baseScenario.id) { mutableStateOf(baseScenario.enableNarration) }
     var enableRoleplayProtocol by rememberSaveable(baseScenario.id) { mutableStateOf(baseScenario.enableRoleplayProtocol) }
+    var longformModeEnabled by rememberSaveable(baseScenario.id) { mutableStateOf(baseScenario.longformModeEnabled) }
     var autoHighlightSpeaker by rememberSaveable(baseScenario.id) { mutableStateOf(baseScenario.autoHighlightSpeaker) }
 
     val backgroundLauncher = rememberLauncherForActivityResult(
@@ -335,7 +336,7 @@ fun RoleplayScenarioEditScreen(
             item {
                 SettingsSectionHeader(
                     title = "演出开关",
-                    description = "协议输出决定是否要求模型产出 narration/dialogue 标签。",
+                    description = "长文模式决定是否走小说流；普通模式下才使用 RP 标签协议。",
                 )
             }
             item {
@@ -345,17 +346,30 @@ fun RoleplayScenarioEditScreen(
                         verticalArrangement = Arrangement.spacedBy(14.dp),
                     ) {
                         SwitchRow(
+                            title = "长文小说模式",
+                            subtitle = "开启后，助手会输出更接近长篇小说的纯长文段落，适合重剧情用户。",
+                            value = longformModeEnabled,
+                            onValueChange = { longformModeEnabled = it },
+                        )
+                        SwitchRow(
                             title = "启用旁白",
+                            subtitle = "关闭后会尽量减少独立旁白段落，更偏纯对白推进。",
                             value = enableNarration,
                             onValueChange = { enableNarration = it },
                         )
                         SwitchRow(
                             title = "启用 RP 协议输出",
+                            subtitle = if (longformModeEnabled) {
+                                "长文小说模式下会忽略这项设置。"
+                            } else {
+                                "开启后要求模型输出 narration/dialogue 标签，结构更稳定。"
+                            },
                             value = enableRoleplayProtocol,
                             onValueChange = { enableRoleplayProtocol = it },
                         )
                         SwitchRow(
                             title = "自动高亮当前说话方",
+                            subtitle = "根据最近一轮发言和回复状态，自动强调当前剧情焦点角色。",
                             value = autoHighlightSpeaker,
                             onValueChange = { autoHighlightSpeaker = it },
                         )
@@ -387,6 +401,7 @@ fun RoleplayScenarioEditScreen(
                                         openingNarration = openingNarration.trim(),
                                         enableNarration = enableNarration,
                                         enableRoleplayProtocol = enableRoleplayProtocol,
+                                        longformModeEnabled = longformModeEnabled,
                                         autoHighlightSpeaker = autoHighlightSpeaker,
                                     ),
                                 )
@@ -482,6 +497,7 @@ private fun ImagePickerRow(
 @Composable
 private fun SwitchRow(
     title: String,
+    subtitle: String,
     value: Boolean,
     onValueChange: (Boolean) -> Unit,
 ) {
@@ -490,11 +506,21 @@ private fun SwitchRow(
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        Text(
-            text = title,
-            style = MaterialTheme.typography.bodyLarge,
-            color = MaterialTheme.colorScheme.onSurface,
-        )
+        Column(
+            modifier = Modifier.weight(1f).padding(end = 12.dp),
+            verticalArrangement = Arrangement.spacedBy(4.dp),
+        ) {
+            Text(
+                text = title,
+                style = MaterialTheme.typography.bodyLarge,
+                color = MaterialTheme.colorScheme.onSurface,
+            )
+            Text(
+                text = subtitle,
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
         Switch(
             checked = value,
             onCheckedChange = onValueChange,

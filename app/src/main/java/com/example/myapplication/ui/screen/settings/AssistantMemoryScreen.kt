@@ -1,5 +1,7 @@
 package com.example.myapplication.ui.screen.settings
 
+import com.example.myapplication.ui.component.*
+
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -247,7 +249,7 @@ fun AssistantMemoryScreen(
                 )
             },
             confirmButton = {
-                TextButton(
+                NarraTextButton(
                     onClick = {
                         val content = memoryDraftContent.trim()
                         if (content.isNotBlank()) {
@@ -280,7 +282,7 @@ fun AssistantMemoryScreen(
                 }
             },
             dismissButton = {
-                TextButton(
+                NarraTextButton(
                     onClick = {
                         memoryDraftContent = ""
                         editingMemory = null

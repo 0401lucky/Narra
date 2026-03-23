@@ -5,6 +5,7 @@ import androidx.compose.runtime.Immutable
 enum class RoleplayContentType {
     NARRATION,
     DIALOGUE,
+    LONGFORM,
     SPECIAL_TRANSFER,
     SYSTEM,
 }

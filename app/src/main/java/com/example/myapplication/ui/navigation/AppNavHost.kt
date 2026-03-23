@@ -191,7 +191,7 @@ fun AppNavHost(
                 onClearNoticeMessage = roleplayViewModel::clearNoticeMessage,
                 onClearErrorMessage = roleplayViewModel::clearErrorMessage,
                 onInputChange = roleplayViewModel::updateInput,
-                onGenerateSuggestions = roleplayViewModel::generateSuggestions,
+                onGenerateSuggestions = roleplayViewModel::generateDraftInput,
                 onApplySuggestion = roleplayViewModel::applySuggestion,
                 onClearSuggestions = roleplayViewModel::clearSuggestions,
                 onRetryTurn = roleplayViewModel::retryTurn,
@@ -286,6 +286,7 @@ fun AppNavHost(
                 onUpdateAutoPreviewImages = settingsViewModel::updateAutoPreviewImages,
                 onUpdateCodeBlockAutoWrap = settingsViewModel::updateCodeBlockAutoWrap,
                 onUpdateCodeBlockAutoCollapse = settingsViewModel::updateCodeBlockAutoCollapse,
+                onUpdateShowRoleplayAiHelper = settingsViewModel::updateShowRoleplayAiHelper,
                 onOpenHome = {
                     navController.navigate(AppRoutes.HOME) {
                         launchSingleTop = true
@@ -444,7 +445,13 @@ fun AppNavHost(
 
             AssistantDetailScreen(
                 assistant = assistant,
-                linkedWorldBookCount = assistant.linkedWorldBookIds.size,
+                linkedWorldBookCount = worldBookState.entries.count { entry ->
+                    entry.id in assistant.linkedWorldBookIds ||
+                        (
+                            entry.scopeType == com.example.myapplication.model.WorldBookScopeType.ASSISTANT &&
+                                entry.scopeId == assistant.id
+                            )
+                },
                 assistantMemoryCount = memoryManagementState.memories.count { memory ->
                     memory.scopeType == com.example.myapplication.model.MemoryScopeType.ASSISTANT &&
                         memory.scopeId == assistant.id
@@ -514,9 +521,16 @@ fun AppNavHost(
         composable(AppRoutes.SETTINGS_ASSISTANT_EXTENSIONS) { backStackEntry ->
             val assistantId = backStackEntry.arguments?.getString("assistantId").orEmpty()
             val assistant = storedSettings.resolvedAssistants().firstOrNull { it.id == assistantId } ?: return@composable
+            val assistantWorldBookEntries = worldBookState.entries.filter { entry ->
+                entry.id in assistant.linkedWorldBookIds ||
+                    (
+                        entry.scopeType == com.example.myapplication.model.WorldBookScopeType.ASSISTANT &&
+                            entry.scopeId == assistant.id
+                        )
+            }
             AssistantExtensionsScreen(
                 assistant = assistant,
-                worldBookEntries = worldBookState.entries,
+                worldBookEntries = assistantWorldBookEntries,
                 onSave = settingsViewModel::updateAssistant,
                 onOpenWorldBookSettings = {
                     navController.navigate(AppRoutes.SETTINGS_WORLD_BOOKS) {

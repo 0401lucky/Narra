@@ -139,17 +139,17 @@ class ContextTransferViewModel(
         viewModelScope.launch {
             _uiState.update { it.copy(isBusy = true, message = null) }
             runCatching {
-                val sourceLabel = resolveImportSourceLabel(payload)
-                val decodedBundle = decodeImportBundle(payload)
+                val decodedImport = decodeImportBundle(payload)
                 val filteredBundle = filterBundleBySection(
                     section = section,
-                    bundle = decodedBundle,
+                    bundle = decodedImport.bundle,
+                    sourceType = decodedImport.sourceType,
                 )
                 if (isBundleEmpty(filteredBundle)) {
                     error("导入文件中没有可用于 ${section.label} 的内容")
                 }
                 val preview = buildImportPreview(
-                    sourceLabel = sourceLabel,
+                    sourceLabel = decodedImport.sourceType.sourceLabel,
                     section = section,
                     bundle = filteredBundle,
                 )
@@ -363,23 +363,6 @@ class ContextTransferViewModel(
         )
     }
 
-    private fun resolveImportSourceLabel(payload: ContextImportPayload): String {
-        return when {
-            payload.binaryContent != null &&
-                tavernCharacterImageAdapter.decodeAsBundle(
-                    bytes = payload.binaryContent,
-                    fileName = payload.fileName,
-                    mimeType = payload.mimeType,
-                ) != null -> {
-                "Tavern 图片角色卡"
-            }
-            payload.textContent != null && tavernCharacterAdapter.decodeAsBundle(payload.textContent) != null -> {
-                "Tavern 角色卡"
-            }
-            else -> "上下文数据包"
-        }
-    }
-
     private fun resolveAssistantAvatarImport(
         payload: ContextImportPayload,
         bundle: ContextDataBundle,
@@ -397,17 +380,27 @@ class ContextTransferViewModel(
         )
     }
 
-    private fun decodeImportBundle(payload: ContextImportPayload): ContextDataBundle {
+    private fun decodeImportBundle(payload: ContextImportPayload): DecodedImportBundle {
         payload.textContent?.let { rawJson ->
             val decodedBundle = runCatching {
                 codec.decode(rawJson)
-            }.getOrNull()
+            }.getOrNull()?.let { bundle ->
+                DecodedImportBundle(
+                    sourceType = ImportSourceType.CONTEXT_BUNDLE,
+                    bundle = bundle,
+                )
+            }
 
-            if (decodedBundle != null && !isBundleEmpty(decodedBundle)) {
+            if (decodedBundle != null && !isBundleEmpty(decodedBundle.bundle)) {
                 return decodedBundle
             }
 
-            tavernCharacterAdapter.decodeAsBundle(rawJson)?.let { return it }
+            tavernCharacterAdapter.decodeAsBundle(rawJson)?.let { bundle ->
+                return DecodedImportBundle(
+                    sourceType = ImportSourceType.TAVERN_JSON,
+                    bundle = attachAssistantScopedWorldBookLinks(bundle),
+                )
+            }
         }
 
         payload.binaryContent?.let { bytes ->
@@ -415,7 +408,12 @@ class ContextTransferViewModel(
                 bytes = bytes,
                 fileName = payload.fileName,
                 mimeType = payload.mimeType,
-            )?.let { return it }
+            )?.let { bundle ->
+                return DecodedImportBundle(
+                    sourceType = ImportSourceType.TAVERN_PNG,
+                    bundle = attachAssistantScopedWorldBookLinks(bundle),
+                )
+            }
             throw IllegalArgumentException(
                 when {
                     looksLikePngImage(bytes, payload.fileName, payload.mimeType) ->
@@ -458,11 +456,16 @@ class ContextTransferViewModel(
     private fun filterBundleBySection(
         section: ContextTransferSection,
         bundle: ContextDataBundle,
+        sourceType: ImportSourceType = ImportSourceType.CONTEXT_BUNDLE,
     ): ContextDataBundle {
         return when (section) {
             ContextTransferSection.ALL -> bundle
             ContextTransferSection.ASSISTANTS -> bundle.copy(
-                worldBookEntries = emptyList(),
+                worldBookEntries = if (sourceType.includesAssistantScopedWorldBooks) {
+                    assistantScopedWorldBookEntries(bundle)
+                } else {
+                    emptyList()
+                },
                 memoryEntries = emptyList(),
                 conversationSummaries = emptyList(),
             )
@@ -485,6 +488,43 @@ class ContextTransferViewModel(
             bundle.worldBookEntries.isEmpty() &&
             bundle.memoryEntries.isEmpty() &&
             bundle.conversationSummaries.isEmpty()
+    }
+
+    private fun attachAssistantScopedWorldBookLinks(bundle: ContextDataBundle): ContextDataBundle {
+        if (bundle.assistants.isEmpty() || bundle.worldBookEntries.isEmpty()) {
+            return bundle
+        }
+
+        val assistantScopedEntryIds = bundle.worldBookEntries
+            .filter { entry ->
+                entry.scopeType == com.example.myapplication.model.WorldBookScopeType.ASSISTANT
+            }
+            .groupBy { entry -> entry.scopeId }
+            .mapValues { (_, entries) -> entries.map { it.id } }
+
+        return bundle.copy(
+            assistants = bundle.assistants.map { assistant ->
+                val scopedEntryIds = assistantScopedEntryIds[assistant.id].orEmpty()
+                if (scopedEntryIds.isEmpty()) {
+                    assistant
+                } else {
+                    assistant.copy(
+                        linkedWorldBookIds = (assistant.linkedWorldBookIds + scopedEntryIds).distinct(),
+                    )
+                }
+            },
+        )
+    }
+
+    private fun assistantScopedWorldBookEntries(bundle: ContextDataBundle): List<com.example.myapplication.model.WorldBookEntry> {
+        val assistantIds = bundle.assistants.map { it.id }.toSet()
+        if (assistantIds.isEmpty()) {
+            return emptyList()
+        }
+        return bundle.worldBookEntries.filter { entry ->
+            entry.scopeType == com.example.myapplication.model.WorldBookScopeType.ASSISTANT &&
+                entry.scopeId in assistantIds
+        }
     }
 
     companion object {
@@ -521,4 +561,27 @@ class ContextTransferViewModel(
             }
         }
     }
+}
+
+private data class DecodedImportBundle(
+    val sourceType: ImportSourceType,
+    val bundle: ContextDataBundle,
+)
+
+private enum class ImportSourceType(
+    val sourceLabel: String,
+    val includesAssistantScopedWorldBooks: Boolean,
+) {
+    CONTEXT_BUNDLE(
+        sourceLabel = "上下文数据包",
+        includesAssistantScopedWorldBooks = false,
+    ),
+    TAVERN_JSON(
+        sourceLabel = "Tavern 角色卡",
+        includesAssistantScopedWorldBooks = true,
+    ),
+    TAVERN_PNG(
+        sourceLabel = "Tavern 图片角色卡",
+        includesAssistantScopedWorldBooks = true,
+    ),
 }

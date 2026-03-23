@@ -283,6 +283,16 @@ class RoleplayViewModel(
     }
 
     fun generateSuggestions() {
+        requestRoleplaySuggestions(fillInputWithFirstSuggestion = false)
+    }
+
+    fun generateDraftInput() {
+        requestRoleplaySuggestions(fillInputWithFirstSuggestion = true)
+    }
+
+    private fun requestRoleplaySuggestions(
+        fillInputWithFirstSuggestion: Boolean,
+    ) {
         val state = _uiState.value
         val scenario = state.currentScenario
         val session = state.currentSession
@@ -375,16 +385,43 @@ class RoleplayViewModel(
                     baseUrl = baseUrl,
                     apiKey = apiKey,
                     modelId = suggestionModel,
+                    longformMode = scenario.longformModeEnabled,
                 )
                 if (!isSuggestionTargetStillCurrent(scenario.id, session.conversationId)) {
                     return@launch
                 }
-                _uiState.update {
-                    it.copy(
-                        suggestions = suggestions,
-                        isGeneratingSuggestions = false,
-                        suggestionErrorMessage = null,
-                    )
+                if (fillInputWithFirstSuggestion) {
+                    val draftText = suggestions.firstOrNull()
+                        ?.text
+                        .orEmpty()
+                        .trim()
+                    if (draftText.isBlank()) {
+                        _uiState.update {
+                            it.copy(
+                                suggestions = emptyList(),
+                                isGeneratingSuggestions = false,
+                                suggestionErrorMessage = "AI 没有生成可用草稿",
+                            )
+                        }
+                    } else {
+                        _uiState.update {
+                            it.copy(
+                                input = draftText,
+                                suggestions = emptyList(),
+                                isGeneratingSuggestions = false,
+                                suggestionErrorMessage = null,
+                                errorMessage = null,
+                            )
+                        }
+                    }
+                } else {
+                    _uiState.update {
+                        it.copy(
+                            suggestions = suggestions,
+                            isGeneratingSuggestions = false,
+                            suggestionErrorMessage = null,
+                        )
+                    }
                 }
             } catch (throwable: Throwable) {
                 if (throwable is CancellationException) {
@@ -1122,7 +1159,11 @@ class RoleplayViewModel(
                 add(
                     RoleplayMessageUiModel(
                         sourceMessageId = "streaming",
-                        contentType = RoleplayContentType.DIALOGUE,
+                        contentType = if (scenario.longformModeEnabled) {
+                            RoleplayContentType.LONGFORM
+                        } else {
+                            RoleplayContentType.DIALOGUE
+                        },
                         speaker = RoleplaySpeaker.CHARACTER,
                         speakerName = characterName,
                         content = streamingContent,
@@ -1217,6 +1258,43 @@ class RoleplayViewModel(
         val initialSize = target.size
         val canRetry = !message.id.startsWith("opening-narration:") &&
             (message.status == MessageStatus.COMPLETED || message.status == MessageStatus.ERROR)
+        if (scenario.longformModeEnabled) {
+            val specialParts = normalizedParts.filter { it.isTransferPart() }
+            specialParts.forEach { part ->
+                target += RoleplayMessageUiModel(
+                    sourceMessageId = message.id,
+                    contentType = RoleplayContentType.SPECIAL_TRANSFER,
+                    speaker = RoleplaySpeaker.CHARACTER,
+                    speakerName = characterName,
+                    content = "",
+                    createdAt = message.createdAt,
+                    messageStatus = message.status,
+                    copyText = part.toTransferCopyText(),
+                    canRetry = canRetry,
+                    specialPart = part,
+                )
+            }
+            val longformContent = normalizedParts.toPlainText()
+                .ifBlank { message.content.trim() }
+                .trim()
+            if (message.status == MessageStatus.LOADING && longformContent.isBlank()) {
+                return
+            }
+            if (longformContent.isNotBlank()) {
+                target += RoleplayMessageUiModel(
+                    sourceMessageId = message.id,
+                    contentType = RoleplayContentType.LONGFORM,
+                    speaker = RoleplaySpeaker.CHARACTER,
+                    speakerName = characterName,
+                    content = longformContent,
+                    createdAt = message.createdAt,
+                    messageStatus = message.status,
+                    copyText = longformContent,
+                    canRetry = canRetry,
+                )
+            }
+            return
+        }
         if (normalizedParts.isEmpty()) {
             val content = message.content.trim()
             if (message.status == MessageStatus.LOADING && content.isBlank()) {

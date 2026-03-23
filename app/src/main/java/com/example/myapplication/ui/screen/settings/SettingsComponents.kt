@@ -1,5 +1,7 @@
 package com.example.myapplication.ui.screen.settings
 
+import com.example.myapplication.ui.component.*
+
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
@@ -30,8 +32,6 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
@@ -133,7 +133,7 @@ fun SettingsTopBar(
                 border = BorderStroke(0.5.dp, palette.border.copy(alpha = 0.3f)),
                 shadowElevation = 2.dp,
             ) {
-                IconButton(onClick = onNavigateBack) {
+                NarraIconButton(onClick = onNavigateBack) {
                     Icon(
                         imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                         contentDescription = "返回",
@@ -595,6 +595,7 @@ fun AnimatedSettingButton(
     leadingIcon: @Composable (() -> Unit)? = null,
 ) {
     val palette = rememberSettingsPalette()
+    val isDarkTheme = isSystemInDarkTheme()
     val interactionSource = remember { MutableInteractionSource() }
     val isPressed by interactionSource.collectIsPressedAsState()
     val scale by animateFloatAsState(
@@ -605,53 +606,230 @@ fun AnimatedSettingButton(
         ),
         label = "settings_button_scale",
     )
+    val shape = RoundedCornerShape(22.dp)
+    val primaryBackgroundBrush = when {
+        enabled && !isDarkTheme -> {
+            Brush.verticalGradient(
+                colors = listOf(
+                    Color(0xFF202634),
+                    Color(0xFF141923),
+                ),
+            )
+        }
+
+        enabled -> {
+            Brush.verticalGradient(
+                colors = listOf(
+                    palette.accent.copy(alpha = 0.92f),
+                    palette.accentStrong.copy(alpha = 0.82f),
+                ),
+            )
+        }
+
+        !isDarkTheme -> {
+            Brush.verticalGradient(
+                colors = listOf(
+                    Color(0xFFF3F5F8),
+                    Color(0xFFE7EAF0),
+                ),
+            )
+        }
+
+        else -> {
+            Brush.verticalGradient(
+                colors = listOf(
+                    palette.surface.copy(alpha = 0.96f),
+                    palette.elevatedSurface.copy(alpha = 0.98f),
+                ),
+            )
+        }
+    }
+    val primaryBorderColor = when {
+        enabled && !isDarkTheme -> Color.White.copy(alpha = 0.16f)
+        enabled -> Color.White.copy(alpha = 0.22f)
+        !isDarkTheme -> Color(0xFFD2D8E2)
+        else -> palette.border.copy(alpha = 0.64f)
+    }
+    val primaryAccentLineColor = when {
+        enabled && !isDarkTheme -> palette.accent.copy(alpha = 0.82f)
+        enabled -> Color.White.copy(alpha = 0.32f)
+        !isDarkTheme -> Color(0xFFC7D0DD)
+        else -> palette.border.copy(alpha = 0.48f)
+    }
+    val primaryTextColor = when {
+        enabled && !isDarkTheme -> Color.White
+        enabled -> palette.accentOnStrong
+        !isDarkTheme -> Color(0xFF677180)
+        else -> palette.body.copy(alpha = 0.84f)
+    }
+    val secondaryBackgroundBrush = when {
+        enabled && !isDarkTheme -> {
+            Brush.verticalGradient(
+                colors = listOf(
+                    Color.White.copy(alpha = 0.98f),
+                    Color(0xFFF5F7FA),
+                ),
+            )
+        }
+
+        enabled -> {
+            Brush.verticalGradient(
+                colors = listOf(
+                    palette.surface.copy(alpha = 0.98f),
+                    palette.surfaceTint.copy(alpha = 0.90f),
+                ),
+            )
+        }
+
+        !isDarkTheme -> {
+            Brush.verticalGradient(
+                colors = listOf(
+                    Color(0xFFF7F8FA),
+                    Color(0xFFF0F2F5),
+                ),
+            )
+        }
+
+        else -> {
+            Brush.verticalGradient(
+                colors = listOf(
+                    palette.surface.copy(alpha = 0.95f),
+                    palette.surfaceTint.copy(alpha = 0.92f),
+                ),
+            )
+        }
+    }
+    val secondaryBorderColor = when {
+        enabled && !isDarkTheme -> Color(0xFFD3D9E2)
+        enabled -> palette.border.copy(alpha = 0.72f)
+        !isDarkTheme -> Color(0xFFE0E5EC)
+        else -> palette.border.copy(alpha = 0.44f)
+    }
+    val secondaryTextColor = when {
+        enabled -> palette.title
+        !isDarkTheme -> Color(0xFF7A8492)
+        else -> palette.body.copy(alpha = 0.72f)
+    }
+    val buttonModifier = Modifier
+        .fillMaxWidth()
+        .height(58.dp)
+        .scale(scale)
+        .shadow(
+            elevation = if (isPrimary && enabled) {
+                if (isPressed) 6.dp else 14.dp
+            } else {
+                0.dp
+            },
+            shape = shape,
+            ambientColor = if (isPrimary && enabled && !isDarkTheme) Color(0xFF131722).copy(alpha = 0.18f) else Color.Transparent,
+            spotColor = if (isPrimary && enabled && !isDarkTheme) Color(0xFF131722).copy(alpha = 0.14f) else Color.Transparent,
+        )
+    val contentAlpha = if (enabled) 1f else 0.96f
 
     if (isPrimary) {
-        Button(
+        Surface(
             onClick = onClick,
             enabled = enabled,
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(56.dp)
-                .scale(scale)
-                .shadow(if (isPressed && enabled) 4.dp else 16.dp, RoundedCornerShape(20.dp), ambientColor = palette.accentStrong, spotColor = palette.accentStrong),
-            shape = RoundedCornerShape(20.dp),
-            colors = ButtonDefaults.buttonColors(
-                containerColor = palette.accentStrong,
-                contentColor = palette.accentOnStrong,
-            ),
+            modifier = buttonModifier,
+            shape = shape,
+            color = Color.Transparent,
+            shadowElevation = 0.dp,
             interactionSource = interactionSource,
         ) {
-            Row(
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                verticalAlignment = Alignment.CenterVertically,
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .clip(shape)
+                    .background(brush = primaryBackgroundBrush)
+                    .border(
+                        width = 1.dp,
+                        color = primaryBorderColor,
+                        shape = shape,
+                    ),
             ) {
-                leadingIcon?.invoke()
-                Text(text = text, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(3.dp)
+                        .background(primaryAccentLineColor)
+                        .align(Alignment.TopCenter),
+                )
+                Row(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(horizontal = 18.dp),
+                    horizontalArrangement = Arrangement.Center,
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Row(
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        leadingIcon?.invoke()
+                        Text(
+                            text = text,
+                            style = MaterialTheme.typography.titleSmall,
+                            fontWeight = FontWeight.SemiBold,
+                            color = primaryTextColor.copy(alpha = contentAlpha),
+                            letterSpacing = 0.4.sp,
+                        )
+                    }
+                }
             }
         }
     } else {
-        androidx.compose.material3.OutlinedButton(
+        Surface(
             onClick = onClick,
             enabled = enabled,
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(56.dp)
-                .scale(scale),
-            shape = RoundedCornerShape(20.dp),
-            interactionSource = interactionSource,
-            colors = ButtonDefaults.outlinedButtonColors(
-                containerColor = palette.surfaceTint,
-                contentColor = palette.title,
+            modifier = buttonModifier,
+            shape = shape,
+            color = Color.Transparent,
+            border = BorderStroke(
+                1.dp,
+                secondaryBorderColor,
             ),
-            border = BorderStroke(1.dp, palette.border.copy(alpha = 0.58f)),
+            shadowElevation = 0.dp,
+            interactionSource = interactionSource,
         ) {
-            Row(
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                verticalAlignment = Alignment.CenterVertically,
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(brush = secondaryBackgroundBrush),
             ) {
-                leadingIcon?.invoke()
-                Text(text = text, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(2.dp)
+                        .background(
+                            if (enabled) {
+                                palette.accent.copy(alpha = 0.16f)
+                            } else {
+                                Color.White.copy(alpha = 0.42f)
+                            },
+                        )
+                        .align(Alignment.TopCenter),
+                )
+                Row(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(horizontal = 18.dp),
+                    horizontalArrangement = Arrangement.Center,
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Row(
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        leadingIcon?.invoke()
+                        Text(
+                            text = text,
+                            style = MaterialTheme.typography.titleSmall,
+                            fontWeight = FontWeight.SemiBold,
+                            color = secondaryTextColor.copy(alpha = contentAlpha),
+                            letterSpacing = 0.3.sp,
+                        )
+                    }
+                }
             }
         }
     }

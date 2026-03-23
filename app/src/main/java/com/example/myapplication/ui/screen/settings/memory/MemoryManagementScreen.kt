@@ -1,5 +1,7 @@
 package com.example.myapplication.ui.screen.settings.memory
 
+import com.example.myapplication.ui.component.*
+
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -270,7 +272,7 @@ private fun MemoryEntryCard(
                 horizontalArrangement = Arrangement.End,
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                IconButton(onClick = onTogglePinned, modifier = Modifier.size(36.dp)) {
+                NarraIconButton(onClick = onTogglePinned, modifier = Modifier.size(36.dp)) {
                     Icon(
                         imageVector = Icons.Default.PushPin,
                         contentDescription = if (entry.pinned) "取消置顶" else "置顶",
@@ -278,7 +280,7 @@ private fun MemoryEntryCard(
                         modifier = Modifier.size(20.dp),
                     )
                 }
-                IconButton(onClick = onDelete, modifier = Modifier.size(36.dp)) {
+                NarraIconButton(onClick = onDelete, modifier = Modifier.size(36.dp)) {
                     Icon(
                         imageVector = Icons.Default.Delete,
                         contentDescription = "删除",
@@ -324,7 +326,7 @@ private fun SummaryCard(
                         contentColor = palette.subtleChipContent,
                     )
                 }
-                IconButton(onClick = onDelete, modifier = Modifier.size(36.dp)) {
+                NarraIconButton(onClick = onDelete, modifier = Modifier.size(36.dp)) {
                     Icon(
                         imageVector = Icons.Default.Delete,
                         contentDescription = "删除摘要",

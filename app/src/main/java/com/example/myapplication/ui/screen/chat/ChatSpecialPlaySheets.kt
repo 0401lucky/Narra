@@ -1,5 +1,7 @@
 package com.example.myapplication.ui.screen.chat
 
+import com.example.myapplication.ui.component.*
+
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -327,7 +329,7 @@ fun TransferPlaySheet(
             }
 
             item {
-                Button(
+                NarraButton(
                     onClick = onConfirm,
                     modifier = Modifier.fillMaxWidth(),
                     enabled = draft.amount.isNotBlank(),
@@ -348,7 +350,7 @@ fun TransferPlaySheet(
             }
 
             item {
-                TextButton(
+                NarraTextButton(
                     onClick = onDismissRequest,
                     modifier = Modifier.fillMaxWidth(),
                 ) {

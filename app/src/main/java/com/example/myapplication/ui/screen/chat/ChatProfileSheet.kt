@@ -1,5 +1,7 @@
 package com.example.myapplication.ui.screen.chat
 
+import com.example.myapplication.ui.component.*
+
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
@@ -228,7 +230,7 @@ internal fun ProfileEditorSheet(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(12.dp),
             ) {
-                OutlinedButton(
+                NarraOutlinedButton(
                     onClick = onPickLocalAvatar,
                     modifier = Modifier.weight(1f),
                 ) {
@@ -241,7 +243,7 @@ internal fun ProfileEditorSheet(
                         modifier = Modifier.padding(start = 8.dp),
                     )
                 }
-                OutlinedButton(
+                NarraOutlinedButton(
                     onClick = onClearAvatar,
                     modifier = Modifier.weight(1f),
                 ) {
@@ -249,7 +251,7 @@ internal fun ProfileEditorSheet(
                 }
             }
 
-            FilledTonalButton(
+            NarraFilledTonalButton(
                 onClick = onSave,
                 modifier = Modifier.fillMaxWidth(),
             ) {

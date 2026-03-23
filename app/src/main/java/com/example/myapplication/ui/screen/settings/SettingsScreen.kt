@@ -79,6 +79,7 @@ fun SettingsScreen(
     onUpdateAutoPreviewImages: (Boolean) -> Unit,
     onUpdateCodeBlockAutoWrap: (Boolean) -> Unit,
     onUpdateCodeBlockAutoCollapse: (Boolean) -> Unit,
+    onUpdateShowRoleplayAiHelper: (Boolean) -> Unit,
 ) {
     val palette = rememberSettingsPalette()
     val snackbarHostState = rememberSettingsSnackbarHostState(
@@ -107,6 +108,8 @@ fun SettingsScreen(
         append(if (uiState.codeBlockAutoWrap) "代码自动换行" else "代码横向滚动")
         append(" · ")
         append(if (uiState.codeBlockAutoCollapse) "代码自动折叠" else "代码完整展开")
+        append(" · ")
+        append(if (uiState.showRoleplayAiHelper) "RP 帮写已显示" else "RP 帮写已隐藏")
     }
 
     Scaffold(
@@ -260,6 +263,7 @@ fun SettingsScreen(
             autoPreviewImages = uiState.autoPreviewImages,
             codeBlockAutoWrap = uiState.codeBlockAutoWrap,
             codeBlockAutoCollapse = uiState.codeBlockAutoCollapse,
+            showRoleplayAiHelper = uiState.showRoleplayAiHelper,
             onDismissRequest = { showDisplaySettingsSheet = false },
             onMessageTextScaleChange = onUpdateMessageTextScale,
             onReasoningExpandedByDefaultChange = onUpdateReasoningExpandedByDefault,
@@ -268,6 +272,7 @@ fun SettingsScreen(
             onAutoPreviewImagesChange = onUpdateAutoPreviewImages,
             onCodeBlockAutoWrapChange = onUpdateCodeBlockAutoWrap,
             onCodeBlockAutoCollapseChange = onUpdateCodeBlockAutoCollapse,
+            onShowRoleplayAiHelperChange = onUpdateShowRoleplayAiHelper,
         )
     }
 }
@@ -325,6 +330,7 @@ private fun DisplaySettingsSheet(
     autoPreviewImages: Boolean,
     codeBlockAutoWrap: Boolean,
     codeBlockAutoCollapse: Boolean,
+    showRoleplayAiHelper: Boolean,
     onDismissRequest: () -> Unit,
     onMessageTextScaleChange: (Float) -> Unit,
     onReasoningExpandedByDefaultChange: (Boolean) -> Unit,
@@ -333,6 +339,7 @@ private fun DisplaySettingsSheet(
     onAutoPreviewImagesChange: (Boolean) -> Unit,
     onCodeBlockAutoWrapChange: (Boolean) -> Unit,
     onCodeBlockAutoCollapseChange: (Boolean) -> Unit,
+    onShowRoleplayAiHelperChange: (Boolean) -> Unit,
 ) {
     ModalBottomSheet(
         onDismissRequest = onDismissRequest,
@@ -408,6 +415,12 @@ private fun DisplaySettingsSheet(
                         supportingText = "代码行数较多时默认收起，减少聊天列表纵向占用",
                         checked = codeBlockAutoCollapse,
                         onCheckedChange = onCodeBlockAutoCollapseChange,
+                    )
+                    DisplaySwitchRow(
+                        title = "显示 RP AI 帮写",
+                        supportingText = "关闭后沉浸式角色扮演页面不再显示 AI 帮写区域和生成入口",
+                        checked = showRoleplayAiHelper,
+                        onCheckedChange = onShowRoleplayAiHelperChange,
                     )
                 }
             }

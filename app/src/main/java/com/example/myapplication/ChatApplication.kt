@@ -66,6 +66,7 @@ class ChatApplication : Application() {
             ChatDatabase.MIGRATION_7_8,
             ChatDatabase.MIGRATION_8_9,
             ChatDatabase.MIGRATION_9_10,
+            ChatDatabase.MIGRATION_10_11,
         ).build()
 
         val settingsStore = AppSettingsStore(this)

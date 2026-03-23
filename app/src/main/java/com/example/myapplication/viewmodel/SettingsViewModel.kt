@@ -48,6 +48,7 @@ data class SettingsUiState(
     val autoPreviewImages: Boolean = true,
     val codeBlockAutoWrap: Boolean = false,
     val codeBlockAutoCollapse: Boolean = false,
+    val showRoleplayAiHelper: Boolean = true,
     val screenTranslationSettings: ScreenTranslationSettings = ScreenTranslationSettings(),
 ) {
     val currentProvider: ProviderSettings?
@@ -85,6 +86,7 @@ data class SettingsUiState(
             autoPreviewImages != savedSettings.autoPreviewImages ||
             codeBlockAutoWrap != savedSettings.codeBlockAutoWrap ||
             codeBlockAutoCollapse != savedSettings.codeBlockAutoCollapse ||
+            showRoleplayAiHelper != savedSettings.showRoleplayAiHelper ||
             screenTranslationSettings != savedSettings.screenTranslationSettings
     }
 }
@@ -127,6 +129,7 @@ class SettingsViewModel(
                             autoPreviewImages = settings.autoPreviewImages,
                             codeBlockAutoWrap = settings.codeBlockAutoWrap,
                             codeBlockAutoCollapse = settings.codeBlockAutoCollapse,
+                            showRoleplayAiHelper = settings.showRoleplayAiHelper,
                             screenTranslationSettings = settings.screenTranslationSettings,
                         )
                     }
@@ -342,6 +345,10 @@ class SettingsViewModel(
         _uiState.update { it.copy(codeBlockAutoCollapse = enabled, message = null) }
     }
 
+    fun updateShowRoleplayAiHelper(enabled: Boolean) {
+        _uiState.update { it.copy(showRoleplayAiHelper = enabled, message = null) }
+    }
+
     fun updateScreenTranslationServiceEnabled(enabled: Boolean) {
         updateScreenTranslationSettings { it.copy(serviceEnabled = enabled) }
     }
@@ -472,6 +479,7 @@ class SettingsViewModel(
                     autoPreviewImages = currentState.autoPreviewImages,
                     codeBlockAutoWrap = currentState.codeBlockAutoWrap,
                     codeBlockAutoCollapse = currentState.codeBlockAutoCollapse,
+                    showRoleplayAiHelper = currentState.showRoleplayAiHelper,
                 )
                 repository.saveScreenTranslationSettings(
                     currentState.screenTranslationSettings,
@@ -489,6 +497,7 @@ class SettingsViewModel(
                         autoPreviewImages = currentState.autoPreviewImages,
                         codeBlockAutoWrap = currentState.codeBlockAutoWrap,
                         codeBlockAutoCollapse = currentState.codeBlockAutoCollapse,
+                        showRoleplayAiHelper = currentState.showRoleplayAiHelper,
                         screenTranslationSettings = currentState.screenTranslationSettings,
                         isSaving = false,
                         message = "设置已保存",

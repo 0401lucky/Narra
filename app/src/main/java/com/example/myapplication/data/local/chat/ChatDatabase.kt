@@ -23,7 +23,7 @@ import com.example.myapplication.data.local.worldbook.WorldBookEntryEntity
         RoleplayScenarioEntity::class,
         RoleplaySessionEntity::class,
     ],
-    version = 10,
+    version = 11,
     exportSchema = false,
 )
 abstract class ChatDatabase : RoomDatabase() {
@@ -182,6 +182,7 @@ abstract class ChatDatabase : RoomDatabase() {
                         openingNarration TEXT NOT NULL DEFAULT '',
                         enableNarration INTEGER NOT NULL DEFAULT 1,
                         enableRoleplayProtocol INTEGER NOT NULL DEFAULT 1,
+                        longformModeEnabled INTEGER NOT NULL DEFAULT 0,
                         autoHighlightSpeaker INTEGER NOT NULL DEFAULT 1,
                         createdAt INTEGER NOT NULL DEFAULT 0,
                         updatedAt INTEGER NOT NULL DEFAULT 0
@@ -211,6 +212,14 @@ abstract class ChatDatabase : RoomDatabase() {
                 )
                 db.execSQL(
                     "CREATE INDEX IF NOT EXISTS index_roleplay_sessions_updatedAt ON roleplay_sessions (updatedAt)",
+                )
+            }
+        }
+
+        val MIGRATION_10_11 = object : Migration(10, 11) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL(
+                    "ALTER TABLE roleplay_scenarios ADD COLUMN longformModeEnabled INTEGER NOT NULL DEFAULT 0",
                 )
             }
         }

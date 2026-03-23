@@ -1,5 +1,7 @@
 package com.example.myapplication.ui.screen.settings
 
+import com.example.myapplication.ui.component.*
+
 import androidx.compose.animation.*
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
@@ -130,7 +132,7 @@ fun ProviderDetailScreen(
                             }
                         }
                         
-                        Button(
+                        NarraButton(
                             onClick = { if (canLoadModels && !isFetching) onLoadModels(provider.id) },
                             shape = RoundedCornerShape(24.dp),
                             colors = ButtonDefaults.buttonColors(containerColor = palette.accentStrong, contentColor = palette.accentOnStrong),
@@ -202,7 +204,7 @@ private fun ProviderDetailTopBar(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            IconButton(onClick = onNavigateBack, modifier = Modifier.size(32.dp)) {
+            NarraIconButton(onClick = onNavigateBack, modifier = Modifier.size(32.dp)) {
                 Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back", tint = palette.title, modifier = Modifier.size(24.dp))
             }
             Surface(
@@ -302,7 +304,7 @@ private fun ConfigTabContent(
                 shape = RoundedCornerShape(12.dp),
                 colors = outlineColors,
                 trailingIcon = {
-                    IconButton(onClick = { showApiKey = !showApiKey }) {
+                    NarraIconButton(onClick = { showApiKey = !showApiKey }) {
                         Icon(if (showApiKey) Icons.Outlined.VisibilityOff else Icons.Outlined.Visibility, contentDescription = null, tint = palette.accentStrong)
                     }
                 },
@@ -340,7 +342,7 @@ private fun ConfigTabContent(
                     Icon(Icons.Outlined.Delete, contentDescription = "Delete", Modifier.padding(16.dp), tint = if (providerCount > 1) palette.title else palette.body.copy(alpha = 0.3f))
                 }
 
-                Button(
+                NarraButton(
                     onClick = onSave,
                     modifier = Modifier.weight(1f).height(56.dp),
                     shape = RoundedCornerShape(20.dp),
@@ -586,11 +588,11 @@ private fun PremiumModelCard(
                 }
             }
 
-            IconButton(onClick = onEditAbilities) {
+            NarraIconButton(onClick = onEditAbilities) {
                 Icon(Icons.Outlined.Settings, contentDescription = "Edit Abilities", tint = palette.title)
             }
 
-            IconButton(onClick = onRemove) {
+            NarraIconButton(onClick = onRemove) {
                 Icon(Icons.Outlined.Close, contentDescription = "移除模型", tint = palette.body.copy(alpha = 0.6f), modifier = Modifier.size(20.dp))
             }
         }
@@ -642,13 +644,13 @@ private fun ModelAbilityOverrideDialog(
         dismissButton = {
             Row {
                 if (modelInfo.abilitiesCustomized) {
-                    TextButton(onClick = { onSave(null) }) { Text("恢复自动") }
+                    NarraTextButton(onClick = { onSave(null) }) { Text("恢复自动") }
                 }
-                TextButton(onClick = onDismissRequest) { Text("取消") }
+                NarraTextButton(onClick = onDismissRequest) { Text("取消") }
             }
         },
         confirmButton = {
-            TextButton(onClick = { onSave(if (shouldResetToAuto) null else editedAbilities) }) { Text("保存") }
+            NarraTextButton(onClick = { onSave(if (shouldResetToAuto) null else editedAbilities) }) { Text("保存") }
         },
     )
 }
@@ -763,7 +765,7 @@ private fun FetchedModelSelectionBottomSheet(
                             color = palette.body
                         )
                     }
-                    TextButton(onClick = {
+                    NarraTextButton(onClick = {
                         if (selectedIds.size == fetchedModels.size) {
                             selectedIds = emptySet()
                         } else {
@@ -886,7 +888,7 @@ private fun FetchedModelSelectionBottomSheet(
                     horizontalArrangement = Arrangement.spacedBy(12.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    androidx.compose.material3.OutlinedButton(
+                    NarraOutlinedButton(
                         onClick = onDismiss,
                         modifier = Modifier.weight(1f).height(48.dp),
                         shape = RoundedCornerShape(14.dp),
@@ -894,7 +896,7 @@ private fun FetchedModelSelectionBottomSheet(
                     ) {
                         Text("取消", fontWeight = FontWeight.Bold)
                     }
-                    Button(
+                    NarraButton(
                         onClick = {
                             onConfirm(selectedIds)
                             onDismiss()

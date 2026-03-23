@@ -1,5 +1,7 @@
 package com.example.myapplication.ui.screen.translate
 
+import com.example.myapplication.ui.component.*
+
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -106,7 +108,7 @@ fun TranslationScreen(
         topBar = {
             TopAppBar(
                 navigationIcon = {
-                    IconButton(onClick = onNavigateBack) {
+                    NarraIconButton(onClick = onNavigateBack) {
                         Icon(
                             imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                             contentDescription = "返回",
@@ -118,14 +120,14 @@ fun TranslationScreen(
                 },
                 actions = {
                     if (uiState.history.isNotEmpty()) {
-                        IconButton(onClick = { showHistorySheet = true }) {
+                        NarraIconButton(onClick = { showHistorySheet = true }) {
                             Icon(
                                 imageVector = Icons.Default.History,
                                 contentDescription = "翻译记录",
                             )
                         }
                     }
-                    IconButton(onClick = { showModelSheet = true }) {
+                    NarraIconButton(onClick = { showModelSheet = true }) {
                         if (uiState.activeModelName.isNotBlank()) {
                             ModelIcon(
                                 modelName = uiState.activeModelName,
@@ -179,7 +181,7 @@ fun TranslationScreen(
             }
 
             item {
-                FilledTonalButton(
+                NarraFilledTonalButton(
                     onClick = {
                         val text = clipboardManager.getText()?.text.orEmpty()
                         if (text.isNotBlank()) {
@@ -219,7 +221,7 @@ fun TranslationScreen(
 
             if (uiState.translatedText.isNotBlank()) {
                 item {
-                    OutlinedButton(
+                    NarraOutlinedButton(
                         onClick = {
                             clipboardManager.setText(AnnotatedString(uiState.translatedText))
                         },
@@ -295,14 +297,14 @@ private fun TranslationBottomBar(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.SpaceBetween,
         ) {
-            FilledTonalButton(
+            NarraFilledTonalButton(
                 onClick = onOpenLanguageSheet,
                 shape = RoundedCornerShape(999.dp),
             ) {
                 Text(targetLanguage)
             }
 
-            FilledTonalButton(
+            NarraFilledTonalButton(
                 onClick = {
                     if (isTranslating) onCancelTranslation() else onTranslate()
                 },
@@ -406,7 +408,7 @@ private fun TranslationHistorySheet(
                         style = MaterialTheme.typography.titleLarge,
                     )
                     if (history.isNotEmpty()) {
-                        OutlinedButton(onClick = onClearHistory) {
+                        NarraOutlinedButton(onClick = onClearHistory) {
                             Text("清空记录")
                         }
                     }

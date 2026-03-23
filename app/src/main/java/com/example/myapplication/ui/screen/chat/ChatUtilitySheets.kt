@@ -1,5 +1,7 @@
 package com.example.myapplication.ui.screen.chat
 
+import com.example.myapplication.ui.component.*
+
 import android.content.Intent
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -101,7 +103,7 @@ fun TranslationResultSheet(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(12.dp),
             ) {
-                OutlinedButton(
+                NarraOutlinedButton(
                     onClick = {
                         clipboardManager.setText(AnnotatedString(translation.translatedText))
                     },
@@ -110,7 +112,7 @@ fun TranslationResultSheet(
                 ) {
                     Text("复制")
                 }
-                OutlinedButton(
+                NarraOutlinedButton(
                     onClick = onReplaceInput,
                     modifier = Modifier.weight(1f),
                     enabled = !translation.isLoading && translation.translatedText.isNotBlank(),
@@ -123,14 +125,14 @@ fun TranslationResultSheet(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(12.dp),
             ) {
-                FilledTonalButton(
+                NarraFilledTonalButton(
                     onClick = onAppendToInput,
                     modifier = Modifier.weight(1f),
                     enabled = !translation.isLoading && translation.translatedText.isNotBlank(),
                 ) {
                     Text("插入输入框")
                 }
-                Button(
+                NarraButton(
                     onClick = onSendAsMessage,
                     modifier = Modifier.weight(1f),
                     enabled = !translation.isLoading && translation.translatedText.isNotBlank(),
@@ -204,13 +206,13 @@ fun ConversationExportSheet(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(12.dp),
             ) {
-                OutlinedButton(
+                NarraOutlinedButton(
                     onClick = onCopyPlainText,
                     modifier = Modifier.weight(1f),
                 ) {
                     Text("复制纯文本")
                 }
-                OutlinedButton(
+                NarraOutlinedButton(
                     onClick = onShareConversation,
                     modifier = Modifier.weight(1f),
                 ) {
@@ -218,7 +220,7 @@ fun ConversationExportSheet(
                 }
             }
 
-            Button(
+            NarraButton(
                 onClick = onExportMarkdown,
                 modifier = Modifier.fillMaxWidth(),
             ) {

@@ -30,6 +30,7 @@ class TavernCharacterAdapter(
             character = character,
             assistant = assistant,
         )
+        logWorldBookEntryCount(worldBookEntries.size)
         return ContextDataBundle(
             assistants = listOf(assistant),
             worldBookEntries = worldBookEntries,
@@ -37,18 +38,11 @@ class TavernCharacterAdapter(
     }
 
     private fun extractCharacterObject(root: JsonObject): JsonObject? {
-        val candidate = root.getAsJsonObject("data") ?: root
-        val hasCharacterFields = listOf(
-            "name",
-            "description",
-            "personality",
-            "scenario",
-            "first_mes",
-            "mes_example",
-        ).any { key ->
-            candidate.has(key) && candidate.get(key)?.isJsonNull == false
+        val directCandidate = root.getAsJsonObject("data") ?: root
+        if (directCandidate.hasCharacterFields()) {
+            return directCandidate
         }
-        return if (hasCharacterFields) candidate else null
+        return findCharacterObject(root)
     }
 
     private fun buildAssistant(
@@ -113,8 +107,10 @@ class TavernCharacterAdapter(
         character: JsonObject,
         assistant: Assistant,
     ): List<WorldBookEntry> {
-        val characterBook = character.getObject("character_book")
-            ?: root.getObject("character_book")
+        val characterBook = resolveCharacterBook(
+            character = character,
+            root = root,
+        )
             ?: return emptyList()
         val bookName = characterBook.getString("name").trim()
         val bookEntries = characterBook.getArray("entries") ?: return emptyList()
@@ -221,8 +217,10 @@ class TavernCharacterAdapter(
         character: JsonObject,
         characterName: String,
     ): List<PreviewWorldBookEntry> {
-        val characterBook = character.getObject("character_book")
-            ?: root.getObject("character_book")
+        val characterBook = resolveCharacterBook(
+            character = character,
+            root = root,
+        )
             ?: return emptyList()
         val entries = characterBook.getArray("entries") ?: return emptyList()
         val bookName = characterBook.getString("name").trim()
@@ -301,8 +299,113 @@ class TavernCharacterAdapter(
         return runCatching { asJsonArray }.getOrNull()
     }
 
+    private fun resolveCharacterBook(
+        character: JsonObject,
+        root: JsonObject,
+    ): JsonObject? {
+        return character.getObject("character_book")
+            ?: root.getObject("character_book")
+            ?: findFirstObjectByKey(character, "character_book")
+            ?: findFirstObjectByKey(root, "character_book")
+    }
+
+    private fun findCharacterObject(root: JsonObject): JsonObject? {
+        if (root.hasCharacterFields()) {
+            return root
+        }
+        root.entrySet().forEach { (_, value) ->
+            when {
+                value.isJsonObject -> {
+                    val nestedObject = value.asJsonObject
+                    if (nestedObject.hasCharacterFields()) {
+                        return nestedObject
+                    }
+                    findCharacterObject(nestedObject)?.let { return it }
+                }
+
+                value.isJsonArray -> {
+                    findCharacterObject(value.asJsonArray)?.let { return it }
+                }
+            }
+        }
+        return null
+    }
+
+    private fun findCharacterObject(array: JsonArray): JsonObject? {
+        array.forEach { element ->
+            when {
+                element.isJsonObject -> {
+                    val nestedObject = element.asJsonObject
+                    if (nestedObject.hasCharacterFields()) {
+                        return nestedObject
+                    }
+                    findCharacterObject(nestedObject)?.let { return it }
+                }
+
+                element.isJsonArray -> {
+                    findCharacterObject(element.asJsonArray)?.let { return it }
+                }
+            }
+        }
+        return null
+    }
+
+    private fun findFirstObjectByKey(
+        root: JsonObject,
+        targetKey: String,
+    ): JsonObject? {
+        root.entrySet().forEach { (key, value) ->
+            if (key == targetKey && value.isJsonObject) {
+                return value.asJsonObject
+            }
+            when {
+                value.isJsonObject -> findFirstObjectByKey(value.asJsonObject, targetKey)?.let { return it }
+                value.isJsonArray -> findFirstObjectByKey(value.asJsonArray, targetKey)?.let { return it }
+            }
+        }
+        return null
+    }
+
+    private fun findFirstObjectByKey(
+        array: JsonArray,
+        targetKey: String,
+    ): JsonObject? {
+        array.forEach { element ->
+            when {
+                element.isJsonObject -> findFirstObjectByKey(element.asJsonObject, targetKey)?.let { return it }
+                element.isJsonArray -> findFirstObjectByKey(element.asJsonArray, targetKey)?.let { return it }
+            }
+        }
+        return null
+    }
+
+    private fun JsonObject.hasCharacterFields(): Boolean {
+        return listOf(
+            "name",
+            "description",
+            "personality",
+            "scenario",
+            "first_mes",
+            "mes_example",
+        ).any { key ->
+            has(key) && get(key)?.isJsonNull == false
+        }
+    }
+
+    private fun logWorldBookEntryCount(count: Int) {
+        val message = "解析到世界书条目数: $count"
+        println("TavernCharacterAdapter: $message")
+        runCatching {
+            android.util.Log.d(TAG, message)
+        }
+    }
+
     private data class PreviewWorldBookEntry(
         val title: String,
         val enabled: Boolean,
     )
+
+    private companion object {
+        private const val TAG = "TavernCharacterAdapter"
+    }
 }

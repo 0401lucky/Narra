@@ -1,5 +1,7 @@
 package com.example.myapplication.ui.screen.settings
 
+import com.example.myapplication.ui.component.*
+
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -42,12 +44,12 @@ internal fun AssistantDeleteConfirmDialog(
             }
         },
         confirmButton = {
-            TextButton(onClick = onConfirm) {
+            NarraTextButton(onClick = onConfirm) {
                 Text("确认删除")
             }
         },
         dismissButton = {
-            TextButton(onClick = onDismissRequest) {
+            NarraTextButton(onClick = onDismissRequest) {
                 Text("取消")
             }
         },

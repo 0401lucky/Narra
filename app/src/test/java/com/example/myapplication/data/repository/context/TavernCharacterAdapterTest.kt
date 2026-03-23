@@ -88,4 +88,42 @@ class TavernCharacterAdapterTest {
         assertEquals(listOf("午夜", "钟楼"), worldBookEntries[1].secondaryKeywords)
         assertTrue(assistant.worldBookMaxEntries >= 8)
     }
+
+    @Test
+    fun decodeAsBundle_findsNestedCharacterBookNode() {
+        val rawJson = """
+            {
+              "spec": "chara_card_v3",
+              "data": {
+                "name": "深港夜巡者",
+                "description": "擅长在雨夜追踪线索。",
+                "extensions": {
+                  "lore": {
+                    "character_book": {
+                      "name": "深港异闻录",
+                      "entries": [
+                        {
+                          "name": "旧钟楼",
+                          "keys": ["钟楼", "旧塔"],
+                          "content": "旧钟楼地下埋着一条废弃运货通道。"
+                        }
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+        """.trimIndent()
+
+        val bundle = adapter.decodeAsBundle(rawJson)
+        val assistant = bundle?.assistants?.single()
+        val worldBookEntries = bundle?.worldBookEntries.orEmpty()
+
+        requireNotNull(assistant)
+        assertEquals(1, worldBookEntries.size)
+        assertEquals("旧钟楼", worldBookEntries.single().title)
+        assertEquals("深港异闻录", worldBookEntries.single().sourceBookName)
+        assertEquals(listOf("钟楼", "旧塔"), worldBookEntries.single().keywords)
+        assertEquals(assistant.id, worldBookEntries.single().scopeId)
+    }
 }

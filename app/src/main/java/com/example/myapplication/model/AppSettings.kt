@@ -14,6 +14,7 @@ data class AppSettings(
     val autoPreviewImages: Boolean = true,
     val codeBlockAutoWrap: Boolean = false,
     val codeBlockAutoCollapse: Boolean = false,
+    val showRoleplayAiHelper: Boolean = true,
     val userDisplayName: String = DEFAULT_USER_DISPLAY_NAME,
     val userAvatarUri: String = "",
     val userAvatarUrl: String = "",

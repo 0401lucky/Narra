@@ -1,5 +1,7 @@
 package com.example.myapplication.ui.screen.settings
 
+import com.example.myapplication.ui.component.*
+
 import android.widget.Toast
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
@@ -118,7 +120,7 @@ fun AssistantPromptScreen(
                     title = "系统提示词",
                     palette = palette,
                     trailingIcons = {
-                        IconButton(
+                        NarraIconButton(
                             onClick = {
                                 if (systemPrompt.isNotBlank()) {
                                     clipboardManager.setText(AnnotatedString(systemPrompt))
@@ -437,7 +439,7 @@ private fun ExampleDialogueItem(
                     fontWeight = FontWeight.SemiBold,
                     color = palette.body,
                 )
-                IconButton(
+                NarraIconButton(
                     onClick = onRemove,
                     modifier = Modifier.size(28.dp),
                 ) {

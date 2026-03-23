@@ -17,6 +17,7 @@ data class RoleplayScenario(
     val openingNarration: String = "",
     val enableNarration: Boolean = true,
     val enableRoleplayProtocol: Boolean = true,
+    val longformModeEnabled: Boolean = false,
     val autoHighlightSpeaker: Boolean = true,
     val createdAt: Long = 0L,
     val updatedAt: Long = 0L,

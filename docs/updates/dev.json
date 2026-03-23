@@ -1,15 +1,15 @@
 {
   "app_id": "com.narra.app.dev",
   "channel": "dev",
-  "latest_version_name": "1.0.3-dev",
-  "latest_version_code": 10003,
+  "latest_version_name": "1.0.4-dev",
+  "latest_version_code": 10004,
   "minimum_supported_version_code": 0,
-  "apk_url": "https://github.com/0401lucky/Narra/releases/download/v1.0.3-dev/Narra-v1.0.3-dev-10003-dev.apk",
-  "apk_sha256": "1965434D6493B2F356A051FAB95673C8E69176865FA3D9A4970EFBCC86DBCFF1",
-  "published_at": "2026-03-23T13:00:00+08:00",
+  "apk_url": "https://github.com/0401lucky/Narra/releases/download/1.0.4-dev/Narra-v1.0.4-dev-10004-dev.apk",
+  "apk_sha256": "610C6AEB4B1E598ED704B83CDBD7FEBB1EE2B2EB72A175A74DB4B1B743C9DEDF",
+  "published_at": "2026-03-23T20:56:22.8415301+08:00",
   "release_notes": [
-    "优化沉浸式扮演回复风格，减少重复句式和模板感",
-    "优化 AI 帮写，建议会更贴近玩家最近的说话口吻",
-    "重构长期记忆与剧情约束注入，支持共享全局长期记忆"
+    "修复 Tavern 角色卡导入时自带世界书无法正确解析、落库和挂载的问题",
+    "打通 RP 世界书命中状态与 Prompt 调试 Dump，可直接看到实际注入内容",
+    "AI 帮写改为生成草稿直接填入输入框，发送前不会写入剧情流或数据库"
   ]
 }

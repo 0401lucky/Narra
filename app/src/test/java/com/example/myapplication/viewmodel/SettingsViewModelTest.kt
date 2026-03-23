@@ -240,6 +240,31 @@ class SettingsViewModelTest {
     }
 
     @Test
+    fun saveSettings_persistsRoleplayAiHelperVisibility() = runTest(mainDispatcherRule.dispatcher.scheduler) {
+        val provider = ProviderSettings(
+            id = "provider-a",
+            name = "Provider A",
+            baseUrl = "https://a.example.com/v1/",
+            apiKey = "key-a",
+            selectedModel = "model-a",
+            availableModels = listOf("model-a"),
+        )
+        val viewModel = createViewModel(
+            settings = AppSettings(
+                providers = listOf(provider),
+                selectedProviderId = provider.id,
+            ),
+        )
+
+        advanceUntilIdle()
+        viewModel.updateShowRoleplayAiHelper(false)
+        viewModel.saveSettings {}
+        advanceUntilIdle()
+
+        assertTrue(!viewModel.storedSettings.value.showRoleplayAiHelper)
+    }
+
+    @Test
     fun saveSettings_persistsScreenTranslationPreferences() = runTest(mainDispatcherRule.dispatcher.scheduler) {
         val provider = ProviderSettings(
             id = "provider-a",

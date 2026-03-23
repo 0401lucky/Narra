@@ -1,5 +1,7 @@
 package com.example.myapplication.ui.component
 
+import com.example.myapplication.ui.component.*
+
 import androidx.core.net.toUri
 import androidx.compose.animation.animateContentSize
 import androidx.compose.animation.core.Spring
@@ -225,7 +227,7 @@ fun MessageInputBar(
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
                     Box {
-                        IconButton(
+                        NarraIconButton(
                             onClick = { showAttachmentMenu = true },
                             enabled = enabled && !isSending,
                             modifier = Modifier
@@ -290,7 +292,7 @@ fun MessageInputBar(
                     }
 
                     if (isSending && onCancelClick != null) {
-                        IconButton(
+                        NarraIconButton(
                             onClick = onCancelClick,
                             modifier = Modifier
                                 .size(48.dp)
@@ -309,7 +311,7 @@ fun MessageInputBar(
                             )
                         }
                     } else {
-                        IconButton(
+                        NarraIconButton(
                             onClick = onSendClick,
                             enabled = canSend,
                             modifier = Modifier
@@ -397,7 +399,7 @@ private fun PendingAttachmentBanner(
                     color = MaterialTheme.colorScheme.onSecondaryContainer.copy(alpha = 0.78f),
                 )
             }
-            IconButton(
+            NarraIconButton(
                 onClick = onRemovePart,
                 enabled = enabled,
                 modifier = Modifier.size(28.dp),
@@ -531,7 +533,7 @@ private fun PendingImageThumbnail(
                 .clip(RoundedCornerShape(14.dp)),
             contentScale = androidx.compose.ui.layout.ContentScale.Crop,
         )
-        IconButton(
+        NarraIconButton(
             onClick = onRemove,
             enabled = enabled,
             modifier = Modifier

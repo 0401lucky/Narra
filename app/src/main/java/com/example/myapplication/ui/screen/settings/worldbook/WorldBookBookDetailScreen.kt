@@ -1,5 +1,7 @@
 package com.example.myapplication.ui.screen.settings.worldbook
 
+import com.example.myapplication.ui.component.*
+
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.PaddingValues
@@ -146,7 +148,7 @@ fun WorldBookBookDetailScreen(
                 )
             },
             confirmButton = {
-                androidx.compose.material3.TextButton(
+                NarraTextButton(
                     onClick = {
                         showDeleteDialog = false
                         onDeleteBook(bookName)
@@ -156,7 +158,7 @@ fun WorldBookBookDetailScreen(
                 }
             },
             dismissButton = {
-                androidx.compose.material3.TextButton(
+                NarraTextButton(
                     onClick = { showDeleteDialog = false },
                 ) {
                     androidx.compose.material3.Text("取消")
