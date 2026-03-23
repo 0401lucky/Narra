@@ -1,15 +1,16 @@
 {
   "app_id": "com.narra.app.dev",
   "channel": "dev",
-  "latest_version_name": "1.0.4-dev",
-  "latest_version_code": 10004,
+  "latest_version_name": "1.0.5-dev",
+  "latest_version_code": 10005,
   "minimum_supported_version_code": 0,
-  "apk_url": "https://github.com/0401lucky/Narra/releases/download/1.0.4-dev/Narra-v1.0.4-dev-10004-dev.apk",
-  "apk_sha256": "610C6AEB4B1E598ED704B83CDBD7FEBB1EE2B2EB72A175A74DB4B1B743C9DEDF",
-  "published_at": "2026-03-23T20:56:22.8415301+08:00",
+  "apk_url": "https://github.com/0401lucky/Narra/releases/download/v1.0.5-dev/Narra-v1.0.5-dev-10005-dev.apk",
+  "apk_sha256": "28C5D364FE8CD0FFF6271F50EDA15C5288DE9BBB7786739442C231B94DEFA6F8",
+  "published_at": "2026-03-24T00:15:00.1107477+08:00",
   "release_notes": [
-    "修复 Tavern 角色卡导入时自带世界书无法正确解析、落库和挂载的问题",
-    "打通 RP 世界书命中状态与 Prompt 调试 Dump，可直接看到实际注入内容",
-    "AI 帮写改为生成草稿直接填入输入框，发送前不会写入剧情流或数据库"
+    "新增每场景可切换的沉浸式长文小说模式，助手可输出更接近长篇小说的长段落剧情文本",
+    "长文模式下优化动作描写、对白和心理描写的阅读呈现，阅读模式也同步支持长文卡片",
+    "新增“显示 RP AI 帮写”全局设置开关，不需要的用户可以彻底隐藏 RP 页面里的 AI 帮写区域",
+    "优化 AI 帮写在长文模式下的草稿生成，更贴近小说流写法，仍然保持只填输入框、不自动发送、不落库"
   ]
 }
