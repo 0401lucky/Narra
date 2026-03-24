@@ -1,16 +1,16 @@
 {
   "app_id": "com.narra.app.dev",
   "channel": "dev",
-  "latest_version_name": "1.0.5-dev",
-  "latest_version_code": 10005,
+  "latest_version_name": "1.0.6-dev",
+  "latest_version_code": 10006,
   "minimum_supported_version_code": 0,
-  "apk_url": "https://github.com/0401lucky/Narra/releases/download/v1.0.5-dev/Narra-v1.0.5-dev-10005-dev.apk",
-  "apk_sha256": "28C5D364FE8CD0FFF6271F50EDA15C5288DE9BBB7786739442C231B94DEFA6F8",
-  "published_at": "2026-03-24T00:15:00.1107477+08:00",
+  "apk_url": "https://github.com/0401lucky/Narra/releases/download/v.1.0.6-dev/Narra-v1.0.6-dev-10006-dev.apk",
+  "apk_sha256": "64C46471449E937DDE61E0271EA49276964C33DA89E677C54A650602B94CE2F7",
+  "published_at": "2026-03-24T21:33:44+08:00",
   "release_notes": [
-    "新增每场景可切换的沉浸式长文小说模式，助手可输出更接近长篇小说的长段落剧情文本",
-    "长文模式下优化动作描写、对白和心理描写的阅读呈现，阅读模式也同步支持长文卡片",
-    "新增“显示 RP AI 帮写”全局设置开关，不需要的用户可以彻底隐藏 RP 页面里的 AI 帮写区域",
-    "优化 AI 帮写在长文模式下的草稿生成，更贴近小说流写法，仍然保持只填输入框、不自动发送、不落库"
+    "新增沉浸设置页、阅读模式入口和长剧情默认字数设置",
+    "沉浸式主页面、阅读模式与设置页统一了背景直出和沉浸式视觉",
+    "新增独立世界书导入与可挂载世界书作用域，助手扩展页可挂任意世界书",
+    "修复 Android Studio 旧运行配置残留、沉浸式页面近期编译阻塞及世界书关联问题"
   ]
 }
