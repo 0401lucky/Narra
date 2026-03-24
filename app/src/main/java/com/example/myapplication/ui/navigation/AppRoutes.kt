@@ -27,6 +27,8 @@ object AppRoutes {
     const val ROLEPLAY = "roleplay"
     const val ROLEPLAY_EDIT = "roleplay/edit/{scenarioId}"
     const val ROLEPLAY_PLAY = "roleplay/play/{scenarioId}"
+    const val ROLEPLAY_SETTINGS = "roleplay/play/{scenarioId}/settings"
+    const val ROLEPLAY_READING = "roleplay/play/{scenarioId}/reading"
 
     fun settingsProviderDetail(providerId: String): String {
         return "settings/providers/$providerId"
@@ -70,5 +72,13 @@ object AppRoutes {
 
     fun roleplayPlay(scenarioId: String): String {
         return "roleplay/play/${Uri.encode(scenarioId)}"
+    }
+
+    fun roleplaySettings(scenarioId: String): String {
+        return "roleplay/play/${Uri.encode(scenarioId)}/settings"
+    }
+
+    fun roleplayReading(scenarioId: String): String {
+        return "roleplay/play/${Uri.encode(scenarioId)}/reading"
     }
 }

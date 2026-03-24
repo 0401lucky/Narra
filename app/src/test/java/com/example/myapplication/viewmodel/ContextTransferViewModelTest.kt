@@ -11,6 +11,7 @@ import com.example.myapplication.model.ConversationSummary
 import com.example.myapplication.model.MemoryEntry
 import com.example.myapplication.model.MemoryScopeType
 import com.example.myapplication.model.WorldBookEntry
+import com.example.myapplication.model.WorldBookScopeType
 import com.example.myapplication.testutil.FakeConversationSummaryRepository
 import com.example.myapplication.testutil.FakeMemoryRepository
 import com.example.myapplication.testutil.FakeSettingsStore
@@ -472,6 +473,163 @@ class ContextTransferViewModelTest {
         assertEquals(listOf("璃珠都市", "夜巡守则"), worldBookRepository.listEntries().map { it.title })
         assertTrue(worldBookRepository.listEntries().all { it.scopeId == importedAssistant.id })
         assertEquals(2, importedAssistant.linkedWorldBookIds.size)
+    }
+
+    @Test
+    fun previewImportJson_supportsStandaloneLorebookJson() = runTest(mainDispatcherRule.dispatcher.scheduler) {
+        val repository = AiRepository(
+            settingsStore = FakeSettingsStore(AppSettings()),
+            apiServiceFactory = ApiServiceFactory(),
+            streamClientProvider = { _, _ -> OkHttpClient.Builder().build() },
+            ioDispatcher = mainDispatcherRule.dispatcher,
+        )
+        val viewModel = ContextTransferViewModel(
+            repository = repository,
+            worldBookRepository = FakeWorldBookRepository(),
+            memoryRepository = FakeMemoryRepository(),
+            conversationSummaryRepository = FakeConversationSummaryRepository(),
+        )
+
+        advanceUntilIdle()
+
+        val lorebookJson = """
+            {
+              "name": "璃珠都市设定",
+              "entries": {
+                "10": {
+                  "uid": 10,
+                  "comment": "璃珠都市",
+                  "key": ["璃珠都市", "港城"],
+                  "content": "璃珠都市是一座不夜港城。",
+                  "order": 120
+                },
+                "11": {
+                  "uid": 11,
+                  "comment": "夜巡守则",
+                  "key": ["夜巡"],
+                  "keysecondary": ["午夜"],
+                  "selective": true,
+                  "content": "午夜之后必须避开旧钟楼北侧。"
+                }
+              }
+            }
+        """.trimIndent()
+
+        viewModel.previewImportPayload(
+            payload = ContextImportPayload(
+                fileName = "lorebook.json",
+                mimeType = "application/json",
+                textContent = lorebookJson,
+            ),
+            section = ContextTransferSection.WORLD_BOOK,
+        )
+        advanceUntilIdle()
+
+        assertEquals("独立世界书", viewModel.uiState.value.importPreview?.sourceLabel)
+        assertEquals(2, viewModel.uiState.value.importPreview?.worldBookCount)
+    }
+
+    @Test
+    fun confirmImport_standaloneLorebookCreatesAttachableEntries() = runTest(mainDispatcherRule.dispatcher.scheduler) {
+        val repository = AiRepository(
+            settingsStore = FakeSettingsStore(AppSettings()),
+            apiServiceFactory = ApiServiceFactory(),
+            streamClientProvider = { _, _ -> OkHttpClient.Builder().build() },
+            ioDispatcher = mainDispatcherRule.dispatcher,
+        )
+        val worldBookRepository = FakeWorldBookRepository()
+        val viewModel = ContextTransferViewModel(
+            repository = repository,
+            worldBookRepository = worldBookRepository,
+            memoryRepository = FakeMemoryRepository(),
+            conversationSummaryRepository = FakeConversationSummaryRepository(),
+        )
+
+        advanceUntilIdle()
+
+        val lorebookJson = """
+            {
+              "name": "北境档案",
+              "entries": [
+                {
+                  "uid": 1,
+                  "comment": "白塔城",
+                  "key": ["白塔城"],
+                  "content": "白塔城是北境最大的贸易都会。"
+                }
+              ]
+            }
+        """.trimIndent()
+
+        viewModel.previewImportPayload(
+            payload = ContextImportPayload(
+                fileName = "north-archive.json",
+                mimeType = "application/json",
+                textContent = lorebookJson,
+            ),
+            section = ContextTransferSection.WORLD_BOOK,
+        )
+        advanceUntilIdle()
+
+        viewModel.confirmImport()
+        advanceUntilIdle()
+
+        val entry = worldBookRepository.listEntries().single()
+        assertEquals(WorldBookScopeType.ATTACHABLE, entry.scopeType)
+        assertEquals("", entry.scopeId)
+        assertEquals("北境档案", entry.sourceBookName)
+    }
+
+    @Test
+    fun previewImportPayload_worldBookSectionSupportsTavernPngExtraction() = runTest(mainDispatcherRule.dispatcher.scheduler) {
+        val repository = AiRepository(
+            settingsStore = FakeSettingsStore(AppSettings()),
+            apiServiceFactory = ApiServiceFactory(),
+            streamClientProvider = { _, _ -> OkHttpClient.Builder().build() },
+            ioDispatcher = mainDispatcherRule.dispatcher,
+        )
+        val viewModel = ContextTransferViewModel(
+            repository = repository,
+            worldBookRepository = FakeWorldBookRepository(),
+            memoryRepository = FakeMemoryRepository(),
+            conversationSummaryRepository = FakeConversationSummaryRepository(),
+        )
+
+        advanceUntilIdle()
+
+        val tavernJson = """
+            {
+              "spec": "chara_card_v2",
+              "data": {
+                "name": "夜巡者",
+                "description": "负责守夜的调查员。",
+                "character_book": {
+                  "name": "璃珠都市设定",
+                  "entries": [
+                    {
+                      "name": "璃珠都市",
+                      "keys": ["璃珠都市"],
+                      "content": "璃珠都市是一座不夜港城。"
+                    }
+                  ]
+                }
+              }
+            }
+        """.trimIndent()
+
+        viewModel.previewImportPayload(
+            payload = ContextImportPayload(
+                fileName = "night-watch.png",
+                mimeType = "image/png",
+                binaryContent = buildPngCharacterCard(tavernJson),
+            ),
+            section = ContextTransferSection.WORLD_BOOK,
+        )
+        advanceUntilIdle()
+
+        val preview = viewModel.uiState.value.importPreview
+        assertEquals(0, preview?.assistantCount)
+        assertEquals(1, preview?.worldBookCount)
     }
 
     private fun buildPngCharacterCard(json: String): ByteArray {

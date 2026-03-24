@@ -11,9 +11,10 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
-import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
@@ -23,28 +24,36 @@ import androidx.compose.ui.unit.sp
 fun RoleplayLongformCard(
     speakerName: String,
     content: String,
+    containerColor: Color = MaterialTheme.colorScheme.surface.copy(alpha = 0.78f),
+    titleColor: Color = MaterialTheme.colorScheme.primary,
+    bodyColor: Color = MaterialTheme.colorScheme.onSurface,
+    accentColor: Color = MaterialTheme.colorScheme.onSurfaceVariant,
     modifier: Modifier = Modifier,
 ) {
     val paragraphs = remember(content) { content.toLongformParagraphs() }
     Surface(
         modifier = modifier.fillMaxWidth(),
         shape = RoundedCornerShape(24.dp),
-        color = MaterialTheme.colorScheme.surface.copy(alpha = 0.78f),
-        tonalElevation = 2.dp,
+        color = containerColor,
+        tonalElevation = 0.dp,
         shadowElevation = 0.dp,
     ) {
         Column(
-            modifier = Modifier.padding(horizontal = 18.dp, vertical = 18.dp),
+            modifier = Modifier.padding(horizontal = 4.dp, vertical = 8.dp),
             verticalArrangement = Arrangement.spacedBy(14.dp),
         ) {
             Text(
                 text = speakerName,
                 style = MaterialTheme.typography.labelLarge,
-                color = MaterialTheme.colorScheme.primary,
+                color = titleColor,
                 fontWeight = FontWeight.Bold,
             )
             paragraphs.forEach { paragraph ->
-                LongformParagraphText(paragraph = paragraph)
+                LongformParagraphText(
+                    paragraph = paragraph,
+                    bodyColor = bodyColor,
+                    dialogueColor = accentColor,
+                )
             }
         }
     }
@@ -52,58 +61,69 @@ fun RoleplayLongformCard(
 
 internal fun String.toLongformParagraphs(): List<String> {
     return replace("\r\n", "\n")
-        .split(Regex("""\n\s*\n+"""))
-        .map { paragraph ->
-            paragraph.lines()
-                .map { it.trim() }
-                .filter { it.isNotEmpty() }
-                .joinToString(separator = "\n")
-        }
+        .split("\n")
+        .map { it.trim() }
         .filter { it.isNotEmpty() }
 }
 
 @Composable
-private fun LongformParagraphText(paragraph: String) {
-    val text = paragraph.trim()
-    val rendered = buildAnnotatedString {
+private fun LongformParagraphText(
+    paragraph: String,
+    bodyColor: Color,
+    dialogueColor: Color,
+) {
+    val rendered = remember(paragraph, bodyColor, dialogueColor) {
+        buildQuotedDialogueAnnotatedString(
+            text = paragraph.trim(),
+            narrationColor = bodyColor,
+            dialogueColor = dialogueColor,
+        )
+    }
+    Text(
+        text = rendered,
+        style = MaterialTheme.typography.bodyLarge.copy(
+            fontSize = 16.sp,
+            lineHeight = 26.sp,
+            letterSpacing = 0.6.sp,
+        ),
+        color = bodyColor,
+    )
+}
+
+internal fun buildQuotedDialogueAnnotatedString(
+    text: String,
+    narrationColor: Color,
+    dialogueColor: Color,
+): AnnotatedString {
+    return buildAnnotatedString {
         if (text.isBlank()) {
             return@buildAnnotatedString
         }
         var cursor = 0
-        LongformStyledTokenRegex.findAll(text).forEach { match ->
+        DialogueQuotedTextRegex.findAll(text).forEach { match ->
             if (match.range.first > cursor) {
-                append(text.substring(cursor, match.range.first))
+                withStyle(SpanStyle(color = narrationColor)) {
+                    append(text.substring(cursor, match.range.first))
+                }
             }
-            val token = match.value
-            val isInnerThought = token.startsWith("（") || token.startsWith("(")
             withStyle(
-                if (isInnerThought) {
-                    SpanStyle(
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        fontStyle = FontStyle.Italic,
-                    )
-                } else {
-                    SpanStyle(
-                        color = MaterialTheme.colorScheme.primary,
-                        fontWeight = FontWeight.SemiBold,
-                    )
-                },
+                SpanStyle(
+                    color = dialogueColor,
+                    fontWeight = FontWeight.Bold,
+                ),
             ) {
-                append(token)
+                append(match.value)
             }
             cursor = match.range.last + 1
         }
         if (cursor < text.length) {
-            append(text.substring(cursor))
+            withStyle(SpanStyle(color = narrationColor)) {
+                append(text.substring(cursor))
+            }
         }
     }
-    Text(
-        text = rendered,
-        style = MaterialTheme.typography.bodyLarge.copy(lineHeight = 28.sp),
-        color = MaterialTheme.colorScheme.onSurface,
-    )
 }
 
-private val LongformStyledTokenRegex = Regex(
-    pattern = """（[^）]+）|\([^)\n]+\)|“[^”]+”|"[^"\n]+"|'[^'\n]+'""",
+private val DialogueQuotedTextRegex = Regex(
+    pattern = """“[^”]*”|‘[^’]*’|"[^"\n]*"|'[^'\n]*'""",
 )

@@ -9,6 +9,7 @@ import com.example.myapplication.data.repository.context.ConversationSummaryRepo
 import com.example.myapplication.data.repository.context.MemoryRepository
 import com.example.myapplication.data.repository.context.TavernCharacterAdapter
 import com.example.myapplication.data.repository.context.TavernCharacterImageAdapter
+import com.example.myapplication.data.repository.context.TavernWorldBookAdapter
 import com.example.myapplication.data.repository.context.WorldBookRepository
 import com.example.myapplication.model.Assistant
 import com.example.myapplication.model.BUILTIN_ASSISTANTS
@@ -80,6 +81,7 @@ class ContextTransferViewModel(
     private val codec: ContextTransferCodec = ContextTransferCodec(),
     private val tavernCharacterAdapter: TavernCharacterAdapter = TavernCharacterAdapter(),
     private val tavernCharacterImageAdapter: TavernCharacterImageAdapter = TavernCharacterImageAdapter(),
+    private val tavernWorldBookAdapter: TavernWorldBookAdapter = TavernWorldBookAdapter(),
     private val importedAssistantAvatarSaver: suspend (AssistantAvatarImport) -> String? = { null },
 ) : ViewModel() {
     val settings = repository.settingsFlow.stateIn(
@@ -139,7 +141,7 @@ class ContextTransferViewModel(
         viewModelScope.launch {
             _uiState.update { it.copy(isBusy = true, message = null) }
             runCatching {
-                val decodedImport = decodeImportBundle(payload)
+                val decodedImport = decodeImportBundle(payload, section)
                 val filteredBundle = filterBundleBySection(
                     section = section,
                     bundle = decodedImport.bundle,
@@ -380,7 +382,10 @@ class ContextTransferViewModel(
         )
     }
 
-    private fun decodeImportBundle(payload: ContextImportPayload): DecodedImportBundle {
+    private fun decodeImportBundle(
+        payload: ContextImportPayload,
+        section: ContextTransferSection,
+    ): DecodedImportBundle {
         payload.textContent?.let { rawJson ->
             val decodedBundle = runCatching {
                 codec.decode(rawJson)
@@ -393,6 +398,16 @@ class ContextTransferViewModel(
 
             if (decodedBundle != null && !isBundleEmpty(decodedBundle.bundle)) {
                 return decodedBundle
+            }
+
+            tavernWorldBookAdapter.decodeAsBundle(
+                rawJson = rawJson,
+                fileName = payload.fileName,
+            )?.let { bundle ->
+                return DecodedImportBundle(
+                    sourceType = ImportSourceType.TAVERN_WORLD_BOOK,
+                    bundle = bundle,
+                )
             }
 
             tavernCharacterAdapter.decodeAsBundle(rawJson)?.let { bundle ->
@@ -583,5 +598,9 @@ private enum class ImportSourceType(
     TAVERN_PNG(
         sourceLabel = "Tavern 图片角色卡",
         includesAssistantScopedWorldBooks = true,
+    ),
+    TAVERN_WORLD_BOOK(
+        sourceLabel = "独立世界书",
+        includesAssistantScopedWorldBooks = false,
     ),
 }

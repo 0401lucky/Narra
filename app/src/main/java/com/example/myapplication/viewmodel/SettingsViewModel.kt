@@ -8,6 +8,7 @@ import com.example.myapplication.model.AppSettings
 import com.example.myapplication.model.Assistant
 import com.example.myapplication.model.BUILTIN_ASSISTANTS
 import com.example.myapplication.model.ConnectionHealth
+import com.example.myapplication.model.DEFAULT_ROLEPLAY_LONGFORM_TARGET_CHARS
 import com.example.myapplication.model.DEFAULT_ASSISTANT_ID
 import com.example.myapplication.model.ModelInfo
 import com.example.myapplication.model.ModelAbility
@@ -49,6 +50,9 @@ data class SettingsUiState(
     val codeBlockAutoWrap: Boolean = false,
     val codeBlockAutoCollapse: Boolean = false,
     val showRoleplayAiHelper: Boolean = true,
+    val roleplayLongformTargetChars: Int = DEFAULT_ROLEPLAY_LONGFORM_TARGET_CHARS,
+    val showRoleplayPresenceStrip: Boolean = true,
+    val showRoleplayStatusStrip: Boolean = false,
     val screenTranslationSettings: ScreenTranslationSettings = ScreenTranslationSettings(),
 ) {
     val currentProvider: ProviderSettings?
@@ -87,6 +91,9 @@ data class SettingsUiState(
             codeBlockAutoWrap != savedSettings.codeBlockAutoWrap ||
             codeBlockAutoCollapse != savedSettings.codeBlockAutoCollapse ||
             showRoleplayAiHelper != savedSettings.showRoleplayAiHelper ||
+            roleplayLongformTargetChars != savedSettings.roleplayLongformTargetChars ||
+            showRoleplayPresenceStrip != savedSettings.showRoleplayPresenceStrip ||
+            showRoleplayStatusStrip != savedSettings.showRoleplayStatusStrip ||
             screenTranslationSettings != savedSettings.screenTranslationSettings
     }
 }
@@ -130,6 +137,9 @@ class SettingsViewModel(
                             codeBlockAutoWrap = settings.codeBlockAutoWrap,
                             codeBlockAutoCollapse = settings.codeBlockAutoCollapse,
                             showRoleplayAiHelper = settings.showRoleplayAiHelper,
+                            roleplayLongformTargetChars = settings.roleplayLongformTargetChars,
+                            showRoleplayPresenceStrip = settings.showRoleplayPresenceStrip,
+                            showRoleplayStatusStrip = settings.showRoleplayStatusStrip,
                             screenTranslationSettings = settings.screenTranslationSettings,
                         )
                     }
@@ -349,6 +359,23 @@ class SettingsViewModel(
         _uiState.update { it.copy(showRoleplayAiHelper = enabled, message = null) }
     }
 
+    fun updateRoleplayLongformTargetChars(value: Int) {
+        _uiState.update {
+            it.copy(
+                roleplayLongformTargetChars = value.coerceIn(300, 2000),
+                message = null,
+            )
+        }
+    }
+
+    fun updateShowRoleplayPresenceStrip(enabled: Boolean) {
+        _uiState.update { it.copy(showRoleplayPresenceStrip = enabled, message = null) }
+    }
+
+    fun updateShowRoleplayStatusStrip(enabled: Boolean) {
+        _uiState.update { it.copy(showRoleplayStatusStrip = enabled, message = null) }
+    }
+
     fun updateScreenTranslationServiceEnabled(enabled: Boolean) {
         updateScreenTranslationSettings { it.copy(serviceEnabled = enabled) }
     }
@@ -480,6 +507,9 @@ class SettingsViewModel(
                     codeBlockAutoWrap = currentState.codeBlockAutoWrap,
                     codeBlockAutoCollapse = currentState.codeBlockAutoCollapse,
                     showRoleplayAiHelper = currentState.showRoleplayAiHelper,
+                    roleplayLongformTargetChars = currentState.roleplayLongformTargetChars,
+                    showRoleplayPresenceStrip = currentState.showRoleplayPresenceStrip,
+                    showRoleplayStatusStrip = currentState.showRoleplayStatusStrip,
                 )
                 repository.saveScreenTranslationSettings(
                     currentState.screenTranslationSettings,
@@ -498,6 +528,9 @@ class SettingsViewModel(
                         codeBlockAutoWrap = currentState.codeBlockAutoWrap,
                         codeBlockAutoCollapse = currentState.codeBlockAutoCollapse,
                         showRoleplayAiHelper = currentState.showRoleplayAiHelper,
+                        roleplayLongformTargetChars = currentState.roleplayLongformTargetChars,
+                        showRoleplayPresenceStrip = currentState.showRoleplayPresenceStrip,
+                        showRoleplayStatusStrip = currentState.showRoleplayStatusStrip,
                         screenTranslationSettings = currentState.screenTranslationSettings,
                         isSaving = false,
                         message = "设置已保存",

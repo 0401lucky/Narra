@@ -15,6 +15,9 @@ data class AppSettings(
     val codeBlockAutoWrap: Boolean = false,
     val codeBlockAutoCollapse: Boolean = false,
     val showRoleplayAiHelper: Boolean = true,
+    val roleplayLongformTargetChars: Int = DEFAULT_ROLEPLAY_LONGFORM_TARGET_CHARS,
+    val showRoleplayPresenceStrip: Boolean = true,
+    val showRoleplayStatusStrip: Boolean = false,
     val userDisplayName: String = DEFAULT_USER_DISPLAY_NAME,
     val userAvatarUri: String = "",
     val userAvatarUrl: String = "",
@@ -99,3 +102,4 @@ data class AppSettings(
 }
 
 const val DEFAULT_USER_DISPLAY_NAME = "用户"
+const val DEFAULT_ROLEPLAY_LONGFORM_TARGET_CHARS = 900

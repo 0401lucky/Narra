@@ -2,6 +2,7 @@ package com.example.myapplication.roleplay
 
 import com.example.myapplication.model.AppSettings
 import com.example.myapplication.model.Assistant
+import com.example.myapplication.model.DEFAULT_ROLEPLAY_LONGFORM_TARGET_CHARS
 import com.example.myapplication.model.RoleplayScenario
 
 object RoleplayPromptDecorator {
@@ -47,15 +48,22 @@ object RoleplayPromptDecorator {
             )
 
             if (scenario.longformModeEnabled) {
+                val targetChars = settings.roleplayLongformTargetChars
+                    .takeIf { it > 0 }
+                    ?.coerceIn(300, 2000)
+                    ?: DEFAULT_ROLEPLAY_LONGFORM_TARGET_CHARS
                 add(
                     buildString {
                         append("【长文小说模式】\n")
                         append("1. 使用纯中文长文小说体输出，不要输出 XML、Markdown、代码块或额外说明\n")
-                        append("2. 每次回复写成 4 到 8 个自然段，保留段落换行\n")
-                        append("3. 动作和环境描写直接融入叙事正文\n")
-                        append("4. 对白优先使用中文引号“”包裹\n")
-                        append("5. 心理描写优先使用全角括号（……）表达\n")
-                        append("6. 继续保持角色口吻稳定，并让剧情至少推进一项：局势、信息或关系")
+                        append("2. 每次回复控制在约 ")
+                        append(targetChars)
+                        append(" 字，允许根据剧情张力自然浮动，不要机械凑字数\n")
+                        append("3. 每次回复写成 4 到 8 个自然段，保留段落换行\n")
+                        append("4. 动作和环境描写直接融入叙事正文\n")
+                        append("5. 对白优先使用中文引号“”包裹\n")
+                        append("6. 心理描写优先使用全角括号（……）表达\n")
+                        append("7. 继续保持角色口吻稳定，并让剧情至少推进一项：局势、信息或关系")
                     },
                 )
             } else if (scenario.enableRoleplayProtocol) {

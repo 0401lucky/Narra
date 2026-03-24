@@ -1,7 +1,6 @@
 package com.example.myapplication.ui.screen.roleplay
 
-import com.example.myapplication.ui.component.*
-
+import com.example.myapplication.ui.component.NarraIconButton
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -20,15 +19,15 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
-import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -38,140 +37,164 @@ import com.example.myapplication.model.RoleplayContentType
 import com.example.myapplication.model.RoleplayMessageUiModel
 import com.example.myapplication.model.RoleplaySpeaker
 import com.example.myapplication.ui.component.TransferPlayCard
+import com.example.myapplication.ui.component.roleplay.ImmersiveBackdropState
+import com.example.myapplication.ui.component.roleplay.ImmersiveGlassChip
+import com.example.myapplication.ui.component.roleplay.ImmersiveGlassSurface
 import com.example.myapplication.ui.component.roleplay.RoleplayLongformCard
+import com.example.myapplication.ui.component.roleplay.RoleplaySceneBackground
+import com.example.myapplication.ui.component.roleplay.rememberImmersiveBackdropState
 
-/**
- * Full-screen reading mode — immersive story log for reviewing all dialogue.
- */
 @Composable
 fun RoleplayReadingMode(
     messages: List<RoleplayMessageUiModel>,
     scenarioTitle: String,
+    backgroundUri: String,
     onDismiss: () -> Unit,
 ) {
+    val backdropState = rememberImmersiveBackdropState(backgroundUri)
+    val palette = backdropState.palette
+
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(MaterialTheme.colorScheme.surface)
             .statusBarsPadding()
             .navigationBarsPadding(),
     ) {
-        LazyColumn(
+        RoleplaySceneBackground(
+            backdropState = backdropState,
             modifier = Modifier.fillMaxSize(),
-            contentPadding = PaddingValues(
-                start = 20.dp, end = 20.dp,
-                top = 8.dp, bottom = 40.dp,
-            ),
-            verticalArrangement = Arrangement.spacedBy(4.dp),
-        ) {
-            // Header with close button
-            item {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(bottom = 8.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                ) {
-                    Column {
-                        Text(
-                            text = "阅读模式",
-                            style = MaterialTheme.typography.titleLarge,
-                            fontWeight = FontWeight.Bold,
-                            color = MaterialTheme.colorScheme.onSurface,
-                        )
-                        Text(
-                            text = scenarioTitle.ifBlank { "剧情回顾" },
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        )
-                    }
-                    NarraIconButton(onClick = onDismiss) {
-                        Icon(Icons.Default.Close, contentDescription = "关闭")
-                    }
-                }
-                HorizontalDivider(
-                    color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f),
-                )
-            }
+        )
+        Box(modifier = Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.3f)))
 
-            if (messages.isEmpty()) {
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+        ) {
+            LazyColumn(
+                modifier = Modifier.fillMaxSize(),
+                contentPadding = PaddingValues(
+                    start = 20.dp,
+                    end = 20.dp,
+                    top = 14.dp,
+                    bottom = 40.dp,
+                ),
+                verticalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
                 item {
-                    Box(
+                    Row(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(vertical = 60.dp),
-                        contentAlignment = Alignment.Center,
+                            .padding(bottom = 8.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween,
                     ) {
-                        Text(
-                            text = "还没有剧情内容",
-                            style = MaterialTheme.typography.bodyLarge,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f),
-                        )
+                        Column(
+                            verticalArrangement = Arrangement.spacedBy(6.dp),
+                        ) {
+                            Text(
+                                text = "阅读模式",
+                                style = MaterialTheme.typography.titleLarge,
+                                fontWeight = FontWeight.ExtraBold,
+                                color = palette.onGlass,
+                            )
+                            Text(
+                                text = scenarioTitle.ifBlank { "剧情回顾" },
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = palette.onGlassMuted,
+                            )
+                            ImmersiveGlassChip(
+                                text = "${messages.size} 条剧情",
+                                backdropState = backdropState,
+                            )
+                        }
+                        NarraIconButton(onClick = onDismiss) {
+                            Icon(Icons.Default.Close, contentDescription = "关闭", tint = palette.onGlass)
+                        }
                     }
                 }
-            }
 
-            items(
-                messages,
-                key = { "${it.sourceMessageId}-${it.createdAt}-${it.content.hashCode()}" },
-            ) { message ->
-                ReadingModeItem(message)
+                if (messages.isEmpty()) {
+                    item {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(vertical = 100.dp),
+                            contentAlignment = Alignment.Center,
+                        ) {
+                            Text(
+                                text = "还没有剧情内容",
+                                style = MaterialTheme.typography.bodyLarge,
+                                color = palette.onGlassMuted.copy(alpha = 0.72f),
+                            )
+                        }
+                    }
+                }
+
+                items(
+                    messages,
+                    key = { "${it.sourceMessageId}-${it.createdAt}-${it.content.hashCode()}" },
+                ) { message ->
+                    when (message.contentType) {
+                        RoleplayContentType.NARRATION -> NarrationReadingBlock(message, backdropState)
+                        RoleplayContentType.SYSTEM -> SystemReadingBlock(message, backdropState)
+                        RoleplayContentType.DIALOGUE -> DialogueReadingBlock(message, backdropState)
+                        RoleplayContentType.LONGFORM -> LongformReadingBlock(message, backdropState)
+                        RoleplayContentType.SPECIAL_TRANSFER -> TransferReadingBlock(message)
+                    }
+                }
             }
         }
     }
 }
 
 @Composable
-private fun ReadingModeItem(message: RoleplayMessageUiModel) {
-    when (message.contentType) {
-        RoleplayContentType.NARRATION -> NarrationReadingBlock(message)
-        RoleplayContentType.SYSTEM -> SystemReadingBlock(message)
-        RoleplayContentType.DIALOGUE -> DialogueReadingBlock(message)
-        RoleplayContentType.LONGFORM -> LongformReadingBlock(message)
-        RoleplayContentType.SPECIAL_TRANSFER -> TransferReadingBlock(message)
+private fun NarrationReadingBlock(
+    message: RoleplayMessageUiModel,
+    backdropState: ImmersiveBackdropState,
+) {
+    val paragraphs = remember(message.content) {
+        message.content.split('\n').map { it.trim() }.filter { it.isNotEmpty() }
     }
-}
-
-/** Narration — centered italic text with subtle background */
-@Composable
-private fun NarrationReadingBlock(message: RoleplayMessageUiModel) {
-    Surface(
+    Column(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(vertical = 8.dp),
-        shape = RoundedCornerShape(16.dp),
-        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.35f),
+            .padding(vertical = 12.dp, horizontal = 20.dp),
+        verticalArrangement = Arrangement.spacedBy(16.dp),
     ) {
-        Text(
-            text = message.content,
-            modifier = Modifier.padding(horizontal = 20.dp, vertical = 16.dp),
-            style = MaterialTheme.typography.bodyLarge.copy(
-                fontStyle = FontStyle.Italic,
-                lineHeight = 28.sp,
-            ),
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            textAlign = TextAlign.Center,
-        )
+        paragraphs.forEach { paragraph ->
+            Text(
+                text = paragraph,
+                style = MaterialTheme.typography.bodyLarge.copy(
+                    fontSize = 16.sp,
+                    fontStyle = FontStyle.Italic,
+                    lineHeight = 26.sp,
+                    letterSpacing = 0.6.sp,
+                ),
+                color = backdropState.palette.onGlassMuted,
+                textAlign = TextAlign.Center,
+            )
+        }
     }
 }
 
-/** Dialogue — speaker name header + content body */
 @Composable
-private fun DialogueReadingBlock(message: RoleplayMessageUiModel) {
+private fun DialogueReadingBlock(
+    message: RoleplayMessageUiModel,
+    backdropState: ImmersiveBackdropState,
+) {
     val isUser = message.speaker == RoleplaySpeaker.USER
     val nameColor = if (isUser) {
-        MaterialTheme.colorScheme.primary
+        backdropState.palette.onGlass
     } else {
-        MaterialTheme.colorScheme.secondary
+        backdropState.palette.chipText
     }
 
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(vertical = 6.dp),
+            .padding(vertical = 8.dp),
+        verticalArrangement = Arrangement.spacedBy(10.dp),
     ) {
-        // Speaker name + emotion
         Row(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(6.dp),
@@ -186,50 +209,62 @@ private fun DialogueReadingBlock(message: RoleplayMessageUiModel) {
                 Text(
                     text = "· ${message.emotion}",
                     style = MaterialTheme.typography.labelMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
+                    color = backdropState.palette.onGlassMuted.copy(alpha = 0.78f),
                 )
             }
         }
-        Spacer(modifier = Modifier.height(4.dp))
-        Text(
-            text = message.content,
-            style = MaterialTheme.typography.bodyLarge.copy(lineHeight = 26.sp),
-            color = MaterialTheme.colorScheme.onSurface,
-        )
+        val paragraphs = remember(message.content) {
+            message.content.split('\n').map { it.trim() }.filter { it.isNotEmpty() }
+        }
+        Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+            paragraphs.forEach { paragraph ->
+                Text(
+                    text = paragraph,
+                    style = MaterialTheme.typography.bodyLarge.copy(
+                        fontSize = 16.sp,
+                        lineHeight = 26.sp,
+                        letterSpacing = 0.6.sp,
+                    ),
+                    color = backdropState.palette.onGlass,
+                )
+            }
+        }
     }
 }
 
 @Composable
-private fun LongformReadingBlock(message: RoleplayMessageUiModel) {
+private fun LongformReadingBlock(
+    message: RoleplayMessageUiModel,
+    backdropState: ImmersiveBackdropState,
+) {
     RoleplayLongformCard(
         speakerName = message.speakerName,
         content = message.content,
+        containerColor = Color.Transparent,
+        titleColor = backdropState.palette.onGlass,
+        bodyColor = backdropState.palette.onGlass,
+        accentColor = backdropState.palette.onGlassMuted,
         modifier = Modifier
             .fillMaxWidth()
             .padding(vertical = 6.dp),
     )
 }
 
-/** System messages — centered small pill */
 @Composable
-private fun SystemReadingBlock(message: RoleplayMessageUiModel) {
+private fun SystemReadingBlock(
+    message: RoleplayMessageUiModel,
+    backdropState: ImmersiveBackdropState,
+) {
     Box(
         modifier = Modifier
             .fillMaxWidth()
             .padding(vertical = 8.dp),
         contentAlignment = Alignment.Center,
     ) {
-        Surface(
-            shape = RoundedCornerShape(12.dp),
-            color = MaterialTheme.colorScheme.tertiaryContainer.copy(alpha = 0.5f),
-        ) {
-            Text(
-                text = message.content,
-                modifier = Modifier.padding(horizontal = 14.dp, vertical = 6.dp),
-                style = MaterialTheme.typography.labelMedium,
-                color = MaterialTheme.colorScheme.onTertiaryContainer,
-            )
-        }
+        ImmersiveGlassChip(
+            text = message.content,
+            backdropState = backdropState,
+        )
     }
 }
 

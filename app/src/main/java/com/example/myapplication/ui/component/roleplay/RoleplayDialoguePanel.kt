@@ -22,6 +22,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
@@ -39,12 +40,9 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.derivedStateOf
@@ -54,10 +52,10 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
@@ -72,8 +70,15 @@ import com.example.myapplication.model.RoleplaySpeaker
 import com.example.myapplication.model.RoleplaySuggestionUiModel
 import com.example.myapplication.ui.component.TransferPlayCard
 
+// 沉浸风文字颜色
+private val ImmersiveTextWhite = Color.White.copy(alpha = 0.92f)
+private val ImmersiveTextMuted = Color.White.copy(alpha = 0.62f)
+private val ImmersiveAccentBlue = Color(0xFF7EB8E8)
+private val ImmersiveUserAccent = Color(0xFFA8D8EA)
+
 @Composable
 fun RoleplayDialoguePanel(
+    backdropState: ImmersiveBackdropState,
     messages: List<RoleplayMessageUiModel>,
     suggestions: List<RoleplaySuggestionUiModel>,
     isGeneratingSuggestions: Boolean,
@@ -110,53 +115,37 @@ fun RoleplayDialoguePanel(
             listState.animateScrollToItem(storyMessages.lastIndex)
         }
     }
-    Surface(
-        modifier = modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(topStart = 30.dp, topEnd = 30.dp, bottomStart = 24.dp, bottomEnd = 24.dp),
-        color = MaterialTheme.colorScheme.surface.copy(alpha = 0.84f),
-        tonalElevation = 6.dp,
-        shadowElevation = 10.dp,
+    Column(
+        modifier = modifier.fillMaxWidth()
+            .padding(start = 14.dp, top = 0.dp, end = 14.dp, bottom = 10.dp),
+        verticalArrangement = Arrangement.spacedBy(6.dp),
     ) {
-        Column(
-            modifier = Modifier.fillMaxWidth().fillMaxHeight().background(
-                brush = Brush.verticalGradient(
-                    colors = listOf(
-                        MaterialTheme.colorScheme.surface.copy(alpha = 0.98f),
-                        MaterialTheme.colorScheme.surfaceContainerLow.copy(alpha = 0.96f),
-                        MaterialTheme.colorScheme.surfaceContainer.copy(alpha = 0.98f),
-                    ),
-                ),
-            ).padding(start = 12.dp, top = 12.dp, end = 12.dp, bottom = 10.dp),
-            verticalArrangement = Arrangement.spacedBy(10.dp),
-        ) {
-            if (storyMessages.isEmpty()) {
-                EmptyDialogueState(modifier = Modifier.weight(1f, fill = true))
-            } else {
-                LazyColumn(
-                    state = listState,
-                    modifier = Modifier.fillMaxWidth().weight(1f, fill = true),
-                    contentPadding = PaddingValues(bottom = 8.dp),
-                    verticalArrangement = Arrangement.spacedBy(8.dp),
-                ) {
-                    item { StoryListHeader(messageCount = storyMessages.size) }
-                    items(storyMessages, key = { "${it.sourceMessageId}-${it.createdAt}-${it.contentType}-${it.copyText.hashCode()}" }) { message ->
-                        RoleplayMessageItem(message, onRetryTurn, onConfirmTransferReceipt)
-                    }
+        if (storyMessages.isEmpty()) {
+            EmptyDialogueState(modifier = Modifier.weight(1f, fill = true))
+        } else {
+            LazyColumn(
+                state = listState,
+                modifier = Modifier.fillMaxWidth().weight(1f, fill = true),
+                contentPadding = PaddingValues(bottom = 8.dp),
+                verticalArrangement = Arrangement.spacedBy(4.dp),
+            ) {
+                items(storyMessages, key = { "${it.sourceMessageId}-${it.createdAt}-${it.contentType}-${it.copyText.hashCode()}" }) { message ->
+                    RoleplayMessageItem(message, onRetryTurn, onConfirmTransferReceipt)
                 }
             }
-            if (showAiHelper) {
-                RoleplaySuggestionSection(
-                    suggestions = suggestions,
-                    isGeneratingSuggestions = isGeneratingSuggestions,
-                    suggestionErrorMessage = suggestionErrorMessage,
-                    isSending = isSending,
-                    onGenerateSuggestions = onGenerateSuggestions,
-                    onApplySuggestion = onApplySuggestion,
-                    onClearSuggestions = onClearSuggestions,
-                )
-            }
-            RoleplayInputBar(input, isSending, onInputChange, onSend, onCancel, onOpenSpecialPlay)
         }
+        if (showAiHelper) {
+            RoleplaySuggestionSection(
+                suggestions = suggestions,
+                isGeneratingSuggestions = isGeneratingSuggestions,
+                suggestionErrorMessage = suggestionErrorMessage,
+                isSending = isSending,
+                onGenerateSuggestions = onGenerateSuggestions,
+                onApplySuggestion = onApplySuggestion,
+                onClearSuggestions = onClearSuggestions,
+            )
+        }
+        RoleplayInputBar(input, isSending, onInputChange, onSend, onCancel, onOpenSpecialPlay)
     }
 }
 
@@ -172,113 +161,122 @@ private fun RoleplaySuggestionSection(
 ) {
     val showPanel = suggestions.isNotEmpty() || isGeneratingSuggestions || !suggestionErrorMessage.isNullOrBlank()
     if (!showPanel) {
-        Surface(
-            modifier = Modifier.fillMaxWidth().combinedClickable(
-                enabled = !isSending,
-                onClick = onGenerateSuggestions,
-                onLongClick = {},
-            ),
-            shape = RoundedCornerShape(20.dp),
-            color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.32f),
-        ) {
-            Row(
-                modifier = Modifier.fillMaxWidth().padding(horizontal = 14.dp, vertical = 12.dp),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
-                    Text("AI帮写", style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.SemiBold)
-                    Text("不知道写什么？让 AI 帮你续一句", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                }
-                Text(
-                    text = if (isSending) "发送中" else "生成",
-                    style = MaterialTheme.typography.labelMedium,
-                    color = if (isSending) MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f) else MaterialTheme.colorScheme.primary,
+        // 收起态：半透明条
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .combinedClickable(
+                    enabled = !isSending,
+                    onClick = onGenerateSuggestions,
+                    onLongClick = {},
                 )
-            }
+                .background(
+                    color = Color.White.copy(alpha = 0.08f),
+                    shape = RoundedCornerShape(16.dp),
+                )
+                .padding(horizontal = 14.dp, vertical = 10.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Text(
+                "AI帮写",
+                style = MaterialTheme.typography.labelMedium,
+                color = ImmersiveAccentBlue,
+                fontWeight = FontWeight.SemiBold,
+            )
+            Text(
+                text = if (isSending) "发送中" else "生成",
+                style = MaterialTheme.typography.labelSmall,
+                color = if (isSending) ImmersiveTextMuted else ImmersiveAccentBlue,
+            )
         }
         return
     }
+
     val suggestionListState = rememberLazyListState()
-    Surface(
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(22.dp),
-        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.28f),
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .background(
+                color = Color.White.copy(alpha = 0.08f),
+                shape = RoundedCornerShape(18.dp),
+            )
+            .padding(horizontal = 12.dp, vertical = 10.dp),
+        verticalArrangement = Arrangement.spacedBy(8.dp),
     ) {
-        Column(
-            modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 12.dp),
-            verticalArrangement = Arrangement.spacedBy(10.dp),
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically,
         ) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically,
+            Text(
+                "AI帮写",
+                style = MaterialTheme.typography.labelMedium,
+                color = ImmersiveAccentBlue,
+                fontWeight = FontWeight.SemiBold,
+            )
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                NarraTextButton(onClick = onGenerateSuggestions, enabled = !isSending && !isGeneratingSuggestions) {
+                    Text(if (suggestions.isEmpty()) "重试" else "换一批", color = ImmersiveAccentBlue)
+                }
+                NarraTextButton(onClick = onClearSuggestions) {
+                    Text("收起", color = ImmersiveTextMuted)
+                }
+            }
+        }
+        if (isGeneratingSuggestions) {
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
+                CircularProgressIndicator(modifier = Modifier.size(16.dp), strokeWidth = 2.dp, color = ImmersiveAccentBlue)
+                Text("正在生成建议…", style = MaterialTheme.typography.bodySmall, color = ImmersiveTextMuted)
+            }
+        }
+        if (!suggestionErrorMessage.isNullOrBlank()) {
+            Text(suggestionErrorMessage, style = MaterialTheme.typography.bodySmall, color = Color(0xFFFF8A80))
+        }
+        if (suggestions.isNotEmpty()) {
+            LazyColumn(
+                state = suggestionListState,
+                modifier = Modifier.fillMaxWidth().heightIn(max = 280.dp),
+                verticalArrangement = Arrangement.spacedBy(6.dp),
             ) {
-                Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
-                    Text("AI帮写", style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.SemiBold)
-                    Text("生成几条可继续剧情的输入建议", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                }
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    NarraTextButton(onClick = onGenerateSuggestions, enabled = !isSending && !isGeneratingSuggestions) { Text(if (suggestions.isEmpty()) "重试" else "换一批") }
-                    NarraTextButton(onClick = onClearSuggestions) { Text("收起") }
-                }
-            }
-            if (isGeneratingSuggestions) {
-                Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
-                    CircularProgressIndicator(modifier = Modifier.size(18.dp), strokeWidth = 2.dp, color = MaterialTheme.colorScheme.primary)
-                    Text("正在根据剧情生成输入建议…", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                }
-            }
-            if (!suggestionErrorMessage.isNullOrBlank()) {
-                Text(suggestionErrorMessage, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.error)
-            }
-            if (suggestions.isNotEmpty()) {
-                LazyColumn(
-                    state = suggestionListState,
-                    modifier = Modifier.fillMaxWidth().heightIn(max = 320.dp),
-                    verticalArrangement = Arrangement.spacedBy(10.dp),
-                ) {
-                    items(suggestions, key = { it.id }) { suggestion ->
-                        Surface(
-                            modifier = Modifier.fillMaxWidth().combinedClickable(
+                items(suggestions, key = { it.id }) { suggestion ->
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .combinedClickable(
                                 enabled = !isSending,
                                 onClick = { onApplySuggestion(suggestion.text) },
                                 onLongClick = {},
-                            ),
-                            shape = RoundedCornerShape(18.dp),
-                            color = MaterialTheme.colorScheme.surface.copy(alpha = 0.82f),
-                            tonalElevation = 2.dp,
+                            )
+                            .background(
+                                color = Color.White.copy(alpha = 0.06f),
+                                shape = RoundedCornerShape(14.dp),
+                            )
+                            .padding(horizontal = 12.dp, vertical = 10.dp),
+                        verticalArrangement = Arrangement.spacedBy(4.dp),
+                    ) {
+                        Row(
+                            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                            verticalAlignment = Alignment.CenterVertically,
                         ) {
-                            Column(
-                                modifier = Modifier.fillMaxWidth().padding(horizontal = 14.dp, vertical = 12.dp),
-                                verticalArrangement = Arrangement.spacedBy(6.dp),
-                            ) {
-                                Row(
-                                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                                    verticalAlignment = Alignment.CenterVertically,
-                                ) {
-                                    Surface(
-                                        shape = RoundedCornerShape(999.dp),
-                                        color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.6f),
-                                    ) {
-                                        Text(
-                                            text = suggestion.axis.toReadableLabel(),
-                                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
-                                            style = MaterialTheme.typography.labelSmall,
-                                            color = MaterialTheme.colorScheme.primary,
-                                            fontWeight = FontWeight.SemiBold,
-                                        )
-                                    }
-                                    Text(
-                                        suggestion.label,
-                                        style = MaterialTheme.typography.labelMedium,
-                                        color = MaterialTheme.colorScheme.primary,
-                                        fontWeight = FontWeight.SemiBold,
-                                    )
-                                }
-                                Text(suggestion.text, style = MaterialTheme.typography.bodyMedium.copy(lineHeight = 22.sp), color = MaterialTheme.colorScheme.onSurface)
-                            }
+                            Text(
+                                text = suggestion.axis.toReadableLabel(),
+                                style = MaterialTheme.typography.labelSmall,
+                                color = ImmersiveAccentBlue.copy(alpha = 0.8f),
+                                fontWeight = FontWeight.SemiBold,
+                            )
+                            Text(
+                                suggestion.label,
+                                style = MaterialTheme.typography.labelSmall,
+                                color = ImmersiveAccentBlue,
+                                fontWeight = FontWeight.SemiBold,
+                            )
                         }
+                        Text(
+                            suggestion.text,
+                            style = MaterialTheme.typography.bodySmall.copy(lineHeight = 20.sp),
+                            color = ImmersiveTextWhite,
+                        )
                     }
                 }
             }
@@ -287,41 +285,27 @@ private fun RoleplaySuggestionSection(
 }
 
 @Composable
-private fun StoryListHeader(messageCount: Int) {
-    Surface(
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(18.dp),
-        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.34f),
-    ) {
-        Row(
-            modifier = Modifier.fillMaxWidth().padding(horizontal = 14.dp, vertical = 10.dp),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
-                Text("剧情记录", style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.SemiBold)
-                Text("默认页可直接浏览全部对话", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-            }
-            Text("$messageCount 条", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
-        }
-    }
-}
-
-@Composable
 private fun EmptyDialogueState(modifier: Modifier = Modifier) {
-    Surface(
+    Box(
         modifier = modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(26.dp),
-        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.24f),
+        contentAlignment = Alignment.Center,
     ) {
         Column(
-            modifier = Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 28.dp),
-            verticalArrangement = Arrangement.Center,
+            modifier = Modifier.padding(horizontal = 32.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(8.dp),
         ) {
-            Text("输入第一句对白", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold, color = MaterialTheme.colorScheme.onSurfaceVariant)
-            Spacer(modifier = Modifier.height(6.dp))
-            Text("默认页会直接累计显示剧情，不用再切阅读模式", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.74f), lineHeight = 22.sp)
+            Text(
+                "输入第一句对白",
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.SemiBold,
+                color = ImmersiveTextWhite,
+            )
+            Text(
+                "你的故事将从这里开始……",
+                style = MaterialTheme.typography.bodyMedium,
+                color = ImmersiveTextMuted,
+            )
         }
     }
 }
@@ -338,12 +322,16 @@ private fun StreamingLogText(content: String) {
     Text(
         text = buildAnnotatedString {
             append(content)
-            withStyle(SpanStyle(color = MaterialTheme.colorScheme.primary.copy(alpha = cursorAlpha), fontWeight = FontWeight.Bold)) {
+            withStyle(SpanStyle(color = ImmersiveAccentBlue.copy(alpha = cursorAlpha), fontWeight = FontWeight.Bold)) {
                 append(" ▌")
             }
         },
-        style = MaterialTheme.typography.bodyLarge.copy(lineHeight = 24.sp),
-        color = MaterialTheme.colorScheme.onSurface,
+        style = MaterialTheme.typography.bodyLarge.copy(
+            fontSize = 16.sp,
+            lineHeight = 26.sp,
+            letterSpacing = 0.6.sp,
+        ),
+        color = ImmersiveTextWhite,
     )
 }
 
@@ -366,62 +354,81 @@ private fun RoleplayInputBar(
 ) {
     val canSend = input.isNotBlank() && !isSending
     var showActionMenu by remember { mutableStateOf(false) }
-    Surface(modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(24.dp), color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.42f)) {
-        Row(
-            modifier = Modifier.fillMaxWidth().padding(start = 8.dp, top = 6.dp, end = 6.dp, bottom = 6.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
-        ) {
-            Box {
-                NarraIconButton(
-                    onClick = { showActionMenu = true },
-                    enabled = !isSending,
-                    modifier = Modifier.size(40.dp).background(color = MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.72f), shape = CircleShape),
-                    colors = IconButtonDefaults.iconButtonColors(containerColor = androidx.compose.ui.graphics.Color.Transparent, contentColor = MaterialTheme.colorScheme.onSecondaryContainer),
-                ) { Icon(Icons.Default.Add, contentDescription = "更多玩法", modifier = Modifier.size(18.dp)) }
-                DropdownMenu(expanded = showActionMenu, onDismissRequest = { showActionMenu = false }) {
-                    DropdownMenuItem(
-                        text = { Text("特殊玩法") },
-                        leadingIcon = { Icon(Icons.Default.Share, contentDescription = null) },
-                        onClick = { showActionMenu = false; onOpenSpecialPlay() },
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .background(
+                color = Color.White.copy(alpha = 0.10f),
+                shape = RoundedCornerShape(24.dp),
+            )
+            .padding(start = 8.dp, top = 6.dp, end = 6.dp, bottom = 6.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(6.dp),
+    ) {
+        Box {
+            NarraIconButton(
+                onClick = { showActionMenu = true },
+                enabled = !isSending,
+                modifier = Modifier
+                    .size(38.dp)
+                    .background(
+                        color = Color.White.copy(alpha = 0.1f),
+                        shape = CircleShape,
+                    ),
+                colors = IconButtonDefaults.iconButtonColors(
+                    containerColor = Color.Transparent,
+                    contentColor = ImmersiveTextWhite,
+                ),
+            ) { Icon(Icons.Default.Add, contentDescription = "更多玩法", modifier = Modifier.size(18.dp)) }
+            DropdownMenu(expanded = showActionMenu, onDismissRequest = { showActionMenu = false }) {
+                DropdownMenuItem(
+                    text = { Text("特殊玩法") },
+                    leadingIcon = { Icon(Icons.Default.Share, contentDescription = null) },
+                    onClick = { showActionMenu = false; onOpenSpecialPlay() },
+                )
+            }
+        }
+        BasicTextField(
+            value = input,
+            onValueChange = onInputChange,
+            modifier = Modifier.weight(1f).padding(vertical = 8.dp),
+            enabled = !isSending,
+            maxLines = 3,
+            textStyle = MaterialTheme.typography.bodyLarge.copy(color = ImmersiveTextWhite),
+            cursorBrush = SolidColor(ImmersiveAccentBlue),
+            decorationBox = { innerTextField ->
+                if (input.isEmpty()) {
+                    Text(
+                        "随便聊聊…",
+                        style = MaterialTheme.typography.bodyLarge,
+                        color = Color.White.copy(alpha = 0.32f),
                     )
                 }
-            }
-            BasicTextField(
-                value = input,
-                onValueChange = onInputChange,
-                modifier = Modifier.weight(1f).padding(vertical = 8.dp),
-                enabled = !isSending,
-                maxLines = 3,
-                textStyle = MaterialTheme.typography.bodyLarge.copy(color = MaterialTheme.colorScheme.onSurface),
-                cursorBrush = SolidColor(MaterialTheme.colorScheme.primary),
-                decorationBox = { innerTextField ->
-                    if (input.isEmpty()) {
-                        Text("输入对白或行动描述…", style = MaterialTheme.typography.bodyLarge, color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f))
-                    }
-                    innerTextField()
-                },
-            )
-            if (isSending && onCancel != null) {
-                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-                    CircularProgressIndicator(modifier = Modifier.size(18.dp), strokeWidth = 2.dp, color = MaterialTheme.colorScheme.primary)
-                    NarraIconButton(
-                        onClick = onCancel,
-                        modifier = Modifier.size(40.dp),
-                        colors = IconButtonDefaults.iconButtonColors(containerColor = MaterialTheme.colorScheme.errorContainer, contentColor = MaterialTheme.colorScheme.onErrorContainer),
-                    ) { Icon(Icons.Default.Close, contentDescription = "取消", modifier = Modifier.size(18.dp)) }
-                }
-            } else {
+                innerTextField()
+            },
+        )
+        if (isSending && onCancel != null) {
+            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                CircularProgressIndicator(modifier = Modifier.size(16.dp), strokeWidth = 2.dp, color = ImmersiveAccentBlue)
                 NarraIconButton(
-                    onClick = onSend,
-                    enabled = canSend,
-                    modifier = Modifier.size(40.dp),
+                    onClick = onCancel,
+                    modifier = Modifier.size(38.dp),
                     colors = IconButtonDefaults.iconButtonColors(
-                        containerColor = if (canSend) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f),
-                        contentColor = if (canSend) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f),
+                        containerColor = Color(0xFFFF5252).copy(alpha = 0.7f),
+                        contentColor = Color.White,
                     ),
-                ) { Icon(Icons.AutoMirrored.Filled.Send, contentDescription = "发送", modifier = Modifier.size(18.dp)) }
+                ) { Icon(Icons.Default.Close, contentDescription = "取消", modifier = Modifier.size(16.dp)) }
             }
+        } else {
+            NarraIconButton(
+                onClick = onSend,
+                enabled = canSend,
+                modifier = Modifier.size(38.dp),
+                colors = IconButtonDefaults.iconButtonColors(
+                    containerColor = if (canSend) ImmersiveAccentBlue.copy(alpha = 0.8f) else Color.White.copy(alpha = 0.08f),
+                    contentColor = if (canSend) Color.Black.copy(alpha = 0.88f) else Color.White.copy(alpha = 0.25f),
+                ),
+            ) { Icon(Icons.AutoMirrored.Filled.Send, contentDescription = "发送", modifier = Modifier.size(16.dp)) }
         }
     }
 }
@@ -434,52 +441,126 @@ private fun RoleplayMessageItem(
 ) {
     when (message.contentType) {
         RoleplayContentType.NARRATION -> RoleplayMessageMenuWrapper(message, onRetryTurn) {
-            Surface(
-                modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(18.dp),
-                color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.24f),
+            // 旁白：居中斜体，无卡片
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 6.dp, horizontal = 8.dp),
+                verticalArrangement = Arrangement.spacedBy(10.dp),
             ) {
-                Column(modifier = Modifier.padding(horizontal = 14.dp, vertical = 12.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                    Text("旁白", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant, fontWeight = FontWeight.SemiBold)
-                    Text(message.content, style = MaterialTheme.typography.bodyMedium.copy(fontStyle = FontStyle.Italic, lineHeight = 22.sp), color = MaterialTheme.colorScheme.onSurfaceVariant)
+                val paragraphs = remember(message.content) { message.content.toLongformParagraphs() }
+                paragraphs.forEach { paragraph ->
+                    Text(
+                        paragraph,
+                        style = MaterialTheme.typography.bodyMedium.copy(
+                            fontSize = 15.sp,
+                            fontStyle = FontStyle.Italic,
+                            lineHeight = 25.sp,
+                            letterSpacing = 0.6.sp,
+                        ),
+                        color = ImmersiveTextMuted,
+                    )
                 }
             }
         }
 
         RoleplayContentType.DIALOGUE -> {
             if (message.speaker == RoleplaySpeaker.USER) {
+                // 用户消息：右对齐，半透明背景
                 Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
                     RoleplayMessageMenuWrapper(message, onRetryTurn, Modifier.fillMaxWidth(0.82f)) {
-                        Surface(
-                            modifier = Modifier.fillMaxWidth(),
-                            shape = RoundedCornerShape(20.dp),
-                            color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.84f),
+                        Column(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .background(
+                                    color = Color.White.copy(alpha = 0.10f),
+                                    shape = RoundedCornerShape(
+                                        topStart = 20.dp,
+                                        topEnd = 6.dp,
+                                        bottomStart = 20.dp,
+                                        bottomEnd = 20.dp,
+                                    ),
+                                )
+                                .padding(horizontal = 14.dp, vertical = 10.dp),
+                            verticalArrangement = Arrangement.spacedBy(4.dp),
                         ) {
-                            Column(modifier = Modifier.padding(horizontal = 14.dp, vertical = 12.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                                Text(message.speakerName, style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.SemiBold, color = MaterialTheme.colorScheme.primary)
-                                Text(message.content, style = MaterialTheme.typography.bodyLarge.copy(lineHeight = 24.sp), color = MaterialTheme.colorScheme.onPrimaryContainer)
+                            Text(
+                                message.speakerName,
+                                style = MaterialTheme.typography.labelMedium,
+                                fontWeight = FontWeight.SemiBold,
+                                color = ImmersiveUserAccent,
+                            )
+                            if (message.isStreaming) {
+                                StreamingLogText(message.content)
+                            } else {
+                                val paragraphs = remember(message.content) { message.content.toLongformParagraphs() }
+                                Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                                    paragraphs.forEach { paragraph ->
+                                        Text(
+                                            paragraph,
+                                            style = MaterialTheme.typography.bodyLarge.copy(
+                                                fontSize = 16.sp,
+                                                lineHeight = 26.sp,
+                                                letterSpacing = 0.6.sp,
+                                            ),
+                                            color = ImmersiveTextWhite,
+                                        )
+                                    }
+                                }
                             }
                         }
                     }
                 }
             } else {
+                // 角色消息：左对齐，无背景，直接内联
                 RoleplayMessageMenuWrapper(message, onRetryTurn) {
-                    Surface(
-                        modifier = Modifier.fillMaxWidth(),
-                        shape = RoundedCornerShape(20.dp),
-                        color = MaterialTheme.colorScheme.surfaceContainerHighest.copy(alpha = 0.88f),
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = 4.dp),
+                        verticalArrangement = Arrangement.spacedBy(4.dp),
                     ) {
-                        Column(modifier = Modifier.padding(horizontal = 14.dp, vertical = 12.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                                Text(message.speakerName, style = MaterialTheme.typography.labelLarge, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
-                                if (message.emotion.isNotBlank()) {
-                                    Text(message.emotion, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                                }
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(6.dp),
+                        ) {
+                            Text(
+                                message.speakerName,
+                                style = MaterialTheme.typography.labelLarge,
+                                fontWeight = FontWeight.Bold,
+                                color = ImmersiveAccentBlue,
+                            )
+                            if (message.emotion.isNotBlank()) {
+                                Text(
+                                    message.emotion,
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = ImmersiveTextMuted,
+                                )
                             }
-                            if (message.isStreaming) {
-                                StreamingLogText(message.content)
-                            } else {
-                                Text(message.content, style = MaterialTheme.typography.bodyLarge.copy(lineHeight = 24.sp), color = MaterialTheme.colorScheme.onSurface)
+                        }
+                        if (message.isStreaming) {
+                            StreamingLogText(message.content)
+                        } else {
+                            val paragraphs = remember(message.content) { message.content.toLongformParagraphs() }
+                            Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                                paragraphs.forEach { paragraph ->
+                                    // 引号对话加粗突出，叙述略淡
+                                    val rendered = remember(paragraph) {
+                                        buildQuotedDialogueAnnotatedString(
+                                            text = paragraph,
+                                            narrationColor = ImmersiveTextWhite.copy(alpha = 0.78f),
+                                            dialogueColor = ImmersiveTextWhite,
+                                        )
+                                    }
+                                    Text(
+                                        text = rendered,
+                                        style = MaterialTheme.typography.bodyLarge.copy(
+                                            fontSize = 16.sp,
+                                            lineHeight = 26.sp,
+                                            letterSpacing = 0.6.sp,
+                                        ),
+                                    )
+                                }
                             }
                         }
                     }
@@ -492,6 +573,10 @@ private fun RoleplayMessageItem(
                 RoleplayLongformCard(
                     speakerName = message.speakerName,
                     content = message.content,
+                    containerColor = Color.Transparent,
+                    titleColor = ImmersiveAccentBlue,
+                    bodyColor = ImmersiveTextWhite.copy(alpha = 0.78f),
+                    accentColor = ImmersiveTextWhite,
                 )
             }
         }

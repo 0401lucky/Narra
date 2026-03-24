@@ -3,6 +3,7 @@ package com.example.myapplication.testutil
 import com.example.myapplication.data.local.SettingsStore
 import com.example.myapplication.model.AppSettings
 import com.example.myapplication.model.Assistant
+import com.example.myapplication.model.DEFAULT_ROLEPLAY_LONGFORM_TARGET_CHARS
 import com.example.myapplication.model.ProviderSettings
 import com.example.myapplication.model.ScreenTranslationSettings
 import com.example.myapplication.model.ThemeMode
@@ -53,6 +54,9 @@ class FakeSettingsStore(
             codeBlockAutoWrap = state.value.codeBlockAutoWrap,
             codeBlockAutoCollapse = state.value.codeBlockAutoCollapse,
             showRoleplayAiHelper = state.value.showRoleplayAiHelper,
+            roleplayLongformTargetChars = state.value.roleplayLongformTargetChars,
+            showRoleplayPresenceStrip = state.value.showRoleplayPresenceStrip,
+            showRoleplayStatusStrip = state.value.showRoleplayStatusStrip,
             userDisplayName = state.value.userDisplayName,
             userAvatarUri = state.value.userAvatarUri,
             userAvatarUrl = state.value.userAvatarUrl,
@@ -73,6 +77,9 @@ class FakeSettingsStore(
         codeBlockAutoWrap: Boolean,
         codeBlockAutoCollapse: Boolean,
         showRoleplayAiHelper: Boolean,
+        roleplayLongformTargetChars: Int,
+        showRoleplayPresenceStrip: Boolean,
+        showRoleplayStatusStrip: Boolean,
     ) {
         state.value = state.value.copy(
             themeMode = themeMode,
@@ -84,6 +91,12 @@ class FakeSettingsStore(
             codeBlockAutoWrap = codeBlockAutoWrap,
             codeBlockAutoCollapse = codeBlockAutoCollapse,
             showRoleplayAiHelper = showRoleplayAiHelper,
+            roleplayLongformTargetChars = roleplayLongformTargetChars
+                .coerceIn(300, 2000)
+                .takeIf { it > 0 }
+                ?: DEFAULT_ROLEPLAY_LONGFORM_TARGET_CHARS,
+            showRoleplayPresenceStrip = showRoleplayPresenceStrip,
+            showRoleplayStatusStrip = showRoleplayStatusStrip,
         )
     }
 

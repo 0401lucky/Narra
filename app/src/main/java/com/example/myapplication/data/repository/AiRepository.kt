@@ -236,6 +236,9 @@ class AiRepository(
         codeBlockAutoWrap: Boolean,
         codeBlockAutoCollapse: Boolean,
         showRoleplayAiHelper: Boolean,
+        roleplayLongformTargetChars: Int,
+        showRoleplayPresenceStrip: Boolean,
+        showRoleplayStatusStrip: Boolean,
     ) {
         settingsStore.saveDisplaySettings(
             themeMode = themeMode,
@@ -247,6 +250,9 @@ class AiRepository(
             codeBlockAutoWrap = codeBlockAutoWrap,
             codeBlockAutoCollapse = codeBlockAutoCollapse,
             showRoleplayAiHelper = showRoleplayAiHelper,
+            roleplayLongformTargetChars = roleplayLongformTargetChars,
+            showRoleplayPresenceStrip = showRoleplayPresenceStrip,
+            showRoleplayStatusStrip = showRoleplayStatusStrip,
         )
     }
 

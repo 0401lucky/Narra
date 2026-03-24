@@ -7,6 +7,7 @@ enum class WorldBookScopeType(
     val label: String,
 ) {
     GLOBAL("global", "全局"),
+    ATTACHABLE("attachable", "可挂载"),
     ASSISTANT("assistant", "助手"),
     CONVERSATION("conversation", "会话");
 

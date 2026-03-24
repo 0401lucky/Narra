@@ -90,6 +90,7 @@ class WorldBookMatcher {
     ): Boolean {
         return when (entry.scopeType) {
             WorldBookScopeType.GLOBAL -> true
+            WorldBookScopeType.ATTACHABLE -> false
             WorldBookScopeType.ASSISTANT -> {
                 val assistantId = assistant?.id?.trim().orEmpty()
                 assistantId.isNotEmpty() && entry.resolvedScopeId() == assistantId

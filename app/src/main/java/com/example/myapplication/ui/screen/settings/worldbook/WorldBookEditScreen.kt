@@ -28,6 +28,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
+import com.example.myapplication.model.Assistant
 import com.example.myapplication.model.WorldBookEntry
 import com.example.myapplication.model.WorldBookScopeType
 import com.example.myapplication.ui.screen.settings.AnimatedSettingButton
@@ -42,6 +43,7 @@ import com.example.myapplication.ui.screen.settings.rememberSettingsPalette
 fun WorldBookEditScreen(
     entry: WorldBookEntry?,
     isNew: Boolean,
+    assistants: List<Assistant>,
     presetBookName: String = "",
     onSave: (WorldBookEntry) -> Unit,
     onDelete: (String) -> Unit,
@@ -66,6 +68,13 @@ fun WorldBookEditScreen(
     var alwaysActive by rememberSaveable { mutableStateOf(entry?.alwaysActive ?: false) }
     var scopeType by rememberSaveable { mutableStateOf(entry?.scopeType ?: WorldBookScopeType.GLOBAL) }
     var scopeId by rememberSaveable { mutableStateOf(entry?.scopeId ?: "") }
+    val canSave = title.isNotBlank() &&
+        content.isNotBlank() &&
+        when (scopeType) {
+            WorldBookScopeType.GLOBAL,
+            WorldBookScopeType.ATTACHABLE -> true
+            else -> scopeId.isNotBlank()
+        }
 
     Scaffold(
         topBar = {
@@ -187,7 +196,9 @@ fun WorldBookEditScreen(
                                     selected = scopeType == candidate,
                                     onClick = {
                                         scopeType = candidate
-                                        if (candidate == WorldBookScopeType.GLOBAL) {
+                                        if (candidate == WorldBookScopeType.GLOBAL ||
+                                            candidate == WorldBookScopeType.ATTACHABLE
+                                        ) {
                                             scopeId = ""
                                         }
                                     },
@@ -199,25 +210,57 @@ fun WorldBookEditScreen(
                                 )
                             }
                         }
-                        OutlinedTextField(
-                            value = scopeId,
-                            onValueChange = { scopeId = it },
-                            label = { Text("作用域 ID") },
-                            modifier = Modifier.fillMaxWidth(),
-                            singleLine = true,
-                            enabled = scopeType != WorldBookScopeType.GLOBAL,
-                            shape = RoundedCornerShape(16.dp),
-                            colors = outlineColors,
-                            placeholder = {
+                        when (scopeType) {
+                            WorldBookScopeType.GLOBAL -> {
                                 Text(
-                                    when (scopeType) {
-                                        WorldBookScopeType.GLOBAL -> "全局条目无需填写"
-                                        WorldBookScopeType.ASSISTANT -> "填写 assistantId"
-                                        WorldBookScopeType.CONVERSATION -> "填写 conversationId"
-                                    },
+                                    text = "全局条目无需绑定角色，会按关键词直接参与所有会话。",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = palette.body,
                                 )
-                            },
-                        )
+                            }
+
+                            WorldBookScopeType.ATTACHABLE -> {
+                                Text(
+                                    text = "可挂载条目默认不会自动命中，需要在助手扩展页手动挂到某个角色身上。",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = palette.body,
+                                )
+                            }
+
+                            WorldBookScopeType.ASSISTANT -> {
+                                FlowRow(
+                                    horizontalArrangement = Arrangement.spacedBy(10.dp),
+                                    verticalArrangement = Arrangement.spacedBy(10.dp),
+                                ) {
+                                    assistants.forEach { assistant ->
+                                        FilterChip(
+                                            selected = scopeId == assistant.id,
+                                            onClick = { scopeId = assistant.id },
+                                            label = {
+                                                Text(assistant.name.ifBlank { "未命名助手" })
+                                            },
+                                            colors = FilterChipDefaults.filterChipColors(
+                                                selectedContainerColor = palette.accentSoft,
+                                                selectedLabelColor = palette.accent,
+                                            ),
+                                        )
+                                    }
+                                }
+                            }
+
+                            WorldBookScopeType.CONVERSATION -> {
+                                OutlinedTextField(
+                                    value = scopeId,
+                                    onValueChange = { scopeId = it },
+                                    label = { Text("会话 ID") },
+                                    modifier = Modifier.fillMaxWidth(),
+                                    singleLine = true,
+                                    shape = RoundedCornerShape(16.dp),
+                                    colors = outlineColors,
+                                    placeholder = { Text("填写 conversationId") },
+                                )
+                            }
+                        }
                     }
                 }
             }
@@ -265,13 +308,17 @@ fun WorldBookEditScreen(
                                     alwaysActive = alwaysActive,
                                     priority = priorityText.trim().toIntOrNull() ?: 0,
                                     scopeType = scopeType,
-                                    scopeId = if (scopeType == WorldBookScopeType.GLOBAL) "" else scopeId.trim(),
+                                    scopeId = when (scopeType) {
+                                        WorldBookScopeType.GLOBAL,
+                                        WorldBookScopeType.ATTACHABLE -> ""
+                                        else -> scopeId.trim()
+                                    },
                                     updatedAt = now,
                                 )
                                 onSave(result)
                                 onNavigateBack()
                             },
-                            enabled = title.isNotBlank() && content.isNotBlank(),
+                            enabled = canSave,
                             isPrimary = true,
                         )
 

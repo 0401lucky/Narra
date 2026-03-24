@@ -15,6 +15,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.MenuBook
 import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.icons.filled.Upload
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
@@ -33,6 +34,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.example.myapplication.model.WorldBookEntry
+import com.example.myapplication.ui.screen.settings.AnimatedSettingButton
 import com.example.myapplication.ui.screen.settings.SettingsHintCard
 import com.example.myapplication.ui.screen.settings.SettingsPageIntro
 import com.example.myapplication.ui.screen.settings.SettingsScreenPadding
@@ -48,6 +50,7 @@ fun WorldBookListScreen(
     onOpenBook: (String) -> Unit,
     onOpenEntryEdit: (String) -> Unit,
     onAddEntry: () -> Unit,
+    onOpenImport: () -> Unit,
     onNavigateBack: () -> Unit,
 ) {
     val palette = rememberSettingsPalette()
@@ -97,6 +100,18 @@ fun WorldBookListScreen(
                     overline = "背景设定",
                     title = "先看书，再看书里的条目",
                     summary = "导入角色卡自带世界书后，这里会优先按书展示；点击一本书再进入它内部的条目列表，排列顺序会尽量保持原样。",
+                )
+            }
+
+            item {
+                AnimatedSettingButton(
+                    text = "导入世界书",
+                    onClick = onOpenImport,
+                    enabled = true,
+                    isPrimary = false,
+                    leadingIcon = {
+                        Icon(Icons.Default.Upload, contentDescription = null)
+                    },
                 )
             }
 

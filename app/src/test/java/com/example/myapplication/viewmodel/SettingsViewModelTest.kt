@@ -265,6 +265,36 @@ class SettingsViewModelTest {
     }
 
     @Test
+    fun saveSettings_persistsRoleplayImmersivePreferences() = runTest(mainDispatcherRule.dispatcher.scheduler) {
+        val provider = ProviderSettings(
+            id = "provider-a",
+            name = "Provider A",
+            baseUrl = "https://a.example.com/v1/",
+            apiKey = "key-a",
+            selectedModel = "model-a",
+            availableModels = listOf("model-a"),
+        )
+        val viewModel = createViewModel(
+            settings = AppSettings(
+                providers = listOf(provider),
+                selectedProviderId = provider.id,
+            ),
+        )
+
+        advanceUntilIdle()
+        viewModel.updateRoleplayLongformTargetChars(1200)
+        viewModel.updateShowRoleplayPresenceStrip(false)
+        viewModel.updateShowRoleplayStatusStrip(true)
+        viewModel.saveSettings {}
+        advanceUntilIdle()
+
+        val stored = viewModel.storedSettings.value
+        assertEquals(1200, stored.roleplayLongformTargetChars)
+        assertTrue(!stored.showRoleplayPresenceStrip)
+        assertTrue(stored.showRoleplayStatusStrip)
+    }
+
+    @Test
     fun saveSettings_persistsScreenTranslationPreferences() = runTest(mainDispatcherRule.dispatcher.scheduler) {
         val provider = ProviderSettings(
             id = "provider-a",

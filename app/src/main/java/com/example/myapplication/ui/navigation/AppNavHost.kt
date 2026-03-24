@@ -15,6 +15,8 @@ import com.example.myapplication.ui.screen.chat.ChatScreen
 import com.example.myapplication.ui.screen.home.HomeScreen
 import com.example.myapplication.ui.screen.roleplay.RoleplayScenarioEditScreen
 import com.example.myapplication.ui.screen.roleplay.RoleplayScenarioListScreen
+import com.example.myapplication.ui.screen.roleplay.RoleplayReadingMode
+import com.example.myapplication.ui.screen.roleplay.RoleplaySettingsScreen
 import com.example.myapplication.ui.screen.roleplay.RoleplayScreen
 import com.example.myapplication.ui.screen.translate.TranslationScreen
 import com.example.myapplication.ui.screen.settings.AssistantBasicScreen
@@ -180,14 +182,7 @@ fun AppNavHost(
                 currentAssistantName = roleplayState.currentAssistantName,
                 noticeMessage = roleplayState.noticeMessage,
                 errorMessage = roleplayState.errorMessage,
-                latestPromptDebugDump = roleplayState.latestPromptDebugDump,
                 suggestionErrorMessage = roleplayState.suggestionErrorMessage,
-                currentModel = roleplayState.currentModel,
-                currentProviderId = roleplayState.currentProviderId,
-                providerOptions = providerOptions,
-                isLoadingModels = settingsState.isLoadingModels,
-                loadingProviderId = settingsState.loadingProviderId,
-                isSavingModel = settingsState.isSaving,
                 onClearNoticeMessage = roleplayViewModel::clearNoticeMessage,
                 onClearErrorMessage = roleplayViewModel::clearErrorMessage,
                 onInputChange = roleplayViewModel::updateInput,
@@ -200,12 +195,14 @@ fun AppNavHost(
                 onSend = roleplayViewModel::sendMessage,
                 onCancelSending = roleplayViewModel::cancelSending,
                 onRestartSession = roleplayViewModel::restartCurrentSession,
-                onResetSession = roleplayViewModel::resetCurrentSession,
                 onDismissAssistantMismatch = roleplayViewModel::dismissAssistantMismatchDialog,
-                onSelectProvider = settingsViewModel::saveSelectedProvider,
-                onSelectModel = settingsViewModel::saveSelectedModelForProvider,
-                onOpenProviderDetail = { providerId ->
-                    navController.navigate(AppRoutes.settingsProviderDetail(providerId)) {
+                onOpenReadingMode = {
+                    navController.navigate(AppRoutes.roleplayReading(scenarioId)) {
+                        launchSingleTop = true
+                    }
+                },
+                onOpenSettings = {
+                    navController.navigate(AppRoutes.roleplaySettings(scenarioId)) {
                         launchSingleTop = true
                     }
                 },
@@ -213,6 +210,83 @@ fun AppNavHost(
                     roleplayViewModel.leaveScenario()
                     navController.popBackStack()
                 },
+            )
+        }
+
+        composable(AppRoutes.ROLEPLAY_SETTINGS) { backStackEntry ->
+            val rawScenarioId = backStackEntry.arguments?.getString("scenarioId").orEmpty()
+            val scenarioId = Uri.decode(rawScenarioId)
+            val routeScenario = roleplayState.currentScenario?.takeIf { it.id == scenarioId }
+                ?: roleplayState.scenarios.firstOrNull { it.id == scenarioId }
+            val routeAssistant = routeScenario?.let { scenario ->
+                roleplayState.settings.resolvedAssistants().firstOrNull { it.id == scenario.assistantId }
+            } ?: roleplayState.currentAssistant
+            val providerOptions = remember(roleplayState.settings) {
+                roleplayState.settings.providers.filter { it.enabled }
+            }
+            LaunchedEffect(scenarioId, roleplayState.currentScenario?.id) {
+                if (roleplayState.currentScenario?.id != scenarioId) {
+                    roleplayViewModel.enterScenario(scenarioId)
+                }
+            }
+            RoleplaySettingsScreen(
+                scenario = routeScenario,
+                assistant = routeAssistant,
+                settings = settingsState.savedSettings.copy(
+                    showRoleplayAiHelper = settingsState.showRoleplayAiHelper,
+                    roleplayLongformTargetChars = settingsState.roleplayLongformTargetChars,
+                    showRoleplayPresenceStrip = settingsState.showRoleplayPresenceStrip,
+                    showRoleplayStatusStrip = settingsState.showRoleplayStatusStrip,
+                ),
+                contextStatus = roleplayState.contextStatus,
+                currentModel = roleplayState.currentModel,
+                currentProviderId = roleplayState.currentProviderId,
+                providerOptions = providerOptions,
+                isLoadingModels = settingsState.isLoadingModels,
+                loadingProviderId = settingsState.loadingProviderId,
+                isSavingModel = settingsState.isSaving,
+                latestPromptDebugDump = roleplayState.latestPromptDebugDump,
+                onOpenReadingMode = {
+                    settingsViewModel.saveSettings {
+                        navController.navigate(AppRoutes.roleplayReading(scenarioId)) {
+                            launchSingleTop = true
+                        }
+                    }
+                },
+                onUpdateShowRoleplayPresenceStrip = settingsViewModel::updateShowRoleplayPresenceStrip,
+                onUpdateShowRoleplayStatusStrip = settingsViewModel::updateShowRoleplayStatusStrip,
+                onUpdateShowRoleplayAiHelper = settingsViewModel::updateShowRoleplayAiHelper,
+                onUpdateRoleplayLongformTargetChars = settingsViewModel::updateRoleplayLongformTargetChars,
+                onSelectProvider = settingsViewModel::saveSelectedProvider,
+                onSelectModel = settingsViewModel::saveSelectedModelForProvider,
+                onOpenProviderDetail = { providerId ->
+                    navController.navigate(AppRoutes.settingsProviderDetail(providerId)) {
+                        launchSingleTop = true
+                    }
+                },
+                onRestartSession = roleplayViewModel::restartCurrentSession,
+                onResetSession = roleplayViewModel::resetCurrentSession,
+                onNavigateBack = {
+                    settingsViewModel.saveSettings {
+                        navController.popBackStack()
+                    }
+                },
+            )
+        }
+
+        composable(AppRoutes.ROLEPLAY_READING) { backStackEntry ->
+            val rawScenarioId = backStackEntry.arguments?.getString("scenarioId").orEmpty()
+            val scenarioId = Uri.decode(rawScenarioId)
+            LaunchedEffect(scenarioId, roleplayState.currentScenario?.id) {
+                if (roleplayState.currentScenario?.id != scenarioId) {
+                    roleplayViewModel.enterScenario(scenarioId)
+                }
+            }
+            RoleplayReadingMode(
+                messages = roleplayState.messages,
+                scenarioTitle = roleplayState.currentScenario?.title.orEmpty(),
+                backgroundUri = roleplayState.currentScenario?.backgroundUri.orEmpty(),
+                onDismiss = { navController.popBackStack() },
             )
         }
 
@@ -286,7 +360,6 @@ fun AppNavHost(
                 onUpdateAutoPreviewImages = settingsViewModel::updateAutoPreviewImages,
                 onUpdateCodeBlockAutoWrap = settingsViewModel::updateCodeBlockAutoWrap,
                 onUpdateCodeBlockAutoCollapse = settingsViewModel::updateCodeBlockAutoCollapse,
-                onUpdateShowRoleplayAiHelper = settingsViewModel::updateShowRoleplayAiHelper,
                 onOpenHome = {
                     navController.navigate(AppRoutes.HOME) {
                         launchSingleTop = true
@@ -521,16 +594,9 @@ fun AppNavHost(
         composable(AppRoutes.SETTINGS_ASSISTANT_EXTENSIONS) { backStackEntry ->
             val assistantId = backStackEntry.arguments?.getString("assistantId").orEmpty()
             val assistant = storedSettings.resolvedAssistants().firstOrNull { it.id == assistantId } ?: return@composable
-            val assistantWorldBookEntries = worldBookState.entries.filter { entry ->
-                entry.id in assistant.linkedWorldBookIds ||
-                    (
-                        entry.scopeType == com.example.myapplication.model.WorldBookScopeType.ASSISTANT &&
-                            entry.scopeId == assistant.id
-                        )
-            }
             AssistantExtensionsScreen(
                 assistant = assistant,
-                worldBookEntries = assistantWorldBookEntries,
+                worldBookEntries = worldBookState.entries,
                 onSave = settingsViewModel::updateAssistant,
                 onOpenWorldBookSettings = {
                     navController.navigate(AppRoutes.SETTINGS_WORLD_BOOKS) {
@@ -584,6 +650,11 @@ fun AppNavHost(
                 },
                 onAddEntry = {
                     navController.navigate(AppRoutes.settingsWorldBookEdit("new")) {
+                        launchSingleTop = true
+                    }
+                },
+                onOpenImport = {
+                    navController.navigate(AppRoutes.SETTINGS_CONTEXT_TRANSFER) {
                         launchSingleTop = true
                     }
                 },
@@ -641,6 +712,7 @@ fun AppNavHost(
             WorldBookEditScreen(
                 entry = entry,
                 isNew = isNew,
+                assistants = storedSettings.resolvedAssistants(),
                 presetBookName = if (isNew) presetBookName else "",
                 onSave = worldBookViewModel::saveEntry,
                 onDelete = worldBookViewModel::deleteEntry,

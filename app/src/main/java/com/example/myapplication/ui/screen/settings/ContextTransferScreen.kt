@@ -188,7 +188,7 @@ fun ContextTransferScreen(
             item {
                 TransferSectionGroup(
                     title = "世界书",
-                    description = "单独迁移世界书条目",
+                    description = "支持本应用 JSON、独立世界书 JSON，以及从角色卡 JSON/PNG 中抽取世界书",
                     isBusy = uiState.isBusy,
                     onExport = {
                         pendingExportSection = ContextTransferSection.WORLD_BOOK
@@ -196,7 +196,7 @@ fun ContextTransferScreen(
                     },
                     onImport = {
                         pendingImportSection = ContextTransferSection.WORLD_BOOK
-                        importLauncher.launch(arrayOf("application/json", "text/plain"))
+                        importLauncher.launch(arrayOf("application/json", "text/plain", "image/png"))
                     },
                 )
             }

@@ -11,6 +11,7 @@ import com.example.myapplication.model.AppSettings
 import com.example.myapplication.model.Assistant
 import com.example.myapplication.model.DEFAULT_ASSISTANT_ICON
 import com.example.myapplication.model.DEFAULT_MEMORY_MAX_ITEMS
+import com.example.myapplication.model.DEFAULT_ROLEPLAY_LONGFORM_TARGET_CHARS
 import com.example.myapplication.model.DEFAULT_WORLD_BOOK_MAX_ENTRIES
 import com.example.myapplication.model.ProviderSettings
 import com.example.myapplication.model.ProviderType
@@ -50,6 +51,9 @@ interface SettingsStore {
         codeBlockAutoWrap: Boolean,
         codeBlockAutoCollapse: Boolean,
         showRoleplayAiHelper: Boolean,
+        roleplayLongformTargetChars: Int,
+        showRoleplayPresenceStrip: Boolean,
+        showRoleplayStatusStrip: Boolean,
     )
 
     suspend fun saveScreenTranslationSettings(
@@ -127,6 +131,10 @@ class AppSettingsStore(
             codeBlockAutoWrap = preferences[PreferencesKeys.codeBlockAutoWrap] ?: false,
             codeBlockAutoCollapse = preferences[PreferencesKeys.codeBlockAutoCollapse] ?: false,
             showRoleplayAiHelper = preferences[PreferencesKeys.showRoleplayAiHelper] ?: true,
+            roleplayLongformTargetChars = (preferences[PreferencesKeys.roleplayLongformTargetChars]
+                ?: DEFAULT_ROLEPLAY_LONGFORM_TARGET_CHARS).coerceIn(300, 2000),
+            showRoleplayPresenceStrip = preferences[PreferencesKeys.showRoleplayPresenceStrip] ?: true,
+            showRoleplayStatusStrip = preferences[PreferencesKeys.showRoleplayStatusStrip] ?: false,
             userDisplayName = preferences[PreferencesKeys.userDisplayName]
                 .orEmpty()
                 .ifBlank { com.example.myapplication.model.DEFAULT_USER_DISPLAY_NAME },
@@ -258,6 +266,9 @@ class AppSettingsStore(
         codeBlockAutoWrap: Boolean,
         codeBlockAutoCollapse: Boolean,
         showRoleplayAiHelper: Boolean,
+        roleplayLongformTargetChars: Int,
+        showRoleplayPresenceStrip: Boolean,
+        showRoleplayStatusStrip: Boolean,
     ) {
         context.dataStore.edit { preferences ->
             preferences[PreferencesKeys.themeMode] = themeMode.storageValue
@@ -269,6 +280,10 @@ class AppSettingsStore(
             preferences[PreferencesKeys.codeBlockAutoWrap] = codeBlockAutoWrap
             preferences[PreferencesKeys.codeBlockAutoCollapse] = codeBlockAutoCollapse
             preferences[PreferencesKeys.showRoleplayAiHelper] = showRoleplayAiHelper
+            preferences[PreferencesKeys.roleplayLongformTargetChars] =
+                roleplayLongformTargetChars.coerceIn(300, 2000)
+            preferences[PreferencesKeys.showRoleplayPresenceStrip] = showRoleplayPresenceStrip
+            preferences[PreferencesKeys.showRoleplayStatusStrip] = showRoleplayStatusStrip
         }
     }
 
@@ -538,6 +553,9 @@ class AppSettingsStore(
         val codeBlockAutoWrap = booleanPreferencesKey("code_block_auto_wrap")
         val codeBlockAutoCollapse = booleanPreferencesKey("code_block_auto_collapse")
         val showRoleplayAiHelper = booleanPreferencesKey("show_roleplay_ai_helper")
+        val roleplayLongformTargetChars = PreferencesKeysCompat.intPreferencesKey("roleplay_longform_target_chars")
+        val showRoleplayPresenceStrip = booleanPreferencesKey("show_roleplay_presence_strip")
+        val showRoleplayStatusStrip = booleanPreferencesKey("show_roleplay_status_strip")
         val userDisplayName = stringPreferencesKey("user_display_name")
         val userAvatarUri = stringPreferencesKey("user_avatar_uri")
         val userAvatarUrl = stringPreferencesKey("user_avatar_url")
@@ -562,4 +580,8 @@ class AppSettingsStore(
     private companion object {
         const val MAX_TRANSLATION_HISTORY = 20
     }
+}
+
+private object PreferencesKeysCompat {
+    fun intPreferencesKey(name: String) = androidx.datastore.preferences.core.intPreferencesKey(name)
 }
