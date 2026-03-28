@@ -25,10 +25,10 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalClipboardManager
-import androidx.compose.ui.text.AnnotatedString
+import androidx.compose.ui.platform.LocalClipboard
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -55,7 +55,8 @@ fun TranslationResultSheet(
     onAppendToInput: () -> Unit,
     onSendAsMessage: () -> Unit,
 ) {
-    val clipboardManager = LocalClipboardManager.current
+    val clipboard = LocalClipboard.current
+    val clipboardScope = rememberCoroutineScope()
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
 
     ModalBottomSheet(
@@ -105,7 +106,7 @@ fun TranslationResultSheet(
             ) {
                 NarraOutlinedButton(
                     onClick = {
-                        clipboardManager.setText(AnnotatedString(translation.translatedText))
+                        clipboardScope.copyPlainTextToClipboard(clipboard, "translation-result", translation.translatedText)
                     },
                     modifier = Modifier.weight(1f),
                     enabled = !translation.isLoading && translation.translatedText.isNotBlank(),

@@ -6,8 +6,8 @@ import java.nio.ByteBuffer
 import java.nio.ByteOrder
 import java.nio.charset.Charset
 import java.nio.charset.StandardCharsets
-import java.util.Base64
 import java.util.zip.Inflater
+import okio.ByteString.Companion.decodeBase64
 
 class TavernCharacterImageAdapter(
     private val tavernCharacterAdapter: TavernCharacterAdapter = TavernCharacterAdapter(),
@@ -151,13 +151,22 @@ class TavernCharacterImageAdapter(
             return sanitized
         }
         return sequenceOf(
-            { Base64.getDecoder().decode(sanitized) },
-            { Base64.getUrlDecoder().decode(sanitized) },
-        ).mapNotNull { decoder ->
-            runCatching {
-                String(decoder.invoke(), StandardCharsets.UTF_8)
-            }.getOrNull()
+            sanitized,
+            sanitized.replace('-', '+').replace('_', '/'),
+        ).mapNotNull { candidate ->
+            normalizeBase64(candidate)
+                ?.decodeBase64()
+                ?.string(StandardCharsets.UTF_8)
         }.firstOrNull()
+    }
+
+    private fun normalizeBase64(value: String): String? {
+        val remainder = value.length % 4
+        return when (remainder) {
+            0 -> value
+            2, 3 -> value + "=".repeat(4 - remainder)
+            else -> null
+        }
     }
 
     private fun readInt(bytes: ByteArray, offset: Int): Int? {

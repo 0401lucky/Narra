@@ -32,6 +32,7 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ImageBitmap
+import androidx.core.graphics.get
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.asAndroidBitmap
 import androidx.compose.ui.graphics.asComposeRenderEffect
@@ -42,8 +43,8 @@ import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.layout.positionInRoot
-import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalWindowInfo
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.IntSize
@@ -67,6 +68,11 @@ data class ImmersiveGlassPalette(
     val onGlassMuted: Color,
     val chipTint: Color,
     val chipText: Color,
+    val characterAccent: Color,
+    val userAccent: Color,
+    val thoughtText: Color,
+    val readingSurface: Color,
+    val readingBorder: Color,
 )
 
 @Immutable
@@ -87,14 +93,14 @@ fun rememberImmersiveBackdropState(
         avatarUri = backgroundUri,
         avatarUrl = "",
     )
-    val configuration = LocalConfiguration.current
     val density = LocalDensity.current
+    val windowInfo = LocalWindowInfo.current
     val colorScheme = MaterialTheme.colorScheme
-    val screenSize = remember(configuration, density) {
+    val screenSize = remember(windowInfo.containerSize, density) {
         with(density) {
             IntSize(
-                width = configuration.screenWidthDp.dp.roundToPx(),
-                height = configuration.screenHeightDp.dp.roundToPx(),
+                width = windowInfo.containerSize.width,
+                height = windowInfo.containerSize.height,
             )
         }
     }
@@ -349,33 +355,73 @@ private fun deriveImmersiveGlassPalette(
     imageBitmap: ImageBitmap?,
     colorScheme: ColorScheme,
 ): ImmersiveGlassPalette {
-    val coldBase = Color(0xFF7A9BBD)
-    val coldDeep = Color(0xFF4A6A8A)
-    val sampled = imageBitmap?.let(::sampleAverageColor)
-        ?: lerp(colorScheme.primary, coldBase, 0.42f)
-    val hsl = FloatArray(3)
-    ColorUtils.colorToHSL(sampled.toArgb(), hsl)
-    hsl[0] = ((hsl[0] * 0.35f) + (216f * 0.65f))
-    hsl[1] = (hsl[1] * 0.42f).coerceIn(0.10f, 0.28f)
-    hsl[2] = (hsl[2] * 0.68f).coerceIn(0.22f, 0.48f)
-    val dynamic = Color(ColorUtils.HSLToColor(hsl))
-    val panelTint = lerp(coldBase, dynamic, 0.28f)
-    val panelTintStrong = lerp(coldDeep, dynamic, 0.16f)
-    val luminance = panelTintStrong.luminance()
-    val onGlass = if (luminance > 0.34f) Color(0xFFF4F7FC) else Color(0xFFF8FBFF)
-    val onGlassMuted = Color(0xDDE7EEF9)
+    val fallbackBase = lerp(colorScheme.primary, colorScheme.secondary, 0.28f)
+    val sampled = imageBitmap?.let(::sampleAverageColor) ?: fallbackBase
+
+    val baseHsl = FloatArray(3)
+    ColorUtils.colorToHSL(sampled.toArgb(), baseHsl)
+    val hue = baseHsl[0]
+    val panelSaturation = (baseHsl[1] * 0.62f).coerceIn(0.12f, 0.34f)
+    val panelLightness = (baseHsl[2] * 0.56f).coerceIn(0.18f, 0.34f)
+
+    val panelTint = colorFromHsl(
+        hue = hue,
+        saturation = panelSaturation,
+        lightness = (panelLightness + 0.06f).coerceAtMost(0.40f),
+    )
+    val panelTintStrong = colorFromHsl(
+        hue = hue,
+        saturation = (panelSaturation + 0.03f).coerceAtMost(0.38f),
+        lightness = panelLightness,
+    )
+    val characterAccent = colorFromHsl(
+        hue = hue,
+        saturation = (baseHsl[1] * 0.9f).coerceIn(0.28f, 0.62f),
+        lightness = 0.76f,
+    )
+    val userAccent = colorFromHsl(
+        hue = (hue + 18f) % 360f,
+        saturation = (baseHsl[1] * 0.58f).coerceIn(0.18f, 0.42f),
+        lightness = 0.80f,
+    )
+    val onGlass = Color(0xFFF8FBFF)
+    val onGlassMuted = lerp(onGlass, characterAccent, 0.18f).copy(alpha = 0.78f)
+    val chipTint = lerp(panelTintStrong, characterAccent, 0.30f).copy(alpha = 0.92f)
+    val thoughtText = lerp(onGlassMuted, userAccent, 0.22f).copy(alpha = 0.88f)
+
     return ImmersiveGlassPalette(
-        panelTint = panelTint.copy(alpha = 0.72f),
-        panelTintStrong = panelTintStrong.copy(alpha = 0.84f),
+        panelTint = panelTint.copy(alpha = 0.74f),
+        panelTintStrong = panelTintStrong.copy(alpha = 0.86f),
         panelHighlight = Color.White.copy(alpha = 0.18f),
-        panelBorder = Color.White.copy(alpha = 0.16f),
-        shadowColor = Color.Black.copy(alpha = 0.34f),
-        scrimTop = Color.Black.copy(alpha = 0.18f),
-        scrimBottom = Color.Black.copy(alpha = 0.36f),
+        panelBorder = Color.White.copy(alpha = 0.15f),
+        shadowColor = Color.Black.copy(alpha = 0.36f),
+        scrimTop = Color.Black.copy(alpha = 0.16f),
+        scrimBottom = Color.Black.copy(alpha = 0.40f),
         onGlass = onGlass,
         onGlassMuted = onGlassMuted,
-        chipTint = lerp(coldDeep, panelTintStrong, 0.42f).copy(alpha = 0.9f),
-        chipText = Color.White.copy(alpha = 0.94f),
+        chipTint = chipTint,
+        chipText = Color.White.copy(alpha = 0.96f),
+        characterAccent = characterAccent,
+        userAccent = userAccent,
+        thoughtText = thoughtText,
+        readingSurface = panelTintStrong.copy(alpha = 0.78f),
+        readingBorder = characterAccent.copy(alpha = 0.22f),
+    )
+}
+
+private fun colorFromHsl(
+    hue: Float,
+    saturation: Float,
+    lightness: Float,
+): Color {
+    return Color(
+        ColorUtils.HSLToColor(
+            floatArrayOf(
+                hue,
+                saturation.coerceIn(0f, 1f),
+                lightness.coerceIn(0f, 1f),
+            ),
+        ),
     )
 }
 
@@ -394,7 +440,7 @@ private fun sampleAverageColor(
     while (x < bitmap.width) {
         var y = 0
         while (y < bitmap.height) {
-            val color = bitmap.getPixel(x, y)
+            val color = bitmap[x, y]
             red += android.graphics.Color.red(color)
             green += android.graphics.Color.green(color)
             blue += android.graphics.Color.blue(color)

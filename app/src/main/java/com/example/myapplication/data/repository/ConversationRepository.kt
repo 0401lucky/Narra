@@ -1,5 +1,6 @@
 package com.example.myapplication.data.repository
 
+import com.example.myapplication.conversation.ConversationMessageTransforms
 import com.example.myapplication.data.local.ConversationStore
 import com.example.myapplication.model.ChatMessage
 import com.example.myapplication.model.Conversation
@@ -58,7 +59,7 @@ class ConversationRepository(
             updatedAt = timestamp,
             assistantId = assistantId,
         )
-        conversationStore.upsertConversation(conversation)
+        conversationStore.upsertConversationMetadata(conversation)
         return conversation
     }
 
@@ -70,20 +71,85 @@ class ConversationRepository(
         return conversationStore.listMessages(conversationId)
     }
 
-    suspend fun saveConversationMessages(
+    suspend fun appendMessages(
         conversationId: String,
         messages: List<ChatMessage>,
         selectedModel: String,
     ): Conversation {
-        val currentConversation = conversationStore.getConversation(conversationId)
-            ?: throw IllegalStateException("当前会话不存在")
-        val updatedConversation = currentConversation.copy(
-            title = buildConversationTitle(messages, currentConversation.title),
-            model = selectedModel,
-            updatedAt = nowProvider(),
-            assistantId = currentConversation.assistantId.ifBlank { DEFAULT_ASSISTANT_ID },
+        val currentConversation = requireConversation(conversationId)
+        val updatedConversation = buildUpdatedConversation(
+            currentConversation = currentConversation,
+            selectedModel = selectedModel,
+            title = resolvePartialConversationTitle(
+                currentConversation = currentConversation,
+                messages = messages,
+            ),
         )
-        conversationStore.saveConversationWithMessages(
+        conversationStore.upsertConversationWithMessages(
+            conversation = updatedConversation,
+            messages = messages,
+        )
+        return updatedConversation
+    }
+
+    suspend fun upsertMessages(
+        conversationId: String,
+        messages: List<ChatMessage>,
+        selectedModel: String,
+    ): Conversation {
+        val currentConversation = requireConversation(conversationId)
+        val updatedConversation = buildUpdatedConversation(
+            currentConversation = currentConversation,
+            selectedModel = selectedModel,
+            title = resolvePartialConversationTitle(
+                currentConversation = currentConversation,
+                messages = messages,
+            ),
+        )
+        conversationStore.upsertConversationWithMessages(
+            conversation = updatedConversation,
+            messages = messages,
+        )
+        return updatedConversation
+    }
+
+    suspend fun applyTransferUpdates(
+        conversationId: String,
+        updates: List<TransferUpdateDirective>,
+        selectedModel: String,
+    ): List<ChatMessage> {
+        if (updates.isEmpty()) {
+            return conversationStore.listMessages(conversationId)
+        }
+        val currentConversation = requireConversation(conversationId)
+        val updatedConversation = buildUpdatedConversation(
+            currentConversation = currentConversation,
+            selectedModel = selectedModel,
+            title = currentConversation.title.ifBlank { DEFAULT_CONVERSATION_TITLE },
+        )
+        return conversationStore.updateConversationMessages(
+            conversation = updatedConversation,
+            conversationId = conversationId,
+        ) { existingMessages ->
+            ConversationMessageTransforms.applyTransferUpdates(
+                messages = existingMessages,
+                updates = updates,
+            )
+        }
+    }
+
+    suspend fun replaceConversationSnapshot(
+        conversationId: String,
+        messages: List<ChatMessage>,
+        selectedModel: String,
+    ): Conversation {
+        val currentConversation = requireConversation(conversationId)
+        val updatedConversation = buildUpdatedConversation(
+            currentConversation = currentConversation,
+            selectedModel = selectedModel,
+            title = buildConversationTitle(messages, currentConversation.title),
+        )
+        conversationStore.replaceConversationSnapshot(
             conversation = updatedConversation,
             conversationId = conversationId,
             messages = messages,
@@ -94,7 +160,7 @@ class ConversationRepository(
     /** 异步更新会话标题（用于 AI 生成标题后回写）。 */
     suspend fun updateConversationTitle(conversationId: String, title: String) {
         val conversation = conversationStore.getConversation(conversationId) ?: return
-        conversationStore.upsertConversation(
+        conversationStore.upsertConversationMetadata(
             conversation.copy(
                 title = title,
                 updatedAt = nowProvider(),
@@ -147,6 +213,42 @@ class ConversationRepository(
             return fallbackTitle.ifBlank { DEFAULT_CONVERSATION_TITLE }
         }
         return firstUserMessage.take(TITLE_MAX_LENGTH)
+    }
+
+    private fun resolvePartialConversationTitle(
+        currentConversation: Conversation,
+        messages: List<ChatMessage>,
+    ): String {
+        val currentTitle = currentConversation.title.ifBlank { DEFAULT_CONVERSATION_TITLE }
+        if (currentTitle != DEFAULT_CONVERSATION_TITLE) {
+            return currentTitle
+        }
+        val firstUserMessage = messages.firstOrNull { it.role == MessageRole.USER }
+            ?.content
+            ?.trim()
+            .orEmpty()
+        if (firstUserMessage.isBlank()) {
+            return currentTitle
+        }
+        return firstUserMessage.take(TITLE_MAX_LENGTH)
+    }
+
+    private suspend fun requireConversation(conversationId: String): Conversation {
+        return conversationStore.getConversation(conversationId)
+            ?: throw IllegalStateException("当前会话不存在")
+    }
+
+    private fun buildUpdatedConversation(
+        currentConversation: Conversation,
+        selectedModel: String,
+        title: String,
+    ): Conversation {
+        return currentConversation.copy(
+            title = title,
+            model = selectedModel,
+            updatedAt = nowProvider(),
+            assistantId = currentConversation.assistantId.ifBlank { DEFAULT_ASSISTANT_ID },
+        )
     }
 
     private companion object {

@@ -35,7 +35,7 @@ class SelectionAccessibilityService : AccessibilityService() {
         super.onServiceConnected()
         val app = application as ChatApplication
         serviceScope.launch {
-            app.aiRepository.settingsFlow.collectLatest { settings ->
+            app.aiSettingsRepository.settingsFlow.collectLatest { settings ->
                 serviceEnabled = settings.screenTranslationSettings.serviceEnabled
                 selectedTextEnabled = settings.screenTranslationSettings.selectedTextEnabled
             }

@@ -1,0 +1,682 @@
+{
+  "formatVersion": 1,
+  "database": {
+    "version": 11,
+    "identityHash": "e4a6f607566cf5be7f117c008f6d474c",
+    "entities": [
+      {
+        "tableName": "conversations",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` TEXT NOT NULL, `title` TEXT NOT NULL, `model` TEXT NOT NULL, `createdAt` INTEGER NOT NULL, `updatedAt` INTEGER NOT NULL, `assistantId` TEXT NOT NULL, PRIMARY KEY(`id`))",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "title",
+            "columnName": "title",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "model",
+            "columnName": "model",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "createdAt",
+            "columnName": "createdAt",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "updatedAt",
+            "columnName": "updatedAt",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "assistantId",
+            "columnName": "assistantId",
+            "affinity": "TEXT",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "id"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_conversations_updatedAt",
+            "unique": false,
+            "columnNames": [
+              "updatedAt"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_conversations_updatedAt` ON `${TABLE_NAME}` (`updatedAt`)"
+          }
+        ]
+      },
+      {
+        "tableName": "messages",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` TEXT NOT NULL, `conversationId` TEXT NOT NULL, `role` TEXT NOT NULL, `content` TEXT NOT NULL, `status` TEXT NOT NULL, `createdAt` INTEGER NOT NULL, `modelName` TEXT NOT NULL, `reasoningContent` TEXT NOT NULL, `attachmentsJson` TEXT NOT NULL, `partsJson` TEXT NOT NULL, PRIMARY KEY(`id`), FOREIGN KEY(`conversationId`) REFERENCES `conversations`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE )",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "conversationId",
+            "columnName": "conversationId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "role",
+            "columnName": "role",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "content",
+            "columnName": "content",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "status",
+            "columnName": "status",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "createdAt",
+            "columnName": "createdAt",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "modelName",
+            "columnName": "modelName",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "reasoningContent",
+            "columnName": "reasoningContent",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "attachmentsJson",
+            "columnName": "attachmentsJson",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "partsJson",
+            "columnName": "partsJson",
+            "affinity": "TEXT",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "id"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_messages_conversationId",
+            "unique": false,
+            "columnNames": [
+              "conversationId"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_messages_conversationId` ON `${TABLE_NAME}` (`conversationId`)"
+          }
+        ],
+        "foreignKeys": [
+          {
+            "table": "conversations",
+            "onDelete": "CASCADE",
+            "onUpdate": "NO ACTION",
+            "columns": [
+              "conversationId"
+            ],
+            "referencedColumns": [
+              "id"
+            ]
+          }
+        ]
+      },
+      {
+        "tableName": "worldbook_entries",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` TEXT NOT NULL, `title` TEXT NOT NULL, `content` TEXT NOT NULL, `keywordsJson` TEXT NOT NULL, `aliasesJson` TEXT NOT NULL, `secondaryKeywordsJson` TEXT NOT NULL, `enabled` INTEGER NOT NULL, `alwaysActive` INTEGER NOT NULL, `selective` INTEGER NOT NULL, `caseSensitive` INTEGER NOT NULL, `priority` INTEGER NOT NULL, `insertionOrder` INTEGER NOT NULL, `sourceBookName` TEXT NOT NULL, `scopeType` TEXT NOT NULL, `scopeId` TEXT NOT NULL, `createdAt` INTEGER NOT NULL, `updatedAt` INTEGER NOT NULL, PRIMARY KEY(`id`))",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "title",
+            "columnName": "title",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "content",
+            "columnName": "content",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "keywordsJson",
+            "columnName": "keywordsJson",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "aliasesJson",
+            "columnName": "aliasesJson",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "secondaryKeywordsJson",
+            "columnName": "secondaryKeywordsJson",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "enabled",
+            "columnName": "enabled",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "alwaysActive",
+            "columnName": "alwaysActive",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "selective",
+            "columnName": "selective",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "caseSensitive",
+            "columnName": "caseSensitive",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "priority",
+            "columnName": "priority",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "insertionOrder",
+            "columnName": "insertionOrder",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "sourceBookName",
+            "columnName": "sourceBookName",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "scopeType",
+            "columnName": "scopeType",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "scopeId",
+            "columnName": "scopeId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "createdAt",
+            "columnName": "createdAt",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "updatedAt",
+            "columnName": "updatedAt",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "id"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_worldbook_entries_scopeType_scopeId",
+            "unique": false,
+            "columnNames": [
+              "scopeType",
+              "scopeId"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_worldbook_entries_scopeType_scopeId` ON `${TABLE_NAME}` (`scopeType`, `scopeId`)"
+          },
+          {
+            "name": "index_worldbook_entries_updatedAt",
+            "unique": false,
+            "columnNames": [
+              "updatedAt"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_worldbook_entries_updatedAt` ON `${TABLE_NAME}` (`updatedAt`)"
+          }
+        ]
+      },
+      {
+        "tableName": "memory_entries",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` TEXT NOT NULL, `scopeType` TEXT NOT NULL, `scopeId` TEXT NOT NULL, `content` TEXT NOT NULL, `importance` INTEGER NOT NULL, `pinned` INTEGER NOT NULL, `sourceMessageId` TEXT NOT NULL, `lastUsedAt` INTEGER NOT NULL, `createdAt` INTEGER NOT NULL, `updatedAt` INTEGER NOT NULL, PRIMARY KEY(`id`))",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "scopeType",
+            "columnName": "scopeType",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "scopeId",
+            "columnName": "scopeId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "content",
+            "columnName": "content",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "importance",
+            "columnName": "importance",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "pinned",
+            "columnName": "pinned",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "sourceMessageId",
+            "columnName": "sourceMessageId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "lastUsedAt",
+            "columnName": "lastUsedAt",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "createdAt",
+            "columnName": "createdAt",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "updatedAt",
+            "columnName": "updatedAt",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "id"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_memory_entries_scopeType_scopeId",
+            "unique": false,
+            "columnNames": [
+              "scopeType",
+              "scopeId"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_memory_entries_scopeType_scopeId` ON `${TABLE_NAME}` (`scopeType`, `scopeId`)"
+          },
+          {
+            "name": "index_memory_entries_pinned",
+            "unique": false,
+            "columnNames": [
+              "pinned"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_memory_entries_pinned` ON `${TABLE_NAME}` (`pinned`)"
+          },
+          {
+            "name": "index_memory_entries_updatedAt",
+            "unique": false,
+            "columnNames": [
+              "updatedAt"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_memory_entries_updatedAt` ON `${TABLE_NAME}` (`updatedAt`)"
+          }
+        ]
+      },
+      {
+        "tableName": "conversation_summaries",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`conversationId` TEXT NOT NULL, `assistantId` TEXT NOT NULL, `summary` TEXT NOT NULL, `coveredMessageCount` INTEGER NOT NULL, `updatedAt` INTEGER NOT NULL, PRIMARY KEY(`conversationId`))",
+        "fields": [
+          {
+            "fieldPath": "conversationId",
+            "columnName": "conversationId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "assistantId",
+            "columnName": "assistantId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "summary",
+            "columnName": "summary",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "coveredMessageCount",
+            "columnName": "coveredMessageCount",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "updatedAt",
+            "columnName": "updatedAt",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "conversationId"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_conversation_summaries_assistantId",
+            "unique": false,
+            "columnNames": [
+              "assistantId"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_conversation_summaries_assistantId` ON `${TABLE_NAME}` (`assistantId`)"
+          },
+          {
+            "name": "index_conversation_summaries_updatedAt",
+            "unique": false,
+            "columnNames": [
+              "updatedAt"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_conversation_summaries_updatedAt` ON `${TABLE_NAME}` (`updatedAt`)"
+          }
+        ]
+      },
+      {
+        "tableName": "roleplay_scenarios",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` TEXT NOT NULL, `title` TEXT NOT NULL, `description` TEXT NOT NULL, `assistantId` TEXT NOT NULL, `backgroundUri` TEXT NOT NULL, `userDisplayNameOverride` TEXT NOT NULL, `userPortraitUri` TEXT NOT NULL, `userPortraitUrl` TEXT NOT NULL, `characterDisplayNameOverride` TEXT NOT NULL, `characterPortraitUri` TEXT NOT NULL, `characterPortraitUrl` TEXT NOT NULL, `openingNarration` TEXT NOT NULL, `enableNarration` INTEGER NOT NULL, `enableRoleplayProtocol` INTEGER NOT NULL, `longformModeEnabled` INTEGER NOT NULL, `autoHighlightSpeaker` INTEGER NOT NULL, `createdAt` INTEGER NOT NULL, `updatedAt` INTEGER NOT NULL, PRIMARY KEY(`id`))",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "title",
+            "columnName": "title",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "description",
+            "columnName": "description",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "assistantId",
+            "columnName": "assistantId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "backgroundUri",
+            "columnName": "backgroundUri",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "userDisplayNameOverride",
+            "columnName": "userDisplayNameOverride",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "userPortraitUri",
+            "columnName": "userPortraitUri",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "userPortraitUrl",
+            "columnName": "userPortraitUrl",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "characterDisplayNameOverride",
+            "columnName": "characterDisplayNameOverride",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "characterPortraitUri",
+            "columnName": "characterPortraitUri",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "characterPortraitUrl",
+            "columnName": "characterPortraitUrl",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "openingNarration",
+            "columnName": "openingNarration",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "enableNarration",
+            "columnName": "enableNarration",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "enableRoleplayProtocol",
+            "columnName": "enableRoleplayProtocol",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "longformModeEnabled",
+            "columnName": "longformModeEnabled",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "autoHighlightSpeaker",
+            "columnName": "autoHighlightSpeaker",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "createdAt",
+            "columnName": "createdAt",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "updatedAt",
+            "columnName": "updatedAt",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "id"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_roleplay_scenarios_updatedAt",
+            "unique": false,
+            "columnNames": [
+              "updatedAt"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_roleplay_scenarios_updatedAt` ON `${TABLE_NAME}` (`updatedAt`)"
+          }
+        ]
+      },
+      {
+        "tableName": "roleplay_sessions",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` TEXT NOT NULL, `scenarioId` TEXT NOT NULL, `conversationId` TEXT NOT NULL, `createdAt` INTEGER NOT NULL, `updatedAt` INTEGER NOT NULL, PRIMARY KEY(`id`), FOREIGN KEY(`scenarioId`) REFERENCES `roleplay_scenarios`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE )",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "scenarioId",
+            "columnName": "scenarioId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "conversationId",
+            "columnName": "conversationId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "createdAt",
+            "columnName": "createdAt",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "updatedAt",
+            "columnName": "updatedAt",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "id"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_roleplay_sessions_scenarioId",
+            "unique": true,
+            "columnNames": [
+              "scenarioId"
+            ],
+            "orders": [],
+            "createSql": "CREATE UNIQUE INDEX IF NOT EXISTS `index_roleplay_sessions_scenarioId` ON `${TABLE_NAME}` (`scenarioId`)"
+          },
+          {
+            "name": "index_roleplay_sessions_conversationId",
+            "unique": false,
+            "columnNames": [
+              "conversationId"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_roleplay_sessions_conversationId` ON `${TABLE_NAME}` (`conversationId`)"
+          },
+          {
+            "name": "index_roleplay_sessions_updatedAt",
+            "unique": false,
+            "columnNames": [
+              "updatedAt"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_roleplay_sessions_updatedAt` ON `${TABLE_NAME}` (`updatedAt`)"
+          }
+        ],
+        "foreignKeys": [
+          {
+            "table": "roleplay_scenarios",
+            "onDelete": "CASCADE",
+            "onUpdate": "NO ACTION",
+            "columns": [
+              "scenarioId"
+            ],
+            "referencedColumns": [
+              "id"
+            ]
+          }
+        ]
+      }
+    ],
+    "setupQueries": [
+      "CREATE TABLE IF NOT EXISTS room_master_table (id INTEGER PRIMARY KEY,identity_hash TEXT)",
+      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, 'e4a6f607566cf5be7f117c008f6d474c')"
+    ]
+  }
+}

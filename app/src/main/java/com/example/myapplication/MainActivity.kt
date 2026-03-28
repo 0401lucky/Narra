@@ -13,17 +13,7 @@ class MainActivity : ComponentActivity() {
 
         val app = application as ChatApplication
         setContent {
-            AppRoot(
-                repository = app.aiRepository,
-                conversationRepository = app.conversationRepository,
-                worldBookRepository = app.worldBookRepository,
-                memoryRepository = app.memoryRepository,
-                conversationSummaryRepository = app.conversationSummaryRepository,
-                promptContextAssembler = app.promptContextAssembler,
-                roleplayRepository = app.roleplayRepository,
-                appUpdateRepository = app.appUpdateRepository,
-                appUpdateDownloadController = app.appUpdateDownloadController,
-            )
+            AppRoot(appGraph = app.appGraph)
         }
     }
 }

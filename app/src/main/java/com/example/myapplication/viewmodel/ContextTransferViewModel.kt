@@ -3,7 +3,8 @@ package com.example.myapplication.viewmodel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
-import com.example.myapplication.data.repository.AiRepository
+import com.example.myapplication.data.repository.ai.AiSettingsEditor
+import com.example.myapplication.data.repository.ai.AiSettingsRepository
 import com.example.myapplication.data.repository.context.ContextTransferCodec
 import com.example.myapplication.data.repository.context.ConversationSummaryRepository
 import com.example.myapplication.data.repository.context.MemoryRepository
@@ -74,7 +75,8 @@ data class ContextTransferUiState(
 )
 
 class ContextTransferViewModel(
-    private val repository: AiRepository,
+    private val settingsRepository: AiSettingsRepository,
+    private val settingsEditor: AiSettingsEditor,
     private val worldBookRepository: WorldBookRepository,
     private val memoryRepository: MemoryRepository,
     private val conversationSummaryRepository: ConversationSummaryRepository,
@@ -84,7 +86,7 @@ class ContextTransferViewModel(
     private val tavernWorldBookAdapter: TavernWorldBookAdapter = TavernWorldBookAdapter(),
     private val importedAssistantAvatarSaver: suspend (AssistantAvatarImport) -> String? = { null },
 ) : ViewModel() {
-    val settings = repository.settingsFlow.stateIn(
+    val settings = settingsRepository.settingsFlow.stateIn(
         scope = viewModelScope,
         started = SharingStarted.Eagerly,
         initialValue = com.example.myapplication.model.AppSettings(),
@@ -240,7 +242,7 @@ class ContextTransferViewModel(
             currentAssistants = currentSettings.assistants,
             importedAssistants = bundle.assistants,
         )
-        repository.saveAssistants(
+        settingsEditor.saveAssistants(
             assistants = mergedAssistants,
             selectedAssistantId = resolveSelectedAssistantId(
                 currentSelectedAssistantId = currentSettings.selectedAssistantId,
@@ -556,7 +558,8 @@ class ContextTransferViewModel(
         )
 
         fun factory(
-            repository: AiRepository,
+            settingsRepository: AiSettingsRepository,
+            settingsEditor: AiSettingsEditor,
             worldBookRepository: WorldBookRepository,
             memoryRepository: MemoryRepository,
             conversationSummaryRepository: ConversationSummaryRepository,
@@ -566,7 +569,8 @@ class ContextTransferViewModel(
                 @Suppress("UNCHECKED_CAST")
                 override fun <T : ViewModel> create(modelClass: Class<T>): T {
                     return ContextTransferViewModel(
-                        repository = repository,
+                        settingsRepository = settingsRepository,
+                        settingsEditor = settingsEditor,
                         worldBookRepository = worldBookRepository,
                         memoryRepository = memoryRepository,
                         conversationSummaryRepository = conversationSummaryRepository,

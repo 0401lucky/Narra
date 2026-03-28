@@ -4,6 +4,7 @@ import android.content.Context
 import android.content.Intent
 import android.graphics.Bitmap
 import android.graphics.PixelFormat
+import androidx.core.graphics.createBitmap
 import android.hardware.display.DisplayManager
 import android.hardware.display.VirtualDisplay
 import android.media.ImageReader
@@ -127,7 +128,7 @@ class MediaProjectionCaptureEngine(
                     val pixelStride = plane.pixelStride
                     val rowStride = plane.rowStride
                     val rowPadding = rowStride - pixelStride * width
-                    val rawBitmap = Bitmap.createBitmap(
+                    val rawBitmap = createBitmap(
                         width + rowPadding / pixelStride,
                         height,
                         Bitmap.Config.ARGB_8888,

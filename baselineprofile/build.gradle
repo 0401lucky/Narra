@@ -3,6 +3,9 @@ plugins {
     alias(libs.plugins.baselineprofile)
 }
 
+def appApplicationId = (project.findProperty("narraApplicationId") ?: "com.narra.app").toString()
+def baselineTargetAppId = "${appApplicationId}.baseline"
+
 android {
     namespace 'com.example.myapplication.baselineprofile'
     compileSdk {
@@ -15,7 +18,7 @@ android {
         minSdk 28
         targetSdk 36
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
-        testInstrumentationRunnerArguments targetAppId: "com.example.myapplication"
+        testInstrumentationRunnerArguments targetAppId: baselineTargetAppId
     }
 
     compileOptions {

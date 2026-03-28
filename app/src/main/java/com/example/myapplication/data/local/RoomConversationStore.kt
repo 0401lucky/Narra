@@ -1,6 +1,8 @@
 package com.example.myapplication.data.local
 
+import androidx.room.withTransaction
 import com.example.myapplication.data.local.chat.ConversationDao
+import com.example.myapplication.data.local.chat.ChatDatabase
 import com.example.myapplication.data.local.chat.ConversationEntity
 import com.example.myapplication.data.local.chat.MessageEntity
 import com.example.myapplication.model.ChatMessage
@@ -16,8 +18,9 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 
 class RoomConversationStore(
-    private val conversationDao: ConversationDao,
+    private val database: ChatDatabase,
 ) : ConversationStore {
+    private val conversationDao: ConversationDao = database.conversationDao()
     private val gson = Gson()
     private val attachmentListType = object : TypeToken<List<MessageAttachment>>() {}.type
     private val partListType = object : TypeToken<List<ChatMessagePart>>() {}.type
@@ -52,22 +55,51 @@ class RoomConversationStore(
         return conversationDao.listMessages(conversationId).map { it.toDomain() }
     }
 
-    override suspend fun upsertConversation(conversation: Conversation) {
-        conversationDao.upsertConversation(conversation.toEntity())
+    override suspend fun upsertConversationMetadata(conversation: Conversation) {
+        conversationDao.upsertConversationEntity(conversation.toEntity())
     }
 
-    override suspend fun replaceMessages(conversationId: String, messages: List<ChatMessage>) {
-        conversationDao.replaceMessagesTransaction(conversationId, messages.map { it.toEntity() })
-    }
-
-    override suspend fun saveConversationWithMessages(
+    override suspend fun replaceConversationSnapshot(
         conversation: Conversation,
         conversationId: String,
         messages: List<ChatMessage>,
     ) {
-        conversationDao.saveConversationWithMessages(
+        conversationDao.replaceConversationSnapshot(
             conversation = conversation.toEntity(),
             conversationId = conversationId,
+            messages = messages.map { it.toEntity() },
+        )
+    }
+
+    override suspend fun updateConversationMessages(
+        conversation: Conversation,
+        conversationId: String,
+        transform: (List<ChatMessage>) -> List<ChatMessage>,
+    ): List<ChatMessage> {
+        return database.withTransaction {
+            val existingMessages = conversationDao.listMessages(conversationId).map { it.toDomain() }
+            val updatedMessages = transform(existingMessages)
+            if (updatedMessages == existingMessages) {
+                return@withTransaction existingMessages
+            }
+            conversationDao.upsertConversationEntity(conversation.toEntity())
+            val changedMessages = resolveMessagesToUpsert(
+                existingMessages = existingMessages,
+                nextMessages = updatedMessages,
+            )
+            if (changedMessages.isNotEmpty()) {
+                conversationDao.insertMessages(changedMessages.map { it.toEntity() })
+            }
+            updatedMessages
+        }
+    }
+
+    override suspend fun upsertConversationWithMessages(
+        conversation: Conversation,
+        messages: List<ChatMessage>,
+    ) {
+        conversationDao.upsertConversationWithMessages(
+            conversation = conversation.toEntity(),
             messages = messages.map { it.toEntity() },
         )
     }
@@ -82,8 +114,11 @@ class RoomConversationStore(
         )
     }
 
-    override suspend fun appendMessage(message: ChatMessage) {
-        conversationDao.insertMessage(message.toEntity())
+    override suspend fun upsertMessages(messages: List<ChatMessage>) {
+        if (messages.isEmpty()) {
+            return
+        }
+        conversationDao.insertMessages(messages.map { it.toEntity() })
     }
 
     override suspend fun deleteConversation(conversationId: String) {
@@ -150,5 +185,15 @@ class RoomConversationStore(
             attachmentsJson = gson.toJson(attachments),
             partsJson = gson.toJson(normalizeChatMessageParts(parts)),
         )
+    }
+
+    private fun resolveMessagesToUpsert(
+        existingMessages: List<ChatMessage>,
+        nextMessages: List<ChatMessage>,
+    ): List<ChatMessage> {
+        val existingById = existingMessages.associateBy(ChatMessage::id)
+        return nextMessages.filter { nextMessage ->
+            existingById[nextMessage.id] != nextMessage
+        }
     }
 }

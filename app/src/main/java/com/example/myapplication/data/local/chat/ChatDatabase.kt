@@ -24,7 +24,7 @@ import com.example.myapplication.data.local.worldbook.WorldBookEntryEntity
         RoleplaySessionEntity::class,
     ],
     version = 11,
-    exportSchema = false,
+    exportSchema = true,
 )
 abstract class ChatDatabase : RoomDatabase() {
     abstract fun conversationDao(): ConversationDao
@@ -218,10 +218,28 @@ abstract class ChatDatabase : RoomDatabase() {
 
         val MIGRATION_10_11 = object : Migration(10, 11) {
             override fun migrate(db: SupportSQLiteDatabase) {
-                db.execSQL(
-                    "ALTER TABLE roleplay_scenarios ADD COLUMN longformModeEnabled INTEGER NOT NULL DEFAULT 0",
-                )
+                if (!hasColumn(db, "roleplay_scenarios", "longformModeEnabled")) {
+                    db.execSQL(
+                        "ALTER TABLE roleplay_scenarios ADD COLUMN longformModeEnabled INTEGER NOT NULL DEFAULT 0",
+                    )
+                }
             }
+        }
+
+        private fun hasColumn(
+            db: SupportSQLiteDatabase,
+            tableName: String,
+            columnName: String,
+        ): Boolean {
+            db.query("PRAGMA table_info($tableName)").use { cursor ->
+                val nameColumnIndex = cursor.getColumnIndex("name")
+                while (cursor.moveToNext()) {
+                    if (nameColumnIndex != -1 && cursor.getString(nameColumnIndex) == columnName) {
+                        return true
+                    }
+                }
+            }
+            return false
         }
     }
 }

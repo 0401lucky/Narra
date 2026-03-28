@@ -5,6 +5,7 @@ import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -24,10 +25,11 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
-import com.example.myapplication.ui.component.AppSnackbarHost
+import com.example.myapplication.ui.component.TopAppSnackbarHost
 import com.example.myapplication.viewmodel.ContextImportPreview
 import com.example.myapplication.viewmodel.ContextImportPayload
 import com.example.myapplication.viewmodel.ContextTransferSection
@@ -95,28 +97,30 @@ fun ContextTransferScreen(
                 onNavigateBack = onNavigateBack,
             )
         },
-        snackbarHost = { AppSnackbarHost(hostState = snackbarHostState) },
         containerColor = palette.background,
     ) { innerPadding ->
-        LazyColumn(
+        Box(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(innerPadding),
-            contentPadding = PaddingValues(
-                start = SettingsScreenPadding,
-                top = 4.dp,
-                end = SettingsScreenPadding,
-                bottom = 32.dp,
-            ),
-            verticalArrangement = Arrangement.spacedBy(16.dp),
         ) {
-            item {
-                SettingsPageIntro(
-                    overline = "JSON 数据包",
-                    title = "统一迁移角色卡、世界书、记忆与摘要",
-                    summary = "采用合并导入，不会删除现有数据。相同 ID 的条目会被导入内容覆盖。",
-                )
-            }
+            LazyColumn(
+                modifier = Modifier.fillMaxSize(),
+                contentPadding = PaddingValues(
+                    start = SettingsScreenPadding,
+                    top = 4.dp,
+                    end = SettingsScreenPadding,
+                    bottom = 32.dp,
+                ),
+                verticalArrangement = Arrangement.spacedBy(16.dp),
+            ) {
+                item {
+                    SettingsPageIntro(
+                        overline = "JSON 数据包",
+                        title = "统一迁移角色卡、世界书、记忆与摘要",
+                        summary = "采用合并导入，不会删除现有数据。相同 ID 的条目会被导入内容覆盖。",
+                    )
+                }
 
             // Current Data Overview
             item { SettingsSectionHeader("当前数据概览", "") }
@@ -228,6 +232,12 @@ fun ContextTransferScreen(
                     )
                 }
             }
+            }
+            TopAppSnackbarHost(
+                hostState = snackbarHostState,
+                modifier = Modifier.align(Alignment.TopCenter),
+                contentTopInset = innerPadding.calculateTopPadding(),
+            )
         }
     }
 }

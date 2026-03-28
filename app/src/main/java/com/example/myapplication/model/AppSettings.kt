@@ -18,6 +18,7 @@ data class AppSettings(
     val roleplayLongformTargetChars: Int = DEFAULT_ROLEPLAY_LONGFORM_TARGET_CHARS,
     val showRoleplayPresenceStrip: Boolean = true,
     val showRoleplayStatusStrip: Boolean = false,
+    val suppressRoleplayAssistantMismatchDialog: Boolean = false,
     val userDisplayName: String = DEFAULT_USER_DISPLAY_NAME,
     val userAvatarUri: String = "",
     val userAvatarUrl: String = "",

@@ -1,7 +1,5 @@
 package com.example.myapplication.viewmodel
 
-import com.example.myapplication.data.remote.ApiServiceFactory
-import com.example.myapplication.data.repository.AiRepository
 import com.example.myapplication.data.repository.context.ContextTransferCodec
 import com.example.myapplication.viewmodel.ContextImportPayload
 import com.example.myapplication.viewmodel.ContextTransferSection
@@ -16,11 +14,12 @@ import com.example.myapplication.testutil.FakeConversationSummaryRepository
 import com.example.myapplication.testutil.FakeMemoryRepository
 import com.example.myapplication.testutil.FakeSettingsStore
 import com.example.myapplication.testutil.FakeWorldBookRepository
+import com.example.myapplication.testutil.TestAiServices
+import com.example.myapplication.testutil.createTestAiServices
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
-import okhttp3.OkHttpClient
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Rule
@@ -38,27 +37,23 @@ class ContextTransferViewModelTest {
 
     @Test
     fun importBundleJson_mergesAssistantsWorldBookMemoryAndSummaries() = runTest(mainDispatcherRule.dispatcher.scheduler) {
-        val repository = AiRepository(
-            settingsStore = FakeSettingsStore(
-                AppSettings(
-                    assistants = listOf(
-                        Assistant(
-                            id = "assistant-existing",
-                            name = "现有助手",
-                        ),
+        val services = createTestAiServices(
+            settings = AppSettings(
+                assistants = listOf(
+                    Assistant(
+                        id = "assistant-existing",
+                        name = "现有助手",
                     ),
-                    selectedAssistantId = "assistant-existing",
                 ),
+                selectedAssistantId = "assistant-existing",
             ),
-            apiServiceFactory = ApiServiceFactory(),
-            streamClientProvider = { _, _ -> OkHttpClient.Builder().build() },
-            ioDispatcher = mainDispatcherRule.dispatcher,
+            dispatcher = mainDispatcherRule.dispatcher,
         )
         val worldBookRepository = FakeWorldBookRepository()
         val memoryRepository = FakeMemoryRepository()
         val summaryRepository = FakeConversationSummaryRepository()
-        val viewModel = ContextTransferViewModel(
-            repository = repository,
+        val viewModel = createContextTransferViewModel(
+            services = services,
             worldBookRepository = worldBookRepository,
             memoryRepository = memoryRepository,
             conversationSummaryRepository = summaryRepository,
@@ -107,8 +102,8 @@ class ContextTransferViewModelTest {
         viewModel.confirmImport()
         advanceUntilIdle()
 
-        assertTrue(repository.settingsFlow.first().assistants.any { it.id == "assistant-existing" })
-        assertTrue(repository.settingsFlow.first().assistants.any { it.id == "assistant-imported" })
+        assertTrue(services.settingsRepository.settingsFlow.first().assistants.any { it.id == "assistant-existing" })
+        assertTrue(services.settingsRepository.settingsFlow.first().assistants.any { it.id == "assistant-imported" })
         assertEquals("白塔城", worldBookRepository.listEntries().single().title)
         assertEquals("用户喜欢短句回复", memoryRepository.currentEntries().single().content)
         assertEquals("已经整理好前文摘要。", summaryRepository.getSummary("c1")?.summary)
@@ -117,23 +112,19 @@ class ContextTransferViewModelTest {
 
     @Test
     fun exportBundleJson_assistantSectionIncludesCustomAssistants() = runTest(mainDispatcherRule.dispatcher.scheduler) {
-        val repository = AiRepository(
-            settingsStore = FakeSettingsStore(
-                AppSettings(
-                    assistants = listOf(
-                        Assistant(
-                            id = "assistant-export",
-                            name = "导出助手",
-                        ),
+        val services = createTestAiServices(
+            settings = AppSettings(
+                assistants = listOf(
+                    Assistant(
+                        id = "assistant-export",
+                        name = "导出助手",
                     ),
                 ),
             ),
-            apiServiceFactory = ApiServiceFactory(),
-            streamClientProvider = { _, _ -> OkHttpClient.Builder().build() },
-            ioDispatcher = mainDispatcherRule.dispatcher,
+            dispatcher = mainDispatcherRule.dispatcher,
         )
-        val viewModel = ContextTransferViewModel(
-            repository = repository,
+        val viewModel = createContextTransferViewModel(
+            services = services,
             worldBookRepository = FakeWorldBookRepository(),
             memoryRepository = FakeMemoryRepository(),
             conversationSummaryRepository = FakeConversationSummaryRepository(),
@@ -156,11 +147,9 @@ class ContextTransferViewModelTest {
 
     @Test
     fun exportBundleJson_worldBookSectionOnlyIncludesWorldBookEntries() = runTest(mainDispatcherRule.dispatcher.scheduler) {
-        val repository = AiRepository(
-            settingsStore = FakeSettingsStore(AppSettings()),
-            apiServiceFactory = ApiServiceFactory(),
-            streamClientProvider = { _, _ -> OkHttpClient.Builder().build() },
-            ioDispatcher = mainDispatcherRule.dispatcher,
+        val services = createTestAiServices(
+            settings = AppSettings(),
+            dispatcher = mainDispatcherRule.dispatcher,
         )
         val worldBookRepository = FakeWorldBookRepository(
             initialEntries = listOf(
@@ -171,8 +160,8 @@ class ContextTransferViewModelTest {
                 ),
             ),
         )
-        val viewModel = ContextTransferViewModel(
-            repository = repository,
+        val viewModel = createContextTransferViewModel(
+            services = services,
             worldBookRepository = worldBookRepository,
             memoryRepository = FakeMemoryRepository(
                 initialEntries = listOf(
@@ -209,23 +198,19 @@ class ContextTransferViewModelTest {
 
     @Test
     fun previewImportJson_detectsConflictAndSupportsTavernSource() = runTest(mainDispatcherRule.dispatcher.scheduler) {
-        val repository = AiRepository(
-            settingsStore = FakeSettingsStore(
-                AppSettings(
-                    assistants = listOf(
-                        Assistant(
-                            id = "existing-id",
-                            name = "现有助手",
-                        ),
+        val services = createTestAiServices(
+            settings = AppSettings(
+                assistants = listOf(
+                    Assistant(
+                        id = "existing-id",
+                        name = "现有助手",
                     ),
                 ),
             ),
-            apiServiceFactory = ApiServiceFactory(),
-            streamClientProvider = { _, _ -> OkHttpClient.Builder().build() },
-            ioDispatcher = mainDispatcherRule.dispatcher,
+            dispatcher = mainDispatcherRule.dispatcher,
         )
-        val viewModel = ContextTransferViewModel(
-            repository = repository,
+        val viewModel = createContextTransferViewModel(
+            services = services,
             worldBookRepository = FakeWorldBookRepository(),
             memoryRepository = FakeMemoryRepository(),
             conversationSummaryRepository = FakeConversationSummaryRepository(),
@@ -268,14 +253,12 @@ class ContextTransferViewModelTest {
 
     @Test
     fun previewImportPayload_supportsTavernImageCard() = runTest(mainDispatcherRule.dispatcher.scheduler) {
-        val repository = AiRepository(
-            settingsStore = FakeSettingsStore(AppSettings()),
-            apiServiceFactory = ApiServiceFactory(),
-            streamClientProvider = { _, _ -> OkHttpClient.Builder().build() },
-            ioDispatcher = mainDispatcherRule.dispatcher,
+        val services = createTestAiServices(
+            settings = AppSettings(),
+            dispatcher = mainDispatcherRule.dispatcher,
         )
-        val viewModel = ContextTransferViewModel(
-            repository = repository,
+        val viewModel = createContextTransferViewModel(
+            services = services,
             worldBookRepository = FakeWorldBookRepository(),
             memoryRepository = FakeMemoryRepository(),
             conversationSummaryRepository = FakeConversationSummaryRepository(),
@@ -305,14 +288,12 @@ class ContextTransferViewModelTest {
 
     @Test
     fun previewImportPayload_supportsBracketWrappedTavernImageCard() = runTest(mainDispatcherRule.dispatcher.scheduler) {
-        val repository = AiRepository(
-            settingsStore = FakeSettingsStore(AppSettings()),
-            apiServiceFactory = ApiServiceFactory(),
-            streamClientProvider = { _, _ -> OkHttpClient.Builder().build() },
-            ioDispatcher = mainDispatcherRule.dispatcher,
+        val services = createTestAiServices(
+            settings = AppSettings(),
+            dispatcher = mainDispatcherRule.dispatcher,
         )
-        val viewModel = ContextTransferViewModel(
-            repository = repository,
+        val viewModel = createContextTransferViewModel(
+            services = services,
             worldBookRepository = FakeWorldBookRepository(),
             memoryRepository = FakeMemoryRepository(),
             conversationSummaryRepository = FakeConversationSummaryRepository(),
@@ -345,15 +326,13 @@ class ContextTransferViewModelTest {
 
     @Test
     fun confirmImport_tavernAssistantSectionAlsoImportsScopedWorldBookEntries() = runTest(mainDispatcherRule.dispatcher.scheduler) {
-        val repository = AiRepository(
-            settingsStore = FakeSettingsStore(AppSettings()),
-            apiServiceFactory = ApiServiceFactory(),
-            streamClientProvider = { _, _ -> OkHttpClient.Builder().build() },
-            ioDispatcher = mainDispatcherRule.dispatcher,
+        val services = createTestAiServices(
+            settings = AppSettings(),
+            dispatcher = mainDispatcherRule.dispatcher,
         )
         val worldBookRepository = FakeWorldBookRepository()
-        val viewModel = ContextTransferViewModel(
-            repository = repository,
+        val viewModel = createContextTransferViewModel(
+            services = services,
             worldBookRepository = worldBookRepository,
             memoryRepository = FakeMemoryRepository(),
             conversationSummaryRepository = FakeConversationSummaryRepository(),
@@ -404,7 +383,7 @@ class ContextTransferViewModelTest {
         viewModel.confirmImport()
         advanceUntilIdle()
 
-        val importedAssistant = repository.settingsFlow.first().assistants.single()
+        val importedAssistant = services.settingsRepository.settingsFlow.first().assistants.single()
         assertEquals(2, importedAssistant.linkedWorldBookIds.size)
         assertEquals(listOf("璃珠都市", "夜巡守则"), worldBookRepository.listEntries().map { it.title })
         assertTrue(worldBookRepository.listEntries().all { it.scopeId == importedAssistant.id })
@@ -412,15 +391,13 @@ class ContextTransferViewModelTest {
 
     @Test
     fun confirmImport_tavernImageCardImportsWorldBookAndAvatar() = runTest(mainDispatcherRule.dispatcher.scheduler) {
-        val repository = AiRepository(
-            settingsStore = FakeSettingsStore(AppSettings()),
-            apiServiceFactory = ApiServiceFactory(),
-            streamClientProvider = { _, _ -> OkHttpClient.Builder().build() },
-            ioDispatcher = mainDispatcherRule.dispatcher,
+        val services = createTestAiServices(
+            settings = AppSettings(),
+            dispatcher = mainDispatcherRule.dispatcher,
         )
         val worldBookRepository = FakeWorldBookRepository()
-        val viewModel = ContextTransferViewModel(
-            repository = repository,
+        val viewModel = createContextTransferViewModel(
+            services = services,
             worldBookRepository = worldBookRepository,
             memoryRepository = FakeMemoryRepository(),
             conversationSummaryRepository = FakeConversationSummaryRepository(),
@@ -468,7 +445,7 @@ class ContextTransferViewModelTest {
         viewModel.confirmImport()
         advanceUntilIdle()
 
-        val importedAssistant = repository.settingsFlow.first().assistants.single()
+        val importedAssistant = services.settingsRepository.settingsFlow.first().assistants.single()
         assertEquals("file:///avatars/${importedAssistant.id}.png", importedAssistant.avatarUri)
         assertEquals(listOf("璃珠都市", "夜巡守则"), worldBookRepository.listEntries().map { it.title })
         assertTrue(worldBookRepository.listEntries().all { it.scopeId == importedAssistant.id })
@@ -477,14 +454,12 @@ class ContextTransferViewModelTest {
 
     @Test
     fun previewImportJson_supportsStandaloneLorebookJson() = runTest(mainDispatcherRule.dispatcher.scheduler) {
-        val repository = AiRepository(
-            settingsStore = FakeSettingsStore(AppSettings()),
-            apiServiceFactory = ApiServiceFactory(),
-            streamClientProvider = { _, _ -> OkHttpClient.Builder().build() },
-            ioDispatcher = mainDispatcherRule.dispatcher,
+        val services = createTestAiServices(
+            settings = AppSettings(),
+            dispatcher = mainDispatcherRule.dispatcher,
         )
-        val viewModel = ContextTransferViewModel(
-            repository = repository,
+        val viewModel = createContextTransferViewModel(
+            services = services,
             worldBookRepository = FakeWorldBookRepository(),
             memoryRepository = FakeMemoryRepository(),
             conversationSummaryRepository = FakeConversationSummaryRepository(),
@@ -531,15 +506,13 @@ class ContextTransferViewModelTest {
 
     @Test
     fun confirmImport_standaloneLorebookCreatesAttachableEntries() = runTest(mainDispatcherRule.dispatcher.scheduler) {
-        val repository = AiRepository(
-            settingsStore = FakeSettingsStore(AppSettings()),
-            apiServiceFactory = ApiServiceFactory(),
-            streamClientProvider = { _, _ -> OkHttpClient.Builder().build() },
-            ioDispatcher = mainDispatcherRule.dispatcher,
+        val services = createTestAiServices(
+            settings = AppSettings(),
+            dispatcher = mainDispatcherRule.dispatcher,
         )
         val worldBookRepository = FakeWorldBookRepository()
-        val viewModel = ContextTransferViewModel(
-            repository = repository,
+        val viewModel = createContextTransferViewModel(
+            services = services,
             worldBookRepository = worldBookRepository,
             memoryRepository = FakeMemoryRepository(),
             conversationSummaryRepository = FakeConversationSummaryRepository(),
@@ -582,14 +555,12 @@ class ContextTransferViewModelTest {
 
     @Test
     fun previewImportPayload_worldBookSectionSupportsTavernPngExtraction() = runTest(mainDispatcherRule.dispatcher.scheduler) {
-        val repository = AiRepository(
-            settingsStore = FakeSettingsStore(AppSettings()),
-            apiServiceFactory = ApiServiceFactory(),
-            streamClientProvider = { _, _ -> OkHttpClient.Builder().build() },
-            ioDispatcher = mainDispatcherRule.dispatcher,
+        val services = createTestAiServices(
+            settings = AppSettings(),
+            dispatcher = mainDispatcherRule.dispatcher,
         )
-        val viewModel = ContextTransferViewModel(
-            repository = repository,
+        val viewModel = createContextTransferViewModel(
+            services = services,
             worldBookRepository = FakeWorldBookRepository(),
             memoryRepository = FakeMemoryRepository(),
             conversationSummaryRepository = FakeConversationSummaryRepository(),
@@ -630,6 +601,23 @@ class ContextTransferViewModelTest {
         val preview = viewModel.uiState.value.importPreview
         assertEquals(0, preview?.assistantCount)
         assertEquals(1, preview?.worldBookCount)
+    }
+
+    private fun createContextTransferViewModel(
+        services: TestAiServices,
+        worldBookRepository: FakeWorldBookRepository,
+        memoryRepository: FakeMemoryRepository,
+        conversationSummaryRepository: FakeConversationSummaryRepository,
+        importedAssistantAvatarSaver: suspend (AssistantAvatarImport) -> String? = { null },
+    ): ContextTransferViewModel {
+        return ContextTransferViewModel(
+            settingsRepository = services.settingsRepository,
+            settingsEditor = services.settingsEditor,
+            worldBookRepository = worldBookRepository,
+            memoryRepository = memoryRepository,
+            conversationSummaryRepository = conversationSummaryRepository,
+            importedAssistantAvatarSaver = importedAssistantAvatarSaver,
+        )
     }
 
     private fun buildPngCharacterCard(json: String): ByteArray {

@@ -17,13 +17,22 @@ interface ConversationStore {
 
     suspend fun listMessages(conversationId: String): List<ChatMessage>
 
-    suspend fun upsertConversation(conversation: Conversation)
+    suspend fun upsertConversationMetadata(conversation: Conversation)
 
-    suspend fun replaceMessages(conversationId: String, messages: List<ChatMessage>)
-
-    suspend fun saveConversationWithMessages(
+    suspend fun replaceConversationSnapshot(
         conversation: Conversation,
         conversationId: String,
+        messages: List<ChatMessage>,
+    )
+
+    suspend fun updateConversationMessages(
+        conversation: Conversation,
+        conversationId: String,
+        transform: (List<ChatMessage>) -> List<ChatMessage>,
+    ): List<ChatMessage>
+
+    suspend fun upsertConversationWithMessages(
+        conversation: Conversation,
         messages: List<ChatMessage>,
     )
 
@@ -32,7 +41,7 @@ interface ConversationStore {
         conversation: Conversation,
     )
 
-    suspend fun appendMessage(message: ChatMessage)
+    suspend fun upsertMessages(messages: List<ChatMessage>)
 
     suspend fun deleteConversation(conversationId: String)
 

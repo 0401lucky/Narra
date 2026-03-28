@@ -6,6 +6,7 @@ import android.content.Intent
 import android.net.Uri
 import android.os.Build
 import android.provider.Settings
+import androidx.core.net.toUri
 import com.example.myapplication.model.AppUpdateDownloadSnapshot
 import com.example.myapplication.model.AppUpdateDownloadStatus
 import com.example.myapplication.model.AppUpdateInstallResult
@@ -34,7 +35,7 @@ class AndroidAppUpdateController(
     private val downloadManager = appContext.getSystemService(DownloadManager::class.java)
 
     override fun enqueueDownload(metadata: AppUpdateMetadata): Long {
-        val request = DownloadManager.Request(Uri.parse(metadata.apkUrl)).apply {
+        val request = DownloadManager.Request(metadata.apkUrl.toUri()).apply {
             setTitle(buildDownloadTitle(metadata))
             setDescription("下载最新安装包")
             setMimeType("application/vnd.android.package-archive")
@@ -105,7 +106,7 @@ class AndroidAppUpdateController(
         if (!canRequestPackageInstalls) {
             val permissionIntent = Intent(
                 Settings.ACTION_MANAGE_UNKNOWN_APP_SOURCES,
-                Uri.parse("package:${appContext.packageName}"),
+                "package:${appContext.packageName}".toUri(),
             ).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
             appContext.startActivity(permissionIntent)
             return@withContext AppUpdateInstallResult(

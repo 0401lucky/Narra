@@ -2,14 +2,13 @@ package com.example.myapplication.viewmodel
 
 import com.example.myapplication.data.remote.ApiServiceFactory
 import com.example.myapplication.data.remote.OpenAiCompatibleApi
-import com.example.myapplication.data.repository.AiRepository
 import com.example.myapplication.model.AppSettings
 import com.example.myapplication.model.ChatCompletionRequest
 import com.example.myapplication.model.ChatCompletionResponse
 import com.example.myapplication.model.ProviderSettings
 import com.example.myapplication.model.TranslationHistoryEntry
 import com.example.myapplication.model.TranslationSourceType
-import com.example.myapplication.testutil.FakeSettingsStore
+import com.example.myapplication.testutil.createTestAiServices
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
@@ -70,6 +69,12 @@ class TranslationViewModelTest {
                         )
                     }
 
+                    override suspend fun createChatCompletionAt(url: String, request: ChatCompletionRequest): Response<ChatCompletionResponse> = createChatCompletion(request)
+
+                    override suspend fun createResponseAt(url: String, request: com.example.myapplication.model.ResponseApiRequest): Response<com.example.myapplication.model.ResponseApiResponse> {
+                        error("不应调用 responses 接口")
+                    }
+
                     override suspend fun generateImage(request: com.example.myapplication.model.ImageGenerationRequest): Response<com.example.myapplication.model.ImageGenerationResponse> {
                         error("不应调用生图接口")
                     }
@@ -123,19 +128,17 @@ class TranslationViewModelTest {
         settings: AppSettings,
         apiServiceProvider: ((String, String) -> OpenAiCompatibleApi)? = null,
     ): TranslationViewModel {
-        val repository = AiRepository(
-            settingsStore = FakeSettingsStore(settings),
-            apiServiceFactory = ApiServiceFactory(),
+        val services = createTestAiServices(
+            settings = settings,
+            dispatcher = mainDispatcherRule.dispatcher,
             apiServiceProvider = apiServiceProvider ?: { _, _ ->
                 error("未提供翻译接口桩")
             },
-            streamClientProvider = { _, _ ->
-                OkHttpClient.Builder().build()
-            },
-            ioDispatcher = mainDispatcherRule.dispatcher,
         )
         return TranslationViewModel(
-            repository = repository,
+            settingsRepository = services.settingsRepository,
+            settingsEditor = services.settingsEditor,
+            aiTranslationService = services.aiTranslationService,
             nowProvider = { 123L },
         )
     }

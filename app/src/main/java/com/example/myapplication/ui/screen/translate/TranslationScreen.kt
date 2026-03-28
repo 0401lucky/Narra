@@ -44,12 +44,13 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalClipboardManager
-import androidx.compose.ui.text.AnnotatedString
+import androidx.compose.ui.platform.LocalClipboard
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -76,7 +77,9 @@ fun TranslationScreen(
     onNavigateBack: () -> Unit,
 ) {
     val snackbarHostState = remember { SnackbarHostState() }
-    val clipboardManager = LocalClipboardManager.current
+    val clipboard = LocalClipboard.current
+    val context = LocalContext.current
+    val clipboardScope = rememberCoroutineScope()
     var showLanguageSheet by rememberSaveable { mutableStateOf(false) }
     var showModelSheet by rememberSaveable { mutableStateOf(false) }
     var showHistorySheet by rememberSaveable { mutableStateOf(false) }
@@ -183,7 +186,7 @@ fun TranslationScreen(
             item {
                 NarraFilledTonalButton(
                     onClick = {
-                        val text = clipboardManager.getText()?.text.orEmpty()
+                        val text = readPlainTextFromClipboard(clipboard, context)
                         if (text.isNotBlank()) {
                             onPasteText(text)
                         }
@@ -223,7 +226,7 @@ fun TranslationScreen(
                 item {
                     NarraOutlinedButton(
                         onClick = {
-                            clipboardManager.setText(AnnotatedString(uiState.translatedText))
+                            clipboardScope.copyPlainTextToClipboard(clipboard, "translation-result", uiState.translatedText)
                         },
                     ) {
                         Icon(Icons.Default.ContentCopy, contentDescription = null)

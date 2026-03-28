@@ -30,10 +30,10 @@ def resolveBuildSecret = { String key ->
 }
 
 def appDisplayName = "Narra"
-def appApplicationId = "com.narra.app"
+def appApplicationId = (project.findProperty("narraApplicationId") ?: "com.narra.app").toString()
 def appVersionMajor = ((project.findProperty("appVersionMajorOverride") ?: "1").toString()).toInteger()
-def appVersionMinor = ((project.findProperty("appVersionMinorOverride") ?: "0").toString()).toInteger()
-def appVersionPatch = ((project.findProperty("appVersionPatchOverride") ?: "6").toString()).toInteger()
+def appVersionMinor = ((project.findProperty("appVersionMinorOverride") ?: "1").toString()).toInteger()
+def appVersionPatch = ((project.findProperty("appVersionPatchOverride") ?: "0").toString()).toInteger()
 def appVersionSuffix = (project.findProperty("appVersionSuffixOverride") ?: "").toString()
 def appVersionName = "${appVersionMajor}.${appVersionMinor}.${appVersionPatch}${appVersionSuffix}"
 def appVersionCode = (appVersionMajor * 10000) + (appVersionMinor * 100) + appVersionPatch
@@ -134,6 +134,10 @@ android {
     }
 }
 
+ksp {
+    arg("room.schemaLocation", "$projectDir/schemas")
+}
+
 androidComponents {
     onVariants(selector().all()) { variant ->
         variant.outputs.each { output ->
@@ -164,6 +168,29 @@ baselineProfile {
     mergeIntoMain = true
     automaticGenerationDuringBuild = false
 }
+
+def registerAnnotationProcessorListWorkaround = { String variantName ->
+    def capitalizedVariant = variantName.substring(0, 1).toUpperCase() + variantName.substring(1)
+    def taskName = "ensure${capitalizedVariant}AnnotationProcessorList"
+    def outputPath = layout.buildDirectory.file(
+            "intermediates/annotation_processor_list/${variantName}/javaPreCompile${capitalizedVariant}/annotationProcessors.json",
+    )
+    tasks.register(taskName) {
+        outputs.file(outputPath)
+        doLast {
+            def outputFile = outputPath.get().asFile
+            outputFile.parentFile.mkdirs()
+            if (!outputFile.exists()) {
+                outputFile.text = "[]"
+            }
+        }
+    }
+    tasks.matching { it.name == "compile${capitalizedVariant}JavaWithJavac" }.configureEach {
+        dependsOn(taskName)
+    }
+}
+
+registerAnnotationProcessorListWorkaround("debug")
 
 dependencies {
     baselineProfile project(':baselineprofile')
@@ -208,6 +235,7 @@ dependencies {
     androidTestImplementation libs.androidx.junit
     androidTestImplementation libs.androidx.espresso.core
     androidTestImplementation libs.androidx.compose.ui.test.junit4
+    androidTestImplementation libs.androidx.room.testing
 
     debugImplementation libs.androidx.compose.ui.tooling
     debugImplementation libs.androidx.compose.ui.test.manifest

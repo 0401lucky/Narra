@@ -7,6 +7,7 @@ import android.graphics.Color
 import android.graphics.PixelFormat
 import android.graphics.drawable.GradientDrawable
 import android.os.Build
+import androidx.core.graphics.toColorInt
 import android.os.Handler
 import android.os.Looper
 import android.view.Gravity
@@ -19,6 +20,7 @@ import android.widget.PopupMenu
 import android.widget.ScrollView
 import android.widget.TextView
 import android.widget.Toast
+import androidx.appcompat.widget.AppCompatTextView
 import kotlin.math.abs
 
 class FloatingOverlayController(
@@ -53,6 +55,17 @@ class FloatingOverlayController(
     private var resultPanelView: View? = null
     private val hideSelectedTextActionRunnable = Runnable {
         hideSelectedTextAction()
+    }
+
+    private class FloatingBallTextView(
+        context: Context,
+        private val onClickAction: () -> Unit,
+    ) : AppCompatTextView(context) {
+        override fun performClick(): Boolean {
+            super.performClick()
+            onClickAction()
+            return true
+        }
     }
 
     fun showFloatingBall(
@@ -223,14 +236,18 @@ class FloatingOverlayController(
     }
 
     private fun createFloatingBallView(): View {
-        val textView = TextView(context).apply {
+        val textView = FloatingBallTextView(
+            context = context,
+            onClickAction = callback::onFloatingBallClicked,
+        ).apply {
             text = "译"
             gravity = Gravity.CENTER
             textSize = 18f
+            contentDescription = "屏幕翻译悬浮球"
             setTextColor(Color.WHITE)
             background = GradientDrawable().apply {
                 shape = GradientDrawable.OVAL
-                setColor(Color.parseColor("#3B82F6"))
+                setColor("#3B82F6".toColorInt())
             }
             elevation = dp(10).toFloat()
             layoutParams = LinearLayout.LayoutParams(dp(56), dp(56))
@@ -272,7 +289,7 @@ class FloatingOverlayController(
 
                 MotionEvent.ACTION_UP -> {
                     if (!moved) {
-                        callback.onFloatingBallClicked()
+                        view.performClick()
                     } else {
                         snapBallToEdge(view, params)
                     }
@@ -314,8 +331,8 @@ class FloatingOverlayController(
             setPadding(dp(16), dp(12), dp(16), dp(12))
             background = GradientDrawable().apply {
                 cornerRadius = dp(20).toFloat()
-                setColor(Color.parseColor("#0F172A"))
-                setStroke(dp(1), Color.parseColor("#334155"))
+                setColor("#0F172A".toColorInt())
+                setStroke(dp(1), "#334155".toColorInt())
             }
             elevation = dp(8).toFloat()
 
@@ -345,22 +362,22 @@ class FloatingOverlayController(
             setPadding(dp(18), dp(18), dp(18), dp(18))
             background = GradientDrawable().apply {
                 cornerRadius = dp(22).toFloat()
-                setColor(Color.parseColor("#F8FAFC"))
-                setStroke(dp(1), Color.parseColor("#CBD5E1"))
+                setColor("#F8FAFC".toColorInt())
+                setStroke(dp(1), "#CBD5E1".toColorInt())
             }
             elevation = dp(12).toFloat()
 
             addView(
                 TextView(context).apply {
                     tag = "panel-title"
-                    setTextColor(Color.parseColor("#0F172A"))
+                    setTextColor("#0F172A".toColorInt())
                     textSize = 18f
                 },
             )
             addView(
                 TextView(context).apply {
                     tag = "panel-app"
-                    setTextColor(Color.parseColor("#475569"))
+                    setTextColor("#475569".toColorInt())
                     textSize = 13f
                 },
             )
@@ -378,14 +395,14 @@ class FloatingOverlayController(
                             addView(
                                 TextView(context).apply {
                                     tag = "panel-source"
-                                    setTextColor(Color.parseColor("#334155"))
+                                    setTextColor("#334155".toColorInt())
                                     textSize = 14f
                                 },
                             )
                             addView(
                                 TextView(context).apply {
                                     tag = "panel-result"
-                                    setTextColor(Color.parseColor("#0F172A"))
+                                    setTextColor("#0F172A".toColorInt())
                                     textSize = 16f
                                     setLineSpacing(0f, 1.16f)
                                 },

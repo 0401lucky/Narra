@@ -13,6 +13,16 @@ class FakeConversationStore(
 ) : ConversationStore {
     private val conversationsState = MutableStateFlow(conversations.sortedByDescending { it.updatedAt })
     private val messagesState = MutableStateFlow(messagesByConversation)
+    var listMessagesCount: Int = 0
+        private set
+    var replaceConversationSnapshotCount: Int = 0
+        private set
+    var updateConversationMessagesCount: Int = 0
+        private set
+    var upsertConversationWithMessagesCount: Int = 0
+        private set
+    var upsertMessagesCount: Int = 0
+        private set
 
     override fun observeConversations(): Flow<List<Conversation>> {
         return conversationsState
@@ -37,27 +47,54 @@ class FakeConversationStore(
     }
 
     override suspend fun listMessages(conversationId: String): List<ChatMessage> {
+        listMessagesCount += 1
         return messagesState.value[conversationId].orEmpty().sortedBy { it.createdAt }
     }
 
-    override suspend fun upsertConversation(conversation: Conversation) {
+    override suspend fun upsertConversationMetadata(conversation: Conversation) {
         val updated = conversationsState.value.filterNot { it.id == conversation.id } + conversation
         conversationsState.value = updated.sortedByDescending { it.updatedAt }
     }
 
-    override suspend fun replaceMessages(conversationId: String, messages: List<ChatMessage>) {
+    override suspend fun replaceConversationSnapshot(
+        conversation: Conversation,
+        conversationId: String,
+        messages: List<ChatMessage>,
+    ) {
+        replaceConversationSnapshotCount += 1
+        upsertConversationMetadata(conversation)
         messagesState.value = messagesState.value.toMutableMap().apply {
             this[conversationId] = messages.sortedBy { it.createdAt }
         }
     }
 
-    override suspend fun saveConversationWithMessages(
+    override suspend fun updateConversationMessages(
         conversation: Conversation,
         conversationId: String,
+        transform: (List<ChatMessage>) -> List<ChatMessage>,
+    ): List<ChatMessage> {
+        updateConversationMessagesCount += 1
+        val existingMessages = messagesState.value[conversationId].orEmpty().sortedBy { it.createdAt }
+        val updatedMessages = transform(existingMessages)
+        if (updatedMessages == existingMessages) {
+            return existingMessages
+        }
+        upsertConversationMetadata(conversation)
+        upsertMessages(
+            updatedMessages.filter { nextMessage ->
+                existingMessages.firstOrNull { it.id == nextMessage.id } != nextMessage
+            },
+        )
+        return updatedMessages
+    }
+
+    override suspend fun upsertConversationWithMessages(
+        conversation: Conversation,
         messages: List<ChatMessage>,
     ) {
-        upsertConversation(conversation)
-        replaceMessages(conversationId, messages)
+        upsertConversationWithMessagesCount += 1
+        upsertConversationMetadata(conversation)
+        upsertMessages(messages)
     }
 
     override suspend fun clearMessagesAndUpdateConversation(
@@ -65,12 +102,20 @@ class FakeConversationStore(
         conversation: Conversation,
     ) {
         clearMessages(conversationId)
-        upsertConversation(conversation)
+        upsertConversationMetadata(conversation)
     }
 
-    override suspend fun appendMessage(message: ChatMessage) {
-        val currentMessages = messagesState.value[message.conversationId].orEmpty()
-        replaceMessages(message.conversationId, currentMessages + message)
+    override suspend fun upsertMessages(messages: List<ChatMessage>) {
+        upsertMessagesCount += 1
+        messages.groupBy { it.conversationId }.forEach { (conversationId, scopedMessages) ->
+            val currentMessages = messagesState.value[conversationId].orEmpty()
+            val mergedMessages = currentMessages.filterNot { existing ->
+                scopedMessages.any { incoming -> incoming.id == existing.id }
+            } + scopedMessages
+            messagesState.value = messagesState.value.toMutableMap().apply {
+                this[conversationId] = mergedMessages.sortedBy { it.createdAt }
+            }
+        }
     }
 
     override suspend fun deleteConversation(conversationId: String) {

@@ -6,6 +6,7 @@ data class ProviderTemplate(
     val name: String,
     val description: String,
     val defaultBaseUrl: String,
+    val defaultApiProtocol: ProviderApiProtocol = ProviderApiProtocol.OPENAI_COMPATIBLE,
 )
 
 /** 内置提供商模板列表。 */
@@ -31,8 +32,9 @@ val BUILT_IN_TEMPLATES: List<ProviderTemplate> = listOf(
     ProviderTemplate(
         type = ProviderType.ANTHROPIC,
         name = "Anthropic",
-        description = "Claude Opus / Sonnet / Haiku 系列模型",
+        description = "支持 OpenAI 兼容网关与 Anthropic /v1/messages 官方协议",
         defaultBaseUrl = ProviderType.ANTHROPIC.defaultBaseUrl,
+        defaultApiProtocol = ProviderApiProtocol.ANTHROPIC,
     ),
     ProviderTemplate(
         type = ProviderType.MISTRAL,

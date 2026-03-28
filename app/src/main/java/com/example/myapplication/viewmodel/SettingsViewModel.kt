@@ -3,7 +3,9 @@ package com.example.myapplication.viewmodel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
-import com.example.myapplication.data.repository.AiRepository
+import com.example.myapplication.data.repository.ai.AiModelCatalogRepository
+import com.example.myapplication.data.repository.ai.AiSettingsEditor
+import com.example.myapplication.data.repository.ai.AiSettingsRepository
 import com.example.myapplication.model.AppSettings
 import com.example.myapplication.model.Assistant
 import com.example.myapplication.model.BUILTIN_ASSISTANTS
@@ -17,10 +19,6 @@ import com.example.myapplication.model.ProviderTemplate
 import com.example.myapplication.model.ProviderType
 import com.example.myapplication.model.ScreenTranslationSettings
 import com.example.myapplication.model.ThemeMode
-import com.example.myapplication.model.createDefaultProvider
-import com.example.myapplication.model.inferredModelInfo
-import com.example.myapplication.model.mergeModelInfosPreservingOverrides
-import com.example.myapplication.model.withAbilityOverride
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -99,9 +97,11 @@ data class SettingsUiState(
 }
 
 class SettingsViewModel(
-    private val repository: AiRepository,
+    private val settingsRepository: AiSettingsRepository,
+    private val settingsEditor: AiSettingsEditor,
+    private val modelCatalogRepository: AiModelCatalogRepository,
 ) : ViewModel() {
-    val storedSettings: StateFlow<AppSettings> = repository.settingsFlow.stateIn(
+    val storedSettings: StateFlow<AppSettings> = settingsRepository.settingsFlow.stateIn(
         scope = viewModelScope,
         started = SharingStarted.Eagerly,
         initialValue = AppSettings(),
@@ -109,40 +109,24 @@ class SettingsViewModel(
 
     private val _uiState = MutableStateFlow(SettingsUiState())
     val uiState: StateFlow<SettingsUiState> = _uiState.asStateFlow()
+    private val persistenceCoordinator = SettingsPersistenceCoordinator(settingsEditor)
+    private val modelLoadCoordinator = SettingsModelLoadCoordinator(
+        modelCatalogRepository = modelCatalogRepository,
+        settingsEditor = settingsEditor,
+    )
+    private val assistantCoordinator = SettingsAssistantCoordinator(settingsEditor)
+    private val healthCoordinator = SettingsHealthCoordinator(modelCatalogRepository)
 
     init {
         viewModelScope.launch {
             // 这里直接订阅仓库真实设置流，避免 stateIn 初始空值先生成默认草稿，
             // 后续真实设置到达时又被误判成“已有未保存改动”。
-            repository.settingsFlow.collect { settings ->
-                val resolvedProviders = ensureProviders(settings.resolvedProviders())
-                val resolvedSelectedProviderId = resolveSelectedProviderId(
-                    providers = resolvedProviders,
-                    selectedProviderId = settings.selectedProviderId,
-                )
+            settingsRepository.settingsFlow.collect { settings ->
                 _uiState.update { current ->
-                    if (current.hasDraftChanges()) {
-                        current.copy(savedSettings = settings)
-                    } else {
-                        current.copy(
-                            providers = resolvedProviders,
-                            selectedProviderId = resolvedSelectedProviderId,
-                            savedSettings = settings,
-                            themeMode = settings.themeMode,
-                            messageTextScale = settings.messageTextScale,
-                            reasoningExpandedByDefault = settings.reasoningExpandedByDefault,
-                            showThinkingContent = settings.showThinkingContent,
-                            autoCollapseThinking = settings.autoCollapseThinking,
-                            autoPreviewImages = settings.autoPreviewImages,
-                            codeBlockAutoWrap = settings.codeBlockAutoWrap,
-                            codeBlockAutoCollapse = settings.codeBlockAutoCollapse,
-                            showRoleplayAiHelper = settings.showRoleplayAiHelper,
-                            roleplayLongformTargetChars = settings.roleplayLongformTargetChars,
-                            showRoleplayPresenceStrip = settings.showRoleplayPresenceStrip,
-                            showRoleplayStatusStrip = settings.showRoleplayStatusStrip,
-                            screenTranslationSettings = settings.screenTranslationSettings,
-                        )
-                    }
+                    SettingsDraftStateSupport.syncStoredSettings(
+                        current = current,
+                        settings = settings,
+                    )
                 }
             }
         }
@@ -160,7 +144,7 @@ class SettingsViewModel(
         updateCurrentProvider { provider ->
             provider.copy(
                 selectedModel = value,
-                availableModels = mergeModels(
+                availableModels = SettingsProviderDraftSupport.mergeModels(
                     currentModels = provider.availableModels,
                     selectedModel = value,
                 ),
@@ -180,6 +164,52 @@ class SettingsViewModel(
         updateProvider(providerId) { it.copy(apiKey = value) }
     }
 
+    fun updateProviderApiProtocol(
+        providerId: String,
+        apiProtocol: com.example.myapplication.model.ProviderApiProtocol,
+    ) {
+        updateProvider(providerId) { provider ->
+            val normalizedBaseUrl = when (apiProtocol) {
+                com.example.myapplication.model.ProviderApiProtocol.OPENAI_COMPATIBLE -> {
+                    when (provider.resolvedType()) {
+                        ProviderType.ANTHROPIC -> ""
+                        else -> provider.baseUrl
+                    }
+                }
+                com.example.myapplication.model.ProviderApiProtocol.ANTHROPIC -> {
+                    provider.baseUrl.ifBlank { ProviderType.ANTHROPIC.defaultBaseUrl }
+                }
+            }
+            provider.copy(
+                apiProtocol = apiProtocol,
+                baseUrl = normalizedBaseUrl,
+                openAiTextApiMode = if (apiProtocol == com.example.myapplication.model.ProviderApiProtocol.OPENAI_COMPATIBLE) {
+                    provider.resolvedOpenAiTextApiMode()
+                } else {
+                    provider.openAiTextApiMode
+                },
+            )
+        }
+    }
+
+    fun updateProviderOpenAiTextApiMode(
+        providerId: String,
+        textApiMode: com.example.myapplication.model.OpenAiTextApiMode,
+    ) {
+        updateProvider(providerId) { provider ->
+            provider.copy(openAiTextApiMode = textApiMode)
+        }
+    }
+
+    fun updateProviderChatCompletionsPath(
+        providerId: String,
+        path: String,
+    ) {
+        updateProvider(providerId) { provider ->
+            provider.copy(chatCompletionsPath = path)
+        }
+    }
+
     fun updateProviderSelectedModel(
         providerId: String,
         value: String,
@@ -187,7 +217,7 @@ class SettingsViewModel(
         updateProvider(providerId) { provider ->
             provider.copy(
                 selectedModel = value,
-                availableModels = mergeModels(
+                availableModels = SettingsProviderDraftSupport.mergeModels(
                     currentModels = provider.availableModels,
                     selectedModel = value,
                 ),
@@ -201,71 +231,70 @@ class SettingsViewModel(
         abilities: Set<ModelAbility>?,
     ) {
         updateProvider(providerId) { provider ->
-            val currentModels = provider.models.orEmpty()
-            val existingModel = currentModels.firstOrNull { it.modelId == modelId }
-            val updatedModel = (existingModel ?: inferredModelInfo(modelId)).withAbilityOverride(abilities)
-            provider.copy(
-                availableModels = mergeModels(
-                    currentModels = provider.availableModels,
-                    selectedModel = modelId,
-                ),
-                models = if (existingModel != null) {
-                    currentModels.map { model ->
-                        if (model.modelId == modelId) {
-                            updatedModel
-                        } else {
-                            model
-                        }
-                    }
-                } else {
-                    currentModels + updatedModel
-                },
+            SettingsProviderDraftSupport.updateProviderModelAbilities(
+                provider = provider,
+                modelId = modelId,
+                abilities = abilities,
             )
         }
     }
 
     fun selectProvider(providerId: String) {
-        _uiState.update { it.copy(selectedProviderId = providerId, message = null) }
+        _uiState.update { current ->
+            SettingsDraftStateSupport.selectProvider(
+                current = current,
+                providerId = providerId,
+            )
+        }
     }
 
     fun addProvider() {
-        val newProvider = createDefaultProvider(
-            name = "提供商 ${_uiState.value.providers.size + 1}",
+        val updatedState = SettingsDraftStateSupport.addProvider(_uiState.value)
+        _uiState.value = updatedState
+        persistProviderDrafts(
+            providers = updatedState.providers,
+            selectedProviderId = updatedState.selectedProviderId,
         )
-        _uiState.update {
-            it.copy(
-                providers = it.providers + newProvider,
-                selectedProviderId = newProvider.id,
-                message = null,
-            )
+    }
+
+    fun ensureProviderDrafts() {
+        val updatedState = SettingsDraftStateSupport.ensureProviderDrafts(_uiState.value)
+        if (updatedState == _uiState.value) {
+            return
         }
+        _uiState.value = updatedState
+        persistProviderDrafts(
+            providers = updatedState.providers,
+            selectedProviderId = updatedState.selectedProviderId,
+        )
     }
 
     /** 显示模板选择对话框。 */
     fun showAddProviderDialog() {
-        _uiState.update { it.copy(showTemplateDialog = true) }
+        _uiState.update { current ->
+            SettingsDraftStateSupport.showAddProviderDialog(current)
+        }
     }
 
     /** 关闭模板选择对话框。 */
     fun dismissAddProviderDialog() {
-        _uiState.update { it.copy(showTemplateDialog = false) }
+        _uiState.update { current ->
+            SettingsDraftStateSupport.dismissAddProviderDialog(current)
+        }
     }
 
     /** 根据模板创建新提供商，返回新提供商 ID。 */
     fun addProviderFromTemplate(template: ProviderTemplate): String {
-        val newProvider = createDefaultProvider(
-            name = template.name,
-            baseUrl = template.defaultBaseUrl,
-            type = template.type,
+        val result = SettingsDraftStateSupport.addProviderFromTemplate(
+            current = _uiState.value,
+            template = template,
         )
-        _uiState.update {
-            it.copy(
-                providers = it.providers + newProvider,
-                showTemplateDialog = false,
-                message = null,
-            )
-        }
-        return newProvider.id
+        _uiState.value = result.state
+        persistProviderDrafts(
+            providers = result.state.providers,
+            selectedProviderId = result.state.selectedProviderId,
+        )
+        return result.newProviderId
     }
 
     /** 检测单个提供商的连接健康状态。 */
@@ -273,17 +302,24 @@ class SettingsViewModel(
         val provider = _uiState.value.providers.firstOrNull { it.id == providerId } ?: return
         if (!provider.hasBaseCredentials()) return
         viewModelScope.launch {
-            _uiState.update {
-                it.copy(connectionHealthMap = it.connectionHealthMap + (providerId to ConnectionHealth.CHECKING))
+            _uiState.update { current ->
+                SettingsHealthStateSupport.markChecking(
+                    current = current,
+                    providerId = providerId,
+                )
             }
-            val health = runCatching {
-                repository.fetchModels(baseUrl = provider.baseUrl, apiKey = provider.apiKey)
-                ConnectionHealth.HEALTHY
-            }.getOrElse {
-                ConnectionHealth.UNHEALTHY
-            }
-            _uiState.update {
-                it.copy(connectionHealthMap = it.connectionHealthMap + (providerId to health))
+            val result = healthCoordinator.checkProviderHealth(provider)
+            _uiState.update { current ->
+                val updated = SettingsHealthStateSupport.markResult(
+                    current = current,
+                    providerId = providerId,
+                    health = result.health,
+                )
+                if (result.message.isNullOrBlank()) {
+                    updated
+                } else {
+                    SettingsUiMutationSupport.applyMessageError(updated, result.message)
+                }
             }
         }
     }
@@ -299,7 +335,9 @@ class SettingsViewModel(
 
     /** 切换提供商启用/禁用。 */
     fun toggleProviderEnabled(providerId: String) {
-        updateProvider(providerId) { it.copy(enabled = !it.enabled) }
+        _uiState.update { current ->
+            SettingsUiMutationSupport.toggleProviderEnabled(current, providerId)
+        }
     }
 
     fun updateProviderTitleSummaryModel(providerId: String, modelId: String) {
@@ -319,61 +357,75 @@ class SettingsViewModel(
     }
 
     fun updateThemeMode(themeMode: ThemeMode) {
-        _uiState.update { it.copy(themeMode = themeMode, message = null) }
+        _uiState.update { current ->
+            SettingsPreferenceDraftSupport.updateThemeMode(current, themeMode)
+        }
     }
 
     fun updateMessageTextScale(messageTextScale: Float) {
-        _uiState.update {
-            it.copy(
-                messageTextScale = messageTextScale.coerceIn(0.85f, 1.25f),
-                message = null,
-            )
+        _uiState.update { current ->
+            SettingsPreferenceDraftSupport.updateMessageTextScale(current, messageTextScale)
         }
     }
 
     fun updateReasoningExpandedByDefault(expanded: Boolean) {
-        _uiState.update { it.copy(reasoningExpandedByDefault = expanded, message = null) }
+        _uiState.update { current ->
+            SettingsPreferenceDraftSupport.updateReasoningExpandedByDefault(current, expanded)
+        }
     }
 
     fun updateShowThinkingContent(enabled: Boolean) {
-        _uiState.update { it.copy(showThinkingContent = enabled, message = null) }
+        _uiState.update { current ->
+            SettingsPreferenceDraftSupport.updateShowThinkingContent(current, enabled)
+        }
     }
 
     fun updateAutoCollapseThinking(enabled: Boolean) {
-        _uiState.update { it.copy(autoCollapseThinking = enabled, message = null) }
+        _uiState.update { current ->
+            SettingsPreferenceDraftSupport.updateAutoCollapseThinking(current, enabled)
+        }
     }
 
     fun updateAutoPreviewImages(enabled: Boolean) {
-        _uiState.update { it.copy(autoPreviewImages = enabled, message = null) }
+        _uiState.update { current ->
+            SettingsPreferenceDraftSupport.updateAutoPreviewImages(current, enabled)
+        }
     }
 
     fun updateCodeBlockAutoWrap(enabled: Boolean) {
-        _uiState.update { it.copy(codeBlockAutoWrap = enabled, message = null) }
+        _uiState.update { current ->
+            SettingsPreferenceDraftSupport.updateCodeBlockAutoWrap(current, enabled)
+        }
     }
 
     fun updateCodeBlockAutoCollapse(enabled: Boolean) {
-        _uiState.update { it.copy(codeBlockAutoCollapse = enabled, message = null) }
+        _uiState.update { current ->
+            SettingsPreferenceDraftSupport.updateCodeBlockAutoCollapse(current, enabled)
+        }
     }
 
     fun updateShowRoleplayAiHelper(enabled: Boolean) {
-        _uiState.update { it.copy(showRoleplayAiHelper = enabled, message = null) }
+        _uiState.update { current ->
+            SettingsPreferenceDraftSupport.updateShowRoleplayAiHelper(current, enabled)
+        }
     }
 
     fun updateRoleplayLongformTargetChars(value: Int) {
-        _uiState.update {
-            it.copy(
-                roleplayLongformTargetChars = value.coerceIn(300, 2000),
-                message = null,
-            )
+        _uiState.update { current ->
+            SettingsPreferenceDraftSupport.updateRoleplayLongformTargetChars(current, value)
         }
     }
 
     fun updateShowRoleplayPresenceStrip(enabled: Boolean) {
-        _uiState.update { it.copy(showRoleplayPresenceStrip = enabled, message = null) }
+        _uiState.update { current ->
+            SettingsPreferenceDraftSupport.updateShowRoleplayPresenceStrip(current, enabled)
+        }
     }
 
     fun updateShowRoleplayStatusStrip(enabled: Boolean) {
-        _uiState.update { it.copy(showRoleplayStatusStrip = enabled, message = null) }
+        _uiState.update { current ->
+            SettingsPreferenceDraftSupport.updateShowRoleplayStatusStrip(current, enabled)
+        }
     }
 
     fun updateScreenTranslationServiceEnabled(enabled: Boolean) {
@@ -414,134 +466,60 @@ class SettingsViewModel(
 
     fun deleteProvider(providerId: String) {
         _uiState.update { current ->
-            val remainingProviders = current.providers.filterNot { it.id == providerId }
-            val resolvedProviders = ensureProviders(remainingProviders)
-            val resolvedSelectedProviderId = when {
-                current.selectedProviderId == providerId -> resolvedProviders.first().id
-                else -> resolveSelectedProviderId(
-                    providers = resolvedProviders,
-                    selectedProviderId = current.selectedProviderId,
-                )
-            }
-            current.copy(
-                providers = resolvedProviders,
-                selectedProviderId = resolvedSelectedProviderId,
-                message = null,
-            )
+            SettingsUiMutationSupport.deleteProvider(current, providerId)
         }
     }
 
     fun loadModels() {
-        val provider = _uiState.value.currentProvider ?: return
-        loadModels(provider.id)
+        val request = SettingsLoadRequestSupport.resolveCurrentProviderRequest(_uiState.value) ?: return
+        loadModelsForProvider(request)
     }
 
     fun loadModels(providerId: String) {
-        val provider = _uiState.value.providers.firstOrNull { it.id == providerId } ?: return
-        loadModelsForProvider(
-            providerId = provider.id,
-            baseUrl = provider.baseUrl,
-            apiKey = provider.apiKey,
-            selectedModel = provider.selectedModel,
-        )
+        val request = SettingsLoadRequestSupport.resolveCurrentProviderRequest(
+            state = _uiState.value,
+            providerId = providerId,
+        ) ?: return
+        loadModelsForProvider(request)
     }
 
     fun loadSavedModels() {
-        val currentState = _uiState.value
-        val savedProviders = ensureProviders(currentState.savedSettings.resolvedProviders())
-        val resolvedSelectedProviderId = resolveSelectedProviderId(
-            providers = savedProviders,
-            selectedProviderId = currentState.savedSettings.selectedProviderId,
-        )
-        val provider = savedProviders.firstOrNull { it.id == resolvedSelectedProviderId }
-            ?: currentState.savedSettings.activeProvider()
-            ?: currentState.currentProvider
-            ?: return
-        loadModelsForProvider(
-            providerId = provider.id,
-            baseUrl = provider.baseUrl,
-            apiKey = provider.apiKey,
-            selectedModel = provider.selectedModel,
-            persistResult = true,
-            persistedProviders = savedProviders,
-            persistedSelectedProviderId = resolvedSelectedProviderId,
-        )
+        val request = SettingsLoadRequestSupport.resolveSavedProviderRequest(_uiState.value) ?: return
+        loadModelsForProvider(request)
     }
 
     fun loadSavedModelsForProvider(providerId: String) {
-        val currentState = _uiState.value
-        val savedProviders = ensureProviders(currentState.savedSettings.resolvedProviders())
-        val provider = savedProviders.firstOrNull { it.id == providerId } ?: return
-        loadModelsForProvider(
-            providerId = provider.id,
-            baseUrl = provider.baseUrl,
-            apiKey = provider.apiKey,
-            selectedModel = provider.selectedModel,
-            persistResult = true,
-            persistedProviders = savedProviders,
-            persistedSelectedProviderId = provider.id,
-        )
+        val request = SettingsLoadRequestSupport.resolveSavedProviderRequest(
+            state = _uiState.value,
+            providerId = providerId,
+        ) ?: return
+        loadModelsForProvider(request)
     }
 
     fun saveSettings(onSaved: () -> Unit) {
-        val currentState = _uiState.value
-        val normalizedProviders = normalizeProviders(currentState.providers)
-        val resolvedSelectedProviderId = resolveSelectedProviderId(
-            providers = normalizedProviders,
-            selectedProviderId = currentState.selectedProviderId,
-        )
         viewModelScope.launch {
-            _uiState.update { it.copy(isSaving = true, message = null) }
+            val currentState = _uiState.value
+            _uiState.update { current ->
+                SettingsUiMutationSupport.beginSaving(current)
+            }
             runCatching {
-                repository.saveProviderSettings(
-                    providers = normalizedProviders,
-                    selectedProviderId = resolvedSelectedProviderId,
+                persistenceCoordinator.saveSettings(
+                    currentState = currentState,
                 )
-                repository.saveDisplaySettings(
-                    themeMode = currentState.themeMode,
-                    messageTextScale = currentState.messageTextScale,
-                    reasoningExpandedByDefault = currentState.reasoningExpandedByDefault,
-                    showThinkingContent = currentState.showThinkingContent,
-                    autoCollapseThinking = currentState.autoCollapseThinking,
-                    autoPreviewImages = currentState.autoPreviewImages,
-                    codeBlockAutoWrap = currentState.codeBlockAutoWrap,
-                    codeBlockAutoCollapse = currentState.codeBlockAutoCollapse,
-                    showRoleplayAiHelper = currentState.showRoleplayAiHelper,
-                    roleplayLongformTargetChars = currentState.roleplayLongformTargetChars,
-                    showRoleplayPresenceStrip = currentState.showRoleplayPresenceStrip,
-                    showRoleplayStatusStrip = currentState.showRoleplayStatusStrip,
-                )
-                repository.saveScreenTranslationSettings(
-                    currentState.screenTranslationSettings,
-                )
-            }.onSuccess {
-                _uiState.update {
-                    it.copy(
-                        providers = normalizedProviders,
-                        selectedProviderId = resolvedSelectedProviderId,
-                        themeMode = currentState.themeMode,
-                        messageTextScale = currentState.messageTextScale,
-                        reasoningExpandedByDefault = currentState.reasoningExpandedByDefault,
-                        showThinkingContent = currentState.showThinkingContent,
-                        autoCollapseThinking = currentState.autoCollapseThinking,
-                        autoPreviewImages = currentState.autoPreviewImages,
-                        codeBlockAutoWrap = currentState.codeBlockAutoWrap,
-                        codeBlockAutoCollapse = currentState.codeBlockAutoCollapse,
-                        showRoleplayAiHelper = currentState.showRoleplayAiHelper,
-                        roleplayLongformTargetChars = currentState.roleplayLongformTargetChars,
-                        showRoleplayPresenceStrip = currentState.showRoleplayPresenceStrip,
-                        showRoleplayStatusStrip = currentState.showRoleplayStatusStrip,
-                        screenTranslationSettings = currentState.screenTranslationSettings,
-                        isSaving = false,
-                        message = "设置已保存",
+            }.onSuccess { result ->
+                _uiState.update { current ->
+                    SettingsUiMutationSupport.applySaveSuccess(
+                        current = current,
+                        result = result,
+                        sourceState = currentState,
                     )
                 }
                 onSaved()
             }.onFailure { throwable ->
-                _uiState.update {
-                    it.copy(
-                        isSaving = false,
-                        message = throwable.message ?: "设置保存失败",
+                _uiState.update { current ->
+                    SettingsUiMutationSupport.applySaveFailure(
+                        current = current,
+                        errorMessage = throwable.message ?: "设置保存失败",
                     )
                 }
             }
@@ -550,91 +528,57 @@ class SettingsViewModel(
 
     fun saveSelectedModel(selectedModel: String) {
         val currentState = _uiState.value
-        val savedProviders = ensureProviders(currentState.savedSettings.resolvedProviders())
-        val resolvedSelectedProviderId = resolveSelectedProviderId(
-            providers = savedProviders,
-            selectedProviderId = currentState.savedSettings.selectedProviderId,
-        )
-        val updatedProviders = savedProviders.map { provider ->
-            if (provider.id == resolvedSelectedProviderId) {
+        _uiState.update { current ->
+            SettingsDraftStateSupport.updateCurrentProvider(current) { provider ->
                 provider.copy(
                     selectedModel = selectedModel,
-                    availableModels = mergeModels(
+                    availableModels = SettingsProviderDraftSupport.mergeModels(
                         currentModels = provider.availableModels,
                         selectedModel = selectedModel,
                     ),
                 )
-            } else {
-                provider
             }
         }
-
-        viewModelScope.launch {
-            runCatching {
-                repository.saveProviderSettings(
-                    providers = updatedProviders,
-                    selectedProviderId = resolvedSelectedProviderId,
+        launchPersistenceMutation(
+            defaultErrorMessage = "模型切换失败",
+            action = {
+                persistenceCoordinator.saveSelectedModel(
+                    savedSettings = currentState.savedSettings,
+                    currentProviders = _uiState.value.providers,
+                    currentSelectedProviderId = _uiState.value.selectedProviderId,
+                    selectedModel = selectedModel,
                 )
-            }.onSuccess {
-                _uiState.update { current ->
-                    current.copy(
-                        providers = if (current.providers.any { it.id == resolvedSelectedProviderId }) {
-                            current.providers.map { provider ->
-                                if (provider.id == resolvedSelectedProviderId) {
-                                    provider.copy(
-                                        selectedModel = selectedModel,
-                                        availableModels = mergeModels(
-                                            currentModels = provider.availableModels,
-                                            selectedModel = selectedModel,
-                                        ),
-                                    )
-                                } else {
-                                    provider
-                                }
-                            }
-                        } else {
-                            current.providers
-                        },
-                        message = "模型已切换为 $selectedModel",
-                    )
-                }
-            }.onFailure { throwable ->
-                _uiState.update {
-                    it.copy(message = throwable.message ?: "模型切换失败")
-                }
-            }
-        }
+            },
+        )
     }
 
     fun saveSelectedProvider(providerId: String) {
         val currentState = _uiState.value
-        val savedProviders = ensureProviders(currentState.savedSettings.resolvedProviders())
-        val targetProvider = savedProviders.firstOrNull { it.id == providerId } ?: return
+        val candidateProviders = SettingsProviderDraftSupport.ensureProviders(
+            currentState.providers.ifEmpty { currentState.savedSettings.resolvedProviders() },
+        )
+        val targetProvider = candidateProviders.firstOrNull { it.id == providerId } ?: return
         if (!targetProvider.enabled) {
-            _uiState.update {
-                it.copy(message = "该提供商已停用，请先启用后再切换")
+            _uiState.update { current ->
+                SettingsUiMutationSupport.applyMessageError(current, "该提供商已停用，请先启用后再切换")
             }
             return
         }
 
-        viewModelScope.launch {
-            runCatching {
-                repository.saveProviderSettings(
-                    providers = savedProviders,
-                    selectedProviderId = targetProvider.id,
-                )
-            }.onSuccess {
-                _uiState.update { current ->
-                    current.copy(
-                        message = "已切换到 ${targetProvider.name.ifBlank { "该提供商" }}",
-                    )
-                }
-            }.onFailure { throwable ->
-                _uiState.update {
-                    it.copy(message = throwable.message ?: "提供商切换失败")
-                }
-            }
+        _uiState.update { current ->
+            SettingsDraftStateSupport.selectProvider(current, targetProvider.id)
         }
+
+        launchPersistenceMutation(
+            defaultErrorMessage = "提供商切换失败",
+            action = {
+                persistenceCoordinator.saveSelectedProvider(
+                    savedSettings = currentState.savedSettings,
+                    draftProviders = _uiState.value.providers,
+                    providerId = targetProvider.id,
+                )
+            },
+        )
     }
 
     fun saveSelectedModelForProvider(
@@ -642,40 +586,32 @@ class SettingsViewModel(
         selectedModel: String,
     ) {
         val currentState = _uiState.value
-        val savedProviders = ensureProviders(currentState.savedSettings.resolvedProviders())
-        val targetProvider = savedProviders.firstOrNull { it.id == providerId } ?: return
-        val updatedProviders = savedProviders.map { provider ->
-            if (provider.id == providerId) {
+        _uiState.update { current ->
+            val updated = SettingsDraftStateSupport.updateProvider(
+                current = current,
+                providerId = providerId,
+            ) { provider ->
                 provider.copy(
                     selectedModel = selectedModel,
-                    availableModels = mergeModels(
+                    availableModels = SettingsProviderDraftSupport.mergeModels(
                         currentModels = provider.availableModels,
                         selectedModel = selectedModel,
                     ),
                 )
-            } else {
-                provider
             }
+            SettingsDraftStateSupport.selectProvider(updated, providerId)
         }
-
-        viewModelScope.launch {
-            runCatching {
-                repository.saveProviderSettings(
-                    providers = updatedProviders,
-                    selectedProviderId = targetProvider.id,
+        launchPersistenceMutation(
+            defaultErrorMessage = "模型切换失败",
+            action = {
+                persistenceCoordinator.saveSelectedModelForProvider(
+                    savedSettings = currentState.savedSettings,
+                    draftProviders = _uiState.value.providers,
+                    providerId = providerId,
+                    selectedModel = selectedModel,
                 )
-            }.onSuccess {
-                _uiState.update { current ->
-                    current.copy(
-                        message = "模型已切换为 $selectedModel",
-                    )
-                }
-            }.onFailure { throwable ->
-                _uiState.update {
-                    it.copy(message = throwable.message ?: "模型切换失败")
-                }
-            }
-        }
+            },
+        )
     }
 
     fun saveThinkingBudgetForProvider(
@@ -683,34 +619,25 @@ class SettingsViewModel(
         thinkingBudget: Int?,
     ) {
         val currentState = _uiState.value
-        val savedProviders = ensureProviders(currentState.savedSettings.resolvedProviders())
-        val targetProvider = savedProviders.firstOrNull { it.id == providerId } ?: return
-        val updatedProviders = savedProviders.map { provider ->
-            if (provider.id == providerId) {
+        _uiState.update { current ->
+            SettingsDraftStateSupport.updateProvider(
+                current = current,
+                providerId = providerId,
+            ) { provider ->
                 provider.copy(thinkingBudget = thinkingBudget)
-            } else {
-                provider
             }
         }
-
-        viewModelScope.launch {
-            runCatching {
-                repository.saveProviderSettings(
-                    providers = updatedProviders,
-                    selectedProviderId = targetProvider.id,
+        launchPersistenceMutation(
+            defaultErrorMessage = "思考预算保存失败",
+            action = {
+                persistenceCoordinator.saveThinkingBudgetForProvider(
+                    savedSettings = currentState.savedSettings,
+                    draftProviders = _uiState.value.providers,
+                    providerId = providerId,
+                    thinkingBudget = thinkingBudget,
                 )
-            }.onSuccess {
-                _uiState.update { current ->
-                    current.copy(
-                        message = "思考预算已更新",
-                    )
-                }
-            }.onFailure { throwable ->
-                _uiState.update {
-                    it.copy(message = throwable.message ?: "思考预算保存失败")
-                }
-            }
-        }
+            },
+        )
     }
 
     fun saveUserProfile(
@@ -718,27 +645,22 @@ class SettingsViewModel(
         avatarUri: String,
         avatarUrl: String,
     ) {
-        viewModelScope.launch {
-            runCatching {
-                repository.saveUserProfile(
+        launchPersistenceMutation(
+            defaultErrorMessage = "个人资料保存失败",
+            action = {
+                persistenceCoordinator.saveUserProfile(
                     displayName = displayName,
                     avatarUri = avatarUri,
                     avatarUrl = avatarUrl,
                 )
-            }.onSuccess {
-                _uiState.update { current ->
-                    current.copy(message = "个人资料已更新")
-                }
-            }.onFailure { throwable ->
-                _uiState.update {
-                    it.copy(message = throwable.message ?: "个人资料保存失败")
-                }
-            }
-        }
+            },
+        )
     }
 
     fun consumeMessage() {
-        _uiState.update { it.copy(message = null) }
+        _uiState.update { current ->
+            SettingsUiMutationSupport.consumeMessage(current)
+        }
     }
 
     fun confirmFetchedModels(providerId: String, selectedModelIds: Set<String>) {
@@ -746,230 +668,161 @@ class SettingsViewModel(
         val fetchedModels = currentState.pendingFetchedModels
 
         _uiState.update { current ->
-            current.copy(
-                providers = current.providers.map { provider ->
-                    if (provider.id == providerId) {
-                        val existingModels = provider.models.orEmpty()
-                        val existingById = existingModels.associateBy { it.modelId }
-                        val fetchedById = fetchedModels.associateBy { it.modelId }
-
-                        // 最终模型列表 = selectedIds 中的模型，保留已有的 ability overrides
-                        val finalModels = selectedModelIds.mapNotNull { modelId ->
-                            val existing = existingById[modelId]
-                            val fetched = fetchedById[modelId]
-                            when {
-                                // 已有模型且被选中 → 保留（包含用户自定义的 ability overrides）
-                                existing != null -> existing
-                                // 新获取的模型被选中 → 添加
-                                fetched != null -> fetched
-                                // 既不在已有也不在获取列表中（理论上不会发生）→ 跳过
-                                else -> null
-                            }
-                        }
-
-                        val finalIds = finalModels.map { it.modelId }
-                        val resolvedSelected = when {
-                            provider.selectedModel in finalIds -> provider.selectedModel
-                            finalIds.isNotEmpty() -> finalIds.first()
-                            else -> ""
-                        }
-
-                        val addedCount = finalIds.count { it !in existingById }
-                        val removedCount = existingById.keys.count { it !in selectedModelIds }
-
-                        provider.copy(
-                            availableModels = finalIds,
-                            models = finalModels.ifEmpty { null },
-                            selectedModel = resolvedSelected,
-                        )
-                    } else {
-                        provider
-                    }
-                },
-                pendingFetchedModels = emptyList(),
-                pendingFetchProviderId = "",
-                message = buildString {
-                    val existingIds = current.providers
-                        .firstOrNull { it.id == providerId }
-                        ?.models.orEmpty()
-                        .map { it.modelId }.toSet()
-                    val added = selectedModelIds.count { it !in existingIds }
-                    val removed = existingIds.count { it !in selectedModelIds }
-                    append("模型已更新")
-                    if (added > 0) append("，新增 $added")
-                    if (removed > 0) append("，移除 $removed")
-                },
+            SettingsUiMutationSupport.confirmFetchedModels(
+                current = current,
+                providerId = providerId,
+                selectedModelIds = selectedModelIds,
             )
         }
     }
 
     fun dismissFetchedModels() {
-        _uiState.update {
-            it.copy(
-                pendingFetchedModels = emptyList(),
-                pendingFetchProviderId = "",
-            )
+        _uiState.update { current ->
+            SettingsUiMutationSupport.dismissFetchedModels(current)
         }
     }
 
     fun removeModelFromProvider(providerId: String, modelId: String) {
         _uiState.update { current ->
-            current.copy(
-                providers = current.providers.map { provider ->
-                    if (provider.id == providerId) {
-                        val updatedModels = provider.models.orEmpty().filter { it.modelId != modelId }
-                        val updatedAvailable = provider.availableModels.filter { it != modelId }
-                        val resolvedSelected = when {
-                            provider.selectedModel != modelId -> provider.selectedModel
-                            updatedModels.isNotEmpty() -> updatedModels.first().modelId
-                            else -> ""
-                        }
-                        provider.copy(
-                            availableModels = updatedAvailable,
-                            models = updatedModels.ifEmpty { null },
-                            selectedModel = resolvedSelected,
-                        )
-                    } else {
-                        provider
-                    }
-                },
-                message = null,
+            SettingsUiMutationSupport.removeModelFromProvider(
+                current = current,
+                providerId = providerId,
+                modelId = modelId,
             )
         }
     }
 
     fun addAssistant(assistant: Assistant) {
         viewModelScope.launch {
-            val settings = storedSettings.value
-            val currentAssistants = settings.assistants.toMutableList()
-            currentAssistants.add(assistant)
-            repository.saveAssistants(currentAssistants, settings.selectedAssistantId)
+            assistantCoordinator.addAssistant(
+                settings = storedSettings.value,
+                assistant = assistant,
+            )
         }
     }
 
     fun updateAssistant(assistant: Assistant) {
         viewModelScope.launch {
-            val settings = storedSettings.value
-            val currentAssistants = settings.assistants.toMutableList()
-            val index = currentAssistants.indexOfFirst { it.id == assistant.id }
-            if (index >= 0) {
-                currentAssistants[index] = assistant
-            } else {
-                currentAssistants.add(assistant)
-            }
-            repository.saveAssistants(currentAssistants, settings.selectedAssistantId)
+            assistantCoordinator.updateAssistant(
+                settings = storedSettings.value,
+                assistant = assistant,
+            )
         }
     }
 
     fun removeAssistant(assistantId: String) {
-        val builtinIds = BUILTIN_ASSISTANTS.map { it.id }.toSet()
-        if (assistantId in builtinIds) return
         viewModelScope.launch {
-            val settings = storedSettings.value
-            val updatedAssistants = settings.assistants.filter { it.id != assistantId }
-            val selectedId = if (settings.selectedAssistantId == assistantId) {
-                DEFAULT_ASSISTANT_ID
-            } else {
-                settings.selectedAssistantId
-            }
-            repository.saveAssistants(updatedAssistants, selectedId)
+            assistantCoordinator.removeAssistant(
+                settings = storedSettings.value,
+                assistantId = assistantId,
+            )
         }
     }
 
     fun duplicateAssistant(assistantId: String) {
-        val settings = storedSettings.value
-        val source = settings.resolvedAssistants().firstOrNull { it.id == assistantId } ?: return
-        val copy = source.copy(
-            id = java.util.UUID.randomUUID().toString(),
-            name = "${source.name} (副本)",
-            isBuiltin = false,
-        )
-        addAssistant(copy)
+        viewModelScope.launch {
+            assistantCoordinator.duplicateAssistant(
+                settings = storedSettings.value,
+                assistantId = assistantId,
+            )
+        }
     }
 
     fun selectAssistant(assistantId: String) {
         viewModelScope.launch {
-            val settings = storedSettings.value
-            repository.saveAssistants(settings.assistants, assistantId)
+            assistantCoordinator.selectAssistant(
+                settings = storedSettings.value,
+                assistantId = assistantId,
+            )
+        }
+    }
+
+    private fun launchPersistenceMutation(
+        defaultErrorMessage: String,
+        action: suspend () -> SettingsPersistenceResult?,
+    ) {
+        launchUiMutation(
+            defaultErrorMessage = defaultErrorMessage,
+            action = action,
+            onSuccess = { current, result ->
+                result?.let {
+                    SettingsUiMutationSupport.applyPersistenceSuccess(current, it)
+                } ?: current
+            },
+        )
+    }
+
+    private fun <T> launchUiMutation(
+        defaultErrorMessage: String,
+        action: suspend () -> T,
+        onSuccess: (SettingsUiState, T) -> SettingsUiState,
+    ) {
+        viewModelScope.launch {
+            runCatching {
+                action()
+            }.onSuccess { result ->
+                _uiState.update { current ->
+                    onSuccess(current, result)
+                }
+            }.onFailure { throwable ->
+                _uiState.update { current ->
+                    SettingsUiMutationSupport.applyMessageError(
+                        current,
+                        throwable.message ?: defaultErrorMessage,
+                    )
+                }
+            }
+        }
+    }
+
+    private fun persistProviderDrafts(
+        providers: List<ProviderSettings>,
+        selectedProviderId: String,
+    ) {
+        viewModelScope.launch {
+            runCatching {
+                settingsEditor.saveProviderSettings(
+                    providers = providers,
+                    selectedProviderId = selectedProviderId,
+                )
+            }.onFailure { throwable ->
+                _uiState.update { current ->
+                    SettingsUiMutationSupport.applyMessageError(
+                        current,
+                        throwable.message ?: "提供商保存失败",
+                    )
+                }
+            }
         }
     }
 
     private fun loadModelsForProvider(
-        providerId: String,
-        baseUrl: String,
-        apiKey: String,
-        selectedModel: String,
-        persistResult: Boolean = false,
-        persistedProviders: List<ProviderSettings> = emptyList(),
-        persistedSelectedProviderId: String = "",
+        request: SettingsModelLoadRequest,
     ) {
         viewModelScope.launch {
-            _uiState.update {
-                it.copy(
-                    isLoadingModels = true,
-                    loadingProviderId = providerId,
-                    message = null,
-                )
+            _uiState.update { current ->
+                SettingsUiMutationSupport.beginLoadingModels(current, request.providerId)
             }
             runCatching {
-                repository.fetchModelInfos(
-                    baseUrl = baseUrl,
-                    apiKey = apiKey,
+                modelLoadCoordinator.loadModelsForProvider(
+                    providerId = request.providerId,
+                    baseUrl = request.baseUrl,
+                    apiKey = request.apiKey,
+                    selectedModel = request.selectedModel,
+                    apiProtocol = request.apiProtocol,
+                    persistResult = request.persistResult,
+                    persistedProviders = request.persistedProviders,
+                    persistedSelectedProviderId = request.persistedSelectedProviderId,
                 )
-            }.onSuccess { modelInfos ->
-                if (persistResult) {
-                    val mergedModelInfos = mergeModelInfosPreservingOverrides(
-                        fetchedModels = modelInfos,
-                        previousModels = persistedProviders
-                            .firstOrNull { it.id == providerId }
-                            ?.models
-                            .orEmpty(),
-                    )
-                    val models = mergedModelInfos.map { it.modelId }
-                    val resolvedSelectedModel = when {
-                        selectedModel in models -> selectedModel
-                        models.isNotEmpty() -> models.first()
-                        else -> ""
-                    }
-                    val providersToPersist = persistedProviders.map { provider ->
-                        if (provider.id == providerId) {
-                            provider.copy(
-                                availableModels = models,
-                                models = mergedModelInfos,
-                                selectedModel = resolvedSelectedModel,
-                            )
-                        } else {
-                            provider
-                        }
-                    }
-                    repository.saveProviderSettings(
-                        providers = providersToPersist,
-                        selectedProviderId = persistedSelectedProviderId.ifBlank { providerId },
-                    )
-                    _uiState.update { current ->
-                        current.copy(
-                            isLoadingModels = false,
-                            loadingProviderId = "",
-                            message = "模型已同步",
-                        )
-                    }
-                } else {
-                    _uiState.update { current ->
-                        current.copy(
-                            isLoadingModels = false,
-                            loadingProviderId = "",
-                            pendingFetchedModels = modelInfos,
-                            pendingFetchProviderId = providerId,
-                            message = "已获取 ${modelInfos.size} 个模型，请选择要添加的",
-                        )
-                    }
+            }.onSuccess { result ->
+                _uiState.update { current ->
+                    SettingsUiMutationSupport.applyLoadModelsSuccess(current, result)
                 }
             }.onFailure { throwable ->
-                _uiState.update {
-                    it.copy(
-                        isLoadingModels = false,
-                        loadingProviderId = "",
-                        message = throwable.message ?: "模型拉取失败",
+                _uiState.update { current ->
+                    SettingsUiMutationSupport.applyLoadModelsFailure(
+                        current,
+                        throwable.message ?: "模型拉取失败",
                     )
                 }
             }
@@ -977,8 +830,12 @@ class SettingsViewModel(
     }
 
     private fun updateCurrentProvider(transform: (ProviderSettings) -> ProviderSettings) {
-        val providerId = _uiState.value.currentProvider?.id ?: return
-        updateProvider(providerId, transform)
+        _uiState.update { current ->
+            SettingsDraftStateSupport.updateCurrentProvider(
+                current = current,
+                transform = transform,
+            )
+        }
     }
 
     private fun updateProvider(
@@ -986,11 +843,10 @@ class SettingsViewModel(
         transform: (ProviderSettings) -> ProviderSettings,
     ) {
         _uiState.update { current ->
-            current.copy(
-                providers = current.providers.map { provider ->
-                    if (provider.id == providerId) transform(provider) else provider
-                },
-                message = null,
+            SettingsDraftStateSupport.updateProvider(
+                current = current,
+                providerId = providerId,
+                transform = transform,
             )
         }
     }
@@ -999,59 +855,27 @@ class SettingsViewModel(
         transform: (ScreenTranslationSettings) -> ScreenTranslationSettings,
     ) {
         _uiState.update { current ->
-            current.copy(
-                screenTranslationSettings = transform(current.screenTranslationSettings),
-                message = null,
+            SettingsPreferenceDraftSupport.updateScreenTranslationSettings(
+                current = current,
+                transform = transform,
             )
-        }
-    }
-
-    private fun normalizeProviders(providers: List<ProviderSettings>): List<ProviderSettings> {
-        return ensureProviders(providers).mapIndexed { index, provider ->
-            provider.copy(
-                name = provider.name.trim().ifBlank { "提供商 ${index + 1}" },
-                baseUrl = provider.baseUrl.trim(),
-                apiKey = provider.apiKey.trim(),
-                selectedModel = provider.selectedModel.trim(),
-            )
-        }
-    }
-
-    private fun ensureProviders(providers: List<ProviderSettings>): List<ProviderSettings> {
-        return if (providers.isEmpty()) {
-            listOf(createDefaultProvider())
-        } else {
-            providers
-        }
-    }
-
-    private fun resolveSelectedProviderId(
-        providers: List<ProviderSettings>,
-        selectedProviderId: String,
-    ): String {
-        return providers.firstOrNull { it.id == selectedProviderId }?.id
-            ?: providers.firstOrNull()?.id
-            ?: ""
-    }
-
-    private fun mergeModels(
-        currentModels: List<String>,
-        selectedModel: String,
-    ): List<String> {
-        return buildList {
-            addAll(currentModels)
-            if (selectedModel.isNotBlank() && selectedModel !in currentModels) {
-                add(selectedModel)
-            }
         }
     }
 
     companion object {
-        fun factory(repository: AiRepository): ViewModelProvider.Factory {
+        fun factory(
+            settingsRepository: AiSettingsRepository,
+            settingsEditor: AiSettingsEditor,
+            modelCatalogRepository: AiModelCatalogRepository,
+        ): ViewModelProvider.Factory {
             return object : ViewModelProvider.Factory {
                 @Suppress("UNCHECKED_CAST")
                 override fun <T : ViewModel> create(modelClass: Class<T>): T {
-                    return SettingsViewModel(repository) as T
+                    return SettingsViewModel(
+                        settingsRepository = settingsRepository,
+                        settingsEditor = settingsEditor,
+                        modelCatalogRepository = modelCatalogRepository,
+                    ) as T
                 }
             }
         }

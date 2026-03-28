@@ -3,6 +3,7 @@ package com.example.myapplication.ui.screen.settings
 import com.example.myapplication.ui.component.*
 
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
@@ -21,6 +22,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
@@ -45,71 +47,83 @@ fun SettingsConnectionScreen(
 
     Scaffold(
         topBar = { SettingsTopBar(title = "连接与凭据", onNavigateBack = onNavigateBack) },
-        snackbarHost = { AppSnackbarHost(hostState = snackbarHostState) },
         containerColor = palette.background,
     ) { innerPadding ->
-        LazyColumn(
-            modifier = Modifier.fillMaxSize().padding(innerPadding),
-            contentPadding = PaddingValues(
-                start = SettingsScreenPadding,
-                top = 12.dp,
-                end = SettingsScreenPadding,
-                bottom = 28.dp,
-            ),
-            verticalArrangement = Arrangement.spacedBy(20.dp),
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(innerPadding),
         ) {
-            item {
-                SettingsPageIntro(
-                    overline = "连接与凭据",
-                    title = "编辑当前提供商的连接草稿",
-                    summary = "这里只有草稿。返回设置首页保存后，聊天页才会真正切换。",
-                )
-            }
-            item { SettingsSectionHeader("连接信息", "填写 Base URL 和 API Key。") }
-            item {
-                SettingsGroup {
-                    Column(
-                        modifier = Modifier.padding(horizontal = 18.dp, vertical = 18.dp),
-                        verticalArrangement = Arrangement.spacedBy(12.dp),
-                    ) {
-                        OutlinedTextField(
-                            value = uiState.baseUrl,
-                            onValueChange = onBaseUrlChange,
-                            modifier = Modifier.fillMaxWidth(),
-                            label = { Text("Base URL") },
-                            placeholder = { Text("https://api.openai.com/v1/") },
-                            singleLine = true,
-                            shape = RoundedCornerShape(18.dp),
-                            colors = outlineColors,
-                        )
-                        OutlinedTextField(
-                            value = uiState.apiKey,
-                            onValueChange = onApiKeyChange,
-                            modifier = Modifier.fillMaxWidth(),
-                            label = { Text("API Key") },
-                            singleLine = true,
-                            visualTransformation = if (showApiKey) VisualTransformation.None else PasswordVisualTransformation(),
-                            shape = RoundedCornerShape(18.dp),
-                            colors = outlineColors,
-                            trailingIcon = {
-                                NarraTextButton(onClick = { showApiKey = !showApiKey }) {
-                                    Text(if (showApiKey) "隐藏" else "显示")
-                                }
-                            },
+            LazyColumn(
+                modifier = Modifier.fillMaxSize(),
+                contentPadding = PaddingValues(
+                    start = SettingsScreenPadding,
+                    top = 12.dp,
+                    end = SettingsScreenPadding,
+                    bottom = 28.dp,
+                ),
+                verticalArrangement = Arrangement.spacedBy(20.dp),
+            ) {
+                item {
+                    SettingsPageIntro(
+                        overline = "连接与凭据",
+                        title = "编辑当前提供商的连接草稿",
+                        summary = "这里只有草稿。返回设置首页保存后，聊天页才会真正切换。",
+                    )
+                }
+                item {
+                    SettingsSectionHeader("连接信息", "填写 Base URL 和 API Key。")
+                }
+                item {
+                    SettingsGroup {
+                        Column(
+                            modifier = Modifier.padding(horizontal = 18.dp, vertical = 18.dp),
+                            verticalArrangement = Arrangement.spacedBy(12.dp),
+                        ) {
+                            OutlinedTextField(
+                                value = uiState.baseUrl,
+                                onValueChange = onBaseUrlChange,
+                                modifier = Modifier.fillMaxWidth(),
+                                label = { Text("Base URL") },
+                                placeholder = { Text("https://api.openai.com/v1/") },
+                                singleLine = true,
+                                shape = RoundedCornerShape(18.dp),
+                                colors = outlineColors,
+                            )
+                            OutlinedTextField(
+                                value = uiState.apiKey,
+                                onValueChange = onApiKeyChange,
+                                modifier = Modifier.fillMaxWidth(),
+                                label = { Text("API Key") },
+                                singleLine = true,
+                                visualTransformation = if (showApiKey) VisualTransformation.None else PasswordVisualTransformation(),
+                                shape = RoundedCornerShape(18.dp),
+                                colors = outlineColors,
+                                trailingIcon = {
+                                    NarraTextButton(onClick = { showApiKey = !showApiKey }) {
+                                        Text(if (showApiKey) "隐藏" else "显示")
+                                    }
+                                },
+                            )
+                        }
+                    }
+                }
+                if (uiState.baseUrl.isBlank() || uiState.apiKey.isBlank()) {
+                    item {
+                        SettingsNoticeCard(
+                            title = "连接信息还不完整",
+                            body = "Base URL 和 API Key 都需要填写，之后才能同步模型列表。",
+                            containerColor = MaterialTheme.colorScheme.errorContainer,
+                            contentColor = MaterialTheme.colorScheme.onErrorContainer,
                         )
                     }
                 }
             }
-            if (uiState.baseUrl.isBlank() || uiState.apiKey.isBlank()) {
-                item {
-                    SettingsNoticeCard(
-                        title = "连接信息还不完整",
-                        body = "Base URL 和 API Key 都需要填写，之后才能同步模型列表。",
-                        containerColor = MaterialTheme.colorScheme.errorContainer,
-                        contentColor = MaterialTheme.colorScheme.onErrorContainer,
-                    )
-                }
-            }
+            TopAppSnackbarHost(
+                hostState = snackbarHostState,
+                modifier = Modifier.align(Alignment.TopCenter),
+                contentTopInset = innerPadding.calculateTopPadding(),
+            )
         }
     }
 }

@@ -170,24 +170,24 @@ fun SettingsTopBar(
             }
 
             if (actionLabel != null && onAction != null) {
-                Surface(
+                TextButton(
+                    onClick = onAction,
                     shape = RoundedCornerShape(16.dp),
-                    color = palette.accentSoft.copy(alpha = 0.65f),
-                    contentColor = palette.accentStrong,
+                    contentPadding = androidx.compose.foundation.layout.PaddingValues(
+                        horizontal = 14.dp,
+                        vertical = 8.dp,
+                    ),
+                    colors = androidx.compose.material3.ButtonDefaults.textButtonColors(
+                        containerColor = palette.accentSoft.copy(alpha = 0.65f),
+                        contentColor = palette.accentStrong,
+                    ),
                     border = BorderStroke(1.dp, palette.accentStrong.copy(alpha = 0.1f)),
                 ) {
-                    Box(
-                        modifier = Modifier
-                            .clickable { onAction() }
-                            .padding(horizontal = 14.dp, vertical = 8.dp),
-                        contentAlignment = Alignment.Center,
-                    ) {
-                        Text(
-                            text = actionLabel,
-                            style = MaterialTheme.typography.labelLarge,
-                            fontWeight = FontWeight.Bold,
-                        )
-                    }
+                    Text(
+                        text = actionLabel,
+                        style = MaterialTheme.typography.labelLarge,
+                        fontWeight = FontWeight.Bold,
+                    )
                 }
             } else {
                 Spacer(modifier = Modifier.size(40.dp))

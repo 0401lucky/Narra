@@ -60,7 +60,7 @@ fun reasoningBudgetSupportHint(
 
         hasModelFeature(modelId, ModelFeature.ANTHROPIC_THINKING) &&
             resolveThinkingBudgetProtocol(provider, modelId) == ThinkingBudgetProtocol.ANTHROPIC_THINKING -> {
-            "思考预算会映射为 Claude 兼容接口的 thinking.budget_tokens；选择“自动”时不会显式开启扩展思考，这类接口通常也不会返回完整明文思考轨迹。"
+            "思考预算会映射为 Anthropic /messages 协议的 thinking.budget_tokens；选择“自动”时不会显式开启扩展思考，这类接口通常也不会返回完整明文思考轨迹。"
         }
 
         isGeminiReasoningModel(lower) -> {
@@ -154,7 +154,7 @@ private fun resolveThinkingBudgetProtocol(
 
     return when {
         hasModelFeature(modelId, ModelFeature.ANTHROPIC_THINKING) -> {
-            if (provider.resolvedType() == ProviderType.ANTHROPIC) {
+            if (provider.resolvedApiProtocol() == ProviderApiProtocol.ANTHROPIC) {
                 ThinkingBudgetProtocol.ANTHROPIC_THINKING
             } else {
                 ThinkingBudgetProtocol.OPENAI_REASONING_EFFORT

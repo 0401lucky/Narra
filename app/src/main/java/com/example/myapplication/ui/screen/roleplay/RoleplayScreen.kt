@@ -3,12 +3,15 @@ package com.example.myapplication.ui.screen.roleplay
 import com.example.myapplication.ui.component.*
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
@@ -45,7 +48,11 @@ import com.example.myapplication.model.RoleplayScenario
 import com.example.myapplication.model.RoleplaySuggestionUiModel
 import com.example.myapplication.model.RoleplaySpeaker
 import com.example.myapplication.ui.component.AppSnackbarHost
+import com.example.myapplication.ui.component.roleplay.ImmersiveBackdropState
+import com.example.myapplication.ui.component.roleplay.ImmersiveGlassChip
 import com.example.myapplication.ui.component.roleplay.RoleplayDialoguePanel
+import com.example.myapplication.ui.component.roleplay.RoleplayPortraitLayer
+import com.example.myapplication.ui.component.roleplay.RoleplayPortraitSpec
 import com.example.myapplication.ui.component.roleplay.RoleplaySceneBackground
 import com.example.myapplication.ui.component.roleplay.rememberImmersiveBackdropState
 import com.example.myapplication.ui.screen.chat.SpecialPlaySheet
@@ -62,6 +69,7 @@ fun RoleplayScreen(
     messages: List<RoleplayMessageUiModel>,
     suggestions: List<RoleplaySuggestionUiModel>,
     input: String,
+    inputFocusToken: Long,
     isSending: Boolean,
     isGeneratingSuggestions: Boolean,
     isScenarioLoading: Boolean,
@@ -78,12 +86,13 @@ fun RoleplayScreen(
     onApplySuggestion: (String) -> Unit,
     onClearSuggestions: () -> Unit,
     onRetryTurn: (String) -> Unit,
+    onEditUserMessage: (String) -> Unit,
     onSendTransferPlay: (String, String, String) -> Unit,
     onConfirmTransferReceipt: (String) -> Unit,
     onSend: () -> Unit,
     onCancelSending: () -> Unit,
     onRestartSession: () -> Unit,
-    onDismissAssistantMismatch: () -> Unit,
+    onDismissAssistantMismatch: (Boolean) -> Unit,
     onOpenReadingMode: () -> Unit,
     onOpenSettings: () -> Unit,
     onNavigateBack: () -> Unit,
@@ -129,168 +138,75 @@ fun RoleplayScreen(
     )
     val backdropState = rememberImmersiveBackdropState(scenario.backgroundUri)
 
-    Box(modifier = Modifier.fillMaxSize()) {
-        // 背景图直接展示，不做全屏模糊
-        RoleplaySceneBackground(
-            backdropState = backdropState,
-            modifier = Modifier.fillMaxSize(),
-        )
-
-        // 底部渐变 scrim：用背景图自身色调，自然融入不压抑
-        val scrimBase = backdropState.palette.panelTintStrong
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .background(
-                    Brush.verticalGradient(
-                        colorStops = arrayOf(
-                            0.0f to Color.Transparent,
-                            0.25f to scrimBase.copy(alpha = 0.05f),
-                            0.45f to scrimBase.copy(alpha = 0.28f),
-                            0.62f to scrimBase.copy(alpha = 0.50f),
-                            0.80f to scrimBase.copy(alpha = 0.68f),
-                            1.0f to scrimBase.copy(alpha = 0.80f),
-                        ),
-                    ),
-                ),
-        )
-
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .statusBarsPadding()
-                .navigationBarsPadding()
-                .imePadding(),
-        ) {
-            // 精简顶栏：返回 + 角色名 + 阅读/设置
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 12.dp, vertical = 10.dp),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.SpaceBetween,
-            ) {
-                NarraIconButton(onClick = onNavigateBack) {
-                    Icon(
-                        Icons.AutoMirrored.Filled.ArrowBack,
-                        contentDescription = "返回",
-                        tint = Color.White,
-                    )
-                }
-
-                Text(
-                    text = characterName,
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold,
-                    color = Color.White,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                    modifier = Modifier.weight(1f).padding(horizontal = 8.dp),
-                    textAlign = TextAlign.Center,
-                )
-
-                NarraIconButton(onClick = onOpenSettings) {
-                    Icon(
-                        Icons.Default.MoreVert,
-                        contentDescription = "沉浸设置",
-                        tint = Color.White,
-                    )
-                }
-            }
-
-            RoleplayDialoguePanel(
-                backdropState = backdropState,
-                messages = messages,
-                suggestions = suggestions,
-                isGeneratingSuggestions = isGeneratingSuggestions,
-                suggestionErrorMessage = suggestionErrorMessage,
-                showAiHelper = settings.showRoleplayAiHelper,
-                input = input,
-                isSending = isSending,
-                onInputChange = onInputChange,
-                onGenerateSuggestions = onGenerateSuggestions,
-                onApplySuggestion = onApplySuggestion,
-                onClearSuggestions = onClearSuggestions,
-                onRetryTurn = onRetryTurn,
-                onOpenSpecialPlay = {
-                    if (transferCounterparty.isBlank()) {
-                        transferCounterparty = characterName
-                    }
-                    showSpecialPlaySheet = true
-                },
-                onConfirmTransferReceipt = onConfirmTransferReceipt,
-                onSend = onSend,
-                onCancel = { onCancelSending() },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .weight(1f),
-            )
-        }
-
-        AppSnackbarHost(
-            hostState = snackbarHostState,
-            modifier = Modifier
-                .align(Alignment.BottomCenter)
-                .navigationBarsPadding(),
-        )
-    }
-
-    if (showSpecialPlaySheet) {
-        SpecialPlaySheet(
-            onDismissRequest = { showSpecialPlaySheet = false },
-            onOpenTransfer = {
-                showSpecialPlaySheet = false
-                if (transferCounterparty.isBlank()) {
-                    transferCounterparty = characterName
-                }
-                showTransferSheet = true
-            },
-        )
-    }
-
-    if (showTransferSheet) {
-        TransferPlaySheet(
-            draft = transferDraft,
-            onDraftChange = {
-                transferCounterparty = it.counterparty
-                transferAmount = it.amount
-                transferNote = it.note
-            },
-            onDismissRequest = { showTransferSheet = false },
-            onConfirm = {
-                onSendTransferPlay(
-                    transferDraft.counterparty.ifBlank { characterName },
-                    transferDraft.amount,
-                    transferDraft.note,
-                )
+    RoleplaySceneContent(
+        scenario = scenario,
+        assistant = assistant,
+        settings = settings,
+        contextStatus = contextStatus,
+        messages = messages,
+        suggestions = suggestions,
+        input = input,
+        inputFocusToken = inputFocusToken,
+        isSending = isSending,
+        isGeneratingSuggestions = isGeneratingSuggestions,
+        suggestionErrorMessage = suggestionErrorMessage,
+        snackbarHostState = snackbarHostState,
+        backdropState = backdropState,
+        onInputChange = onInputChange,
+        onGenerateSuggestions = onGenerateSuggestions,
+        onApplySuggestion = onApplySuggestion,
+        onClearSuggestions = onClearSuggestions,
+        onRetryTurn = onRetryTurn,
+        onEditUserMessage = onEditUserMessage,
+        onOpenSpecialPlay = {
+            if (transferCounterparty.isBlank()) {
                 transferCounterparty = characterName
-                transferAmount = ""
-                transferNote = ""
-                showTransferSheet = false
-            },
-        )
-    }
+            }
+            showSpecialPlaySheet = true
+        },
+        onConfirmTransferReceipt = onConfirmTransferReceipt,
+        onSend = onSend,
+        onCancelSending = onCancelSending,
+        onOpenSettings = onOpenSettings,
+        onNavigateBack = onNavigateBack,
+        transferCounterparty = transferCounterparty,
+        transferDraft = transferDraft,
+        showSpecialPlaySheet = showSpecialPlaySheet,
+        showTransferSheet = showTransferSheet,
+        onDismissSpecialPlay = { showSpecialPlaySheet = false },
+        onOpenTransferSheet = {
+            showSpecialPlaySheet = false
+            if (transferCounterparty.isBlank()) {
+                transferCounterparty = characterName
+            }
+            showTransferSheet = true
+        },
+        onDismissTransferSheet = { showTransferSheet = false },
+        onTransferDraftChange = {
+            transferCounterparty = it.counterparty
+            transferAmount = it.amount
+            transferNote = it.note
+        },
+        onTransferConfirm = {
+            onSendTransferPlay(
+                transferDraft.counterparty.ifBlank { characterName },
+                transferDraft.amount,
+                transferDraft.note,
+            )
+            transferCounterparty = characterName
+            transferAmount = ""
+            transferNote = ""
+            showTransferSheet = false
+        },
+    )
 
-    if (showAssistantMismatchDialog) {
-        AlertDialog(
-            onDismissRequest = onDismissAssistantMismatch,
-            title = { Text("当前角色已改绑") },
-            text = {
-                Text(
-                    "旧剧情绑定的是“$previousAssistantName”，当前场景改成了“$currentAssistantName”。继续沿用旧剧情可能出现人格和历史错位，建议重建剧情会话。",
-                )
-            },
-            confirmButton = {
-                NarraTextButton(onClick = onRestartSession) {
-                    Text("重建剧情")
-                }
-            },
-            dismissButton = {
-                NarraTextButton(onClick = onDismissAssistantMismatch) {
-                    Text("继续旧剧情")
-                }
-            },
-        )
-    }
+    RoleplayAssistantMismatchDialog(
+        showAssistantMismatchDialog = showAssistantMismatchDialog,
+        previousAssistantName = previousAssistantName,
+        currentAssistantName = currentAssistantName,
+        onRestartSession = onRestartSession,
+        onDismissAssistantMismatch = onDismissAssistantMismatch,
+    )
 
 }
+

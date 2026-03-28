@@ -4,6 +4,7 @@ import android.net.Uri
 
 object AppRoutes {
     const val HOME = "home"
+    const val SETTINGS_GRAPH = "settings_graph"
     const val SETTINGS = "settings"
     const val SETTINGS_CONNECTION = "settings/connection"
     const val SETTINGS_MODEL = "settings/model"
@@ -24,6 +25,7 @@ object AppRoutes {
     const val SETTINGS_CONTEXT_TRANSFER = "settings/context-transfer"
     const val CHAT = "chat"
     const val TRANSLATOR = "translator"
+    const val ROLEPLAY_GRAPH = "roleplay_graph"
     const val ROLEPLAY = "roleplay"
     const val ROLEPLAY_EDIT = "roleplay/edit/{scenarioId}"
     const val ROLEPLAY_PLAY = "roleplay/play/{scenarioId}"

@@ -99,7 +99,7 @@ class ScreenTranslatorService : Service() {
         createNotificationChannel()
         ensureForeground()
         serviceScope.launch {
-            app.aiRepository.settingsFlow.collect { settings ->
+            app.aiSettingsRepository.settingsFlow.collect { settings ->
                 latestScreenSettings = settings.screenTranslationSettings
                 if (!settings.screenTranslationSettings.serviceEnabled) {
                     stopSelf()
@@ -266,7 +266,7 @@ class ScreenTranslatorService : Service() {
                     segments = blocks,
                 )
                 val translationResult = withContext(Dispatchers.IO) {
-                    app.aiRepository.translateStructuredSegments(request)
+                    app.aiTranslationService.translateStructuredSegments(request)
                 }
                 latestInput = CachedTranslationInput.ScreenCapture(
                     appPackage = sourceAppPackage,
@@ -334,7 +334,7 @@ class ScreenTranslatorService : Service() {
                 )
                 var latestTranslation = ""
                 withContext(Dispatchers.IO) {
-                    app.aiRepository.translateTextStream(
+                    app.aiTranslationService.translateTextStream(
                         text = payload.text,
                         targetLanguage = latestScreenSettings.targetLanguage,
                         sourceLanguage = DefaultAutoDetectLanguage,
@@ -381,7 +381,7 @@ class ScreenTranslatorService : Service() {
         when (val input = latestInput) {
             is CachedTranslationInput.ScreenCapture -> {
                 val translationResult = withContext(Dispatchers.IO) {
-                    app.aiRepository.translateStructuredSegments(
+                    app.aiTranslationService.translateStructuredSegments(
                         ScreenTranslationRequest(
                             sourceType = TranslationSourceType.SCREEN_CAPTURE,
                             appPackage = input.appPackage,
@@ -427,7 +427,7 @@ class ScreenTranslatorService : Service() {
         sourceAppPackage: String,
         sourceAppLabel: String,
     ) {
-        val settings = app.aiRepository.settingsFlow.first()
+        val settings = app.aiSettingsRepository.settingsFlow.first()
         val activeModel = settings.activeProvider()
             ?.resolveFunctionModel(com.example.myapplication.model.ProviderFunction.TRANSLATION)
             .orEmpty()
@@ -449,12 +449,12 @@ class ScreenTranslatorService : Service() {
                 it.targetLanguage == entry.targetLanguage &&
                 it.sourceType == entry.sourceType
         }
-        app.aiRepository.saveTranslationHistory(deduplicatedHistory)
+        app.aiSettingsEditor.saveTranslationHistory(deduplicatedHistory)
     }
 
     private suspend fun persistScreenTranslationSettings(settings: ScreenTranslationSettings) {
         latestScreenSettings = settings
-        app.aiRepository.saveScreenTranslationSettings(settings)
+        app.aiSettingsEditor.saveScreenTranslationSettings(settings)
         applyOverlayState(settings)
         ensureForeground()
     }
@@ -485,7 +485,7 @@ class ScreenTranslatorService : Service() {
 
     private fun ensureForeground() {
         val notification = buildNotification()
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
             startForeground(
                 NOTIFICATION_ID,
                 notification,
@@ -498,12 +498,18 @@ class ScreenTranslatorService : Service() {
 
     private fun promoteForMediaProjection() {
         val notification = buildNotification(contentText = "正在识别当前屏幕…")
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
             startForeground(
                 NOTIFICATION_ID,
                 notification,
                 ServiceInfo.FOREGROUND_SERVICE_TYPE_SPECIAL_USE or
                     ServiceInfo.FOREGROUND_SERVICE_TYPE_MEDIA_PROJECTION,
+            )
+        } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            startForeground(
+                NOTIFICATION_ID,
+                notification,
+                ServiceInfo.FOREGROUND_SERVICE_TYPE_MEDIA_PROJECTION,
             )
         } else {
             startForeground(NOTIFICATION_ID, notification)

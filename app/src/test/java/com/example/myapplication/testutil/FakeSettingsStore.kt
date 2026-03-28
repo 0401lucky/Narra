@@ -57,6 +57,7 @@ class FakeSettingsStore(
             roleplayLongformTargetChars = state.value.roleplayLongformTargetChars,
             showRoleplayPresenceStrip = state.value.showRoleplayPresenceStrip,
             showRoleplayStatusStrip = state.value.showRoleplayStatusStrip,
+            suppressRoleplayAssistantMismatchDialog = state.value.suppressRoleplayAssistantMismatchDialog,
             userDisplayName = state.value.userDisplayName,
             userAvatarUri = state.value.userAvatarUri,
             userAvatarUrl = state.value.userAvatarUrl,
@@ -131,6 +132,12 @@ class FakeSettingsStore(
     override suspend fun saveTranslationHistory(history: List<TranslationHistoryEntry>) {
         state.value = state.value.copy(
             translationHistory = history,
+        )
+    }
+
+    override suspend fun saveRoleplayAssistantMismatchDialogPreference(suppressed: Boolean) {
+        state.value = state.value.copy(
+            suppressRoleplayAssistantMismatchDialog = suppressed,
         )
     }
 }

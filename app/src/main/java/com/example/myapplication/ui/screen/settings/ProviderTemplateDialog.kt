@@ -1,15 +1,14 @@
 package com.example.myapplication.ui.screen.settings
 
 import androidx.compose.foundation.Image
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -17,63 +16,93 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.rememberModalBottomSheetState
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.window.Dialog
+import androidx.compose.ui.window.DialogProperties
 import com.example.myapplication.model.BUILT_IN_TEMPLATES
 import com.example.myapplication.model.ProviderTemplate
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ProviderTemplateDialog(
     onSelectTemplate: (ProviderTemplate) -> Unit,
     onDismiss: () -> Unit,
 ) {
-    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
-
-    ModalBottomSheet(
+    Dialog(
         onDismissRequest = onDismiss,
-        sheetState = sheetState,
-        shape = RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp),
-        containerColor = MaterialTheme.colorScheme.surface,
-        contentWindowInsets = { WindowInsets(0, 0, 0, 0) },
-        tonalElevation = 2.dp,
+        properties = DialogProperties(
+            dismissOnBackPress = true,
+            dismissOnClickOutside = true,
+            usePlatformDefaultWidth = false,
+        ),
     ) {
-        Column(
-            modifier = Modifier.padding(bottom = 24.dp).navigationBarsPadding(),
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(horizontal = 20.dp, vertical = 24.dp),
+            contentAlignment = Alignment.Center,
         ) {
-            Text(
-                text = "选择提供商模板",
-                modifier = Modifier.padding(horizontal = 24.dp, vertical = 8.dp),
-                style = MaterialTheme.typography.titleLarge,
-                color = MaterialTheme.colorScheme.onSurface,
-            )
-            Text(
-                text = "选择一个模板快速创建提供商，名称和 URL 会自动填充。",
-                modifier = Modifier.padding(horizontal = 24.dp, vertical = 4.dp),
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-            LazyColumn(
-                contentPadding = PaddingValues(horizontal = 16.dp, vertical = 12.dp),
-                verticalArrangement = Arrangement.spacedBy(4.dp),
+            Surface(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .heightIn(max = 620.dp)
+                    .navigationBarsPadding(),
+                shape = RoundedCornerShape(28.dp),
+                color = MaterialTheme.colorScheme.surface,
+                contentColor = MaterialTheme.colorScheme.onSurface,
+                tonalElevation = 4.dp,
+                shadowElevation = 6.dp,
             ) {
-                items(BUILT_IN_TEMPLATES) { template ->
-                    TemplateCard(
-                        template = template,
-                        onClick = { onSelectTemplate(template) },
+                Column {
+                    Text(
+                        text = "选择提供商模板",
+                        modifier = Modifier.padding(horizontal = 24.dp, vertical = 20.dp),
+                        style = MaterialTheme.typography.titleLarge,
+                        fontWeight = FontWeight.Bold,
                     )
+                    Text(
+                        text = "选择一个模板快速创建提供商，名称和 URL 会自动填充。",
+                        modifier = Modifier.padding(horizontal = 24.dp),
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                    LazyColumn(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .weight(1f, fill = false),
+                        contentPadding = PaddingValues(horizontal = 16.dp, vertical = 16.dp),
+                        verticalArrangement = Arrangement.spacedBy(8.dp),
+                    ) {
+                        items(BUILT_IN_TEMPLATES) { template ->
+                            TemplateCard(
+                                template = template,
+                                onClick = { onSelectTemplate(template) },
+                            )
+                        }
+                    }
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 12.dp, vertical = 8.dp),
+                        horizontalArrangement = Arrangement.End,
+                    ) {
+                        TextButton(onClick = onDismiss) {
+                            Text("取消")
+                        }
+                    }
                 }
             }
         }
@@ -85,15 +114,18 @@ private fun TemplateCard(
     template: ProviderTemplate,
     onClick: () -> Unit,
 ) {
-    Surface(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clip(RoundedCornerShape(16.dp))
-            .clickable(onClick = onClick),
-        color = MaterialTheme.colorScheme.surface,
+    Card(
+        onClick = onClick,
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(18.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.45f),
+            contentColor = MaterialTheme.colorScheme.onSurface,
+        ),
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
     ) {
         Row(
-            modifier = Modifier.padding(horizontal = 12.dp, vertical = 14.dp),
+            modifier = Modifier.padding(horizontal = 14.dp, vertical = 14.dp),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(14.dp),
         ) {
@@ -112,7 +144,7 @@ private fun TemplateCard(
                     text = template.description,
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    maxLines = 1,
+                    maxLines = 2,
                     overflow = TextOverflow.Ellipsis,
                 )
             }

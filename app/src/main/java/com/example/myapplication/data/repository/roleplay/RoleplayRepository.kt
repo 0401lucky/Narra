@@ -23,6 +23,7 @@ data class RoleplaySessionStartResult(
     val hasHistory: Boolean,
     val assistantMismatch: Boolean,
     val conversationAssistantId: String = "",
+    val conversationMessages: List<ChatMessage> = emptyList(),
 )
 
 interface RoleplayRepository {
@@ -141,6 +142,7 @@ class RoomRoleplayRepository(
                     assistantMismatch = normalizeAssistantId(existingConversation.assistantId) !=
                         normalizeAssistantId(scenario.assistantId),
                     conversationAssistantId = normalizeAssistantId(existingConversation.assistantId),
+                    conversationMessages = historyMessages,
                 )
             }
         }
@@ -152,6 +154,7 @@ class RoomRoleplayRepository(
             conversationId = conversation.id,
             scenario = toScenarioDomain(scenario),
         )
+        val seededMessages = conversationRepository.listMessages(conversation.id)
         val newSession = RoleplaySessionEntity(
             id = existingSession?.id ?: java.util.UUID.randomUUID().toString(),
             scenarioId = scenarioId,
@@ -166,6 +169,7 @@ class RoomRoleplayRepository(
             hasHistory = false,
             assistantMismatch = false,
             conversationAssistantId = normalizeAssistantId(scenario.assistantId),
+            conversationMessages = seededMessages,
         )
     }
 
@@ -184,6 +188,7 @@ class RoomRoleplayRepository(
             conversationId = conversation.id,
             scenario = toScenarioDomain(scenario),
         )
+        val seededMessages = conversationRepository.listMessages(conversation.id)
         val restartedSession = RoleplaySessionEntity(
             id = existingSession?.id ?: UUID.randomUUID().toString(),
             scenarioId = scenarioId,
@@ -198,6 +203,7 @@ class RoomRoleplayRepository(
             hasHistory = false,
             assistantMismatch = false,
             conversationAssistantId = normalizeAssistantId(scenario.assistantId),
+            conversationMessages = seededMessages,
         )
     }
 
@@ -274,7 +280,7 @@ class RoomRoleplayRepository(
             return
         }
         val timestamp = nowProvider()
-        conversationRepository.saveConversationMessages(
+        conversationRepository.appendMessages(
             conversationId = conversationId,
             messages = listOf(
                 ChatMessage(

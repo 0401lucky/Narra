@@ -4,10 +4,10 @@ import android.accessibilityservice.AccessibilityServiceInfo
 import android.app.NotificationManager
 import android.content.Context
 import android.content.Intent
-import android.net.Uri
 import android.os.Build
 import android.os.PowerManager
 import android.provider.Settings
+import androidx.core.net.toUri
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -141,12 +141,7 @@ fun ScreenTranslationSettingsScreen(
                         actionLabel = "打开通知设置",
                         palette = palette,
                         onAction = {
-                            context.startActivity(
-                                Intent(Settings.ACTION_APP_NOTIFICATION_SETTINGS).apply {
-                                    putExtra(Settings.EXTRA_APP_PACKAGE, context.packageName)
-                                    addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-                                },
-                            )
+                            context.startActivity(notificationSettingsIntent(context))
                         },
                         leadingIcon = Icons.Default.Notifications,
                     )
@@ -161,7 +156,7 @@ fun ScreenTranslationSettingsScreen(
                             context.startActivity(
                                 Intent(
                                     Settings.ACTION_MANAGE_OVERLAY_PERMISSION,
-                                    Uri.parse("package:${context.packageName}"),
+                                    "package:${context.packageName}".toUri(),
                                 ).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK),
                             )
                         },
@@ -183,21 +178,13 @@ fun ScreenTranslationSettingsScreen(
                     )
                     SettingsGroupDivider()
                     PermissionRow(
-                        title = "忽略电池优化",
+                        title = "后台运行优化",
                         granted = batteryOptimizationIgnored.value,
-                        description = "减少后台服务被系统回收",
-                        actionLabel = "电池优化设置",
+                        description = "如后台常被系统回收，可手动在系统电池优化设置中放宽限制",
+                        actionLabel = "打开电池优化设置",
                         palette = palette,
                         onAction = {
-                            val intent = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-                                Intent(
-                                    Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS,
-                                    Uri.parse("package:${context.packageName}"),
-                                )
-                            } else {
-                                Intent(Settings.ACTION_IGNORE_BATTERY_OPTIMIZATION_SETTINGS)
-                            }
-                            context.startActivity(intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
+                            context.startActivity(batteryOptimizationSettingsIntent(context))
                         },
                         leadingIcon = Icons.Default.BatteryAlert,
                     )
@@ -430,6 +417,26 @@ private fun TranslationSwitchRow(
 
 private fun areNotificationsEnabled(context: Context): Boolean {
     return context.getSystemService(NotificationManager::class.java).areNotificationsEnabled()
+}
+
+private fun notificationSettingsIntent(context: Context): Intent {
+    return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+        Intent(Settings.ACTION_APP_NOTIFICATION_SETTINGS).apply {
+            putExtra(Settings.EXTRA_APP_PACKAGE, context.packageName)
+            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+        }
+    } else {
+        Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
+            data = "package:${context.packageName}".toUri()
+            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+        }
+    }
+}
+
+private fun batteryOptimizationSettingsIntent(context: Context): Intent {
+    return Intent(Settings.ACTION_IGNORE_BATTERY_OPTIMIZATION_SETTINGS).apply {
+        addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+    }
 }
 
 private fun isIgnoringBatteryOptimizations(context: Context): Boolean {

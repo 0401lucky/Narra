@@ -1,6 +1,7 @@
 package com.example.myapplication.ui.screen.settings
 
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
@@ -16,12 +17,13 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.example.myapplication.model.AppUpdateAvailability
 import com.example.myapplication.model.AppUpdateDownloadSnapshot
 import com.example.myapplication.model.AppUpdateDownloadStatus
-import com.example.myapplication.ui.component.AppSnackbarHost
+import com.example.myapplication.ui.component.TopAppSnackbarHost
 import com.example.myapplication.viewmodel.AppUpdateUiState
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -66,28 +68,30 @@ fun AppUpdateScreen(
                 onNavigateBack = onNavigateBack,
             )
         },
-        snackbarHost = { AppSnackbarHost(hostState = snackbarHostState) },
         containerColor = palette.background,
     ) { innerPadding ->
-        LazyColumn(
+        Box(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(innerPadding),
-            contentPadding = PaddingValues(
-                start = SettingsScreenPadding,
-                top = 4.dp,
-                end = SettingsScreenPadding,
-                bottom = 32.dp,
-            ),
-            verticalArrangement = Arrangement.spacedBy(16.dp),
         ) {
-            item {
-                SettingsPageIntro(
-                    overline = "安装包分发",
-                    title = "启动自动检查，设置页手动更新",
-                    summary = "当服务器返回更高版本时，可以在这里查看更新说明、下载 APK，并调用系统安装器完成升级。",
-                )
-            }
+            LazyColumn(
+                modifier = Modifier.fillMaxSize(),
+                contentPadding = PaddingValues(
+                    start = SettingsScreenPadding,
+                    top = 4.dp,
+                    end = SettingsScreenPadding,
+                    bottom = 32.dp,
+                ),
+                verticalArrangement = Arrangement.spacedBy(16.dp),
+            ) {
+                item {
+                    SettingsPageIntro(
+                        overline = "安装包分发",
+                        title = "启动自动检查，设置页手动更新",
+                        summary = "当服务器返回更高版本时，可以在这里查看更新说明、下载 APK，并调用系统安装器完成升级。",
+                    )
+                }
 
             item { SettingsSectionHeader("当前版本", "") }
             item {
@@ -207,6 +211,12 @@ fun AppUpdateScreen(
                     isPrimary = false,
                 )
             }
+            }
+            TopAppSnackbarHost(
+                hostState = snackbarHostState,
+                modifier = Modifier.align(Alignment.TopCenter),
+                contentTopInset = innerPadding.calculateTopPadding(),
+            )
         }
     }
 }

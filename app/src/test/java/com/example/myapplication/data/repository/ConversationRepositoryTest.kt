@@ -5,6 +5,9 @@ import com.example.myapplication.model.Conversation
 import com.example.myapplication.model.DEFAULT_ASSISTANT_ID
 import com.example.myapplication.model.DEFAULT_CONVERSATION_TITLE
 import com.example.myapplication.model.MessageRole
+import com.example.myapplication.model.TransferDirection
+import com.example.myapplication.model.TransferStatus
+import com.example.myapplication.model.transferMessagePart
 import com.example.myapplication.testutil.FakeConversationStore
 import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertEquals
@@ -28,7 +31,7 @@ class ConversationRepositoryTest {
     }
 
     @Test
-    fun saveConversationMessages_updatesTitleAndModel() = runBlocking {
+    fun replaceConversationSnapshot_updatesTitleAndModel() = runBlocking {
         val store = FakeConversationStore(
             conversations = listOf(
                 Conversation(
@@ -54,7 +57,7 @@ class ConversationRepositoryTest {
             ),
         )
 
-        val updatedConversation = repository.saveConversationMessages(
+        val updatedConversation = repository.replaceConversationSnapshot(
             conversationId = "c1",
             messages = messages,
             selectedModel = "new-model",
@@ -64,6 +67,8 @@ class ConversationRepositoryTest {
         assertEquals("new-model", updatedConversation.model)
         assertEquals(200L, updatedConversation.updatedAt)
         assertEquals(messages, store.listMessages("c1"))
+        assertEquals(1, store.replaceConversationSnapshotCount)
+        assertEquals(0, store.upsertConversationWithMessagesCount)
     }
 
     @Test
@@ -182,6 +187,310 @@ class ConversationRepositoryTest {
         assertEquals(DEFAULT_CONVERSATION_TITLE, nextConversation.title)
         assertEquals("model-z", nextConversation.model)
         assertEquals(1, store.listConversations().size)
+    }
+
+    @Test
+    fun appendMessages_appendsIncrementallyWithoutReplacingSnapshot() = runBlocking {
+        val existingMessages = listOf(
+            ChatMessage(
+                id = "m1",
+                conversationId = "c1",
+                role = MessageRole.USER,
+                content = "你好",
+                createdAt = 10L,
+            ),
+        )
+        val store = FakeConversationStore(
+            conversations = listOf(
+                Conversation(
+                    id = "c1",
+                    title = DEFAULT_CONVERSATION_TITLE,
+                    model = "old-model",
+                    createdAt = 1L,
+                    updatedAt = 1L,
+                ),
+            ),
+            messagesByConversation = mapOf("c1" to existingMessages),
+        )
+        val repository = ConversationRepository(
+            conversationStore = store,
+            nowProvider = { 600L },
+        )
+
+        repository.appendMessages(
+            conversationId = "c1",
+            messages = listOf(
+                ChatMessage(
+                    id = "m2",
+                    conversationId = "c1",
+                    role = MessageRole.ASSISTANT,
+                    content = "",
+                    createdAt = 11L,
+                ),
+            ),
+            selectedModel = "new-model",
+        )
+
+        assertEquals(0, store.replaceConversationSnapshotCount)
+        assertEquals(1, store.upsertConversationWithMessagesCount)
+    }
+
+    @Test
+    fun replaceConversationSnapshot_replacesSnapshotWhenMessagesAreRewound() = runBlocking {
+        val store = FakeConversationStore(
+            conversations = listOf(
+                Conversation(
+                    id = "c1",
+                    title = "旧标题",
+                    model = "old-model",
+                    createdAt = 1L,
+                    updatedAt = 1L,
+                ),
+            ),
+            messagesByConversation = mapOf(
+                "c1" to listOf(
+                    ChatMessage(
+                        id = "m1",
+                        conversationId = "c1",
+                        role = MessageRole.USER,
+                        content = "第一条",
+                        createdAt = 10L,
+                    ),
+                    ChatMessage(
+                        id = "m2",
+                        conversationId = "c1",
+                        role = MessageRole.ASSISTANT,
+                        content = "第二条",
+                        createdAt = 11L,
+                    ),
+                ),
+            ),
+        )
+        val repository = ConversationRepository(
+            conversationStore = store,
+            nowProvider = { 700L },
+        )
+
+        repository.replaceConversationSnapshot(
+            conversationId = "c1",
+            messages = listOf(
+                ChatMessage(
+                    id = "m1",
+                    conversationId = "c1",
+                    role = MessageRole.USER,
+                    content = "第一条",
+                    createdAt = 10L,
+                ),
+            ),
+            selectedModel = "new-model",
+        )
+
+        assertEquals(1, store.replaceConversationSnapshotCount)
+        assertEquals(0, store.upsertConversationWithMessagesCount)
+    }
+
+    @Test
+    fun appendMessages_doesNotReadExistingMessagesOnHotPath() = runBlocking {
+        val store = FakeConversationStore(
+            conversations = listOf(
+                Conversation(
+                    id = "c1",
+                    title = DEFAULT_CONVERSATION_TITLE,
+                    model = "old-model",
+                    createdAt = 1L,
+                    updatedAt = 1L,
+                ),
+            ),
+        )
+        val repository = ConversationRepository(
+            conversationStore = store,
+            nowProvider = { 800L },
+        )
+
+        repository.appendMessages(
+            conversationId = "c1",
+            messages = listOf(
+                ChatMessage(
+                    id = "m-user",
+                    conversationId = "c1",
+                    role = MessageRole.USER,
+                    content = "新的首条消息会更新标题",
+                    createdAt = 10L,
+                ),
+                ChatMessage(
+                    id = "m-loading",
+                    conversationId = "c1",
+                    role = MessageRole.ASSISTANT,
+                    content = "",
+                    createdAt = 11L,
+                ),
+            ),
+            selectedModel = "new-model",
+        )
+
+        assertEquals(0, store.listMessagesCount)
+        assertEquals(1, store.upsertConversationWithMessagesCount)
+        assertEquals("新的首条消息会更新标题", store.listConversations().single().title)
+    }
+
+    @Test
+    fun upsertMessages_doesNotReadExistingMessagesOnHotPath() = runBlocking {
+        val store = FakeConversationStore(
+            conversations = listOf(
+                Conversation(
+                    id = "c1",
+                    title = "已存在标题",
+                    model = "old-model",
+                    createdAt = 1L,
+                    updatedAt = 1L,
+                ),
+            ),
+            messagesByConversation = mapOf(
+                "c1" to listOf(
+                    ChatMessage(
+                        id = "assistant-1",
+                        conversationId = "c1",
+                        role = MessageRole.ASSISTANT,
+                        content = "",
+                        createdAt = 10L,
+                    ),
+                ),
+            ),
+        )
+        val repository = ConversationRepository(
+            conversationStore = store,
+            nowProvider = { 900L },
+        )
+
+        repository.upsertMessages(
+            conversationId = "c1",
+            messages = listOf(
+                ChatMessage(
+                    id = "assistant-1",
+                    conversationId = "c1",
+                    role = MessageRole.ASSISTANT,
+                    content = "最终回复",
+                    createdAt = 10L,
+                ),
+            ),
+            selectedModel = "new-model",
+        )
+
+        assertEquals(0, store.listMessagesCount)
+        assertEquals(1, store.upsertConversationWithMessagesCount)
+        assertEquals("最终回复", store.listMessages("c1").single().content)
+    }
+
+    @Test
+    fun applyTransferUpdates_readsCurrentMessagesAsSingleException() = runBlocking {
+        val store = FakeConversationStore(
+            conversations = listOf(
+                Conversation(
+                    id = "c1",
+                    title = "会话",
+                    model = "old-model",
+                    createdAt = 1L,
+                    updatedAt = 1L,
+                ),
+            ),
+            messagesByConversation = mapOf(
+                "c1" to listOf(
+                    ChatMessage(
+                        id = "m1",
+                        conversationId = "c1",
+                        role = MessageRole.USER,
+                        content = "转账",
+                        createdAt = 10L,
+                        parts = listOf(
+                            transferMessagePart(
+                                id = "transfer-1",
+                                direction = TransferDirection.USER_TO_ASSISTANT,
+                                status = TransferStatus.PENDING,
+                                counterparty = "陆宴清",
+                                amount = "88.00",
+                                note = "买奶茶",
+                            ),
+                        ),
+                    ),
+                ),
+            ),
+        )
+        val repository = ConversationRepository(
+            conversationStore = store,
+            nowProvider = { 1000L },
+        )
+
+        val updatedMessages = repository.applyTransferUpdates(
+            conversationId = "c1",
+            updates = listOf(
+                TransferUpdateDirective(
+                    refId = "transfer-1",
+                    status = TransferStatus.RECEIVED,
+                ),
+            ),
+            selectedModel = "new-model",
+        )
+
+        assertEquals(0, store.listMessagesCount)
+        assertEquals(1, store.updateConversationMessagesCount)
+        assertEquals(0, store.upsertConversationWithMessagesCount)
+        assertEquals(
+            TransferStatus.RECEIVED,
+            updatedMessages.single().parts.single().specialStatus,
+        )
+    }
+
+    @Test
+    fun applyTransferUpdates_skipsWriteWhenMessageStateDoesNotChange() = runBlocking {
+        val originalMessage = ChatMessage(
+            id = "m1",
+            conversationId = "c1",
+            role = MessageRole.USER,
+            content = "转账",
+            createdAt = 10L,
+            parts = listOf(
+                transferMessagePart(
+                    id = "transfer-1",
+                    direction = TransferDirection.USER_TO_ASSISTANT,
+                    status = TransferStatus.RECEIVED,
+                    counterparty = "陆宴清",
+                    amount = "88.00",
+                    note = "买奶茶",
+                ),
+            ),
+        )
+        val store = FakeConversationStore(
+            conversations = listOf(
+                Conversation(
+                    id = "c1",
+                    title = "会话",
+                    model = "old-model",
+                    createdAt = 1L,
+                    updatedAt = 1L,
+                ),
+            ),
+            messagesByConversation = mapOf("c1" to listOf(originalMessage)),
+        )
+        val repository = ConversationRepository(
+            conversationStore = store,
+            nowProvider = { 1001L },
+        )
+
+        val updatedMessages = repository.applyTransferUpdates(
+            conversationId = "c1",
+            updates = listOf(
+                TransferUpdateDirective(
+                    refId = "transfer-1",
+                    status = TransferStatus.RECEIVED,
+                ),
+            ),
+            selectedModel = "new-model",
+        )
+
+        assertEquals(listOf(originalMessage), updatedMessages)
+        assertEquals(1, store.updateConversationMessagesCount)
+        assertEquals(0, store.upsertConversationWithMessagesCount)
+        assertEquals(0, store.upsertMessagesCount)
     }
 
     @Test

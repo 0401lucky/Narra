@@ -29,7 +29,7 @@ import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Scaffold
-import com.example.myapplication.ui.component.AppSnackbarHost
+import com.example.myapplication.ui.component.TopAppSnackbarHost
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -80,76 +80,86 @@ fun SettingsModelScreen(
 
     Scaffold(
         topBar = { SettingsTopBar(title = "模型", onNavigateBack = onNavigateBack) },
-        snackbarHost = { AppSnackbarHost(hostState = snackbarHostState) },
         containerColor = palette.background,
     ) { innerPadding ->
-        LazyColumn(
-            modifier = Modifier.fillMaxSize().padding(innerPadding),
-            contentPadding = PaddingValues(
-                start = SettingsScreenPadding,
-                top = 12.dp,
-                end = SettingsScreenPadding,
-                bottom = 28.dp,
-            ),
-            verticalArrangement = Arrangement.spacedBy(16.dp),
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(innerPadding),
         ) {
-            item {
-                SettingsPageIntro(
-                    overline = "模型",
-                    title = uiState.selectedModel.ifBlank { "还没选择默认模型" },
-                    summary = "为不同功能分配合适的模型，优化成本和性能。",
-                )
-            }
+            LazyColumn(
+                modifier = Modifier.fillMaxSize(),
+                contentPadding = PaddingValues(
+                    start = SettingsScreenPadding,
+                    top = 12.dp,
+                    end = SettingsScreenPadding,
+                    bottom = 28.dp,
+                ),
+                verticalArrangement = Arrangement.spacedBy(16.dp),
+            ) {
+                item {
+                    SettingsPageIntro(
+                        overline = "模型",
+                        title = uiState.selectedModel.ifBlank { "还没选择默认模型" },
+                        summary = "为不同功能分配合适的模型，优化成本和性能。",
+                    )
+                }
 
-            item {
-                RoleModelCard(
-                    icon = Icons.AutoMirrored.Outlined.Chat,
-                    title = "聊天模型",
-                    subtitle = "全局默认的聊天模型",
-                    currentModelId = uiState.selectedModel,
-                    onClick = { selectingRole = "chat" },
-                )
-            }
+                item {
+                    RoleModelCard(
+                        icon = Icons.AutoMirrored.Outlined.Chat,
+                        title = "聊天模型",
+                        subtitle = "全局默认的聊天模型",
+                        currentModelId = uiState.selectedModel,
+                        onClick = { selectingRole = "chat" },
+                    )
+                }
 
-            item {
-                RoleModelCard(
-                    icon = Icons.Outlined.Subtitles,
-                    title = "标题总结模型",
-                    subtitle = "用于总结对话标题的模型，推荐使用快速且便宜的模型",
-                    currentModelId = provider?.titleSummaryModel.orEmpty(),
-                    onClick = { selectingRole = "title" },
-                )
-            }
+                item {
+                    RoleModelCard(
+                        icon = Icons.Outlined.Subtitles,
+                        title = "标题总结模型",
+                        subtitle = "用于总结对话标题的模型，推荐使用快速且便宜的模型",
+                        currentModelId = provider?.titleSummaryModel.orEmpty(),
+                        onClick = { selectingRole = "title" },
+                    )
+                }
 
-            item {
-                RoleModelCard(
-                    icon = Icons.Outlined.QuestionAnswer,
-                    title = "聊天建议模型",
-                    subtitle = "用于生成对话建议的模型，推荐使用快速且便宜的模型",
-                    currentModelId = provider?.chatSuggestionModel.orEmpty(),
-                    onClick = { selectingRole = "suggestion" },
-                )
-            }
+                item {
+                    RoleModelCard(
+                        icon = Icons.Outlined.QuestionAnswer,
+                        title = "聊天建议模型",
+                        subtitle = "用于生成对话建议的模型，推荐使用快速且便宜的模型",
+                        currentModelId = provider?.chatSuggestionModel.orEmpty(),
+                        onClick = { selectingRole = "suggestion" },
+                    )
+                }
 
-            item {
-                RoleModelCard(
-                    icon = Icons.Outlined.Psychology,
-                    title = "记忆模型",
-                    subtitle = "用于自动提取长期记忆的模型，建议使用便宜且稳定的模型",
-                    currentModelId = provider?.memoryModel.orEmpty(),
-                    onClick = { selectingRole = "memory" },
-                )
-            }
+                item {
+                    RoleModelCard(
+                        icon = Icons.Outlined.Psychology,
+                        title = "记忆模型",
+                        subtitle = "用于自动提取长期记忆的模型，建议使用便宜且稳定的模型",
+                        currentModelId = provider?.memoryModel.orEmpty(),
+                        onClick = { selectingRole = "memory" },
+                    )
+                }
 
-            item {
-                RoleModelCard(
-                    icon = Icons.Outlined.Translate,
-                    title = "翻译模型",
-                    subtitle = "用于翻译功能的模型",
-                    currentModelId = provider?.translationModel.orEmpty(),
-                    onClick = { selectingRole = "translation" },
-                )
+                item {
+                    RoleModelCard(
+                        icon = Icons.Outlined.Translate,
+                        title = "翻译模型",
+                        subtitle = "用于翻译功能的模型",
+                        currentModelId = provider?.translationModel.orEmpty(),
+                        onClick = { selectingRole = "translation" },
+                    )
+                }
             }
+            TopAppSnackbarHost(
+                hostState = snackbarHostState,
+                modifier = Modifier.align(Alignment.TopCenter),
+                contentTopInset = innerPadding.calculateTopPadding(),
+            )
         }
     }
 

@@ -52,10 +52,10 @@ fun RoleplayPortraitLayer(
     character: RoleplayPortraitSpec,
     highlightedSpeaker: RoleplaySpeaker?,
     autoHighlightSpeaker: Boolean,
+    modifier: Modifier = Modifier,
     isSpeaking: Boolean = false,
     onUserPortraitClick: () -> Unit = {},
     onCharacterPortraitClick: () -> Unit = {},
-    modifier: Modifier = Modifier,
 ) {
     Row(
         modifier = modifier.fillMaxWidth(),
@@ -97,8 +97,8 @@ private fun PortraitCard(
     emphasized: Boolean,
     isSpeaking: Boolean,
     gradientColors: List<Color>,
-    onClick: () -> Unit = {},
     modifier: Modifier = Modifier,
+    onClick: () -> Unit = {},
 ) {
     val imageState = rememberUserProfileAvatarState(
         avatarUri = spec.avatarUri,

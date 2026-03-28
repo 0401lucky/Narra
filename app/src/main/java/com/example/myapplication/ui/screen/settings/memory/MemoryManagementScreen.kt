@@ -4,6 +4,7 @@ import com.example.myapplication.ui.component.*
 
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -89,28 +90,30 @@ fun MemoryManagementScreen(
                 onNavigateBack = onNavigateBack,
             )
         },
-        snackbarHost = { AppSnackbarHost(hostState = snackbarHostState) },
         containerColor = palette.background,
     ) { innerPadding ->
-        LazyColumn(
+        Box(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(innerPadding),
-            contentPadding = PaddingValues(
-                start = SettingsScreenPadding,
-                top = 4.dp,
-                end = SettingsScreenPadding,
-                bottom = 32.dp,
-            ),
-            verticalArrangement = Arrangement.spacedBy(16.dp),
         ) {
-            item {
-                SettingsPageIntro(
-                    overline = "长期上下文",
-                    title = "集中查看自动记忆与摘要",
-                    summary = "查看全局自动记忆、手动记忆和会话摘要。搜索、置顶或删除，保持上下文干净可控。",
-                )
-            }
+            LazyColumn(
+                modifier = Modifier.fillMaxSize(),
+                contentPadding = PaddingValues(
+                    start = SettingsScreenPadding,
+                    top = 4.dp,
+                    end = SettingsScreenPadding,
+                    bottom = 32.dp,
+                ),
+                verticalArrangement = Arrangement.spacedBy(16.dp),
+            ) {
+                item {
+                    SettingsPageIntro(
+                        overline = "长期上下文",
+                        title = "集中查看自动记忆与摘要",
+                        summary = "查看全局自动记忆、手动记忆和会话摘要。搜索、置顶或删除，保持上下文干净可控。",
+                    )
+                }
 
             item {
                 OutlinedTextField(
@@ -203,6 +206,12 @@ fun MemoryManagementScreen(
                     }
                 }
             }
+            }
+            TopAppSnackbarHost(
+                hostState = snackbarHostState,
+                modifier = Modifier.align(Alignment.TopCenter),
+                contentTopInset = innerPadding.calculateTopPadding(),
+            )
         }
     }
 }

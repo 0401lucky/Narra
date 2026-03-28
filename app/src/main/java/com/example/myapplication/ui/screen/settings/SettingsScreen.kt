@@ -1,6 +1,7 @@
 package com.example.myapplication.ui.screen.settings
 
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -38,7 +39,7 @@ import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Slider
 import androidx.compose.material3.Switch
-import com.example.myapplication.ui.component.AppSnackbarHost
+import com.example.myapplication.ui.component.TopAppSnackbarHost
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -118,21 +119,23 @@ fun SettingsScreen(
                 onAction = if (savedHasRequiredConfig) onOpenChat else onOpenHome,
             )
         },
-        snackbarHost = { AppSnackbarHost(hostState = snackbarHostState) },
         containerColor = palette.background,
     ) { innerPadding ->
-        LazyColumn(
+        Box(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(innerPadding),
-            contentPadding = PaddingValues(
-                start = SettingsScreenPadding,
-                top = 4.dp,
-                end = SettingsScreenPadding,
-                bottom = 32.dp,
-            ),
-            verticalArrangement = Arrangement.spacedBy(20.dp),
         ) {
+            LazyColumn(
+                modifier = Modifier.fillMaxSize(),
+                contentPadding = PaddingValues(
+                    start = SettingsScreenPadding,
+                    top = 4.dp,
+                    end = SettingsScreenPadding,
+                    bottom = 32.dp,
+                ),
+                verticalArrangement = Arrangement.spacedBy(20.dp),
+            ) {
             item { SettingsSectionHeader("通用设置", "") }
             item {
                 SettingsGroup {
@@ -235,8 +238,12 @@ fun SettingsScreen(
                 }
             }
 
-
-
+            }
+            TopAppSnackbarHost(
+                hostState = snackbarHostState,
+                modifier = Modifier.align(Alignment.TopCenter),
+                contentTopInset = innerPadding.calculateTopPadding(),
+            )
         }
     }
 

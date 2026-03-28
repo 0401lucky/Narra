@@ -4,7 +4,6 @@ import com.example.myapplication.context.DefaultPromptContextAssembler
 import com.example.myapplication.context.PromptContextAssembler
 import com.example.myapplication.data.remote.ApiServiceFactory
 import com.example.myapplication.data.remote.OpenAiCompatibleApi
-import com.example.myapplication.data.repository.AiRepository
 import com.example.myapplication.data.repository.ConversationRepository
 import com.example.myapplication.data.repository.SavedImageFile
 import com.example.myapplication.data.repository.context.EmptyConversationSummaryRepository
@@ -35,7 +34,7 @@ import com.example.myapplication.model.transferMessagePart
 import com.example.myapplication.testutil.FakeConversationStore
 import com.example.myapplication.testutil.FakeConversationSummaryRepository
 import com.example.myapplication.testutil.FakeMemoryRepository
-import com.example.myapplication.testutil.FakeSettingsStore
+import com.example.myapplication.testutil.createTestAiServices
 import com.google.gson.JsonParser
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.TestDispatcher
@@ -570,6 +569,12 @@ class ChatViewModelTest {
                         )
                     }
 
+                    override suspend fun createChatCompletionAt(url: String, request: ChatCompletionRequest): Response<ChatCompletionResponse> = createChatCompletion(request)
+
+                    override suspend fun createResponseAt(url: String, request: com.example.myapplication.model.ResponseApiRequest): Response<com.example.myapplication.model.ResponseApiResponse> {
+                        error("不应调用 responses 接口")
+                    }
+
                     override suspend fun generateImage(request: ImageGenerationRequest): Response<ImageGenerationResponse> {
                         error("不应调用生图接口")
                     }
@@ -677,6 +682,12 @@ class ChatViewModelTest {
                         )
                     }
 
+                    override suspend fun createChatCompletionAt(url: String, request: ChatCompletionRequest): Response<ChatCompletionResponse> = createChatCompletion(request)
+
+                    override suspend fun createResponseAt(url: String, request: com.example.myapplication.model.ResponseApiRequest): Response<com.example.myapplication.model.ResponseApiResponse> {
+                        error("不应调用 responses 接口")
+                    }
+
                     override suspend fun generateImage(request: ImageGenerationRequest): Response<ImageGenerationResponse> {
                         error("不应调用生图接口")
                     }
@@ -767,6 +778,12 @@ class ChatViewModelTest {
                         error("不应调用聊天接口")
                     }
 
+                    override suspend fun createChatCompletionAt(url: String, request: ChatCompletionRequest): Response<ChatCompletionResponse> = createChatCompletion(request)
+
+                    override suspend fun createResponseAt(url: String, request: com.example.myapplication.model.ResponseApiRequest): Response<com.example.myapplication.model.ResponseApiResponse> {
+                        error("不应调用 responses 接口")
+                    }
+
                     override suspend fun generateImage(request: ImageGenerationRequest): Response<ImageGenerationResponse> {
                         generateImageCalled = true
                         return Response.success(
@@ -844,6 +861,12 @@ class ChatViewModelTest {
 
                     override suspend fun createChatCompletion(request: ChatCompletionRequest): Response<ChatCompletionResponse> {
                         error("不应调用聊天接口")
+                    }
+
+                    override suspend fun createChatCompletionAt(url: String, request: ChatCompletionRequest): Response<ChatCompletionResponse> = createChatCompletion(request)
+
+                    override suspend fun createResponseAt(url: String, request: com.example.myapplication.model.ResponseApiRequest): Response<com.example.myapplication.model.ResponseApiResponse> {
+                        error("不应调用 responses 接口")
                     }
 
                     override suspend fun generateImage(request: ImageGenerationRequest): Response<ImageGenerationResponse> {
@@ -937,7 +960,7 @@ class ChatViewModelTest {
             settings = AppSettings(
                 baseUrl = server.url("/v1/").toString(),
                 apiKey = "key",
-                selectedModel = "deepseek-chat",
+                selectedModel = "gpt-4o",
             ),
             nowProvider = incrementingNowProvider(230L),
             messageIdProvider = idProviderOf("user-1", "assistant-1"),
@@ -1216,6 +1239,12 @@ class ChatViewModelTest {
                         )
                     }
 
+                    override suspend fun createChatCompletionAt(url: String, request: ChatCompletionRequest): Response<ChatCompletionResponse> = createChatCompletion(request)
+
+                    override suspend fun createResponseAt(url: String, request: com.example.myapplication.model.ResponseApiRequest): Response<com.example.myapplication.model.ResponseApiResponse> {
+                        error("不应调用 responses 接口")
+                    }
+
                     override suspend fun generateImage(request: ImageGenerationRequest): Response<ImageGenerationResponse> {
                         error("不应调用生图接口")
                     }
@@ -1369,39 +1398,48 @@ class ChatViewModelTest {
         imageSaver: suspend (String) -> SavedImageFile = { error("测试不应保存图片") },
         apiServiceProvider: ((String, String) -> OpenAiCompatibleApi)? = null,
     ): ChatViewModel {
-        val repository = AiRepository(
-            settingsStore = FakeSettingsStore(settings),
-            apiServiceFactory = ApiServiceFactory(),
-            apiServiceProvider = apiServiceProvider ?: { _, _ ->
-                object : OpenAiCompatibleApi {
-                    override suspend fun listModels(): Response<ModelsResponse> {
-                        error("默认测试桩不应调用模型接口")
-                    }
-
-                    override suspend fun createChatCompletion(request: ChatCompletionRequest): Response<ChatCompletionResponse> {
-                        return Response.error(
-                            500,
-                            """{"error":"disabled in unit test"}"""
-                                .toResponseBody("application/json".toMediaType()),
-                        )
-                    }
-
-                    override suspend fun generateImage(request: ImageGenerationRequest): Response<ImageGenerationResponse> {
-                        error("默认测试桩不应调用生图接口")
-                    }
+        val resolvedApiServiceProvider = apiServiceProvider ?: { _, _ ->
+            object : OpenAiCompatibleApi {
+                override suspend fun listModels(): Response<ModelsResponse> {
+                    error("默认测试桩不应调用模型接口")
                 }
-            },
+
+                override suspend fun createChatCompletion(request: ChatCompletionRequest): Response<ChatCompletionResponse> {
+                    return Response.error(
+                        500,
+                        """{"error":"disabled in unit test"}"""
+                            .toResponseBody("application/json".toMediaType()),
+                    )
+                }
+
+                    override suspend fun createChatCompletionAt(url: String, request: ChatCompletionRequest): Response<ChatCompletionResponse> = createChatCompletion(request)
+
+                    override suspend fun createResponseAt(url: String, request: com.example.myapplication.model.ResponseApiRequest): Response<com.example.myapplication.model.ResponseApiResponse> {
+                        error("不应调用 responses 接口")
+                    }
+
+                override suspend fun generateImage(request: ImageGenerationRequest): Response<ImageGenerationResponse> {
+                    error("默认测试桩不应调用生图接口")
+                }
+            }
+        }
+        val services = createTestAiServices(
+            settings = settings,
+            dispatcher = mainDispatcherRule.dispatcher,
+            apiServiceProvider = resolvedApiServiceProvider,
             streamClientProvider = { _, _ ->
                 OkHttpClient.Builder().build()
             },
-            ioDispatcher = mainDispatcherRule.dispatcher,
         )
         val conversationRepository = ConversationRepository(
             conversationStore = store,
             nowProvider = nowProvider,
         )
         return ChatViewModel(
-            repository = repository,
+            settingsRepository = services.settingsRepository,
+            aiGateway = services.aiGateway,
+            aiPromptExtrasService = services.aiPromptExtrasService,
+            aiTranslationService = services.aiTranslationService,
             conversationRepository = conversationRepository,
             memoryRepository = memoryRepository,
             conversationSummaryRepository = conversationSummaryRepository,

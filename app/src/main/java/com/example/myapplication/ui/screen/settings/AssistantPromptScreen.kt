@@ -40,14 +40,14 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.lerp
-import androidx.compose.ui.platform.LocalClipboardManager
+import androidx.compose.ui.platform.LocalClipboard
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -64,8 +64,9 @@ fun AssistantPromptScreen(
 ) {
     val palette = rememberSettingsPalette()
     val outlineColors = rememberSettingsOutlineColors()
-    val clipboardManager = LocalClipboardManager.current
+    val clipboard = LocalClipboard.current
     val context = LocalContext.current
+    val clipboardScope = rememberCoroutineScope()
 
     var systemPrompt by rememberSaveable { mutableStateOf(assistant.systemPrompt) }
     var scenario by rememberSaveable { mutableStateOf(assistant.scenario) }
@@ -123,7 +124,7 @@ fun AssistantPromptScreen(
                         NarraIconButton(
                             onClick = {
                                 if (systemPrompt.isNotBlank()) {
-                                    clipboardManager.setText(AnnotatedString(systemPrompt))
+                                    clipboardScope.copyPlainTextToClipboard(clipboard, "assistant-system-prompt", systemPrompt)
                                     Toast.makeText(context, "已复制", Toast.LENGTH_SHORT).show()
                                 }
                             },

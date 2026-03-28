@@ -1,16 +1,17 @@
 package com.example.myapplication.viewmodel
 
 import com.example.myapplication.data.remote.ApiServiceFactory
-import com.example.myapplication.data.repository.AiRepository
 import com.example.myapplication.model.AppSettings
 import com.example.myapplication.model.Assistant
 import com.example.myapplication.model.DEFAULT_ASSISTANT_ID
 import com.example.myapplication.model.ModelAbility
 import com.example.myapplication.model.ModelInfo
 import com.example.myapplication.model.ProviderSettings
+import com.example.myapplication.model.ProviderTemplate
+import com.example.myapplication.model.ProviderType
 import com.example.myapplication.model.ScreenTranslationSettings
 import com.example.myapplication.model.ThemeMode
-import com.example.myapplication.testutil.FakeSettingsStore
+import com.example.myapplication.testutil.createTestAiServices
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
@@ -81,6 +82,10 @@ class SettingsViewModelTest {
         viewModel.saveSelectedProvider(providerB.id)
         advanceUntilIdle()
 
+        val uiState = viewModel.uiState.value
+        assertEquals(providerB.id, uiState.selectedProviderId)
+        assertEquals(providerB.id, uiState.currentProvider?.id)
+
         val stored = viewModel.storedSettings.value
         assertEquals(providerB.id, stored.selectedProviderId)
         assertEquals(providerB.baseUrl, stored.baseUrl)
@@ -123,6 +128,81 @@ class SettingsViewModelTest {
     }
 
     @Test
+    fun addProviderFromTemplate_selectsNewProviderAndKeepsExistingDrafts() = runTest(mainDispatcherRule.dispatcher.scheduler) {
+        val providerA = ProviderSettings(
+            id = "provider-a",
+            name = "Provider A",
+            baseUrl = "https://a.example.com/v1/",
+            apiKey = "key-a",
+            selectedModel = "model-a",
+            availableModels = listOf("model-a"),
+        )
+        val viewModel = createViewModel(
+            settings = AppSettings(
+                providers = listOf(providerA),
+                selectedProviderId = providerA.id,
+            ),
+        )
+
+        advanceUntilIdle()
+        val newProviderId = viewModel.addProviderFromTemplate(
+            ProviderTemplate(
+                name = "OpenAI",
+                description = "官方兼容接口",
+                defaultBaseUrl = "https://api.openai.com/v1/",
+                type = ProviderType.OPENAI,
+            ),
+        )
+
+        val uiState = viewModel.uiState.value
+        assertEquals(2, uiState.providers.size)
+        assertEquals(providerA.id, uiState.providers.first().id)
+        assertEquals(newProviderId, uiState.selectedProviderId)
+        assertEquals("OpenAI", uiState.providers.last().name)
+
+        advanceUntilIdle()
+        val stored = viewModel.storedSettings.value
+        assertEquals(2, stored.resolvedProviders().size)
+        assertEquals(newProviderId, stored.selectedProviderId)
+    }
+
+    @Test
+    fun saveSettings_afterAddProviderFromTemplate_persistsExistingAndNewProviders() = runTest(mainDispatcherRule.dispatcher.scheduler) {
+        val providerA = ProviderSettings(
+            id = "provider-a",
+            name = "Provider A",
+            baseUrl = "https://a.example.com/v1/",
+            apiKey = "key-a",
+            selectedModel = "model-a",
+            availableModels = listOf("model-a"),
+        )
+        val viewModel = createViewModel(
+            settings = AppSettings(
+                providers = listOf(providerA),
+                selectedProviderId = providerA.id,
+            ),
+        )
+
+        advanceUntilIdle()
+        val newProviderId = viewModel.addProviderFromTemplate(
+            ProviderTemplate(
+                name = "OpenAI",
+                description = "官方兼容接口",
+                defaultBaseUrl = "https://api.openai.com/v1/",
+                type = ProviderType.OPENAI,
+            ),
+        )
+        viewModel.saveSettings {}
+        advanceUntilIdle()
+
+        val stored = viewModel.storedSettings.value
+        assertEquals(2, stored.resolvedProviders().size)
+        assertEquals(providerA.id, stored.resolvedProviders().first().id)
+        assertEquals(newProviderId, stored.selectedProviderId)
+        assertEquals("OpenAI", stored.resolvedProviders().last().name)
+    }
+
+    @Test
     fun saveSelectedModelForProvider_updatesModelAndSwitchesActiveProvider() = runTest(mainDispatcherRule.dispatcher.scheduler) {
         val providerA = ProviderSettings(
             id = "provider-a",
@@ -154,6 +234,10 @@ class SettingsViewModelTest {
         )
         advanceUntilIdle()
 
+        val uiState = viewModel.uiState.value
+        assertEquals(providerB.id, uiState.selectedProviderId)
+        assertEquals("new-model-b", uiState.currentProvider?.selectedModel)
+
         val stored = viewModel.storedSettings.value
         val updatedProviderB = stored.resolvedProviders().first { it.id == providerB.id }
 
@@ -162,6 +246,121 @@ class SettingsViewModelTest {
         assertEquals("new-model-b", updatedProviderB.selectedModel)
         assertTrue(updatedProviderB.availableModels.contains("new-model-b"))
         assertEquals(providerA.selectedModel, stored.resolvedProviders().first { it.id == providerA.id }.selectedModel)
+    }
+
+    @Test
+    fun saveSelectedModel_supportsNewlyAddedDraftProviderBeforeFlowSync() = runTest(mainDispatcherRule.dispatcher.scheduler) {
+        val providerA = ProviderSettings(
+            id = "provider-a",
+            name = "Provider A",
+            baseUrl = "https://a.example.com/v1/",
+            apiKey = "key-a",
+            selectedModel = "model-a",
+            availableModels = listOf("model-a"),
+        )
+        val viewModel = createViewModel(
+            settings = AppSettings(
+                providers = listOf(providerA),
+                selectedProviderId = providerA.id,
+            ),
+        )
+
+        advanceUntilIdle()
+        val newProviderId = viewModel.addProviderFromTemplate(
+            ProviderTemplate(
+                name = "OpenAI",
+                description = "官方兼容接口",
+                defaultBaseUrl = "https://api.openai.com/v1/",
+                type = ProviderType.OPENAI,
+            ),
+        )
+        viewModel.saveSelectedModel("gpt-4o-mini")
+        advanceUntilIdle()
+
+        val uiState = viewModel.uiState.value
+        assertEquals(newProviderId, uiState.selectedProviderId)
+        assertEquals("gpt-4o-mini", uiState.currentProvider?.selectedModel)
+
+        val stored = viewModel.storedSettings.value
+        val newProvider = stored.resolvedProviders().first { it.id == newProviderId }
+        assertEquals(newProviderId, stored.selectedProviderId)
+        assertEquals("gpt-4o-mini", stored.selectedModel)
+        assertEquals("gpt-4o-mini", newProvider.selectedModel)
+        assertEquals("model-a", stored.resolvedProviders().first { it.id == providerA.id }.selectedModel)
+    }
+
+    @Test
+    fun saveSelectedModelForProvider_supportsNewlyAddedDraftProviderBeforeFlowSync() = runTest(mainDispatcherRule.dispatcher.scheduler) {
+        val providerA = ProviderSettings(
+            id = "provider-a",
+            name = "Provider A",
+            baseUrl = "https://a.example.com/v1/",
+            apiKey = "key-a",
+            selectedModel = "model-a",
+            availableModels = listOf("model-a"),
+        )
+        val viewModel = createViewModel(
+            settings = AppSettings(
+                providers = listOf(providerA),
+                selectedProviderId = providerA.id,
+            ),
+        )
+
+        advanceUntilIdle()
+        val newProviderId = viewModel.addProviderFromTemplate(
+            ProviderTemplate(
+                name = "OpenAI",
+                description = "官方兼容接口",
+                defaultBaseUrl = "https://api.openai.com/v1/",
+                type = ProviderType.OPENAI,
+            ),
+        )
+        viewModel.saveSelectedModelForProvider(
+            providerId = newProviderId,
+            selectedModel = "gpt-4o-mini",
+        )
+        advanceUntilIdle()
+
+        val uiState = viewModel.uiState.value
+        assertEquals(newProviderId, uiState.selectedProviderId)
+        assertEquals("gpt-4o-mini", uiState.currentProvider?.selectedModel)
+
+        val stored = viewModel.storedSettings.value
+        val newProvider = stored.resolvedProviders().first { it.id == newProviderId }
+        assertEquals(newProviderId, stored.selectedProviderId)
+        assertEquals("gpt-4o-mini", stored.selectedModel)
+        assertEquals("gpt-4o-mini", newProvider.selectedModel)
+    }
+
+    @Test
+    fun saveSelectedModelForProvider_thenSaveSettingsImmediately_keepsLatestModel() = runTest(mainDispatcherRule.dispatcher.scheduler) {
+        val provider = ProviderSettings(
+            id = "provider-a",
+            name = "Provider A",
+            baseUrl = "https://a.example.com/v1/",
+            apiKey = "key-a",
+            selectedModel = "old-model",
+            availableModels = listOf("old-model"),
+        )
+        val viewModel = createViewModel(
+            settings = AppSettings(
+                providers = listOf(provider),
+                selectedProviderId = provider.id,
+            ),
+        )
+
+        advanceUntilIdle()
+        viewModel.saveSelectedModelForProvider(
+            providerId = provider.id,
+            selectedModel = "new-model",
+        )
+        viewModel.saveSettings {}
+        advanceUntilIdle()
+
+        val stored = viewModel.storedSettings.value
+        assertEquals(provider.id, stored.selectedProviderId)
+        assertEquals("new-model", stored.selectedModel)
+        assertEquals("new-model", stored.resolvedProviders().first().selectedModel)
     }
 
     @Test
@@ -377,12 +576,14 @@ class SettingsViewModelTest {
     }
 
     private fun createViewModel(settings: AppSettings): SettingsViewModel {
-        val repository = AiRepository(
-            settingsStore = FakeSettingsStore(settings),
-            apiServiceFactory = ApiServiceFactory(),
-            streamClientProvider = { _, _ -> OkHttpClient.Builder().build() },
-            ioDispatcher = mainDispatcherRule.dispatcher,
+        val services = createTestAiServices(
+            settings = settings,
+            dispatcher = mainDispatcherRule.dispatcher,
         )
-        return SettingsViewModel(repository)
+        return SettingsViewModel(
+            settingsRepository = services.settingsRepository,
+            settingsEditor = services.settingsEditor,
+            modelCatalogRepository = services.modelCatalogRepository,
+        )
     }
 }

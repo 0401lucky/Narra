@@ -11,6 +11,7 @@ import com.example.myapplication.model.AppSettings
 import com.example.myapplication.model.Assistant
 import com.example.myapplication.model.DEFAULT_ASSISTANT_ICON
 import com.example.myapplication.model.DEFAULT_MEMORY_MAX_ITEMS
+import com.example.myapplication.model.OpenAiTextApiMode
 import com.example.myapplication.model.DEFAULT_ROLEPLAY_LONGFORM_TARGET_CHARS
 import com.example.myapplication.model.DEFAULT_WORLD_BOOK_MAX_ENTRIES
 import com.example.myapplication.model.ProviderSettings
@@ -72,6 +73,8 @@ interface SettingsStore {
     )
 
     suspend fun saveTranslationHistory(history: List<TranslationHistoryEntry>)
+
+    suspend fun saveRoleplayAssistantMismatchDialogPreference(suppressed: Boolean)
 }
 
 class AppSettingsStore(
@@ -135,6 +138,7 @@ class AppSettingsStore(
                 ?: DEFAULT_ROLEPLAY_LONGFORM_TARGET_CHARS).coerceIn(300, 2000),
             showRoleplayPresenceStrip = preferences[PreferencesKeys.showRoleplayPresenceStrip] ?: true,
             showRoleplayStatusStrip = preferences[PreferencesKeys.showRoleplayStatusStrip] ?: false,
+            suppressRoleplayAssistantMismatchDialog = preferences[PreferencesKeys.suppressRoleplayAssistantMismatchDialog] ?: false,
             userDisplayName = preferences[PreferencesKeys.userDisplayName]
                 .orEmpty()
                 .ifBlank { com.example.myapplication.model.DEFAULT_USER_DISPLAY_NAME },
@@ -335,6 +339,12 @@ class AppSettingsStore(
         }
     }
 
+    override suspend fun saveRoleplayAssistantMismatchDialogPreference(suppressed: Boolean) {
+        context.dataStore.edit { preferences ->
+            preferences[PreferencesKeys.suppressRoleplayAssistantMismatchDialog] = suppressed
+        }
+    }
+
     suspend fun migrateSensitiveData() {
         context.dataStore.edit { preferences ->
             val currentSecureProviderApiKeys = secureValueStore.getStringMap(SecureKeys.providerApiKeys).toMutableMap()
@@ -402,13 +412,22 @@ class AppSettingsStore(
         )
     }
 
-    /** Gson 反序列化旧 JSON 时新字段为 null，补充 type 和 models。 */
+    /** Gson 反序列化旧 JSON 时新字段为 null，补充 type、apiProtocol、OpenAI text api mode 和 models。 */
     private fun normalizeProviderFields(provider: ProviderSettings): ProviderSettings {
         val resolvedType = provider.type ?: ProviderType.fromBaseUrl(provider.baseUrl)
+        val resolvedProtocol = provider.apiProtocol
+            ?: inferProviderApiProtocol(
+                baseUrl = provider.baseUrl,
+                providerType = resolvedType,
+            )
+        val resolvedTextApiMode = provider.openAiTextApiMode ?: OpenAiTextApiMode.CHAT_COMPLETIONS
         val resolvedModels = provider.models ?: provider.availableModels.map(::inferredModelInfo)
         return provider.copy(
-            baseUrl = normalizeProviderBaseUrl(provider.baseUrl, resolvedType),
+            baseUrl = normalizeProviderBaseUrl(provider.baseUrl, resolvedType, resolvedProtocol),
             type = resolvedType,
+            apiProtocol = resolvedProtocol,
+            openAiTextApiMode = resolvedTextApiMode,
+            chatCompletionsPath = normalizeChatCompletionsPath(provider.chatCompletionsPath),
             models = resolvedModels,
         )
     }
@@ -416,13 +435,14 @@ class AppSettingsStore(
     private fun normalizeProviderBaseUrl(
         baseUrl: String,
         providerType: ProviderType,
+        apiProtocol: com.example.myapplication.model.ProviderApiProtocol,
     ): String {
         val trimmed = baseUrl.trim()
         if (trimmed.isBlank()) {
             return ""
         }
         val normalizedBaseUrl = if (trimmed.endsWith('/')) trimmed else "$trimmed/"
-        if (providerType != ProviderType.GOOGLE) {
+        if (providerType != ProviderType.GOOGLE || apiProtocol != com.example.myapplication.model.ProviderApiProtocol.OPENAI_COMPATIBLE) {
             return normalizedBaseUrl
         }
         val lower = normalizedBaseUrl.lowercase()
@@ -431,6 +451,24 @@ class AppSettingsStore(
         } else {
             "${normalizedBaseUrl}openai/"
         }
+    }
+
+    private fun inferProviderApiProtocol(
+        baseUrl: String,
+        providerType: ProviderType,
+    ): com.example.myapplication.model.ProviderApiProtocol {
+        val lower = baseUrl.trim().lowercase()
+        return when {
+            "api.anthropic.com" in lower -> com.example.myapplication.model.ProviderApiProtocol.ANTHROPIC
+            lower.isBlank() && providerType == ProviderType.ANTHROPIC -> com.example.myapplication.model.ProviderApiProtocol.ANTHROPIC
+            else -> com.example.myapplication.model.ProviderApiProtocol.OPENAI_COMPATIBLE
+        }
+    }
+
+    private fun normalizeChatCompletionsPath(path: String): String {
+        val trimmed = path.trim().ifBlank { com.example.myapplication.model.DEFAULT_CHAT_COMPLETIONS_PATH }
+        val prefixed = if (trimmed.startsWith('/')) trimmed else "/$trimmed"
+        return prefixed.replace(Regex("/{2,}"), "/")
     }
 
     private fun normalizeProvider(
@@ -445,6 +483,7 @@ class AppSettingsStore(
                 baseUrl = provider.baseUrl.trim(),
                 apiKey = provider.apiKey.trim(),
                 selectedModel = provider.selectedModel.trim(),
+                chatCompletionsPath = normalizeChatCompletionsPath(provider.chatCompletionsPath),
             ),
         )
     }
@@ -556,6 +595,7 @@ class AppSettingsStore(
         val roleplayLongformTargetChars = PreferencesKeysCompat.intPreferencesKey("roleplay_longform_target_chars")
         val showRoleplayPresenceStrip = booleanPreferencesKey("show_roleplay_presence_strip")
         val showRoleplayStatusStrip = booleanPreferencesKey("show_roleplay_status_strip")
+        val suppressRoleplayAssistantMismatchDialog = booleanPreferencesKey("suppress_roleplay_assistant_mismatch_dialog")
         val userDisplayName = stringPreferencesKey("user_display_name")
         val userAvatarUri = stringPreferencesKey("user_avatar_uri")
         val userAvatarUrl = stringPreferencesKey("user_avatar_url")

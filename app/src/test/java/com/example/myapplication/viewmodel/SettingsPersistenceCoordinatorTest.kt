@@ -1,0 +1,250 @@
+package com.example.myapplication.viewmodel
+
+import com.example.myapplication.data.repository.ai.AiSettingsEditor
+import com.example.myapplication.model.AppSettings
+import com.example.myapplication.model.Assistant
+import com.example.myapplication.model.ProviderSettings
+import com.example.myapplication.model.ScreenTranslationSettings
+import com.example.myapplication.model.ThemeMode
+import com.example.myapplication.model.TranslationHistoryEntry
+import kotlinx.coroutines.runBlocking
+import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
+import org.junit.Assert.assertTrue
+import org.junit.Test
+
+class SettingsPersistenceCoordinatorTest {
+    @Test
+    fun saveSettings_persistsProvidersDisplayAndScreenTranslation() = runBlocking {
+        val editor = RecordingSettingsEditor()
+        val coordinator = SettingsPersistenceCoordinator(editor)
+        val provider = ProviderSettings(
+            id = "provider-1",
+            name = "  Provider A  ",
+            baseUrl = " https://example.com/v1/ ",
+            apiKey = " key ",
+            selectedModel = " model-a ",
+        )
+        val state = SettingsUiState(
+            providers = listOf(provider),
+            selectedProviderId = provider.id,
+            themeMode = ThemeMode.DARK,
+            messageTextScale = 1.1f,
+            reasoningExpandedByDefault = false,
+            showThinkingContent = false,
+            autoCollapseThinking = false,
+            autoPreviewImages = false,
+            codeBlockAutoWrap = true,
+            codeBlockAutoCollapse = true,
+            showRoleplayAiHelper = false,
+            roleplayLongformTargetChars = 1200,
+            showRoleplayPresenceStrip = false,
+            showRoleplayStatusStrip = true,
+            screenTranslationSettings = ScreenTranslationSettings(
+                serviceEnabled = true,
+                targetLanguage = "日语",
+            ),
+        )
+
+        val result = coordinator.saveSettings(state)
+
+        assertEquals("设置已保存", result.message)
+        assertEquals("Provider A", editor.savedProviders.single().name)
+        assertEquals("https://example.com/v1/", editor.savedProviders.single().baseUrl)
+        assertEquals("model-a", editor.savedProviders.single().selectedModel)
+        assertEquals(provider.id, editor.savedSelectedProviderId)
+        assertEquals(ThemeMode.DARK, editor.savedThemeMode)
+        assertFalse(editor.savedReasoningExpandedByDefault)
+        assertTrue(editor.savedCodeBlockAutoWrap)
+        assertTrue(editor.savedCodeBlockAutoCollapse)
+        assertEquals("日语", editor.savedScreenTranslationSettings.targetLanguage)
+        assertTrue(editor.savedScreenTranslationSettings.serviceEnabled)
+    }
+
+    @Test
+    fun saveSelectedModel_updatesDraftProvidersForCurrentSelection() = runBlocking {
+        val editor = RecordingSettingsEditor()
+        val coordinator = SettingsPersistenceCoordinator(editor)
+        val provider = ProviderSettings(
+            id = "provider-1",
+            name = "Provider A",
+            baseUrl = "https://example.com/v1/",
+            apiKey = "key",
+            selectedModel = "old-model",
+            availableModels = listOf("old-model"),
+        )
+
+        val result = coordinator.saveSelectedModel(
+            savedSettings = AppSettings(
+                providers = listOf(provider),
+                selectedProviderId = provider.id,
+            ),
+            currentProviders = listOf(provider),
+            currentSelectedProviderId = provider.id,
+            selectedModel = "new-model",
+        )
+
+        assertEquals("模型已切换为 new-model", result.message)
+        assertEquals("new-model", editor.savedProviders.single().selectedModel)
+        assertTrue(editor.savedProviders.single().availableModels.contains("new-model"))
+        assertEquals("new-model", result.providers.single().selectedModel)
+    }
+
+    @Test
+    fun saveSelectedProvider_prefersDraftProvidersWhenSavedSettingsStillStale() = runBlocking {
+        val editor = RecordingSettingsEditor()
+        val coordinator = SettingsPersistenceCoordinator(editor)
+        val providerA = ProviderSettings(
+            id = "provider-a",
+            name = "Provider A",
+            baseUrl = "https://a.example.com/v1/",
+            apiKey = "key-a",
+        )
+        val draftProvider = ProviderSettings(
+            id = "provider-draft",
+            name = "Draft Provider",
+            baseUrl = "https://draft.example.com/v1/",
+            apiKey = "draft-key",
+        )
+
+        val result = coordinator.saveSelectedProvider(
+            savedSettings = AppSettings(
+                providers = listOf(providerA),
+                selectedProviderId = providerA.id,
+            ),
+            draftProviders = listOf(providerA, draftProvider),
+            providerId = draftProvider.id,
+        )
+
+        assertEquals("已切换到 Draft Provider", result?.message)
+        assertEquals(draftProvider.id, editor.savedSelectedProviderId)
+        assertEquals(2, editor.savedProviders.size)
+        assertEquals(2, result?.providers?.size)
+        assertEquals(draftProvider.id, result?.selectedProviderId)
+    }
+
+    @Test
+    fun saveSelectedModel_prefersCurrentSelectedDraftProviderWhenSavedSettingsStillStale() = runBlocking {
+        val editor = RecordingSettingsEditor()
+        val coordinator = SettingsPersistenceCoordinator(editor)
+        val providerA = ProviderSettings(
+            id = "provider-a",
+            name = "Provider A",
+            baseUrl = "https://a.example.com/v1/",
+            apiKey = "key-a",
+            selectedModel = "model-a",
+            availableModels = listOf("model-a"),
+        )
+        val draftProvider = ProviderSettings(
+            id = "provider-draft",
+            name = "Draft Provider",
+            baseUrl = "https://draft.example.com/v1/",
+            apiKey = "draft-key",
+        )
+
+        val result = coordinator.saveSelectedModel(
+            savedSettings = AppSettings(
+                providers = listOf(providerA),
+                selectedProviderId = providerA.id,
+            ),
+            currentProviders = listOf(providerA, draftProvider),
+            currentSelectedProviderId = draftProvider.id,
+            selectedModel = "gpt-4o-mini",
+        )
+
+        val persistedDraftProvider = editor.savedProviders.first { it.id == draftProvider.id }
+        assertEquals(draftProvider.id, editor.savedSelectedProviderId)
+        assertEquals("gpt-4o-mini", persistedDraftProvider.selectedModel)
+        assertTrue(persistedDraftProvider.availableModels.contains("gpt-4o-mini"))
+        assertEquals(draftProvider.id, result.selectedProviderId)
+        assertEquals("gpt-4o-mini", result.providers.first { it.id == draftProvider.id }.selectedModel)
+        assertEquals("model-a", result.providers.first { it.id == providerA.id }.selectedModel)
+    }
+
+    @Test
+    fun saveUserProfile_delegatesToEditor() = runBlocking {
+        val editor = RecordingSettingsEditor()
+        val coordinator = SettingsPersistenceCoordinator(editor)
+
+        val result = coordinator.saveUserProfile(
+            displayName = "测试用户",
+            avatarUri = "content://avatar/test",
+            avatarUrl = "https://cdn.example.com/avatar.png",
+        )
+
+        assertEquals("个人资料已更新", result.message)
+        assertEquals("测试用户", editor.savedDisplayName)
+        assertEquals("content://avatar/test", editor.savedAvatarUri)
+        assertEquals("https://cdn.example.com/avatar.png", editor.savedAvatarUrl)
+    }
+
+    private class RecordingSettingsEditor : AiSettingsEditor {
+        var savedProviders: List<ProviderSettings> = emptyList()
+        var savedSelectedProviderId: String = ""
+        var savedThemeMode: ThemeMode = ThemeMode.SYSTEM
+        var savedMessageTextScale: Float = 1f
+        var savedReasoningExpandedByDefault: Boolean = true
+        var savedShowThinkingContent: Boolean = true
+        var savedAutoCollapseThinking: Boolean = true
+        var savedAutoPreviewImages: Boolean = true
+        var savedCodeBlockAutoWrap: Boolean = false
+        var savedCodeBlockAutoCollapse: Boolean = false
+        var savedShowRoleplayAiHelper: Boolean = true
+        var savedRoleplayLongformTargetChars: Int = 0
+        var savedShowRoleplayPresenceStrip: Boolean = true
+        var savedShowRoleplayStatusStrip: Boolean = false
+        var savedScreenTranslationSettings: ScreenTranslationSettings = ScreenTranslationSettings()
+        var savedDisplayName: String = ""
+        var savedAvatarUri: String = ""
+        var savedAvatarUrl: String = ""
+
+        override suspend fun saveProviderSettings(providers: List<ProviderSettings>, selectedProviderId: String) {
+            savedProviders = providers
+            savedSelectedProviderId = selectedProviderId
+        }
+
+        override suspend fun saveTranslationHistory(history: List<TranslationHistoryEntry>) = Unit
+
+        override suspend fun saveAssistants(assistants: List<Assistant>, selectedAssistantId: String) = Unit
+
+        override suspend fun saveDisplaySettings(
+            themeMode: ThemeMode,
+            messageTextScale: Float,
+            reasoningExpandedByDefault: Boolean,
+            showThinkingContent: Boolean,
+            autoCollapseThinking: Boolean,
+            autoPreviewImages: Boolean,
+            codeBlockAutoWrap: Boolean,
+            codeBlockAutoCollapse: Boolean,
+            showRoleplayAiHelper: Boolean,
+            roleplayLongformTargetChars: Int,
+            showRoleplayPresenceStrip: Boolean,
+            showRoleplayStatusStrip: Boolean,
+        ) {
+            savedThemeMode = themeMode
+            savedMessageTextScale = messageTextScale
+            savedReasoningExpandedByDefault = reasoningExpandedByDefault
+            savedShowThinkingContent = showThinkingContent
+            savedAutoCollapseThinking = autoCollapseThinking
+            savedAutoPreviewImages = autoPreviewImages
+            savedCodeBlockAutoWrap = codeBlockAutoWrap
+            savedCodeBlockAutoCollapse = codeBlockAutoCollapse
+            savedShowRoleplayAiHelper = showRoleplayAiHelper
+            savedRoleplayLongformTargetChars = roleplayLongformTargetChars
+            savedShowRoleplayPresenceStrip = showRoleplayPresenceStrip
+            savedShowRoleplayStatusStrip = showRoleplayStatusStrip
+        }
+
+        override suspend fun saveScreenTranslationSettings(settings: ScreenTranslationSettings) {
+            savedScreenTranslationSettings = settings
+        }
+
+        override suspend fun saveUserProfile(displayName: String, avatarUri: String, avatarUrl: String) {
+            savedDisplayName = displayName
+            savedAvatarUri = avatarUri
+            savedAvatarUrl = avatarUrl
+        }
+
+        override suspend fun saveRoleplayAssistantMismatchDialogPreference(suppressed: Boolean) = Unit
+    }
+}

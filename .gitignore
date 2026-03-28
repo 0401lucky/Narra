@@ -20,9 +20,14 @@ local.properties
 .claude/
 .serena/
 .tmp/
+tmp/
+tmp-*
 %TEMP%/
+.codex_tmp*
 **/build/
 *.log
+*.err.log
+*.out.log
 build_err.txt
 build_output*.txt
 phase*_*.log

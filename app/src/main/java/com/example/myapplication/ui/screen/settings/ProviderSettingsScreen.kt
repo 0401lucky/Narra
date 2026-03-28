@@ -1,5 +1,6 @@
 package com.example.myapplication.ui.screen.settings
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.infiniteRepeatable
@@ -31,11 +32,13 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Search
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
-import com.example.myapplication.ui.component.AppSnackbarHost
+import com.example.myapplication.ui.component.TopAppSnackbarHost
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -43,6 +46,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -64,6 +68,7 @@ import com.example.myapplication.viewmodel.SettingsUiState
 @Composable
 fun ProviderSettingsScreen(
     uiState: SettingsUiState,
+    onEnsureProviderDrafts: () -> Unit,
     onShowAddDialog: () -> Unit,
     onDismissAddDialog: () -> Unit,
     onAddProviderFromTemplate: (ProviderTemplate) -> String,
@@ -72,6 +77,46 @@ fun ProviderSettingsScreen(
     onConsumeMessage: () -> Unit,
     onNavigateBack: () -> Unit,
 ) {
+    var showTemplateDialog by rememberSaveable { mutableStateOf(false) }
+    var pendingProviderDetailId by rememberSaveable { mutableStateOf("") }
+    val isTemplateDialogVisible = showTemplateDialog || uiState.showTemplateDialog
+
+    LaunchedEffect(uiState.providers.isEmpty()) {
+        if (uiState.providers.isEmpty()) {
+            onEnsureProviderDrafts()
+        }
+    }
+
+    LaunchedEffect(uiState.showTemplateDialog) {
+        if (uiState.showTemplateDialog) {
+            showTemplateDialog = true
+        }
+    }
+
+    LaunchedEffect(pendingProviderDetailId, uiState.providers) {
+        val targetProviderId = pendingProviderDetailId
+        if (targetProviderId.isBlank()) {
+            return@LaunchedEffect
+        }
+        if (uiState.providers.any { it.id == targetProviderId }) {
+            pendingProviderDetailId = ""
+            onOpenProviderDetail(targetProviderId)
+        }
+    }
+
+    val openAddProviderDialog = {
+        showTemplateDialog = true
+        onShowAddDialog()
+    }
+    val closeAddProviderDialog = {
+        showTemplateDialog = false
+        onDismissAddDialog()
+    }
+
+    BackHandler(enabled = !isTemplateDialogVisible) {
+        onNavigateBack()
+    }
+
     val palette = rememberSettingsPalette()
     val snackbarHostState = rememberSettingsSnackbarHostState(
         message = uiState.message,
@@ -106,63 +151,102 @@ fun ProviderSettingsScreen(
                 title = "提供商",
                 onNavigateBack = onNavigateBack,
                 actionLabel = "新增",
-                onAction = onShowAddDialog,
+                onAction = openAddProviderDialog,
             )
-        },
-        snackbarHost = {
-            AppSnackbarHost(hostState = snackbarHostState)
         },
         containerColor = palette.background,
     ) { innerPadding ->
-        LazyVerticalGrid(
-            columns = GridCells.Adaptive(minSize = 154.dp),
+        Box(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(innerPadding),
-            contentPadding = PaddingValues(
-                start = 20.dp,
-                top = 4.dp,
-                end = 20.dp,
-                bottom = 28.dp,
-            ),
-            horizontalArrangement = Arrangement.spacedBy(14.dp),
-            verticalArrangement = Arrangement.spacedBy(14.dp),
         ) {
-            item(span = { GridItemSpan(maxLineSpan) }) {
-                ProviderSearchBar(
-                    value = searchQuery,
-                    onValueChange = { searchQuery = it },
-                )
-            }
-
-            if (filteredProviders.isEmpty()) {
+            LazyVerticalGrid(
+                columns = GridCells.Adaptive(minSize = 154.dp),
+                modifier = Modifier.fillMaxSize(),
+                contentPadding = PaddingValues(
+                    start = 20.dp,
+                    top = 4.dp,
+                    end = 20.dp,
+                    bottom = 28.dp,
+                ),
+                horizontalArrangement = Arrangement.spacedBy(14.dp),
+                verticalArrangement = Arrangement.spacedBy(14.dp),
+            ) {
                 item(span = { GridItemSpan(maxLineSpan) }) {
-                    SettingsPlaceholderRow(
-                        title = "没有匹配的提供商",
-                        subtitle = "换个关键词试试，可以搜索名称、类型、地址或模型名。",
+                    ProviderSearchBar(
+                        value = searchQuery,
+                        onValueChange = { searchQuery = it },
                     )
                 }
-            } else {
-                items(filteredProviders, key = { it.id }) { provider ->
-                    ProviderCard(
-                        provider = provider,
-                        health = uiState.connectionHealthMap[provider.id] ?: ConnectionHealth.UNKNOWN,
-                        onClick = {
-                            onOpenProviderDetail(provider.id)
-                        },
-                    )
+
+                if (filteredProviders.isEmpty()) {
+                    item(span = { GridItemSpan(maxLineSpan) }) {
+                        SettingsPlaceholderRow(
+                            title = if (uiState.providers.isEmpty()) "还没有提供商" else "没有匹配的提供商",
+                            subtitle = if (uiState.providers.isEmpty()) {
+                                "先新增一个提供商，再填写 Base URL、API Key 和模型。"
+                            } else {
+                                "换个关键词试试，可以搜索名称、类型、地址或模型名。"
+                            },
+                        )
+                    }
+                    item(span = { GridItemSpan(maxLineSpan) }) {
+                        Card(
+                            onClick = openAddProviderDialog,
+                            modifier = Modifier.fillMaxWidth(),
+                            shape = RoundedCornerShape(22.dp),
+                            colors = CardDefaults.cardColors(
+                                containerColor = palette.surface.copy(alpha = 0.74f),
+                                contentColor = palette.accentStrong,
+                            ),
+                            border = BorderStroke(1.dp, palette.border.copy(alpha = 0.3f)),
+                            elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
+                        ) {
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(horizontal = 18.dp, vertical = 16.dp),
+                                horizontalArrangement = Arrangement.Center,
+                                verticalAlignment = Alignment.CenterVertically,
+                            ) {
+                                Text(
+                                    text = "新增提供商",
+                                    style = MaterialTheme.typography.titleMedium,
+                                    fontWeight = FontWeight.SemiBold,
+                                    color = palette.accentStrong,
+                                )
+                            }
+                        }
+                    }
+                } else {
+                    items(filteredProviders, key = { it.id }) { provider ->
+                        ProviderCard(
+                            provider = provider,
+                            health = uiState.connectionHealthMap[provider.id] ?: ConnectionHealth.UNKNOWN,
+                            onClick = {
+                                onOpenProviderDetail(provider.id)
+                            },
+                        )
+                    }
                 }
             }
+            TopAppSnackbarHost(
+                hostState = snackbarHostState,
+                modifier = Modifier.align(Alignment.TopCenter),
+                contentTopInset = innerPadding.calculateTopPadding(),
+            )
         }
     }
 
-    if (uiState.showTemplateDialog) {
+    if (isTemplateDialogVisible) {
         ProviderTemplateDialog(
             onSelectTemplate = { template ->
+                showTemplateDialog = false
                 val newId = onAddProviderFromTemplate(template)
-                onOpenProviderDetail(newId)
+                pendingProviderDetailId = newId
             },
-            onDismiss = onDismissAddDialog,
+            onDismiss = closeAddProviderDialog,
         )
     }
 }
@@ -203,15 +287,17 @@ private fun ProviderCard(
     val brandColor = providerType.brandColor(isDark)
     val modelCount = provider.resolvedModels().size
 
-    Surface(
+    Card(
+        onClick = onClick,
         modifier = Modifier
-            .fillMaxWidth()
-            .clip(RoundedCornerShape(24.dp))
-            .clickable(onClick = onClick),
+            .fillMaxWidth(),
         shape = RoundedCornerShape(24.dp),
-        color = palette.surface.copy(alpha = 0.7f),
+        colors = CardDefaults.cardColors(
+            containerColor = palette.surface.copy(alpha = 0.7f),
+            contentColor = palette.title,
+        ),
         border = BorderStroke(0.5.dp, palette.border.copy(alpha = 0.2f)),
-        shadowElevation = 0.dp,
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
     ) {
         Column(
             modifier = Modifier

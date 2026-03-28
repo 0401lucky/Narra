@@ -14,6 +14,9 @@ data class ProviderSettings(
     val thinkingBudget: Int? = null,
     val availableModels: List<String> = emptyList(),
     val type: ProviderType? = null,
+    val apiProtocol: ProviderApiProtocol? = null,
+    val openAiTextApiMode: OpenAiTextApiMode? = null,
+    val chatCompletionsPath: String = DEFAULT_CHAT_COMPLETIONS_PATH,
     val models: List<ModelInfo>? = null,
     val enabled: Boolean = true,
     val titleSummaryModel: String = "",
@@ -32,6 +35,34 @@ data class ProviderSettings(
     /** 返回 non-null 的提供商类型，null 时从 baseUrl 推断。 */
     fun resolvedType(): ProviderType {
         return type ?: ProviderType.fromBaseUrl(baseUrl)
+    }
+
+    fun resolvedApiProtocol(): ProviderApiProtocol {
+        apiProtocol?.let { return it }
+        val normalizedBaseUrl = baseUrl.trim().lowercase()
+        return when {
+            "api.anthropic.com" in normalizedBaseUrl -> ProviderApiProtocol.ANTHROPIC
+            normalizedBaseUrl.isBlank() && resolvedType() == ProviderType.ANTHROPIC -> ProviderApiProtocol.ANTHROPIC
+            else -> ProviderApiProtocol.OPENAI_COMPATIBLE
+        }
+    }
+
+    fun supportsAnthropicProtocolSelection(): Boolean {
+        return resolvedType() == ProviderType.ANTHROPIC || resolvedType() == ProviderType.CUSTOM
+    }
+
+    fun supportsOpenAiTextApiModeSelection(): Boolean {
+        return resolvedApiProtocol() == ProviderApiProtocol.OPENAI_COMPATIBLE
+    }
+
+    fun resolvedOpenAiTextApiMode(): OpenAiTextApiMode {
+        return openAiTextApiMode ?: OpenAiTextApiMode.CHAT_COMPLETIONS
+    }
+
+    fun resolvedChatCompletionsPath(): String {
+        val trimmed = chatCompletionsPath.trim().ifBlank { DEFAULT_CHAT_COMPLETIONS_PATH }
+        val prefixed = if (trimmed.startsWith('/')) trimmed else "/$trimmed"
+        return prefixed.replace(Regex("/{2,}"), "/")
     }
 
     /** 返回 non-null 的模型信息列表，null 时从 availableModels 字符串列表转换。 */
@@ -88,6 +119,9 @@ fun createDefaultProvider(
     thinkingBudget: Int? = null,
     availableModels: List<String> = emptyList(),
     type: ProviderType? = null,
+    apiProtocol: ProviderApiProtocol? = null,
+    openAiTextApiMode: OpenAiTextApiMode? = null,
+    chatCompletionsPath: String = DEFAULT_CHAT_COMPLETIONS_PATH,
 ): ProviderSettings {
     return ProviderSettings(
         id = id,
@@ -98,5 +132,8 @@ fun createDefaultProvider(
         thinkingBudget = thinkingBudget,
         availableModels = availableModels,
         type = type,
+        apiProtocol = apiProtocol,
+        openAiTextApiMode = openAiTextApiMode,
+        chatCompletionsPath = chatCompletionsPath,
     )
 }

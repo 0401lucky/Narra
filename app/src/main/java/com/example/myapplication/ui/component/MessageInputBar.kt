@@ -35,6 +35,7 @@ import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Description
 import androidx.compose.material.icons.filled.Image
+import androidx.compose.material.icons.filled.OpenInFull
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material.icons.filled.Translate
 import androidx.compose.material.icons.outlined.Psychology
@@ -82,6 +83,9 @@ fun MessageInputBar(
     pendingParts: List<ChatMessagePart>,
     enabled: Boolean,
     modifier: Modifier = Modifier,
+    allowImageAttachments: Boolean = true,
+    allowFileAttachments: Boolean = true,
+    allowSpecialPlay: Boolean = true,
     isSending: Boolean = false,
     onCancelClick: (() -> Unit)? = null,
 ) {
@@ -90,6 +94,16 @@ fun MessageInputBar(
     val isPressed by sendInteractionSource.collectIsPressedAsState()
     var showAttachmentMenu by rememberSaveable { mutableStateOf(false) }
     val canSend = enabled && (value.isNotBlank() || pendingParts.isNotEmpty())
+    val canOpenAttachmentMenu = enabled && !isSending && (
+        allowImageAttachments || allowFileAttachments || allowSpecialPlay
+    )
+    val inputPlaceholder = when {
+        pendingParts.any { it.type == ChatMessagePartType.IMAGE } && pendingParts.any { it.type == ChatMessagePartType.FILE } -> "补充说明，让 AI 结合图片和文件回答"
+        pendingParts.any { it.type == ChatMessagePartType.IMAGE } -> "补充说明，让 AI 结合图片回答"
+        pendingParts.any { it.type == ChatMessagePartType.FILE } -> "输入你的要求，让 AI 结合文件内容回答"
+        else -> "输入消息，与 AI 聊天"
+    }
+    var showExpandedEditor by rememberSaveable { mutableStateOf(false) }
     val scale by animateFloatAsState(
         targetValue = if (isPressed && (canSend || isSending)) 0.92f else 1f,
         animationSpec = spring(
@@ -156,40 +170,58 @@ fun MessageInputBar(
                         }
                     }
 
-                    BasicTextField(
-                        value = value,
-                        onValueChange = onValueChange,
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .heightIn(min = 52.dp),
-                        enabled = enabled && !isSending,
-                        maxLines = 5,
-                        textStyle = MaterialTheme.typography.bodyLarge.copy(
-                            color = if (enabled || isSending) {
-                                MaterialTheme.colorScheme.onSurface
-                            } else {
-                                MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.72f)
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.Bottom,
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    ) {
+                        BasicTextField(
+                            value = value,
+                            onValueChange = onValueChange,
+                            modifier = Modifier
+                                .weight(1f)
+                                .heightIn(min = 52.dp),
+                            enabled = enabled && !isSending,
+                            maxLines = 5,
+                            textStyle = MaterialTheme.typography.bodyLarge.copy(
+                                color = if (enabled || isSending) {
+                                    MaterialTheme.colorScheme.onSurface
+                                } else {
+                                    MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.72f)
+                                },
+                            ),
+                            cursorBrush = SolidColor(MaterialTheme.colorScheme.primary),
+                            decorationBox = { innerTextField ->
+                                if (value.isEmpty()) {
+                                    Text(
+                                        text = inputPlaceholder,
+                                        style = MaterialTheme.typography.bodyLarge,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
+                                    )
+                                }
+                                innerTextField()
                             },
-                        ),
-                        cursorBrush = SolidColor(MaterialTheme.colorScheme.primary),
-                        decorationBox = { innerTextField ->
-                            if (value.isEmpty()) {
-                                val hasImages = pendingParts.any { it.type == ChatMessagePartType.IMAGE }
-                                val hasFiles = pendingParts.any { it.type == ChatMessagePartType.FILE }
-                                Text(
-                                    text = when {
-                                        hasImages && hasFiles -> "补充说明，让 AI 结合图片和文件回答"
-                                        hasImages -> "补充说明，让 AI 结合图片回答"
-                                        hasFiles -> "输入你的要求，让 AI 结合文件内容回答"
-                                        else -> "输入消息，与 AI 聊天"
-                                    },
-                                    style = MaterialTheme.typography.bodyLarge,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
-                                )
-                            }
-                            innerTextField()
-                        },
-                    )
+                        )
+
+                        NarraIconButton(
+                            onClick = { showExpandedEditor = true },
+                            enabled = enabled && !isSending,
+                            modifier = Modifier
+                                .size(38.dp)
+                                .clip(CircleShape),
+                            colors = IconButtonDefaults.iconButtonColors(
+                                containerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.72f),
+                                contentColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                                disabledContainerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.28f),
+                            ),
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.OpenInFull,
+                                contentDescription = "展开输入编辑",
+                                modifier = Modifier.size(18.dp),
+                            )
+                        }
+                    }
                 }
             }
 
@@ -229,7 +261,7 @@ fun MessageInputBar(
                     Box {
                         NarraIconButton(
                             onClick = { showAttachmentMenu = true },
-                            enabled = enabled && !isSending,
+                            enabled = canOpenAttachmentMenu,
                             modifier = Modifier
                                 .size(44.dp)
                                 .clip(CircleShape),
@@ -251,6 +283,7 @@ fun MessageInputBar(
                         ) {
                             DropdownMenuItem(
                                 text = { Text("选择图片") },
+                                enabled = allowImageAttachments,
                                 leadingIcon = {
                                     Icon(
                                         imageVector = Icons.Default.Image,
@@ -264,6 +297,7 @@ fun MessageInputBar(
                             )
                             DropdownMenuItem(
                                 text = { Text("上传文件") },
+                                enabled = allowFileAttachments,
                                 leadingIcon = {
                                     Icon(
                                         imageVector = Icons.Default.Description,
@@ -277,6 +311,7 @@ fun MessageInputBar(
                             )
                             DropdownMenuItem(
                                 text = { Text("特殊玩法") },
+                                enabled = allowSpecialPlay,
                                 leadingIcon = {
                                     Icon(
                                         imageVector = Icons.Default.Share,
@@ -343,6 +378,14 @@ fun MessageInputBar(
             }
         }
     }
+
+    ExpandedDraftEditorDialog(
+        visible = showExpandedEditor,
+        value = value,
+        placeholder = inputPlaceholder,
+        onSave = onValueChange,
+        onDismissRequest = { showExpandedEditor = false },
+    )
 }
 
 @Composable

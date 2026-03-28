@@ -29,10 +29,7 @@ interface ConversationDao {
     suspend fun listMessages(conversationId: String): List<MessageEntity>
 
     @Upsert
-    suspend fun upsertConversation(conversation: ConversationEntity)
-
-    @Insert(onConflict = OnConflictStrategy.REPLACE)
-    suspend fun insertMessage(message: MessageEntity)
+    suspend fun upsertConversationEntity(conversation: ConversationEntity)
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertMessages(messages: List<MessageEntity>)
@@ -44,7 +41,12 @@ interface ConversationDao {
     suspend fun deleteConversation(conversationId: String)
 
     @Transaction
-    suspend fun replaceMessagesTransaction(conversationId: String, messages: List<MessageEntity>) {
+    suspend fun replaceConversationSnapshot(
+        conversation: ConversationEntity,
+        conversationId: String,
+        messages: List<MessageEntity>,
+    ) {
+        upsertConversationEntity(conversation)
         clearMessages(conversationId)
         if (messages.isNotEmpty()) {
             insertMessages(messages)
@@ -52,13 +54,11 @@ interface ConversationDao {
     }
 
     @Transaction
-    suspend fun saveConversationWithMessages(
+    suspend fun upsertConversationWithMessages(
         conversation: ConversationEntity,
-        conversationId: String,
         messages: List<MessageEntity>,
     ) {
-        upsertConversation(conversation)
-        clearMessages(conversationId)
+        upsertConversationEntity(conversation)
         if (messages.isNotEmpty()) {
             insertMessages(messages)
         }
@@ -70,6 +70,6 @@ interface ConversationDao {
         conversation: ConversationEntity,
     ) {
         clearMessages(conversationId)
-        upsertConversation(conversation)
+        upsertConversationEntity(conversation)
     }
 }

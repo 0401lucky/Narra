@@ -4,6 +4,7 @@ import android.content.Context
 import android.security.keystore.KeyGenParameterSpec
 import android.security.keystore.KeyProperties
 import android.util.Base64
+import androidx.core.content.edit
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
 import java.security.KeyStore
@@ -32,11 +33,11 @@ class SecureValueStore(
 
     fun putString(key: String, value: String) {
         if (value.isBlank()) {
-            sharedPreferences.edit().remove(key).apply()
+            sharedPreferences.edit { remove(key) }
             return
         }
         val encrypted = encrypt(value) ?: return
-        sharedPreferences.edit().putString(key, encrypted).apply()
+        sharedPreferences.edit { putString(key, encrypted) }
     }
 
     fun getStringMap(key: String): Map<String, String> {
@@ -57,7 +58,7 @@ class SecureValueStore(
             .mapValues { (_, value) -> value.trim() }
             .filterValues { it.isNotBlank() }
         if (normalized.isEmpty()) {
-            sharedPreferences.edit().remove(key).apply()
+            sharedPreferences.edit { remove(key) }
             return
         }
         putString(key, gson.toJson(normalized, stringMapType))

@@ -29,6 +29,7 @@ data class RoleplayMessageUiModel(
     val isStreaming: Boolean = false,
     val messageStatus: MessageStatus = MessageStatus.COMPLETED,
     val copyText: String = content,
+    val richTextSource: String = content,
     val canRetry: Boolean = false,
     val specialPart: ChatMessagePart? = null,
 )

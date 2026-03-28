@@ -3,7 +3,9 @@ package com.example.myapplication.viewmodel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
-import com.example.myapplication.data.repository.AiRepository
+import com.example.myapplication.data.repository.ai.AiSettingsEditor
+import com.example.myapplication.data.repository.ai.AiSettingsRepository
+import com.example.myapplication.data.repository.ai.AiTranslationService
 import com.example.myapplication.model.AppSettings
 import com.example.myapplication.model.ProviderFunction
 import com.example.myapplication.model.TranslationSourceType
@@ -36,10 +38,12 @@ data class TranslationPageUiState(
 )
 
 class TranslationViewModel(
-    private val repository: AiRepository,
+    private val settingsRepository: AiSettingsRepository,
+    private val settingsEditor: AiSettingsEditor,
+    private val aiTranslationService: AiTranslationService,
     private val nowProvider: () -> Long = { System.currentTimeMillis() },
 ) : ViewModel() {
-    val settings: StateFlow<AppSettings> = repository.settingsFlow.stateIn(
+    val settings: StateFlow<AppSettings> = settingsRepository.settingsFlow.stateIn(
         scope = viewModelScope,
         started = SharingStarted.WhileSubscribed(5_000),
         initialValue = AppSettings(),
@@ -127,7 +131,7 @@ class TranslationViewModel(
             }
         }
         viewModelScope.launch {
-            repository.saveProviderSettings(
+            settingsEditor.saveProviderSettings(
                 providers = updatedProviders,
                 selectedProviderId = selectedProviderId,
             )
@@ -149,7 +153,7 @@ class TranslationViewModel(
 
     fun clearHistory() {
         viewModelScope.launch {
-            repository.saveTranslationHistory(emptyList())
+            settingsEditor.saveTranslationHistory(emptyList())
         }
     }
 
@@ -186,7 +190,7 @@ class TranslationViewModel(
                 )
             }
             runCatching {
-                repository.translateText(
+                aiTranslationService.translateText(
                     text = inputText,
                     targetLanguage = _uiState.value.targetLanguage,
                     sourceLanguage = _uiState.value.sourceLanguage,
@@ -209,7 +213,7 @@ class TranslationViewModel(
                         it.sourceLanguage == _uiState.value.sourceLanguage
                 }
 
-                repository.saveTranslationHistory(updatedHistory)
+                settingsEditor.saveTranslationHistory(updatedHistory)
                 _uiState.update {
                     it.copy(
                         isTranslating = false,
@@ -248,11 +252,19 @@ class TranslationViewModel(
             "西班牙语",
         )
 
-        fun factory(repository: AiRepository): ViewModelProvider.Factory {
+        fun factory(
+            settingsRepository: AiSettingsRepository,
+            settingsEditor: AiSettingsEditor,
+            aiTranslationService: AiTranslationService,
+        ): ViewModelProvider.Factory {
             return object : ViewModelProvider.Factory {
                 @Suppress("UNCHECKED_CAST")
                 override fun <T : ViewModel> create(modelClass: Class<T>): T {
-                    return TranslationViewModel(repository) as T
+                    return TranslationViewModel(
+                        settingsRepository = settingsRepository,
+                        settingsEditor = settingsEditor,
+                        aiTranslationService = aiTranslationService,
+                    ) as T
                 }
             }
         }

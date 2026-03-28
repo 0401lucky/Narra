@@ -5,7 +5,6 @@ import com.example.myapplication.context.PromptContextResult
 import com.example.myapplication.context.DefaultPromptContextAssembler
 import com.example.myapplication.data.remote.ApiServiceFactory
 import com.example.myapplication.data.remote.OpenAiCompatibleApi
-import com.example.myapplication.data.repository.AiRepository
 import com.example.myapplication.data.repository.ConversationRepository
 import com.example.myapplication.data.repository.context.ConversationSummaryRepository
 import com.example.myapplication.data.repository.context.MemoryRepository
@@ -38,8 +37,8 @@ import com.example.myapplication.model.transferMessagePart
 import com.example.myapplication.testutil.FakeConversationStore
 import com.example.myapplication.testutil.FakeConversationSummaryRepository
 import com.example.myapplication.testutil.FakeMemoryRepository
-import com.example.myapplication.testutil.FakeSettingsStore
 import com.example.myapplication.testutil.FakeWorldBookRepository
+import com.example.myapplication.testutil.createTestAiServices
 import com.google.gson.JsonParser
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.delay
@@ -188,6 +187,12 @@ class RoleplayViewModelTest {
                         )
                     }
 
+                    override suspend fun createChatCompletionAt(url: String, request: ChatCompletionRequest): Response<ChatCompletionResponse> = createChatCompletion(request)
+
+                    override suspend fun createResponseAt(url: String, request: com.example.myapplication.model.ResponseApiRequest): Response<com.example.myapplication.model.ResponseApiResponse> {
+                        error("不应调用 responses 接口")
+                    }
+
                     override suspend fun generateImage(request: ImageGenerationRequest): Response<ImageGenerationResponse> {
                         error("不应调用生图接口")
                     }
@@ -197,6 +202,7 @@ class RoleplayViewModelTest {
 
         viewModel.enterScenario(scenario.id)
         advanceUntilIdle()
+        val listMessagesCountBeforeSuggestion = store.listMessagesCount
 
         viewModel.generateSuggestions()
         advanceUntilIdle()
@@ -207,6 +213,7 @@ class RoleplayViewModelTest {
         assertEquals("逼近真相", state.suggestions[0].label)
         assertTrue(state.suggestions[0].text.contains("你刚才那句话"))
         assertEquals(RoleplaySuggestionAxis.PLOT, state.suggestions[0].axis)
+        assertEquals(listMessagesCountBeforeSuggestion, store.listMessagesCount)
 
         val request = lastSuggestionRequest ?: error("未记录到建议请求")
         assertEquals("rp-suggestion-model", request.model)
@@ -289,6 +296,12 @@ class RoleplayViewModelTest {
                         ),
                     )
                 }
+
+                    override suspend fun createChatCompletionAt(url: String, request: ChatCompletionRequest): Response<ChatCompletionResponse> = createChatCompletion(request)
+
+                    override suspend fun createResponseAt(url: String, request: com.example.myapplication.model.ResponseApiRequest): Response<com.example.myapplication.model.ResponseApiResponse> {
+                        error("不应调用 responses 接口")
+                    }
 
                 override suspend fun generateImage(request: ImageGenerationRequest): Response<ImageGenerationResponse> {
                     error("不应调用生图接口")
@@ -428,6 +441,12 @@ class RoleplayViewModelTest {
                         )
                     }
 
+                    override suspend fun createChatCompletionAt(url: String, request: ChatCompletionRequest): Response<ChatCompletionResponse> = createChatCompletion(request)
+
+                    override suspend fun createResponseAt(url: String, request: com.example.myapplication.model.ResponseApiRequest): Response<com.example.myapplication.model.ResponseApiResponse> {
+                        error("不应调用 responses 接口")
+                    }
+
                     override suspend fun generateImage(request: ImageGenerationRequest): Response<ImageGenerationResponse> {
                         error("不应调用生图接口")
                     }
@@ -548,6 +567,12 @@ class RoleplayViewModelTest {
                         )
                     }
 
+                    override suspend fun createChatCompletionAt(url: String, request: ChatCompletionRequest): Response<ChatCompletionResponse> = createChatCompletion(request)
+
+                    override suspend fun createResponseAt(url: String, request: com.example.myapplication.model.ResponseApiRequest): Response<com.example.myapplication.model.ResponseApiResponse> {
+                        error("不应调用 responses 接口")
+                    }
+
                     override suspend fun generateImage(request: ImageGenerationRequest): Response<ImageGenerationResponse> {
                         error("不应调用生图接口")
                     }
@@ -564,6 +589,7 @@ class RoleplayViewModelTest {
         viewModel.applySuggestion("你最好把话说清楚。")
         assertEquals("你最好把话说清楚。", viewModel.uiState.value.input)
         assertTrue(viewModel.uiState.value.suggestions.isEmpty())
+        val listMessagesCountBeforeSend = store.listMessagesCount
         viewModel.sendMessage()
         assertTrue(viewModel.uiState.value.suggestions.isEmpty())
 
@@ -572,6 +598,7 @@ class RoleplayViewModelTest {
         val state = viewModel.uiState.value
         assertFalse(state.isSending)
         assertTrue(state.suggestions.isEmpty())
+        assertEquals(listMessagesCountBeforeSend, store.listMessagesCount)
         assertTrue(store.listMessages(session.conversationId).any { it.content.contains("你最好把话说清楚") })
         val requestBody = JsonParser.parseString(server.takeRequest().body.readUtf8()).asJsonObject
         assertEquals(0.9f, requestBody["temperature"].asFloat)
@@ -660,13 +687,122 @@ class RoleplayViewModelTest {
 
         viewModel.enterScenario(scenario.id)
         advanceUntilIdle()
+        val listMessagesCountBeforeRetry = store.listMessagesCount
         viewModel.retryTurn("assistant-1")
         advanceUntilIdle()
 
         val state = viewModel.uiState.value
         assertFalse(state.isSending)
+        assertEquals(listMessagesCountBeforeRetry, store.listMessagesCount)
         assertEquals(listOf("你今晚为什么会在这里？", "新的剧情回复"), store.listMessages(session.conversationId).map { it.content })
         assertTrue(state.messages.any { it.sourceMessageId == "assistant-1" && it.content == "新的剧情回复" })
+    }
+
+    @Test
+    fun editUserMessage_rewindsConversationAndRestoresInput() = runTest(mainDispatcherRule.dispatcher.scheduler) {
+        val assistant = Assistant(
+            id = "assistant-1",
+            name = "陆宴清",
+        )
+        val scenario = RoleplayScenario(
+            id = "scene-1",
+            assistantId = assistant.id,
+            userDisplayNameOverride = "林晚",
+            characterDisplayNameOverride = "陆宴清",
+        )
+        val session = RoleplaySession(
+            id = "session-1",
+            scenarioId = scenario.id,
+            conversationId = "conv-1",
+            createdAt = 1L,
+            updatedAt = 2L,
+        )
+        val store = FakeConversationStore(
+            conversations = listOf(
+                Conversation(
+                    id = session.conversationId,
+                    title = "剧情",
+                    model = "chat-model",
+                    createdAt = 1L,
+                    updatedAt = 2L,
+                    assistantId = assistant.id,
+                ),
+            ),
+            messagesByConversation = mapOf(
+                session.conversationId to listOf(
+                    ChatMessage(
+                        id = "user-1",
+                        conversationId = session.conversationId,
+                        role = MessageRole.USER,
+                        content = "第一句",
+                        createdAt = 10L,
+                    ),
+                    ChatMessage(
+                        id = "assistant-1",
+                        conversationId = session.conversationId,
+                        role = MessageRole.ASSISTANT,
+                        content = "第一句回复",
+                        status = MessageStatus.COMPLETED,
+                        createdAt = 11L,
+                        modelName = "chat-model",
+                    ),
+                    ChatMessage(
+                        id = "user-2",
+                        conversationId = session.conversationId,
+                        role = MessageRole.USER,
+                        content = "卡住的那句",
+                        createdAt = 12L,
+                    ),
+                    ChatMessage(
+                        id = "assistant-2",
+                        conversationId = session.conversationId,
+                        role = MessageRole.ASSISTANT,
+                        content = "发送失败",
+                        status = MessageStatus.ERROR,
+                        createdAt = 13L,
+                        modelName = "chat-model",
+                    ),
+                ),
+            ),
+        )
+        val provider = ProviderSettings(
+            id = "provider-1",
+            name = "测试 Provider",
+            baseUrl = server.url("/v1/").toString(),
+            apiKey = "test-key",
+            selectedModel = "chat-model",
+        )
+        val viewModel = createViewModel(
+            store = store,
+            roleplayRepository = FakeRoleplayRepository(
+                conversationStore = store,
+                scenarios = listOf(scenario),
+                sessions = listOf(session),
+            ),
+            settings = AppSettings(
+                baseUrl = provider.baseUrl,
+                apiKey = provider.apiKey,
+                selectedModel = provider.selectedModel,
+                providers = listOf(provider),
+                selectedProviderId = provider.id,
+                assistants = listOf(assistant),
+                selectedAssistantId = assistant.id,
+            ),
+            promptContextAssembler = fixedPromptAssembler("提示词上下文"),
+        )
+
+        viewModel.enterScenario(scenario.id)
+        advanceUntilIdle()
+        val listMessagesCountBeforeEdit = store.listMessagesCount
+        viewModel.editUserMessage("user-2")
+        advanceUntilIdle()
+
+        val state = viewModel.uiState.value
+        assertEquals("卡住的那句", state.input)
+        assertEquals(listMessagesCountBeforeEdit, store.listMessagesCount)
+        assertEquals(listOf("第一句", "第一句回复"), store.listMessages(session.conversationId).map { it.content })
+        assertTrue(state.messages.none { it.sourceMessageId == "user-2" })
+        assertTrue(state.messages.none { it.sourceMessageId == "assistant-2" })
     }
 
     @Test
@@ -962,6 +1098,12 @@ class RoleplayViewModelTest {
                         )
                     }
 
+                    override suspend fun createChatCompletionAt(url: String, request: ChatCompletionRequest): Response<ChatCompletionResponse> = createChatCompletion(request)
+
+                    override suspend fun createResponseAt(url: String, request: com.example.myapplication.model.ResponseApiRequest): Response<com.example.myapplication.model.ResponseApiResponse> {
+                        error("不应调用 responses 接口")
+                    }
+
                     override suspend fun generateImage(request: ImageGenerationRequest): Response<ImageGenerationResponse> {
                         error("不应调用生图接口")
                     }
@@ -1154,13 +1296,169 @@ class RoleplayViewModelTest {
 
         val state = viewModel.uiState.value
         assertTrue(state.messages.any { it.speaker == RoleplaySpeaker.USER && it.contentType == RoleplayContentType.DIALOGUE })
-        assertTrue(state.messages.any { it.speaker == RoleplaySpeaker.CHARACTER && it.contentType == RoleplayContentType.LONGFORM })
+        val longformMessage = state.messages.firstOrNull {
+            it.speaker == RoleplaySpeaker.CHARACTER && it.contentType == RoleplayContentType.LONGFORM
+        }
+        assertTrue(longformMessage != null)
+        assertEquals(
+            "他推开半掩的窗子，夜风一下子灌了进来。 “别逼我现在回答。”（可他其实已经有些动摇了。）",
+            longformMessage?.content,
+        )
+        assertEquals(longformMessage?.content, longformMessage?.copyText)
+        assertEquals(longformMessage?.content, longformMessage?.richTextSource)
         assertTrue(state.latestPromptDebugDump.contains("【长文小说模式】"))
 
         val requestBody = JsonParser.parseString(server.takeRequest().body.readUtf8()).asJsonObject
         val systemPrompt = requestBody.getAsJsonArray("messages")[0].asJsonObject["content"].asString
         assertTrue(systemPrompt.contains("【长文小说模式】"))
+        assertTrue(systemPrompt.contains("<char>“……”</char>"))
+        assertTrue(systemPrompt.contains("<thought>（……）</thought>"))
         assertTrue(!systemPrompt.contains("<dialogue speaker=\"character\""))
+    }
+
+    @Test
+    fun sendMessage_longformModeStripsInternalRenderTagsFromVisibleContent() = runTest(mainDispatcherRule.dispatcher.scheduler) {
+        enqueueStreamResponse("她望着你，呼吸轻得几乎听不见。<char>“别再躲我了。”</char><thought>（如果他现在还退开，我会更难受。）</thought>")
+
+        val assistant = Assistant(
+            id = "assistant-1",
+            name = "余罪",
+        )
+        val scenario = RoleplayScenario(
+            id = "scene-1",
+            title = "回廊",
+            assistantId = assistant.id,
+            userDisplayNameOverride = "林晚",
+            characterDisplayNameOverride = "余罪",
+            longformModeEnabled = true,
+        )
+        val session = RoleplaySession(
+            id = "session-1",
+            scenarioId = scenario.id,
+            conversationId = "conv-1",
+            createdAt = 1L,
+            updatedAt = 2L,
+        )
+        val store = FakeConversationStore(
+            conversations = listOf(
+                Conversation(
+                    id = session.conversationId,
+                    title = "回廊",
+                    model = "chat-model",
+                    createdAt = 1L,
+                    updatedAt = 2L,
+                    assistantId = assistant.id,
+                ),
+            ),
+        )
+        val provider = ProviderSettings(
+            id = "provider-1",
+            name = "测试 Provider",
+            baseUrl = server.url("/v1/").toString(),
+            apiKey = "test-key",
+            selectedModel = "chat-model",
+        )
+        val viewModel = createViewModel(
+            store = store,
+            roleplayRepository = FakeRoleplayRepository(
+                conversationStore = store,
+                scenarios = listOf(scenario),
+                sessions = listOf(session),
+            ),
+            settings = AppSettings(
+                baseUrl = provider.baseUrl,
+                apiKey = provider.apiKey,
+                selectedModel = provider.selectedModel,
+                providers = listOf(provider),
+                selectedProviderId = provider.id,
+                assistants = listOf(assistant),
+                selectedAssistantId = assistant.id,
+            ),
+            promptContextAssembler = fixedPromptAssembler("提示词上下文"),
+            messageIdProvider = idProviderOf("user-1", "assistant-1"),
+        )
+
+        viewModel.enterScenario(scenario.id)
+        advanceUntilIdle()
+        viewModel.updateInput("看着我。")
+        viewModel.sendMessage()
+        advanceUntilIdle()
+
+        val longformMessage = viewModel.uiState.value.messages.firstOrNull {
+            it.speaker == RoleplaySpeaker.CHARACTER && it.contentType == RoleplayContentType.LONGFORM
+        }
+        assertEquals(
+            "她望着你，呼吸轻得几乎听不见。“别再躲我了。”（如果他现在还退开，我会更难受。）",
+            longformMessage?.content,
+        )
+        assertEquals(longformMessage?.content, longformMessage?.copyText)
+        assertEquals(
+            "她望着你，呼吸轻得几乎听不见。<char>“别再躲我了。”</char><thought>（如果他现在还退开，我会更难受。）</thought>",
+            longformMessage?.richTextSource,
+        )
+    }
+
+    @Test
+    fun dismissAssistantMismatchDialog_withSuppression_persistsPreference() = runTest(mainDispatcherRule.dispatcher.scheduler) {
+        val assistant = Assistant(
+            id = "assistant-1",
+            name = "余罪",
+        )
+        val scenario = RoleplayScenario(
+            id = "scene-1",
+            assistantId = assistant.id,
+        )
+        val session = RoleplaySession(
+            id = "session-1",
+            scenarioId = scenario.id,
+            conversationId = "conv-1",
+            createdAt = 1L,
+            updatedAt = 2L,
+        )
+        val store = FakeConversationStore(
+            conversations = listOf(
+                Conversation(
+                    id = session.conversationId,
+                    title = "剧情",
+                    model = "chat-model",
+                    createdAt = 1L,
+                    updatedAt = 2L,
+                    assistantId = assistant.id,
+                ),
+            ),
+        )
+        val provider = ProviderSettings(
+            id = "provider-1",
+            name = "测试 Provider",
+            baseUrl = server.url("/v1/").toString(),
+            apiKey = "test-key",
+            selectedModel = "chat-model",
+        )
+        val viewModel = createViewModel(
+            store = store,
+            roleplayRepository = FakeRoleplayRepository(
+                conversationStore = store,
+                scenarios = listOf(scenario),
+                sessions = listOf(session),
+            ),
+            settings = AppSettings(
+                baseUrl = provider.baseUrl,
+                apiKey = provider.apiKey,
+                selectedModel = provider.selectedModel,
+                providers = listOf(provider),
+                selectedProviderId = provider.id,
+                assistants = listOf(assistant),
+                selectedAssistantId = assistant.id,
+                suppressRoleplayAssistantMismatchDialog = false,
+            ),
+            promptContextAssembler = fixedPromptAssembler("提示词上下文"),
+        )
+
+        viewModel.dismissAssistantMismatchDialog(suppressFuturePrompt = true)
+        advanceUntilIdle()
+
+        assertTrue(viewModel.settings.value.suppressRoleplayAssistantMismatchDialog)
+        assertEquals("继续沿用旧剧情，后续不再提示", viewModel.uiState.value.noticeMessage)
     }
 
     @Test
@@ -1262,6 +1560,12 @@ class RoleplayViewModelTest {
                         )
                     }
 
+                    override suspend fun createChatCompletionAt(url: String, request: ChatCompletionRequest): Response<ChatCompletionResponse> = createChatCompletion(request)
+
+                    override suspend fun createResponseAt(url: String, request: com.example.myapplication.model.ResponseApiRequest): Response<com.example.myapplication.model.ResponseApiResponse> {
+                        error("不应调用 responses 接口")
+                    }
+
                     override suspend fun generateImage(request: ImageGenerationRequest): Response<ImageGenerationResponse> {
                         error("不应调用生图接口")
                     }
@@ -1327,26 +1631,29 @@ class RoleplayViewModelTest {
         apiServiceProvider: ((String, String) -> OpenAiCompatibleApi)? = null,
         streamClientProvider: ((String, String) -> OkHttpClient)? = null,
     ): RoleplayViewModel {
-        val repository = AiRepository(
-            settingsStore = FakeSettingsStore(settings),
-            apiServiceFactory = ApiServiceFactory(),
-            apiServiceProvider = apiServiceProvider ?: { baseUrl, apiKey ->
-                ApiServiceFactory().create(
-                    baseUrl = baseUrl,
-                    apiKey = apiKey,
-                )
-            },
+        val resolvedApiServiceProvider = apiServiceProvider ?: { baseUrl, apiKey ->
+            ApiServiceFactory().create(
+                baseUrl = baseUrl,
+                apiKey = apiKey,
+            )
+        }
+        val services = createTestAiServices(
+            settings = settings,
+            dispatcher = mainDispatcherRule.dispatcher,
+            apiServiceProvider = resolvedApiServiceProvider,
             streamClientProvider = streamClientProvider ?: { _, _ ->
                 OkHttpClient.Builder().build()
             },
-            ioDispatcher = mainDispatcherRule.dispatcher,
         )
         val conversationRepository = ConversationRepository(
             conversationStore = store,
             nowProvider = nowProvider,
         )
         return RoleplayViewModel(
-            repository = repository,
+            settingsRepository = services.settingsRepository,
+            settingsEditor = services.settingsEditor,
+            aiGateway = services.aiGateway,
+            aiPromptExtrasService = services.aiPromptExtrasService,
             conversationRepository = conversationRepository,
             roleplayRepository = roleplayRepository,
             promptContextAssembler = promptContextAssembler,
@@ -1427,12 +1734,14 @@ private class FakeRoleplayRepository(
         val scenario = getScenario(scenarioId) ?: error("场景不存在")
         val session = sessionsState.value.firstOrNull { it.scenarioId == scenarioId }
             ?: error("测试未预置会话")
+        val conversationMessages = conversationStore.listMessages(session.conversationId)
         return RoleplaySessionStartResult(
             session = session,
             reusedExistingSession = true,
-            hasHistory = conversationStore.listMessages(session.conversationId).isNotEmpty(),
+            hasHistory = conversationMessages.isNotEmpty(),
             assistantMismatch = false,
             conversationAssistantId = scenario.assistantId,
+            conversationMessages = conversationMessages,
         )
     }
 

@@ -73,6 +73,48 @@ class ProviderTypeTest {
     }
 
     @Test
+    fun anthropicDefaultBaseUrl_pointsToOfficialMessagesEndpointBase() {
+        assertEquals("https://api.anthropic.com/v1/", ProviderType.ANTHROPIC.defaultBaseUrl)
+    }
+
+    @Test
+    fun providerSettings_resolvedApiProtocol_infersAnthropicFromOfficialBaseUrl() {
+        val settings = ProviderSettings(
+            baseUrl = "https://api.anthropic.com/v1/",
+        )
+
+        assertEquals(ProviderApiProtocol.ANTHROPIC, settings.resolvedApiProtocol())
+    }
+
+    @Test
+    fun providerSettings_resolvedApiProtocol_defaultsToOpenAiCompatibleForCustomProxy() {
+        val settings = ProviderSettings(
+            baseUrl = "https://proxy.example.com/v1/",
+            type = ProviderType.ANTHROPIC,
+        )
+
+        assertEquals(ProviderApiProtocol.OPENAI_COMPATIBLE, settings.resolvedApiProtocol())
+    }
+
+    @Test
+    fun providerSettings_resolvedOpenAiTextApiMode_defaultsToChatCompletions() {
+        val settings = ProviderSettings(
+            baseUrl = "https://api.openai.com/v1/",
+        )
+
+        assertEquals(OpenAiTextApiMode.CHAT_COMPLETIONS, settings.resolvedOpenAiTextApiMode())
+    }
+
+    @Test
+    fun providerSettings_resolvedChatCompletionsPath_normalizesCustomPath() {
+        val settings = ProviderSettings(
+            chatCompletionsPath = "custom/chat",
+        )
+
+        assertEquals("/custom/chat", settings.resolvedChatCompletionsPath())
+    }
+
+    @Test
     fun providerSettings_resolvedType_usesExplicitType() {
         val settings = ProviderSettings(
             baseUrl = "https://api.openai.com/v1/",

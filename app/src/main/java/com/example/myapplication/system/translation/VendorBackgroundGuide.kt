@@ -5,6 +5,7 @@ import android.content.Context
 import android.content.Intent
 import android.os.Build
 import android.provider.Settings
+import androidx.core.net.toUri
 
 data class VendorBackgroundGuide(
     val title: String,
@@ -69,7 +70,7 @@ fun resolveVendorBackgroundGuide(context: Context): VendorBackgroundGuide? {
     }?.let { guide ->
         val intent = guide.deepLinkIntent?.apply {
             if (action == Settings.ACTION_APPLICATION_DETAILS_SETTINGS) {
-                data = android.net.Uri.parse("package:${context.packageName}")
+                data = "package:${context.packageName}".toUri()
             }
             addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
         }
