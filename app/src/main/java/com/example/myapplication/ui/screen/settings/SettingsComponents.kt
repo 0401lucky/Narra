@@ -200,7 +200,7 @@ fun SettingsTopBar(
 fun SettingsPageIntro(
     overline: String,
     title: String,
-    summary: String,
+    summary: String = "",
 ) {
     val palette = rememberSettingsPalette()
 
@@ -233,12 +233,14 @@ fun SettingsPageIntro(
                     fontWeight = FontWeight.ExtraBold,
                     color = palette.title,
                 )
-                Text(
-                    text = summary,
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = palette.body.copy(alpha = 0.85f),
-                    lineHeight = 20.sp,
-                )
+                if (summary.isNotBlank()) {
+                    Text(
+                        text = summary,
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = palette.body.copy(alpha = 0.85f),
+                        lineHeight = 20.sp,
+                    )
+                }
             }
         }
     }
@@ -321,7 +323,7 @@ fun SettingsGroupDivider() {
 @Composable
 fun SettingsListRow(
     title: String,
-    supportingText: String,
+    supportingText: String = "",
     modifier: Modifier = Modifier,
     leadingContent: @Composable (() -> Unit)? = null,
     onClick: (() -> Unit)? = null,
@@ -378,13 +380,15 @@ fun SettingsListRow(
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
                 )
-                Text(
-                    text = supportingText,
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = supportingColor,
-                    maxLines = 2,
-                    overflow = TextOverflow.Ellipsis,
-                )
+                if (supportingText.isNotBlank()) {
+                    Text(
+                        text = supportingText,
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = supportingColor,
+                        maxLines = 2,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                }
             }
             when {
                 trailingContent != null -> trailingContent()

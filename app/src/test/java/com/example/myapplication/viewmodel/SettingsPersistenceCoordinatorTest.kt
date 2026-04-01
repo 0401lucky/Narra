@@ -5,6 +5,10 @@ import com.example.myapplication.model.AppSettings
 import com.example.myapplication.model.Assistant
 import com.example.myapplication.model.ProviderSettings
 import com.example.myapplication.model.ScreenTranslationSettings
+import com.example.myapplication.model.SearchSettings
+import com.example.myapplication.model.SearchSourceConfig
+import com.example.myapplication.model.SearchSourceIds
+import com.example.myapplication.model.SearchSourceType
 import com.example.myapplication.model.ThemeMode
 import com.example.myapplication.model.TranslationHistoryEntry
 import kotlinx.coroutines.runBlocking
@@ -44,6 +48,19 @@ class SettingsPersistenceCoordinatorTest {
                 serviceEnabled = true,
                 targetLanguage = "日语",
             ),
+            searchSettings = SearchSettings(
+                sources = listOf(
+                    SearchSourceConfig(
+                        id = SearchSourceIds.BRAVE,
+                        type = SearchSourceType.BRAVE,
+                        name = "Brave 搜索",
+                        enabled = true,
+                        apiKey = "search-key",
+                    ),
+                ),
+                selectedSourceId = SearchSourceIds.BRAVE,
+                defaultResultCount = 6,
+            ),
         )
 
         val result = coordinator.saveSettings(state)
@@ -59,6 +76,8 @@ class SettingsPersistenceCoordinatorTest {
         assertTrue(editor.savedCodeBlockAutoCollapse)
         assertEquals("日语", editor.savedScreenTranslationSettings.targetLanguage)
         assertTrue(editor.savedScreenTranslationSettings.serviceEnabled)
+        assertEquals(6, editor.savedSearchSettings.defaultResultCount)
+        assertEquals("Brave 搜索", editor.savedSearchSettings.sources.single().name)
     }
 
     @Test
@@ -194,6 +213,7 @@ class SettingsPersistenceCoordinatorTest {
         var savedShowRoleplayPresenceStrip: Boolean = true
         var savedShowRoleplayStatusStrip: Boolean = false
         var savedScreenTranslationSettings: ScreenTranslationSettings = ScreenTranslationSettings()
+        var savedSearchSettings: SearchSettings = SearchSettings()
         var savedDisplayName: String = ""
         var savedAvatarUri: String = ""
         var savedAvatarUrl: String = ""
@@ -237,6 +257,10 @@ class SettingsPersistenceCoordinatorTest {
 
         override suspend fun saveScreenTranslationSettings(settings: ScreenTranslationSettings) {
             savedScreenTranslationSettings = settings
+        }
+
+        override suspend fun saveSearchSettings(settings: SearchSettings) {
+            savedSearchSettings = settings
         }
 
         override suspend fun saveUserProfile(displayName: String, avatarUri: String, avatarUrl: String) {

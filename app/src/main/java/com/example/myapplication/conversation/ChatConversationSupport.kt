@@ -6,7 +6,9 @@ import com.example.myapplication.model.ChatMessage
 import com.example.myapplication.model.ChatMessagePart
 import com.example.myapplication.model.ChatMessagePartType
 import com.example.myapplication.model.Conversation
+import com.example.myapplication.model.GatewayToolRuntimeContext
 import com.example.myapplication.model.MessageAttachment
+import com.example.myapplication.model.MessageCitation
 import com.example.myapplication.model.MessageRole
 import com.example.myapplication.model.MessageStatus
 import com.example.myapplication.model.ModelAbility
@@ -204,6 +206,19 @@ object ChatConversationSupport {
         )
     }
 
+    fun buildToolRuntimeContext(
+        promptAssemblyInput: ChatPromptAssemblyInput,
+        promptMode: com.example.myapplication.model.PromptMode = com.example.myapplication.model.PromptMode.CHAT,
+    ): GatewayToolRuntimeContext {
+        return GatewayToolRuntimeContext(
+            promptMode = promptMode,
+            assistant = promptAssemblyInput.assistant,
+            conversation = promptAssemblyInput.conversation,
+            userInputText = promptAssemblyInput.userInputText,
+            recentMessages = promptAssemblyInput.recentMessages,
+        )
+    }
+
     fun buildMessage(
         conversationId: String,
         role: MessageRole,
@@ -215,6 +230,7 @@ object ChatConversationSupport {
         reasoningContent: String = "",
         attachments: List<MessageAttachment> = emptyList(),
         parts: List<ChatMessagePart> = emptyList(),
+        citations: List<MessageCitation> = emptyList(),
     ): ChatMessage {
         return ChatMessage(
             id = messageIdProvider(),
@@ -227,6 +243,7 @@ object ChatConversationSupport {
             reasoningContent = reasoningContent,
             attachments = attachments,
             parts = normalizeChatMessageParts(parts),
+            citations = citations,
         )
     }
 }

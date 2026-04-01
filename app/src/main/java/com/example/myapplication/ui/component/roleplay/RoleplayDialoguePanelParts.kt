@@ -15,6 +15,8 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Send
 import androidx.compose.material.icons.filled.Add
@@ -46,6 +48,12 @@ import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.input.key.Key
+import androidx.compose.ui.input.key.KeyEventType
+import androidx.compose.ui.input.key.isShiftPressed
+import androidx.compose.ui.input.key.key
+import androidx.compose.ui.input.key.onPreviewKeyEvent
+import androidx.compose.ui.input.key.type
 import androidx.compose.ui.platform.LocalClipboard
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
@@ -54,6 +62,7 @@ import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -332,6 +341,7 @@ internal fun RoleplayInputBar(
     val canSend = input.isNotBlank() && !isSending
     var showActionMenu by remember { mutableStateOf(false) }
     var showExpandedEditor by rememberSaveable { mutableStateOf(false) }
+    var allowNextInlineNewline by remember { mutableStateOf(false) }
     val focusRequester = remember { FocusRequester() }
     val keyboardController = LocalSoftwareKeyboardController.current
 
@@ -339,6 +349,27 @@ internal fun RoleplayInputBar(
         if (inputFocusToken > 0L && !isSending) {
             focusRequester.requestFocus()
             keyboardController?.show()
+        }
+    }
+    val handleInputChange: (String) -> Unit = { nextValue ->
+        val insertedTrailingNewline = nextValue.length == input.length + 1 &&
+            nextValue.endsWith('\n') &&
+            nextValue.dropLast(1) == input
+        if (insertedTrailingNewline) {
+            if (allowNextInlineNewline) {
+                allowNextInlineNewline = false
+                onInputChange(nextValue)
+            } else {
+                val trimmedValue = nextValue.dropLast(1)
+                val canSendWithNewValue = trimmedValue.isNotBlank() && !isSending
+                onInputChange(trimmedValue)
+                if (canSendWithNewValue) {
+                    onSend()
+                }
+            }
+        } else {
+            allowNextInlineNewline = false
+            onInputChange(nextValue)
         }
     }
 
@@ -378,15 +409,48 @@ internal fun RoleplayInputBar(
         }
         BasicTextField(
             value = input,
-            onValueChange = onInputChange,
+            onValueChange = handleInputChange,
             modifier = Modifier
                 .weight(1f)
                 .focusRequester(focusRequester)
-                .padding(vertical = 8.dp),
+                .padding(vertical = 8.dp)
+                .onPreviewKeyEvent { event ->
+                    if (
+                        event.type == KeyEventType.KeyDown &&
+                        event.key == Key.Enter &&
+                        !event.isShiftPressed
+                    ) {
+                        if (canSend) {
+                            onSend()
+                            true
+                        } else {
+                            false
+                        }
+                    } else if (
+                        event.type == KeyEventType.KeyDown &&
+                        event.key == Key.Enter &&
+                        event.isShiftPressed
+                    ) {
+                        allowNextInlineNewline = true
+                        false
+                    } else {
+                        false
+                    }
+                },
             enabled = !isSending,
             maxLines = 3,
             textStyle = MaterialTheme.typography.bodyLarge.copy(color = colors.textPrimary),
             cursorBrush = SolidColor(colors.characterAccent),
+            keyboardOptions = KeyboardOptions(
+                imeAction = ImeAction.Send,
+            ),
+            keyboardActions = KeyboardActions(
+                onSend = {
+                    if (canSend) {
+                        onSend()
+                    }
+                },
+            ),
             decorationBox = { innerTextField ->
                 if (input.isEmpty()) {
                     Text(

@@ -49,6 +49,7 @@ class ConversationRepository(
     suspend fun createConversation(
         selectedModel: String = "",
         assistantId: String = DEFAULT_ASSISTANT_ID,
+        searchEnabled: Boolean = false,
     ): Conversation {
         val timestamp = nowProvider()
         val conversation = Conversation(
@@ -58,6 +59,7 @@ class ConversationRepository(
             createdAt = timestamp,
             updatedAt = timestamp,
             assistantId = assistantId,
+            searchEnabled = searchEnabled,
         )
         conversationStore.upsertConversationMetadata(conversation)
         return conversation
@@ -165,6 +167,21 @@ class ConversationRepository(
                 title = title,
                 updatedAt = nowProvider(),
                 assistantId = conversation.assistantId.ifBlank { DEFAULT_ASSISTANT_ID },
+            ),
+        )
+    }
+
+    suspend fun updateConversationSearchEnabled(
+        conversationId: String,
+        searchEnabled: Boolean,
+    ) {
+        val conversation = conversationStore.getConversation(conversationId) ?: return
+        if (conversation.searchEnabled == searchEnabled) {
+            return
+        }
+        conversationStore.upsertConversationMetadata(
+            conversation.copy(
+                searchEnabled = searchEnabled,
             ),
         )
     }

@@ -2,6 +2,7 @@ package com.example.myapplication.conversation
 
 import com.example.myapplication.model.ChatMessagePart
 import com.example.myapplication.model.ChatMessagePartType
+import com.example.myapplication.model.MessageCitation
 import com.example.myapplication.model.normalizeChatMessageParts
 import com.example.myapplication.model.textMessagePart
 
@@ -30,6 +31,7 @@ class StreamingReplyBuffer {
     private val fullParts = mutableListOf<ChatMessagePart>()
     private val visibleParts = mutableListOf<ChatMessagePart>()
     private val pendingVisuals = ArrayDeque<PendingVisualDelta>()
+    private var citations: List<MessageCitation> = emptyList()
 
     val pendingContentLength: Int
         get() = synchronized(lock) {
@@ -100,6 +102,14 @@ class StreamingReplyBuffer {
     fun parts(): List<ChatMessagePart> = synchronized(lock) { fullParts.toList() }
 
     fun visibleParts(): List<ChatMessagePart> = synchronized(lock) { visibleParts.toList() }
+
+    fun citations(): List<MessageCitation> = synchronized(lock) { citations }
+
+    fun setCitations(value: List<MessageCitation>) {
+        synchronized(lock) {
+            citations = value.distinctBy(MessageCitation::url)
+        }
+    }
 
     private fun advanceContent(step: Int): Boolean = synchronized(lock) {
         drainPendingVisuals(step)

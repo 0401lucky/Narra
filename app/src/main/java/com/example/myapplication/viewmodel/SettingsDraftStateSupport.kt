@@ -54,6 +54,7 @@ object SettingsDraftStateSupport {
                 showRoleplayPresenceStrip = settings.showRoleplayPresenceStrip,
                 showRoleplayStatusStrip = settings.showRoleplayStatusStrip,
                 screenTranslationSettings = settings.screenTranslationSettings,
+                searchSettings = settings.resolvedSearchSettings(),
             )
         }
     }

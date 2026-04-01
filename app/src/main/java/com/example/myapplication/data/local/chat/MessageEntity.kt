@@ -28,4 +28,5 @@ data class MessageEntity(
     val reasoningContent: String = "",
     val attachmentsJson: String = "[]",
     val partsJson: String = "[]",
+    val citationsJson: String = "[]",
 )

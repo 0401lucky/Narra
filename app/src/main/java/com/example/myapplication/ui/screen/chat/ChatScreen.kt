@@ -156,6 +156,7 @@ fun ChatScreen(
     onClearCurrentConversation: () -> Unit,
     onRetryMessage: (String) -> Unit,
     onToggleMemoryMessage: (String) -> Unit,
+    onToggleSearch: () -> Unit,
     onTranslateDraft: () -> Unit,
     onTranslateMessage: (String) -> Unit,
     onDismissTranslationSheet: () -> Unit,
@@ -195,6 +196,9 @@ fun ChatScreen(
     }
     val currentProviderId = activeProvider?.id.orEmpty()
     val currentModel = activeProvider?.selectedModel.orEmpty()
+    val currentConversation = remember(uiState.currentConversationId, uiState.conversations) {
+        uiState.conversations.firstOrNull { it.id == uiState.currentConversationId }
+    }
     val currentAssistantName = uiState.currentAssistant?.name.orEmpty().ifBlank { "对方" }
     val userDisplayName = uiState.settings.resolvedUserDisplayName()
     val userAvatarUri = uiState.settings.userAvatarUri
@@ -351,6 +355,65 @@ fun ChatScreen(
     val canAdjustThinkingBudget = remember(activeProvider, currentModel) {
         activeProvider?.let { supportsThinkingBudgetControl(it, currentModel) } == true
     }
+    val selectedSearchSource = remember(uiState.settings) {
+        uiState.settings.resolvedSearchSettings().selectedSourceOrNull()
+    }
+    val selectedSearchProvider = remember(uiState.settings, selectedSearchSource) {
+        selectedSearchSource?.let(uiState.settings::resolveSearchSourceProvider)
+    }
+    val searchEnabled = currentConversation?.searchEnabled == true
+    val searchAvailable = remember(
+        currentConversation,
+        hasRequiredConfig,
+        currentModel,
+        currentModelAbilities,
+        currentModelIsImageGeneration,
+        uiState.settings,
+        selectedSearchProvider,
+    ) {
+        currentConversation != null &&
+            hasRequiredConfig &&
+            currentModel.isNotBlank() &&
+            !currentModelIsImageGeneration &&
+            ModelAbility.TOOL in currentModelAbilities &&
+            uiState.settings.hasConfiguredSearchSource()
+    }
+    val searchUnavailableMessage = remember(
+        currentConversation,
+        hasRequiredConfig,
+        currentModel,
+        currentModelAbilities,
+        currentModelIsImageGeneration,
+        uiState.settings,
+        selectedSearchSource,
+        selectedSearchProvider,
+    ) {
+        when {
+            currentConversation == null -> "当前会话尚未就绪"
+            !hasRequiredConfig -> "请先完成模型与连接配置"
+            currentModel.isBlank() -> "请先选择聊天模型"
+            currentModelIsImageGeneration -> "生图模型不支持搜索工具"
+            ModelAbility.TOOL !in currentModelAbilities -> "当前模型不支持工具调用"
+            !uiState.settings.hasConfiguredSearchSource() -> {
+                if (selectedSearchSource?.type == com.example.myapplication.model.SearchSourceType.LLM_SEARCH) {
+                    when {
+                        selectedSearchSource.providerId.isBlank() -> "请先在搜索与工具里为 LLM 搜索选择搜索提供商"
+                        selectedSearchProvider == null -> "所选搜索提供商不可用，请检查是否已启用"
+                        !selectedSearchProvider.supportsLlmSearchSource() -> {
+                            "所选搜索提供商需要使用 Responses API 或 Anthropic 协议"
+                        }
+                        selectedSearchProvider.searchModel.isBlank() -> {
+                            "所选搜索提供商未单独设置搜索模型，当前会回退使用其聊天模型"
+                        }
+                        else -> "请先在设置里启用可用搜索源"
+                    }
+                } else {
+                    "请先在设置里配置可用搜索源"
+                }
+            }
+            else -> "当前状态暂不可用"
+        }
+    }
     val reasoningBudgetHint = remember(activeProvider, currentModel) {
         activeProvider?.let { reasoningBudgetSupportHint(it, currentModel) }.orEmpty()
     }
@@ -471,6 +534,10 @@ fun ChatScreen(
                 canAttachFiles = canAttachFiles,
                 canUseSpecialPlay = canUseSpecialPlay,
                 currentModelSupportsReasoning = currentModelSupportsReasoning,
+                searchEnabled = searchEnabled,
+                searchAvailable = searchAvailable,
+                hasConversationSummary = uiState.hasConversationSummary,
+                summaryCoveredMessageCount = uiState.summaryCoveredMessageCount,
                 reasoningActionLabel = reasoningActionLabel,
                 currentAssistantName = currentAssistantName,
                 onInputChange = onInputChange,
@@ -482,6 +549,12 @@ fun ChatScreen(
                 onToggleMemoryMessage = onToggleMemoryMessage,
                 onTranslateMessage = onTranslateMessage,
                 onConfirmTransferReceipt = onConfirmTransferReceipt,
+                onToggleSearch = onToggleSearch,
+                onSearchUnavailable = {
+                    scope.launch {
+                        snackbarHostState.showSnackbar(searchUnavailableMessage)
+                    }
+                },
                 onTranslateDraft = onTranslateDraft,
                 onPickImageClick = {
                     imagePickerLauncher.launch(arrayOf("image/*"))

@@ -12,6 +12,7 @@ import androidx.compose.material3.Checkbox
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -30,6 +31,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.example.myapplication.model.AppSettings
 import com.example.myapplication.model.Assistant
+import com.example.myapplication.model.PendingMemoryProposal
 import com.example.myapplication.model.RoleplayContextStatus
 import com.example.myapplication.model.RoleplayMessageUiModel
 import com.example.myapplication.model.RoleplayScenario
@@ -61,6 +63,7 @@ internal fun RoleplaySceneContent(
     isSending: Boolean,
     isGeneratingSuggestions: Boolean,
     suggestionErrorMessage: String?,
+    pendingMemoryProposal: PendingMemoryProposal?,
     snackbarHostState: SnackbarHostState,
     backdropState: ImmersiveBackdropState,
     onInputChange: (String) -> Unit,
@@ -73,6 +76,8 @@ internal fun RoleplaySceneContent(
     onConfirmTransferReceipt: (String) -> Unit,
     onSend: () -> Unit,
     onCancelSending: () -> Unit,
+    onApprovePendingMemoryProposal: () -> Unit,
+    onRejectPendingMemoryProposal: () -> Unit,
     onOpenSettings: () -> Unit,
     onNavigateBack: () -> Unit,
     transferCounterparty: String,
@@ -176,6 +181,17 @@ internal fun RoleplaySceneContent(
                 )
             }
 
+            if (pendingMemoryProposal != null) {
+                PendingMemoryProposalCard(
+                    proposal = pendingMemoryProposal,
+                    onApprove = onApprovePendingMemoryProposal,
+                    onReject = onRejectPendingMemoryProposal,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 12.dp, vertical = 6.dp),
+                )
+            }
+
             RoleplayDialoguePanel(
                 backdropState = backdropState,
                 messages = messages,
@@ -220,6 +236,64 @@ internal fun RoleplaySceneContent(
         onTransferDraftChange = onTransferDraftChange,
         onTransferConfirm = onTransferConfirm,
     )
+}
+
+@Composable
+private fun PendingMemoryProposalCard(
+    proposal: PendingMemoryProposal,
+    onApprove: () -> Unit,
+    onReject: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    Surface(
+        modifier = modifier,
+        shape = MaterialTheme.shapes.large,
+        color = MaterialTheme.colorScheme.surface.copy(alpha = 0.92f),
+        tonalElevation = 4.dp,
+    ) {
+        Column(
+            modifier = Modifier.padding(horizontal = 16.dp, vertical = 14.dp),
+            verticalArrangement = Arrangement.spacedBy(10.dp),
+        ) {
+            Text(
+                text = "建议记住一条长期设定",
+                style = MaterialTheme.typography.titleSmall,
+                fontWeight = FontWeight.Bold,
+            )
+            Text(
+                text = proposal.content,
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurface,
+            )
+            Text(
+                text = buildString {
+                    append(
+                        if (proposal.scopeType == com.example.myapplication.model.MemoryScopeType.GLOBAL) {
+                            "将写入全局长期记忆"
+                        } else {
+                            "将写入助手长期记忆"
+                        },
+                    )
+                    proposal.reason.takeIf { it.isNotBlank() }?.let { reason ->
+                        append(" · ")
+                        append(reason)
+                    }
+                },
+                style = MaterialTheme.typography.labelMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
+            ) {
+                NarraTextButton(onClick = onApprove) {
+                    Text("记住")
+                }
+                NarraTextButton(onClick = onReject) {
+                    Text("忽略")
+                }
+            }
+        }
+    }
 }
 
 @Composable

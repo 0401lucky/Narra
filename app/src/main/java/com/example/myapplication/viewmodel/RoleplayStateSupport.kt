@@ -2,6 +2,8 @@ package com.example.myapplication.viewmodel
 
 import com.example.myapplication.model.AppSettings
 import com.example.myapplication.model.Assistant
+import com.example.myapplication.model.MemoryProposalHistoryItem
+import com.example.myapplication.model.PendingMemoryProposal
 import com.example.myapplication.model.RoleplayContextStatus
 import com.example.myapplication.model.RoleplayMessageUiModel
 import com.example.myapplication.model.RoleplayScenario
@@ -68,6 +70,8 @@ object RoleplayStateSupport {
             latestPromptDebugDump = "",
             streamingContent = "",
             suggestionErrorMessage = null,
+            pendingMemoryProposal = null,
+            recentMemoryProposalHistory = emptyList(),
             contextStatus = RoleplayContextStatus(),
         )
     }
@@ -92,6 +96,8 @@ object RoleplayStateSupport {
             latestPromptDebugDump = "",
             streamingContent = "",
             suggestionErrorMessage = null,
+            pendingMemoryProposal = null,
+            recentMemoryProposalHistory = emptyList(),
         )
     }
 
@@ -242,6 +248,8 @@ object RoleplayStateSupport {
                 isContinuingSession = false,
             ),
             noticeMessage = "剧情已清空",
+            pendingMemoryProposal = null,
+            recentMemoryProposalHistory = emptyList(),
         )
     }
 
@@ -257,6 +265,8 @@ object RoleplayStateSupport {
             showAssistantMismatchDialog = false,
             previousAssistantName = "",
             currentAssistantName = "",
+            pendingMemoryProposal = null,
+            recentMemoryProposalHistory = emptyList(),
         )
     }
 
@@ -300,6 +310,43 @@ object RoleplayStateSupport {
         contextStatus: RoleplayContextStatus,
     ): RoleplayUiState {
         return current.copy(contextStatus = contextStatus)
+    }
+
+    fun updatePendingMemoryProposal(
+        current: RoleplayUiState,
+        proposal: PendingMemoryProposal?,
+    ): RoleplayUiState {
+        return current.copy(pendingMemoryProposal = proposal)
+    }
+
+    fun updateMemoryProposalHistory(
+        current: RoleplayUiState,
+        history: List<MemoryProposalHistoryItem>,
+    ): RoleplayUiState {
+        return current.copy(recentMemoryProposalHistory = history)
+    }
+
+    fun applyPendingMemoryProposalSaved(
+        current: RoleplayUiState,
+        content: String,
+    ): RoleplayUiState {
+        return current.copy(
+            pendingMemoryProposal = null,
+            recentMemoryProposalHistory = current.recentMemoryProposalHistory,
+            noticeMessage = "已记住：$content",
+            errorMessage = null,
+        )
+    }
+
+    fun applyPendingMemoryProposalRejected(
+        current: RoleplayUiState,
+    ): RoleplayUiState {
+        return current.copy(
+            pendingMemoryProposal = null,
+            recentMemoryProposalHistory = current.recentMemoryProposalHistory,
+            noticeMessage = "已忽略这条长期记忆建议",
+            errorMessage = null,
+        )
     }
 
     fun applyStreamingContent(
@@ -382,6 +429,8 @@ object RoleplayStateSupport {
     ): RoleplayUiState {
         return current.copy(
             currentSession = session,
+            pendingMemoryProposal = null,
+            recentMemoryProposalHistory = emptyList(),
             contextStatus = if (session == null) {
                 RoleplayContextStatus()
             } else {
@@ -404,6 +453,8 @@ object RoleplayStateSupport {
             showAssistantMismatchDialog = shouldShowMismatchDialog,
             previousAssistantName = if (shouldShowMismatchDialog) previousAssistantName else "",
             currentAssistantName = if (shouldShowMismatchDialog) currentAssistantName else "",
+            pendingMemoryProposal = null,
+            recentMemoryProposalHistory = emptyList(),
             contextStatus = current.contextStatus.copy(
                 isContinuingSession = startResult.hasHistory,
             ),

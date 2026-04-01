@@ -42,6 +42,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.example.myapplication.model.AppSettings
 import com.example.myapplication.model.Assistant
+import com.example.myapplication.model.PendingMemoryProposal
 import com.example.myapplication.model.RoleplayContextStatus
 import com.example.myapplication.model.RoleplayMessageUiModel
 import com.example.myapplication.model.RoleplayScenario
@@ -79,6 +80,7 @@ fun RoleplayScreen(
     noticeMessage: String?,
     errorMessage: String?,
     suggestionErrorMessage: String?,
+    pendingMemoryProposal: PendingMemoryProposal?,
     onClearNoticeMessage: () -> Unit,
     onClearErrorMessage: () -> Unit,
     onInputChange: (String) -> Unit,
@@ -91,6 +93,8 @@ fun RoleplayScreen(
     onConfirmTransferReceipt: (String) -> Unit,
     onSend: () -> Unit,
     onCancelSending: () -> Unit,
+    onApprovePendingMemoryProposal: () -> Unit,
+    onRejectPendingMemoryProposal: () -> Unit,
     onRestartSession: () -> Unit,
     onDismissAssistantMismatch: (Boolean) -> Unit,
     onOpenReadingMode: () -> Unit,
@@ -150,6 +154,7 @@ fun RoleplayScreen(
         isSending = isSending,
         isGeneratingSuggestions = isGeneratingSuggestions,
         suggestionErrorMessage = suggestionErrorMessage,
+        pendingMemoryProposal = pendingMemoryProposal,
         snackbarHostState = snackbarHostState,
         backdropState = backdropState,
         onInputChange = onInputChange,
@@ -167,6 +172,8 @@ fun RoleplayScreen(
         onConfirmTransferReceipt = onConfirmTransferReceipt,
         onSend = onSend,
         onCancelSending = onCancelSending,
+        onApprovePendingMemoryProposal = onApprovePendingMemoryProposal,
+        onRejectPendingMemoryProposal = onRejectPendingMemoryProposal,
         onOpenSettings = onOpenSettings,
         onNavigateBack = onNavigateBack,
         transferCounterparty = transferCounterparty,

@@ -23,6 +23,9 @@ data class ChatCompletionRequest(
     @SerializedName("reasoning_effort")
     val reasoningEffort: String? = null,
     val thinking: ThinkingConfigDto? = null,
+    val tools: List<ChatToolDto> = emptyList(),
+    @SerializedName("tool_choice")
+    val toolChoice: String? = null,
 )
 
 data class ThinkingConfigDto(
@@ -34,6 +37,22 @@ data class ThinkingConfigDto(
 data class ChatMessageDto(
     val role: String,
     val content: Any,
+    val name: String? = null,
+    @SerializedName("tool_call_id")
+    val toolCallId: String? = null,
+    @SerializedName("tool_calls")
+    val toolCalls: List<ChatToolCallDto> = emptyList(),
+)
+
+data class ChatToolDto(
+    val type: String = "function",
+    val function: ChatFunctionDefinitionDto,
+)
+
+data class ChatFunctionDefinitionDto(
+    val name: String,
+    val description: String,
+    val parameters: Map<String, Any>,
 )
 
 data class TextContentPartDto(
@@ -63,6 +82,19 @@ data class AssistantMessageDto(
     val reasoningContent: String? = null,
     val reasoning: String? = null,
     val thinking: String? = null,
+    @SerializedName("tool_calls")
+    val toolCalls: List<ChatToolCallDto> = emptyList(),
+)
+
+data class ChatToolCallDto(
+    val id: String = "",
+    val type: String = "function",
+    val function: ChatToolFunctionDto = ChatToolFunctionDto(),
+)
+
+data class ChatToolFunctionDto(
+    val name: String = "",
+    val arguments: String = "",
 )
 
 data class ChatChoiceDto(

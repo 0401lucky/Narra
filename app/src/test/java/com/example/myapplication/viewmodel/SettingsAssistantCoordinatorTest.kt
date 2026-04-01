@@ -6,6 +6,7 @@ import com.example.myapplication.model.Assistant
 import com.example.myapplication.model.DEFAULT_ASSISTANT_ID
 import com.example.myapplication.model.ProviderSettings
 import com.example.myapplication.model.ScreenTranslationSettings
+import com.example.myapplication.model.SearchSettings
 import com.example.myapplication.model.ThemeMode
 import com.example.myapplication.model.TranslationHistoryEntry
 import kotlinx.coroutines.runBlocking
@@ -136,6 +137,8 @@ class SettingsAssistantCoordinatorTest {
         ) = Unit
 
         override suspend fun saveScreenTranslationSettings(settings: ScreenTranslationSettings) = Unit
+
+        override suspend fun saveSearchSettings(settings: SearchSettings) = Unit
 
         override suspend fun saveUserProfile(displayName: String, avatarUri: String, avatarUrl: String) = Unit
         override suspend fun saveRoleplayAssistantMismatchDialogPreference(suppressed: Boolean) = Unit

@@ -135,6 +135,7 @@ internal fun NavGraphBuilder.registerRoleplayGraph(
                 noticeMessage = roleplayState.noticeMessage,
                 errorMessage = roleplayState.errorMessage,
                 suggestionErrorMessage = roleplayState.suggestionErrorMessage,
+                pendingMemoryProposal = roleplayState.pendingMemoryProposal,
                 onClearNoticeMessage = roleplayViewModel::clearNoticeMessage,
                 onClearErrorMessage = roleplayViewModel::clearErrorMessage,
                 onInputChange = roleplayViewModel::updateInput,
@@ -147,6 +148,8 @@ internal fun NavGraphBuilder.registerRoleplayGraph(
                 onConfirmTransferReceipt = roleplayViewModel::confirmTransferReceipt,
                 onSend = roleplayViewModel::sendMessage,
                 onCancelSending = roleplayViewModel::cancelSending,
+                onApprovePendingMemoryProposal = roleplayViewModel::approvePendingMemoryProposal,
+                onRejectPendingMemoryProposal = roleplayViewModel::rejectPendingMemoryProposal,
                 onRestartSession = roleplayViewModel::restartCurrentSession,
                 onDismissAssistantMismatch = roleplayViewModel::dismissAssistantMismatchDialog,
                 onOpenReadingMode = {
@@ -206,6 +209,7 @@ internal fun NavGraphBuilder.registerRoleplayGraph(
                 loadingProviderId = settingsUiState.loadingProviderId,
                 isSavingModel = settingsUiState.isSaving,
                 latestPromptDebugDump = roleplayState.latestPromptDebugDump,
+                recentMemoryProposalHistory = roleplayState.recentMemoryProposalHistory,
                 onOpenReadingMode = {
                     settingsViewModel.saveSettings {
                         navController.navigate(AppRoutes.roleplayReading(scenarioId)) {

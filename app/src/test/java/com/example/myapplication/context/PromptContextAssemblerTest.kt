@@ -220,6 +220,28 @@ class PromptContextAssemblerTest {
     fun assemble_includesConversationSummary() = runBlocking {
         val assembler = DefaultPromptContextAssembler(
             conversationSummaryRepository = object : com.example.myapplication.data.repository.context.ConversationSummaryRepository {
+                override fun observeSummary(conversationId: String) = kotlinx.coroutines.flow.flowOf(
+                    ConversationSummary(
+                        conversationId = conversationId,
+                        assistantId = "assistant-1",
+                        summary = "用户正在调查白塔城的失窃案，已确认嫌疑人与北境商会有关。",
+                        coveredMessageCount = 18,
+                        updatedAt = 10L,
+                    ),
+                )
+
+                override fun observeSummaries() = kotlinx.coroutines.flow.flowOf(
+                    listOf(
+                        ConversationSummary(
+                            conversationId = "c1",
+                            assistantId = "assistant-1",
+                            summary = "用户正在调查白塔城的失窃案，已确认嫌疑人与北境商会有关。",
+                            coveredMessageCount = 18,
+                            updatedAt = 10L,
+                        ),
+                    ),
+                )
+
                 override suspend fun getSummary(conversationId: String): ConversationSummary? {
                     return ConversationSummary(
                         conversationId = conversationId,

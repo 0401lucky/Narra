@@ -8,6 +8,7 @@ import com.example.myapplication.model.ResponseApiReasoningDto
 import com.example.myapplication.model.ResponseApiRequest
 import com.example.myapplication.model.ResponseApiResponse
 import com.example.myapplication.model.ResponseApiSummaryContentDto
+import com.example.myapplication.model.ResponseApiToolDto
 import com.example.myapplication.model.TextContentPartDto
 import com.google.gson.JsonObject
 import com.google.gson.JsonParser
@@ -49,6 +50,13 @@ internal object ResponseApiSupport {
                 ResponseApiReasoningDto(
                     effort = effort,
                     summary = "auto",
+                )
+            },
+            tools = request.tools.map { tool ->
+                ResponseApiToolDto(
+                    name = tool.function.name,
+                    description = tool.function.description,
+                    parameters = tool.function.parameters,
                 )
             },
         )

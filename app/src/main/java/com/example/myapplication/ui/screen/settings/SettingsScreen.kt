@@ -29,6 +29,7 @@ import androidx.compose.material.icons.filled.LightMode
 import androidx.compose.material.icons.filled.Mood
 import androidx.compose.material.icons.filled.Psychology
 import androidx.compose.material.icons.filled.RecordVoiceOver
+import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material.icons.filled.Translate
@@ -63,6 +64,7 @@ fun SettingsScreen(
     onOpenChat: () -> Unit,
     onOpenProviderSettings: () -> Unit,
     onOpenConnectionSettings: () -> Unit,
+    onOpenSearchToolSettings: () -> Unit,
     onOpenUpdateSettings: () -> Unit,
     onOpenModelSettings: () -> Unit,
     onOpenAssistantSettings: () -> Unit,
@@ -94,6 +96,9 @@ fun SettingsScreen(
     val connectionSummary = uiState.baseUrl
         .ifBlank { uiState.savedSettings.baseUrl }
         .ifBlank { "未配置 Base URL" }
+    val searchSummary = uiState.searchSettings.selectedSourceOrNull()?.let { source ->
+        "${source.name} · 默认 ${uiState.searchSettings.defaultResultCount} 条"
+    } ?: "未配置可用搜索源"
     val displaySummary = buildString {
         append(displayScaleLabel(uiState.messageTextScale))
         append(" · ")
@@ -171,42 +176,36 @@ fun SettingsScreen(
                     SettingsListRow(
                         leadingContent = { Icon(Icons.AutoMirrored.Filled.Assignment, contentDescription = null, tint = palette.title) },
                         title = "版本与更新",
-                        supportingText = "检查新版本、下载 APK 并调起系统安装",
                         onClick = onOpenUpdateSettings,
                     )
                     SettingsGroupDivider()
                     SettingsListRow(
                         leadingContent = { Icon(Icons.Default.Face, contentDescription = null, tint = palette.title) },
                         title = "助手",
-                        supportingText = "设置个性化助手 (智能体)",
                         onClick = onOpenAssistantSettings,
                     )
                     SettingsGroupDivider()
                     SettingsListRow(
                         leadingContent = { Icon(Icons.AutoMirrored.Filled.MenuBook, contentDescription = null, tint = palette.title) },
                         title = "世界书",
-                        supportingText = "管理背景设定条目和关键词命中规则",
                         onClick = onOpenWorldBookSettings,
                     )
                     SettingsGroupDivider()
                     SettingsListRow(
                         leadingContent = { Icon(Icons.Default.Psychology, contentDescription = null, tint = palette.title) },
                         title = "记忆与摘要",
-                        supportingText = "查看自动记忆、置顶记忆和对话摘要",
                         onClick = onOpenMemorySettings,
                     )
                     SettingsGroupDivider()
                     SettingsListRow(
                         leadingContent = { Icon(Icons.Default.Backup, contentDescription = null, tint = palette.title) },
                         title = "资料导入导出",
-                        supportingText = "迁移角色卡、世界书、记忆与摘要数据",
                         onClick = onOpenContextTransferSettings,
                     )
                     SettingsGroupDivider()
                     SettingsListRow(
                         leadingContent = { Icon(Icons.Default.Translate, contentDescription = null, tint = palette.title) },
                         title = "悬浮翻译",
-                        supportingText = "配置后台翻译、悬浮球与屏幕识别",
                         onClick = onOpenScreenTranslationSettings,
                     )
                 }
@@ -218,14 +217,12 @@ fun SettingsScreen(
                     SettingsListRow(
                         leadingContent = { Icon(Icons.Default.AutoAwesome, contentDescription = null, tint = palette.title) },
                         title = "默认模型和提示词",
-                        supportingText = "设置各个功能的默认模型",
                         onClick = onOpenModelSettings,
                     )
                     SettingsGroupDivider()
                     SettingsListRow(
                         leadingContent = { Icon(Icons.Default.Psychology, contentDescription = null, tint = palette.title) },
                         title = "提供商",
-                        supportingText = "配置AI提供商",
                         onClick = onOpenProviderSettings,
                     )
                     SettingsGroupDivider()
@@ -234,6 +231,13 @@ fun SettingsScreen(
                         title = "连接与凭据",
                         supportingText = connectionSummary,
                         onClick = onOpenConnectionSettings,
+                    )
+                    SettingsGroupDivider()
+                    SettingsListRow(
+                        leadingContent = { Icon(Icons.Default.Search, contentDescription = null, tint = palette.title) },
+                        title = "搜索与工具",
+                        supportingText = searchSummary,
+                        onClick = onOpenSearchToolSettings,
                     )
                 }
             }
@@ -305,11 +309,6 @@ private fun ThemeModeSheet(
                         Icon(Icons.Default.LightMode, contentDescription = null)
                     },
                     title = themeMode.label,
-                    supportingText = when (themeMode) {
-                        ThemeMode.SYSTEM -> "跟随设备当前外观"
-                        ThemeMode.LIGHT -> "始终使用浅色外观"
-                        ThemeMode.DARK -> "始终使用深色外观"
-                    },
                     onClick = { onSelectMode(themeMode) },
                     trailingContent = {
                         if (themeMode == selectedMode) {
@@ -382,37 +381,31 @@ private fun DisplaySettingsSheet(
                 ) {
                     DisplaySwitchRow(
                         title = "思考默认展开",
-                        supportingText = "关闭自动收起时，控制已完成思考的默认展开状态",
                         checked = reasoningExpandedByDefault,
                         onCheckedChange = onReasoningExpandedByDefaultChange,
                     )
                     DisplaySwitchRow(
                         title = "生成中显示思考",
-                        supportingText = "回复还在生成时，自动展示思考预览",
                         checked = showThinkingContent,
                         onCheckedChange = onShowThinkingContentChange,
                     )
                     DisplaySwitchRow(
                         title = "结束后自动收起思考",
-                        supportingText = "回复生成完成后自动折叠思考区域，减少列表占用",
                         checked = autoCollapseThinking,
                         onCheckedChange = onAutoCollapseThinkingChange,
                     )
                     DisplaySwitchRow(
                         title = "自动预览图片",
-                        supportingText = "关闭后仅显示图片附件卡片，不自动加载预览",
                         checked = autoPreviewImages,
                         onCheckedChange = onAutoPreviewImagesChange,
                     )
                     DisplaySwitchRow(
                         title = "代码块自动换行",
-                        supportingText = "关闭后保留横向滑动，适合查看长代码行",
                         checked = codeBlockAutoWrap,
                         onCheckedChange = onCodeBlockAutoWrapChange,
                     )
                     DisplaySwitchRow(
                         title = "代码块自动折叠",
-                        supportingText = "代码行数较多时默认收起，减少聊天列表纵向占用",
                         checked = codeBlockAutoCollapse,
                         onCheckedChange = onCodeBlockAutoCollapseChange,
                     )
@@ -425,7 +418,7 @@ private fun DisplaySettingsSheet(
 @Composable
 private fun DisplaySwitchRow(
     title: String,
-    supportingText: String,
+    supportingText: String = "",
     checked: Boolean,
     onCheckedChange: (Boolean) -> Unit,
 ) {
@@ -439,11 +432,13 @@ private fun DisplaySwitchRow(
                 text = title,
                 style = MaterialTheme.typography.titleSmall,
             )
-            Text(
-                text = supportingText,
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
+            if (supportingText.isNotBlank()) {
+                Text(
+                    text = supportingText,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
         }
         Switch(
             checked = checked,

@@ -26,7 +26,7 @@ internal fun AssistantWorkspaceIntro(
     assistant: Assistant,
     overline: String,
     title: String,
-    summary: String,
+    summary: String = "",
 ) {
     val palette = rememberSettingsPalette()
     Surface(
@@ -75,13 +75,15 @@ internal fun AssistantWorkspaceIntro(
                     color = palette.title,
                     fontWeight = FontWeight.Black,
                 )
-                Text(
-                    text = summary,
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = palette.body,
-                    maxLines = 3,
-                    overflow = TextOverflow.Ellipsis,
-                )
+                if (summary.isNotBlank()) {
+                    Text(
+                        text = summary,
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = palette.body,
+                        maxLines = 3,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                }
             }
         }
     }
@@ -90,7 +92,7 @@ internal fun AssistantWorkspaceIntro(
 @Composable
 internal fun AssistantSubsectionTitle(
     title: String,
-    subtitle: String,
+    subtitle: String = "",
 ) {
     val palette = rememberSettingsPalette()
     Column(
@@ -103,10 +105,12 @@ internal fun AssistantSubsectionTitle(
             fontWeight = FontWeight.Bold,
             color = palette.title,
         )
-        Text(
-            text = subtitle,
-            style = MaterialTheme.typography.bodySmall,
-            color = palette.body,
-        )
+        if (subtitle.isNotBlank()) {
+            Text(
+                text = subtitle,
+                style = MaterialTheme.typography.bodySmall,
+                color = palette.body,
+            )
+        }
     }
 }

@@ -84,33 +84,25 @@ fun AssistantDetailScreen(
                     AssistantEntryRow(
                         icon = { EntryGlyph(icon = { Icon(Icons.Default.Face, null) }) },
                         title = "基础设定",
-                        supporting = "配置名称、头像、描述与标签",
                         onClick = onOpenBasic,
                     )
                     SettingsGroupDivider()
                     AssistantEntryRow(
                         icon = { EntryGlyph(icon = { Icon(Icons.Default.AutoAwesome, null) }) },
                         title = "提示词",
-                        supporting = "设置系统提示、场景、开场白与示例对话",
                         onClick = onOpenPrompt,
                     )
                     SettingsGroupDivider()
                     AssistantEntryRow(
                         icon = { EntryGlyph(icon = { Icon(Icons.AutoMirrored.Filled.MenuBook, null) }) },
                         title = "扩展管理",
-                        supporting = "管理世界书关联、注入上限等扩展能力",
-                        badge = if (linkedWorldBookCount > 0) "$linkedWorldBookCount 条世界书" else "未关联",
+                        badge = if (linkedWorldBookCount > 0) "$linkedWorldBookCount 条可用" else "无可用",
                         onClick = onOpenExtensions,
                     )
                     SettingsGroupDivider()
                     AssistantEntryRow(
                         icon = { EntryGlyph(icon = { Icon(Icons.Default.Psychology, null) }) },
                         title = "记忆",
-                        supporting = if (assistant.memoryEnabled) {
-                            "已启用自动记忆，当前助手下已有 $assistantMemoryCount 条记忆"
-                        } else {
-                            "当前未启用记忆，可在这里开启自动记忆和管理专属记忆"
-                        },
                         badge = if (assistant.memoryEnabled) "已启用" else "未启用",
                         onClick = onOpenMemory,
                     )
@@ -171,13 +163,17 @@ private fun AssistantHeroPanel(
                         fontWeight = FontWeight.Black,
                         color = palette.title,
                     )
-                    Text(
-                        text = assistant.description.ifBlank { "这里会展示这个助手最重要的气质和用途。" },
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = palette.body,
-                        maxLines = 3,
-                        overflow = TextOverflow.Ellipsis,
-                    )
+                    assistant.description
+                        .takeIf { it.isNotBlank() }
+                        ?.let { description ->
+                            Text(
+                                text = description,
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = palette.body,
+                                maxLines = 3,
+                                overflow = TextOverflow.Ellipsis,
+                            )
+                        }
                 }
 
                 Row(
@@ -194,7 +190,7 @@ private fun AssistantHeroPanel(
                         contentColor = palette.subtleChipContent,
                     )
                     SettingsStatusPill(
-                        text = "$linkedWorldBookCount 条世界书",
+                        text = "$linkedWorldBookCount 条可用",
                         containerColor = palette.surfaceTint,
                         contentColor = palette.body,
                     )
@@ -208,7 +204,7 @@ private fun AssistantHeroPanel(
 private fun AssistantEntryRow(
     icon: @Composable () -> Unit,
     title: String,
-    supporting: String,
+    supporting: String = "",
     badge: String? = null,
     onClick: () -> Unit,
 ) {
@@ -248,11 +244,13 @@ private fun AssistantEntryRow(
                         )
                     }
                 }
-                Text(
-                    text = supporting,
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = palette.body,
-                )
+                if (supporting.isNotBlank()) {
+                    Text(
+                        text = supporting,
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = palette.body,
+                    )
+                }
             }
             Icon(
                 imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,

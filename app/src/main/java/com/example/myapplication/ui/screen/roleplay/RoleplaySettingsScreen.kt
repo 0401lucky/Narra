@@ -15,6 +15,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import com.example.myapplication.model.AppSettings
 import com.example.myapplication.model.Assistant
+import com.example.myapplication.model.MemoryProposalHistoryItem
 import com.example.myapplication.model.ProviderSettings
 import com.example.myapplication.model.RoleplayContextStatus
 import com.example.myapplication.model.RoleplayScenario
@@ -36,6 +37,7 @@ fun RoleplaySettingsScreen(
     loadingProviderId: String,
     isSavingModel: Boolean,
     latestPromptDebugDump: String,
+    recentMemoryProposalHistory: List<MemoryProposalHistoryItem>,
     onOpenReadingMode: () -> Unit,
     onUpdateShowRoleplayPresenceStrip: (Boolean) -> Unit,
     onUpdateShowRoleplayStatusStrip: (Boolean) -> Unit,
@@ -85,6 +87,7 @@ fun RoleplaySettingsScreen(
                     currentModel = currentModel,
                     backdropState = backdropState,
                     latestPromptDebugDump = latestPromptDebugDump,
+                    recentMemoryProposalHistory = recentMemoryProposalHistory,
                     longformCharsText = longformCharsText,
                     onLongformCharsTextChange = { raw ->
                         val digits = raw.filter(Char::isDigit).take(4)

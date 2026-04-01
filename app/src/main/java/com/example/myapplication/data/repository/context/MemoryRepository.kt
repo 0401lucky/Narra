@@ -29,6 +29,10 @@ interface MemoryRepository {
 }
 
 interface ConversationSummaryRepository {
+    fun observeSummary(conversationId: String): Flow<ConversationSummary?>
+
+    fun observeSummaries(): Flow<List<ConversationSummary>>
+
     suspend fun getSummary(conversationId: String): ConversationSummary?
 
     suspend fun listSummaries(): List<ConversationSummary>
@@ -84,8 +88,20 @@ class RoomMemoryRepository(
         return memoryDao.getConversationSummary(conversationId)?.let(::toSummaryDomain)
     }
 
+    override fun observeSummary(conversationId: String): Flow<ConversationSummary?> {
+        return memoryDao.observeConversationSummary(conversationId).map { entity ->
+            entity?.let(::toSummaryDomain)
+        }
+    }
+
     override suspend fun listSummaries(): List<ConversationSummary> {
         return memoryDao.listConversationSummaries().map(::toSummaryDomain)
+    }
+
+    override fun observeSummaries(): Flow<List<ConversationSummary>> {
+        return memoryDao.observeConversationSummaries().map { summaries ->
+            summaries.map(::toSummaryDomain)
+        }
     }
 
     override suspend fun upsertSummary(summary: ConversationSummary) {
@@ -164,6 +180,10 @@ object EmptyMemoryRepository : MemoryRepository {
 }
 
 object EmptyConversationSummaryRepository : ConversationSummaryRepository {
+    override fun observeSummary(conversationId: String): Flow<ConversationSummary?> = flowOf(null)
+
+    override fun observeSummaries(): Flow<List<ConversationSummary>> = flowOf(emptyList())
+
     override suspend fun getSummary(conversationId: String): ConversationSummary? = null
 
     override suspend fun listSummaries(): List<ConversationSummary> = emptyList()

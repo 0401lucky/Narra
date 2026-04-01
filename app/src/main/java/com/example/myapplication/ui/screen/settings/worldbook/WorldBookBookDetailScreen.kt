@@ -74,15 +74,14 @@ fun WorldBookBookDetailScreen(
             item {
                 SettingsPageIntro(
                     overline = "书内条目",
-                    title = "按原始顺序查看这本世界书",
-                    summary = "这里展示的是这本书内部的具体条目，点击任意条目可以继续进入单条编辑页。",
+                    title = "书内条目",
                 )
             }
 
             item {
                 SettingsSectionHeader(
                     title = "整本操作",
-                    description = "可以直接重命名这本书，或者整本删除。",
+                    description = "",
                 )
             }
 
@@ -122,7 +121,7 @@ fun WorldBookBookDetailScreen(
                 item {
                     SettingsHintCard(
                         title = "这本世界书当前没有条目",
-                        body = "可能是数据已被删除，或者你刚从别的页面改动了分组信息。",
+                        body = "暂无内容",
                         containerColor = palette.accentSoft,
                         contentColor = palette.accent,
                     )

@@ -41,6 +41,10 @@ internal fun ChatConversationPane(
     canAttachFiles: Boolean,
     canUseSpecialPlay: Boolean,
     currentModelSupportsReasoning: Boolean,
+    searchEnabled: Boolean,
+    searchAvailable: Boolean,
+    hasConversationSummary: Boolean,
+    summaryCoveredMessageCount: Int,
     reasoningActionLabel: String,
     currentAssistantName: String,
     onInputChange: (String) -> Unit,
@@ -50,6 +54,8 @@ internal fun ChatConversationPane(
     onToggleMemoryMessage: (String) -> Unit,
     onTranslateMessage: (String) -> Unit,
     onConfirmTransferReceipt: (String) -> Unit,
+    onToggleSearch: () -> Unit,
+    onSearchUnavailable: () -> Unit,
     onTranslateDraft: () -> Unit,
     onPickImageClick: () -> Unit,
     onPickFileClick: () -> Unit,
@@ -148,6 +154,22 @@ internal fun ChatConversationPane(
             onSend = onSend,
         )
 
+        if (hasConversationSummary && summaryCoveredMessageCount > 0) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = ChatScreenPadding)
+                    .padding(bottom = 6.dp),
+                horizontalArrangement = Arrangement.Start,
+            ) {
+                Text(
+                    text = "摘要已覆盖 $summaryCoveredMessageCount 条消息",
+                    style = MaterialTheme.typography.labelMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+        }
+
         MessageInputBar(
             value = uiState.input,
             onValueChange = onInputChange,
@@ -157,6 +179,10 @@ internal fun ChatConversationPane(
             showReasoningAction = currentModelSupportsReasoning,
             reasoningLabel = reasoningActionLabel,
             onOpenReasoningPicker = onOpenReasoningPicker,
+            searchEnabled = searchEnabled,
+            searchAvailable = searchAvailable,
+            onToggleSearch = onToggleSearch,
+            onSearchUnavailableClick = onSearchUnavailable,
             onTranslateInputClick = onTranslateDraft,
             onPickImageClick = onPickImageClick,
             onPickFileClick = onPickFileClick,

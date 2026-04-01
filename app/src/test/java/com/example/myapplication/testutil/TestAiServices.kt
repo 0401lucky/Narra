@@ -14,8 +14,27 @@ import com.example.myapplication.data.repository.ai.DefaultAiPromptExtrasService
 import com.example.myapplication.data.repository.ai.DefaultAiSettingsEditor
 import com.example.myapplication.data.repository.ai.DefaultAiSettingsRepository
 import com.example.myapplication.data.repository.ai.DefaultAiTranslationService
+import com.example.myapplication.data.repository.ai.tooling.DefaultMemoryWriteService
+import com.example.myapplication.data.repository.ai.tooling.GetConversationSummaryTool
+import com.example.myapplication.data.repository.ai.tooling.MemoryWriteService
+import com.example.myapplication.data.repository.ai.tooling.ReadMemoryTool
+import com.example.myapplication.data.repository.ai.tooling.SaveMemoryTool
+import com.example.myapplication.data.repository.ai.tooling.SearchWebTool
+import com.example.myapplication.data.repository.ai.tooling.SearchWorldBookTool
+import com.example.myapplication.data.repository.ai.tooling.ToolAvailabilityResolver
+import com.example.myapplication.data.repository.ai.tooling.ToolRegistry
+import com.example.myapplication.data.repository.context.EmptyConversationSummaryRepository
+import com.example.myapplication.data.repository.context.EmptyMemoryRepository
+import com.example.myapplication.data.repository.context.EmptyWorldBookRepository
+import com.example.myapplication.data.repository.context.InMemoryPendingMemoryProposalRepository
+import com.example.myapplication.data.repository.context.PendingMemoryProposalRepository
+import com.example.myapplication.data.repository.context.ConversationSummaryRepository
+import com.example.myapplication.data.repository.context.MemoryRepository
+import com.example.myapplication.data.repository.context.WorldBookRepository
+import com.example.myapplication.data.repository.search.SearchRepository
 import com.example.myapplication.model.AppSettings
 import com.example.myapplication.model.MessageAttachment
+import com.example.myapplication.model.SearchSourceConfig
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import okhttp3.OkHttpClient
@@ -37,6 +56,17 @@ fun createTestAiServices(
     streamClientProvider: ((String, String) -> OkHttpClient)? = null,
     imagePayloadResolver: suspend (MessageAttachment) -> String = { error("不应解析图片") },
     filePromptResolver: suspend (MessageAttachment) -> String = { error("不应解析文件") },
+    memoryRepository: MemoryRepository = EmptyMemoryRepository,
+    worldBookRepository: WorldBookRepository = EmptyWorldBookRepository,
+    conversationSummaryRepository: ConversationSummaryRepository = EmptyConversationSummaryRepository,
+    pendingMemoryProposalRepository: PendingMemoryProposalRepository = InMemoryPendingMemoryProposalRepository(),
+    searchRepository: SearchRepository = object : SearchRepository {
+        override suspend fun search(
+            source: SearchSourceConfig,
+            query: String,
+            resultCount: Int,
+        ) = error("不应执行搜索")
+    },
 ): TestAiServices {
     val settingsStore = FakeSettingsStore(settings)
     val apiServiceFactory = ApiServiceFactory()
@@ -49,6 +79,30 @@ fun createTestAiServices(
     val resolvedStreamClientProvider = streamClientProvider ?: { _, _ ->
         OkHttpClient.Builder().build()
     }
+    val toolRegistry = ToolRegistry(
+        listOf(
+            ReadMemoryTool(),
+            GetConversationSummaryTool(),
+            SearchWorldBookTool(),
+            SaveMemoryTool(),
+            SearchWebTool(),
+        ),
+    )
+    val toolAvailabilityResolver = ToolAvailabilityResolver(
+        searchRepository = searchRepository,
+        memoryRepository = memoryRepository,
+        worldBookRepository = worldBookRepository,
+        conversationSummaryRepository = conversationSummaryRepository,
+    )
+    val memoryWriteService: MemoryWriteService = DefaultMemoryWriteService(
+        settingsStore = settingsStore,
+        memoryRepository = memoryRepository,
+        pendingMemoryProposalRepository = pendingMemoryProposalRepository,
+        aiPromptExtrasService = DefaultAiPromptExtrasService(
+            apiServiceFactory = apiServiceFactory,
+            apiServiceProvider = resolvedApiServiceProvider,
+        ),
+    )
 
     return TestAiServices(
         settingsStore = settingsStore,
@@ -65,6 +119,13 @@ fun createTestAiServices(
             streamClientProvider = resolvedStreamClientProvider,
             imagePayloadResolver = imagePayloadResolver,
             filePromptResolver = filePromptResolver,
+            searchRepository = searchRepository,
+            memoryRepository = memoryRepository,
+            worldBookRepository = worldBookRepository,
+            conversationSummaryRepository = conversationSummaryRepository,
+            memoryWriteService = memoryWriteService,
+            toolAvailabilityResolver = toolAvailabilityResolver,
+            toolRegistry = toolRegistry,
             ioDispatcher = dispatcher,
         ),
         aiPromptExtrasService = DefaultAiPromptExtrasService(

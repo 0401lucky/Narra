@@ -23,15 +23,13 @@ class MemorySelector {
         }
 
         val maxItems = assistant.memoryMaxItems.takeIf { it > 0 } ?: DEFAULT_MEMORY_MAX_ITEMS
-        val scopedEntries = entries.filter { matchesScope(it, assistant, conversation) }
+        val scopedEntries = MemoryScopeSupport.filterAccessibleEntries(
+            entries = entries,
+            assistant = assistant,
+            conversation = conversation,
+        )
         if (promptMode != PromptMode.ROLEPLAY) {
-            return scopedEntries
-                .sortedWith(
-                    compareByDescending<MemoryEntry> { it.pinned }
-                        .thenByDescending { it.importance }
-                        .thenByDescending { it.lastUsedAt }
-                        .thenByDescending { it.updatedAt },
-                )
+            return MemoryScopeSupport.sortByPriority(scopedEntries)
                 .take(maxItems)
                 .toList()
         }
@@ -80,18 +78,6 @@ class MemorySelector {
                 }
         }
         return selected
-    }
-
-    private fun matchesScope(
-        entry: MemoryEntry,
-        assistant: Assistant,
-        conversation: Conversation,
-    ): Boolean {
-        return when (entry.scopeType) {
-            MemoryScopeType.GLOBAL -> true
-            MemoryScopeType.ASSISTANT -> !assistant.useGlobalMemory && entry.resolvedScopeId() == assistant.id
-            MemoryScopeType.CONVERSATION -> entry.resolvedScopeId() == conversation.id
-        }
     }
 
     private fun roleplayComparator(queryTerms: Set<String>): Comparator<MemoryEntry> {

@@ -58,6 +58,7 @@ object SettingsUiMutationSupport {
             showRoleplayPresenceStrip = sourceState.showRoleplayPresenceStrip,
             showRoleplayStatusStrip = sourceState.showRoleplayStatusStrip,
             screenTranslationSettings = sourceState.screenTranslationSettings,
+            searchSettings = sourceState.searchSettings,
             isSaving = false,
             message = result.message,
         )

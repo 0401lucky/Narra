@@ -6,6 +6,7 @@ import com.example.myapplication.model.Assistant
 import com.example.myapplication.model.DEFAULT_ROLEPLAY_LONGFORM_TARGET_CHARS
 import com.example.myapplication.model.ProviderSettings
 import com.example.myapplication.model.ScreenTranslationSettings
+import com.example.myapplication.model.SearchSettings
 import com.example.myapplication.model.ThemeMode
 import com.example.myapplication.model.TranslationHistoryEntry
 import kotlinx.coroutines.flow.Flow
@@ -65,6 +66,7 @@ class FakeSettingsStore(
             assistants = state.value.assistants,
             selectedAssistantId = state.value.selectedAssistantId,
             screenTranslationSettings = state.value.screenTranslationSettings,
+            searchSettings = state.value.searchSettings,
         )
     }
 
@@ -104,6 +106,12 @@ class FakeSettingsStore(
     override suspend fun saveScreenTranslationSettings(settings: ScreenTranslationSettings) {
         state.value = state.value.copy(
             screenTranslationSettings = settings,
+        )
+    }
+
+    override suspend fun saveSearchSettings(settings: SearchSettings) {
+        state.value = state.value.copy(
+            searchSettings = settings.normalized(),
         )
     }
 

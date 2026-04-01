@@ -55,6 +55,7 @@ internal fun NavGraphBuilder.registerChatNavGraph(
             onClearCurrentConversation = chatViewModel::clearCurrentConversation,
             onRetryMessage = chatViewModel::retryMessage,
             onToggleMemoryMessage = chatViewModel::toggleMessageMemory,
+            onToggleSearch = chatViewModel::toggleConversationSearch,
             onTranslateDraft = chatViewModel::translateDraftInput,
             onTranslateMessage = chatViewModel::translateMessage,
             onDismissTranslationSheet = chatViewModel::dismissTranslationSheet,

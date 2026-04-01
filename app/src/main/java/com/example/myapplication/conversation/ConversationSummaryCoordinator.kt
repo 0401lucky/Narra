@@ -31,7 +31,9 @@ class ConversationSummaryCoordinator(
             return false
         }
         val activeProvider = settings.activeProvider() ?: return false
-        val summaryModel = activeProvider.resolveFunctionModel(ProviderFunction.TITLE_SUMMARY)
+        val summaryModel = activeProvider.titleSummaryModel.trim()
+            .ifBlank { activeProvider.memoryModel.trim() }
+            .ifBlank { activeProvider.resolveFunctionModel(ProviderFunction.CHAT) }
         if (summaryModel.isBlank()) {
             return false
         }

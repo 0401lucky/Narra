@@ -23,6 +23,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.material3.HorizontalDivider
 import com.example.myapplication.model.Assistant
 import com.example.myapplication.model.WorldBookEntry
 import com.example.myapplication.model.WorldBookScopeType
@@ -44,14 +45,17 @@ fun AssistantExtensionsScreen(
             entry.scopeType == WorldBookScopeType.ASSISTANT && entry.scopeId == assistant.id
         }
         .sortedBy { it.title.ifBlank { it.id } }
-    val linkableEntries = worldBookEntries
-        .filterNot { entry ->
-            entry.scopeType == WorldBookScopeType.CONVERSATION ||
-                (entry.scopeType == WorldBookScopeType.ASSISTANT && entry.scopeId == assistant.id)
+    val globalEntries = worldBookEntries
+        .filter { entry ->
+            entry.scopeType == WorldBookScopeType.GLOBAL
+        }
+        .sortedBy { it.title.ifBlank { it.id } }
+    val attachableEntries = worldBookEntries
+        .filter { entry ->
+            entry.scopeType == WorldBookScopeType.ATTACHABLE
         }
         .sortedWith(
             compareByDescending<WorldBookEntry> { it.id in linkedWorldBookIds }
-                .thenBy { it.scopeType.ordinal }
                 .thenBy { it.sourceBookName.ifBlank { "~" } }
                 .thenBy { it.title.ifBlank { it.id } },
         )
@@ -81,15 +85,13 @@ fun AssistantExtensionsScreen(
                 AssistantWorkspaceIntro(
                     assistant = assistant,
                     overline = "扩展",
-                    title = "把世界书挂到助手身上",
-                    summary = "这里管理该助手可使用的世界书、显式挂载关系，以及每轮可注入的最大条数。",
+                    title = "扩展管理",
                 )
             }
 
             item {
                 AssistantSubsectionTitle(
                     title = "世界书联动",
-                    subtitle = "角色专属条目会自动生效，其他可挂载条目可以在这里手动绑到这个助手上。",
                 )
             }
 
@@ -113,7 +115,7 @@ fun AssistantExtensionsScreen(
                 }
             }
 
-            if (ownedEntries.isNotEmpty()) {
+            if (globalEntries.isNotEmpty() || ownedEntries.isNotEmpty()) {
                 item {
                     SettingsGroup {
                         Column(
@@ -121,33 +123,66 @@ fun AssistantExtensionsScreen(
                             verticalArrangement = Arrangement.spacedBy(12.dp),
                         ) {
                             Text(
-                                text = "当前角色专属世界书",
+                                text = "自动生效",
                                 style = androidx.compose.material3.MaterialTheme.typography.titleSmall,
                             )
-                            Text(
-                                text = "这些条目已经直接绑在当前助手名下，不需要再额外挂载。",
-                                style = androidx.compose.material3.MaterialTheme.typography.bodySmall,
-                                color = palette.body,
-                            )
-                            FlowRow(
-                                horizontalArrangement = Arrangement.spacedBy(10.dp),
-                                verticalArrangement = Arrangement.spacedBy(10.dp),
-                            ) {
-                                ownedEntries.forEach { entry ->
-                                    FilterChip(
-                                        selected = true,
-                                        onClick = {},
-                                        enabled = false,
-                                        label = {
-                                            Text(entry.title.ifBlank { "未命名条目" })
-                                        },
-                                        colors = FilterChipDefaults.filterChipColors(
-                                            selectedContainerColor = palette.subtleChip,
-                                            selectedLabelColor = palette.subtleChipContent,
-                                            disabledSelectedContainerColor = palette.subtleChip,
-                                            disabledLabelColor = palette.subtleChipContent,
-                                        ),
-                                    )
+                            if (globalEntries.isNotEmpty()) {
+                                Text(
+                                    text = "全局条目",
+                                    style = androidx.compose.material3.MaterialTheme.typography.bodySmall,
+                                    color = palette.body,
+                                )
+                                FlowRow(
+                                    horizontalArrangement = Arrangement.spacedBy(10.dp),
+                                    verticalArrangement = Arrangement.spacedBy(10.dp),
+                                ) {
+                                    globalEntries.forEach { entry ->
+                                        FilterChip(
+                                            selected = true,
+                                            onClick = {},
+                                            enabled = false,
+                                            label = {
+                                                Text(entry.title.ifBlank { "未命名条目" })
+                                            },
+                                            colors = FilterChipDefaults.filterChipColors(
+                                                selectedContainerColor = palette.subtleChip,
+                                                selectedLabelColor = palette.subtleChipContent,
+                                                disabledSelectedContainerColor = palette.subtleChip,
+                                                disabledLabelColor = palette.subtleChipContent,
+                                            ),
+                                        )
+                                    }
+                                }
+                            }
+                            if (globalEntries.isNotEmpty() && ownedEntries.isNotEmpty()) {
+                                HorizontalDivider(color = palette.border.copy(alpha = 0.35f))
+                            }
+                            if (ownedEntries.isNotEmpty()) {
+                                Text(
+                                    text = "当前助手专属",
+                                    style = androidx.compose.material3.MaterialTheme.typography.bodySmall,
+                                    color = palette.body,
+                                )
+                                FlowRow(
+                                    horizontalArrangement = Arrangement.spacedBy(10.dp),
+                                    verticalArrangement = Arrangement.spacedBy(10.dp),
+                                ) {
+                                    ownedEntries.forEach { entry ->
+                                        FilterChip(
+                                            selected = true,
+                                            onClick = {},
+                                            enabled = false,
+                                            label = {
+                                                Text(entry.title.ifBlank { "未命名条目" })
+                                            },
+                                            colors = FilterChipDefaults.filterChipColors(
+                                                selectedContainerColor = palette.subtleChip,
+                                                selectedLabelColor = palette.subtleChipContent,
+                                                disabledSelectedContainerColor = palette.subtleChip,
+                                                disabledLabelColor = palette.subtleChipContent,
+                                            ),
+                                        )
+                                    }
                                 }
                             }
                         }
@@ -160,28 +195,23 @@ fun AssistantExtensionsScreen(
                     Column(
                         modifier = Modifier.padding(horizontal = 18.dp, vertical = 16.dp),
                         verticalArrangement = Arrangement.spacedBy(12.dp),
-                    ) {
-                        Text(
-                            text = "手动挂载其他世界书",
-                            style = androidx.compose.material3.MaterialTheme.typography.titleSmall,
-                        )
-                        Text(
-                            text = "这里会显示全局条目、可挂载条目，以及其他助手的专属条目。挂上后当前助手也能命中它们。",
-                            style = androidx.compose.material3.MaterialTheme.typography.bodySmall,
-                            color = palette.body,
-                        )
-                        if (linkableEntries.isEmpty()) {
+                        ) {
                             Text(
-                                text = "当前没有可挂载世界书，先去世界书页导入或新建。",
-                                style = androidx.compose.material3.MaterialTheme.typography.bodySmall,
-                                color = palette.body,
+                                text = "手动挂载",
+                                style = androidx.compose.material3.MaterialTheme.typography.titleSmall,
                             )
+                            if (attachableEntries.isEmpty()) {
+                                Text(
+                                    text = "暂无可挂载条目",
+                                    style = androidx.compose.material3.MaterialTheme.typography.bodySmall,
+                                    color = palette.body,
+                                )
                         } else {
                             FlowRow(
                                 horizontalArrangement = Arrangement.spacedBy(10.dp),
                                 verticalArrangement = Arrangement.spacedBy(10.dp),
                             ) {
-                                linkableEntries.forEach { entry ->
+                                attachableEntries.forEach { entry ->
                                     val selected = entry.id in linkedWorldBookIds
                                     FilterChip(
                                         selected = selected,
@@ -196,8 +226,6 @@ fun AssistantExtensionsScreen(
                                             Text(
                                                 buildString {
                                                     append(entry.title.ifBlank { "未命名条目" })
-                                                    append(" · ")
-                                                    append(entry.scopeType.label)
                                                 },
                                             )
                                         },

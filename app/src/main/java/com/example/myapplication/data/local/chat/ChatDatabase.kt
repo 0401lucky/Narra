@@ -23,7 +23,7 @@ import com.example.myapplication.data.local.worldbook.WorldBookEntryEntity
         RoleplayScenarioEntity::class,
         RoleplaySessionEntity::class,
     ],
-    version = 11,
+    version = 12,
     exportSchema = true,
 )
 abstract class ChatDatabase : RoomDatabase() {
@@ -221,6 +221,21 @@ abstract class ChatDatabase : RoomDatabase() {
                 if (!hasColumn(db, "roleplay_scenarios", "longformModeEnabled")) {
                     db.execSQL(
                         "ALTER TABLE roleplay_scenarios ADD COLUMN longformModeEnabled INTEGER NOT NULL DEFAULT 0",
+                    )
+                }
+            }
+        }
+
+        val MIGRATION_11_12 = object : Migration(11, 12) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                if (!hasColumn(db, "conversations", "searchEnabled")) {
+                    db.execSQL(
+                        "ALTER TABLE conversations ADD COLUMN searchEnabled INTEGER NOT NULL DEFAULT 0",
+                    )
+                }
+                if (!hasColumn(db, "messages", "citationsJson")) {
+                    db.execSQL(
+                        "ALTER TABLE messages ADD COLUMN citationsJson TEXT NOT NULL DEFAULT '[]'",
                     )
                 }
             }

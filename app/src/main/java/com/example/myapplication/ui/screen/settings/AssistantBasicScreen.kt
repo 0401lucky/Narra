@@ -104,15 +104,13 @@ fun AssistantBasicScreen(
                 AssistantWorkspaceIntro(
                     assistant = assistant ?: Assistant(name = name, description = description),
                     overline = "Basic",
-                    title = "先把助手做得像一个角色",
-                    summary = "头像、名称、描述和标签是最先被感知到的部分，尽量别空着。",
+                    title = "基础设定",
                 )
             }
 
             item {
                 AssistantSubsectionTitle(
                     title = "外观识别",
-                    subtitle = "先定头像和图标，角色感会立刻提升。",
                 )
             }
 
@@ -243,7 +241,6 @@ fun AssistantBasicScreen(
             item {
                 AssistantSubsectionTitle(
                     title = "文字名片",
-                    subtitle = "用简短但准确的名字和描述，把助手定位说清楚。",
                 )
             }
 

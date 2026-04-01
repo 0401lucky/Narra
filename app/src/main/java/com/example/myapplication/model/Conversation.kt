@@ -9,4 +9,5 @@ data class Conversation(
     val createdAt: Long,
     val updatedAt: Long,
     val assistantId: String = DEFAULT_ASSISTANT_ID,
+    val searchEnabled: Boolean = false,
 )

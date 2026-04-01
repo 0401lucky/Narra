@@ -47,6 +47,9 @@ class SettingsPersistenceCoordinator(
         settingsEditor.saveScreenTranslationSettings(
             currentState.screenTranslationSettings,
         )
+        settingsEditor.saveSearchSettings(
+            currentState.searchSettings,
+        )
         return SettingsPersistenceResult(
             providers = normalizedProviders,
             selectedProviderId = resolvedSelectedProviderId,

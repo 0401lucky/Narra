@@ -67,12 +67,11 @@ fun SettingsConnectionScreen(
                 item {
                     SettingsPageIntro(
                         overline = "连接与凭据",
-                        title = "编辑当前提供商的连接草稿",
-                        summary = "这里只有草稿。返回设置首页保存后，聊天页才会真正切换。",
+                        title = "连接与凭据",
                     )
                 }
                 item {
-                    SettingsSectionHeader("连接信息", "填写 Base URL 和 API Key。")
+                    SettingsSectionHeader("连接信息", "")
                 }
                 item {
                     SettingsGroup {

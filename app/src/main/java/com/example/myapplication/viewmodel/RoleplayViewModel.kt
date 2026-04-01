@@ -22,8 +22,10 @@ import com.example.myapplication.data.repository.ai.AiGateway
 import com.example.myapplication.data.repository.ai.AiPromptExtrasService
 import com.example.myapplication.data.repository.ai.AiSettingsEditor
 import com.example.myapplication.data.repository.ai.AiSettingsRepository
+import com.example.myapplication.data.repository.ai.tooling.MemoryWriteService
 import com.example.myapplication.data.repository.context.ConversationSummaryRepository
 import com.example.myapplication.data.repository.context.MemoryRepository
+import com.example.myapplication.data.repository.context.PendingMemoryProposalRepository
 import com.example.myapplication.data.repository.roleplay.RoleplayRepository
 import com.example.myapplication.data.repository.roleplay.RoleplaySessionStartResult
 import com.example.myapplication.model.AppSettings
@@ -35,6 +37,8 @@ import com.example.myapplication.model.Conversation
 import com.example.myapplication.model.MemoryScopeType
 import com.example.myapplication.model.MessageRole
 import com.example.myapplication.model.MessageStatus
+import com.example.myapplication.model.MemoryProposalHistoryItem
+import com.example.myapplication.model.PendingMemoryProposal
 import com.example.myapplication.model.PromptMode
 import com.example.myapplication.model.TransferDirection
 import com.example.myapplication.model.TransferStatus
@@ -64,6 +68,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
@@ -91,6 +96,8 @@ data class RoleplayUiState(
     val latestPromptDebugDump: String = "",
     val streamingContent: String = "",
     val suggestionErrorMessage: String? = null,
+    val pendingMemoryProposal: PendingMemoryProposal? = null,
+    val recentMemoryProposalHistory: List<MemoryProposalHistoryItem> = emptyList(),
     val currentModel: String = "",
     val currentProviderId: String = "",
     val inputFocusToken: Long = 0L,
@@ -107,6 +114,8 @@ class RoleplayViewModel(
     private val promptContextAssembler: PromptContextAssembler,
     private val memoryRepository: MemoryRepository,
     private val conversationSummaryRepository: ConversationSummaryRepository,
+    private val pendingMemoryProposalRepository: PendingMemoryProposalRepository,
+    private val memoryWriteService: MemoryWriteService,
     private val outputParser: RoleplayOutputParser = RoleplayOutputParser(),
     private val nowProvider: () -> Long = { System.currentTimeMillis() },
     private val messageIdProvider: () -> String = { UUID.randomUUID().toString() },
@@ -166,6 +175,7 @@ class RoleplayViewModel(
         summaryCoordinator = summaryCoordinator,
         memoryExtractionCoordinator = memoryExtractionCoordinator,
         contextStatusCoordinator = contextStatusCoordinator,
+        pendingMemoryProposalRepository = pendingMemoryProposalRepository,
         aiPromptExtrasService = aiPromptExtrasService,
     )
     private val scenarioActionSupport = RoleplayScenarioActionSupport(
@@ -268,6 +278,8 @@ class RoleplayViewModel(
                 )
             },
         )
+        observePendingMemoryProposal()
+        observeMemoryProposalHistory()
         RoleplayObservationSupport.observeCurrentMessages(
             scope = viewModelScope,
             roleplayRepository = roleplayRepository,
@@ -387,6 +399,38 @@ class RoleplayViewModel(
         suggestionActionSupport.clearSuggestions()
     }
 
+    fun approvePendingMemoryProposal() {
+        val proposalId = _uiState.value.pendingMemoryProposal?.id.orEmpty()
+        if (proposalId.isBlank()) {
+            return
+        }
+        viewModelScope.launch {
+            val savedEntry = runCatching {
+                memoryWriteService.approveProposal(proposalId)
+            }.getOrNull()
+            _uiState.update { current ->
+                if (savedEntry == null) {
+                    RoleplayStateSupport.applyErrorMessage(current, "记忆确认失败")
+                } else {
+                    RoleplayStateSupport.applyPendingMemoryProposalSaved(current, savedEntry.content)
+                }
+            }
+        }
+    }
+
+    fun rejectPendingMemoryProposal() {
+        val proposalId = _uiState.value.pendingMemoryProposal?.id.orEmpty()
+        if (proposalId.isBlank()) {
+            return
+        }
+        viewModelScope.launch {
+            memoryWriteService.rejectProposal(proposalId)
+            _uiState.update { current ->
+                RoleplayStateSupport.applyPendingMemoryProposalRejected(current)
+            }
+        }
+    }
+
     fun cancelSending() {
         sendingJob?.cancel()
     }
@@ -404,6 +448,47 @@ class RoleplayViewModel(
     fun sendMessage() {
         sendActionSupport.sendMessage()?.let { job ->
             sendingJob = job
+        }
+    }
+
+    private fun observePendingMemoryProposal() {
+        viewModelScope.launch {
+            _uiState
+                .map { it.currentSession?.conversationId.orEmpty() }
+                .flatMapLatest { conversationId ->
+                    if (conversationId.isBlank()) {
+                        flowOf(null)
+                    } else {
+                        pendingMemoryProposalRepository.observeProposal(conversationId)
+                    }
+                }
+                .collect { proposal ->
+                    _uiState.update { current ->
+                        RoleplayStateSupport.updatePendingMemoryProposal(current, proposal)
+                    }
+                }
+        }
+    }
+
+    private fun observeMemoryProposalHistory() {
+        viewModelScope.launch {
+            _uiState
+                .map { it.currentSession?.conversationId.orEmpty() }
+                .flatMapLatest { conversationId ->
+                    if (conversationId.isBlank()) {
+                        flowOf(emptyList())
+                    } else {
+                        pendingMemoryProposalRepository.observeHistory(conversationId)
+                    }
+                }
+                .collect { history ->
+                    _uiState.update { current ->
+                        RoleplayStateSupport.updateMemoryProposalHistory(
+                            current = current,
+                            history = history,
+                        )
+                    }
+                }
         }
     }
 
@@ -428,6 +513,8 @@ class RoleplayViewModel(
             promptContextAssembler: PromptContextAssembler,
             memoryRepository: MemoryRepository,
             conversationSummaryRepository: ConversationSummaryRepository,
+            pendingMemoryProposalRepository: PendingMemoryProposalRepository,
+            memoryWriteService: MemoryWriteService,
         ): ViewModelProvider.Factory {
             return object : ViewModelProvider.Factory {
                 @Suppress("UNCHECKED_CAST")
@@ -442,6 +529,8 @@ class RoleplayViewModel(
                         promptContextAssembler = promptContextAssembler,
                         memoryRepository = memoryRepository,
                         conversationSummaryRepository = conversationSummaryRepository,
+                        pendingMemoryProposalRepository = pendingMemoryProposalRepository,
+                        memoryWriteService = memoryWriteService,
                     ) as T
                 }
             }

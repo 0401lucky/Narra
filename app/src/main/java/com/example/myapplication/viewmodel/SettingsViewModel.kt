@@ -18,6 +18,7 @@ import com.example.myapplication.model.ProviderSettings
 import com.example.myapplication.model.ProviderTemplate
 import com.example.myapplication.model.ProviderType
 import com.example.myapplication.model.ScreenTranslationSettings
+import com.example.myapplication.model.SearchSettings
 import com.example.myapplication.model.ThemeMode
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -52,6 +53,7 @@ data class SettingsUiState(
     val showRoleplayPresenceStrip: Boolean = true,
     val showRoleplayStatusStrip: Boolean = false,
     val screenTranslationSettings: ScreenTranslationSettings = ScreenTranslationSettings(),
+    val searchSettings: SearchSettings = SearchSettings(),
 ) {
     val currentProvider: ProviderSettings?
         get() = providers.firstOrNull { it.id == selectedProviderId } ?: providers.firstOrNull()
@@ -92,7 +94,8 @@ data class SettingsUiState(
             roleplayLongformTargetChars != savedSettings.roleplayLongformTargetChars ||
             showRoleplayPresenceStrip != savedSettings.showRoleplayPresenceStrip ||
             showRoleplayStatusStrip != savedSettings.showRoleplayStatusStrip ||
-            screenTranslationSettings != savedSettings.screenTranslationSettings
+            screenTranslationSettings != savedSettings.screenTranslationSettings ||
+            searchSettings != savedSettings.resolvedSearchSettings()
     }
 }
 
@@ -356,6 +359,10 @@ class SettingsViewModel(
         updateProvider(providerId) { it.copy(translationModel = modelId) }
     }
 
+    fun updateProviderSearchModel(providerId: String, modelId: String) {
+        updateProvider(providerId) { it.copy(searchModel = modelId) }
+    }
+
     fun updateThemeMode(themeMode: ThemeMode) {
         _uiState.update { current ->
             SettingsPreferenceDraftSupport.updateThemeMode(current, themeMode)
@@ -461,6 +468,98 @@ class SettingsViewModel(
                 overlayOffsetX = x.coerceIn(0f, 1f),
                 overlayOffsetY = y.coerceIn(0f, 1f),
             )
+        }
+    }
+
+    fun selectSearchSource(sourceId: String) {
+        _uiState.update { current ->
+            SettingsSearchDraftSupport.updateSearchSettings(current) { settings ->
+                settings.copy(selectedSourceId = sourceId)
+            }
+        }
+    }
+
+    fun updateSearchResultCount(resultCount: Int) {
+        _uiState.update { current ->
+            SettingsSearchDraftSupport.updateSearchSettings(current) { settings ->
+                settings.copy(defaultResultCount = resultCount)
+            }
+        }
+    }
+
+    fun updateSearchSourceEnabled(
+        sourceId: String,
+        enabled: Boolean,
+    ) {
+        _uiState.update { current ->
+            SettingsSearchDraftSupport.updateSearchSettings(current) { settings ->
+                settings.copy(
+                    sources = settings.sources.map { source ->
+                        if (source.id == sourceId) {
+                            source.copy(enabled = enabled)
+                        } else {
+                            source
+                        }
+                    },
+                )
+            }
+        }
+    }
+
+    fun updateSearchSourceApiKey(
+        sourceId: String,
+        apiKey: String,
+    ) {
+        _uiState.update { current ->
+            SettingsSearchDraftSupport.updateSearchSettings(current) { settings ->
+                settings.copy(
+                    sources = settings.sources.map { source ->
+                        if (source.id == sourceId) {
+                            source.copy(apiKey = apiKey)
+                        } else {
+                            source
+                        }
+                    },
+                )
+            }
+        }
+    }
+
+    fun updateSearchSourceEngineId(
+        sourceId: String,
+        engineId: String,
+    ) {
+        _uiState.update { current ->
+            SettingsSearchDraftSupport.updateSearchSettings(current) { settings ->
+                settings.copy(
+                    sources = settings.sources.map { source ->
+                        if (source.id == sourceId) {
+                            source.copy(engineId = engineId)
+                        } else {
+                            source
+                        }
+                    },
+                )
+            }
+        }
+    }
+
+    fun updateSearchSourceProviderId(
+        sourceId: String,
+        providerId: String,
+    ) {
+        _uiState.update { current ->
+            SettingsSearchDraftSupport.updateSearchSettings(current) { settings ->
+                settings.copy(
+                    sources = settings.sources.map { source ->
+                        if (source.id == sourceId) {
+                            source.copy(providerId = providerId)
+                        } else {
+                            source
+                        }
+                    },
+                )
+            }
         }
     }
 

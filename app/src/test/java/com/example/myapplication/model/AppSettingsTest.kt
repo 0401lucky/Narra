@@ -60,11 +60,13 @@ class AppSettingsTest {
             translationModel = "translation-model",
             titleSummaryModel = "title-model",
             chatSuggestionModel = "suggestion-model",
+            searchModel = "search-model",
         )
 
         assertEquals("translation-model", provider.resolveFunctionModel(ProviderFunction.TRANSLATION))
         assertEquals("title-model", provider.resolveFunctionModel(ProviderFunction.TITLE_SUMMARY))
         assertEquals("suggestion-model", provider.resolveFunctionModel(ProviderFunction.CHAT_SUGGESTION))
+        assertEquals("search-model", provider.resolveFunctionModel(ProviderFunction.SEARCH))
     }
 
     @Test
@@ -76,5 +78,68 @@ class AppSettingsTest {
         assertEquals("chat-model", provider.resolveFunctionModel(ProviderFunction.TRANSLATION))
         assertEquals("chat-model", provider.resolveFunctionModel(ProviderFunction.TITLE_SUMMARY))
         assertEquals("chat-model", provider.resolveFunctionModel(ProviderFunction.CHAT_SUGGESTION))
+        assertEquals("chat-model", provider.resolveFunctionModel(ProviderFunction.SEARCH))
+    }
+
+    @Test
+    fun hasConfiguredSearchSource_acceptsLlmSearchWhenProviderHasSearchModelAndResponsesMode() {
+        val provider = ProviderSettings(
+            id = "provider-search",
+            name = "Search Provider",
+            baseUrl = "https://api.x.ai/v1/",
+            apiKey = "search-key",
+            selectedModel = "grok-4-fast",
+            searchModel = "grok-4.20-reasoning",
+            openAiTextApiMode = OpenAiTextApiMode.RESPONSES,
+        )
+        val settings = AppSettings(
+            providers = listOf(provider),
+            selectedProviderId = provider.id,
+            searchSettings = SearchSettings(
+                sources = listOf(
+                    SearchSourceConfig(
+                        id = SearchSourceIds.LLM_SEARCH,
+                        type = SearchSourceType.LLM_SEARCH,
+                        name = "LLM 搜索",
+                        enabled = true,
+                        providerId = provider.id,
+                    ),
+                ),
+                selectedSourceId = SearchSourceIds.LLM_SEARCH,
+            ),
+        )
+
+        assertTrue(settings.hasConfiguredSearchSource(provider))
+    }
+
+    @Test
+    fun hasConfiguredSearchSource_rejectsLlmSearchWithoutResponsesOrAnthropicSupport() {
+        val provider = ProviderSettings(
+            id = "provider-search",
+            name = "Search Provider",
+            baseUrl = "https://api.x.ai/v1/",
+            apiKey = "search-key",
+            selectedModel = "grok-4-fast",
+            searchModel = "grok-4.20-reasoning",
+            openAiTextApiMode = OpenAiTextApiMode.CHAT_COMPLETIONS,
+        )
+        val settings = AppSettings(
+            providers = listOf(provider),
+            selectedProviderId = provider.id,
+            searchSettings = SearchSettings(
+                sources = listOf(
+                    SearchSourceConfig(
+                        id = SearchSourceIds.LLM_SEARCH,
+                        type = SearchSourceType.LLM_SEARCH,
+                        name = "LLM 搜索",
+                        enabled = true,
+                        providerId = provider.id,
+                    ),
+                ),
+                selectedSourceId = SearchSourceIds.LLM_SEARCH,
+            ),
+        )
+
+        assertFalse(settings.hasConfiguredSearchSource(provider))
     }
 }

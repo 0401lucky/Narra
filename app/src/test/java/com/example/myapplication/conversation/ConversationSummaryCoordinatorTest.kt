@@ -126,6 +126,53 @@ class ConversationSummaryCoordinatorTest {
         assertEquals("已有摘要", repository.getSummary("conv-1")?.summary)
     }
 
+    @Test
+    fun updateConversationSummary_fallsBackToMemoryModelWhenTitleSummaryModelBlank() = runBlocking {
+        val repository = FakeConversationSummaryRepository()
+        val coordinator = ConversationSummaryCoordinator(
+            aiPromptExtrasService = unusedPromptExtrasService(),
+            conversationSummaryRepository = repository,
+            nowProvider = { 123L },
+        )
+        val provider = ProviderSettings(
+            id = "provider-1",
+            name = "Provider",
+            baseUrl = "https://example.com/v1/",
+            apiKey = "key",
+            selectedModel = "chat-model",
+            memoryModel = "memory-model",
+        )
+
+        val updated = coordinator.updateConversationSummary(
+            conversationId = "conv-1",
+            assistantId = "assistant-1",
+            completedMessages = listOf(
+                ChatMessage(id = "m1", conversationId = "conv-1", role = MessageRole.USER, content = "a", createdAt = 1L),
+                ChatMessage(id = "m2", conversationId = "conv-1", role = MessageRole.ASSISTANT, content = "b", createdAt = 2L),
+                ChatMessage(id = "m3", conversationId = "conv-1", role = MessageRole.USER, content = "c", createdAt = 3L),
+                ChatMessage(id = "m4", conversationId = "conv-1", role = MessageRole.ASSISTANT, content = "d", createdAt = 4L),
+            ),
+            settings = AppSettings(
+                providers = listOf(provider),
+                selectedProviderId = provider.id,
+            ),
+            config = SummaryGenerationConfig(
+                triggerMessageCount = 2,
+                recentMessageWindow = 1,
+                minCoveredMessageCount = 2,
+            ),
+            buildSummaryInput = { messages ->
+                messages.joinToString(separator = "\n") { it.content }
+            },
+            generateSummary = { _, _, _, modelId, _ ->
+                assertEquals("memory-model", modelId)
+                "这是摘要"
+            },
+        )
+
+        assertTrue(updated)
+    }
+
     private fun unusedPromptExtrasService(): AiPromptExtrasService {
         return object : AiPromptExtrasService {
             override suspend fun generateTitle(firstUserMessage: String, baseUrl: String, apiKey: String, modelId: String, apiProtocol: com.example.myapplication.model.ProviderApiProtocol, provider: com.example.myapplication.model.ProviderSettings?): String = error("不应调用")

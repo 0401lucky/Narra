@@ -22,6 +22,7 @@ import com.example.myapplication.ui.screen.settings.ContextTransferScreen
 import com.example.myapplication.ui.screen.settings.ProviderDetailScreen
 import com.example.myapplication.ui.screen.settings.ProviderSettingsScreen
 import com.example.myapplication.ui.screen.settings.ScreenTranslationSettingsScreen
+import com.example.myapplication.ui.screen.settings.SearchToolSettingsScreen
 import com.example.myapplication.ui.screen.settings.SettingsConnectionScreen
 import com.example.myapplication.ui.screen.settings.SettingsModelScreen
 import com.example.myapplication.ui.screen.settings.SettingsScreen
@@ -67,6 +68,11 @@ internal fun NavGraphBuilder.registerSettingsNavGraph(
                 },
                 onOpenConnectionSettings = {
                     navController.navigate(AppRoutes.SETTINGS_CONNECTION) {
+                        launchSingleTop = true
+                    }
+                },
+                onOpenSearchToolSettings = {
+                    navController.navigate(AppRoutes.SETTINGS_SEARCH_TOOLS) {
                         launchSingleTop = true
                     }
                 },
@@ -234,6 +240,23 @@ internal fun NavGraphBuilder.registerSettingsNavGraph(
             )
         }
 
+        composable(AppRoutes.SETTINGS_SEARCH_TOOLS) {
+            val providerSettingsState by settingsViewModel.uiState.collectAsStateWithLifecycle()
+            SearchToolSettingsScreen(
+                uiState = providerSettingsState,
+                onSelectSource = settingsViewModel::selectSearchSource,
+                onUpdateResultCount = settingsViewModel::updateSearchResultCount,
+                onUpdateSourceEnabled = settingsViewModel::updateSearchSourceEnabled,
+                onUpdateSourceApiKey = settingsViewModel::updateSearchSourceApiKey,
+                onUpdateSourceEngineId = settingsViewModel::updateSearchSourceEngineId,
+                onUpdateSourceProviderId = settingsViewModel::updateSearchSourceProviderId,
+                onNavigateBack = {
+                    settingsViewModel.saveSettings {}
+                    navController.popBackStack()
+                },
+            )
+        }
+
         composable(AppRoutes.SETTINGS_MODEL) {
             val providerSettingsState by settingsViewModel.uiState.collectAsStateWithLifecycle()
             SettingsModelScreen(
@@ -245,6 +268,7 @@ internal fun NavGraphBuilder.registerSettingsNavGraph(
                 onUpdateChatSuggestionModel = settingsViewModel::updateProviderChatSuggestionModel,
                 onUpdateMemoryModel = settingsViewModel::updateProviderMemoryModel,
                 onUpdateTranslationModel = settingsViewModel::updateProviderTranslationModel,
+                onUpdateSearchModel = settingsViewModel::updateProviderSearchModel,
                 onConsumeMessage = settingsViewModel::consumeMessage,
                 onNavigateBack = {
                     settingsViewModel.saveSettings {}
@@ -295,11 +319,14 @@ internal fun NavGraphBuilder.registerSettingsNavGraph(
             AssistantDetailScreen(
                 assistant = assistant,
                 linkedWorldBookCount = worldBookState.entries.count { entry ->
-                    entry.id in assistant.linkedWorldBookIds ||
-                        (
-                            entry.scopeType == com.example.myapplication.model.WorldBookScopeType.ASSISTANT &&
-                                entry.scopeId == assistant.id
-                            )
+                    when (entry.scopeType) {
+                        com.example.myapplication.model.WorldBookScopeType.GLOBAL -> true
+                        com.example.myapplication.model.WorldBookScopeType.ATTACHABLE -> entry.id in assistant.linkedWorldBookIds
+                        com.example.myapplication.model.WorldBookScopeType.ASSISTANT -> {
+                            entry.scopeId == assistant.id
+                        }
+                        com.example.myapplication.model.WorldBookScopeType.CONVERSATION -> false
+                    }
                 },
                 assistantMemoryCount = memoryManagementState.memories.count { memory ->
                     memory.scopeType == com.example.myapplication.model.MemoryScopeType.ASSISTANT &&
@@ -565,7 +592,6 @@ internal fun NavGraphBuilder.registerSettingsNavGraph(
                 onTogglePinned = memoryManagementViewModel::togglePinned,
                 onDeleteMemory = memoryManagementViewModel::deleteMemory,
                 onDeleteSummary = memoryManagementViewModel::deleteSummary,
-                onRefreshSummaries = memoryManagementViewModel::refreshSummaries,
                 onConsumeMessage = memoryManagementViewModel::consumeMessage,
                 onNavigateBack = {
                     navController.popBackStack()

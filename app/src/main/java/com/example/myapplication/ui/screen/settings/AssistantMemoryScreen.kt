@@ -87,8 +87,8 @@ fun AssistantMemoryScreen(
                 AssistantWorkspaceIntro(
                     assistant = assistant,
                     overline = "Memory",
-                    title = "把长期上下文留在助手身上",
-                    summary = "开启后，模型会尝试自动记忆稳定信息；你也可以手动补充专属记忆。",
+                    title = "记忆",
+                    summary = "",
                 )
             }
 
@@ -96,21 +96,18 @@ fun AssistantMemoryScreen(
                 SettingsGroup {
                     AssistantMemorySettingRow(
                         title = "记忆",
-                        supporting = "启用后，模型会在与你对话结束后尝试自动记忆稳定信息，并在后续对话中使用。",
                         checked = memoryEnabled,
                         onCheckedChange = { memoryEnabled = it },
                     )
                     SettingsGroupDivider()
                     AssistantMemorySettingRow(
                         title = "共享全局长期记忆",
-                        supporting = "打开后，这个助手新增或自动整理出的长期记忆会写入全局池，并优先使用共享长期记忆。",
                         checked = useGlobalMemory,
                         onCheckedChange = { useGlobalMemory = it },
                     )
                     SettingsGroupDivider()
                     AssistantMemoryStaticRow(
                         title = "每轮注入条数",
-                        supporting = "控制每次最多注入多少条记忆，避免上下文过度膨胀。",
                         trailing = {
                             OutlinedTextField(
                                 value = memoryMaxItemsText,
@@ -127,9 +124,9 @@ fun AssistantMemoryScreen(
                     AssistantMemoryStaticRow(
                         title = "管理记忆",
                         supporting = if (useGlobalMemory) {
-                            "当前助手正在使用全局长期记忆池，共有 ${memories.size} 条可编辑长期记忆。"
+                            "全局 ${memories.size} 条"
                         } else {
-                            "当前助手下共有 ${memories.size} 条专属记忆，可手动新增、编辑、置顶或删除。"
+                            "当前 ${memories.size} 条"
                         },
                         trailing = {
                             Surface(
@@ -197,7 +194,7 @@ fun AssistantMemoryScreen(
                 item {
                     SettingsHintCard(
                         title = "还没有专属记忆",
-                        body = "你可以让系统自动提取，也可以手动添加一些稳定设定、偏好和长期目标。",
+                        body = "暂无内容",
                         containerColor = palette.accentSoft,
                         contentColor = palette.accent,
                     )
@@ -299,7 +296,7 @@ fun AssistantMemoryScreen(
 @Composable
 private fun AssistantMemorySettingRow(
     title: String,
-    supporting: String,
+    supporting: String = "",
     checked: Boolean,
     onCheckedChange: (Boolean) -> Unit,
 ) {
@@ -321,11 +318,13 @@ private fun AssistantMemorySettingRow(
                 fontWeight = FontWeight.Bold,
                 color = palette.title,
             )
-            Text(
-                text = supporting,
-                style = MaterialTheme.typography.bodySmall,
-                color = palette.body,
-            )
+            if (supporting.isNotBlank()) {
+                Text(
+                    text = supporting,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = palette.body,
+                )
+            }
         }
         Switch(
             checked = checked,
@@ -338,7 +337,7 @@ private fun AssistantMemorySettingRow(
 @Composable
 private fun AssistantMemoryStaticRow(
     title: String,
-    supporting: String,
+    supporting: String = "",
     trailing: @Composable () -> Unit,
 ) {
     val palette = rememberSettingsPalette()
@@ -354,11 +353,13 @@ private fun AssistantMemoryStaticRow(
             fontWeight = FontWeight.Bold,
             color = palette.title,
         )
-        Text(
-            text = supporting,
-            style = MaterialTheme.typography.bodySmall,
-            color = palette.body,
-        )
+        if (supporting.isNotBlank()) {
+            Text(
+                text = supporting,
+                style = MaterialTheme.typography.bodySmall,
+                color = palette.body,
+            )
+        }
         trailing()
     }
 }

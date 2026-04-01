@@ -15,6 +15,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -22,6 +23,7 @@ import androidx.compose.material.icons.automirrored.outlined.Chat
 import androidx.compose.material.icons.outlined.Build
 import androidx.compose.material.icons.outlined.Psychology
 import androidx.compose.material.icons.outlined.QuestionAnswer
+import androidx.compose.material.icons.outlined.Search
 import androidx.compose.material.icons.outlined.Subtitles
 import androidx.compose.material.icons.outlined.Translate
 import androidx.compose.material.icons.filled.Check
@@ -61,21 +63,42 @@ fun SettingsModelScreen(
     onUpdateChatSuggestionModel: (String, String) -> Unit,
     onUpdateMemoryModel: (String, String) -> Unit,
     onUpdateTranslationModel: (String, String) -> Unit,
+    onUpdateSearchModel: (String, String) -> Unit,
     onConsumeMessage: () -> Unit,
     onNavigateBack: () -> Unit,
 ) {
+    BackHandler(onBack = onNavigateBack)
+
     val palette = rememberSettingsPalette()
     val snackbarHostState = rememberSettingsSnackbarHostState(
         message = uiState.message,
         onConsumeMessage = onConsumeMessage,
     )
     val provider = uiState.currentProvider
-    val providerId = provider?.id.orEmpty()
     val providerOptions = remember(uiState.providers) {
         uiState.providers.filter { it.enabled }
     }
     val currentProviderId = uiState.selectedProviderId.ifBlank { provider?.id.orEmpty() }
     val currentModel = provider?.selectedModel.orEmpty()
+    val currentProviderSummary = buildString {
+        append(provider?.name.orEmpty().ifBlank { "未选择提供商" })
+        provider?.let { current ->
+            append(" · ")
+            append(
+                when (current.resolvedApiProtocol()) {
+                    com.example.myapplication.model.ProviderApiProtocol.OPENAI_COMPATIBLE -> {
+                        if (current.resolvedOpenAiTextApiMode() == com.example.myapplication.model.OpenAiTextApiMode.RESPONSES) {
+                            "OpenAI 兼容 / Responses"
+                        } else {
+                            "OpenAI 兼容 / Chat Completions"
+                        }
+                    }
+
+                    com.example.myapplication.model.ProviderApiProtocol.ANTHROPIC -> "Anthropic /messages"
+                },
+            )
+        }
+    }
     var selectingRole by rememberSaveable { mutableStateOf("") }
 
     Scaffold(
@@ -101,15 +124,33 @@ fun SettingsModelScreen(
                     SettingsPageIntro(
                         overline = "模型",
                         title = uiState.selectedModel.ifBlank { "还没选择默认模型" },
-                        summary = "为不同功能分配合适的模型，优化成本和性能。",
                     )
+                }
+
+                item {
+                    SettingsGroup {
+                        Column(
+                            modifier = Modifier.padding(horizontal = 18.dp, vertical = 18.dp),
+                            verticalArrangement = Arrangement.spacedBy(8.dp),
+                        ) {
+                            Text(
+                                text = "当前正在编辑的提供商",
+                                style = MaterialTheme.typography.labelLarge,
+                                color = palette.title,
+                            )
+                            Text(
+                                text = currentProviderSummary,
+                                style = MaterialTheme.typography.titleMedium,
+                                color = palette.title,
+                            )
+                        }
+                    }
                 }
 
                 item {
                     RoleModelCard(
                         icon = Icons.AutoMirrored.Outlined.Chat,
                         title = "聊天模型",
-                        subtitle = "全局默认的聊天模型",
                         currentModelId = uiState.selectedModel,
                         onClick = { selectingRole = "chat" },
                     )
@@ -118,8 +159,7 @@ fun SettingsModelScreen(
                 item {
                     RoleModelCard(
                         icon = Icons.Outlined.Subtitles,
-                        title = "标题总结模型",
-                        subtitle = "用于总结对话标题的模型，推荐使用快速且便宜的模型",
+                        title = "标题/摘要模型",
                         currentModelId = provider?.titleSummaryModel.orEmpty(),
                         onClick = { selectingRole = "title" },
                     )
@@ -129,7 +169,6 @@ fun SettingsModelScreen(
                     RoleModelCard(
                         icon = Icons.Outlined.QuestionAnswer,
                         title = "聊天建议模型",
-                        subtitle = "用于生成对话建议的模型，推荐使用快速且便宜的模型",
                         currentModelId = provider?.chatSuggestionModel.orEmpty(),
                         onClick = { selectingRole = "suggestion" },
                     )
@@ -139,7 +178,6 @@ fun SettingsModelScreen(
                     RoleModelCard(
                         icon = Icons.Outlined.Psychology,
                         title = "记忆模型",
-                        subtitle = "用于自动提取长期记忆的模型，建议使用便宜且稳定的模型",
                         currentModelId = provider?.memoryModel.orEmpty(),
                         onClick = { selectingRole = "memory" },
                     )
@@ -149,9 +187,18 @@ fun SettingsModelScreen(
                     RoleModelCard(
                         icon = Icons.Outlined.Translate,
                         title = "翻译模型",
-                        subtitle = "用于翻译功能的模型",
                         currentModelId = provider?.translationModel.orEmpty(),
                         onClick = { selectingRole = "translation" },
+                    )
+                }
+
+                item {
+                    RoleModelCard(
+                        icon = Icons.Outlined.Search,
+                        title = "搜索模型",
+                        subtitle = "仅 LLM 搜索",
+                        currentModelId = provider?.searchModel.orEmpty(),
+                        onClick = { selectingRole = "search" },
                     )
                 }
             }
@@ -170,14 +217,16 @@ fun SettingsModelScreen(
             "suggestion" -> provider?.chatSuggestionModel.orEmpty()
             "memory" -> provider?.memoryModel.orEmpty()
             "translation" -> provider?.translationModel.orEmpty()
+            "search" -> provider?.searchModel.orEmpty()
             else -> ""
         }
         val roleTitle = when (selectingRole) {
-            "chat" -> "选择聊天模型"
-            "title" -> "选择标题总结模型"
-            "suggestion" -> "选择聊天建议模型"
-            "memory" -> "选择记忆模型"
-            "translation" -> "选择翻译模型"
+            "chat" -> "选择聊天模型 · ${provider?.name.orEmpty().ifBlank { "当前提供商" }}"
+            "title" -> "选择标题总结模型 · ${provider?.name.orEmpty().ifBlank { "当前提供商" }}"
+            "suggestion" -> "选择聊天建议模型 · ${provider?.name.orEmpty().ifBlank { "当前提供商" }}"
+            "memory" -> "选择记忆模型 · ${provider?.name.orEmpty().ifBlank { "当前提供商" }}"
+            "translation" -> "选择翻译模型 · ${provider?.name.orEmpty().ifBlank { "当前提供商" }}"
+            "search" -> "选择搜索模型 · ${provider?.name.orEmpty().ifBlank { "当前提供商" }}"
             else -> "选择模型"
         }
 
@@ -185,6 +234,7 @@ fun SettingsModelScreen(
             providerOptions = providerOptions,
             currentProviderId = currentProviderId,
             currentModel = currentSelectedForRole.ifBlank { currentModel },
+            sheetTitle = roleTitle,
             isLoadingModels = uiState.isLoadingModels,
             loadingProviderId = uiState.loadingProviderId,
             isSavingModel = uiState.isSaving,
@@ -198,6 +248,7 @@ fun SettingsModelScreen(
                     "suggestion" -> onUpdateChatSuggestionModel(selectedProviderId, model)
                     "memory" -> onUpdateMemoryModel(selectedProviderId, model)
                     "translation" -> onUpdateTranslationModel(selectedProviderId, model)
+                    "search" -> onUpdateSearchModel(selectedProviderId, model)
                 }
                 selectingRole = ""
             },
@@ -209,7 +260,7 @@ fun SettingsModelScreen(
 private fun RoleModelCard(
     icon: ImageVector,
     title: String,
-    subtitle: String,
+    subtitle: String = "",
     currentModelId: String,
     onClick: () -> Unit,
 ) {
@@ -244,13 +295,15 @@ private fun RoleModelCard(
                         fontWeight = FontWeight.Bold,
                         color = palette.title,
                     )
-                    Text(
-                        text = subtitle,
-                        style = MaterialTheme.typography.bodySmall,
-                        color = palette.body,
-                        maxLines = 2,
-                        overflow = TextOverflow.Ellipsis,
-                    )
+                    if (subtitle.isNotBlank()) {
+                        Text(
+                            text = subtitle,
+                            style = MaterialTheme.typography.bodySmall,
+                            color = palette.body,
+                            maxLines = 2,
+                            overflow = TextOverflow.Ellipsis,
+                        )
+                    }
                 }
                 Surface(
                     shape = CircleShape,

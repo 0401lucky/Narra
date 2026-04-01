@@ -8,6 +8,7 @@ import com.example.myapplication.data.local.chat.MessageEntity
 import com.example.myapplication.model.ChatMessage
 import com.example.myapplication.model.ChatMessagePart
 import com.example.myapplication.model.Conversation
+import com.example.myapplication.model.MessageCitation
 import com.example.myapplication.model.MessageAttachment
 import com.example.myapplication.model.MessageRole
 import com.example.myapplication.model.MessageStatus
@@ -24,6 +25,7 @@ class RoomConversationStore(
     private val gson = Gson()
     private val attachmentListType = object : TypeToken<List<MessageAttachment>>() {}.type
     private val partListType = object : TypeToken<List<ChatMessagePart>>() {}.type
+    private val citationListType = object : TypeToken<List<MessageCitation>>() {}.type
 
     override fun observeConversations(): Flow<List<Conversation>> {
         return conversationDao.observeConversations().map { conversations ->
@@ -137,6 +139,7 @@ class RoomConversationStore(
             createdAt = createdAt,
             updatedAt = updatedAt,
             assistantId = assistantId,
+            searchEnabled = searchEnabled,
         )
     }
 
@@ -148,6 +151,7 @@ class RoomConversationStore(
             createdAt = createdAt,
             updatedAt = updatedAt,
             assistantId = assistantId,
+            searchEnabled = searchEnabled,
         )
     }
 
@@ -166,9 +170,12 @@ class RoomConversationStore(
             }.getOrDefault(emptyList()),
             parts = normalizeChatMessageParts(
                 runCatching {
-                gson.fromJson<List<ChatMessagePart>>(partsJson, partListType).orEmpty()
+                    gson.fromJson<List<ChatMessagePart>>(partsJson, partListType).orEmpty()
                 }.getOrDefault(emptyList()),
             ),
+            citations = runCatching {
+                gson.fromJson<List<MessageCitation>>(citationsJson, citationListType).orEmpty()
+            }.getOrDefault(emptyList()),
         )
     }
 
@@ -184,6 +191,7 @@ class RoomConversationStore(
             reasoningContent = reasoningContent,
             attachmentsJson = gson.toJson(attachments),
             partsJson = gson.toJson(normalizeChatMessageParts(parts)),
+            citationsJson = gson.toJson(citations),
         )
     }
 

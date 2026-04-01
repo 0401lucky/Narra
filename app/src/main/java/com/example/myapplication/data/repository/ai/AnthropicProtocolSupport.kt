@@ -6,6 +6,7 @@ import com.example.myapplication.model.AnthropicMessageDto
 import com.example.myapplication.model.AnthropicMessageRequest
 import com.example.myapplication.model.AnthropicMessageResponse
 import com.example.myapplication.model.AnthropicThinkingDto
+import com.example.myapplication.model.AnthropicToolDto
 import com.example.myapplication.model.AssistantReply
 import com.example.myapplication.model.ChatCompletionRequest
 import com.example.myapplication.model.ChatMessageDto
@@ -47,6 +48,13 @@ internal object AnthropicProtocolSupport {
             thinking = request.thinking?.let { thinking ->
                 AnthropicThinkingDto(
                     budgetTokens = thinking.budgetTokens,
+                )
+            },
+            tools = request.tools.map { tool ->
+                AnthropicToolDto(
+                    name = tool.function.name,
+                    description = tool.function.description,
+                    inputSchema = tool.function.parameters,
                 )
             },
         )
@@ -160,6 +168,32 @@ internal object AnthropicProtocolSupport {
                                 text = text,
                             )
                         },
+                    )
+                    "tool_use" -> {
+                        val input = contentPart["input"] as? Map<*, *>
+                        listOf(
+                            AnthropicContentPartDto(
+                                type = "tool_use",
+                                id = contentPart["id"]?.toString(),
+                                name = contentPart["name"]?.toString(),
+                                input = input?.entries
+                                    .orEmpty()
+                                    .mapNotNull { entry ->
+                                        entry.value?.let { value ->
+                                            entry.key.toString() to value
+                                        }
+                                    }
+                                    .toMap(),
+                            ),
+                        )
+                    }
+                    "tool_result" -> listOf(
+                        AnthropicContentPartDto(
+                            type = "tool_result",
+                            toolUseId = contentPart["tool_use_id"]?.toString(),
+                            content = contentPart["content"]?.toString().orEmpty(),
+                            isError = contentPart["is_error"] as? Boolean,
+                        ),
                     )
                     "image_url" -> {
                         val imageUrl = contentPart["image_url"]

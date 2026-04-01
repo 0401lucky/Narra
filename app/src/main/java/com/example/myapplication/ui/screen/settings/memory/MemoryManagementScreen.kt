@@ -21,7 +21,6 @@ import androidx.compose.material.icons.filled.PushPin
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
@@ -40,11 +39,8 @@ import androidx.compose.ui.unit.dp
 import com.example.myapplication.model.ConversationSummary
 import com.example.myapplication.model.MemoryEntry
 import com.example.myapplication.ui.component.AppSnackbarHost
-import com.example.myapplication.ui.screen.settings.AnimatedSettingButton
-import com.example.myapplication.ui.screen.settings.SettingsGroup
 import com.example.myapplication.ui.screen.settings.SettingsHintCard
 import com.example.myapplication.ui.screen.settings.SettingsPageIntro
-import com.example.myapplication.ui.screen.settings.SettingsSectionHeader
 import com.example.myapplication.ui.screen.settings.SettingsScreenPadding
 import com.example.myapplication.ui.screen.settings.SettingsStatusPill
 import com.example.myapplication.ui.screen.settings.SettingsTopBar
@@ -59,7 +55,6 @@ fun MemoryManagementScreen(
     onTogglePinned: (String) -> Unit,
     onDeleteMemory: (String) -> Unit,
     onDeleteSummary: (String) -> Unit,
-    onRefreshSummaries: () -> Unit,
     onConsumeMessage: () -> Unit,
     onNavigateBack: () -> Unit,
 ) {
@@ -110,8 +105,7 @@ fun MemoryManagementScreen(
                 item {
                     SettingsPageIntro(
                         overline = "长期上下文",
-                        title = "集中查看自动记忆与摘要",
-                        summary = "查看全局自动记忆、手动记忆和会话摘要。搜索、置顶或删除，保持上下文干净可控。",
+                        title = "记忆与摘要",
                     )
                 }
 
@@ -165,7 +159,7 @@ fun MemoryManagementScreen(
                     item {
                         SettingsHintCard(
                             title = "暂无记忆",
-                            body = "开启助手记忆后，可自动提取记忆，也可以在聊天消息上手动记忆。",
+                            body = "暂无内容",
                             containerColor = palette.accentSoft,
                             contentColor = palette.accent,
                         )
@@ -180,19 +174,11 @@ fun MemoryManagementScreen(
                     }
                 }
             } else {
-                item {
-                    AnimatedSettingButton(
-                        text = if (uiState.isBusy) "刷新中…" else "刷新摘要",
-                        onClick = onRefreshSummaries,
-                        enabled = !uiState.isBusy,
-                        isPrimary = false,
-                    )
-                }
                 if (filteredSummaries.isEmpty()) {
                     item {
                         SettingsHintCard(
                             title = "暂无摘要",
-                            body = "长对话在达到阈值后会自动生成摘要，生成后会显示在这里。",
+                            body = "暂无内容",
                             containerColor = palette.accentSoft,
                             contentColor = palette.accent,
                         )

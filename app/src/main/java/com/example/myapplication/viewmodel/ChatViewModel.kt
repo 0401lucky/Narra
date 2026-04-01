@@ -13,6 +13,7 @@ import com.example.myapplication.conversation.ConversationAssistantRoundTripRunn
 import com.example.myapplication.conversation.ConversationMemoryExtractionCoordinator
 import com.example.myapplication.conversation.ConversationMessageTransforms
 import com.example.myapplication.conversation.ConversationSummaryCoordinator
+import com.example.myapplication.conversation.ConversationSummaryDebugSupport
 import com.example.myapplication.conversation.ConversationTitleCoordinator
 import com.example.myapplication.conversation.ConversationTransferCoordinator
 import com.example.myapplication.conversation.RoundTripInitialPersistence
@@ -37,6 +38,7 @@ import com.example.myapplication.model.ChatStreamEvent
 import com.example.myapplication.model.Conversation
 import com.example.myapplication.model.DEFAULT_ASSISTANT_ID
 import com.example.myapplication.model.DEFAULT_CONVERSATION_TITLE
+import com.example.myapplication.model.GatewayToolingOptions
 import com.example.myapplication.model.MemoryEntry
 import com.example.myapplication.model.MemoryScopeType
 import com.example.myapplication.model.MessageStatus
@@ -85,6 +87,8 @@ data class ChatUiState(
     val chatSuggestionsModelName: String = "",
     val currentAssistant: Assistant? = null,
     val rememberedMessageIds: Set<String> = emptySet(),
+    val hasConversationSummary: Boolean = false,
+    val summaryCoveredMessageCount: Int = 0,
     val latestPromptDebugDump: String = "",
     val translation: TranslationUiState = TranslationUiState(),
 )
@@ -162,6 +166,7 @@ class ChatViewModel(
         observeMessages()
         observeMemoryEntries()
         observeRememberedMessageIds()
+        observeConversationSummary()
         ensureConversation()
     }
 
@@ -519,6 +524,41 @@ class ChatViewModel(
         }
     }
 
+    fun toggleConversationSearch() {
+        val state = _uiState.value
+        val conversationId = state.currentConversationId
+        if (state.isSending || conversationId.isBlank()) {
+            return
+        }
+        val currentConversation = state.conversations.firstOrNull { it.id == conversationId } ?: return
+        val nextEnabled = !currentConversation.searchEnabled
+        viewModelScope.launch {
+            conversationRepository.updateConversationSearchEnabled(
+                conversationId = conversationId,
+                searchEnabled = nextEnabled,
+            )
+            val resolvedEnabled = conversationRepository.getConversation(conversationId)
+                ?.searchEnabled
+                ?: nextEnabled
+            _uiState.update { current ->
+                current.copy(
+                    conversations = current.conversations.map { conversation ->
+                        if (conversation.id == conversationId) {
+                            conversation.copy(searchEnabled = resolvedEnabled)
+                        } else {
+                            conversation
+                        }
+                    },
+                    noticeMessage = if (resolvedEnabled) {
+                        "当前会话已开启搜索"
+                    } else {
+                        "当前会话已关闭搜索"
+                    },
+                )
+            }
+        }
+    }
+
     fun toggleMessageMemory(messageId: String) {
         val state = _uiState.value
         viewModelScope.launch {
@@ -685,7 +725,13 @@ class ChatViewModel(
                     ChatStateSupport.applyPromptDebugDump(
                         current = current,
                         conversationId = conversationId,
-                        debugDump = promptContext.debugDump,
+                        debugDump = ConversationSummaryDebugSupport.appendStatusLine(
+                            debugDump = promptContext.debugDump,
+                            hasSummary = promptContext.summaryCoveredMessageCount > 0,
+                            coveredMessageCount = promptContext.summaryCoveredMessageCount,
+                            completedMessageCount = promptAssemblyInput.recentMessages.count { it.status == MessageStatus.COMPLETED },
+                            triggerMessageCount = SUMMARY_TRIGGER_MESSAGE_COUNT,
+                        ),
                     )
                 }
                 val effectiveRequestMessages = resolveRequestMessagesForRoundTrip(
@@ -708,6 +754,13 @@ class ChatViewModel(
                                     requestMessages = messages,
                                     streamBuffer = streamBuffer,
                                     systemPrompt = systemPrompt,
+                                    toolingOptions = GatewayToolingOptions.chat(
+                                        searchEnabled = promptAssemblyInput.conversation.searchEnabled,
+                                        runtimeContext = ChatConversationSupport.buildToolRuntimeContext(
+                                            promptAssemblyInput = promptAssemblyInput,
+                                            promptMode = PromptMode.CHAT,
+                                        ),
+                                    ),
                                 )
                             },
                             currentPayload = {
@@ -715,6 +768,7 @@ class ChatViewModel(
                                     content = streamBuffer.content(),
                                     reasoning = streamBuffer.reasoning(),
                                     parts = streamBuffer.parts(),
+                                    citations = streamBuffer.citations(),
                                 )
                             },
                             onCompleted = { payload, parsedOutput, loading ->
@@ -732,6 +786,7 @@ class ChatViewModel(
                                     status = MessageStatus.COMPLETED,
                                     reasoningContent = payload.reasoning,
                                     parts = finalParts,
+                                    citations = payload.citations,
                                 )
                             },
                             onCancelled = { payload, loading ->
@@ -745,6 +800,7 @@ class ChatViewModel(
                                             status = MessageStatus.ERROR,
                                             reasoningContent = payload.reasoning,
                                             parts = payload.parts,
+                                            citations = payload.citations,
                                         ),
                                     ),
                                     errorMessage = null,
@@ -767,6 +823,7 @@ class ChatViewModel(
                                             status = MessageStatus.ERROR,
                                             reasoningContent = payload.reasoning,
                                             parts = payload.parts,
+                                            citations = payload.citations,
                                         ),
                                     ),
                                     errorMessage = errorText,
@@ -913,6 +970,29 @@ class ChatViewModel(
                     ChatStateSupport.updateRememberedMessageIds(current, rememberedIds)
                 }
             }
+        }
+    }
+
+    private fun observeConversationSummary() {
+        viewModelScope.launch {
+            currentConversationId
+                .flatMapLatest { conversationId ->
+                    val resolvedConversationId = conversationId.orEmpty()
+                    if (resolvedConversationId.isBlank()) {
+                        kotlinx.coroutines.flow.flowOf(null)
+                    } else {
+                        conversationSummaryRepository.observeSummary(resolvedConversationId)
+                    }
+                }
+                .collect { summary ->
+                    _uiState.update { current ->
+                        ChatStateSupport.updateConversationSummaryStatus(
+                            current = current,
+                            hasSummary = summary?.summary?.isNotBlank() == true,
+                            coveredMessageCount = summary?.coveredMessageCount ?: 0,
+                        )
+                    }
+                }
         }
     }
 
@@ -1150,6 +1230,7 @@ class ChatViewModel(
         requestMessages: List<ChatMessage>,
         streamBuffer: StreamingReplyBuffer,
         systemPrompt: String = "",
+        toolingOptions: GatewayToolingOptions = GatewayToolingOptions(),
     ) = coroutineScope {
         var streamCompleted = false
         val uiPumpJob = launch {
@@ -1186,11 +1267,13 @@ class ChatViewModel(
                 messages = requestMessages,
                 systemPrompt = systemPrompt,
                 promptMode = PromptMode.CHAT,
+                toolingOptions = toolingOptions,
             ).collect { event ->
                 when (event) {
                     is ChatStreamEvent.ContentDelta -> streamBuffer.appendContent(event.value)
                     is ChatStreamEvent.ImageDelta -> streamBuffer.appendImage(event.part)
                     is ChatStreamEvent.ReasoningDelta -> streamBuffer.appendReasoning(event.value)
+                    is ChatStreamEvent.Citations -> streamBuffer.setCitations(event.items)
                     ChatStreamEvent.Completed -> streamCompleted = true
                 }
             }

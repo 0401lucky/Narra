@@ -32,6 +32,20 @@ import com.example.myapplication.data.repository.ai.DefaultAiPromptExtrasService
 import com.example.myapplication.data.repository.ai.DefaultAiSettingsEditor
 import com.example.myapplication.data.repository.ai.DefaultAiSettingsRepository
 import com.example.myapplication.data.repository.ai.DefaultAiTranslationService
+import com.example.myapplication.data.repository.ai.tooling.GetConversationSummaryTool
+import com.example.myapplication.data.repository.ai.tooling.DefaultMemoryWriteService
+import com.example.myapplication.data.repository.ai.tooling.MemoryWriteService
+import com.example.myapplication.data.repository.ai.tooling.ReadMemoryTool
+import com.example.myapplication.data.repository.ai.tooling.SaveMemoryTool
+import com.example.myapplication.data.repository.ai.tooling.SearchWebTool
+import com.example.myapplication.data.repository.ai.tooling.SearchWorldBookTool
+import com.example.myapplication.data.repository.ai.tooling.ToolAvailabilityResolver
+import com.example.myapplication.data.repository.ai.tooling.ToolRegistry
+import com.example.myapplication.data.repository.context.InMemoryPendingMemoryProposalRepository
+import com.example.myapplication.data.repository.context.PendingMemoryProposalRepository
+import com.example.myapplication.data.repository.search.DefaultSearchRepository
+import com.example.myapplication.data.repository.search.SearchModelExecutor
+import com.example.myapplication.data.repository.search.SearchRepository
 import com.example.myapplication.data.repository.roleplay.RoleplayRepository
 import com.example.myapplication.data.repository.roleplay.RoomRoleplayRepository
 import com.example.myapplication.system.update.AndroidAppUpdateController
@@ -62,6 +76,7 @@ class AppGraph(
             ChatDatabase.MIGRATION_8_9,
             ChatDatabase.MIGRATION_9_10,
             ChatDatabase.MIGRATION_10_11,
+            ChatDatabase.MIGRATION_11_12,
         ).build()
     }
 
@@ -98,12 +113,63 @@ class AppGraph(
         DefaultAiModelCatalogRepository(apiServiceFactory)
     }
 
+    val searchRepository: SearchRepository by lazy {
+        DefaultSearchRepository(
+            llmSearchExecutor = SearchModelExecutor(
+                settingsStore = settingsStore,
+                apiServiceFactory = apiServiceFactory,
+            ),
+        )
+    }
+
+    val toolRegistry: ToolRegistry by lazy {
+        ToolRegistry(
+            listOf(
+                ReadMemoryTool(),
+                GetConversationSummaryTool(),
+                SearchWorldBookTool(),
+                SaveMemoryTool(),
+                SearchWebTool(),
+            ),
+        )
+    }
+
+    val pendingMemoryProposalRepository: PendingMemoryProposalRepository by lazy {
+        InMemoryPendingMemoryProposalRepository()
+    }
+
+    val memoryWriteService: MemoryWriteService by lazy {
+        DefaultMemoryWriteService(
+            settingsStore = settingsStore,
+            memoryRepository = memoryRepository,
+            pendingMemoryProposalRepository = pendingMemoryProposalRepository,
+            aiPromptExtrasService = aiPromptExtrasService,
+        )
+    }
+
+    val toolAvailabilityResolver: ToolAvailabilityResolver by lazy {
+        ToolAvailabilityResolver(
+            searchRepository = searchRepository,
+            memoryRepository = memoryRepository,
+            worldBookRepository = worldBookRepository,
+            conversationSummaryRepository = conversationSummaryRepository,
+            memoryWriteService = memoryWriteService,
+        )
+    }
+
     val aiGateway: AiGateway by lazy {
         DefaultAiGateway(
             settingsStore = settingsStore,
             apiServiceFactory = apiServiceFactory,
             imagePayloadResolver = ImageAttachmentResolver(application)::resolveDataUrl,
             filePromptResolver = FileAttachmentResolver(application)::resolvePromptText,
+            searchRepository = searchRepository,
+            memoryRepository = memoryRepository,
+            worldBookRepository = worldBookRepository,
+            conversationSummaryRepository = conversationSummaryRepository,
+            memoryWriteService = memoryWriteService,
+            toolAvailabilityResolver = toolAvailabilityResolver,
+            toolRegistry = toolRegistry,
         )
     }
 

@@ -23,6 +23,7 @@ data class AnthropicMessageRequest(
     @SerializedName("top_p")
     val topP: Float? = null,
     val thinking: AnthropicThinkingDto? = null,
+    val tools: List<AnthropicToolDto> = emptyList(),
 )
 
 data class AnthropicMessageDto(
@@ -33,7 +34,23 @@ data class AnthropicMessageDto(
 data class AnthropicContentPartDto(
     val type: String,
     val text: String? = null,
+    val thinking: String? = null,
     val source: AnthropicImageSourceDto? = null,
+    val id: String? = null,
+    val name: String? = null,
+    val input: Map<String, Any>? = null,
+    @SerializedName("tool_use_id")
+    val toolUseId: String? = null,
+    val content: String? = null,
+    @SerializedName("is_error")
+    val isError: Boolean? = null,
+)
+
+data class AnthropicToolDto(
+    val name: String,
+    val description: String,
+    @SerializedName("input_schema")
+    val inputSchema: Map<String, Any>,
 )
 
 data class AnthropicImageSourceDto(
@@ -61,4 +78,7 @@ data class AnthropicResponseContentDto(
     val type: String = "",
     val text: String? = null,
     val thinking: String? = null,
+    val id: String? = null,
+    val name: String? = null,
+    val input: Map<String, Any>? = null,
 )

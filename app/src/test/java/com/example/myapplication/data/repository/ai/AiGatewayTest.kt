@@ -2,6 +2,19 @@ package com.example.myapplication.data.repository.ai
 
 import com.example.myapplication.data.remote.ApiServiceFactory
 import com.example.myapplication.data.remote.OpenAiCompatibleApi
+import com.example.myapplication.data.repository.ai.tooling.GetConversationSummaryTool
+import com.example.myapplication.data.repository.ai.tooling.ReadMemoryTool
+import com.example.myapplication.data.repository.ai.tooling.SaveMemoryTool
+import com.example.myapplication.data.repository.ai.tooling.SearchWebTool
+import com.example.myapplication.data.repository.ai.tooling.SearchWorldBookTool
+import com.example.myapplication.data.repository.ai.tooling.ToolAvailabilityResolver
+import com.example.myapplication.data.repository.ai.tooling.ToolRegistry
+import com.example.myapplication.data.repository.context.EmptyConversationSummaryRepository
+import com.example.myapplication.data.repository.context.EmptyMemoryRepository
+import com.example.myapplication.data.repository.context.EmptyWorldBookRepository
+import com.example.myapplication.data.repository.search.SearchRepository
+import com.example.myapplication.data.repository.search.SearchResult
+import com.example.myapplication.data.repository.search.SearchResultItem
 import com.example.myapplication.model.AppSettings
 import com.example.myapplication.model.AttachmentType
 import com.example.myapplication.model.ChatCompletionRequest
@@ -9,6 +22,7 @@ import com.example.myapplication.model.ChatCompletionResponse
 import com.example.myapplication.model.ChatMessage
 import com.example.myapplication.model.ChatMessagePartType
 import com.example.myapplication.model.ChatStreamEvent
+import com.example.myapplication.model.GatewayToolingOptions
 import com.example.myapplication.model.ImageGenerationRequest
 import com.example.myapplication.model.ImageGenerationResponse
 import com.example.myapplication.model.MessageAttachment
@@ -18,6 +32,10 @@ import com.example.myapplication.model.ModelsResponse
 import com.example.myapplication.model.OpenAiTextApiMode
 import com.example.myapplication.model.ProviderSettings
 import com.example.myapplication.model.ProviderType
+import com.example.myapplication.model.SearchSettings
+import com.example.myapplication.model.SearchSourceConfig
+import com.example.myapplication.model.SearchSourceIds
+import com.example.myapplication.model.SearchSourceType
 import com.example.myapplication.model.TransferDirection
 import com.example.myapplication.model.TransferStatus
 import com.example.myapplication.model.fileMessagePart
@@ -152,6 +170,73 @@ class AiGatewayTest {
         assertEquals("先整理上下文", reply.reasoningContent)
         val request = server.takeRequest()
         assertEquals("/v1/responses", request.path)
+    }
+
+    @Test
+    fun sendMessage_supportsResponsesApiToolLoop() = runBlocking {
+        server.enqueue(
+            MockResponse().setResponseCode(200).setBody(
+                """
+                {
+                  "id": "resp_tool_1",
+                  "output": [
+                    {
+                      "type": "function_call",
+                      "call_id": "call_resp_1",
+                      "name": "search_web",
+                      "arguments": "{\"query\":\"今日黄金价格\"}"
+                    }
+                  ]
+                }
+                """.trimIndent(),
+            ),
+        )
+        server.enqueue(
+            MockResponse().setResponseCode(200).setBody(
+                """
+                {
+                  "id": "resp_tool_2",
+                  "output": [
+                    {
+                      "type": "message",
+                      "content": [
+                        {"type": "output_text", "text": "这是带搜索结果的 responses 回复"}
+                      ]
+                    }
+                  ]
+                }
+                """.trimIndent(),
+            ),
+        )
+        val provider = ProviderSettings(
+            id = "provider-responses-search",
+            name = "OpenAI Proxy",
+            baseUrl = server.url("/v1/").toString(),
+            apiKey = "saved-key",
+            selectedModel = "gpt-4.1-mini",
+            openAiTextApiMode = OpenAiTextApiMode.RESPONSES,
+        )
+        val gateway = createGateway(
+            settings = AppSettings(
+                providers = listOf(provider),
+                selectedProviderId = provider.id,
+                searchSettings = configuredSearchSettings(),
+            ),
+            searchRepository = fakeSearchRepository(),
+        )
+
+        val reply = gateway.sendMessage(
+            listOf(ChatMessage(id = "1", role = MessageRole.USER, content = "帮我查一下")),
+            toolingOptions = GatewayToolingOptions.searchOnly(true),
+        )
+
+        assertEquals("这是带搜索结果的 responses 回复", reply.content)
+        assertEquals(1, reply.citations.size)
+        val firstRequest = JsonParser.parseString(server.takeRequest().body.readUtf8()).asJsonObject
+        assertTrue(firstRequest.getAsJsonArray("tools").size() > 0)
+        val secondRequest = JsonParser.parseString(server.takeRequest().body.readUtf8()).asJsonObject
+        assertEquals("resp_tool_1", secondRequest["previous_response_id"].asString)
+        assertEquals("function_call_output", secondRequest.getAsJsonArray("input")[0].asJsonObject["type"].asString)
     }
 
     @Test
@@ -494,6 +579,77 @@ class AiGatewayTest {
         val request = server.takeRequest()
         assertEquals("/v1/messages", request.path)
         assertEquals("anthropic-key", request.getHeader("x-api-key"))
+    }
+
+    @Test
+    fun sendMessage_supportsAnthropicToolLoop() = runBlocking {
+        server.enqueue(
+            MockResponse().setResponseCode(200).setBody(
+                """
+                {
+                  "id": "msg_tool_1",
+                  "model": "claude-sonnet-4-20250514",
+                  "content": [
+                    {
+                      "type": "tool_use",
+                      "id": "toolu_1",
+                      "name": "search_web",
+                      "input": {
+                        "query": "今日原油"
+                      }
+                    }
+                  ]
+                }
+                """.trimIndent(),
+            ),
+        )
+        server.enqueue(
+            MockResponse().setResponseCode(200).setBody(
+                """
+                {
+                  "id": "msg_tool_2",
+                  "model": "claude-sonnet-4-20250514",
+                  "content": [
+                    {
+                      "type": "text",
+                      "text": "这是 Claude 搜索后的回复"
+                    }
+                  ]
+                }
+                """.trimIndent(),
+            ),
+        )
+        val provider = ProviderSettings(
+            id = "provider-claude-search",
+            name = "Claude",
+            baseUrl = server.url("/v1/").toString(),
+            apiKey = "anthropic-key",
+            selectedModel = "claude-sonnet-4-20250514",
+            apiProtocol = com.example.myapplication.model.ProviderApiProtocol.ANTHROPIC,
+        )
+        val gateway = createGateway(
+            settings = AppSettings(
+                providers = listOf(provider),
+                selectedProviderId = provider.id,
+                searchSettings = configuredSearchSettings(),
+            ),
+            searchRepository = fakeSearchRepository(),
+        )
+
+        val reply = gateway.sendMessage(
+            listOf(ChatMessage(id = "1", role = MessageRole.USER, content = "查一下油价")),
+            toolingOptions = GatewayToolingOptions.searchOnly(true),
+        )
+
+        assertEquals("这是 Claude 搜索后的回复", reply.content)
+        assertEquals(1, reply.citations.size)
+        val firstRequest = JsonParser.parseString(server.takeRequest().body.readUtf8()).asJsonObject
+        assertTrue(firstRequest.getAsJsonArray("tools").size() > 0)
+        val secondRequest = JsonParser.parseString(server.takeRequest().body.readUtf8()).asJsonObject
+        val toolResult = secondRequest.getAsJsonArray("messages")
+            .last().asJsonObject
+            .getAsJsonArray("content")[0].asJsonObject
+        assertEquals("tool_result", toolResult["type"].asString)
     }
 
     @Test
@@ -1108,6 +1264,82 @@ class AiGatewayTest {
     }
 
     @Test
+    fun sendMessage_chatCompletionsSearchToolReturnsCitations() = runBlocking {
+        server.enqueue(
+            MockResponse().setResponseCode(200).setBody(
+                """
+                {
+                  "choices": [
+                    {
+                      "index": 0,
+                      "message": {
+                        "role": "assistant",
+                        "tool_calls": [
+                          {
+                            "id": "call_1",
+                            "type": "function",
+                            "function": {
+                              "name": "search_web",
+                              "arguments": "{\"query\":\"今日美股行情\"}"
+                            }
+                          }
+                        ]
+                      },
+                      "finish_reason": "tool_calls"
+                    }
+                  ]
+                }
+                """.trimIndent(),
+            ),
+        )
+        server.enqueue(
+            MockResponse().setResponseCode(200).setBody(
+                """
+                {
+                  "choices": [
+                    {
+                      "index": 0,
+                      "message": {
+                        "role": "assistant",
+                        "content": "这是搜索后的最终回答"
+                      }
+                    }
+                  ]
+                }
+                """.trimIndent(),
+            ),
+        )
+        val provider = ProviderSettings(
+            id = "provider-search-stream",
+            name = "OpenAI",
+            baseUrl = server.url("/v1/").toString(),
+            apiKey = "stream-key",
+            selectedModel = "gpt-4.1-mini",
+        )
+        val gateway = createGateway(
+            settings = AppSettings(
+                providers = listOf(provider),
+                selectedProviderId = provider.id,
+                searchSettings = configuredSearchSettings(),
+            ),
+            searchRepository = fakeSearchRepository(),
+        )
+
+        val reply = gateway.sendMessage(
+            listOf(ChatMessage(id = "1", role = MessageRole.USER, content = "查一下今天的美股")),
+            toolingOptions = GatewayToolingOptions.searchOnly(true),
+        )
+
+        assertEquals("这是搜索后的最终回答", reply.content)
+        assertEquals(1, reply.citations.size)
+        val firstRequest = JsonParser.parseString(server.takeRequest().body.readUtf8()).asJsonObject
+        assertTrue(firstRequest.getAsJsonArray("tools").size() > 0)
+        val secondRequest = JsonParser.parseString(server.takeRequest().body.readUtf8()).asJsonObject
+        val messages = secondRequest.getAsJsonArray("messages")
+        assertEquals("tool", messages[messages.size() - 1].asJsonObject["role"].asString)
+    }
+
+    @Test
     fun sendMessageStream_splitsThinkTagsIntoReasoningAndContentDeltas() = runBlocking {
         val sseBody = buildString {
             append("data: {\"choices\":[{\"delta\":{\"content\":\"<think>先分析问题</think>最终\"},\"index\":0}]}\n\n")
@@ -1268,9 +1500,31 @@ class AiGatewayTest {
         streamClientProvider: ((String, String) -> OkHttpClient)? = null,
         imagePayloadResolver: suspend (MessageAttachment) -> String = { error("不应解析图片") },
         filePromptResolver: suspend (MessageAttachment) -> String = { error("不应解析文件") },
+        searchRepository: SearchRepository = object : SearchRepository {
+            override suspend fun search(
+                source: SearchSourceConfig,
+                query: String,
+                resultCount: Int,
+            ) = error("不应执行搜索")
+        },
     ): DefaultAiGateway {
         val settingsStore = FakeSettingsStore(settings)
         val apiServiceFactory = ApiServiceFactory()
+        val toolRegistry = ToolRegistry(
+            listOf(
+                ReadMemoryTool(),
+                GetConversationSummaryTool(),
+                SearchWorldBookTool(),
+                SaveMemoryTool(),
+                SearchWebTool(),
+            ),
+        )
+        val toolAvailabilityResolver = ToolAvailabilityResolver(
+            searchRepository = searchRepository,
+            memoryRepository = EmptyMemoryRepository,
+            worldBookRepository = EmptyWorldBookRepository,
+            conversationSummaryRepository = EmptyConversationSummaryRepository,
+        )
         return DefaultAiGateway(
             settingsStore = settingsStore,
             apiServiceFactory = apiServiceFactory,
@@ -1285,7 +1539,51 @@ class AiGatewayTest {
             },
             imagePayloadResolver = imagePayloadResolver,
             filePromptResolver = filePromptResolver,
+            searchRepository = searchRepository,
+            memoryRepository = EmptyMemoryRepository,
+            worldBookRepository = EmptyWorldBookRepository,
+            conversationSummaryRepository = EmptyConversationSummaryRepository,
+            toolAvailabilityResolver = toolAvailabilityResolver,
+            toolRegistry = toolRegistry,
             ioDispatcher = Dispatchers.Unconfined,
         )
+    }
+
+    private fun configuredSearchSettings(): SearchSettings {
+        return SearchSettings(
+            sources = listOf(
+                SearchSourceConfig(
+                    id = SearchSourceIds.BRAVE,
+                    type = SearchSourceType.BRAVE,
+                    name = "Brave 搜索",
+                    enabled = true,
+                    apiKey = "search-key",
+                ),
+            ),
+            selectedSourceId = SearchSourceIds.BRAVE,
+            defaultResultCount = 3,
+        )
+    }
+
+    private fun fakeSearchRepository(): SearchRepository {
+        return object : SearchRepository {
+            override suspend fun search(
+                source: SearchSourceConfig,
+                query: String,
+                resultCount: Int,
+            ): SearchResult {
+                return SearchResult(
+                    query = query,
+                    items = listOf(
+                        SearchResultItem(
+                            title = "示例来源",
+                            url = "https://example.com/search",
+                            snippet = "这是搜索摘要",
+                            sourceLabel = source.name,
+                        ),
+                    ),
+                )
+            }
+        }
     }
 }

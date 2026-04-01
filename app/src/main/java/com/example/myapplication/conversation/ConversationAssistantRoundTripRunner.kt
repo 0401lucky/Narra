@@ -5,12 +5,14 @@ import com.example.myapplication.data.repository.ai.AiGateway
 import com.example.myapplication.data.repository.ConversationRepository
 import com.example.myapplication.model.ChatMessage
 import com.example.myapplication.model.ChatMessagePart
+import com.example.myapplication.model.MessageCitation
 import kotlinx.coroutines.CancellationException
 
 data class StreamedAssistantPayload(
     val content: String,
     val reasoning: String,
     val parts: List<ChatMessagePart>,
+    val citations: List<MessageCitation>,
 )
 
 data class AssistantRoundTripOutcome(

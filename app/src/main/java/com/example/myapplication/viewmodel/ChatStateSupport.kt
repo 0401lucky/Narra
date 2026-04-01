@@ -162,6 +162,8 @@ object ChatStateSupport {
             streamingReasoningContent = "",
             streamingParts = emptyList(),
             isConversationReady = false,
+            hasConversationSummary = false,
+            summaryCoveredMessageCount = 0,
         )
     }
 
@@ -202,6 +204,17 @@ object ChatStateSupport {
         rememberedIds: Set<String>,
     ): ChatUiState {
         return current.copy(rememberedMessageIds = rememberedIds)
+    }
+
+    fun updateConversationSummaryStatus(
+        current: ChatUiState,
+        hasSummary: Boolean,
+        coveredMessageCount: Int,
+    ): ChatUiState {
+        return current.copy(
+            hasConversationSummary = hasSummary,
+            summaryCoveredMessageCount = coveredMessageCount,
+        )
     }
 
     fun selectAssistant(
@@ -270,6 +283,8 @@ object ChatStateSupport {
             noticeMessage = null,
             chatSuggestions = emptyList(),
             chatSuggestionsModelName = "",
+            hasConversationSummary = false,
+            summaryCoveredMessageCount = 0,
             latestPromptDebugDump = "",
             translation = TranslationUiState(),
         )

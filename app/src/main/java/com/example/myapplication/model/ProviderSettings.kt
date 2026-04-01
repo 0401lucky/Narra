@@ -23,6 +23,7 @@ data class ProviderSettings(
     val chatSuggestionModel: String = "",
     val memoryModel: String = "",
     val translationModel: String = "",
+    val searchModel: String = "",
 ) {
     fun hasBaseCredentials(): Boolean {
         return baseUrl.isNotBlank() && apiKey.isNotBlank()
@@ -96,9 +97,19 @@ data class ProviderSettings(
             ProviderFunction.CHAT_SUGGESTION -> chatSuggestionModel
             ProviderFunction.MEMORY -> memoryModel
             ProviderFunction.TRANSLATION -> translationModel
+            ProviderFunction.SEARCH -> searchModel
         }.trim()
 
         return taskModel.ifBlank { selectedModel.trim() }
+    }
+
+    fun supportsLlmSearchSource(): Boolean {
+        return when (resolvedApiProtocol()) {
+            ProviderApiProtocol.ANTHROPIC -> true
+            ProviderApiProtocol.OPENAI_COMPATIBLE -> {
+                resolvedOpenAiTextApiMode() == OpenAiTextApiMode.RESPONSES
+            }
+        }
     }
 }
 
@@ -108,6 +119,7 @@ enum class ProviderFunction {
     CHAT_SUGGESTION,
     MEMORY,
     TRANSLATION,
+    SEARCH,
 }
 
 fun createDefaultProvider(

@@ -16,6 +16,8 @@ import com.example.myapplication.model.DEFAULT_ROLEPLAY_LONGFORM_TARGET_CHARS
 import com.example.myapplication.model.DEFAULT_WORLD_BOOK_MAX_ENTRIES
 import com.example.myapplication.model.ProviderSettings
 import com.example.myapplication.model.ProviderType
+import com.example.myapplication.model.SearchSettings
+import com.example.myapplication.model.SearchSourceConfig
 import com.example.myapplication.model.ScreenTranslationSettings
 import com.example.myapplication.model.ThemeMode
 import com.example.myapplication.model.TranslationHistoryEntry
@@ -61,6 +63,8 @@ interface SettingsStore {
         settings: ScreenTranslationSettings,
     )
 
+    suspend fun saveSearchSettings(settings: SearchSettings)
+
     suspend fun saveUserProfile(
         displayName: String,
         avatarUri: String,
@@ -84,6 +88,7 @@ class AppSettingsStore(
     private val providerListType = object : TypeToken<List<ProviderSettings>>() {}.type
     private val assistantListType = object : TypeToken<List<Assistant>>() {}.type
     private val translationHistoryType = object : TypeToken<List<TranslationHistoryEntry>>() {}.type
+    private val searchSettingsType = object : TypeToken<SearchSettings>() {}.type
     private val secureValueStore = SecureValueStore(context)
 
     override val settingsFlow: Flow<AppSettings> = context.dataStore.data.map { preferences ->
@@ -92,6 +97,7 @@ class AppSettingsStore(
             .ifBlank { preferences[PreferencesKeys.apiKey].orEmpty() }
         val legacySelectedModel = preferences[PreferencesKeys.selectedModel].orEmpty()
         val secureProviderApiKeys = secureValueStore.getStringMap(SecureKeys.providerApiKeys)
+        val secureSearchApiKeys = secureValueStore.getStringMap(SecureKeys.searchSourceApiKeys)
         val storedProviders = decodeProviders(preferences[PreferencesKeys.providersJson].orEmpty())
             .map { provider ->
                 normalizeProviderFields(provider).copy(
@@ -116,6 +122,18 @@ class AppSettingsStore(
             providers = resolvedProviders,
             selectedProviderId = resolvedSelectedProviderId,
         )
+        val storedSearchSettings = decodeSearchSettings(
+            preferences[PreferencesKeys.searchSettingsJson].orEmpty(),
+        )
+        val searchSettings = storedSearchSettings.copy(
+            sources = storedSearchSettings.sources.map { source ->
+                source.copy(
+                    apiKey = secureSearchApiKeys[source.id]
+                        .orEmpty()
+                        .ifBlank { source.apiKey.trim() },
+                )
+            },
+        ).normalized()
 
         AppSettings(
             baseUrl = effectiveActiveProvider?.baseUrl ?: legacyBaseUrl,
@@ -163,6 +181,7 @@ class AppSettingsStore(
                 showSourceText = preferences[PreferencesKeys.screenTranslationShowSourceText] ?: true,
                 vendorGuideDismissed = preferences[PreferencesKeys.screenTranslationVendorGuideDismissed] ?: false,
             ),
+            searchSettings = searchSettings,
         )
     }
 
@@ -306,6 +325,19 @@ class AppSettingsStore(
         }
     }
 
+    override suspend fun saveSearchSettings(settings: SearchSettings) {
+        val normalizedSettings = settings.normalized()
+        persistSecureSearchApiKeys(normalizedSettings.sources)
+        context.dataStore.edit { preferences ->
+            preferences[PreferencesKeys.searchSettingsJson] = gson.toJson(
+                normalizedSettings.copy(
+                    sources = normalizedSettings.sources.map(::stripSensitiveSearchFields),
+                ),
+                searchSettingsType,
+            )
+        }
+    }
+
     override suspend fun saveUserProfile(
         displayName: String,
         avatarUri: String,
@@ -412,6 +444,17 @@ class AppSettingsStore(
         )
     }
 
+    private fun decodeSearchSettings(rawJson: String): SearchSettings {
+        if (rawJson.isBlank()) {
+            return SearchSettings()
+        }
+        return runCatching {
+            gson.fromJson<SearchSettings>(rawJson, searchSettingsType)
+                ?.normalized()
+                ?: SearchSettings()
+        }.getOrDefault(SearchSettings())
+    }
+
     /** Gson 反序列化旧 JSON 时新字段为 null，补充 type、apiProtocol、OpenAI text api mode 和 models。 */
     private fun normalizeProviderFields(provider: ProviderSettings): ProviderSettings {
         val resolvedType = provider.type ?: ProviderType.fromBaseUrl(provider.baseUrl)
@@ -508,6 +551,24 @@ class AppSettingsStore(
             SecureKeys.legacyApiKey,
             activeProvider?.apiKey.orEmpty(),
         )
+    }
+
+    private fun persistSecureSearchApiKeys(
+        sources: List<SearchSourceConfig>,
+    ) {
+        val secureApiKeys = sources.associate { source ->
+            source.id to source.apiKey.trim()
+        }
+        secureValueStore.putStringMap(
+            SecureKeys.searchSourceApiKeys,
+            secureApiKeys,
+        )
+    }
+
+    private fun stripSensitiveSearchFields(
+        source: SearchSourceConfig,
+    ): SearchSourceConfig {
+        return source.copy(apiKey = "")
     }
 
     private fun resolveEffectiveProvider(
@@ -610,11 +671,13 @@ class AppSettingsStore(
         val screenTranslationSelectedTextEnabled = booleanPreferencesKey("screen_translation_selected_text_enabled")
         val screenTranslationShowSourceText = booleanPreferencesKey("screen_translation_show_source_text")
         val screenTranslationVendorGuideDismissed = booleanPreferencesKey("screen_translation_vendor_guide_dismissed")
+        val searchSettingsJson = stringPreferencesKey("search_settings_json")
     }
 
     private object SecureKeys {
         const val legacyApiKey = "legacy_api_key"
         const val providerApiKeys = "provider_api_keys"
+        const val searchSourceApiKeys = "search_source_api_keys"
     }
 
     private companion object {

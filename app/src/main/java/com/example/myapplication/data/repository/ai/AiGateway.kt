@@ -4,9 +4,28 @@ import com.example.myapplication.data.local.SettingsStore
 import com.example.myapplication.data.remote.AnthropicApi
 import com.example.myapplication.data.remote.ApiServiceFactory
 import com.example.myapplication.data.remote.OpenAiCompatibleApi
-import com.example.myapplication.model.AssistantReply
+import com.example.myapplication.data.repository.context.ConversationSummaryRepository
+import com.example.myapplication.data.repository.context.EmptyConversationSummaryRepository
+import com.example.myapplication.data.repository.context.EmptyMemoryRepository
+import com.example.myapplication.data.repository.context.EmptyWorldBookRepository
+import com.example.myapplication.data.repository.context.MemoryRepository
+import com.example.myapplication.data.repository.context.WorldBookRepository
 import com.example.myapplication.data.repository.ImageGenerationResult
 import com.example.myapplication.data.repository.ParsedAssistantSpecialOutput
+import com.example.myapplication.data.repository.ai.tooling.GetConversationSummaryTool
+import com.example.myapplication.data.repository.ai.tooling.MemoryWriteService
+import com.example.myapplication.data.repository.ai.tooling.NoOpMemoryWriteService
+import com.example.myapplication.data.repository.ai.tooling.ReadMemoryTool
+import com.example.myapplication.data.repository.ai.tooling.ResolvedGatewayTooling
+import com.example.myapplication.data.repository.ai.tooling.SaveMemoryTool
+import com.example.myapplication.data.repository.ai.tooling.SearchWebTool
+import com.example.myapplication.data.repository.ai.tooling.SearchWorldBookTool
+import com.example.myapplication.data.repository.ai.tooling.ToolAvailabilityResolver
+import com.example.myapplication.data.repository.ai.tooling.ToolContinuation
+import com.example.myapplication.data.repository.ai.tooling.ToolEngine
+import com.example.myapplication.data.repository.ai.tooling.ToolRegistry
+import com.example.myapplication.data.repository.search.SearchRepository
+import com.example.myapplication.model.AssistantReply
 import com.example.myapplication.model.ChatCompletionChunk
 import com.example.myapplication.model.ChatCompletionRequest
 import com.example.myapplication.model.ChatMessage
@@ -15,11 +34,14 @@ import com.example.myapplication.model.ChatMessagePart
 import com.example.myapplication.model.ChatStreamEvent
 import com.example.myapplication.model.ImageGenerationRequest
 import com.example.myapplication.model.MessageAttachment
+import com.example.myapplication.model.GatewayToolingOptions
+import com.example.myapplication.model.MessageCitation
 import com.example.myapplication.model.DEFAULT_CHAT_COMPLETIONS_PATH
 import com.example.myapplication.model.OpenAiTextApiMode
 import com.example.myapplication.model.PromptMode
 import com.example.myapplication.model.ProviderApiProtocol
 import com.example.myapplication.model.ProviderSettings
+import com.example.myapplication.model.ResponseApiRequest
 import com.example.myapplication.model.buildThinkingRequestConfig
 import com.google.gson.Gson
 import kotlinx.coroutines.CancellationException
@@ -64,12 +86,14 @@ interface AiGateway {
     suspend fun sendMessage(
         messages: List<ChatMessage>,
         systemPrompt: String = "",
+        toolingOptions: GatewayToolingOptions = GatewayToolingOptions(),
     ): AssistantReply
 
     fun sendMessageStream(
         messages: List<ChatMessage>,
         systemPrompt: String = "",
         promptMode: PromptMode = PromptMode.CHAT,
+        toolingOptions: GatewayToolingOptions = GatewayToolingOptions(),
     ): Flow<ChatStreamEvent>
 
     fun parseAssistantSpecialOutput(
@@ -111,9 +135,49 @@ class DefaultAiGateway(
     private val filePromptResolver: suspend (MessageAttachment) -> String = {
         throw IllegalStateException("当前环境不支持文件发送")
     },
+    private val searchRepository: SearchRepository,
+    private val memoryRepository: MemoryRepository = EmptyMemoryRepository,
+    private val worldBookRepository: WorldBookRepository = EmptyWorldBookRepository,
+    private val conversationSummaryRepository: ConversationSummaryRepository = EmptyConversationSummaryRepository,
+    private val memoryWriteService: MemoryWriteService = NoOpMemoryWriteService,
+    private val toolAvailabilityResolver: ToolAvailabilityResolver = ToolAvailabilityResolver(
+        searchRepository = searchRepository,
+        memoryRepository = memoryRepository,
+        worldBookRepository = worldBookRepository,
+        conversationSummaryRepository = conversationSummaryRepository,
+    ),
+    private val toolRegistry: ToolRegistry = ToolRegistry(
+        listOf(
+            ReadMemoryTool(),
+            GetConversationSummaryTool(),
+            SearchWorldBookTool(),
+            SaveMemoryTool(),
+            SearchWebTool(),
+        ),
+    ),
     private val ioDispatcher: CoroutineDispatcher = Dispatchers.IO,
 ) : AiGateway {
     private val gson = Gson()
+    private val toolEngine = ToolEngine(
+        toolRegistry = toolRegistry,
+        apiServiceProvider = apiServiceProvider,
+        anthropicApiProvider = anthropicApiProvider,
+        openAiTextUrlBuilder = ::buildOpenAiTextUrl,
+        requestBuilder = { spec ->
+            buildRequestWithRoleplaySampling(
+                model = spec.model,
+                messages = spec.messages,
+                baseUrl = spec.baseUrl,
+                apiProtocol = spec.apiProtocol,
+                stream = spec.stream,
+                reasoningEffort = spec.reasoningEffort,
+                thinking = spec.thinking,
+                promptMode = spec.promptMode,
+                tools = spec.tools,
+                toolChoice = spec.toolChoice,
+            )
+        },
+    )
     private val roleplaySamplingDisabledBaseUrls = Collections.synchronizedSet(mutableSetOf<String>())
 
     override suspend fun generateImage(prompt: String): List<ImageGenerationResult> {
@@ -157,6 +221,7 @@ class DefaultAiGateway(
     override suspend fun sendMessage(
         messages: List<ChatMessage>,
         systemPrompt: String,
+        toolingOptions: GatewayToolingOptions,
     ): AssistantReply {
         val settings = settingsStore.settingsFlow.first()
         require(settings.hasRequiredConfig()) { "请先完成设置并选择模型" }
@@ -169,94 +234,34 @@ class DefaultAiGateway(
 
         val requestMessages = toRequestMessages(messages, systemPrompt)
         require(requestMessages.isNotEmpty()) { "消息不能为空" }
+        val gatewayTooling = toolAvailabilityResolver.resolve(
+            settings = settings,
+            activeProvider = activeProvider,
+            selectedModel = selectedModel,
+            promptMode = PromptMode.CHAT,
+            toolingOptions = toolingOptions,
+        )
 
         return try {
             when (apiProtocol) {
-                ProviderApiProtocol.OPENAI_COMPATIBLE -> {
-                    val request = ChatCompletionRequest(
-                        model = selectedModel,
-                        messages = requestMessages,
-                        reasoningEffort = thinkingRequestConfig.reasoningEffort,
-                        thinking = thinkingRequestConfig.thinking,
-                    )
-                    when (activeProvider?.resolvedOpenAiTextApiMode() ?: OpenAiTextApiMode.CHAT_COMPLETIONS) {
-                        OpenAiTextApiMode.CHAT_COMPLETIONS -> {
-                            val response = apiServiceProvider(
-                                baseUrl,
-                                apiKey,
-                            ).createChatCompletionAt(
-                                buildOpenAiTextUrl(baseUrl, activeProvider),
-                                request,
-                            )
-                            if (!response.isSuccessful) {
-                                throw GatewayNetworkSupport.retrofitFailure("聊天请求失败", response)
-                            }
-                            val assistantMessage = response.body()
-                                ?.choices
-                                ?.firstOrNull()
-                                ?.message
-                            val extractedOutput = GatewayAssistantOutputParser.extractAssistantOutput(assistantMessage)
-                            if (extractedOutput.content.isBlank() && extractedOutput.parts.isEmpty()) {
-                                throw IllegalStateException("模型未返回有效内容")
-                            }
-                            AssistantReply(
-                                content = extractedOutput.content,
-                                reasoningContent = extractedOutput.reasoning,
-                                parts = extractedOutput.parts,
-                            )
-                        }
-                        OpenAiTextApiMode.RESPONSES -> {
-                            val response = apiServiceProvider(
-                                baseUrl,
-                                apiKey,
-                            ).createResponseAt(
-                                buildOpenAiTextUrl(baseUrl, activeProvider),
-                                ResponseApiSupport.buildRequest(request),
-                            )
-                            if (!response.isSuccessful) {
-                                throw PromptExtrasResponseSupport.buildHttpFailure(
-                                    operation = "聊天请求失败",
-                                    code = response.code(),
-                                    errorDetail = response.errorBody()?.string().orEmpty(),
-                                    headers = response.headers(),
-                                )
-                            }
-                            val body = response.body() ?: throw IllegalStateException("响应体为空")
-                            val parsed = ResponseApiSupport.parseResponse(body)
-                            AssistantReply(
-                                content = parsed.content,
-                                reasoningContent = parsed.reasoning,
-                            )
-                        }
-                    }
-                }
-                ProviderApiProtocol.ANTHROPIC -> {
-                    val response = anthropicApiProvider(baseUrl, apiKey).createMessage(
-                        AnthropicProtocolSupport.buildMessageRequest(
-                            ChatCompletionRequest(
-                                model = selectedModel,
-                                messages = requestMessages,
-                                temperature = null,
-                                topP = null,
-                                thinking = thinkingRequestConfig.thinking,
-                            ),
-                        ),
-                    )
-                    if (!response.isSuccessful) {
-                        throw PromptExtrasResponseSupport.buildHttpFailure(
-                            operation = "聊天请求失败",
-                            code = response.code(),
-                            errorDetail = response.errorBody()?.string().orEmpty(),
-                            headers = response.headers(),
-                        )
-                    }
-                    val body = response.body() ?: throw IllegalStateException("响应体为空")
-                    val reply = AnthropicProtocolSupport.toAssistantReply(body)
-                    if (reply.content.isBlank() && reply.parts.isEmpty()) {
-                        throw IllegalStateException("模型未返回有效内容")
-                    }
-                    reply
-                }
+                ProviderApiProtocol.OPENAI_COMPATIBLE -> sendOpenAiCompatibleMessage(
+                    baseUrl = baseUrl,
+                    apiKey = apiKey,
+                    selectedModel = selectedModel,
+                    requestMessages = requestMessages,
+                    thinkingRequestConfig = thinkingRequestConfig,
+                    activeProvider = activeProvider,
+                    gatewayTooling = gatewayTooling,
+                )
+
+                ProviderApiProtocol.ANTHROPIC -> sendAnthropicMessage(
+                    baseUrl = baseUrl,
+                    apiKey = apiKey,
+                    selectedModel = selectedModel,
+                    requestMessages = requestMessages,
+                    thinkingRequestConfig = thinkingRequestConfig,
+                    gatewayTooling = gatewayTooling,
+                )
             }
         } catch (exception: Exception) {
             throw GatewayNetworkSupport.toReadableNetworkException(exception)
@@ -267,6 +272,7 @@ class DefaultAiGateway(
         messages: List<ChatMessage>,
         systemPrompt: String,
         promptMode: PromptMode,
+        toolingOptions: GatewayToolingOptions,
     ): Flow<ChatStreamEvent> = flow {
         val settings = settingsStore.settingsFlow.first()
         require(settings.hasRequiredConfig()) { "请先完成设置并选择模型" }
@@ -279,28 +285,60 @@ class DefaultAiGateway(
 
         val requestMessages = toRequestMessages(messages, systemPrompt, promptMode)
         require(requestMessages.isNotEmpty()) { "消息不能为空" }
+        val gatewayTooling = toolAvailabilityResolver.resolve(
+            settings = settings,
+            activeProvider = activeProvider,
+            selectedModel = selectedModel,
+                        promptMode = promptMode,
+                        toolingOptions = toolingOptions,
+                    )
 
         when (apiProtocol) {
             ProviderApiProtocol.OPENAI_COMPATIBLE -> {
-                streamOpenAiMessage(
-                    baseUrl = baseUrl,
-                    apiKey = apiKey,
-                    selectedModel = selectedModel,
-                    requestMessages = requestMessages,
-                    thinkingRequestConfig = thinkingRequestConfig,
-                    promptMode = promptMode,
-                    activeProvider = activeProvider,
-                ).collect { emit(it) }
+                if (gatewayTooling.enabledToolNames.isEmpty()) {
+                    streamOpenAiMessage(
+                        baseUrl = baseUrl,
+                        apiKey = apiKey,
+                        selectedModel = selectedModel,
+                        requestMessages = requestMessages,
+                        thinkingRequestConfig = thinkingRequestConfig,
+                        promptMode = promptMode,
+                        activeProvider = activeProvider,
+                    ).collect { emit(it) }
+                } else {
+                    streamOpenAiMessageWithTools(
+                        baseUrl = baseUrl,
+                        apiKey = apiKey,
+                        selectedModel = selectedModel,
+                        requestMessages = requestMessages,
+                        thinkingRequestConfig = thinkingRequestConfig,
+                        activeProvider = activeProvider,
+                        gatewayTooling = gatewayTooling,
+                        promptMode = promptMode,
+                    ).collect { emit(it) }
+                }
             }
             ProviderApiProtocol.ANTHROPIC -> {
-                streamAnthropicMessage(
-                    baseUrl = baseUrl,
-                    apiKey = apiKey,
-                    selectedModel = selectedModel,
-                    requestMessages = requestMessages,
-                    thinkingRequestConfig = thinkingRequestConfig,
-                    promptMode = promptMode,
-                ).collect { emit(it) }
+                if (gatewayTooling.enabledToolNames.isEmpty()) {
+                    streamAnthropicMessage(
+                        baseUrl = baseUrl,
+                        apiKey = apiKey,
+                        selectedModel = selectedModel,
+                        requestMessages = requestMessages,
+                        thinkingRequestConfig = thinkingRequestConfig,
+                        promptMode = promptMode,
+                    ).collect { emit(it) }
+                } else {
+                    streamAnthropicMessageWithTools(
+                        baseUrl = baseUrl,
+                        apiKey = apiKey,
+                        selectedModel = selectedModel,
+                        requestMessages = requestMessages,
+                        thinkingRequestConfig = thinkingRequestConfig,
+                        gatewayTooling = gatewayTooling,
+                        promptMode = promptMode,
+                    ).collect { emit(it) }
+                }
             }
         }
     }.flowOn(ioDispatcher)
@@ -313,6 +351,373 @@ class DefaultAiGateway(
             content = content,
             existingParts = existingParts,
         )
+    }
+
+    private fun assistantReplyFromOpenAiMessage(
+        assistantMessage: com.example.myapplication.model.AssistantMessageDto?,
+        citations: List<MessageCitation> = emptyList(),
+    ): AssistantReply {
+        val extractedOutput = GatewayAssistantOutputParser.extractAssistantOutput(assistantMessage)
+        return ensureAssistantReplyHasContent(
+            AssistantReply(
+                content = extractedOutput.content,
+                reasoningContent = extractedOutput.reasoning,
+                parts = extractedOutput.parts,
+                citations = citations,
+            ),
+        )
+    }
+
+    private fun ensureAssistantReplyHasContent(
+        reply: AssistantReply,
+    ): AssistantReply {
+        if (reply.content.isBlank() && reply.parts.isEmpty()) {
+            throw IllegalStateException("模型未返回有效内容")
+        }
+        return reply
+    }
+
+    private fun emitAssistantReply(
+        reply: AssistantReply?,
+    ): Flow<ChatStreamEvent> = flow {
+        val resolvedReply = reply ?: throw IllegalStateException("模型未返回有效内容")
+        if (resolvedReply.reasoningContent.isNotBlank()) {
+            emit(ChatStreamEvent.ReasoningDelta(resolvedReply.reasoningContent))
+        }
+        if (resolvedReply.content.isNotBlank()) {
+            emit(ChatStreamEvent.ContentDelta(resolvedReply.content))
+        }
+        resolvedReply.parts
+            .filter { it.type == com.example.myapplication.model.ChatMessagePartType.IMAGE }
+            .forEach { emit(ChatStreamEvent.ImageDelta(it)) }
+        if (resolvedReply.citations.isNotEmpty()) {
+            emit(ChatStreamEvent.Citations(resolvedReply.citations))
+        }
+        emit(ChatStreamEvent.Completed)
+    }
+
+    private suspend fun sendOpenAiCompatibleMessage(
+        baseUrl: String,
+        apiKey: String,
+        selectedModel: String,
+        requestMessages: List<ChatMessageDto>,
+        thinkingRequestConfig: com.example.myapplication.model.ThinkingRequestConfig,
+        activeProvider: ProviderSettings?,
+        gatewayTooling: ResolvedGatewayTooling,
+    ): AssistantReply {
+        return when (activeProvider?.resolvedOpenAiTextApiMode() ?: OpenAiTextApiMode.CHAT_COMPLETIONS) {
+            OpenAiTextApiMode.CHAT_COMPLETIONS -> {
+                if (gatewayTooling.enabledToolNames.isEmpty()) {
+                    val request = ChatCompletionRequest(
+                        model = selectedModel,
+                        messages = requestMessages,
+                        reasoningEffort = thinkingRequestConfig.reasoningEffort,
+                        thinking = thinkingRequestConfig.thinking,
+                    )
+                    val response = apiServiceProvider(
+                        baseUrl,
+                        apiKey,
+                    ).createChatCompletionAt(
+                        buildOpenAiTextUrl(baseUrl, activeProvider),
+                        request,
+                    )
+                    if (!response.isSuccessful) {
+                        throw GatewayNetworkSupport.retrofitFailure("聊天请求失败", response)
+                    }
+                    val assistantMessage = response.body()
+                        ?.choices
+                        ?.firstOrNull()
+                        ?.message
+                    assistantReplyFromOpenAiMessage(assistantMessage)
+                } else {
+                    toolEngine.runOpenAiChatCompletionToolLoop(
+                        baseUrl = baseUrl,
+                        apiKey = apiKey,
+                        selectedModel = selectedModel,
+                        requestMessages = requestMessages,
+                        activeProvider = activeProvider,
+                        thinkingRequestConfig = thinkingRequestConfig,
+                        enabledToolNames = gatewayTooling.enabledToolNames,
+                    toolContext = gatewayTooling.toolContext,
+                    promptMode = PromptMode.CHAT,
+                ).finalReply ?: throw IllegalStateException("模型未返回有效内容")
+                }
+            }
+
+            OpenAiTextApiMode.RESPONSES -> {
+                if (gatewayTooling.enabledToolNames.isEmpty()) {
+                    val request = ChatCompletionRequest(
+                        model = selectedModel,
+                        messages = requestMessages,
+                        reasoningEffort = thinkingRequestConfig.reasoningEffort,
+                        thinking = thinkingRequestConfig.thinking,
+                    )
+                    val response = apiServiceProvider(
+                        baseUrl,
+                        apiKey,
+                    ).createResponseAt(
+                        buildOpenAiTextUrl(baseUrl, activeProvider),
+                        ResponseApiSupport.buildRequest(request),
+                    )
+                    if (!response.isSuccessful) {
+                        throw PromptExtrasResponseSupport.buildHttpFailure(
+                            operation = "聊天请求失败",
+                            code = response.code(),
+                            errorDetail = response.errorBody()?.string().orEmpty(),
+                            headers = response.headers(),
+                        )
+                    }
+                    val body = response.body() ?: throw IllegalStateException("响应体为空")
+                    val parsed = ResponseApiSupport.parseResponse(body)
+                    ensureAssistantReplyHasContent(
+                        AssistantReply(
+                            content = parsed.content,
+                            reasoningContent = parsed.reasoning,
+                        ),
+                    )
+                } else {
+                    toolEngine.runResponsesToolLoop(
+                        baseUrl = baseUrl,
+                        apiKey = apiKey,
+                        selectedModel = selectedModel,
+                        requestMessages = requestMessages,
+                        activeProvider = activeProvider,
+                        thinkingRequestConfig = thinkingRequestConfig,
+                        enabledToolNames = gatewayTooling.enabledToolNames,
+                    toolContext = gatewayTooling.toolContext,
+                    promptMode = PromptMode.CHAT,
+                ).finalReply ?: throw IllegalStateException("模型未返回有效内容")
+                }
+            }
+        }
+    }
+
+    private suspend fun sendAnthropicMessage(
+        baseUrl: String,
+        apiKey: String,
+        selectedModel: String,
+        requestMessages: List<ChatMessageDto>,
+        thinkingRequestConfig: com.example.myapplication.model.ThinkingRequestConfig,
+        gatewayTooling: ResolvedGatewayTooling,
+    ): AssistantReply {
+        if (gatewayTooling.enabledToolNames.isEmpty()) {
+            val response = anthropicApiProvider(baseUrl, apiKey).createMessage(
+                AnthropicProtocolSupport.buildMessageRequest(
+                    ChatCompletionRequest(
+                        model = selectedModel,
+                        messages = requestMessages,
+                        temperature = null,
+                        topP = null,
+                        thinking = thinkingRequestConfig.thinking,
+                    ),
+                ),
+            )
+            if (!response.isSuccessful) {
+                throw PromptExtrasResponseSupport.buildHttpFailure(
+                    operation = "聊天请求失败",
+                    code = response.code(),
+                    errorDetail = response.errorBody()?.string().orEmpty(),
+                    headers = response.headers(),
+                )
+            }
+            val body = response.body() ?: throw IllegalStateException("响应体为空")
+            return ensureAssistantReplyHasContent(AnthropicProtocolSupport.toAssistantReply(body))
+        }
+
+        return toolEngine.runAnthropicToolLoop(
+            baseUrl = baseUrl,
+            apiKey = apiKey,
+            selectedModel = selectedModel,
+            requestMessages = requestMessages,
+            thinkingRequestConfig = thinkingRequestConfig,
+            enabledToolNames = gatewayTooling.enabledToolNames,
+            toolContext = gatewayTooling.toolContext,
+            promptMode = PromptMode.CHAT,
+        ).finalReply ?: throw IllegalStateException("模型未返回有效内容")
+    }
+
+    private fun streamOpenAiMessageWithTools(
+        baseUrl: String,
+        apiKey: String,
+        selectedModel: String,
+        requestMessages: List<ChatMessageDto>,
+        thinkingRequestConfig: com.example.myapplication.model.ThinkingRequestConfig,
+        activeProvider: ProviderSettings?,
+        gatewayTooling: ResolvedGatewayTooling,
+        promptMode: PromptMode,
+    ): Flow<ChatStreamEvent> = flow {
+        when (activeProvider?.resolvedOpenAiTextApiMode() ?: OpenAiTextApiMode.CHAT_COMPLETIONS) {
+            OpenAiTextApiMode.CHAT_COMPLETIONS -> {
+                val toolLoopOutcome = toolEngine.runOpenAiChatCompletionToolLoop(
+                    baseUrl = baseUrl,
+                    apiKey = apiKey,
+                    selectedModel = selectedModel,
+                    requestMessages = requestMessages,
+                    activeProvider = activeProvider,
+                    thinkingRequestConfig = thinkingRequestConfig,
+                    enabledToolNames = gatewayTooling.enabledToolNames,
+                    toolContext = gatewayTooling.toolContext,
+                    promptMode = promptMode,
+                )
+                if (toolLoopOutcome.toolRoundCount == 0) {
+                    emitAssistantReply(toolLoopOutcome.finalReply).collect { emit(it) }
+                } else {
+                    val continuation = toolLoopOutcome.continuation as? ToolContinuation.Transcript
+                        ?: throw IllegalStateException("工具续写上下文缺失")
+                    streamOpenAiMessage(
+                        baseUrl = baseUrl,
+                        apiKey = apiKey,
+                        selectedModel = selectedModel,
+                        requestMessages = continuation.messages,
+                        thinkingRequestConfig = thinkingRequestConfig,
+                        promptMode = promptMode,
+                        activeProvider = activeProvider?.copy(openAiTextApiMode = OpenAiTextApiMode.CHAT_COMPLETIONS),
+                    ).collect { event ->
+                        if (event is ChatStreamEvent.Completed && toolLoopOutcome.citations.isNotEmpty()) {
+                            emit(ChatStreamEvent.Citations(toolLoopOutcome.citations))
+                        }
+                        emit(event)
+                    }
+                }
+            }
+
+            OpenAiTextApiMode.RESPONSES -> {
+                val toolLoopOutcome = toolEngine.runResponsesToolLoop(
+                    baseUrl = baseUrl,
+                    apiKey = apiKey,
+                    selectedModel = selectedModel,
+                    requestMessages = requestMessages,
+                    activeProvider = activeProvider,
+                    thinkingRequestConfig = thinkingRequestConfig,
+                    enabledToolNames = gatewayTooling.enabledToolNames,
+                    toolContext = gatewayTooling.toolContext,
+                    promptMode = promptMode,
+                )
+                if (toolLoopOutcome.toolRoundCount == 0) {
+                    emitAssistantReply(toolLoopOutcome.finalReply).collect { emit(it) }
+                } else {
+                    val continuation = toolLoopOutcome.continuation as? ToolContinuation.Responses
+                        ?: throw IllegalStateException("工具续写上下文缺失")
+                    streamOpenAiResponseRequest(
+                        baseUrl = baseUrl,
+                        apiKey = apiKey,
+                        activeProvider = activeProvider,
+                        request = ResponseApiRequest(
+                            model = selectedModel,
+                            input = continuation.input,
+                            stream = true,
+                            temperature = continuation.temperature,
+                            topP = continuation.topP,
+                            reasoning = thinkingRequestConfig.reasoningEffort?.let { effort ->
+                                com.example.myapplication.model.ResponseApiReasoningDto(
+                                    effort = effort,
+                                    summary = "auto",
+                                )
+                            },
+                            previousResponseId = continuation.previousResponseId,
+                        ),
+                    ).collect { event ->
+                        if (event is ChatStreamEvent.Completed && toolLoopOutcome.citations.isNotEmpty()) {
+                            emit(ChatStreamEvent.Citations(toolLoopOutcome.citations))
+                        }
+                        emit(event)
+                    }
+                }
+            }
+        }
+    }
+
+    private fun streamAnthropicMessageWithTools(
+        baseUrl: String,
+        apiKey: String,
+        selectedModel: String,
+        requestMessages: List<ChatMessageDto>,
+        thinkingRequestConfig: com.example.myapplication.model.ThinkingRequestConfig,
+        gatewayTooling: ResolvedGatewayTooling,
+        promptMode: PromptMode,
+    ): Flow<ChatStreamEvent> = flow {
+        val toolLoopOutcome = toolEngine.runAnthropicToolLoop(
+            baseUrl = baseUrl,
+            apiKey = apiKey,
+            selectedModel = selectedModel,
+            requestMessages = requestMessages,
+            thinkingRequestConfig = thinkingRequestConfig,
+            enabledToolNames = gatewayTooling.enabledToolNames,
+            toolContext = gatewayTooling.toolContext,
+            promptMode = promptMode,
+        )
+        if (toolLoopOutcome.toolRoundCount == 0) {
+            emitAssistantReply(toolLoopOutcome.finalReply).collect { emit(it) }
+        } else {
+            val continuation = toolLoopOutcome.continuation as? ToolContinuation.Transcript
+                ?: throw IllegalStateException("工具续写上下文缺失")
+            streamAnthropicMessage(
+                baseUrl = baseUrl,
+                apiKey = apiKey,
+                selectedModel = selectedModel,
+                requestMessages = continuation.messages,
+                thinkingRequestConfig = thinkingRequestConfig,
+                promptMode = promptMode,
+            ).collect { event ->
+                if (event is ChatStreamEvent.Completed && toolLoopOutcome.citations.isNotEmpty()) {
+                    emit(ChatStreamEvent.Citations(toolLoopOutcome.citations))
+                }
+                emit(event)
+            }
+        }
+    }
+
+    private fun streamOpenAiResponseRequest(
+        baseUrl: String,
+        apiKey: String,
+        activeProvider: ProviderSettings?,
+        request: ResponseApiRequest,
+    ): Flow<ChatStreamEvent> = flow {
+        val client = streamClientProvider(baseUrl, apiKey)
+        val call = client.newCall(
+            buildStreamingRequest(
+                fullUrl = buildOpenAiTextUrl(baseUrl, activeProvider?.copy(openAiTextApiMode = OpenAiTextApiMode.RESPONSES)),
+                requestBody = gson.toJson(request),
+            ),
+        )
+        var response: okhttp3.Response? = null
+        val coroutineContext = currentCoroutineContext()
+        val coroutineJob = coroutineContext[Job]
+        val cancelHandle = coroutineJob?.invokeOnCompletion { cause ->
+            if (cause is CancellationException) {
+                call.cancel()
+            }
+        }
+        try {
+            response = call.execute()
+            if (!response.isSuccessful) {
+                throw GatewayNetworkSupport.okhttpFailure("聊天请求失败", response)
+            }
+            val source = response.body?.source()
+                ?: throw IllegalStateException("响应体为空")
+            while (!source.exhausted()) {
+                coroutineContext.ensureActive()
+                val line = source.readUtf8Line() ?: break
+                if (line.isBlank() || !line.startsWith("data: ")) continue
+                val data = line.removePrefix("data: ").trim()
+                when (val event = ResponseApiSupport.parseStreamEvent(data)) {
+                    is ResponseApiStreamEvent.ContentDelta -> emit(ChatStreamEvent.ContentDelta(event.value))
+                    is ResponseApiStreamEvent.ReasoningDelta -> emit(ChatStreamEvent.ReasoningDelta(event.value))
+                    ResponseApiStreamEvent.Completed -> break
+                    null -> Unit
+                }
+            }
+            emit(ChatStreamEvent.Completed)
+        } catch (exception: IOException) {
+            if (call.isCanceled() || coroutineJob?.isActive == false) {
+                throw CancellationException("聊天请求已取消").apply { initCause(exception) }
+            }
+            throw GatewayNetworkSupport.toReadableNetworkException(exception)
+        } finally {
+            cancelHandle?.dispose()
+            call.cancel()
+            response?.close()
+        }
     }
 
     private fun streamOpenAiMessage(
@@ -563,6 +968,8 @@ class DefaultAiGateway(
         reasoningEffort: String? = null,
         thinking: com.example.myapplication.model.ThinkingConfigDto? = null,
         promptMode: PromptMode = PromptMode.ROLEPLAY,
+        tools: List<com.example.myapplication.model.ChatToolDto> = emptyList(),
+        toolChoice: String? = null,
     ): ChatCompletionRequest {
         val sampling = resolveRoleplaySampling(baseUrl, apiProtocol, promptMode)
         return ChatCompletionRequest(
@@ -573,6 +980,8 @@ class DefaultAiGateway(
             topP = sampling?.topP,
             reasoningEffort = reasoningEffort,
             thinking = thinking,
+            tools = tools,
+            toolChoice = toolChoice,
         )
     }
 

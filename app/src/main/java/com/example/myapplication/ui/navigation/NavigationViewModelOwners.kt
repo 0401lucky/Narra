@@ -34,6 +34,8 @@ internal fun rememberRoleplayViewModel(
             promptContextAssembler = appGraph.promptContextAssembler,
             memoryRepository = appGraph.memoryRepository,
             conversationSummaryRepository = appGraph.conversationSummaryRepository,
+            pendingMemoryProposalRepository = appGraph.pendingMemoryProposalRepository,
+            memoryWriteService = appGraph.memoryWriteService,
         ),
     )
 }

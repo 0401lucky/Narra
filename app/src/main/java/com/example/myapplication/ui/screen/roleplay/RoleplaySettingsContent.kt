@@ -50,6 +50,8 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.example.myapplication.model.AppSettings
 import com.example.myapplication.model.Assistant
+import com.example.myapplication.model.MemoryProposalHistoryItem
+import com.example.myapplication.model.MemoryProposalStatus
 import com.example.myapplication.model.ProviderSettings
 import com.example.myapplication.model.RoleplayContextStatus
 import com.example.myapplication.model.RoleplayScenario
@@ -73,6 +75,7 @@ internal fun RoleplaySettingsContent(
     currentModel: String,
     backdropState: ImmersiveBackdropState,
     latestPromptDebugDump: String,
+    recentMemoryProposalHistory: List<MemoryProposalHistoryItem>,
     longformCharsText: String,
     onLongformCharsTextChange: (String) -> Unit,
     onOpenReadingMode: () -> Unit,
@@ -125,7 +128,6 @@ internal fun RoleplaySettingsContent(
                         )
                     },
                     title = "显示身份条",
-                    supportingText = "控制顶部用户和角色卡片是否显示，默认保留人物感。",
                     checked = settings.showRoleplayPresenceStrip,
                     onCheckedChange = onUpdateShowRoleplayPresenceStrip,
                 )
@@ -143,7 +145,6 @@ internal fun RoleplaySettingsContent(
                         )
                     },
                     title = "显示状态条",
-                    supportingText = "控制身份条下方的剧情摘要、记忆和世界书状态胶囊。",
                     checked = settings.showRoleplayStatusStrip,
                     onCheckedChange = onUpdateShowRoleplayStatusStrip,
                 )
@@ -161,7 +162,6 @@ internal fun RoleplaySettingsContent(
                         )
                     },
                     title = "显示 AI 帮写",
-                    supportingText = "控制沉浸式页面底部的输入建议区和生成入口。",
                     checked = settings.showRoleplayAiHelper,
                     onCheckedChange = onUpdateShowRoleplayAiHelper,
                 )
@@ -203,11 +203,6 @@ internal fun RoleplaySettingsContent(
                                 color = palette.onGlass,
                                 fontWeight = FontWeight.SemiBold,
                             )
-                            Text(
-                                text = "仅在长剧情模式下生效，当前默认目标为约 ${settings.roleplayLongformTargetChars} 字。",
-                                style = MaterialTheme.typography.bodyMedium,
-                                color = palette.onGlassMuted,
-                            )
                         }
                     }
                     OutlinedTextField(
@@ -216,7 +211,6 @@ internal fun RoleplaySettingsContent(
                         modifier = Modifier.fillMaxWidth(),
                         shape = RoundedCornerShape(18.dp),
                         label = { Text("默认字数") },
-                        supportingText = { Text("建议范围 300 - 2000") },
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                         colors = androidx.compose.material3.OutlinedTextFieldDefaults.colors(
                             unfocusedContainerColor = Color.Transparent,
@@ -236,6 +230,68 @@ internal fun RoleplaySettingsContent(
             }
         }
 
+        if (recentMemoryProposalHistory.isNotEmpty()) {
+            item {
+                ImmersiveSettingsCard(backdropState) {
+                    Column(
+                        modifier = Modifier.padding(horizontal = 18.dp, vertical = 16.dp),
+                        verticalArrangement = Arrangement.spacedBy(12.dp),
+                    ) {
+                        Text(
+                            text = "最近记忆提议",
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Bold,
+                            color = palette.onGlass,
+                        )
+                        recentMemoryProposalHistory
+                            .take(5)
+                            .forEachIndexed { index, item ->
+                                if (index > 0) {
+                                    HorizontalDivider(
+                                        color = palette.panelBorder.copy(alpha = 0.44f),
+                                    )
+                                }
+                                Column(
+                                    verticalArrangement = Arrangement.spacedBy(6.dp),
+                                ) {
+                                    Row(
+                                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                        verticalAlignment = Alignment.CenterVertically,
+                                    ) {
+                                        SettingsStatusPill(
+                                            text = item.status.label,
+                                            containerColor = when (item.status) {
+                                                MemoryProposalStatus.PENDING -> palette.panelTintStrong
+                                                MemoryProposalStatus.APPROVED -> palette.chipTint
+                                                MemoryProposalStatus.REJECTED -> palette.panelTint
+                                            },
+                                            contentColor = palette.onGlass,
+                                        )
+                                        SettingsStatusPill(
+                                            text = item.scopeType.label,
+                                            containerColor = palette.panelTint,
+                                            contentColor = palette.onGlassMuted,
+                                        )
+                                    }
+                                    Text(
+                                        text = item.content,
+                                        style = MaterialTheme.typography.bodyMedium,
+                                        color = palette.onGlass,
+                                    )
+                                    item.reason.takeIf { it.isNotBlank() }?.let { reason ->
+                                        Text(
+                                            text = reason,
+                                            style = MaterialTheme.typography.bodySmall,
+                                            color = palette.onGlassMuted,
+                                        )
+                                    }
+                                }
+                            }
+                    }
+                }
+            }
+        }
+
         item {
             ImmersiveSettingsCard(backdropState) {
                 SettingsListRow(
@@ -247,7 +303,6 @@ internal fun RoleplaySettingsContent(
                         )
                     },
                     title = "阅读模式",
-                    supportingText = "切到完整剧情回看页，适合连续浏览对白、旁白和长文本。",
                     onClick = onOpenReadingMode,
                 )
                 HorizontalDivider(
@@ -279,7 +334,6 @@ internal fun RoleplaySettingsContent(
                         )
                     },
                     title = "查看提示词",
-                    supportingText = "检查当前世界书、记忆、摘要和剧情指令是否按预期注入。",
                     onClick = onOpenPromptDebugSheet,
                     enabled = latestPromptDebugDump.isNotBlank(),
                 )
@@ -317,7 +371,7 @@ internal fun RoleplaySettingsContent(
                     }
                     Text(
                         text = buildString {
-                            append(if (contextStatus.isContinuingSession) "正在延续旧剧情。" else "当前是新的剧情入口。")
+                            append(if (contextStatus.isContinuingSession) "正在延续旧剧情。" else "当前是新剧情。")
                             if (contextStatus.hasSummary) {
                                 append(" 摘要已覆盖 ${contextStatus.summaryCoveredMessageCount} 条消息。")
                             }
@@ -605,7 +659,7 @@ internal fun RoleplaySettingSwitchRow(
     palette: ImmersiveGlassPalette,
     icon: @Composable () -> Unit,
     title: String,
-    supportingText: String,
+    supportingText: String = "",
     checked: Boolean,
     onCheckedChange: (Boolean) -> Unit,
 ) {
@@ -627,11 +681,13 @@ internal fun RoleplaySettingSwitchRow(
                 fontWeight = FontWeight.SemiBold,
                 color = palette.onGlass,
             )
-            Text(
-                text = supportingText,
-                style = MaterialTheme.typography.bodyMedium,
-                color = palette.onGlassMuted,
-            )
+            if (supportingText.isNotBlank()) {
+                Text(
+                    text = supportingText,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = palette.onGlassMuted,
+                )
+            }
         }
         Switch(
             checked = checked,

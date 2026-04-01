@@ -4,6 +4,7 @@ import com.example.myapplication.data.local.SettingsStore
 import com.example.myapplication.data.remote.ApiServiceFactory
 import com.example.myapplication.model.Assistant
 import com.example.myapplication.model.ScreenTranslationSettings
+import com.example.myapplication.model.SearchSettings
 import com.example.myapplication.model.ThemeMode
 import com.example.myapplication.model.ProviderSettings
 import com.example.myapplication.model.TranslationHistoryEntry
@@ -37,6 +38,8 @@ interface AiSettingsEditor {
     )
 
     suspend fun saveScreenTranslationSettings(settings: ScreenTranslationSettings)
+
+    suspend fun saveSearchSettings(settings: SearchSettings)
 
     suspend fun saveUserProfile(
         displayName: String,
@@ -119,6 +122,10 @@ class DefaultAiSettingsEditor(
 
     override suspend fun saveScreenTranslationSettings(settings: ScreenTranslationSettings) {
         settingsStore.saveScreenTranslationSettings(settings)
+    }
+
+    override suspend fun saveSearchSettings(settings: SearchSettings) {
+        settingsStore.saveSearchSettings(settings)
     }
 
     override suspend fun saveUserProfile(

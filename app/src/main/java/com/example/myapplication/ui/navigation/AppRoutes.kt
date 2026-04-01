@@ -8,6 +8,7 @@ object AppRoutes {
     const val SETTINGS = "settings"
     const val SETTINGS_CONNECTION = "settings/connection"
     const val SETTINGS_MODEL = "settings/model"
+    const val SETTINGS_SEARCH_TOOLS = "settings/search-tools"
     const val SETTINGS_PROVIDERS = "settings/providers"
     const val SETTINGS_UPDATES = "settings/updates"
     const val SETTINGS_SCREEN_TRANSLATION = "settings/screen-translation"

@@ -15,4 +15,5 @@ data class ConversationEntity(
     val createdAt: Long,
     val updatedAt: Long,
     val assistantId: String = "",
+    val searchEnabled: Boolean = false,
 )

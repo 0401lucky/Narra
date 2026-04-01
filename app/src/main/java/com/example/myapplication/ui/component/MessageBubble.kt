@@ -65,6 +65,7 @@ import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalClipboard
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontFamily
@@ -130,6 +131,7 @@ fun MessageBubble(
 ) {
     val clipboard = LocalClipboard.current
     val context = LocalContext.current
+    val uriHandler = LocalUriHandler.current
     val clipboardScope = rememberCoroutineScope()
     val renderState = rememberMessageBubbleRenderState(
         message = message,
@@ -292,6 +294,14 @@ fun MessageBubble(
             }
         }
 
+        if (!isUser && message.citations.isNotEmpty()) {
+            AssistantCitationSection(
+                citations = message.citations,
+                onOpenUrl = uriHandler::openUri,
+                modifier = assistantWidthModifier.padding(top = 8.dp),
+            )
+        }
+
         MessageBubbleActionRows(
             message = message,
             copyPayload = copyPayload,
@@ -308,6 +318,63 @@ fun MessageBubble(
             clipboard = clipboard,
             clipboardScope = clipboardScope,
         )
+    }
+}
+
+@Composable
+private fun AssistantCitationSection(
+    citations: List<com.example.myapplication.model.MessageCitation>,
+    onOpenUrl: (String) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    Surface(
+        modifier = modifier,
+        shape = RoundedCornerShape(18.dp),
+        color = MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.48f),
+        contentColor = MaterialTheme.colorScheme.onSecondaryContainer,
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 14.dp, vertical = 12.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+            Text(
+                text = "来源",
+                style = MaterialTheme.typography.labelLarge,
+                fontWeight = FontWeight.SemiBold,
+            )
+            citations.forEach { citation ->
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clip(RoundedCornerShape(12.dp))
+                        .clickable { onOpenUrl(citation.url) }
+                        .padding(horizontal = 10.dp, vertical = 8.dp),
+                    verticalArrangement = Arrangement.spacedBy(2.dp),
+                ) {
+                    Text(
+                        text = citation.title.ifBlank { citation.url },
+                        style = MaterialTheme.typography.bodyMedium,
+                        maxLines = 2,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                    Text(
+                        text = buildString {
+                            if (citation.sourceLabel.isNotBlank()) {
+                                append(citation.sourceLabel)
+                                append(" · ")
+                            }
+                            append(citation.url)
+                        },
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSecondaryContainer.copy(alpha = 0.74f),
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                }
+            }
+        }
     }
 }
 

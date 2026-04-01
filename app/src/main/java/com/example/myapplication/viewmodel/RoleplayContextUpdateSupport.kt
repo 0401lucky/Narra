@@ -4,6 +4,7 @@ import com.example.myapplication.conversation.ConversationMemoryExtractionCoordi
 import com.example.myapplication.conversation.ConversationSummaryCoordinator
 import com.example.myapplication.conversation.RoleplayContextStatusCoordinator
 import com.example.myapplication.conversation.SummaryGenerationConfig
+import com.example.myapplication.data.repository.context.PendingMemoryProposalRepository
 import com.example.myapplication.model.AppSettings
 import com.example.myapplication.model.Assistant
 import com.example.myapplication.model.ChatMessage
@@ -19,6 +20,7 @@ internal class RoleplayContextUpdateSupport(
     private val summaryCoordinator: ConversationSummaryCoordinator,
     private val memoryExtractionCoordinator: ConversationMemoryExtractionCoordinator,
     private val contextStatusCoordinator: RoleplayContextStatusCoordinator,
+    private val pendingMemoryProposalRepository: PendingMemoryProposalRepository,
     private val aiPromptExtrasService: com.example.myapplication.data.repository.ai.AiPromptExtrasService,
 ) {
     fun launchConversationSummaryGeneration(
@@ -110,6 +112,7 @@ internal class RoleplayContextUpdateSupport(
 
     suspend fun clearConversationScopedContext(conversationId: String) {
         contextStatusCoordinator.clearConversationScopedContext(conversationId)
+        pendingMemoryProposalRepository.clearConversation(conversationId)
     }
 
     fun refreshContextStatus(

@@ -25,6 +25,7 @@ data class ChatMessage(
     val reasoningContent: String = "",
     val attachments: List<MessageAttachment> = emptyList(),
     val parts: List<ChatMessagePart> = emptyList(),
+    val citations: List<MessageCitation> = emptyList(),
 )
 
 fun ChatMessage.hasSendableContent(): Boolean {

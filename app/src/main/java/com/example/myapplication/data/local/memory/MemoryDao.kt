@@ -29,8 +29,14 @@ interface MemoryDao {
     @Query("SELECT * FROM conversation_summaries WHERE conversationId = :conversationId LIMIT 1")
     suspend fun getConversationSummary(conversationId: String): ConversationSummaryEntity?
 
+    @Query("SELECT * FROM conversation_summaries WHERE conversationId = :conversationId LIMIT 1")
+    fun observeConversationSummary(conversationId: String): Flow<ConversationSummaryEntity?>
+
     @Query("SELECT * FROM conversation_summaries ORDER BY updatedAt DESC")
     suspend fun listConversationSummaries(): List<ConversationSummaryEntity>
+
+    @Query("SELECT * FROM conversation_summaries ORDER BY updatedAt DESC")
+    fun observeConversationSummaries(): Flow<List<ConversationSummaryEntity>>
 
     @Upsert
     suspend fun upsertMemoryEntry(entry: MemoryEntryEntity)

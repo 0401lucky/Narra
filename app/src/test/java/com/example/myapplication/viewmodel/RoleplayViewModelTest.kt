@@ -6,8 +6,11 @@ import com.example.myapplication.context.DefaultPromptContextAssembler
 import com.example.myapplication.data.remote.ApiServiceFactory
 import com.example.myapplication.data.remote.OpenAiCompatibleApi
 import com.example.myapplication.data.repository.ConversationRepository
+import com.example.myapplication.data.repository.ai.tooling.DefaultMemoryWriteService
 import com.example.myapplication.data.repository.context.ConversationSummaryRepository
 import com.example.myapplication.data.repository.context.MemoryRepository
+import com.example.myapplication.data.repository.context.InMemoryPendingMemoryProposalRepository
+import com.example.myapplication.data.repository.context.PendingMemoryProposalRepository
 import com.example.myapplication.data.repository.roleplay.RoleplayRepository
 import com.example.myapplication.data.repository.roleplay.RoleplaySessionStartResult
 import com.example.myapplication.model.AppSettings
@@ -24,6 +27,7 @@ import com.example.myapplication.model.MemoryEntry
 import com.example.myapplication.model.MessageRole
 import com.example.myapplication.model.MessageStatus
 import com.example.myapplication.model.ModelsResponse
+import com.example.myapplication.model.PendingMemoryProposal
 import com.example.myapplication.model.ProviderSettings
 import com.example.myapplication.model.RoleplayContentType
 import com.example.myapplication.model.RoleplayScenario
@@ -1584,6 +1588,93 @@ class RoleplayViewModelTest {
         assertTrue(systemPrompt.contains("当前场景处于长文小说模式"))
     }
 
+    @Test
+    fun approvePendingMemoryProposal_savesMemoryAndClearsProposal() = runTest(mainDispatcherRule.dispatcher.scheduler) {
+        val assistant = Assistant(
+            id = "assistant-1",
+            name = "余罪",
+            memoryEnabled = true,
+        )
+        val scenario = RoleplayScenario(
+            id = "scene-1",
+            assistantId = assistant.id,
+        )
+        val session = RoleplaySession(
+            id = "session-1",
+            scenarioId = scenario.id,
+            conversationId = "conv-1",
+            createdAt = 1L,
+            updatedAt = 2L,
+        )
+        val store = FakeConversationStore(
+            conversations = listOf(
+                Conversation(
+                    id = session.conversationId,
+                    title = "剧情",
+                    model = "chat-model",
+                    createdAt = 1L,
+                    updatedAt = 2L,
+                    assistantId = assistant.id,
+                ),
+            ),
+        )
+        val provider = ProviderSettings(
+            id = "provider-1",
+            name = "测试 Provider",
+            baseUrl = "https://example.com/v1/",
+            apiKey = "test-key",
+            selectedModel = "chat-model",
+            memoryModel = "memory-model",
+        )
+        val memoryRepository = FakeMemoryRepository()
+        val proposalRepository = InMemoryPendingMemoryProposalRepository()
+        val viewModel = createViewModel(
+            store = store,
+            roleplayRepository = FakeRoleplayRepository(
+                conversationStore = store,
+                scenarios = listOf(scenario),
+                sessions = listOf(session),
+            ),
+            settings = AppSettings(
+                baseUrl = provider.baseUrl,
+                apiKey = provider.apiKey,
+                selectedModel = provider.selectedModel,
+                providers = listOf(provider),
+                selectedProviderId = provider.id,
+                assistants = listOf(assistant),
+                selectedAssistantId = assistant.id,
+            ),
+            promptContextAssembler = fixedPromptAssembler("提示词上下文"),
+            memoryRepository = memoryRepository,
+            pendingMemoryProposalRepository = proposalRepository,
+        )
+
+        viewModel.enterScenario(scenario.id)
+        advanceUntilIdle()
+
+        proposalRepository.upsertProposal(
+            PendingMemoryProposal(
+                id = "proposal-1",
+                conversationId = session.conversationId,
+                assistantId = assistant.id,
+                scopeType = com.example.myapplication.model.MemoryScopeType.ASSISTANT,
+                content = "她不喜欢被突然逼问。",
+                reason = "这是稳定偏好",
+                importance = 60,
+            ),
+        )
+        advanceUntilIdle()
+
+        assertEquals("她不喜欢被突然逼问。", viewModel.uiState.value.pendingMemoryProposal?.content)
+
+        viewModel.approvePendingMemoryProposal()
+        advanceUntilIdle()
+
+        val entry = memoryRepository.currentEntries().single()
+        assertEquals("她不喜欢被突然逼问。", entry.content)
+        assertTrue(viewModel.uiState.value.pendingMemoryProposal == null)
+    }
+
     private fun enqueueStreamResponse(content: String) {
         val sseBody = buildString {
             append("data: {\"choices\":[{\"delta\":{\"content\":\"")
@@ -1626,6 +1717,7 @@ class RoleplayViewModelTest {
         promptContextAssembler: PromptContextAssembler,
         memoryRepository: MemoryRepository = FakeMemoryRepository(),
         conversationSummaryRepository: ConversationSummaryRepository = FakeConversationSummaryRepository(),
+        pendingMemoryProposalRepository: PendingMemoryProposalRepository = InMemoryPendingMemoryProposalRepository(),
         nowProvider: () -> Long = incrementingNowProvider(1L),
         messageIdProvider: () -> String = idProviderOf("m1", "m2", "m3", "m4"),
         apiServiceProvider: ((String, String) -> OpenAiCompatibleApi)? = null,
@@ -1644,6 +1736,9 @@ class RoleplayViewModelTest {
             streamClientProvider = streamClientProvider ?: { _, _ ->
                 OkHttpClient.Builder().build()
             },
+            memoryRepository = memoryRepository,
+            conversationSummaryRepository = conversationSummaryRepository,
+            pendingMemoryProposalRepository = pendingMemoryProposalRepository,
         )
         val conversationRepository = ConversationRepository(
             conversationStore = store,
@@ -1659,6 +1754,13 @@ class RoleplayViewModelTest {
             promptContextAssembler = promptContextAssembler,
             memoryRepository = memoryRepository,
             conversationSummaryRepository = conversationSummaryRepository,
+            pendingMemoryProposalRepository = pendingMemoryProposalRepository,
+            memoryWriteService = DefaultMemoryWriteService(
+                settingsStore = services.settingsStore,
+                memoryRepository = memoryRepository,
+                pendingMemoryProposalRepository = pendingMemoryProposalRepository,
+                aiPromptExtrasService = services.aiPromptExtrasService,
+            ),
             nowProvider = nowProvider,
             messageIdProvider = messageIdProvider,
         )

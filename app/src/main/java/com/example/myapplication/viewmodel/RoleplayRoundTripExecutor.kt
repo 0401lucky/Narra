@@ -3,6 +3,7 @@ package com.example.myapplication.viewmodel
 import com.example.myapplication.conversation.AssistantRoundTripOutcome
 import com.example.myapplication.conversation.AssistantRoundTripRequest
 import com.example.myapplication.conversation.AssistantRoundTripResult
+import com.example.myapplication.conversation.ConversationSummaryDebugSupport
 import com.example.myapplication.conversation.ConversationAssistantRoundTripRunner
 import com.example.myapplication.conversation.ConversationMessageTransforms
 import com.example.myapplication.conversation.RoundTripInitialPersistence
@@ -16,6 +17,8 @@ import com.example.myapplication.model.ChatMessage
 import com.example.myapplication.model.ChatMessagePart
 import com.example.myapplication.model.ChatStreamEvent
 import com.example.myapplication.model.Conversation
+import com.example.myapplication.model.GatewayToolRuntimeContext
+import com.example.myapplication.model.GatewayToolingOptions
 import com.example.myapplication.model.MessageRole
 import com.example.myapplication.model.MessageStatus
 import com.example.myapplication.model.PromptMode
@@ -115,7 +118,15 @@ internal class RoleplayRoundTripExecutor(
                     worldBookHitCount = promptContext.worldBookHitCount,
                     memoryInjectionCount = promptContext.memoryInjectionCount,
                     debugDump = buildString {
-                        append(promptContext.debugDump)
+                        append(
+                            ConversationSummaryDebugSupport.appendStatusLine(
+                                debugDump = promptContext.debugDump,
+                                hasSummary = promptContext.summaryCoveredMessageCount > 0,
+                                coveredMessageCount = promptContext.summaryCoveredMessageCount,
+                                completedMessageCount = requestMessages.count { it.status == MessageStatus.COMPLETED },
+                                triggerMessageCount = SUMMARY_TRIGGER_MESSAGE_COUNT,
+                            ),
+                        )
                         if (decoratedPrompt.isNotBlank()) {
                             append("\n\n【RP 装饰后提示词】\n")
                             append(decoratedPrompt)
@@ -149,6 +160,15 @@ internal class RoleplayRoundTripExecutor(
                                 fullContent = fullContent,
                                 fullReasoning = fullReasoning,
                                 fullParts = fullParts,
+                                toolingOptions = GatewayToolingOptions.localContextOnly(
+                                    GatewayToolRuntimeContext(
+                                        promptMode = PromptMode.ROLEPLAY,
+                                        assistant = assistant,
+                                        conversation = conversation,
+                                        userInputText = RoleplayConversationSupport.resolveLatestUserInputText(requestMessages),
+                                        recentMessages = requestMessages,
+                                    ),
+                                ),
                             )
                         },
                         currentPayload = {
@@ -156,6 +176,7 @@ internal class RoleplayRoundTripExecutor(
                                 content = fullContent.toString().trim(),
                                 reasoning = fullReasoning.toString(),
                                 parts = fullParts.toList(),
+                                citations = emptyList(),
                             )
                         },
                         onCompleted = { payload, parsedOutput, loading ->
@@ -261,11 +282,13 @@ internal class RoleplayRoundTripExecutor(
         fullContent: StringBuilder,
         fullReasoning: StringBuilder,
         fullParts: MutableList<ChatMessagePart>,
+        toolingOptions: GatewayToolingOptions,
     ) {
         aiGateway.sendMessageStream(
             messages = requestMessages,
             systemPrompt = systemPrompt,
             promptMode = PromptMode.ROLEPLAY,
+            toolingOptions = toolingOptions,
         ).collect { event ->
             when (event) {
                 is ChatStreamEvent.ContentDelta -> {
@@ -287,6 +310,7 @@ internal class RoleplayRoundTripExecutor(
                     )
                 }
 
+                is ChatStreamEvent.Citations -> Unit
                 ChatStreamEvent.Completed -> Unit
             }
         }
@@ -308,6 +332,7 @@ internal class RoleplayRoundTripExecutor(
     }
 
     private companion object {
+        private const val SUMMARY_TRIGGER_MESSAGE_COUNT = 12
         private const val SUMMARY_RECENT_MESSAGE_WINDOW = 8
     }
 }

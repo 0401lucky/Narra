@@ -26,6 +26,7 @@ data class AppSettings(
     val assistants: List<Assistant> = emptyList(),
     val selectedAssistantId: String = DEFAULT_ASSISTANT_ID,
     val screenTranslationSettings: ScreenTranslationSettings = ScreenTranslationSettings(),
+    val searchSettings: SearchSettings = SearchSettings(),
 ) {
     fun resolvedAssistants(): List<Assistant> {
         val builtinIds = BUILTIN_ASSISTANTS.map { it.id }.toSet()
@@ -87,6 +88,46 @@ data class AppSettings(
 
     fun resolvedUserAvatar(): String {
         return userAvatarUrl.trim().ifBlank { userAvatarUri.trim() }
+    }
+
+    fun resolvedSearchSettings(): SearchSettings {
+        return searchSettings.normalized()
+    }
+
+    fun activeSearchSource(
+        activeProvider: ProviderSettings? = activeProvider(),
+    ): SearchSourceConfig? {
+        val source = resolvedSearchSettings().selectedSourceOrNull() ?: return null
+        return when (source.type) {
+            SearchSourceType.LLM_SEARCH -> {
+                val provider = resolveSearchSourceProvider(source)
+                source.takeIf {
+                    it.enabled &&
+                        provider?.hasBaseCredentials() == true &&
+                        provider.supportsLlmSearchSource() &&
+                        provider.resolveFunctionModel(ProviderFunction.SEARCH).isNotBlank()
+                }
+            }
+
+            else -> source.takeIf(SearchSourceConfig::isConfigured)
+        }
+    }
+
+    fun hasConfiguredSearchSource(
+        activeProvider: ProviderSettings? = activeProvider(),
+    ): Boolean {
+        return activeSearchSource(activeProvider) != null
+    }
+
+    fun resolveSearchSourceProvider(
+        source: SearchSourceConfig,
+    ): ProviderSettings? {
+        if (source.type != SearchSourceType.LLM_SEARCH) {
+            return null
+        }
+        return resolvedProviders().firstOrNull { provider ->
+            provider.id == source.providerId && provider.enabled
+        }
     }
 
     private fun legacyProviderOrNull(): ProviderSettings? {

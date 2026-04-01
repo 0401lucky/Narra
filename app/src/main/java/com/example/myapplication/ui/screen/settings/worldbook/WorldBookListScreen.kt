@@ -98,8 +98,7 @@ fun WorldBookListScreen(
             item {
                 SettingsPageIntro(
                     overline = "背景设定",
-                    title = "先看书，再看书里的条目",
-                    summary = "导入角色卡自带世界书后，这里会优先按书展示；点击一本书再进入它内部的条目列表，排列顺序会尽量保持原样。",
+                    title = "世界书",
                 )
             }
 
@@ -149,7 +148,7 @@ fun WorldBookListScreen(
                     item {
                         SettingsSectionHeader(
                             title = "导入的世界书",
-                            description = "按书名展示，点击进入查看书内条目。",
+                            description = "",
                         )
                     }
                     items(filteredBooks, key = { it.name }) { book ->
@@ -164,7 +163,7 @@ fun WorldBookListScreen(
                     item {
                         SettingsSectionHeader(
                             title = "独立条目",
-                            description = "这些条目不属于任何一本世界书，会直接单条管理。",
+                            description = "",
                         )
                     }
                     items(filteredStandaloneEntries, key = { it.id }) { entry ->

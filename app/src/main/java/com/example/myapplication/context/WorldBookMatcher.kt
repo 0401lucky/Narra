@@ -23,33 +23,21 @@ class WorldBookMatcher {
         recentMessages: List<ChatMessage>,
     ): WorldBookMatchResult {
         val sourceText = buildSourceText(userInputText, recentMessages)
-        val linkedIds = assistant?.linkedWorldBookIds
-            ?.mapNotNull { value ->
-                value.trim().takeIf { it.isNotEmpty() }
-            }
-            ?.toSet()
-            .orEmpty()
         val maxEntries = assistant?.worldBookMaxEntries
             ?.takeIf { it > 0 }
             ?: DEFAULT_WORLD_BOOK_MAX_ENTRIES
 
-        val matchedEntries = entries
+        val matchedEntries = WorldBookScopeSupport.filterAccessibleEntries(
+            entries = entries,
+            assistant = assistant,
+            conversation = conversation,
+        )
             .asSequence()
             .filter { it.enabled }
             .filter { entry ->
-                val explicitlyLinked = linkedIds.contains(entry.id)
-                explicitlyLinked || matchesScope(entry, assistant, conversation)
-            }
-            .filter { entry ->
                 entry.alwaysActive || hasKeywordHit(entry, sourceText)
             }
-            .sortedWith(
-                compareByDescending<WorldBookEntry> { it.alwaysActive }
-                    .thenByDescending { it.priority }
-                    .thenBy { it.insertionOrder }
-                    .thenBy { it.createdAt }
-                    .thenByDescending { it.updatedAt },
-            )
+            .sortedWith(WorldBookScopeSupport.priorityComparator())
             .take(maxEntries)
             .toList()
 
@@ -81,23 +69,6 @@ class WorldBookMatcher {
             }
             .firstOrNull()
             .orEmpty()
-    }
-
-    private fun matchesScope(
-        entry: WorldBookEntry,
-        assistant: Assistant?,
-        conversation: Conversation,
-    ): Boolean {
-        return when (entry.scopeType) {
-            WorldBookScopeType.GLOBAL -> true
-            WorldBookScopeType.ATTACHABLE -> false
-            WorldBookScopeType.ASSISTANT -> {
-                val assistantId = assistant?.id?.trim().orEmpty()
-                assistantId.isNotEmpty() && entry.resolvedScopeId() == assistantId
-            }
-
-            WorldBookScopeType.CONVERSATION -> entry.resolvedScopeId() == conversation.id
-        }
     }
 
     private fun hasKeywordHit(

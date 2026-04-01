@@ -41,7 +41,13 @@ class MemoryManagementViewModel(
                 _uiState.update { it.copy(memories = memoryEntries) }
             }
         }
-        refreshSummaries()
+        viewModelScope.launch {
+            conversationSummaryRepository.observeSummaries().collect { summaries ->
+                _uiState.update { current ->
+                    current.copy(summaries = summaries)
+                }
+            }
+        }
     }
 
     fun togglePinned(entryId: String) {
@@ -71,21 +77,7 @@ class MemoryManagementViewModel(
         if (conversationId.isBlank()) return
         viewModelScope.launch {
             conversationSummaryRepository.deleteSummary(conversationId)
-            refreshSummaries()
             _uiState.update { it.copy(message = "摘要已删除") }
-        }
-    }
-
-    fun refreshSummaries() {
-        viewModelScope.launch {
-            _uiState.update { it.copy(isBusy = true) }
-            val summaries = conversationSummaryRepository.listSummaries()
-            _uiState.update {
-                it.copy(
-                    summaries = summaries,
-                    isBusy = false,
-                )
-            }
         }
     }
 

@@ -205,6 +205,7 @@ internal fun ModelPickerSheet(
     providerOptions: List<ProviderSettings>,
     currentProviderId: String,
     currentModel: String,
+    sheetTitle: String = "选择模型",
     isLoadingModels: Boolean,
     loadingProviderId: String,
     isSavingModel: Boolean,
@@ -262,6 +263,20 @@ internal fun ModelPickerSheet(
                 .padding(horizontal = 20.dp, vertical = 8.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp),
         ) {
+            Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                Text(
+                    text = sheetTitle,
+                    style = MaterialTheme.typography.titleLarge,
+                )
+                if (providerOptions.size > 1) {
+                    Text(
+                        text = "先切换到要编辑的提供商，再为该提供商选择模型。这里的设置不会自动同步到别的提供商。",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+            }
+
             if (providerOptions.size > 1) {
                 LazyRow(
                     horizontalArrangement = Arrangement.spacedBy(8.dp),

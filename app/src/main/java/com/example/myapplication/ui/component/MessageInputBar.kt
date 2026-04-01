@@ -8,6 +8,7 @@ import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.clickable
@@ -28,6 +29,8 @@ import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Send
 import androidx.compose.material.icons.filled.Add
@@ -36,6 +39,7 @@ import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Description
 import androidx.compose.material.icons.filled.Image
 import androidx.compose.material.icons.filled.OpenInFull
+import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material.icons.filled.Translate
 import androidx.compose.material.icons.outlined.Psychology
@@ -58,6 +62,13 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.input.key.Key
+import androidx.compose.ui.input.key.KeyEventType
+import androidx.compose.ui.input.key.isShiftPressed
+import androidx.compose.ui.input.key.key
+import androidx.compose.ui.input.key.onPreviewKeyEvent
+import androidx.compose.ui.input.key.type
+import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.example.myapplication.model.ChatMessagePart
@@ -75,6 +86,10 @@ fun MessageInputBar(
     showReasoningAction: Boolean,
     reasoningLabel: String,
     onOpenReasoningPicker: () -> Unit,
+    searchEnabled: Boolean,
+    searchAvailable: Boolean,
+    onToggleSearch: () -> Unit,
+    onSearchUnavailableClick: (() -> Unit)? = null,
     onTranslateInputClick: () -> Unit,
     onPickImageClick: () -> Unit,
     onPickFileClick: () -> Unit,
@@ -104,6 +119,7 @@ fun MessageInputBar(
         else -> "输入消息，与 AI 聊天"
     }
     var showExpandedEditor by rememberSaveable { mutableStateOf(false) }
+    var allowNextInlineNewline by remember { mutableStateOf(false) }
     val scale by animateFloatAsState(
         targetValue = if (isPressed && (canSend || isSending)) 0.92f else 1f,
         animationSpec = spring(
@@ -112,6 +128,27 @@ fun MessageInputBar(
         ),
         label = "send_button_scale",
     )
+    val handleInputChange: (String) -> Unit = { nextValue ->
+        val insertedTrailingNewline = nextValue.length == value.length + 1 &&
+            nextValue.endsWith('\n') &&
+            nextValue.dropLast(1) == value
+        if (insertedTrailingNewline) {
+            if (allowNextInlineNewline) {
+                allowNextInlineNewline = false
+                onValueChange(nextValue)
+            } else {
+                val trimmedValue = nextValue.dropLast(1)
+                val canSendWithNewValue = enabled && (trimmedValue.isNotBlank() || pendingParts.isNotEmpty())
+                onValueChange(trimmedValue)
+                if (canSendWithNewValue) {
+                    onSendClick()
+                }
+            }
+        } else {
+            allowNextInlineNewline = false
+            onValueChange(nextValue)
+        }
+    }
 
     Surface(
         modifier = modifier
@@ -177,10 +214,33 @@ fun MessageInputBar(
                     ) {
                         BasicTextField(
                             value = value,
-                            onValueChange = onValueChange,
+                            onValueChange = handleInputChange,
                             modifier = Modifier
                                 .weight(1f)
-                                .heightIn(min = 52.dp),
+                                .heightIn(min = 52.dp)
+                                .onPreviewKeyEvent { event ->
+                                    if (
+                                        event.type == KeyEventType.KeyDown &&
+                                        event.key == Key.Enter &&
+                                        !event.isShiftPressed
+                                    ) {
+                                        if (canSend) {
+                                            onSendClick()
+                                            true
+                                        } else {
+                                            false
+                                        }
+                                    } else if (
+                                        event.type == KeyEventType.KeyDown &&
+                                        event.key == Key.Enter &&
+                                        event.isShiftPressed
+                                    ) {
+                                        allowNextInlineNewline = true
+                                        false
+                                    } else {
+                                        false
+                                    }
+                                },
                             enabled = enabled && !isSending,
                             maxLines = 5,
                             textStyle = MaterialTheme.typography.bodyLarge.copy(
@@ -191,6 +251,16 @@ fun MessageInputBar(
                                 },
                             ),
                             cursorBrush = SolidColor(MaterialTheme.colorScheme.primary),
+                            keyboardOptions = KeyboardOptions(
+                                imeAction = ImeAction.Send,
+                            ),
+                            keyboardActions = KeyboardActions(
+                                onSend = {
+                                    if (canSend) {
+                                        onSendClick()
+                                    }
+                                },
+                            ),
                             decorationBox = { innerTextField ->
                                 if (value.isEmpty()) {
                                     Text(
@@ -247,6 +317,19 @@ fun MessageInputBar(
                             onClick = onOpenReasoningPicker,
                         )
                     }
+
+                    SearchActionChip(
+                        enabled = enabled && !isSending,
+                        available = searchAvailable,
+                        selected = searchEnabled,
+                        onClick = {
+                            if (searchAvailable) {
+                                onToggleSearch()
+                            } else {
+                                onSearchUnavailableClick?.invoke()
+                            }
+                        },
+                    )
 
                     TranslationActionChip(
                         enabled = !isSending && value.isNotBlank(),
@@ -386,6 +469,56 @@ fun MessageInputBar(
         onSave = onValueChange,
         onDismissRequest = { showExpandedEditor = false },
     )
+}
+
+@Composable
+private fun SearchActionChip(
+    enabled: Boolean,
+    available: Boolean,
+    selected: Boolean,
+    onClick: () -> Unit,
+) {
+    val containerColor = when {
+        selected -> MaterialTheme.colorScheme.primary
+        available -> MaterialTheme.colorScheme.surface.copy(alpha = 0.92f)
+        else -> MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.42f)
+    }
+    val contentColor = when {
+        selected -> MaterialTheme.colorScheme.onPrimary
+        available -> MaterialTheme.colorScheme.onSurfaceVariant
+        else -> MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.56f)
+    }
+    val borderColor = when {
+        selected -> MaterialTheme.colorScheme.primary.copy(alpha = 0.16f)
+        available -> MaterialTheme.colorScheme.outline.copy(alpha = 0.52f)
+        else -> MaterialTheme.colorScheme.outline.copy(alpha = 0.18f)
+    }
+
+    Surface(
+        modifier = Modifier
+            .size(38.dp)
+            .clip(CircleShape)
+            .border(
+                width = 1.dp,
+                color = borderColor,
+                shape = CircleShape,
+            )
+            .clickable(enabled = enabled, onClick = onClick),
+        shape = CircleShape,
+        color = containerColor,
+        contentColor = contentColor,
+    ) {
+        Box(
+            modifier = Modifier.fillMaxSize(),
+            contentAlignment = Alignment.Center,
+        ) {
+            Icon(
+                imageVector = Icons.Default.Search,
+                contentDescription = if (selected) "关闭搜索" else "开启搜索",
+                modifier = Modifier.size(20.dp),
+            )
+        }
+    }
 }
 
 @Composable
