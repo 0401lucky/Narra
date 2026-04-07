@@ -43,6 +43,9 @@ class SettingsPersistenceCoordinator(
             roleplayLongformTargetChars = currentState.roleplayLongformTargetChars,
             showRoleplayPresenceStrip = currentState.showRoleplayPresenceStrip,
             showRoleplayStatusStrip = currentState.showRoleplayStatusStrip,
+            roleplayImmersiveMode = currentState.roleplayImmersiveMode,
+            roleplayHighContrast = currentState.roleplayHighContrast,
+            roleplayLineHeightScale = currentState.roleplayLineHeightScale,
         )
         settingsEditor.saveScreenTranslationSettings(
             currentState.screenTranslationSettings,

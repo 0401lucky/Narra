@@ -46,29 +46,57 @@ object RoleplayTranscriptFormatter {
             }
 
             MessageRole.ASSISTANT -> {
-                val content = message.parts.toPlainText()
-                    .ifBlank { message.content }
-                    .trim()
+                val content = RoleplayMessageFormatSupport.resolveAssistantRawContent(message)
                 if (content.isBlank()) {
                     emptyList()
                 } else {
-                    parser.parseAssistantOutput(
-                        rawContent = content,
-                        characterName = characterName.ifBlank { "角色" },
-                        allowNarration = allowNarration,
-                    ).mapNotNull { segment ->
-                        val prefix = when (segment.speaker) {
-                            RoleplaySpeaker.USER -> userName.ifBlank { "用户" }
-                            RoleplaySpeaker.NARRATOR -> "旁白"
-                            RoleplaySpeaker.SYSTEM -> segment.speakerName.ifBlank { "系统" }
-                            RoleplaySpeaker.CHARACTER -> characterName.ifBlank { "角色" }
+                    when (RoleplayMessageFormatSupport.resolveAssistantMessageOutputFormat(message)) {
+                        com.example.myapplication.model.RoleplayOutputFormat.LONGFORM -> {
+                            formatLongformMessage(
+                                rawContent = content,
+                                characterName = characterName,
+                            )
                         }
-                        segment.content.trim().takeIf { it.isNotBlank() }?.let { readableContent ->
-                            "$prefix：$readableContent"
+
+                        else -> {
+                            parser.parseAssistantOutput(
+                                rawContent = content,
+                                characterName = characterName.ifBlank { "角色" },
+                                allowNarration = allowNarration,
+                            ).mapNotNull { segment ->
+                                val prefix = when (segment.speaker) {
+                                    RoleplaySpeaker.USER -> userName.ifBlank { "用户" }
+                                    RoleplaySpeaker.NARRATOR -> "旁白"
+                                    RoleplaySpeaker.SYSTEM -> segment.speakerName.ifBlank { "系统" }
+                                    RoleplaySpeaker.CHARACTER -> characterName.ifBlank { "角色" }
+                                }
+                                segment.content.trim().takeIf { it.isNotBlank() }?.let { readableContent ->
+                                    "$prefix：$readableContent"
+                                }
+                            }
                         }
                     }
                 }
             }
         }
+    }
+
+    private fun formatLongformMessage(
+        rawContent: String,
+        characterName: String,
+    ): List<String> {
+        val normalizedCharacterName = characterName.ifBlank { "角色" }
+        return RoleplayLongformMarkupParser.stripMarkupForDisplay(rawContent)
+            .lines()
+            .map { it.trim() }
+            .filter { it.isNotBlank() }
+            .ifEmpty {
+                listOf(RoleplayLongformMarkupParser.stripMarkupForDisplay(rawContent))
+            }
+            .mapNotNull { paragraph ->
+                paragraph.takeIf { it.isNotBlank() }?.let {
+                    "$normalizedCharacterName：$it"
+                }
+            }
     }
 }

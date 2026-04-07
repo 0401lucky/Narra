@@ -38,6 +38,7 @@ import com.example.myapplication.model.SearchSourceIds
 import com.example.myapplication.model.SearchSourceType
 import com.example.myapplication.model.TransferDirection
 import com.example.myapplication.model.TransferStatus
+import com.example.myapplication.model.specialMetadataValue
 import com.example.myapplication.model.fileMessagePart
 import com.example.myapplication.model.imageMessagePart
 import com.example.myapplication.model.textMessagePart
@@ -902,7 +903,7 @@ class AiGatewayTest {
         )
 
         val requestBody = server.takeRequest().body.readUtf8()
-        assertTrue(requestBody.contains("仅限聊天内展示的“转账”特殊玩法"))
+        assertTrue(requestBody.contains("仅限聊天内展示的“特殊玩法卡片”协议"))
         assertTrue(requestBody.contains("transfer-1"))
         assertTrue(requestBody.contains("user_to_assistant"))
         assertTrue(requestBody.contains("88.00"))
@@ -963,7 +964,7 @@ class AiGatewayTest {
         )
 
         val requestBody = server.takeRequest().body.readUtf8()
-        assertTrue(requestBody.contains("仅限聊天内展示的“转账”特殊玩法"))
+        assertTrue(requestBody.contains("仅限聊天内展示的“特殊玩法卡片”协议"))
         assertTrue(requestBody.contains("transfer-pending"))
     }
 
@@ -1476,11 +1477,11 @@ class AiGatewayTest {
     }
 
     @Test
-    fun parseAssistantSpecialOutput_extractsTransferAndUpdateTags() {
+    fun parseAssistantSpecialOutput_extractsPlayAndUpdateTags() {
         val gateway = createGateway(settings = AppSettings())
 
         val parsed = gateway.parseAssistantSpecialOutput(
-            content = "给你转账啦<transfer id=\"t1\" direction=\"assistant_to_user\" amount=\"66.00\" counterparty=\"用户\" note=\"晚饭\" />顺手收一下<transfer-update ref=\"t0\" status=\"received\" />",
+            content = "给你转账啦<play id=\"t1\" type=\"transfer\" direction=\"assistant_to_user\" amount=\"66.00\" counterparty=\"用户\" note=\"晚饭\" status=\"pending\" />顺手收一下<play-update ref=\"t0\" status=\"received\" />",
             existingParts = emptyList(),
         )
 
@@ -1492,6 +1493,21 @@ class AiGatewayTest {
         assertEquals(1, parsed.transferUpdates.size)
         assertEquals("t0", parsed.transferUpdates.first().refId)
         assertEquals(TransferStatus.RECEIVED, parsed.transferUpdates.first().status)
+    }
+
+    @Test
+    fun parseAssistantSpecialOutput_extractsInviteCard() {
+        val gateway = createGateway(settings = AppSettings())
+
+        val parsed = gateway.parseAssistantSpecialOutput(
+            content = "今晚见我吧<play id=\"i1\" type=\"invite\" target=\"用户\" place=\"江边步道\" time=\"今晚九点\" note=\"别迟到\" />",
+            existingParts = emptyList(),
+        )
+
+        assertEquals("今晚见我吧", parsed.content)
+        assertEquals(ChatMessagePartType.SPECIAL, parsed.parts.last().type)
+        assertEquals("invite", parsed.parts.last().specialType?.protocolValue)
+        assertEquals("江边步道", parsed.parts.last().specialMetadataValue("place"))
     }
 
     private fun createGateway(

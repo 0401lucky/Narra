@@ -59,6 +59,13 @@ import com.example.myapplication.model.resolveReasoningBudgetLabel
 import com.example.myapplication.model.supportsThinkingBudgetControl
 import com.example.myapplication.ui.component.ModelIcon
 
+internal data class ModelPickerQuickAction(
+    val id: String,
+    val title: String,
+    val supportingText: String = "",
+    val selected: Boolean = false,
+)
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 internal fun ReasoningBudgetSheet(
@@ -98,11 +105,7 @@ internal fun ReasoningBudgetSheet(
                     style = MaterialTheme.typography.titleLarge,
                 )
                 Text(
-                    text = if (canAdjustThinkingBudget) {
-                        "调节当前模型的思考强度，发送下一条消息时会立即生效。"
-                    } else {
-                        "当前模型支持推理，但接口是否返回明文思考过程由服务端决定。"
-                    },
+                    text = if (canAdjustThinkingBudget) "调节思考强度，发送下一条消息时生效" else "是否返回思考过程取决于服务端设置",
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
@@ -111,7 +114,7 @@ internal fun ReasoningBudgetSheet(
             if (provider == null || currentModel.isBlank() || !selectedModelSupportsReasoning) {
                 NoticeCard(
                     title = "当前模型未开启思考",
-                    body = "请先选择支持推理的模型，再回来调整思考设置。",
+                    body = "请先选择支持推理能力的模型。",
                     containerColor = MaterialTheme.colorScheme.secondaryContainer,
                     contentColor = MaterialTheme.colorScheme.onSecondaryContainer,
                 )
@@ -163,9 +166,9 @@ internal fun ReasoningBudgetSheet(
                             SheetOptionRow(
                                 title = preset.label,
                                 supportingText = if (preset.budget == null) {
-                                    "交给模型自行分配思考强度"
+                                    "交给模型自行分配"
                                 } else {
-                                    "预算约为 ${preset.budget} token，会映射为兼容接口的 reasoning effort"
+                                    "预估约 ${preset.budget} tokens"
                                 },
                                 selected = preset.budget == provider.thinkingBudget,
                                 onClick = {
@@ -178,7 +181,7 @@ internal fun ReasoningBudgetSheet(
 
                 if (reasoningBudgetHint.isNotBlank()) {
                     NoticeCard(
-                        title = if (canAdjustThinkingBudget) "当前说明" else "接口限制说明",
+                        title = if (canAdjustThinkingBudget) "说明" else "接口限制",
                         body = reasoningBudgetHint,
                         containerColor = MaterialTheme.colorScheme.tertiaryContainer,
                         contentColor = MaterialTheme.colorScheme.onTertiaryContainer,
@@ -212,6 +215,8 @@ internal fun ModelPickerSheet(
     onDismissRequest: () -> Unit,
     onSelectProvider: (String) -> Unit,
     onOpenProviderDetail: (String) -> Unit,
+    quickActions: (ProviderSettings?) -> List<ModelPickerQuickAction> = { emptyList() },
+    onSelectQuickAction: ((String, String) -> Unit)? = null,
     onSelectModel: (String, String) -> Unit,
 ) {
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
@@ -247,6 +252,9 @@ internal fun ModelPickerSheet(
             }
         }
     }
+    val quickActionOptions = remember(selectedProvider) {
+        quickActions(selectedProvider)
+    }
     val selectedProviderHasCredentials = selectedProvider?.hasBaseCredentials() == true
     val isSelectedProviderLoading = isLoadingModels && loadingProviderId == selectedProvider?.id
 
@@ -268,13 +276,6 @@ internal fun ModelPickerSheet(
                     text = sheetTitle,
                     style = MaterialTheme.typography.titleLarge,
                 )
-                if (providerOptions.size > 1) {
-                    Text(
-                        text = "先切换到要编辑的提供商，再为该提供商选择模型。这里的设置不会自动同步到别的提供商。",
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                }
             }
 
             if (providerOptions.size > 1) {
@@ -312,7 +313,7 @@ internal fun ModelPickerSheet(
                 onValueChange = { searchQuery = it },
                 modifier = Modifier.fillMaxWidth(),
                 singleLine = true,
-                placeholder = { Text("输入模型名、ID 或能力关键词") },
+                placeholder = { Text("输入模型名、ID 或关键词") },
                 leadingIcon = {
                     Icon(
                         imageVector = Icons.Default.Search,
@@ -321,11 +322,31 @@ internal fun ModelPickerSheet(
                 },
             )
 
+            if (quickActionOptions.isNotEmpty()) {
+                Column(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalArrangement = Arrangement.spacedBy(10.dp),
+                ) {
+                    quickActionOptions.forEach { option ->
+                        SheetOptionRow(
+                            title = option.title,
+                            supportingText = option.supportingText.ifBlank { null },
+                            selected = option.selected,
+                            onClick = {
+                                selectedProvider?.id?.let { providerId ->
+                                    onSelectQuickAction?.invoke(providerId, option.id)
+                                }
+                            },
+                        )
+                    }
+                }
+            }
+
             when {
                 !selectedProviderHasCredentials -> {
                     NoticeCard(
                         title = "尚未保存连接配置",
-                        body = "当前提供商还没有可用的 Base URL 与 API Key，请先到设置页补齐。",
+                        body = "请先到参数设置中补齐 Base URL 与 API Key。",
                         containerColor = MaterialTheme.colorScheme.errorContainer,
                         contentColor = MaterialTheme.colorScheme.onErrorContainer,
                     )
@@ -333,8 +354,8 @@ internal fun ModelPickerSheet(
 
                 modelInfos.isEmpty() -> {
                     NoticeCard(
-                        title = "模型列表仍为空",
-                        body = "请先进入设置页的提供商详情，点击「更新模型列表」获取并选择要使用的模型。",
+                        title = "模型列表为空",
+                        body = "请到设置详情页点击「更新模型列表」获取模型。",
                         containerColor = MaterialTheme.colorScheme.secondaryContainer,
                         contentColor = MaterialTheme.colorScheme.onSecondaryContainer,
                     )
@@ -342,8 +363,8 @@ internal fun ModelPickerSheet(
 
                 filteredModelInfos.isEmpty() -> {
                     NoticeCard(
-                        title = "没有匹配的模型",
-                        body = "换个关键词试试，或者先清空搜索查看完整模型列表。",
+                        title = "未找到模型",
+                        body = "换个关键词试试，或清空搜索查看所有模型。",
                         containerColor = MaterialTheme.colorScheme.tertiaryContainer,
                         contentColor = MaterialTheme.colorScheme.onTertiaryContainer,
                     )

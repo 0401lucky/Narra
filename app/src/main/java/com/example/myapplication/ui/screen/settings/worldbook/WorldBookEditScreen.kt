@@ -213,7 +213,7 @@ fun WorldBookEditScreen(
                         when (scopeType) {
                             WorldBookScopeType.GLOBAL -> {
                                 Text(
-                                    text = "全局条目无需绑定角色，会按关键词直接参与所有会话。",
+                                    text = "自动按关键词作用于所有会话。",
                                     style = MaterialTheme.typography.bodySmall,
                                     color = palette.body,
                                 )
@@ -221,7 +221,7 @@ fun WorldBookEditScreen(
 
                             WorldBookScopeType.ATTACHABLE -> {
                                 Text(
-                                    text = "可挂载条目默认不会自动命中，需要在助手扩展页手动挂到某个角色身上。",
+                                    text = "需要手动在助手中挂载才生效。",
                                     style = MaterialTheme.typography.bodySmall,
                                     color = palette.body,
                                 )

@@ -33,8 +33,12 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.runtime.remember
 import com.example.myapplication.model.BUILT_IN_TEMPLATES
 import com.example.myapplication.model.ProviderTemplate
+import com.example.myapplication.ui.component.NarraTextButton
+import com.example.myapplication.ui.component.bounceClick
 
 @Composable
 fun ProviderTemplateDialog(
@@ -74,7 +78,7 @@ fun ProviderTemplateDialog(
                         fontWeight = FontWeight.Bold,
                     )
                     Text(
-                        text = "选择一个模板快速创建提供商，名称和 URL 会自动填充。",
+                        text = "快速填充配置参数。",
                         modifier = Modifier.padding(horizontal = 24.dp),
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -84,7 +88,7 @@ fun ProviderTemplateDialog(
                             .fillMaxWidth()
                             .weight(1f, fill = false),
                         contentPadding = PaddingValues(horizontal = 16.dp, vertical = 16.dp),
-                        verticalArrangement = Arrangement.spacedBy(8.dp),
+                        verticalArrangement = Arrangement.spacedBy(12.dp),
                     ) {
                         items(BUILT_IN_TEMPLATES) { template ->
                             TemplateCard(
@@ -96,10 +100,10 @@ fun ProviderTemplateDialog(
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(horizontal = 12.dp, vertical = 8.dp),
+                            .padding(horizontal = 12.dp, vertical = 12.dp),
                         horizontalArrangement = Arrangement.End,
                     ) {
-                        TextButton(onClick = onDismiss) {
+                        NarraTextButton(onClick = onDismiss) {
                             Text("取消")
                         }
                     }
@@ -114,10 +118,14 @@ private fun TemplateCard(
     template: ProviderTemplate,
     onClick: () -> Unit,
 ) {
+    val interactionSource = remember { MutableInteractionSource() }
     Card(
         onClick = onClick,
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier
+            .fillMaxWidth()
+            .bounceClick(interactionSource = interactionSource),
         shape = RoundedCornerShape(18.dp),
+        interactionSource = interactionSource,
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.45f),
             contentColor = MaterialTheme.colorScheme.onSurface,

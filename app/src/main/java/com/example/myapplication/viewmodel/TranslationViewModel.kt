@@ -8,6 +8,7 @@ import com.example.myapplication.data.repository.ai.AiSettingsRepository
 import com.example.myapplication.data.repository.ai.AiTranslationService
 import com.example.myapplication.model.AppSettings
 import com.example.myapplication.model.ProviderFunction
+import com.example.myapplication.model.ProviderFunctionModelMode
 import com.example.myapplication.model.TranslationSourceType
 import com.example.myapplication.model.TranslationHistoryEntry
 import com.example.myapplication.model.detectLanguageLabel
@@ -63,7 +64,7 @@ class TranslationViewModel(
                         activeModelName = appSettings.activeProvider()
                             ?.resolveFunctionModel(ProviderFunction.TRANSLATION)
                             .orEmpty()
-                            .ifBlank { appSettings.selectedModel },
+                            .ifBlank { "未启用" },
                         availableModels = appSettings.activeProvider()?.resolvedModelIds().orEmpty(),
                         history = appSettings.translationHistory.sortedByDescending(TranslationHistoryEntry::createdAt),
                         detectedSourceLanguageLabel = detectLanguageLabel(current.inputText),
@@ -125,7 +126,10 @@ class TranslationViewModel(
         }
         val updatedProviders = providers.map { provider ->
             if (provider.id == selectedProviderId) {
-                provider.copy(translationModel = modelId)
+                provider.copy(
+                    translationModel = modelId,
+                    translationModelMode = ProviderFunctionModelMode.CUSTOM,
+                )
             } else {
                 provider
             }
@@ -177,6 +181,14 @@ class TranslationViewModel(
         val inputText = state.inputText.trim()
         if (inputText.isBlank()) {
             _uiState.update { it.copy(errorMessage = "请先输入要翻译的内容") }
+            return
+        }
+        if (_uiState.value.settings.activeProvider()
+                ?.resolveFunctionModel(ProviderFunction.TRANSLATION)
+                .orEmpty()
+                .isBlank()
+        ) {
+            _uiState.update { it.copy(errorMessage = "请先在模型页开启翻译模型") }
             return
         }
 

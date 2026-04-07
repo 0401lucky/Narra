@@ -4,6 +4,7 @@ import com.example.myapplication.conversation.ConversationMemoryExtractionCoordi
 import com.example.myapplication.conversation.ConversationSummaryCoordinator
 import com.example.myapplication.conversation.RoleplayContextStatusCoordinator
 import com.example.myapplication.conversation.SummaryGenerationConfig
+import com.example.myapplication.conversation.SummaryUpdateResult
 import com.example.myapplication.data.repository.context.PendingMemoryProposalRepository
 import com.example.myapplication.model.AppSettings
 import com.example.myapplication.model.Assistant
@@ -22,6 +23,7 @@ internal class RoleplayContextUpdateSupport(
     private val contextStatusCoordinator: RoleplayContextStatusCoordinator,
     private val pendingMemoryProposalRepository: PendingMemoryProposalRepository,
     private val aiPromptExtrasService: com.example.myapplication.data.repository.ai.AiPromptExtrasService,
+    private val refreshContextGovernance: suspend (String, List<ChatMessage>, AppSettings, Assistant?, RoleplayScenario) -> Unit,
 ) {
     fun launchConversationSummaryGeneration(
         conversationId: String,
@@ -33,47 +35,79 @@ internal class RoleplayContextUpdateSupport(
         summaryRecentMessageWindow: Int,
         summaryMinCoveredMessageCount: Int,
         maxSummaryInputLength: Int,
+        forceRefresh: Boolean = false,
     ) {
         scope.launch {
-            val updated = runCatching {
-                summaryCoordinator.updateConversationSummary(
+            runCatching {
+                updateConversationSummary(
                     conversationId = conversationId,
-                    assistantId = assistant?.id.orEmpty(),
                     completedMessages = completedMessages,
                     settings = settings,
-                    config = SummaryGenerationConfig(
-                        triggerMessageCount = summaryTriggerMessageCount,
-                        recentMessageWindow = summaryRecentMessageWindow,
-                        minCoveredMessageCount = summaryMinCoveredMessageCount,
-                    ),
-                    buildSummaryInput = { messages ->
-                        RoleplayConversationSupport.buildTranscriptInput(
-                            messages = messages,
-                            scenario = scenario,
-                            assistant = assistant,
-                            settings = settings,
-                            maxLength = maxSummaryInputLength,
-                        )
-                    },
-                    generateSummary = { conversationText, baseUrl, apiKey, modelId, apiProtocol ->
-                        aiPromptExtrasService.generateRoleplayConversationSummary(
-                            conversationText = conversationText,
-                            baseUrl = baseUrl,
-                            apiKey = apiKey,
-                            modelId = modelId,
-                            apiProtocol = apiProtocol,
-                            provider = settings.activeProvider(),
-                        )
-                    },
-                )
-            }.getOrDefault(false)
-            if (updated) {
-                refreshContextStatus(
-                    conversationId = conversationId,
-                    isContinuingSession = uiState().contextStatus.isContinuingSession,
+                    assistant = assistant,
+                    scenario = scenario,
+                    summaryTriggerMessageCount = summaryTriggerMessageCount,
+                    summaryRecentMessageWindow = summaryRecentMessageWindow,
+                    summaryMinCoveredMessageCount = summaryMinCoveredMessageCount,
+                    maxSummaryInputLength = maxSummaryInputLength,
+                    forceRefresh = forceRefresh,
                 )
             }
         }
+    }
+
+    suspend fun updateConversationSummary(
+        conversationId: String,
+        completedMessages: List<ChatMessage>,
+        settings: AppSettings,
+        assistant: Assistant?,
+        scenario: RoleplayScenario,
+        summaryTriggerMessageCount: Int,
+        summaryRecentMessageWindow: Int,
+        summaryMinCoveredMessageCount: Int,
+        maxSummaryInputLength: Int,
+        forceRefresh: Boolean = false,
+    ): SummaryUpdateResult {
+        val result = summaryCoordinator.updateConversationSummary(
+            conversationId = conversationId,
+            assistantId = assistant?.id.orEmpty(),
+            completedMessages = completedMessages,
+            settings = settings,
+            config = SummaryGenerationConfig(
+                triggerMessageCount = summaryTriggerMessageCount,
+                recentMessageWindow = summaryRecentMessageWindow,
+                minCoveredMessageCount = summaryMinCoveredMessageCount,
+            ),
+            forceRefresh = forceRefresh,
+            buildSummaryInput = { messages ->
+                RoleplayConversationSupport.buildTranscriptInput(
+                    messages = messages,
+                    scenario = scenario,
+                    assistant = assistant,
+                    settings = settings,
+                    maxLength = maxSummaryInputLength,
+                )
+            },
+            generateSummary = { conversationText, baseUrl, apiKey, modelId, apiProtocol ->
+                aiPromptExtrasService.generateRoleplayConversationSummary(
+                    conversationText = conversationText,
+                    baseUrl = baseUrl,
+                    apiKey = apiKey,
+                    modelId = modelId,
+                    apiProtocol = apiProtocol,
+                    provider = settings.activeProvider(),
+                )
+            },
+        )
+        if (result.updated) {
+            refreshContextGovernance(
+                conversationId,
+                completedMessages,
+                settings,
+                assistant,
+                scenario,
+            )
+        }
+        return result
     }
 
     fun launchAutomaticMemoryExtraction(

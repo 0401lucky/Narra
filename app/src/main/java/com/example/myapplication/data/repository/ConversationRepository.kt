@@ -3,12 +3,12 @@ package com.example.myapplication.data.repository
 import com.example.myapplication.conversation.ConversationMessageTransforms
 import com.example.myapplication.data.local.ConversationStore
 import com.example.myapplication.model.ChatMessage
+import com.example.myapplication.model.ChatMessagePart
 import com.example.myapplication.model.Conversation
 import com.example.myapplication.model.DEFAULT_ASSISTANT_ID
 import com.example.myapplication.model.DEFAULT_CONVERSATION_TITLE
 import com.example.myapplication.model.MessageRole
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.map
 import java.util.UUID
 
 class ConversationRepository(
@@ -20,11 +20,7 @@ class ConversationRepository(
     }
 
     fun observeConversationsByAssistant(assistantId: String): Flow<List<Conversation>> {
-        return conversationStore.observeConversations().map { conversations ->
-            conversations.filter { conversation ->
-                conversation.matchesAssistant(assistantId)
-            }
-        }
+        return conversationStore.observeConversationsByAssistant(assistantId)
     }
 
     fun observeMessages(conversationId: String): Flow<List<ChatMessage>> {
@@ -136,6 +132,33 @@ class ConversationRepository(
             ConversationMessageTransforms.applyTransferUpdates(
                 messages = existingMessages,
                 updates = updates,
+            )
+        }
+    }
+
+    suspend fun updateGiftImagePart(
+        conversationId: String,
+        specialId: String,
+        selectedModel: String,
+        transform: (ChatMessagePart) -> ChatMessagePart,
+    ): List<ChatMessage> {
+        if (conversationId.isBlank() || specialId.isBlank()) {
+            return conversationStore.listMessages(conversationId)
+        }
+        val currentConversation = requireConversation(conversationId)
+        val updatedConversation = buildUpdatedConversation(
+            currentConversation = currentConversation,
+            selectedModel = selectedModel,
+            title = currentConversation.title.ifBlank { DEFAULT_CONVERSATION_TITLE },
+        )
+        return conversationStore.updateConversationMessages(
+            conversation = updatedConversation,
+            conversationId = conversationId,
+        ) { existingMessages ->
+            ConversationMessageTransforms.applyGiftImageUpdate(
+                messages = existingMessages,
+                specialId = specialId,
+                transform = transform,
             )
         }
     }

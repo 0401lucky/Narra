@@ -34,6 +34,10 @@ object ChatViewModelUiUpdates {
             streamingReasoningContent = "",
             streamingParts = emptyList(),
             isConversationReady = false,
+            hasConversationSummary = false,
+            summaryCoveredMessageCount = 0,
+            latestPromptDebugDump = "",
+            contextGovernance = null,
         )
     }
 

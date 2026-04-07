@@ -75,6 +75,12 @@ internal class RoleplaySuggestionActionSupport(
             }
             return
         }
+        if (RoleplayConversationSupport.resolveSuggestionModelId(state.settings).isBlank()) {
+            updateUiState { current ->
+                RoleplayStateSupport.applySuggestionValidationError(current, "请先在模型页开启聊天建议模型")
+            }
+            return
+        }
 
         cancelSuggestionGeneration(resetState = false)
         updateUiState { current ->

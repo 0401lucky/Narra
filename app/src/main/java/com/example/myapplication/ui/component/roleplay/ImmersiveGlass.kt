@@ -18,12 +18,13 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.ColorScheme
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.produceState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -54,6 +55,21 @@ import com.example.myapplication.ui.component.UserAvatarLoadState
 import com.example.myapplication.ui.component.rememberUserProfileAvatarState
 import kotlin.math.max
 import kotlin.math.roundToInt
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
+
+// 调色板缓存：访问顺序驱逐，避免热点场景被随机移除
+private val paletteCache = object : LinkedHashMap<String, ImmersiveGlassPalette>(
+    ImmersivePaletteCacheMaxEntries,
+    0.75f,
+    true,
+) {
+    override fun removeEldestEntry(
+        eldest: MutableMap.MutableEntry<String, ImmersiveGlassPalette>?,
+    ): Boolean {
+        return size > ImmersivePaletteCacheMaxEntries
+    }
+}
 
 @Immutable
 data class ImmersiveGlassPalette(
@@ -88,11 +104,8 @@ data class ImmersiveBackdropState(
 @Composable
 fun rememberImmersiveBackdropState(
     backgroundUri: String,
+    highContrast: Boolean = false,
 ): ImmersiveBackdropState {
-    val backgroundState = rememberUserProfileAvatarState(
-        avatarUri = backgroundUri,
-        avatarUrl = "",
-    )
     val density = LocalDensity.current
     val windowInfo = LocalWindowInfo.current
     val colorScheme = MaterialTheme.colorScheme
@@ -104,14 +117,50 @@ fun rememberImmersiveBackdropState(
             )
         }
     }
-    val palette = remember(backgroundState.imageBitmap, colorScheme) {
-        deriveImmersiveGlassPalette(
-            imageBitmap = backgroundState.imageBitmap.takeIf {
-                backgroundState.loadState == UserAvatarLoadState.Success
-            },
+    val backgroundState = rememberUserProfileAvatarState(
+        avatarUri = backgroundUri,
+        avatarUrl = "",
+        requestSize = screenSize,
+        allowHardware = false,
+    )
+
+    // 异步计算调色板，带缓存
+    val cacheKey = backgroundState.imageBitmap?.let {
+        "${backgroundUri}_${it.width}_${it.height}_$highContrast"
+    } ?: "fallback_${colorScheme.primary.toArgb()}_${colorScheme.secondary.toArgb()}_$highContrast"
+
+    val palette by produceState<ImmersiveGlassPalette>(
+        initialValue = readPaletteCache(cacheKey) ?: deriveImmersiveGlassPalette(
+            imageBitmap = null,
             colorScheme = colorScheme,
-        )
+            highContrast = highContrast,
+        ),
+        key1 = cacheKey,
+        key2 = colorScheme,
+    ) {
+        // 先尝试从缓存读取
+        readPaletteCache(cacheKey)?.let {
+            value = it
+            return@produceState
+        }
+
+        // 异步计算（在后台线程采样）
+        val bitmap = backgroundState.imageBitmap.takeIf {
+            backgroundState.loadState == UserAvatarLoadState.Success
+        }
+        val computed = withContext(Dispatchers.Default) {
+            deriveImmersiveGlassPalette(
+                imageBitmap = bitmap,
+                colorScheme = colorScheme,
+                highContrast = highContrast,
+            )
+        }
+
+        // 写入缓存
+        writePaletteCache(cacheKey, computed)
+        value = computed
     }
+
     return remember(backgroundState.imageBitmap, screenSize, palette) {
         ImmersiveBackdropState(
             imageBitmap = backgroundState.imageBitmap.takeIf {
@@ -120,6 +169,21 @@ fun rememberImmersiveBackdropState(
             screenSize = screenSize,
             palette = palette,
         )
+    }
+}
+
+private fun readPaletteCache(key: String): ImmersiveGlassPalette? {
+    return synchronized(paletteCache) {
+        paletteCache[key]
+    }
+}
+
+private fun writePaletteCache(
+    key: String,
+    palette: ImmersiveGlassPalette,
+) {
+    synchronized(paletteCache) {
+        paletteCache[key] = palette
     }
 }
 
@@ -354,6 +418,7 @@ private fun AlignedBlurredBackdropSlice(
 private fun deriveImmersiveGlassPalette(
     imageBitmap: ImageBitmap?,
     colorScheme: ColorScheme,
+    highContrast: Boolean = false,
 ): ImmersiveGlassPalette {
     val fallbackBase = lerp(colorScheme.primary, colorScheme.secondary, 0.28f)
     val sampled = imageBitmap?.let(::sampleAverageColor) ?: fallbackBase
@@ -361,51 +426,86 @@ private fun deriveImmersiveGlassPalette(
     val baseHsl = FloatArray(3)
     ColorUtils.colorToHSL(sampled.toArgb(), baseHsl)
     val hue = baseHsl[0]
-    val panelSaturation = (baseHsl[1] * 0.62f).coerceIn(0.12f, 0.34f)
-    val panelLightness = (baseHsl[2] * 0.56f).coerceIn(0.18f, 0.34f)
+
+    // 高对比度模式：提高饱和度和明度差异，增强可读性
+    val contrastMultiplier = if (highContrast) 1.5f else 1.0f
+    val panelSaturation = ((baseHsl[1] * 0.62f) * contrastMultiplier).coerceIn(
+        if (highContrast) 0.25f else 0.12f,
+        if (highContrast) 0.50f else 0.34f,
+    )
+    val panelLightness = ((baseHsl[2] * 0.56f) * contrastMultiplier).coerceIn(
+        if (highContrast) 0.12f else 0.18f,
+        if (highContrast) 0.40f else 0.34f,
+    )
 
     val panelTint = colorFromHsl(
         hue = hue,
         saturation = panelSaturation,
-        lightness = (panelLightness + 0.06f).coerceAtMost(0.40f),
+        lightness = (panelLightness + 0.06f).coerceAtMost(if (highContrast) 0.30f else 0.40f),
     )
     val panelTintStrong = colorFromHsl(
         hue = hue,
-        saturation = (panelSaturation + 0.03f).coerceAtMost(0.38f),
+        saturation = (panelSaturation + 0.03f).coerceAtMost(if (highContrast) 0.55f else 0.38f),
         lightness = panelLightness,
     )
     val characterAccent = colorFromHsl(
         hue = hue,
-        saturation = (baseHsl[1] * 0.9f).coerceIn(0.28f, 0.62f),
-        lightness = 0.76f,
+        saturation = ((baseHsl[1] * 0.9f) * contrastMultiplier).coerceIn(
+            if (highContrast) 0.40f else 0.28f,
+            if (highContrast) 0.75f else 0.62f,
+        ),
+        lightness = if (highContrast) 0.85f else 0.76f,
     )
     val userAccent = colorFromHsl(
         hue = (hue + 18f) % 360f,
-        saturation = (baseHsl[1] * 0.58f).coerceIn(0.18f, 0.42f),
-        lightness = 0.80f,
+        saturation = ((baseHsl[1] * 0.58f) * contrastMultiplier).coerceIn(
+            if (highContrast) 0.30f else 0.18f,
+            if (highContrast) 0.55f else 0.42f,
+        ),
+        lightness = if (highContrast) 0.88f else 0.80f,
     )
-    val onGlass = Color(0xFFF8FBFF)
-    val onGlassMuted = lerp(onGlass, characterAccent, 0.18f).copy(alpha = 0.78f)
-    val chipTint = lerp(panelTintStrong, characterAccent, 0.30f).copy(alpha = 0.92f)
-    val thoughtText = lerp(onGlassMuted, userAccent, 0.22f).copy(alpha = 0.88f)
+    val onGlass = if (highContrast) Color(0xFFFFFFFF) else Color(0xFFF8FBFF)
+    val onGlassMuted = if (highContrast) {
+        lerp(onGlass, characterAccent, 0.10f).copy(alpha = 0.92f)
+    } else {
+        lerp(onGlass, characterAccent, 0.18f).copy(alpha = 0.78f)
+    }
+    val chipTint = if (highContrast) {
+        lerp(panelTintStrong, characterAccent, 0.20f).copy(alpha = 0.96f)
+    } else {
+        lerp(panelTintStrong, characterAccent, 0.30f).copy(alpha = 0.92f)
+    }
+    val thoughtText = if (highContrast) {
+        lerp(onGlassMuted, userAccent, 0.15f).copy(alpha = 0.95f)
+    } else {
+        lerp(onGlassMuted, userAccent, 0.22f).copy(alpha = 0.88f)
+    }
+
+    // 高对比度：增强边框、阴影和 scrim
+    val borderAlpha = if (highContrast) 0.35f else 0.15f
+    val shadowAlpha = if (highContrast) 0.55f else 0.36f
+    val scrimTopAlpha = if (highContrast) 0.30f else 0.16f
+    val scrimBottomAlpha = if (highContrast) 0.60f else 0.40f
+    val readingSurfaceAlpha = if (highContrast) 0.90f else 0.78f
+    val readingBorderAlpha = if (highContrast) 0.45f else 0.22f
 
     return ImmersiveGlassPalette(
-        panelTint = panelTint.copy(alpha = 0.74f),
-        panelTintStrong = panelTintStrong.copy(alpha = 0.86f),
-        panelHighlight = Color.White.copy(alpha = 0.18f),
-        panelBorder = Color.White.copy(alpha = 0.15f),
-        shadowColor = Color.Black.copy(alpha = 0.36f),
-        scrimTop = Color.Black.copy(alpha = 0.16f),
-        scrimBottom = Color.Black.copy(alpha = 0.40f),
+        panelTint = panelTint.copy(alpha = if (highContrast) 0.88f else 0.74f),
+        panelTintStrong = panelTintStrong.copy(alpha = if (highContrast) 0.94f else 0.86f),
+        panelHighlight = Color.White.copy(alpha = if (highContrast) 0.28f else 0.18f),
+        panelBorder = Color.White.copy(alpha = borderAlpha),
+        shadowColor = Color.Black.copy(alpha = shadowAlpha),
+        scrimTop = Color.Black.copy(alpha = scrimTopAlpha),
+        scrimBottom = Color.Black.copy(alpha = scrimBottomAlpha),
         onGlass = onGlass,
         onGlassMuted = onGlassMuted,
         chipTint = chipTint,
-        chipText = Color.White.copy(alpha = 0.96f),
+        chipText = Color.White.copy(alpha = if (highContrast) 1.0f else 0.96f),
         characterAccent = characterAccent,
         userAccent = userAccent,
         thoughtText = thoughtText,
-        readingSurface = panelTintStrong.copy(alpha = 0.78f),
-        readingBorder = characterAccent.copy(alpha = 0.22f),
+        readingSurface = panelTintStrong.copy(alpha = readingSurfaceAlpha),
+        readingBorder = characterAccent.copy(alpha = readingBorderAlpha),
     )
 }
 
@@ -459,4 +559,66 @@ private fun sampleAverageColor(
         green = (green / count).toInt(),
         blue = (blue / count).toInt(),
     )
+}
+
+/**
+ * 计算顶部区域平均亮度，用于系统栏图标明暗判断
+ */
+fun calculateTopRegionLuminance(imageBitmap: ImageBitmap?, regionHeightFraction: Float = 0.08f): Float {
+    val bitmap = imageBitmap?.asAndroidBitmap() ?: return 0.0f
+    val regionHeight = (bitmap.height * regionHeightFraction).toInt().coerceAtLeast(1)
+    val stepX = max(1, bitmap.width / 32)
+    val stepY = max(1, regionHeight / 8)
+    var luminanceSum = 0.0
+    var count = 0
+
+    var x = 0
+    while (x < bitmap.width) {
+        var y = 0
+        while (y < regionHeight) {
+            val color = bitmap[x, y]
+            val r = android.graphics.Color.red(color) / 255.0
+            val g = android.graphics.Color.green(color) / 255.0
+            val b = android.graphics.Color.blue(color) / 255.0
+            // 相对亮度公式
+            val lum = 0.2126 * r + 0.7152 * g + 0.0722 * b
+            luminanceSum += lum
+            count++
+            y += stepY
+        }
+        x += stepX
+    }
+
+    return if (count > 0) (luminanceSum / count).toFloat() else 0.0f
+}
+
+/**
+ * 计算底部区域平均亮度
+ */
+fun calculateBottomRegionLuminance(imageBitmap: ImageBitmap?, regionHeightFraction: Float = 0.12f): Float {
+    val bitmap = imageBitmap?.asAndroidBitmap() ?: return 0.0f
+    val regionHeight = (bitmap.height * regionHeightFraction).toInt().coerceAtLeast(1)
+    val startY = bitmap.height - regionHeight
+    val stepX = max(1, bitmap.width / 32)
+    val stepY = max(1, regionHeight / 8)
+    var luminanceSum = 0.0
+    var count = 0
+
+    var x = 0
+    while (x < bitmap.width) {
+        var y = startY
+        while (y < bitmap.height) {
+            val color = bitmap[x, y]
+            val r = android.graphics.Color.red(color) / 255.0
+            val g = android.graphics.Color.green(color) / 255.0
+            val b = android.graphics.Color.blue(color) / 255.0
+            val lum = 0.2126 * r + 0.7152 * g + 0.0722 * b
+            luminanceSum += lum
+            count++
+            y += stepY
+        }
+        x += stepX
+    }
+
+    return if (count > 0) (luminanceSum / count).toFloat() else 0.0f
 }

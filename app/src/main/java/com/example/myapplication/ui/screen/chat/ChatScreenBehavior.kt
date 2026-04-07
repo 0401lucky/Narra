@@ -12,8 +12,11 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.withFrameNanos
 import androidx.compose.material3.SnackbarHostState
+import com.example.myapplication.ui.component.ChatMessagePerformanceMode
+import kotlinx.coroutines.delay
 
 private const val ChatStreamFollowScrollWindowMillis = 64L
+private const val ChatScrollPerformanceRecoveryMillis = 180L
 
 internal class ChatAutoFollowState {
     var shouldAutoFollowStreaming by mutableStateOf(true)
@@ -58,11 +61,23 @@ internal class ChatAutoFollowState {
     }
 }
 
+internal class ChatScrollPerformanceState {
+    var mode by mutableStateOf(ChatMessagePerformanceMode.FULL)
+    var activityToken by mutableLongStateOf(0L)
+}
+
 @Composable
 internal fun rememberChatAutoFollowState(
     conversationId: String,
 ): ChatAutoFollowState {
     return remember(conversationId) { ChatAutoFollowState() }
+}
+
+@Composable
+internal fun rememberChatScrollPerformanceState(
+    conversationId: String,
+): ChatScrollPerformanceState {
+    return remember(conversationId) { ChatScrollPerformanceState() }
 }
 
 @Composable
@@ -195,6 +210,31 @@ internal fun ChatAutoFollowEffects(
         }
         state.shouldAutoFollowStreaming = true
         state.pendingCompletionFollow = false
+    }
+}
+
+@Composable
+internal fun ChatScrollPerformanceEffects(
+    state: ChatScrollPerformanceState,
+    listState: LazyListState,
+    displayedConversationId: String,
+) {
+    LaunchedEffect(displayedConversationId) {
+        state.activityToken += 1L
+        state.mode = ChatMessagePerformanceMode.FULL
+    }
+
+    LaunchedEffect(listState.isScrollInProgress, displayedConversationId) {
+        if (listState.isScrollInProgress) {
+            state.activityToken += 1L
+            state.mode = ChatMessagePerformanceMode.SCROLLING_LIGHT
+        } else {
+            val currentToken = state.activityToken
+            delay(ChatScrollPerformanceRecoveryMillis)
+            if (currentToken == state.activityToken) {
+                state.mode = ChatMessagePerformanceMode.FULL
+            }
+        }
     }
 }
 

@@ -4,6 +4,8 @@ import com.example.myapplication.data.remote.ApiServiceFactory
 import com.example.myapplication.model.AppSettings
 import com.example.myapplication.model.Assistant
 import com.example.myapplication.model.ProviderSettings
+import com.example.myapplication.model.RoleplayImmersiveMode
+import com.example.myapplication.model.RoleplayLineHeightScale
 import com.example.myapplication.model.ScreenTranslationSettings
 import com.example.myapplication.model.ThemeMode
 import com.example.myapplication.model.TranslationHistoryEntry
@@ -76,6 +78,9 @@ class AiSettingsServicesTest {
             roleplayLongformTargetChars = 900,
             showRoleplayPresenceStrip = false,
             showRoleplayStatusStrip = true,
+            roleplayImmersiveMode = RoleplayImmersiveMode.HIDE_SYSTEM_BARS,
+            roleplayHighContrast = true,
+            roleplayLineHeightScale = RoleplayLineHeightScale.RELAXED,
         )
         editor.saveScreenTranslationSettings(
             ScreenTranslationSettings(
@@ -114,6 +119,9 @@ class AiSettingsServicesTest {
         val saved = settingsStore.settingsFlow.first()
         assertEquals(ThemeMode.DARK, saved.themeMode)
         assertEquals(1.1f, saved.messageTextScale)
+        assertEquals(RoleplayImmersiveMode.HIDE_SYSTEM_BARS, saved.roleplayImmersiveMode)
+        assertTrue(saved.roleplayHighContrast)
+        assertEquals(RoleplayLineHeightScale.RELAXED, saved.roleplayLineHeightScale)
         assertTrue(saved.screenTranslationSettings.serviceEnabled)
         assertEquals("英语", saved.screenTranslationSettings.targetLanguage)
         assertEquals("Hello", saved.translationHistory.first().translatedText)

@@ -5,6 +5,8 @@ import com.example.myapplication.model.AppSettings
 import com.example.myapplication.model.Assistant
 import com.example.myapplication.model.DEFAULT_ROLEPLAY_LONGFORM_TARGET_CHARS
 import com.example.myapplication.model.ProviderSettings
+import com.example.myapplication.model.RoleplayImmersiveMode
+import com.example.myapplication.model.RoleplayLineHeightScale
 import com.example.myapplication.model.ScreenTranslationSettings
 import com.example.myapplication.model.SearchSettings
 import com.example.myapplication.model.ThemeMode
@@ -58,6 +60,9 @@ class FakeSettingsStore(
             roleplayLongformTargetChars = state.value.roleplayLongformTargetChars,
             showRoleplayPresenceStrip = state.value.showRoleplayPresenceStrip,
             showRoleplayStatusStrip = state.value.showRoleplayStatusStrip,
+            roleplayImmersiveMode = state.value.roleplayImmersiveMode,
+            roleplayHighContrast = state.value.roleplayHighContrast,
+            roleplayLineHeightScale = state.value.roleplayLineHeightScale,
             suppressRoleplayAssistantMismatchDialog = state.value.suppressRoleplayAssistantMismatchDialog,
             userDisplayName = state.value.userDisplayName,
             userAvatarUri = state.value.userAvatarUri,
@@ -83,6 +88,9 @@ class FakeSettingsStore(
         roleplayLongformTargetChars: Int,
         showRoleplayPresenceStrip: Boolean,
         showRoleplayStatusStrip: Boolean,
+        roleplayImmersiveMode: RoleplayImmersiveMode,
+        roleplayHighContrast: Boolean,
+        roleplayLineHeightScale: RoleplayLineHeightScale,
     ) {
         state.value = state.value.copy(
             themeMode = themeMode,
@@ -100,6 +108,9 @@ class FakeSettingsStore(
                 ?: DEFAULT_ROLEPLAY_LONGFORM_TARGET_CHARS,
             showRoleplayPresenceStrip = showRoleplayPresenceStrip,
             showRoleplayStatusStrip = showRoleplayStatusStrip,
+            roleplayImmersiveMode = roleplayImmersiveMode,
+            roleplayHighContrast = roleplayHighContrast,
+            roleplayLineHeightScale = roleplayLineHeightScale,
         )
     }
 

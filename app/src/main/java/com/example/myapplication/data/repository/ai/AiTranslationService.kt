@@ -94,8 +94,7 @@ class DefaultAiTranslationService(
         val activeProvider = settings.activeProvider()
         val baseUrl = activeProvider?.baseUrl ?: settings.baseUrl
         val apiKey = activeProvider?.apiKey ?: settings.apiKey
-        val modelId = activeProvider?.resolveFunctionModel(ProviderFunction.TRANSLATION)
-            ?: settings.selectedModel
+        val modelId = resolveTranslationModelId(settings)
 
         val content = runNetworkCall {
             requestCompletionText(
@@ -126,8 +125,7 @@ class DefaultAiTranslationService(
         val activeProvider = settings.activeProvider()
         val baseUrl = activeProvider?.baseUrl ?: settings.baseUrl
         val apiKey = activeProvider?.apiKey ?: settings.apiKey
-        val modelId = activeProvider?.resolveFunctionModel(ProviderFunction.TRANSLATION)
-            ?: settings.selectedModel
+        val modelId = resolveTranslationModelId(settings)
 
         val apiProtocol = activeProvider?.resolvedApiProtocol() ?: ProviderApiProtocol.OPENAI_COMPATIBLE
         val requestBody = ChatCompletionRequest(
@@ -176,8 +174,7 @@ class DefaultAiTranslationService(
         val activeProvider = settings.activeProvider()
         val baseUrl = activeProvider?.baseUrl ?: settings.baseUrl
         val apiKey = activeProvider?.apiKey ?: settings.apiKey
-        val modelId = activeProvider?.resolveFunctionModel(ProviderFunction.TRANSLATION)
-            ?: settings.selectedModel
+        val modelId = resolveTranslationModelId(settings)
 
         val rawContent = runNetworkCall {
             requestCompletionText(
@@ -234,6 +231,16 @@ class DefaultAiTranslationService(
         val settings = settingsStore.settingsFlow.first()
         require(settings.hasRequiredConfig()) { "请先完成设置并选择模型" }
         return settings
+    }
+
+    private fun resolveTranslationModelId(settings: AppSettings): String {
+        val modelId = settings.activeProvider()
+            ?.resolveFunctionModel(ProviderFunction.TRANSLATION)
+            .orEmpty()
+        if (modelId.isBlank()) {
+            throw IllegalStateException("请先在模型页开启翻译模型")
+        }
+        return modelId
     }
 
     private suspend fun <T> runNetworkCall(block: suspend () -> T): T {

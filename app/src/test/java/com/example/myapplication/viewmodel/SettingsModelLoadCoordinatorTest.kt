@@ -5,6 +5,8 @@ import com.example.myapplication.data.repository.ai.AiSettingsEditor
 import com.example.myapplication.model.Assistant
 import com.example.myapplication.model.ModelInfo
 import com.example.myapplication.model.ProviderSettings
+import com.example.myapplication.model.RoleplayImmersiveMode
+import com.example.myapplication.model.RoleplayLineHeightScale
 import com.example.myapplication.model.ScreenTranslationSettings
 import com.example.myapplication.model.SearchSettings
 import com.example.myapplication.model.ThemeMode
@@ -115,6 +117,9 @@ class SettingsModelLoadCoordinatorTest {
             roleplayLongformTargetChars: Int,
             showRoleplayPresenceStrip: Boolean,
             showRoleplayStatusStrip: Boolean,
+            roleplayImmersiveMode: RoleplayImmersiveMode,
+            roleplayHighContrast: Boolean,
+            roleplayLineHeightScale: RoleplayLineHeightScale,
         ) = Unit
 
         override suspend fun saveScreenTranslationSettings(settings: ScreenTranslationSettings) = Unit

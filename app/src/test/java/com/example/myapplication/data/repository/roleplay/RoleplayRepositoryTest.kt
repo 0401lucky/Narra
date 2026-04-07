@@ -169,6 +169,7 @@ class RoleplayRepositoryTest {
 
         assertEquals(1, seededMessages.size)
         assertEquals(MessageRole.ASSISTANT, seededMessages.single().role)
+        assertTrue(seededMessages.single().id.startsWith("rp-opening-"))
         assertTrue(seededMessages.single().content.contains("<narration>"))
         assertTrue(seededMessages.single().content.contains("夜色渐深。"))
     }

@@ -269,6 +269,13 @@ internal fun NavGraphBuilder.registerSettingsNavGraph(
                 onUpdateMemoryModel = settingsViewModel::updateProviderMemoryModel,
                 onUpdateTranslationModel = settingsViewModel::updateProviderTranslationModel,
                 onUpdateSearchModel = settingsViewModel::updateProviderSearchModel,
+                onUpdateGiftImageModel = settingsViewModel::updateProviderGiftImageModel,
+                onUpdateTitleSummaryModelMode = settingsViewModel::updateProviderTitleSummaryModelMode,
+                onUpdateChatSuggestionModelMode = settingsViewModel::updateProviderChatSuggestionModelMode,
+                onUpdateMemoryModelMode = settingsViewModel::updateProviderMemoryModelMode,
+                onUpdateTranslationModelMode = settingsViewModel::updateProviderTranslationModelMode,
+                onUpdateSearchModelMode = settingsViewModel::updateProviderSearchModelMode,
+                onUpdateGiftImageModelMode = settingsViewModel::updateProviderGiftImageModelMode,
                 onConsumeMessage = settingsViewModel::consumeMessage,
                 onNavigateBack = {
                     settingsViewModel.saveSettings {}

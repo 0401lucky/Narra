@@ -3,6 +3,7 @@ package com.example.myapplication.viewmodel
 import com.example.myapplication.model.Assistant
 import com.example.myapplication.model.ChatMessage
 import com.example.myapplication.model.Conversation
+import com.example.myapplication.model.ContextGovernanceSnapshot
 import com.example.myapplication.model.MessageRole
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -53,6 +54,7 @@ class ChatStateSupportTest {
                 noticeMessage = "旧提示",
                 chatSuggestions = listOf("建议"),
                 latestPromptDebugDump = "旧调试",
+                contextGovernance = ContextGovernanceSnapshot(summaryCoveredMessageCount = 9),
                 translation = TranslationUiState(isVisible = true, translatedText = "译文"),
             ),
             conversationId = "new",
@@ -68,6 +70,7 @@ class ChatStateSupportTest {
         assertEquals(null, updated.noticeMessage)
         assertTrue(updated.chatSuggestions.isEmpty())
         assertEquals("", updated.latestPromptDebugDump)
+        assertEquals(null, updated.contextGovernance)
         assertFalse(updated.translation.isVisible)
     }
 
@@ -120,5 +123,19 @@ class ChatStateSupportTest {
 
         assertEquals("chat-model", updated.settings.selectedModel)
         assertEquals("assistant-1", updated.currentAssistant?.id)
+    }
+
+    @Test
+    fun applyContextGovernance_updatesSnapshotAndDebugDump() {
+        val snapshot = ContextGovernanceSnapshot(summaryCoveredMessageCount = 6)
+        val updated = ChatStateSupport.applyContextGovernance(
+            current = ChatUiState(currentConversationId = "c1"),
+            conversationId = "c1",
+            snapshot = snapshot,
+            debugDump = "debug",
+        )
+
+        assertEquals(snapshot, updated.contextGovernance)
+        assertEquals("debug", updated.latestPromptDebugDump)
     }
 }

@@ -36,8 +36,7 @@ object RoleplayConversationSupport {
     fun resolveSuggestionModelId(settings: AppSettings): String {
         return settings.activeProvider()
             ?.resolveFunctionModel(ProviderFunction.CHAT_SUGGESTION)
-            ?.takeIf { it.isNotBlank() }
-            ?: settings.selectedModel
+            .orEmpty()
     }
 
     fun buildTranscriptInput(
@@ -90,8 +89,7 @@ object RoleplayConversationSupport {
             .takeLast(3)
             .mapNotNull { message ->
                 val plainText = outputParser.stripMarkup(
-                    message.parts.toPlainText()
-                        .ifBlank { message.content },
+                    RoleplayMessageFormatSupport.resolveAssistantRawContent(message),
                 ).trim()
                 plainText.takeIf { it.isNotBlank() }?.take(10)
             }
@@ -100,12 +98,15 @@ object RoleplayConversationSupport {
             .filter { it.role == MessageRole.ASSISTANT }
             .takeLast(3)
             .flatMap { message ->
-                outputParser.parseAssistantOutput(
-                    rawContent = message.parts.toPlainText().ifBlank { message.content },
-                    characterName = characterName,
-                    allowNarration = scenario.enableNarration,
-                ).mapNotNull { segment ->
-                    segment.emotion.trim().takeIf { it.isNotBlank() }
+                when (RoleplayMessageFormatSupport.resolveAssistantMessageOutputFormat(message)) {
+                    com.example.myapplication.model.RoleplayOutputFormat.LONGFORM -> emptyList()
+                    else -> outputParser.parseAssistantOutput(
+                        rawContent = RoleplayMessageFormatSupport.resolveAssistantRawContent(message),
+                        characterName = characterName,
+                        allowNarration = scenario.enableNarration,
+                    ).mapNotNull { segment ->
+                        segment.emotion.trim().takeIf { it.isNotBlank() }
+                    }
                 }
             }
             .distinct()
@@ -132,5 +133,19 @@ object RoleplayConversationSupport {
             append(" 像在临场反应，不要每轮都完整解释动机。\n")
             append("这一轮至少推进一项：关系、信息或局势。")
         }.trim()
+    }
+
+    fun openingNarrationMessageId(
+        scenarioId: String,
+        conversationId: String,
+    ): String {
+        return "rp-opening-$scenarioId-$conversationId"
+    }
+
+    fun isOpeningNarrationMessageId(
+        messageId: String,
+        scenarioId: String,
+    ): Boolean {
+        return messageId.startsWith("rp-opening-$scenarioId-")
     }
 }

@@ -6,7 +6,7 @@ enum class RoleplayContentType {
     NARRATION,
     DIALOGUE,
     LONGFORM,
-    SPECIAL_TRANSFER,
+    SPECIAL_PLAY,
     SYSTEM,
 }
 

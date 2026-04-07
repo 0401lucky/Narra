@@ -6,6 +6,7 @@ import com.example.myapplication.context.DefaultPromptContextAssembler
 import com.example.myapplication.data.remote.ApiServiceFactory
 import com.example.myapplication.data.remote.OpenAiCompatibleApi
 import com.example.myapplication.data.repository.ConversationRepository
+import com.example.myapplication.data.repository.SavedImageFile
 import com.example.myapplication.data.repository.ai.tooling.DefaultMemoryWriteService
 import com.example.myapplication.data.repository.context.ConversationSummaryRepository
 import com.example.myapplication.data.repository.context.MemoryRepository
@@ -21,6 +22,9 @@ import com.example.myapplication.model.ChatCompletionResponse
 import com.example.myapplication.model.ChatChoiceDto
 import com.example.myapplication.model.ChatMessage
 import com.example.myapplication.model.Conversation
+import com.example.myapplication.model.ContextSummaryState
+import com.example.myapplication.model.GiftImageStatus
+import com.example.myapplication.model.GiftPlayDraft
 import com.example.myapplication.model.ImageGenerationRequest
 import com.example.myapplication.model.ImageGenerationResponse
 import com.example.myapplication.model.MemoryEntry
@@ -29,14 +33,18 @@ import com.example.myapplication.model.MessageStatus
 import com.example.myapplication.model.ModelsResponse
 import com.example.myapplication.model.PendingMemoryProposal
 import com.example.myapplication.model.ProviderSettings
+import com.example.myapplication.model.ProviderFunctionModelMode
 import com.example.myapplication.model.RoleplayContentType
+import com.example.myapplication.model.RoleplayOutputFormat
 import com.example.myapplication.model.RoleplayScenario
 import com.example.myapplication.model.RoleplaySuggestionAxis
 import com.example.myapplication.model.RoleplaySession
 import com.example.myapplication.model.RoleplaySpeaker
 import com.example.myapplication.model.TransferDirection
 import com.example.myapplication.model.TransferStatus
+import com.example.myapplication.model.giftImageStatus
 import com.example.myapplication.model.isTransferPart
+import com.example.myapplication.model.specialMetadataValue
 import com.example.myapplication.model.transferMessagePart
 import com.example.myapplication.testutil.FakeConversationStore
 import com.example.myapplication.testutil.FakeConversationSummaryRepository
@@ -348,6 +356,71 @@ class RoleplayViewModelTest {
         assertFalse(state.isGeneratingSuggestions)
         assertTrue(state.suggestions.isEmpty())
         assertEquals(null, state.suggestionErrorMessage)
+    }
+
+    @Test
+    fun generateSuggestions_showsClearMessageWhenSuggestionModelDisabled() = runTest(mainDispatcherRule.dispatcher.scheduler) {
+        val assistant = Assistant(
+            id = "assistant-1",
+            name = "陆宴清",
+        )
+        val scenario = RoleplayScenario(
+            id = "scene-1",
+            assistantId = assistant.id,
+        )
+        val session = RoleplaySession(
+            id = "session-1",
+            scenarioId = scenario.id,
+            conversationId = "conv-1",
+            createdAt = 1L,
+            updatedAt = 2L,
+        )
+        val store = FakeConversationStore(
+            conversations = listOf(
+                Conversation(
+                    id = session.conversationId,
+                    title = "剧情",
+                    model = "chat-model",
+                    createdAt = 1L,
+                    updatedAt = 2L,
+                    assistantId = assistant.id,
+                ),
+            ),
+        )
+        val provider = ProviderSettings(
+            id = "provider-1",
+            name = "测试 Provider",
+            baseUrl = "https://example.com/v1/",
+            apiKey = "test-key",
+            selectedModel = "chat-model",
+            chatSuggestionModelMode = ProviderFunctionModelMode.DISABLED,
+        )
+        val viewModel = createViewModel(
+            store = store,
+            roleplayRepository = FakeRoleplayRepository(
+                conversationStore = store,
+                scenarios = listOf(scenario),
+                sessions = listOf(session),
+            ),
+            settings = AppSettings(
+                baseUrl = provider.baseUrl,
+                apiKey = provider.apiKey,
+                selectedModel = provider.selectedModel,
+                providers = listOf(provider),
+                selectedProviderId = provider.id,
+                assistants = listOf(assistant),
+                selectedAssistantId = assistant.id,
+            ),
+            promptContextAssembler = fixedPromptAssembler("提示词上下文"),
+        )
+
+        viewModel.enterScenario(scenario.id)
+        advanceUntilIdle()
+        viewModel.generateSuggestions()
+
+        val state = viewModel.uiState.value
+        assertFalse(state.isGeneratingSuggestions)
+        assertEquals("请先在模型页开启聊天建议模型", state.suggestionErrorMessage)
     }
 
     @Test
@@ -875,7 +948,7 @@ class RoleplayViewModelTest {
 
         val savedMessages = store.listMessages(session.conversationId)
         assertTrue(savedMessages.first { it.role == MessageRole.USER }.parts.first().isTransferPart())
-        assertTrue(viewModel.uiState.value.messages.any { it.contentType == RoleplayContentType.SPECIAL_TRANSFER })
+        assertTrue(viewModel.uiState.value.messages.any { it.contentType == RoleplayContentType.SPECIAL_PLAY })
     }
 
     @Test
@@ -1222,6 +1295,7 @@ class RoleplayViewModelTest {
 
         assertEquals(1, viewModel.uiState.value.contextStatus.worldBookHitCount)
         assertTrue(viewModel.uiState.value.latestPromptDebugDump.contains("他随身带着一把黑星手枪。"))
+        assertEquals(1, viewModel.uiState.value.contextGovernance?.worldBookHitCount)
 
         viewModel.updateInput("今天天气不错。")
         viewModel.sendMessage()
@@ -1311,6 +1385,7 @@ class RoleplayViewModelTest {
         assertEquals(longformMessage?.content, longformMessage?.copyText)
         assertEquals(longformMessage?.content, longformMessage?.richTextSource)
         assertTrue(state.latestPromptDebugDump.contains("【长文小说模式】"))
+        assertEquals(1, state.contextGovernance?.sentMessageCount)
 
         val requestBody = JsonParser.parseString(server.takeRequest().body.readUtf8()).asJsonObject
         val systemPrompt = requestBody.getAsJsonArray("messages")[0].asJsonObject["content"].asString
@@ -1400,6 +1475,221 @@ class RoleplayViewModelTest {
             "她望着你，呼吸轻得几乎听不见。<char>“别再躲我了。”</char><thought>（如果他现在还退开，我会更难受。）</thought>",
             longformMessage?.richTextSource,
         )
+    }
+
+    @Test
+    fun sendMessage_withStaleConversationSummary_keepsIntermediateMessages() = runTest(mainDispatcherRule.dispatcher.scheduler) {
+        enqueueStreamResponse("继续推进剧情")
+
+        val assistant = Assistant(
+            id = "assistant-1",
+            name = "陆宴清",
+        )
+        val scenario = RoleplayScenario(
+            id = "scene-1",
+            title = "对白模式",
+            assistantId = assistant.id,
+            userDisplayNameOverride = "林晚",
+            characterDisplayNameOverride = "陆宴清",
+        )
+        val session = RoleplaySession(
+            id = "session-1",
+            scenarioId = scenario.id,
+            conversationId = "conv-1",
+            createdAt = 1L,
+            updatedAt = 2L,
+        )
+        val existingMessages = (1..10).map { index ->
+            ChatMessage(
+                id = "m$index",
+                conversationId = session.conversationId,
+                role = if (index % 2 == 0) MessageRole.ASSISTANT else MessageRole.USER,
+                content = "剧情消息$index",
+                createdAt = index.toLong(),
+            )
+        }
+        val store = FakeConversationStore(
+            conversations = listOf(
+                Conversation(
+                    id = session.conversationId,
+                    title = "剧情",
+                    model = "",
+                    createdAt = 1L,
+                    updatedAt = 2L,
+                    assistantId = assistant.id,
+                ),
+            ),
+            messagesByConversation = mapOf(
+                session.conversationId to existingMessages,
+            ),
+        )
+        val summaryRepository = FakeConversationSummaryRepository(
+            initialSummaries = listOf(
+                com.example.myapplication.model.ConversationSummary(
+                    conversationId = session.conversationId,
+                    assistantId = assistant.id,
+                    summary = "只覆盖了开头的一小段。",
+                    coveredMessageCount = 2,
+                    updatedAt = 3L,
+                ),
+            ),
+        )
+        val provider = ProviderSettings(
+            id = "provider-1",
+            name = "测试 Provider",
+            baseUrl = server.url("/v1/").toString(),
+            apiKey = "test-key",
+            selectedModel = "chat-model",
+            titleSummaryModel = "summary-model",
+        )
+        val viewModel = createViewModel(
+            store = store,
+            roleplayRepository = FakeRoleplayRepository(
+                conversationStore = store,
+                scenarios = listOf(scenario),
+                sessions = listOf(session),
+            ),
+            settings = AppSettings(
+                baseUrl = provider.baseUrl,
+                apiKey = provider.apiKey,
+                selectedModel = provider.selectedModel,
+                providers = listOf(provider),
+                selectedProviderId = provider.id,
+                assistants = listOf(assistant),
+                selectedAssistantId = assistant.id,
+            ),
+            promptContextAssembler = DefaultPromptContextAssembler(
+                conversationSummaryRepository = summaryRepository,
+            ),
+            conversationSummaryRepository = summaryRepository,
+            messageIdProvider = idProviderOf("user-1", "assistant-1"),
+        )
+
+        viewModel.enterScenario(scenario.id)
+        advanceUntilIdle()
+        viewModel.updateInput("把话说清楚。")
+        viewModel.sendMessage()
+        advanceUntilIdle()
+
+        val requestBody = JsonParser.parseString(server.takeRequest().body.readUtf8()).asJsonObject
+        val messages = requestBody.getAsJsonArray("messages")
+        assertEquals(existingMessages.size + 2, messages.size())
+        assertEquals(ContextSummaryState.STALE, viewModel.uiState.value.contextGovernance?.summaryState)
+    }
+
+    @Test
+    fun sendMessage_switchingBackFromLongformKeepsHistoryFormatAndRequestContext() = runTest(mainDispatcherRule.dispatcher.scheduler) {
+        enqueueStreamResponse("风从窗缝里挤进来，吹得他的声音更轻。<char>“我没有忘。”</char>")
+        enqueueStreamResponse("<dialogue speaker=\"character\" emotion=\"低沉\">我只是还没准备好现在说。</dialogue>")
+
+        val assistant = Assistant(
+            id = "assistant-1",
+            name = "余罪",
+        )
+        val longformScenario = RoleplayScenario(
+            id = "scene-1",
+            title = "旧夜",
+            assistantId = assistant.id,
+            userDisplayNameOverride = "林晚",
+            characterDisplayNameOverride = "余罪",
+            longformModeEnabled = true,
+            enableRoleplayProtocol = true,
+        )
+        val session = RoleplaySession(
+            id = "session-1",
+            scenarioId = longformScenario.id,
+            conversationId = "conv-1",
+            createdAt = 1L,
+            updatedAt = 2L,
+        )
+        val store = FakeConversationStore(
+            conversations = listOf(
+                Conversation(
+                    id = session.conversationId,
+                    title = "旧夜",
+                    model = "chat-model",
+                    createdAt = 1L,
+                    updatedAt = 2L,
+                    assistantId = assistant.id,
+                ),
+            ),
+        )
+        val repository = FakeRoleplayRepository(
+            conversationStore = store,
+            scenarios = listOf(longformScenario),
+            sessions = listOf(session),
+        )
+        val provider = ProviderSettings(
+            id = "provider-1",
+            name = "测试 Provider",
+            baseUrl = server.url("/v1/").toString(),
+            apiKey = "test-key",
+            selectedModel = "chat-model",
+        )
+        val viewModel = createViewModel(
+            store = store,
+            roleplayRepository = repository,
+            settings = AppSettings(
+                baseUrl = provider.baseUrl,
+                apiKey = provider.apiKey,
+                selectedModel = provider.selectedModel,
+                providers = listOf(provider),
+                selectedProviderId = provider.id,
+                assistants = listOf(assistant),
+                selectedAssistantId = assistant.id,
+            ),
+            promptContextAssembler = fixedPromptAssembler("提示词上下文"),
+            messageIdProvider = idProviderOf("user-1", "assistant-1", "user-2", "assistant-2"),
+        )
+
+        viewModel.enterScenario(longformScenario.id)
+        advanceUntilIdle()
+
+        viewModel.updateInput("你还记得那一晚吗？")
+        viewModel.sendMessage()
+        advanceUntilIdle()
+
+        repository.upsertScenario(
+            longformScenario.copy(
+                longformModeEnabled = false,
+                updatedAt = 99L,
+            ),
+        )
+        advanceUntilIdle()
+
+        val firstLongformMessage = viewModel.uiState.value.messages.firstOrNull {
+            it.sourceMessageId == "assistant-1" && it.contentType == RoleplayContentType.LONGFORM
+        }
+        assertTrue(firstLongformMessage != null)
+        assertEquals(
+            "风从窗缝里挤进来，吹得他的声音更轻。“我没有忘。”",
+            firstLongformMessage?.content,
+        )
+
+        viewModel.updateInput("那你现在说。")
+        viewModel.sendMessage()
+        advanceUntilIdle()
+
+        val storedMessages = store.listMessages(session.conversationId)
+        val assistantMessages = storedMessages.filter { it.role == MessageRole.ASSISTANT }
+        assertEquals(RoleplayOutputFormat.LONGFORM, assistantMessages[0].roleplayOutputFormat)
+        assertEquals(RoleplayOutputFormat.PROTOCOL, assistantMessages[1].roleplayOutputFormat)
+
+        val finalState = viewModel.uiState.value
+        assertTrue(
+            finalState.messages.any {
+                it.sourceMessageId == "assistant-1" && it.contentType == RoleplayContentType.LONGFORM
+            },
+        )
+        assertTrue(finalState.latestPromptDebugDump.contains("【输出协议】"))
+        assertTrue(!finalState.latestPromptDebugDump.contains("【长文小说模式】"))
+
+        server.takeRequest()
+        val secondRequest = JsonParser.parseString(server.takeRequest().body.readUtf8()).asJsonObject
+        val sentContext = secondRequest.getAsJsonArray("messages")
+            .map { element -> element.asJsonObject["content"].asString }
+            .joinToString(separator = "\n")
+        assertTrue(sentContext.contains("<char>“我没有忘。”</char>"))
     }
 
     @Test
@@ -1710,6 +2000,276 @@ class RoleplayViewModelTest {
         }
     }
 
+    @Test
+    fun refreshCurrentConversationSummary_rebuildsContextGovernanceImmediately() = runTest(mainDispatcherRule.dispatcher.scheduler) {
+        server.enqueue(
+            MockResponse().setResponseCode(200).setBody(
+                """
+                {
+                  "choices": [
+                    {
+                      "index": 0,
+                      "message": {
+                        "role": "assistant",
+                        "content": "新的剧情摘要"
+                      }
+                    }
+                  ]
+                }
+                """.trimIndent(),
+            ),
+        )
+        val assistant = Assistant(
+            id = "assistant-1",
+            name = "余罪",
+        )
+        val scenario = RoleplayScenario(
+            id = "scene-1",
+            title = "旧巷",
+            assistantId = assistant.id,
+        )
+        val session = RoleplaySession(
+            id = "session-1",
+            scenarioId = scenario.id,
+            conversationId = "conv-1",
+            createdAt = 1L,
+            updatedAt = 2L,
+        )
+        val store = FakeConversationStore(
+            conversations = listOf(
+                Conversation(
+                    id = session.conversationId,
+                    title = "旧巷",
+                    model = "chat-model",
+                    createdAt = 1L,
+                    updatedAt = 2L,
+                    assistantId = assistant.id,
+                ),
+            ),
+            messagesByConversation = mapOf(
+                session.conversationId to (1..13).map { index ->
+                    ChatMessage(
+                        id = "m$index",
+                        conversationId = session.conversationId,
+                        role = if (index % 2 == 0) MessageRole.ASSISTANT else MessageRole.USER,
+                        content = "剧情消息$index",
+                        createdAt = index.toLong(),
+                    )
+                },
+            ),
+        )
+        val summaryRepository = FakeConversationSummaryRepository()
+        val provider = ProviderSettings(
+            id = "provider-1",
+            name = "测试 Provider",
+            baseUrl = server.url("/v1/").toString(),
+            apiKey = "test-key",
+            selectedModel = "chat-model",
+            titleSummaryModel = "summary-model",
+        )
+        val viewModel = createViewModel(
+            store = store,
+            roleplayRepository = FakeRoleplayRepository(
+                conversationStore = store,
+                scenarios = listOf(scenario),
+                sessions = listOf(session),
+            ),
+            settings = AppSettings(
+                baseUrl = provider.baseUrl,
+                apiKey = provider.apiKey,
+                selectedModel = provider.selectedModel,
+                providers = listOf(provider),
+                selectedProviderId = provider.id,
+                assistants = listOf(assistant),
+                selectedAssistantId = assistant.id,
+            ),
+            promptContextAssembler = DefaultPromptContextAssembler(
+                conversationSummaryRepository = summaryRepository,
+            ),
+            conversationSummaryRepository = summaryRepository,
+            apiServiceProvider = { _, _ ->
+                object : OpenAiCompatibleApi {
+                    override suspend fun listModels(): Response<ModelsResponse> = error("不应调用")
+
+                    override suspend fun createChatCompletion(request: ChatCompletionRequest): Response<ChatCompletionResponse> {
+                        return Response.success(
+                            ChatCompletionResponse(
+                                choices = listOf(
+                                    ChatChoiceDto(
+                                        index = 0,
+                                        message = AssistantMessageDto(
+                                            role = "assistant",
+                                            content = "新的剧情摘要",
+                                        ),
+                                    ),
+                                ),
+                            ),
+                        )
+                    }
+
+                    override suspend fun createChatCompletionAt(
+                        url: String,
+                        request: ChatCompletionRequest,
+                    ): Response<ChatCompletionResponse> = createChatCompletion(request)
+
+                    override suspend fun createResponseAt(
+                        url: String,
+                        request: com.example.myapplication.model.ResponseApiRequest,
+                    ): Response<com.example.myapplication.model.ResponseApiResponse> = error("不应调用")
+
+                    override suspend fun generateImage(request: ImageGenerationRequest): Response<ImageGenerationResponse> = error("不应调用")
+                }
+            },
+        )
+
+        viewModel.enterScenario(scenario.id)
+        advanceUntilIdle()
+        viewModel.refreshCurrentConversationSummary()
+        advanceUntilIdle()
+
+        assertEquals("新的剧情摘要", summaryRepository.getSummary(session.conversationId)?.summary)
+        assertEquals(5, viewModel.uiState.value.contextGovernance?.summaryCoveredMessageCount)
+        assertEquals(ContextSummaryState.APPLIED, viewModel.uiState.value.contextGovernance?.summaryState)
+    }
+
+    @Test
+    fun sendSpecialPlay_generatesGiftImageForRoleplayGiftCard() = runTest(mainDispatcherRule.dispatcher.scheduler) {
+        val assistant = Assistant(
+            id = "assistant-1",
+            name = "陆宴清",
+        )
+        val scenario = RoleplayScenario(
+            id = "scene-1",
+            title = "旧巷",
+            assistantId = assistant.id,
+            userDisplayNameOverride = "林晚",
+            characterDisplayNameOverride = "陆宴清",
+        )
+        val session = RoleplaySession(
+            id = "session-1",
+            scenarioId = scenario.id,
+            conversationId = "conv-1",
+            createdAt = 1L,
+            updatedAt = 2L,
+        )
+        val store = FakeConversationStore(
+            conversations = listOf(
+                Conversation(
+                    id = session.conversationId,
+                    title = "旧巷",
+                    model = "chat-model",
+                    createdAt = 1L,
+                    updatedAt = 2L,
+                    assistantId = assistant.id,
+                ),
+            ),
+        )
+        enqueueStreamResponse("<dialogue speaker=\"character\">我会好好收着。</dialogue>")
+        val provider = ProviderSettings(
+            id = "provider-1",
+            name = "测试 Provider",
+            baseUrl = server.url("/v1/").toString(),
+            apiKey = "test-key",
+            selectedModel = "chat-model",
+            giftImageModel = "gpt-image-1",
+        )
+        val viewModel = createViewModel(
+            store = store,
+            roleplayRepository = FakeRoleplayRepository(
+                conversationStore = store,
+                scenarios = listOf(scenario),
+                sessions = listOf(session),
+            ),
+            settings = AppSettings(
+                baseUrl = provider.baseUrl,
+                apiKey = provider.apiKey,
+                selectedModel = provider.selectedModel,
+                providers = listOf(provider),
+                selectedProviderId = provider.id,
+                assistants = listOf(assistant),
+                selectedAssistantId = assistant.id,
+            ),
+            promptContextAssembler = DefaultPromptContextAssembler(),
+            imageSaver = {
+                SavedImageFile(
+                    path = "/tmp/roleplay-gift.png",
+                    mimeType = "image/png",
+                    fileName = "roleplay-gift.png",
+                )
+            },
+            apiServiceProvider = { _, _ ->
+                object : OpenAiCompatibleApi {
+                    override suspend fun listModels(): Response<ModelsResponse> = error("不应调用")
+
+                    override suspend fun createChatCompletion(
+                        request: ChatCompletionRequest,
+                    ): Response<ChatCompletionResponse> = createChatCompletionAt("", request)
+
+                    override suspend fun createChatCompletionAt(
+                        url: String,
+                        request: ChatCompletionRequest,
+                    ): Response<ChatCompletionResponse> {
+                        val prompt = request.messages.firstOrNull()?.content?.toString().orEmpty()
+                        val content = when {
+                            prompt.contains("礼物生图提示词优化器") -> "黑胶唱片礼物特写，安静旧巷氛围，电影感。"
+                            prompt.contains("persistent_memories") -> "{\"persistent_memories\":[],\"scene_state_memories\":[]}"
+                            else -> "辅助结果"
+                        }
+                        return Response.success(
+                            ChatCompletionResponse(
+                                choices = listOf(
+                                    ChatChoiceDto(
+                                        index = 0,
+                                        message = AssistantMessageDto(
+                                            role = "assistant",
+                                            content = content,
+                                        ),
+                                    ),
+                                ),
+                            ),
+                        )
+                    }
+
+                    override suspend fun createResponseAt(
+                        url: String,
+                        request: com.example.myapplication.model.ResponseApiRequest,
+                    ): Response<com.example.myapplication.model.ResponseApiResponse> = error("不应调用")
+
+                    override suspend fun generateImage(
+                        request: ImageGenerationRequest,
+                    ): Response<ImageGenerationResponse> {
+                        return Response.success(
+                            ImageGenerationResponse(
+                                data = listOf(
+                                    com.example.myapplication.model.ImageGenerationDataDto(
+                                        b64Json = "ZmFrZQ==",
+                                        revisedPrompt = request.prompt,
+                                    ),
+                                ),
+                            ),
+                        )
+                    }
+                }
+            },
+        )
+
+        viewModel.enterScenario(scenario.id)
+        advanceUntilIdle()
+        viewModel.sendSpecialPlay(
+            GiftPlayDraft(
+                target = "陆宴清",
+                item = "黑胶唱片",
+                note = "收好",
+            ),
+        )
+        advanceUntilIdle()
+
+        val specialMessage = viewModel.uiState.value.messages.first { it.contentType == RoleplayContentType.SPECIAL_PLAY }
+        assertEquals(GiftImageStatus.SUCCEEDED, specialMessage.specialPart?.giftImageStatus())
+        assertEquals("/tmp/roleplay-gift.png", specialMessage.specialPart?.specialMetadataValue("gift_image_uri"))
+        assertTrue(viewModel.uiState.value.messages.any { it.contentType == RoleplayContentType.DIALOGUE })
+    }
+
     private fun createViewModel(
         store: FakeConversationStore,
         roleplayRepository: RoleplayRepository,
@@ -1720,6 +2280,7 @@ class RoleplayViewModelTest {
         pendingMemoryProposalRepository: PendingMemoryProposalRepository = InMemoryPendingMemoryProposalRepository(),
         nowProvider: () -> Long = incrementingNowProvider(1L),
         messageIdProvider: () -> String = idProviderOf("m1", "m2", "m3", "m4"),
+        imageSaver: suspend (String) -> SavedImageFile = { error("测试不应保存图片") },
         apiServiceProvider: ((String, String) -> OpenAiCompatibleApi)? = null,
         streamClientProvider: ((String, String) -> OkHttpClient)? = null,
     ): RoleplayViewModel {
@@ -1763,6 +2324,7 @@ class RoleplayViewModelTest {
             ),
             nowProvider = nowProvider,
             messageIdProvider = messageIdProvider,
+            imageSaver = imageSaver,
         )
     }
 

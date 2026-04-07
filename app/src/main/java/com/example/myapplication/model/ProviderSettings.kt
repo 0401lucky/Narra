@@ -20,10 +20,17 @@ data class ProviderSettings(
     val models: List<ModelInfo>? = null,
     val enabled: Boolean = true,
     val titleSummaryModel: String = "",
+    val titleSummaryModelMode: ProviderFunctionModelMode = ProviderFunctionModelMode.FOLLOW_DEFAULT,
     val chatSuggestionModel: String = "",
+    val chatSuggestionModelMode: ProviderFunctionModelMode = ProviderFunctionModelMode.FOLLOW_DEFAULT,
     val memoryModel: String = "",
+    val memoryModelMode: ProviderFunctionModelMode = ProviderFunctionModelMode.FOLLOW_DEFAULT,
     val translationModel: String = "",
+    val translationModelMode: ProviderFunctionModelMode = ProviderFunctionModelMode.FOLLOW_DEFAULT,
     val searchModel: String = "",
+    val searchModelMode: ProviderFunctionModelMode = ProviderFunctionModelMode.FOLLOW_DEFAULT,
+    val giftImageModel: String = "",
+    val giftImageModelMode: ProviderFunctionModelMode = ProviderFunctionModelMode.DISABLED,
 ) {
     fun hasBaseCredentials(): Boolean {
         return baseUrl.isNotBlank() && apiKey.isNotBlank()
@@ -90,17 +97,52 @@ data class ProviderSettings(
         return models?.map { it.modelId } ?: availableModels
     }
 
-    fun resolveFunctionModel(function: ProviderFunction): String {
-        val taskModel = when (function) {
+    fun resolveFunctionModelMode(function: ProviderFunction): ProviderFunctionModelMode {
+        if (function == ProviderFunction.CHAT) {
+            return ProviderFunctionModelMode.CUSTOM
+        }
+        val explicitModel = resolveExplicitFunctionModel(function)
+        val storedMode = when (function) {
+            ProviderFunction.CHAT -> ProviderFunctionModelMode.CUSTOM
+            ProviderFunction.TITLE_SUMMARY -> titleSummaryModelMode
+            ProviderFunction.CHAT_SUGGESTION -> chatSuggestionModelMode
+            ProviderFunction.MEMORY -> memoryModelMode
+            ProviderFunction.TRANSLATION -> translationModelMode
+            ProviderFunction.SEARCH -> searchModelMode
+            ProviderFunction.GIFT_IMAGE -> giftImageModelMode
+        }
+        return when {
+            explicitModel.isNotBlank() && storedMode != ProviderFunctionModelMode.CUSTOM -> {
+                ProviderFunctionModelMode.CUSTOM
+            }
+
+            explicitModel.isBlank() && storedMode == ProviderFunctionModelMode.CUSTOM -> {
+                defaultFunctionModelMode(function)
+            }
+
+            else -> storedMode
+        }
+    }
+
+    fun resolveExplicitFunctionModel(function: ProviderFunction): String {
+        return when (function) {
             ProviderFunction.CHAT -> selectedModel
             ProviderFunction.TITLE_SUMMARY -> titleSummaryModel
             ProviderFunction.CHAT_SUGGESTION -> chatSuggestionModel
             ProviderFunction.MEMORY -> memoryModel
             ProviderFunction.TRANSLATION -> translationModel
             ProviderFunction.SEARCH -> searchModel
+            ProviderFunction.GIFT_IMAGE -> giftImageModel
         }.trim()
+    }
 
-        return taskModel.ifBlank { selectedModel.trim() }
+    fun resolveFunctionModel(function: ProviderFunction): String {
+        val explicitModel = resolveExplicitFunctionModel(function)
+        return when (resolveFunctionModelMode(function)) {
+            ProviderFunctionModelMode.CUSTOM -> explicitModel
+            ProviderFunctionModelMode.FOLLOW_DEFAULT -> selectedModel.trim()
+            ProviderFunctionModelMode.DISABLED -> ""
+        }
     }
 
     fun supportsLlmSearchSource(): Boolean {
@@ -111,6 +153,20 @@ data class ProviderSettings(
             }
         }
     }
+
+    private fun defaultFunctionModelMode(function: ProviderFunction): ProviderFunctionModelMode {
+        return when (function) {
+            ProviderFunction.GIFT_IMAGE -> ProviderFunctionModelMode.DISABLED
+            ProviderFunction.CHAT -> ProviderFunctionModelMode.CUSTOM
+            else -> ProviderFunctionModelMode.FOLLOW_DEFAULT
+        }
+    }
+}
+
+enum class ProviderFunctionModelMode {
+    FOLLOW_DEFAULT,
+    CUSTOM,
+    DISABLED,
 }
 
 enum class ProviderFunction {
@@ -120,6 +176,7 @@ enum class ProviderFunction {
     MEMORY,
     TRANSLATION,
     SEARCH,
+    GIFT_IMAGE,
 }
 
 fun createDefaultProvider(

@@ -3,6 +3,7 @@ package com.example.myapplication.ui.component.roleplay
 import android.widget.Toast
 import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
@@ -56,8 +57,12 @@ import androidx.compose.ui.input.key.onPreviewKeyEvent
 import androidx.compose.ui.input.key.type
 import androidx.compose.ui.platform.LocalClipboard
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
+import androidx.compose.ui.platform.LocalView
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.AnnotatedString
+import androidx.core.view.HapticFeedbackConstantsCompat
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontStyle
@@ -66,6 +71,7 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.myapplication.R
 import com.example.myapplication.model.MessageStatus
 import com.example.myapplication.model.RoleplayContentType
 import com.example.myapplication.model.RoleplayMessageUiModel
@@ -74,7 +80,7 @@ import com.example.myapplication.model.RoleplaySuggestionUiModel
 import com.example.myapplication.ui.component.ExpandedDraftEditorDialog
 import com.example.myapplication.ui.component.NarraIconButton
 import com.example.myapplication.ui.component.NarraTextButton
-import com.example.myapplication.ui.component.TransferPlayCard
+import com.example.myapplication.ui.component.SpecialPlayCard
 import com.example.myapplication.ui.component.copyPlainTextToClipboard
 
 internal data class ImmersiveRoleplayColors(
@@ -123,6 +129,7 @@ internal fun RoleplaySuggestionSection(
     onApplySuggestion: (String) -> Unit,
     onClearSuggestions: () -> Unit,
 ) {
+    val view = LocalView.current
     val showPanel = suggestions.isNotEmpty() || isGeneratingSuggestions || !suggestionErrorMessage.isNullOrBlank()
     if (!showPanel) {
         Row(
@@ -142,13 +149,17 @@ internal fun RoleplaySuggestionSection(
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Text(
-                "AI帮写",
+                stringResource(id = R.string.roleplay_ai_helper_title),
                 style = MaterialTheme.typography.labelMedium,
                 color = colors.characterAccent,
                 fontWeight = FontWeight.SemiBold,
             )
             Text(
-                text = if (isSending) "发送中" else "生成",
+                text = if (isSending) {
+                    stringResource(id = R.string.roleplay_sending)
+                } else {
+                    stringResource(id = R.string.roleplay_generate)
+                },
                 style = MaterialTheme.typography.labelSmall,
                 color = if (isSending) colors.textMuted else colors.characterAccent,
             )
@@ -173,24 +184,41 @@ internal fun RoleplaySuggestionSection(
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Text(
-                "AI帮写",
+                stringResource(id = R.string.roleplay_ai_helper_title),
                 style = MaterialTheme.typography.labelMedium,
                 color = colors.characterAccent,
                 fontWeight = FontWeight.SemiBold,
             )
             Row(verticalAlignment = Alignment.CenterVertically) {
-                NarraTextButton(onClick = onGenerateSuggestions, enabled = !isSending && !isGeneratingSuggestions) {
-                    Text(if (suggestions.isEmpty()) "重试" else "换一批", color = colors.characterAccent)
+                NarraTextButton(onClick = {
+                    view.performHapticFeedback(HapticFeedbackConstantsCompat.SEGMENT_FREQUENT_TICK)
+                    onGenerateSuggestions()
+                }, enabled = !isSending && !isGeneratingSuggestions) {
+                    Text(
+                        text = if (suggestions.isEmpty()) {
+                            stringResource(id = R.string.common_retry)
+                        } else {
+                            stringResource(id = R.string.roleplay_refresh_suggestions)
+                        },
+                        color = colors.characterAccent,
+                    )
                 }
                 NarraTextButton(onClick = onClearSuggestions) {
-                    Text("收起", color = colors.textMuted)
+                    Text(
+                        text = stringResource(id = R.string.common_collapse),
+                        color = colors.textMuted,
+                    )
                 }
             }
         }
         if (isGeneratingSuggestions) {
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
                 CircularProgressIndicator(modifier = Modifier.size(16.dp), strokeWidth = 2.dp, color = colors.characterAccent)
-                Text("正在生成建议…", style = MaterialTheme.typography.bodySmall, color = colors.textMuted)
+                Text(
+                    text = stringResource(id = R.string.roleplay_generating_suggestions),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = colors.textMuted,
+                )
             }
         }
         if (!suggestionErrorMessage.isNullOrBlank()) {
@@ -208,7 +236,10 @@ internal fun RoleplaySuggestionSection(
                             .fillMaxWidth()
                             .combinedClickable(
                                 enabled = !isSending,
-                                onClick = { onApplySuggestion(suggestion.text) },
+                                onClick = {
+                                    view.performHapticFeedback(HapticFeedbackConstantsCompat.SEGMENT_FREQUENT_TICK)
+                                    onApplySuggestion(suggestion.text)
+                                },
                                 onLongClick = {},
                             )
                             .background(
@@ -252,25 +283,75 @@ internal fun EmptyDialogueState(
     colors: ImmersiveRoleplayColors,
     modifier: Modifier = Modifier,
 ) {
+    val density = LocalDensity.current
+    val infiniteTransition = rememberInfiniteTransition(label = "empty_state_glow")
+    val glowAlpha by infiniteTransition.animateFloat(
+        initialValue = 0.15f,
+        targetValue = 0.35f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(durationMillis = RoleplayEmptyStateGlowDurationMillis),
+            repeatMode = RepeatMode.Reverse,
+        ),
+        label = "empty_glow_pulse",
+    )
+    val radiusPx = with(density) { RoleplayEmptyStateGlowRadius.toPx() }
+
     Box(
         modifier = modifier.fillMaxWidth(),
         contentAlignment = Alignment.Center,
     ) {
+        // 背景光晕效果
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(
+                    androidx.compose.ui.graphics.Brush.radialGradient(
+                        colors = listOf(
+                            colors.characterAccent.copy(alpha = glowAlpha),
+                            Color.Transparent,
+                        ),
+                        radius = radiusPx,
+                    ),
+                ),
+        )
+
         Column(
-            modifier = Modifier.padding(horizontal = 32.dp),
+            modifier = Modifier.padding(horizontal = 32.dp, vertical = 24.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(8.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
-            Text(
-                "输入第一句对白",
+            // 装饰性分隔线
+            Box(
+                modifier = Modifier
+                    .width(60.dp)
+                    .height(2.dp)
+                    .background(
+                        colors.characterAccent.copy(alpha = 0.4f),
+                        androidx.compose.foundation.shape.RoundedCornerShape(2.dp),
+                    ),
+            )
+
+            androidx.compose.material3.Text(
+                text = stringResource(id = R.string.roleplay_empty_state_title),
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.SemiBold,
                 color = colors.textPrimary,
             )
-            Text(
-                "你的故事将从这里开始……",
+            androidx.compose.material3.Text(
+                text = stringResource(id = R.string.roleplay_empty_state_subtitle),
                 style = MaterialTheme.typography.bodyMedium,
-                color = colors.textMuted,
+                color = colors.textMuted.copy(alpha = 0.75f),
+            )
+
+            // 底部装饰线
+            Box(
+                modifier = Modifier
+                    .width(40.dp)
+                    .height(1.dp)
+                    .background(
+                        colors.textMuted.copy(alpha = 0.25f),
+                        androidx.compose.foundation.shape.RoundedCornerShape(1.dp),
+                    ),
             )
         }
     }
@@ -295,12 +376,16 @@ internal fun StreamingLogText(
     content: String,
     textColor: Color,
     accentColor: Color,
+    lineHeightScale: Float = 1.0f,
 ) {
     val infiniteTransition = rememberInfiniteTransition(label = "roleplay_log_cursor")
     val cursorAlpha by infiniteTransition.animateFloat(
         initialValue = 1f,
         targetValue = 0f,
-        animationSpec = infiniteRepeatable(animation = tween(durationMillis = 520), repeatMode = RepeatMode.Reverse),
+        animationSpec = infiniteRepeatable(
+            animation = tween(durationMillis = RoleplayStreamingCursorPulseMillis),
+            repeatMode = RepeatMode.Reverse,
+        ),
         label = "roleplay_log_cursor_alpha",
     )
     Text(
@@ -312,7 +397,7 @@ internal fun StreamingLogText(
         },
         style = MaterialTheme.typography.bodyLarge.copy(
             fontSize = 16.sp,
-            lineHeight = 26.sp,
+            lineHeight = 26.sp * lineHeightScale,
             letterSpacing = 0.6.sp,
         ),
         color = textColor,
@@ -344,6 +429,7 @@ internal fun RoleplayInputBar(
     var allowNextInlineNewline by remember { mutableStateOf(false) }
     val focusRequester = remember { FocusRequester() }
     val keyboardController = LocalSoftwareKeyboardController.current
+    val view = LocalView.current
 
     LaunchedEffect(inputFocusToken) {
         if (inputFocusToken > 0L && !isSending) {
@@ -389,7 +475,7 @@ internal fun RoleplayInputBar(
                 onClick = { showActionMenu = true },
                 enabled = !isSending,
                 modifier = Modifier
-                    .size(38.dp)
+                    .size(RoleplayInteractiveIconButtonSize)
                     .background(
                         color = colors.panelBackground,
                         shape = CircleShape,
@@ -398,10 +484,16 @@ internal fun RoleplayInputBar(
                     containerColor = Color.Transparent,
                     contentColor = colors.textPrimary,
                 ),
-            ) { Icon(Icons.Default.Add, contentDescription = "更多玩法", modifier = Modifier.size(18.dp)) }
+            ) {
+                Icon(
+                    Icons.Default.Add,
+                    contentDescription = stringResource(id = R.string.roleplay_more_actions),
+                    modifier = Modifier.size(18.dp),
+                )
+            }
             DropdownMenu(expanded = showActionMenu, onDismissRequest = { showActionMenu = false }) {
                 DropdownMenuItem(
-                    text = { Text("特殊玩法") },
+                    text = { Text(stringResource(id = R.string.roleplay_special_play)) },
                     leadingIcon = { Icon(Icons.Default.Share, contentDescription = null) },
                     onClick = { showActionMenu = false; onOpenSpecialPlay() },
                 )
@@ -454,7 +546,7 @@ internal fun RoleplayInputBar(
             decorationBox = { innerTextField ->
                 if (input.isEmpty()) {
                     Text(
-                        "随便聊聊…",
+                        stringResource(id = R.string.roleplay_input_placeholder),
                         style = MaterialTheme.typography.bodyLarge,
                         color = colors.textMuted.copy(alpha = 0.56f),
                     )
@@ -465,7 +557,7 @@ internal fun RoleplayInputBar(
         NarraIconButton(
             onClick = { showExpandedEditor = true },
             enabled = !isSending,
-            modifier = Modifier.size(38.dp),
+            modifier = Modifier.size(RoleplayInteractiveIconButtonSize),
             colors = IconButtonDefaults.iconButtonColors(
                 containerColor = colors.panelBackground,
                 contentColor = colors.textPrimary,
@@ -475,7 +567,7 @@ internal fun RoleplayInputBar(
         ) {
             Icon(
                 Icons.Default.OpenInFull,
-                contentDescription = "展开输入编辑",
+                contentDescription = stringResource(id = R.string.roleplay_expand_editor),
                 modifier = Modifier.size(16.dp),
             )
         }
@@ -484,30 +576,45 @@ internal fun RoleplayInputBar(
                 CircularProgressIndicator(modifier = Modifier.size(16.dp), strokeWidth = 2.dp, color = colors.characterAccent)
                 NarraIconButton(
                     onClick = onCancel,
-                    modifier = Modifier.size(38.dp),
+                    modifier = Modifier.size(RoleplayInteractiveIconButtonSize),
                     colors = IconButtonDefaults.iconButtonColors(
-                        containerColor = Color(0xFFFF5252).copy(alpha = 0.7f),
+                        containerColor = RoleplayErrorActionContainerColor.copy(alpha = 0.7f),
                         contentColor = Color.White,
                     ),
-                ) { Icon(Icons.Default.Close, contentDescription = "取消", modifier = Modifier.size(16.dp)) }
+                ) {
+                    Icon(
+                        Icons.Default.Close,
+                        contentDescription = stringResource(id = R.string.common_cancel),
+                        modifier = Modifier.size(16.dp),
+                    )
+                }
             }
         } else {
             NarraIconButton(
-                onClick = onSend,
+                onClick = {
+                    view.performHapticFeedback(HapticFeedbackConstantsCompat.SEGMENT_FREQUENT_TICK)
+                    onSend()
+                },
                 enabled = canSend,
-                modifier = Modifier.size(38.dp),
+                modifier = Modifier.size(RoleplayInteractiveIconButtonSize),
                 colors = IconButtonDefaults.iconButtonColors(
                     containerColor = if (canSend) colors.characterAccent.copy(alpha = 0.88f) else colors.panelBackground,
                     contentColor = if (canSend) Color.Black.copy(alpha = 0.88f) else colors.textMuted.copy(alpha = 0.55f),
                 ),
-            ) { Icon(Icons.AutoMirrored.Filled.Send, contentDescription = "发送", modifier = Modifier.size(16.dp)) }
+            ) {
+                Icon(
+                    Icons.AutoMirrored.Filled.Send,
+                    contentDescription = stringResource(id = R.string.common_send),
+                    modifier = Modifier.size(16.dp),
+                )
+            }
         }
     }
 
     ExpandedDraftEditorDialog(
         visible = showExpandedEditor,
         value = input,
-        placeholder = "随便聊聊…",
+        placeholder = stringResource(id = R.string.roleplay_input_placeholder),
         onSave = onInputChange,
         onDismissRequest = { showExpandedEditor = false },
         containerColor = MaterialTheme.colorScheme.surface,
@@ -523,6 +630,7 @@ internal fun RoleplayMessageItem(
     onRetryTurn: (String) -> Unit,
     onEditUserMessage: (String) -> Unit,
     onConfirmTransferReceipt: (String) -> Unit,
+    lineHeightScale: Float = 1.0f,
 ) {
     when (message.contentType) {
         RoleplayContentType.NARRATION -> RoleplayMessageMenuWrapper(message, onRetryTurn, onEditUserMessage) {
@@ -547,7 +655,7 @@ internal fun RoleplayMessageItem(
                         style = MaterialTheme.typography.bodyMedium.copy(
                             fontSize = 15.sp,
                             fontStyle = FontStyle.Italic,
-                            lineHeight = 25.sp,
+                            lineHeight = 25.sp * lineHeightScale,
                             letterSpacing = 0.6.sp,
                         ),
                         color = colors.textMuted,
@@ -586,6 +694,7 @@ internal fun RoleplayMessageItem(
                                     content = message.content,
                                     textColor = colors.textPrimary,
                                     accentColor = colors.userAccent,
+                                    lineHeightScale = lineHeightScale,
                                 )
                             } else {
                                 val paragraphs = remember(message.content) { message.content.toLongformParagraphs() }
@@ -595,7 +704,7 @@ internal fun RoleplayMessageItem(
                                             paragraph,
                                             style = MaterialTheme.typography.bodyLarge.copy(
                                                 fontSize = 16.sp,
-                                                lineHeight = 26.sp,
+                                                lineHeight = 26.sp * lineHeightScale,
                                                 letterSpacing = 0.6.sp,
                                             ),
                                             color = colors.textPrimary,
@@ -645,6 +754,7 @@ internal fun RoleplayMessageItem(
                                 content = message.content,
                                 textColor = colors.textPrimary,
                                 accentColor = colors.characterAccent,
+                                lineHeightScale = lineHeightScale,
                             )
                         } else {
                             val paragraphs = remember(message.content) { message.content.toLongformParagraphs() }
@@ -661,7 +771,7 @@ internal fun RoleplayMessageItem(
                                         text = rendered,
                                         style = MaterialTheme.typography.bodyLarge.copy(
                                             fontSize = 16.sp,
-                                            lineHeight = 26.sp,
+                                            lineHeight = 26.sp * lineHeightScale,
                                             letterSpacing = 0.6.sp,
                                         ),
                                     )
@@ -689,12 +799,13 @@ internal fun RoleplayMessageItem(
                         bodyColor = if (isError) colors.errorText.copy(alpha = 0.88f) else colors.textPrimary.copy(alpha = 0.82f),
                         accentColor = if (isError) colors.errorText else RoleplayQuotedDialogueHighlightColor,
                         thoughtColor = if (isError) colors.errorText.copy(alpha = 0.76f) else colors.thoughtText,
+                        lineHeightScale = lineHeightScale,
                     )
                 }
             }
         }
 
-        RoleplayContentType.SPECIAL_TRANSFER -> {
+        RoleplayContentType.SPECIAL_PLAY -> {
             val specialPart = message.specialPart ?: return
             val isUserMessage = message.speaker == RoleplaySpeaker.USER
             Box(
@@ -707,7 +818,7 @@ internal fun RoleplayMessageItem(
                     onEditUserMessage = onEditUserMessage,
                     modifier = if (isUserMessage) Modifier.fillMaxWidth(0.82f) else Modifier.fillMaxWidth(),
                 ) {
-                    TransferPlayCard(
+                    SpecialPlayCard(
                         part = specialPart,
                         isUserMessage = isUserMessage,
                         onConfirmTransferReceipt = onConfirmTransferReceipt,

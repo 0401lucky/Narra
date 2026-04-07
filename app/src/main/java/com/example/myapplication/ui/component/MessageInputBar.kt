@@ -153,7 +153,7 @@ fun MessageInputBar(
     Surface(
         modifier = modifier
             .fillMaxWidth()
-            .padding(horizontal = 12.dp, vertical = 8.dp)
+            .padding(horizontal = 12.dp, vertical = 2.dp)
             .animateContentSize(
                 animationSpec = spring(
                     dampingRatio = Spring.DampingRatioNoBouncy,
@@ -170,8 +170,8 @@ fun MessageInputBar(
         shadowElevation = 0.dp,
     ) {
         Column(
-            modifier = Modifier.padding(horizontal = 12.dp, vertical = 10.dp),
-            verticalArrangement = Arrangement.spacedBy(10.dp),
+            modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp),
+            verticalArrangement = Arrangement.spacedBy(4.dp),
         ) {
             Surface(
                 modifier = Modifier.fillMaxWidth(),
@@ -181,8 +181,8 @@ fun MessageInputBar(
                 ),
             ) {
                 Column(
-                    modifier = Modifier.padding(horizontal = 14.dp, vertical = 12.dp),
-                    verticalArrangement = Arrangement.spacedBy(8.dp),
+                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
+                    verticalArrangement = Arrangement.spacedBy(3.dp),
                 ) {
                     if (pendingParts.isNotEmpty()) {
                         LazyRow(
@@ -210,14 +210,14 @@ fun MessageInputBar(
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         verticalAlignment = Alignment.Bottom,
-                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        horizontalArrangement = Arrangement.spacedBy(6.dp),
                     ) {
                         BasicTextField(
                             value = value,
                             onValueChange = handleInputChange,
                             modifier = Modifier
                                 .weight(1f)
-                                .heightIn(min = 52.dp)
+                                .heightIn(min = 38.dp)
                                 .onPreviewKeyEvent { event ->
                                     if (
                                         event.type == KeyEventType.KeyDown &&
@@ -277,7 +277,7 @@ fun MessageInputBar(
                             onClick = { showExpandedEditor = true },
                             enabled = enabled && !isSending,
                             modifier = Modifier
-                                .size(38.dp)
+                                .size(32.dp)
                                 .clip(CircleShape),
                             colors = IconButtonDefaults.iconButtonColors(
                                 containerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.72f),
@@ -301,7 +301,7 @@ fun MessageInputBar(
                 horizontalArrangement = Arrangement.SpaceBetween,
             ) {
                 Row(
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    horizontalArrangement = Arrangement.spacedBy(4.dp),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
                     ModelSelectorButton(
@@ -338,7 +338,7 @@ fun MessageInputBar(
                 }
 
                 Row(
-                    horizontalArrangement = Arrangement.spacedBy(10.dp),
+                    horizontalArrangement = Arrangement.spacedBy(6.dp),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
                     Box {
@@ -346,7 +346,7 @@ fun MessageInputBar(
                             onClick = { showAttachmentMenu = true },
                             enabled = canOpenAttachmentMenu,
                             modifier = Modifier
-                                .size(44.dp)
+                                .size(38.dp)
                                 .clip(CircleShape),
                             colors = IconButtonDefaults.iconButtonColors(
                                 containerColor = MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.72f),
@@ -413,7 +413,7 @@ fun MessageInputBar(
                         NarraIconButton(
                             onClick = onCancelClick,
                             modifier = Modifier
-                                .size(48.dp)
+                                .size(40.dp)
                                 .scale(scale)
                                 .clip(CircleShape),
                             colors = IconButtonDefaults.iconButtonColors(
@@ -433,7 +433,7 @@ fun MessageInputBar(
                             onClick = onSendClick,
                             enabled = canSend,
                             modifier = Modifier
-                                .size(48.dp)
+                                .size(40.dp)
                                 .scale(scale)
                                 .clip(CircleShape),
                             colors = IconButtonDefaults.iconButtonColors(

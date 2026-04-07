@@ -32,6 +32,43 @@ class MessageContentFormatterTest {
     }
 
     @Test
+    fun normalizeAssistantMarkdownForDisplay_keepsBlockquoteUntouched() {
+        val input = """
+            > 第一条引用
+            > 第二条引用
+        """.trimIndent()
+
+        val actual = normalizeAssistantMarkdownForDisplay(input)
+
+        assertEquals(input, actual)
+    }
+
+    @Test
+    fun normalizeAssistantMarkdownForDisplay_keepsTaskListUntouched() {
+        val input = """
+            - [ ] 第一步
+            - [x] 第二步
+        """.trimIndent()
+
+        val actual = normalizeAssistantMarkdownForDisplay(input)
+
+        assertEquals(input, actual)
+    }
+
+    @Test
+    fun normalizeAssistantMarkdownForDisplay_keepsMarkdownTableUntouched() {
+        val input = """
+            模块 | 状态 | 说明
+            --- | --- | ---
+            聊天 | 完成 | 已优化
+        """.trimIndent()
+
+        val actual = normalizeAssistantMarkdownForDisplay(input)
+
+        assertEquals(input, actual)
+    }
+
+    @Test
     fun normalizeAssistantMarkdownForDisplay_keepsExistingParagraphBreaks() {
         val input = """
             第一段

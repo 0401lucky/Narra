@@ -84,7 +84,7 @@ class ConversationAssistantRoundTripRunner(
                 selectedModel = request.selectedModel,
             )
             val completedMessages = if (parsedOutput.transferUpdates.isEmpty()) {
-                request.buildFinalMessages(completedAssistant)
+                conversationRepository.listMessages(request.conversationId)
             } else {
                 conversationRepository.applyTransferUpdates(
                     conversationId = request.conversationId,

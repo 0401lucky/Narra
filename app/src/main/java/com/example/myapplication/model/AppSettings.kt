@@ -19,6 +19,9 @@ data class AppSettings(
     val showRoleplayPresenceStrip: Boolean = true,
     val showRoleplayStatusStrip: Boolean = false,
     val suppressRoleplayAssistantMismatchDialog: Boolean = false,
+    val roleplayImmersiveMode: RoleplayImmersiveMode = RoleplayImmersiveMode.EDGE_TO_EDGE,
+    val roleplayHighContrast: Boolean = false,
+    val roleplayLineHeightScale: RoleplayLineHeightScale = RoleplayLineHeightScale.NORMAL,
     val userDisplayName: String = DEFAULT_USER_DISPLAY_NAME,
     val userAvatarUri: String = "",
     val userAvatarUrl: String = "",
@@ -145,3 +148,27 @@ data class AppSettings(
 
 const val DEFAULT_USER_DISPLAY_NAME = "用户"
 const val DEFAULT_ROLEPLAY_LONGFORM_TARGET_CHARS = 900
+
+enum class RoleplayImmersiveMode(val storageValue: String) {
+    EDGE_TO_EDGE("edge_to_edge"),
+    HIDE_SYSTEM_BARS("hide_system_bars"),
+    NONE("none");
+
+    companion object {
+        fun fromStorageValue(value: String): RoleplayImmersiveMode {
+            return entries.find { it.storageValue == value } ?: EDGE_TO_EDGE
+        }
+    }
+}
+
+enum class RoleplayLineHeightScale(val storageValue: String, val scaleFactor: Float) {
+    COMPACT("compact", 0.85f),
+    NORMAL("normal", 1.0f),
+    RELAXED("relaxed", 1.15f);
+
+    companion object {
+        fun fromStorageValue(value: String): RoleplayLineHeightScale {
+            return entries.find { it.storageValue == value } ?: NORMAL
+        }
+    }
+}

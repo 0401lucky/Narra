@@ -99,6 +99,9 @@ class RoleplaySuggestionCoordinator(
         val baseUrl = activeProvider?.baseUrl ?: request.settings.baseUrl
         val apiKey = activeProvider?.apiKey ?: request.settings.apiKey
         val suggestionModel = request.resolveSuggestionModelId(request.settings)
+        if (suggestionModel.isBlank()) {
+            return RoleplaySuggestionResult(emptyList())
+        }
         val suggestions = aiPromptExtrasService.generateRoleplaySuggestions(
             conversationExcerpt = conversationExcerpt,
             systemPrompt = decoratedPrompt,

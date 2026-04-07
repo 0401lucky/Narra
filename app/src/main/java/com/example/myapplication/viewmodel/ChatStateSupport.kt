@@ -5,6 +5,7 @@ import com.example.myapplication.model.Assistant
 import com.example.myapplication.model.ChatMessage
 import com.example.myapplication.model.ChatMessagePart
 import com.example.myapplication.model.Conversation
+import com.example.myapplication.model.ContextGovernanceSnapshot
 import com.example.myapplication.model.DEFAULT_CONVERSATION_TITLE
 import com.example.myapplication.model.normalizeChatMessageParts
 
@@ -164,6 +165,8 @@ object ChatStateSupport {
             isConversationReady = false,
             hasConversationSummary = false,
             summaryCoveredMessageCount = 0,
+            latestPromptDebugDump = "",
+            contextGovernance = null,
         )
     }
 
@@ -235,6 +238,23 @@ object ChatStateSupport {
         return current.copy(latestPromptDebugDump = debugDump)
     }
 
+    fun applyContextGovernance(
+        current: ChatUiState,
+        conversationId: String,
+        snapshot: ContextGovernanceSnapshot?,
+        debugDump: String,
+    ): ChatUiState {
+        if (current.currentConversationId != conversationId) {
+            return current
+        }
+        return current.copy(
+            hasConversationSummary = snapshot?.summaryCoveredMessageCount?.let { it > 0 } ?: current.hasConversationSummary,
+            summaryCoveredMessageCount = snapshot?.summaryCoveredMessageCount ?: current.summaryCoveredMessageCount,
+            latestPromptDebugDump = debugDump,
+            contextGovernance = snapshot,
+        )
+    }
+
     fun applyChatSuggestions(
         current: ChatUiState,
         suggestions: List<String>,
@@ -286,6 +306,7 @@ object ChatStateSupport {
             hasConversationSummary = false,
             summaryCoveredMessageCount = 0,
             latestPromptDebugDump = "",
+            contextGovernance = null,
             translation = TranslationUiState(),
         )
     }

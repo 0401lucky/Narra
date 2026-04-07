@@ -1,9 +1,17 @@
 package com.example.myapplication.viewmodel
 
 import com.example.myapplication.conversation.ChatConversationSupport
+import com.example.myapplication.model.ChatSpecialPlayDraft
+import com.example.myapplication.model.GiftPlayDraft
+import com.example.myapplication.model.InvitePlayDraft
+import com.example.myapplication.model.TaskPlayDraft
 import com.example.myapplication.model.ChatMessagePart
+import com.example.myapplication.model.TransferPlayDraft
 import com.example.myapplication.model.TransferDirection
 import com.example.myapplication.model.TransferStatus
+import com.example.myapplication.model.giftMessagePart
+import com.example.myapplication.model.inviteMessagePart
+import com.example.myapplication.model.taskMessagePart
 import com.example.myapplication.model.transferMessagePart
 
 data class ChatOutgoingMessagePlan(
@@ -54,39 +62,105 @@ object ChatOutgoingMessageSupport {
         )
     }
 
+    fun resolveSpecialPlay(
+        state: ChatUiState,
+        draft: ChatSpecialPlayDraft,
+    ): ChatOutgoingMessageResolution {
+        if (state.isSending) {
+            return ChatOutgoingMessageResolution.NoOp
+        }
+        ChatConversationSupport.validateSpecialPlayAvailability(state.settings)?.let { errorMessage ->
+            return ChatOutgoingMessageResolution.Error(errorMessage)
+        }
+        val specialPart = when (draft) {
+            is TransferPlayDraft -> {
+                val normalizedAmount = draft.amount.trim()
+                if (normalizedAmount.isBlank()) {
+                    return ChatOutgoingMessageResolution.Error("请输入转账金额")
+                }
+                transferMessagePart(
+                    direction = TransferDirection.USER_TO_ASSISTANT,
+                    status = TransferStatus.PENDING,
+                    counterparty = draft.counterparty.trim().ifBlank {
+                        state.currentAssistant?.name?.trim().orEmpty().ifBlank { "对方" }
+                    },
+                    amount = normalizedAmount,
+                    note = draft.note.trim(),
+                )
+            }
+
+            is InvitePlayDraft -> {
+                val normalizedPlace = draft.place.trim()
+                if (normalizedPlace.isBlank()) {
+                    return ChatOutgoingMessageResolution.Error("请输入邀约地点")
+                }
+                val normalizedTime = draft.time.trim()
+                if (normalizedTime.isBlank()) {
+                    return ChatOutgoingMessageResolution.Error("请输入邀约时间")
+                }
+                inviteMessagePart(
+                    target = draft.target.trim().ifBlank {
+                        state.currentAssistant?.name?.trim().orEmpty().ifBlank { "对方" }
+                    },
+                    place = normalizedPlace,
+                    time = normalizedTime,
+                    note = draft.note.trim(),
+                )
+            }
+
+            is GiftPlayDraft -> {
+                val normalizedItem = draft.item.trim()
+                if (normalizedItem.isBlank()) {
+                    return ChatOutgoingMessageResolution.Error("请输入礼物内容")
+                }
+                giftMessagePart(
+                    target = draft.target.trim().ifBlank {
+                        state.currentAssistant?.name?.trim().orEmpty().ifBlank { "对方" }
+                    },
+                    item = normalizedItem,
+                    note = draft.note.trim(),
+                )
+            }
+
+            is TaskPlayDraft -> {
+                val normalizedTitle = draft.title.trim()
+                if (normalizedTitle.isBlank()) {
+                    return ChatOutgoingMessageResolution.Error("请输入委托标题")
+                }
+                val normalizedObjective = draft.objective.trim()
+                if (normalizedObjective.isBlank()) {
+                    return ChatOutgoingMessageResolution.Error("请输入委托目标")
+                }
+                taskMessagePart(
+                    title = normalizedTitle,
+                    objective = normalizedObjective,
+                    reward = draft.reward.trim(),
+                    deadline = draft.deadline.trim(),
+                )
+            }
+        }
+        return ChatOutgoingMessageResolution.Ready(
+            plan = ChatOutgoingMessagePlan(
+                userParts = listOf(specialPart),
+                nextInput = state.input,
+                nextPendingParts = state.pendingParts,
+                forceChatRoundTrip = true,
+            ),
+        )
+    }
+
     fun resolveTransferPlay(
         state: ChatUiState,
         counterparty: String,
         amount: String,
         note: String,
     ): ChatOutgoingMessageResolution {
-        if (state.isSending) {
-            return ChatOutgoingMessageResolution.NoOp
-        }
-        ChatConversationSupport.validateTransferPlayAvailability(state.settings)?.let { errorMessage ->
-            return ChatOutgoingMessageResolution.Error(errorMessage)
-        }
-        val normalizedAmount = amount.trim()
-        if (normalizedAmount.isBlank()) {
-            return ChatOutgoingMessageResolution.Error("请输入转账金额")
-        }
-        val normalizedCounterparty = counterparty.trim().ifBlank {
-            state.currentAssistant?.name?.trim().orEmpty().ifBlank { "对方" }
-        }
-        return ChatOutgoingMessageResolution.Ready(
-            plan = ChatOutgoingMessagePlan(
-                userParts = listOf(
-                    transferMessagePart(
-                        direction = TransferDirection.USER_TO_ASSISTANT,
-                        status = TransferStatus.PENDING,
-                        counterparty = normalizedCounterparty,
-                        amount = normalizedAmount,
-                        note = note.trim(),
-                    ),
-                ),
-                nextInput = state.input,
-                nextPendingParts = state.pendingParts,
-                forceChatRoundTrip = true,
+        return resolveSpecialPlay(
+            state = state,
+            draft = TransferPlayDraft(
+                counterparty = counterparty,
+                amount = amount,
+                note = note,
             ),
         )
     }

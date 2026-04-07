@@ -12,6 +12,7 @@ import com.example.myapplication.model.MessageCitation
 import com.example.myapplication.model.MessageAttachment
 import com.example.myapplication.model.MessageRole
 import com.example.myapplication.model.MessageStatus
+import com.example.myapplication.model.RoleplayOutputFormat
 import com.example.myapplication.model.normalizeChatMessageParts
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
@@ -176,6 +177,9 @@ class RoomConversationStore(
             citations = runCatching {
                 gson.fromJson<List<MessageCitation>>(citationsJson, citationListType).orEmpty()
             }.getOrDefault(emptyList()),
+            roleplayOutputFormat = runCatching {
+                RoleplayOutputFormat.valueOf(roleplayOutputFormat)
+            }.getOrDefault(RoleplayOutputFormat.UNSPECIFIED),
         )
     }
 
@@ -192,6 +196,7 @@ class RoomConversationStore(
             attachmentsJson = gson.toJson(attachments),
             partsJson = gson.toJson(normalizeChatMessageParts(parts)),
             citationsJson = gson.toJson(citations),
+            roleplayOutputFormat = roleplayOutputFormat.name,
         )
     }
 

@@ -1,15 +1,30 @@
 package com.example.myapplication.viewmodel
 
+import com.example.myapplication.conversation.GiftImageGenerationRequest
 import com.example.myapplication.conversation.ConversationTransferCoordinator
 import com.example.myapplication.conversation.RoundTripInitialPersistence
+import com.example.myapplication.model.ChatSpecialPlayDraft
 import com.example.myapplication.model.ChatMessage
 import com.example.myapplication.model.ChatMessagePart
+import com.example.myapplication.model.GiftPlayDraft
+import com.example.myapplication.model.InvitePlayDraft
+import com.example.myapplication.model.TaskPlayDraft
+import com.example.myapplication.model.TransferPlayDraft
 import com.example.myapplication.model.TransferDirection
 import com.example.myapplication.model.TransferStatus
+import com.example.myapplication.model.giftMessagePart
+import com.example.myapplication.model.inviteMessagePart
+import com.example.myapplication.model.isGiftPart
+import com.example.myapplication.model.normalizeChatMessageParts
+import com.example.myapplication.model.ProviderFunction
+import com.example.myapplication.model.specialMetadataValue
+import com.example.myapplication.model.taskMessagePart
 import com.example.myapplication.model.transferMessagePart
 import com.example.myapplication.model.textMessagePart
 import com.example.myapplication.model.toPlainText
+import com.example.myapplication.model.withGiftImageGenerating
 import com.example.myapplication.roleplay.RoleplayConversationSupport
+import com.example.myapplication.roleplay.RoleplayMessageFormatSupport
 import com.example.myapplication.roleplay.RoleplayRoundTripSupport
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
@@ -76,10 +91,8 @@ internal class RoleplaySendActionSupport(
         }
     }
 
-    fun sendTransferPlay(
-        counterparty: String,
-        amount: String,
-        note: String,
+    fun sendSpecialPlay(
+        draft: ChatSpecialPlayDraft,
     ): Job? {
         val state = uiState()
         val scenario = state.currentScenario
@@ -99,34 +112,110 @@ internal class RoleplaySendActionSupport(
             return null
         }
 
-        val normalizedAmount = amount.trim()
-        if (normalizedAmount.isBlank()) {
-            updateUiState { current ->
-                RoleplayStateSupport.applyErrorMessage(current, "请输入转账金额")
+        val defaultCharacterName = RoleplayConversationSupport.resolveRoleplayNames(
+            scenario = scenario,
+            assistant = RoleplayConversationSupport.resolveAssistant(state.settings, scenario.assistantId),
+            settings = state.settings,
+        ).second
+        val specialPart = when (draft) {
+            is TransferPlayDraft -> {
+                val normalizedAmount = draft.amount.trim()
+                if (normalizedAmount.isBlank()) {
+                    updateUiState { current ->
+                        RoleplayStateSupport.applyErrorMessage(current, "请输入转账金额")
+                    }
+                    return null
+                }
+                transferMessagePart(
+                    direction = TransferDirection.USER_TO_ASSISTANT,
+                    status = TransferStatus.PENDING,
+                    counterparty = draft.counterparty.trim().ifBlank { defaultCharacterName },
+                    amount = normalizedAmount,
+                    note = draft.note.trim(),
+                )
             }
-            return null
-        }
 
-        val normalizedCounterparty = counterparty.trim().ifBlank {
-            RoleplayConversationSupport.resolveRoleplayNames(
-                scenario = scenario,
-                assistant = RoleplayConversationSupport.resolveAssistant(state.settings, scenario.assistantId),
-                settings = state.settings,
-            ).second
+            is InvitePlayDraft -> {
+                val normalizedPlace = draft.place.trim()
+                if (normalizedPlace.isBlank()) {
+                    updateUiState { current ->
+                        RoleplayStateSupport.applyErrorMessage(current, "请输入邀约地点")
+                    }
+                    return null
+                }
+                val normalizedTime = draft.time.trim()
+                if (normalizedTime.isBlank()) {
+                    updateUiState { current ->
+                        RoleplayStateSupport.applyErrorMessage(current, "请输入邀约时间")
+                    }
+                    return null
+                }
+                inviteMessagePart(
+                    target = draft.target.trim().ifBlank { defaultCharacterName },
+                    place = normalizedPlace,
+                    time = normalizedTime,
+                    note = draft.note.trim(),
+                )
+            }
+
+            is GiftPlayDraft -> {
+                val normalizedItem = draft.item.trim()
+                if (normalizedItem.isBlank()) {
+                    updateUiState { current ->
+                        RoleplayStateSupport.applyErrorMessage(current, "请输入礼物内容")
+                    }
+                    return null
+                }
+                giftMessagePart(
+                    target = draft.target.trim().ifBlank { defaultCharacterName },
+                    item = normalizedItem,
+                    note = draft.note.trim(),
+                )
+            }
+
+            is TaskPlayDraft -> {
+                val normalizedTitle = draft.title.trim()
+                if (normalizedTitle.isBlank()) {
+                    updateUiState { current ->
+                        RoleplayStateSupport.applyErrorMessage(current, "请输入委托标题")
+                    }
+                    return null
+                }
+                val normalizedObjective = draft.objective.trim()
+                if (normalizedObjective.isBlank()) {
+                    updateUiState { current ->
+                        RoleplayStateSupport.applyErrorMessage(current, "请输入委托目标")
+                    }
+                    return null
+                }
+                taskMessagePart(
+                    title = normalizedTitle,
+                    objective = normalizedObjective,
+                    reward = draft.reward.trim(),
+                    deadline = draft.deadline.trim(),
+                )
+            }
         }
-        val transferPart = transferMessagePart(
-            direction = TransferDirection.USER_TO_ASSISTANT,
-            status = TransferStatus.PENDING,
-            counterparty = normalizedCounterparty,
-            amount = normalizedAmount,
-            note = note.trim(),
-        )
 
         return startRoleplaySend(
             state = state,
             scenario = scenario,
-            userParts = listOf(transferPart),
+            userParts = listOf(specialPart),
             nextInput = state.input,
+        )
+    }
+
+    fun sendTransferPlay(
+        counterparty: String,
+        amount: String,
+        note: String,
+    ): Job? {
+        return sendSpecialPlay(
+            TransferPlayDraft(
+                counterparty = counterparty,
+                amount = amount,
+                note = note,
+            ),
         )
     }
 
@@ -191,9 +280,35 @@ internal class RoleplaySendActionSupport(
         userParts: List<ChatMessagePart>,
         nextInput: String,
     ): Job {
+        val activeProvider = state.settings.activeProvider()
+        val originalGiftPart = normalizeChatMessageParts(userParts).firstOrNull { it.isGiftPart() }
+        val giftImageModelId = activeProvider
+            ?.resolveFunctionModel(ProviderFunction.GIFT_IMAGE)
+            .orEmpty()
+            .trim()
+        val shouldGenerateGiftImage = originalGiftPart != null &&
+            activeProvider != null &&
+            giftImageModelId.isNotBlank()
+        val resolvedUserParts = if (shouldGenerateGiftImage) {
+            userParts.map { part ->
+                if (part.specialId == originalGiftPart?.specialId) {
+                    part.withGiftImageGenerating()
+                } else {
+                    part
+                }
+            }
+        } else {
+            userParts
+        }
         cancelSuggestionGeneration(false)
         updateUiState { current ->
-            RoleplayStateSupport.beginSending(current, nextInput)
+            RoleplayStateSupport.beginSending(current, nextInput).let { updated ->
+                if (originalGiftPart != null && !shouldGenerateGiftImage) {
+                    RoleplayStateSupport.applyNoticeMessage(updated, "未配置礼物生图模型，已按普通礼物卡发送")
+                } else {
+                    updated
+                }
+            }
         }
 
         return scope.launch {
@@ -228,11 +343,43 @@ internal class RoleplaySendActionSupport(
                 val preparedRoundTrip = RoleplayRoundTripSupport.prepareOutgoingRoundTrip(
                     baseMessages = baseMessages,
                     conversationId = session.conversationId,
-                    userParts = userParts,
+                    userParts = resolvedUserParts,
                     selectedModel = selectedModel,
+                    roleplayOutputFormat = RoleplayMessageFormatSupport.resolveScenarioOutputFormat(scenario),
                     nowProvider = nowProvider,
                     messageIdProvider = messageIdProvider,
                 )
+                val giftImageRequest = if (shouldGenerateGiftImage) {
+                    val giftPart = normalizeChatMessageParts(resolvedUserParts).firstOrNull { it.isGiftPart() }
+                    val (userName, characterName) = RoleplayConversationSupport.resolveRoleplayNames(
+                        scenario = scenario,
+                        assistant = assistant,
+                        settings = state.settings,
+                    )
+                    if (giftPart == null) {
+                        null
+                    } else {
+                        GiftImageGenerationRequest(
+                            conversationId = session.conversationId,
+                            selectedModel = selectedModel,
+                            provider = activeProvider,
+                            specialId = giftPart.specialId,
+                            giftName = giftPart.specialMetadataValue("item"),
+                            recipientName = giftPart.specialMetadataValue("target"),
+                            userName = userName,
+                            assistantName = characterName,
+                            contextExcerpt = RoleplayConversationSupport.buildTranscriptInput(
+                                messages = preparedRoundTrip.requestMessages.takeLast(8),
+                                scenario = scenario,
+                                assistant = assistant,
+                                settings = state.settings,
+                                maxLength = 600,
+                            ),
+                        )
+                    }
+                } else {
+                    null
+                }
                 currentRawMessages.value = preparedRoundTrip.initialMessages
 
                 roundTripExecutor.execute(
@@ -249,6 +396,7 @@ internal class RoleplaySendActionSupport(
                     buildFinalMessages = { completedAssistant ->
                         preparedRoundTrip.baseMessages + preparedRoundTrip.userMessage + completedAssistant
                     },
+                    giftImageRequest = giftImageRequest,
                 )
             } finally {
                 onSendingFinished()

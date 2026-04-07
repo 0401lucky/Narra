@@ -3,13 +3,13 @@ package com.example.myapplication.conversation
 import com.example.myapplication.data.repository.RoleplayMemoryCondenseMode
 import com.example.myapplication.data.repository.StructuredMemoryExtractionResult
 import com.example.myapplication.data.repository.ai.AiPromptExtrasService
-import com.example.myapplication.testutil.FakeConversationSummaryRepository
 import com.example.myapplication.model.AppSettings
 import com.example.myapplication.model.ChatMessage
+import com.example.myapplication.model.ConversationSummary
 import com.example.myapplication.model.MessageRole
 import com.example.myapplication.model.ProviderSettings
-import com.example.myapplication.model.ConversationSummary
 import com.example.myapplication.model.RoleplaySuggestionUiModel
+import com.example.myapplication.testutil.FakeConversationSummaryRepository
 import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -34,7 +34,7 @@ class ConversationSummaryCoordinatorTest {
             titleSummaryModel = "summary-model",
         )
 
-        val updated = coordinator.updateConversationSummary(
+        val result = coordinator.updateConversationSummary(
             conversationId = "conv-1",
             assistantId = "assistant-1",
             completedMessages = listOf(
@@ -62,7 +62,9 @@ class ConversationSummaryCoordinatorTest {
             },
         )
 
-        assertTrue(updated)
+        assertTrue(result.updated)
+        assertEquals("这是摘要", result.summaryText)
+        assertEquals(3, result.coveredMessageCount)
         assertEquals(
             ConversationSummary(
                 conversationId = "conv-1",
@@ -100,7 +102,7 @@ class ConversationSummaryCoordinatorTest {
             titleSummaryModel = "summary-model",
         )
 
-        val updated = coordinator.updateConversationSummary(
+        val result = coordinator.updateConversationSummary(
             conversationId = "conv-1",
             assistantId = "assistant-1",
             completedMessages = listOf(
@@ -122,12 +124,12 @@ class ConversationSummaryCoordinatorTest {
             generateSummary = { _, _, _, _, _ -> error("不应调用生成") },
         )
 
-        assertFalse(updated)
+        assertFalse(result.updated)
         assertEquals("已有摘要", repository.getSummary("conv-1")?.summary)
     }
 
     @Test
-    fun updateConversationSummary_fallsBackToMemoryModelWhenTitleSummaryModelBlank() = runBlocking {
+    fun updateConversationSummary_followsDefaultChatModelWhenTitleSummaryModeUsesDefault() = runBlocking {
         val repository = FakeConversationSummaryRepository()
         val coordinator = ConversationSummaryCoordinator(
             aiPromptExtrasService = unusedPromptExtrasService(),
@@ -140,10 +142,9 @@ class ConversationSummaryCoordinatorTest {
             baseUrl = "https://example.com/v1/",
             apiKey = "key",
             selectedModel = "chat-model",
-            memoryModel = "memory-model",
         )
 
-        val updated = coordinator.updateConversationSummary(
+        val result = coordinator.updateConversationSummary(
             conversationId = "conv-1",
             assistantId = "assistant-1",
             completedMessages = listOf(
@@ -165,12 +166,68 @@ class ConversationSummaryCoordinatorTest {
                 messages.joinToString(separator = "\n") { it.content }
             },
             generateSummary = { _, _, _, modelId, _ ->
-                assertEquals("memory-model", modelId)
+                assertEquals("chat-model", modelId)
                 "这是摘要"
             },
         )
 
-        assertTrue(updated)
+        assertTrue(result.updated)
+    }
+
+    @Test
+    fun updateConversationSummary_forceRefreshRegeneratesSameCoverageSummary() = runBlocking {
+        val repository = FakeConversationSummaryRepository(
+            initialSummaries = listOf(
+                ConversationSummary(
+                    conversationId = "conv-1",
+                    assistantId = "assistant-1",
+                    summary = "旧摘要",
+                    coveredMessageCount = 3,
+                ),
+            ),
+        )
+        val coordinator = ConversationSummaryCoordinator(
+            aiPromptExtrasService = unusedPromptExtrasService(),
+            conversationSummaryRepository = repository,
+            nowProvider = { 456L },
+        )
+        val provider = ProviderSettings(
+            id = "provider-1",
+            name = "Provider",
+            baseUrl = "https://example.com/v1/",
+            apiKey = "key",
+            selectedModel = "chat-model",
+            titleSummaryModel = "summary-model",
+        )
+
+        val result = coordinator.updateConversationSummary(
+            conversationId = "conv-1",
+            assistantId = "assistant-1",
+            completedMessages = listOf(
+                ChatMessage(id = "m1", conversationId = "conv-1", role = MessageRole.USER, content = "a", createdAt = 1L),
+                ChatMessage(id = "m2", conversationId = "conv-1", role = MessageRole.ASSISTANT, content = "b", createdAt = 2L),
+                ChatMessage(id = "m3", conversationId = "conv-1", role = MessageRole.USER, content = "c", createdAt = 3L),
+                ChatMessage(id = "m4", conversationId = "conv-1", role = MessageRole.ASSISTANT, content = "d", createdAt = 4L),
+            ),
+            settings = AppSettings(
+                providers = listOf(provider),
+                selectedProviderId = provider.id,
+            ),
+            config = SummaryGenerationConfig(
+                triggerMessageCount = 2,
+                recentMessageWindow = 1,
+                minCoveredMessageCount = 2,
+            ),
+            forceRefresh = true,
+            buildSummaryInput = { messages ->
+                messages.joinToString(separator = "\n") { it.content }
+            },
+            generateSummary = { _, _, _, _, _ -> "新摘要" },
+        )
+
+        assertTrue(result.updated)
+        assertEquals("新摘要", repository.getSummary("conv-1")?.summary)
+        assertEquals(456L, repository.getSummary("conv-1")?.updatedAt)
     }
 
     private fun unusedPromptExtrasService(): AiPromptExtrasService {

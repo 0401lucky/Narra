@@ -72,6 +72,14 @@ fun AssistantPromptScreen(
     var scenario by rememberSaveable { mutableStateOf(assistant.scenario) }
     var greeting by rememberSaveable { mutableStateOf(assistant.greeting) }
     var creatorNotes by rememberSaveable { mutableStateOf(assistant.creatorNotes) }
+    var contextMessageSizeText by rememberSaveable {
+        mutableStateOf(
+            assistant.contextMessageSize
+                .takeIf { it > 0 }
+                ?.toString()
+                .orEmpty(),
+        )
+    }
     val exampleDialogues = remember {
         mutableStateListOf<String>().apply {
             addAll(assistant.exampleDialogues)
@@ -88,6 +96,9 @@ fun AssistantPromptScreen(
                     greeting = greeting.trim(),
                     exampleDialogues = exampleDialogues.map { it.trim() }.filter { it.isNotBlank() },
                     creatorNotes = creatorNotes.trim(),
+                    contextMessageSize = contextMessageSizeText.toIntOrNull()
+                        ?.coerceIn(0, 30)
+                        ?: 0,
                 ),
             )
         }
@@ -204,7 +215,7 @@ fun AssistantPromptScreen(
                         color = palette.title,
                     )
                     Text(
-                        text = "助手在新对话开始时的第一条消息，留空则不发送",
+                        text = "新对话的开场白，留空即不发送。",
                         style = MaterialTheme.typography.bodySmall,
                         color = palette.body.copy(alpha = 0.6f),
                     )
@@ -229,7 +240,7 @@ fun AssistantPromptScreen(
                     palette = palette,
                 ) {
                     Text(
-                        text = "添加示例对话帮助模型理解风格, 每条是一轮完整的对话示例",
+                        text = "提供多轮对话示例，帮助模型理解风格。",
                         style = MaterialTheme.typography.bodySmall,
                         color = palette.body.copy(alpha = 0.6f),
                     )
@@ -280,7 +291,7 @@ fun AssistantPromptScreen(
                     palette = palette,
                 ) {
                     Text(
-                        text = "仅供自己参考的笔记，不会注入到对话上下文中",
+                        text = "私密笔记，不会注入对话上下文。",
                         style = MaterialTheme.typography.bodySmall,
                         color = palette.body.copy(alpha = 0.6f),
                     )
@@ -292,6 +303,31 @@ fun AssistantPromptScreen(
                             .fillMaxWidth()
                             .heightIn(min = 80.dp),
                         maxLines = 6,
+                        shape = RoundedCornerShape(16.dp),
+                        colors = outlineColors,
+                    )
+                }
+            }
+
+            item {
+                PromptSection(
+                    title = "最近消息窗口",
+                    palette = palette,
+                ) {
+                    Text(
+                        text = "填 0 为自动。超出窗口的历史将会被压缩。",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = palette.body.copy(alpha = 0.6f),
+                    )
+                    Spacer(Modifier.height(8.dp))
+                    OutlinedTextField(
+                        value = contextMessageSizeText,
+                        onValueChange = { raw ->
+                            contextMessageSizeText = raw.filter(Char::isDigit).take(2)
+                        },
+                        modifier = Modifier.fillMaxWidth(),
+                        singleLine = true,
+                        label = { Text("消息条数") },
                         shape = RoundedCornerShape(16.dp),
                         colors = outlineColors,
                     )

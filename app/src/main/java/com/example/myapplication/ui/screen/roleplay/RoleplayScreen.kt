@@ -1,28 +1,6 @@
 package com.example.myapplication.ui.screen.roleplay
 
-import com.example.myapplication.ui.component.*
-
-import androidx.compose.foundation.background
-import androidx.compose.foundation.horizontalScroll
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.imePadding
-import androidx.compose.foundation.layout.navigationBarsPadding
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.statusBarsPadding
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.MoreVert
-import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.Icon
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -34,31 +12,27 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Brush
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.unit.dp
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
 import com.example.myapplication.model.AppSettings
 import com.example.myapplication.model.Assistant
+import com.example.myapplication.model.ChatSpecialPlayDraft
+import com.example.myapplication.model.ChatSpecialType
+import com.example.myapplication.model.GiftPlayDraft
+import com.example.myapplication.model.InvitePlayDraft
 import com.example.myapplication.model.PendingMemoryProposal
 import com.example.myapplication.model.RoleplayContextStatus
 import com.example.myapplication.model.RoleplayMessageUiModel
 import com.example.myapplication.model.RoleplayScenario
 import com.example.myapplication.model.RoleplaySuggestionUiModel
-import com.example.myapplication.model.RoleplaySpeaker
-import com.example.myapplication.ui.component.AppSnackbarHost
-import com.example.myapplication.ui.component.roleplay.ImmersiveBackdropState
-import com.example.myapplication.ui.component.roleplay.ImmersiveGlassChip
-import com.example.myapplication.ui.component.roleplay.RoleplayDialoguePanel
-import com.example.myapplication.ui.component.roleplay.RoleplayPortraitLayer
-import com.example.myapplication.ui.component.roleplay.RoleplayPortraitSpec
-import com.example.myapplication.ui.component.roleplay.RoleplaySceneBackground
+import com.example.myapplication.model.TaskPlayDraft
+import com.example.myapplication.model.TransferPlayDraft
+import com.example.myapplication.ui.component.rememberSystemHighTextContrastEnabled
 import com.example.myapplication.ui.component.roleplay.rememberImmersiveBackdropState
-import com.example.myapplication.ui.screen.chat.SpecialPlaySheet
-import com.example.myapplication.ui.screen.chat.TransferPlayDraft
-import com.example.myapplication.ui.screen.chat.TransferPlaySheet
+import com.example.myapplication.ui.screen.chat.GiftPlayDraftSaver
+import com.example.myapplication.ui.screen.chat.InvitePlayDraftSaver
+import com.example.myapplication.ui.screen.chat.TaskPlayDraftSaver
+import com.example.myapplication.ui.screen.chat.TransferPlayDraftSaver
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -89,7 +63,7 @@ fun RoleplayScreen(
     onClearSuggestions: () -> Unit,
     onRetryTurn: (String) -> Unit,
     onEditUserMessage: (String) -> Unit,
-    onSendTransferPlay: (String, String, String) -> Unit,
+    onSendSpecialPlay: (ChatSpecialPlayDraft) -> Unit,
     onConfirmTransferReceipt: (String) -> Unit,
     onSend: () -> Unit,
     onCancelSending: () -> Unit,
@@ -129,18 +103,68 @@ fun RoleplayScreen(
     val characterName = scenario.characterDisplayNameOverride.trim()
         .ifBlank { assistant?.name?.trim().orEmpty() }
         .ifBlank { "角色" }
+    val effectiveHighContrast = settings.roleplayHighContrast || rememberSystemHighTextContrastEnabled()
+    val backdropState = rememberImmersiveBackdropState(
+        backgroundUri = scenario.backgroundUri,
+        highContrast = effectiveHighContrast,
+    )
 
     var showSpecialPlaySheet by rememberSaveable { mutableStateOf(false) }
-    var showTransferSheet by rememberSaveable { mutableStateOf(false) }
-    var transferCounterparty by rememberSaveable { mutableStateOf("") }
-    var transferAmount by rememberSaveable { mutableStateOf("") }
-    var transferNote by rememberSaveable { mutableStateOf("") }
-    val transferDraft = TransferPlayDraft(
-        counterparty = transferCounterparty,
-        amount = transferAmount,
-        note = transferNote,
-    )
-    val backdropState = rememberImmersiveBackdropState(scenario.backgroundUri)
+    var activeSpecialPlayTypeName by rememberSaveable { mutableStateOf<String?>(null) }
+    var transferDraft by rememberSaveable(stateSaver = TransferPlayDraftSaver) {
+        mutableStateOf(TransferPlayDraft(counterparty = characterName))
+    }
+    var inviteDraft by rememberSaveable(stateSaver = InvitePlayDraftSaver) {
+        mutableStateOf(InvitePlayDraft(target = characterName))
+    }
+    var giftDraft by rememberSaveable(stateSaver = GiftPlayDraftSaver) {
+        mutableStateOf(GiftPlayDraft(target = characterName))
+    }
+    var taskDraft by rememberSaveable(stateSaver = TaskPlayDraftSaver) {
+        mutableStateOf(TaskPlayDraft())
+    }
+
+    val activeSpecialPlayType = activeSpecialPlayTypeName?.let(ChatSpecialType::valueOf)
+    val activeSpecialPlayDraft = when (activeSpecialPlayType) {
+        ChatSpecialType.TRANSFER -> transferDraft
+        ChatSpecialType.INVITE -> inviteDraft
+        ChatSpecialType.GIFT -> giftDraft
+        ChatSpecialType.TASK -> taskDraft
+        null -> null
+    }
+
+    fun primeSpecialPlayDraft(type: ChatSpecialType) {
+        when (type) {
+            ChatSpecialType.TRANSFER -> {
+                if (transferDraft.counterparty.isBlank()) {
+                    transferDraft = transferDraft.copy(counterparty = characterName)
+                }
+            }
+
+            ChatSpecialType.INVITE -> {
+                if (inviteDraft.target.isBlank()) {
+                    inviteDraft = inviteDraft.copy(target = characterName)
+                }
+            }
+
+            ChatSpecialType.GIFT -> {
+                if (giftDraft.target.isBlank()) {
+                    giftDraft = giftDraft.copy(target = characterName)
+                }
+            }
+
+            ChatSpecialType.TASK -> Unit
+        }
+    }
+
+    fun resetSpecialPlayDraft(type: ChatSpecialType) {
+        when (type) {
+            ChatSpecialType.TRANSFER -> transferDraft = TransferPlayDraft(counterparty = characterName)
+            ChatSpecialType.INVITE -> inviteDraft = InvitePlayDraft(target = characterName)
+            ChatSpecialType.GIFT -> giftDraft = GiftPlayDraft(target = characterName)
+            ChatSpecialType.TASK -> taskDraft = TaskPlayDraft()
+        }
+    }
 
     RoleplaySceneContent(
         scenario = scenario,
@@ -163,12 +187,7 @@ fun RoleplayScreen(
         onClearSuggestions = onClearSuggestions,
         onRetryTurn = onRetryTurn,
         onEditUserMessage = onEditUserMessage,
-        onOpenSpecialPlay = {
-            if (transferCounterparty.isBlank()) {
-                transferCounterparty = characterName
-            }
-            showSpecialPlaySheet = true
-        },
+        onOpenSpecialPlay = { showSpecialPlaySheet = true },
         onConfirmTransferReceipt = onConfirmTransferReceipt,
         onSend = onSend,
         onCancelSending = onCancelSending,
@@ -176,34 +195,30 @@ fun RoleplayScreen(
         onRejectPendingMemoryProposal = onRejectPendingMemoryProposal,
         onOpenSettings = onOpenSettings,
         onNavigateBack = onNavigateBack,
-        transferCounterparty = transferCounterparty,
-        transferDraft = transferDraft,
         showSpecialPlaySheet = showSpecialPlaySheet,
-        showTransferSheet = showTransferSheet,
+        activeSpecialPlayDraft = activeSpecialPlayDraft,
         onDismissSpecialPlay = { showSpecialPlaySheet = false },
-        onOpenTransferSheet = {
+        onOpenSpecialPlayEditor = { type ->
             showSpecialPlaySheet = false
-            if (transferCounterparty.isBlank()) {
-                transferCounterparty = characterName
+            primeSpecialPlayDraft(type)
+            activeSpecialPlayTypeName = type.name
+        },
+        onDismissSpecialPlayEditor = { activeSpecialPlayTypeName = null },
+        onSpecialPlayDraftChange = { draft ->
+            when (draft) {
+                is TransferPlayDraft -> transferDraft = draft
+                is InvitePlayDraft -> inviteDraft = draft
+                is GiftPlayDraft -> giftDraft = draft
+                is TaskPlayDraft -> taskDraft = draft
             }
-            showTransferSheet = true
         },
-        onDismissTransferSheet = { showTransferSheet = false },
-        onTransferDraftChange = {
-            transferCounterparty = it.counterparty
-            transferAmount = it.amount
-            transferNote = it.note
-        },
-        onTransferConfirm = {
-            onSendTransferPlay(
-                transferDraft.counterparty.ifBlank { characterName },
-                transferDraft.amount,
-                transferDraft.note,
-            )
-            transferCounterparty = characterName
-            transferAmount = ""
-            transferNote = ""
-            showTransferSheet = false
+        onSpecialPlayConfirm = {
+            val activeDraft = activeSpecialPlayDraft
+            if (activeDraft != null) {
+                onSendSpecialPlay(activeDraft)
+                resetSpecialPlayDraft(activeDraft.type)
+                activeSpecialPlayTypeName = null
+            }
         },
     )
 
@@ -214,6 +229,4 @@ fun RoleplayScreen(
         onRestartSession = onRestartSession,
         onDismissAssistantMismatch = onDismissAssistantMismatch,
     )
-
 }
-

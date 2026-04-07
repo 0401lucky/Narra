@@ -52,8 +52,10 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
 import com.example.myapplication.model.Assistant
 import com.example.myapplication.model.Conversation
@@ -166,12 +168,8 @@ internal fun ConversationDrawerContent(
 
             if (conversationSections.isEmpty()) {
                 NoticeCard(
-                    title = if (searchQuery.isBlank()) "当前没有历史会话" else "没有匹配的聊天",
-                    body = if (searchQuery.isBlank()) {
-                        "创建新会话后，这里会按时间分组展示全部历史记录。"
-                    } else {
-                        "换个关键词试试，可以搜标题或模型名。"
-                    },
+                    title = if (searchQuery.isBlank()) "尚无聊天记录" else "无匹配结果",
+                    body = if (searchQuery.isBlank()) "新聊天会显示在这里" else "请换个关键词试试",
                     containerColor = drawerPalette.card,
                     contentColor = drawerPalette.onSurface,
                 )
@@ -471,6 +469,11 @@ private fun DrawerProfileHeader(
     secondaryTextColor: Color,
     onClick: () -> Unit,
 ) {
+    val density = LocalDensity.current
+    val avatarRequestSize = with(density) {
+        val sizePx = 54.dp.roundToPx().coerceAtLeast(1)
+        IntSize(sizePx, sizePx)
+    }
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -484,6 +487,7 @@ private fun DrawerProfileHeader(
             avatarUri = userAvatarUri,
             avatarUrl = userAvatarUrl,
             modifier = Modifier.size(54.dp),
+            requestSize = avatarRequestSize,
             containerColor = accentContainerColor,
             contentColor = accentContentColor,
             textStyle = MaterialTheme.typography.titleLarge,

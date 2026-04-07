@@ -101,6 +101,19 @@ interface AiPromptExtrasService {
         longformMode: Boolean = false,
     ): List<RoleplaySuggestionUiModel>
 
+    suspend fun generateGiftImagePrompt(
+        giftName: String,
+        recipientName: String,
+        userName: String,
+        assistantName: String,
+        contextExcerpt: String,
+        baseUrl: String,
+        apiKey: String,
+        modelId: String,
+        apiProtocol: ProviderApiProtocol = ProviderApiProtocol.OPENAI_COMPATIBLE,
+        provider: ProviderSettings? = null,
+    ): String = ""
+
     suspend fun condenseRoleplayMemories(
         memoryItems: List<String>,
         mode: RoleplayMemoryCondenseMode,
@@ -446,6 +459,51 @@ class DefaultAiPromptExtrasService(
             provider = provider,
         )
         return retriedSuggestions.ifEmpty { initialSuggestions }
+    }
+
+    override suspend fun generateGiftImagePrompt(
+        giftName: String,
+        recipientName: String,
+        userName: String,
+        assistantName: String,
+        contextExcerpt: String,
+        baseUrl: String,
+        apiKey: String,
+        modelId: String,
+        apiProtocol: ProviderApiProtocol,
+        provider: ProviderSettings?,
+    ): String {
+        val prompt = buildString {
+            append("你是礼物生图提示词优化器。")
+            append("请根据礼物信息、人物关系和最近上下文，输出一条适合文生图模型的最终提示词。")
+            append("只输出最终 Prompt，不要标题、解释、编号或 Markdown。")
+            append("默认突出单个礼物主体的特写或近景，强调材质、光影、氛围和构图稳定。")
+            append("除非上下文明确需要，否则不要出现人物正脸、对话框、文字、水印、品牌 logo、边框或界面元素。")
+            append("风格偏好：电影感、精致细节、真实材质、柔和光影、高质量构图。")
+            append("\n礼物：").append(giftName.trim())
+            append("\n送礼对象：").append(recipientName.trim().ifBlank { "对方" })
+            append("\n送礼人：").append(userName.trim().ifBlank { "用户" })
+            append("\n相关角色：").append(assistantName.trim().ifBlank { "对方" })
+            if (contextExcerpt.isNotBlank()) {
+                append("\n最近上下文：").append(contextExcerpt.trim())
+            }
+        }
+        return requestCompletionContent(
+            baseUrl = baseUrl,
+            apiKey = apiKey,
+            operation = "礼物生图提示词生成失败",
+            request = ChatCompletionRequest(
+                model = modelId,
+                messages = listOf(
+                    ChatMessageDto(
+                        role = "user",
+                        content = prompt,
+                    ),
+                ),
+            ),
+            apiProtocol = apiProtocol,
+            provider = provider,
+        ).trim()
     }
 
     override suspend fun condenseRoleplayMemories(

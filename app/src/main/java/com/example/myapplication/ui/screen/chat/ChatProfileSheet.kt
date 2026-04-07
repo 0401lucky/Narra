@@ -34,6 +34,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
 import com.example.myapplication.model.DEFAULT_USER_DISPLAY_NAME
 import com.example.myapplication.ui.component.UserAvatarLoadState
@@ -56,10 +58,24 @@ internal fun ProfileEditorSheet(
 ) {
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     val colorScheme = MaterialTheme.colorScheme
+    val density = LocalDensity.current
     val normalizedAvatarUrl = avatarUrl.trim()
+    val avatarPreviewRequestSize = with(density) {
+        IntSize(
+            width = 112.dp.roundToPx().coerceAtLeast(1),
+            height = 112.dp.roundToPx().coerceAtLeast(1),
+        )
+    }
+    val avatarEditorRequestSize = with(density) {
+        IntSize(
+            width = 92.dp.roundToPx().coerceAtLeast(1),
+            height = 92.dp.roundToPx().coerceAtLeast(1),
+        )
+    }
     val avatarPreviewState = rememberUserProfileAvatarState(
         avatarUri = avatarUri,
         avatarUrl = avatarUrl,
+        requestSize = avatarPreviewRequestSize,
     )
     val hasAvatarUrl = normalizedAvatarUrl.isNotBlank()
     val avatarUrlFormatError = hasAvatarUrl && !supportsProfileAvatarUrl(normalizedAvatarUrl)
@@ -152,6 +168,7 @@ internal fun ProfileEditorSheet(
                                 avatarUri = avatarUri,
                                 avatarUrl = avatarUrl,
                                 modifier = Modifier.fillMaxSize(),
+                                requestSize = avatarEditorRequestSize,
                                 containerColor = colorScheme.primaryContainer,
                                 contentColor = colorScheme.onPrimaryContainer,
                                 textStyle = MaterialTheme.typography.headlineSmall,

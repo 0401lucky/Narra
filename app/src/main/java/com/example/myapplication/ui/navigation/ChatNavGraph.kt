@@ -92,10 +92,11 @@ internal fun NavGraphBuilder.registerChatNavGraph(
             },
             onClearErrorMessage = chatViewModel::clearErrorMessage,
             onClearNoticeMessage = chatViewModel::clearNoticeMessage,
+            onRefreshConversationSummary = chatViewModel::refreshConversationSummary,
             onCancelSending = chatViewModel::cancelSending,
             onAddPendingParts = chatViewModel::addPendingParts,
             onRemovePendingPart = chatViewModel::removePendingPart,
-            onSendTransferPlay = chatViewModel::sendTransferPlay,
+            onSendSpecialPlay = chatViewModel::sendSpecialPlay,
             onConfirmTransferReceipt = chatViewModel::confirmTransferReceipt,
             onSelectAssistant = { assistantId ->
                 settingsViewModel.selectAssistant(assistantId)

@@ -32,4 +32,65 @@ class MessageBubbleRenderModeTest {
             shouldRenderWithMarkdown("请查看 `val answer = 42`，或者访问 [文档](https://example.com)。"),
         )
     }
+
+    @Test
+    fun shouldRenderWithMarkdown_returnsTrueForTaskList() {
+        assertTrue(
+            shouldRenderWithMarkdown(
+                """
+                - [ ] 检查日志
+                - [x] 复现问题
+                """.trimIndent(),
+            ),
+        )
+    }
+
+    @Test
+    fun shouldRenderWithMarkdown_returnsTrueForBlockquote() {
+        assertTrue(
+            shouldRenderWithMarkdown(
+                """
+                > 先确认版本
+                > 再执行修复
+                """.trimIndent(),
+            ),
+        )
+    }
+
+    @Test
+    fun shouldRenderWithMarkdown_returnsTrueForMarkdownTableWithoutLeadingPipe() {
+        assertTrue(
+            shouldRenderWithMarkdown(
+                """
+                字段 | 说明 | 状态
+                --- | --- | ---
+                url | 下载地址 | 必填
+                """.trimIndent(),
+            ),
+        )
+    }
+
+    @Test
+    fun shouldRenderWithMarkdownDuringScrolling_returnsFalseForPlainParagraph() {
+        assertFalse(
+            shouldRenderWithMarkdownDuringScrolling("这是普通回复，没有列表、链接或代码块。"),
+        )
+    }
+
+    @Test
+    fun shouldRenderWithMarkdownDuringScrolling_keepsStructuredMarkdown() {
+        assertTrue(
+            shouldRenderWithMarkdownDuringScrolling(
+                """
+                # 标题
+
+                - 第一项
+                - 第二项
+                """.trimIndent(),
+            ),
+        )
+        assertTrue(
+            shouldRenderWithMarkdownDuringScrolling("请查看 [文档](https://example.com)。"),
+        )
+    }
 }

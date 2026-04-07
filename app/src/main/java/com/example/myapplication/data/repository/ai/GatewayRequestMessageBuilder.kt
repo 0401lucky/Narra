@@ -70,14 +70,16 @@ internal object GatewayRequestMessageBuilder {
         messages: List<ChatMessage>,
     ): String {
         val customPrompt = systemPrompt.trim()
+        val specialPlayPrompt = "\n\n${GatewaySpecialPlaySupport.defaultSpecialPlayPrompt}"
         return when (promptMode) {
-            PromptMode.ROLEPLAY -> customPrompt
-            PromptMode.CHAT -> {
-                val specialPlayPrompt = if (GatewaySpecialPlaySupport.shouldInjectSpecialPlayPrompt(messages)) {
-                    "\n\n${GatewaySpecialPlaySupport.defaultSpecialPlayPrompt}"
+            PromptMode.ROLEPLAY -> {
+                if (customPrompt.isBlank()) {
+                    GatewaySpecialPlaySupport.defaultSpecialPlayPrompt
                 } else {
-                    ""
+                    "$customPrompt$specialPlayPrompt"
                 }
+            }
+            PromptMode.CHAT -> {
                 if (customPrompt.isBlank()) {
                     "$defaultChatFormattingPrompt$specialPlayPrompt"
                 } else {

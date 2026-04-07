@@ -26,13 +26,15 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.spring
 import kotlinx.coroutines.delay
 
-private const val APP_NOTICE_DISPLAY_MILLIS = 1500L
-private const val APP_NOTICE_ANIMATION_MILLIS = 300
-private val AppNoticeHorizontalPadding = 16.dp
-private val AppNoticeVerticalPadding = 10.dp
-private val AppNoticeCornerRadius = 12.dp
+private const val APP_NOTICE_DISPLAY_MILLIS = 2000L
+private const val APP_NOTICE_ANIMATION_MILLIS = 350
+private val AppNoticeHorizontalPadding = 20.dp
+private val AppNoticeVerticalPadding = 12.dp
+private val AppNoticeCornerRadius = 24.dp
 private val AppNoticeTopMargin = 64.dp
 private val AppNoticeBottomMargin = 80.dp
 
@@ -72,7 +74,7 @@ private fun AnimatedAppSnackbarHost(
 ) {
     val currentData = hostState.currentSnackbarData
     val density = LocalDensity.current
-    val slideOffsetPx = with(density) { 20.dp.roundToPx() }
+    val slideOffsetPx = with(density) { 40.dp.roundToPx() }
     var renderedData by remember { mutableStateOf<androidx.compose.material3.SnackbarData?>(null) }
     var isVisible by remember { mutableStateOf(false) }
 
@@ -102,12 +104,12 @@ private fun AnimatedAppSnackbarHost(
         AnimatedVisibility(
             visible = renderedData != null && isVisible,
             enter = fadeIn(animationSpec = androidx.compose.animation.core.tween(APP_NOTICE_ANIMATION_MILLIS)) + slideInVertically(
-                animationSpec = androidx.compose.animation.core.tween(APP_NOTICE_ANIMATION_MILLIS),
-                initialOffsetY = { -slideOffsetPx },
+                animationSpec = spring(dampingRatio = 0.65f, stiffness = Spring.StiffnessMedium),
+                initialOffsetY = { if (alignment == Alignment.TopCenter) -slideOffsetPx else slideOffsetPx },
             ),
             exit = fadeOut(animationSpec = androidx.compose.animation.core.tween(APP_NOTICE_ANIMATION_MILLIS)) + slideOutVertically(
-                animationSpec = androidx.compose.animation.core.tween(APP_NOTICE_ANIMATION_MILLIS),
-                targetOffsetY = { -slideOffsetPx },
+                animationSpec = spring(dampingRatio = 0.8f, stiffness = Spring.StiffnessMediumLow),
+                targetOffsetY = { if (alignment == Alignment.TopCenter) -slideOffsetPx else slideOffsetPx },
             ),
             modifier = Modifier
                 .padding(top = if (alignment == Alignment.TopCenter) edgePadding else 0.dp)

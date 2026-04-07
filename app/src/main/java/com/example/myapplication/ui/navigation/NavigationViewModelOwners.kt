@@ -19,6 +19,7 @@ internal fun rememberRoleplayViewModel(
     appGraph: AppGraph,
     backStackEntry: NavBackStackEntry,
 ): RoleplayViewModel {
+    val context = LocalContext.current
     val parentEntry = remember(backStackEntry) {
         navController.getBackStackEntry(AppRoutes.ROLEPLAY_GRAPH)
     }
@@ -36,6 +37,9 @@ internal fun rememberRoleplayViewModel(
             conversationSummaryRepository = appGraph.conversationSummaryRepository,
             pendingMemoryProposalRepository = appGraph.pendingMemoryProposalRepository,
             memoryWriteService = appGraph.memoryWriteService,
+            imageSaver = { b64Data ->
+                ImageFileStorage.saveBase64Image(context, b64Data)
+            },
         ),
     )
 }

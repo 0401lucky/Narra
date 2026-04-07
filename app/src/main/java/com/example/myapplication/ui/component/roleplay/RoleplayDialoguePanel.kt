@@ -10,6 +10,7 @@ import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.combinedClickable
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -48,6 +49,8 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
 import androidx.compose.ui.input.nestedscroll.NestedScrollSource
 import androidx.compose.ui.input.nestedscroll.nestedScroll
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.SolidColor
@@ -70,6 +73,7 @@ import com.example.myapplication.model.RoleplayContentType
 import com.example.myapplication.model.RoleplayMessageUiModel
 import com.example.myapplication.model.RoleplaySpeaker
 import com.example.myapplication.model.RoleplaySuggestionUiModel
+import com.example.myapplication.R
 import com.example.myapplication.ui.component.TransferPlayCard
 
 private enum class RoleplayJumpIndicator {
@@ -99,6 +103,8 @@ fun RoleplayDialoguePanel(
     onSend: () -> Unit,
     modifier: Modifier = Modifier,
     onCancel: (() -> Unit)? = null,
+    lineHeightScale: Float = 1.0f,
+    onToggleTopBar: () -> Unit = {},
 ) {
     val colors = rememberImmersiveRoleplayColors(backdropState)
     val storyMessages = messages.filter { it.contentType != RoleplayContentType.SYSTEM }
@@ -179,10 +185,22 @@ fun RoleplayDialoguePanel(
         verticalArrangement = Arrangement.spacedBy(6.dp),
     ) {
         if (storyMessages.isEmpty()) {
-            EmptyDialogueState(
-                colors = colors,
-                modifier = Modifier.weight(1f, fill = true),
-            )
+            // 空白区域点击切换顶栏，避免手势实现停留在占位状态
+            Box(
+                modifier = Modifier
+                    .weight(1f, fill = true)
+                    .pointerInput(Unit) {
+                        detectTapGestures(
+                            onTap = { onToggleTopBar() },
+                            onDoubleTap = { onToggleTopBar() },
+                        )
+                    },
+            ) {
+                EmptyDialogueState(
+                    colors = colors,
+                    modifier = Modifier.matchParentSize(),
+                )
+            }
         } else {
             Box(
                 modifier = Modifier
@@ -203,6 +221,7 @@ fun RoleplayDialoguePanel(
                             onRetryTurn = onRetryTurn,
                             onEditUserMessage = onEditUserMessage,
                             onConfirmTransferReceipt = onConfirmTransferReceipt,
+                            lineHeightScale = lineHeightScale,
                         )
                     }
                 }
@@ -217,7 +236,7 @@ fun RoleplayDialoguePanel(
                         modifier = Modifier
                             .align(Alignment.TopEnd)
                             .padding(top = 8.dp, end = 6.dp)
-                            .size(42.dp),
+                            .size(RoleplayInteractiveIconButtonSize),
                         colors = IconButtonDefaults.iconButtonColors(
                             containerColor = colors.panelBackgroundStrong,
                             contentColor = colors.textPrimary,
@@ -225,7 +244,7 @@ fun RoleplayDialoguePanel(
                     ) {
                         Icon(
                             imageVector = Icons.Default.ArrowUpward,
-                            contentDescription = "回到顶部",
+                            contentDescription = stringResource(id = R.string.roleplay_jump_to_top),
                             modifier = Modifier.size(18.dp),
                         )
                     }
@@ -241,7 +260,7 @@ fun RoleplayDialoguePanel(
                         modifier = Modifier
                             .align(Alignment.BottomEnd)
                             .padding(end = 6.dp, bottom = 12.dp)
-                            .size(46.dp),
+                            .size(RoleplayInteractiveIconButtonSize),
                         colors = IconButtonDefaults.iconButtonColors(
                             containerColor = colors.characterAccent.copy(alpha = 0.88f),
                             contentColor = Color.Black.copy(alpha = 0.88f),
@@ -249,7 +268,7 @@ fun RoleplayDialoguePanel(
                     ) {
                         Icon(
                             imageVector = Icons.Default.ArrowDownward,
-                            contentDescription = "回到底部",
+                            contentDescription = stringResource(id = R.string.roleplay_jump_to_bottom),
                             modifier = Modifier.size(20.dp),
                         )
                     }

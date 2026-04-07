@@ -6,6 +6,12 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
+import com.example.myapplication.model.ChatSpecialPlayDraft
+import com.example.myapplication.model.ChatSpecialType
+import com.example.myapplication.model.GiftPlayDraft
+import com.example.myapplication.model.InvitePlayDraft
+import com.example.myapplication.model.TaskPlayDraft
+import com.example.myapplication.model.TransferPlayDraft
 
 internal data class ChatScreenLocalState(
     val showModelSheet: Boolean,
@@ -20,8 +26,16 @@ internal data class ChatScreenLocalState(
     val setShowPromptDebugSheet: (Boolean) -> Unit,
     val showSpecialPlaySheet: Boolean,
     val setShowSpecialPlaySheet: (Boolean) -> Unit,
-    val showTransferSheet: Boolean,
-    val setShowTransferSheet: (Boolean) -> Unit,
+    val activeSpecialPlayType: ChatSpecialType?,
+    val setActiveSpecialPlayType: (ChatSpecialType?) -> Unit,
+    val transferDraft: TransferPlayDraft,
+    val setTransferDraft: (TransferPlayDraft) -> Unit,
+    val inviteDraft: InvitePlayDraft,
+    val setInviteDraft: (InvitePlayDraft) -> Unit,
+    val giftDraft: GiftPlayDraft,
+    val setGiftDraft: (GiftPlayDraft) -> Unit,
+    val taskDraft: TaskPlayDraft,
+    val setTaskDraft: (TaskPlayDraft) -> Unit,
     val exportOptions: ConversationExportOptions,
     val setExportOptions: (ConversationExportOptions) -> Unit,
     val draftUserDisplayName: String,
@@ -30,20 +44,25 @@ internal data class ChatScreenLocalState(
     val setDraftUserAvatarUri: (String) -> Unit,
     val draftUserAvatarUrl: String,
     val setDraftUserAvatarUrl: (String) -> Unit,
-    val transferCounterparty: String,
-    val setTransferCounterparty: (String) -> Unit,
-    val transferAmount: String,
-    val setTransferAmount: (String) -> Unit,
-    val transferNote: String,
-    val setTransferNote: (String) -> Unit,
     val openProfileSheet: () -> Unit,
 ) {
-    val transferDraft: TransferPlayDraft
-        get() = TransferPlayDraft(
-            counterparty = transferCounterparty,
-            amount = transferAmount,
-            note = transferNote,
-        )
+    val activeSpecialPlayDraft: ChatSpecialPlayDraft?
+        get() = when (activeSpecialPlayType) {
+            ChatSpecialType.TRANSFER -> transferDraft
+            ChatSpecialType.INVITE -> inviteDraft
+            ChatSpecialType.GIFT -> giftDraft
+            ChatSpecialType.TASK -> taskDraft
+            null -> null
+        }
+
+    fun updateActiveSpecialPlayDraft(draft: ChatSpecialPlayDraft) {
+        when (draft) {
+            is TransferPlayDraft -> setTransferDraft(draft)
+            is InvitePlayDraft -> setInviteDraft(draft)
+            is GiftPlayDraft -> setGiftDraft(draft)
+            is TaskPlayDraft -> setTaskDraft(draft)
+        }
+    }
 }
 
 @Composable
@@ -58,11 +77,20 @@ internal fun rememberChatScreenLocalState(
     var showExportSheet by rememberSaveable { mutableStateOf(false) }
     var showPromptDebugSheet by rememberSaveable { mutableStateOf(false) }
     var showSpecialPlaySheet by rememberSaveable { mutableStateOf(false) }
-    var showTransferSheet by rememberSaveable { mutableStateOf(false) }
+    var activeSpecialPlayTypeName by rememberSaveable { mutableStateOf<String?>(null) }
+    var transferDraft by rememberSaveable(stateSaver = TransferPlayDraftSaver) {
+        mutableStateOf(TransferPlayDraft())
+    }
+    var inviteDraft by rememberSaveable(stateSaver = InvitePlayDraftSaver) {
+        mutableStateOf(InvitePlayDraft())
+    }
+    var giftDraft by rememberSaveable(stateSaver = GiftPlayDraftSaver) {
+        mutableStateOf(GiftPlayDraft())
+    }
+    var taskDraft by rememberSaveable(stateSaver = TaskPlayDraftSaver) {
+        mutableStateOf(TaskPlayDraft())
+    }
     var exportOptions by remember { mutableStateOf(ConversationExportOptions()) }
-    var transferCounterparty by rememberSaveable { mutableStateOf("") }
-    var transferAmount by rememberSaveable { mutableStateOf("") }
-    var transferNote by rememberSaveable { mutableStateOf("") }
     var draftUserDisplayName by rememberSaveable { mutableStateOf("") }
     var draftUserAvatarUri by rememberSaveable { mutableStateOf("") }
     var draftUserAvatarUrl by rememberSaveable { mutableStateOf("") }
@@ -80,8 +108,16 @@ internal fun rememberChatScreenLocalState(
         setShowPromptDebugSheet = { showPromptDebugSheet = it },
         showSpecialPlaySheet = showSpecialPlaySheet,
         setShowSpecialPlaySheet = { showSpecialPlaySheet = it },
-        showTransferSheet = showTransferSheet,
-        setShowTransferSheet = { showTransferSheet = it },
+        activeSpecialPlayType = activeSpecialPlayTypeName?.let(ChatSpecialType::valueOf),
+        setActiveSpecialPlayType = { activeSpecialPlayTypeName = it?.name },
+        transferDraft = transferDraft,
+        setTransferDraft = { transferDraft = it },
+        inviteDraft = inviteDraft,
+        setInviteDraft = { inviteDraft = it },
+        giftDraft = giftDraft,
+        setGiftDraft = { giftDraft = it },
+        taskDraft = taskDraft,
+        setTaskDraft = { taskDraft = it },
         exportOptions = exportOptions,
         setExportOptions = { exportOptions = it },
         draftUserDisplayName = draftUserDisplayName,
@@ -90,12 +126,6 @@ internal fun rememberChatScreenLocalState(
         setDraftUserAvatarUri = { draftUserAvatarUri = it },
         draftUserAvatarUrl = draftUserAvatarUrl,
         setDraftUserAvatarUrl = { draftUserAvatarUrl = it },
-        transferCounterparty = transferCounterparty,
-        setTransferCounterparty = { transferCounterparty = it },
-        transferAmount = transferAmount,
-        setTransferAmount = { transferAmount = it },
-        transferNote = transferNote,
-        setTransferNote = { transferNote = it },
         openProfileSheet = {
             draftUserDisplayName = userDisplayName
             draftUserAvatarUri = userAvatarUri

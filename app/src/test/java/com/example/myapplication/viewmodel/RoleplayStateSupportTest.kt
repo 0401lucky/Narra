@@ -3,6 +3,7 @@ package com.example.myapplication.viewmodel
 import com.example.myapplication.data.repository.roleplay.RoleplaySessionStartResult
 import com.example.myapplication.model.AppSettings
 import com.example.myapplication.model.Assistant
+import com.example.myapplication.model.ContextGovernanceSnapshot
 import com.example.myapplication.model.RoleplayContextStatus
 import com.example.myapplication.model.RoleplayScenario
 import com.example.myapplication.model.RoleplaySession
@@ -38,11 +39,13 @@ class RoleplayStateSupportTest {
                     memoryInjectionCount = 3,
                     isContinuingSession = true,
                 ),
+                contextGovernance = ContextGovernanceSnapshot(summaryCoveredMessageCount = 8),
             ),
             session = null,
         )
 
         assertEquals(RoleplayContextStatus(), updated.contextStatus)
+        assertEquals(null, updated.contextGovernance)
     }
 
     @Test
@@ -192,6 +195,7 @@ class RoleplayStateSupportTest {
                     ),
                 ),
                 latestPromptDebugDump = "old",
+                contextGovernance = ContextGovernanceSnapshot(summaryCoveredMessageCount = 5),
                 showAssistantMismatchDialog = true,
                 previousAssistantName = "旧角色",
                 currentAssistantName = "新角色",
@@ -200,6 +204,7 @@ class RoleplayStateSupportTest {
 
         assertTrue(updated.suggestions.isEmpty())
         assertEquals("", updated.latestPromptDebugDump)
+        assertEquals(null, updated.contextGovernance)
         assertEquals("已重开剧情", updated.noticeMessage)
         assertFalse(updated.showAssistantMismatchDialog)
     }
@@ -230,6 +235,7 @@ class RoleplayStateSupportTest {
                 ),
                 isGeneratingSuggestions = true,
                 latestPromptDebugDump = "old",
+                contextGovernance = ContextGovernanceSnapshot(summaryCoveredMessageCount = 2),
                 streamingContent = "streaming",
             ),
             restoredInput = "恢复输入",
@@ -240,18 +246,21 @@ class RoleplayStateSupportTest {
         assertTrue(updated.suggestions.isEmpty())
         assertFalse(updated.isGeneratingSuggestions)
         assertEquals("", updated.latestPromptDebugDump)
+        assertEquals(null, updated.contextGovernance)
         assertEquals("", updated.streamingContent)
         assertEquals(123L, updated.inputFocusToken)
     }
 
     @Test
     fun applyPromptContext_updatesCountsAndDebugDump() {
+        val snapshot = ContextGovernanceSnapshot(summaryCoveredMessageCount = 4)
         val updated = RoleplayStateSupport.applyPromptContext(
             current = RoleplayUiState(),
             summaryCoveredMessageCount = 4,
             worldBookHitCount = 2,
             memoryInjectionCount = 3,
             debugDump = "debug-dump",
+            contextGovernance = snapshot,
         )
 
         assertTrue(updated.contextStatus.hasSummary)
@@ -259,5 +268,6 @@ class RoleplayStateSupportTest {
         assertEquals(2, updated.contextStatus.worldBookHitCount)
         assertEquals(3, updated.contextStatus.memoryInjectionCount)
         assertEquals("debug-dump", updated.latestPromptDebugDump)
+        assertEquals(snapshot, updated.contextGovernance)
     }
 }

@@ -10,15 +10,19 @@ import com.example.myapplication.conversation.ChatConversationSupport
 import com.example.myapplication.conversation.ChatPromptAssemblyInput
 import com.example.myapplication.conversation.ChatSuggestionCoordinator
 import com.example.myapplication.conversation.ConversationAssistantRoundTripRunner
+import com.example.myapplication.conversation.ContextGovernanceSupport
 import com.example.myapplication.conversation.ConversationMemoryExtractionCoordinator
 import com.example.myapplication.conversation.ConversationMessageTransforms
 import com.example.myapplication.conversation.ConversationSummaryCoordinator
 import com.example.myapplication.conversation.ConversationSummaryDebugSupport
 import com.example.myapplication.conversation.ConversationTitleCoordinator
 import com.example.myapplication.conversation.ConversationTransferCoordinator
+import com.example.myapplication.conversation.GiftImageGenerationCoordinator
+import com.example.myapplication.conversation.GiftImageGenerationRequest
 import com.example.myapplication.conversation.RoundTripInitialPersistence
 import com.example.myapplication.conversation.StreamingReplyBuffer
 import com.example.myapplication.conversation.SummaryGenerationConfig
+import com.example.myapplication.conversation.SummaryUpdateResult
 import com.example.myapplication.conversation.StreamedAssistantPayload
 import com.example.myapplication.conversation.persistInitialRoundTripState
 import com.example.myapplication.context.PromptContextAssembler
@@ -34,8 +38,9 @@ import com.example.myapplication.model.AppSettings
 import com.example.myapplication.model.Assistant
 import com.example.myapplication.model.ChatMessage
 import com.example.myapplication.model.ChatMessagePart
-import com.example.myapplication.model.ChatStreamEvent
+import com.example.myapplication.model.ChatSpecialPlayDraft
 import com.example.myapplication.model.Conversation
+import com.example.myapplication.model.ContextGovernanceSnapshot
 import com.example.myapplication.model.DEFAULT_ASSISTANT_ID
 import com.example.myapplication.model.DEFAULT_CONVERSATION_TITLE
 import com.example.myapplication.model.GatewayToolingOptions
@@ -44,15 +49,15 @@ import com.example.myapplication.model.MemoryScopeType
 import com.example.myapplication.model.MessageStatus
 import com.example.myapplication.model.ProviderFunction
 import com.example.myapplication.model.PromptMode
+import com.example.myapplication.model.isGiftPart
 import com.example.myapplication.model.isTransferPart
 import com.example.myapplication.model.normalizeChatMessageParts
+import com.example.myapplication.model.specialMetadataValue
 import com.example.myapplication.model.toContentMirror
+import com.example.myapplication.model.withGiftImageGenerating
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.Job
-import kotlinx.coroutines.cancelAndJoin
-import kotlinx.coroutines.coroutineScope
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -90,6 +95,7 @@ data class ChatUiState(
     val hasConversationSummary: Boolean = false,
     val summaryCoveredMessageCount: Int = 0,
     val latestPromptDebugDump: String = "",
+    val contextGovernance: ContextGovernanceSnapshot? = null,
     val translation: TranslationUiState = TranslationUiState(),
 )
 
@@ -159,6 +165,12 @@ class ChatViewModel(
         nowProvider = nowProvider,
     )
     private val imageGenerationSupport = ChatImageGenerationSupport(imageSaver)
+    private val giftImageCoordinator = GiftImageGenerationCoordinator(
+        aiPromptExtrasService = aiPromptExtrasService,
+        aiGateway = aiGateway,
+        conversationRepository = conversationRepository,
+        imageSaver = imageSaver,
+    )
 
     init {
         observeSettings()
@@ -383,18 +395,12 @@ class ChatViewModel(
         }
     }
 
-    fun sendTransferPlay(
-        counterparty: String,
-        amount: String,
-        note: String,
-    ) {
+    fun sendSpecialPlay(draft: ChatSpecialPlayDraft) {
         val state = _uiState.value
         when (
-            val resolution = ChatOutgoingMessageSupport.resolveTransferPlay(
+            val resolution = ChatOutgoingMessageSupport.resolveSpecialPlay(
                 state = state,
-                counterparty = counterparty,
-                amount = amount,
-                note = note,
+                draft = draft,
             )
         ) {
             is ChatOutgoingMessageResolution.Error -> {
@@ -416,6 +422,20 @@ class ChatViewModel(
                 )
             }
         }
+    }
+
+    fun sendTransferPlay(
+        counterparty: String,
+        amount: String,
+        note: String,
+    ) {
+        sendSpecialPlay(
+            com.example.myapplication.model.TransferPlayDraft(
+                counterparty = counterparty,
+                amount = amount,
+                note = note,
+            ),
+        )
     }
 
     fun confirmTransferReceipt(specialId: String) {
@@ -524,6 +544,34 @@ class ChatViewModel(
         }
     }
 
+    fun refreshConversationSummary() {
+        val state = _uiState.value
+        val conversationId = state.currentConversationId.takeIf { it.isNotBlank() } ?: return
+        val assistant = state.currentAssistant ?: state.settings.activeAssistant()
+        viewModelScope.launch {
+            val result = runCatching {
+                updateConversationSummary(
+                    conversationId = conversationId,
+                    messages = state.messages,
+                    settings = state.settings,
+                    assistant = assistant,
+                    forceRefresh = true,
+                )
+            }.getOrDefault(SummaryUpdateResult())
+            if (result.updated && _uiState.value.currentConversationId == conversationId) {
+                rebuildContextGovernanceSnapshot(
+                    conversationId = conversationId,
+                    messages = state.messages,
+                    settings = state.settings,
+                    assistant = assistant,
+                )
+                _uiState.update { current ->
+                    ChatStateSupport.applyNoticeMessage(current, "上下文摘要已刷新")
+                }
+            }
+        }
+    }
+
     fun toggleConversationSearch() {
         val state = _uiState.value
         val conversationId = state.currentConversationId
@@ -596,31 +644,39 @@ class ChatViewModel(
         val state = _uiState.value
         val activeProvider = state.settings.activeProvider()
         val translationModel = activeProvider?.resolveFunctionModel(ProviderFunction.TRANSLATION)
-            ?: activeProvider?.selectedModel
-            ?: state.settings.selectedModel
-
-        _uiState.update { current ->
-            ChatStateSupport.beginTranslation(
-                current = current,
-                sourceText = sourceText,
-                sourceLabel = sourceLabel,
-                modelName = translationModel,
-            )
+            .orEmpty()
+        if (translationModel.isBlank()) {
+            _uiState.update { current ->
+                ChatStateSupport.applyErrorMessage(current, "请先在模型页开启翻译模型")
+            }
+            return
         }
 
-        viewModelScope.launch {
-            runCatching {
-                aiTranslationService.translateText(sourceText)
-            }.onSuccess { translatedText ->
+        ChatTranslationSupport.startTranslation(
+            scope = viewModelScope,
+            translationService = aiTranslationService,
+            sourceText = sourceText,
+            onStart = {
+                _uiState.update { current ->
+                    ChatStateSupport.beginTranslation(
+                        current = current,
+                        sourceText = sourceText,
+                        sourceLabel = sourceLabel,
+                        modelName = translationModel,
+                    )
+                }
+            },
+            onSuccess = { translatedText ->
                 _uiState.update { current ->
                     ChatStateSupport.completeTranslation(current, translatedText)
                 }
-            }.onFailure { throwable ->
+            },
+            onFailure = { message ->
                 _uiState.update { current ->
-                    ChatStateSupport.failTranslation(current, throwable.message ?: "翻译失败")
+                    ChatStateSupport.failTranslation(current, message)
                 }
-            }
-        }
+            },
+        )
     }
 
     private fun validateAndGetConversationId(state: ChatUiState): String? {
@@ -703,6 +759,7 @@ class ChatViewModel(
         initialPersistence: RoundTripInitialPersistence,
         buildFinalMessages: (ChatMessage) -> List<ChatMessage>,
         promptAssemblyInput: ChatPromptAssemblyInput,
+        giftImageRequest: GiftImageGenerationRequest? = null,
     ) {
         sendingJob = viewModelScope.launch {
             val streamBuffer = StreamingReplyBuffer()
@@ -713,6 +770,9 @@ class ChatViewModel(
                     selectedModel = selectedModel,
                     persistence = initialPersistence,
                 )
+                giftImageRequest?.let { request ->
+                    launchGiftImageGeneration(request)
+                }
                 val promptContext = promptContextAssembler.assemble(
                     settings = promptAssemblyInput.settings,
                     assistant = promptAssemblyInput.assistant,
@@ -721,23 +781,47 @@ class ChatViewModel(
                     recentMessages = promptAssemblyInput.recentMessages,
                     promptMode = PromptMode.CHAT,
                 )
-                _uiState.update { current ->
-                    ChatStateSupport.applyPromptDebugDump(
-                        current = current,
-                        conversationId = conversationId,
-                        debugDump = ConversationSummaryDebugSupport.appendStatusLine(
-                            debugDump = promptContext.debugDump,
-                            hasSummary = promptContext.summaryCoveredMessageCount > 0,
-                            coveredMessageCount = promptContext.summaryCoveredMessageCount,
-                            completedMessageCount = promptAssemblyInput.recentMessages.count { it.status == MessageStatus.COMPLETED },
-                            triggerMessageCount = SUMMARY_TRIGGER_MESSAGE_COUNT,
-                        ),
-                    )
-                }
                 val effectiveRequestMessages = resolveRequestMessagesForRoundTrip(
                     promptAssemblyInput = promptAssemblyInput,
                     requestMessages = requestMessages,
                 )
+                val toolingOptions = GatewayToolingOptions.chat(
+                    searchEnabled = promptAssemblyInput.conversation.searchEnabled,
+                    runtimeContext = ChatConversationSupport.buildToolRuntimeContext(
+                        promptAssemblyInput = promptAssemblyInput,
+                        promptMode = PromptMode.CHAT,
+                    ),
+                )
+                val completedMessageCount = requestMessages.count { it.status == MessageStatus.COMPLETED }
+                val debugDump = ConversationSummaryDebugSupport.appendStatusLine(
+                    debugDump = promptContext.debugDump,
+                    hasSummary = promptContext.summaryCoveredMessageCount > 0,
+                    coveredMessageCount = promptContext.summaryCoveredMessageCount,
+                    completedMessageCount = completedMessageCount,
+                    triggerMessageCount = SUMMARY_TRIGGER_MESSAGE_COUNT,
+                )
+                _uiState.update { current ->
+                    ChatStateSupport.applyContextGovernance(
+                        current = current,
+                        conversationId = conversationId,
+                        snapshot = ContextGovernanceSupport.buildSnapshot(
+                            settings = promptAssemblyInput.settings,
+                            assistant = promptAssemblyInput.assistant,
+                            promptMode = PromptMode.CHAT,
+                            selectedModel = selectedModel,
+                            requestMessages = requestMessages,
+                            effectiveRequestMessages = effectiveRequestMessages,
+                            promptContext = promptContext,
+                            completedMessageCount = completedMessageCount,
+                            triggerMessageCount = SUMMARY_TRIGGER_MESSAGE_COUNT,
+                            recentWindow = resolveSummaryRecentWindow(promptAssemblyInput.assistant),
+                            minCoveredMessageCount = SUMMARY_MIN_COVERED_MESSAGE_COUNT,
+                            toolingOptions = toolingOptions,
+                            rawDebugDump = debugDump,
+                        ),
+                        debugDump = debugDump,
+                    )
+                }
                 when (
                     val result = assistantRoundTripRunner.execute(
                         AssistantRoundTripRequest(
@@ -754,13 +838,7 @@ class ChatViewModel(
                                     requestMessages = messages,
                                     streamBuffer = streamBuffer,
                                     systemPrompt = systemPrompt,
-                                    toolingOptions = GatewayToolingOptions.chat(
-                                        searchEnabled = promptAssemblyInput.conversation.searchEnabled,
-                                        runtimeContext = ChatConversationSupport.buildToolRuntimeContext(
-                                            promptAssemblyInput = promptAssemblyInput,
-                                            promptMode = PromptMode.CHAT,
-                                        ),
-                                    ),
+                                    toolingOptions = toolingOptions,
                                 )
                             },
                             currentPayload = {
@@ -1142,40 +1220,24 @@ class ChatViewModel(
         conversationId: String,
         messages: List<ChatMessage>,
     ) {
-        val completedMessages = messages.filter { it.status == MessageStatus.COMPLETED }
         val state = _uiState.value
+        val assistant = state.currentAssistant ?: state.settings.activeAssistant()
         viewModelScope.launch {
-            val updated = runCatching {
-                summaryCoordinator.updateConversationSummary(
+            val result = runCatching {
+                updateConversationSummary(
                     conversationId = conversationId,
-                    assistantId = currentAssistantId.value,
-                    completedMessages = completedMessages,
+                    messages = messages,
                     settings = state.settings,
-                    config = SummaryGenerationConfig(
-                        triggerMessageCount = SUMMARY_TRIGGER_MESSAGE_COUNT,
-                        recentMessageWindow = SUMMARY_RECENT_MESSAGE_WINDOW,
-                        minCoveredMessageCount = SUMMARY_MIN_COVERED_MESSAGE_COUNT,
-                    ),
-                    buildSummaryInput = { messages ->
-                        ChatConversationSupport.buildConversationExcerpt(
-                            messages = messages,
-                            maxLength = MAX_SUMMARY_INPUT_LENGTH,
-                            perMessageLimit = 200,
-                        )
-                    },
-                    generateSummary = { conversationText, baseUrl, apiKey, modelId, apiProtocol ->
-                        aiPromptExtrasService.generateConversationSummary(
-                            conversationText = conversationText,
-                            baseUrl = baseUrl,
-                            apiKey = apiKey,
-                            modelId = modelId,
-                            apiProtocol = apiProtocol,
-                            provider = state.settings.activeProvider(),
-                        )
-                    },
+                    assistant = assistant,
                 )
-            }.getOrDefault(false)
-            if (updated && _uiState.value.currentConversationId == conversationId) {
+            }.getOrDefault(SummaryUpdateResult())
+            if (result.updated && _uiState.value.currentConversationId == conversationId) {
+                rebuildContextGovernanceSnapshot(
+                    conversationId = conversationId,
+                    messages = messages,
+                    settings = state.settings,
+                    assistant = assistant,
+                )
                 _uiState.update { current ->
                     ChatStateSupport.applyNoticeMessage(current, "上下文摘要已更新")
                 }
@@ -1214,14 +1276,136 @@ class ChatViewModel(
         requestMessages: List<ChatMessage>,
     ): List<ChatMessage> {
         val summary = conversationSummaryRepository.getSummary(promptAssemblyInput.conversation.id)
-        val recentWindow = promptAssemblyInput.assistant?.contextMessageSize
-            ?.takeIf { it > 0 }
-            ?: SUMMARY_RECENT_MESSAGE_WINDOW
         return ConversationMessageTransforms.trimRequestMessagesWithSummary(
             requestMessages = requestMessages,
-            recentWindow = recentWindow,
-            hasSummary = summary?.summary?.isBlank() == false,
+            completedMessageCount = requestMessages.count { it.status == MessageStatus.COMPLETED },
+            summaryCoveredMessageCount = summary
+                ?.takeIf { it.summary.isNotBlank() }
+                ?.coveredMessageCount
+                ?: 0,
+            recentWindow = resolveSummaryRecentWindow(promptAssemblyInput.assistant),
         )
+    }
+
+    private suspend fun updateConversationSummary(
+        conversationId: String,
+        messages: List<ChatMessage>,
+        settings: AppSettings,
+        assistant: Assistant?,
+        forceRefresh: Boolean = false,
+    ): SummaryUpdateResult {
+        val completedMessages = messages.filter { it.status == MessageStatus.COMPLETED }
+        return summaryCoordinator.updateConversationSummary(
+            conversationId = conversationId,
+            assistantId = assistant?.id.orEmpty().ifBlank { currentAssistantId.value },
+            completedMessages = completedMessages,
+            settings = settings,
+            config = SummaryGenerationConfig(
+                triggerMessageCount = SUMMARY_TRIGGER_MESSAGE_COUNT,
+                recentMessageWindow = resolveSummaryRecentWindow(assistant),
+                minCoveredMessageCount = SUMMARY_MIN_COVERED_MESSAGE_COUNT,
+            ),
+            forceRefresh = forceRefresh,
+            buildSummaryInput = { summaryMessages ->
+                ChatConversationSupport.buildConversationExcerpt(
+                    messages = summaryMessages,
+                    maxLength = MAX_SUMMARY_INPUT_LENGTH,
+                    perMessageLimit = 200,
+                )
+            },
+            generateSummary = { conversationText, baseUrl, apiKey, modelId, apiProtocol ->
+                aiPromptExtrasService.generateConversationSummary(
+                    conversationText = conversationText,
+                    baseUrl = baseUrl,
+                    apiKey = apiKey,
+                    modelId = modelId,
+                    apiProtocol = apiProtocol,
+                    provider = settings.activeProvider(),
+                )
+            },
+        )
+    }
+
+    private fun resolveSummaryRecentWindow(
+        assistant: Assistant?,
+    ): Int {
+        return assistant?.contextMessageSize
+            ?.takeIf { it > 0 }
+            ?: SUMMARY_RECENT_MESSAGE_WINDOW
+    }
+
+    private suspend fun rebuildContextGovernanceSnapshot(
+        conversationId: String,
+        messages: List<ChatMessage>,
+        settings: AppSettings,
+        assistant: Assistant?,
+    ) {
+        val current = _uiState.value
+        if (current.currentConversationId != conversationId) {
+            return
+        }
+        val requestMessages = messages.filter { it.status == MessageStatus.COMPLETED }
+        val promptAssemblyInput = ChatConversationSupport.buildPromptAssemblyInput(
+            settings = settings,
+            currentAssistant = assistant,
+            currentConversations = current.conversations,
+            fallbackAssistantId = assistant?.id
+                ?.takeIf { it.isNotBlank() }
+                ?: currentAssistantId.value,
+            conversationId = conversationId,
+            requestMessages = requestMessages,
+            nowProvider = nowProvider,
+        )
+        val promptContext = promptContextAssembler.assemble(
+            settings = promptAssemblyInput.settings,
+            assistant = promptAssemblyInput.assistant,
+            conversation = promptAssemblyInput.conversation,
+            userInputText = promptAssemblyInput.userInputText,
+            recentMessages = promptAssemblyInput.recentMessages,
+            promptMode = PromptMode.CHAT,
+        )
+        val effectiveRequestMessages = resolveRequestMessagesForRoundTrip(
+            promptAssemblyInput = promptAssemblyInput,
+            requestMessages = requestMessages,
+        )
+        val selectedModel = ChatConversationSupport.resolveSelectedModelId(settings)
+        val toolingOptions = GatewayToolingOptions.chat(
+            searchEnabled = promptAssemblyInput.conversation.searchEnabled,
+            runtimeContext = ChatConversationSupport.buildToolRuntimeContext(
+                promptAssemblyInput = promptAssemblyInput,
+                promptMode = PromptMode.CHAT,
+            ),
+        )
+        val completedMessageCount = requestMessages.size
+        val debugDump = ConversationSummaryDebugSupport.appendStatusLine(
+            debugDump = promptContext.debugDump,
+            hasSummary = promptContext.summaryCoveredMessageCount > 0,
+            coveredMessageCount = promptContext.summaryCoveredMessageCount,
+            completedMessageCount = completedMessageCount,
+            triggerMessageCount = SUMMARY_TRIGGER_MESSAGE_COUNT,
+        )
+        _uiState.update { currentState ->
+            ChatStateSupport.applyContextGovernance(
+                current = currentState,
+                conversationId = conversationId,
+                snapshot = ContextGovernanceSupport.buildSnapshot(
+                    settings = settings,
+                    assistant = assistant,
+                    promptMode = PromptMode.CHAT,
+                    selectedModel = selectedModel,
+                    requestMessages = requestMessages,
+                    effectiveRequestMessages = effectiveRequestMessages,
+                    promptContext = promptContext,
+                    completedMessageCount = completedMessageCount,
+                    triggerMessageCount = SUMMARY_TRIGGER_MESSAGE_COUNT,
+                    recentWindow = resolveSummaryRecentWindow(assistant),
+                    minCoveredMessageCount = SUMMARY_MIN_COVERED_MESSAGE_COUNT,
+                    toolingOptions = toolingOptions,
+                    rawDebugDump = debugDump,
+                ),
+                debugDump = debugDump,
+            )
+        }
     }
 
     private suspend fun streamAssistantReply(
@@ -1231,66 +1415,25 @@ class ChatViewModel(
         streamBuffer: StreamingReplyBuffer,
         systemPrompt: String = "",
         toolingOptions: GatewayToolingOptions = GatewayToolingOptions(),
-    ) = coroutineScope {
-        var streamCompleted = false
-        val uiPumpJob = launch {
-            while (true) {
-                val advanced = advanceStreamingFrame(
-                    streamBuffer = streamBuffer,
-                    streamCompleted = streamCompleted,
-                )
-                if (advanced) {
-                    publishStreamingFrame(
-                        conversationId = conversationId,
-                        loadingMessageId = loadingMessageId,
-                        content = streamBuffer.visibleContent(),
-                        reasoning = streamBuffer.visibleReasoning(),
-                        parts = streamBuffer.visibleParts(),
-                    )
-                }
-                if (streamCompleted && !streamBuffer.hasPending()) {
-                    break
-                }
-                delay(STREAM_FRAME_DELAY_MILLIS)
-            }
-            publishStreamingFrame(
-                conversationId = conversationId,
-                loadingMessageId = loadingMessageId,
-                content = streamBuffer.content(),
-                reasoning = streamBuffer.reasoning(),
-                parts = streamBuffer.parts(),
-            )
-        }
-
-        try {
-            aiGateway.sendMessageStream(
+    ) {
+        ChatStreamingSupport.collectStreamingReply(
+            streamBuffer = streamBuffer,
+            streamEvents = aiGateway.sendMessageStream(
                 messages = requestMessages,
                 systemPrompt = systemPrompt,
                 promptMode = PromptMode.CHAT,
                 toolingOptions = toolingOptions,
-            ).collect { event ->
-                when (event) {
-                    is ChatStreamEvent.ContentDelta -> streamBuffer.appendContent(event.value)
-                    is ChatStreamEvent.ImageDelta -> streamBuffer.appendImage(event.part)
-                    is ChatStreamEvent.ReasoningDelta -> streamBuffer.appendReasoning(event.value)
-                    is ChatStreamEvent.Citations -> streamBuffer.setCitations(event.items)
-                    ChatStreamEvent.Completed -> streamCompleted = true
-                }
-            }
-            streamCompleted = true
-            uiPumpJob.join()
-        } catch (throwable: Throwable) {
-            streamCompleted = true
-            uiPumpJob.cancelAndJoin()
-            throw throwable
-        }
-    }
-
-    private fun advanceStreamingFrame(
-        streamBuffer: StreamingReplyBuffer,
-        streamCompleted: Boolean,
-    ): Boolean {
-        return streamBuffer.advanceFrame(streamCompleted)
+            ),
+            publishFrame = { content, reasoning, parts ->
+                publishStreamingFrame(
+                    conversationId = conversationId,
+                    loadingMessageId = loadingMessageId,
+                    content = content,
+                    reasoning = reasoning,
+                    parts = parts,
+                )
+            },
+        )
     }
 
     private fun publishStreamingFrame(
@@ -1323,14 +1466,61 @@ class ChatViewModel(
         val conversationId = validateAndGetConversationId(state) ?: return
         val selectedModel = ChatConversationSupport.resolveSelectedModelId(state.settings)
         val baseMessages = ChatConversationSupport.currentConversationMessages(state.messages, conversationId)
+        val activeProvider = state.settings.activeProvider()
+        val originalGiftPart = normalizeChatMessageParts(userParts).firstOrNull { it.isGiftPart() }
+        val giftImageModelId = activeProvider
+            ?.resolveFunctionModel(ProviderFunction.GIFT_IMAGE)
+            .orEmpty()
+            .trim()
+        val shouldGenerateGiftImage = originalGiftPart != null &&
+            activeProvider != null &&
+            giftImageModelId.isNotBlank()
+        val resolvedUserParts = if (shouldGenerateGiftImage) {
+            userParts.map { part ->
+                if (part.specialId == originalGiftPart?.specialId) {
+                    part.withGiftImageGenerating()
+                } else {
+                    part
+                }
+            }
+        } else {
+            userParts
+        }
         val preparedRoundTrip = ChatConversationSupport.prepareOutgoingRoundTrip(
             baseMessages = baseMessages,
             conversationId = conversationId,
-            userParts = userParts,
+            userParts = resolvedUserParts,
             selectedModel = selectedModel,
             nowProvider = nowProvider,
             messageIdProvider = messageIdProvider,
         )
+        val giftImageRequest = if (shouldGenerateGiftImage) {
+            val giftPart = normalizeChatMessageParts(resolvedUserParts).firstOrNull { it.isGiftPart() }
+            if (giftPart == null) {
+                null
+            } else {
+                GiftImageGenerationRequest(
+                    conversationId = conversationId,
+                    selectedModel = selectedModel,
+                    provider = activeProvider,
+                    specialId = giftPart.specialId,
+                    giftName = giftPart.specialMetadataValue("item"),
+                    recipientName = giftPart.specialMetadataValue("target"),
+                    userName = state.settings.resolvedUserDisplayName(),
+                    assistantName = state.currentAssistant?.name
+                        ?.trim()
+                        .orEmpty()
+                        .ifBlank { state.settings.activeAssistant()?.name.orEmpty() },
+                    contextExcerpt = ChatConversationSupport.buildConversationExcerpt(
+                        messages = preparedRoundTrip.requestMessages.takeLast(6),
+                        maxLength = 600,
+                        perMessageLimit = 120,
+                    ),
+                )
+            }
+        } else {
+            null
+        }
 
         _uiState.update { current ->
             ChatViewModelUiUpdates.beginRoundTrip(
@@ -1339,7 +1529,13 @@ class ChatViewModel(
                 loadingMessageId = preparedRoundTrip.loadingMessage.id,
                 nextInput = nextInput,
                 nextPendingParts = nextPendingParts,
-            )
+            ).let { updated ->
+                if (originalGiftPart != null && !shouldGenerateGiftImage) {
+                    updated.copy(noticeMessage = "未配置礼物生图模型，已按普通礼物卡发送")
+                } else {
+                    updated
+                }
+            }
         }
 
         if (!forceChatRoundTrip && ChatConversationSupport.supportsImageGeneration(state.settings, selectedModel)) {
@@ -1378,12 +1574,27 @@ class ChatViewModel(
                     requestMessages = preparedRoundTrip.requestMessages,
                     nowProvider = nowProvider,
                 ),
+                giftImageRequest = giftImageRequest,
             )
         }
     }
 
+    private fun launchGiftImageGeneration(
+        request: GiftImageGenerationRequest,
+    ) {
+        viewModelScope.launch {
+            val updatedMessages = giftImageCoordinator.generate(request) ?: return@launch
+            _uiState.update { current ->
+                if (current.currentConversationId != request.conversationId) {
+                    current
+                } else {
+                    current.copy(messages = updatedMessages)
+                }
+            }
+        }
+    }
+
     companion object {
-        private const val STREAM_FRAME_DELAY_MILLIS = 32L
         private const val SUMMARY_TRIGGER_MESSAGE_COUNT = 20
         private const val SUMMARY_MIN_COVERED_MESSAGE_COUNT = 8
         private const val SUMMARY_RECENT_MESSAGE_WINDOW = 12

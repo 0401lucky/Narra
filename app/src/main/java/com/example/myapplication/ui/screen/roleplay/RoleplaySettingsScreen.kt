@@ -15,10 +15,13 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import com.example.myapplication.model.AppSettings
 import com.example.myapplication.model.Assistant
+import com.example.myapplication.model.ContextGovernanceSnapshot
 import com.example.myapplication.model.MemoryProposalHistoryItem
 import com.example.myapplication.model.ProviderSettings
 import com.example.myapplication.model.RoleplayContextStatus
 import com.example.myapplication.model.RoleplayScenario
+import com.example.myapplication.ui.component.rememberSystemHighTextContrastEnabled
+import com.example.myapplication.ui.component.ContextGovernanceSheet
 import com.example.myapplication.ui.component.roleplay.RoleplaySceneBackground
 import com.example.myapplication.ui.component.roleplay.rememberImmersiveBackdropState
 import com.example.myapplication.ui.screen.settings.SettingsTopBar
@@ -37,20 +40,30 @@ fun RoleplaySettingsScreen(
     loadingProviderId: String,
     isSavingModel: Boolean,
     latestPromptDebugDump: String,
+    contextGovernance: ContextGovernanceSnapshot?,
     recentMemoryProposalHistory: List<MemoryProposalHistoryItem>,
     onOpenReadingMode: () -> Unit,
     onUpdateShowRoleplayPresenceStrip: (Boolean) -> Unit,
     onUpdateShowRoleplayStatusStrip: (Boolean) -> Unit,
     onUpdateShowRoleplayAiHelper: (Boolean) -> Unit,
     onUpdateRoleplayLongformTargetChars: (Int) -> Unit,
+    onUpdateRoleplayImmersiveMode: (com.example.myapplication.model.RoleplayImmersiveMode) -> Unit,
+    onUpdateRoleplayHighContrast: (Boolean) -> Unit,
+    onUpdateRoleplayLineHeightScale: (com.example.myapplication.model.RoleplayLineHeightScale) -> Unit,
     onSelectProvider: (String) -> Unit,
     onSelectModel: (String, String) -> Unit,
     onOpenProviderDetail: (String) -> Unit,
+    onRefreshConversationSummary: () -> Unit,
     onRestartSession: () -> Unit,
     onResetSession: () -> Unit,
     onNavigateBack: () -> Unit,
 ) {
-    val backdropState = rememberImmersiveBackdropState(scenario?.backgroundUri.orEmpty())
+    val systemHighContrastEnabled = rememberSystemHighTextContrastEnabled()
+    val effectiveHighContrast = settings.roleplayHighContrast || systemHighContrastEnabled
+    val backdropState = rememberImmersiveBackdropState(
+        backgroundUri = scenario?.backgroundUri.orEmpty(),
+        highContrast = effectiveHighContrast,
+    )
     var showModelSheet by rememberSaveable { mutableStateOf(false) }
     var showPromptDebugSheet by rememberSaveable { mutableStateOf(false) }
     var showConfirmResetDialog by rememberSaveable { mutableStateOf(false) }
@@ -87,6 +100,7 @@ fun RoleplaySettingsScreen(
                     currentModel = currentModel,
                     backdropState = backdropState,
                     latestPromptDebugDump = latestPromptDebugDump,
+                    contextGovernance = contextGovernance,
                     recentMemoryProposalHistory = recentMemoryProposalHistory,
                     longformCharsText = longformCharsText,
                     onLongformCharsTextChange = { raw ->
@@ -102,6 +116,10 @@ fun RoleplaySettingsScreen(
                     onUpdateShowRoleplayPresenceStrip = onUpdateShowRoleplayPresenceStrip,
                     onUpdateShowRoleplayStatusStrip = onUpdateShowRoleplayStatusStrip,
                     onUpdateShowRoleplayAiHelper = onUpdateShowRoleplayAiHelper,
+                    systemHighContrastEnabled = systemHighContrastEnabled,
+                    onUpdateRoleplayImmersiveMode = onUpdateRoleplayImmersiveMode,
+                    onUpdateRoleplayHighContrast = onUpdateRoleplayHighContrast,
+                    onUpdateRoleplayLineHeightScale = onUpdateRoleplayLineHeightScale,
                     onShowRestartDialog = { showConfirmRestartDialog = true },
                     onShowResetDialog = { showConfirmResetDialog = true },
                 )
@@ -123,11 +141,14 @@ fun RoleplaySettingsScreen(
         onSelectModel = onSelectModel,
     )
 
-    RoleplayPromptDebugSheet(
-        showPromptDebugSheet = showPromptDebugSheet,
-        latestPromptDebugDump = latestPromptDebugDump,
-        onDismissRequest = { showPromptDebugSheet = false },
-    )
+    if (showPromptDebugSheet) {
+        ContextGovernanceSheet(
+            snapshot = contextGovernance,
+            rawDebugDump = latestPromptDebugDump,
+            onRefreshSummary = onRefreshConversationSummary,
+            onDismissRequest = { showPromptDebugSheet = false },
+        )
+    }
 
     RoleplayRestartConfirmDialog(
         showConfirmRestartDialog = showConfirmRestartDialog,

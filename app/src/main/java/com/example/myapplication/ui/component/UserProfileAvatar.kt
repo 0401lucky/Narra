@@ -1,8 +1,5 @@
 package com.example.myapplication.ui.component
 
-import android.content.Context
-import android.graphics.BitmapFactory
-import androidx.core.net.toUri
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
@@ -11,8 +8,8 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.remember
 import androidx.compose.runtime.produceState
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -20,12 +17,20 @@ import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.unit.IntSize
+import coil3.imageLoader
+import coil3.request.CachePolicy
+import coil3.request.ImageRequest
+import coil3.request.SuccessResult
+import coil3.request.allowHardware
+import coil3.size.Precision
+import coil3.size.Scale
+import coil3.toBitmap
+import com.example.myapplication.R
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
-import java.io.File
-import java.net.HttpURLConnection
-import java.net.URL
 
 enum class UserAvatarLoadState {
     Empty,
@@ -50,6 +55,8 @@ data class UserProfileAvatarState(
 fun rememberUserProfileAvatarState(
     avatarUri: String,
     avatarUrl: String,
+    requestSize: IntSize? = null,
+    allowHardware: Boolean = false,
 ): UserProfileAvatarState {
     val context = LocalContext.current
     val avatarSource = remember(avatarUri, avatarUrl) {
@@ -69,9 +76,11 @@ fun rememberUserProfileAvatarState(
             },
             source = avatarSource.type,
         ),
-        key1 = context,
-        key2 = avatarSource.value,
-        key3 = avatarSource.type,
+        context,
+        avatarSource.value,
+        avatarSource.type,
+        requestSize,
+        allowHardware,
     ) {
         if (avatarSource.value.isBlank()) {
             value = UserProfileAvatarState(
@@ -89,9 +98,11 @@ fun rememberUserProfileAvatarState(
         )
 
         val avatarBitmap = withContext(Dispatchers.IO) {
-            loadAvatarBitmap(
+            loadAvatarBitmapWithCoil(
                 context = context,
                 source = avatarSource.value,
+                requestSize = requestSize,
+                allowHardware = allowHardware,
             )
         }
 
@@ -117,6 +128,7 @@ fun UserProfileAvatar(
     avatarUri: String,
     avatarUrl: String,
     modifier: Modifier = Modifier,
+    requestSize: IntSize? = null,
     containerColor: Color = MaterialTheme.colorScheme.primaryContainer,
     contentColor: Color = MaterialTheme.colorScheme.onPrimaryContainer,
     textStyle: TextStyle = MaterialTheme.typography.titleMedium,
@@ -124,8 +136,16 @@ fun UserProfileAvatar(
     val avatarState = rememberUserProfileAvatarState(
         avatarUri = avatarUri,
         avatarUrl = avatarUrl,
+        requestSize = requestSize,
     )
-    val fallbackText = displayName.trim().firstOrNull()?.uppercase() ?: "用"
+    val fallbackText = displayName.trim().firstOrNull()?.uppercase()
+        ?: stringResource(id = R.string.user_avatar_fallback_letter)
+    val avatarDescription = stringResource(
+        id = R.string.avatar_content_description,
+        displayName.ifBlank {
+            stringResource(id = R.string.default_user_name)
+        },
+    )
 
     Surface(
         modifier = modifier,
@@ -139,7 +159,7 @@ fun UserProfileAvatar(
             ) {
                 Image(
                     bitmap = avatarState.imageBitmap,
-                    contentDescription = "${displayName.ifBlank { "用户" }}头像",
+                    contentDescription = avatarDescription,
                     modifier = Modifier.fillMaxSize(),
                     contentScale = ContentScale.Crop,
                 )
@@ -171,6 +191,13 @@ private fun resolveAvatarSource(
             type = UserAvatarSource.Remote,
         )
 
+        normalizedUri.startsWith("http://") || normalizedUri.startsWith("https://") -> {
+            ResolvedAvatarSource(
+                value = normalizedUri,
+                type = UserAvatarSource.Remote,
+            )
+        }
+
         normalizedUri.isNotBlank() -> ResolvedAvatarSource(
             value = normalizedUri,
             type = UserAvatarSource.Local,
@@ -183,46 +210,29 @@ private fun resolveAvatarSource(
     }
 }
 
-private fun loadAvatarBitmap(
-    context: Context,
+private suspend fun loadAvatarBitmapWithCoil(
+    context: android.content.Context,
     source: String,
+    requestSize: IntSize?,
+    allowHardware: Boolean,
 ): ImageBitmap? {
-    return runCatching {
-        when {
-            source.startsWith("content://") -> {
-                context.contentResolver.openInputStream(source.toUri())?.use { stream ->
-                    BitmapFactory.decodeStream(stream)?.asImageBitmap()
-                }
+    val request = ImageRequest.Builder(context)
+        .data(source)
+        .allowHardware(allowHardware)
+        .memoryCachePolicy(CachePolicy.ENABLED)
+        .diskCachePolicy(CachePolicy.ENABLED)
+        .networkCachePolicy(CachePolicy.ENABLED)
+        .scale(Scale.FILL)
+        .precision(Precision.INEXACT)
+        .apply {
+            if (requestSize != null && requestSize.width > 0 && requestSize.height > 0) {
+                size(requestSize.width, requestSize.height)
             }
-
-            source.startsWith("http://") || source.startsWith("https://") -> {
-                val connection = (URL(source).openConnection() as HttpURLConnection).apply {
-                    connectTimeout = 8_000
-                    readTimeout = 8_000
-                    instanceFollowRedirects = true
-                    setRequestProperty("User-Agent", "Mozilla/5.0")
-                }
-                try {
-                    if (connection.responseCode !in 200..299) {
-                        return@runCatching null
-                    }
-                    connection.inputStream.use { stream ->
-                        BitmapFactory.decodeStream(stream)?.asImageBitmap()
-                    }
-                } finally {
-                    connection.disconnect()
-                }
-            }
-
-            source.startsWith("file://") -> {
-                BitmapFactory.decodeFile(source.toUri().path)?.asImageBitmap()
-            }
-
-            File(source).exists() -> {
-                BitmapFactory.decodeFile(source)?.asImageBitmap()
-            }
-
-            else -> null
         }
-    }.getOrNull()
+        .build()
+    val result = context.imageLoader.execute(request)
+    return (result as? SuccessResult)
+        ?.image
+        ?.toBitmap()
+        ?.asImageBitmap()
 }

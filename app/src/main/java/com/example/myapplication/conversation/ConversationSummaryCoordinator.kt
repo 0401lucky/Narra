@@ -13,6 +13,17 @@ data class SummaryGenerationConfig(
     val minCoveredMessageCount: Int,
 )
 
+data class SummaryUpdateResult(
+    val updated: Boolean = false,
+    val summaryText: String = "",
+    val coveredMessageCount: Int = 0,
+)
+
+internal fun resolveConversationSummaryModel(settings: AppSettings): String {
+    val activeProvider = settings.activeProvider() ?: return ""
+    return activeProvider.resolveFunctionModel(ProviderFunction.TITLE_SUMMARY)
+}
+
 class ConversationSummaryCoordinator(
     private val aiPromptExtrasService: AiPromptExtrasService,
     private val conversationSummaryRepository: ConversationSummaryRepository,
@@ -24,30 +35,36 @@ class ConversationSummaryCoordinator(
         completedMessages: List<ChatMessage>,
         settings: AppSettings,
         config: SummaryGenerationConfig,
+        forceRefresh: Boolean = false,
         buildSummaryInput: (List<ChatMessage>) -> String,
         generateSummary: suspend (conversationText: String, baseUrl: String, apiKey: String, modelId: String, apiProtocol: com.example.myapplication.model.ProviderApiProtocol) -> String,
-    ): Boolean {
+    ): SummaryUpdateResult {
         if (completedMessages.size <= config.triggerMessageCount) {
-            return false
+            return SummaryUpdateResult()
         }
-        val activeProvider = settings.activeProvider() ?: return false
-        val summaryModel = activeProvider.titleSummaryModel.trim()
-            .ifBlank { activeProvider.memoryModel.trim() }
-            .ifBlank { activeProvider.resolveFunctionModel(ProviderFunction.CHAT) }
+        val activeProvider = settings.activeProvider() ?: return SummaryUpdateResult()
+        val summaryModel = resolveConversationSummaryModel(settings)
         if (summaryModel.isBlank()) {
-            return false
+            return SummaryUpdateResult()
         }
         val olderMessages = completedMessages.dropLast(config.recentMessageWindow)
         if (olderMessages.size < config.minCoveredMessageCount) {
-            return false
+            return SummaryUpdateResult()
         }
         val existingSummary = conversationSummaryRepository.getSummary(conversationId)
-        if (existingSummary != null && existingSummary.coveredMessageCount >= olderMessages.size) {
-            return false
+        if (!forceRefresh &&
+            existingSummary != null &&
+            existingSummary.coveredMessageCount >= olderMessages.size
+        ) {
+            return SummaryUpdateResult(
+                updated = false,
+                summaryText = existingSummary.summary,
+                coveredMessageCount = existingSummary.coveredMessageCount,
+            )
         }
         val summaryInput = buildSummaryInput(olderMessages)
         if (summaryInput.isBlank()) {
-            return false
+            return SummaryUpdateResult()
         }
         val summaryText = generateSummary(
             summaryInput,
@@ -65,6 +82,10 @@ class ConversationSummaryCoordinator(
                 updatedAt = nowProvider(),
             ),
         )
-        return true
+        return SummaryUpdateResult(
+            updated = true,
+            summaryText = summaryText,
+            coveredMessageCount = olderMessages.size,
+        )
     }
 }

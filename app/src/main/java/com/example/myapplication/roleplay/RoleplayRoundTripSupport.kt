@@ -4,6 +4,7 @@ import com.example.myapplication.model.ChatMessage
 import com.example.myapplication.model.ChatMessagePart
 import com.example.myapplication.model.MessageRole
 import com.example.myapplication.model.MessageStatus
+import com.example.myapplication.model.RoleplayOutputFormat
 import com.example.myapplication.model.hasSendableContent
 import com.example.myapplication.model.normalizeChatMessageParts
 import com.example.myapplication.model.toContentMirror
@@ -42,13 +43,14 @@ object RoleplayRoundTripSupport {
         conversationId: String,
         userParts: List<ChatMessagePart>,
         selectedModel: String,
+        roleplayOutputFormat: RoleplayOutputFormat,
         nowProvider: () -> Long,
         messageIdProvider: () -> String,
     ): PreparedRoleplayRoundTrip {
         val userMessage = buildMessage(
             conversationId = conversationId,
             role = MessageRole.USER,
-            content = userParts.toContentMirror(specialFallback = "转账").ifBlank { "剧情互动" },
+            content = userParts.toContentMirror(specialFallback = "特殊玩法").ifBlank { "剧情互动" },
             nowProvider = nowProvider,
             messageIdProvider = messageIdProvider,
             parts = userParts,
@@ -61,6 +63,7 @@ object RoleplayRoundTripSupport {
             messageIdProvider = messageIdProvider,
             status = MessageStatus.LOADING,
             modelName = selectedModel,
+            roleplayOutputFormat = roleplayOutputFormat,
         )
         return PreparedRoleplayRoundTrip(
             baseMessages = baseMessages,
@@ -136,6 +139,7 @@ object RoleplayRoundTripSupport {
         modelName: String = "",
         reasoningContent: String = "",
         parts: List<ChatMessagePart> = emptyList(),
+        roleplayOutputFormat: RoleplayOutputFormat = RoleplayOutputFormat.UNSPECIFIED,
     ): ChatMessage {
         return ChatMessage(
             id = messageIdProvider(),
@@ -147,6 +151,7 @@ object RoleplayRoundTripSupport {
             modelName = modelName,
             reasoningContent = reasoningContent,
             parts = normalizeChatMessageParts(parts),
+            roleplayOutputFormat = roleplayOutputFormat,
         )
     }
 }

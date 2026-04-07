@@ -5,6 +5,7 @@ import com.example.myapplication.data.remote.OpenAiCompatibleApi
 import com.example.myapplication.model.AppSettings
 import com.example.myapplication.model.ChatCompletionRequest
 import com.example.myapplication.model.ChatCompletionResponse
+import com.example.myapplication.model.ProviderFunctionModelMode
 import com.example.myapplication.model.ProviderSettings
 import com.example.myapplication.model.TranslationHistoryEntry
 import com.example.myapplication.model.TranslationSourceType
@@ -122,6 +123,30 @@ class TranslationViewModelTest {
         assertEquals("你好", state.translatedText)
         assertEquals("法语", state.sourceLanguage)
         assertEquals("简体中文", state.targetLanguage)
+    }
+
+    @Test
+    fun translate_showsClearMessageWhenTranslationModelDisabled() = runTest(mainDispatcherRule.dispatcher.scheduler) {
+        val provider = ProviderSettings(
+            id = "provider-1",
+            name = "Provider",
+            baseUrl = "https://example.com/v1/",
+            apiKey = "key",
+            selectedModel = "chat-model",
+            translationModelMode = ProviderFunctionModelMode.DISABLED,
+        )
+        val viewModel = createViewModel(
+            settings = AppSettings(
+                providers = listOf(provider),
+                selectedProviderId = provider.id,
+            ),
+        )
+
+        advanceUntilIdle()
+        viewModel.updateInputText("你好")
+        viewModel.translate()
+
+        assertEquals("请先在模型页开启翻译模型", viewModel.uiState.value.errorMessage)
     }
 
     private fun createViewModel(

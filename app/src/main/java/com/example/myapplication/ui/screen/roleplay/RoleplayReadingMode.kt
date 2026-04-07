@@ -1,6 +1,7 @@
 package com.example.myapplication.ui.screen.roleplay
 
 import com.example.myapplication.ui.component.NarraIconButton
+import com.example.myapplication.ui.component.rememberSystemHighTextContrastEnabled
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -25,13 +26,15 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.myapplication.R
 import com.example.myapplication.model.RoleplayContentType
 import com.example.myapplication.model.RoleplayMessageUiModel
 import com.example.myapplication.model.RoleplaySpeaker
-import com.example.myapplication.ui.component.TransferPlayCard
+import com.example.myapplication.ui.component.SpecialPlayCard
 import com.example.myapplication.ui.component.roleplay.ImmersiveBackdropState
 import com.example.myapplication.ui.component.roleplay.ImmersiveGlassChip
 import com.example.myapplication.ui.component.roleplay.ImmersiveGlassSurface
@@ -48,9 +51,15 @@ fun RoleplayReadingMode(
     messages: List<RoleplayMessageUiModel>,
     scenarioTitle: String,
     backgroundUri: String,
+    lineHeightScale: Float,
+    highContrast: Boolean,
     onDismiss: () -> Unit,
 ) {
-    val backdropState = rememberImmersiveBackdropState(backgroundUri)
+    val effectiveHighContrast = highContrast || rememberSystemHighTextContrastEnabled()
+    val backdropState = rememberImmersiveBackdropState(
+        backgroundUri = backgroundUri,
+        highContrast = effectiveHighContrast,
+    )
     val palette = backdropState.palette
 
     Box(
@@ -103,23 +112,32 @@ fun RoleplayReadingMode(
                                 verticalArrangement = Arrangement.spacedBy(6.dp),
                             ) {
                                 Text(
-                                    text = "阅读模式",
+                                    text = stringResource(id = R.string.roleplay_reading_mode_title),
                                     style = MaterialTheme.typography.titleLarge,
                                     fontWeight = FontWeight.ExtraBold,
                                     color = palette.onGlass,
                                 )
                                 Text(
-                                    text = scenarioTitle.ifBlank { "剧情回顾" },
+                                    text = scenarioTitle.ifBlank {
+                                        stringResource(id = R.string.roleplay_story_recap)
+                                    },
                                     style = MaterialTheme.typography.bodyMedium,
                                     color = palette.onGlassMuted,
                                 )
                                 ImmersiveGlassChip(
-                                    text = "${messages.size} 条剧情",
+                                    text = stringResource(
+                                        id = R.string.roleplay_story_count,
+                                        messages.size,
+                                    ),
                                     backdropState = backdropState,
                                 )
                             }
                             NarraIconButton(onClick = onDismiss) {
-                                Icon(Icons.Default.Close, contentDescription = "关闭", tint = palette.onGlass)
+                                Icon(
+                                    Icons.Default.Close,
+                                    contentDescription = stringResource(id = R.string.common_close),
+                                    tint = palette.onGlass,
+                                )
                             }
                         }
                     }
@@ -133,7 +151,7 @@ fun RoleplayReadingMode(
                                 contentAlignment = Alignment.Center,
                             ) {
                                 Text(
-                                    text = "还没有剧情内容",
+                                    text = stringResource(id = R.string.roleplay_no_story_content),
                                     style = MaterialTheme.typography.bodyLarge,
                                     color = palette.onGlassMuted.copy(alpha = 0.72f),
                                 )
@@ -146,11 +164,23 @@ fun RoleplayReadingMode(
                         key = { "${it.sourceMessageId}-${it.createdAt}-${it.content.hashCode()}" },
                     ) { message ->
                         when (message.contentType) {
-                            RoleplayContentType.NARRATION -> NarrationReadingBlock(message, backdropState)
+                            RoleplayContentType.NARRATION -> NarrationReadingBlock(
+                                message = message,
+                                backdropState = backdropState,
+                                lineHeightScale = lineHeightScale,
+                            )
                             RoleplayContentType.SYSTEM -> SystemReadingBlock(message, backdropState)
-                            RoleplayContentType.DIALOGUE -> DialogueReadingBlock(message, backdropState)
-                            RoleplayContentType.LONGFORM -> LongformReadingBlock(message, backdropState)
-                            RoleplayContentType.SPECIAL_TRANSFER -> TransferReadingBlock(message)
+                            RoleplayContentType.DIALOGUE -> DialogueReadingBlock(
+                                message = message,
+                                backdropState = backdropState,
+                                lineHeightScale = lineHeightScale,
+                            )
+                            RoleplayContentType.LONGFORM -> LongformReadingBlock(
+                                message = message,
+                                backdropState = backdropState,
+                                lineHeightScale = lineHeightScale,
+                            )
+                            RoleplayContentType.SPECIAL_PLAY -> TransferReadingBlock(message)
                         }
                     }
                 }
@@ -163,6 +193,7 @@ fun RoleplayReadingMode(
 private fun NarrationReadingBlock(
     message: RoleplayMessageUiModel,
     backdropState: ImmersiveBackdropState,
+    lineHeightScale: Float,
 ) {
     val paragraphs = remember(message.content) {
         message.content.split('\n').map { it.trim() }.filter { it.isNotEmpty() }
@@ -186,7 +217,7 @@ private fun NarrationReadingBlock(
                 ),
                 style = MaterialTheme.typography.bodyLarge.copy(
                     fontSize = 16.sp,
-                    lineHeight = 30.sp,
+                    lineHeight = 30.sp * lineHeightScale,
                     letterSpacing = 0.3.sp,
                 ),
                 color = backdropState.palette.onGlassMuted,
@@ -199,6 +230,7 @@ private fun NarrationReadingBlock(
 private fun DialogueReadingBlock(
     message: RoleplayMessageUiModel,
     backdropState: ImmersiveBackdropState,
+    lineHeightScale: Float,
 ) {
     val isUser = message.speaker == RoleplaySpeaker.USER
     val palette = backdropState.palette
@@ -266,7 +298,7 @@ private fun DialogueReadingBlock(
                         },
                         style = MaterialTheme.typography.bodyLarge.copy(
                             fontSize = 16.sp,
-                            lineHeight = 30.sp,
+                            lineHeight = 30.sp * lineHeightScale,
                             letterSpacing = 0.3.sp,
                         ),
                         color = palette.onGlass,
@@ -281,6 +313,7 @@ private fun DialogueReadingBlock(
 private fun LongformReadingBlock(
     message: RoleplayMessageUiModel,
     backdropState: ImmersiveBackdropState,
+    lineHeightScale: Float,
 ) {
     RoleplayLongformCard(
         speakerName = message.speakerName,
@@ -291,6 +324,7 @@ private fun LongformReadingBlock(
         bodyColor = backdropState.palette.onGlass,
         accentColor = RoleplayQuotedDialogueHighlightColor,
         thoughtColor = backdropState.palette.thoughtText,
+        lineHeightScale = lineHeightScale,
         modifier = Modifier
             .fillMaxWidth()
             .padding(vertical = 2.dp, horizontal = 6.dp),
@@ -328,7 +362,7 @@ private fun TransferReadingBlock(message: RoleplayMessageUiModel) {
             Alignment.CenterStart
         },
     ) {
-        TransferPlayCard(
+        SpecialPlayCard(
             part = specialPart,
             isUserMessage = message.speaker == RoleplaySpeaker.USER,
             onConfirmTransferReceipt = null,

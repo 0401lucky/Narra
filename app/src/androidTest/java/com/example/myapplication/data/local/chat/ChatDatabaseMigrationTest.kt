@@ -24,7 +24,7 @@ class ChatDatabaseMigrationTest {
     }
 
     @Test
-    fun migrateFrom1To11_preservesLegacyConversationData() {
+    fun migrateFrom1To13_preservesLegacyConversationData() {
         createLegacyDatabase(version = 1) { db ->
             createVersion1Schema(db)
             db.execSQL(
@@ -46,13 +46,19 @@ class ChatDatabaseMigrationTest {
         openReadableDatabase().use { db ->
             assertEquals("default-assistant", queryString(db, "SELECT assistantId FROM conversations WHERE id = 'c1'"))
             assertEquals("[]", queryString(db, "SELECT partsJson FROM messages WHERE id = 'm1'"))
+            assertEquals("[]", queryString(db, "SELECT citationsJson FROM messages WHERE id = 'm1'"))
+            assertEquals(
+                "UNSPECIFIED",
+                queryString(db, "SELECT roleplayOutputFormat FROM messages WHERE id = 'm1'"),
+            )
+            assertEquals(0L, queryLong(db, "SELECT searchEnabled FROM conversations WHERE id = 'c1'"))
             assertTrue(hasColumn(db, "roleplay_scenarios", "longformModeEnabled"))
             assertTrue(hasIndex(db, "conversations", "index_conversations_updatedAt"))
         }
     }
 
     @Test
-    fun migrateFrom9To11_createsRoleplayTablesWithLongformColumn() {
+    fun migrateFrom9To13_createsRoleplayTablesWithLongformColumn() {
         createLegacyDatabase(version = 9) { db ->
             createVersion9Schema(db)
         }
@@ -67,7 +73,7 @@ class ChatDatabaseMigrationTest {
     }
 
     @Test
-    fun migrateFrom10To11_whenLongformAlreadyExists_keepsDataReadable() {
+    fun migrateFrom10To12_whenLongformAlreadyExists_keepsDataReadable() {
         createLegacyDatabase(version = 10) { db ->
             createVersion10Schema(db, includeLongformColumn = true)
             db.execSQL(
@@ -94,7 +100,7 @@ class ChatDatabaseMigrationTest {
     }
 
     @Test
-    fun migrateFrom10To11_whenLongformMissing_addsDefaultColumn() {
+    fun migrateFrom10To12_whenLongformMissing_addsDefaultColumn() {
         createLegacyDatabase(version = 10) { db ->
             createVersion10Schema(db, includeLongformColumn = false)
             db.execSQL(
@@ -117,6 +123,44 @@ class ChatDatabaseMigrationTest {
         openReadableDatabase().use { db ->
             assertEquals(0L, queryLong(db, "SELECT longformModeEnabled FROM roleplay_scenarios WHERE id = 'scene-2'"))
             assertTrue(hasColumn(db, "roleplay_scenarios", "longformModeEnabled"))
+        }
+    }
+
+    @Test
+    fun migrateFrom11To12_addsSearchAndCitationColumns() {
+        createLegacyDatabase(version = 11) { db ->
+            createVersion11Schema(db)
+            db.execSQL(
+                """
+                INSERT INTO conversations (id, title, model, createdAt, updatedAt, assistantId)
+                VALUES ('c11', '旧会话11', 'model-11', 1, 2, 'assistant-11')
+                """.trimIndent(),
+            )
+            db.execSQL(
+                """
+                INSERT INTO messages (
+                    id, conversationId, role, content, status, createdAt,
+                    modelName, reasoningContent, attachmentsJson, partsJson
+                ) VALUES (
+                    'm11', 'c11', 'ASSISTANT', '旧消息', 'COMPLETED', 3,
+                    'model-11', '', '[]', '[]'
+                )
+                """.trimIndent(),
+            )
+        }
+
+        migrateToLatest()
+
+        openReadableDatabase().use { db ->
+            assertTrue(hasColumn(db, "conversations", "searchEnabled"))
+            assertTrue(hasColumn(db, "messages", "citationsJson"))
+            assertTrue(hasColumn(db, "messages", "roleplayOutputFormat"))
+            assertEquals(0L, queryLong(db, "SELECT searchEnabled FROM conversations WHERE id = 'c11'"))
+            assertEquals("[]", queryString(db, "SELECT citationsJson FROM messages WHERE id = 'm11'"))
+            assertEquals(
+                "UNSPECIFIED",
+                queryString(db, "SELECT roleplayOutputFormat FROM messages WHERE id = 'm11'"),
+            )
         }
     }
 
@@ -318,6 +362,10 @@ class ChatDatabaseMigrationTest {
         db.execSQL("CREATE INDEX IF NOT EXISTS index_roleplay_sessions_updatedAt ON roleplay_sessions (updatedAt)")
     }
 
+    private fun createVersion11Schema(db: SQLiteDatabase) {
+        createVersion10Schema(db, includeLongformColumn = true)
+    }
+
     private fun openReadableDatabase(): SQLiteDatabase {
         return SQLiteDatabase.openDatabase(
             databaseFile.path,
@@ -389,6 +437,8 @@ class ChatDatabaseMigrationTest {
             ChatDatabase.MIGRATION_8_9,
             ChatDatabase.MIGRATION_9_10,
             ChatDatabase.MIGRATION_10_11,
+            ChatDatabase.MIGRATION_11_12,
+            ChatDatabase.MIGRATION_12_13,
         )
     }
 }

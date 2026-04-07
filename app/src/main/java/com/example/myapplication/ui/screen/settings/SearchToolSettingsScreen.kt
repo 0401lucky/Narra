@@ -85,7 +85,7 @@ fun SearchToolSettingsScreen(
                                 style = androidx.compose.material3.MaterialTheme.typography.titleMedium,
                             )
                             Text(
-                                text = "主聊天模型只会调用统一的 search_web 工具。若这里选中 LLM 搜索，工具执行器会把请求转发给你在下方单独选择的搜索提供商与搜索模型；最终回答仍由主聊天模型生成。",
+                                text = "自动转发 search_web 工具请求给单独的搜索模型。",
                                 style = androidx.compose.material3.MaterialTheme.typography.bodySmall,
                                 color = androidx.compose.material3.MaterialTheme.colorScheme.onSurfaceVariant,
                             )
@@ -124,7 +124,7 @@ fun SearchToolSettingsScreen(
                                 steps = 8,
                             )
                             Text(
-                                text = "聊天页开启搜索后，模型每次默认最多读取这些搜索结果。",
+                                text = "默认预读最大条目数。",
                                 style = androidx.compose.material3.MaterialTheme.typography.bodySmall,
                                 color = androidx.compose.material3.MaterialTheme.colorScheme.onSurfaceVariant,
                             )
@@ -175,8 +175,12 @@ private fun SearchSourceCard(
                 !selectedProvider.supportsLlmSearchSource() -> {
                     "所选搜索提供商需要使用 Responses API 或 Anthropic 协议。"
                 }
-                selectedProvider.searchModel.isBlank() -> {
-                    "已启用，但该搜索提供商还没单独设置搜索模型；当前会回退使用它自己的聊天模型搜索。"
+                selectedProvider.resolveFunctionModel(com.example.myapplication.model.ProviderFunction.SEARCH).isBlank() -> {
+                    "已启用，但该搜索提供商的搜索模型已关闭；请先在模型页开启搜索模型。"
+                }
+                selectedProvider.resolveFunctionModelMode(com.example.myapplication.model.ProviderFunction.SEARCH) ==
+                    com.example.myapplication.model.ProviderFunctionModelMode.FOLLOW_DEFAULT -> {
+                    "配置完整，当前会跟随该提供商的聊天模型执行搜索。"
                 }
                 else -> "配置完整，聊天页可用。"
             }
@@ -216,7 +220,7 @@ private fun SearchSourceCard(
                             SearchSourceType.BRAVE -> "使用 Brave Search API"
                             SearchSourceType.TAVILY -> "使用 Tavily Search API"
                             SearchSourceType.GOOGLE_CSE -> "使用 Google Programmable Search"
-                            SearchSourceType.LLM_SEARCH -> "主聊天模型调用搜索工具后，将转发给这里配置的搜索提供商与搜索模型"
+                            SearchSourceType.LLM_SEARCH -> "自动代理 search_web 搜索请求"
                         },
                         style = androidx.compose.material3.MaterialTheme.typography.bodySmall,
                         color = androidx.compose.material3.MaterialTheme.colorScheme.onSurfaceVariant,
@@ -294,7 +298,13 @@ private fun SearchSourceCard(
                                             },
                                         )
                                         append(" · 搜索模型：")
-                                        append(provider.resolveFunctionModel(com.example.myapplication.model.ProviderFunction.SEARCH).ifBlank { "未设置" })
+                                        append(
+                                            when (provider.resolveFunctionModelMode(com.example.myapplication.model.ProviderFunction.SEARCH)) {
+                                                com.example.myapplication.model.ProviderFunctionModelMode.FOLLOW_DEFAULT -> "跟随默认"
+                                                com.example.myapplication.model.ProviderFunctionModelMode.CUSTOM -> provider.resolveFunctionModel(com.example.myapplication.model.ProviderFunction.SEARCH).ifBlank { "未设置" }
+                                                com.example.myapplication.model.ProviderFunctionModelMode.DISABLED -> "已关闭"
+                                            },
+                                        )
                                         if (provider.id == settings.selectedProviderId) {
                                             append(" · 当前聊天提供商")
                                         }

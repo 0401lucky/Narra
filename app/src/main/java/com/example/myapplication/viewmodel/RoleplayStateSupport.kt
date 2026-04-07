@@ -2,6 +2,7 @@ package com.example.myapplication.viewmodel
 
 import com.example.myapplication.model.AppSettings
 import com.example.myapplication.model.Assistant
+import com.example.myapplication.model.ContextGovernanceSnapshot
 import com.example.myapplication.model.MemoryProposalHistoryItem
 import com.example.myapplication.model.PendingMemoryProposal
 import com.example.myapplication.model.RoleplayContextStatus
@@ -68,6 +69,7 @@ object RoleplayStateSupport {
             errorMessage = null,
             noticeMessage = null,
             latestPromptDebugDump = "",
+            contextGovernance = null,
             streamingContent = "",
             suggestionErrorMessage = null,
             pendingMemoryProposal = null,
@@ -94,6 +96,7 @@ object RoleplayStateSupport {
             errorMessage = null,
             noticeMessage = null,
             latestPromptDebugDump = "",
+            contextGovernance = null,
             streamingContent = "",
             suggestionErrorMessage = null,
             pendingMemoryProposal = null,
@@ -247,6 +250,7 @@ object RoleplayStateSupport {
                 worldBookHitCount = 0,
                 isContinuingSession = false,
             ),
+            contextGovernance = null,
             noticeMessage = "剧情已清空",
             pendingMemoryProposal = null,
             recentMemoryProposalHistory = emptyList(),
@@ -265,6 +269,7 @@ object RoleplayStateSupport {
             showAssistantMismatchDialog = false,
             previousAssistantName = "",
             currentAssistantName = "",
+            contextGovernance = null,
             pendingMemoryProposal = null,
             recentMemoryProposalHistory = emptyList(),
         )
@@ -283,6 +288,7 @@ object RoleplayStateSupport {
             errorMessage = null,
             streamingContent = "",
             latestPromptDebugDump = "",
+            contextGovernance = null,
             inputFocusToken = inputFocusToken,
         )
     }
@@ -293,6 +299,7 @@ object RoleplayStateSupport {
         worldBookHitCount: Int,
         memoryInjectionCount: Int,
         debugDump: String,
+        contextGovernance: ContextGovernanceSnapshot?,
     ): RoleplayUiState {
         return current.copy(
             contextStatus = current.contextStatus.copy(
@@ -302,6 +309,7 @@ object RoleplayStateSupport {
                 memoryInjectionCount = memoryInjectionCount,
             ),
             latestPromptDebugDump = debugDump,
+            contextGovernance = contextGovernance,
         )
     }
 
@@ -436,6 +444,8 @@ object RoleplayStateSupport {
             } else {
                 current.contextStatus
             },
+            latestPromptDebugDump = if (session == null) "" else current.latestPromptDebugDump,
+            contextGovernance = if (session == null) null else current.contextGovernance,
         )
     }
 

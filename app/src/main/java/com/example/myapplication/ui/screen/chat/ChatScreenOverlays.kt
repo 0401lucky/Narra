@@ -1,7 +1,9 @@
 package com.example.myapplication.ui.screen.chat
 
 import androidx.compose.runtime.Composable
-import com.example.myapplication.model.ChatMessagePart
+import com.example.myapplication.ui.component.ContextGovernanceSheet
+import com.example.myapplication.model.ChatSpecialPlayDraft
+import com.example.myapplication.model.ChatSpecialType
 import com.example.myapplication.viewmodel.ChatUiState
 
 @Composable
@@ -19,12 +21,11 @@ internal fun ChatScreenOverlays(
     onSaveProfile: () -> Unit,
     showSpecialPlaySheet: Boolean,
     onDismissSpecialPlaySheet: () -> Unit,
-    onOpenTransferFromSpecialPlay: () -> Unit,
-    showTransferSheet: Boolean,
-    transferDraft: TransferPlayDraft,
-    onTransferDraftChange: (TransferPlayDraft) -> Unit,
-    onDismissTransferSheet: () -> Unit,
-    onConfirmTransfer: () -> Unit,
+    onOpenSpecialPlayEditor: (ChatSpecialType) -> Unit,
+    activeSpecialPlayDraft: ChatSpecialPlayDraft?,
+    onSpecialPlayDraftChange: (ChatSpecialPlayDraft) -> Unit,
+    onDismissSpecialPlayEditor: () -> Unit,
+    onConfirmSpecialPlay: () -> Unit,
     showModelSheet: Boolean,
     providerOptions: List<com.example.myapplication.model.ProviderSettings>,
     currentProviderId: String,
@@ -43,6 +44,7 @@ internal fun ChatScreenOverlays(
     onUpdateThinkingBudget: (String, Int?) -> Unit,
     showPromptDebugSheet: Boolean,
     onDismissPromptDebugSheet: () -> Unit,
+    onRefreshConversationSummary: () -> Unit,
     onDismissTranslationSheet: () -> Unit,
     onApplyTranslationToInput: (Boolean) -> Unit,
     onSendTranslationAsMessage: () -> Unit,
@@ -71,16 +73,16 @@ internal fun ChatScreenOverlays(
     if (showSpecialPlaySheet) {
         SpecialPlaySheet(
             onDismissRequest = onDismissSpecialPlaySheet,
-            onOpenTransfer = onOpenTransferFromSpecialPlay,
+            onOpenPlay = onOpenSpecialPlayEditor,
         )
     }
 
-    if (showTransferSheet) {
-        TransferPlaySheet(
-            draft = transferDraft,
-            onDraftChange = onTransferDraftChange,
-            onDismissRequest = onDismissTransferSheet,
-            onConfirm = onConfirmTransfer,
+    activeSpecialPlayDraft?.let { draft ->
+        SpecialPlayEditorSheet(
+            draft = draft,
+            onDraftChange = onSpecialPlayDraftChange,
+            onDismissRequest = onDismissSpecialPlayEditor,
+            onConfirm = onConfirmSpecialPlay,
         )
     }
 
@@ -117,8 +119,10 @@ internal fun ChatScreenOverlays(
     }
 
     if (showPromptDebugSheet) {
-        PromptDebugSheet(
-            debugDump = uiState.latestPromptDebugDump,
+        ContextGovernanceSheet(
+            snapshot = uiState.contextGovernance,
+            rawDebugDump = uiState.latestPromptDebugDump,
+            onRefreshSummary = onRefreshConversationSummary,
             onDismissRequest = onDismissPromptDebugSheet,
         )
     }

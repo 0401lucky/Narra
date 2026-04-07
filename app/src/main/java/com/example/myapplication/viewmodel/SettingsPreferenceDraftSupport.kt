@@ -58,6 +58,27 @@ object SettingsPreferenceDraftSupport {
         return current.copy(showRoleplayStatusStrip = enabled, message = null)
     }
 
+    fun updateRoleplayImmersiveMode(
+        current: SettingsUiState,
+        mode: com.example.myapplication.model.RoleplayImmersiveMode,
+    ): SettingsUiState {
+        return current.copy(roleplayImmersiveMode = mode, message = null)
+    }
+
+    fun updateRoleplayHighContrast(
+        current: SettingsUiState,
+        enabled: Boolean,
+    ): SettingsUiState {
+        return current.copy(roleplayHighContrast = enabled, message = null)
+    }
+
+    fun updateRoleplayLineHeightScale(
+        current: SettingsUiState,
+        scale: com.example.myapplication.model.RoleplayLineHeightScale,
+    ): SettingsUiState {
+        return current.copy(roleplayLineHeightScale = scale, message = null)
+    }
+
     fun updateScreenTranslationSettings(
         current: SettingsUiState,
         transform: (ScreenTranslationSettings) -> ScreenTranslationSettings,

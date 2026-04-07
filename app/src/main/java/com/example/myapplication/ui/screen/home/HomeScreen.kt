@@ -2,10 +2,8 @@ package com.example.myapplication.ui.screen.home
 
 import com.example.myapplication.ui.component.*
 
-import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.animateFloatAsState
-import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.interaction.MutableInteractionSource
@@ -20,12 +18,8 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -43,10 +37,12 @@ import androidx.compose.ui.draw.scale
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
+import com.example.myapplication.R
 import com.example.myapplication.model.AppSettings
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -66,21 +62,20 @@ fun HomeScreen(
     }
 
     val slideAnim by animateDpAsState(
-        targetValue = if (isVisible) 0.dp else 40.dp,
-        animationSpec = spring(dampingRatio = Spring.DampingRatioMediumBouncy, stiffness = Spring.StiffnessLow),
+        targetValue = if (isVisible) 0.dp else HomeEnterOffsetY,
+        animationSpec = tween(durationMillis = HomeEnterFadeDurationMillis),
         label = "slide"
     )
-
     val alphaAnim by animateFloatAsState(
         targetValue = if (isVisible) 1f else 0f,
-        animationSpec = tween(durationMillis = 800),
+        animationSpec = tween(durationMillis = HomeEnterFadeDurationMillis),
         label = "alpha"
     )
 
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("AI 聊天助手") },
+                title = { Text(stringResource(id = R.string.home_top_bar_title)) },
                 colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = Color.Transparent,
                     scrolledContainerColor = MaterialTheme.colorScheme.surface
@@ -101,7 +96,7 @@ fun HomeScreen(
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
             Text(
-                text = "欢迎回来",
+                text = stringResource(id = R.string.home_welcome_title),
                 style = MaterialTheme.typography.displaySmall,
                 color = MaterialTheme.colorScheme.onBackground,
             )
@@ -110,9 +105,9 @@ fun HomeScreen(
 
             Text(
                 text = if (hasRequiredConfig) {
-                    "配置就绪，随时可以开始一次绝妙的对话。"
+                    stringResource(id = R.string.home_ready_subtitle)
                 } else {
-                    "准备好探索未知了吗？请先完成基础配置。"
+                    stringResource(id = R.string.home_missing_config_subtitle)
                 },
                 style = MaterialTheme.typography.bodyLarge,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -126,8 +121,12 @@ fun HomeScreen(
             Surface(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .shadow(16.dp, RoundedCornerShape(28.dp), ambientColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.1f)),
-                shape = RoundedCornerShape(28.dp),
+                    .shadow(
+                        HomePrimaryButtonShadowElevation,
+                        androidx.compose.foundation.shape.RoundedCornerShape(HomePrimaryCardCornerRadius),
+                        ambientColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.1f),
+                    ),
+                shape = androidx.compose.foundation.shape.RoundedCornerShape(HomePrimaryCardCornerRadius),
                 color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f),
                 tonalElevation = 0.dp
             ) {
@@ -136,16 +135,34 @@ fun HomeScreen(
                     verticalArrangement = Arrangement.spacedBy(16.dp)
                 ) {
                     Text(
-                        text = "当前配置状态",
+                        text = stringResource(id = R.string.home_config_card_title),
                         style = MaterialTheme.typography.titleLarge,
                         color = MaterialTheme.colorScheme.primary,
                         fontWeight = FontWeight.SemiBold
                     )
-                    ConfigRow("Base URL", if (storedSettings.baseUrl.isBlank()) "未配置" else "已配置")
-                    ConfigRow("API Key", if (storedSettings.apiKey.isBlank()) "未配置" else "已配置")
                     ConfigRow(
-                        "模型",
-                        if (storedSettings.selectedModel.isBlank()) "未选择" else storedSettings.selectedModel
+                        label = stringResource(id = R.string.home_config_base_url),
+                        value = if (storedSettings.baseUrl.isBlank()) {
+                            stringResource(id = R.string.status_not_configured)
+                        } else {
+                            stringResource(id = R.string.status_configured)
+                        },
+                    )
+                    ConfigRow(
+                        label = stringResource(id = R.string.home_config_api_key),
+                        value = if (storedSettings.apiKey.isBlank()) {
+                            stringResource(id = R.string.status_not_configured)
+                        } else {
+                            stringResource(id = R.string.status_configured)
+                        },
+                    )
+                    ConfigRow(
+                        label = stringResource(id = R.string.home_config_model),
+                        value = if (storedSettings.selectedModel.isBlank()) {
+                            stringResource(id = R.string.status_not_selected)
+                        } else {
+                            storedSettings.selectedModel
+                        },
                     )
                 }
             }
@@ -153,7 +170,7 @@ fun HomeScreen(
             Spacer(modifier = Modifier.height(56.dp))
 
             AnimatedHoverButton(
-                text = "进入聊天",
+                text = stringResource(id = R.string.home_open_chat),
                 onClick = onOpenChat,
                 enabled = hasRequiredConfig,
                 isPrimary = true
@@ -162,7 +179,7 @@ fun HomeScreen(
             Spacer(modifier = Modifier.height(16.dp))
 
                 AnimatedHoverButton(
-                    text = "进入设置",
+                    text = stringResource(id = R.string.home_open_settings),
                     onClick = onOpenSettings,
                     enabled = true,
                     isPrimary = false
@@ -171,7 +188,7 @@ fun HomeScreen(
                 Spacer(modifier = Modifier.height(16.dp))
 
                 AnimatedHoverButton(
-                    text = "沉浸扮演",
+                    text = stringResource(id = R.string.home_open_roleplay),
                     onClick = onOpenRoleplay,
                     enabled = hasRequiredConfig,
                     isPrimary = false,
@@ -180,7 +197,7 @@ fun HomeScreen(
                 if (!hasRequiredConfig) {
                     Spacer(modifier = Modifier.height(24.dp))
                     Text(
-                    text = "完成设置后即可直接开始对话",
+                    text = stringResource(id = R.string.home_config_hint),
                     style = MaterialTheme.typography.labelMedium,
                     color = MaterialTheme.colorScheme.error
                 )
@@ -219,10 +236,14 @@ fun AnimatedHoverButton(
     val interactionSource = remember { MutableInteractionSource() }
     val isPressed by interactionSource.collectIsPressedAsState()
 
-    val scale by animateFloatAsState(
-        targetValue = if (isPressed) 0.94f else 1f,
-        animationSpec = spring(dampingRatio = Spring.DampingRatioMediumBouncy, stiffness = Spring.StiffnessLow),
-        label = "button_scale"
+    val shadowElevation by animateDpAsState(
+        targetValue = if (isPressed) {
+            HomePrimaryButtonPressedShadowElevation
+        } else {
+            HomePrimaryButtonShadowElevation
+        },
+        animationSpec = tween(durationMillis = HomeEnterFadeDurationMillis / 4),
+        label = "button_shadow"
     )
 
     if (isPrimary) {
@@ -231,11 +252,15 @@ fun AnimatedHoverButton(
             enabled = enabled,
             modifier = Modifier
                 .fillMaxWidth()
-                .height(56.dp)
-                .scale(scale)
-                .shadow(if (isPressed) 4.dp else 16.dp, RoundedCornerShape(20.dp), ambientColor = MaterialTheme.colorScheme.primary, spotColor = MaterialTheme.colorScheme.primary),
-            shape = RoundedCornerShape(20.dp),
-            colors = ButtonDefaults.buttonColors(
+                .height(HomePrimaryButtonHeight)
+                .shadow(
+                    elevation = shadowElevation,
+                    shape = androidx.compose.foundation.shape.RoundedCornerShape(HomePrimaryButtonCornerRadius),
+                    ambientColor = MaterialTheme.colorScheme.primary,
+                    spotColor = MaterialTheme.colorScheme.primary,
+                ),
+            shape = androidx.compose.foundation.shape.RoundedCornerShape(HomePrimaryButtonCornerRadius),
+            colors = androidx.compose.material3.ButtonDefaults.buttonColors(
                 containerColor = MaterialTheme.colorScheme.primary,
                 contentColor = MaterialTheme.colorScheme.onPrimary
             ),
@@ -249,9 +274,8 @@ fun AnimatedHoverButton(
             enabled = enabled,
             modifier = Modifier
                 .fillMaxWidth()
-                .height(56.dp)
-                .scale(scale),
-            shape = RoundedCornerShape(20.dp),
+                .height(HomePrimaryButtonHeight),
+            shape = androidx.compose.foundation.shape.RoundedCornerShape(HomePrimaryButtonCornerRadius),
             interactionSource = interactionSource
         ) {
             Text(text, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)

@@ -36,7 +36,6 @@ import com.example.myapplication.model.ImageGenerationRequest
 import com.example.myapplication.model.MessageAttachment
 import com.example.myapplication.model.GatewayToolingOptions
 import com.example.myapplication.model.MessageCitation
-import com.example.myapplication.model.DEFAULT_CHAT_COMPLETIONS_PATH
 import com.example.myapplication.model.OpenAiTextApiMode
 import com.example.myapplication.model.PromptMode
 import com.example.myapplication.model.ProviderApiProtocol
@@ -61,27 +60,13 @@ import okhttp3.RequestBody.Companion.toRequestBody
 import java.io.IOException
 import java.util.Collections
 
-private const val ROLEPLAY_TEMPERATURE = 0.9f
-private const val ROLEPLAY_TOP_P = 0.92f
-
-private val UnsupportedSamplingMessageHints = listOf(
-    "temperature",
-    "top_p",
-    "top p",
-    "unknown parameter",
-    "unknown field",
-    "unrecognized field",
-    "not permitted",
-    "not allowed",
-)
-
-private data class GatewayRoleplaySamplingConfig(
-    val temperature: Float,
-    val topP: Float,
-)
+// 采样配置和请求构建已提取到 GatewayRequestSupport
 
 interface AiGateway {
-    suspend fun generateImage(prompt: String): List<ImageGenerationResult>
+    suspend fun generateImage(
+        prompt: String,
+        modelId: String = "",
+    ): List<ImageGenerationResult>
 
     suspend fun sendMessage(
         messages: List<ChatMessage>,
@@ -180,13 +165,18 @@ class DefaultAiGateway(
     )
     private val roleplaySamplingDisabledBaseUrls = Collections.synchronizedSet(mutableSetOf<String>())
 
-    override suspend fun generateImage(prompt: String): List<ImageGenerationResult> {
+    override suspend fun generateImage(
+        prompt: String,
+        modelId: String,
+    ): List<ImageGenerationResult> {
         val settings = settingsStore.settingsFlow.first()
         require(settings.hasRequiredConfig()) { "请先完成设置并选择模型" }
         val activeProvider = settings.activeProvider()
         val baseUrl = activeProvider?.baseUrl ?: settings.baseUrl
         val apiKey = activeProvider?.apiKey ?: settings.apiKey
-        val selectedModel = activeProvider?.selectedModel ?: settings.selectedModel
+        val selectedModel = modelId.trim().ifBlank {
+            activeProvider?.selectedModel ?: settings.selectedModel
+        }
         if (activeProvider?.resolvedApiProtocol() == ProviderApiProtocol.ANTHROPIC) {
             throw IllegalStateException("Anthropic /messages 协议当前不支持图片生成")
         }
@@ -940,24 +930,12 @@ class DefaultAiGateway(
     private fun buildStreamingRequest(
         fullUrl: String,
         requestBody: String,
-    ): Request {
-        return Request.Builder()
-            .url(fullUrl)
-            .post(requestBody.toRequestBody("application/json".toMediaType()))
-            .build()
-    }
+    ): Request = GatewayRequestSupport.buildStreamingRequest(fullUrl, requestBody)
 
     private fun buildOpenAiTextUrl(
         baseUrl: String,
         provider: ProviderSettings?,
-    ): String {
-        val normalizedBaseUrl = apiServiceFactory.normalizeBaseUrl(baseUrl, ProviderApiProtocol.OPENAI_COMPATIBLE)
-        val path = when (provider?.resolvedOpenAiTextApiMode() ?: OpenAiTextApiMode.CHAT_COMPLETIONS) {
-            OpenAiTextApiMode.CHAT_COMPLETIONS -> provider?.resolvedChatCompletionsPath() ?: DEFAULT_CHAT_COMPLETIONS_PATH
-            OpenAiTextApiMode.RESPONSES -> "/responses"
-        }
-        return normalizedBaseUrl.removeSuffix("/") + path
-    }
+    ): String = GatewayRequestSupport.buildOpenAiTextUrl(baseUrl, provider, apiServiceFactory)
 
     private fun buildRequestWithRoleplaySampling(
         model: String,
@@ -970,54 +948,25 @@ class DefaultAiGateway(
         promptMode: PromptMode = PromptMode.ROLEPLAY,
         tools: List<com.example.myapplication.model.ChatToolDto> = emptyList(),
         toolChoice: String? = null,
-    ): ChatCompletionRequest {
-        val sampling = resolveRoleplaySampling(baseUrl, apiProtocol, promptMode)
-        return ChatCompletionRequest(
-            model = model,
-            messages = messages,
-            stream = stream,
-            temperature = sampling?.temperature,
-            topP = sampling?.topP,
-            reasoningEffort = reasoningEffort,
-            thinking = thinking,
-            tools = tools,
-            toolChoice = toolChoice,
-        )
-    }
-
-    private fun resolveRoleplaySampling(
-        baseUrl: String,
-        apiProtocol: ProviderApiProtocol,
-        promptMode: PromptMode,
-    ): GatewayRoleplaySamplingConfig? {
-        if (promptMode != PromptMode.ROLEPLAY) {
-            return null
-        }
-        val normalizedBaseUrl = apiServiceFactory.normalizeBaseUrl(baseUrl, apiProtocol)
-        if (roleplaySamplingDisabledBaseUrls.contains(normalizedBaseUrl)) {
-            return null
-        }
-        return GatewayRoleplaySamplingConfig(
-            temperature = ROLEPLAY_TEMPERATURE,
-            topP = ROLEPLAY_TOP_P,
-        )
-    }
+    ): ChatCompletionRequest = GatewayRequestSupport.buildRequestWithRoleplaySampling(
+        model = model,
+        messages = messages,
+        baseUrl = baseUrl,
+        apiProtocol = apiProtocol,
+        apiServiceFactory = apiServiceFactory,
+        disabledBaseUrls = roleplaySamplingDisabledBaseUrls,
+        stream = stream,
+        reasoningEffort = reasoningEffort,
+        thinking = thinking,
+        promptMode = promptMode,
+        tools = tools,
+        toolChoice = toolChoice,
+    )
 
     private fun shouldRetryWithoutRoleplaySampling(
         request: ChatCompletionRequest,
         errorDetail: String,
-    ): Boolean {
-        if (request.temperature == null && request.topP == null) {
-            return false
-        }
-        val normalizedError = errorDetail.trim().lowercase()
-        if (normalizedError.isBlank()) {
-            return false
-        }
-        return UnsupportedSamplingMessageHints.any { hint ->
-            normalizedError.contains(hint)
-        }
-    }
+    ): Boolean = GatewayRequestSupport.shouldRetryWithoutRoleplaySampling(request, errorDetail)
 
     private fun markRoleplaySamplingUnsupported(
         baseUrl: String,

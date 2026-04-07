@@ -12,12 +12,17 @@ import com.example.myapplication.conversation.ConversationMemoryExtractionCoordi
 import com.example.myapplication.conversation.ConversationTransferCoordinator
 import com.example.myapplication.conversation.ConversationMessageTransforms
 import com.example.myapplication.conversation.ConversationSummaryCoordinator
+import com.example.myapplication.conversation.ConversationSummaryDebugSupport
+import com.example.myapplication.conversation.ContextGovernanceSupport
+import com.example.myapplication.conversation.GiftImageGenerationCoordinator
 import com.example.myapplication.conversation.RoundTripInitialPersistence
 import com.example.myapplication.conversation.RoleplaySuggestionCoordinator
 import com.example.myapplication.conversation.StreamedAssistantPayload
+import com.example.myapplication.conversation.SummaryUpdateResult
 import com.example.myapplication.conversation.persistInitialRoundTripState
 import com.example.myapplication.context.PromptContextAssembler
 import com.example.myapplication.data.repository.ConversationRepository
+import com.example.myapplication.data.repository.SavedImageFile
 import com.example.myapplication.data.repository.ai.AiGateway
 import com.example.myapplication.data.repository.ai.AiPromptExtrasService
 import com.example.myapplication.data.repository.ai.AiSettingsEditor
@@ -32,8 +37,11 @@ import com.example.myapplication.model.AppSettings
 import com.example.myapplication.model.Assistant
 import com.example.myapplication.model.ChatMessage
 import com.example.myapplication.model.ChatMessagePart
+import com.example.myapplication.model.ChatSpecialPlayDraft
 import com.example.myapplication.model.ChatStreamEvent
 import com.example.myapplication.model.Conversation
+import com.example.myapplication.model.ContextGovernanceSnapshot
+import com.example.myapplication.model.GatewayToolingOptions
 import com.example.myapplication.model.MemoryScopeType
 import com.example.myapplication.model.MessageRole
 import com.example.myapplication.model.MessageStatus
@@ -94,6 +102,7 @@ data class RoleplayUiState(
     val errorMessage: String? = null,
     val noticeMessage: String? = null,
     val latestPromptDebugDump: String = "",
+    val contextGovernance: ContextGovernanceSnapshot? = null,
     val streamingContent: String = "",
     val suggestionErrorMessage: String? = null,
     val pendingMemoryProposal: PendingMemoryProposal? = null,
@@ -119,6 +128,7 @@ class RoleplayViewModel(
     private val outputParser: RoleplayOutputParser = RoleplayOutputParser(),
     private val nowProvider: () -> Long = { System.currentTimeMillis() },
     private val messageIdProvider: () -> String = { UUID.randomUUID().toString() },
+    private val imageSaver: suspend (String) -> SavedImageFile = { throw IllegalStateException("图片保存未配置") },
 ) : ViewModel() {
     val settings: StateFlow<AppSettings> = settingsRepository.settingsFlow.stateIn(
         scope = viewModelScope,
@@ -159,6 +169,12 @@ class RoleplayViewModel(
     private val transferCoordinator = ConversationTransferCoordinator(
         conversationRepository = conversationRepository,
     )
+    private val giftImageCoordinator = GiftImageGenerationCoordinator(
+        aiPromptExtrasService = aiPromptExtrasService,
+        aiGateway = aiGateway,
+        conversationRepository = conversationRepository,
+        imageSaver = imageSaver,
+    )
     private val suggestionActionSupport = RoleplaySuggestionActionSupport(
         scope = viewModelScope,
         uiState = { _uiState.value },
@@ -177,6 +193,7 @@ class RoleplayViewModel(
         contextStatusCoordinator = contextStatusCoordinator,
         pendingMemoryProposalRepository = pendingMemoryProposalRepository,
         aiPromptExtrasService = aiPromptExtrasService,
+        refreshContextGovernance = ::rebuildContextGovernanceSnapshot,
     )
     private val scenarioActionSupport = RoleplayScenarioActionSupport(
         scope = viewModelScope,
@@ -202,6 +219,12 @@ class RoleplayViewModel(
         currentUiState = { _uiState.value },
         updateUiState = { reducer -> _uiState.update(reducer) },
         updateRawMessages = { messages -> currentRawMessages.value = messages },
+        launchGiftImageGeneration = { request, onUpdated ->
+            viewModelScope.launch {
+                val updatedMessages = giftImageCoordinator.generate(request) ?: return@launch
+                onUpdated(updatedMessages)
+            }
+        },
         launchConversationSummaryGeneration = { conversationId, completedMessages, settings, assistant, scenario ->
             contextUpdateSupport.launchConversationSummaryGeneration(
                 conversationId = conversationId,
@@ -210,7 +233,7 @@ class RoleplayViewModel(
                 assistant = assistant,
                 scenario = scenario,
                 summaryTriggerMessageCount = SUMMARY_TRIGGER_MESSAGE_COUNT,
-                summaryRecentMessageWindow = SUMMARY_RECENT_MESSAGE_WINDOW,
+                summaryRecentMessageWindow = resolveSummaryRecentWindow(assistant),
                 summaryMinCoveredMessageCount = SUMMARY_MIN_COVERED_MESSAGE_COUNT,
                 maxSummaryInputLength = MAX_SUMMARY_INPUT_LENGTH,
             )
@@ -381,14 +404,24 @@ class RoleplayViewModel(
         scenarioActionSupport.editUserMessage(sourceMessageId)
     }
 
+    fun sendSpecialPlay(draft: ChatSpecialPlayDraft) {
+        sendActionSupport.sendSpecialPlay(draft)?.let { job ->
+            sendingJob = job
+        }
+    }
+
     fun sendTransferPlay(
         counterparty: String,
         amount: String,
         note: String,
     ) {
-        sendActionSupport.sendTransferPlay(counterparty, amount, note)?.let { job ->
-            sendingJob = job
-        }
+        sendSpecialPlay(
+            com.example.myapplication.model.TransferPlayDraft(
+                counterparty = counterparty,
+                amount = amount,
+                note = note,
+            ),
+        )
     }
 
     fun confirmTransferReceipt(specialId: String) {
@@ -445,10 +478,164 @@ class RoleplayViewModel(
         scenarioActionSupport.restartCurrentSession()
     }
 
+    fun refreshCurrentConversationSummary() {
+        val state = _uiState.value
+        val session = state.currentSession ?: return
+        val scenario = state.currentScenario ?: return
+        val assistant = state.currentAssistant ?: RoleplayConversationSupport.resolveAssistant(
+            settings = state.settings,
+            assistantId = scenario.assistantId,
+        )
+        viewModelScope.launch {
+            val result = runCatching {
+                contextUpdateSupport.updateConversationSummary(
+                    conversationId = session.conversationId,
+                    completedMessages = currentRawMessages.value.filter { it.status == MessageStatus.COMPLETED },
+                    settings = state.settings,
+                    assistant = assistant,
+                    scenario = scenario,
+                    summaryTriggerMessageCount = SUMMARY_TRIGGER_MESSAGE_COUNT,
+                    summaryRecentMessageWindow = resolveSummaryRecentWindow(assistant),
+                    summaryMinCoveredMessageCount = SUMMARY_MIN_COVERED_MESSAGE_COUNT,
+                    maxSummaryInputLength = MAX_SUMMARY_INPUT_LENGTH,
+                    forceRefresh = true,
+                )
+            }.getOrDefault(SummaryUpdateResult())
+            if (result.updated && _uiState.value.currentSession?.conversationId == session.conversationId) {
+                _uiState.update { current ->
+                    RoleplayStateSupport.applyNoticeMessage(current, "上下文摘要已刷新")
+                }
+            }
+        }
+    }
+
     fun sendMessage() {
         sendActionSupport.sendMessage()?.let { job ->
             sendingJob = job
         }
+    }
+
+    private fun resolveSummaryRecentWindow(
+        assistant: Assistant?,
+    ): Int {
+        return assistant?.contextMessageSize?.takeIf { it > 0 }
+            ?: SUMMARY_RECENT_MESSAGE_WINDOW
+    }
+
+    private suspend fun rebuildContextGovernanceSnapshot(
+        conversationId: String,
+        messages: List<ChatMessage>,
+        settings: AppSettings,
+        assistant: Assistant?,
+        scenario: RoleplayScenario,
+    ) {
+        val current = _uiState.value
+        val session = current.currentSession ?: return
+        if (session.conversationId != conversationId) {
+            return
+        }
+        val requestMessages = messages.filter { it.status == MessageStatus.COMPLETED }
+        val conversation = conversationRepository.getConversation(conversationId)
+            ?: Conversation(
+                id = conversationId,
+                createdAt = nowProvider(),
+                updatedAt = nowProvider(),
+                assistantId = scenario.assistantId,
+            )
+        val promptContext = promptContextAssembler.assemble(
+            settings = settings,
+            assistant = assistant,
+            conversation = conversation,
+            userInputText = RoleplayConversationSupport.resolveLatestUserInputText(requestMessages),
+            recentMessages = requestMessages,
+            promptMode = PromptMode.ROLEPLAY,
+        )
+        val directorNote = RoleplayConversationSupport.buildDynamicDirectorNote(
+            messages = requestMessages,
+            scenario = scenario,
+            assistant = assistant,
+            settings = settings,
+            outputParser = outputParser,
+        )
+        val decoratedPrompt = RoleplayPromptDecorator.decorate(
+            baseSystemPrompt = promptContext.systemPrompt,
+            scenario = scenario,
+            assistant = assistant,
+            settings = settings,
+            includeOpeningNarrationReference = requestMessages.none { it.role == MessageRole.USER },
+            directorNote = directorNote,
+        )
+        val effectiveRequestMessages = resolveRoleplayRequestMessagesForRoundTrip(
+            conversationId = conversationId,
+            assistant = assistant,
+            requestMessages = requestMessages,
+        )
+        val toolingOptions = GatewayToolingOptions.localContextOnly(
+            com.example.myapplication.model.GatewayToolRuntimeContext(
+                promptMode = PromptMode.ROLEPLAY,
+                assistant = assistant,
+                conversation = conversation,
+                userInputText = RoleplayConversationSupport.resolveLatestUserInputText(requestMessages),
+                recentMessages = requestMessages,
+            ),
+        )
+        val completedMessageCount = requestMessages.size
+        val debugDump = buildString {
+            append(
+                ConversationSummaryDebugSupport.appendStatusLine(
+                    debugDump = promptContext.debugDump,
+                    hasSummary = promptContext.summaryCoveredMessageCount > 0,
+                    coveredMessageCount = promptContext.summaryCoveredMessageCount,
+                    completedMessageCount = completedMessageCount,
+                    triggerMessageCount = SUMMARY_TRIGGER_MESSAGE_COUNT,
+                ),
+            )
+            if (decoratedPrompt.isNotBlank()) {
+                append("\n\n【RP 装饰后提示词】\n")
+                append(decoratedPrompt)
+            }
+        }
+        _uiState.update { currentState ->
+            RoleplayStateSupport.applyPromptContext(
+                current = currentState,
+                summaryCoveredMessageCount = promptContext.summaryCoveredMessageCount,
+                worldBookHitCount = promptContext.worldBookHitCount,
+                memoryInjectionCount = promptContext.memoryInjectionCount,
+                debugDump = debugDump,
+                contextGovernance = ContextGovernanceSupport.buildSnapshot(
+                    settings = settings,
+                    assistant = assistant,
+                    promptMode = PromptMode.ROLEPLAY,
+                    selectedModel = RoleplayConversationSupport.resolveSelectedModelId(settings),
+                    requestMessages = requestMessages,
+                    effectiveRequestMessages = effectiveRequestMessages,
+                    promptContext = promptContext,
+                    completedMessageCount = completedMessageCount,
+                    triggerMessageCount = SUMMARY_TRIGGER_MESSAGE_COUNT,
+                    recentWindow = resolveSummaryRecentWindow(assistant),
+                    minCoveredMessageCount = SUMMARY_MIN_COVERED_MESSAGE_COUNT,
+                    toolingOptions = toolingOptions,
+                    rawDebugDump = debugDump,
+                ),
+            )
+        }
+    }
+
+    private suspend fun resolveRoleplayRequestMessagesForRoundTrip(
+        conversationId: String,
+        assistant: Assistant?,
+        requestMessages: List<ChatMessage>,
+    ): List<ChatMessage> {
+        val summary = conversationSummaryRepository.getSummary(conversationId)
+        return ConversationMessageTransforms.trimRequestMessagesWithSummary(
+            requestMessages = requestMessages,
+            completedMessageCount = requestMessages.count { it.status == MessageStatus.COMPLETED },
+            summaryCoveredMessageCount = summary
+                ?.takeIf { it.summary.isNotBlank() }
+                ?.coveredMessageCount
+                ?: 0,
+            recentWindow = resolveSummaryRecentWindow(assistant),
+        )
     }
 
     private fun observePendingMemoryProposal() {
@@ -515,6 +702,7 @@ class RoleplayViewModel(
             conversationSummaryRepository: ConversationSummaryRepository,
             pendingMemoryProposalRepository: PendingMemoryProposalRepository,
             memoryWriteService: MemoryWriteService,
+            imageSaver: suspend (String) -> SavedImageFile = { throw IllegalStateException("图片保存未配置") },
         ): ViewModelProvider.Factory {
             return object : ViewModelProvider.Factory {
                 @Suppress("UNCHECKED_CAST")
@@ -531,6 +719,7 @@ class RoleplayViewModel(
                         conversationSummaryRepository = conversationSummaryRepository,
                         pendingMemoryProposalRepository = pendingMemoryProposalRepository,
                         memoryWriteService = memoryWriteService,
+                        imageSaver = imageSaver,
                     ) as T
                 }
             }

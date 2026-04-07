@@ -17,6 +17,8 @@ import com.example.myapplication.model.ChatChoiceDto
 import com.example.myapplication.model.ChatMessage
 import com.example.myapplication.model.Conversation
 import com.example.myapplication.model.DEFAULT_CONVERSATION_TITLE
+import com.example.myapplication.model.GiftImageStatus
+import com.example.myapplication.model.GiftPlayDraft
 import com.example.myapplication.model.ImageGenerationRequest
 import com.example.myapplication.model.ImageGenerationDataDto
 import com.example.myapplication.model.ImageGenerationResponse
@@ -24,12 +26,15 @@ import com.example.myapplication.model.MemoryEntry
 import com.example.myapplication.model.MessageRole
 import com.example.myapplication.model.MessageStatus
 import com.example.myapplication.model.MemoryScopeType
+import com.example.myapplication.model.ContextSummaryState
 import com.example.myapplication.model.ModelAbility
 import com.example.myapplication.model.ModelInfo
 import com.example.myapplication.model.ModelsResponse
 import com.example.myapplication.model.ProviderSettings
 import com.example.myapplication.model.TransferDirection
 import com.example.myapplication.model.TransferStatus
+import com.example.myapplication.model.giftImageStatus
+import com.example.myapplication.model.specialMetadataValue
 import com.example.myapplication.model.transferMessagePart
 import com.example.myapplication.testutil.FakeConversationStore
 import com.example.myapplication.testutil.FakeConversationSummaryRepository
@@ -307,6 +312,7 @@ class ChatViewModelTest {
         assertTrue(systemPrompt.contains("【示例对话】"))
         assertTrue(systemPrompt.contains("先看账本，能更快锁定资金流向。"))
         assertTrue(viewModel.uiState.value.latestPromptDebugDump.contains("【上下文调试】"))
+        assertEquals(1, viewModel.uiState.value.contextGovernance?.sentMessageCount)
     }
 
     @Test
@@ -498,6 +504,87 @@ class ChatViewModelTest {
         val systemPrompt = messages[0].asJsonObject["content"].asString
         assertTrue(systemPrompt.contains("【对话摘要】"))
         assertTrue(messages.size() < existingMessages.size + 2)
+    }
+
+    @Test
+    fun sendMessage_withStaleConversationSummary_keepsIntermediateMessages() = runTest(mainDispatcherRule.dispatcher.scheduler) {
+        val existingMessages = (1..8).flatMap { index ->
+            listOf(
+                ChatMessage(
+                    id = "user-$index",
+                    conversationId = "c1",
+                    role = MessageRole.USER,
+                    content = "用户消息 $index",
+                    createdAt = index.toLong(),
+                ),
+                ChatMessage(
+                    id = "assistant-$index",
+                    conversationId = "c1",
+                    role = MessageRole.ASSISTANT,
+                    content = "助手回复 $index",
+                    createdAt = (index + 100).toLong(),
+                ),
+            )
+        }
+        val store = FakeConversationStore(
+            conversations = listOf(
+                Conversation(
+                    id = "c1",
+                    title = DEFAULT_CONVERSATION_TITLE,
+                    model = "",
+                    createdAt = 1L,
+                    updatedAt = 1L,
+                    assistantId = "assistant-1",
+                ),
+            ),
+            messagesByConversation = mapOf(
+                "c1" to existingMessages,
+            ),
+        )
+        enqueueStreamResponse(content = "继续调查")
+        val summaryRepository = FakeConversationSummaryRepository(
+            initialSummaries = listOf(
+                com.example.myapplication.model.ConversationSummary(
+                    conversationId = "c1",
+                    assistantId = "assistant-1",
+                    summary = "只覆盖了更早的一小段。",
+                    coveredMessageCount = 4,
+                    updatedAt = 10L,
+                ),
+            ),
+        )
+        val viewModel = createViewModel(
+            store = store,
+            settings = AppSettings(
+                baseUrl = server.url("/v1/").toString(),
+                apiKey = "key",
+                selectedModel = "deepseek-chat",
+                assistants = listOf(
+                    Assistant(
+                        id = "assistant-1",
+                        name = "摘要助手",
+                    ),
+                ),
+                selectedAssistantId = "assistant-1",
+            ),
+            conversationSummaryRepository = summaryRepository,
+            promptContextAssembler = DefaultPromptContextAssembler(
+                conversationSummaryRepository = summaryRepository,
+            ),
+        )
+
+        advanceUntilIdle()
+        viewModel.updateInput("现在继续")
+        viewModel.sendMessage()
+        advanceUntilIdle()
+
+        val requestBody = JsonParser.parseString(server.takeRequest().body.readUtf8()).asJsonObject
+        val messages = requestBody.getAsJsonArray("messages")
+        assertEquals(existingMessages.size + 2, messages.size())
+        assertEquals(
+            ContextSummaryState.STALE,
+            viewModel.uiState.value.contextGovernance?.summaryState,
+        )
     }
 
     @Test
@@ -1385,6 +1472,348 @@ class ChatViewModelTest {
                 .setHeader("Content-Type", "text/event-stream")
                 .setBody(sseBody),
         )
+    }
+
+    @Test
+    fun rapidAssistantSwitching_doesNotCrashOrLoseState() = runTest(mainDispatcherRule.dispatcher.scheduler) {
+        val store = FakeConversationStore()
+        val assistantA = Assistant(id = "assistant-a", name = "A")
+        val assistantB = Assistant(id = "assistant-b", name = "B")
+        val settings = AppSettings(
+            baseUrl = server.url("/v1/").toString(),
+            apiKey = "test-key",
+            selectedModel = "test-model",
+            assistants = listOf(assistantA, assistantB),
+        )
+        val viewModel = createViewModel(
+            store = store,
+            settings = settings,
+            messageIdProvider = {
+                java.util.UUID.randomUUID().toString()
+            },
+        )
+        advanceUntilIdle()
+
+        viewModel.selectAssistant("assistant-a")
+        viewModel.selectAssistant("assistant-b")
+        viewModel.selectAssistant("assistant-a")
+        viewModel.selectAssistant("assistant-b")
+        advanceUntilIdle()
+
+        val state = viewModel.uiState.value
+        assertFalse(state.isSending)
+        assertTrue(state.currentConversationId.isNotBlank())
+    }
+
+    @Test
+    fun rapidConversationSwitching_maintainsConsistentState() = runTest(mainDispatcherRule.dispatcher.scheduler) {
+        val store = FakeConversationStore()
+        val settings = AppSettings(
+            baseUrl = server.url("/v1/").toString(),
+            apiKey = "test-key",
+            selectedModel = "test-model",
+        )
+        val viewModel = createViewModel(
+            store = store,
+            settings = settings,
+            messageIdProvider = {
+                java.util.UUID.randomUUID().toString()
+            },
+        )
+        advanceUntilIdle()
+
+        viewModel.createConversation()
+        advanceUntilIdle()
+        viewModel.createConversation()
+        advanceUntilIdle()
+
+        val conversations = viewModel.uiState.value.conversations
+        assertTrue(conversations.size >= 2)
+
+        viewModel.selectConversation(conversations[0].id)
+        viewModel.selectConversation(conversations[1].id)
+        viewModel.selectConversation(conversations[0].id)
+        advanceUntilIdle()
+
+        val finalState = viewModel.uiState.value
+        assertEquals(conversations[0].id, finalState.currentConversationId)
+        assertFalse(finalState.isSending)
+    }
+
+    @Test
+    fun refreshConversationSummary_rebuildsContextGovernanceImmediately() = runTest(mainDispatcherRule.dispatcher.scheduler) {
+        server.enqueue(
+            MockResponse().setResponseCode(200).setBody(
+                """
+                {
+                  "choices": [
+                    {
+                      "index": 0,
+                      "message": {
+                        "role": "assistant",
+                        "content": "新的聊天摘要"
+                      }
+                    }
+                  ]
+                }
+                """.trimIndent(),
+            ),
+        )
+        val conversationId = "c1"
+        val store = FakeConversationStore(
+            conversations = listOf(
+                Conversation(
+                    id = conversationId,
+                    title = "旧对话",
+                    model = "chat-model",
+                    createdAt = 1L,
+                    updatedAt = 1L,
+                    assistantId = "assistant-1",
+                ),
+            ),
+            messagesByConversation = mapOf(
+                conversationId to (1..21).map { index ->
+                    ChatMessage(
+                        id = "m$index",
+                        conversationId = conversationId,
+                        role = if (index % 2 == 0) MessageRole.ASSISTANT else MessageRole.USER,
+                        content = "消息$index",
+                        createdAt = index.toLong(),
+                    )
+                },
+            ),
+        )
+        val summaryRepository = FakeConversationSummaryRepository()
+        val provider = ProviderSettings(
+            id = "provider-1",
+            baseUrl = server.url("/v1/").toString(),
+            apiKey = "key",
+            selectedModel = "chat-model",
+            titleSummaryModel = "summary-model",
+        )
+        val assistant = Assistant(id = "assistant-1", name = "助手")
+        val viewModel = createViewModel(
+            store = store,
+            settings = AppSettings(
+                baseUrl = provider.baseUrl,
+                apiKey = provider.apiKey,
+                selectedModel = provider.selectedModel,
+                providers = listOf(provider),
+                selectedProviderId = provider.id,
+                assistants = listOf(assistant),
+                selectedAssistantId = assistant.id,
+            ),
+            conversationSummaryRepository = summaryRepository,
+            promptContextAssembler = DefaultPromptContextAssembler(
+                conversationSummaryRepository = summaryRepository,
+            ),
+            apiServiceProvider = { _, _ ->
+                object : OpenAiCompatibleApi {
+                    override suspend fun listModels(): Response<ModelsResponse> = error("不应调用")
+
+                    override suspend fun createChatCompletion(request: ChatCompletionRequest): Response<ChatCompletionResponse> {
+                        return Response.success(
+                            ChatCompletionResponse(
+                                choices = listOf(
+                                    ChatChoiceDto(
+                                        index = 0,
+                                        message = AssistantMessageDto(
+                                            role = "assistant",
+                                            content = "新的聊天摘要",
+                                        ),
+                                    ),
+                                ),
+                            ),
+                        )
+                    }
+
+                    override suspend fun createChatCompletionAt(
+                        url: String,
+                        request: ChatCompletionRequest,
+                    ): Response<ChatCompletionResponse> = createChatCompletion(request)
+
+                    override suspend fun createResponseAt(
+                        url: String,
+                        request: com.example.myapplication.model.ResponseApiRequest,
+                    ): Response<com.example.myapplication.model.ResponseApiResponse> = error("不应调用")
+
+                    override suspend fun generateImage(request: ImageGenerationRequest): Response<ImageGenerationResponse> = error("不应调用")
+                }
+            },
+        )
+
+        advanceUntilIdle()
+        viewModel.refreshConversationSummary()
+        advanceUntilIdle()
+
+        assertEquals("新的聊天摘要", summaryRepository.getSummary(conversationId)?.summary)
+        assertEquals(9, viewModel.uiState.value.contextGovernance?.summaryCoveredMessageCount)
+        assertEquals(ContextSummaryState.APPLIED, viewModel.uiState.value.contextGovernance?.summaryState)
+    }
+
+    @Test
+    fun sendSpecialPlay_generatesGiftImageAndKeepsSingleGiftMessage() = runTest(mainDispatcherRule.dispatcher.scheduler) {
+        val conversationId = "c1"
+        val store = FakeConversationStore(
+            conversations = listOf(
+                Conversation(
+                    id = conversationId,
+                    title = DEFAULT_CONVERSATION_TITLE,
+                    model = "",
+                    createdAt = 1L,
+                    updatedAt = 1L,
+                    assistantId = "assistant-1",
+                ),
+            ),
+        )
+        enqueueStreamResponse("礼物我收下了。")
+        val provider = ProviderSettings(
+            id = "provider-1",
+            baseUrl = server.url("/v1/").toString(),
+            apiKey = "key",
+            selectedModel = "deepseek-chat",
+            giftImageModel = "gpt-image-1",
+        )
+        val viewModel = createViewModel(
+            store = store,
+            settings = AppSettings(
+                baseUrl = provider.baseUrl,
+                apiKey = provider.apiKey,
+                selectedModel = provider.selectedModel,
+                providers = listOf(provider),
+                selectedProviderId = provider.id,
+                assistants = listOf(Assistant(id = "assistant-1", name = "陆宴清")),
+                selectedAssistantId = "assistant-1",
+            ),
+            nowProvider = incrementingNowProvider(100L),
+            messageIdProvider = idProviderOf("user-1", "assistant-1"),
+            imageSaver = {
+                SavedImageFile(
+                    path = "/tmp/gift.png",
+                    mimeType = "image/png",
+                    fileName = "gift.png",
+                )
+            },
+            apiServiceProvider = { _, _ ->
+                object : OpenAiCompatibleApi {
+                    override suspend fun listModels(): Response<ModelsResponse> = error("不应调用")
+
+                    override suspend fun createChatCompletion(
+                        request: ChatCompletionRequest,
+                    ): Response<ChatCompletionResponse> = createChatCompletionAt("", request)
+
+                    override suspend fun createChatCompletionAt(
+                        url: String,
+                        request: ChatCompletionRequest,
+                    ): Response<ChatCompletionResponse> {
+                        val prompt = request.messages.firstOrNull()?.content?.toString().orEmpty()
+                        val content = when {
+                            prompt.contains("礼物生图提示词优化器") -> "一张黑胶唱片礼物特写，柔和光影，电影感构图。"
+                            prompt.contains("请用不超过15个字总结以下对话的主题") -> "礼物互动"
+                            else -> "通用结果"
+                        }
+                        return Response.success(
+                            ChatCompletionResponse(
+                                choices = listOf(
+                                    ChatChoiceDto(
+                                        index = 0,
+                                        message = AssistantMessageDto(
+                                            role = "assistant",
+                                            content = content,
+                                        ),
+                                    ),
+                                ),
+                            ),
+                        )
+                    }
+
+                    override suspend fun createResponseAt(
+                        url: String,
+                        request: com.example.myapplication.model.ResponseApiRequest,
+                    ): Response<com.example.myapplication.model.ResponseApiResponse> = error("不应调用")
+
+                    override suspend fun generateImage(
+                        request: ImageGenerationRequest,
+                    ): Response<ImageGenerationResponse> {
+                        return Response.success(
+                            ImageGenerationResponse(
+                                data = listOf(
+                                    ImageGenerationDataDto(
+                                        b64Json = "ZmFrZQ==",
+                                        revisedPrompt = request.prompt,
+                                    ),
+                                ),
+                            ),
+                        )
+                    }
+                }
+            },
+        )
+
+        advanceUntilIdle()
+        viewModel.sendSpecialPlay(
+            GiftPlayDraft(
+                target = "陆宴清",
+                item = "黑胶唱片",
+                note = "收好",
+            ),
+        )
+        advanceUntilIdle()
+
+        val state = viewModel.uiState.value
+        assertEquals(2, state.messages.size)
+        val giftPart = state.messages.first().parts.single()
+        assertEquals(GiftImageStatus.SUCCEEDED, giftPart.giftImageStatus())
+        assertEquals("/tmp/gift.png", giftPart.specialMetadataValue("gift_image_uri"))
+        assertEquals("礼物我收下了。", state.messages.last().content)
+    }
+
+    @Test
+    fun sendSpecialPlay_withoutGiftImageModelShowsNoticeAndKeepsPlainGiftCard() = runTest(mainDispatcherRule.dispatcher.scheduler) {
+        val conversationId = "c1"
+        val store = FakeConversationStore(
+            conversations = listOf(
+                Conversation(
+                    id = conversationId,
+                    title = DEFAULT_CONVERSATION_TITLE,
+                    model = "",
+                    createdAt = 1L,
+                    updatedAt = 1L,
+                ),
+            ),
+        )
+        enqueueStreamResponse("收到礼物")
+        val provider = ProviderSettings(
+            id = "provider-1",
+            baseUrl = server.url("/v1/").toString(),
+            apiKey = "key",
+            selectedModel = "deepseek-chat",
+        )
+        val viewModel = createViewModel(
+            store = store,
+            settings = AppSettings(
+                baseUrl = provider.baseUrl,
+                apiKey = provider.apiKey,
+                selectedModel = provider.selectedModel,
+                providers = listOf(provider),
+                selectedProviderId = provider.id,
+            ),
+            nowProvider = incrementingNowProvider(200L),
+            messageIdProvider = idProviderOf("user-1", "assistant-1"),
+        )
+
+        advanceUntilIdle()
+        viewModel.sendSpecialPlay(
+            GiftPlayDraft(
+                target = "陆宴清",
+                item = "黑胶唱片",
+            ),
+        )
+        advanceUntilIdle()
+
+        val giftPart = viewModel.uiState.value.messages.first().parts.single()
+        assertEquals(null, giftPart.giftImageStatus())
+        assertEquals("未配置礼物生图模型，已按普通礼物卡发送", viewModel.uiState.value.noticeMessage)
     }
 
     private fun createViewModel(

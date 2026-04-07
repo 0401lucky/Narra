@@ -28,9 +28,8 @@ import com.example.myapplication.model.ChatMessagePart
 import com.example.myapplication.model.ChatMessagePartType
 import com.example.myapplication.model.MessageAttachment
 import com.example.myapplication.model.MessageRole
-import com.example.myapplication.model.formatTransferAmount
-import com.example.myapplication.model.isTransferPart
 import com.example.myapplication.model.toMessageAttachmentOrNull
+import com.example.myapplication.model.toSpecialPlayCopyText
 import com.mikepenz.markdown.model.MarkdownPadding
 import com.mikepenz.markdown.model.MarkdownTypography
 import com.mikepenz.markdown.model.markdownPadding
@@ -47,6 +46,7 @@ internal fun UserStructuredMessageContent(
     contentColor: androidx.compose.ui.graphics.Color,
     messageTextScale: Float,
     autoPreviewImages: Boolean,
+    performanceMode: ChatMessagePerformanceMode,
     onConfirmTransferReceipt: ((String) -> Unit)?,
 ) {
     val bubbleShape = RoundedCornerShape(
@@ -106,14 +106,14 @@ internal fun UserStructuredMessageContent(
                     }
 
                     ChatMessagePartType.SPECIAL -> {
-                        if (part.isTransferPart()) {
-                            Box(modifier = Modifier.widthIn(max = MessageBubbleUserMessageMaxWidth)) {
-                                TransferPlayCard(
-                                    part = part,
-                                    isUserMessage = true,
-                                    onConfirmTransferReceipt = onConfirmTransferReceipt,
-                                )
-                            }
+                        Box(modifier = Modifier.widthIn(max = MessageBubbleUserMessageMaxWidth)) {
+                            SpecialPlayCard(
+                                part = part,
+                                isUserMessage = true,
+                                onConfirmTransferReceipt = onConfirmTransferReceipt,
+                                autoPreviewImages = autoPreviewImages,
+                                reduceMotion = performanceMode != ChatMessagePerformanceMode.FULL,
+                            )
                         }
                     }
                 }
@@ -229,14 +229,7 @@ internal fun buildMessageCopyPayload(
                     "文件：${part.fileName.ifBlank { "未命名文件" }}"
                 }
 
-                part.isTransferPart() -> {
-                    buildString {
-                        append("转账：")
-                        append(part.formatTransferAmount())
-                        append(" · ")
-                        append(part.specialCounterparty.ifBlank { "对方" })
-                    }
-                }
+                part.type == ChatMessagePartType.SPECIAL -> part.toSpecialPlayCopyText().lineSequence().firstOrNull().orEmpty()
 
                 else -> ""
             }
@@ -293,12 +286,13 @@ internal fun MessageBubbleContent(
     autoPreviewImages: Boolean,
     codeBlockAutoWrap: Boolean,
     codeBlockAutoCollapse: Boolean,
+    performanceMode: ChatMessagePerformanceMode,
     onConfirmTransferReceipt: ((String) -> Unit)?,
     modifier: Modifier = Modifier,
 ) {
     Column(
         modifier = modifier,
-        verticalArrangement = Arrangement.spacedBy(10.dp),
+        verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
         if (displayAttachments.isNotEmpty()) {
             displayAttachments.forEach { attachment ->
@@ -323,6 +317,7 @@ internal fun MessageBubbleContent(
                 autoPreviewImages = autoPreviewImages,
                 codeBlockAutoWrap = codeBlockAutoWrap,
                 codeBlockAutoCollapse = codeBlockAutoCollapse,
+                performanceMode = performanceMode,
                 onConfirmTransferReceipt = onConfirmTransferReceipt,
             )
         } else {
@@ -346,6 +341,7 @@ internal fun MessageBubbleContent(
                     plainTextStyle = plainTextStyle,
                     codeBlockAutoWrap = codeBlockAutoWrap,
                     codeBlockAutoCollapse = codeBlockAutoCollapse,
+                    performanceMode = performanceMode,
                 )
             }
         }
@@ -364,17 +360,17 @@ internal fun chatMarkdownPadding(
     compact: Boolean,
 ): MarkdownPadding {
     return markdownPadding(
-        block = if (compact) 1.dp else 2.dp,
-        list = if (compact) 1.dp else 2.dp,
+        block = if (compact) 2.dp else 4.dp,
+        list = if (compact) 2.dp else 4.dp,
         listItemTop = 0.dp,
-        listItemBottom = if (compact) 0.dp else 1.dp,
-        listIndent = if (compact) 6.dp else 8.dp,
+        listItemBottom = if (compact) 1.dp else 2.dp,
+        listIndent = if (compact) 8.dp else 10.dp,
         codeBlock = if (compact) {
-            PaddingValues(horizontal = 10.dp, vertical = 6.dp)
+            PaddingValues(horizontal = 12.dp, vertical = 10.dp)
         } else {
-            PaddingValues(horizontal = 12.dp, vertical = 8.dp)
+            PaddingValues(horizontal = 14.dp, vertical = 12.dp)
         },
-        blockQuote = PaddingValues(horizontal = if (compact) 10.dp else 12.dp, vertical = 0.dp),
-        blockQuoteText = PaddingValues(bottom = if (compact) 2.dp else 3.dp),
+        blockQuote = PaddingValues(horizontal = if (compact) 12.dp else 14.dp, vertical = 2.dp),
+        blockQuoteText = PaddingValues(bottom = if (compact) 3.dp else 4.dp),
     )
 }

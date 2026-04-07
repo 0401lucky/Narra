@@ -431,7 +431,7 @@ class ScreenTranslatorService : Service() {
         val activeModel = settings.activeProvider()
             ?.resolveFunctionModel(com.example.myapplication.model.ProviderFunction.TRANSLATION)
             .orEmpty()
-            .ifBlank { settings.selectedModel }
+            .ifBlank { "未启用" }
         val entry = TranslationHistoryEntry(
             id = UUID.randomUUID().toString(),
             sourceText = sourceText,

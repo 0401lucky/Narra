@@ -14,6 +14,7 @@ import com.example.myapplication.model.DEFAULT_MEMORY_MAX_ITEMS
 import com.example.myapplication.model.OpenAiTextApiMode
 import com.example.myapplication.model.DEFAULT_ROLEPLAY_LONGFORM_TARGET_CHARS
 import com.example.myapplication.model.DEFAULT_WORLD_BOOK_MAX_ENTRIES
+import com.example.myapplication.model.ProviderFunctionModelMode
 import com.example.myapplication.model.ProviderSettings
 import com.example.myapplication.model.ProviderType
 import com.example.myapplication.model.SearchSettings
@@ -57,6 +58,9 @@ interface SettingsStore {
         roleplayLongformTargetChars: Int,
         showRoleplayPresenceStrip: Boolean,
         showRoleplayStatusStrip: Boolean,
+        roleplayImmersiveMode: com.example.myapplication.model.RoleplayImmersiveMode,
+        roleplayHighContrast: Boolean,
+        roleplayLineHeightScale: com.example.myapplication.model.RoleplayLineHeightScale,
     )
 
     suspend fun saveScreenTranslationSettings(
@@ -156,6 +160,13 @@ class AppSettingsStore(
                 ?: DEFAULT_ROLEPLAY_LONGFORM_TARGET_CHARS).coerceIn(300, 2000),
             showRoleplayPresenceStrip = preferences[PreferencesKeys.showRoleplayPresenceStrip] ?: true,
             showRoleplayStatusStrip = preferences[PreferencesKeys.showRoleplayStatusStrip] ?: false,
+            roleplayImmersiveMode = com.example.myapplication.model.RoleplayImmersiveMode.fromStorageValue(
+                preferences[PreferencesKeys.roleplayImmersiveMode].orEmpty(),
+            ),
+            roleplayHighContrast = preferences[PreferencesKeys.roleplayHighContrast] ?: false,
+            roleplayLineHeightScale = com.example.myapplication.model.RoleplayLineHeightScale.fromStorageValue(
+                preferences[PreferencesKeys.roleplayLineHeightScale].orEmpty(),
+            ),
             suppressRoleplayAssistantMismatchDialog = preferences[PreferencesKeys.suppressRoleplayAssistantMismatchDialog] ?: false,
             userDisplayName = preferences[PreferencesKeys.userDisplayName]
                 .orEmpty()
@@ -292,6 +303,9 @@ class AppSettingsStore(
         roleplayLongformTargetChars: Int,
         showRoleplayPresenceStrip: Boolean,
         showRoleplayStatusStrip: Boolean,
+        roleplayImmersiveMode: com.example.myapplication.model.RoleplayImmersiveMode,
+        roleplayHighContrast: Boolean,
+        roleplayLineHeightScale: com.example.myapplication.model.RoleplayLineHeightScale,
     ) {
         context.dataStore.edit { preferences ->
             preferences[PreferencesKeys.themeMode] = themeMode.storageValue
@@ -307,6 +321,9 @@ class AppSettingsStore(
                 roleplayLongformTargetChars.coerceIn(300, 2000)
             preferences[PreferencesKeys.showRoleplayPresenceStrip] = showRoleplayPresenceStrip
             preferences[PreferencesKeys.showRoleplayStatusStrip] = showRoleplayStatusStrip
+            preferences[PreferencesKeys.roleplayImmersiveMode] = roleplayImmersiveMode.storageValue
+            preferences[PreferencesKeys.roleplayHighContrast] = roleplayHighContrast
+            preferences[PreferencesKeys.roleplayLineHeightScale] = roleplayLineHeightScale.storageValue
         }
     }
 
@@ -380,8 +397,13 @@ class AppSettingsStore(
     suspend fun migrateSensitiveData() {
         context.dataStore.edit { preferences ->
             val currentSecureProviderApiKeys = secureValueStore.getStringMap(SecureKeys.providerApiKeys).toMutableMap()
+            val currentSecureSearchApiKeys = secureValueStore.getStringMap(SecureKeys.searchSourceApiKeys)
             val legacyPlainApiKey = preferences[PreferencesKeys.apiKey].orEmpty()
             val storedProviders = decodeProviders(preferences[PreferencesKeys.providersJson].orEmpty())
+            val migratedSearchSettings = SearchSettingsSensitiveMigrationSupport.migrate(
+                rawJson = preferences[PreferencesKeys.searchSettingsJson].orEmpty(),
+                existingSecureApiKeys = currentSecureSearchApiKeys,
+            )
 
             var updated = false
 
@@ -407,7 +429,17 @@ class AppSettingsStore(
             }
 
             if (!updated) {
-                return@edit
+                if (migratedSearchSettings == null) {
+                    return@edit
+                }
+            }
+
+            if (migratedSearchSettings != null) {
+                secureValueStore.putStringMap(
+                    SecureKeys.searchSourceApiKeys,
+                    migratedSearchSettings.mergedSecureApiKeys,
+                )
+                preferences[PreferencesKeys.searchSettingsJson] = migratedSearchSettings.sanitizedJson
             }
 
             secureValueStore.putStringMap(SecureKeys.providerApiKeys, currentSecureProviderApiKeys)
@@ -465,6 +497,12 @@ class AppSettingsStore(
             )
         val resolvedTextApiMode = provider.openAiTextApiMode ?: OpenAiTextApiMode.CHAT_COMPLETIONS
         val resolvedModels = provider.models ?: provider.availableModels.map(::inferredModelInfo)
+        val normalizedTitleSummaryModel = (provider.titleSummaryModel as String?).orEmpty().trim()
+        val normalizedChatSuggestionModel = (provider.chatSuggestionModel as String?).orEmpty().trim()
+        val normalizedMemoryModel = (provider.memoryModel as String?).orEmpty().trim()
+        val normalizedTranslationModel = (provider.translationModel as String?).orEmpty().trim()
+        val normalizedSearchModel = (provider.searchModel as String?).orEmpty().trim()
+        val normalizedGiftImageModel = (provider.giftImageModel as String?).orEmpty().trim()
         return provider.copy(
             baseUrl = normalizeProviderBaseUrl(provider.baseUrl, resolvedType, resolvedProtocol),
             type = resolvedType,
@@ -472,7 +510,63 @@ class AppSettingsStore(
             openAiTextApiMode = resolvedTextApiMode,
             chatCompletionsPath = normalizeChatCompletionsPath(provider.chatCompletionsPath),
             models = resolvedModels,
+            titleSummaryModel = normalizedTitleSummaryModel,
+            titleSummaryModelMode = normalizeFunctionModelMode(
+                rawMode = provider.titleSummaryModelMode as ProviderFunctionModelMode?,
+                rawModel = normalizedTitleSummaryModel,
+                blankMode = ProviderFunctionModelMode.FOLLOW_DEFAULT,
+            ),
+            chatSuggestionModel = normalizedChatSuggestionModel,
+            chatSuggestionModelMode = normalizeFunctionModelMode(
+                rawMode = provider.chatSuggestionModelMode as ProviderFunctionModelMode?,
+                rawModel = normalizedChatSuggestionModel,
+                blankMode = ProviderFunctionModelMode.FOLLOW_DEFAULT,
+            ),
+            memoryModel = normalizedMemoryModel,
+            memoryModelMode = normalizeFunctionModelMode(
+                rawMode = provider.memoryModelMode as ProviderFunctionModelMode?,
+                rawModel = normalizedMemoryModel,
+                blankMode = ProviderFunctionModelMode.FOLLOW_DEFAULT,
+            ),
+            translationModel = normalizedTranslationModel,
+            translationModelMode = normalizeFunctionModelMode(
+                rawMode = provider.translationModelMode as ProviderFunctionModelMode?,
+                rawModel = normalizedTranslationModel,
+                blankMode = ProviderFunctionModelMode.FOLLOW_DEFAULT,
+            ),
+            searchModel = normalizedSearchModel,
+            searchModelMode = normalizeFunctionModelMode(
+                rawMode = provider.searchModelMode as ProviderFunctionModelMode?,
+                rawModel = normalizedSearchModel,
+                blankMode = ProviderFunctionModelMode.FOLLOW_DEFAULT,
+            ),
+            giftImageModel = normalizedGiftImageModel,
+            giftImageModelMode = normalizeFunctionModelMode(
+                rawMode = provider.giftImageModelMode as ProviderFunctionModelMode?,
+                rawModel = normalizedGiftImageModel,
+                blankMode = ProviderFunctionModelMode.DISABLED,
+            ),
         )
+    }
+
+    private fun normalizeFunctionModelMode(
+        rawMode: ProviderFunctionModelMode?,
+        rawModel: String,
+        blankMode: ProviderFunctionModelMode,
+    ): ProviderFunctionModelMode {
+        val normalizedModel = rawModel.trim()
+        return when (rawMode ?: if (normalizedModel.isNotBlank()) ProviderFunctionModelMode.CUSTOM else blankMode) {
+            ProviderFunctionModelMode.CUSTOM -> {
+                if (normalizedModel.isBlank()) {
+                    blankMode
+                } else {
+                    ProviderFunctionModelMode.CUSTOM
+                }
+            }
+
+            ProviderFunctionModelMode.FOLLOW_DEFAULT -> ProviderFunctionModelMode.FOLLOW_DEFAULT
+            ProviderFunctionModelMode.DISABLED -> ProviderFunctionModelMode.DISABLED
+        }
     }
 
     private fun normalizeProviderBaseUrl(
@@ -526,6 +620,12 @@ class AppSettingsStore(
                 baseUrl = provider.baseUrl.trim(),
                 apiKey = provider.apiKey.trim(),
                 selectedModel = provider.selectedModel.trim(),
+                titleSummaryModel = (provider.titleSummaryModel as String?).orEmpty().trim(),
+                chatSuggestionModel = (provider.chatSuggestionModel as String?).orEmpty().trim(),
+                memoryModel = (provider.memoryModel as String?).orEmpty().trim(),
+                translationModel = (provider.translationModel as String?).orEmpty().trim(),
+                searchModel = (provider.searchModel as String?).orEmpty().trim(),
+                giftImageModel = (provider.giftImageModel as String?).orEmpty().trim(),
                 chatCompletionsPath = normalizeChatCompletionsPath(provider.chatCompletionsPath),
             ),
         )
@@ -656,6 +756,9 @@ class AppSettingsStore(
         val roleplayLongformTargetChars = PreferencesKeysCompat.intPreferencesKey("roleplay_longform_target_chars")
         val showRoleplayPresenceStrip = booleanPreferencesKey("show_roleplay_presence_strip")
         val showRoleplayStatusStrip = booleanPreferencesKey("show_roleplay_status_strip")
+        val roleplayImmersiveMode = stringPreferencesKey("roleplay_immersive_mode")
+        val roleplayHighContrast = booleanPreferencesKey("roleplay_high_contrast")
+        val roleplayLineHeightScale = stringPreferencesKey("roleplay_line_height_scale")
         val suppressRoleplayAssistantMismatchDialog = booleanPreferencesKey("suppress_roleplay_assistant_mismatch_dialog")
         val userDisplayName = stringPreferencesKey("user_display_name")
         val userAvatarUri = stringPreferencesKey("user_avatar_uri")
@@ -687,4 +790,60 @@ class AppSettingsStore(
 
 private object PreferencesKeysCompat {
     fun intPreferencesKey(name: String) = androidx.datastore.preferences.core.intPreferencesKey(name)
+}
+
+internal data class SearchSettingsSensitiveMigrationResult(
+    val sanitizedJson: String,
+    val mergedSecureApiKeys: Map<String, String>,
+)
+
+internal object SearchSettingsSensitiveMigrationSupport {
+    private val gson = Gson()
+    private val searchSettingsType = object : TypeToken<SearchSettings>() {}.type
+
+    fun migrate(
+        rawJson: String,
+        existingSecureApiKeys: Map<String, String>,
+    ): SearchSettingsSensitiveMigrationResult? {
+        if (rawJson.isBlank()) {
+            return null
+        }
+        val normalizedSettings = runCatching {
+            gson.fromJson<SearchSettings>(rawJson, searchSettingsType)
+                ?.normalized()
+        }.getOrNull() ?: return null
+
+        var updated = false
+        val mergedSecureApiKeys = existingSecureApiKeys
+            .mapValues { (_, value) -> value.trim() }
+            .filterValues { it.isNotBlank() }
+            .toMutableMap()
+
+        normalizedSettings.sources.forEach { source ->
+            val trimmedApiKey = source.apiKey.trim()
+            if (trimmedApiKey.isNotBlank() && mergedSecureApiKeys[source.id].isNullOrBlank()) {
+                mergedSecureApiKeys[source.id] = trimmedApiKey
+                updated = true
+            }
+            if (source.apiKey.isNotBlank()) {
+                updated = true
+            }
+        }
+
+        if (!updated) {
+            return null
+        }
+
+        return SearchSettingsSensitiveMigrationResult(
+            sanitizedJson = gson.toJson(
+                normalizedSettings.copy(
+                    sources = normalizedSettings.sources.map { source ->
+                        source.copy(apiKey = "")
+                    },
+                ),
+                searchSettingsType,
+            ),
+            mergedSecureApiKeys = mergedSecureApiKeys,
+        )
+    }
 }

@@ -1,9 +1,17 @@
 package com.example.myapplication.ui.screen.roleplay
 
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.MoreVert
@@ -15,6 +23,7 @@ import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -25,13 +34,24 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.lerp
+import androidx.compose.ui.platform.LocalView
+import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.core.view.WindowCompat
+import androidx.core.view.WindowInsetsControllerCompat
+import androidx.core.view.WindowInsetsCompat
+import com.example.myapplication.R
 import com.example.myapplication.model.AppSettings
 import com.example.myapplication.model.Assistant
+import com.example.myapplication.model.ChatSpecialPlayDraft
+import com.example.myapplication.model.ChatSpecialType
 import com.example.myapplication.model.PendingMemoryProposal
+import com.example.myapplication.model.RoleplayImmersiveMode
 import com.example.myapplication.model.RoleplayContextStatus
 import com.example.myapplication.model.RoleplayMessageUiModel
 import com.example.myapplication.model.RoleplayScenario
@@ -42,13 +62,16 @@ import com.example.myapplication.ui.component.NarraIconButton
 import com.example.myapplication.ui.component.NarraTextButton
 import com.example.myapplication.ui.component.roleplay.ImmersiveBackdropState
 import com.example.myapplication.ui.component.roleplay.ImmersiveGlassChip
+import com.example.myapplication.ui.component.roleplay.ImmersiveGlassSurface
 import com.example.myapplication.ui.component.roleplay.RoleplayDialoguePanel
 import com.example.myapplication.ui.component.roleplay.RoleplayPortraitLayer
 import com.example.myapplication.ui.component.roleplay.RoleplayPortraitSpec
 import com.example.myapplication.ui.component.roleplay.RoleplaySceneBackground
+import com.example.myapplication.roleplay.RoleplaySceneMood
+import com.example.myapplication.roleplay.RoleplaySceneMoodState
+import com.example.myapplication.roleplay.resolveRoleplaySceneMood
+import com.example.myapplication.ui.screen.chat.SpecialPlayEditorSheet
 import com.example.myapplication.ui.screen.chat.SpecialPlaySheet
-import com.example.myapplication.ui.screen.chat.TransferPlayDraft
-import com.example.myapplication.ui.screen.chat.TransferPlaySheet
 
 @Composable
 internal fun RoleplaySceneContent(
@@ -80,15 +103,13 @@ internal fun RoleplaySceneContent(
     onRejectPendingMemoryProposal: () -> Unit,
     onOpenSettings: () -> Unit,
     onNavigateBack: () -> Unit,
-    transferCounterparty: String,
-    transferDraft: TransferPlayDraft,
     showSpecialPlaySheet: Boolean,
-    showTransferSheet: Boolean,
+    activeSpecialPlayDraft: ChatSpecialPlayDraft?,
     onDismissSpecialPlay: () -> Unit,
-    onOpenTransferSheet: () -> Unit,
-    onDismissTransferSheet: () -> Unit,
-    onTransferDraftChange: (TransferPlayDraft) -> Unit,
-    onTransferConfirm: () -> Unit,
+    onOpenSpecialPlayEditor: (ChatSpecialType) -> Unit,
+    onDismissSpecialPlayEditor: () -> Unit,
+    onSpecialPlayDraftChange: (ChatSpecialPlayDraft) -> Unit,
+    onSpecialPlayConfirm: () -> Unit,
 ) {
     val characterName = scenario.characterDisplayNameOverride.trim()
         .ifBlank { assistant?.name?.trim().orEmpty() }
@@ -102,6 +123,13 @@ internal fun RoleplaySceneContent(
                 ?.speaker
         }
     }
+    val sceneMoodState = remember(messages) {
+        resolveRoleplaySceneMood(messages)
+    }
+    val sceneMoodColor by animateColorAsState(
+        targetValue = resolveMoodAccentColor(sceneMoodState.mood),
+        label = "roleplay_scene_mood_color",
+    )
     val userPortrait = remember(scenario, settings, userName) {
         RoleplayPortraitSpec(
             name = userName,
@@ -118,6 +146,58 @@ internal fun RoleplaySceneContent(
             fallbackLabel = "角色",
         )
     }
+    var chromeVisible by rememberSaveable(scenario.id) { mutableStateOf(true) }
+    val immersiveMode = settings.roleplayImmersiveMode
+
+    // 系统栏明暗自适应：基于顶部/底部区域亮度
+    val view = LocalView.current
+    LaunchedEffect(backdropState.imageBitmap) {
+        val window = (view.context as? android.app.Activity)?.window ?: return@LaunchedEffect
+        val controller = WindowCompat.getInsetsController(window, view)
+
+        val topLuminance = com.example.myapplication.ui.component.roleplay.calculateTopRegionLuminance(
+            backdropState.imageBitmap,
+        )
+        val bottomLuminance = com.example.myapplication.ui.component.roleplay.calculateBottomRegionLuminance(
+            backdropState.imageBitmap,
+        )
+
+        // 亮度阈值 0.5：高于则用深色图标，低于则用浅色图标
+        controller.isAppearanceLightStatusBars = topLuminance > 0.5f
+        controller.isAppearanceLightNavigationBars = bottomLuminance > 0.5f
+    }
+
+    // 沉浸模式控制
+    DisposableEffect(view, immersiveMode) {
+        val window = (view.context as? android.app.Activity)?.window
+        if (window == null) {
+            onDispose {}
+        } else {
+            val controller = WindowCompat.getInsetsController(window, view)
+            controller.show(WindowInsetsCompat.Type.systemBars())
+            controller.systemBarsBehavior = WindowInsetsControllerCompat.BEHAVIOR_DEFAULT
+
+            when (immersiveMode) {
+                RoleplayImmersiveMode.EDGE_TO_EDGE -> {
+                    WindowCompat.setDecorFitsSystemWindows(window, false)
+                }
+                RoleplayImmersiveMode.HIDE_SYSTEM_BARS -> {
+                    WindowCompat.setDecorFitsSystemWindows(window, false)
+                    controller.hide(WindowInsetsCompat.Type.systemBars())
+                    controller.systemBarsBehavior = WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
+                }
+                RoleplayImmersiveMode.NONE -> {
+                    WindowCompat.setDecorFitsSystemWindows(window, true)
+                }
+            }
+
+            onDispose {
+                WindowCompat.setDecorFitsSystemWindows(window, false)
+                controller.show(WindowInsetsCompat.Type.systemBars())
+                controller.systemBarsBehavior = WindowInsetsControllerCompat.BEHAVIOR_DEFAULT
+            }
+        }
+    }
 
     Box(modifier = Modifier.fillMaxSize()) {
         RoleplaySceneBackground(
@@ -125,7 +205,7 @@ internal fun RoleplaySceneContent(
             modifier = Modifier.fillMaxSize(),
         )
 
-        val scrimBase = backdropState.palette.panelTintStrong
+        val scrimBase = lerp(backdropState.palette.panelTintStrong, sceneMoodColor, 0.18f)
         Box(
             modifier = Modifier
                 .fillMaxSize()
@@ -146,49 +226,78 @@ internal fun RoleplaySceneContent(
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .statusBarsPadding()
-                .navigationBarsPadding()
+                .then(
+                    if (immersiveMode == RoleplayImmersiveMode.NONE) {
+                        Modifier
+                    } else {
+                        Modifier
+                            .statusBarsPadding()
+                            .navigationBarsPadding()
+                    },
+                )
                 .imePadding(),
         ) {
-            RoleplaySceneTopBar(
-                characterName = characterName,
-                onOpenSettings = onOpenSettings,
-                onNavigateBack = onNavigateBack,
-            )
+            AnimatedVisibility(
+                visible = chromeVisible,
+                enter = fadeIn() + slideInVertically(initialOffsetY = { -it / 2 }),
+                exit = fadeOut() + slideOutVertically(targetOffsetY = { -it / 2 }),
+            ) {
+                Column {
+                    RoleplaySceneTopBar(
+                        characterName = characterName,
+                        sceneMoodState = sceneMoodState,
+                        sceneMoodColor = sceneMoodColor,
+                        onOpenSettings = onOpenSettings,
+                        onNavigateBack = onNavigateBack,
+                        onToggleChrome = { chromeVisible = false },
+                    )
 
-            if (settings.showRoleplayPresenceStrip) {
-                RoleplayPresenceStrip(
-                    userPortrait = userPortrait,
-                    characterPortrait = characterPortrait,
-                    highlightedSpeaker = highlightedSpeaker,
-                    autoHighlightSpeaker = scenario.autoHighlightSpeaker,
-                    isSending = isSending,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(120.dp)
-                        .padding(horizontal = 12.dp, vertical = 2.dp),
-                )
+                    if (settings.showRoleplayPresenceStrip) {
+                        RoleplayPresenceStrip(
+                            userPortrait = userPortrait,
+                            characterPortrait = characterPortrait,
+                            highlightedSpeaker = highlightedSpeaker,
+                            autoHighlightSpeaker = scenario.autoHighlightSpeaker,
+                            sceneMoodColor = sceneMoodColor,
+                            isSending = isSending,
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(120.dp)
+                                .padding(horizontal = 12.dp, vertical = 2.dp),
+                        )
+                    }
+
+                    if (settings.showRoleplayStatusStrip) {
+                        RoleplayStatusStrip(
+                            backdropState = backdropState,
+                            scenario = scenario,
+                            contextStatus = contextStatus,
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = 12.dp, vertical = 6.dp),
+                        )
+                    }
+
+                    if (pendingMemoryProposal != null) {
+                        PendingMemoryProposalCard(
+                            proposal = pendingMemoryProposal,
+                            onApprove = onApprovePendingMemoryProposal,
+                            onReject = onRejectPendingMemoryProposal,
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = 12.dp, vertical = 6.dp),
+                        )
+                    }
+                }
             }
 
-            if (settings.showRoleplayStatusStrip) {
-                RoleplayStatusStrip(
+            if (!chromeVisible) {
+                RoleplayChromeHandle(
                     backdropState = backdropState,
-                    scenario = scenario,
-                    contextStatus = contextStatus,
                     modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 12.dp, vertical = 6.dp),
-                )
-            }
-
-            if (pendingMemoryProposal != null) {
-                PendingMemoryProposalCard(
-                    proposal = pendingMemoryProposal,
-                    onApprove = onApprovePendingMemoryProposal,
-                    onReject = onRejectPendingMemoryProposal,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 12.dp, vertical = 6.dp),
+                        .align(Alignment.CenterHorizontally)
+                        .padding(top = 6.dp, bottom = 4.dp),
+                    onClick = { chromeVisible = true },
                 )
             }
 
@@ -212,6 +321,8 @@ internal fun RoleplaySceneContent(
                 onConfirmTransferReceipt = onConfirmTransferReceipt,
                 onSend = onSend,
                 onCancel = onCancelSending,
+                lineHeightScale = settings.roleplayLineHeightScale.scaleFactor,
+                onToggleTopBar = { chromeVisible = !chromeVisible },
                 modifier = Modifier
                     .fillMaxWidth()
                     .weight(1f),
@@ -222,19 +333,24 @@ internal fun RoleplaySceneContent(
             hostState = snackbarHostState,
             modifier = Modifier
                 .align(Alignment.BottomCenter)
-                .navigationBarsPadding(),
+                .then(
+                    if (immersiveMode == RoleplayImmersiveMode.NONE) {
+                        Modifier
+                    } else {
+                        Modifier.navigationBarsPadding()
+                    },
+                ),
         )
     }
 
     RoleplaySpecialPlayOverlays(
         showSpecialPlaySheet = showSpecialPlaySheet,
-        showTransferSheet = showTransferSheet,
-        transferDraft = transferDraft,
+        activeSpecialPlayDraft = activeSpecialPlayDraft,
         onDismissSpecialPlay = onDismissSpecialPlay,
-        onOpenTransferSheet = onOpenTransferSheet,
-        onDismissTransferSheet = onDismissTransferSheet,
-        onTransferDraftChange = onTransferDraftChange,
-        onTransferConfirm = onTransferConfirm,
+        onOpenSpecialPlayEditor = onOpenSpecialPlayEditor,
+        onDismissSpecialPlayEditor = onDismissSpecialPlayEditor,
+        onSpecialPlayDraftChange = onSpecialPlayDraftChange,
+        onSpecialPlayConfirm = onSpecialPlayConfirm,
     )
 }
 
@@ -299,8 +415,11 @@ private fun PendingMemoryProposalCard(
 @Composable
 private fun RoleplaySceneTopBar(
     characterName: String,
+    sceneMoodState: RoleplaySceneMoodState,
+    sceneMoodColor: Color,
     onOpenSettings: () -> Unit,
     onNavigateBack: () -> Unit,
+    onToggleChrome: () -> Unit,
 ) {
     Row(
         modifier = Modifier
@@ -312,29 +431,86 @@ private fun RoleplaySceneTopBar(
         NarraIconButton(onClick = onNavigateBack) {
             Icon(
                 Icons.AutoMirrored.Filled.ArrowBack,
-                contentDescription = "返回",
+                contentDescription = stringResource(id = R.string.common_back),
                 tint = Color.White,
             )
         }
 
-        Text(
-            text = characterName,
-            style = MaterialTheme.typography.titleMedium,
-            fontWeight = FontWeight.Bold,
-            color = Color.White,
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis,
+        Column(
             modifier = Modifier
                 .weight(1f)
+                .clickable(onClick = onToggleChrome)
+                .testTag("roleplay_scene_title")
                 .padding(horizontal = 8.dp),
-            textAlign = TextAlign.Center,
-        )
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(6.dp),
+        ) {
+            Text(
+                text = characterName,
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.Bold,
+                color = Color.White,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+                textAlign = TextAlign.Center,
+            )
+            Surface(
+                shape = RoundedCornerShape(999.dp),
+                color = sceneMoodColor.copy(alpha = 0.22f),
+                contentColor = Color.White,
+            ) {
+                Text(
+                    text = "当前氛围：${sceneMoodState.label}",
+                    modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp),
+                    style = MaterialTheme.typography.labelMedium,
+                    color = Color.White,
+                )
+            }
+        }
 
         NarraIconButton(onClick = onOpenSettings) {
             Icon(
                 Icons.Default.MoreVert,
-                contentDescription = "沉浸设置",
+                contentDescription = stringResource(id = R.string.roleplay_settings_button),
                 tint = Color.White,
+            )
+        }
+    }
+}
+
+@Composable
+private fun RoleplayChromeHandle(
+    backdropState: ImmersiveBackdropState,
+    modifier: Modifier = Modifier,
+    onClick: () -> Unit,
+) {
+    ImmersiveGlassSurface(
+        backdropState = backdropState,
+        modifier = modifier,
+        shape = MaterialTheme.shapes.extraLarge,
+        blurRadius = 18.dp,
+        overlayColor = backdropState.palette.panelTint.copy(alpha = 0.26f),
+    ) {
+        Row(
+            modifier = Modifier
+                .clickable(onClick = onClick)
+                .testTag("roleplay_chrome_handle")
+                .padding(horizontal = 14.dp, vertical = 8.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(width = 18.dp, height = 4.dp)
+                    .background(
+                        color = backdropState.palette.onGlassMuted.copy(alpha = 0.72f),
+                        shape = MaterialTheme.shapes.extraSmall,
+                    ),
+            )
+            Text(
+                text = stringResource(id = R.string.roleplay_show_title_bar),
+                style = MaterialTheme.typography.labelMedium,
+                color = backdropState.palette.onGlassMuted,
             )
         }
     }
@@ -346,6 +522,7 @@ internal fun RoleplayPresenceStrip(
     characterPortrait: RoleplayPortraitSpec,
     highlightedSpeaker: RoleplaySpeaker?,
     autoHighlightSpeaker: Boolean,
+    sceneMoodColor: Color,
     isSending: Boolean,
     modifier: Modifier = Modifier,
 ) {
@@ -354,6 +531,8 @@ internal fun RoleplayPresenceStrip(
         character = characterPortrait,
         highlightedSpeaker = highlightedSpeaker,
         autoHighlightSpeaker = autoHighlightSpeaker,
+        userAccentColor = Color(0xFFD8E6FF),
+        characterAccentColor = sceneMoodColor,
         isSpeaking = isSending,
         modifier = modifier,
     )
@@ -399,28 +578,37 @@ internal fun RoleplayStatusStrip(
 @Composable
 internal fun RoleplaySpecialPlayOverlays(
     showSpecialPlaySheet: Boolean,
-    showTransferSheet: Boolean,
-    transferDraft: TransferPlayDraft,
+    activeSpecialPlayDraft: ChatSpecialPlayDraft?,
     onDismissSpecialPlay: () -> Unit,
-    onOpenTransferSheet: () -> Unit,
-    onDismissTransferSheet: () -> Unit,
-    onTransferDraftChange: (TransferPlayDraft) -> Unit,
-    onTransferConfirm: () -> Unit,
+    onOpenSpecialPlayEditor: (ChatSpecialType) -> Unit,
+    onDismissSpecialPlayEditor: () -> Unit,
+    onSpecialPlayDraftChange: (ChatSpecialPlayDraft) -> Unit,
+    onSpecialPlayConfirm: () -> Unit,
 ) {
     if (showSpecialPlaySheet) {
         SpecialPlaySheet(
             onDismissRequest = onDismissSpecialPlay,
-            onOpenTransfer = onOpenTransferSheet,
+            onOpenPlay = onOpenSpecialPlayEditor,
         )
     }
 
-    if (showTransferSheet) {
-        TransferPlaySheet(
-            draft = transferDraft,
-            onDraftChange = onTransferDraftChange,
-            onDismissRequest = onDismissTransferSheet,
-            onConfirm = onTransferConfirm,
+    activeSpecialPlayDraft?.let { draft ->
+        SpecialPlayEditorSheet(
+            draft = draft,
+            onDraftChange = onSpecialPlayDraftChange,
+            onDismissRequest = onDismissSpecialPlayEditor,
+            onConfirm = onSpecialPlayConfirm,
         )
+    }
+}
+
+private fun resolveMoodAccentColor(mood: RoleplaySceneMood): Color {
+    return when (mood) {
+        RoleplaySceneMood.NEUTRAL -> Color(0xFFD7E7FF)
+        RoleplaySceneMood.WARM -> Color(0xFFF8C97E)
+        RoleplaySceneMood.TENSE -> Color(0xFF86B2FF)
+        RoleplaySceneMood.SHARP -> Color(0xFFFF8A8A)
+        RoleplaySceneMood.MUTED -> Color(0xFFC7BEEB)
     }
 }
 

@@ -29,4 +29,5 @@ data class MessageEntity(
     val attachmentsJson: String = "[]",
     val partsJson: String = "[]",
     val citationsJson: String = "[]",
+    val roleplayOutputFormat: String = "UNSPECIFIED",
 )

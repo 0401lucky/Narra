@@ -14,8 +14,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.example.myapplication.model.ChatMessagePart
+import com.example.myapplication.model.ContextSummaryState
 import com.example.myapplication.model.ModelInfo
 import com.example.myapplication.model.ProviderSettings
+import com.example.myapplication.ui.component.ChatMessagePerformanceMode
 import com.example.myapplication.ui.component.MessageBubble
 import com.example.myapplication.ui.component.MessageInputBar
 import com.example.myapplication.ui.component.NarraFilledTonalButton
@@ -35,6 +37,7 @@ internal fun ChatConversationPane(
     listState: LazyListState,
     isNearBottom: Boolean,
     shouldAutoFollowStreaming: Boolean,
+    performanceMode: ChatMessagePerformanceMode,
     isSavingModel: Boolean,
     currentModel: String,
     canAttachImages: Boolean,
@@ -43,8 +46,6 @@ internal fun ChatConversationPane(
     currentModelSupportsReasoning: Boolean,
     searchEnabled: Boolean,
     searchAvailable: Boolean,
-    hasConversationSummary: Boolean,
-    summaryCoveredMessageCount: Int,
     reasoningActionLabel: String,
     currentAssistantName: String,
     onInputChange: (String) -> Unit,
@@ -138,6 +139,7 @@ internal fun ChatConversationPane(
                         listState = listState,
                         isNearBottom = isNearBottom,
                         shouldAutoFollowStreaming = shouldAutoFollowStreaming,
+                        performanceMode = performanceMode,
                         onRetryMessage = onRetryMessage,
                         onToggleMemoryMessage = onToggleMemoryMessage,
                         onTranslateMessage = onTranslateMessage,
@@ -154,7 +156,19 @@ internal fun ChatConversationPane(
             onSend = onSend,
         )
 
-        if (hasConversationSummary && summaryCoveredMessageCount > 0) {
+        val summaryNotice = when (val governance = uiState.contextGovernance) {
+            null -> null
+            else -> when (governance.summaryState) {
+                ContextSummaryState.APPLIED -> {
+                    "当前仅发送最近 ${governance.recentWindow} 条消息，旧消息由摘要承接"
+                }
+
+                ContextSummaryState.STALE -> "当前上下文偏长，建议刷新摘要"
+                else -> null
+            }
+        }
+
+        if (!summaryNotice.isNullOrBlank()) {
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -163,7 +177,7 @@ internal fun ChatConversationPane(
                 horizontalArrangement = Arrangement.Start,
             ) {
                 Text(
-                    text = "摘要已覆盖 $summaryCoveredMessageCount 条消息",
+                    text = summaryNotice,
                     style = MaterialTheme.typography.labelMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
@@ -208,6 +222,7 @@ private fun ColumnScope.ChatMessageListPane(
     listState: LazyListState,
     isNearBottom: Boolean,
     shouldAutoFollowStreaming: Boolean,
+    performanceMode: ChatMessagePerformanceMode,
     onRetryMessage: (String) -> Unit,
     onToggleMemoryMessage: (String) -> Unit,
     onTranslateMessage: (String) -> Unit,
@@ -258,7 +273,8 @@ private fun ColumnScope.ChatMessageListPane(
                     autoPreviewImages = uiState.settings.autoPreviewImages,
                     codeBlockAutoWrap = uiState.settings.codeBlockAutoWrap,
                     codeBlockAutoCollapse = uiState.settings.codeBlockAutoCollapse,
-                    reduceVisualEffects = listState.isScrollInProgress,
+                    performanceMode = performanceMode,
+                    reduceVisualEffects = performanceMode != ChatMessagePerformanceMode.FULL,
                     onConfirmTransferReceipt = onConfirmTransferReceipt,
                 )
             }

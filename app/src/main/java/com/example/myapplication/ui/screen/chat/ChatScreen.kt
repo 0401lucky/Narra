@@ -104,20 +104,27 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.platform.LocalConfiguration
 import com.example.myapplication.model.AttachmentType
 import com.example.myapplication.model.Assistant
+import com.example.myapplication.model.ChatSpecialPlayDraft
+import com.example.myapplication.model.ChatSpecialType
 import com.example.myapplication.model.ChatMessagePart
 import com.example.myapplication.model.Conversation
 import com.example.myapplication.model.DEFAULT_USER_DISPLAY_NAME
+import com.example.myapplication.model.GiftPlayDraft
+import com.example.myapplication.model.InvitePlayDraft
 import com.example.myapplication.model.MessageAttachment
 import com.example.myapplication.model.ModelAbility
 import com.example.myapplication.model.ModelInfo
 import com.example.myapplication.model.ProviderSettings
 import com.example.myapplication.model.ReasoningBudgetPreset
+import com.example.myapplication.model.TaskPlayDraft
+import com.example.myapplication.model.TransferPlayDraft
 import com.example.myapplication.model.inferModelAbilities
 import com.example.myapplication.model.reasoningBudgetSupportHint
 import com.example.myapplication.model.resolveReasoningBudgetLabel
 import com.example.myapplication.model.supportsThinkingBudgetControl
 import com.example.myapplication.model.toChatMessagePart
 import com.example.myapplication.ui.component.AssistantAvatar
+import com.example.myapplication.ui.component.ChatMessagePerformanceMode
 import com.example.myapplication.ui.component.MessageBubble
 import com.example.myapplication.ui.component.MessageInputBar
 import com.example.myapplication.ui.component.ModelIcon
@@ -173,10 +180,11 @@ fun ChatScreen(
     onOpenProviderDetail: (String) -> Unit,
     onClearErrorMessage: () -> Unit,
     onClearNoticeMessage: () -> Unit,
+    onRefreshConversationSummary: () -> Unit,
     onCancelSending: () -> Unit = {},
     onAddPendingParts: (List<ChatMessagePart>) -> Unit,
     onRemovePendingPart: (Int) -> Unit,
-    onSendTransferPlay: (String, String, String) -> Unit,
+    onSendSpecialPlay: (ChatSpecialPlayDraft) -> Unit,
     onConfirmTransferReceipt: (String) -> Unit,
     onSelectAssistant: (String) -> Unit = {},
     onOpenAssistantDetail: (String) -> Unit = {},
@@ -188,6 +196,7 @@ fun ChatScreen(
     val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
     val scope = rememberCoroutineScope()
     val autoFollowState = rememberChatAutoFollowState(uiState.displayedConversationId)
+    val chatMessagePerformanceMode = ChatMessagePerformanceMode.SCROLLING_LIGHT
     val providerOptions = remember(uiState.settings) {
         uiState.settings.enabledProviders()
     }
@@ -208,7 +217,6 @@ fun ChatScreen(
         userAvatarUri = userAvatarUri,
         userAvatarUrl = userAvatarUrl,
     )
-    val transferDraft = localState.transferDraft
     val availableModelInfos = remember(activeProvider) {
         buildList {
             addAll(activeProvider?.resolvedModels().orEmpty())
@@ -261,6 +269,45 @@ fun ChatScreen(
         }
         onSaveUserProfile(normalizedName, normalizedUri, normalizedUrl)
         localState.setShowProfileSheet(false)
+    }
+
+    fun primeSpecialPlayDraft(type: ChatSpecialType) {
+        when (type) {
+            ChatSpecialType.TRANSFER -> {
+                if (localState.transferDraft.counterparty.isBlank()) {
+                    localState.setTransferDraft(localState.transferDraft.copy(counterparty = currentAssistantName))
+                }
+            }
+
+            ChatSpecialType.INVITE -> {
+                if (localState.inviteDraft.target.isBlank()) {
+                    localState.setInviteDraft(localState.inviteDraft.copy(target = currentAssistantName))
+                }
+            }
+
+            ChatSpecialType.GIFT -> {
+                if (localState.giftDraft.target.isBlank()) {
+                    localState.setGiftDraft(localState.giftDraft.copy(target = currentAssistantName))
+                }
+            }
+
+            ChatSpecialType.TASK -> Unit
+        }
+    }
+
+    fun resetSpecialPlayDraft(type: ChatSpecialType) {
+        when (type) {
+            ChatSpecialType.TRANSFER -> localState.setTransferDraft(
+                TransferPlayDraft(counterparty = currentAssistantName),
+            )
+            ChatSpecialType.INVITE -> localState.setInviteDraft(
+                InvitePlayDraft(target = currentAssistantName),
+            )
+            ChatSpecialType.GIFT -> localState.setGiftDraft(
+                GiftPlayDraft(target = currentAssistantName),
+            )
+            ChatSpecialType.TASK -> localState.setTaskDraft(TaskPlayDraft())
+        }
     }
 
     val imagePickerLauncher = rememberLauncherForActivityResult(
@@ -402,8 +449,12 @@ fun ChatScreen(
                         !selectedSearchProvider.supportsLlmSearchSource() -> {
                             "所选搜索提供商需要使用 Responses API 或 Anthropic 协议"
                         }
-                        selectedSearchProvider.searchModel.isBlank() -> {
-                            "所选搜索提供商未单独设置搜索模型，当前会回退使用其聊天模型"
+                        selectedSearchProvider.resolveFunctionModel(com.example.myapplication.model.ProviderFunction.SEARCH).isBlank() -> {
+                            "所选搜索提供商已关闭搜索模型，请先在模型页开启搜索模型"
+                        }
+                        selectedSearchProvider.resolveFunctionModelMode(com.example.myapplication.model.ProviderFunction.SEARCH) ==
+                            com.example.myapplication.model.ProviderFunctionModelMode.FOLLOW_DEFAULT -> {
+                            "所选搜索提供商当前会跟随其聊天模型执行搜索"
                         }
                         else -> "请先在设置里启用可用搜索源"
                     }
@@ -528,6 +579,7 @@ fun ChatScreen(
                 listState = listState,
                 isNearBottom = isNearBottom,
                 shouldAutoFollowStreaming = autoFollowState.shouldAutoFollowStreaming,
+                performanceMode = chatMessagePerformanceMode,
                 isSavingModel = isSavingModel,
                 currentModel = currentModel,
                 canAttachImages = canAttachImages,
@@ -536,8 +588,6 @@ fun ChatScreen(
                 currentModelSupportsReasoning = currentModelSupportsReasoning,
                 searchEnabled = searchEnabled,
                 searchAvailable = searchAvailable,
-                hasConversationSummary = uiState.hasConversationSummary,
-                summaryCoveredMessageCount = uiState.summaryCoveredMessageCount,
                 reasoningActionLabel = reasoningActionLabel,
                 currentAssistantName = currentAssistantName,
                 onInputChange = onInputChange,
@@ -565,9 +615,6 @@ fun ChatScreen(
                 onOpenModelPicker = { localState.setShowModelSheet(true) },
                 onOpenReasoningPicker = { localState.setShowReasoningSheet(true) },
                 onOpenSpecialPlayClick = {
-                    if (localState.transferCounterparty.isBlank()) {
-                        localState.setTransferCounterparty(currentAssistantName)
-                    }
                     localState.setShowSpecialPlaySheet(true)
                 },
                 onRemovePendingPart = onRemovePendingPart,
@@ -611,31 +658,21 @@ fun ChatScreen(
         onSaveProfile = ::saveProfileDraft,
         showSpecialPlaySheet = localState.showSpecialPlaySheet,
         onDismissSpecialPlaySheet = { localState.setShowSpecialPlaySheet(false) },
-        onOpenTransferFromSpecialPlay = {
+        onOpenSpecialPlayEditor = { type ->
             localState.setShowSpecialPlaySheet(false)
-            if (localState.transferCounterparty.isBlank()) {
-                localState.setTransferCounterparty(currentAssistantName)
+            primeSpecialPlayDraft(type)
+            localState.setActiveSpecialPlayType(type)
+        },
+        activeSpecialPlayDraft = localState.activeSpecialPlayDraft,
+        onSpecialPlayDraftChange = { localState.updateActiveSpecialPlayDraft(it) },
+        onDismissSpecialPlayEditor = { localState.setActiveSpecialPlayType(null) },
+        onConfirmSpecialPlay = {
+            val activeDraft = localState.activeSpecialPlayDraft
+            if (activeDraft != null) {
+                onSendSpecialPlay(activeDraft)
+                resetSpecialPlayDraft(activeDraft.type)
+                localState.setActiveSpecialPlayType(null)
             }
-            localState.setShowTransferSheet(true)
-        },
-        showTransferSheet = localState.showTransferSheet,
-        transferDraft = transferDraft,
-        onTransferDraftChange = {
-            localState.setTransferCounterparty(it.counterparty)
-            localState.setTransferAmount(it.amount)
-            localState.setTransferNote(it.note)
-        },
-        onDismissTransferSheet = { localState.setShowTransferSheet(false) },
-        onConfirmTransfer = {
-            onSendTransferPlay(
-                transferDraft.counterparty.ifBlank { currentAssistantName },
-                transferDraft.amount,
-                transferDraft.note,
-            )
-            localState.setTransferCounterparty(currentAssistantName)
-            localState.setTransferAmount("")
-            localState.setTransferNote("")
-            localState.setShowTransferSheet(false)
         },
         showModelSheet = localState.showModelSheet,
         providerOptions = providerOptions,
@@ -655,6 +692,7 @@ fun ChatScreen(
         onUpdateThinkingBudget = onUpdateThinkingBudget,
         showPromptDebugSheet = localState.showPromptDebugSheet,
         onDismissPromptDebugSheet = { localState.setShowPromptDebugSheet(false) },
+        onRefreshConversationSummary = onRefreshConversationSummary,
         onDismissTranslationSheet = onDismissTranslationSheet,
         onApplyTranslationToInput = onApplyTranslationToInput,
         onSendTranslationAsMessage = onSendTranslationAsMessage,

@@ -144,7 +144,7 @@ internal fun NavGraphBuilder.registerRoleplayGraph(
                 onClearSuggestions = roleplayViewModel::clearSuggestions,
                 onRetryTurn = roleplayViewModel::retryTurn,
                 onEditUserMessage = roleplayViewModel::editUserMessage,
-                onSendTransferPlay = roleplayViewModel::sendTransferPlay,
+                onSendSpecialPlay = roleplayViewModel::sendSpecialPlay,
                 onConfirmTransferReceipt = roleplayViewModel::confirmTransferReceipt,
                 onSend = roleplayViewModel::sendMessage,
                 onCancelSending = roleplayViewModel::cancelSending,
@@ -200,6 +200,9 @@ internal fun NavGraphBuilder.registerRoleplayGraph(
                     roleplayLongformTargetChars = settingsUiState.roleplayLongformTargetChars,
                     showRoleplayPresenceStrip = settingsUiState.showRoleplayPresenceStrip,
                     showRoleplayStatusStrip = settingsUiState.showRoleplayStatusStrip,
+                    roleplayImmersiveMode = settingsUiState.roleplayImmersiveMode,
+                    roleplayHighContrast = settingsUiState.roleplayHighContrast,
+                    roleplayLineHeightScale = settingsUiState.roleplayLineHeightScale,
                 ),
                 contextStatus = roleplayState.contextStatus,
                 currentModel = roleplayState.currentModel,
@@ -209,6 +212,7 @@ internal fun NavGraphBuilder.registerRoleplayGraph(
                 loadingProviderId = settingsUiState.loadingProviderId,
                 isSavingModel = settingsUiState.isSaving,
                 latestPromptDebugDump = roleplayState.latestPromptDebugDump,
+                contextGovernance = roleplayState.contextGovernance,
                 recentMemoryProposalHistory = roleplayState.recentMemoryProposalHistory,
                 onOpenReadingMode = {
                     settingsViewModel.saveSettings {
@@ -221,6 +225,9 @@ internal fun NavGraphBuilder.registerRoleplayGraph(
                 onUpdateShowRoleplayStatusStrip = settingsViewModel::updateShowRoleplayStatusStrip,
                 onUpdateShowRoleplayAiHelper = settingsViewModel::updateShowRoleplayAiHelper,
                 onUpdateRoleplayLongformTargetChars = settingsViewModel::updateRoleplayLongformTargetChars,
+                onUpdateRoleplayImmersiveMode = settingsViewModel::updateRoleplayImmersiveMode,
+                onUpdateRoleplayHighContrast = settingsViewModel::updateRoleplayHighContrast,
+                onUpdateRoleplayLineHeightScale = settingsViewModel::updateRoleplayLineHeightScale,
                 onSelectProvider = settingsViewModel::saveSelectedProvider,
                 onSelectModel = settingsViewModel::saveSelectedModelForProvider,
                 onOpenProviderDetail = { providerId ->
@@ -228,6 +235,7 @@ internal fun NavGraphBuilder.registerRoleplayGraph(
                         launchSingleTop = true
                     }
                 },
+                onRefreshConversationSummary = roleplayViewModel::refreshCurrentConversationSummary,
                 onRestartSession = roleplayViewModel::restartCurrentSession,
                 onResetSession = roleplayViewModel::resetCurrentSession,
                 onNavigateBack = {
@@ -256,6 +264,8 @@ internal fun NavGraphBuilder.registerRoleplayGraph(
                 messages = roleplayState.messages,
                 scenarioTitle = roleplayState.currentScenario?.title.orEmpty(),
                 backgroundUri = roleplayState.currentScenario?.backgroundUri.orEmpty(),
+                lineHeightScale = roleplayState.settings.roleplayLineHeightScale.scaleFactor,
+                highContrast = roleplayState.settings.roleplayHighContrast,
                 onDismiss = { navController.popBackStack() },
             )
         }

@@ -2,7 +2,11 @@ package com.example.myapplication.viewmodel
 
 import com.example.myapplication.model.AppSettings
 import com.example.myapplication.model.Assistant
+import com.example.myapplication.model.GiftPlayDraft
+import com.example.myapplication.model.InvitePlayDraft
 import com.example.myapplication.model.ProviderSettings
+import com.example.myapplication.model.TaskPlayDraft
+import com.example.myapplication.model.specialMetadataValue
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -132,6 +136,72 @@ class ChatOutgoingMessageSupportTest {
         assertEquals("保留草稿", ready.plan.nextInput)
         assertEquals(1, ready.plan.nextPendingParts.size)
         assertTrue(ready.plan.forceChatRoundTrip)
+    }
+
+    @Test
+    fun resolveSpecialPlay_requiresInvitePlaceAndTime() {
+        val result = ChatOutgoingMessageSupport.resolveSpecialPlay(
+            state = ChatUiState(),
+            draft = InvitePlayDraft(
+                target = "陆宴清",
+                place = "  ",
+                time = "今晚九点",
+            ),
+        )
+
+        val error = result as ChatOutgoingMessageResolution.Error
+        assertEquals("请输入邀约地点", error.message)
+    }
+
+    @Test
+    fun resolveSpecialPlay_buildsInviteWithAssistantFallback() {
+        val result = ChatOutgoingMessageSupport.resolveSpecialPlay(
+            state = ChatUiState(
+                currentAssistant = Assistant(id = "a1", name = "陆宴清"),
+            ),
+            draft = InvitePlayDraft(
+                place = "天台",
+                time = "今晚九点",
+                note = "别迟到",
+            ),
+        )
+
+        val ready = result as ChatOutgoingMessageResolution.Ready
+        val invitePart = ready.plan.userParts.single()
+        assertEquals("陆宴清", invitePart.specialMetadataValue("target"))
+        assertEquals("天台", invitePart.specialMetadataValue("place"))
+        assertEquals("今晚九点", invitePart.specialMetadataValue("time"))
+    }
+
+    @Test
+    fun resolveSpecialPlay_buildsGiftCard() {
+        val result = ChatOutgoingMessageSupport.resolveSpecialPlay(
+            state = ChatUiState(),
+            draft = GiftPlayDraft(
+                target = "陆宴清",
+                item = "黑胶唱片",
+                note = "给你的",
+            ),
+        )
+
+        val ready = result as ChatOutgoingMessageResolution.Ready
+        val giftPart = ready.plan.userParts.single()
+        assertEquals("黑胶唱片", giftPart.specialMetadataValue("item"))
+        assertEquals("给你的", giftPart.specialMetadataValue("note"))
+    }
+
+    @Test
+    fun resolveSpecialPlay_requiresTaskTitleAndObjective() {
+        val result = ChatOutgoingMessageSupport.resolveSpecialPlay(
+            state = ChatUiState(),
+            draft = TaskPlayDraft(
+                title = "寻找钥匙",
+                objective = " ",
+            ),
+        )
+
+        val error = result as ChatOutgoingMessageResolution.Error
+        assertEquals("请输入委托目标", error.message)
     }
 
     private fun settingsWithSelectedModel(modelId: String): AppSettings {

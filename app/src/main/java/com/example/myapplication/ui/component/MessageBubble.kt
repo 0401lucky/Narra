@@ -1,7 +1,5 @@
 package com.example.myapplication.ui.component
 
-import com.example.myapplication.ui.component.*
-
 import android.widget.Toast
 import androidx.compose.animation.animateContentSize
 import androidx.compose.foundation.BorderStroke
@@ -102,10 +100,15 @@ import com.mikepenz.markdown.model.MarkdownPadding
 import com.mikepenz.markdown.model.MarkdownTypography
 import com.mikepenz.markdown.model.markdownPadding
 
-private const val AssistantBubbleWidthFactor = 0.9f
+private const val AssistantBubbleWidthFactor = 0.94f
 private val MessageActionButtonSize = 30.dp
 private val MessageActionIconSize = 16.dp
 private val UserMessageMaxWidth = 300.dp
+
+enum class ChatMessagePerformanceMode {
+    FULL,
+    SCROLLING_LIGHT,
+}
 
 @Suppress("DEPRECATION")
 @Composable
@@ -127,6 +130,7 @@ fun MessageBubble(
     autoPreviewImages: Boolean = true,
     codeBlockAutoWrap: Boolean = false,
     codeBlockAutoCollapse: Boolean = false,
+    performanceMode: ChatMessagePerformanceMode = ChatMessagePerformanceMode.FULL,
     reduceVisualEffects: Boolean = false,
 ) {
     val clipboard = LocalClipboard.current
@@ -172,6 +176,22 @@ fun MessageBubble(
     val reasoningMarkdownPadding = renderState.reasoningMarkdownPadding
     val copyPayload = renderState.copyPayload
     val assistantWidthModifier = Modifier.fillMaxWidth(AssistantBubbleWidthFactor)
+    val isScrollingLight = performanceMode == ChatMessagePerformanceMode.SCROLLING_LIGHT
+    val effectiveReduceVisualEffects = reduceVisualEffects || isScrollingLight
+    val effectiveReasoningExpanded = reasoningExpanded
+    val effectiveReasoningPreviewVisible = reasoningPreviewVisible
+    val effectiveUseMarkdown = remember(isUser, isStreaming, renderedDisplayContent, performanceMode) {
+        if (isUser || isStreaming) {
+            false
+        } else {
+            when (performanceMode) {
+                ChatMessagePerformanceMode.FULL -> true
+                ChatMessagePerformanceMode.SCROLLING_LIGHT -> {
+                    shouldRenderWithMarkdownDuringScrolling(renderedDisplayContent)
+                }
+            }
+        }
+    }
 
     Column(
         modifier = modifier
@@ -208,19 +228,20 @@ fun MessageBubble(
             AssistantReasoningCard(
                 reasoningParts = reasoningParts,
                 reasoningPreview = reasoningPreview,
-                expanded = reasoningExpanded,
-                previewVisible = reasoningPreviewVisible,
+                expanded = effectiveReasoningExpanded,
+                previewVisible = effectiveReasoningPreviewVisible,
                 isLoading = isLoading && resolvedContent.isBlank(),
                 markdownTypography = reasoningMarkdownTypography,
                 markdownPadding = reasoningMarkdownPadding,
                 onToggleExpanded = renderState.onToggleReasoning,
                 previewTextStyle = MaterialTheme.typography.bodyMedium.scaledBy(messageTextScale),
-                        autoPreviewImages = autoPreviewImages,
-                        codeBlockAutoWrap = codeBlockAutoWrap,
-                        codeBlockAutoCollapse = codeBlockAutoCollapse,
-                        reduceVisualEffects = reduceVisualEffects,
-                        modifier = assistantWidthModifier,
-                    )
+                autoPreviewImages = autoPreviewImages,
+                codeBlockAutoWrap = codeBlockAutoWrap,
+                codeBlockAutoCollapse = codeBlockAutoCollapse,
+                performanceMode = performanceMode,
+                reduceVisualEffects = effectiveReduceVisualEffects,
+                modifier = assistantWidthModifier,
+            )
             Spacer(modifier = Modifier.height(8.dp))
         }
 
@@ -233,6 +254,7 @@ fun MessageBubble(
                     contentColor = contentColor,
                     messageTextScale = messageTextScale,
                     autoPreviewImages = autoPreviewImages,
+                    performanceMode = performanceMode,
                     onConfirmTransferReceipt = onConfirmTransferReceipt,
                 )
             } else if (!isUser && !isError) {
@@ -242,13 +264,13 @@ fun MessageBubble(
                     tint = MaterialTheme.colorScheme.primary,
                     contentColor = contentColor,
                     contentPadding = PaddingValues(horizontal = 16.dp, vertical = 14.dp),
-                    reduceVisualEffects = reduceVisualEffects,
+                    reduceVisualEffects = effectiveReduceVisualEffects,
                 ) {
                     MessageBubbleContent(
                         message = message,
                         displayAttachments = displayAttachments,
                         isUser = isUser,
-                        useMarkdown = !isUser && !isStreaming,
+                        useMarkdown = effectiveUseMarkdown,
                         displayContent = renderedDisplayContent,
                         displayParts = displayParts,
                         assistantImageSources = assistantVisualContent.imageSources,
@@ -259,6 +281,7 @@ fun MessageBubble(
                         autoPreviewImages = autoPreviewImages,
                         codeBlockAutoWrap = codeBlockAutoWrap,
                         codeBlockAutoCollapse = codeBlockAutoCollapse,
+                        performanceMode = performanceMode,
                         onConfirmTransferReceipt = onConfirmTransferReceipt,
                     )
                 }
@@ -276,7 +299,7 @@ fun MessageBubble(
                         message = message,
                         displayAttachments = displayAttachments,
                         isUser = isUser,
-                        useMarkdown = !isUser && !isStreaming,
+                        useMarkdown = effectiveUseMarkdown,
                         displayContent = renderedDisplayContent,
                         displayParts = displayParts,
                         assistantImageSources = assistantVisualContent.imageSources,
@@ -287,6 +310,7 @@ fun MessageBubble(
                         autoPreviewImages = autoPreviewImages,
                         codeBlockAutoWrap = codeBlockAutoWrap,
                         codeBlockAutoCollapse = codeBlockAutoCollapse,
+                        performanceMode = performanceMode,
                         onConfirmTransferReceipt = onConfirmTransferReceipt,
                         modifier = Modifier.padding(horizontal = 16.dp, vertical = 14.dp),
                     )
@@ -337,43 +361,89 @@ private fun AssistantCitationSection(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(horizontal = 14.dp, vertical = 12.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp),
+            verticalArrangement = Arrangement.spacedBy(10.dp),
         ) {
-            Text(
-                text = "来源",
-                style = MaterialTheme.typography.labelLarge,
-                fontWeight = FontWeight.SemiBold,
-            )
-            citations.forEach { citation ->
-                Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .clip(RoundedCornerShape(12.dp))
-                        .clickable { onOpenUrl(citation.url) }
-                        .padding(horizontal = 10.dp, vertical = 8.dp),
-                    verticalArrangement = Arrangement.spacedBy(2.dp),
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                Surface(
+                    shape = RoundedCornerShape(999.dp),
+                    color = MaterialTheme.colorScheme.secondary.copy(alpha = 0.12f),
                 ) {
                     Text(
-                        text = citation.title.ifBlank { citation.url },
-                        style = MaterialTheme.typography.bodyMedium,
-                        maxLines = 2,
-                        overflow = TextOverflow.Ellipsis,
-                    )
-                    Text(
-                        text = buildString {
-                            if (citation.sourceLabel.isNotBlank()) {
-                                append(citation.sourceLabel)
-                                append(" · ")
-                            }
-                            append(citation.url)
-                        },
-                        style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.onSecondaryContainer.copy(alpha = 0.74f),
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
+                        text = "参考来源",
+                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 5.dp),
+                        style = MaterialTheme.typography.labelMedium,
+                        fontWeight = FontWeight.SemiBold,
                     )
                 }
+                Text(
+                    text = "${citations.size} 条",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSecondaryContainer.copy(alpha = 0.72f),
+                )
             }
+            citations.forEach { citation ->
+                Surface(
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(14.dp),
+                    color = MaterialTheme.colorScheme.surface.copy(alpha = 0.42f),
+                ) {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clip(RoundedCornerShape(14.dp))
+                            .clickable { onOpenUrl(citation.url) }
+                            .padding(horizontal = 12.dp, vertical = 10.dp),
+                        verticalArrangement = Arrangement.spacedBy(4.dp),
+                    ) {
+                        Text(
+                            text = citation.title.ifBlank { citation.url },
+                            style = MaterialTheme.typography.bodyMedium,
+                            fontWeight = FontWeight.Medium,
+                            maxLines = 2,
+                            overflow = TextOverflow.Ellipsis,
+                        )
+                        Text(
+                            text = buildCitationMeta(citation),
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onSecondaryContainer.copy(alpha = 0.74f),
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                        )
+                        Text(
+                            text = citation.url,
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onSecondaryContainer.copy(alpha = 0.58f),
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                        )
+                    }
+                }
+            }
+        }
+    }
+}
+
+private fun buildCitationMeta(
+    citation: com.example.myapplication.model.MessageCitation,
+): String {
+    val host = runCatching {
+        java.net.URI(citation.url).host.orEmpty().removePrefix("www.")
+    }.getOrDefault("")
+    return buildString {
+        if (citation.sourceLabel.isNotBlank()) {
+            append(citation.sourceLabel)
+        }
+        if (host.isNotBlank()) {
+            if (isNotBlank()) {
+                append(" · ")
+            }
+            append(host)
+        }
+        if (isBlank()) {
+            append("链接")
         }
     }
 }

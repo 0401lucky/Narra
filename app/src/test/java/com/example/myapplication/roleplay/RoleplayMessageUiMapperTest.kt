@@ -6,9 +6,12 @@ import com.example.myapplication.model.ChatMessage
 import com.example.myapplication.model.MessageRole
 import com.example.myapplication.model.MessageStatus
 import com.example.myapplication.model.RoleplayContentType
+import com.example.myapplication.model.RoleplayOutputFormat
 import com.example.myapplication.model.RoleplayScenario
 import com.example.myapplication.model.TransferDirection
 import com.example.myapplication.model.TransferStatus
+import com.example.myapplication.model.inviteMessagePart
+import com.example.myapplication.model.specialMetadataValue
 import com.example.myapplication.model.textMessagePart
 import com.example.myapplication.model.transferMessagePart
 import org.junit.Assert.assertEquals
@@ -78,7 +81,7 @@ class RoleplayMessageUiMapperTest {
         assertEquals("林晚", mapped[0].speakerName)
         assertEquals(RoleplayContentType.NARRATION, mapped[1].contentType)
         assertEquals(RoleplayContentType.DIALOGUE, mapped[2].contentType)
-        assertEquals(RoleplayContentType.SPECIAL_TRANSFER, mapped[3].contentType)
+        assertEquals(RoleplayContentType.SPECIAL_PLAY, mapped[3].contentType)
         assertTrue(mapped[4].isStreaming)
         assertEquals("陆宴清", mapped[4].speakerName)
     }
@@ -117,5 +120,147 @@ class RoleplayMessageUiMapperTest {
         assertEquals(RoleplayContentType.LONGFORM, mapped.single().contentType)
         assertEquals("<char>我垂下眼，声音很轻。</char>", mapped.single().richTextSource)
         assertEquals("我垂下眼，声音很轻。", mapped.single().content)
+    }
+
+    @Test
+    fun mapMessages_keepsStoredLongformHistoryAfterSwitchingBackToDialogueMode() {
+        val scenario = RoleplayScenario(
+            id = "scene-1",
+            title = "普通模式",
+            characterDisplayNameOverride = "陆宴清",
+            longformModeEnabled = false,
+        )
+        val mapped = RoleplayMessageUiMapper.mapMessages(
+            scenario = scenario,
+            assistant = Assistant(id = "assistant-1", name = "陆宴清"),
+            settings = AppSettings(),
+            rawMessages = listOf(
+                ChatMessage(
+                    id = "assistant-1",
+                    conversationId = "conv-1",
+                    role = MessageRole.ASSISTANT,
+                    content = "雨声贴着窗框往下坠。<char>“别这样看我。”</char>",
+                    createdAt = 2L,
+                    status = MessageStatus.COMPLETED,
+                    roleplayOutputFormat = RoleplayOutputFormat.LONGFORM,
+                ),
+            ),
+            streamingContent = null,
+            outputParser = RoleplayOutputParser(),
+            nowProvider = { 20L },
+        )
+
+        assertEquals(1, mapped.size)
+        assertEquals(RoleplayContentType.LONGFORM, mapped.single().contentType)
+        assertEquals("雨声贴着窗框往下坠。“别这样看我。”", mapped.single().content)
+    }
+
+    @Test
+    fun mapMessages_infersLegacyLongformTagsWhenMessageFormatIsMissing() {
+        val scenario = RoleplayScenario(
+            id = "scene-1",
+            title = "对白模式",
+            characterDisplayNameOverride = "陆宴清",
+            longformModeEnabled = false,
+        )
+        val mapped = RoleplayMessageUiMapper.mapMessages(
+            scenario = scenario,
+            assistant = Assistant(id = "assistant-1", name = "陆宴清"),
+            settings = AppSettings(),
+            rawMessages = listOf(
+                ChatMessage(
+                    id = "assistant-1",
+                    conversationId = "conv-1",
+                    role = MessageRole.ASSISTANT,
+                    content = "",
+                    createdAt = 2L,
+                    status = MessageStatus.COMPLETED,
+                    parts = listOf(
+                        textMessagePart("她垂下眼睫。<thought>（不能再退了。）</thought>"),
+                    ),
+                ),
+            ),
+            streamingContent = null,
+            outputParser = RoleplayOutputParser(),
+            nowProvider = { 20L },
+        )
+
+        assertEquals(1, mapped.size)
+        assertEquals(RoleplayContentType.LONGFORM, mapped.single().contentType)
+        assertEquals("她垂下眼睫。（不能再退了。）", mapped.single().content)
+    }
+
+    @Test
+    fun mapMessages_marksOpeningNarrationAsNonRetryable() {
+        val scenario = RoleplayScenario(
+            id = "scene-1",
+            title = "开场",
+            characterDisplayNameOverride = "陆宴清",
+        )
+
+        val mapped = RoleplayMessageUiMapper.mapMessages(
+            scenario = scenario,
+            assistant = Assistant(id = "assistant-1", name = "陆宴清"),
+            settings = AppSettings(),
+            rawMessages = listOf(
+                ChatMessage(
+                    id = RoleplayConversationSupport.openingNarrationMessageId(
+                        scenarioId = scenario.id,
+                        conversationId = "conv-1",
+                    ),
+                    conversationId = "conv-1",
+                    role = MessageRole.ASSISTANT,
+                    content = "<narration>夜色渐深。</narration>",
+                    createdAt = 1L,
+                    status = MessageStatus.COMPLETED,
+                ),
+            ),
+            streamingContent = null,
+            outputParser = RoleplayOutputParser(),
+            nowProvider = { 20L },
+        )
+
+        assertEquals(1, mapped.size)
+        assertTrue(!mapped.single().canRetry)
+    }
+
+    @Test
+    fun mapMessages_mapsInviteCardToSpecialPlay() {
+        val scenario = RoleplayScenario(
+            id = "scene-1",
+            title = "邀约",
+            characterDisplayNameOverride = "陆宴清",
+        )
+
+        val mapped = RoleplayMessageUiMapper.mapMessages(
+            scenario = scenario,
+            assistant = Assistant(id = "assistant-1", name = "陆宴清"),
+            settings = AppSettings(),
+            rawMessages = listOf(
+                ChatMessage(
+                    id = "invite-1",
+                    conversationId = "conv-1",
+                    role = MessageRole.ASSISTANT,
+                    content = "今晚见我。",
+                    createdAt = 3L,
+                    status = MessageStatus.COMPLETED,
+                    parts = listOf(
+                        inviteMessagePart(
+                            id = "i1",
+                            target = "林晚",
+                            place = "江边步道",
+                            time = "今晚九点",
+                            note = "别迟到",
+                        ),
+                    ),
+                ),
+            ),
+            streamingContent = null,
+            outputParser = RoleplayOutputParser(),
+            nowProvider = { 20L },
+        )
+
+        assertEquals(RoleplayContentType.SPECIAL_PLAY, mapped.single().contentType)
+        assertEquals("江边步道", mapped.single().specialPart?.specialMetadataValue("place"))
     }
 }

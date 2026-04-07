@@ -1,17 +1,17 @@
 {
   "app_id": "com.narra.app.dev",
   "channel": "dev",
-  "latest_version_name": "1.1.1-dev",
-  "latest_version_code": 10101,
+  "latest_version_name": "1.1.2-dev",
+  "latest_version_code": 10102,
   "minimum_supported_version_code": 0,
-  "apk_url": "https://github.com/0401lucky/Narra/releases/download/v1.1.1-dev/Narra-v1.1.1-dev-10101-dev.apk",
-  "apk_sha256": "8EE65BDF3321963484C1BDB3756BF6F34D9C678830E24194B3C6A9345C963B5F",
-  "published_at": "2026-04-01T20:05:50+08:00",
+  "apk_url": "https://pub-d98030c1dda7491eb00137162e4b7c94.r2.dev/dev/Narra-v1.1.2-dev-10102-dev.apk",
+  "apk_sha256": "243ABCBDC62419BCE2C9BE6025C2AB7E02BC150A4FC383C13DEA34F17A536F61",
+  "published_at": "2026-04-07T13:57:19+08:00",
   "release_notes": [
-    "新增本地上下文工具能力，可读取记忆、世界书和会话摘要，并为后续更多 App 内工具打好基础",
-    "新增 save_memory 沉浸式记忆保存能力：剧情状态可直接写入，长期记忆改为先提议后确认",
-    "优化长对话摘要：增加摘要状态展示，标题摘要模型为空时会自动回退到记忆模型或聊天模型",
-    "支持聊天页与沉浸式输入框回车发送，Shift+Enter 保留换行",
-    "收缩设置页和沉浸设置页冗余说明文案，界面更简洁，世界书与助手关联逻辑也更直观"
+    "特殊玩法扩展为转账、邀约、礼物、委托四类，聊天页与沉浸式扮演页统一支持玩法卡片发送",
+    "礼物特殊玩法升级为自动生图 V1，礼物卡支持生成中、成功、失败三态，并直接在卡片内展示礼物图",
+    "功能模型支持跟随默认、单独指定、关闭三态，可显式关闭聊天建议、翻译、记忆、搜索、礼物生图等能力",
+    "收紧聊天页底部输入栏尺寸，整体更贴底、更紧凑",
+    "优化聊天页历史消息滚动体验，减少滚动过程中的重渲染与闪动感"
   ]
 }

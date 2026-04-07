@@ -110,7 +110,7 @@ object ChatConversationSupport {
         return null
     }
 
-    fun validateTransferPlayAvailability(
+    fun validateSpecialPlayAvailability(
         settings: AppSettings,
     ): String? {
         val selectedModel = resolveSelectedModelId(settings)
@@ -151,7 +151,7 @@ object ChatConversationSupport {
             content = userParts.toContentMirror(
                 imageFallback = "图片已发送",
                 fileFallback = "文件已附加",
-                specialFallback = "转账",
+                specialFallback = "特殊玩法",
             ),
             nowProvider = nowProvider,
             messageIdProvider = messageIdProvider,

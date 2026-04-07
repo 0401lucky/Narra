@@ -11,6 +11,7 @@ import com.example.myapplication.model.Assistant
 import com.example.myapplication.model.ChatMessage
 import com.example.myapplication.model.ConversationSummary
 import com.example.myapplication.model.Conversation
+import com.example.myapplication.model.ContextGovernanceItem
 import com.example.myapplication.model.MemoryEntry
 import com.example.myapplication.model.PromptMode
 import com.example.myapplication.model.WorldBookEntry
@@ -21,6 +22,9 @@ data class PromptContextResult(
     val summaryCoveredMessageCount: Int = 0,
     val worldBookHitCount: Int = 0,
     val memoryInjectionCount: Int = 0,
+    val summaryPreview: String = "",
+    val worldBookItems: List<ContextGovernanceItem> = emptyList(),
+    val memoryItems: List<ContextGovernanceItem> = emptyList(),
 )
 
 interface PromptContextAssembler {
@@ -122,6 +126,24 @@ class DefaultPromptContextAssembler(
             summaryCoveredMessageCount = conversationSummary?.coveredMessageCount ?: 0,
             worldBookHitCount = matchedWorldBookEntries.size,
             memoryInjectionCount = selectedMemories.size,
+            summaryPreview = conversationSummary?.summary
+                ?.trim()
+                .orEmpty()
+                .let(::limitEntryContent)
+                .takeIf { it.isNotBlank() }
+                .orEmpty(),
+            worldBookItems = matchedWorldBookEntries.map { entry ->
+                ContextGovernanceItem(
+                    title = entry.title.ifBlank { "未命名条目" },
+                    content = limitEntryContent(entry.content).ifBlank { "（无内容）" },
+                )
+            },
+            memoryItems = selectedMemories.map { entry ->
+                ContextGovernanceItem(
+                    title = resolveMemoryGovernanceTitle(entry, promptMode),
+                    content = limitEntryContent(entry.content).ifBlank { "（无内容）" },
+                )
+            },
         )
     }
 
@@ -295,6 +317,21 @@ class DefaultPromptContextAssembler(
                 append(limitEntryContent(entry.content))
             }
         }
+    }
+
+    private fun resolveMemoryGovernanceTitle(
+        entry: MemoryEntry,
+        promptMode: PromptMode,
+    ): String {
+        if (promptMode == PromptMode.ROLEPLAY) {
+            return when (entry.scopeType) {
+                com.example.myapplication.model.MemoryScopeType.CONVERSATION -> "剧情约束"
+                com.example.myapplication.model.MemoryScopeType.ASSISTANT,
+                com.example.myapplication.model.MemoryScopeType.GLOBAL,
+                -> "长期记忆"
+            }
+        }
+        return "记忆 · ${entry.scopeType.label}"
     }
 
     private fun limitEntryContent(content: String): String {

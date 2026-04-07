@@ -5,7 +5,9 @@ import com.example.myapplication.conversation.AssistantRoundTripRequest
 import com.example.myapplication.conversation.AssistantRoundTripResult
 import com.example.myapplication.conversation.ConversationSummaryDebugSupport
 import com.example.myapplication.conversation.ConversationAssistantRoundTripRunner
+import com.example.myapplication.conversation.ContextGovernanceSupport
 import com.example.myapplication.conversation.ConversationMessageTransforms
+import com.example.myapplication.conversation.GiftImageGenerationRequest
 import com.example.myapplication.conversation.RoundTripInitialPersistence
 import com.example.myapplication.conversation.StreamedAssistantPayload
 import com.example.myapplication.context.PromptContextAssembler
@@ -41,6 +43,7 @@ internal class RoleplayRoundTripExecutor(
     private val currentUiState: () -> RoleplayUiState,
     private val updateUiState: ((RoleplayUiState) -> RoleplayUiState) -> Unit,
     private val updateRawMessages: (List<ChatMessage>) -> Unit,
+    private val launchGiftImageGeneration: (GiftImageGenerationRequest, (List<ChatMessage>) -> Unit) -> Unit,
     private val launchConversationSummaryGeneration: (String, List<ChatMessage>, com.example.myapplication.model.AppSettings, Assistant?, com.example.myapplication.model.RoleplayScenario) -> Unit,
     private val launchAutomaticMemoryExtraction: (String, List<ChatMessage>, com.example.myapplication.model.AppSettings, Assistant?, com.example.myapplication.model.RoleplayScenario) -> Unit,
 ) {
@@ -54,6 +57,7 @@ internal class RoleplayRoundTripExecutor(
         initialPersistence: RoundTripInitialPersistence,
         loadingMessage: ChatMessage,
         buildFinalMessages: (ChatMessage) -> List<ChatMessage>,
+        giftImageRequest: GiftImageGenerationRequest? = null,
     ) {
         try {
             when (initialPersistence) {
@@ -80,6 +84,9 @@ internal class RoleplayRoundTripExecutor(
                         selectedModel = selectedModel,
                     )
                 }
+            }
+            giftImageRequest?.let { request ->
+                launchGiftImageGeneration(request, updateRawMessages)
             }
             val conversation = conversationRepository.getConversation(session.conversationId)
                 ?: Conversation(
@@ -111,35 +118,59 @@ internal class RoleplayRoundTripExecutor(
                 includeOpeningNarrationReference = requestMessages.none { it.role == MessageRole.USER },
                 directorNote = directorNote,
             )
+            val effectiveRequestMessages = resolveRequestMessagesForRoundTrip(
+                conversation = conversation,
+                assistant = assistant,
+                requestMessages = requestMessages,
+            )
+            val toolingOptions = GatewayToolingOptions.localContextOnly(
+                GatewayToolRuntimeContext(
+                    promptMode = PromptMode.ROLEPLAY,
+                    assistant = assistant,
+                    conversation = conversation,
+                    userInputText = RoleplayConversationSupport.resolveLatestUserInputText(requestMessages),
+                    recentMessages = requestMessages,
+                ),
+            )
+            val debugDump = buildString {
+                append(
+                    ConversationSummaryDebugSupport.appendStatusLine(
+                        debugDump = promptContext.debugDump,
+                        hasSummary = promptContext.summaryCoveredMessageCount > 0,
+                        coveredMessageCount = promptContext.summaryCoveredMessageCount,
+                        completedMessageCount = requestMessages.count { it.status == MessageStatus.COMPLETED },
+                        triggerMessageCount = SUMMARY_TRIGGER_MESSAGE_COUNT,
+                    ),
+                )
+                if (decoratedPrompt.isNotBlank()) {
+                    append("\n\n【RP 装饰后提示词】\n")
+                    append(decoratedPrompt)
+                }
+            }
             updateUiState { current ->
                 RoleplayStateSupport.applyPromptContext(
                     current = current,
                     summaryCoveredMessageCount = promptContext.summaryCoveredMessageCount,
                     worldBookHitCount = promptContext.worldBookHitCount,
                     memoryInjectionCount = promptContext.memoryInjectionCount,
-                    debugDump = buildString {
-                        append(
-                            ConversationSummaryDebugSupport.appendStatusLine(
-                                debugDump = promptContext.debugDump,
-                                hasSummary = promptContext.summaryCoveredMessageCount > 0,
-                                coveredMessageCount = promptContext.summaryCoveredMessageCount,
-                                completedMessageCount = requestMessages.count { it.status == MessageStatus.COMPLETED },
-                                triggerMessageCount = SUMMARY_TRIGGER_MESSAGE_COUNT,
-                            ),
-                        )
-                        if (decoratedPrompt.isNotBlank()) {
-                            append("\n\n【RP 装饰后提示词】\n")
-                            append(decoratedPrompt)
-                        }
-                    },
+                    debugDump = debugDump,
+                    contextGovernance = ContextGovernanceSupport.buildSnapshot(
+                        settings = state.settings,
+                        assistant = assistant,
+                        promptMode = PromptMode.ROLEPLAY,
+                        selectedModel = selectedModel,
+                        requestMessages = requestMessages,
+                        effectiveRequestMessages = effectiveRequestMessages,
+                        promptContext = promptContext,
+                        completedMessageCount = requestMessages.count { it.status == MessageStatus.COMPLETED },
+                        triggerMessageCount = SUMMARY_TRIGGER_MESSAGE_COUNT,
+                        recentWindow = resolveSummaryRecentWindow(assistant),
+                        minCoveredMessageCount = SUMMARY_MIN_COVERED_MESSAGE_COUNT,
+                        toolingOptions = toolingOptions,
+                        rawDebugDump = debugDump,
+                    ),
                 )
             }
-
-            val effectiveRequestMessages = resolveRequestMessagesForRoundTrip(
-                conversation = conversation,
-                assistant = assistant,
-                requestMessages = requestMessages,
-            )
             val fullContent = StringBuilder()
             val fullReasoning = StringBuilder()
             val fullParts = mutableListOf<ChatMessagePart>()
@@ -160,15 +191,7 @@ internal class RoleplayRoundTripExecutor(
                                 fullContent = fullContent,
                                 fullReasoning = fullReasoning,
                                 fullParts = fullParts,
-                                toolingOptions = GatewayToolingOptions.localContextOnly(
-                                    GatewayToolRuntimeContext(
-                                        promptMode = PromptMode.ROLEPLAY,
-                                        assistant = assistant,
-                                        conversation = conversation,
-                                        userInputText = RoleplayConversationSupport.resolveLatestUserInputText(requestMessages),
-                                        recentMessages = requestMessages,
-                                    ),
-                                ),
+                                toolingOptions = toolingOptions,
                             )
                         },
                         currentPayload = {
@@ -322,17 +345,27 @@ internal class RoleplayRoundTripExecutor(
         requestMessages: List<ChatMessage>,
     ): List<ChatMessage> {
         val summary = conversationSummaryRepository.getSummary(conversation.id)
-        val recentWindow = assistant?.contextMessageSize?.takeIf { it > 0 }
-            ?: SUMMARY_RECENT_MESSAGE_WINDOW
         return ConversationMessageTransforms.trimRequestMessagesWithSummary(
             requestMessages = requestMessages,
-            recentWindow = recentWindow,
-            hasSummary = summary?.summary?.isBlank() == false,
+            completedMessageCount = requestMessages.count { it.status == MessageStatus.COMPLETED },
+            summaryCoveredMessageCount = summary
+                ?.takeIf { it.summary.isNotBlank() }
+                ?.coveredMessageCount
+                ?: 0,
+            recentWindow = resolveSummaryRecentWindow(assistant),
         )
+    }
+
+    private fun resolveSummaryRecentWindow(
+        assistant: Assistant?,
+    ): Int {
+        return assistant?.contextMessageSize?.takeIf { it > 0 }
+            ?: SUMMARY_RECENT_MESSAGE_WINDOW
     }
 
     private companion object {
         private const val SUMMARY_TRIGGER_MESSAGE_COUNT = 12
+        private const val SUMMARY_MIN_COVERED_MESSAGE_COUNT = 4
         private const val SUMMARY_RECENT_MESSAGE_WINDOW = 8
     }
 }

@@ -307,6 +307,9 @@ class DefaultMemoryWriteService(
         val settings = settingsStore.settingsFlow.first()
         val provider = settings.activeProvider() ?: return items.take(maxItems.coerceAtLeast(1))
         val modelId = provider.resolveFunctionModel(ProviderFunction.MEMORY)
+        if (modelId.isBlank()) {
+            return items.take(maxItems.coerceAtLeast(1))
+        }
         return runCatching {
             aiPromptExtrasService.condenseRoleplayMemories(
                 memoryItems = items,

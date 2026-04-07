@@ -35,6 +35,9 @@ interface AiSettingsEditor {
         roleplayLongformTargetChars: Int,
         showRoleplayPresenceStrip: Boolean,
         showRoleplayStatusStrip: Boolean,
+        roleplayImmersiveMode: com.example.myapplication.model.RoleplayImmersiveMode,
+        roleplayHighContrast: Boolean,
+        roleplayLineHeightScale: com.example.myapplication.model.RoleplayLineHeightScale,
     )
 
     suspend fun saveScreenTranslationSettings(settings: ScreenTranslationSettings)
@@ -103,6 +106,9 @@ class DefaultAiSettingsEditor(
         roleplayLongformTargetChars: Int,
         showRoleplayPresenceStrip: Boolean,
         showRoleplayStatusStrip: Boolean,
+        roleplayImmersiveMode: com.example.myapplication.model.RoleplayImmersiveMode,
+        roleplayHighContrast: Boolean,
+        roleplayLineHeightScale: com.example.myapplication.model.RoleplayLineHeightScale,
     ) {
         settingsStore.saveDisplaySettings(
             themeMode = themeMode,
@@ -117,6 +123,9 @@ class DefaultAiSettingsEditor(
             roleplayLongformTargetChars = roleplayLongformTargetChars,
             showRoleplayPresenceStrip = showRoleplayPresenceStrip,
             showRoleplayStatusStrip = showRoleplayStatusStrip,
+            roleplayImmersiveMode = roleplayImmersiveMode,
+            roleplayHighContrast = roleplayHighContrast,
+            roleplayLineHeightScale = roleplayLineHeightScale,
         )
     }
 

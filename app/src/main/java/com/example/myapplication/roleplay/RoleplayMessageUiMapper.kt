@@ -7,13 +7,14 @@ import com.example.myapplication.model.MessageRole
 import com.example.myapplication.model.MessageStatus
 import com.example.myapplication.model.RoleplayContentType
 import com.example.myapplication.model.RoleplayMessageUiModel
+import com.example.myapplication.model.RoleplayOutputFormat
 import com.example.myapplication.model.RoleplayScenario
 import com.example.myapplication.model.RoleplaySpeaker
 import com.example.myapplication.model.hasSendableContent
-import com.example.myapplication.model.isTransferPart
+import com.example.myapplication.model.isSpecialPlayPart
 import com.example.myapplication.model.normalizeChatMessageParts
 import com.example.myapplication.model.toPlainText
-import com.example.myapplication.model.toTransferCopyText
+import com.example.myapplication.model.toSpecialPlayCopyText
 
 object RoleplayMessageUiMapper {
     fun mapMessages(
@@ -58,10 +59,14 @@ object RoleplayMessageUiMapper {
                 }
             }
             if (!streamingContent.isNullOrBlank()) {
+                val streamingFormat = rawMessages
+                    .lastOrNull { it.role == MessageRole.ASSISTANT && it.status == MessageStatus.LOADING }
+                    ?.let(RoleplayMessageFormatSupport::resolveAssistantMessageOutputFormat)
+                    ?: RoleplayMessageFormatSupport.resolveScenarioOutputFormat(scenario)
                 add(
                     RoleplayMessageUiModel(
                         sourceMessageId = "streaming",
-                        contentType = if (scenario.longformModeEnabled) {
+                        contentType = if (streamingFormat == RoleplayOutputFormat.LONGFORM) {
                             RoleplayContentType.LONGFORM
                         } else {
                             RoleplayContentType.DIALOGUE
@@ -72,7 +77,11 @@ object RoleplayMessageUiMapper {
                         createdAt = nowProvider(),
                         isStreaming = true,
                         messageStatus = MessageStatus.LOADING,
-                        copyText = outputParser.stripMarkup(streamingContent),
+                        copyText = if (streamingFormat == RoleplayOutputFormat.LONGFORM) {
+                            RoleplayLongformMarkupParser.stripMarkupForDisplay(streamingContent)
+                        } else {
+                            outputParser.stripMarkup(streamingContent)
+                        },
                     ),
                 )
             }
@@ -103,16 +112,16 @@ object RoleplayMessageUiMapper {
 
         normalizedParts.forEach { part ->
             when {
-                part.isTransferPart() -> {
+                part.isSpecialPlayPart() -> {
                     target += RoleplayMessageUiModel(
                         sourceMessageId = message.id,
-                        contentType = RoleplayContentType.SPECIAL_TRANSFER,
+                        contentType = RoleplayContentType.SPECIAL_PLAY,
                         speaker = RoleplaySpeaker.USER,
                         speakerName = userName,
                         content = "",
                         createdAt = message.createdAt,
                         messageStatus = message.status,
-                        copyText = part.toTransferCopyText(),
+                        copyText = part.toSpecialPlayCopyText(),
                         specialPart = part,
                     )
                 }
@@ -157,27 +166,26 @@ object RoleplayMessageUiMapper {
     ) {
         val normalizedParts = normalizeChatMessageParts(message.parts)
         val initialSize = target.size
-        val canRetry = !message.id.startsWith("opening-narration:") &&
+        val canRetry = !RoleplayConversationSupport.isOpeningNarrationMessageId(message.id, scenario.id) &&
             (message.status == MessageStatus.COMPLETED || message.status == MessageStatus.ERROR)
-        if (scenario.longformModeEnabled) {
-            val specialParts = normalizedParts.filter { it.isTransferPart() }
+        val outputFormat = RoleplayMessageFormatSupport.resolveAssistantMessageOutputFormat(message)
+        if (outputFormat == RoleplayOutputFormat.LONGFORM) {
+            val specialParts = normalizedParts.filter { it.isSpecialPlayPart() }
             specialParts.forEach { part ->
                 target += RoleplayMessageUiModel(
                     sourceMessageId = message.id,
-                    contentType = RoleplayContentType.SPECIAL_TRANSFER,
+                    contentType = RoleplayContentType.SPECIAL_PLAY,
                     speaker = RoleplaySpeaker.CHARACTER,
                     speakerName = characterName,
                     content = "",
                     createdAt = message.createdAt,
                     messageStatus = message.status,
-                    copyText = part.toTransferCopyText(),
+                    copyText = part.toSpecialPlayCopyText(),
                     canRetry = canRetry,
                     specialPart = part,
                 )
             }
-            val longformSource = normalizedParts.toPlainText()
-                .ifBlank { message.content.trim() }
-                .trim()
+            val longformSource = RoleplayMessageFormatSupport.resolveAssistantRawContent(message)
             val displayLongformContent = RoleplayLongformMarkupParser.stripMarkupForDisplay(longformSource)
             if (message.status == MessageStatus.LOADING && displayLongformContent.isBlank()) {
                 return
@@ -220,16 +228,16 @@ object RoleplayMessageUiMapper {
 
         normalizedParts.forEach { part ->
             when {
-                part.isTransferPart() -> {
+                part.isSpecialPlayPart() -> {
                     target += RoleplayMessageUiModel(
                         sourceMessageId = message.id,
-                        contentType = RoleplayContentType.SPECIAL_TRANSFER,
+                        contentType = RoleplayContentType.SPECIAL_PLAY,
                         speaker = RoleplaySpeaker.CHARACTER,
                         speakerName = characterName,
                         content = "",
                         createdAt = message.createdAt,
                         messageStatus = message.status,
-                        copyText = part.toTransferCopyText(),
+                        copyText = part.toSpecialPlayCopyText(),
                         canRetry = canRetry,
                         specialPart = part,
                     )

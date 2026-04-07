@@ -36,7 +36,9 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
 import com.example.myapplication.model.AppSettings
 import com.example.myapplication.model.Assistant
@@ -431,9 +433,17 @@ private fun ImagePickerRow(
     onPick: () -> Unit,
     onClear: () -> Unit,
 ) {
+    val density = LocalDensity.current
+    val previewRequestSize = with(density) {
+        IntSize(
+            width = 88.dp.roundToPx().coerceAtLeast(1),
+            height = 88.dp.roundToPx().coerceAtLeast(1),
+        )
+    }
     val imageState = rememberUserProfileAvatarState(
         avatarUri = value.takeIf { it.startsWith("content://") || it.startsWith("file://") }.orEmpty(),
         avatarUrl = value.takeIf { it.startsWith("http://") || it.startsWith("https://") }.orEmpty(),
+        requestSize = previewRequestSize,
     )
 
     Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {

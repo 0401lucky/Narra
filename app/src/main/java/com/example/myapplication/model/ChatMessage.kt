@@ -26,6 +26,7 @@ data class ChatMessage(
     val attachments: List<MessageAttachment> = emptyList(),
     val parts: List<ChatMessagePart> = emptyList(),
     val citations: List<MessageCitation> = emptyList(),
+    val roleplayOutputFormat: RoleplayOutputFormat = RoleplayOutputFormat.UNSPECIFIED,
 )
 
 fun ChatMessage.hasSendableContent(): Boolean {

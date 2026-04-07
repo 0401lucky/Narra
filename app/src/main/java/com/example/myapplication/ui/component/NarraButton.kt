@@ -21,6 +21,7 @@ import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.example.myapplication.ui.theme.NarraMinimumTouchTarget
 
 /**
  * Premium Button Modifier:
@@ -123,7 +124,7 @@ fun NarraButton(
     Button(
         onClick = onClick,
         modifier = modifier
-            .defaultMinSize(minHeight = 44.dp)
+            .defaultMinSize(minHeight = NarraMinimumTouchTarget)
             .bounceClick(enabled, interactionSource),
         enabled = enabled,
         shape = shape,
@@ -156,7 +157,7 @@ fun NarraOutlinedButton(
     OutlinedButton(
         onClick = onClick,
         modifier = modifier
-            .defaultMinSize(minHeight = 44.dp)
+            .defaultMinSize(minHeight = NarraMinimumTouchTarget)
             .bounceClick(enabled, interactionSource),
         enabled = enabled,
         shape = shape,
@@ -186,7 +187,7 @@ fun NarraTextButton(
     TextButton(
         onClick = onClick,
         modifier = modifier
-            .defaultMinSize(minHeight = 44.dp)
+            .defaultMinSize(minHeight = NarraMinimumTouchTarget)
             .bounceClick(enabled, interactionSource),
         enabled = enabled,
         shape = shape,
@@ -216,7 +217,7 @@ fun NarraFilledTonalButton(
     FilledTonalButton(
         onClick = onClick,
         modifier = modifier
-            .defaultMinSize(minHeight = 44.dp)
+            .defaultMinSize(minHeight = NarraMinimumTouchTarget)
             .bounceClick(enabled, interactionSource),
         enabled = enabled,
         shape = shape,
@@ -249,7 +250,7 @@ fun NarraElevatedButton(
     ElevatedButton(
         onClick = onClick,
         modifier = modifier
-            .defaultMinSize(minHeight = 44.dp)
+            .defaultMinSize(minHeight = NarraMinimumTouchTarget)
             .bounceClick(enabled, interactionSource),
         enabled = enabled,
         shape = shape,
@@ -276,7 +277,12 @@ fun NarraIconButton(
 ) {
     IconButton(
         onClick = onClick,
-        modifier = modifier.bounceClick(enabled, interactionSource),
+        modifier = modifier
+            .defaultMinSize(
+                minWidth = NarraMinimumTouchTarget,
+                minHeight = NarraMinimumTouchTarget,
+            )
+            .bounceClick(enabled, interactionSource),
         enabled = enabled,
         colors = colors,
         interactionSource = interactionSource,
@@ -301,7 +307,12 @@ fun NarraFilledIconButton(
 ) {
     FilledIconButton(
         onClick = onClick,
-        modifier = modifier.bounceClick(enabled, interactionSource),
+        modifier = modifier
+            .defaultMinSize(
+                minWidth = NarraMinimumTouchTarget,
+                minHeight = NarraMinimumTouchTarget,
+            )
+            .bounceClick(enabled, interactionSource),
         enabled = enabled,
         shape = shape,
         colors = colors,
@@ -327,7 +338,12 @@ fun NarraFilledTonalIconButton(
 ) {
     FilledTonalIconButton(
         onClick = onClick,
-        modifier = modifier.bounceClick(enabled, interactionSource),
+        modifier = modifier
+            .defaultMinSize(
+                minWidth = NarraMinimumTouchTarget,
+                minHeight = NarraMinimumTouchTarget,
+            )
+            .bounceClick(enabled, interactionSource),
         enabled = enabled,
         shape = shape,
         colors = colors,

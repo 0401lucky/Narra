@@ -35,6 +35,9 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.SegmentedButton
+import androidx.compose.material3.SegmentedButtonDefaults
+import androidx.compose.material3.SingleChoiceSegmentedButtonRow
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
@@ -44,16 +47,22 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import com.example.myapplication.R
 import com.example.myapplication.model.AppSettings
 import com.example.myapplication.model.Assistant
+import com.example.myapplication.model.ContextGovernanceSnapshot
 import com.example.myapplication.model.MemoryProposalHistoryItem
 import com.example.myapplication.model.MemoryProposalStatus
 import com.example.myapplication.model.ProviderSettings
 import com.example.myapplication.model.RoleplayContextStatus
+import com.example.myapplication.model.RoleplayImmersiveMode
+import com.example.myapplication.model.RoleplayLineHeightScale
 import com.example.myapplication.model.RoleplayScenario
 import com.example.myapplication.ui.component.NarraTextButton
 import com.example.myapplication.ui.component.roleplay.ImmersiveBackdropState
@@ -75,6 +84,7 @@ internal fun RoleplaySettingsContent(
     currentModel: String,
     backdropState: ImmersiveBackdropState,
     latestPromptDebugDump: String,
+    contextGovernance: ContextGovernanceSnapshot?,
     recentMemoryProposalHistory: List<MemoryProposalHistoryItem>,
     longformCharsText: String,
     onLongformCharsTextChange: (String) -> Unit,
@@ -84,6 +94,10 @@ internal fun RoleplaySettingsContent(
     onUpdateShowRoleplayPresenceStrip: (Boolean) -> Unit,
     onUpdateShowRoleplayStatusStrip: (Boolean) -> Unit,
     onUpdateShowRoleplayAiHelper: (Boolean) -> Unit,
+    systemHighContrastEnabled: Boolean,
+    onUpdateRoleplayImmersiveMode: (RoleplayImmersiveMode) -> Unit,
+    onUpdateRoleplayHighContrast: (Boolean) -> Unit,
+    onUpdateRoleplayLineHeightScale: (RoleplayLineHeightScale) -> Unit,
     onShowRestartDialog: () -> Unit,
     onShowResetDialog: () -> Unit,
 ) {
@@ -230,6 +244,110 @@ internal fun RoleplaySettingsContent(
             }
         }
 
+        item {
+            ImmersiveSettingsCard(backdropState) {
+                Column(
+                    modifier = Modifier.padding(horizontal = 18.dp, vertical = 16.dp),
+                    verticalArrangement = Arrangement.spacedBy(16.dp),
+                ) {
+                    Text(
+                        text = stringResource(id = R.string.roleplay_readability_section_title),
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold,
+                        color = palette.onGlass,
+                    )
+                    Text(
+                        text = stringResource(id = R.string.roleplay_readability_section_subtitle),
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = palette.onGlassMuted,
+                    )
+                    Column(
+                        verticalArrangement = Arrangement.spacedBy(10.dp),
+                    ) {
+                        Text(
+                            text = stringResource(id = R.string.roleplay_immersive_mode_title),
+                            style = MaterialTheme.typography.titleSmall,
+                            fontWeight = FontWeight.SemiBold,
+                            color = palette.onGlass,
+                        )
+                        SingleChoiceSegmentedButtonRow(
+                            modifier = Modifier.fillMaxWidth(),
+                        ) {
+                            RoleplayImmersiveMode.entries.forEachIndexed { index, mode ->
+                                SegmentedButton(
+                                    modifier = Modifier.testTag("roleplay_immersive_${mode.storageValue}"),
+                                    shape = SegmentedButtonDefaults.itemShape(
+                                        index = index,
+                                        count = RoleplayImmersiveMode.entries.size,
+                                    ),
+                                    selected = settings.roleplayImmersiveMode == mode,
+                                    onClick = { onUpdateRoleplayImmersiveMode(mode) },
+                                    label = { Text(roleplayImmersiveModeLabel(mode)) },
+                                )
+                            }
+                        }
+                        Text(
+                            text = roleplayImmersiveModeDescription(settings.roleplayImmersiveMode),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = palette.onGlassMuted,
+                        )
+                    }
+                    HorizontalDivider(color = palette.panelBorder.copy(alpha = 0.44f))
+                    RoleplaySettingSwitchRow(
+                        palette = palette,
+                        icon = {
+                            Icon(
+                                imageVector = Icons.Default.Visibility,
+                                contentDescription = null,
+                                tint = palette.onGlass,
+                            )
+                        },
+                        title = "高对比度模式",
+                        supportingText = if (systemHighContrastEnabled && !settings.roleplayHighContrast) {
+                            stringResource(id = R.string.roleplay_high_contrast_system_enabled)
+                        } else {
+                            stringResource(id = R.string.roleplay_high_contrast_supporting)
+                        },
+                        checked = settings.roleplayHighContrast,
+                        switchModifier = Modifier.testTag("roleplay_high_contrast_switch"),
+                        onCheckedChange = onUpdateRoleplayHighContrast,
+                    )
+                    HorizontalDivider(color = palette.panelBorder.copy(alpha = 0.44f))
+                    Column(
+                        verticalArrangement = Arrangement.spacedBy(10.dp),
+                    ) {
+                        Text(
+                            text = stringResource(id = R.string.roleplay_line_height_title),
+                            style = MaterialTheme.typography.titleSmall,
+                            fontWeight = FontWeight.SemiBold,
+                            color = palette.onGlass,
+                        )
+                        SingleChoiceSegmentedButtonRow(
+                            modifier = Modifier.fillMaxWidth(),
+                        ) {
+                            RoleplayLineHeightScale.entries.forEachIndexed { index, scale ->
+                                SegmentedButton(
+                                    modifier = Modifier.testTag("roleplay_line_height_${scale.storageValue}"),
+                                    shape = SegmentedButtonDefaults.itemShape(
+                                        index = index,
+                                        count = RoleplayLineHeightScale.entries.size,
+                                    ),
+                                    selected = settings.roleplayLineHeightScale == scale,
+                                    onClick = { onUpdateRoleplayLineHeightScale(scale) },
+                                    label = { Text(roleplayLineHeightScaleLabel(scale)) },
+                                )
+                            }
+                        }
+                        Text(
+                            text = roleplayLineHeightScaleDescription(settings.roleplayLineHeightScale),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = palette.onGlassMuted,
+                        )
+                    }
+                }
+            }
+        }
+
         if (recentMemoryProposalHistory.isNotEmpty()) {
             item {
                 ImmersiveSettingsCard(backdropState) {
@@ -333,9 +451,10 @@ internal fun RoleplaySettingsContent(
                             tint = palette.onGlass,
                         )
                     },
-                    title = "查看提示词",
+                    title = "上下文治理",
+                    supportingText = contextGovernance?.summarySupportingText.orEmpty(),
                     onClick = onOpenPromptDebugSheet,
-                    enabled = latestPromptDebugDump.isNotBlank(),
+                    enabled = latestPromptDebugDump.isNotBlank() || contextGovernance != null,
                 )
             }
         }
@@ -370,7 +489,16 @@ internal fun RoleplaySettingsContent(
                         )
                     }
                     Text(
-                        text = buildString {
+                        text = contextGovernance?.let { governance ->
+                            buildString {
+                                append(if (contextStatus.isContinuingSession) "正在延续旧剧情。" else "当前是新剧情。")
+                                append(' ')
+                                append(governance.summarySupportingText)
+                                if (governance.worldBookHitCount > 0 || governance.memoryCount > 0) {
+                                    append(" 当前命中世界书 ${governance.worldBookHitCount} 条，注入记忆 ${governance.memoryCount} 条。")
+                                }
+                            }
+                        } ?: buildString {
                             append(if (contextStatus.isContinuingSession) "正在延续旧剧情。" else "当前是新剧情。")
                             if (contextStatus.hasSummary) {
                                 append(" 摘要已覆盖 ${contextStatus.summaryCoveredMessageCount} 条消息。")
@@ -492,6 +620,42 @@ internal fun RoleplayPromptDebugSheet(
                 }
             }
         }
+    }
+}
+
+@Composable
+private fun roleplayImmersiveModeLabel(mode: RoleplayImmersiveMode): String {
+    return when (mode) {
+        RoleplayImmersiveMode.EDGE_TO_EDGE -> stringResource(id = R.string.roleplay_immersive_mode_edge_to_edge)
+        RoleplayImmersiveMode.HIDE_SYSTEM_BARS -> stringResource(id = R.string.roleplay_immersive_mode_fullscreen)
+        RoleplayImmersiveMode.NONE -> stringResource(id = R.string.roleplay_immersive_mode_standard)
+    }
+}
+
+@Composable
+private fun roleplayImmersiveModeDescription(mode: RoleplayImmersiveMode): String {
+    return when (mode) {
+        RoleplayImmersiveMode.EDGE_TO_EDGE -> stringResource(id = R.string.roleplay_immersive_mode_edge_to_edge_desc)
+        RoleplayImmersiveMode.HIDE_SYSTEM_BARS -> stringResource(id = R.string.roleplay_immersive_mode_fullscreen_desc)
+        RoleplayImmersiveMode.NONE -> stringResource(id = R.string.roleplay_immersive_mode_standard_desc)
+    }
+}
+
+@Composable
+private fun roleplayLineHeightScaleLabel(scale: RoleplayLineHeightScale): String {
+    return when (scale) {
+        RoleplayLineHeightScale.COMPACT -> stringResource(id = R.string.roleplay_line_height_compact)
+        RoleplayLineHeightScale.NORMAL -> stringResource(id = R.string.roleplay_line_height_normal)
+        RoleplayLineHeightScale.RELAXED -> stringResource(id = R.string.roleplay_line_height_relaxed)
+    }
+}
+
+@Composable
+private fun roleplayLineHeightScaleDescription(scale: RoleplayLineHeightScale): String {
+    return when (scale) {
+        RoleplayLineHeightScale.COMPACT -> stringResource(id = R.string.roleplay_line_height_compact_desc)
+        RoleplayLineHeightScale.NORMAL -> stringResource(id = R.string.roleplay_line_height_normal_desc)
+        RoleplayLineHeightScale.RELAXED -> stringResource(id = R.string.roleplay_line_height_relaxed_desc)
     }
 }
 
@@ -661,6 +825,7 @@ internal fun RoleplaySettingSwitchRow(
     title: String,
     supportingText: String = "",
     checked: Boolean,
+    switchModifier: Modifier = Modifier,
     onCheckedChange: (Boolean) -> Unit,
 ) {
     Row(
@@ -690,6 +855,7 @@ internal fun RoleplaySettingSwitchRow(
             }
         }
         Switch(
+            modifier = switchModifier,
             checked = checked,
             onCheckedChange = onCheckedChange,
         )

@@ -7,9 +7,12 @@ import com.example.myapplication.data.repository.ConversationRepository
 import com.example.myapplication.model.ChatMessage
 import com.example.myapplication.model.DEFAULT_ASSISTANT_ID
 import com.example.myapplication.model.MessageRole
+import com.example.myapplication.model.RoleplayOutputFormat
 import com.example.myapplication.model.RoleplayScenario
 import com.example.myapplication.model.RoleplaySession
 import com.example.myapplication.model.textMessagePart
+import com.example.myapplication.roleplay.RoleplayMessageFormatSupport
+import com.example.myapplication.roleplay.RoleplayConversationSupport
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flatMapLatest
@@ -280,28 +283,32 @@ class RoomRoleplayRepository(
             return
         }
         val timestamp = nowProvider()
+        val outputFormat = RoleplayMessageFormatSupport.resolveScenarioOutputFormat(scenario)
+        val renderedOpeningNarration = when (outputFormat) {
+            RoleplayOutputFormat.PROTOCOL -> {
+                "<narration>${escapeXml(openingNarration)}</narration>"
+            }
+
+            RoleplayOutputFormat.LONGFORM,
+            RoleplayOutputFormat.PLAIN,
+            RoleplayOutputFormat.UNSPECIFIED,
+            -> {
+                openingNarration
+            }
+        }
         conversationRepository.appendMessages(
             conversationId = conversationId,
             messages = listOf(
                 ChatMessage(
-                    id = openingNarrationMessageId(scenario.id, conversationId),
+                    id = RoleplayConversationSupport.openingNarrationMessageId(scenario.id, conversationId),
                     conversationId = conversationId,
                     role = MessageRole.ASSISTANT,
-                    content = if (scenario.enableRoleplayProtocol) {
-                        "<narration>${escapeXml(openingNarration)}</narration>"
-                    } else {
-                        openingNarration
-                    },
+                    content = renderedOpeningNarration,
                     createdAt = timestamp,
                     parts = listOf(
-                        textMessagePart(
-                            if (scenario.enableRoleplayProtocol) {
-                                "<narration>${escapeXml(openingNarration)}</narration>"
-                            } else {
-                                openingNarration
-                            },
-                        ),
+                        textMessagePart(renderedOpeningNarration),
                     ),
+                    roleplayOutputFormat = outputFormat,
                 ),
             ),
             selectedModel = "",
@@ -312,15 +319,8 @@ class RoomRoleplayRepository(
         return assistantId.trim().ifBlank { DEFAULT_ASSISTANT_ID }
     }
 
-    private fun openingNarrationMessageId(
-        scenarioId: String,
-        conversationId: String,
-    ): String {
-        return "rp-opening-$scenarioId-$conversationId"
-    }
-
     private fun ChatMessage.isOpeningNarrationMessage(scenarioId: String): Boolean {
-        return id.startsWith("rp-opening-$scenarioId-")
+        return RoleplayConversationSupport.isOpeningNarrationMessageId(id, scenarioId)
     }
 
     private fun escapeXml(value: String): String {

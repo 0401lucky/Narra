@@ -1,6 +1,8 @@
 package com.example.myapplication.ui.component
 
 private val OrderedListLineRegex = Regex("""\d+\.\s+.+""")
+private val TaskListLineRegex = Regex("""[-*+]\s+\[(?: |x|X)]\s+.+""")
+private val HorizontalRuleRegex = Regex("""^\s{0,3}(?:-{3,}|\*{3,}|_{3,})\s*$""")
 private val CommandHeadingRegex = Regex(""".*[:：]\s*$""")
 private val CommandContinuationRegex = Regex("""^(--?[A-Za-z0-9][\w./:\\-]*|[A-Za-z0-9_.:/\\-]+)$""")
 private val ShellPromptRegex = Regex("""^(?:PS [^>]+>|[A-Z]:\\.*>|[$>#])\s*.+""")
@@ -43,7 +45,7 @@ internal fun normalizeAssistantMarkdownForDisplay(content: String): String {
     val nonBlankLines = normalized.lines()
         .map(String::trim)
         .filter(String::isNotBlank)
-    if (nonBlankLines.size < 2 || nonBlankLines.any(::looksLikeStructuredMarkdownLine)) {
+    if (nonBlankLines.size < 2 || containsStructuredMarkdown(normalized)) {
         return normalized
     }
 
@@ -249,15 +251,61 @@ private fun inferCommandLanguage(lines: List<String>): String {
     }
 }
 
-private fun looksLikeStructuredMarkdownLine(line: String): Boolean {
-    return line.startsWith("#") ||
-        line.startsWith("> ") ||
-        line.startsWith("- ") ||
-        line.startsWith("* ") ||
-        line.startsWith("+ ") ||
-        line.startsWith("|") ||
-        line.startsWith("```") ||
-        OrderedListLineRegex.matches(line)
+internal fun containsStructuredMarkdown(content: String): Boolean {
+    val lines = content.lines()
+    if (lines.any { line -> looksLikeStructuredMarkdownLine(line.trimStart()) }) {
+        return true
+    }
+    return containsMarkdownTable(lines)
+}
+
+internal fun looksLikeStructuredMarkdownLine(line: String): Boolean {
+    val trimmed = line.trimStart()
+    return trimmed.startsWith("#") ||
+        trimmed.startsWith("> ") ||
+        trimmed.startsWith("- ") ||
+        trimmed.startsWith("* ") ||
+        trimmed.startsWith("+ ") ||
+        trimmed.startsWith("|") ||
+        trimmed.startsWith("```") ||
+        OrderedListLineRegex.matches(trimmed) ||
+        TaskListLineRegex.matches(trimmed) ||
+        HorizontalRuleRegex.matches(trimmed)
+}
+
+private fun containsMarkdownTable(lines: List<String>): Boolean {
+    if (lines.size < 2) {
+        return false
+    }
+    for (index in 0 until lines.lastIndex) {
+        val current = lines[index].trim()
+        val next = lines[index + 1].trim()
+        if (looksLikeMarkdownTableRow(current) && looksLikeMarkdownTableSeparator(next)) {
+            return true
+        }
+    }
+    return false
+}
+
+private fun looksLikeMarkdownTableRow(line: String): Boolean {
+    if (line.isBlank()) {
+        return false
+    }
+    val pipeCount = line.count { it == '|' }
+    return pipeCount >= 1 && !line.startsWith("http://") && !line.startsWith("https://")
+}
+
+private fun looksLikeMarkdownTableSeparator(line: String): Boolean {
+    if (line.isBlank() || '|' !in line) {
+        return false
+    }
+    return line
+        .split('|')
+        .map { it.trim() }
+        .filter { it.isNotEmpty() }
+        .all { segment ->
+            segment.all { ch -> ch == '-' || ch == ':' }
+        }
 }
 
 internal fun extractAssistantVisualContent(content: String): AssistantVisualContent {

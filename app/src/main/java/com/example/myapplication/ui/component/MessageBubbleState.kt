@@ -11,6 +11,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.example.myapplication.model.AttachmentType
 import com.example.myapplication.model.ChatMessage
 import com.example.myapplication.model.ChatMessagePart
@@ -24,6 +25,7 @@ import com.example.myapplication.model.textMessagePart
 import com.example.myapplication.model.toPlainText
 import com.mikepenz.markdown.model.MarkdownPadding
 import com.mikepenz.markdown.model.MarkdownTypography
+import java.util.LinkedHashMap
 
 internal enum class ReasoningCardDisplayState {
     Collapsed,
@@ -92,7 +94,7 @@ internal fun rememberMessageBubbleRenderState(
         if (rawMessageParts.isNotEmpty()) {
             rawMessageParts.map { part ->
                 if (part.type == ChatMessagePartType.TEXT && !isUser && !isStreaming) {
-                    part.copy(text = normalizeAssistantMarkdownForDisplay(part.text))
+                    part.copy(text = cachedNormalizeAssistantMarkdown(part.text))
                 } else {
                     part
                 }
@@ -182,20 +184,20 @@ internal fun rememberMessageBubbleRenderState(
     }
     val assistantVisualContent = remember(isUser, isStreaming, hasStructuredParts, displayContent) {
         if (!isUser && !isStreaming && !hasStructuredParts) {
-            extractAssistantVisualContent(displayContent)
+            cachedExtractAssistantVisualContent(displayContent)
         } else {
             AssistantVisualContent(text = displayContent, imageSources = emptyList())
         }
     }
     val renderedDisplayContent = remember(isUser, isStreaming, hasStructuredParts, assistantVisualContent) {
         if (!isUser && !isStreaming && !hasStructuredParts) {
-            normalizeAssistantMarkdownForDisplay(assistantVisualContent.text)
+            cachedNormalizeAssistantMarkdown(assistantVisualContent.text)
         } else {
             assistantVisualContent.text
         }
     }
     val renderedReasoningContent = remember(isLoading, resolvedReasoningContent) {
-        if (!isLoading) normalizeAssistantMarkdownForDisplay(resolvedReasoningContent) else resolvedReasoningContent
+        if (!isLoading) cachedNormalizeAssistantMarkdown(resolvedReasoningContent) else resolvedReasoningContent
     }
     val reasoningParts = remember(renderedReasoningContent) {
         if (renderedReasoningContent.isNotBlank()) listOf(textMessagePart(renderedReasoningContent)) else emptyList()
@@ -224,14 +226,26 @@ internal fun rememberMessageBubbleRenderState(
         displayAttachments.any { it.type == AttachmentType.IMAGE } ||
             displayParts.any { it.type != ChatMessagePartType.TEXT }
         )
+    val assistantParagraphStyle = androidx.compose.material3.MaterialTheme.typography.bodyLarge.scaledBy(
+        messageTextScale,
+    ).copy(
+        lineHeight = 29.sp * messageTextScale,
+        letterSpacing = 0.12.sp,
+    )
     val assistantMarkdownTypography = chatMarkdownTypography(
-        paragraphStyle = androidx.compose.material3.MaterialTheme.typography.bodyLarge.scaledBy(messageTextScale),
+        paragraphStyle = assistantParagraphStyle,
         compact = false,
     )
-    val plainMessageTextStyle = androidx.compose.material3.MaterialTheme.typography.bodyLarge.scaledBy(messageTextScale)
+    val plainMessageTextStyle = assistantParagraphStyle
     val assistantMarkdownPadding = chatMarkdownPadding(compact = false)
+    val reasoningParagraphStyle = androidx.compose.material3.MaterialTheme.typography.bodyMedium.scaledBy(
+        messageTextScale,
+    ).copy(
+        lineHeight = 24.sp * messageTextScale,
+        letterSpacing = 0.08.sp,
+    )
     val reasoningMarkdownTypography = chatMarkdownTypography(
-        paragraphStyle = androidx.compose.material3.MaterialTheme.typography.bodyMedium.scaledBy(messageTextScale),
+        paragraphStyle = reasoningParagraphStyle,
         compact = true,
     )
     val reasoningMarkdownPadding = chatMarkdownPadding(compact = true)
@@ -273,4 +287,51 @@ internal fun rememberMessageBubbleRenderState(
             userToggledReasoning = reasoningDisplayState != ReasoningCardDisplayState.Expanded
         },
     )
+}
+
+private fun cachedNormalizeAssistantMarkdown(content: String): String {
+    if (content.isBlank()) {
+        return content
+    }
+    return MessageBubbleTextRenderCache.normalizedMarkdown(content) {
+        normalizeAssistantMarkdownForDisplay(content)
+    }
+}
+
+private fun cachedExtractAssistantVisualContent(content: String): AssistantVisualContent {
+    if (content.isBlank()) {
+        return AssistantVisualContent(text = content, imageSources = emptyList())
+    }
+    return MessageBubbleTextRenderCache.visualContent(content) {
+        extractAssistantVisualContent(content)
+    }
+}
+
+private object MessageBubbleTextRenderCache {
+    private const val MaxEntries = 200
+
+    private val normalizedMarkdownCache = object : LinkedHashMap<String, String>(MaxEntries, 0.75f, true) {
+        override fun removeEldestEntry(eldest: MutableMap.MutableEntry<String, String>?): Boolean {
+            return size > MaxEntries
+        }
+    }
+    private val visualContentCache = object : LinkedHashMap<String, AssistantVisualContent>(MaxEntries, 0.75f, true) {
+        override fun removeEldestEntry(eldest: MutableMap.MutableEntry<String, AssistantVisualContent>?): Boolean {
+            return size > MaxEntries
+        }
+    }
+
+    fun normalizedMarkdown(
+        key: String,
+        producer: () -> String,
+    ): String = synchronized(normalizedMarkdownCache) {
+        normalizedMarkdownCache[key] ?: producer().also { normalizedMarkdownCache[key] = it }
+    }
+
+    fun visualContent(
+        key: String,
+        producer: () -> AssistantVisualContent,
+    ): AssistantVisualContent = synchronized(visualContentCache) {
+        visualContentCache[key] ?: producer().also { visualContentCache[key] = it }
+    }
 }

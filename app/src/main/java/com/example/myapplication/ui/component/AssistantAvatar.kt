@@ -27,13 +27,17 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import com.example.myapplication.R
 
 /**
  * 助手头像组件。
@@ -51,13 +55,24 @@ fun AssistantAvatar(
     contentColor: Color = MaterialTheme.colorScheme.onSecondaryContainer,
     cornerRadius: Dp = 14.dp,
 ) {
+    val density = LocalDensity.current
+    val requestSize = with(density) {
+        val sizePx = size.roundToPx().coerceAtLeast(1)
+        IntSize(width = sizePx, height = sizePx)
+    }
     val avatarState = rememberUserProfileAvatarState(
         avatarUri = avatarUri,
         avatarUrl = "",
+        requestSize = requestSize,
     )
     val hasUploadedAvatar = avatarUri.isNotBlank() &&
         avatarState.loadState == UserAvatarLoadState.Success &&
         avatarState.imageBitmap != null
+    val resolvedAssistantName = name.ifBlank { stringResource(id = R.string.default_assistant_name) }
+    val avatarDescription = stringResource(
+        id = R.string.avatar_content_description,
+        resolvedAssistantName,
+    )
 
     Surface(
         modifier = modifier.size(size),
@@ -73,7 +88,7 @@ fun AssistantAvatar(
                 hasUploadedAvatar -> {
                     Image(
                         bitmap = avatarState.imageBitmap!!,
-                        contentDescription = "${name.ifBlank { "助手" }}头像",
+                        contentDescription = avatarDescription,
                         modifier = Modifier.fillMaxSize(),
                         contentScale = ContentScale.Crop,
                     )
@@ -84,7 +99,7 @@ fun AssistantAvatar(
                     if (icon != null) {
                         Icon(
                             imageVector = icon,
-                            contentDescription = name.ifBlank { "助手" },
+                            contentDescription = resolvedAssistantName,
                             modifier = Modifier.size(size * 0.52f),
                             tint = contentColor,
                         )

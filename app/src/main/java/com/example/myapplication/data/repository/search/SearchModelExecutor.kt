@@ -39,7 +39,7 @@ class SearchModelExecutor(
         val provider = settings.resolveSearchSourceProvider(source)
             ?: throw IllegalStateException("当前搜索提供商不可用，请检查提供商启用状态与连接配置")
         val searchModel = provider.resolveFunctionModel(ProviderFunction.SEARCH)
-        require(searchModel.isNotBlank()) { "请先在模型页设置搜索模型" }
+        require(searchModel.isNotBlank()) { "请先在模型页开启搜索模型" }
         require(provider.hasBaseCredentials()) { "当前提供商缺少连接配置，无法执行 LLM 搜索" }
 
         when (provider.resolvedApiProtocol()) {

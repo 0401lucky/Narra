@@ -53,6 +53,9 @@ object SettingsDraftStateSupport {
                 roleplayLongformTargetChars = settings.roleplayLongformTargetChars,
                 showRoleplayPresenceStrip = settings.showRoleplayPresenceStrip,
                 showRoleplayStatusStrip = settings.showRoleplayStatusStrip,
+                roleplayImmersiveMode = settings.roleplayImmersiveMode,
+                roleplayHighContrast = settings.roleplayHighContrast,
+                roleplayLineHeightScale = settings.roleplayLineHeightScale,
                 screenTranslationSettings = settings.screenTranslationSettings,
                 searchSettings = settings.resolvedSearchSettings(),
             )

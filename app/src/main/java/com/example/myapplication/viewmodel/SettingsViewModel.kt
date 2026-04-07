@@ -14,6 +14,7 @@ import com.example.myapplication.model.DEFAULT_ROLEPLAY_LONGFORM_TARGET_CHARS
 import com.example.myapplication.model.DEFAULT_ASSISTANT_ID
 import com.example.myapplication.model.ModelInfo
 import com.example.myapplication.model.ModelAbility
+import com.example.myapplication.model.ProviderFunctionModelMode
 import com.example.myapplication.model.ProviderSettings
 import com.example.myapplication.model.ProviderTemplate
 import com.example.myapplication.model.ProviderType
@@ -52,6 +53,9 @@ data class SettingsUiState(
     val roleplayLongformTargetChars: Int = DEFAULT_ROLEPLAY_LONGFORM_TARGET_CHARS,
     val showRoleplayPresenceStrip: Boolean = true,
     val showRoleplayStatusStrip: Boolean = false,
+    val roleplayImmersiveMode: com.example.myapplication.model.RoleplayImmersiveMode = com.example.myapplication.model.RoleplayImmersiveMode.EDGE_TO_EDGE,
+    val roleplayHighContrast: Boolean = false,
+    val roleplayLineHeightScale: com.example.myapplication.model.RoleplayLineHeightScale = com.example.myapplication.model.RoleplayLineHeightScale.NORMAL,
     val screenTranslationSettings: ScreenTranslationSettings = ScreenTranslationSettings(),
     val searchSettings: SearchSettings = SearchSettings(),
 ) {
@@ -94,6 +98,9 @@ data class SettingsUiState(
             roleplayLongformTargetChars != savedSettings.roleplayLongformTargetChars ||
             showRoleplayPresenceStrip != savedSettings.showRoleplayPresenceStrip ||
             showRoleplayStatusStrip != savedSettings.showRoleplayStatusStrip ||
+            roleplayImmersiveMode != savedSettings.roleplayImmersiveMode ||
+            roleplayHighContrast != savedSettings.roleplayHighContrast ||
+            roleplayLineHeightScale != savedSettings.roleplayLineHeightScale ||
             screenTranslationSettings != savedSettings.screenTranslationSettings ||
             searchSettings != savedSettings.resolvedSearchSettings()
     }
@@ -344,23 +351,111 @@ class SettingsViewModel(
     }
 
     fun updateProviderTitleSummaryModel(providerId: String, modelId: String) {
-        updateProvider(providerId) { it.copy(titleSummaryModel = modelId) }
+        updateProvider(providerId) {
+            it.copy(
+                titleSummaryModel = modelId,
+                titleSummaryModelMode = ProviderFunctionModelMode.CUSTOM,
+            )
+        }
     }
 
     fun updateProviderChatSuggestionModel(providerId: String, modelId: String) {
-        updateProvider(providerId) { it.copy(chatSuggestionModel = modelId) }
+        updateProvider(providerId) {
+            it.copy(
+                chatSuggestionModel = modelId,
+                chatSuggestionModelMode = ProviderFunctionModelMode.CUSTOM,
+            )
+        }
     }
 
     fun updateProviderMemoryModel(providerId: String, modelId: String) {
-        updateProvider(providerId) { it.copy(memoryModel = modelId) }
+        updateProvider(providerId) {
+            it.copy(
+                memoryModel = modelId,
+                memoryModelMode = ProviderFunctionModelMode.CUSTOM,
+            )
+        }
     }
 
     fun updateProviderTranslationModel(providerId: String, modelId: String) {
-        updateProvider(providerId) { it.copy(translationModel = modelId) }
+        updateProvider(providerId) {
+            it.copy(
+                translationModel = modelId,
+                translationModelMode = ProviderFunctionModelMode.CUSTOM,
+            )
+        }
     }
 
     fun updateProviderSearchModel(providerId: String, modelId: String) {
-        updateProvider(providerId) { it.copy(searchModel = modelId) }
+        updateProvider(providerId) {
+            it.copy(
+                searchModel = modelId,
+                searchModelMode = ProviderFunctionModelMode.CUSTOM,
+            )
+        }
+    }
+
+    fun updateProviderGiftImageModel(providerId: String, modelId: String) {
+        updateProvider(providerId) {
+            it.copy(
+                giftImageModel = modelId,
+                giftImageModelMode = ProviderFunctionModelMode.CUSTOM,
+            )
+        }
+    }
+
+    fun updateProviderTitleSummaryModelMode(providerId: String, mode: ProviderFunctionModelMode) {
+        updateProvider(providerId) {
+            it.copy(
+                titleSummaryModelMode = mode,
+                titleSummaryModel = if (mode == ProviderFunctionModelMode.CUSTOM) it.titleSummaryModel else "",
+            )
+        }
+    }
+
+    fun updateProviderChatSuggestionModelMode(providerId: String, mode: ProviderFunctionModelMode) {
+        updateProvider(providerId) {
+            it.copy(
+                chatSuggestionModelMode = mode,
+                chatSuggestionModel = if (mode == ProviderFunctionModelMode.CUSTOM) it.chatSuggestionModel else "",
+            )
+        }
+    }
+
+    fun updateProviderMemoryModelMode(providerId: String, mode: ProviderFunctionModelMode) {
+        updateProvider(providerId) {
+            it.copy(
+                memoryModelMode = mode,
+                memoryModel = if (mode == ProviderFunctionModelMode.CUSTOM) it.memoryModel else "",
+            )
+        }
+    }
+
+    fun updateProviderTranslationModelMode(providerId: String, mode: ProviderFunctionModelMode) {
+        updateProvider(providerId) {
+            it.copy(
+                translationModelMode = mode,
+                translationModel = if (mode == ProviderFunctionModelMode.CUSTOM) it.translationModel else "",
+            )
+        }
+    }
+
+    fun updateProviderSearchModelMode(providerId: String, mode: ProviderFunctionModelMode) {
+        updateProvider(providerId) {
+            it.copy(
+                searchModelMode = mode,
+                searchModel = if (mode == ProviderFunctionModelMode.CUSTOM) it.searchModel else "",
+            )
+        }
+    }
+
+    fun updateProviderGiftImageModelMode(providerId: String, mode: ProviderFunctionModelMode) {
+        updateProvider(providerId) {
+            it.copy(
+                giftImageModelMode = mode,
+                giftImageModel = if (mode == ProviderFunctionModelMode.CUSTOM) it.giftImageModel else "",
+            )
+        }
     }
 
     fun updateThemeMode(themeMode: ThemeMode) {
@@ -432,6 +527,24 @@ class SettingsViewModel(
     fun updateShowRoleplayStatusStrip(enabled: Boolean) {
         _uiState.update { current ->
             SettingsPreferenceDraftSupport.updateShowRoleplayStatusStrip(current, enabled)
+        }
+    }
+
+    fun updateRoleplayImmersiveMode(mode: com.example.myapplication.model.RoleplayImmersiveMode) {
+        _uiState.update { current ->
+            SettingsPreferenceDraftSupport.updateRoleplayImmersiveMode(current, mode)
+        }
+    }
+
+    fun updateRoleplayHighContrast(enabled: Boolean) {
+        _uiState.update { current ->
+            SettingsPreferenceDraftSupport.updateRoleplayHighContrast(current, enabled)
+        }
+    }
+
+    fun updateRoleplayLineHeightScale(scale: com.example.myapplication.model.RoleplayLineHeightScale) {
+        _uiState.update { current ->
+            SettingsPreferenceDraftSupport.updateRoleplayLineHeightScale(current, scale)
         }
     }
 

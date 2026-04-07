@@ -4,6 +4,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
@@ -34,6 +35,7 @@ fun RoleplayLongformCard(
     bodyColor: Color = MaterialTheme.colorScheme.onSurface,
     accentColor: Color = MaterialTheme.colorScheme.onSurfaceVariant,
     thoughtColor: Color = bodyColor.copy(alpha = 0.72f),
+    lineHeightScale: Float = 1.0f,
 ) {
     val paragraphs = remember(content, richTextSource) {
         RoleplayLongformMarkupParser.parseParagraphs(richTextSource)
@@ -43,6 +45,7 @@ fun RoleplayLongformCard(
         modifier = modifier.fillMaxWidth(),
         shape = RoundedCornerShape(24.dp),
         color = containerColor,
+        border = BorderStroke(1.dp, titleColor.copy(alpha = 0.08f)),
         tonalElevation = 0.dp,
         shadowElevation = 0.dp,
     ) {
@@ -62,6 +65,7 @@ fun RoleplayLongformCard(
                     bodyColor = bodyColor,
                     dialogueColor = accentColor,
                     thoughtColor = thoughtColor,
+                    lineHeightScale = lineHeightScale,
                 )
             }
         }
@@ -83,6 +87,7 @@ private fun LongformParagraphText(
     bodyColor: Color,
     dialogueColor: Color,
     thoughtColor: Color,
+    lineHeightScale: Float = 1.0f,
 ) {
     val rendered = remember(paragraph, bodyColor, dialogueColor, thoughtColor) {
         buildLongformAnnotatedString(
@@ -92,11 +97,12 @@ private fun LongformParagraphText(
             thoughtColor = thoughtColor,
         )
     }
+    val baseLineHeight = 32.sp
     Text(
         text = rendered,
         style = MaterialTheme.typography.bodyLarge.copy(
             fontSize = 17.sp,
-            lineHeight = 30.sp,
+            lineHeight = baseLineHeight * lineHeightScale,
             letterSpacing = 0.3.sp,
         ),
         color = bodyColor,
