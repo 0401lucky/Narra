@@ -38,6 +38,7 @@ import com.example.myapplication.model.AppSettings
 import com.example.myapplication.model.Assistant
 import com.example.myapplication.model.ChatMessage
 import com.example.myapplication.model.ChatMessagePart
+import com.example.myapplication.model.ChatReasoningStep
 import com.example.myapplication.model.ChatSpecialPlayDraft
 import com.example.myapplication.model.Conversation
 import com.example.myapplication.model.ContextGovernanceSnapshot
@@ -80,6 +81,7 @@ data class ChatUiState(
     val streamingMessageId: String = "",
     val streamingContent: String = "",
     val streamingReasoningContent: String = "",
+    val streamingReasoningSteps: List<ChatReasoningStep> = emptyList(),
     val streamingParts: List<ChatMessagePart> = emptyList(),
     val input: String = "",
     val pendingParts: List<ChatMessagePart> = emptyList(),
@@ -527,6 +529,40 @@ class ChatViewModel(
         }
     }
 
+    fun editUserMessage(messageId: String) {
+        val state = _uiState.value
+        val conversationId = state.currentConversationId.takeIf { it.isNotBlank() } ?: return
+        if (state.isSending || messageId.isBlank()) {
+            return
+        }
+
+        val currentMessages = ChatConversationSupport.currentConversationMessages(
+            messages = state.messages,
+            conversationId = conversationId,
+        )
+        val preparedEdit = ChatConversationSupport.prepareUserEdit(
+            currentMessages = currentMessages,
+            sourceMessageId = messageId,
+        ) ?: return
+
+        viewModelScope.launch {
+            conversationRepository.replaceConversationSnapshot(
+                conversationId = conversationId,
+                messages = preparedEdit.rewoundMessages,
+                selectedModel = ChatConversationSupport.resolveSelectedModelId(state.settings),
+            )
+            conversationSummaryRepository.deleteSummary(conversationId)
+            _uiState.update { current ->
+                ChatStateSupport.applyPreparedEdit(
+                    current = current,
+                    restoredInput = preparedEdit.restoredInput,
+                    restoredPendingParts = preparedEdit.restoredPendingParts,
+                    rewoundMessages = preparedEdit.rewoundMessages,
+                )
+            }
+        }
+    }
+
     fun cancelSending() {
         sendingJob?.cancel()
         sendingJob = null
@@ -845,6 +881,7 @@ class ChatViewModel(
                                 StreamedAssistantPayload(
                                     content = streamBuffer.content(),
                                     reasoning = streamBuffer.reasoning(),
+                                    reasoningSteps = streamBuffer.reasoningSteps(),
                                     parts = streamBuffer.parts(),
                                     citations = streamBuffer.citations(),
                                 )
@@ -863,6 +900,7 @@ class ChatViewModel(
                                     content = resolvedContent,
                                     status = MessageStatus.COMPLETED,
                                     reasoningContent = payload.reasoning,
+                                    reasoningSteps = payload.reasoningSteps,
                                     parts = finalParts,
                                     citations = payload.citations,
                                 )
@@ -877,6 +915,7 @@ class ChatViewModel(
                                             content = partialContent.ifBlank { "已取消" },
                                             status = MessageStatus.ERROR,
                                             reasoningContent = payload.reasoning,
+                                            reasoningSteps = payload.reasoningSteps,
                                             parts = payload.parts,
                                             citations = payload.citations,
                                         ),
@@ -900,6 +939,7 @@ class ChatViewModel(
                                             content = errorContent,
                                             status = MessageStatus.ERROR,
                                             reasoningContent = payload.reasoning,
+                                            reasoningSteps = payload.reasoningSteps,
                                             parts = payload.parts,
                                             citations = payload.citations,
                                         ),
@@ -1424,12 +1464,13 @@ class ChatViewModel(
                 promptMode = PromptMode.CHAT,
                 toolingOptions = toolingOptions,
             ),
-            publishFrame = { content, reasoning, parts ->
+            publishFrame = { content, reasoning, reasoningSteps, parts ->
                 publishStreamingFrame(
                     conversationId = conversationId,
                     loadingMessageId = loadingMessageId,
                     content = content,
                     reasoning = reasoning,
+                    reasoningSteps = reasoningSteps,
                     parts = parts,
                 )
             },
@@ -1441,6 +1482,7 @@ class ChatViewModel(
         loadingMessageId: String,
         content: String,
         reasoning: String,
+        reasoningSteps: List<ChatReasoningStep>,
         parts: List<ChatMessagePart>,
     ) {
         _uiState.update { current ->
@@ -1450,6 +1492,7 @@ class ChatViewModel(
                 loadingMessageId = loadingMessageId,
                 content = content,
                 reasoning = reasoning,
+                reasoningSteps = reasoningSteps,
                 parts = parts,
             )
         }

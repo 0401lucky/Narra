@@ -21,6 +21,9 @@ import com.example.myapplication.model.ResponseApiReasoningDto
 import com.example.myapplication.model.ResponseApiRequest
 import com.example.myapplication.model.ThinkingConfigDto
 import com.example.myapplication.model.ThinkingRequestConfig
+import com.example.myapplication.model.legacyReasoningStepsFromContent
+import com.example.myapplication.model.normalizeChatReasoningSteps
+import com.example.myapplication.model.reasoningStepsToContent
 import com.google.gson.Gson
 
 private const val MAX_TOOL_ROUNDS = 4
@@ -402,9 +405,27 @@ class ToolEngine(
     private fun ensureAssistantReplyHasContent(
         reply: AssistantReply,
     ): AssistantReply {
-        if (reply.content.isBlank() && reply.parts.isEmpty()) {
+        val normalizedReply = reply.copy(
+            reasoningSteps = normalizeChatReasoningSteps(
+                reply.reasoningSteps.ifEmpty {
+                    legacyReasoningStepsFromContent(
+                        reasoningContent = reply.reasoningContent,
+                        createdAt = System.currentTimeMillis(),
+                        finishedAt = System.currentTimeMillis(),
+                        idPrefix = "tool-reply",
+                    )
+                },
+            ),
+        ).let { normalized ->
+            normalized.copy(
+                reasoningContent = normalized.reasoningContent.ifBlank {
+                    reasoningStepsToContent(normalized.reasoningSteps)
+                },
+            )
+        }
+        if (normalizedReply.content.isBlank() && normalizedReply.parts.isEmpty()) {
             throw IllegalStateException("模型未返回有效内容")
         }
-        return reply
+        return normalizedReply
     }
 }

@@ -162,6 +162,7 @@ fun ChatScreen(
     onDeleteCurrentConversation: () -> Unit,
     onClearCurrentConversation: () -> Unit,
     onRetryMessage: (String) -> Unit,
+    onEditUserMessage: (String) -> Unit,
     onToggleMemoryMessage: (String) -> Unit,
     onToggleSearch: () -> Unit,
     onTranslateDraft: () -> Unit,
@@ -212,6 +213,7 @@ fun ChatScreen(
     val userDisplayName = uiState.settings.resolvedUserDisplayName()
     val userAvatarUri = uiState.settings.userAvatarUri
     val userAvatarUrl = uiState.settings.userAvatarUrl
+    val colorScheme = MaterialTheme.colorScheme
     val localState = rememberChatScreenLocalState(
         userDisplayName = userDisplayName,
         userAvatarUri = userAvatarUri,
@@ -465,6 +467,26 @@ fun ChatScreen(
             else -> "当前状态暂不可用"
         }
     }
+    val messageMarkdownExportLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.CreateDocument("text/markdown"),
+    ) { uri ->
+        val payload = localState.pendingMessageExport
+        if (uri == null || payload == null) return@rememberLauncherForActivityResult
+        runCatching {
+            context.contentResolver.openOutputStream(uri)?.use { output ->
+                output.write(payload.markdown.toByteArray(Charsets.UTF_8))
+            } ?: error("无法写入导出文件")
+        }.onSuccess {
+            scope.launch {
+                snackbarHostState.showSnackbar("消息 Markdown 已导出")
+            }
+        }.onFailure { throwable ->
+            scope.launch {
+                snackbarHostState.showSnackbar(throwable.message ?: "导出消息 Markdown 失败")
+            }
+        }
+        localState.setPendingMessageExport(null)
+    }
     val reasoningBudgetHint = remember(activeProvider, currentModel) {
         activeProvider?.let { reasoningBudgetSupportHint(it, currentModel) }.orEmpty()
     }
@@ -596,6 +618,17 @@ fun ChatScreen(
                     scope.launch { drawerState.open() }
                 },
                 onRetryMessage = onRetryMessage,
+                onOpenMessageActions = { messageId ->
+                    localState.setActiveMessageActionId(messageId)
+                },
+                onOpenUrlPreview = { url, title ->
+                    localState.setMessagePreviewPayload(
+                        ChatMessagePreviewPayload.ExternalUrlPreview(
+                            title = title,
+                            url = url,
+                        ),
+                    )
+                },
                 onToggleMemoryMessage = onToggleMemoryMessage,
                 onTranslateMessage = onTranslateMessage,
                 onConfirmTransferReceipt = onConfirmTransferReceipt,
@@ -732,6 +765,56 @@ fun ChatScreen(
             )
             localState.setShowExportSheet(false)
         },
+        activeMessageAction = localState.activeMessageActionId?.let { messageId ->
+            uiState.messages.firstOrNull { it.id == messageId }
+        },
+        onDismissMessageAction = { localState.setActiveMessageActionId(null) },
+        onSelectMessageCopy = { message ->
+            localState.setMessageSelectionPayload(buildMessageSelectionPayload(message))
+            localState.setActiveMessageActionId(null)
+        },
+        onOpenMessagePreviewPayload = { message ->
+            if (messageHasPreviewableText(message)) {
+                localState.setMessagePreviewPayload(
+                    buildMessagePreviewPayload(
+                        message = message,
+                        colorScheme = colorScheme,
+                    ),
+                )
+            }
+            localState.setActiveMessageActionId(null)
+        },
+        onExportMessageMarkdown = { message ->
+            localState.setPendingMessageExport(
+                ChatMessageExportPayload(
+                    fileName = buildMessageExportFileName(message),
+                    markdown = buildMessageMarkdown(message),
+                ),
+            )
+            messageMarkdownExportLauncher.launch(buildMessageExportFileName(message))
+            localState.setActiveMessageActionId(null)
+        },
+        onShareMessage = { message ->
+            context.startActivity(
+                Intent.createChooser(
+                    buildShareIntent(buildMessageMarkdown(message)),
+                    "分享消息",
+                ),
+            )
+            localState.setActiveMessageActionId(null)
+        },
+        onEditUserMessage = { message ->
+            onEditUserMessage(message.id)
+            localState.setActiveMessageActionId(null)
+        },
+        onRetryMessage = { message ->
+            onRetryMessage(message.id)
+            localState.setActiveMessageActionId(null)
+        },
+        messageSelectionPayload = localState.messageSelectionPayload,
+        onDismissMessageSelection = { localState.setMessageSelectionPayload(null) },
+        messagePreviewPayload = localState.messagePreviewPayload,
+        onDismissMessagePreview = { localState.setMessagePreviewPayload(null) },
     )
 }
 

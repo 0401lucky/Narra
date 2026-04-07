@@ -23,7 +23,7 @@ import com.example.myapplication.data.local.worldbook.WorldBookEntryEntity
         RoleplayScenarioEntity::class,
         RoleplaySessionEntity::class,
     ],
-    version = 13,
+    version = 14,
     exportSchema = true,
 )
 abstract class ChatDatabase : RoomDatabase() {
@@ -248,6 +248,41 @@ abstract class ChatDatabase : RoomDatabase() {
                         "ALTER TABLE messages ADD COLUMN roleplayOutputFormat TEXT NOT NULL DEFAULT 'UNSPECIFIED'",
                     )
                 }
+            }
+        }
+
+        val MIGRATION_13_14 = object : Migration(13, 14) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                if (!hasColumn(db, "messages", "reasoningStepsJson")) {
+                    db.execSQL(
+                        "ALTER TABLE messages ADD COLUMN reasoningStepsJson TEXT NOT NULL DEFAULT '[]'",
+                    )
+                }
+                db.execSQL(
+                    """
+                    UPDATE messages
+                    SET reasoningStepsJson = CASE
+                        WHEN TRIM(reasoningContent) = '' THEN '[]'
+                        ELSE
+                            '[{"id":"legacy-' || id || '-0","text":"' ||
+                            REPLACE(
+                                REPLACE(
+                                    REPLACE(
+                                        REPLACE(reasoningContent, '\', '\\'),
+                                        '"',
+                                        '\"'
+                                    ),
+                                    char(10),
+                                    '\n'
+                                ),
+                                char(13),
+                                '\r'
+                            ) ||
+                            '","createdAt":' || createdAt || ',"finishedAt":' || createdAt || '}]'
+                    END
+                    WHERE reasoningStepsJson = '[]'
+                    """.trimIndent(),
+                )
             }
         }
 

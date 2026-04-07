@@ -44,6 +44,14 @@ internal data class ChatScreenLocalState(
     val setDraftUserAvatarUri: (String) -> Unit,
     val draftUserAvatarUrl: String,
     val setDraftUserAvatarUrl: (String) -> Unit,
+    val activeMessageActionId: String?,
+    val setActiveMessageActionId: (String?) -> Unit,
+    val messageSelectionPayload: ChatMessageSelectionPayload?,
+    val setMessageSelectionPayload: (ChatMessageSelectionPayload?) -> Unit,
+    val messagePreviewPayload: ChatMessagePreviewPayload?,
+    val setMessagePreviewPayload: (ChatMessagePreviewPayload?) -> Unit,
+    val pendingMessageExport: ChatMessageExportPayload?,
+    val setPendingMessageExport: (ChatMessageExportPayload?) -> Unit,
     val openProfileSheet: () -> Unit,
 ) {
     val activeSpecialPlayDraft: ChatSpecialPlayDraft?
@@ -94,6 +102,10 @@ internal fun rememberChatScreenLocalState(
     var draftUserDisplayName by rememberSaveable { mutableStateOf("") }
     var draftUserAvatarUri by rememberSaveable { mutableStateOf("") }
     var draftUserAvatarUrl by rememberSaveable { mutableStateOf("") }
+    var activeMessageActionId by remember { mutableStateOf<String?>(null) }
+    var messageSelectionPayload by remember { mutableStateOf<ChatMessageSelectionPayload?>(null) }
+    var messagePreviewPayload by remember { mutableStateOf<ChatMessagePreviewPayload?>(null) }
+    var pendingMessageExport by remember { mutableStateOf<ChatMessageExportPayload?>(null) }
 
     return ChatScreenLocalState(
         showModelSheet = showModelSheet,
@@ -126,6 +138,14 @@ internal fun rememberChatScreenLocalState(
         setDraftUserAvatarUri = { draftUserAvatarUri = it },
         draftUserAvatarUrl = draftUserAvatarUrl,
         setDraftUserAvatarUrl = { draftUserAvatarUrl = it },
+        activeMessageActionId = activeMessageActionId,
+        setActiveMessageActionId = { activeMessageActionId = it },
+        messageSelectionPayload = messageSelectionPayload,
+        setMessageSelectionPayload = { messageSelectionPayload = it },
+        messagePreviewPayload = messagePreviewPayload,
+        setMessagePreviewPayload = { messagePreviewPayload = it },
+        pendingMessageExport = pendingMessageExport,
+        setPendingMessageExport = { pendingMessageExport = it },
         openProfileSheet = {
             draftUserDisplayName = userDisplayName
             draftUserAvatarUri = userAvatarUri

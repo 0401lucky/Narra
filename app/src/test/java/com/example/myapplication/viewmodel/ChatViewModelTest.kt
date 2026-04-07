@@ -34,6 +34,8 @@ import com.example.myapplication.model.ProviderSettings
 import com.example.myapplication.model.TransferDirection
 import com.example.myapplication.model.TransferStatus
 import com.example.myapplication.model.giftImageStatus
+import com.example.myapplication.model.imageMessagePart
+import com.example.myapplication.model.ConversationSummary
 import com.example.myapplication.model.specialMetadataValue
 import com.example.myapplication.model.transferMessagePart
 import com.example.myapplication.testutil.FakeConversationStore
@@ -313,6 +315,94 @@ class ChatViewModelTest {
         assertTrue(systemPrompt.contains("先看账本，能更快锁定资金流向。"))
         assertTrue(viewModel.uiState.value.latestPromptDebugDump.contains("【上下文调试】"))
         assertEquals(1, viewModel.uiState.value.contextGovernance?.sentMessageCount)
+    }
+
+    @Test
+    fun editUserMessage_rewindsConversationAndRestoresInput() = runTest(mainDispatcherRule.dispatcher.scheduler) {
+        val conversationSummaryRepository = FakeConversationSummaryRepository(
+            initialSummaries = listOf(
+                ConversationSummary(
+                    conversationId = "c1",
+                    assistantId = "",
+                    summary = "旧摘要",
+                    coveredMessageCount = 2,
+                    updatedAt = 20L,
+                ),
+            ),
+        )
+        val store = FakeConversationStore(
+            conversations = listOf(
+                Conversation(
+                    id = "c1",
+                    title = "会话",
+                    model = "chat-model",
+                    createdAt = 1L,
+                    updatedAt = 2L,
+                ),
+            ),
+            messagesByConversation = mapOf(
+                "c1" to listOf(
+                    ChatMessage(
+                        id = "user-1",
+                        conversationId = "c1",
+                        role = MessageRole.USER,
+                        content = "第一句",
+                        status = MessageStatus.COMPLETED,
+                        createdAt = 1L,
+                    ),
+                    ChatMessage(
+                        id = "assistant-1",
+                        conversationId = "c1",
+                        role = MessageRole.ASSISTANT,
+                        content = "旧回复",
+                        status = MessageStatus.COMPLETED,
+                        createdAt = 2L,
+                    ),
+                    ChatMessage(
+                        id = "user-2",
+                        conversationId = "c1",
+                        role = MessageRole.USER,
+                        content = "补充说明",
+                        status = MessageStatus.COMPLETED,
+                        createdAt = 3L,
+                        parts = listOf(
+                            imageMessagePart(
+                                uri = "content://image-1",
+                                fileName = "picked.png",
+                            ),
+                        ),
+                    ),
+                    ChatMessage(
+                        id = "assistant-2",
+                        conversationId = "c1",
+                        role = MessageRole.ASSISTANT,
+                        content = "后续回复",
+                        status = MessageStatus.COMPLETED,
+                        createdAt = 4L,
+                    ),
+                ),
+            ),
+        )
+        val viewModel = createViewModel(
+            store = store,
+            settings = AppSettings(),
+            conversationSummaryRepository = conversationSummaryRepository,
+        )
+
+        advanceUntilIdle()
+        viewModel.editUserMessage("user-2")
+        advanceUntilIdle()
+
+        val state = viewModel.uiState.value
+        assertEquals("补充说明", state.input)
+        assertEquals(1, state.pendingParts.size)
+        assertEquals("user-1", state.messages[0].id)
+        assertEquals("assistant-1", state.messages[1].id)
+        assertEquals(2, state.messages.size)
+        assertEquals(1, store.replaceConversationSnapshotCount)
+        assertEquals(2, store.listMessages("c1").size)
+        assertEquals(null, conversationSummaryRepository.getSummary("c1"))
+        assertEquals("已回退到这条用户消息，可修改后重新发送", state.noticeMessage)
     }
 
     @Test

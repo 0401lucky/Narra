@@ -6,8 +6,10 @@ import com.example.myapplication.model.ChatMessage
 import com.example.myapplication.model.ChatMessagePartType
 import com.example.myapplication.model.Conversation
 import com.example.myapplication.model.MessageRole
+import com.example.myapplication.model.MessageStatus
 import com.example.myapplication.model.imageMessagePart
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
@@ -84,5 +86,76 @@ class ChatConversationSupportTest {
         )
 
         assertTrue(ChatConversationSupport.supportsImageGeneration(settings, "image-model"))
+    }
+
+    @Test
+    fun prepareUserEdit_rewindsConversationAndRestoresPendingParts() {
+        val prepared = ChatConversationSupport.prepareUserEdit(
+            currentMessages = listOf(
+                ChatMessage(
+                    id = "user-1",
+                    conversationId = "c1",
+                    role = MessageRole.USER,
+                    content = "第一句",
+                    status = MessageStatus.COMPLETED,
+                    createdAt = 1L,
+                ),
+                ChatMessage(
+                    id = "assistant-1",
+                    conversationId = "c1",
+                    role = MessageRole.ASSISTANT,
+                    content = "旧回复",
+                    status = MessageStatus.COMPLETED,
+                    createdAt = 2L,
+                ),
+                ChatMessage(
+                    id = "user-2",
+                    conversationId = "c1",
+                    role = MessageRole.USER,
+                    content = "图片已发送",
+                    status = MessageStatus.COMPLETED,
+                    createdAt = 3L,
+                    parts = listOf(
+                        imageMessagePart(
+                            uri = "content://image-1",
+                            fileName = "test.png",
+                        ),
+                    ),
+                ),
+                ChatMessage(
+                    id = "assistant-2",
+                    conversationId = "c1",
+                    role = MessageRole.ASSISTANT,
+                    content = "后续回复",
+                    status = MessageStatus.COMPLETED,
+                    createdAt = 4L,
+                ),
+            ),
+            sourceMessageId = "user-2",
+        )
+
+        assertEquals("图片已发送", prepared?.restoredInput)
+        assertEquals(1, prepared?.restoredPendingParts?.size)
+        assertEquals(ChatMessagePartType.IMAGE, prepared?.restoredPendingParts?.single()?.type)
+        assertEquals(listOf("user-1", "assistant-1"), prepared?.rewoundMessages?.map { it.id })
+    }
+
+    @Test
+    fun prepareUserEdit_returnsNullForAssistantMessage() {
+        val prepared = ChatConversationSupport.prepareUserEdit(
+            currentMessages = listOf(
+                ChatMessage(
+                    id = "assistant-1",
+                    conversationId = "c1",
+                    role = MessageRole.ASSISTANT,
+                    content = "旧回复",
+                    status = MessageStatus.COMPLETED,
+                    createdAt = 1L,
+                ),
+            ),
+            sourceMessageId = "assistant-1",
+        )
+
+        assertFalse(prepared != null)
     }
 }

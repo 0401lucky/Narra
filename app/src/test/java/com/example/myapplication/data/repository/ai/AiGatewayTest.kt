@@ -1253,14 +1253,15 @@ class AiGatewayTest {
             listOf(ChatMessage(id = "1", role = MessageRole.USER, content = "你好")),
         ).toList()
 
+        assertEquals(5, deltas.size)
+        assertTrue(deltas[0] is ChatStreamEvent.ReasoningStepStarted)
         assertEquals(
-            listOf(
-                ChatStreamEvent.ReasoningDelta("先分析"),
-                ChatStreamEvent.ContentDelta("最终答案"),
-                ChatStreamEvent.Completed,
-            ),
-            deltas,
+            "先分析",
+            (deltas[1] as ChatStreamEvent.ReasoningStepDelta).value,
         )
+        assertTrue(deltas[2] is ChatStreamEvent.ReasoningStepCompleted)
+        assertEquals(ChatStreamEvent.ContentDelta("最终答案"), deltas[3])
+        assertEquals(ChatStreamEvent.Completed, deltas[4])
         assertEquals("/v1/responses", server.takeRequest().path)
     }
 
@@ -1365,14 +1366,15 @@ class AiGatewayTest {
             listOf(ChatMessage(id = "1", role = MessageRole.USER, content = "你好")),
         ).toList()
 
+        assertEquals(5, deltas.size)
+        assertTrue(deltas[0] is ChatStreamEvent.ReasoningStepStarted)
         assertEquals(
-            listOf(
-                ChatStreamEvent.ReasoningDelta("先分析问题"),
-                ChatStreamEvent.ContentDelta("最终答案"),
-                ChatStreamEvent.Completed,
-            ),
-            deltas,
+            "先分析问题",
+            (deltas[1] as ChatStreamEvent.ReasoningStepDelta).value,
         )
+        assertTrue(deltas[2] is ChatStreamEvent.ReasoningStepCompleted)
+        assertEquals(ChatStreamEvent.ContentDelta("最终答案"), deltas[3])
+        assertEquals(ChatStreamEvent.Completed, deltas[4])
     }
 
     @Test
@@ -1400,19 +1402,23 @@ class AiGatewayTest {
             listOf(ChatMessage(id = "1", role = MessageRole.USER, content = "你好")),
         ).toList()
 
+        assertEquals(6, deltas.size)
+        assertTrue(deltas[0] is ChatStreamEvent.ReasoningStepStarted)
         assertEquals(
-            listOf(
-                ChatStreamEvent.ReasoningDelta("先看图"),
-                ChatStreamEvent.ContentDelta("这是结果"),
-                ChatStreamEvent.ImageDelta(
-                    com.example.myapplication.model.imageMessagePart(
-                        uri = "https://cdn.example.com/test.png",
-                    ),
-                ),
-                ChatStreamEvent.Completed,
-            ),
-            deltas,
+            "先看图",
+            (deltas[1] as ChatStreamEvent.ReasoningStepDelta).value,
         )
+        assertTrue(deltas[2] is ChatStreamEvent.ReasoningStepCompleted)
+        assertEquals(ChatStreamEvent.ContentDelta("这是结果"), deltas[3])
+        assertEquals(
+            ChatStreamEvent.ImageDelta(
+                com.example.myapplication.model.imageMessagePart(
+                    uri = "https://cdn.example.com/test.png",
+                ),
+            ),
+            deltas[4],
+        )
+        assertEquals(ChatStreamEvent.Completed, deltas[5])
     }
 
     @Test

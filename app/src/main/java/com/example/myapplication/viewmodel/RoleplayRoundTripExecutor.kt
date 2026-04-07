@@ -17,6 +17,7 @@ import com.example.myapplication.data.repository.context.ConversationSummaryRepo
 import com.example.myapplication.model.Assistant
 import com.example.myapplication.model.ChatMessage
 import com.example.myapplication.model.ChatMessagePart
+import com.example.myapplication.model.ChatReasoningStep
 import com.example.myapplication.model.ChatStreamEvent
 import com.example.myapplication.model.Conversation
 import com.example.myapplication.model.GatewayToolRuntimeContext
@@ -25,6 +26,7 @@ import com.example.myapplication.model.MessageRole
 import com.example.myapplication.model.MessageStatus
 import com.example.myapplication.model.PromptMode
 import com.example.myapplication.model.imageMessagePart
+import com.example.myapplication.model.reasoningStepsToContent
 import com.example.myapplication.model.toContentMirror
 import com.example.myapplication.roleplay.RoleplayConversationSupport
 import com.example.myapplication.roleplay.RoleplayOutputParser
@@ -172,8 +174,8 @@ internal class RoleplayRoundTripExecutor(
                 )
             }
             val fullContent = StringBuilder()
-            val fullReasoning = StringBuilder()
             val fullParts = mutableListOf<ChatMessagePart>()
+            val fullReasoningSteps = mutableListOf<ChatReasoningStep>()
 
             when (
                 val result = assistantRoundTripRunner.execute(
@@ -189,7 +191,7 @@ internal class RoleplayRoundTripExecutor(
                                 requestMessages = messages,
                                 systemPrompt = systemPrompt,
                                 fullContent = fullContent,
-                                fullReasoning = fullReasoning,
+                                fullReasoningSteps = fullReasoningSteps,
                                 fullParts = fullParts,
                                 toolingOptions = toolingOptions,
                             )
@@ -197,7 +199,8 @@ internal class RoleplayRoundTripExecutor(
                         currentPayload = {
                             StreamedAssistantPayload(
                                 content = fullContent.toString().trim(),
-                                reasoning = fullReasoning.toString(),
+                                reasoning = reasoningStepsToContent(fullReasoningSteps),
+                                reasoningSteps = fullReasoningSteps.toList(),
                                 parts = fullParts.toList(),
                                 citations = emptyList(),
                             )
@@ -215,6 +218,7 @@ internal class RoleplayRoundTripExecutor(
                                     },
                                 status = MessageStatus.COMPLETED,
                                 reasoningContent = payload.reasoning,
+                                reasoningSteps = payload.reasoningSteps,
                                 parts = parsedOutput.parts,
                             )
                         },
@@ -303,7 +307,7 @@ internal class RoleplayRoundTripExecutor(
         requestMessages: List<ChatMessage>,
         systemPrompt: String,
         fullContent: StringBuilder,
-        fullReasoning: StringBuilder,
+        fullReasoningSteps: MutableList<ChatReasoningStep>,
         fullParts: MutableList<ChatMessagePart>,
         toolingOptions: GatewayToolingOptions,
     ) {
@@ -324,7 +328,36 @@ internal class RoleplayRoundTripExecutor(
                     }
                 }
 
-                is ChatStreamEvent.ReasoningDelta -> fullReasoning.append(event.value)
+                is ChatStreamEvent.ReasoningStepStarted -> {
+                    if (fullReasoningSteps.none { it.id == event.stepId }) {
+                        fullReasoningSteps += ChatReasoningStep(
+                            id = event.stepId,
+                            text = "",
+                            createdAt = event.createdAt,
+                            finishedAt = null,
+                        )
+                    }
+                }
+
+                is ChatStreamEvent.ReasoningStepDelta -> {
+                    val index = fullReasoningSteps.indexOfLast { it.id == event.stepId }
+                    if (index != -1) {
+                        val step = fullReasoningSteps[index]
+                        fullReasoningSteps[index] = step.copy(
+                            text = step.text + event.value,
+                        )
+                    }
+                }
+
+                is ChatStreamEvent.ReasoningStepCompleted -> {
+                    val index = fullReasoningSteps.indexOfLast { it.id == event.stepId }
+                    if (index != -1) {
+                        val step = fullReasoningSteps[index]
+                        fullReasoningSteps[index] = step.copy(finishedAt = event.finishedAt)
+                    }
+                }
+
+                is ChatStreamEvent.ReasoningDelta -> Unit
                 is ChatStreamEvent.ImageDelta -> {
                     fullParts += imageMessagePart(
                         uri = event.part.uri,

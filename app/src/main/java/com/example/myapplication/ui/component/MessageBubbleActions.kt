@@ -3,6 +3,7 @@ package com.example.myapplication.ui.component
 import android.widget.Toast
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.MoreHoriz
 import androidx.compose.material.icons.filled.Translate
 import androidx.compose.material.icons.outlined.ContentCopy
 import androidx.compose.material.icons.outlined.Psychology
@@ -31,6 +32,7 @@ internal fun MessageBubbleActionRows(
     shouldShowErrorActions: Boolean,
     assistantWidthModifier: Modifier,
     onRetry: ((String) -> Unit)?,
+    onOpenActionSheet: ((String) -> Unit)?,
     onToggleMemory: ((String) -> Unit)?,
     onTranslate: ((String) -> Unit)?,
     clipboard: Clipboard,
@@ -45,6 +47,7 @@ internal fun MessageBubbleActionRows(
             isRemembered = isRemembered,
             onTranslate = onTranslate,
             onToggleMemory = onToggleMemory,
+            onOpenActionSheet = onOpenActionSheet,
             clipboard = clipboard,
             clipboardScope = clipboardScope,
             onShowToast = { Toast.makeText(context, it, Toast.LENGTH_SHORT).show() },
@@ -60,6 +63,7 @@ internal fun MessageBubbleActionRows(
             onTranslate = onTranslate,
             onRetry = onRetry,
             onToggleMemory = onToggleMemory,
+            onOpenActionSheet = onOpenActionSheet,
             clipboard = clipboard,
             clipboardScope = clipboardScope,
             onShowToast = { Toast.makeText(context, it, Toast.LENGTH_SHORT).show() },
@@ -73,6 +77,7 @@ internal fun MessageBubbleActionRows(
             modifier = assistantWidthModifier,
             onRetry = onRetry,
             onTranslate = onTranslate,
+            onOpenActionSheet = onOpenActionSheet,
             clipboard = clipboard,
             clipboardScope = clipboardScope,
             onShowToast = { Toast.makeText(context, it, Toast.LENGTH_SHORT).show() },
@@ -87,6 +92,7 @@ private fun MessageBubbleUserActions(
     isRemembered: Boolean,
     onTranslate: ((String) -> Unit)?,
     onToggleMemory: ((String) -> Unit)?,
+    onOpenActionSheet: ((String) -> Unit)?,
     clipboard: Clipboard,
     clipboardScope: CoroutineScope,
     onShowToast: (String) -> Unit,
@@ -122,6 +128,13 @@ private fun MessageBubbleUserActions(
                 highlighted = isRemembered,
             )
         }
+        if (onOpenActionSheet != null) {
+            MessageActionIconButton(
+                icon = Icons.Default.MoreHoriz,
+                contentDescription = "更多操作",
+                onClick = { onOpenActionSheet(message.id) },
+            )
+        }
     }
 }
 
@@ -134,6 +147,7 @@ private fun MessageBubbleAssistantActions(
     onTranslate: ((String) -> Unit)?,
     onRetry: ((String) -> Unit)?,
     onToggleMemory: ((String) -> Unit)?,
+    onOpenActionSheet: ((String) -> Unit)?,
     clipboard: Clipboard,
     clipboardScope: CoroutineScope,
     onShowToast: (String) -> Unit,
@@ -175,6 +189,13 @@ private fun MessageBubbleAssistantActions(
                 highlighted = isRemembered,
             )
         }
+        if (onOpenActionSheet != null) {
+            MessageActionIconButton(
+                icon = Icons.Default.MoreHoriz,
+                contentDescription = "更多操作",
+                onClick = { onOpenActionSheet(message.id) },
+            )
+        }
     }
 }
 
@@ -185,6 +206,7 @@ private fun MessageBubbleErrorActions(
     modifier: Modifier,
     onRetry: ((String) -> Unit)?,
     onTranslate: ((String) -> Unit)?,
+    onOpenActionSheet: ((String) -> Unit)?,
     clipboard: Clipboard,
     clipboardScope: CoroutineScope,
     onShowToast: (String) -> Unit,
@@ -214,6 +236,13 @@ private fun MessageBubbleErrorActions(
                 icon = Icons.Default.Translate,
                 contentDescription = "翻译错误消息",
                 onClick = { onTranslate(message.id) },
+            )
+        }
+        if (onOpenActionSheet != null) {
+            MessageActionIconButton(
+                icon = Icons.Default.MoreHoriz,
+                contentDescription = "更多操作",
+                onClick = { onOpenActionSheet(message.id) },
             )
         }
     }

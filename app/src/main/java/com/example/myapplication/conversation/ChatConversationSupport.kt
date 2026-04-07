@@ -5,8 +5,10 @@ import com.example.myapplication.model.Assistant
 import com.example.myapplication.model.ChatMessage
 import com.example.myapplication.model.ChatMessagePart
 import com.example.myapplication.model.ChatMessagePartType
+import com.example.myapplication.model.ChatReasoningStep
 import com.example.myapplication.model.Conversation
 import com.example.myapplication.model.GatewayToolRuntimeContext
+import com.example.myapplication.model.hasSendableContent
 import com.example.myapplication.model.MessageAttachment
 import com.example.myapplication.model.MessageCitation
 import com.example.myapplication.model.MessageRole
@@ -14,6 +16,8 @@ import com.example.myapplication.model.MessageStatus
 import com.example.myapplication.model.ModelAbility
 import com.example.myapplication.model.inferModelAbilities
 import com.example.myapplication.model.normalizeChatMessageParts
+import com.example.myapplication.model.normalizeChatReasoningSteps
+import com.example.myapplication.model.reasoningStepsToContent
 import com.example.myapplication.model.textMessagePart
 import com.example.myapplication.model.toContentMirror
 import com.example.myapplication.model.toMessageAttachments
@@ -32,6 +36,12 @@ data class PreparedChatRoundTrip(
     val loadingMessage: ChatMessage,
     val persistedMessages: List<ChatMessage>,
     val requestMessages: List<ChatMessage>,
+)
+
+data class PreparedChatEdit(
+    val restoredInput: String,
+    val restoredPendingParts: List<ChatMessagePart>,
+    val rewoundMessages: List<ChatMessage>,
 )
 
 object ChatConversationSupport {
@@ -175,6 +185,31 @@ object ChatConversationSupport {
         )
     }
 
+    fun prepareUserEdit(
+        currentMessages: List<ChatMessage>,
+        sourceMessageId: String,
+    ): PreparedChatEdit? {
+        val targetIndex = currentMessages.indexOfFirst { message ->
+            message.id == sourceMessageId &&
+                message.role == MessageRole.USER &&
+                message.status == MessageStatus.COMPLETED &&
+                message.hasSendableContent()
+        }
+        if (targetIndex == -1) {
+            return null
+        }
+        val targetMessage = currentMessages[targetIndex]
+        val normalizedParts = normalizeChatMessageParts(targetMessage.parts)
+        return PreparedChatEdit(
+            restoredInput = normalizedParts
+                .toPlainText()
+                .ifBlank { targetMessage.content }
+                .trim(),
+            restoredPendingParts = normalizedParts.filter { it.type != ChatMessagePartType.TEXT },
+            rewoundMessages = currentMessages.take(targetIndex),
+        )
+    }
+
     fun buildPromptAssemblyInput(
         settings: AppSettings,
         currentAssistant: Assistant?,
@@ -228,6 +263,7 @@ object ChatConversationSupport {
         status: MessageStatus = MessageStatus.COMPLETED,
         modelName: String = "",
         reasoningContent: String = "",
+        reasoningSteps: List<ChatReasoningStep> = emptyList(),
         attachments: List<MessageAttachment> = emptyList(),
         parts: List<ChatMessagePart> = emptyList(),
         citations: List<MessageCitation> = emptyList(),
@@ -240,7 +276,8 @@ object ChatConversationSupport {
             status = status,
             createdAt = nowProvider(),
             modelName = modelName,
-            reasoningContent = reasoningContent,
+            reasoningContent = reasoningContent.ifBlank { reasoningStepsToContent(reasoningSteps) },
+            reasoningSteps = normalizeChatReasoningSteps(reasoningSteps),
             attachments = attachments,
             parts = normalizeChatMessageParts(parts),
             citations = citations,

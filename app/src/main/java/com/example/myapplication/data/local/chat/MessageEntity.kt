@@ -26,6 +26,7 @@ data class MessageEntity(
     val createdAt: Long,
     val modelName: String = "",
     val reasoningContent: String = "",
+    val reasoningStepsJson: String = "[]",
     val attachmentsJson: String = "[]",
     val partsJson: String = "[]",
     val citationsJson: String = "[]",

@@ -2,6 +2,7 @@ package com.example.myapplication.viewmodel
 
 import com.example.myapplication.model.ChatMessage
 import com.example.myapplication.model.MessageRole
+import com.example.myapplication.model.ChatReasoningStep
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Test
@@ -53,5 +54,32 @@ class ChatViewModelUiUpdatesTest {
         assertEquals("", updated.streamingReasoningContent)
         assertFalse(updated.errorMessage != null)
         assertEquals(true, updated.isSending)
+    }
+
+    @Test
+    fun applyStreamingFrame_updatesReasoningSteps() {
+        val updated = ChatViewModelUiUpdates.applyStreamingFrame(
+            current = ChatUiState(
+                currentConversationId = "c1",
+                streamingMessageId = "m1",
+            ),
+            conversationId = "c1",
+            loadingMessageId = "m1",
+            content = "",
+            reasoning = "**分析目标**\n先看输入。",
+            reasoningSteps = listOf(
+                ChatReasoningStep(
+                    id = "reasoning-1",
+                    text = "**分析目标**\n先看输入。",
+                    createdAt = 10L,
+                    finishedAt = null,
+                ),
+            ),
+            parts = emptyList(),
+        )
+
+        assertEquals(1, updated.streamingReasoningSteps.size)
+        assertEquals("reasoning-1", updated.streamingReasoningSteps.single().id)
+        assertEquals("**分析目标**\n先看输入。", updated.streamingReasoningContent)
     }
 }

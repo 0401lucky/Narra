@@ -2,8 +2,11 @@ package com.example.myapplication.conversation
 
 import com.example.myapplication.model.ChatMessagePart
 import com.example.myapplication.model.ChatMessagePartType
+import com.example.myapplication.model.ChatReasoningStep
 import com.example.myapplication.model.MessageCitation
+import com.example.myapplication.model.normalizeChatReasoningSteps
 import com.example.myapplication.model.normalizeChatMessageParts
+import com.example.myapplication.model.reasoningStepsToContent
 import com.example.myapplication.model.textMessagePart
 
 private const val streamSmallBatchSize = 10
@@ -22,15 +25,31 @@ class StreamingReplyBuffer {
         ) : PendingVisualDelta
     }
 
+    private sealed interface PendingReasoningDelta {
+        data class Start(
+            val step: ChatReasoningStep,
+        ) : PendingReasoningDelta
+
+        data class Delta(
+            val stepId: String,
+            val value: StringBuilder,
+        ) : PendingReasoningDelta
+
+        data class Complete(
+            val stepId: String,
+            val finishedAt: Long,
+        ) : PendingReasoningDelta
+    }
+
     private val lock = Any()
     private val fullContent = StringBuilder()
-    private val fullReasoning = StringBuilder()
     private val visibleContent = StringBuilder()
-    private val visibleReasoning = StringBuilder()
-    private val pendingReasoning = StringBuilder()
     private val fullParts = mutableListOf<ChatMessagePart>()
     private val visibleParts = mutableListOf<ChatMessagePart>()
     private val pendingVisuals = ArrayDeque<PendingVisualDelta>()
+    private val fullReasoningSteps = mutableListOf<ChatReasoningStep>()
+    private val visibleReasoningSteps = mutableListOf<ChatReasoningStep>()
+    private val pendingReasoning = ArrayDeque<PendingReasoningDelta>()
     private var citations: List<MessageCitation> = emptyList()
 
     val pendingContentLength: Int
@@ -44,7 +63,15 @@ class StreamingReplyBuffer {
         }
 
     val pendingReasoningLength: Int
-        get() = synchronized(lock) { pendingReasoning.length }
+        get() = synchronized(lock) {
+            pendingReasoning.sumOf { delta ->
+                when (delta) {
+                    is PendingReasoningDelta.Delta -> delta.value.length
+                    is PendingReasoningDelta.Start -> 0
+                    is PendingReasoningDelta.Complete -> 0
+                }
+            }
+        }
 
     fun appendContent(value: String) {
         if (value.isEmpty()) return
@@ -63,11 +90,65 @@ class StreamingReplyBuffer {
         }
     }
 
-    fun appendReasoning(value: String) {
+    fun startReasoningStep(
+        stepId: String,
+        createdAt: Long,
+    ) {
+        synchronized(lock) {
+            if (fullReasoningSteps.any { it.id == stepId }) {
+                return
+            }
+            val step = ChatReasoningStep(
+                id = stepId,
+                text = "",
+                createdAt = createdAt,
+                finishedAt = null,
+            )
+            fullReasoningSteps += step
+            pendingReasoning.addLast(PendingReasoningDelta.Start(step))
+        }
+    }
+
+    fun appendReasoningStepDelta(
+        stepId: String,
+        value: String,
+    ) {
         if (value.isEmpty()) return
         synchronized(lock) {
-            fullReasoning.append(value)
-            pendingReasoning.append(value)
+            val index = fullReasoningSteps.indexOfLast { it.id == stepId }
+            if (index == -1) {
+                return
+            }
+            val step = fullReasoningSteps[index]
+            fullReasoningSteps[index] = step.copy(
+                text = step.text + value,
+            )
+            pendingReasoning.addLast(
+                PendingReasoningDelta.Delta(
+                    stepId = stepId,
+                    value = StringBuilder(value),
+                ),
+            )
+        }
+    }
+
+    fun completeReasoningStep(
+        stepId: String,
+        finishedAt: Long,
+    ) {
+        synchronized(lock) {
+            val index = fullReasoningSteps.indexOfLast { it.id == stepId }
+            if (index == -1) {
+                return
+            }
+            val step = fullReasoningSteps[index]
+            fullReasoningSteps[index] = step.copy(finishedAt = finishedAt)
+            pendingReasoning.addLast(
+                PendingReasoningDelta.Complete(
+                    stepId = stepId,
+                    finishedAt = finishedAt,
+                ),
+            )
         }
     }
 
@@ -93,15 +174,23 @@ class StreamingReplyBuffer {
 
     fun content(): String = synchronized(lock) { fullContent.toString() }
 
-    fun reasoning(): String = synchronized(lock) { fullReasoning.toString() }
+    fun reasoning(): String = synchronized(lock) { reasoningStepsToContent(fullReasoningSteps) }
 
     fun visibleContent(): String = synchronized(lock) { visibleContent.toString() }
 
-    fun visibleReasoning(): String = synchronized(lock) { visibleReasoning.toString() }
+    fun visibleReasoning(): String = synchronized(lock) { reasoningStepsToContent(visibleReasoningSteps) }
 
     fun parts(): List<ChatMessagePart> = synchronized(lock) { fullParts.toList() }
 
     fun visibleParts(): List<ChatMessagePart> = synchronized(lock) { visibleParts.toList() }
+
+    fun reasoningSteps(): List<ChatReasoningStep> = synchronized(lock) {
+        normalizeChatReasoningSteps(fullReasoningSteps)
+    }
+
+    fun visibleReasoningSteps(): List<ChatReasoningStep> = synchronized(lock) {
+        normalizeChatReasoningSteps(visibleReasoningSteps)
+    }
 
     fun citations(): List<MessageCitation> = synchronized(lock) { citations }
 
@@ -116,25 +205,7 @@ class StreamingReplyBuffer {
     }
 
     private fun advanceReasoning(step: Int): Boolean = synchronized(lock) {
-        drainLeadingText(
-            source = pendingReasoning,
-            target = visibleReasoning,
-            step = step,
-        )
-    }
-
-    private fun drainLeadingText(
-        source: StringBuilder,
-        target: StringBuilder,
-        step: Int,
-    ): Boolean {
-        if (source.isEmpty() || step <= 0) {
-            return false
-        }
-        val endIndex = step.coerceAtMost(source.length)
-        target.append(source.substring(0, endIndex))
-        source.delete(0, endIndex)
-        return true
+        drainPendingReasoning(step)
     }
 
     private fun drainPendingVisuals(step: Int): Boolean {
@@ -168,6 +239,67 @@ class StreamingReplyBuffer {
 
                     if (next.value.isEmpty()) {
                         pendingVisuals.removeFirst()
+                    }
+
+                    if (remaining <= 0) {
+                        return advanced
+                    }
+                }
+            }
+        }
+
+        return advanced
+    }
+
+    private fun drainPendingReasoning(step: Int): Boolean {
+        var remaining = step
+        var advanced = false
+
+        while (pendingReasoning.isNotEmpty()) {
+            when (val next = pendingReasoning.first()) {
+                is PendingReasoningDelta.Start -> {
+                    if (visibleReasoningSteps.none { it.id == next.step.id }) {
+                        visibleReasoningSteps += next.step
+                        advanced = true
+                    }
+                    pendingReasoning.removeFirst()
+                }
+
+                is PendingReasoningDelta.Complete -> {
+                    val index = visibleReasoningSteps.indexOfLast { it.id == next.stepId }
+                    if (index != -1) {
+                        visibleReasoningSteps[index] = visibleReasoningSteps[index].copy(
+                            finishedAt = next.finishedAt,
+                        )
+                        advanced = true
+                    }
+                    pendingReasoning.removeFirst()
+                }
+
+                is PendingReasoningDelta.Delta -> {
+                    if (remaining <= 0) {
+                        return advanced
+                    }
+                    val index = visibleReasoningSteps.indexOfLast { it.id == next.stepId }
+                    if (index == -1) {
+                        pendingReasoning.removeFirst()
+                        continue
+                    }
+                    val endIndex = remaining.coerceAtMost(next.value.length)
+                    if (endIndex <= 0) {
+                        return advanced
+                    }
+                    val chunk = next.value.substring(0, endIndex)
+                    val currentStep = visibleReasoningSteps[index]
+                    visibleReasoningSteps[index] = currentStep.copy(
+                        text = currentStep.text + chunk,
+                    )
+                    next.value.delete(0, endIndex)
+                    remaining -= endIndex
+                    advanced = true
+
+                    if (next.value.isEmpty()) {
+                        pendingReasoning.removeFirst()
                     }
 
                     if (remaining <= 0) {

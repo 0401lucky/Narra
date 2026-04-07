@@ -16,13 +16,14 @@ import com.example.myapplication.model.AttachmentType
 import com.example.myapplication.model.ChatMessage
 import com.example.myapplication.model.ChatMessagePart
 import com.example.myapplication.model.ChatMessagePartType
+import com.example.myapplication.model.ChatReasoningStep
 import com.example.myapplication.model.MessageAttachment
 import com.example.myapplication.model.MessageRole
 import com.example.myapplication.model.MessageStatus
 import com.example.myapplication.model.ModelAbility
 import com.example.myapplication.model.normalizeChatMessageParts
-import com.example.myapplication.model.textMessagePart
 import com.example.myapplication.model.toPlainText
+import com.example.myapplication.model.reasoningStepsToContent
 import com.mikepenz.markdown.model.MarkdownPadding
 import com.mikepenz.markdown.model.MarkdownTypography
 import java.util.LinkedHashMap
@@ -31,6 +32,27 @@ internal enum class ReasoningCardDisplayState {
     Collapsed,
     Preview,
     Expanded,
+}
+
+internal fun resolveReasoningCardDisplayState(
+    hasReasoningContent: Boolean,
+    userToggledReasoning: Boolean?,
+    isReasoningPhase: Boolean,
+    reasoningExpandedByDefault: Boolean,
+    showThinkingContent: Boolean,
+    autoCollapseThinking: Boolean,
+): ReasoningCardDisplayState {
+    return when {
+        !hasReasoningContent -> ReasoningCardDisplayState.Collapsed
+        userToggledReasoning == true -> ReasoningCardDisplayState.Expanded
+        userToggledReasoning == false && isReasoningPhase && showThinkingContent -> ReasoningCardDisplayState.Preview
+        userToggledReasoning == false -> ReasoningCardDisplayState.Collapsed
+        isReasoningPhase && showThinkingContent -> ReasoningCardDisplayState.Preview
+        isReasoningPhase -> ReasoningCardDisplayState.Collapsed
+        autoCollapseThinking -> ReasoningCardDisplayState.Collapsed
+        reasoningExpandedByDefault -> ReasoningCardDisplayState.Expanded
+        else -> ReasoningCardDisplayState.Collapsed
+    }
 }
 
 internal data class MessageBubbleRenderState(
@@ -43,12 +65,10 @@ internal data class MessageBubbleRenderState(
     val displayContent: String,
     val renderedDisplayContent: String,
     val resolvedReasoningContent: String,
-    val renderedReasoningContent: String,
-    val reasoningParts: List<ChatMessagePart>,
+    val reasoningSteps: List<ChatReasoningStep>,
     val reasoningDisplayState: ReasoningCardDisplayState,
     val reasoningExpanded: Boolean,
     val reasoningPreviewVisible: Boolean,
-    val reasoningPreview: String,
     val assistantVisualContent: AssistantVisualContent,
     val shouldShowContentBubble: Boolean,
     val shouldShowUserActions: Boolean,
@@ -74,6 +94,7 @@ internal fun rememberMessageBubbleRenderState(
     message: ChatMessage,
     streamingContent: String?,
     streamingReasoningContent: String?,
+    streamingReasoningSteps: List<ChatReasoningStep>?,
     streamingParts: List<ChatMessagePart>?,
     isRemembered: Boolean,
     messageTextScale: Float,
@@ -86,7 +107,6 @@ internal fun rememberMessageBubbleRenderState(
     val isLoading = !isUser && message.status == MessageStatus.LOADING
     val isStreaming = streamingContent != null
     val resolvedContent = streamingContent ?: message.content
-    val resolvedReasoningContent = streamingReasoningContent ?: message.reasoningContent
     val rawMessageParts = remember(message.parts, streamingParts) {
         normalizeChatMessageParts(streamingParts ?: message.parts)
     }
@@ -115,8 +135,26 @@ internal fun rememberMessageBubbleRenderState(
         if (hasStructuredParts) emptyList() else message.attachments
     }
 
-    val isReasoningPhase = isLoading && resolvedContent.isBlank() && resolvedReasoningContent.isNotBlank()
-    val hasReasoningContent = resolvedReasoningContent.isNotBlank()
+    val resolvedReasoningSteps = remember(message.reasoningSteps, streamingReasoningSteps, isLoading) {
+        (streamingReasoningSteps ?: message.reasoningSteps).map { step ->
+            if (isLoading) {
+                step
+            } else {
+                step.copy(text = cachedNormalizeAssistantMarkdown(step.text))
+            }
+        }
+    }
+    val resolvedReasoningContent = remember(
+        resolvedReasoningSteps,
+        streamingReasoningContent,
+        message.reasoningContent,
+    ) {
+        reasoningStepsToContent(resolvedReasoningSteps)
+            .ifBlank { streamingReasoningContent ?: message.reasoningContent }
+    }
+
+    val isReasoningPhase = isLoading && resolvedContent.isBlank() && resolvedReasoningSteps.isNotEmpty()
+    val hasReasoningContent = resolvedReasoningSteps.isNotEmpty() || resolvedReasoningContent.isNotBlank()
     var userToggledReasoning by rememberSaveable(message.id) { mutableStateOf<Boolean?>(null) }
     var lastReasoningPhase by rememberSaveable(message.id) { mutableStateOf(isReasoningPhase) }
     LaunchedEffect(isReasoningPhase, hasReasoningContent, autoCollapseThinking) {
@@ -136,17 +174,14 @@ internal fun rememberMessageBubbleRenderState(
         showThinkingContent,
         autoCollapseThinking,
     ) {
-        when {
-            !hasReasoningContent -> ReasoningCardDisplayState.Collapsed
-            userToggledReasoning == true -> ReasoningCardDisplayState.Expanded
-            userToggledReasoning == false && isReasoningPhase && showThinkingContent -> ReasoningCardDisplayState.Preview
-            userToggledReasoning == false -> ReasoningCardDisplayState.Collapsed
-            isReasoningPhase && showThinkingContent -> ReasoningCardDisplayState.Preview
-            isReasoningPhase -> ReasoningCardDisplayState.Collapsed
-            autoCollapseThinking -> ReasoningCardDisplayState.Collapsed
-            reasoningExpandedByDefault -> ReasoningCardDisplayState.Expanded
-            else -> ReasoningCardDisplayState.Collapsed
-        }
+        resolveReasoningCardDisplayState(
+            hasReasoningContent = hasReasoningContent,
+            userToggledReasoning = userToggledReasoning,
+            isReasoningPhase = isReasoningPhase,
+            reasoningExpandedByDefault = reasoningExpandedByDefault,
+            showThinkingContent = showThinkingContent,
+            autoCollapseThinking = autoCollapseThinking,
+        )
     }
     val reasoningExpanded = reasoningDisplayState == ReasoningCardDisplayState.Expanded
     val reasoningPreviewVisible = reasoningDisplayState == ReasoningCardDisplayState.Preview
@@ -196,21 +231,12 @@ internal fun rememberMessageBubbleRenderState(
             assistantVisualContent.text
         }
     }
-    val renderedReasoningContent = remember(isLoading, resolvedReasoningContent) {
-        if (!isLoading) cachedNormalizeAssistantMarkdown(resolvedReasoningContent) else resolvedReasoningContent
-    }
-    val reasoningParts = remember(renderedReasoningContent) {
-        if (renderedReasoningContent.isNotBlank()) listOf(textMessagePart(renderedReasoningContent)) else emptyList()
-    }
     val copyPayload = remember(message, displayContent, resolvedReasoningContent) {
         buildMessageCopyPayload(
             message = message,
             displayContent = displayContent,
             reasoningContent = resolvedReasoningContent,
         )
-    }
-    val reasoningPreview = remember(reasoningParts, renderedReasoningContent) {
-        buildReasoningPreview(reasoningParts.toPlainText().ifBlank { renderedReasoningContent })
     }
     val shouldShowContentBubble = displayAttachments.isNotEmpty() ||
         hasStructuredParts ||
@@ -220,7 +246,7 @@ internal fun rememberMessageBubbleRenderState(
         isError
     val shouldShowUserActions = isUser && copyPayload.isNotBlank()
     val shouldShowAssistantActions = !isUser && !isLoading && !isError &&
-        (displayContent.isNotBlank() || hasStructuredParts || assistantVisualContent.imageSources.isNotEmpty() || resolvedReasoningContent.isNotBlank())
+        (displayContent.isNotBlank() || hasStructuredParts || assistantVisualContent.imageSources.isNotEmpty() || resolvedReasoningSteps.isNotEmpty())
     val shouldShowErrorActions = isError
     val shouldUseSplitUserLayout = isUser && (
         displayAttachments.any { it.type == AttachmentType.IMAGE } ||
@@ -260,12 +286,10 @@ internal fun rememberMessageBubbleRenderState(
         displayContent = displayContent,
         renderedDisplayContent = renderedDisplayContent,
         resolvedReasoningContent = resolvedReasoningContent,
-        renderedReasoningContent = renderedReasoningContent,
-        reasoningParts = reasoningParts,
+        reasoningSteps = resolvedReasoningSteps,
         reasoningDisplayState = reasoningDisplayState,
         reasoningExpanded = reasoningExpanded,
         reasoningPreviewVisible = reasoningPreviewVisible,
-        reasoningPreview = reasoningPreview,
         assistantVisualContent = assistantVisualContent,
         shouldShowContentBubble = shouldShowContentBubble,
         shouldShowUserActions = shouldShowUserActions,

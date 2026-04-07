@@ -7,13 +7,17 @@ import com.example.myapplication.data.local.chat.ConversationEntity
 import com.example.myapplication.data.local.chat.MessageEntity
 import com.example.myapplication.model.ChatMessage
 import com.example.myapplication.model.ChatMessagePart
+import com.example.myapplication.model.ChatReasoningStep
 import com.example.myapplication.model.Conversation
+import com.example.myapplication.model.legacyReasoningStepsFromContent
 import com.example.myapplication.model.MessageCitation
 import com.example.myapplication.model.MessageAttachment
 import com.example.myapplication.model.MessageRole
 import com.example.myapplication.model.MessageStatus
 import com.example.myapplication.model.RoleplayOutputFormat
 import com.example.myapplication.model.normalizeChatMessageParts
+import com.example.myapplication.model.normalizeChatReasoningSteps
+import com.example.myapplication.model.reasoningStepsToContent
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
 import kotlinx.coroutines.flow.Flow
@@ -26,6 +30,7 @@ class RoomConversationStore(
     private val gson = Gson()
     private val attachmentListType = object : TypeToken<List<MessageAttachment>>() {}.type
     private val partListType = object : TypeToken<List<ChatMessagePart>>() {}.type
+    private val reasoningStepListType = object : TypeToken<List<ChatReasoningStep>>() {}.type
     private val citationListType = object : TypeToken<List<MessageCitation>>() {}.type
 
     override fun observeConversations(): Flow<List<Conversation>> {
@@ -157,6 +162,16 @@ class RoomConversationStore(
     }
 
     private fun MessageEntity.toDomain(): ChatMessage {
+        val reasoningSteps = normalizeChatReasoningSteps(
+            runCatching {
+                gson.fromJson<List<ChatReasoningStep>>(reasoningStepsJson, reasoningStepListType).orEmpty()
+            }.getOrDefault(emptyList()).ifEmpty {
+                legacyReasoningStepsFromContent(
+                    reasoningContent = reasoningContent,
+                    createdAt = createdAt,
+                )
+            },
+        )
         return ChatMessage(
             id = id,
             conversationId = conversationId,
@@ -165,7 +180,8 @@ class RoomConversationStore(
             status = runCatching { MessageStatus.valueOf(status) }.getOrDefault(MessageStatus.COMPLETED),
             createdAt = createdAt,
             modelName = modelName,
-            reasoningContent = reasoningContent,
+            reasoningContent = reasoningContent.ifBlank { reasoningStepsToContent(reasoningSteps) },
+            reasoningSteps = reasoningSteps,
             attachments = runCatching {
                 gson.fromJson<List<MessageAttachment>>(attachmentsJson, attachmentListType).orEmpty()
             }.getOrDefault(emptyList()),
@@ -184,6 +200,7 @@ class RoomConversationStore(
     }
 
     private fun ChatMessage.toEntity(): MessageEntity {
+        val normalizedReasoningSteps = normalizeChatReasoningSteps(reasoningSteps)
         return MessageEntity(
             id = id,
             conversationId = conversationId,
@@ -192,7 +209,8 @@ class RoomConversationStore(
             status = status.name,
             createdAt = createdAt,
             modelName = modelName,
-            reasoningContent = reasoningContent,
+            reasoningContent = reasoningContent.ifBlank { reasoningStepsToContent(normalizedReasoningSteps) },
+            reasoningStepsJson = gson.toJson(normalizedReasoningSteps),
             attachmentsJson = gson.toJson(attachments),
             partsJson = gson.toJson(normalizeChatMessageParts(parts)),
             citationsJson = gson.toJson(citations),

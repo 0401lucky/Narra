@@ -2,11 +2,14 @@ package com.example.myapplication.roleplay
 
 import com.example.myapplication.model.ChatMessage
 import com.example.myapplication.model.ChatMessagePart
+import com.example.myapplication.model.ChatReasoningStep
 import com.example.myapplication.model.MessageRole
 import com.example.myapplication.model.MessageStatus
 import com.example.myapplication.model.RoleplayOutputFormat
 import com.example.myapplication.model.hasSendableContent
 import com.example.myapplication.model.normalizeChatMessageParts
+import com.example.myapplication.model.normalizeChatReasoningSteps
+import com.example.myapplication.model.reasoningStepsToContent
 import com.example.myapplication.model.toContentMirror
 import com.example.myapplication.model.toPlainText
 
@@ -93,6 +96,7 @@ object RoleplayRoundTripSupport {
             content = "",
             status = MessageStatus.LOADING,
             reasoningContent = "",
+            reasoningSteps = emptyList(),
             parts = emptyList(),
         )
         val baseMessages = currentMessages.take(targetIndex)
@@ -138,6 +142,7 @@ object RoleplayRoundTripSupport {
         status: MessageStatus = MessageStatus.COMPLETED,
         modelName: String = "",
         reasoningContent: String = "",
+        reasoningSteps: List<ChatReasoningStep> = emptyList(),
         parts: List<ChatMessagePart> = emptyList(),
         roleplayOutputFormat: RoleplayOutputFormat = RoleplayOutputFormat.UNSPECIFIED,
     ): ChatMessage {
@@ -149,7 +154,8 @@ object RoleplayRoundTripSupport {
             status = status,
             createdAt = nowProvider(),
             modelName = modelName,
-            reasoningContent = reasoningContent,
+            reasoningContent = reasoningContent.ifBlank { reasoningStepsToContent(reasoningSteps) },
+            reasoningSteps = normalizeChatReasoningSteps(reasoningSteps),
             parts = normalizeChatMessageParts(parts),
             roleplayOutputFormat = roleplayOutputFormat,
         )

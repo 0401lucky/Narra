@@ -4,6 +4,7 @@ import com.example.myapplication.model.AppSettings
 import com.example.myapplication.model.Assistant
 import com.example.myapplication.model.ChatMessage
 import com.example.myapplication.model.ChatMessagePart
+import com.example.myapplication.model.ChatReasoningStep
 import com.example.myapplication.model.Conversation
 import com.example.myapplication.model.DEFAULT_CONVERSATION_TITLE
 
@@ -32,6 +33,7 @@ object ChatViewModelUiUpdates {
             streamingMessageId = "",
             streamingContent = "",
             streamingReasoningContent = "",
+            streamingReasoningSteps = emptyList(),
             streamingParts = emptyList(),
             isConversationReady = false,
             hasConversationSummary = false,
@@ -68,6 +70,7 @@ object ChatViewModelUiUpdates {
             streamingMessageId = "",
             streamingContent = "",
             streamingReasoningContent = "",
+            streamingReasoningSteps = emptyList(),
             streamingParts = emptyList(),
             isConversationReady = true,
         )
@@ -85,6 +88,7 @@ object ChatViewModelUiUpdates {
             streamingMessageId = loadingMessageId,
             streamingContent = "",
             streamingReasoningContent = "",
+            streamingReasoningSteps = emptyList(),
             streamingParts = emptyList(),
             input = nextInput,
             pendingParts = nextPendingParts,
@@ -99,6 +103,7 @@ object ChatViewModelUiUpdates {
         loadingMessageId: String,
         content: String,
         reasoning: String,
+        reasoningSteps: List<ChatReasoningStep>,
         parts: List<ChatMessagePart>,
     ): ChatUiState {
         if (current.currentConversationId != conversationId || current.streamingMessageId != loadingMessageId) {
@@ -107,6 +112,7 @@ object ChatViewModelUiUpdates {
         return current.copy(
             streamingContent = content,
             streamingReasoningContent = reasoning,
+            streamingReasoningSteps = reasoningSteps,
             streamingParts = parts,
         )
     }
@@ -138,6 +144,7 @@ object ChatViewModelUiUpdates {
             streamingMessageId = loadingMessageId,
             streamingContent = "",
             streamingReasoningContent = "",
+            streamingReasoningSteps = emptyList(),
             streamingParts = emptyList(),
             isSending = true,
             errorMessage = null,

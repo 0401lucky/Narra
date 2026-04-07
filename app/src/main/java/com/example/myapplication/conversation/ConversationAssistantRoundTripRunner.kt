@@ -5,12 +5,14 @@ import com.example.myapplication.data.repository.ai.AiGateway
 import com.example.myapplication.data.repository.ConversationRepository
 import com.example.myapplication.model.ChatMessage
 import com.example.myapplication.model.ChatMessagePart
+import com.example.myapplication.model.ChatReasoningStep
 import com.example.myapplication.model.MessageCitation
 import kotlinx.coroutines.CancellationException
 
 data class StreamedAssistantPayload(
     val content: String,
     val reasoning: String,
+    val reasoningSteps: List<ChatReasoningStep>,
     val parts: List<ChatMessagePart>,
     val citations: List<MessageCitation>,
 )
@@ -84,7 +86,7 @@ class ConversationAssistantRoundTripRunner(
                 selectedModel = request.selectedModel,
             )
             val completedMessages = if (parsedOutput.transferUpdates.isEmpty()) {
-                conversationRepository.listMessages(request.conversationId)
+                request.buildFinalMessages(completedAssistant)
             } else {
                 conversationRepository.applyTransferUpdates(
                     conversationId = request.conversationId,

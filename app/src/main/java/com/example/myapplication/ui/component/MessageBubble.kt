@@ -78,6 +78,7 @@ import com.example.myapplication.model.AttachmentType
 import com.example.myapplication.model.ChatMessage
 import com.example.myapplication.model.ChatMessagePart
 import com.example.myapplication.model.ChatMessagePartType
+import com.example.myapplication.model.ChatReasoningStep
 import com.example.myapplication.model.ChatSpecialType
 import com.example.myapplication.model.MessageAttachment
 import com.example.myapplication.model.MessageRole
@@ -117,11 +118,14 @@ fun MessageBubble(
     modifier: Modifier = Modifier,
     streamingContent: String? = null,
     streamingReasoningContent: String? = null,
+    streamingReasoningSteps: List<ChatReasoningStep>? = null,
     streamingParts: List<ChatMessagePart>? = null,
     onRetry: ((String) -> Unit)? = null,
+    onOpenMessageActions: ((String) -> Unit)? = null,
     onToggleMemory: ((String) -> Unit)? = null,
     isRemembered: Boolean = false,
     onTranslate: ((String) -> Unit)? = null,
+    onOpenUrlPreview: ((String, String) -> Unit)? = null,
     onConfirmTransferReceipt: ((String) -> Unit)? = null,
     messageTextScale: Float = 1f,
     reasoningExpandedByDefault: Boolean = true,
@@ -141,6 +145,7 @@ fun MessageBubble(
         message = message,
         streamingContent = streamingContent,
         streamingReasoningContent = streamingReasoningContent,
+        streamingReasoningSteps = streamingReasoningSteps,
         streamingParts = streamingParts,
         isRemembered = isRemembered,
         messageTextScale = messageTextScale,
@@ -158,10 +163,9 @@ fun MessageBubble(
     val displayContent = renderState.displayContent
     val renderedDisplayContent = renderState.renderedDisplayContent
     val resolvedReasoningContent = renderState.resolvedReasoningContent
-    val reasoningParts = renderState.reasoningParts
+    val reasoningSteps = renderState.reasoningSteps
     val reasoningExpanded = renderState.reasoningExpanded
     val reasoningPreviewVisible = renderState.reasoningPreviewVisible
-    val reasoningPreview = renderState.reasoningPreview
     val assistantVisualContent = renderState.assistantVisualContent
     val shouldShowContentBubble = renderState.shouldShowContentBubble
     val shouldUseSplitUserLayout = renderState.shouldUseSplitUserLayout
@@ -224,10 +228,9 @@ fun MessageBubble(
 
         Spacer(modifier = Modifier.height(4.dp))
 
-        if (!isUser && resolvedReasoningContent.isNotBlank()) {
-            AssistantReasoningCard(
-                reasoningParts = reasoningParts,
-                reasoningPreview = reasoningPreview,
+        if (!isUser && reasoningSteps.isNotEmpty()) {
+            ReasoningTimelineCard(
+                reasoningSteps = reasoningSteps,
                 expanded = effectiveReasoningExpanded,
                 previewVisible = effectiveReasoningPreviewVisible,
                 isLoading = isLoading && resolvedContent.isBlank(),
@@ -239,7 +242,6 @@ fun MessageBubble(
                 codeBlockAutoWrap = codeBlockAutoWrap,
                 codeBlockAutoCollapse = codeBlockAutoCollapse,
                 performanceMode = performanceMode,
-                reduceVisualEffects = effectiveReduceVisualEffects,
                 modifier = assistantWidthModifier,
             )
             Spacer(modifier = Modifier.height(8.dp))
@@ -322,6 +324,7 @@ fun MessageBubble(
             AssistantCitationSection(
                 citations = message.citations,
                 onOpenUrl = uriHandler::openUri,
+                onOpenUrlPreview = onOpenUrlPreview,
                 modifier = assistantWidthModifier.padding(top = 8.dp),
             )
         }
@@ -337,6 +340,7 @@ fun MessageBubble(
             shouldShowErrorActions = renderState.shouldShowErrorActions,
             assistantWidthModifier = assistantWidthModifier,
             onRetry = onRetry,
+            onOpenActionSheet = onOpenMessageActions,
             onToggleMemory = onToggleMemory,
             onTranslate = onTranslate,
             clipboard = clipboard,
@@ -349,6 +353,7 @@ fun MessageBubble(
 private fun AssistantCitationSection(
     citations: List<com.example.myapplication.model.MessageCitation>,
     onOpenUrl: (String) -> Unit,
+    onOpenUrlPreview: ((String, String) -> Unit)?,
     modifier: Modifier = Modifier,
 ) {
     Surface(
@@ -394,7 +399,16 @@ private fun AssistantCitationSection(
                         modifier = Modifier
                             .fillMaxWidth()
                             .clip(RoundedCornerShape(14.dp))
-                            .clickable { onOpenUrl(citation.url) }
+                            .clickable {
+                                if (onOpenUrlPreview != null) {
+                                    onOpenUrlPreview(
+                                        citation.url,
+                                        citation.title.ifBlank { citation.url },
+                                    )
+                                } else {
+                                    onOpenUrl(citation.url)
+                                }
+                            }
                             .padding(horizontal = 12.dp, vertical = 10.dp),
                         verticalArrangement = Arrangement.spacedBy(4.dp),
                     ) {

@@ -1,17 +1,17 @@
 {
   "app_id": "com.narra.app.dev",
   "channel": "dev",
-  "latest_version_name": "1.1.2-dev",
-  "latest_version_code": 10102,
+  "latest_version_name": "1.1.3-dev",
+  "latest_version_code": 10103,
   "minimum_supported_version_code": 0,
-  "apk_url": "https://download.lsa1230.dpdns.org/dev/Narra-v1.1.2-dev-10102-dev.apk",
-  "apk_sha256": "243ABCBDC62419BCE2C9BE6025C2AB7E02BC150A4FC383C13DEA34F17A536F61",
-  "published_at": "2026-04-07T13:57:19+08:00",
+  "apk_url": "https://download.lsa1230.dpdns.org/dev/Narra-v1.1.3-dev-10103-dev.apk",
+  "apk_sha256": "a4e071f991343a6a440f3a05f3ea40db373715ef1f20ef44fc8c9a77aec7e139",
+  "published_at": "2026-04-07T22:48:14+08:00",
   "release_notes": [
-    "特殊玩法扩展为转账、邀约、礼物、委托四类，聊天页与沉浸式扮演页统一支持玩法卡片发送",
-    "礼物特殊玩法升级为自动生图 V1，礼物卡支持生成中、成功、失败三态，并直接在卡片内展示礼物图",
-    "功能模型支持跟随默认、单独指定、关闭三态，可显式关闭聊天建议、翻译、记忆、搜索、礼物生图等能力",
-    "收紧聊天页底部输入栏尺寸，整体更贴底、更紧凑",
-    "优化聊天页历史消息滚动体验，减少滚动过程中的重渲染与闪动感"
+    "聊天页消息新增统一更多操作面板，支持选中复制、单条消息导出 Markdown 和系统分享",
+    "新增消息级 WebView 渲染预览工作台，可预览本地消息 HTML，并以内置浏览模式打开引用链接",
+    "聊天页支持从历史用户消息回退到输入区，恢复文本与附件后修改重发",
+    "聊天页思考区域升级为步骤式时间线卡片，支持多段思考步骤、生成中预览和单步耗时标题",
+    "聊天消息流式事件和持久化升级为 reasoning steps 结构，为后续更多工作流可视化打底"
   ]
 }

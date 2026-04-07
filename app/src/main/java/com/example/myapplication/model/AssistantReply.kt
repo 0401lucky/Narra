@@ -3,6 +3,7 @@ package com.example.myapplication.model
 data class AssistantReply(
     val content: String,
     val reasoningContent: String = "",
+    val reasoningSteps: List<ChatReasoningStep> = emptyList(),
     val parts: List<ChatMessagePart> = emptyList(),
     val citations: List<MessageCitation> = emptyList(),
 )
@@ -46,6 +47,22 @@ data class GatewayToolingOptions(
 sealed interface ChatStreamEvent {
     data class ContentDelta(val value: String) : ChatStreamEvent
 
+    data class ReasoningStepStarted(
+        val stepId: String,
+        val createdAt: Long,
+    ) : ChatStreamEvent
+
+    data class ReasoningStepDelta(
+        val stepId: String,
+        val value: String,
+    ) : ChatStreamEvent
+
+    data class ReasoningStepCompleted(
+        val stepId: String,
+        val finishedAt: Long,
+    ) : ChatStreamEvent
+
+    // 兼容底层 provider 的旧 delta 事件，统一会在网关层转成 reasoning step 事件。
     data class ReasoningDelta(val value: String) : ChatStreamEvent
 
     data class ImageDelta(val part: ChatMessagePart) : ChatStreamEvent

@@ -42,6 +42,9 @@ import com.example.myapplication.model.ProviderApiProtocol
 import com.example.myapplication.model.ProviderSettings
 import com.example.myapplication.model.ResponseApiRequest
 import com.example.myapplication.model.buildThinkingRequestConfig
+import com.example.myapplication.model.legacyReasoningStepsFromContent
+import com.example.myapplication.model.normalizeChatReasoningSteps
+import com.example.myapplication.model.reasoningStepsToContent
 import com.google.gson.Gson
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineDispatcher
@@ -283,7 +286,7 @@ class DefaultAiGateway(
                         toolingOptions = toolingOptions,
                     )
 
-        when (apiProtocol) {
+        val rawEvents = when (apiProtocol) {
             ProviderApiProtocol.OPENAI_COMPATIBLE -> {
                 if (gatewayTooling.enabledToolNames.isEmpty()) {
                     streamOpenAiMessage(
@@ -294,7 +297,7 @@ class DefaultAiGateway(
                         thinkingRequestConfig = thinkingRequestConfig,
                         promptMode = promptMode,
                         activeProvider = activeProvider,
-                    ).collect { emit(it) }
+                    )
                 } else {
                     streamOpenAiMessageWithTools(
                         baseUrl = baseUrl,
@@ -305,9 +308,10 @@ class DefaultAiGateway(
                         activeProvider = activeProvider,
                         gatewayTooling = gatewayTooling,
                         promptMode = promptMode,
-                    ).collect { emit(it) }
+                    )
                 }
             }
+
             ProviderApiProtocol.ANTHROPIC -> {
                 if (gatewayTooling.enabledToolNames.isEmpty()) {
                     streamAnthropicMessage(
@@ -317,7 +321,7 @@ class DefaultAiGateway(
                         requestMessages = requestMessages,
                         thinkingRequestConfig = thinkingRequestConfig,
                         promptMode = promptMode,
-                    ).collect { emit(it) }
+                    )
                 } else {
                     streamAnthropicMessageWithTools(
                         baseUrl = baseUrl,
@@ -327,10 +331,12 @@ class DefaultAiGateway(
                         thinkingRequestConfig = thinkingRequestConfig,
                         gatewayTooling = gatewayTooling,
                         promptMode = promptMode,
-                    ).collect { emit(it) }
+                    )
                 }
             }
         }
+
+        normalizeReasoningStepEvents(rawEvents).collect { emit(it) }
     }.flowOn(ioDispatcher)
 
     override fun parseAssistantSpecialOutput(
@@ -361,18 +367,55 @@ class DefaultAiGateway(
     private fun ensureAssistantReplyHasContent(
         reply: AssistantReply,
     ): AssistantReply {
-        if (reply.content.isBlank() && reply.parts.isEmpty()) {
+        val normalizedReply = reply.copy(
+            reasoningSteps = normalizeChatReasoningSteps(
+                reply.reasoningSteps.ifEmpty {
+                    legacyReasoningStepsFromContent(
+                        reasoningContent = reply.reasoningContent,
+                        createdAt = System.currentTimeMillis(),
+                        finishedAt = System.currentTimeMillis(),
+                        idPrefix = "assistant-reply",
+                    )
+                },
+            ),
+        ).let { normalized ->
+            normalized.copy(
+                reasoningContent = normalized.reasoningContent.ifBlank {
+                    reasoningStepsToContent(normalized.reasoningSteps)
+                },
+            )
+        }
+        if (normalizedReply.content.isBlank() && normalizedReply.parts.isEmpty()) {
             throw IllegalStateException("模型未返回有效内容")
         }
-        return reply
+        return normalizedReply
     }
 
     private fun emitAssistantReply(
         reply: AssistantReply?,
     ): Flow<ChatStreamEvent> = flow {
         val resolvedReply = reply ?: throw IllegalStateException("模型未返回有效内容")
-        if (resolvedReply.reasoningContent.isNotBlank()) {
-            emit(ChatStreamEvent.ReasoningDelta(resolvedReply.reasoningContent))
+        resolvedReply.reasoningSteps.forEach { step ->
+            emit(
+                ChatStreamEvent.ReasoningStepStarted(
+                    stepId = step.id,
+                    createdAt = step.createdAt,
+                ),
+            )
+            if (step.text.isNotBlank()) {
+                emit(
+                    ChatStreamEvent.ReasoningStepDelta(
+                        stepId = step.id,
+                        value = step.text,
+                    ),
+                )
+            }
+            emit(
+                ChatStreamEvent.ReasoningStepCompleted(
+                    stepId = step.id,
+                    finishedAt = step.finishedAt ?: System.currentTimeMillis(),
+                ),
+            )
         }
         if (resolvedReply.content.isNotBlank()) {
             emit(ChatStreamEvent.ContentDelta(resolvedReply.content))
@@ -384,6 +427,81 @@ class DefaultAiGateway(
             emit(ChatStreamEvent.Citations(resolvedReply.citations))
         }
         emit(ChatStreamEvent.Completed)
+    }
+
+    private fun normalizeReasoningStepEvents(
+        rawEvents: Flow<ChatStreamEvent>,
+    ): Flow<ChatStreamEvent> = flow {
+        var activeReasoningStepId: String? = null
+        var reasoningStepIndex = 0
+
+        suspend fun closeActiveReasoningStep() {
+            val stepId = activeReasoningStepId ?: return
+            emit(
+                ChatStreamEvent.ReasoningStepCompleted(
+                    stepId = stepId,
+                    finishedAt = System.currentTimeMillis(),
+                ),
+            )
+            activeReasoningStepId = null
+        }
+
+        rawEvents.collect { event ->
+            when (event) {
+                is ChatStreamEvent.ReasoningDelta -> {
+                    val stepId = activeReasoningStepId ?: "reasoning-step-${reasoningStepIndex++}-${System.currentTimeMillis()}".also { generatedId ->
+                        activeReasoningStepId = generatedId
+                        emit(
+                            ChatStreamEvent.ReasoningStepStarted(
+                                stepId = generatedId,
+                                createdAt = System.currentTimeMillis(),
+                            ),
+                        )
+                    }
+                    emit(
+                        ChatStreamEvent.ReasoningStepDelta(
+                            stepId = stepId,
+                            value = event.value,
+                        ),
+                    )
+                }
+
+                is ChatStreamEvent.ContentDelta -> {
+                    closeActiveReasoningStep()
+                    emit(event)
+                }
+
+                is ChatStreamEvent.ImageDelta -> {
+                    closeActiveReasoningStep()
+                    emit(event)
+                }
+
+                is ChatStreamEvent.ReasoningStepStarted -> {
+                    closeActiveReasoningStep()
+                    activeReasoningStepId = event.stepId
+                    emit(event)
+                }
+
+                is ChatStreamEvent.ReasoningStepDelta -> {
+                    activeReasoningStepId = event.stepId
+                    emit(event)
+                }
+
+                is ChatStreamEvent.ReasoningStepCompleted -> {
+                    if (activeReasoningStepId == event.stepId) {
+                        activeReasoningStepId = null
+                    }
+                    emit(event)
+                }
+
+                is ChatStreamEvent.Citations -> emit(event)
+
+                ChatStreamEvent.Completed -> {
+                    closeActiveReasoningStep()
+                    emit(event)
+                }
+            }
+        }
     }
 
     private suspend fun sendOpenAiCompatibleMessage(
@@ -719,8 +837,22 @@ class DefaultAiGateway(
         promptMode: PromptMode,
         activeProvider: ProviderSettings? = null,
     ): Flow<ChatStreamEvent> = flow {
-        val client = streamClientProvider(baseUrl, apiKey)
         val apiMode = activeProvider?.resolvedOpenAiTextApiMode() ?: OpenAiTextApiMode.CHAT_COMPLETIONS
+        val client = runCatching {
+            streamClientProvider(baseUrl, apiKey)
+        }.getOrElse {
+            emitAssistantReply(
+                sendOpenAiMessageWithoutStreaming(
+                    baseUrl = baseUrl,
+                    apiKey = apiKey,
+                    selectedModel = selectedModel,
+                    requestMessages = requestMessages,
+                    thinkingRequestConfig = thinkingRequestConfig,
+                    activeProvider = activeProvider,
+                ),
+            ).collect { emit(it) }
+            return@flow
+        }
         var requestBody = buildRequestWithRoleplaySampling(
             model = selectedModel,
             messages = requestMessages,
@@ -851,6 +983,65 @@ class DefaultAiGateway(
             cancelHandle?.dispose()
             call.cancel()
             response?.close()
+        }
+    }
+
+    private suspend fun sendOpenAiMessageWithoutStreaming(
+        baseUrl: String,
+        apiKey: String,
+        selectedModel: String,
+        requestMessages: List<ChatMessageDto>,
+        thinkingRequestConfig: com.example.myapplication.model.ThinkingRequestConfig,
+        activeProvider: ProviderSettings?,
+    ): AssistantReply {
+        return when (activeProvider?.resolvedOpenAiTextApiMode() ?: OpenAiTextApiMode.CHAT_COMPLETIONS) {
+            OpenAiTextApiMode.CHAT_COMPLETIONS -> {
+                val request = ChatCompletionRequest(
+                    model = selectedModel,
+                    messages = requestMessages,
+                    reasoningEffort = thinkingRequestConfig.reasoningEffort,
+                    thinking = thinkingRequestConfig.thinking,
+                )
+                val response = apiServiceProvider(baseUrl, apiKey).createChatCompletionAt(
+                    buildOpenAiTextUrl(baseUrl, activeProvider),
+                    request,
+                )
+                if (!response.isSuccessful) {
+                    throw GatewayNetworkSupport.retrofitFailure("聊天请求失败", response)
+                }
+                assistantReplyFromOpenAiMessage(
+                    response.body()?.choices?.firstOrNull()?.message,
+                )
+            }
+
+            OpenAiTextApiMode.RESPONSES -> {
+                val request = ChatCompletionRequest(
+                    model = selectedModel,
+                    messages = requestMessages,
+                    reasoningEffort = thinkingRequestConfig.reasoningEffort,
+                    thinking = thinkingRequestConfig.thinking,
+                )
+                val response = apiServiceProvider(baseUrl, apiKey).createResponseAt(
+                    buildOpenAiTextUrl(baseUrl, activeProvider),
+                    ResponseApiSupport.buildRequest(request),
+                )
+                if (!response.isSuccessful) {
+                    throw PromptExtrasResponseSupport.buildHttpFailure(
+                        operation = "聊天请求失败",
+                        code = response.code(),
+                        errorDetail = response.errorBody()?.string().orEmpty(),
+                        headers = response.headers(),
+                    )
+                }
+                val body = response.body() ?: throw IllegalStateException("响应体为空")
+                val parsed = ResponseApiSupport.parseResponse(body)
+                ensureAssistantReplyHasContent(
+                    AssistantReply(
+                        content = parsed.content,
+                        reasoningContent = parsed.reasoning,
+                    ),
+                )
+            }
         }
     }
 

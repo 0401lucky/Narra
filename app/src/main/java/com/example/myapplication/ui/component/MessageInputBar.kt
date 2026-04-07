@@ -541,10 +541,11 @@ private fun PendingAttachmentBanner(
             horizontalArrangement = Arrangement.spacedBy(10.dp),
         ) {
             Icon(
-                imageVector = if (part.type == ChatMessagePartType.IMAGE) {
-                    Icons.Default.Image
-                } else {
-                    Icons.Default.Description
+                imageVector = when (part.type) {
+                    ChatMessagePartType.IMAGE -> Icons.Default.Image
+                    ChatMessagePartType.FILE -> Icons.Default.Description
+                    ChatMessagePartType.SPECIAL -> Icons.Default.Share
+                    ChatMessagePartType.TEXT -> Icons.Default.Description
                 },
                 contentDescription = null,
                 modifier = Modifier.size(18.dp),
@@ -554,22 +555,22 @@ private fun PendingAttachmentBanner(
                 verticalArrangement = Arrangement.spacedBy(2.dp),
             ) {
                 Text(
-                    text = attachment?.fileName?.ifBlank {
-                        if (part.type == ChatMessagePartType.IMAGE) "已选择图片" else "已选择文件"
-                    } ?: if (part.type == ChatMessagePartType.IMAGE) {
-                        "已选择图片"
-                    } else {
-                        "已选择文件"
+                    text = when (part.type) {
+                        ChatMessagePartType.IMAGE -> attachment?.fileName?.ifBlank { "已选择图片" } ?: "已选择图片"
+                        ChatMessagePartType.FILE -> attachment?.fileName?.ifBlank { "已选择文件" } ?: "已选择文件"
+                        ChatMessagePartType.SPECIAL -> part.specialType?.displayName?.let { "已恢复${it}卡片" } ?: "已恢复特殊玩法"
+                        ChatMessagePartType.TEXT -> "待发送文本"
                     },
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
                     style = MaterialTheme.typography.bodyMedium,
                 )
                 Text(
-                    text = if (part.type == ChatMessagePartType.IMAGE) {
-                        "发送时作为图片附件上传"
-                    } else {
-                        "发送时会提取文本内容作为上下文"
+                    text = when (part.type) {
+                        ChatMessagePartType.IMAGE -> "发送时作为图片附件上传"
+                        ChatMessagePartType.FILE -> "发送时会提取文本内容作为上下文"
+                        ChatMessagePartType.SPECIAL -> "发送时会按原消息结构重新发出"
+                        ChatMessagePartType.TEXT -> "发送时会作为普通文本发出"
                     },
                     style = MaterialTheme.typography.labelMedium,
                     color = MaterialTheme.colorScheme.onSecondaryContainer.copy(alpha = 0.78f),

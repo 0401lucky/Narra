@@ -24,7 +24,7 @@ class ChatDatabaseMigrationTest {
     }
 
     @Test
-    fun migrateFrom1To13_preservesLegacyConversationData() {
+    fun migrateFrom1To14_preservesLegacyConversationData() {
         createLegacyDatabase(version = 1) { db ->
             createVersion1Schema(db)
             db.execSQL(
@@ -47,6 +47,7 @@ class ChatDatabaseMigrationTest {
             assertEquals("default-assistant", queryString(db, "SELECT assistantId FROM conversations WHERE id = 'c1'"))
             assertEquals("[]", queryString(db, "SELECT partsJson FROM messages WHERE id = 'm1'"))
             assertEquals("[]", queryString(db, "SELECT citationsJson FROM messages WHERE id = 'm1'"))
+            assertEquals("[]", queryString(db, "SELECT reasoningStepsJson FROM messages WHERE id = 'm1'"))
             assertEquals(
                 "UNSPECIFIED",
                 queryString(db, "SELECT roleplayOutputFormat FROM messages WHERE id = 'm1'"),
@@ -58,7 +59,7 @@ class ChatDatabaseMigrationTest {
     }
 
     @Test
-    fun migrateFrom9To13_createsRoleplayTablesWithLongformColumn() {
+    fun migrateFrom9To14_createsRoleplayTablesWithLongformColumn() {
         createLegacyDatabase(version = 9) { db ->
             createVersion9Schema(db)
         }
@@ -73,7 +74,7 @@ class ChatDatabaseMigrationTest {
     }
 
     @Test
-    fun migrateFrom10To12_whenLongformAlreadyExists_keepsDataReadable() {
+    fun migrateFrom10To14_whenLongformAlreadyExists_keepsDataReadable() {
         createLegacyDatabase(version = 10) { db ->
             createVersion10Schema(db, includeLongformColumn = true)
             db.execSQL(
@@ -100,7 +101,7 @@ class ChatDatabaseMigrationTest {
     }
 
     @Test
-    fun migrateFrom10To12_whenLongformMissing_addsDefaultColumn() {
+    fun migrateFrom10To14_whenLongformMissing_addsDefaultColumn() {
         createLegacyDatabase(version = 10) { db ->
             createVersion10Schema(db, includeLongformColumn = false)
             db.execSQL(
@@ -127,7 +128,7 @@ class ChatDatabaseMigrationTest {
     }
 
     @Test
-    fun migrateFrom11To12_addsSearchAndCitationColumns() {
+    fun migrateFrom11To14_addsSearchCitationAndReasoningStepColumns() {
         createLegacyDatabase(version = 11) { db ->
             createVersion11Schema(db)
             db.execSQL(
@@ -155,12 +156,52 @@ class ChatDatabaseMigrationTest {
             assertTrue(hasColumn(db, "conversations", "searchEnabled"))
             assertTrue(hasColumn(db, "messages", "citationsJson"))
             assertTrue(hasColumn(db, "messages", "roleplayOutputFormat"))
+            assertTrue(hasColumn(db, "messages", "reasoningStepsJson"))
             assertEquals(0L, queryLong(db, "SELECT searchEnabled FROM conversations WHERE id = 'c11'"))
             assertEquals("[]", queryString(db, "SELECT citationsJson FROM messages WHERE id = 'm11'"))
+            assertEquals("[]", queryString(db, "SELECT reasoningStepsJson FROM messages WHERE id = 'm11'"))
             assertEquals(
                 "UNSPECIFIED",
                 queryString(db, "SELECT roleplayOutputFormat FROM messages WHERE id = 'm11'"),
             )
+        }
+    }
+
+    @Test
+    fun migrateFrom13To14_backfillsLegacyReasoningSteps() {
+        createLegacyDatabase(version = 13) { db ->
+            createVersion13Schema(db)
+            db.execSQL(
+                """
+                INSERT INTO conversations (
+                    id, title, model, createdAt, updatedAt, assistantId, searchEnabled
+                ) VALUES (
+                    'c13', '旧会话13', 'model-13', 1, 2, 'assistant-13', 0
+                )
+                """.trimIndent(),
+            )
+            db.execSQL(
+                """
+                INSERT INTO messages (
+                    id, conversationId, role, content, status, createdAt,
+                    modelName, reasoningContent, attachmentsJson, partsJson, citationsJson, roleplayOutputFormat
+                ) VALUES (
+                    'm13', 'c13', 'ASSISTANT', '最终回复', 'COMPLETED', 42,
+                    'model-13', '**分析目标**\n先检查输入。', '[]', '[]', '[]', 'UNSPECIFIED'
+                )
+                """.trimIndent(),
+            )
+        }
+
+        migrateToLatest()
+
+        openReadableDatabase().use { db ->
+            val reasoningStepsJson = queryString(db, "SELECT reasoningStepsJson FROM messages WHERE id = 'm13'")
+            assertNotNull(reasoningStepsJson)
+            assertTrue(reasoningStepsJson.contains("\"id\":\"legacy-m13-0\""))
+            assertTrue(reasoningStepsJson.contains("\"createdAt\":42"))
+            assertTrue(reasoningStepsJson.contains("\"finishedAt\":42"))
+            assertTrue(reasoningStepsJson.contains("分析目标"))
         }
     }
 
@@ -366,6 +407,19 @@ class ChatDatabaseMigrationTest {
         createVersion10Schema(db, includeLongformColumn = true)
     }
 
+    private fun createVersion13Schema(db: SQLiteDatabase) {
+        createVersion11Schema(db)
+        db.execSQL(
+            "ALTER TABLE conversations ADD COLUMN searchEnabled INTEGER NOT NULL DEFAULT 0",
+        )
+        db.execSQL(
+            "ALTER TABLE messages ADD COLUMN citationsJson TEXT NOT NULL DEFAULT '[]'",
+        )
+        db.execSQL(
+            "ALTER TABLE messages ADD COLUMN roleplayOutputFormat TEXT NOT NULL DEFAULT 'UNSPECIFIED'",
+        )
+    }
+
     private fun openReadableDatabase(): SQLiteDatabase {
         return SQLiteDatabase.openDatabase(
             databaseFile.path,
@@ -439,6 +493,7 @@ class ChatDatabaseMigrationTest {
             ChatDatabase.MIGRATION_10_11,
             ChatDatabase.MIGRATION_11_12,
             ChatDatabase.MIGRATION_12_13,
+            ChatDatabase.MIGRATION_13_14,
         )
     }
 }

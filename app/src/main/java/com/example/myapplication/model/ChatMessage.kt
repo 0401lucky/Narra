@@ -23,6 +23,7 @@ data class ChatMessage(
     val createdAt: Long = 0L,
     val modelName: String = "",
     val reasoningContent: String = "",
+    val reasoningSteps: List<ChatReasoningStep> = emptyList(),
     val attachments: List<MessageAttachment> = emptyList(),
     val parts: List<ChatMessagePart> = emptyList(),
     val citations: List<MessageCitation> = emptyList(),

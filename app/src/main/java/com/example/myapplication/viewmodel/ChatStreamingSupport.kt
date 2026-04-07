@@ -2,6 +2,7 @@ package com.example.myapplication.viewmodel
 
 import com.example.myapplication.conversation.StreamingReplyBuffer
 import com.example.myapplication.model.ChatMessagePart
+import com.example.myapplication.model.ChatReasoningStep
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.cancelAndJoin
@@ -16,7 +17,12 @@ internal object ChatStreamingSupport {
     suspend fun collectStreamingReply(
         streamBuffer: StreamingReplyBuffer,
         streamEvents: Flow<com.example.myapplication.model.ChatStreamEvent>,
-        publishFrame: (content: String, reasoning: String, parts: List<ChatMessagePart>) -> Unit,
+        publishFrame: (
+            content: String,
+            reasoning: String,
+            reasoningSteps: List<ChatReasoningStep>,
+            parts: List<ChatMessagePart>,
+        ) -> Unit,
     ) = coroutineScope {
         var streamCompleted = false
         val uiPumpJob: Job = launch {
@@ -26,6 +32,7 @@ internal object ChatStreamingSupport {
                     publishFrame(
                         streamBuffer.visibleContent(),
                         streamBuffer.visibleReasoning(),
+                        streamBuffer.visibleReasoningSteps(),
                         streamBuffer.visibleParts(),
                     )
                 }
@@ -37,6 +44,7 @@ internal object ChatStreamingSupport {
             publishFrame(
                 streamBuffer.content(),
                 streamBuffer.reasoning(),
+                streamBuffer.reasoningSteps(),
                 streamBuffer.parts(),
             )
         }
@@ -46,7 +54,19 @@ internal object ChatStreamingSupport {
                 when (event) {
                     is com.example.myapplication.model.ChatStreamEvent.ContentDelta -> streamBuffer.appendContent(event.value)
                     is com.example.myapplication.model.ChatStreamEvent.ImageDelta -> streamBuffer.appendImage(event.part)
-                    is com.example.myapplication.model.ChatStreamEvent.ReasoningDelta -> streamBuffer.appendReasoning(event.value)
+                    is com.example.myapplication.model.ChatStreamEvent.ReasoningStepStarted -> streamBuffer.startReasoningStep(
+                        stepId = event.stepId,
+                        createdAt = event.createdAt,
+                    )
+                    is com.example.myapplication.model.ChatStreamEvent.ReasoningStepDelta -> streamBuffer.appendReasoningStepDelta(
+                        stepId = event.stepId,
+                        value = event.value,
+                    )
+                    is com.example.myapplication.model.ChatStreamEvent.ReasoningStepCompleted -> streamBuffer.completeReasoningStep(
+                        stepId = event.stepId,
+                        finishedAt = event.finishedAt,
+                    )
+                    is com.example.myapplication.model.ChatStreamEvent.ReasoningDelta -> Unit
                     is com.example.myapplication.model.ChatStreamEvent.Citations -> streamBuffer.setCitations(event.items)
                     com.example.myapplication.model.ChatStreamEvent.Completed -> streamCompleted = true
                 }

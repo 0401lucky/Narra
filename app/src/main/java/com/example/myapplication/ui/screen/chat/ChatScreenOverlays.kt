@@ -4,6 +4,7 @@ import androidx.compose.runtime.Composable
 import com.example.myapplication.ui.component.ContextGovernanceSheet
 import com.example.myapplication.model.ChatSpecialPlayDraft
 import com.example.myapplication.model.ChatSpecialType
+import com.example.myapplication.model.ChatMessage
 import com.example.myapplication.viewmodel.ChatUiState
 
 @Composable
@@ -55,6 +56,18 @@ internal fun ChatScreenOverlays(
     onExportMarkdown: () -> Unit,
     onCopyPlainText: () -> Unit,
     onShareConversation: () -> Unit,
+    activeMessageAction: ChatMessage?,
+    onDismissMessageAction: () -> Unit,
+    onSelectMessageCopy: (ChatMessage) -> Unit,
+    onOpenMessagePreviewPayload: (ChatMessage) -> Unit,
+    onExportMessageMarkdown: (ChatMessage) -> Unit,
+    onShareMessage: (ChatMessage) -> Unit,
+    onEditUserMessage: (ChatMessage) -> Unit,
+    onRetryMessage: (ChatMessage) -> Unit,
+    messageSelectionPayload: ChatMessageSelectionPayload?,
+    onDismissMessageSelection: () -> Unit,
+    messagePreviewPayload: ChatMessagePreviewPayload?,
+    onDismissMessagePreview: () -> Unit,
 ) {
     if (showProfileSheet) {
         ProfileEditorSheet(
@@ -146,6 +159,46 @@ internal fun ChatScreenOverlays(
             onExportMarkdown = onExportMarkdown,
             onCopyPlainText = onCopyPlainText,
             onShareConversation = onShareConversation,
+        )
+    }
+
+    activeMessageAction?.let { message ->
+        val availability = resolveMessageActionAvailability(message)
+        ChatMessageActionSheet(
+            message = message,
+            onDismissRequest = onDismissMessageAction,
+            onSelectAndCopy = { onSelectMessageCopy(message) },
+            onOpenPreview = if (availability.canPreview) {
+                { onOpenMessagePreviewPayload(message) }
+            } else {
+                null
+            },
+            onExportMarkdown = { onExportMessageMarkdown(message) },
+            onShareMessage = { onShareMessage(message) },
+            onEditUserMessage = if (availability.canEditUserMessage) {
+                { onEditUserMessage(message) }
+            } else {
+                null
+            },
+            onRegenerate = if (availability.canRegenerate) {
+                { onRetryMessage(message) }
+            } else {
+                null
+            },
+        )
+    }
+
+    messageSelectionPayload?.let { payload ->
+        ChatMessageSelectionSheet(
+            payload = payload,
+            onDismissRequest = onDismissMessageSelection,
+        )
+    }
+
+    messagePreviewPayload?.let { payload ->
+        ChatMessagePreviewDialog(
+            payload = payload,
+            onDismissRequest = onDismissMessagePreview,
         )
     }
 }

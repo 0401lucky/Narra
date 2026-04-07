@@ -52,6 +52,8 @@ internal fun ChatConversationPane(
     onSend: () -> Unit,
     onOpenConversationDrawer: () -> Unit,
     onRetryMessage: (String) -> Unit,
+    onOpenMessageActions: (String) -> Unit,
+    onOpenUrlPreview: (String, String) -> Unit,
     onToggleMemoryMessage: (String) -> Unit,
     onTranslateMessage: (String) -> Unit,
     onConfirmTransferReceipt: (String) -> Unit,
@@ -141,6 +143,8 @@ internal fun ChatConversationPane(
                         shouldAutoFollowStreaming = shouldAutoFollowStreaming,
                         performanceMode = performanceMode,
                         onRetryMessage = onRetryMessage,
+                        onOpenMessageActions = onOpenMessageActions,
+                        onOpenUrlPreview = onOpenUrlPreview,
                         onToggleMemoryMessage = onToggleMemoryMessage,
                         onTranslateMessage = onTranslateMessage,
                         onConfirmTransferReceipt = onConfirmTransferReceipt,
@@ -224,6 +228,8 @@ private fun ColumnScope.ChatMessageListPane(
     shouldAutoFollowStreaming: Boolean,
     performanceMode: ChatMessagePerformanceMode,
     onRetryMessage: (String) -> Unit,
+    onOpenMessageActions: (String) -> Unit,
+    onOpenUrlPreview: (String, String) -> Unit,
     onToggleMemoryMessage: (String) -> Unit,
     onTranslateMessage: (String) -> Unit,
     onConfirmTransferReceipt: (String) -> Unit,
@@ -257,15 +263,22 @@ private fun ColumnScope.ChatMessageListPane(
                     } else {
                         null
                     },
+                    streamingReasoningSteps = if (message.id == uiState.streamingMessageId) {
+                        uiState.streamingReasoningSteps
+                    } else {
+                        null
+                    },
                     streamingParts = if (message.id == uiState.streamingMessageId) {
                         uiState.streamingParts
                     } else {
                         null
                     },
                     onRetry = onRetryMessage,
+                    onOpenMessageActions = onOpenMessageActions,
                     onToggleMemory = onToggleMemoryMessage,
                     isRemembered = message.id in uiState.rememberedMessageIds,
                     onTranslate = onTranslateMessage,
+                    onOpenUrlPreview = onOpenUrlPreview,
                     messageTextScale = uiState.settings.messageTextScale,
                     reasoningExpandedByDefault = uiState.settings.reasoningExpandedByDefault,
                     showThinkingContent = uiState.settings.showThinkingContent,

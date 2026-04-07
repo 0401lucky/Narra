@@ -122,6 +122,7 @@ object ChatRetrySupport {
             content = "",
             status = MessageStatus.LOADING,
             reasoningContent = "",
+            reasoningSteps = emptyList(),
             attachments = emptyList(),
             parts = emptyList(),
         )

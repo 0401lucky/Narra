@@ -161,6 +161,7 @@ object ChatStateSupport {
             streamingMessageId = "",
             streamingContent = "",
             streamingReasoningContent = "",
+            streamingReasoningSteps = emptyList(),
             streamingParts = emptyList(),
             isConversationReady = false,
             hasConversationSummary = false,
@@ -197,6 +198,7 @@ object ChatStateSupport {
             streamingMessageId = "",
             streamingContent = "",
             streamingReasoningContent = "",
+            streamingReasoningSteps = emptyList(),
             streamingParts = emptyList(),
             isConversationReady = true,
         )
@@ -266,6 +268,33 @@ object ChatStateSupport {
         )
     }
 
+    fun applyPreparedEdit(
+        current: ChatUiState,
+        restoredInput: String,
+        restoredPendingParts: List<ChatMessagePart>,
+        rewoundMessages: List<ChatMessage>,
+    ): ChatUiState {
+        return current.copy(
+            messages = rewoundMessages,
+            input = restoredInput,
+            pendingParts = restoredPendingParts,
+            streamingMessageId = "",
+            streamingContent = "",
+            streamingReasoningContent = "",
+            streamingReasoningSteps = emptyList(),
+            streamingParts = emptyList(),
+            chatSuggestions = emptyList(),
+            chatSuggestionsModelName = "",
+            hasConversationSummary = false,
+            summaryCoveredMessageCount = 0,
+            latestPromptDebugDump = "",
+            contextGovernance = null,
+            translation = TranslationUiState(),
+            errorMessage = null,
+            noticeMessage = "已回退到这条用户消息，可修改后重新发送",
+        )
+    }
+
     fun finishSending(
         current: ChatUiState,
         messages: List<ChatMessage>,
@@ -276,6 +305,7 @@ object ChatStateSupport {
             streamingMessageId = "",
             streamingContent = "",
             streamingReasoningContent = "",
+            streamingReasoningSteps = emptyList(),
             streamingParts = emptyList(),
             isSending = false,
             errorMessage = errorMessage,
@@ -295,6 +325,7 @@ object ChatStateSupport {
             streamingMessageId = "",
             streamingContent = "",
             streamingReasoningContent = "",
+            streamingReasoningSteps = emptyList(),
             streamingParts = emptyList(),
             input = "",
             pendingParts = emptyList(),
