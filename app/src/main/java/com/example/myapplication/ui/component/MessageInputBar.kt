@@ -88,7 +88,7 @@ fun MessageInputBar(
     onOpenReasoningPicker: () -> Unit,
     searchEnabled: Boolean,
     searchAvailable: Boolean,
-    onToggleSearch: () -> Unit,
+    onOpenSearchPicker: () -> Unit,
     onSearchUnavailableClick: (() -> Unit)? = null,
     onTranslateInputClick: () -> Unit,
     onPickImageClick: () -> Unit,
@@ -322,13 +322,7 @@ fun MessageInputBar(
                         enabled = enabled && !isSending,
                         available = searchAvailable,
                         selected = searchEnabled,
-                        onClick = {
-                            if (searchAvailable) {
-                                onToggleSearch()
-                            } else {
-                                onSearchUnavailableClick?.invoke()
-                            }
-                        },
+                        onClick = onOpenSearchPicker,
                     )
 
                     TranslationActionChip(

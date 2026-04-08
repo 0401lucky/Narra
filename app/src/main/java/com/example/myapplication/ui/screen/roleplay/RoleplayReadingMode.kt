@@ -41,6 +41,7 @@ import com.example.myapplication.ui.component.roleplay.ImmersiveGlassSurface
 import com.example.myapplication.ui.component.roleplay.RoleplayEmotionChip
 import com.example.myapplication.ui.component.roleplay.RoleplayLongformCard
 import com.example.myapplication.ui.component.roleplay.RoleplayQuotedDialogueHighlightColor
+import com.example.myapplication.ui.component.roleplay.toLongformParagraphs
 import com.example.myapplication.ui.component.roleplay.RoleplaySceneBackground
 import com.example.myapplication.ui.component.roleplay.buildCharacterDialogueAnnotatedString
 import com.example.myapplication.ui.component.roleplay.buildQuotedDialogueAnnotatedString
@@ -196,7 +197,7 @@ private fun NarrationReadingBlock(
     lineHeightScale: Float,
 ) {
     val paragraphs = remember(message.content) {
-        message.content.split('\n').map { it.trim() }.filter { it.isNotEmpty() }
+        message.content.toLongformParagraphs()
     }
     Column(
         modifier = Modifier
@@ -277,9 +278,7 @@ private fun DialogueReadingBlock(
                     )
                 }
             }
-            val paragraphs = remember(message.content) {
-                message.content.split('\n').map { it.trim() }.filter { it.isNotEmpty() }
-            }
+            val paragraphs = remember(message.content) { message.content.toLongformParagraphs() }
             Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
                 paragraphs.forEach { paragraph ->
                     Text(

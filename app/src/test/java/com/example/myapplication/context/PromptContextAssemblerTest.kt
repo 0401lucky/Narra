@@ -7,6 +7,7 @@ import com.example.myapplication.model.Conversation
 import com.example.myapplication.model.ConversationSummary
 import com.example.myapplication.model.MemoryEntry
 import com.example.myapplication.model.MemoryScopeType
+import com.example.myapplication.model.PromptMode
 import com.example.myapplication.model.WorldBookEntry
 import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertEquals
@@ -274,5 +275,28 @@ class PromptContextAssemblerTest {
         assertTrue(result.systemPrompt.contains("【对话摘要】"))
         assertTrue(result.systemPrompt.contains("用户正在调查白塔城的失窃案"))
         assertTrue(result.debugDump.contains("摘要注入：是（覆盖 18 条）"))
+    }
+
+    @Test
+    fun assemble_roleplayIncludesDescriptionAndCreatorNotes() = runBlocking {
+        val result = assembler.assemble(
+            settings = AppSettings(),
+            assistant = Assistant(
+                id = "assistant-1",
+                name = "余罪",
+                systemPrompt = "你要一直维持角色口吻。",
+                description = "嘴硬、警惕、反应快，遇到逼问时会先试探再回击。",
+                creatorNotes = "重点写出余罪那种压着火气、边试探边推进局势的感觉。",
+            ),
+            conversation = Conversation(id = "c1", createdAt = 1L, updatedAt = 1L),
+            userInputText = "继续逼问他",
+            recentMessages = emptyList(),
+            promptMode = PromptMode.ROLEPLAY,
+        )
+
+        assertTrue(result.systemPrompt.contains("【角色核心设定】"))
+        assertTrue(result.systemPrompt.contains("嘴硬、警惕、反应快"))
+        assertTrue(result.systemPrompt.contains("【创作者导演说明】"))
+        assertTrue(result.systemPrompt.contains("边试探边推进局势"))
     }
 }

@@ -4,8 +4,10 @@ import com.example.myapplication.model.ChatMessage
 import com.example.myapplication.model.ChatReasoningStep
 import com.example.myapplication.model.MessageCitation
 import com.example.myapplication.model.MessageRole
+import com.example.myapplication.model.textMessagePart
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
@@ -78,6 +80,7 @@ class ChatUtilitySheetsTest {
                 ),
                 citations = listOf(
                     MessageCitation(
+                        id = "cite001",
                         title = "OpenAI",
                         url = "https://openai.com",
                         sourceLabel = "官网",
@@ -90,6 +93,55 @@ class ChatUtilitySheetsTest {
         assertTrue(markdown.contains("**分析目标**"))
         assertTrue(markdown.contains("### 引用来源"))
         assertTrue(markdown.contains("[OpenAI](https://openai.com)"))
+    }
+
+    @Test
+    fun buildSearchResultPreviewPayload_parsesItemsAndAnswer() {
+        val payload = buildSearchResultPreviewPayload(
+            ChatMessage(
+                id = "m1",
+                role = MessageRole.ASSISTANT,
+                content = "",
+                parts = listOf(
+                    textMessagePart(
+                        """
+                        {
+                          "query": "今天天气",
+                          "answer": "今天整体晴朗。",
+                          "items": [
+                            {
+                              "id": "w001",
+                              "title": "天气网",
+                              "url": "https://weather.example.com",
+                              "text": "今日晴天",
+                              "sourceLabel": "LLM 搜索"
+                            }
+                          ]
+                        }
+                        """.trimIndent(),
+                    ),
+                ),
+                modelName = "grok-4.20-reasoning",
+            ),
+        )
+
+        assertNotNull(payload)
+        assertEquals("今天天气", payload?.query)
+        assertEquals("今天整体晴朗。", payload?.answer)
+        assertEquals("w001", payload?.items?.single()?.id)
+    }
+
+    @Test
+    fun buildSearchResultPreviewPayload_returnsNullForNormalMessage() {
+        val payload = buildSearchResultPreviewPayload(
+            ChatMessage(
+                id = "m1",
+                role = MessageRole.ASSISTANT,
+                content = "普通回复",
+            ),
+        )
+
+        assertEquals(null, payload)
     }
 
     @Test

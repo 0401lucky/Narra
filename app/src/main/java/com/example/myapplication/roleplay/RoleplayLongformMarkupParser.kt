@@ -27,11 +27,33 @@ object RoleplayLongformMarkupParser {
     private val supportedTagRegex = Regex("""(?is)</?(char|thought)>""")
     private val parserTagRegex = Regex("""(?is)<(/?)(char|thought)>""")
     private val danglingTagRegex = Regex("""(?is)<[^>\n]*$""")
+    private val paragraphBreakRegex = Regex("""\n\s*\n+""")
+    private val strongBoundaryChars = setOf('。', '！', '？', '!', '?', '；', ';')
+    private val weakBoundaryChars = setOf('，', '、', '：')
+    private val weakBoundaryCueWords = listOf(
+        "他", "她", "我", "你", "对方", "随后", "接着", "紧接着", "然后",
+        "可", "但", "却", "而", "于是", "片刻", "一时间", "下一秒", "与此同时", "忽然", "突然",
+    )
+
+    private const val SmartParagraphMinLength = 48
+    private const val SmartParagraphSoftMax = 92
+    private const val SmartParagraphHardMax = 144
 
     fun parseParagraphs(rawContent: String): List<RoleplayLongformParagraph> {
-        return rawContent.replace("\r\n", "\n")
-            .split("\n")
-            .map { paragraph -> parseParagraph(paragraph.trim()) }
+        val normalizedBlocks = normalizeParagraphBlocks(
+            rawContent = rawContent,
+            stripSupportedTags = false,
+        )
+        val shouldApplySmartFallback = normalizedBlocks.size <= 1
+        return normalizedBlocks
+            .flatMap { block ->
+                val paragraph = parseParagraph(block)
+                if (shouldApplySmartFallback) {
+                    splitParagraphIfNeeded(paragraph)
+                } else {
+                    listOf(paragraph)
+                }
+            }
             .filter { paragraph -> paragraph.spans.isNotEmpty() && paragraph.plainText.isNotBlank() }
     }
 
@@ -40,6 +62,24 @@ object RoleplayLongformMarkupParser {
             .replace(danglingTagRegex, "")
             .replace(supportedTagRegex, "")
             .trim()
+    }
+
+    fun splitDisplayParagraphs(rawContent: String): List<String> {
+        val normalizedBlocks = normalizeParagraphBlocks(
+            rawContent = rawContent,
+            stripSupportedTags = true,
+        )
+        val shouldApplySmartFallback = normalizedBlocks.size <= 1
+        return normalizedBlocks
+            .flatMap { block ->
+                if (shouldApplySmartFallback) {
+                    splitNarrationText(block)
+                } else {
+                    listOf(block)
+                }
+            }
+            .map { it.trim() }
+            .filter { it.isNotEmpty() }
     }
 
     private fun parseParagraph(paragraph: String): RoleplayLongformParagraph {
@@ -92,6 +132,78 @@ object RoleplayLongformMarkupParser {
         return RoleplayLongformParagraph(spans)
     }
 
+    private fun splitParagraphIfNeeded(
+        paragraph: RoleplayLongformParagraph,
+    ): List<RoleplayLongformParagraph> {
+        if (paragraph.plainText.length < SmartParagraphHardMax ||
+            paragraph.spans.none { it.type == RoleplayLongformSpanType.NARRATION }
+        ) {
+            return listOf(paragraph)
+        }
+
+        data class ParagraphUnit(
+            val span: RoleplayLongformSpan,
+            val prefersBoundaryAfter: Boolean = false,
+        )
+
+        val units = buildList {
+            paragraph.spans.forEach { span ->
+                if (span.type != RoleplayLongformSpanType.NARRATION) {
+                    add(ParagraphUnit(span))
+                    return@forEach
+                }
+                val chunks = splitNarrationText(span.text)
+                chunks.forEachIndexed { index, chunk ->
+                    add(
+                        ParagraphUnit(
+                            span = span.copy(text = chunk),
+                            prefersBoundaryAfter = index < chunks.lastIndex,
+                        ),
+                    )
+                }
+            }
+        }
+        if (units.none { it.prefersBoundaryAfter }) {
+            return listOf(paragraph)
+        }
+
+        val paragraphs = mutableListOf<RoleplayLongformParagraph>()
+        val currentSpans = mutableListOf<RoleplayLongformSpan>()
+        var currentLength = 0
+
+        fun flushCurrentParagraph() {
+            if (currentSpans.isEmpty()) {
+                return
+            }
+            paragraphs += RoleplayLongformParagraph(currentSpans.toList())
+            currentSpans.clear()
+            currentLength = 0
+        }
+
+        units.forEachIndexed { index, unit ->
+            currentSpans += unit.span
+            currentLength += unit.span.text.length
+            val nextUnit = units.getOrNull(index + 1)
+            val shouldFlush = when {
+                unit.prefersBoundaryAfter &&
+                    currentLength >= SmartParagraphMinLength &&
+                    (nextUnit == null ||
+                        nextUnit.span.type == RoleplayLongformSpanType.NARRATION ||
+                        currentLength >= SmartParagraphSoftMax) -> true
+
+                currentLength >= SmartParagraphHardMax &&
+                    currentSpans.any { it.type == RoleplayLongformSpanType.NARRATION } -> true
+
+                else -> false
+            }
+            if (shouldFlush) {
+                flushCurrentParagraph()
+            }
+        }
+        flushCurrentParagraph()
+        return mergeTinyTrailingParagraphs(paragraphs)
+    }
+
     private fun appendSpan(
         target: MutableList<RoleplayLongformSpan>,
         text: String,
@@ -117,5 +229,189 @@ object RoleplayLongformMarkupParser {
                 type = type,
             )
         }
+    }
+
+    private fun normalizeParagraphBlocks(
+        rawContent: String,
+        stripSupportedTags: Boolean,
+    ): List<String> {
+        var normalized = rawContent.replace("\r\n", "\n")
+            .replace(danglingTagRegex, "")
+            .trim()
+        if (stripSupportedTags) {
+            normalized = normalized.replace(supportedTagRegex, "")
+        }
+        if (normalized.isBlank()) {
+            return emptyList()
+        }
+
+        val explicitBlocks = normalized
+            .split(paragraphBreakRegex)
+            .mapNotNull { block ->
+                normalizeInlineLineBreaks(block)
+                    .takeIf { it.isNotBlank() }
+            }
+        if (explicitBlocks.size > 1) {
+            return explicitBlocks
+        }
+
+        val nonBlankLines = normalized.lines()
+            .map { it.trim() }
+            .filter { it.isNotEmpty() }
+        if (looksLikeIntentionalSingleLineParagraphs(nonBlankLines)) {
+            return nonBlankLines
+        }
+
+        return listOf(normalizeInlineLineBreaks(normalized))
+    }
+
+    private fun normalizeInlineLineBreaks(
+        rawBlock: String,
+    ): String {
+        return rawBlock.lines()
+            .map { it.trim() }
+            .filter { it.isNotEmpty() }
+            .joinToString(separator = " ")
+            .replace(Regex("""[ \t]{2,}"""), " ")
+            .trim()
+    }
+
+    private fun looksLikeIntentionalSingleLineParagraphs(
+        lines: List<String>,
+    ): Boolean {
+        if (lines.size <= 1) {
+            return false
+        }
+        val paragraphLikeLines = lines.count { line ->
+            val lastChar = line.lastOrNull()
+            lastChar in strongBoundaryChars ||
+                lastChar == '”' ||
+                lastChar == '"' ||
+                lastChar == '）' ||
+                lastChar == ')'
+        }
+        return paragraphLikeLines >= (lines.size + 1) / 2
+    }
+
+    private fun splitNarrationText(
+        rawText: String,
+    ): List<String> {
+        val text = rawText.replace(Regex("""\s+"""), " ").trim()
+        if (text.length <= SmartParagraphHardMax) {
+            return listOf(text)
+        }
+
+        val result = mutableListOf<String>()
+        var start = 0
+        var lastStrongBoundary = -1
+        var lastWeakBoundary = -1
+
+        fun cutAt(endExclusive: Int) {
+            if (endExclusive <= start) {
+                return
+            }
+            val chunk = text.substring(start, endExclusive).trim()
+            if (chunk.isNotBlank()) {
+                result += chunk
+            }
+            start = endExclusive
+            while (start < text.length && text[start].isWhitespace()) {
+                start++
+            }
+            if (lastStrongBoundary <= start) {
+                lastStrongBoundary = -1
+            }
+            if (lastWeakBoundary <= start) {
+                lastWeakBoundary = -1
+            }
+        }
+
+        for (index in text.indices) {
+            if (index < start) {
+                continue
+            }
+            when {
+                isStrongBoundary(text, index) -> lastStrongBoundary = index + 1
+                isWeakBoundary(text, index) -> lastWeakBoundary = index + 1
+            }
+
+            val currentLength = index + 1 - start
+            when {
+                currentLength >= SmartParagraphHardMax -> {
+                    val cutIndex = when {
+                        lastStrongBoundary - start >= SmartParagraphMinLength -> lastStrongBoundary
+                        lastWeakBoundary - start >= SmartParagraphMinLength -> lastWeakBoundary
+                        else -> index + 1
+                    }
+                    cutAt(cutIndex)
+                }
+
+                currentLength >= SmartParagraphSoftMax &&
+                    lastStrongBoundary - start >= SmartParagraphMinLength -> {
+                    cutAt(lastStrongBoundary)
+                }
+            }
+        }
+
+        if (start < text.length) {
+            cutAt(text.length)
+        }
+
+        return mergeTinyTrailingChunks(result)
+    }
+
+    private fun isStrongBoundary(
+        text: String,
+        index: Int,
+    ): Boolean {
+        val current = text[index]
+        if (current in strongBoundaryChars) {
+            return true
+        }
+        return when (current) {
+            '”', '"', '）', ')' -> true
+            else -> false
+        }
+    }
+
+    private fun isWeakBoundary(
+        text: String,
+        index: Int,
+    ): Boolean {
+        val current = text[index]
+        if (current !in weakBoundaryChars) {
+            return false
+        }
+        val next = text.substring(index + 1).trimStart()
+        return weakBoundaryCueWords.any { cue -> next.startsWith(cue) }
+    }
+
+    private fun mergeTinyTrailingChunks(
+        chunks: List<String>,
+    ): List<String> {
+        if (chunks.size < 2) {
+            return chunks
+        }
+        val merged = chunks.toMutableList()
+        while (merged.size >= 2 && merged.last().length < 20) {
+            val tail = merged.removeAt(merged.lastIndex)
+            merged[merged.lastIndex] = "${merged.last()}$tail"
+        }
+        return merged
+    }
+
+    private fun mergeTinyTrailingParagraphs(
+        paragraphs: List<RoleplayLongformParagraph>,
+    ): List<RoleplayLongformParagraph> {
+        if (paragraphs.size < 2) {
+            return paragraphs
+        }
+        val merged = paragraphs.toMutableList()
+        while (merged.size >= 2 && merged.last().plainText.length < 20) {
+            val tail = merged.removeAt(merged.lastIndex)
+            val previous = merged.removeAt(merged.lastIndex)
+            merged += RoleplayLongformParagraph(previous.spans + tail.spans)
+        }
+        return merged
     }
 }

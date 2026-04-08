@@ -15,10 +15,12 @@ import java.util.concurrent.TimeUnit
 
 data class SearchResult(
     val query: String,
+    val answer: String = "",
     val items: List<SearchResultItem> = emptyList(),
 )
 
 data class SearchResultItem(
+    val id: String = "",
     val title: String,
     val url: String,
     val snippet: String,
@@ -28,6 +30,7 @@ data class SearchResultItem(
 fun SearchResult.toCitations(): List<MessageCitation> {
     return items.map { item ->
         MessageCitation(
+            id = item.id,
             title = item.title,
             url = item.url,
             sourceLabel = item.sourceLabel,
@@ -108,13 +111,18 @@ class DefaultSearchRepository(
                         return@mapNotNull null
                     }
                     SearchResultItem(
+                        id = stableSearchResultId(urlValue),
                         title = title,
                         url = urlValue,
                         snippet = item.get("description")?.asString.orEmpty().trim(),
                         sourceLabel = source.name.ifBlank { source.type.label },
                     )
                 }
-            SearchResult(query = query, items = items)
+            SearchResult(
+                query = query,
+                answer = items.firstOrNull()?.snippet.orEmpty(),
+                items = deduplicateSearchItems(items).take(resultCount),
+            )
         }
     }
 
@@ -154,13 +162,18 @@ class DefaultSearchRepository(
                         return@mapNotNull null
                     }
                     SearchResultItem(
+                        id = stableSearchResultId(urlValue),
                         title = title,
                         url = urlValue,
                         snippet = item.get("content")?.asString.orEmpty().trim(),
                         sourceLabel = source.name.ifBlank { source.type.label },
                     )
                 }
-            SearchResult(query = query, items = items)
+            SearchResult(
+                query = query,
+                answer = items.firstOrNull()?.snippet.orEmpty(),
+                items = deduplicateSearchItems(items).take(resultCount),
+            )
         }
     }
 
@@ -197,13 +210,18 @@ class DefaultSearchRepository(
                         return@mapNotNull null
                     }
                     SearchResultItem(
+                        id = stableSearchResultId(urlValue),
                         title = title,
                         url = urlValue,
                         snippet = item.get("snippet")?.asString.orEmpty().trim(),
                         sourceLabel = source.name.ifBlank { source.type.label },
                     )
                 }
-            SearchResult(query = query, items = items)
+            SearchResult(
+                query = query,
+                answer = items.firstOrNull()?.snippet.orEmpty(),
+                items = deduplicateSearchItems(items).take(resultCount),
+            )
         }
     }
 
@@ -215,5 +233,41 @@ class DefaultSearchRepository(
         return "\"" + value
             .replace("\\", "\\\\")
             .replace("\"", "\\\"") + "\""
+    }
+
+    private fun deduplicateSearchItems(
+        items: List<SearchResultItem>,
+    ): List<SearchResultItem> {
+        return items
+            .groupBy { normalizeSearchUrl(it.url) }
+            .values
+            .map { group ->
+                group.maxWithOrNull(
+                    compareBy<SearchResultItem>(
+                        { it.title.isNotBlank() },
+                        { it.snippet.length },
+                    ),
+                ) ?: group.first()
+            }
+            .filter { it.url.isNotBlank() }
+    }
+
+    private fun normalizeSearchUrl(url: String): String {
+        return runCatching {
+            val parsed = url.toHttpUrl()
+            parsed.newBuilder()
+                .fragment(null)
+                .build()
+                .toString()
+                .trimEnd('/')
+        }.getOrDefault(url.trim().trimEnd('/'))
+    }
+
+    private fun stableSearchResultId(url: String): String {
+        val normalized = normalizeSearchUrl(url)
+        return normalized.hashCode()
+            .toUInt()
+            .toString(16)
+            .takeLast(8)
     }
 }

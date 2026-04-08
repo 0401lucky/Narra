@@ -18,6 +18,8 @@ internal data class ChatScreenLocalState(
     val setShowModelSheet: (Boolean) -> Unit,
     val showReasoningSheet: Boolean,
     val setShowReasoningSheet: (Boolean) -> Unit,
+    val showSearchPickerSheet: Boolean,
+    val setShowSearchPickerSheet: (Boolean) -> Unit,
     val showProfileSheet: Boolean,
     val setShowProfileSheet: (Boolean) -> Unit,
     val showExportSheet: Boolean,
@@ -50,6 +52,8 @@ internal data class ChatScreenLocalState(
     val setMessageSelectionPayload: (ChatMessageSelectionPayload?) -> Unit,
     val messagePreviewPayload: ChatMessagePreviewPayload?,
     val setMessagePreviewPayload: (ChatMessagePreviewPayload?) -> Unit,
+    val searchResultPreviewPayload: ChatSearchResultPreviewPayload?,
+    val setSearchResultPreviewPayload: (ChatSearchResultPreviewPayload?) -> Unit,
     val pendingMessageExport: ChatMessageExportPayload?,
     val setPendingMessageExport: (ChatMessageExportPayload?) -> Unit,
     val openProfileSheet: () -> Unit,
@@ -81,6 +85,7 @@ internal fun rememberChatScreenLocalState(
 ): ChatScreenLocalState {
     var showModelSheet by rememberSaveable { mutableStateOf(false) }
     var showReasoningSheet by rememberSaveable { mutableStateOf(false) }
+    var showSearchPickerSheet by rememberSaveable { mutableStateOf(false) }
     var showProfileSheet by rememberSaveable { mutableStateOf(false) }
     var showExportSheet by rememberSaveable { mutableStateOf(false) }
     var showPromptDebugSheet by rememberSaveable { mutableStateOf(false) }
@@ -105,6 +110,7 @@ internal fun rememberChatScreenLocalState(
     var activeMessageActionId by remember { mutableStateOf<String?>(null) }
     var messageSelectionPayload by remember { mutableStateOf<ChatMessageSelectionPayload?>(null) }
     var messagePreviewPayload by remember { mutableStateOf<ChatMessagePreviewPayload?>(null) }
+    var searchResultPreviewPayload by remember { mutableStateOf<ChatSearchResultPreviewPayload?>(null) }
     var pendingMessageExport by remember { mutableStateOf<ChatMessageExportPayload?>(null) }
 
     return ChatScreenLocalState(
@@ -112,6 +118,8 @@ internal fun rememberChatScreenLocalState(
         setShowModelSheet = { showModelSheet = it },
         showReasoningSheet = showReasoningSheet,
         setShowReasoningSheet = { showReasoningSheet = it },
+        showSearchPickerSheet = showSearchPickerSheet,
+        setShowSearchPickerSheet = { showSearchPickerSheet = it },
         showProfileSheet = showProfileSheet,
         setShowProfileSheet = { showProfileSheet = it },
         showExportSheet = showExportSheet,
@@ -144,6 +152,8 @@ internal fun rememberChatScreenLocalState(
         setMessageSelectionPayload = { messageSelectionPayload = it },
         messagePreviewPayload = messagePreviewPayload,
         setMessagePreviewPayload = { messagePreviewPayload = it },
+        searchResultPreviewPayload = searchResultPreviewPayload,
+        setSearchResultPreviewPayload = { searchResultPreviewPayload = it },
         pendingMessageExport = pendingMessageExport,
         setPendingMessageExport = { pendingMessageExport = it },
         openProfileSheet = {

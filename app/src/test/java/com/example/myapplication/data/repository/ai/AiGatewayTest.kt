@@ -1596,16 +1596,18 @@ class AiGatewayTest {
             ): SearchResult {
                 return SearchResult(
                     query = query,
+                    answer = "这是搜索摘要结论",
                     items = listOf(
                         SearchResultItem(
+                            id = "demo001",
                             title = "示例来源",
                             url = "https://example.com/search",
                             snippet = "这是搜索摘要",
                             sourceLabel = source.name,
                         ),
-                    ),
-                )
-            }
+            ),
+        )
+    }
         }
     }
 }

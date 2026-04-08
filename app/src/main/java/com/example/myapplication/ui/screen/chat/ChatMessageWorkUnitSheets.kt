@@ -10,9 +10,11 @@ import android.webkit.WebViewClient
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -29,6 +31,7 @@ import androidx.compose.material.icons.filled.ContentCopy
 import androidx.compose.material.icons.filled.Description
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Refresh
+import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material3.Card
@@ -76,6 +79,7 @@ internal fun ChatMessageActionSheet(
     onDismissRequest: () -> Unit,
     onSelectAndCopy: () -> Unit,
     onOpenPreview: (() -> Unit)?,
+    onOpenSearchResults: (() -> Unit)?,
     onExportMarkdown: () -> Unit,
     onShareMessage: () -> Unit,
     onEditUserMessage: (() -> Unit)?,
@@ -112,6 +116,17 @@ internal fun ChatMessageActionSheet(
                     onClick = {
                         onDismissRequest()
                         onOpenPreview()
+                    },
+                )
+            }
+
+            if (onOpenSearchResults != null) {
+                MessageActionCard(
+                    title = "查看搜索结果",
+                    icon = Icons.Default.Search,
+                    onClick = {
+                        onDismissRequest()
+                        onOpenSearchResults()
                     },
                 )
             }
@@ -166,6 +181,121 @@ internal fun ChatMessageActionSheet(
                     style = MaterialTheme.typography.labelMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
+            }
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+internal fun ChatSearchResultPreviewSheet(
+    payload: ChatSearchResultPreviewPayload,
+    onDismissRequest: () -> Unit,
+    onOpenUrlPreview: (String, String) -> Unit,
+) {
+    ModalBottomSheet(
+        onDismissRequest = onDismissRequest,
+        sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
+    ) {
+        LazyColumn(
+            modifier = Modifier
+                .fillMaxWidth()
+                .navigationBarsPadding(),
+            contentPadding = androidx.compose.foundation.layout.PaddingValues(
+                start = 18.dp,
+                top = 8.dp,
+                end = 18.dp,
+                bottom = 24.dp,
+            ),
+            verticalArrangement = Arrangement.spacedBy(12.dp),
+        ) {
+            item {
+                Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                    Text(
+                        text = payload.title,
+                        style = MaterialTheme.typography.titleLarge,
+                    )
+                    Text(
+                        text = "搜索词：${payload.query.ifBlank { "未记录" }}",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+            }
+
+            if (payload.answer.isNotBlank()) {
+                item {
+                    Surface(
+                        shape = RoundedCornerShape(18.dp),
+                        color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.72f),
+                    ) {
+                        Column(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = 14.dp, vertical = 12.dp),
+                            verticalArrangement = Arrangement.spacedBy(6.dp),
+                        ) {
+                            Text(
+                                text = "搜索摘要",
+                                style = MaterialTheme.typography.labelLarge,
+                                color = MaterialTheme.colorScheme.onPrimaryContainer,
+                                fontWeight = FontWeight.SemiBold,
+                            )
+                            Text(
+                                text = payload.answer,
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onPrimaryContainer,
+                            )
+                        }
+                    }
+                }
+            }
+
+            items(payload.items) { item ->
+                Surface(
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(18.dp),
+                    tonalElevation = 2.dp,
+                ) {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable {
+                                onOpenUrlPreview(
+                                    item.url,
+                                    item.title.ifBlank { item.url },
+                                )
+                            }
+                            .padding(horizontal = 14.dp, vertical = 12.dp),
+                        verticalArrangement = Arrangement.spacedBy(4.dp),
+                    ) {
+                        Text(
+                            text = item.title.ifBlank { item.url },
+                            style = MaterialTheme.typography.titleSmall,
+                            fontWeight = FontWeight.SemiBold,
+                        )
+                        if (item.snippet.isNotBlank()) {
+                            Text(
+                                text = item.snippet,
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                maxLines = 3,
+                                overflow = TextOverflow.Ellipsis,
+                            )
+                        }
+                        Text(
+                            text = buildString {
+                                append(item.sourceLabel.ifBlank { "搜索结果" })
+                                append(" · ")
+                                append(item.url)
+                            },
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                        )
+                    }
+                }
             }
         }
     }

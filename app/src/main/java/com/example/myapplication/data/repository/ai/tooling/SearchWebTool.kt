@@ -10,7 +10,7 @@ class SearchWebTool(
 ) : AppTool {
     override val name: String = NAME
 
-    override val description: String = "搜索网页并返回标题、链接和摘要，用于回答时引用最新来源。"
+    override val description: String = "搜索网页并返回结构化结果，用于回答时引用最新来源。使用搜索结果后，请在句末附加 [citation,domain](id) 形式的引用标记。"
 
     override val inputSchema: Map<String, Any> = mapOf(
         "type" to "object",
@@ -44,11 +44,26 @@ class SearchWebTool(
                 payload = gson.toJson(
                     mapOf(
                         "query" to result.query,
-                        "results" to result.items.map { item ->
+                        "answer" to result.answer,
+                        "items" to result.items.map { item ->
                             mapOf(
+                                "id" to item.id,
                                 "title" to item.title,
                                 "url" to item.url,
+                                "text" to item.snippet,
                                 "snippet" to item.snippet,
+                                "sourceLabel" to item.sourceLabel,
+                                "source" to item.sourceLabel,
+                            )
+                        },
+                        "results" to result.items.map { item ->
+                            mapOf(
+                                "id" to item.id,
+                                "title" to item.title,
+                                "url" to item.url,
+                                "text" to item.snippet,
+                                "snippet" to item.snippet,
+                                "sourceLabel" to item.sourceLabel,
                                 "source" to item.sourceLabel,
                             )
                         },
@@ -85,6 +100,8 @@ class SearchWebTool(
             payload = gson.toJson(
                 mapOf(
                     "query" to query,
+                    "answer" to "",
+                    "items" to emptyList<Map<String, String>>(),
                     "error" to message,
                     "results" to emptyList<Map<String, String>>(),
                 ),

@@ -43,7 +43,7 @@ class SearchModelExecutorTest {
                       "content": [
                         {
                           "type": "output_text",
-                          "text": "{\"query\":\"今天天气\",\"results\":[{\"title\":\"天气网\",\"url\":\"https://weather.example.com\",\"snippet\":\"今日晴天\",\"sourceLabel\":\"LLM 搜索\"}]}",
+                          "text": "{\"query\":\"今天天气\",\"answer\":\"今天整体以晴为主。\",\"items\":[{\"id\":\"w001\",\"title\":\"天气网\",\"url\":\"https://weather.example.com\",\"text\":\"今日晴天\",\"sourceLabel\":\"LLM 搜索\"}]}",
                           "annotations": [
                             {
                               "type": "url_citation",
@@ -91,7 +91,9 @@ class SearchModelExecutorTest {
         )
 
         assertEquals("今天天气", result.query)
+        assertEquals("今天整体以晴为主。", result.answer)
         assertEquals(1, result.items.size)
+        assertEquals("w001", result.items.single().id)
         assertEquals("https://weather.example.com", result.items.single().url)
         val request = server.takeRequest()
         assertEquals("/v1/responses", request.path)
@@ -121,7 +123,7 @@ class SearchModelExecutorTest {
                     },
                     {
                       "type": "text",
-                      "text": "{\"query\":\"今日新闻\",\"results\":[{\"title\":\"新闻站\",\"url\":\"https://news.example.com\",\"snippet\":\"今日头条摘要\",\"sourceLabel\":\"LLM 搜索\"}]}",
+                      "text": "{\"query\":\"今日新闻\",\"answer\":\"今天有一条重点新闻。\",\"items\":[{\"id\":\"n001\",\"title\":\"新闻站\",\"url\":\"https://news.example.com\",\"text\":\"今日头条摘要\",\"sourceLabel\":\"LLM 搜索\"}]}",
                       "citations": [
                         {
                           "type": "web_search_result_location",
@@ -167,7 +169,9 @@ class SearchModelExecutorTest {
             resultCount = 3,
         )
 
+        assertEquals("今天有一条重点新闻。", result.answer)
         assertEquals(1, result.items.size)
+        assertEquals("n001", result.items.single().id)
         assertEquals("https://news.example.com", result.items.single().url)
         val request = server.takeRequest()
         assertEquals("/v1/messages", request.path)
@@ -175,5 +179,71 @@ class SearchModelExecutorTest {
         assertEquals("claude-opus-4-6", requestJson["model"].asString)
         assertEquals("web_search_20250305", requestJson.getAsJsonArray("tools")[0].asJsonObject["type"].asString)
         assertTrue(request.getHeader("anthropic-version").orEmpty().isNotBlank())
+    }
+
+    @Test
+    fun search_fallsBackToCitationsWhenStructuredItemsMissing() = runBlocking {
+        server.enqueue(
+            MockResponse().setResponseCode(200).setBody(
+                """
+                {
+                  "id": "resp_1",
+                  "output": [
+                    {
+                      "type": "message",
+                      "content": [
+                        {
+                          "type": "output_text",
+                          "text": "今天的结论已经整理好了。",
+                          "annotations": [
+                            {
+                              "type": "url_citation",
+                              "url": "https://weather.example.com/today",
+                              "title": "天气网今日页"
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                }
+                """.trimIndent(),
+            ),
+        )
+        val provider = ProviderSettings(
+            id = "provider-responses",
+            name = "xAI",
+            baseUrl = server.url("/v1/").toString(),
+            apiKey = "search-key",
+            selectedModel = "grok-chat",
+            searchModel = "grok-4.20-reasoning",
+            openAiTextApiMode = OpenAiTextApiMode.RESPONSES,
+        )
+        val executor = SearchModelExecutor(
+            settingsStore = FakeSettingsStore(
+                AppSettings(
+                    providers = listOf(provider),
+                    selectedProviderId = provider.id,
+                ),
+            ),
+            apiServiceFactory = ApiServiceFactory(),
+        )
+
+        val result = executor.search(
+            source = com.example.myapplication.model.SearchSourceConfig(
+                id = com.example.myapplication.model.SearchSourceIds.LLM_SEARCH,
+                type = com.example.myapplication.model.SearchSourceType.LLM_SEARCH,
+                name = "LLM 搜索",
+                enabled = true,
+                providerId = provider.id,
+            ),
+            query = "今天天气",
+            resultCount = 3,
+        )
+
+        assertEquals("今天的结论已经整理好了。", result.answer)
+        assertEquals(1, result.items.size)
+        assertTrue(result.items.single().id.isNotBlank())
+        assertEquals("https://weather.example.com/today", result.items.single().url)
     }
 }

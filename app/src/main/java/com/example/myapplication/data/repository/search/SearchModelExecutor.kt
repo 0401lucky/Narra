@@ -14,6 +14,7 @@ import com.google.gson.JsonParser
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.withContext
+import okhttp3.HttpUrl.Companion.toHttpUrl
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
 import okhttp3.Request
@@ -29,6 +30,11 @@ class SearchModelExecutor(
         .writeTimeout(30, TimeUnit.SECONDS)
         .build(),
 ) {
+    private data class StructuredSearchPayload(
+        val answer: String,
+        val items: List<SearchResultItem>,
+    )
+
     suspend fun search(
         source: com.example.myapplication.model.SearchSourceConfig,
         query: String,
@@ -184,6 +190,7 @@ class SearchModelExecutor(
                             return@forEach
                         }
                         citations += SearchResultItem(
+                            id = stableSearchResultId(url),
                             title = annotation.getString("title").ifBlank { url },
                             url = url,
                             snippet = "",
@@ -200,6 +207,7 @@ class SearchModelExecutor(
                 return@forEach
             }
             citations += SearchResultItem(
+                id = stableSearchResultId(url),
                 title = citation.getString("title").ifBlank { url },
                 url = url,
                 snippet = citation.getString("cited_text"),
@@ -235,6 +243,7 @@ class SearchModelExecutor(
                             return@forEach
                         }
                         citations += SearchResultItem(
+                            id = stableSearchResultId(url),
                             title = citation.getString("title").ifBlank { url },
                             url = url,
                             snippet = citation.getString("cited_text"),
@@ -254,6 +263,7 @@ class SearchModelExecutor(
                             return@forEach
                         }
                         citations += SearchResultItem(
+                            id = stableSearchResultId(url),
                             title = result.getString("title").ifBlank { url },
                             url = url,
                             snippet = "",
@@ -279,38 +289,57 @@ class SearchModelExecutor(
         citations: List<SearchResultItem>,
         sourceLabel: String,
     ): SearchResult {
-        val structuredItems = parseStructuredResult(responseText, query, sourceLabel)
-        val mergedItems = (structuredItems + citations)
-            .filter { it.url.isNotBlank() }
-            .distinctBy(SearchResultItem::url)
+        val structured = parseStructuredResult(
+            text = responseText,
+            sourceLabel = sourceLabel,
+        )
+        val mergedItems = deduplicateSearchItems(structured.items + citations)
             .take(resultCount)
         return SearchResult(
             query = query,
+            answer = structured.answer,
             items = mergedItems,
         )
     }
 
     private fun parseStructuredResult(
         text: String,
-        fallbackQuery: String,
         sourceLabel: String,
-    ): List<SearchResultItem> {
-        val jsonText = extractJsonObject(text) ?: return emptyList()
+    ): StructuredSearchPayload {
+        val jsonText = extractJsonObject(text)
+            ?: return StructuredSearchPayload(
+                answer = text.trim(),
+                items = emptyList(),
+            )
         val root = runCatching { JsonParser.parseString(jsonText).asJsonObject }.getOrNull()
-            ?: return emptyList()
-        return root.getAsJsonArray("results").orEmpty().mapNotNull { itemElement ->
+            ?: return StructuredSearchPayload(
+                answer = text.trim(),
+                items = emptyList(),
+            )
+        val answer = root.getString("answer").trim()
+        val items = when {
+            root.getAsJsonArray("items") != null -> root.getAsJsonArray("items")
+            else -> root.getAsJsonArray("results")
+        }.orEmpty().mapNotNull { itemElement ->
             val item = itemElement.asJsonObject
             val url = item.getString("url").trim()
             if (url.isBlank()) {
                 return@mapNotNull null
             }
             SearchResultItem(
+                id = item.getString("id").ifBlank { stableSearchResultId(url) },
                 title = item.getString("title").ifBlank { url },
                 url = url,
-                snippet = item.getString("snippet"),
+                snippet = item.getString("text").ifBlank { item.getString("snippet") },
                 sourceLabel = item.getString("sourceLabel").ifBlank { sourceLabel },
             )
         }
+        return StructuredSearchPayload(
+            answer = answer.ifBlank {
+                items.firstOrNull()?.snippet.orEmpty()
+            },
+            items = items,
+        )
     }
 
     private fun extractJsonObject(text: String): String? {
@@ -358,11 +387,13 @@ class SearchModelExecutor(
             JSON 结构必须严格为：
             {
               "query": "原查询",
-              "results": [
+              "answer": "对搜索结果的简短总结",
+              "items": [
                 {
+                  "id": "稳定且简短的唯一 id",
                   "title": "来源标题",
                   "url": "https://example.com",
-                  "snippet": "与问题最相关的摘要",
+                  "text": "与问题最相关的摘要",
                   "sourceLabel": "LLM 搜索"
                 }
               ]
@@ -370,7 +401,9 @@ class SearchModelExecutor(
             要求：
             1. 最多返回 $resultCount 条结果。
             2. 必须优先返回真实网页来源，不要编造 URL。
-            3. snippet 用中文简洁概括，不超过 120 字。
+            3. answer 用中文简洁总结最值得看的结论，不超过 140 字。
+            4. text 用中文简洁概括，不超过 120 字。
+            5. id 必须在本轮结果内唯一，优先使用稳定短 id。
             用户查询：$query
         """.trimIndent()
     }
@@ -389,6 +422,42 @@ class SearchModelExecutor(
             this.isJsonArray -> this.asJsonArray
             else -> emptyList()
         }
+    }
+
+    private fun deduplicateSearchItems(
+        items: List<SearchResultItem>,
+    ): List<SearchResultItem> {
+        return items
+            .groupBy { normalizeSearchUrl(it.url) }
+            .values
+            .map { group ->
+                group.maxWithOrNull(
+                    compareBy<SearchResultItem>(
+                        { it.title.isNotBlank() },
+                        { it.snippet.length },
+                    ),
+                ) ?: group.first()
+            }
+            .filter { it.url.isNotBlank() }
+    }
+
+    private fun normalizeSearchUrl(url: String): String {
+        return runCatching {
+            url.toHttpUrl()
+                .newBuilder()
+                .fragment(null)
+                .build()
+                .toString()
+                .trimEnd('/')
+        }.getOrDefault(url.trim().trimEnd('/'))
+    }
+
+    private fun stableSearchResultId(url: String): String {
+        return normalizeSearchUrl(url)
+            .hashCode()
+            .toUInt()
+            .toString(16)
+            .takeLast(8)
     }
 
     private companion object {

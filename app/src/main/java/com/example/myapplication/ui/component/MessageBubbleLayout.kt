@@ -26,6 +26,7 @@ import com.example.myapplication.model.AttachmentType
 import com.example.myapplication.model.ChatMessage
 import com.example.myapplication.model.ChatMessagePart
 import com.example.myapplication.model.ChatMessagePartType
+import com.example.myapplication.model.MessageCitation
 import com.example.myapplication.model.MessageAttachment
 import com.example.myapplication.model.MessageRole
 import com.example.myapplication.model.toMessageAttachmentOrNull
@@ -288,6 +289,7 @@ internal fun MessageBubbleContent(
     codeBlockAutoCollapse: Boolean,
     performanceMode: ChatMessagePerformanceMode,
     onConfirmTransferReceipt: ((String) -> Unit)?,
+    onOpenCitation: ((MessageCitation) -> Unit)?,
     modifier: Modifier = Modifier,
 ) {
     Column(
@@ -319,6 +321,8 @@ internal fun MessageBubbleContent(
                 codeBlockAutoCollapse = codeBlockAutoCollapse,
                 performanceMode = performanceMode,
                 onConfirmTransferReceipt = onConfirmTransferReceipt,
+                citations = message.citations,
+                onOpenCitation = onOpenCitation,
             )
         } else {
             if (!isUser && assistantImageSources.isNotEmpty()) {
@@ -342,6 +346,8 @@ internal fun MessageBubbleContent(
                     codeBlockAutoWrap = codeBlockAutoWrap,
                     codeBlockAutoCollapse = codeBlockAutoCollapse,
                     performanceMode = performanceMode,
+                    citations = message.citations,
+                    onOpenCitation = onOpenCitation,
                 )
             }
         }

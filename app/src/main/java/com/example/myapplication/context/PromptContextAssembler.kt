@@ -79,6 +79,11 @@ class DefaultPromptContextAssembler(
                 ?.takeIf { it.isNotEmpty() }
                 ?.let(::add)
 
+            formatAssistantRoleSection(
+                assistant = assistant,
+                promptMode = promptMode,
+            )?.let(::add)
+
             assistant?.scenario
                 ?.trim()
                 ?.takeIf { it.isNotEmpty() }
@@ -160,6 +165,42 @@ class DefaultPromptContextAssembler(
             append("【开场白参考】\n")
             append(limitEntryContent(greetingText))
         }
+    }
+
+    private fun formatAssistantRoleSection(
+        assistant: Assistant?,
+        promptMode: PromptMode,
+    ): String? {
+        val roleDescription = assistant?.description
+            ?.trim()
+            .orEmpty()
+        val creatorNotes = assistant?.creatorNotes
+            ?.trim()
+            .orEmpty()
+        if (roleDescription.isBlank() && (promptMode != PromptMode.ROLEPLAY || creatorNotes.isBlank())) {
+            return null
+        }
+        return buildString {
+            if (roleDescription.isNotBlank()) {
+                append(
+                    if (promptMode == PromptMode.ROLEPLAY) {
+                        "【角色核心设定】\n"
+                    } else {
+                        "【助手简介】\n"
+                    },
+                )
+                append(limitEntryContent(roleDescription))
+            }
+            if (promptMode == PromptMode.ROLEPLAY && creatorNotes.isNotBlank()) {
+                if (isNotBlank()) {
+                    append("\n\n")
+                }
+                append("【创作者导演说明】\n")
+                append("以下内容仅供你在内部把握角色与剧情节奏时遵循，不要直接复述给用户。\n")
+                append(limitEntryContent(creatorNotes))
+            }
+        }.trim()
+            .takeIf { it.isNotBlank() }
     }
 
     private fun formatExampleDialoguesSection(

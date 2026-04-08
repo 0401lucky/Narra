@@ -38,8 +38,8 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.surfaceColorAtElevation
-import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.Composable
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.LaunchedEffect
@@ -64,6 +64,7 @@ import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.platform.LocalClipboard
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontStyle
@@ -74,6 +75,7 @@ import androidx.compose.ui.unit.sp
 import com.example.myapplication.model.ChatMessagePart
 import com.example.myapplication.model.ChatMessagePartType
 import com.example.myapplication.model.ChatReasoningStep
+import com.example.myapplication.model.MessageCitation
 import com.example.myapplication.model.ModelAbility
 import com.example.myapplication.model.toMessageAttachmentOrNull
 import com.mikepenz.markdown.compose.components.MarkdownComponents
@@ -93,6 +95,7 @@ import java.util.Locale
 private const val MessageBubbleCodeBlockCollapseLines = 10
 private val MessageBubbleCodeBlockShape = RoundedCornerShape(22.dp)
 private val MessageBubbleOrderedMarkdownListHintRegex = Regex("""\d+\.\s+.+""")
+private val CitationMarkdownRegex = Regex("""\[citation,([^\]]+)]\(([^)]+)\)""")
 private val MessageBubbleMarkdownInlineHintRegex = Regex(
     """(```|`[^`\n]+`|\[[^\]]+]\([^)]+\)|!\[[^\]]*]\([^)]+\)|\*\*[^*\n]+\*\*|__[^_\n]+__|~~[^~\n]+~~)""",
 )
@@ -114,6 +117,8 @@ internal fun MessagePartsRenderer(
     codeBlockAutoCollapse: Boolean,
     performanceMode: ChatMessagePerformanceMode,
     onConfirmTransferReceipt: ((String) -> Unit)?,
+    citations: List<MessageCitation> = emptyList(),
+    onOpenCitation: ((MessageCitation) -> Unit)? = null,
 ) {
     parts.forEachIndexed { index, part ->
         when (part.type) {
@@ -128,6 +133,8 @@ internal fun MessagePartsRenderer(
                     codeBlockAutoWrap = codeBlockAutoWrap,
                     codeBlockAutoCollapse = codeBlockAutoCollapse,
                     performanceMode = performanceMode,
+                    citations = citations,
+                    onOpenCitation = onOpenCitation,
                 )
             }
 
@@ -175,13 +182,18 @@ internal fun RenderMessageText(
     codeBlockAutoWrap: Boolean,
     codeBlockAutoCollapse: Boolean,
     performanceMode: ChatMessagePerformanceMode,
+    citations: List<MessageCitation> = emptyList(),
+    onOpenCitation: ((MessageCitation) -> Unit)? = null,
 ) {
     if (text.isBlank()) {
         return
     }
 
-    val shouldUseMarkdown = remember(text, useMarkdown) {
-        useMarkdown && shouldRenderWithMarkdown(text)
+    val renderedText = remember(text) {
+        normalizeCitationMarkdownForDisplay(text)
+    }
+    val shouldUseMarkdown = remember(renderedText, useMarkdown) {
+        useMarkdown && shouldRenderWithMarkdown(renderedText)
     }
     val markdownComponents = rememberChatMarkdownComponents(
         markdownPadding = assistantMarkdownPadding,
@@ -189,16 +201,40 @@ internal fun RenderMessageText(
         codeBlockAutoCollapse = codeBlockAutoCollapse,
         enableContentSizeAnimation = performanceMode == ChatMessagePerformanceMode.FULL,
     )
+    val defaultUriHandler = LocalUriHandler.current
+    val citationMap = remember(citations) {
+        citations.associateBy { citation ->
+            citation.id.trim().ifBlank { citation.url.trim() }
+        }
+    }
+    val citationAwareUriHandler = remember(defaultUriHandler, citationMap, onOpenCitation) {
+        object : androidx.compose.ui.platform.UriHandler {
+            override fun openUri(uri: String) {
+                if (uri.startsWith("citation:")) {
+                    val citationId = uri.removePrefix("citation:").trim()
+                    val citation = citationMap[citationId]
+                        ?: citationMap.values.firstOrNull { it.url.trim() == citationId }
+                    if (citation != null && onOpenCitation != null) {
+                        onOpenCitation(citation)
+                    }
+                    return
+                }
+                defaultUriHandler.openUri(uri)
+            }
+        }
+    }
 
     if (shouldUseMarkdown) {
-        Markdown(
-            content = text,
-            colors = markdownColor(text = contentColor),
-            typography = assistantMarkdownTypography,
-            modifier = Modifier.fillMaxWidth(),
-            padding = assistantMarkdownPadding,
-            components = markdownComponents,
-        )
+        CompositionLocalProvider(LocalUriHandler provides citationAwareUriHandler) {
+            Markdown(
+                content = renderedText,
+                colors = markdownColor(text = contentColor),
+                typography = assistantMarkdownTypography,
+                modifier = Modifier.fillMaxWidth(),
+                padding = assistantMarkdownPadding,
+                components = markdownComponents,
+            )
+        }
     } else {
         Text(
             text = text,
@@ -206,6 +242,16 @@ internal fun RenderMessageText(
             color = contentColor,
             style = plainTextStyle,
         )
+    }
+}
+
+internal fun normalizeCitationMarkdownForDisplay(
+    text: String,
+): String {
+    return text.replace(CitationMarkdownRegex) { match ->
+        val domain = match.groupValues.getOrNull(1).orEmpty().trim().ifBlank { "引用" }
+        val citationId = match.groupValues.getOrNull(2).orEmpty().trim()
+        "[〔$domain〕](citation:$citationId)"
     }
 }
 

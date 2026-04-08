@@ -285,6 +285,16 @@ fun MessageBubble(
                         codeBlockAutoCollapse = codeBlockAutoCollapse,
                         performanceMode = performanceMode,
                         onConfirmTransferReceipt = onConfirmTransferReceipt,
+                        onOpenCitation = { citation ->
+                            if (onOpenUrlPreview != null) {
+                                onOpenUrlPreview(
+                                    citation.url,
+                                    citation.title.ifBlank { citation.url },
+                                )
+                            } else {
+                                uriHandler.openUri(citation.url)
+                            }
+                        },
                     )
                 }
             } else {
@@ -314,6 +324,16 @@ fun MessageBubble(
                         codeBlockAutoCollapse = codeBlockAutoCollapse,
                         performanceMode = performanceMode,
                         onConfirmTransferReceipt = onConfirmTransferReceipt,
+                        onOpenCitation = { citation ->
+                            if (onOpenUrlPreview != null) {
+                                onOpenUrlPreview(
+                                    citation.url,
+                                    citation.title.ifBlank { citation.url },
+                                )
+                            } else {
+                                uriHandler.openUri(citation.url)
+                            }
+                        },
                         modifier = Modifier.padding(horizontal = 16.dp, vertical = 14.dp),
                     )
                 }

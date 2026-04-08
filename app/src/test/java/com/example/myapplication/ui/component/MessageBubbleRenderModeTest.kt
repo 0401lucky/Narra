@@ -1,5 +1,6 @@
 package com.example.myapplication.ui.component
 
+import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -91,6 +92,16 @@ class MessageBubbleRenderModeTest {
         )
         assertTrue(
             shouldRenderWithMarkdownDuringScrolling("请查看 [文档](https://example.com)。"),
+        )
+    }
+
+    @Test
+    fun normalizeCitationMarkdownForDisplay_rewritesCitationSyntax() {
+        assertEquals(
+            "巴黎是法国首都。[〔example.com〕](citation:abc123)",
+            normalizeCitationMarkdownForDisplay(
+                "巴黎是法国首都。[citation,example.com](abc123)",
+            ),
         )
     }
 }

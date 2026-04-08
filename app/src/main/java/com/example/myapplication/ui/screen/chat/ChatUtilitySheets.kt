@@ -44,6 +44,7 @@ import com.example.myapplication.model.toPlainText
 import com.example.myapplication.model.toSpecialPlayCopyText
 import com.example.myapplication.ui.component.extractReasoningStepTitle
 import com.example.myapplication.viewmodel.TranslationUiState
+import com.google.gson.JsonParser
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -506,6 +507,18 @@ fun buildMessagePreviewPayload(
     )
 }
 
+fun buildSearchResultPreviewPayload(
+    message: ChatMessage,
+): ChatSearchResultPreviewPayload? {
+    val preview = parseSearchResultPreview(message) ?: return null
+    return ChatSearchResultPreviewPayload(
+        title = buildMessageHeading(message, includeModelName = true),
+        query = preview.query,
+        answer = preview.answer,
+        items = preview.items,
+    )
+}
+
 fun buildShareIntent(sharedText: String): Intent {
     return Intent(Intent.ACTION_SEND).apply {
         type = "text/plain"
@@ -752,4 +765,60 @@ internal fun formatMessageCreatedAt(createdAt: Long): String {
         return "未知时间"
     }
     return SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault()).format(Date(createdAt))
+}
+
+private data class ParsedSearchResultPreview(
+    val query: String,
+    val answer: String,
+    val items: List<com.example.myapplication.data.repository.search.SearchResultItem>,
+)
+
+private fun parseSearchResultPreview(
+    message: ChatMessage,
+): ParsedSearchResultPreview? {
+    val jsonText = normalizeChatMessageParts(message.parts)
+        .firstOrNull { part ->
+            part.type == ChatMessagePartType.TEXT &&
+                part.text.contains("\"query\"") &&
+                (part.text.contains("\"items\"") || part.text.contains("\"results\""))
+        }
+        ?.text
+        .orEmpty()
+        .trim()
+        .takeIf { it.isNotBlank() }
+        ?: return null
+    val root = runCatching {
+        JsonParser.parseString(jsonText).asJsonObject
+    }.getOrNull() ?: return null
+    val rawItems = when {
+        root.has("items") -> root.getAsJsonArray("items")
+        root.has("results") -> root.getAsJsonArray("results")
+        else -> null
+    } ?: return null
+    val items = rawItems.mapNotNull { element ->
+        val item = element.asJsonObject
+        val url = item.get("url")?.asString.orEmpty().trim()
+        if (url.isBlank()) {
+            return@mapNotNull null
+        }
+        com.example.myapplication.data.repository.search.SearchResultItem(
+            id = item.get("id")?.asString.orEmpty(),
+            title = item.get("title")?.asString.orEmpty().ifBlank { url },
+            url = url,
+            snippet = item.get("text")?.asString.orEmpty().ifBlank {
+                item.get("snippet")?.asString.orEmpty()
+            },
+            sourceLabel = item.get("sourceLabel")?.asString.orEmpty().ifBlank {
+                item.get("source")?.asString.orEmpty()
+            },
+        )
+    }
+    if (items.isEmpty()) {
+        return null
+    }
+    return ParsedSearchResultPreview(
+        query = root.get("query")?.asString.orEmpty(),
+        answer = root.get("answer")?.asString.orEmpty(),
+        items = items,
+    )
 }

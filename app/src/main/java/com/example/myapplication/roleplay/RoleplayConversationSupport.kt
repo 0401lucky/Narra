@@ -9,6 +9,11 @@ import com.example.myapplication.model.RoleplayScenario
 import com.example.myapplication.model.toPlainText
 
 object RoleplayConversationSupport {
+    private val tensionHighKeywords = listOf("为什么", "凭什么", "到底", "说清楚", "解释", "你敢", "不准", "别过来", "休想", "骗")
+    private val tensionTenderKeywords = listOf("靠近", "轻声", "抱", "握住", "吻", "温柔", "心疼", "安抚")
+    private val actionPriorityKeywords = listOf("靠近", "后退", "伸手", "抬手", "抓住", "握住", "抱住", "推开", "看着", "逼近", "退开")
+    private val emotionPriorityKeywords = listOf("难过", "委屈", "生气", "害怕", "紧张", "失望", "愤怒", "不安", "心虚", "哽咽")
+
     fun resolveRoleplayNames(
         scenario: RoleplayScenario,
         assistant: Assistant?,
@@ -110,12 +115,44 @@ object RoleplayConversationSupport {
                 }
             }
             .distinct()
+        val recentAssistantTexts = messages
+            .filter { it.role == MessageRole.ASSISTANT }
+            .takeLast(2)
+            .mapNotNull { message ->
+                outputParser.stripMarkup(
+                    RoleplayMessageFormatSupport.resolveAssistantRawContent(message),
+                ).trim().takeIf { it.isNotBlank() }
+            }
+        val relationTension = resolveRelationTension(recentUserInput)
+        val roundPriority = resolveRoundPriority(recentUserInput)
+        val currentObstacle = resolveCurrentObstacle(
+            repeatedOpeners = repeatedOpeners,
+            recentEmotions = recentEmotions,
+            recentUserInput = recentUserInput,
+        )
+        val continuityAnchor = recentAssistantTexts.lastOrNull()
+            ?.take(42)
+            ?.takeIf { it.isNotBlank() }
         return buildString {
+            append("当前关系张力：")
+            append(relationTension)
+            append("。\n")
+            append("当前目标或优先推进点：")
+            append(roundPriority)
+            append("。\n")
+            append("当前阻碍：")
+            append(currentObstacle)
+            append("。\n")
             if (recentUserInput.isNotBlank()) {
                 append("优先回应 ")
                 append(userName.ifBlank { "玩家" })
                 append(" 刚刚提到的具体细节：")
                 append(recentUserInput.take(80))
+                append("。\n")
+            }
+            if (!continuityAnchor.isNullOrBlank()) {
+                append("优先接住上一轮已经抛出的线索或态度：")
+                append(continuityAnchor)
                 append("。\n")
             }
             if (repeatedOpeners.isNotEmpty()) {
@@ -131,7 +168,7 @@ object RoleplayConversationSupport {
             append("允许停顿、试探、反问和转折，让 ")
             append(characterName)
             append(" 像在临场反应，不要每轮都完整解释动机。\n")
-            append("这一轮至少推进一项：关系、信息或局势。")
+            append("推进时先回应，再顺势往前推一小步，不要一下子替双方做完所有决定。")
         }.trim()
     }
 
@@ -147,5 +184,47 @@ object RoleplayConversationSupport {
         scenarioId: String,
     ): Boolean {
         return messageId.startsWith("rp-opening-$scenarioId-")
+    }
+
+    private fun resolveRelationTension(
+        recentUserInput: String,
+    ): String {
+        return when {
+            recentUserInput.isBlank() -> "持续互动"
+            tensionHighKeywords.any { it in recentUserInput } || recentUserInput.any { it == '？' || it == '!' || it == '！' } -> {
+                "高压对峙"
+            }
+            tensionTenderKeywords.any { it in recentUserInput } -> "暧昧靠近"
+            recentUserInput.contains("吗") || recentUserInput.contains("会不会") || recentUserInput.contains("是不是") -> {
+                "试探拉扯"
+            }
+            else -> "持续拉扯"
+        }
+    }
+
+    private fun resolveRoundPriority(
+        recentUserInput: String,
+    ): String {
+        return when {
+            recentUserInput.isBlank() -> "先贴住当前氛围，再推进关系、信息或局势中的一项"
+            recentUserInput.any { it == '？' || it == '?' } -> "优先正面回应对方刚抛出的追问或质疑"
+            actionPriorityKeywords.any { it in recentUserInput } -> "优先接住对方刚做出的动作，并给出角色的即时反应"
+            emotionPriorityKeywords.any { it in recentUserInput } -> "优先回应对方当前情绪，再决定如何推进"
+            else -> "先回应当下互动，再自然推进关系、信息或局势中的一项"
+        }
+    }
+
+    private fun resolveCurrentObstacle(
+        repeatedOpeners: List<String>,
+        recentEmotions: List<String>,
+        recentUserInput: String,
+    ): String {
+        return when {
+            repeatedOpeners.isNotEmpty() -> "避免重复模板化起手和惯性动作"
+            recentEmotions.isNotEmpty() -> "避免连续复用同一类情绪标签或同一种反应节奏"
+            recentUserInput.any { it == '？' || it == '?' } -> "不能回避对方刚刚逼过来的关键问题"
+            recentUserInput.isBlank() -> "不要自顾自讲背景，必须贴着当前互动往前走"
+            else -> "不要把关系和局势重置回初始状态"
+        }
     }
 }

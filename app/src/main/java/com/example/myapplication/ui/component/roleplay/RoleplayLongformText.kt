@@ -73,10 +73,7 @@ fun RoleplayLongformCard(
 }
 
 internal fun String.toLongformParagraphs(): List<String> {
-    return replace("\r\n", "\n")
-        .split("\n")
-        .map { it.trim() }
-        .filter { it.isNotEmpty() }
+    return RoleplayLongformMarkupParser.splitDisplayParagraphs(this)
 }
 
 internal val RoleplayQuotedDialogueHighlightColor = Color(0xFF90CAF9)

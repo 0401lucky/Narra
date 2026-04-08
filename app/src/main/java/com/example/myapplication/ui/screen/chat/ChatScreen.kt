@@ -165,6 +165,8 @@ fun ChatScreen(
     onEditUserMessage: (String) -> Unit,
     onToggleMemoryMessage: (String) -> Unit,
     onToggleSearch: () -> Unit,
+    onSelectSearchSource: (String) -> Unit,
+    onUpdateSearchResultCount: (Int) -> Unit,
     onTranslateDraft: () -> Unit,
     onTranslateMessage: (String) -> Unit,
     onDismissTranslationSheet: () -> Unit,
@@ -410,6 +412,9 @@ fun ChatScreen(
     val selectedSearchProvider = remember(uiState.settings, selectedSearchSource) {
         selectedSearchSource?.let(uiState.settings::resolveSearchSourceProvider)
     }
+    val normalizedSearchSettings = remember(uiState.settings) {
+        uiState.settings.resolvedSearchSettings()
+    }
     val searchEnabled = currentConversation?.searchEnabled == true
     val searchAvailable = remember(
         currentConversation,
@@ -612,6 +617,9 @@ fun ChatScreen(
                 searchAvailable = searchAvailable,
                 reasoningActionLabel = reasoningActionLabel,
                 currentAssistantName = currentAssistantName,
+                searchSettings = normalizedSearchSettings,
+                selectedSearchSource = selectedSearchSource,
+                selectedSearchProvider = selectedSearchProvider,
                 onInputChange = onInputChange,
                 onSend = onSend,
                 onOpenConversationDrawer = {
@@ -633,11 +641,14 @@ fun ChatScreen(
                 onTranslateMessage = onTranslateMessage,
                 onConfirmTransferReceipt = onConfirmTransferReceipt,
                 onToggleSearch = onToggleSearch,
+                onSelectSearchSource = onSelectSearchSource,
+                onUpdateSearchResultCount = onUpdateSearchResultCount,
                 onSearchUnavailable = {
                     scope.launch {
                         snackbarHostState.showSnackbar(searchUnavailableMessage)
                     }
                 },
+                onOpenSearchPicker = { localState.setShowSearchPickerSheet(true) },
                 onTranslateDraft = onTranslateDraft,
                 onPickImageClick = {
                     imagePickerLauncher.launch(arrayOf("image/*"))
@@ -723,6 +734,22 @@ fun ChatScreen(
         reasoningBudgetHint = reasoningBudgetHint,
         onDismissReasoningSheet = { localState.setShowReasoningSheet(false) },
         onUpdateThinkingBudget = onUpdateThinkingBudget,
+        showSearchPickerSheet = localState.showSearchPickerSheet,
+        searchEnabled = searchEnabled,
+        searchAvailable = searchAvailable,
+        searchSettings = normalizedSearchSettings,
+        currentModelIsImageGeneration = currentModelIsImageGeneration,
+        currentModelSupportsTools = ModelAbility.TOOL in currentModelAbilities,
+        selectedSearchSource = selectedSearchSource,
+        selectedSearchProvider = selectedSearchProvider,
+        onDismissSearchPickerSheet = { localState.setShowSearchPickerSheet(false) },
+        onToggleSearch = onToggleSearch,
+        onSelectSearchSource = onSelectSearchSource,
+        onUpdateSearchResultCount = onUpdateSearchResultCount,
+        onOpenSearchSettings = {
+            localState.setShowSearchPickerSheet(false)
+            onOpenSettings()
+        },
         showPromptDebugSheet = localState.showPromptDebugSheet,
         onDismissPromptDebugSheet = { localState.setShowPromptDebugSheet(false) },
         onRefreshConversationSummary = onRefreshConversationSummary,
@@ -815,6 +842,21 @@ fun ChatScreen(
         onDismissMessageSelection = { localState.setMessageSelectionPayload(null) },
         messagePreviewPayload = localState.messagePreviewPayload,
         onDismissMessagePreview = { localState.setMessagePreviewPayload(null) },
+        searchResultPreviewPayload = localState.searchResultPreviewPayload,
+        onDismissSearchResultPreview = { localState.setSearchResultPreviewPayload(null) },
+        onOpenUrlPreview = { url, title ->
+            localState.setMessagePreviewPayload(
+                ChatMessagePreviewPayload.ExternalUrlPreview(
+                    title = title,
+                    url = url,
+                ),
+            )
+            localState.setSearchResultPreviewPayload(null)
+        },
+        onOpenSearchResultPreview = { message ->
+            buildSearchResultPreviewPayload(message)?.let(localState.setSearchResultPreviewPayload)
+            localState.setActiveMessageActionId(null)
+        },
     )
 }
 

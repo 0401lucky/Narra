@@ -43,6 +43,19 @@ internal fun ChatScreenOverlays(
     reasoningBudgetHint: String,
     onDismissReasoningSheet: () -> Unit,
     onUpdateThinkingBudget: (String, Int?) -> Unit,
+    showSearchPickerSheet: Boolean,
+    searchEnabled: Boolean,
+    searchAvailable: Boolean,
+    searchSettings: com.example.myapplication.model.SearchSettings,
+    currentModelIsImageGeneration: Boolean,
+    currentModelSupportsTools: Boolean,
+    selectedSearchSource: com.example.myapplication.model.SearchSourceConfig?,
+    selectedSearchProvider: com.example.myapplication.model.ProviderSettings?,
+    onDismissSearchPickerSheet: () -> Unit,
+    onToggleSearch: () -> Unit,
+    onSelectSearchSource: (String) -> Unit,
+    onUpdateSearchResultCount: (Int) -> Unit,
+    onOpenSearchSettings: () -> Unit,
     showPromptDebugSheet: Boolean,
     onDismissPromptDebugSheet: () -> Unit,
     onRefreshConversationSummary: () -> Unit,
@@ -68,6 +81,10 @@ internal fun ChatScreenOverlays(
     onDismissMessageSelection: () -> Unit,
     messagePreviewPayload: ChatMessagePreviewPayload?,
     onDismissMessagePreview: () -> Unit,
+    searchResultPreviewPayload: ChatSearchResultPreviewPayload?,
+    onDismissSearchResultPreview: () -> Unit,
+    onOpenUrlPreview: (String, String) -> Unit,
+    onOpenSearchResultPreview: (ChatMessage) -> Unit,
 ) {
     if (showProfileSheet) {
         ProfileEditorSheet(
@@ -131,6 +148,24 @@ internal fun ChatScreenOverlays(
         )
     }
 
+    if (showSearchPickerSheet) {
+        ChatSearchPickerSheet(
+            searchEnabled = searchEnabled,
+            searchAvailable = searchAvailable,
+            searchSettings = searchSettings,
+            currentModelIsImageGeneration = currentModelIsImageGeneration,
+            currentModelSupportsTools = currentModelSupportsTools,
+            selectedSearchSource = selectedSearchSource,
+            selectedSearchProvider = selectedSearchProvider,
+            currentModel = currentModel,
+            onDismissRequest = onDismissSearchPickerSheet,
+            onToggleSearch = onToggleSearch,
+            onSelectSearchSource = onSelectSearchSource,
+            onUpdateSearchResultCount = onUpdateSearchResultCount,
+            onOpenSearchSettings = onOpenSearchSettings,
+        )
+    }
+
     if (showPromptDebugSheet) {
         ContextGovernanceSheet(
             snapshot = uiState.contextGovernance,
@@ -173,6 +208,9 @@ internal fun ChatScreenOverlays(
             } else {
                 null
             },
+            onOpenSearchResults = buildSearchResultPreviewPayload(message)?.let {
+                { onOpenSearchResultPreview(message) }
+            },
             onExportMarkdown = { onExportMessageMarkdown(message) },
             onShareMessage = { onShareMessage(message) },
             onEditUserMessage = if (availability.canEditUserMessage) {
@@ -199,6 +237,14 @@ internal fun ChatScreenOverlays(
         ChatMessagePreviewDialog(
             payload = payload,
             onDismissRequest = onDismissMessagePreview,
+        )
+    }
+
+    searchResultPreviewPayload?.let { payload ->
+        ChatSearchResultPreviewSheet(
+            payload = payload,
+            onDismissRequest = onDismissSearchResultPreview,
+            onOpenUrlPreview = onOpenUrlPreview,
         )
     }
 }
