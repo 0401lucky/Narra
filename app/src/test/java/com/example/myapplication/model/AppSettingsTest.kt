@@ -196,4 +196,25 @@ class AppSettingsTest {
 
         assertFalse(settings.hasConfiguredSearchSource(provider))
     }
+
+    @Test
+    fun resolvedAssistants_prefersSavedOverrideForBuiltinAssistant() {
+        val overrideAssistant = Assistant(
+            id = DEFAULT_ASSISTANT_ID,
+            name = "默认助手",
+            systemPrompt = "新的系统提示词",
+            creatorNotes = "新的备注",
+            isBuiltin = false,
+        )
+        val settings = AppSettings(
+            assistants = listOf(overrideAssistant),
+            selectedAssistantId = DEFAULT_ASSISTANT_ID,
+        )
+
+        val resolved = settings.resolvedAssistants().first { it.id == DEFAULT_ASSISTANT_ID }
+
+        assertEquals("新的系统提示词", resolved.systemPrompt)
+        assertEquals("新的备注", resolved.creatorNotes)
+        assertTrue(resolved.isBuiltin)
+    }
 }

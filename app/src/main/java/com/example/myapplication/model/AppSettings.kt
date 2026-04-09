@@ -33,9 +33,13 @@ data class AppSettings(
     val searchSettings: SearchSettings = SearchSettings(),
 ) {
     fun resolvedAssistants(): List<Assistant> {
+        val customAssistantsById = assistants.associateBy { it.id }
         val builtinIds = BUILTIN_ASSISTANTS.map { it.id }.toSet()
+        val mergedBuiltins = BUILTIN_ASSISTANTS.map { builtin ->
+            customAssistantsById[builtin.id]?.copy(isBuiltin = builtin.isBuiltin) ?: builtin
+        }
         val customAssistants = assistants.filter { it.id !in builtinIds }
-        return BUILTIN_ASSISTANTS + customAssistants
+        return mergedBuiltins + customAssistants
     }
 
     fun activeAssistant(): Assistant? {

@@ -68,11 +68,11 @@ fun AssistantPromptScreen(
     val context = LocalContext.current
     val clipboardScope = rememberCoroutineScope()
 
-    var systemPrompt by rememberSaveable { mutableStateOf(assistant.systemPrompt) }
-    var scenario by rememberSaveable { mutableStateOf(assistant.scenario) }
-    var greeting by rememberSaveable { mutableStateOf(assistant.greeting) }
-    var creatorNotes by rememberSaveable { mutableStateOf(assistant.creatorNotes) }
-    var contextMessageSizeText by rememberSaveable {
+    var systemPrompt by rememberSaveable(assistant.id) { mutableStateOf(assistant.systemPrompt) }
+    var scenario by rememberSaveable(assistant.id) { mutableStateOf(assistant.scenario) }
+    var greeting by rememberSaveable(assistant.id) { mutableStateOf(assistant.greeting) }
+    var creatorNotes by rememberSaveable(assistant.id) { mutableStateOf(assistant.creatorNotes) }
+    var contextMessageSizeText by rememberSaveable(assistant.id) {
         mutableStateOf(
             assistant.contextMessageSize
                 .takeIf { it > 0 }
@@ -80,7 +80,7 @@ fun AssistantPromptScreen(
                 .orEmpty(),
         )
     }
-    val exampleDialogues = remember {
+    val exampleDialogues = remember(assistant.id) {
         mutableStateListOf<String>().apply {
             addAll(assistant.exampleDialogues)
         }
