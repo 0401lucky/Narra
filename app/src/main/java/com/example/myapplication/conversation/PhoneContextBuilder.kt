@@ -77,7 +77,7 @@ class PhoneContextBuilder(
                         userName,
                         assistantName,
                         PhoneViewMode.CHARACTER_LOOKS_USER_PHONE,
-                        "角色正在查看用户的私人手机内容",
+                        "角色正在查看用户的私人手机内容；内容主体必须来自用户本人，但可优先保留最能触发角色反应的线索",
                     )
                 }
             }
@@ -136,7 +136,7 @@ class PhoneContextBuilder(
                         userName,
                         assistantName,
                         PhoneViewMode.CHARACTER_LOOKS_USER_PHONE,
-                        "对方正在查看用户的手机内容",
+                        "对方正在查看用户的手机内容；内容主体必须来自用户本人，但可优先保留最能触发对方反应的线索",
                     )
                 }
             }

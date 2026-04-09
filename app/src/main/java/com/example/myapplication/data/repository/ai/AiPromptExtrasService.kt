@@ -634,9 +634,9 @@ class DefaultAiPromptExtrasService(
         val normalizedSections = requestedSections.ifEmpty { PhoneSnapshotSection.entries.toSet() }
         val prompt = buildString {
             append("你是“查手机玩法”的内容生成器。")
-            append("现在要为一个虚构角色生成他的手机内容快照。")
+            append(phoneSnapshotOwnerInstruction(context))
             append("所有内容必须基于给定的人设、记忆、关系、剧情和最近对话自然推导，可以适度扩展，但不能脱离上下文乱编。")
-            append("输出必须像已经真实存在于这个角色手机里的内容，而不是总结报告。")
+            append(phoneSnapshotAuthenticityInstruction(context))
             append("手机主人：").append(context.ownerName).append("。")
             append("查看者：").append(context.viewerName).append("。")
             append("关系方向：").append(context.relationshipDirection).append("。")
@@ -665,6 +665,8 @@ class DefaultAiPromptExtrasService(
             append("\n- description 要有明确画面细节，例如姿势、构图、光线、衣着、地点、视角、当时的小动作。")
             append("\n- description 允许带轻微私密感和暧昧感，但必须仍然像相册说明，不要写成露骨对白或纯欲望宣泄。")
             append("\n- 优先生成值得收藏、带明显关系痕迹或个人执念的照片，不要生成泛泛的风景照。")
+            append("\n- messages[].is_owner 表示该消息是否由手机主人本人发出。")
+            append(phoneSnapshotOwnerRules(context))
             append("\n除非本次重建该板块，否则对应键返回 []。")
             if (context.systemContext.isNotBlank()) {
                 append("\n\n【基础设定】\n")
@@ -717,7 +719,7 @@ class DefaultAiPromptExtrasService(
     ): PhoneSearchDetail {
         val prompt = buildString {
             append("你是“查手机玩法”的搜索详情生成器。")
-            append("请为角色手机里的一个搜索词生成点开后的详情内容。")
+            append(phoneSearchDetailOwnerInstruction(context))
             append("详情必须像搜索结果页、百科摘要、帖子整理或经验总结，不要写成第一人称自白。")
             append("手机主人：").append(context.ownerName).append("。")
             append("查看者：").append(context.viewerName).append("。")
@@ -1047,6 +1049,53 @@ class DefaultAiPromptExtrasService(
                 }
             }
         }.trim()
+    }
+
+    private fun phoneSnapshotOwnerInstruction(
+        context: PhoneGenerationContext,
+    ): String {
+        return when (context.ownerType) {
+            com.example.myapplication.model.PhoneSnapshotOwnerType.CHARACTER ->
+                "现在要为一个虚构角色生成他的手机内容快照。"
+            com.example.myapplication.model.PhoneSnapshotOwnerType.USER ->
+                "现在要为当前用户生成他的手机内容快照，这些内容会被角色翻看到，用来触发后续反应。"
+        }
+    }
+
+    private fun phoneSnapshotAuthenticityInstruction(
+        context: PhoneGenerationContext,
+    ): String {
+        return when (context.ownerType) {
+            com.example.myapplication.model.PhoneSnapshotOwnerType.CHARACTER ->
+                "输出必须像已经真实存在于这个角色手机里的内容，而不是总结报告。"
+            com.example.myapplication.model.PhoneSnapshotOwnerType.USER ->
+                "输出必须像已经真实存在于用户手机里的内容，而不是总结报告；可以优先挑选最能触发角色反应的线索，但不能写成角色自己的手机内容。"
+        }
+    }
+
+    private fun phoneSnapshotOwnerRules(
+        context: PhoneGenerationContext,
+    ): String {
+        return when (context.ownerType) {
+            com.example.myapplication.model.PhoneSnapshotOwnerType.CHARACTER -> ""
+            com.example.myapplication.model.PhoneSnapshotOwnerType.USER -> buildString {
+                append("\n- 当手机主人是用户时，关系速览、消息、备忘录、相册、购物和搜索都必须从用户侧出发。")
+                append("\n- 可以让角色本人、朋友、家人、同事成为用户的联系人，但不要把主体写成角色自己的社交圈和日常手机。")
+                append("\n- 如果出现角色本人，也只能作为“用户手机里与角色有关的线索”出现。")
+                append("\n- 可以增强戏剧触发点，但必须先保证这些内容像用户真的会留下的痕迹。")
+            }
+        }
+    }
+
+    private fun phoneSearchDetailOwnerInstruction(
+        context: PhoneGenerationContext,
+    ): String {
+        return when (context.ownerType) {
+            com.example.myapplication.model.PhoneSnapshotOwnerType.CHARACTER ->
+                "请为角色手机里的一个搜索词生成点开后的详情内容。"
+            com.example.myapplication.model.PhoneSnapshotOwnerType.USER ->
+                "请为用户手机里的一个搜索词生成点开后的详情内容；搜索方向可以优先保留最能触发角色反应的线索，但主体必须仍是用户自己会搜的内容。"
+        }
     }
 
     private fun parsePhoneSnapshotSections(

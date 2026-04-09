@@ -98,6 +98,11 @@ internal data class ImmersiveRoleplayColors(
     val errorBackgroundStrong: Color,
 )
 
+internal enum class RoleplayMessageBubbleMode {
+    DEFAULT,
+    ONLINE_PHONE,
+}
+
 @Composable
 internal fun rememberImmersiveRoleplayColors(
     backdropState: ImmersiveBackdropState,
@@ -636,6 +641,7 @@ internal fun RoleplayMessageItem(
     onOpenQuotedMessage: ((String) -> Unit)? = null,
     onConfirmTransferReceipt: (String) -> Unit,
     lineHeightScale: Float = 1.0f,
+    bubbleMode: RoleplayMessageBubbleMode = RoleplayMessageBubbleMode.DEFAULT,
 ) {
     when (message.contentType) {
         RoleplayContentType.NARRATION -> RoleplayMessageMenuWrapper(message, onRetryTurn, onEditUserMessage, onQuoteMessage = onQuoteMessage, onRecallMessage = onRecallMessage) {
@@ -671,59 +677,46 @@ internal fun RoleplayMessageItem(
 
         RoleplayContentType.DIALOGUE -> {
             if (message.speaker == RoleplaySpeaker.USER) {
-                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
-                    RoleplayMessageMenuWrapper(message, onRetryTurn, onEditUserMessage, Modifier.fillMaxWidth(0.82f), onQuoteMessage = onQuoteMessage, onRecallMessage = onRecallMessage) {
-                        Column(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .background(
-                                    color = colors.panelBackgroundStrong,
-                                    shape = RoundedCornerShape(
-                                        topStart = 20.dp,
-                                        topEnd = 6.dp,
-                                        bottomStart = 20.dp,
-                                        bottomEnd = 20.dp,
-                                    ),
-                                )
-                            .padding(horizontal = 14.dp, vertical = 10.dp),
-                        verticalArrangement = Arrangement.spacedBy(4.dp),
+                val isOnlinePhoneBubble = bubbleMode == RoleplayMessageBubbleMode.ONLINE_PHONE
+                if (isOnlinePhoneBubble) {
+                    BoxWithConstraints(
+                        modifier = Modifier.fillMaxWidth(),
+                        contentAlignment = Alignment.CenterEnd,
                     ) {
-                        if (message.replyToPreview.isNotBlank()) {
-                            RoleplayReplyPreview(
+                        RoleplayMessageMenuWrapper(
+                            message = message,
+                            onRetryTurn = onRetryTurn,
+                            onEditUserMessage = onEditUserMessage,
+                            modifier = Modifier.widthIn(max = maxWidth * 0.82f),
+                            onQuoteMessage = onQuoteMessage,
+                            onRecallMessage = onRecallMessage,
+                        ) {
+                            UserDialogueBubbleContent(
                                 message = message,
                                 colors = colors,
+                                lineHeightScale = lineHeightScale,
                                 onOpenQuotedMessage = onOpenQuotedMessage,
+                                fillWidth = false,
                             )
                         }
-                            Text(
-                                message.speakerName,
-                                style = MaterialTheme.typography.labelMedium,
-                                fontWeight = FontWeight.SemiBold,
-                                color = colors.userAccent,
+                    }
+                } else {
+                    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
+                        RoleplayMessageMenuWrapper(
+                            message,
+                            onRetryTurn,
+                            onEditUserMessage,
+                            Modifier.fillMaxWidth(0.82f),
+                            onQuoteMessage = onQuoteMessage,
+                            onRecallMessage = onRecallMessage,
+                        ) {
+                            UserDialogueBubbleContent(
+                                message = message,
+                                colors = colors,
+                                lineHeightScale = lineHeightScale,
+                                onOpenQuotedMessage = onOpenQuotedMessage,
+                                fillWidth = true,
                             )
-                            if (message.isStreaming) {
-                                StreamingLogText(
-                                    content = message.content,
-                                    textColor = colors.textPrimary,
-                                    accentColor = colors.userAccent,
-                                    lineHeightScale = lineHeightScale,
-                                )
-                            } else {
-                                val paragraphs = remember(message.content) { message.content.toLongformParagraphs() }
-                                Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                                    paragraphs.forEach { paragraph ->
-                                        Text(
-                                            paragraph,
-                                            style = MaterialTheme.typography.bodyLarge.copy(
-                                                fontSize = 16.sp,
-                                                lineHeight = 26.sp * lineHeightScale,
-                                                letterSpacing = 0.6.sp,
-                                            ),
-                                            color = colors.textPrimary,
-                                        )
-                                    }
-                                }
-                            }
                         }
                     }
                 }
@@ -850,6 +843,67 @@ internal fun RoleplayMessageItem(
         }
 
         RoleplayContentType.SYSTEM -> Unit
+    }
+}
+
+@Composable
+private fun UserDialogueBubbleContent(
+    message: RoleplayMessageUiModel,
+    colors: ImmersiveRoleplayColors,
+    lineHeightScale: Float,
+    onOpenQuotedMessage: ((String) -> Unit)?,
+    fillWidth: Boolean,
+) {
+    Column(
+        modifier = (if (fillWidth) Modifier.fillMaxWidth() else Modifier)
+            .background(
+                color = colors.panelBackgroundStrong,
+                shape = RoundedCornerShape(
+                    topStart = 20.dp,
+                    topEnd = 6.dp,
+                    bottomStart = 20.dp,
+                    bottomEnd = 20.dp,
+                ),
+            )
+            .padding(horizontal = 14.dp, vertical = 10.dp),
+        verticalArrangement = Arrangement.spacedBy(4.dp),
+    ) {
+        if (message.replyToPreview.isNotBlank()) {
+            RoleplayReplyPreview(
+                message = message,
+                colors = colors,
+                onOpenQuotedMessage = onOpenQuotedMessage,
+            )
+        }
+        Text(
+            message.speakerName,
+            style = MaterialTheme.typography.labelMedium,
+            fontWeight = FontWeight.SemiBold,
+            color = colors.userAccent,
+        )
+        if (message.isStreaming) {
+            StreamingLogText(
+                content = message.content,
+                textColor = colors.textPrimary,
+                accentColor = colors.userAccent,
+                lineHeightScale = lineHeightScale,
+            )
+        } else {
+            val paragraphs = remember(message.content) { message.content.toLongformParagraphs() }
+            Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                paragraphs.forEach { paragraph ->
+                    Text(
+                        paragraph,
+                        style = MaterialTheme.typography.bodyLarge.copy(
+                            fontSize = 16.sp,
+                            lineHeight = 26.sp * lineHeightScale,
+                            letterSpacing = 0.6.sp,
+                        ),
+                        color = colors.textPrimary,
+                    )
+                }
+            }
+        }
     }
 }
 

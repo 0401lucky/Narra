@@ -37,6 +37,17 @@ interface PhoneSnapshotDao {
     @Query("DELETE FROM phone_snapshots WHERE conversationId = :conversationId")
     suspend fun deleteSnapshot(conversationId: String)
 
+    @Query(
+        """
+        DELETE FROM phone_snapshots
+        WHERE conversationId = :conversationId AND ownerType = :ownerType
+        """,
+    )
+    suspend fun deleteSnapshot(
+        conversationId: String,
+        ownerType: String,
+    )
+
     @Query("SELECT * FROM phone_observations WHERE conversationId = :conversationId LIMIT 1")
     fun observeObservation(conversationId: String): Flow<PhoneObservationEntity?>
 

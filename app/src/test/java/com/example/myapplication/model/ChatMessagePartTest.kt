@@ -20,6 +20,20 @@ class ChatMessagePartTest {
     }
 
     @Test
+    fun toContentMirror_returnsPunishFallback() {
+        val mirror = listOf(
+            punishMessagePart(
+                method = "戒尺",
+                count = "三下",
+                intensity = PunishIntensity.HEAVY,
+                reason = "撒谎",
+            ),
+        ).toContentMirror()
+
+        assertEquals("惩罚：戒尺 · 三下", mirror)
+    }
+
+    @Test
     fun normalizeChatMessageParts_trimsTaskMetadata() {
         val normalized = normalizeChatMessageParts(
             listOf(
@@ -49,6 +63,23 @@ class ChatMessagePartTest {
         assertTrue(copyText.contains("送礼对象：陆宴清"))
         assertTrue(copyText.contains("礼物：黑胶唱片"))
         assertTrue(copyText.contains("附言：别再熬夜了"))
+    }
+
+    @Test
+    fun toSpecialPlayCopyText_includesPunishPayload() {
+        val copyText = punishMessagePart(
+            method = "鞭子",
+            count = "三下",
+            intensity = PunishIntensity.MEDIUM,
+            reason = "撒谎",
+            note = "边抽边认错",
+        ).toSpecialPlayCopyText()
+
+        assertTrue(copyText.contains("方式：鞭子"))
+        assertTrue(copyText.contains("次数：三下"))
+        assertTrue(copyText.contains("强度：中"))
+        assertTrue(copyText.contains("原因：撒谎"))
+        assertTrue(copyText.contains("附注：边抽边认错"))
     }
 
     @Test

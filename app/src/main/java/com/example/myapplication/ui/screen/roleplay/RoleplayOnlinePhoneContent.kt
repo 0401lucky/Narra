@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
@@ -52,6 +53,7 @@ import com.example.myapplication.ui.component.NarraIconButton
 import com.example.myapplication.ui.component.roleplay.ImmersiveRoleplayColors
 import com.example.myapplication.ui.component.roleplay.RoleplayInputBar
 import com.example.myapplication.ui.component.roleplay.RoleplayMessageItem
+import com.example.myapplication.ui.component.roleplay.RoleplayMessageBubbleMode
 import com.example.myapplication.ui.component.roleplay.RoleplaySuggestionSection
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -135,7 +137,9 @@ internal fun RoleplayOnlinePhoneContent(
             .navigationBarsPadding(),
     ) {
         Surface(
-            modifier = Modifier.fillMaxWidth(),
+            modifier = Modifier
+                .fillMaxWidth()
+                .statusBarsPadding(),
             color = OnlineCard,
             tonalElevation = 2.dp,
         ) {
@@ -283,6 +287,7 @@ internal fun RoleplayOnlinePhoneContent(
                             }
                         },
                         onConfirmTransferReceipt = onConfirmTransferReceipt,
+                        bubbleMode = RoleplayMessageBubbleMode.ONLINE_PHONE,
                     )
                 }
             }

@@ -8,6 +8,7 @@ import com.example.myapplication.model.ChatMessage
 import com.example.myapplication.model.ChatMessagePart
 import com.example.myapplication.model.GiftPlayDraft
 import com.example.myapplication.model.InvitePlayDraft
+import com.example.myapplication.model.PunishPlayDraft
 import com.example.myapplication.model.TaskPlayDraft
 import com.example.myapplication.model.TransferPlayDraft
 import com.example.myapplication.model.TransferDirection
@@ -17,6 +18,7 @@ import com.example.myapplication.model.inviteMessagePart
 import com.example.myapplication.model.isGiftPart
 import com.example.myapplication.model.normalizeChatMessageParts
 import com.example.myapplication.model.ProviderFunction
+import com.example.myapplication.model.punishMessagePart
 import com.example.myapplication.model.specialMetadataValue
 import com.example.myapplication.model.taskMessagePart
 import com.example.myapplication.model.transferMessagePart
@@ -193,6 +195,30 @@ internal class RoleplaySendActionSupport(
                     objective = normalizedObjective,
                     reward = draft.reward.trim(),
                     deadline = draft.deadline.trim(),
+                )
+            }
+
+            is PunishPlayDraft -> {
+                val normalizedMethod = draft.method.trim()
+                if (normalizedMethod.isBlank()) {
+                    updateUiState { current ->
+                        RoleplayStateSupport.applyErrorMessage(current, "请输入惩罚方式")
+                    }
+                    return null
+                }
+                val normalizedCount = draft.count.trim()
+                if (normalizedCount.isBlank()) {
+                    updateUiState { current ->
+                        RoleplayStateSupport.applyErrorMessage(current, "请输入惩罚次数")
+                    }
+                    return null
+                }
+                punishMessagePart(
+                    method = normalizedMethod,
+                    count = normalizedCount,
+                    intensity = draft.intensity,
+                    reason = draft.reason.trim(),
+                    note = draft.note.trim(),
                 )
             }
         }

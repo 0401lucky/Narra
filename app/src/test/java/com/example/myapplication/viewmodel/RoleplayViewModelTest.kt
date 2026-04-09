@@ -28,6 +28,8 @@ import com.example.myapplication.model.GiftImageStatus
 import com.example.myapplication.model.GiftPlayDraft
 import com.example.myapplication.model.ImageGenerationRequest
 import com.example.myapplication.model.ImageGenerationResponse
+import com.example.myapplication.model.PunishIntensity
+import com.example.myapplication.model.PunishPlayDraft
 import com.example.myapplication.model.MemoryEntry
 import com.example.myapplication.model.MessageRole
 import com.example.myapplication.model.MessageStatus
@@ -2270,6 +2272,88 @@ class RoleplayViewModelTest {
         assertEquals(GiftImageStatus.SUCCEEDED, specialMessage.specialPart?.giftImageStatus())
         assertEquals("/tmp/roleplay-gift.png", specialMessage.specialPart?.specialMetadataValue("gift_image_uri"))
         assertTrue(viewModel.uiState.value.messages.any { it.contentType == RoleplayContentType.DIALOGUE })
+    }
+
+    @Test
+    fun sendSpecialPlay_sendsPunishCardForRoleplay() = runTest(mainDispatcherRule.dispatcher.scheduler) {
+        val assistant = Assistant(
+            id = "assistant-1",
+            name = "陆宴清",
+        )
+        val scenario = RoleplayScenario(
+            id = "scene-1",
+            title = "旧巷",
+            assistantId = assistant.id,
+            userDisplayNameOverride = "林晚",
+            characterDisplayNameOverride = "陆宴清",
+        )
+        val session = RoleplaySession(
+            id = "session-1",
+            scenarioId = scenario.id,
+            conversationId = "conv-1",
+            createdAt = 1L,
+            updatedAt = 2L,
+        )
+        val store = FakeConversationStore(
+            conversations = listOf(
+                Conversation(
+                    id = session.conversationId,
+                    title = "旧巷",
+                    model = "chat-model",
+                    createdAt = 1L,
+                    updatedAt = 2L,
+                    assistantId = assistant.id,
+                ),
+            ),
+        )
+        enqueueStreamResponse("<dialogue speaker=\"character\">……知道了。</dialogue>")
+        val provider = ProviderSettings(
+            id = "provider-1",
+            name = "测试 Provider",
+            baseUrl = server.url("/v1/").toString(),
+            apiKey = "test-key",
+            selectedModel = "chat-model",
+        )
+        val viewModel = createViewModel(
+            store = store,
+            roleplayRepository = FakeRoleplayRepository(
+                conversationStore = store,
+                scenarios = listOf(scenario),
+                sessions = listOf(session),
+            ),
+            settings = AppSettings(
+                baseUrl = provider.baseUrl,
+                apiKey = provider.apiKey,
+                selectedModel = provider.selectedModel,
+                providers = listOf(provider),
+                selectedProviderId = provider.id,
+                assistants = listOf(assistant),
+                selectedAssistantId = assistant.id,
+            ),
+            promptContextAssembler = DefaultPromptContextAssembler(),
+        )
+
+        viewModel.enterScenario(scenario.id)
+        advanceUntilIdle()
+        viewModel.sendSpecialPlay(
+            PunishPlayDraft(
+                method = "戒尺",
+                count = "三下",
+                intensity = PunishIntensity.MEDIUM,
+                reason = "撒谎",
+                note = "边抽边认错",
+            ),
+        )
+        advanceUntilIdle()
+
+        val specialMessage = viewModel.uiState.value.messages.first { it.contentType == RoleplayContentType.SPECIAL_PLAY }
+        assertEquals("punish", specialMessage.specialPart?.specialType?.protocolValue)
+        assertEquals("戒尺", specialMessage.specialPart?.specialMetadataValue("method"))
+        assertEquals("三下", specialMessage.specialPart?.specialMetadataValue("count"))
+        assertEquals("medium", specialMessage.specialPart?.specialMetadataValue("intensity"))
+        assertTrue(viewModel.uiState.value.messages.any {
+            it.contentType == RoleplayContentType.DIALOGUE && it.content.contains("知道了")
+        })
     }
 
     private fun createViewModel(

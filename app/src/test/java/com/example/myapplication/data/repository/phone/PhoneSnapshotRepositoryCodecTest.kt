@@ -17,6 +17,7 @@ class PhoneSnapshotRepositoryCodecTest {
             ownerType = PhoneSnapshotOwnerType.CHARACTER,
             scenarioId = "scene-1",
             assistantId = "assistant-1",
+            contentSemanticsVersion = PhoneSnapshot.USER_PHONE_CONTENT_SEMANTICS_VERSION,
             ownerName = "沈砚清",
             updatedAt = 88L,
             messageThreads = listOf(
@@ -43,6 +44,7 @@ class PhoneSnapshotRepositoryCodecTest {
 
         assertNotNull(restored)
         assertEquals("沈砚清", restored?.ownerName)
+        assertEquals(PhoneSnapshot.USER_PHONE_CONTENT_SEMANTICS_VERSION, restored?.contentSemanticsVersion)
         assertEquals("lucky", restored?.messageThreads?.first()?.contactName)
         assertEquals("纪念日", restored?.notes?.first()?.title)
     }

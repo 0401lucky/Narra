@@ -22,6 +22,8 @@ import com.example.myapplication.model.GiftPlayDraft
 import com.example.myapplication.model.ImageGenerationRequest
 import com.example.myapplication.model.ImageGenerationDataDto
 import com.example.myapplication.model.ImageGenerationResponse
+import com.example.myapplication.model.PunishIntensity
+import com.example.myapplication.model.PunishPlayDraft
 import com.example.myapplication.model.MemoryEntry
 import com.example.myapplication.model.MessageRole
 import com.example.myapplication.model.MessageStatus
@@ -1904,6 +1906,62 @@ class ChatViewModelTest {
         val giftPart = viewModel.uiState.value.messages.first().parts.single()
         assertEquals(null, giftPart.giftImageStatus())
         assertEquals("未配置礼物生图模型，已按普通礼物卡发送", viewModel.uiState.value.noticeMessage)
+    }
+
+    @Test
+    fun sendSpecialPlay_sendsPunishCardAndReceivesAssistantReply() = runTest(mainDispatcherRule.dispatcher.scheduler) {
+        val conversationId = "c1"
+        val store = FakeConversationStore(
+            conversations = listOf(
+                Conversation(
+                    id = conversationId,
+                    title = DEFAULT_CONVERSATION_TITLE,
+                    model = "",
+                    createdAt = 1L,
+                    updatedAt = 1L,
+                ),
+            ),
+        )
+        enqueueStreamResponse("……知道了。")
+        val provider = ProviderSettings(
+            id = "provider-1",
+            baseUrl = server.url("/v1/").toString(),
+            apiKey = "key",
+            selectedModel = "deepseek-chat",
+        )
+        val viewModel = createViewModel(
+            store = store,
+            settings = AppSettings(
+                baseUrl = provider.baseUrl,
+                apiKey = provider.apiKey,
+                selectedModel = provider.selectedModel,
+                providers = listOf(provider),
+                selectedProviderId = provider.id,
+            ),
+            nowProvider = incrementingNowProvider(300L),
+            messageIdProvider = idProviderOf("user-1", "assistant-1"),
+        )
+
+        advanceUntilIdle()
+        viewModel.sendSpecialPlay(
+            PunishPlayDraft(
+                method = "戒尺",
+                count = "三下",
+                intensity = PunishIntensity.HEAVY,
+                reason = "撒谎",
+                note = "边抽边认错",
+            ),
+        )
+        advanceUntilIdle()
+
+        val state = viewModel.uiState.value
+        assertEquals(2, state.messages.size)
+        val punishPart = state.messages.first().parts.single()
+        assertEquals("punish", punishPart.specialType?.protocolValue)
+        assertEquals("戒尺", punishPart.specialMetadataValue("method"))
+        assertEquals("三下", punishPart.specialMetadataValue("count"))
+        assertEquals("heavy", punishPart.specialMetadataValue("intensity"))
+        assertEquals("……知道了。", state.messages.last().content)
     }
 
     private fun createViewModel(

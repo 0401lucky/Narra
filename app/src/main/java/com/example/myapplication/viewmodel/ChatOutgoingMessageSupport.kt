@@ -4,6 +4,7 @@ import com.example.myapplication.conversation.ChatConversationSupport
 import com.example.myapplication.model.ChatSpecialPlayDraft
 import com.example.myapplication.model.GiftPlayDraft
 import com.example.myapplication.model.InvitePlayDraft
+import com.example.myapplication.model.PunishPlayDraft
 import com.example.myapplication.model.TaskPlayDraft
 import com.example.myapplication.model.ChatMessagePart
 import com.example.myapplication.model.TransferPlayDraft
@@ -11,6 +12,7 @@ import com.example.myapplication.model.TransferDirection
 import com.example.myapplication.model.TransferStatus
 import com.example.myapplication.model.giftMessagePart
 import com.example.myapplication.model.inviteMessagePart
+import com.example.myapplication.model.punishMessagePart
 import com.example.myapplication.model.taskMessagePart
 import com.example.myapplication.model.transferMessagePart
 
@@ -136,6 +138,24 @@ object ChatOutgoingMessageSupport {
                     objective = normalizedObjective,
                     reward = draft.reward.trim(),
                     deadline = draft.deadline.trim(),
+                )
+            }
+
+            is PunishPlayDraft -> {
+                val normalizedMethod = draft.method.trim()
+                if (normalizedMethod.isBlank()) {
+                    return ChatOutgoingMessageResolution.Error("请输入惩罚方式")
+                }
+                val normalizedCount = draft.count.trim()
+                if (normalizedCount.isBlank()) {
+                    return ChatOutgoingMessageResolution.Error("请输入惩罚次数")
+                }
+                punishMessagePart(
+                    method = normalizedMethod,
+                    count = normalizedCount,
+                    intensity = draft.intensity,
+                    reason = draft.reason.trim(),
+                    note = draft.note.trim(),
                 )
             }
         }

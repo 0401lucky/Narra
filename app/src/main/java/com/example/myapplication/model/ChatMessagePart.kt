@@ -15,6 +15,7 @@ enum class ChatSpecialType {
     INVITE,
     GIFT,
     TASK,
+    PUNISH,
     ;
 
     val displayName: String
@@ -23,6 +24,7 @@ enum class ChatSpecialType {
             INVITE -> "邀约"
             GIFT -> "礼物"
             TASK -> "委托"
+            PUNISH -> "惩罚"
         }
 
     val protocolValue: String
@@ -194,6 +196,30 @@ fun taskMessagePart(
     )
 }
 
+fun punishMessagePart(
+    id: String = UUID.randomUUID().toString(),
+    method: String,
+    count: String,
+    intensity: PunishIntensity = PunishIntensity.MEDIUM,
+    reason: String = "",
+    note: String = "",
+): ChatMessagePart {
+    return ChatMessagePart(
+        type = ChatMessagePartType.SPECIAL,
+        specialType = ChatSpecialType.PUNISH,
+        specialId = id,
+        specialMetadata = normalizeSpecialMetadata(
+            mapOf(
+                PUNISH_METHOD_KEY to method,
+                PUNISH_COUNT_KEY to count,
+                PUNISH_INTENSITY_KEY to intensity.storageValue,
+                PUNISH_REASON_KEY to reason,
+                PUNISH_NOTE_KEY to note,
+            ),
+        ),
+    )
+}
+
 fun MessageAttachment.toChatMessagePart(): ChatMessagePart {
     return when (type) {
         AttachmentType.IMAGE -> imageMessagePart(
@@ -346,6 +372,21 @@ fun ChatMessagePart.isTaskPart(): Boolean {
     return type == ChatMessagePartType.SPECIAL && specialType == ChatSpecialType.TASK
 }
 
+fun ChatMessagePart.isPunishPart(): Boolean {
+    return type == ChatMessagePartType.SPECIAL && specialType == ChatSpecialType.PUNISH
+}
+
+fun ChatMessagePart.punishIntensity(): PunishIntensity? {
+    if (!isPunishPart()) {
+        return null
+    }
+    return PunishIntensity.fromStorageValue(specialMetadataValue(PUNISH_INTENSITY_KEY))
+}
+
+fun ChatMessagePart.punishIntensityLabel(): String {
+    return punishIntensity()?.displayName ?: "中"
+}
+
 fun ChatMessagePart.giftImageStatus(): GiftImageStatus? {
     if (!isGiftPart()) {
         return null
@@ -466,6 +507,13 @@ fun ChatMessagePart.isValidSpecialPart(): Boolean {
                 specialMetadataValue("title").isNotBlank() &&
                 specialMetadataValue("objective").isNotBlank()
         }
+        ChatSpecialType.PUNISH -> {
+            isPunishPart() &&
+                specialId.isNotBlank() &&
+                specialMetadataValue(PUNISH_METHOD_KEY).isNotBlank() &&
+                specialMetadataValue(PUNISH_COUNT_KEY).isNotBlank() &&
+                punishIntensity() != null
+        }
         null -> false
     }
 }
@@ -530,6 +578,7 @@ fun ChatMessagePart.specialPlayTitle(): String {
         ChatSpecialType.INVITE -> "邀约 ${specialMetadataValue("target").ifBlank { "对方" }}"
         ChatSpecialType.GIFT -> "送给 ${specialMetadataValue("target").ifBlank { "对方" }} 的礼物"
         ChatSpecialType.TASK -> specialMetadataValue("title").ifBlank { "新的委托" }
+        ChatSpecialType.PUNISH -> ChatSpecialType.PUNISH.displayName
         null -> "特殊玩法"
     }
 }
@@ -566,6 +615,19 @@ fun ChatMessagePart.specialPlayFallbackText(): String {
             if (title.isNotBlank()) {
                 append("：")
                 append(title)
+            }
+        }
+        ChatSpecialType.PUNISH -> buildString {
+            append("惩罚")
+            val method = specialMetadataValue(PUNISH_METHOD_KEY)
+            val count = specialMetadataValue(PUNISH_COUNT_KEY)
+            if (method.isNotBlank() || count.isNotBlank()) {
+                append("：")
+                append(method.ifBlank { "待定方式" })
+                if (count.isNotBlank()) {
+                    append(" · ")
+                    append(count)
+                }
             }
         }
         null -> "特殊玩法"
@@ -615,6 +677,24 @@ fun ChatMessagePart.toSpecialPlayCopyText(): String {
                 append(deadline)
             }
         }
+        ChatSpecialType.PUNISH -> buildString {
+            append("方式：")
+            append(specialMetadataValue(PUNISH_METHOD_KEY))
+            append('\n')
+            append("次数：")
+            append(specialMetadataValue(PUNISH_COUNT_KEY))
+            append('\n')
+            append("强度：")
+            append(punishIntensityLabel())
+            specialMetadataValue(PUNISH_REASON_KEY).takeIf { it.isNotBlank() }?.let { reason ->
+                append("\n原因：")
+                append(reason)
+            }
+            specialMetadataValue(PUNISH_NOTE_KEY).takeIf { it.isNotBlank() }?.let { note ->
+                append("\n附注：")
+                append(note)
+            }
+        }
         null -> ""
     }
 }
@@ -638,3 +718,8 @@ private const val GIFT_IMAGE_URI_KEY = "gift_image_uri"
 private const val GIFT_IMAGE_MIME_TYPE_KEY = "gift_image_mime_type"
 private const val GIFT_IMAGE_FILE_NAME_KEY = "gift_image_file_name"
 private const val GIFT_IMAGE_ERROR_KEY = "gift_image_error"
+private const val PUNISH_METHOD_KEY = "method"
+private const val PUNISH_COUNT_KEY = "count"
+private const val PUNISH_INTENSITY_KEY = "intensity"
+private const val PUNISH_REASON_KEY = "reason"
+private const val PUNISH_NOTE_KEY = "note"

@@ -9,6 +9,7 @@ class PhoneSnapshotTest {
     fun mergeSections_onlyReplacesRequestedSections() {
         val original = PhoneSnapshot(
             conversationId = "conversation-1",
+            contentSemanticsVersion = PhoneSnapshot.USER_PHONE_CONTENT_SEMANTICS_VERSION,
             relationshipHighlights = listOf(
                 PhoneRelationshipHighlight(
                     id = "r1",
@@ -54,6 +55,7 @@ class PhoneSnapshotTest {
         )
 
         assertEquals(99L, merged.updatedAt)
+        assertEquals(PhoneSnapshot.USER_PHONE_CONTENT_SEMANTICS_VERSION, merged.contentSemanticsVersion)
         assertEquals("旧备忘录", original.notes.first().title)
         assertEquals("新备忘录", merged.notes.first().title)
         assertEquals("沈砚清", merged.messageThreads.first().contactName)

@@ -96,13 +96,19 @@ class PhoneCheckViewModel(
                     conversationId = initialConversationId,
                     ownerType = initialOwnerType,
                 )
-                baseContext to snapshot
-            }.onSuccess { (baseContext, snapshot) ->
+                LoadedSnapshotResult(
+                    baseContext = baseContext,
+                    resolution = resolveLoadedSnapshot(snapshot),
+                )
+            }.onSuccess { result ->
                 _uiState.update { current ->
                     current.copy(
                         isLoading = false,
-                        ownerName = baseContext.ownerName.ifBlank { snapshot?.ownerName.orEmpty() },
-                        snapshot = snapshot,
+                        ownerName = result.baseContext.ownerName.ifBlank {
+                            result.resolution.snapshot?.ownerName.orEmpty()
+                        },
+                        snapshot = result.resolution.snapshot,
+                        noticeMessage = result.resolution.noticeMessage,
                     )
                 }
             }.onFailure { throwable ->
@@ -176,6 +182,7 @@ class PhoneCheckViewModel(
         var workingSnapshot = existingSnapshot ?: PhoneSnapshot(
             conversationId = initialConversationId,
             ownerType = initialOwnerType,
+            contentSemanticsVersion = PhoneSnapshot.currentContentSemanticsVersion(initialOwnerType),
         )
         val failedSections = mutableListOf<String>()
         var lastErrorMessage = ""
@@ -200,6 +207,7 @@ class PhoneCheckViewModel(
                     ownerType = initialOwnerType,
                     scenarioId = initialScenarioId,
                     assistantId = runtime.assistant?.id.orEmpty(),
+                    contentSemanticsVersion = PhoneSnapshot.currentContentSemanticsVersion(initialOwnerType),
                     ownerName = runtime.ownerName,
                 )
                 phoneSnapshotRepository.upsertSnapshot(workingSnapshot)
@@ -297,6 +305,25 @@ class PhoneCheckViewModel(
 
     fun clearNoticeMessage() {
         _uiState.update { current -> current.copy(noticeMessage = null) }
+    }
+
+    private suspend fun resolveLoadedSnapshot(
+        snapshot: PhoneSnapshot?,
+    ): LoadedSnapshotResolution {
+        if (snapshot == null) {
+            return LoadedSnapshotResolution()
+        }
+        if (initialOwnerType != PhoneSnapshotOwnerType.USER || snapshot.isCompatibleWith(initialOwnerType)) {
+            return LoadedSnapshotResolution(snapshot = snapshot)
+        }
+        phoneSnapshotRepository.deleteSnapshot(
+            conversationId = initialConversationId,
+            ownerType = initialOwnerType,
+        )
+        phoneSnapshotRepository.deleteObservation(initialConversationId)
+        return LoadedSnapshotResolution(
+            noticeMessage = "“我的手机”规则已更新，请重新生成手机内容",
+        )
     }
 
     private suspend fun resolveBaseContext(): BaseContext? {
@@ -463,6 +490,16 @@ class PhoneCheckViewModel(
         val scenario: RoleplayScenario?,
         val ownerName: String,
         val viewerName: String,
+    )
+
+    private data class LoadedSnapshotResolution(
+        val snapshot: PhoneSnapshot? = null,
+        val noticeMessage: String? = null,
+    )
+
+    private data class LoadedSnapshotResult(
+        val baseContext: BaseContext,
+        val resolution: LoadedSnapshotResolution,
     )
 
     companion object {

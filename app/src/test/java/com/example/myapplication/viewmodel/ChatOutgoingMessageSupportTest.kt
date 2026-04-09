@@ -4,6 +4,8 @@ import com.example.myapplication.model.AppSettings
 import com.example.myapplication.model.Assistant
 import com.example.myapplication.model.GiftPlayDraft
 import com.example.myapplication.model.InvitePlayDraft
+import com.example.myapplication.model.PunishIntensity
+import com.example.myapplication.model.PunishPlayDraft
 import com.example.myapplication.model.ProviderSettings
 import com.example.myapplication.model.TaskPlayDraft
 import com.example.myapplication.model.specialMetadataValue
@@ -202,6 +204,50 @@ class ChatOutgoingMessageSupportTest {
 
         val error = result as ChatOutgoingMessageResolution.Error
         assertEquals("请输入委托目标", error.message)
+    }
+
+    @Test
+    fun resolveSpecialPlay_requiresPunishMethodAndCount() {
+        val methodMissing = ChatOutgoingMessageSupport.resolveSpecialPlay(
+            state = ChatUiState(),
+            draft = PunishPlayDraft(
+                method = " ",
+                count = "三下",
+            ),
+        ) as ChatOutgoingMessageResolution.Error
+        assertEquals("请输入惩罚方式", methodMissing.message)
+
+        val countMissing = ChatOutgoingMessageSupport.resolveSpecialPlay(
+            state = ChatUiState(),
+            draft = PunishPlayDraft(
+                method = "戒尺",
+                count = " ",
+            ),
+        ) as ChatOutgoingMessageResolution.Error
+        assertEquals("请输入惩罚次数", countMissing.message)
+    }
+
+    @Test
+    fun resolveSpecialPlay_buildsPunishCard() {
+        val result = ChatOutgoingMessageSupport.resolveSpecialPlay(
+            state = ChatUiState(),
+            draft = PunishPlayDraft(
+                method = "鞭子",
+                count = "三下",
+                intensity = PunishIntensity.HEAVY,
+                reason = "撒谎",
+                note = "边抽边认错",
+            ),
+        )
+
+        val ready = result as ChatOutgoingMessageResolution.Ready
+        val punishPart = ready.plan.userParts.single()
+        assertEquals("鞭子", punishPart.specialMetadataValue("method"))
+        assertEquals("三下", punishPart.specialMetadataValue("count"))
+        assertEquals("heavy", punishPart.specialMetadataValue("intensity"))
+        assertEquals("撒谎", punishPart.specialMetadataValue("reason"))
+        assertEquals("边抽边认错", punishPart.specialMetadataValue("note"))
+        assertTrue(ready.plan.forceChatRoundTrip)
     }
 
     private fun settingsWithSelectedModel(modelId: String): AppSettings {

@@ -627,6 +627,13 @@ class ConversationRepositoryTest {
             deletedConversationIds += conversationId
         }
 
+        override suspend fun deleteSnapshot(
+            conversationId: String,
+            ownerType: PhoneSnapshotOwnerType,
+        ) {
+            deletedConversationIds += "$conversationId:${ownerType.storageValue}"
+        }
+
         override fun observeObservation(conversationId: String): Flow<PhoneObservationState?> = flowOf(null)
 
         override suspend fun getObservation(conversationId: String): PhoneObservationState? = null

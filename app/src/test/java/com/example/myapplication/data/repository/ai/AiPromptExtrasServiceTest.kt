@@ -588,6 +588,65 @@ class AiPromptExtrasServiceTest {
     }
 
     @Test
+    fun generatePhoneSnapshotSections_userPhonePromptKeepsUserAsOwner() = runBlocking {
+        server.enqueue(
+            MockResponse().setResponseCode(200).setBody(
+                """
+                {
+                  "choices": [
+                    {
+                      "index": 0,
+                      "message": {
+                        "role": "assistant",
+                        "content": "{\"relationship_highlights\":[],\"message_threads\":[],\"notes\":[],\"gallery\":[],\"shopping_records\":[],\"search_history\":[]}"
+                      }
+                    }
+                  ]
+                }
+                """.trimIndent(),
+            ),
+        )
+        val service = createService()
+
+        service.generatePhoneSnapshotSections(
+            context = PhoneGenerationContext(
+                ownerType = PhoneSnapshotOwnerType.USER,
+                viewerType = PhoneSnapshotOwnerType.CHARACTER,
+                viewMode = PhoneViewMode.CHARACTER_LOOKS_USER_PHONE,
+                ownerName = "lucky",
+                viewerName = "沈砚清",
+                userName = "lucky",
+                assistantName = "沈砚清",
+                relationshipDirection = "角色正在查看用户的私人手机内容；内容主体必须来自用户本人，但可优先保留最能触发角色反应的线索",
+                timeGapContext = "",
+                promptMode = com.example.myapplication.model.PromptMode.ROLEPLAY,
+                systemContext = "【角色核心设定】冷静克制。",
+                scenarioContext = "场景描述：深夜书房",
+                conversationExcerpt = "lucky：你是不是又看我手机了？",
+            ),
+            requestedSections = setOf(PhoneSnapshotSection.MESSAGES),
+            existingSnapshot = null,
+            baseUrl = server.url("/v1/").toString(),
+            apiKey = "test-key",
+            modelId = "deepseek-chat",
+        )
+
+        val request = JsonParser.parseString(server.takeRequest().body.readUtf8()).asJsonObject
+        val prompt = request
+            .getAsJsonArray("messages")
+            .get(0)
+            .asJsonObject
+            .get("content")
+            .asString
+
+        assertTrue(prompt.contains("现在要为当前用户生成他的手机内容快照"))
+        assertTrue(prompt.contains("输出必须像已经真实存在于用户手机里的内容"))
+        assertTrue(prompt.contains("messages[].is_owner 表示该消息是否由手机主人本人发出"))
+        assertTrue(prompt.contains("不要把主体写成角色自己的社交圈和日常手机"))
+        assertFalse(prompt.contains("现在要为一个虚构角色生成他的手机内容快照"))
+    }
+
+    @Test
     fun generatePhoneSearchDetail_parsesJsonObject() = runBlocking {
         server.enqueue(
             MockResponse().setResponseCode(200).setBody(
@@ -634,6 +693,63 @@ class AiPromptExtrasServiceTest {
         assertEquals("古典文学中的克制美学", result.title)
         assertTrue(result.summary.contains("留白"))
         assertTrue(result.content.contains("压低直白表达"))
+    }
+
+    @Test
+    fun generatePhoneSearchDetail_userPhonePromptKeepsUserSearchSemantics() = runBlocking {
+        server.enqueue(
+            MockResponse().setResponseCode(200).setBody(
+                """
+                {
+                  "choices": [
+                    {
+                      "index": 0,
+                      "message": {
+                        "role": "assistant",
+                        "content": "{\"title\":\"怎么判断对方是不是吃醋\",\"summary\":\"观察回避、试探和占有欲细节。\",\"content\":\"可从说话方式、回应延迟和对他人话题的反应判断。\"}"
+                      }
+                    }
+                  ]
+                }
+                """.trimIndent(),
+            ),
+        )
+        val service = createService()
+
+        service.generatePhoneSearchDetail(
+            context = PhoneGenerationContext(
+                ownerType = PhoneSnapshotOwnerType.USER,
+                viewerType = PhoneSnapshotOwnerType.CHARACTER,
+                viewMode = PhoneViewMode.CHARACTER_LOOKS_USER_PHONE,
+                ownerName = "lucky",
+                viewerName = "沈砚清",
+                userName = "lucky",
+                assistantName = "沈砚清",
+                relationshipDirection = "角色正在查看用户的私人手机内容；内容主体必须来自用户本人，但可优先保留最能触发角色反应的线索",
+                timeGapContext = "",
+                promptMode = com.example.myapplication.model.PromptMode.ROLEPLAY,
+                systemContext = "【角色核心设定】冷静克制。",
+                scenarioContext = "",
+                conversationExcerpt = "",
+            ),
+            query = "怎么判断对方是不是吃醋",
+            relatedContext = "用户最近在反复试探角色的态度。",
+            baseUrl = server.url("/v1/").toString(),
+            apiKey = "test-key",
+            modelId = "deepseek-chat",
+        )
+
+        val request = JsonParser.parseString(server.takeRequest().body.readUtf8()).asJsonObject
+        val prompt = request
+            .getAsJsonArray("messages")
+            .get(0)
+            .asJsonObject
+            .get("content")
+            .asString
+
+        assertTrue(prompt.contains("请为用户手机里的一个搜索词生成点开后的详情内容"))
+        assertTrue(prompt.contains("主体必须仍是用户自己会搜的内容"))
+        assertFalse(prompt.contains("请为角色手机里的一个搜索词生成点开后的详情内容"))
     }
 
     private fun createService(): DefaultAiPromptExtrasService {

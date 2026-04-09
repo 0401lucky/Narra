@@ -111,6 +111,7 @@ import com.example.myapplication.model.Conversation
 import com.example.myapplication.model.DEFAULT_USER_DISPLAY_NAME
 import com.example.myapplication.model.GiftPlayDraft
 import com.example.myapplication.model.InvitePlayDraft
+import com.example.myapplication.model.PunishPlayDraft
 import com.example.myapplication.model.MessageAttachment
 import com.example.myapplication.model.ModelAbility
 import com.example.myapplication.model.ModelInfo
@@ -296,7 +297,9 @@ fun ChatScreen(
                 }
             }
 
-            ChatSpecialType.TASK -> Unit
+            ChatSpecialType.TASK,
+            ChatSpecialType.PUNISH,
+            -> Unit
         }
     }
 
@@ -312,6 +315,7 @@ fun ChatScreen(
                 GiftPlayDraft(target = currentAssistantName),
             )
             ChatSpecialType.TASK -> localState.setTaskDraft(TaskPlayDraft())
+            ChatSpecialType.PUNISH -> localState.setPunishDraft(PunishPlayDraft())
         }
     }
 

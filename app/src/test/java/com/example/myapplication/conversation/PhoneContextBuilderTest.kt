@@ -7,6 +7,7 @@ import com.example.myapplication.model.Assistant
 import com.example.myapplication.model.ChatMessage
 import com.example.myapplication.model.Conversation
 import com.example.myapplication.model.MessageRole
+import com.example.myapplication.model.PhoneSnapshotOwnerType
 import com.example.myapplication.model.PromptMode
 import com.example.myapplication.model.RoleplayScenario
 import org.junit.Assert.assertEquals
@@ -90,5 +91,47 @@ class PhoneContextBuilderTest {
         assertTrue(result.scenarioContext.contains("深夜书房"))
         assertTrue(result.scenarioContext.contains("你推门进去时"))
         assertEquals(PromptMode.ROLEPLAY, result.promptMode)
+    }
+
+    @Test
+    fun build_roleplayUserPhoneContextKeepsUserAsOwner() = runBlocking {
+        val builder = PhoneContextBuilder(
+            promptContextAssembler = object : PromptContextAssembler {
+                override suspend fun assemble(
+                    settings: AppSettings,
+                    assistant: Assistant?,
+                    conversation: Conversation,
+                    userInputText: String,
+                    recentMessages: List<ChatMessage>,
+                    promptMode: PromptMode,
+                    includePhoneSnapshot: Boolean,
+                ): PromptContextResult {
+                    return PromptContextResult(systemPrompt = "【角色长期记忆】他很在意用户最近的动向。")
+                }
+            },
+        )
+
+        val scenario = RoleplayScenario(
+            id = "scene-2",
+            assistantId = "assistant-1",
+            userDisplayNameOverride = "lucky",
+            characterDisplayNameOverride = "沈砚清",
+        )
+
+        val result = builder.build(
+            settings = AppSettings(),
+            assistant = Assistant(id = "assistant-1", name = "沈砚清"),
+            conversation = Conversation(id = "conversation-2", createdAt = 1L, updatedAt = 1L),
+            recentMessages = listOf(
+                ChatMessage(id = "m1", role = MessageRole.USER, content = "你是不是又看我手机了？"),
+            ),
+            scenario = scenario,
+            ownerType = PhoneSnapshotOwnerType.USER,
+        )
+
+        assertEquals("lucky", result.ownerName)
+        assertEquals("沈砚清", result.viewerName)
+        assertEquals(PhoneSnapshotOwnerType.USER, result.ownerType)
+        assertTrue(result.relationshipDirection.contains("内容主体必须来自用户本人"))
     }
 }

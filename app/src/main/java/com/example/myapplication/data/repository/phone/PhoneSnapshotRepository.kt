@@ -28,6 +28,11 @@ interface PhoneSnapshotRepository {
 
     suspend fun deleteSnapshot(conversationId: String)
 
+    suspend fun deleteSnapshot(
+        conversationId: String,
+        ownerType: PhoneSnapshotOwnerType,
+    )
+
     fun observeObservation(conversationId: String): Flow<PhoneObservationState?>
 
     suspend fun getObservation(conversationId: String): PhoneObservationState?
@@ -85,6 +90,19 @@ class RoomPhoneSnapshotRepository(
         phoneSnapshotDao.deleteSnapshot(conversationId)
     }
 
+    override suspend fun deleteSnapshot(
+        conversationId: String,
+        ownerType: PhoneSnapshotOwnerType,
+    ) {
+        if (conversationId.isBlank()) {
+            return
+        }
+        phoneSnapshotDao.deleteSnapshot(
+            conversationId = conversationId,
+            ownerType = ownerType.storageValue,
+        )
+    }
+
     override fun observeObservation(conversationId: String): Flow<PhoneObservationState?> {
         if (conversationId.isBlank()) {
             return flowOf(null)
@@ -130,6 +148,11 @@ object EmptyPhoneSnapshotRepository : PhoneSnapshotRepository {
     override suspend fun upsertSnapshot(snapshot: PhoneSnapshot) = Unit
 
     override suspend fun deleteSnapshot(conversationId: String) = Unit
+
+    override suspend fun deleteSnapshot(
+        conversationId: String,
+        ownerType: PhoneSnapshotOwnerType,
+    ) = Unit
 
     override fun observeObservation(conversationId: String): Flow<PhoneObservationState?> = flowOf(null)
 

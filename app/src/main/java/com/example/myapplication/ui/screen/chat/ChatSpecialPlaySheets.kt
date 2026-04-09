@@ -23,10 +23,12 @@ import androidx.compose.material.icons.automirrored.filled.Assignment
 import androidx.compose.material.icons.filled.CardGiftcard
 import androidx.compose.material.icons.filled.ChevronRight
 import androidx.compose.material.icons.filled.Event
+import androidx.compose.material.icons.filled.Gavel
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.FilterChip
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -49,12 +51,15 @@ import com.example.myapplication.model.ChatSpecialPlayDraft
 import com.example.myapplication.model.ChatSpecialType
 import com.example.myapplication.model.GiftPlayDraft
 import com.example.myapplication.model.InvitePlayDraft
+import com.example.myapplication.model.PunishIntensity
+import com.example.myapplication.model.PunishPlayDraft
 import com.example.myapplication.model.TaskPlayDraft
 import com.example.myapplication.model.TransferDirection
 import com.example.myapplication.model.TransferPlayDraft
 import com.example.myapplication.model.TransferStatus
 import com.example.myapplication.model.giftMessagePart
 import com.example.myapplication.model.inviteMessagePart
+import com.example.myapplication.model.punishMessagePart
 import com.example.myapplication.model.taskMessagePart
 import com.example.myapplication.model.transferMessagePart
 import com.example.myapplication.ui.component.NarraButton
@@ -78,6 +83,8 @@ private val GiftRose = Color(0xFFE46074)
 private val GiftRoseSoft = Color(0xFFFFEEF1)
 private val TaskAmber = Color(0xFFD78B31)
 private val TaskAmberSoft = Color(0xFFFFF2E1)
+private val PunishCrimson = Color(0xFFD54F63)
+private val PunishCrimsonSoft = Color(0xFFFFEEF1)
 private val PhoneBlue = Color(0xFF4A86D9)
 private val PhoneBlueSoft = Color(0xFFEAF2FF)
 
@@ -113,6 +120,14 @@ private val specialPlayOptions = listOf(
         icon = Icons.AutoMirrored.Filled.Assignment,
         iconTint = TaskAmber,
         iconBackground = TaskAmberSoft,
+    ),
+    SpecialPlayOption(
+        type = ChatSpecialType.PUNISH,
+        title = "惩罚",
+        description = "把抽打、教训和压迫感做成结构化动作卡，方便角色直接接反应。",
+        icon = Icons.Default.Gavel,
+        iconTint = PunishCrimson,
+        iconBackground = PunishCrimsonSoft,
     ),
 )
 
@@ -171,6 +186,28 @@ val TaskPlayDraftSaver: Saver<TaskPlayDraft, Any> = listSaver(
     },
 )
 
+val PunishPlayDraftSaver: Saver<PunishPlayDraft, Any> = listSaver(
+    save = {
+        listOf(
+            it.method,
+            it.count,
+            it.intensity.storageValue,
+            it.reason,
+            it.note,
+        )
+    },
+    restore = {
+        PunishPlayDraft(
+            method = (it.getOrNull(0) as? String).orEmpty(),
+            count = (it.getOrNull(1) as? String).orEmpty(),
+            intensity = PunishIntensity.fromStorageValue((it.getOrNull(2) as? String).orEmpty())
+                ?: PunishIntensity.MEDIUM,
+            reason = (it.getOrNull(3) as? String).orEmpty(),
+            note = (it.getOrNull(4) as? String).orEmpty(),
+        )
+    },
+)
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SpecialPlaySheet(
@@ -210,7 +247,14 @@ fun SpecialPlaySheet(
 
             SpecialPlayGroup(title = "社交互动") {
                 specialPlayOptions
-                    .filter { it.type in setOf(ChatSpecialType.TRANSFER, ChatSpecialType.INVITE, ChatSpecialType.GIFT) }
+                    .filter {
+                        it.type in setOf(
+                            ChatSpecialType.TRANSFER,
+                            ChatSpecialType.INVITE,
+                            ChatSpecialType.GIFT,
+                            ChatSpecialType.PUNISH,
+                        )
+                    }
                     .forEach { option ->
                         SpecialPlayEntry(option = option, onClick = { onOpenPlay(option.type) })
                     }
@@ -295,6 +339,7 @@ fun SpecialPlayEditorSheet(
                                     ChatSpecialType.INVITE -> "发出一份邀约"
                                     ChatSpecialType.GIFT -> "准备一份礼物"
                                     ChatSpecialType.TASK -> "创建一个委托"
+                                    ChatSpecialType.PUNISH -> "发起一次惩罚"
                                 },
                                 style = MaterialTheme.typography.titleMedium,
                                 fontWeight = FontWeight.SemiBold,
@@ -342,6 +387,12 @@ fun SpecialPlayEditorSheet(
                             )
 
                             is TaskPlayDraft -> TaskDraftFields(
+                                draft = draft,
+                                option = option,
+                                onDraftChange = { onDraftChange(it) },
+                            )
+
+                            is PunishPlayDraft -> PunishDraftFields(
                                 draft = draft,
                                 option = option,
                                 onDraftChange = { onDraftChange(it) },
@@ -676,6 +727,76 @@ private fun TaskDraftFields(
 }
 
 @Composable
+private fun PunishDraftFields(
+    draft: PunishPlayDraft,
+    option: SpecialPlayOption,
+    onDraftChange: (PunishPlayDraft) -> Unit,
+) {
+    SpecialLineField(
+        label = "方式",
+        value = draft.method,
+        placeholder = "例如：扇巴掌 / 鞭子 / 戒尺",
+        accentColor = option.iconTint,
+        onValueChange = { onDraftChange(draft.copy(method = it)) },
+    )
+    HorizontalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.16f))
+    SpecialLineField(
+        label = "次数",
+        value = draft.count,
+        placeholder = "例如：一下 / 三下",
+        accentColor = option.iconTint,
+        onValueChange = { onDraftChange(draft.copy(count = it)) },
+    )
+    HorizontalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.16f))
+    PunishIntensityField(
+        intensity = draft.intensity,
+        onIntensityChange = { onDraftChange(draft.copy(intensity = it)) },
+    )
+    HorizontalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.16f))
+    SpecialLineField(
+        label = "原因",
+        value = draft.reason,
+        placeholder = "例如：为什么要罚",
+        accentColor = option.iconTint,
+        onValueChange = { onDraftChange(draft.copy(reason = it)) },
+    )
+    HorizontalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.16f))
+    SpecialLineField(
+        label = "附注",
+        value = draft.note,
+        placeholder = "例如：边抽边说的话",
+        accentColor = option.iconTint,
+        onValueChange = { onDraftChange(draft.copy(note = it)) },
+    )
+}
+
+@Composable
+private fun PunishIntensityField(
+    intensity: PunishIntensity,
+    onIntensityChange: (PunishIntensity) -> Unit,
+) {
+    Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+        Text(
+            text = "强度",
+            style = MaterialTheme.typography.labelLarge,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(10.dp),
+        ) {
+            PunishIntensity.entries.forEach { option ->
+                FilterChip(
+                    selected = intensity == option,
+                    onClick = { onIntensityChange(option) },
+                    label = { Text(option.displayName) },
+                )
+            }
+        }
+    }
+}
+
+@Composable
 private fun SpecialLineField(
     label: String,
     value: String,
@@ -723,6 +844,7 @@ private fun canConfirmDraft(draft: ChatSpecialPlayDraft): Boolean {
         is InvitePlayDraft -> draft.place.trim().isNotBlank() && draft.time.trim().isNotBlank()
         is GiftPlayDraft -> draft.item.trim().isNotBlank()
         is TaskPlayDraft -> draft.title.trim().isNotBlank() && draft.objective.trim().isNotBlank()
+        is PunishPlayDraft -> draft.method.trim().isNotBlank() && draft.count.trim().isNotBlank()
     }
 }
 
@@ -753,5 +875,13 @@ private fun buildPreviewPart(draft: ChatSpecialPlayDraft) = when (draft) {
         objective = draft.objective.ifBlank { "暂无目标说明" },
         reward = draft.reward,
         deadline = draft.deadline,
+    )
+
+    is PunishPlayDraft -> punishMessagePart(
+        method = draft.method.ifBlank { "待定方式" },
+        count = draft.count.ifBlank { "一下" },
+        intensity = draft.intensity,
+        reason = draft.reason,
+        note = draft.note,
     )
 }

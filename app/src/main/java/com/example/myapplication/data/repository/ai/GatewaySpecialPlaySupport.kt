@@ -13,6 +13,7 @@ import com.example.myapplication.model.inviteMessagePart
 import com.example.myapplication.model.isValidTransferPart
 import com.example.myapplication.model.isValidSpecialPart
 import com.example.myapplication.model.normalizeChatMessageParts
+import com.example.myapplication.model.punishMessagePart
 import com.example.myapplication.model.specialMetadataValue
 import com.example.myapplication.model.taskMessagePart
 import com.example.myapplication.model.textMessagePart
@@ -24,15 +25,17 @@ internal object GatewaySpecialPlaySupport {
     const val defaultSpecialPlayPrompt: String = """
 你支持一个仅限聊天内展示的“特殊玩法卡片”协议，仅在互动确实适合可视化展示时使用。
 - 你可以输出 XML 自闭合标签：
-  <play id="唯一ID" type="transfer|invite|gift|task" ... />
+  <play id="唯一ID" type="transfer|invite|gift|task|punish" ... />
 - 字段要求：
   1. 转账：type="transfer"，并带 direction="assistant_to_user|user_to_assistant" amount="88.00" counterparty="用户" note="备注" status="pending|received"
   2. 邀约：type="invite"，并带 target="用户" place="天台" time="今晚九点" note="附言"
   3. 礼物：type="gift"，并带 target="用户" item="黑胶唱片" note="附言"
   4. 委托：type="task"，并带 title="寻找钥匙" objective="在旧图书馆找到铜钥匙" reward="一个答案" deadline="天亮前"
+  5. 惩罚：type="punish"，并带 method="戒尺" count="三下" intensity="light|medium|heavy" reason="撒谎" note="边抽边认错"
 - 当你确认已经收下用户之前发来的转账时，输出：
   <play-update ref="之前的转账ID" status="received" />
 - 非转账玩法不要输出 update 标签。
+- 惩罚卡只会由用户手动发出；当你看见它时，只需要在正文里回应，不要主动生成或回发惩罚卡。
 - 标签不要放进代码块，不要解释标签语法本身。
 - 可以同时输出正常对话正文，界面会把标签渲染成玩法卡片。
 """
@@ -92,6 +95,14 @@ internal object GatewaySpecialPlaySupport {
                     append(" objective=\"").append(part.specialMetadataValue("objective").escapeXmlAttribute()).append('"')
                     append(" reward=\"").append(part.specialMetadataValue("reward").escapeXmlAttribute()).append('"')
                     append(" deadline=\"").append(part.specialMetadataValue("deadline").escapeXmlAttribute()).append('"')
+                }
+
+                ChatSpecialType.PUNISH -> {
+                    append(" method=\"").append(part.specialMetadataValue("method").escapeXmlAttribute()).append('"')
+                    append(" count=\"").append(part.specialMetadataValue("count").escapeXmlAttribute()).append('"')
+                    append(" intensity=\"").append(part.specialMetadataValue("intensity").escapeXmlAttribute()).append('"')
+                    append(" reason=\"").append(part.specialMetadataValue("reason").escapeXmlAttribute()).append('"')
+                    append(" note=\"").append(part.specialMetadataValue("note").escapeXmlAttribute()).append('"')
                 }
 
                 null -> return null
@@ -229,6 +240,17 @@ internal object GatewaySpecialPlaySupport {
                 objective = attributes["objective"].orEmpty(),
                 reward = attributes["reward"].orEmpty(),
                 deadline = attributes["deadline"].orEmpty(),
+            ).takeIf(ChatMessagePart::isValidSpecialPart)
+
+            ChatSpecialType.PUNISH -> punishMessagePart(
+                id = id,
+                method = attributes["method"].orEmpty(),
+                count = attributes["count"].orEmpty(),
+                intensity = com.example.myapplication.model.PunishIntensity.fromStorageValue(
+                    attributes["intensity"].orEmpty(),
+                ) ?: com.example.myapplication.model.PunishIntensity.MEDIUM,
+                reason = attributes["reason"].orEmpty(),
+                note = attributes["note"].orEmpty(),
             ).takeIf(ChatMessagePart::isValidSpecialPart)
 
             null -> null

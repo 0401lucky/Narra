@@ -23,6 +23,7 @@ import com.example.myapplication.model.GiftPlayDraft
 import com.example.myapplication.model.InvitePlayDraft
 import com.example.myapplication.model.PhoneSnapshotOwnerType
 import com.example.myapplication.model.PendingMemoryProposal
+import com.example.myapplication.model.PunishPlayDraft
 import com.example.myapplication.model.RoleplayContextStatus
 import com.example.myapplication.model.RoleplayInteractionMode
 import com.example.myapplication.model.RoleplayMessageUiModel
@@ -35,6 +36,7 @@ import com.example.myapplication.ui.component.rememberSystemHighTextContrastEnab
 import com.example.myapplication.ui.component.roleplay.rememberImmersiveBackdropState
 import com.example.myapplication.ui.screen.chat.GiftPlayDraftSaver
 import com.example.myapplication.ui.screen.chat.InvitePlayDraftSaver
+import com.example.myapplication.ui.screen.chat.PunishPlayDraftSaver
 import com.example.myapplication.ui.screen.chat.TaskPlayDraftSaver
 import com.example.myapplication.ui.screen.chat.TransferPlayDraftSaver
 
@@ -136,6 +138,9 @@ fun RoleplayScreen(
     var taskDraft by rememberSaveable(stateSaver = TaskPlayDraftSaver) {
         mutableStateOf(TaskPlayDraft())
     }
+    var punishDraft by rememberSaveable(stateSaver = PunishPlayDraftSaver) {
+        mutableStateOf(PunishPlayDraft())
+    }
 
     val activeSpecialPlayType = activeSpecialPlayTypeName?.let(ChatSpecialType::valueOf)
     val activeSpecialPlayDraft = when (activeSpecialPlayType) {
@@ -143,6 +148,7 @@ fun RoleplayScreen(
         ChatSpecialType.INVITE -> inviteDraft
         ChatSpecialType.GIFT -> giftDraft
         ChatSpecialType.TASK -> taskDraft
+        ChatSpecialType.PUNISH -> punishDraft
         null -> null
     }
 
@@ -166,7 +172,9 @@ fun RoleplayScreen(
                 }
             }
 
-            ChatSpecialType.TASK -> Unit
+            ChatSpecialType.TASK,
+            ChatSpecialType.PUNISH,
+            -> Unit
         }
     }
 
@@ -176,6 +184,7 @@ fun RoleplayScreen(
             ChatSpecialType.INVITE -> inviteDraft = InvitePlayDraft(target = characterName)
             ChatSpecialType.GIFT -> giftDraft = GiftPlayDraft(target = characterName)
             ChatSpecialType.TASK -> taskDraft = TaskPlayDraft()
+            ChatSpecialType.PUNISH -> punishDraft = PunishPlayDraft()
         }
     }
 
@@ -263,6 +272,7 @@ fun RoleplayScreen(
                     is InvitePlayDraft -> inviteDraft = draft
                     is GiftPlayDraft -> giftDraft = draft
                     is TaskPlayDraft -> taskDraft = draft
+                    is PunishPlayDraft -> punishDraft = draft
                 }
             },
             onSpecialPlayConfirm = {
@@ -331,6 +341,7 @@ fun RoleplayScreen(
                     is InvitePlayDraft -> inviteDraft = draft
                     is GiftPlayDraft -> giftDraft = draft
                     is TaskPlayDraft -> taskDraft = draft
+                    is PunishPlayDraft -> punishDraft = draft
                 }
             },
             onSpecialPlayConfirm = {

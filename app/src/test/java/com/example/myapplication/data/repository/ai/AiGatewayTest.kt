@@ -912,6 +912,61 @@ class AiGatewayTest {
     }
 
     @Test
+    fun sendMessage_withPunishPartBuildsProtocolPrompt() = runBlocking {
+        server.enqueue(
+            MockResponse().setResponseCode(200).setBody(
+                """
+                {
+                  "choices": [
+                    {
+                      "index": 0,
+                      "message": {
+                        "role": "assistant",
+                        "content": "……知道了。"
+                      }
+                    }
+                  ]
+                }
+                """.trimIndent(),
+            ),
+        )
+        val gateway = createGateway(
+            settings = AppSettings(
+                baseUrl = server.url("/v1/").toString(),
+                apiKey = "saved-key",
+                selectedModel = "deepseek-chat",
+            ),
+        )
+
+        gateway.sendMessage(
+            listOf(
+                ChatMessage(
+                    id = "1",
+                    role = MessageRole.USER,
+                    content = "惩罚",
+                    parts = listOf(
+                        com.example.myapplication.model.punishMessagePart(
+                            id = "punish-1",
+                            method = "戒尺",
+                            count = "三下",
+                            intensity = com.example.myapplication.model.PunishIntensity.MEDIUM,
+                            reason = "撒谎",
+                            note = "边抽边认错",
+                        ),
+                    ),
+                ),
+            ),
+        )
+
+        val requestBody = server.takeRequest().body.readUtf8()
+        assertTrue(requestBody.contains("punish-1"))
+        assertTrue(requestBody.contains("戒尺"))
+        assertTrue(requestBody.contains("三下"))
+        assertTrue(requestBody.contains("medium"))
+        assertTrue(requestBody.contains("不要主动生成或回发惩罚卡"))
+    }
+
+    @Test
     fun sendMessage_injectsTransferPromptWhenPendingTransferExistsInHistory() = runBlocking {
         server.enqueue(
             MockResponse().setResponseCode(200).setBody(
@@ -1514,6 +1569,23 @@ class AiGatewayTest {
         assertEquals(ChatMessagePartType.SPECIAL, parsed.parts.last().type)
         assertEquals("invite", parsed.parts.last().specialType?.protocolValue)
         assertEquals("江边步道", parsed.parts.last().specialMetadataValue("place"))
+    }
+
+    @Test
+    fun parseAssistantSpecialOutput_extractsPunishCard() {
+        val gateway = createGateway(settings = AppSettings())
+
+        val parsed = gateway.parseAssistantSpecialOutput(
+            content = "你自己选的<play id=\"p1\" type=\"punish\" method=\"戒尺\" count=\"三下\" intensity=\"heavy\" reason=\"撒谎\" note=\"边抽边认错\" />",
+            existingParts = emptyList(),
+        )
+
+        assertEquals("你自己选的", parsed.content)
+        assertEquals(ChatMessagePartType.SPECIAL, parsed.parts.last().type)
+        assertEquals("punish", parsed.parts.last().specialType?.protocolValue)
+        assertEquals("戒尺", parsed.parts.last().specialMetadataValue("method"))
+        assertEquals("三下", parsed.parts.last().specialMetadataValue("count"))
+        assertEquals("heavy", parsed.parts.last().specialMetadataValue("intensity"))
     }
 
     private fun createGateway(

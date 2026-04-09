@@ -10,6 +10,7 @@ import com.example.myapplication.model.ChatSpecialPlayDraft
 import com.example.myapplication.model.ChatSpecialType
 import com.example.myapplication.model.GiftPlayDraft
 import com.example.myapplication.model.InvitePlayDraft
+import com.example.myapplication.model.PunishPlayDraft
 import com.example.myapplication.model.TaskPlayDraft
 import com.example.myapplication.model.TransferPlayDraft
 
@@ -38,6 +39,8 @@ internal data class ChatScreenLocalState(
     val setGiftDraft: (GiftPlayDraft) -> Unit,
     val taskDraft: TaskPlayDraft,
     val setTaskDraft: (TaskPlayDraft) -> Unit,
+    val punishDraft: PunishPlayDraft,
+    val setPunishDraft: (PunishPlayDraft) -> Unit,
     val exportOptions: ConversationExportOptions,
     val setExportOptions: (ConversationExportOptions) -> Unit,
     val draftUserDisplayName: String,
@@ -64,6 +67,7 @@ internal data class ChatScreenLocalState(
             ChatSpecialType.INVITE -> inviteDraft
             ChatSpecialType.GIFT -> giftDraft
             ChatSpecialType.TASK -> taskDraft
+            ChatSpecialType.PUNISH -> punishDraft
             null -> null
         }
 
@@ -73,6 +77,7 @@ internal data class ChatScreenLocalState(
             is InvitePlayDraft -> setInviteDraft(draft)
             is GiftPlayDraft -> setGiftDraft(draft)
             is TaskPlayDraft -> setTaskDraft(draft)
+            is PunishPlayDraft -> setPunishDraft(draft)
         }
     }
 }
@@ -102,6 +107,9 @@ internal fun rememberChatScreenLocalState(
     }
     var taskDraft by rememberSaveable(stateSaver = TaskPlayDraftSaver) {
         mutableStateOf(TaskPlayDraft())
+    }
+    var punishDraft by rememberSaveable(stateSaver = PunishPlayDraftSaver) {
+        mutableStateOf(PunishPlayDraft())
     }
     var exportOptions by remember { mutableStateOf(ConversationExportOptions()) }
     var draftUserDisplayName by rememberSaveable { mutableStateOf("") }
@@ -138,6 +146,8 @@ internal fun rememberChatScreenLocalState(
         setGiftDraft = { giftDraft = it },
         taskDraft = taskDraft,
         setTaskDraft = { taskDraft = it },
+        punishDraft = punishDraft,
+        setPunishDraft = { punishDraft = it },
         exportOptions = exportOptions,
         setExportOptions = { exportOptions = it },
         draftUserDisplayName = draftUserDisplayName,

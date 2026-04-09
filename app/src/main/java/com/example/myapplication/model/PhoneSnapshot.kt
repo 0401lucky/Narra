@@ -45,6 +45,7 @@ data class PhoneSnapshot(
     val ownerType: PhoneSnapshotOwnerType = PhoneSnapshotOwnerType.CHARACTER,
     val scenarioId: String = "",
     val assistantId: String = "",
+    val contentSemanticsVersion: Int = DEFAULT_PHONE_CONTENT_SEMANTICS_VERSION,
     val ownerName: String = "",
     val updatedAt: Long = 0L,
     val relationshipHighlights: List<PhoneRelationshipHighlight> = emptyList(),
@@ -70,6 +71,7 @@ data class PhoneSnapshot(
         ownerType: PhoneSnapshotOwnerType = this.ownerType,
         scenarioId: String = this.scenarioId,
         assistantId: String = this.assistantId,
+        contentSemanticsVersion: Int = this.contentSemanticsVersion,
         ownerName: String = this.ownerName,
     ): PhoneSnapshot {
         val normalizedRequested = requestedSections.ifEmpty { PhoneSnapshotSection.entries.toSet() }
@@ -77,6 +79,7 @@ data class PhoneSnapshot(
             ownerType = ownerType,
             scenarioId = scenarioId,
             assistantId = assistantId,
+            contentSemanticsVersion = contentSemanticsVersion,
             ownerName = ownerName,
             updatedAt = updatedAt,
             relationshipHighlights = if (PhoneSnapshotSection.MESSAGES in normalizedRequested) {
@@ -130,6 +133,22 @@ data class PhoneSnapshot(
                 }
             },
         )
+    }
+
+    fun isCompatibleWith(ownerType: PhoneSnapshotOwnerType): Boolean {
+        return contentSemanticsVersion >= currentContentSemanticsVersion(ownerType)
+    }
+
+    companion object {
+        const val DEFAULT_PHONE_CONTENT_SEMANTICS_VERSION = 1
+        const val USER_PHONE_CONTENT_SEMANTICS_VERSION = 2
+
+        fun currentContentSemanticsVersion(ownerType: PhoneSnapshotOwnerType): Int {
+            return when (ownerType) {
+                PhoneSnapshotOwnerType.CHARACTER -> DEFAULT_PHONE_CONTENT_SEMANTICS_VERSION
+                PhoneSnapshotOwnerType.USER -> USER_PHONE_CONTENT_SEMANTICS_VERSION
+            }
+        }
     }
 }
 

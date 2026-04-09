@@ -19,6 +19,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Assignment
 import androidx.compose.material.icons.filled.CardGiftcard
 import androidx.compose.material.icons.filled.Event
+import androidx.compose.material.icons.filled.Gavel
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
@@ -59,6 +60,7 @@ import com.example.myapplication.model.giftImageUri
 import com.example.myapplication.model.hasGiftGeneratedImage
 import com.example.myapplication.model.isSpecialPlayPart
 import com.example.myapplication.model.isTransferPart
+import com.example.myapplication.model.punishIntensityLabel
 import com.example.myapplication.model.specialMetadataValue
 import com.example.myapplication.model.specialPlayTitle
 import com.example.myapplication.model.transferDirectionLabel
@@ -143,6 +145,7 @@ fun SpecialPlayCard(
                     autoPreviewImages = autoPreviewImages,
                 )
                 ChatSpecialType.TASK -> TaskPlayBody(part = part)
+                ChatSpecialType.PUNISH -> PunishPlayBody(part = part)
                 null -> Unit
             }
         }
@@ -444,6 +447,34 @@ private fun TaskPlayBody(part: ChatMessagePart) {
 }
 
 @Composable
+private fun PunishPlayBody(part: ChatMessagePart) {
+    HighlightBlock(
+        headline = part.specialMetadataValue("method").ifBlank { "待定方式" },
+        supporting = "强度 ${part.punishIntensityLabel()} · 次数 ${part.specialMetadataValue("count").ifBlank { "一下" }}",
+    )
+    part.specialMetadataValue("reason").takeIf { it.isNotBlank() }?.let { reason ->
+        Text(
+            text = "原因：$reason",
+            style = MaterialTheme.typography.bodyMedium,
+            color = Color.White.copy(alpha = 0.92f),
+        )
+    }
+    part.specialMetadataValue("note").takeIf { it.isNotBlank() }?.let { note ->
+        Text(
+            text = "附注：$note",
+            style = MaterialTheme.typography.bodyMedium,
+            color = Color.White.copy(alpha = 0.92f),
+        )
+    }
+    HorizontalDivider(color = Color.White.copy(alpha = 0.18f))
+    Text(
+        text = "等待对方反应",
+        style = MaterialTheme.typography.labelMedium,
+        color = Color.White.copy(alpha = 0.88f),
+    )
+}
+
+@Composable
 private fun HighlightBlock(
     headline: String,
     supporting: String,
@@ -469,6 +500,7 @@ private fun resolveSpecialPlayIcon(type: ChatSpecialType?): ImageVector {
         ChatSpecialType.INVITE -> Icons.Default.Event
         ChatSpecialType.GIFT -> Icons.Default.CardGiftcard
         ChatSpecialType.TASK -> Icons.AutoMirrored.Filled.Assignment
+        ChatSpecialType.PUNISH -> Icons.Default.Gavel
         null -> Icons.Default.Share
     }
 }
@@ -510,6 +542,12 @@ private fun resolveSpecialPlayPalette(
             topColor = if (isUserMessage) Color(0xFFF1B86A) else Color(0xFFE7A44D),
             bottomColor = if (isUserMessage) Color(0xFFDB9041) else Color(0xFFC87624),
             emphasisColor = Color(0xFF7D470F),
+        )
+
+        ChatSpecialType.PUNISH -> SpecialPlayPalette(
+            topColor = if (isUserMessage) Color(0xFFEC7285) else Color(0xFFE45A71),
+            bottomColor = if (isUserMessage) Color(0xFFD45066) else Color(0xFFB93B51),
+            emphasisColor = Color(0xFF7B1E31),
         )
 
         null -> SpecialPlayPalette(
