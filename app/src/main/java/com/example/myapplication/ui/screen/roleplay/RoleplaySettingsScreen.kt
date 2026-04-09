@@ -19,6 +19,7 @@ import com.example.myapplication.model.ContextGovernanceSnapshot
 import com.example.myapplication.model.MemoryProposalHistoryItem
 import com.example.myapplication.model.ProviderSettings
 import com.example.myapplication.model.RoleplayContextStatus
+import com.example.myapplication.model.RoleplayInteractionMode
 import com.example.myapplication.model.RoleplayScenario
 import com.example.myapplication.ui.component.rememberSystemHighTextContrastEnabled
 import com.example.myapplication.ui.component.ContextGovernanceSheet
@@ -47,6 +48,7 @@ fun RoleplaySettingsScreen(
     onUpdateShowRoleplayStatusStrip: (Boolean) -> Unit,
     onUpdateShowRoleplayAiHelper: (Boolean) -> Unit,
     onUpdateRoleplayLongformTargetChars: (Int) -> Unit,
+    onUpdateScenarioInteractionMode: (RoleplayInteractionMode) -> Unit,
     onUpdateRoleplayImmersiveMode: (com.example.myapplication.model.RoleplayImmersiveMode) -> Unit,
     onUpdateRoleplayHighContrast: (Boolean) -> Unit,
     onUpdateRoleplayLineHeightScale: (com.example.myapplication.model.RoleplayLineHeightScale) -> Unit,
@@ -116,6 +118,7 @@ fun RoleplaySettingsScreen(
                     onUpdateShowRoleplayPresenceStrip = onUpdateShowRoleplayPresenceStrip,
                     onUpdateShowRoleplayStatusStrip = onUpdateShowRoleplayStatusStrip,
                     onUpdateShowRoleplayAiHelper = onUpdateShowRoleplayAiHelper,
+                    onUpdateScenarioInteractionMode = onUpdateScenarioInteractionMode,
                     systemHighContrastEnabled = systemHighContrastEnabled,
                     onUpdateRoleplayImmersiveMode = onUpdateRoleplayImmersiveMode,
                     onUpdateRoleplayHighContrast = onUpdateRoleplayHighContrast,

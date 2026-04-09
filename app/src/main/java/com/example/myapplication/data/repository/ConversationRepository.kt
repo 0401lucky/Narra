@@ -2,17 +2,21 @@ package com.example.myapplication.data.repository
 
 import com.example.myapplication.conversation.ConversationMessageTransforms
 import com.example.myapplication.data.local.ConversationStore
+import com.example.myapplication.data.repository.phone.EmptyPhoneSnapshotRepository
+import com.example.myapplication.data.repository.phone.PhoneSnapshotRepository
 import com.example.myapplication.model.ChatMessage
 import com.example.myapplication.model.ChatMessagePart
 import com.example.myapplication.model.Conversation
 import com.example.myapplication.model.DEFAULT_ASSISTANT_ID
 import com.example.myapplication.model.DEFAULT_CONVERSATION_TITLE
 import com.example.myapplication.model.MessageRole
+import com.example.myapplication.model.RoleplayOnlineEventKind
 import kotlinx.coroutines.flow.Flow
 import java.util.UUID
 
 class ConversationRepository(
     private val conversationStore: ConversationStore,
+    private val phoneSnapshotRepository: PhoneSnapshotRepository = EmptyPhoneSnapshotRepository,
     private val nowProvider: () -> Long = { System.currentTimeMillis() },
 ) {
     fun observeConversations(): Flow<List<Conversation>> {
@@ -222,6 +226,8 @@ class ConversationRepository(
             conversationId = conversationId,
             conversation = updatedConversation,
         )
+        phoneSnapshotRepository.deleteSnapshot(conversationId)
+        phoneSnapshotRepository.deleteObservation(conversationId)
         return updatedConversation
     }
 
@@ -231,6 +237,8 @@ class ConversationRepository(
         assistantId: String = DEFAULT_ASSISTANT_ID,
     ): Conversation {
         conversationStore.deleteConversation(conversationId)
+        phoneSnapshotRepository.deleteSnapshot(conversationId)
+        phoneSnapshotRepository.deleteObservation(conversationId)
         val remainingConversations = conversationStore.listConversations()
             .filter { it.matchesAssistant(assistantId) }
         return remainingConversations.firstOrNull()
@@ -239,6 +247,53 @@ class ConversationRepository(
 
     suspend fun deleteConversationById(conversationId: String) {
         conversationStore.deleteConversation(conversationId)
+        phoneSnapshotRepository.deleteSnapshot(conversationId)
+        phoneSnapshotRepository.deleteObservation(conversationId)
+    }
+
+    suspend fun recallMessage(
+        conversationId: String,
+        messageId: String,
+        selectedModel: String,
+    ): List<ChatMessage> {
+        val currentConversation = requireConversation(conversationId)
+        val updatedConversation = buildUpdatedConversation(
+            currentConversation = currentConversation,
+            selectedModel = selectedModel,
+            title = currentConversation.title.ifBlank { DEFAULT_CONVERSATION_TITLE },
+        )
+        return conversationStore.updateConversationMessages(
+            conversation = updatedConversation,
+            conversationId = conversationId,
+        ) { existingMessages ->
+            existingMessages.map { message ->
+                if (message.id == messageId) {
+                    message.copy(
+                        content = "你撤回了一条消息",
+                        isRecalled = true,
+                        systemEventKind = RoleplayOnlineEventKind.RECALL,
+                        parts = emptyList(),
+                        replyToMessageId = "",
+                        replyToPreview = "",
+                        replyToSpeakerName = "",
+                    )
+                } else {
+                    message
+                }
+            }
+        }
+    }
+
+    suspend fun appendSystemEventMessage(
+        conversationId: String,
+        message: ChatMessage,
+        selectedModel: String,
+    ): Conversation {
+        return appendMessages(
+            conversationId = conversationId,
+            messages = listOf(message),
+            selectedModel = selectedModel,
+        )
     }
 
     private fun buildConversationTitle(

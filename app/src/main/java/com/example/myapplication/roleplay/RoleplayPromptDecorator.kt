@@ -1,8 +1,10 @@
 package com.example.myapplication.roleplay
 
+import com.example.myapplication.context.ContextPlaceholderResolver
 import com.example.myapplication.model.AppSettings
 import com.example.myapplication.model.Assistant
 import com.example.myapplication.model.DEFAULT_ROLEPLAY_LONGFORM_TARGET_CHARS
+import com.example.myapplication.model.RoleplayInteractionMode
 import com.example.myapplication.model.RoleplayScenario
 
 object RoleplayPromptDecorator {
@@ -19,8 +21,13 @@ object RoleplayPromptDecorator {
         val characterName = scenario.characterDisplayNameOverride.trim()
             .ifBlank { assistant?.name?.trim().orEmpty() }
             .ifBlank { "角色" }
+        val resolvedBaseSystemPrompt = ContextPlaceholderResolver.resolve(
+            text = baseSystemPrompt,
+            userName = playerName,
+            characterName = characterName,
+        )
         val sections = buildList {
-            baseSystemPrompt.trim()
+            resolvedBaseSystemPrompt.trim()
                 .takeIf { it.isNotBlank() }
                 ?.let(::add)
 
@@ -34,15 +41,33 @@ object RoleplayPromptDecorator {
                     append("。")
                     if (scenario.title.isNotBlank()) {
                         append("\n场景标题：")
-                        append(scenario.title.trim())
+                        append(
+                            ContextPlaceholderResolver.resolve(
+                                text = scenario.title.trim(),
+                                userName = playerName,
+                                characterName = characterName,
+                            ),
+                        )
                     }
                     if (scenario.description.isNotBlank()) {
                         append("\n场景描述：")
-                        append(scenario.description.trim())
+                        append(
+                            ContextPlaceholderResolver.resolve(
+                                text = scenario.description.trim(),
+                                userName = playerName,
+                                characterName = characterName,
+                            ),
+                        )
                     }
                     if (includeOpeningNarrationReference && scenario.openingNarration.isNotBlank()) {
                         append("\n开场旁白参考：")
-                        append(scenario.openingNarration.trim())
+                        append(
+                            ContextPlaceholderResolver.resolve(
+                                text = scenario.openingNarration.trim(),
+                                userName = playerName,
+                                characterName = characterName,
+                            ),
+                        )
                     }
                 },
             )
@@ -68,7 +93,23 @@ object RoleplayPromptDecorator {
                 },
             )
 
-            if (scenario.longformModeEnabled) {
+            if (scenario.interactionMode == RoleplayInteractionMode.ONLINE_PHONE) {
+                add(
+                    buildString {
+                        append("【线上手机聊天模式】\n")
+                        append("1. 当前是手机线上聊天，不是面对面现场互动。\n")
+                        append("2. 角色回复应以短消息、多气泡为主，但允许自然穿插旁白/叙述性插段。\n")
+                        append("3. 角色对白继续使用 <dialogue speaker=\"character\" emotion=\"情绪\">内容</dialogue>。\n")
+                        append("4. 如果要引用旧消息，可在 dialogue 标签上附加属性：reply_to=\"消息ID\" reply_speaker=\"名字\" reply_preview=\"预览\"。\n")
+                        append("5. 叙述性内容继续使用 <narration>内容</narration>，用于状态条、聊天中的动作/停顿/情绪铺垫。\n")
+                        append("6. 不要把整轮写成长篇散文；每轮通常输出 1 到 6 段 dialogue/narration。\n")
+                        append("7. 聊天语境要有时间感、等待感和手机互动感，但不要丢掉正常强度的旁白表现。\n")
+                        append("8. 如果近期失联较久，可按角色人设自然表现委屈、生气、阴阳怪气、克制或想念。\n")
+                        append("9. 如果当前剧情里存在“看过对方手机”的既有事件，角色可以自然引用或延续其情绪后效。\n")
+                        append("10. 不要输出 Markdown、代码块或额外格式说明。")
+                    },
+                )
+            } else if (scenario.longformModeEnabled || scenario.interactionMode == RoleplayInteractionMode.OFFLINE_LONGFORM) {
                 val targetChars = settings.roleplayLongformTargetChars
                     .takeIf { it > 0 }
                     ?.coerceIn(300, 2000)

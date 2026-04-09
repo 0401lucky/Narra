@@ -2,7 +2,11 @@ package com.example.myapplication.data.repository.ai
 
 import com.example.myapplication.data.remote.ApiServiceFactory
 import com.example.myapplication.data.repository.RoleplayMemoryCondenseMode
+import com.example.myapplication.conversation.PhoneGenerationContext
 import com.example.myapplication.model.OpenAiTextApiMode
+import com.example.myapplication.model.PhoneSnapshotOwnerType
+import com.example.myapplication.model.PhoneSnapshotSection
+import com.example.myapplication.model.PhoneViewMode
 import com.example.myapplication.model.ProviderSettings
 import com.example.myapplication.model.RoleplaySuggestionAxis
 import com.google.gson.JsonParser
@@ -531,6 +535,105 @@ class AiPromptExtrasServiceTest {
         assertTrue(firstRequest.has("top_p"))
         assertFalse(secondRequest.has("temperature"))
         assertFalse(secondRequest.has("top_p"))
+    }
+
+    @Test
+    fun generatePhoneSnapshotSections_parsesStructuredJson() = runBlocking {
+        server.enqueue(
+            MockResponse().setResponseCode(200).setBody(
+                """
+                {
+                  "choices": [
+                    {
+                      "index": 0,
+                      "message": {
+                        "role": "assistant",
+                        "content": "{\"relationship_highlights\":[{\"id\":\"r1\",\"name\":\"沈砚清\",\"relation_label\":\"恋人\",\"stance\":\"克制\",\"note\":\"最近在回避公开关系\"}],\"message_threads\":[{\"id\":\"t1\",\"contact_name\":\"沈砚清\",\"relation_label\":\"恋人\",\"preview\":\"今晚别再躲我了。\",\"time_label\":\"昨天\",\"avatar_label\":\"沈\",\"messages\":[{\"id\":\"tm1\",\"sender_name\":\"沈砚清\",\"text\":\"今晚别再躲我了。\",\"time_label\":\"22:15\",\"is_owner\":false}]}],\"notes\":[],\"gallery\":[],\"shopping_records\":[],\"search_history\":[]}"
+                      }
+                    }
+                  ]
+                }
+                """.trimIndent(),
+            ),
+        )
+        val service = createService()
+
+        val result = service.generatePhoneSnapshotSections(
+            context = PhoneGenerationContext(
+                ownerType = PhoneSnapshotOwnerType.CHARACTER,
+                viewerType = PhoneSnapshotOwnerType.USER,
+                viewMode = PhoneViewMode.USER_LOOKS_CHARACTER_PHONE,
+                ownerName = "沈砚清",
+                viewerName = "lucky",
+                userName = "lucky",
+                assistantName = "沈砚清",
+                relationshipDirection = "用户正在查看角色的私人手机内容",
+                timeGapContext = "距离上一轮互动约 8 小时。",
+                promptMode = com.example.myapplication.model.PromptMode.ROLEPLAY,
+                systemContext = "【角色核心设定】冷静克制。",
+                scenarioContext = "场景描述：深夜书房",
+                conversationExcerpt = "lucky：你是不是又在躲我？",
+            ),
+            requestedSections = setOf(PhoneSnapshotSection.MESSAGES),
+            existingSnapshot = null,
+            baseUrl = server.url("/v1/").toString(),
+            apiKey = "test-key",
+            modelId = "deepseek-chat",
+        )
+
+        assertEquals(1, result.relationshipHighlights?.size)
+        assertEquals("沈砚清", result.relationshipHighlights?.first()?.name)
+        assertEquals(1, result.messageThreads?.size)
+        assertEquals("今晚别再躲我了。", result.messageThreads?.first()?.messages?.first()?.text)
+    }
+
+    @Test
+    fun generatePhoneSearchDetail_parsesJsonObject() = runBlocking {
+        server.enqueue(
+            MockResponse().setResponseCode(200).setBody(
+                """
+                {
+                  "choices": [
+                    {
+                      "index": 0,
+                      "message": {
+                        "role": "assistant",
+                        "content": "{\"title\":\"古典文学中的克制美学\",\"summary\":\"隐忍、留白与节制常被用来承载浓烈情绪。\",\"content\":\"克制美学常通过收束语言、压低直白表达来放大情绪余波。\"}"
+                      }
+                    }
+                  ]
+                }
+                """.trimIndent(),
+            ),
+        )
+        val service = createService()
+
+        val result = service.generatePhoneSearchDetail(
+            context = PhoneGenerationContext(
+                ownerType = PhoneSnapshotOwnerType.CHARACTER,
+                viewerType = PhoneSnapshotOwnerType.USER,
+                viewMode = PhoneViewMode.USER_LOOKS_CHARACTER_PHONE,
+                ownerName = "沈砚清",
+                viewerName = "lucky",
+                userName = "lucky",
+                assistantName = "沈砚清",
+                relationshipDirection = "用户正在查看角色的私人手机内容",
+                timeGapContext = "",
+                promptMode = com.example.myapplication.model.PromptMode.ROLEPLAY,
+                systemContext = "【角色核心设定】冷静克制。",
+                scenarioContext = "",
+                conversationExcerpt = "",
+            ),
+            query = "古典文学中的克制美学",
+            relatedContext = "与 lucky 的关系最近更紧张。",
+            baseUrl = server.url("/v1/").toString(),
+            apiKey = "test-key",
+            modelId = "deepseek-chat",
+        )
+
+        assertEquals("古典文学中的克制美学", result.title)
+        assertTrue(result.summary.contains("留白"))
+        assertTrue(result.content.contains("压低直白表达"))
     }
 
     private fun createService(): DefaultAiPromptExtrasService {

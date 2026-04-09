@@ -62,6 +62,7 @@ import com.example.myapplication.model.MemoryProposalStatus
 import com.example.myapplication.model.ProviderSettings
 import com.example.myapplication.model.RoleplayContextStatus
 import com.example.myapplication.model.RoleplayImmersiveMode
+import com.example.myapplication.model.RoleplayInteractionMode
 import com.example.myapplication.model.RoleplayLineHeightScale
 import com.example.myapplication.model.RoleplayScenario
 import com.example.myapplication.ui.component.NarraTextButton
@@ -94,6 +95,7 @@ internal fun RoleplaySettingsContent(
     onUpdateShowRoleplayPresenceStrip: (Boolean) -> Unit,
     onUpdateShowRoleplayStatusStrip: (Boolean) -> Unit,
     onUpdateShowRoleplayAiHelper: (Boolean) -> Unit,
+    onUpdateScenarioInteractionMode: (RoleplayInteractionMode) -> Unit,
     systemHighContrastEnabled: Boolean,
     onUpdateRoleplayImmersiveMode: (RoleplayImmersiveMode) -> Unit,
     onUpdateRoleplayHighContrast: (Boolean) -> Unit,
@@ -179,6 +181,43 @@ internal fun RoleplaySettingsContent(
                     checked = settings.showRoleplayAiHelper,
                     onCheckedChange = onUpdateShowRoleplayAiHelper,
                 )
+            }
+        }
+
+        item {
+            ImmersiveSettingsCard(backdropState) {
+                Column(
+                    modifier = Modifier.padding(horizontal = 18.dp, vertical = 16.dp),
+                    verticalArrangement = Arrangement.spacedBy(12.dp),
+                ) {
+                    Text(
+                        text = "剧情交互模式",
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold,
+                        color = palette.onGlass,
+                    )
+                    Text(
+                        text = "切换后当前场景会立即改成对应模式：长文、普通对白或线上手机聊天。",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = palette.onGlassMuted,
+                    )
+                    SingleChoiceSegmentedButtonRow(
+                        modifier = Modifier.fillMaxWidth(),
+                    ) {
+                        RoleplayInteractionMode.entries.forEachIndexed { index, mode ->
+                            SegmentedButton(
+                                selected = scenario?.interactionMode == mode,
+                                onClick = { onUpdateScenarioInteractionMode(mode) },
+                                shape = SegmentedButtonDefaults.itemShape(
+                                    index = index,
+                                    count = RoleplayInteractionMode.entries.size,
+                                ),
+                                enabled = scenario != null,
+                                label = { Text(mode.displayName) },
+                            )
+                        }
+                    }
+                }
             }
         }
 

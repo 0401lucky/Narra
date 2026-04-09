@@ -5,6 +5,7 @@ import com.example.myapplication.model.Assistant
 import com.example.myapplication.model.ChatMessage
 import com.example.myapplication.model.MessageRole
 import com.example.myapplication.model.ProviderFunction
+import com.example.myapplication.model.RoleplayInteractionMode
 import com.example.myapplication.model.RoleplayScenario
 import com.example.myapplication.model.toPlainText
 
@@ -76,6 +77,7 @@ object RoleplayConversationSupport {
         assistant: Assistant?,
         settings: AppSettings,
         outputParser: RoleplayOutputParser,
+        nowProvider: () -> Long = { System.currentTimeMillis() },
     ): String {
         val (userName, characterName) = resolveRoleplayNames(
             scenario = scenario,
@@ -155,6 +157,40 @@ object RoleplayConversationSupport {
                 append(continuityAnchor)
                 append("。\n")
             }
+            if (scenario.interactionMode == RoleplayInteractionMode.ONLINE_PHONE) {
+                if (recentUserInput.isBlank()) {
+                    append("当前状态：用户重新打开了聊天界面，但还没有发言。\n")
+                }
+                resolveTimeGapGuidance(messages, nowProvider)
+                    .takeIf { it.isNotBlank() }
+                    ?.let { timeGuidance ->
+                        append("时间差提示：")
+                        append(timeGuidance)
+                        append("。\n")
+                    }
+                val quoteCandidates = messages
+                    .takeLast(6)
+                    .filter { it.status == com.example.myapplication.model.MessageStatus.COMPLETED }
+                    .mapNotNull { message ->
+                        val preview = message.parts.toPlainText()
+                            .ifBlank { message.content }
+                            .trim()
+                            .takeIf { it.isNotBlank() }
+                            ?.replace('\n', ' ')
+                            ?.take(40)
+                            ?: return@mapNotNull null
+                        val speaker = if (message.role == MessageRole.USER) userName else characterName
+                        "id=${message.id} speaker=$speaker preview=$preview"
+                    }
+                if (quoteCandidates.isNotEmpty()) {
+                    append("可引用消息候选：\n")
+                    quoteCandidates.forEach { candidate ->
+                        append("- ")
+                        append(candidate)
+                        append('\n')
+                    }
+                }
+            }
             if (repeatedOpeners.isNotEmpty()) {
                 append("避免直接复用最近出现过的起手句或动作模板：")
                 append(repeatedOpeners.joinToString("、"))
@@ -170,6 +206,26 @@ object RoleplayConversationSupport {
             append(" 像在临场反应，不要每轮都完整解释动机。\n")
             append("推进时先回应，再顺势往前推一小步，不要一下子替双方做完所有决定。")
         }.trim()
+    }
+
+    private fun resolveTimeGapGuidance(
+        messages: List<ChatMessage>,
+        nowProvider: () -> Long,
+    ): String {
+        val latestTimestamp = messages
+            .filter { it.createdAt > 0L }
+            .maxOfOrNull { it.createdAt }
+            ?: return ""
+        val gapMillis = (nowProvider() - latestTimestamp).coerceAtLeast(0L)
+        val hours = gapMillis / (60 * 60 * 1000)
+        val days = gapMillis / (24 * 60 * 60 * 1000)
+        return when {
+            gapMillis < 6 * 60 * 60 * 1000L -> ""
+            gapMillis < 24 * 60 * 60 * 1000L -> "距离上次聊天约 $hours 小时，角色可以表现轻微等待感或挂念感"
+            gapMillis < 3 * 24 * 60 * 60 * 1000L -> "距离上次聊天约 $days 天，角色可按人设表现明显在意、埋怨、试探或冷淡"
+            gapMillis < 14 * 24 * 60 * 60 * 1000L -> "距离上次聊天已超过 $days 天，角色可自然带出失联后的情绪积压"
+            else -> "距离上次聊天已超过 $days 天，角色可强烈体现断联后的情绪与关系后效"
+        }
     }
 
     fun openingNarrationMessageId(

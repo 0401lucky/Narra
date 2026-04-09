@@ -46,6 +46,8 @@ import com.example.myapplication.data.repository.context.PendingMemoryProposalRe
 import com.example.myapplication.data.repository.search.DefaultSearchRepository
 import com.example.myapplication.data.repository.search.SearchModelExecutor
 import com.example.myapplication.data.repository.search.SearchRepository
+import com.example.myapplication.data.repository.phone.PhoneSnapshotRepository
+import com.example.myapplication.data.repository.phone.RoomPhoneSnapshotRepository
 import com.example.myapplication.data.repository.roleplay.RoleplayRepository
 import com.example.myapplication.data.repository.roleplay.RoomRoleplayRepository
 import com.example.myapplication.system.update.AndroidAppUpdateController
@@ -79,6 +81,11 @@ class AppGraph(
             ChatDatabase.MIGRATION_11_12,
             ChatDatabase.MIGRATION_12_13,
             ChatDatabase.MIGRATION_13_14,
+            ChatDatabase.MIGRATION_14_15,
+            ChatDatabase.MIGRATION_15_16,
+            ChatDatabase.MIGRATION_16_17,
+            ChatDatabase.MIGRATION_17_18,
+            ChatDatabase.MIGRATION_18_19,
         ).build()
     }
 
@@ -94,9 +101,14 @@ class AppGraph(
         ApiServiceFactory()
     }
 
+    val phoneSnapshotRepository: PhoneSnapshotRepository by lazy {
+        RoomPhoneSnapshotRepository(database.phoneSnapshotDao())
+    }
+
     val conversationRepository: ConversationRepository by lazy {
         ConversationRepository(
             conversationStore = RoomConversationStore(database),
+            phoneSnapshotRepository = phoneSnapshotRepository,
         )
     }
 
@@ -218,6 +230,7 @@ class AppGraph(
             memoryRepository = memoryRepository,
             memorySelector = MemorySelector(),
             conversationSummaryRepository = conversationSummaryRepository,
+            phoneSnapshotRepository = phoneSnapshotRepository,
         )
     }
 

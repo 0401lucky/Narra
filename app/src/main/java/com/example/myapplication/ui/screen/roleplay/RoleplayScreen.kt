@@ -14,19 +14,23 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.Row
 import com.example.myapplication.model.AppSettings
 import com.example.myapplication.model.Assistant
 import com.example.myapplication.model.ChatSpecialPlayDraft
 import com.example.myapplication.model.ChatSpecialType
 import com.example.myapplication.model.GiftPlayDraft
 import com.example.myapplication.model.InvitePlayDraft
+import com.example.myapplication.model.PhoneSnapshotOwnerType
 import com.example.myapplication.model.PendingMemoryProposal
 import com.example.myapplication.model.RoleplayContextStatus
+import com.example.myapplication.model.RoleplayInteractionMode
 import com.example.myapplication.model.RoleplayMessageUiModel
 import com.example.myapplication.model.RoleplayScenario
 import com.example.myapplication.model.RoleplaySuggestionUiModel
 import com.example.myapplication.model.TaskPlayDraft
 import com.example.myapplication.model.TransferPlayDraft
+import com.example.myapplication.ui.component.NarraTextButton
 import com.example.myapplication.ui.component.rememberSystemHighTextContrastEnabled
 import com.example.myapplication.ui.component.roleplay.rememberImmersiveBackdropState
 import com.example.myapplication.ui.screen.chat.GiftPlayDraftSaver
@@ -45,6 +49,9 @@ fun RoleplayScreen(
     suggestions: List<RoleplaySuggestionUiModel>,
     input: String,
     inputFocusToken: Long,
+    replyToMessageId: String,
+    replyToPreview: String,
+    replyToSpeakerName: String,
     isSending: Boolean,
     isGeneratingSuggestions: Boolean,
     isScenarioLoading: Boolean,
@@ -63,6 +70,10 @@ fun RoleplayScreen(
     onClearSuggestions: () -> Unit,
     onRetryTurn: (String) -> Unit,
     onEditUserMessage: (String) -> Unit,
+    onQuoteMessage: (String, String, String) -> Unit,
+    onClearQuotedMessage: () -> Unit,
+    onRecallMessage: (String) -> Unit,
+    onCaptureOnlineChat: () -> Unit,
     onSendSpecialPlay: (ChatSpecialPlayDraft) -> Unit,
     onConfirmTransferReceipt: (String) -> Unit,
     onSend: () -> Unit,
@@ -71,6 +82,7 @@ fun RoleplayScreen(
     onRejectPendingMemoryProposal: () -> Unit,
     onRestartSession: () -> Unit,
     onDismissAssistantMismatch: (Boolean) -> Unit,
+    onOpenPhoneCheck: (PhoneSnapshotOwnerType) -> Unit,
     onOpenReadingMode: () -> Unit,
     onOpenSettings: () -> Unit,
     onNavigateBack: () -> Unit,
@@ -110,6 +122,7 @@ fun RoleplayScreen(
     )
 
     var showSpecialPlaySheet by rememberSaveable { mutableStateOf(false) }
+    var showPhoneOwnerPicker by rememberSaveable { mutableStateOf(false) }
     var activeSpecialPlayTypeName by rememberSaveable { mutableStateOf<String?>(null) }
     var transferDraft by rememberSaveable(stateSaver = TransferPlayDraftSaver) {
         mutableStateOf(TransferPlayDraft(counterparty = characterName))
@@ -166,61 +179,102 @@ fun RoleplayScreen(
         }
     }
 
-    RoleplaySceneContent(
-        scenario = scenario,
-        assistant = assistant,
-        settings = settings,
-        contextStatus = contextStatus,
-        messages = messages,
-        suggestions = suggestions,
-        input = input,
-        inputFocusToken = inputFocusToken,
-        isSending = isSending,
-        isGeneratingSuggestions = isGeneratingSuggestions,
-        suggestionErrorMessage = suggestionErrorMessage,
-        pendingMemoryProposal = pendingMemoryProposal,
-        snackbarHostState = snackbarHostState,
-        backdropState = backdropState,
-        onInputChange = onInputChange,
-        onGenerateSuggestions = onGenerateSuggestions,
-        onApplySuggestion = onApplySuggestion,
-        onClearSuggestions = onClearSuggestions,
-        onRetryTurn = onRetryTurn,
-        onEditUserMessage = onEditUserMessage,
-        onOpenSpecialPlay = { showSpecialPlaySheet = true },
-        onConfirmTransferReceipt = onConfirmTransferReceipt,
-        onSend = onSend,
-        onCancelSending = onCancelSending,
-        onApprovePendingMemoryProposal = onApprovePendingMemoryProposal,
-        onRejectPendingMemoryProposal = onRejectPendingMemoryProposal,
-        onOpenSettings = onOpenSettings,
-        onNavigateBack = onNavigateBack,
-        showSpecialPlaySheet = showSpecialPlaySheet,
-        activeSpecialPlayDraft = activeSpecialPlayDraft,
-        onDismissSpecialPlay = { showSpecialPlaySheet = false },
-        onOpenSpecialPlayEditor = { type ->
-            showSpecialPlaySheet = false
-            primeSpecialPlayDraft(type)
-            activeSpecialPlayTypeName = type.name
-        },
-        onDismissSpecialPlayEditor = { activeSpecialPlayTypeName = null },
-        onSpecialPlayDraftChange = { draft ->
-            when (draft) {
-                is TransferPlayDraft -> transferDraft = draft
-                is InvitePlayDraft -> inviteDraft = draft
-                is GiftPlayDraft -> giftDraft = draft
-                is TaskPlayDraft -> taskDraft = draft
-            }
-        },
-        onSpecialPlayConfirm = {
-            val activeDraft = activeSpecialPlayDraft
-            if (activeDraft != null) {
-                onSendSpecialPlay(activeDraft)
-                resetSpecialPlayDraft(activeDraft.type)
-                activeSpecialPlayTypeName = null
-            }
-        },
-    )
+    if (scenario.interactionMode == RoleplayInteractionMode.ONLINE_PHONE) {
+        RoleplayOnlinePhoneContent(
+            scenario = scenario,
+            assistant = assistant,
+            settings = settings,
+            contextStatus = contextStatus,
+            messages = messages,
+            suggestions = suggestions,
+            input = input,
+            inputFocusToken = inputFocusToken,
+            replyToMessageId = replyToMessageId,
+            replyToPreview = replyToPreview,
+            replyToSpeakerName = replyToSpeakerName,
+            isSending = isSending,
+            isGeneratingSuggestions = isGeneratingSuggestions,
+            suggestionErrorMessage = suggestionErrorMessage,
+            pendingMemoryProposal = pendingMemoryProposal,
+            snackbarHostState = snackbarHostState,
+            onInputChange = onInputChange,
+            onGenerateSuggestions = onGenerateSuggestions,
+            onApplySuggestion = onApplySuggestion,
+            onClearSuggestions = onClearSuggestions,
+            onRetryTurn = onRetryTurn,
+            onEditUserMessage = onEditUserMessage,
+            onQuoteMessage = onQuoteMessage,
+            onClearQuotedMessage = onClearQuotedMessage,
+            onRecallMessage = onRecallMessage,
+            onScreenshotChat = onCaptureOnlineChat,
+            onOpenSpecialPlay = { showSpecialPlaySheet = true },
+            onConfirmTransferReceipt = onConfirmTransferReceipt,
+            onSend = onSend,
+            onCancelSending = onCancelSending,
+            onApprovePendingMemoryProposal = onApprovePendingMemoryProposal,
+            onRejectPendingMemoryProposal = onRejectPendingMemoryProposal,
+            onOpenPhoneCheck = { showPhoneOwnerPicker = true },
+            onOpenSettings = onOpenSettings,
+            onNavigateBack = onNavigateBack,
+        )
+    } else {
+        RoleplaySceneContent(
+            scenario = scenario,
+            assistant = assistant,
+            settings = settings,
+            contextStatus = contextStatus,
+            messages = messages,
+            suggestions = suggestions,
+            input = input,
+            inputFocusToken = inputFocusToken,
+            isSending = isSending,
+            isGeneratingSuggestions = isGeneratingSuggestions,
+            suggestionErrorMessage = suggestionErrorMessage,
+            pendingMemoryProposal = pendingMemoryProposal,
+            snackbarHostState = snackbarHostState,
+            backdropState = backdropState,
+            onInputChange = onInputChange,
+            onGenerateSuggestions = onGenerateSuggestions,
+            onApplySuggestion = onApplySuggestion,
+            onClearSuggestions = onClearSuggestions,
+            onRetryTurn = onRetryTurn,
+            onEditUserMessage = onEditUserMessage,
+            onOpenSpecialPlay = { showSpecialPlaySheet = true },
+            onOpenPhoneCheck = { showPhoneOwnerPicker = true },
+            onConfirmTransferReceipt = onConfirmTransferReceipt,
+            onSend = onSend,
+            onCancelSending = onCancelSending,
+            onApprovePendingMemoryProposal = onApprovePendingMemoryProposal,
+            onRejectPendingMemoryProposal = onRejectPendingMemoryProposal,
+            onOpenSettings = onOpenSettings,
+            onNavigateBack = onNavigateBack,
+            showSpecialPlaySheet = showSpecialPlaySheet,
+            activeSpecialPlayDraft = activeSpecialPlayDraft,
+            onDismissSpecialPlay = { showSpecialPlaySheet = false },
+            onOpenSpecialPlayEditor = { type ->
+                showSpecialPlaySheet = false
+                primeSpecialPlayDraft(type)
+                activeSpecialPlayTypeName = type.name
+            },
+            onDismissSpecialPlayEditor = { activeSpecialPlayTypeName = null },
+            onSpecialPlayDraftChange = { draft ->
+                when (draft) {
+                    is TransferPlayDraft -> transferDraft = draft
+                    is InvitePlayDraft -> inviteDraft = draft
+                    is GiftPlayDraft -> giftDraft = draft
+                    is TaskPlayDraft -> taskDraft = draft
+                }
+            },
+            onSpecialPlayConfirm = {
+                val activeDraft = activeSpecialPlayDraft
+                if (activeDraft != null) {
+                    onSendSpecialPlay(activeDraft)
+                    resetSpecialPlayDraft(activeDraft.type)
+                    activeSpecialPlayTypeName = null
+                }
+            },
+        )
+    }
 
     RoleplayAssistantMismatchDialog(
         showAssistantMismatchDialog = showAssistantMismatchDialog,
@@ -229,4 +283,64 @@ fun RoleplayScreen(
         onRestartSession = onRestartSession,
         onDismissAssistantMismatch = onDismissAssistantMismatch,
     )
+
+    if (showPhoneOwnerPicker) {
+        androidx.compose.material3.AlertDialog(
+            onDismissRequest = { showPhoneOwnerPicker = false },
+            title = { Text("选择查看对象") },
+            text = { Text("这次你想看谁的手机？") },
+            confirmButton = {
+                NarraTextButton(onClick = {
+                    showPhoneOwnerPicker = false
+                    onOpenPhoneCheck(PhoneSnapshotOwnerType.CHARACTER)
+                }) {
+                    Text("TA的手机")
+                }
+            },
+            dismissButton = {
+                Row {
+                    NarraTextButton(onClick = {
+                        showPhoneOwnerPicker = false
+                        onOpenPhoneCheck(PhoneSnapshotOwnerType.USER)
+                    }) {
+                        Text("我的手机")
+                    }
+                    NarraTextButton(onClick = { showPhoneOwnerPicker = false }) {
+                        Text("取消")
+                    }
+                }
+            },
+        )
+    }
+
+    if (scenario.interactionMode == RoleplayInteractionMode.ONLINE_PHONE) {
+        RoleplaySpecialPlayOverlays(
+            showSpecialPlaySheet = showSpecialPlaySheet,
+            activeSpecialPlayDraft = activeSpecialPlayDraft,
+            onDismissSpecialPlay = { showSpecialPlaySheet = false },
+            onOpenSpecialPlayEditor = { type ->
+                showSpecialPlaySheet = false
+                primeSpecialPlayDraft(type)
+                activeSpecialPlayTypeName = type.name
+            },
+            onOpenPhoneCheck = { showPhoneOwnerPicker = true },
+            onDismissSpecialPlayEditor = { activeSpecialPlayTypeName = null },
+            onSpecialPlayDraftChange = { draft ->
+                when (draft) {
+                    is TransferPlayDraft -> transferDraft = draft
+                    is InvitePlayDraft -> inviteDraft = draft
+                    is GiftPlayDraft -> giftDraft = draft
+                    is TaskPlayDraft -> taskDraft = draft
+                }
+            },
+            onSpecialPlayConfirm = {
+                val activeDraft = activeSpecialPlayDraft
+                if (activeDraft != null) {
+                    onSendSpecialPlay(activeDraft)
+                    resetSpecialPlayDraft(activeDraft.type)
+                    activeSpecialPlayTypeName = null
+                }
+            },
+        )
+    }
 }

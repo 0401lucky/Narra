@@ -3,11 +3,12 @@ package com.example.myapplication.ui.navigation
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.navigation.compose.composable
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
-import androidx.navigation.compose.composable
 import com.example.myapplication.di.AppGraph
 import com.example.myapplication.ui.screen.home.HomeScreen
+import com.example.myapplication.ui.screen.phone.PhoneCheckScreen
 import com.example.myapplication.viewmodel.AppUpdateViewModel
 import com.example.myapplication.viewmodel.SettingsViewModel
 
@@ -65,5 +66,22 @@ fun AppNavHost(
             navController = navController,
             settingsViewModel = settingsViewModel,
         )
+
+        composable(AppRoutes.PHONE_CHECK) { backStackEntry ->
+            val phoneCheckViewModel = rememberPhoneCheckViewModel(
+                appGraph = appGraph,
+                backStackEntry = backStackEntry,
+            )
+            val uiState by phoneCheckViewModel.uiState.collectAsStateWithLifecycle()
+            PhoneCheckScreen(
+                uiState = uiState,
+                onNavigateBack = { navController.popBackStack() },
+                onGenerateSnapshot = phoneCheckViewModel::generateSnapshot,
+                onRefreshSections = phoneCheckViewModel::refreshSections,
+                onLoadSearchDetail = phoneCheckViewModel::loadSearchDetail,
+                onClearErrorMessage = phoneCheckViewModel::clearErrorMessage,
+                onClearNoticeMessage = phoneCheckViewModel::clearNoticeMessage,
+            )
+        }
     }
 }

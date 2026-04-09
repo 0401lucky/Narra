@@ -1,0 +1,239 @@
+package com.example.myapplication.conversation
+
+import com.example.myapplication.context.PromptContextAssembler
+import com.example.myapplication.model.AppSettings
+import com.example.myapplication.model.Assistant
+import com.example.myapplication.model.ChatMessage
+import com.example.myapplication.model.Conversation
+import com.example.myapplication.model.MessageRole
+import com.example.myapplication.model.MessageStatus
+import com.example.myapplication.model.PhoneSnapshot
+import com.example.myapplication.model.PhoneSnapshotOwnerType
+import com.example.myapplication.model.PhoneViewMode
+import com.example.myapplication.model.PromptMode
+import com.example.myapplication.model.RoleplayScenario
+import com.example.myapplication.model.hasSendableContent
+import com.example.myapplication.model.toPlainText
+import com.example.myapplication.roleplay.RoleplayTranscriptFormatter
+
+data class PhoneGenerationContext(
+    val ownerType: PhoneSnapshotOwnerType,
+    val viewerType: PhoneSnapshotOwnerType,
+    val viewMode: PhoneViewMode,
+    val ownerName: String,
+    val viewerName: String,
+    val userName: String,
+    val assistantName: String,
+    val relationshipDirection: String,
+    val timeGapContext: String,
+    val promptMode: PromptMode,
+    val systemContext: String,
+    val scenarioContext: String,
+    val conversationExcerpt: String,
+)
+
+class PhoneContextBuilder(
+    private val promptContextAssembler: PromptContextAssembler,
+) {
+    suspend fun build(
+        settings: AppSettings,
+        assistant: Assistant?,
+        conversation: Conversation,
+        recentMessages: List<ChatMessage>,
+        scenario: RoleplayScenario? = null,
+        ownerType: PhoneSnapshotOwnerType = PhoneSnapshotOwnerType.CHARACTER,
+        nowProvider: () -> Long = { System.currentTimeMillis() },
+    ): PhoneGenerationContext {
+        val completedMessages = recentMessages.filter { message ->
+            message.status == MessageStatus.COMPLETED && message.hasSendableContent()
+        }
+        val promptMode = if (scenario != null) PromptMode.ROLEPLAY else PromptMode.CHAT
+        val assembledContext = promptContextAssembler.assemble(
+            settings = settings,
+            assistant = assistant,
+            conversation = conversation,
+            userInputText = "",
+            recentMessages = completedMessages,
+            promptMode = promptMode,
+            includePhoneSnapshot = false,
+        )
+        return if (scenario != null) {
+            val userName = scenario.userDisplayNameOverride.trim()
+                .ifBlank { settings.resolvedUserDisplayName() }
+            val assistantName = scenario.characterDisplayNameOverride.trim()
+                .ifBlank { assistant?.name?.trim().orEmpty() }
+                .ifBlank { "角色" }
+            val (resolvedOwnerName, viewerName, viewMode, relationshipDirection) = when (ownerType) {
+                PhoneSnapshotOwnerType.CHARACTER -> {
+                    Quadruple(
+                        assistantName,
+                        userName,
+                        PhoneViewMode.USER_LOOKS_CHARACTER_PHONE,
+                        "用户正在查看角色的私人手机内容",
+                    )
+                }
+                PhoneSnapshotOwnerType.USER -> {
+                    Quadruple(
+                        userName,
+                        assistantName,
+                        PhoneViewMode.CHARACTER_LOOKS_USER_PHONE,
+                        "角色正在查看用户的私人手机内容",
+                    )
+                }
+            }
+            PhoneGenerationContext(
+                ownerType = ownerType,
+                viewerType = if (ownerType == PhoneSnapshotOwnerType.CHARACTER) PhoneSnapshotOwnerType.USER else PhoneSnapshotOwnerType.CHARACTER,
+                viewMode = viewMode,
+                ownerName = resolvedOwnerName,
+                viewerName = viewerName,
+                userName = userName,
+                assistantName = assistantName,
+                relationshipDirection = relationshipDirection,
+                timeGapContext = buildTimeGapContext(
+                    messages = completedMessages,
+                    nowProvider = nowProvider,
+                ),
+                promptMode = PromptMode.ROLEPLAY,
+                systemContext = assembledContext.systemPrompt,
+                scenarioContext = buildString {
+                    if (scenario.title.isNotBlank()) {
+                        append("场景标题：")
+                        append(scenario.title.trim())
+                        append('\n')
+                    }
+                    if (scenario.description.isNotBlank()) {
+                        append("场景描述：")
+                        append(scenario.description.trim())
+                        append('\n')
+                    }
+                    if (scenario.openingNarration.isNotBlank()) {
+                        append("开场旁白：")
+                        append(scenario.openingNarration.trim())
+                    }
+                }.trim(),
+                conversationExcerpt = RoleplayTranscriptFormatter.formatMessages(
+                    messages = completedMessages.takeLast(12),
+                    userName = userName,
+                    characterName = assistantName,
+                    allowNarration = scenario.enableNarration,
+                ),
+            )
+        } else {
+            val userName = settings.resolvedUserDisplayName()
+            val assistantName = assistant?.name?.trim().orEmpty().ifBlank { "对方" }
+            val (resolvedOwnerName, viewerName, viewMode, relationshipDirection) = when (ownerType) {
+                PhoneSnapshotOwnerType.CHARACTER -> {
+                    Quadruple(
+                        assistantName,
+                        userName,
+                        PhoneViewMode.USER_LOOKS_CHARACTER_PHONE,
+                        "用户正在查看对方的手机内容",
+                    )
+                }
+                PhoneSnapshotOwnerType.USER -> {
+                    Quadruple(
+                        userName,
+                        assistantName,
+                        PhoneViewMode.CHARACTER_LOOKS_USER_PHONE,
+                        "对方正在查看用户的手机内容",
+                    )
+                }
+            }
+            PhoneGenerationContext(
+                ownerType = ownerType,
+                viewerType = if (ownerType == PhoneSnapshotOwnerType.CHARACTER) PhoneSnapshotOwnerType.USER else PhoneSnapshotOwnerType.CHARACTER,
+                viewMode = viewMode,
+                ownerName = resolvedOwnerName,
+                viewerName = viewerName,
+                userName = userName,
+                assistantName = assistantName,
+                relationshipDirection = relationshipDirection,
+                timeGapContext = buildTimeGapContext(
+                    messages = completedMessages,
+                    nowProvider = nowProvider,
+                ),
+                promptMode = PromptMode.CHAT,
+                systemContext = assembledContext.systemPrompt,
+                scenarioContext = "",
+                conversationExcerpt = completedMessages
+                    .takeLast(10)
+                    .joinToString(separator = "\n") { message ->
+                        val speaker = if (message.role == MessageRole.USER) userName else assistantName
+                        "$speaker：${message.parts.toPlainText().ifBlank { message.content }.trim()}"
+                    }
+                    .trim(),
+            )
+        }
+    }
+
+    private fun buildTimeGapContext(
+        messages: List<ChatMessage>,
+        nowProvider: () -> Long,
+    ): String {
+        val latestTimestamp = messages.maxOfOrNull { it.createdAt }
+            ?.takeIf { it > 0L }
+            ?: return ""
+        val gapMillis = (nowProvider() - latestTimestamp).coerceAtLeast(0L)
+        val hours = gapMillis / (60 * 60 * 1000)
+        val days = gapMillis / (24 * 60 * 60 * 1000)
+        return when {
+            gapMillis < 6 * 60 * 60 * 1000L -> "距离上一轮互动不到 6 小时。"
+            gapMillis < 24 * 60 * 60 * 1000L -> "距离上一轮互动约 $hours 小时，属于短暂间隔。"
+            gapMillis < 3 * 24 * 60 * 60 * 1000L -> "距离上一轮互动约 $days 天，属于明显失联。"
+            gapMillis < 14 * 24 * 60 * 60 * 1000L -> "距离上一轮互动已超过 $days 天，角色可能会对久未联系产生明显反应。"
+            else -> "距离上一轮互动已超过 $days 天，属于强烈断联，角色可按人设表现压抑、埋怨、冷淡或失控的情绪。"
+        }
+    }
+
+    fun buildSearchDetailContext(
+        snapshot: PhoneSnapshot,
+        query: String,
+    ): String {
+        return buildString {
+            if (snapshot.relationshipHighlights.isNotEmpty()) {
+                appendLine("【关系速览】")
+                snapshot.relationshipHighlights.take(5).forEach { item ->
+                    append("- ")
+                    append(item.name)
+                    if (item.relationLabel.isNotBlank()) {
+                        append("（")
+                        append(item.relationLabel)
+                        append("）")
+                    }
+                    if (item.note.isNotBlank()) {
+                        append("：")
+                        append(item.note)
+                    }
+                    appendLine()
+                }
+            }
+            snapshot.notes.firstOrNull { entry -> entry.title.contains(query, ignoreCase = true) }
+                ?.let { note ->
+                    appendLine("【相关备忘录】")
+                    appendLine(note.title)
+                    appendLine(note.summary)
+                }
+            snapshot.shoppingRecords.firstOrNull { entry -> entry.title.contains(query, ignoreCase = true) }
+                ?.let { record ->
+                    appendLine("【相关购物记录】")
+                    appendLine(record.title)
+                    appendLine(record.note)
+                }
+            snapshot.messageThreads.firstOrNull { thread ->
+                thread.contactName.contains(query, ignoreCase = true) ||
+                    thread.preview.contains(query, ignoreCase = true)
+            }?.let { thread ->
+                appendLine("【相关消息】")
+                appendLine("${thread.contactName}：${thread.preview}")
+            }
+        }.trim()
+    }
+
+    private data class Quadruple<A, B, C, D>(
+        val first: A,
+        val second: B,
+        val third: C,
+        val fourth: D,
+    )
+}

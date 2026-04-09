@@ -88,6 +88,11 @@ internal fun NavGraphBuilder.registerChatNavGraph(
                     launchSingleTop = true
                 }
             },
+            onOpenPhoneCheck = { conversationId ->
+                navController.navigate(AppRoutes.phoneCheck(conversationId)) {
+                    launchSingleTop = true
+                }
+            },
             onOpenProviderDetail = { providerId ->
                 navController.navigate(AppRoutes.settingsProviderDetail(providerId)) {
                     launchSingleTop = true

@@ -299,4 +299,27 @@ class PromptContextAssemblerTest {
         assertTrue(result.systemPrompt.contains("【创作者导演说明】"))
         assertTrue(result.systemPrompt.contains("边试探边推进局势"))
     }
+
+    @Test
+    fun assemble_replacesTavernStylePlaceholders() = runBlocking {
+        val result = assembler.assemble(
+            settings = AppSettings(userDisplayName = "lucky"),
+            assistant = Assistant(
+                id = "assistant-1",
+                name = "金乘",
+                systemPrompt = "{{char}} 没有看向{{User}}，只是低声应了一句。",
+                scenario = "{{user}} 站在门边，{{char}} 正在整理警服领口。",
+                greeting = "晚上好，{{user}}。",
+                exampleDialogues = listOf("{{char}}：别再试探我了，{{user}}。"),
+            ),
+            conversation = Conversation(id = "c1", createdAt = 1L, updatedAt = 1L),
+            userInputText = "继续",
+            recentMessages = emptyList(),
+        )
+
+        assertTrue(result.systemPrompt.contains("金乘 没有看向lucky"))
+        assertTrue(result.systemPrompt.contains("lucky 站在门边，金乘 正在整理警服领口"))
+        assertTrue(result.systemPrompt.contains("晚上好，lucky"))
+        assertTrue(result.systemPrompt.contains("金乘：别再试探我了，lucky"))
+    }
 }

@@ -14,6 +14,8 @@ import com.example.myapplication.context.PromptContextAssembler
 import com.example.myapplication.data.repository.ConversationRepository
 import com.example.myapplication.data.repository.ai.AiGateway
 import com.example.myapplication.data.repository.context.ConversationSummaryRepository
+import com.example.myapplication.data.repository.phone.PhoneSnapshotRepository
+import com.example.myapplication.data.repository.roleplay.RoleplayRepository
 import com.example.myapplication.model.Assistant
 import com.example.myapplication.model.ChatMessage
 import com.example.myapplication.model.ChatMessagePart
@@ -24,6 +26,7 @@ import com.example.myapplication.model.GatewayToolRuntimeContext
 import com.example.myapplication.model.GatewayToolingOptions
 import com.example.myapplication.model.MessageRole
 import com.example.myapplication.model.MessageStatus
+import com.example.myapplication.model.PhoneSnapshotOwnerType
 import com.example.myapplication.model.PromptMode
 import com.example.myapplication.model.imageMessagePart
 import com.example.myapplication.model.reasoningStepsToContent
@@ -38,6 +41,8 @@ internal class RoleplayRoundTripExecutor(
     private val aiGateway: AiGateway,
     private val conversationRepository: ConversationRepository,
     private val conversationSummaryRepository: ConversationSummaryRepository,
+    private val phoneSnapshotRepository: PhoneSnapshotRepository,
+    private val roleplayRepository: RoleplayRepository,
     private val promptContextAssembler: PromptContextAssembler,
     private val assistantRoundTripRunner: ConversationAssistantRoundTripRunner,
     private val outputParser: RoleplayOutputParser,
@@ -243,6 +248,10 @@ internal class RoleplayRoundTripExecutor(
             ) {
                 is AssistantRoundTripResult.Completed -> {
                     updateRawMessages(result.messages)
+                    markPhoneObservationConsumedIfNeeded(
+                        conversationId = session.conversationId,
+                        assistantMessage = result.messages.lastOrNull { it.role == MessageRole.ASSISTANT && it.status == MessageStatus.COMPLETED },
+                    )
                     updateUiState { current ->
                         RoleplayStateSupport.finishSending(current, errorMessage = null)
                     }
@@ -301,6 +310,35 @@ internal class RoleplayRoundTripExecutor(
                 selectedModel = selectedModel,
             )
         }
+    }
+
+    private suspend fun markPhoneObservationConsumedIfNeeded(
+        conversationId: String,
+        assistantMessage: ChatMessage?,
+    ) {
+        val observation = phoneSnapshotRepository.getObservation(conversationId) ?: return
+        if (observation.ownerType != PhoneSnapshotOwnerType.USER || observation.hasVisibleFeedback) {
+            return
+        }
+        val feedbackMessage = assistantMessage ?: return
+        phoneSnapshotRepository.upsertObservation(
+            observation.copy(
+                hasVisibleFeedback = true,
+                feedbackMessageId = feedbackMessage.id,
+                usedFindingKeys = observation.keyFindings,
+                updatedAt = nowProvider(),
+            ),
+        )
+        val meta = roleplayRepository.getOnlineMeta(conversationId)
+        roleplayRepository.upsertOnlineMeta(
+            com.example.myapplication.model.RoleplayOnlineMeta(
+                conversationId = conversationId,
+                lastCompensationBucket = meta?.lastCompensationBucket.orEmpty(),
+                lastConsumedObservationUpdatedAt = observation.updatedAt,
+                lastSystemEventToken = meta?.lastSystemEventToken.orEmpty(),
+                updatedAt = nowProvider(),
+            ),
+        )
     }
 
     private suspend fun streamRoleplayAssistantReply(

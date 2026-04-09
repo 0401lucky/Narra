@@ -2,6 +2,7 @@ package com.example.myapplication.roleplay
 
 import com.example.myapplication.model.ChatMessage
 import com.example.myapplication.model.MessageRole
+import com.example.myapplication.model.RoleplayInteractionMode
 import com.example.myapplication.model.RoleplayOutputFormat
 import com.example.myapplication.model.RoleplayScenario
 import com.example.myapplication.model.toPlainText
@@ -14,7 +15,9 @@ object RoleplayMessageFormatSupport {
         scenario: RoleplayScenario,
     ): RoleplayOutputFormat {
         return when {
-            scenario.longformModeEnabled -> RoleplayOutputFormat.LONGFORM
+            scenario.interactionMode == RoleplayInteractionMode.OFFLINE_LONGFORM ||
+                scenario.longformModeEnabled -> RoleplayOutputFormat.LONGFORM
+            scenario.interactionMode == RoleplayInteractionMode.ONLINE_PHONE -> RoleplayOutputFormat.PROTOCOL
             scenario.enableRoleplayProtocol -> RoleplayOutputFormat.PROTOCOL
             else -> RoleplayOutputFormat.PLAIN
         }

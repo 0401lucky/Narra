@@ -29,6 +29,11 @@ data class MessageEntity(
     val reasoningStepsJson: String = "[]",
     val attachmentsJson: String = "[]",
     val partsJson: String = "[]",
+    val replyToMessageId: String = "",
+    val replyToPreview: String = "",
+    val replyToSpeakerName: String = "",
+    val isRecalled: Boolean = false,
+    val systemEventKind: String = "none",
     val citationsJson: String = "[]",
     val roleplayOutputFormat: String = "UNSPECIFIED",
 )

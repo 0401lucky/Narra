@@ -42,6 +42,7 @@ import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
 import com.example.myapplication.model.AppSettings
 import com.example.myapplication.model.Assistant
+import com.example.myapplication.model.RoleplayInteractionMode
 import com.example.myapplication.model.RoleplayScenario
 import com.example.myapplication.ui.component.AppSnackbarHost
 import com.example.myapplication.ui.component.UserAvatarLoadState
@@ -98,6 +99,18 @@ fun RoleplayScenarioEditScreen(
     var characterPortraitUri by rememberSaveable(baseScenario.id) { mutableStateOf(baseScenario.characterPortraitUri) }
     var characterPortraitUrl by rememberSaveable(baseScenario.id) { mutableStateOf(baseScenario.characterPortraitUrl) }
     var openingNarration by rememberSaveable(baseScenario.id) { mutableStateOf(baseScenario.openingNarration) }
+    var interactionMode by rememberSaveable(baseScenario.id) {
+        mutableStateOf(
+            if (
+                baseScenario.longformModeEnabled &&
+                baseScenario.interactionMode == RoleplayInteractionMode.OFFLINE_DIALOGUE
+            ) {
+                RoleplayInteractionMode.OFFLINE_LONGFORM
+            } else {
+                baseScenario.interactionMode
+            },
+        )
+    }
     var enableNarration by rememberSaveable(baseScenario.id) { mutableStateOf(baseScenario.enableNarration) }
     var enableRoleplayProtocol by rememberSaveable(baseScenario.id) { mutableStateOf(baseScenario.enableRoleplayProtocol) }
     var longformModeEnabled by rememberSaveable(baseScenario.id) { mutableStateOf(baseScenario.longformModeEnabled) }
@@ -338,7 +351,7 @@ fun RoleplayScenarioEditScreen(
             item {
                 SettingsSectionHeader(
                     title = "演出开关",
-                    description = "长文模式决定是否走小说流；普通模式下才使用 RP 标签协议。",
+                    description = "先选择剧情交互模式，再补充旁白和输出协议行为。",
                 )
             }
             item {
@@ -347,11 +360,51 @@ fun RoleplayScenarioEditScreen(
                         modifier = Modifier.padding(horizontal = 18.dp, vertical = 12.dp),
                         verticalArrangement = Arrangement.spacedBy(14.dp),
                     ) {
+                        Text(
+                            text = "交互模式",
+                            style = MaterialTheme.typography.titleSmall,
+                            fontWeight = FontWeight.SemiBold,
+                        )
+                        FlowRow(
+                            horizontalArrangement = Arrangement.spacedBy(10.dp),
+                            verticalArrangement = Arrangement.spacedBy(10.dp),
+                        ) {
+                            RoleplayInteractionMode.entries.forEach { mode ->
+                                FilterChip(
+                                    selected = interactionMode == mode,
+                                    onClick = {
+                                        interactionMode = mode
+                                        when (mode) {
+                                            RoleplayInteractionMode.OFFLINE_LONGFORM -> {
+                                                longformModeEnabled = true
+                                                enableRoleplayProtocol = false
+                                            }
+                                            RoleplayInteractionMode.OFFLINE_DIALOGUE -> {
+                                                longformModeEnabled = false
+                                            }
+                                            RoleplayInteractionMode.ONLINE_PHONE -> {
+                                                longformModeEnabled = false
+                                                enableRoleplayProtocol = true
+                                            }
+                                        }
+                                    },
+                                    label = { Text(mode.displayName) },
+                                )
+                            }
+                        }
                         SwitchRow(
                             title = "长文小说模式",
                             subtitle = "开启后，助手会输出更接近长篇小说的纯长文段落，适合重剧情用户。",
                             value = longformModeEnabled,
-                            onValueChange = { longformModeEnabled = it },
+                            onValueChange = {
+                                longformModeEnabled = it
+                                if (it) {
+                                    interactionMode = RoleplayInteractionMode.OFFLINE_LONGFORM
+                                    enableRoleplayProtocol = false
+                                } else if (interactionMode == RoleplayInteractionMode.OFFLINE_LONGFORM) {
+                                    interactionMode = RoleplayInteractionMode.OFFLINE_DIALOGUE
+                                }
+                            },
                         )
                         SwitchRow(
                             title = "启用旁白",
@@ -363,11 +416,18 @@ fun RoleplayScenarioEditScreen(
                             title = "启用 RP 协议输出",
                             subtitle = if (longformModeEnabled) {
                                 "长文小说模式下会忽略这项设置。"
+                            } else if (interactionMode == RoleplayInteractionMode.ONLINE_PHONE) {
+                                "线上模式默认也会走 narration/dialogue 协议。"
                             } else {
                                 "开启后要求模型输出 narration/dialogue 标签，结构更稳定。"
                             },
                             value = enableRoleplayProtocol,
-                            onValueChange = { enableRoleplayProtocol = it },
+                            onValueChange = {
+                                enableRoleplayProtocol = it
+                                if (!longformModeEnabled && interactionMode != RoleplayInteractionMode.ONLINE_PHONE) {
+                                    interactionMode = RoleplayInteractionMode.OFFLINE_DIALOGUE
+                                }
+                            },
                         )
                         SwitchRow(
                             title = "自动高亮当前说话方",
@@ -401,6 +461,7 @@ fun RoleplayScenarioEditScreen(
                                         characterPortraitUri = characterPortraitUri.trim(),
                                         characterPortraitUrl = characterPortraitUrl.trim(),
                                         openingNarration = openingNarration.trim(),
+                                        interactionMode = interactionMode,
                                         enableNarration = enableNarration,
                                         enableRoleplayProtocol = enableRoleplayProtocol,
                                         longformModeEnabled = longformModeEnabled,

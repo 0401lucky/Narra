@@ -23,6 +23,7 @@ internal fun ChatScreenOverlays(
     showSpecialPlaySheet: Boolean,
     onDismissSpecialPlaySheet: () -> Unit,
     onOpenSpecialPlayEditor: (ChatSpecialType) -> Unit,
+    onOpenPhoneCheck: () -> Unit,
     activeSpecialPlayDraft: ChatSpecialPlayDraft?,
     onSpecialPlayDraftChange: (ChatSpecialPlayDraft) -> Unit,
     onDismissSpecialPlayEditor: () -> Unit,
@@ -104,6 +105,7 @@ internal fun ChatScreenOverlays(
         SpecialPlaySheet(
             onDismissRequest = onDismissSpecialPlaySheet,
             onOpenPlay = onOpenSpecialPlayEditor,
+            onOpenPhoneCheck = onOpenPhoneCheck,
         )
     }
 

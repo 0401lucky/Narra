@@ -180,6 +180,7 @@ fun ChatScreen(
     onOpenHome: () -> Unit,
     onOpenTranslator: () -> Unit,
     onOpenRoleplay: () -> Unit,
+    onOpenPhoneCheck: (String) -> Unit,
     onOpenProviderDetail: (String) -> Unit,
     onClearErrorMessage: () -> Unit,
     onClearNoticeMessage: () -> Unit,
@@ -706,6 +707,12 @@ fun ChatScreen(
             localState.setShowSpecialPlaySheet(false)
             primeSpecialPlayDraft(type)
             localState.setActiveSpecialPlayType(type)
+        },
+        onOpenPhoneCheck = {
+            localState.setShowSpecialPlaySheet(false)
+            uiState.currentConversationId
+                .takeIf { it.isNotBlank() }
+                ?.let(onOpenPhoneCheck)
         },
         activeSpecialPlayDraft = localState.activeSpecialPlayDraft,
         onSpecialPlayDraftChange = { localState.updateActiveSpecialPlayDraft(it) },

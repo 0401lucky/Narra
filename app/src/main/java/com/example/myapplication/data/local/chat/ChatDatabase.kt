@@ -5,11 +5,15 @@ import androidx.room.RoomDatabase
 import androidx.room.migration.Migration
 import androidx.sqlite.db.SupportSQLiteDatabase
 import com.example.myapplication.data.local.roleplay.RoleplayDao
+import com.example.myapplication.data.local.roleplay.RoleplayOnlineMetaEntity
 import com.example.myapplication.data.local.roleplay.RoleplayScenarioEntity
 import com.example.myapplication.data.local.roleplay.RoleplaySessionEntity
 import com.example.myapplication.data.local.memory.ConversationSummaryEntity
 import com.example.myapplication.data.local.memory.MemoryDao
 import com.example.myapplication.data.local.memory.MemoryEntryEntity
+import com.example.myapplication.data.local.phone.PhoneObservationEntity
+import com.example.myapplication.data.local.phone.PhoneSnapshotDao
+import com.example.myapplication.data.local.phone.PhoneSnapshotEntity
 import com.example.myapplication.data.local.worldbook.WorldBookDao
 import com.example.myapplication.data.local.worldbook.WorldBookEntryEntity
 
@@ -22,8 +26,11 @@ import com.example.myapplication.data.local.worldbook.WorldBookEntryEntity
         ConversationSummaryEntity::class,
         RoleplayScenarioEntity::class,
         RoleplaySessionEntity::class,
+        RoleplayOnlineMetaEntity::class,
+        PhoneSnapshotEntity::class,
+        PhoneObservationEntity::class,
     ],
-    version = 14,
+    version = 19,
     exportSchema = true,
 )
 abstract class ChatDatabase : RoomDatabase() {
@@ -31,6 +38,7 @@ abstract class ChatDatabase : RoomDatabase() {
     abstract fun worldBookDao(): WorldBookDao
     abstract fun memoryDao(): MemoryDao
     abstract fun roleplayDao(): RoleplayDao
+    abstract fun phoneSnapshotDao(): PhoneSnapshotDao
 
     companion object {
         val MIGRATION_1_2 = object : Migration(1, 2) {
@@ -283,6 +291,161 @@ abstract class ChatDatabase : RoomDatabase() {
                     WHERE reasoningStepsJson = '[]'
                     """.trimIndent(),
                 )
+            }
+        }
+
+        val MIGRATION_14_15 = object : Migration(14, 15) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL(
+                    """
+                    CREATE TABLE IF NOT EXISTS phone_snapshots (
+                        conversationId TEXT NOT NULL PRIMARY KEY,
+                        scenarioId TEXT NOT NULL DEFAULT '',
+                        assistantId TEXT NOT NULL DEFAULT '',
+                        updatedAt INTEGER NOT NULL DEFAULT 0,
+                        snapshotJson TEXT NOT NULL DEFAULT ''
+                    )
+                    """.trimIndent(),
+                )
+                db.execSQL(
+                    "CREATE INDEX IF NOT EXISTS index_phone_snapshots_updatedAt ON phone_snapshots (updatedAt)",
+                )
+            }
+        }
+
+        val MIGRATION_15_16 = object : Migration(15, 16) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                if (!hasColumn(db, "roleplay_scenarios", "interactionMode")) {
+                    db.execSQL(
+                        "ALTER TABLE roleplay_scenarios ADD COLUMN interactionMode TEXT NOT NULL DEFAULT 'offline_dialogue'",
+                    )
+                }
+                db.execSQL(
+                    """
+                    CREATE TABLE IF NOT EXISTS phone_snapshots_v2 (
+                        conversationId TEXT NOT NULL,
+                        ownerType TEXT NOT NULL DEFAULT 'character',
+                        scenarioId TEXT NOT NULL DEFAULT '',
+                        assistantId TEXT NOT NULL DEFAULT '',
+                        updatedAt INTEGER NOT NULL DEFAULT 0,
+                        snapshotJson TEXT NOT NULL DEFAULT '',
+                        PRIMARY KEY(conversationId, ownerType)
+                    )
+                    """.trimIndent(),
+                )
+                db.execSQL(
+                    """
+                    INSERT OR REPLACE INTO phone_snapshots_v2 (
+                        conversationId,
+                        ownerType,
+                        scenarioId,
+                        assistantId,
+                        updatedAt,
+                        snapshotJson
+                    )
+                    SELECT
+                        conversationId,
+                        'character',
+                        scenarioId,
+                        assistantId,
+                        updatedAt,
+                        snapshotJson
+                    FROM phone_snapshots
+                    """.trimIndent(),
+                )
+                db.execSQL("DROP TABLE phone_snapshots")
+                db.execSQL("ALTER TABLE phone_snapshots_v2 RENAME TO phone_snapshots")
+                db.execSQL(
+                    "CREATE INDEX IF NOT EXISTS index_phone_snapshots_updatedAt ON phone_snapshots (updatedAt)",
+                )
+                db.execSQL(
+                    """
+                    CREATE TABLE IF NOT EXISTS phone_observations (
+                        conversationId TEXT NOT NULL PRIMARY KEY,
+                        scenarioId TEXT NOT NULL DEFAULT '',
+                        ownerType TEXT NOT NULL DEFAULT 'user',
+                        viewMode TEXT NOT NULL DEFAULT 'character_looks_user_phone',
+                        ownerName TEXT NOT NULL DEFAULT '',
+                        viewerName TEXT NOT NULL DEFAULT '',
+                        eventText TEXT NOT NULL DEFAULT '',
+                        keyFindingsJson TEXT NOT NULL DEFAULT '[]',
+                        observedAt INTEGER NOT NULL DEFAULT 0,
+                        updatedAt INTEGER NOT NULL DEFAULT 0
+                    )
+                    """.trimIndent(),
+                )
+                db.execSQL(
+                    "CREATE INDEX IF NOT EXISTS index_phone_observations_updatedAt ON phone_observations (updatedAt)",
+                )
+            }
+        }
+
+        val MIGRATION_16_17 = object : Migration(16, 17) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                if (!hasColumn(db, "messages", "replyToMessageId")) {
+                    db.execSQL(
+                        "ALTER TABLE messages ADD COLUMN replyToMessageId TEXT NOT NULL DEFAULT ''",
+                    )
+                }
+                if (!hasColumn(db, "messages", "replyToPreview")) {
+                    db.execSQL(
+                        "ALTER TABLE messages ADD COLUMN replyToPreview TEXT NOT NULL DEFAULT ''",
+                    )
+                }
+                if (!hasColumn(db, "messages", "replyToSpeakerName")) {
+                    db.execSQL(
+                        "ALTER TABLE messages ADD COLUMN replyToSpeakerName TEXT NOT NULL DEFAULT ''",
+                    )
+                }
+            }
+        }
+
+        val MIGRATION_17_18 = object : Migration(17, 18) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                if (!hasColumn(db, "messages", "isRecalled")) {
+                    db.execSQL(
+                        "ALTER TABLE messages ADD COLUMN isRecalled INTEGER NOT NULL DEFAULT 0",
+                    )
+                }
+                if (!hasColumn(db, "messages", "systemEventKind")) {
+                    db.execSQL(
+                        "ALTER TABLE messages ADD COLUMN systemEventKind TEXT NOT NULL DEFAULT 'none'",
+                    )
+                }
+                db.execSQL(
+                    """
+                    CREATE TABLE IF NOT EXISTS roleplay_online_meta (
+                        conversationId TEXT NOT NULL PRIMARY KEY,
+                        lastCompensationBucket TEXT NOT NULL DEFAULT '',
+                        lastConsumedObservationUpdatedAt INTEGER NOT NULL DEFAULT 0,
+                        lastSystemEventToken TEXT NOT NULL DEFAULT '',
+                        updatedAt INTEGER NOT NULL DEFAULT 0
+                    )
+                    """.trimIndent(),
+                )
+                db.execSQL(
+                    "CREATE INDEX IF NOT EXISTS index_roleplay_online_meta_updatedAt ON roleplay_online_meta (updatedAt)",
+                )
+            }
+        }
+
+        val MIGRATION_18_19 = object : Migration(18, 19) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                if (!hasColumn(db, "phone_observations", "hasVisibleFeedback")) {
+                    db.execSQL(
+                        "ALTER TABLE phone_observations ADD COLUMN hasVisibleFeedback INTEGER NOT NULL DEFAULT 0",
+                    )
+                }
+                if (!hasColumn(db, "phone_observations", "feedbackMessageId")) {
+                    db.execSQL(
+                        "ALTER TABLE phone_observations ADD COLUMN feedbackMessageId TEXT NOT NULL DEFAULT ''",
+                    )
+                }
+                if (!hasColumn(db, "phone_observations", "usedFindingKeysJson")) {
+                    db.execSQL(
+                        "ALTER TABLE phone_observations ADD COLUMN usedFindingKeysJson TEXT NOT NULL DEFAULT '[]'",
+                    )
+                }
             }
         }
 

@@ -6,6 +6,8 @@ import com.example.myapplication.data.repository.context.EmptyConversationSummar
 import com.example.myapplication.data.repository.context.ConversationSummaryRepository
 import com.example.myapplication.data.repository.context.MemoryRepository
 import com.example.myapplication.data.repository.context.WorldBookRepository
+import com.example.myapplication.data.repository.phone.EmptyPhoneSnapshotRepository
+import com.example.myapplication.data.repository.phone.PhoneSnapshotRepository
 import com.example.myapplication.model.AppSettings
 import com.example.myapplication.model.Assistant
 import com.example.myapplication.model.ChatMessage
@@ -13,8 +15,10 @@ import com.example.myapplication.model.ConversationSummary
 import com.example.myapplication.model.Conversation
 import com.example.myapplication.model.ContextGovernanceItem
 import com.example.myapplication.model.MemoryEntry
+import com.example.myapplication.model.PhoneSnapshotOwnerType
 import com.example.myapplication.model.PromptMode
 import com.example.myapplication.model.WorldBookEntry
+import com.example.myapplication.model.toPlainText
 
 data class PromptContextResult(
     val systemPrompt: String,
@@ -35,6 +39,7 @@ interface PromptContextAssembler {
         userInputText: String,
         recentMessages: List<ChatMessage>,
         promptMode: PromptMode = PromptMode.CHAT,
+        includePhoneSnapshot: Boolean = true,
     ): PromptContextResult
 }
 
@@ -44,6 +49,8 @@ class DefaultPromptContextAssembler(
     private val memoryRepository: MemoryRepository = EmptyMemoryRepository,
     private val memorySelector: MemorySelector = MemorySelector(),
     private val conversationSummaryRepository: ConversationSummaryRepository = EmptyConversationSummaryRepository,
+    private val phoneSnapshotRepository: PhoneSnapshotRepository = EmptyPhoneSnapshotRepository,
+    private val phoneSnapshotPromptInjector: PhoneSnapshotPromptInjector = PhoneSnapshotPromptInjector(),
 ) : PromptContextAssembler {
     override suspend fun assemble(
         settings: AppSettings,
@@ -52,7 +59,10 @@ class DefaultPromptContextAssembler(
         userInputText: String,
         recentMessages: List<ChatMessage>,
         promptMode: PromptMode,
+        includePhoneSnapshot: Boolean,
     ): PromptContextResult {
+        val resolvedUserName = settings.resolvedUserDisplayName()
+        val resolvedCharacterName = assistant?.name?.trim().orEmpty().ifBlank { "角色" }
         val matchedWorldBookEntries = worldBookMatcher.match(
             entries = worldBookRepository.listEnabledEntries(),
             assistant = assistant,
@@ -69,6 +79,30 @@ class DefaultPromptContextAssembler(
             recentMessages = recentMessages,
         )
         val conversationSummary = conversationSummaryRepository.getSummary(conversation.id)
+        val phoneObservation = if (promptMode == PromptMode.ROLEPLAY) {
+            phoneSnapshotRepository.getObservation(conversation.id)
+        } else {
+            null
+        }
+        val shouldIncludePhoneObservation = phoneObservation != null && (
+            !phoneObservation.hasVisibleFeedback || isPhoneObservationTopic(userInputText, recentMessages)
+        )
+        val phoneSnapshotItems = if (includePhoneSnapshot) {
+            phoneSnapshotRepository.getSnapshot(
+                conversationId = conversation.id,
+                ownerType = PhoneSnapshotOwnerType.CHARACTER,
+            )
+                ?.let { snapshot ->
+                    phoneSnapshotPromptInjector.selectRelevantItems(
+                        snapshot = snapshot,
+                        userInputText = userInputText,
+                        recentMessages = recentMessages,
+                    )
+                }
+                .orEmpty()
+        } else {
+            emptyList()
+        }
         memoryRepository.markEntriesUsed(
             entryIds = selectedMemories.map { it.id },
             timestamp = System.currentTimeMillis(),
@@ -77,11 +111,21 @@ class DefaultPromptContextAssembler(
             assistant?.systemPrompt
                 ?.trim()
                 ?.takeIf { it.isNotEmpty() }
-                ?.let(::add)
+                ?.let { prompt ->
+                    add(
+                        ContextPlaceholderResolver.resolve(
+                            text = prompt,
+                            userName = resolvedUserName,
+                            characterName = resolvedCharacterName,
+                        ),
+                    )
+                }
 
             formatAssistantRoleSection(
                 assistant = assistant,
                 promptMode = promptMode,
+                userName = resolvedUserName,
+                characterName = resolvedCharacterName,
             )?.let(::add)
 
             assistant?.scenario
@@ -91,15 +135,29 @@ class DefaultPromptContextAssembler(
                     add(
                         buildString {
                             append("【场景设定】\n")
-                            append(scenario)
+                            append(
+                                ContextPlaceholderResolver.resolve(
+                                    text = scenario,
+                                    userName = resolvedUserName,
+                                    characterName = resolvedCharacterName,
+                                ),
+                            )
                         },
                     )
                 }
 
-            formatGreetingSection(assistant?.greeting)
+            formatGreetingSection(
+                greeting = assistant?.greeting,
+                userName = resolvedUserName,
+                characterName = resolvedCharacterName,
+            )
                 ?.let(::add)
 
-            formatExampleDialoguesSection(assistant?.exampleDialogues.orEmpty())
+            formatExampleDialoguesSection(
+                dialogues = assistant?.exampleDialogues.orEmpty(),
+                userName = resolvedUserName,
+                characterName = resolvedCharacterName,
+            )
                 ?.let(::add)
 
             formatSummarySection(
@@ -116,6 +174,12 @@ class DefaultPromptContextAssembler(
                 promptMode = promptMode,
             )
                 ?.let(::add)
+
+            formatPhoneSnapshotSection(phoneSnapshotItems)
+                ?.let(::add)
+
+            formatPhoneObservationSection(phoneObservation.takeIf { shouldIncludePhoneObservation })
+                ?.let(::add)
         }
 
         val systemPrompt = sections.joinToString(separator = "\n\n").trim()
@@ -126,6 +190,8 @@ class DefaultPromptContextAssembler(
                 matchedWorldBookEntries = matchedWorldBookEntries,
                 selectedMemories = selectedMemories,
                 conversationSummary = conversationSummary,
+                phoneSnapshotItems = phoneSnapshotItems,
+                phoneObservationText = phoneObservation?.eventText.orEmpty(),
                 systemPrompt = systemPrompt,
             ),
             summaryCoveredMessageCount = conversationSummary?.coveredMessageCount ?: 0,
@@ -154,6 +220,8 @@ class DefaultPromptContextAssembler(
 
     private fun formatGreetingSection(
         greeting: String?,
+        userName: String,
+        characterName: String,
     ): String? {
         val greetingText = greeting
             ?.trim()
@@ -163,13 +231,23 @@ class DefaultPromptContextAssembler(
         }
         return buildString {
             append("【开场白参考】\n")
-            append(limitEntryContent(greetingText))
+            append(
+                limitEntryContent(
+                    ContextPlaceholderResolver.resolve(
+                        text = greetingText,
+                        userName = userName,
+                        characterName = characterName,
+                    ),
+                ),
+            )
         }
     }
 
     private fun formatAssistantRoleSection(
         assistant: Assistant?,
         promptMode: PromptMode,
+        userName: String,
+        characterName: String,
     ): String? {
         val roleDescription = assistant?.description
             ?.trim()
@@ -189,7 +267,15 @@ class DefaultPromptContextAssembler(
                         "【助手简介】\n"
                     },
                 )
-                append(limitEntryContent(roleDescription))
+                append(
+                    limitEntryContent(
+                        ContextPlaceholderResolver.resolve(
+                            text = roleDescription,
+                            userName = userName,
+                            characterName = characterName,
+                        ),
+                    ),
+                )
             }
             if (promptMode == PromptMode.ROLEPLAY && creatorNotes.isNotBlank()) {
                 if (isNotBlank()) {
@@ -197,7 +283,15 @@ class DefaultPromptContextAssembler(
                 }
                 append("【创作者导演说明】\n")
                 append("以下内容仅供你在内部把握角色与剧情节奏时遵循，不要直接复述给用户。\n")
-                append(limitEntryContent(creatorNotes))
+                append(
+                    limitEntryContent(
+                        ContextPlaceholderResolver.resolve(
+                            text = creatorNotes,
+                            userName = userName,
+                            characterName = characterName,
+                        ),
+                    ),
+                )
             }
         }.trim()
             .takeIf { it.isNotBlank() }
@@ -205,10 +299,16 @@ class DefaultPromptContextAssembler(
 
     private fun formatExampleDialoguesSection(
         dialogues: List<String>,
+        userName: String,
+        characterName: String,
     ): String? {
         val normalizedDialogues = dialogues
             .mapNotNull { dialogue ->
-                dialogue.trim().takeIf { it.isNotEmpty() }
+                ContextPlaceholderResolver.resolve(
+                    text = dialogue.trim(),
+                    userName = userName,
+                    characterName = characterName,
+                ).takeIf { it.isNotEmpty() }
             }
         if (normalizedDialogues.isEmpty()) {
             return null
@@ -246,6 +346,8 @@ class DefaultPromptContextAssembler(
         matchedWorldBookEntries: List<WorldBookEntry>,
         selectedMemories: List<MemoryEntry>,
         conversationSummary: ConversationSummary?,
+        phoneSnapshotItems: List<String>,
+        phoneObservationText: String,
         systemPrompt: String,
     ): String {
         return buildString {
@@ -279,6 +381,14 @@ class DefaultPromptContextAssembler(
                 append("\n  • ")
                 append(limitEntryContent(entry.content))
             }
+            append("\n- 手机快照命中数：")
+            append(phoneSnapshotItems.size)
+            phoneSnapshotItems.forEach { item ->
+                append("\n  • ")
+                append(limitEntryContent(item))
+            }
+            append("\n- 最近手机查看事件：")
+            append(phoneObservationText.ifBlank { "无" })
             if (systemPrompt.isNotBlank()) {
                 append("\n\n")
                 append(systemPrompt)
@@ -357,6 +467,69 @@ class DefaultPromptContextAssembler(
                 append("\n- ")
                 append(limitEntryContent(entry.content))
             }
+        }
+    }
+
+    private fun formatPhoneSnapshotSection(
+        items: List<String>,
+    ): String? {
+        if (items.isEmpty()) {
+            return null
+        }
+        return buildString {
+            append("【查手机已知线索】\n")
+            append("以下内容来自当前会话里已经固定下来的手机快照，仅在与本轮话题相关时参考，不要与其冲突。\n")
+            items.forEach { item ->
+                append("- ")
+                append(limitEntryContent(item))
+                append('\n')
+            }
+        }.trim()
+    }
+
+    private fun formatPhoneObservationSection(
+        observation: com.example.myapplication.model.PhoneObservationState?,
+    ): String? {
+        if (observation == null) {
+            return null
+        }
+        return buildString {
+            append("【最近手机查看事件】\n")
+            append(observation.eventText.trim())
+            if (observation.keyFindings.isNotEmpty()) {
+                append("\n关键发现：\n")
+                observation.keyFindings.forEach { finding ->
+                    append("- ")
+                    append(limitEntryContent(finding))
+                    append('\n')
+                }
+            }
+            append("如果这件事已经自然回应过，就不要每轮机械重复；只有在话题相关、情绪顺势或用户追问时再带出来。")
+        }.trim()
+    }
+
+    private fun isPhoneObservationTopic(
+        userInputText: String,
+        recentMessages: List<ChatMessage>,
+    ): Boolean {
+        val sourceText = buildString {
+            appendLine(userInputText)
+            recentMessages.takeLast(4).forEach { message ->
+                appendLine(message.parts.toPlainText().ifBlank { message.content })
+            }
+        }
+        val normalized = sourceText.lowercase()
+        return listOf(
+            "手机",
+            "相册",
+            "备忘录",
+            "搜索",
+            "购物",
+            "截图",
+            "你在看我手机",
+            "你看了我手机",
+        ).any { keyword ->
+            keyword.lowercase() in normalized
         }
     }
 

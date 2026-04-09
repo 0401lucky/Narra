@@ -94,6 +94,7 @@ internal object GatewayRequestMessageBuilder {
         imagePayloadResolver: suspend (MessageAttachment) -> String,
         filePromptResolver: suspend (MessageAttachment) -> String,
     ): Any? {
+        val replyPrefix = buildReplyPrefix(message)
         if (message.role != MessageRole.USER) {
             val assistantParts = normalizeChatMessageParts(message.parts)
             if (assistantParts.isNotEmpty()) {
@@ -107,25 +108,42 @@ internal object GatewayRequestMessageBuilder {
                     }
                 }.joinToString(separator = "\n\n").trim()
                 if (assistantContext.isNotBlank()) {
-                    return assistantContext
+                    return listOf(replyPrefix, assistantContext)
+                        .filter { it.isNotBlank() }
+                        .joinToString(separator = "\n")
+                        .trim()
                 }
             }
-            return message.content
+            return listOf(
+                replyPrefix,
+                message.content
                 .ifBlank { message.parts.toPlainText() }
+                .takeIf { it.isNotBlank() }.orEmpty(),
+            ).filter { it.isNotBlank() }
+                .joinToString(separator = "\n")
                 .takeIf { it.isNotBlank() }
         }
 
         val userParts = buildRequestMessageParts(message)
         if (userParts.isEmpty()) {
-            return message.content.takeIf { it.isNotBlank() }
+            return listOf(replyPrefix, message.content)
+                .filter { it.isNotBlank() }
+                .joinToString(separator = "\n")
+                .takeIf { it.isNotBlank() }
         }
 
         val hasNonTextPart = userParts.any { it.type != ChatMessagePartType.TEXT }
         if (!hasNonTextPart) {
-            return userParts.toPlainText().takeIf { it.isNotBlank() }
+            return listOf(replyPrefix, userParts.toPlainText())
+                .filter { it.isNotBlank() }
+                .joinToString(separator = "\n")
+                .takeIf { it.isNotBlank() }
         }
 
         return buildList {
+            if (replyPrefix.isNotBlank()) {
+                add(TextContentPartDto(text = replyPrefix))
+            }
             userParts.forEach { part ->
                 when (part.type) {
                     ChatMessagePartType.TEXT -> {
@@ -159,6 +177,20 @@ internal object GatewayRequestMessageBuilder {
                 }
             }
         }.takeIf { it.isNotEmpty() }
+    }
+
+    private fun buildReplyPrefix(message: ChatMessage): String {
+        if (message.replyToPreview.isBlank()) {
+            return ""
+        }
+        return buildString {
+            append("【引用上一条消息】\n")
+            append("来自：")
+            append(message.replyToSpeakerName.ifBlank { "对方" })
+            append('\n')
+            append("内容：")
+            append(message.replyToPreview.trim())
+        }
     }
 
     private fun buildRequestMessageParts(message: ChatMessage): List<ChatMessagePart> {

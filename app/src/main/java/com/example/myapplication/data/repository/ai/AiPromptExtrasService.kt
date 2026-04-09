@@ -5,14 +5,28 @@ import com.example.myapplication.data.remote.ApiServiceFactory
 import com.example.myapplication.data.remote.OpenAiCompatibleApi
 import com.example.myapplication.data.repository.RoleplayMemoryCondenseMode
 import com.example.myapplication.data.repository.StructuredMemoryExtractionResult
+import com.example.myapplication.conversation.PhoneGenerationContext
 import com.example.myapplication.model.ChatCompletionRequest
 import com.example.myapplication.model.ChatCompletionResponse
 import com.example.myapplication.model.ChatMessageDto
 import com.example.myapplication.model.DEFAULT_CHAT_COMPLETIONS_PATH
 import com.example.myapplication.model.OpenAiTextApiMode
+import com.example.myapplication.model.PhoneGalleryEntry
+import com.example.myapplication.model.PhoneMessageItem
+import com.example.myapplication.model.PhoneMessageThread
+import com.example.myapplication.model.PhoneNoteEntry
+import com.example.myapplication.model.PhoneRelationshipHighlight
+import com.example.myapplication.model.PhoneSearchDetail
+import com.example.myapplication.model.PhoneSearchEntry
+import com.example.myapplication.model.PhoneShoppingEntry
+import com.example.myapplication.model.PhoneSnapshot
+import com.example.myapplication.model.PhoneSnapshotSection
+import com.example.myapplication.model.PhoneSnapshotSections
 import com.example.myapplication.model.ProviderApiProtocol
 import com.example.myapplication.model.ProviderSettings
 import com.example.myapplication.model.RoleplaySuggestionUiModel
+import com.google.gson.JsonArray
+import com.google.gson.JsonObject
 import com.google.gson.JsonParser
 import java.util.Collections
 
@@ -124,6 +138,32 @@ interface AiPromptExtrasService {
         apiProtocol: ProviderApiProtocol = ProviderApiProtocol.OPENAI_COMPATIBLE,
         provider: ProviderSettings? = null,
     ): List<String>
+
+    suspend fun generatePhoneSnapshotSections(
+        context: PhoneGenerationContext,
+        requestedSections: Set<PhoneSnapshotSection>,
+        existingSnapshot: PhoneSnapshot?,
+        baseUrl: String,
+        apiKey: String,
+        modelId: String,
+        apiProtocol: ProviderApiProtocol = ProviderApiProtocol.OPENAI_COMPATIBLE,
+        provider: ProviderSettings? = null,
+    ): PhoneSnapshotSections = PhoneSnapshotSections()
+
+    suspend fun generatePhoneSearchDetail(
+        context: PhoneGenerationContext,
+        query: String,
+        relatedContext: String,
+        baseUrl: String,
+        apiKey: String,
+        modelId: String,
+        apiProtocol: ProviderApiProtocol = ProviderApiProtocol.OPENAI_COMPATIBLE,
+        provider: ProviderSettings? = null,
+    ): PhoneSearchDetail = PhoneSearchDetail(
+        title = query.trim(),
+        summary = "",
+        content = "",
+    )
 }
 
 class DefaultAiPromptExtrasService(
@@ -581,6 +621,151 @@ class DefaultAiPromptExtrasService(
             .take(maxItems.coerceAtLeast(1))
     }
 
+    override suspend fun generatePhoneSnapshotSections(
+        context: PhoneGenerationContext,
+        requestedSections: Set<PhoneSnapshotSection>,
+        existingSnapshot: PhoneSnapshot?,
+        baseUrl: String,
+        apiKey: String,
+        modelId: String,
+        apiProtocol: ProviderApiProtocol,
+        provider: ProviderSettings?,
+    ): PhoneSnapshotSections {
+        val normalizedSections = requestedSections.ifEmpty { PhoneSnapshotSection.entries.toSet() }
+        val prompt = buildString {
+            append("你是“查手机玩法”的内容生成器。")
+            append("现在要为一个虚构角色生成他的手机内容快照。")
+            append("所有内容必须基于给定的人设、记忆、关系、剧情和最近对话自然推导，可以适度扩展，但不能脱离上下文乱编。")
+            append("输出必须像已经真实存在于这个角色手机里的内容，而不是总结报告。")
+            append("手机主人：").append(context.ownerName).append("。")
+            append("查看者：").append(context.viewerName).append("。")
+            append("关系方向：").append(context.relationshipDirection).append("。")
+            if (context.timeGapContext.isNotBlank()) {
+                append("\n时间间隔：").append(context.timeGapContext)
+            }
+            append("\n本次只重建这些板块：")
+            append(normalizedSections.joinToString("、") { it.displayName })
+            append("。")
+            append("\n如果重建“消息”板块，必须同时输出 relationship_highlights 和 message_threads。")
+            append("\n严格输出 JSON 对象，不要 Markdown，不要解释。")
+            append("""JSON 键固定为：relationship_highlights、message_threads、notes、gallery、shopping_records、search_history。""")
+            append("\n每个数组项都必须包含 id 字段。")
+            append("\n字段要求：")
+            append("\n1. relationship_highlights: [{id,name,relation_label,stance,note}]")
+            append("\n2. message_threads: [{id,contact_name,relation_label,preview,time_label,avatar_label,messages:[{id,sender_name,text,time_label,is_owner}]}]")
+            append("\n3. notes: [{id,title,summary,content,time_label,icon}]")
+            append("\n4. gallery: [{id,title,summary,description,time_label}]")
+            append("\n5. shopping_records: [{id,title,status,price_label,note,detail,time_label}]")
+            append("\n6. search_history: [{id,query,time_label}]")
+            append("\n其中相册需要额外遵守这些规则：")
+            append("\n- title 要像手机相册里真正会起的照片名，短、具体、带对象或场景。")
+            append("\n- summary 是一句简短的画面摘要，突出镜头主体、场景或拍摄瞬间，控制在 12 到 30 字。")
+            append("\n- description 不是重复 summary，而是要写成“照片里具体拍到了什么 + 为什么拍下这张照片/这张照片背后的故事或情绪”。")
+            append("\n- description 默认使用第一人称，更像手机主人回看照片时对这张图的私人解释。")
+            append("\n- description 要有明确画面细节，例如姿势、构图、光线、衣着、地点、视角、当时的小动作。")
+            append("\n- description 允许带轻微私密感和暧昧感，但必须仍然像相册说明，不要写成露骨对白或纯欲望宣泄。")
+            append("\n- 优先生成值得收藏、带明显关系痕迹或个人执念的照片，不要生成泛泛的风景照。")
+            append("\n除非本次重建该板块，否则对应键返回 []。")
+            if (context.systemContext.isNotBlank()) {
+                append("\n\n【基础设定】\n")
+                append(context.systemContext)
+            }
+            if (context.scenarioContext.isNotBlank()) {
+                append("\n\n【场景补充】\n")
+                append(context.scenarioContext)
+            }
+            if (context.conversationExcerpt.isNotBlank()) {
+                append("\n\n【最近上下文】\n")
+                append(context.conversationExcerpt)
+            }
+            existingSnapshot?.takeIf { it.hasContent() }?.let { snapshot ->
+                append("\n\n【当前已存在的手机内容，仅供保持一致】\n")
+                append(buildPhoneSnapshotReference(snapshot, excludeSections = normalizedSections))
+            }
+        }
+        val content = requestCompletionContent(
+            baseUrl = baseUrl,
+            apiKey = apiKey,
+            operation = "手机内容生成失败",
+            request = buildRequestWithRoleplaySampling(
+                model = modelId,
+                messages = listOf(ChatMessageDto(role = "user", content = prompt)),
+                baseUrl = baseUrl,
+                apiProtocol = apiProtocol,
+            ),
+            apiProtocol = apiProtocol,
+            provider = provider,
+            allowRoleplaySamplingFallback = true,
+        ).trim()
+        if (content.isBlank()) {
+            return PhoneSnapshotSections()
+        }
+        val parsedJson = runCatching { JsonParser.parseString(content).asJsonObject }.getOrNull()
+            ?: return PhoneSnapshotSections()
+        return parsePhoneSnapshotSections(parsedJson)
+    }
+
+    override suspend fun generatePhoneSearchDetail(
+        context: PhoneGenerationContext,
+        query: String,
+        relatedContext: String,
+        baseUrl: String,
+        apiKey: String,
+        modelId: String,
+        apiProtocol: ProviderApiProtocol,
+        provider: ProviderSettings?,
+    ): PhoneSearchDetail {
+        val prompt = buildString {
+            append("你是“查手机玩法”的搜索详情生成器。")
+            append("请为角色手机里的一个搜索词生成点开后的详情内容。")
+            append("详情必须像搜索结果页、百科摘要、帖子整理或经验总结，不要写成第一人称自白。")
+            append("手机主人：").append(context.ownerName).append("。")
+            append("查看者：").append(context.viewerName).append("。")
+            append("\n搜索词：").append(query.trim())
+            append("\n严格输出 JSON 对象：{")
+            append("\"title\":\"...\",\"summary\":\"...\",\"content\":\"...\"}")
+            append("。不要输出额外解释。")
+            if (context.systemContext.isNotBlank()) {
+                append("\n\n【基础设定】\n")
+                append(context.systemContext)
+            }
+            if (context.scenarioContext.isNotBlank()) {
+                append("\n\n【场景补充】\n")
+                append(context.scenarioContext)
+            }
+            if (context.conversationExcerpt.isNotBlank()) {
+                append("\n\n【最近上下文】\n")
+                append(context.conversationExcerpt)
+            }
+            if (relatedContext.isNotBlank()) {
+                append("\n\n【与该搜索词直接相关的手机线索】\n")
+                append(relatedContext)
+            }
+        }
+        val content = requestCompletionContent(
+            baseUrl = baseUrl,
+            apiKey = apiKey,
+            operation = "搜索详情生成失败",
+            request = buildRequestWithRoleplaySampling(
+                model = modelId,
+                messages = listOf(ChatMessageDto(role = "user", content = prompt)),
+                baseUrl = baseUrl,
+                apiProtocol = apiProtocol,
+            ),
+            apiProtocol = apiProtocol,
+            provider = provider,
+            allowRoleplaySamplingFallback = true,
+        ).trim()
+        val parsedJson = runCatching { JsonParser.parseString(content).asJsonObject }.getOrNull()
+        return PhoneSearchDetail(
+            title = parsedJson?.get("title")?.takeIf { !it.isJsonNull }?.asString?.trim().orEmpty()
+                .ifBlank { query.trim() },
+            summary = parsedJson?.get("summary")?.takeIf { !it.isJsonNull }?.asString?.trim().orEmpty(),
+            content = parsedJson?.get("content")?.takeIf { !it.isJsonNull }?.asString?.trim().orEmpty()
+                .ifBlank { content },
+        )
+    }
+
     private suspend fun requestCompletionContent(
         baseUrl: String,
         apiKey: String,
@@ -787,6 +972,205 @@ class DefaultAiPromptExtrasService(
             allowRoleplaySamplingFallback = true,
         )
         return RoleplaySuggestionParser.parse(content)
+    }
+
+    private fun buildPhoneSnapshotReference(
+        snapshot: PhoneSnapshot,
+        excludeSections: Set<PhoneSnapshotSection>,
+    ): String {
+        return buildString {
+            if (PhoneSnapshotSection.MESSAGES !in excludeSections) {
+                if (snapshot.relationshipHighlights.isNotEmpty()) {
+                    appendLine("关系速览：")
+                    snapshot.relationshipHighlights.take(4).forEach { item ->
+                        append("- ")
+                        append(item.name)
+                        if (item.relationLabel.isNotBlank()) {
+                            append("（")
+                            append(item.relationLabel)
+                            append("）")
+                        }
+                        if (item.note.isNotBlank()) {
+                            append("：")
+                            append(item.note)
+                        }
+                        appendLine()
+                    }
+                }
+                if (snapshot.messageThreads.isNotEmpty()) {
+                    appendLine("消息概览：")
+                    snapshot.messageThreads.take(4).forEach { thread ->
+                        append("- ")
+                        append(thread.contactName)
+                        append("：")
+                        append(thread.preview)
+                        appendLine()
+                    }
+                }
+            }
+            if (PhoneSnapshotSection.NOTES !in excludeSections && snapshot.notes.isNotEmpty()) {
+                appendLine("备忘录概览：")
+                snapshot.notes.take(4).forEach { note ->
+                    append("- ")
+                    append(note.title)
+                    append("：")
+                    append(note.summary)
+                    appendLine()
+                }
+            }
+            if (PhoneSnapshotSection.GALLERY !in excludeSections && snapshot.gallery.isNotEmpty()) {
+                appendLine("相册概览：")
+                snapshot.gallery.take(4).forEach { item ->
+                    append("- ")
+                    append(item.title)
+                    append("：")
+                    append(item.summary)
+                    appendLine()
+                }
+            }
+            if (PhoneSnapshotSection.SHOPPING !in excludeSections && snapshot.shoppingRecords.isNotEmpty()) {
+                appendLine("购物概览：")
+                snapshot.shoppingRecords.take(4).forEach { item ->
+                    append("- ")
+                    append(item.title)
+                    append("：")
+                    append(item.note)
+                    appendLine()
+                }
+            }
+            if (PhoneSnapshotSection.SEARCH !in excludeSections && snapshot.searchHistory.isNotEmpty()) {
+                appendLine("搜索概览：")
+                snapshot.searchHistory.take(6).forEach { item ->
+                    append("- ")
+                    append(item.query)
+                    appendLine()
+                }
+            }
+        }.trim()
+    }
+
+    private fun parsePhoneSnapshotSections(
+        jsonObject: JsonObject,
+    ): PhoneSnapshotSections {
+        return PhoneSnapshotSections(
+            relationshipHighlights = jsonObject.getAsJsonArrayOrNull("relationship_highlights")
+                ?.mapIndexed { index, element ->
+                    val item = element.asJsonObjectOrNull()
+                    PhoneRelationshipHighlight(
+                        id = item.stringValue("id").ifBlank { "relationship-${index + 1}" },
+                        name = item.stringValue("name"),
+                        relationLabel = item.stringValue("relation_label"),
+                        stance = item.stringValue("stance"),
+                        note = item.stringValue("note"),
+                    )
+                }
+                ?.filter { it.name.isNotBlank() },
+            messageThreads = jsonObject.getAsJsonArrayOrNull("message_threads")
+                ?.mapIndexed { index, element ->
+                    val item = element.asJsonObjectOrNull()
+                    PhoneMessageThread(
+                        id = item.stringValue("id").ifBlank { "thread-${index + 1}" },
+                        contactName = item.stringValue("contact_name"),
+                        relationLabel = item.stringValue("relation_label"),
+                        preview = item.stringValue("preview"),
+                        timeLabel = item.stringValue("time_label"),
+                        avatarLabel = item.stringValue("avatar_label"),
+                        messages = item?.getAsJsonArrayOrNull("messages")
+                            ?.mapIndexed { msgIndex, msgElement ->
+                                val messageItem = msgElement.asJsonObjectOrNull()
+                                PhoneMessageItem(
+                                    id = messageItem.stringValue("id").ifBlank { "message-${index + 1}-${msgIndex + 1}" },
+                                    senderName = messageItem.stringValue("sender_name"),
+                                    text = messageItem.stringValue("text"),
+                                    timeLabel = messageItem.stringValue("time_label"),
+                                    isOwner = messageItem.booleanValue("is_owner"),
+                                )
+                            }
+                            ?.filter { it.text.isNotBlank() }
+                            .orEmpty(),
+                    )
+                }
+                ?.filter { it.contactName.isNotBlank() },
+            notes = jsonObject.getAsJsonArrayOrNull("notes")
+                ?.mapIndexed { index, element ->
+                    val item = element.asJsonObjectOrNull()
+                    PhoneNoteEntry(
+                        id = item.stringValue("id").ifBlank { "note-${index + 1}" },
+                        title = item.stringValue("title"),
+                        summary = item.stringValue("summary"),
+                        content = item.stringValue("content"),
+                        timeLabel = item.stringValue("time_label"),
+                        icon = item.stringValue("icon"),
+                    )
+                }
+                ?.filter { it.title.isNotBlank() },
+            gallery = jsonObject.getAsJsonArrayOrNull("gallery")
+                ?.mapIndexed { index, element ->
+                    val item = element.asJsonObjectOrNull()
+                    PhoneGalleryEntry(
+                        id = item.stringValue("id").ifBlank { "gallery-${index + 1}" },
+                        title = item.stringValue("title"),
+                        summary = item.stringValue("summary"),
+                        description = item.stringValue("description"),
+                        timeLabel = item.stringValue("time_label"),
+                    )
+                }
+                ?.filter { it.title.isNotBlank() },
+            shoppingRecords = jsonObject.getAsJsonArrayOrNull("shopping_records")
+                ?.mapIndexed { index, element ->
+                    val item = element.asJsonObjectOrNull()
+                    PhoneShoppingEntry(
+                        id = item.stringValue("id").ifBlank { "shopping-${index + 1}" },
+                        title = item.stringValue("title"),
+                        status = item.stringValue("status"),
+                        priceLabel = item.stringValue("price_label"),
+                        note = item.stringValue("note"),
+                        detail = item.stringValue("detail"),
+                        timeLabel = item.stringValue("time_label"),
+                    )
+                }
+                ?.filter { it.title.isNotBlank() },
+            searchHistory = jsonObject.getAsJsonArrayOrNull("search_history")
+                ?.mapIndexed { index, element ->
+                    val item = element.asJsonObjectOrNull()
+                    PhoneSearchEntry(
+                        id = item.stringValue("id").ifBlank { "search-${index + 1}" },
+                        query = item.stringValue("query"),
+                        timeLabel = item.stringValue("time_label"),
+                    )
+                }
+                ?.filter { it.query.isNotBlank() },
+        )
+    }
+
+    private fun JsonObject?.stringValue(key: String): String {
+        if (this == null) {
+            return ""
+        }
+        return this.get(key)
+            ?.takeIf { !it.isJsonNull }
+            ?.asString
+            ?.trim()
+            .orEmpty()
+    }
+
+    private fun JsonObject?.booleanValue(key: String): Boolean {
+        if (this == null) {
+            return false
+        }
+        return this.get(key)
+            ?.takeIf { !it.isJsonNull }
+            ?.asBoolean
+            ?: false
+    }
+
+    private fun JsonObject.getAsJsonArrayOrNull(key: String): JsonArray? {
+        val value = get(key) ?: return null
+        return if (value.isJsonArray) value.asJsonArray else null
+    }
+
+    private fun com.google.gson.JsonElement.asJsonObjectOrNull(): JsonObject? {
+        return runCatching { asJsonObject }.getOrNull()
     }
 
 }

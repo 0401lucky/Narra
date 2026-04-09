@@ -8,6 +8,9 @@ data class RoleplayParsedSegment(
     val speaker: RoleplaySpeaker,
     val speakerName: String,
     val content: String,
+    val replyToMessageId: String = "",
+    val replyToPreview: String = "",
+    val replyToSpeakerName: String = "",
     val emotion: String = "",
 )
 
@@ -81,6 +84,9 @@ class RoleplayOutputParser {
                         rawContent = dialogueContent,
                         characterName = characterName,
                         allowNarration = allowNarration,
+                        replyToMessageId = attributes["reply_to"].orEmpty().trim(),
+                        replyToPreview = attributes["reply_preview"].orEmpty().trim(),
+                        replyToSpeakerName = attributes["reply_speaker"].orEmpty().trim(),
                         emotion = attributes["emotion"].orEmpty().trim(),
                     )
                 }
@@ -125,6 +131,9 @@ class RoleplayOutputParser {
         rawContent: String,
         characterName: String,
         allowNarration: Boolean,
+        replyToMessageId: String,
+        replyToPreview: String,
+        replyToSpeakerName: String,
         emotion: String,
     ): List<RoleplayParsedSegment> {
         return parsePlainTextOutput(
@@ -134,7 +143,12 @@ class RoleplayOutputParser {
             defaultFallbackKind = PlainSegmentKind.DIALOGUE,
         ).map { segment ->
             if (segment.contentType == RoleplayContentType.DIALOGUE) {
-                segment.copy(emotion = emotion)
+                segment.copy(
+                    emotion = emotion,
+                    replyToMessageId = replyToMessageId,
+                    replyToPreview = replyToPreview,
+                    replyToSpeakerName = replyToSpeakerName,
+                )
             } else {
                 segment
             }
@@ -285,6 +299,9 @@ class RoleplayOutputParser {
                 previous.contentType == segment.contentType &&
                 previous.speaker == segment.speaker &&
                 previous.speakerName == segment.speakerName &&
+                previous.replyToMessageId == segment.replyToMessageId &&
+                previous.replyToPreview == segment.replyToPreview &&
+                previous.replyToSpeakerName == segment.replyToSpeakerName &&
                 previous.emotion == segment.emotion
             ) {
                 merged[merged.lastIndex] = previous.copy(

@@ -1,6 +1,7 @@
 package com.example.myapplication.data.repository.roleplay
 
 import com.example.myapplication.data.local.roleplay.RoleplayDao
+import com.example.myapplication.data.local.roleplay.RoleplayOnlineMetaEntity
 import com.example.myapplication.data.local.roleplay.RoleplayScenarioEntity
 import com.example.myapplication.data.local.roleplay.RoleplaySessionEntity
 import com.example.myapplication.data.repository.ConversationRepository
@@ -280,6 +281,12 @@ private class FakeRoleplayDao(
     override suspend fun getSession(sessionId: String): RoleplaySessionEntity? {
         return sessionsState.value.firstOrNull { it.id == sessionId }
     }
+
+    override suspend fun getOnlineMeta(conversationId: String): RoleplayOnlineMetaEntity? = null
+
+    override suspend fun upsertOnlineMeta(meta: RoleplayOnlineMetaEntity) = Unit
+
+    override suspend fun deleteOnlineMeta(conversationId: String) = Unit
 
     override suspend fun upsertScenario(scenario: RoleplayScenarioEntity) {
         scenariosState.value = scenariosState.value.filterNot { it.id == scenario.id } + scenario

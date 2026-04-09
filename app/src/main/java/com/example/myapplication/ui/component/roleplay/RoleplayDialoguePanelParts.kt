@@ -8,6 +8,7 @@ import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -33,6 +34,7 @@ import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -629,11 +631,14 @@ internal fun RoleplayMessageItem(
     colors: ImmersiveRoleplayColors,
     onRetryTurn: (String) -> Unit,
     onEditUserMessage: (String) -> Unit,
+    onQuoteMessage: ((String, String, String) -> Unit)? = null,
+    onRecallMessage: ((String) -> Unit)? = null,
+    onOpenQuotedMessage: ((String) -> Unit)? = null,
     onConfirmTransferReceipt: (String) -> Unit,
     lineHeightScale: Float = 1.0f,
 ) {
     when (message.contentType) {
-        RoleplayContentType.NARRATION -> RoleplayMessageMenuWrapper(message, onRetryTurn, onEditUserMessage) {
+        RoleplayContentType.NARRATION -> RoleplayMessageMenuWrapper(message, onRetryTurn, onEditUserMessage, onQuoteMessage = onQuoteMessage, onRecallMessage = onRecallMessage) {
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -667,7 +672,7 @@ internal fun RoleplayMessageItem(
         RoleplayContentType.DIALOGUE -> {
             if (message.speaker == RoleplaySpeaker.USER) {
                 Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
-                    RoleplayMessageMenuWrapper(message, onRetryTurn, onEditUserMessage, Modifier.fillMaxWidth(0.82f)) {
+                    RoleplayMessageMenuWrapper(message, onRetryTurn, onEditUserMessage, Modifier.fillMaxWidth(0.82f), onQuoteMessage = onQuoteMessage, onRecallMessage = onRecallMessage) {
                         Column(
                             modifier = Modifier
                                 .fillMaxWidth()
@@ -680,9 +685,16 @@ internal fun RoleplayMessageItem(
                                         bottomEnd = 20.dp,
                                     ),
                                 )
-                                .padding(horizontal = 14.dp, vertical = 10.dp),
-                            verticalArrangement = Arrangement.spacedBy(4.dp),
-                        ) {
+                            .padding(horizontal = 14.dp, vertical = 10.dp),
+                        verticalArrangement = Arrangement.spacedBy(4.dp),
+                    ) {
+                        if (message.replyToPreview.isNotBlank()) {
+                            RoleplayReplyPreview(
+                                message = message,
+                                colors = colors,
+                                onOpenQuotedMessage = onOpenQuotedMessage,
+                            )
+                        }
                             Text(
                                 message.speakerName,
                                 style = MaterialTheme.typography.labelMedium,
@@ -717,7 +729,7 @@ internal fun RoleplayMessageItem(
                 }
             } else {
                 val isError = message.messageStatus == MessageStatus.ERROR
-                RoleplayMessageMenuWrapper(message, onRetryTurn, onEditUserMessage) {
+                RoleplayMessageMenuWrapper(message, onRetryTurn, onEditUserMessage, onQuoteMessage = onQuoteMessage, onRecallMessage = onRecallMessage) {
                     Column(
                         modifier = Modifier
                             .fillMaxWidth()
@@ -728,6 +740,13 @@ internal fun RoleplayMessageItem(
                             .padding(horizontal = 14.dp, vertical = 12.dp),
                         verticalArrangement = Arrangement.spacedBy(6.dp),
                     ) {
+                        if (message.replyToPreview.isNotBlank()) {
+                            RoleplayReplyPreview(
+                                message = message,
+                                colors = colors,
+                                onOpenQuotedMessage = onOpenQuotedMessage,
+                            )
+                        }
                         Row(
                             verticalAlignment = Alignment.CenterVertically,
                             horizontalArrangement = Arrangement.spacedBy(6.dp),
@@ -785,7 +804,7 @@ internal fun RoleplayMessageItem(
 
         RoleplayContentType.LONGFORM -> {
             val isError = message.messageStatus == MessageStatus.ERROR
-            RoleplayMessageMenuWrapper(message, onRetryTurn, onEditUserMessage) {
+            RoleplayMessageMenuWrapper(message, onRetryTurn, onEditUserMessage, onQuoteMessage = onQuoteMessage, onRecallMessage = onRecallMessage) {
                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     if (isError) {
                         FailedTurnHint(colors = colors)
@@ -817,6 +836,8 @@ internal fun RoleplayMessageItem(
                     onRetryTurn = onRetryTurn,
                     onEditUserMessage = onEditUserMessage,
                     modifier = if (isUserMessage) Modifier.fillMaxWidth(0.82f) else Modifier.fillMaxWidth(),
+                    onQuoteMessage = onQuoteMessage,
+                    onRecallMessage = onRecallMessage,
                 ) {
                     SpecialPlayCard(
                         part = specialPart,
@@ -838,6 +859,8 @@ internal fun RoleplayMessageMenuWrapper(
     onRetryTurn: (String) -> Unit,
     onEditUserMessage: (String) -> Unit,
     modifier: Modifier = Modifier,
+    onQuoteMessage: ((String, String, String) -> Unit)? = null,
+    onRecallMessage: ((String) -> Unit)? = null,
     content: @Composable () -> Unit,
 ) {
     val clipboard = LocalClipboard.current
@@ -848,12 +871,20 @@ internal fun RoleplayMessageMenuWrapper(
         message.speaker == RoleplaySpeaker.USER &&
         message.contentType == RoleplayContentType.DIALOGUE &&
         message.content.isNotBlank()
+    val canQuoteMessage = onQuoteMessage != null &&
+        message.sourceMessageId.isNotBlank() &&
+        message.contentType in setOf(RoleplayContentType.DIALOGUE, RoleplayContentType.NARRATION, RoleplayContentType.LONGFORM)
+    val canRecallMessage = onRecallMessage != null &&
+        message.sourceMessageId.isNotBlank() &&
+        message.speaker == RoleplaySpeaker.USER &&
+        message.contentType == RoleplayContentType.DIALOGUE &&
+        !message.isRecalled
     var showMenu by remember(message.sourceMessageId, message.copyText, message.canRetry, canEditUserMessage) {
         mutableStateOf(false)
     }
     Box(
         modifier = modifier.combinedClickable(
-            enabled = canCopy || message.canRetry || canEditUserMessage,
+            enabled = canCopy || message.canRetry || canEditUserMessage || canQuoteMessage || canRecallMessage,
             onClick = {},
             onLongClick = { showMenu = true },
         ),
@@ -881,6 +912,30 @@ internal fun RoleplayMessageMenuWrapper(
                     },
                 )
             }
+            if (canQuoteMessage) {
+                DropdownMenuItem(
+                    text = { Text("引用") },
+                    leadingIcon = { Icon(Icons.Outlined.ContentCopy, contentDescription = null) },
+                    onClick = {
+                        onQuoteMessage?.invoke(
+                            message.sourceMessageId,
+                            message.speakerName,
+                            message.copyText.lineSequence().firstOrNull().orEmpty().take(60),
+                        )
+                        showMenu = false
+                    },
+                )
+            }
+            if (canRecallMessage) {
+                DropdownMenuItem(
+                    text = { Text("撤回") },
+                    leadingIcon = { Icon(Icons.Outlined.Refresh, contentDescription = null) },
+                    onClick = {
+                        onRecallMessage?.invoke(message.sourceMessageId)
+                        showMenu = false
+                    },
+                )
+            }
             if (message.canRetry && message.sourceMessageId.isNotBlank()) {
                 DropdownMenuItem(
                     text = { Text("重回此回合") },
@@ -891,6 +946,44 @@ internal fun RoleplayMessageMenuWrapper(
                     },
                 )
             }
+        }
+    }
+}
+
+@Composable
+private fun RoleplayReplyPreview(
+    message: RoleplayMessageUiModel,
+    colors: ImmersiveRoleplayColors,
+    onOpenQuotedMessage: ((String) -> Unit)?,
+) {
+    Surface(
+        modifier = if (message.replyToMessageId.isNotBlank() && onOpenQuotedMessage != null) {
+            Modifier.clickable { onOpenQuotedMessage(message.replyToMessageId) }
+        } else {
+            Modifier
+        },
+        shape = RoundedCornerShape(14.dp),
+        color = colors.panelBackground,
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 10.dp, vertical = 8.dp),
+            verticalArrangement = Arrangement.spacedBy(4.dp),
+        ) {
+            Text(
+                text = message.replyToSpeakerName.ifBlank { "引用消息" },
+                style = MaterialTheme.typography.labelSmall,
+                color = colors.characterAccent,
+                fontWeight = FontWeight.SemiBold,
+            )
+            Text(
+                text = message.replyToPreview,
+                style = MaterialTheme.typography.bodySmall,
+                color = colors.textMuted,
+                maxLines = 2,
+                overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
+            )
         }
     }
 }

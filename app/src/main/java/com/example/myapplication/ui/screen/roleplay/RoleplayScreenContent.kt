@@ -96,6 +96,7 @@ internal fun RoleplaySceneContent(
     onRetryTurn: (String) -> Unit,
     onEditUserMessage: (String) -> Unit,
     onOpenSpecialPlay: () -> Unit,
+    onOpenPhoneCheck: () -> Unit,
     onConfirmTransferReceipt: (String) -> Unit,
     onSend: () -> Unit,
     onCancelSending: () -> Unit,
@@ -348,6 +349,7 @@ internal fun RoleplaySceneContent(
         activeSpecialPlayDraft = activeSpecialPlayDraft,
         onDismissSpecialPlay = onDismissSpecialPlay,
         onOpenSpecialPlayEditor = onOpenSpecialPlayEditor,
+        onOpenPhoneCheck = onOpenPhoneCheck,
         onDismissSpecialPlayEditor = onDismissSpecialPlayEditor,
         onSpecialPlayDraftChange = onSpecialPlayDraftChange,
         onSpecialPlayConfirm = onSpecialPlayConfirm,
@@ -581,6 +583,7 @@ internal fun RoleplaySpecialPlayOverlays(
     activeSpecialPlayDraft: ChatSpecialPlayDraft?,
     onDismissSpecialPlay: () -> Unit,
     onOpenSpecialPlayEditor: (ChatSpecialType) -> Unit,
+    onOpenPhoneCheck: () -> Unit,
     onDismissSpecialPlayEditor: () -> Unit,
     onSpecialPlayDraftChange: (ChatSpecialPlayDraft) -> Unit,
     onSpecialPlayConfirm: () -> Unit,
@@ -589,6 +592,7 @@ internal fun RoleplaySpecialPlayOverlays(
         SpecialPlaySheet(
             onDismissRequest = onDismissSpecialPlay,
             onOpenPlay = onOpenSpecialPlayEditor,
+            onOpenPhoneCheck = onOpenPhoneCheck,
         )
     }
 

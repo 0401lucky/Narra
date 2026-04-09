@@ -31,6 +31,7 @@ import com.example.myapplication.data.repository.ai.tooling.MemoryWriteService
 import com.example.myapplication.data.repository.context.ConversationSummaryRepository
 import com.example.myapplication.data.repository.context.MemoryRepository
 import com.example.myapplication.data.repository.context.PendingMemoryProposalRepository
+import com.example.myapplication.data.repository.phone.PhoneSnapshotRepository
 import com.example.myapplication.data.repository.roleplay.RoleplayRepository
 import com.example.myapplication.data.repository.roleplay.RoleplaySessionStartResult
 import com.example.myapplication.model.AppSettings
@@ -48,9 +49,12 @@ import com.example.myapplication.model.MessageStatus
 import com.example.myapplication.model.MemoryProposalHistoryItem
 import com.example.myapplication.model.PendingMemoryProposal
 import com.example.myapplication.model.PromptMode
+import com.example.myapplication.model.RoleplayOnlineEventKind
+import com.example.myapplication.model.RoleplayOutputFormat
 import com.example.myapplication.model.TransferDirection
 import com.example.myapplication.model.TransferStatus
 import com.example.myapplication.model.RoleplayContextStatus
+import com.example.myapplication.model.RoleplayInteractionMode
 import com.example.myapplication.model.RoleplayMessageUiModel
 import com.example.myapplication.model.RoleplayScenario
 import com.example.myapplication.model.RoleplaySuggestionUiModel
@@ -60,6 +64,7 @@ import com.example.myapplication.model.textMessagePart
 import com.example.myapplication.model.transferMessagePart
 import com.example.myapplication.model.toContentMirror
 import com.example.myapplication.model.toPlainText
+import com.example.myapplication.model.hasSendableContent
 import com.example.myapplication.roleplay.RoleplayMessageUiMapper
 import com.example.myapplication.roleplay.RoleplayConversationSupport
 import com.example.myapplication.roleplay.RoleplayOutputParser
@@ -76,6 +81,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
@@ -110,6 +116,9 @@ data class RoleplayUiState(
     val currentModel: String = "",
     val currentProviderId: String = "",
     val inputFocusToken: Long = 0L,
+    val replyToMessageId: String = "",
+    val replyToPreview: String = "",
+    val replyToSpeakerName: String = "",
 )
 
 @OptIn(ExperimentalCoroutinesApi::class)
@@ -124,6 +133,7 @@ class RoleplayViewModel(
     private val memoryRepository: MemoryRepository,
     private val conversationSummaryRepository: ConversationSummaryRepository,
     private val pendingMemoryProposalRepository: PendingMemoryProposalRepository,
+    private val phoneSnapshotRepository: PhoneSnapshotRepository,
     private val memoryWriteService: MemoryWriteService,
     private val outputParser: RoleplayOutputParser = RoleplayOutputParser(),
     private val nowProvider: () -> Long = { System.currentTimeMillis() },
@@ -142,6 +152,7 @@ class RoleplayViewModel(
     val uiState: StateFlow<RoleplayUiState> = _uiState.asStateFlow()
 
     private var sendingJob: Job? = null
+    private var compensationJob: Job? = null
     private val assistantRoundTripRunner = ConversationAssistantRoundTripRunner(
         conversationRepository = conversationRepository,
         aiGateway = aiGateway,
@@ -212,6 +223,8 @@ class RoleplayViewModel(
         aiGateway = aiGateway,
         conversationRepository = conversationRepository,
         conversationSummaryRepository = conversationSummaryRepository,
+        phoneSnapshotRepository = phoneSnapshotRepository,
+        roleplayRepository = roleplayRepository,
         promptContextAssembler = promptContextAssembler,
         assistantRoundTripRunner = assistantRoundTripRunner,
         outputParser = outputParser,
@@ -317,6 +330,7 @@ class RoleplayViewModel(
             outputParser = outputParser,
             nowProvider = nowProvider,
         )
+        observeOnlineCompensation()
     }
 
     fun updateInput(value: String) {
@@ -432,6 +446,104 @@ class RoleplayViewModel(
         suggestionActionSupport.clearSuggestions()
     }
 
+    fun quoteMessage(
+        sourceMessageId: String,
+        speakerName: String,
+        preview: String,
+    ) {
+        _uiState.update { current ->
+            current.copy(
+                replyToMessageId = sourceMessageId,
+                replyToSpeakerName = speakerName.trim(),
+                replyToPreview = preview.trim(),
+            )
+        }
+    }
+
+    fun clearQuotedMessage() {
+        _uiState.update { current ->
+            current.copy(
+                replyToMessageId = "",
+                replyToPreview = "",
+                replyToSpeakerName = "",
+            )
+        }
+    }
+
+    fun recallMessage(sourceMessageId: String) {
+        val state = _uiState.value
+        val session = state.currentSession ?: return
+        if (state.currentScenario?.interactionMode != RoleplayInteractionMode.ONLINE_PHONE) {
+            return
+        }
+        viewModelScope.launch {
+            val currentMessages = currentRawMessages.value
+            val latestUserMessage = currentMessages
+                .filter { it.role == MessageRole.USER && it.status == MessageStatus.COMPLETED && !it.isRecalled }
+                .maxByOrNull { it.createdAt }
+            if (latestUserMessage == null || latestUserMessage.id != sourceMessageId) {
+                _uiState.update { current ->
+                    RoleplayStateSupport.applyErrorMessage(current, "当前只支持撤回你最近发送的一条消息")
+                }
+                return@launch
+            }
+            val updatedMessages = conversationRepository.recallMessage(
+                conversationId = session.conversationId,
+                messageId = sourceMessageId,
+                selectedModel = RoleplayConversationSupport.resolveSelectedModelId(state.settings),
+            )
+            currentRawMessages.value = updatedMessages
+            clearQuotedMessage()
+            _uiState.update { current ->
+                RoleplayStateSupport.applyNoticeMessage(current, "已撤回一条消息")
+            }
+        }
+    }
+
+    fun captureOnlineChat() {
+        val state = _uiState.value
+        val session = state.currentSession ?: return
+        if (state.currentScenario?.interactionMode != RoleplayInteractionMode.ONLINE_PHONE) {
+            return
+        }
+        viewModelScope.launch {
+            val eventMessage = ChatMessage(
+                id = "online-event-screenshot-${session.conversationId}-${nowProvider()}",
+                conversationId = session.conversationId,
+                role = MessageRole.ASSISTANT,
+                content = "<narration>你截了一张聊天截图。</narration>",
+                createdAt = nowProvider(),
+                parts = listOf(textMessagePart("<narration>你截了一张聊天截图。</narration>")),
+                systemEventKind = RoleplayOnlineEventKind.SCREENSHOT,
+                roleplayOutputFormat = RoleplayOutputFormat.PROTOCOL,
+            )
+            conversationRepository.appendSystemEventMessage(
+                conversationId = session.conversationId,
+                message = eventMessage,
+                selectedModel = RoleplayConversationSupport.resolveSelectedModelId(state.settings),
+            )
+            currentRawMessages.value = conversationRepository.listMessages(session.conversationId)
+            _uiState.update { current ->
+                RoleplayStateSupport.applyNoticeMessage(current, "已记录截图事件")
+            }
+        }
+    }
+
+    fun updateCurrentScenarioInteractionMode(mode: RoleplayInteractionMode) {
+        val scenario = _uiState.value.currentScenario ?: return
+        upsertScenario(
+            scenario.copy(
+                interactionMode = mode,
+                longformModeEnabled = mode == RoleplayInteractionMode.OFFLINE_LONGFORM,
+                enableRoleplayProtocol = when (mode) {
+                    RoleplayInteractionMode.OFFLINE_LONGFORM -> false
+                    RoleplayInteractionMode.OFFLINE_DIALOGUE -> scenario.enableRoleplayProtocol
+                    RoleplayInteractionMode.ONLINE_PHONE -> true
+                },
+            ),
+        )
+    }
+
     fun approvePendingMemoryProposal() {
         val proposalId = _uiState.value.pendingMemoryProposal?.id.orEmpty()
         if (proposalId.isBlank()) {
@@ -512,6 +624,107 @@ class RoleplayViewModel(
     fun sendMessage() {
         sendActionSupport.sendMessage()?.let { job ->
             sendingJob = job
+        }
+    }
+
+    private fun observeOnlineCompensation() {
+        viewModelScope.launch {
+            currentRawMessages.collectLatest {
+                maybeTriggerOnlineCompensation()
+            }
+        }
+    }
+
+    private suspend fun maybeTriggerOnlineCompensation() {
+        val state = _uiState.value
+        val scenario = state.currentScenario ?: return
+        val session = state.currentSession ?: return
+        if (scenario.interactionMode != RoleplayInteractionMode.ONLINE_PHONE) {
+            return
+        }
+        if (state.isSending || state.input.isNotBlank() || compensationJob?.isActive == true) {
+            return
+        }
+        val bucket = resolveOnlineCompensationBucket(currentRawMessages.value) ?: return
+        val meta = roleplayRepository.getOnlineMeta(session.conversationId)
+        if (meta?.lastCompensationBucket == bucket) {
+            return
+        }
+        val assistant = RoleplayConversationSupport.resolveAssistant(state.settings, scenario.assistantId)
+        val selectedModel = RoleplayConversationSupport.resolveSelectedModelId(state.settings)
+        if (selectedModel.isBlank()) {
+            return
+        }
+        val baseMessages = RoleplayRoundTripSupport.currentConversationMessages(
+            messages = currentRawMessages.value,
+            conversationId = session.conversationId,
+        )
+        val loadingMessage = ChatMessage(
+            id = "online-compensation-loading-${session.conversationId}-${nowProvider()}",
+            conversationId = session.conversationId,
+            role = MessageRole.ASSISTANT,
+            content = "",
+            status = MessageStatus.LOADING,
+            createdAt = nowProvider(),
+            modelName = selectedModel,
+            systemEventKind = RoleplayOnlineEventKind.COMPENSATION_OPENING,
+            roleplayOutputFormat = RoleplayOutputFormat.PROTOCOL,
+        )
+        compensationJob = viewModelScope.launch {
+            try {
+                updateUiStateForCompensationStart()
+                roundTripExecutor.execute(
+                    state = state,
+                    scenario = scenario,
+                    session = session,
+                    selectedModel = selectedModel,
+                    assistant = assistant,
+                    requestMessages = baseMessages.filter { it.status == MessageStatus.COMPLETED && it.hasSendableContent() },
+                    initialPersistence = RoundTripInitialPersistence.Append(messages = listOf(loadingMessage)),
+                    loadingMessage = loadingMessage,
+                    buildFinalMessages = { completedAssistant ->
+                        baseMessages + completedAssistant
+                    },
+                )
+                roleplayRepository.upsertOnlineMeta(
+                    com.example.myapplication.model.RoleplayOnlineMeta(
+                        conversationId = session.conversationId,
+                        lastCompensationBucket = bucket,
+                        lastConsumedObservationUpdatedAt = roleplayRepository.getOnlineMeta(session.conversationId)?.lastConsumedObservationUpdatedAt ?: 0L,
+                        lastSystemEventToken = "compensation-$bucket",
+                        updatedAt = nowProvider(),
+                    ),
+                )
+            } finally {
+                compensationJob = null
+            }
+        }
+    }
+
+    private fun updateUiStateForCompensationStart() {
+        _uiState.update { current ->
+            current.copy(
+                isSending = true,
+                errorMessage = null,
+                noticeMessage = null,
+            )
+        }
+    }
+
+    private fun resolveOnlineCompensationBucket(
+        messages: List<ChatMessage>,
+    ): String? {
+        val latestTimestamp = messages
+            .filter { it.status == MessageStatus.COMPLETED && it.createdAt > 0L }
+            .maxOfOrNull { it.createdAt }
+            ?: return null
+        val gapMillis = (nowProvider() - latestTimestamp).coerceAtLeast(0L)
+        return when {
+            gapMillis < 6 * 60 * 60 * 1000L -> null
+            gapMillis < 24 * 60 * 60 * 1000L -> "6h_24h"
+            gapMillis < 3 * 24 * 60 * 60 * 1000L -> "1d_3d"
+            gapMillis < 14 * 24 * 60 * 60 * 1000L -> "3d_14d"
+            else -> "14d_plus"
         }
     }
 
@@ -701,6 +914,7 @@ class RoleplayViewModel(
             memoryRepository: MemoryRepository,
             conversationSummaryRepository: ConversationSummaryRepository,
             pendingMemoryProposalRepository: PendingMemoryProposalRepository,
+            phoneSnapshotRepository: PhoneSnapshotRepository,
             memoryWriteService: MemoryWriteService,
             imageSaver: suspend (String) -> SavedImageFile = { throw IllegalStateException("图片保存未配置") },
         ): ViewModelProvider.Factory {
@@ -718,6 +932,7 @@ class RoleplayViewModel(
                         memoryRepository = memoryRepository,
                         conversationSummaryRepository = conversationSummaryRepository,
                         pendingMemoryProposalRepository = pendingMemoryProposalRepository,
+                        phoneSnapshotRepository = phoneSnapshotRepository,
                         memoryWriteService = memoryWriteService,
                         imageSaver = imageSaver,
                     ) as T

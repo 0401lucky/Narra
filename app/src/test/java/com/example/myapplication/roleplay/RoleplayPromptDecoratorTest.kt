@@ -55,5 +55,27 @@ class RoleplayPromptDecoratorTest {
         assertTrue(prompt.contains("先回应对方当前动作或问题，再推进关系、信息或局势中的一项"))
         assertTrue(prompt.contains("保持角色口吻稳定，不要跳出设定解释规则"))
     }
-}
 
+    @Test
+    fun decorate_replacesScenarioPlaceholders() {
+        val prompt = RoleplayPromptDecorator.decorate(
+            baseSystemPrompt = "{{char}} 没有看向{{user}}。",
+            scenario = RoleplayScenario(
+                id = "scene-1",
+                title = "{{char}}的夜班",
+                description = "{{User}} 走进值班室时，{{char}} 正低头扣上颈间的金属扣。",
+                openingNarration = "{{user}} 听见那声轻响时，心口跟着一缩。",
+                userDisplayNameOverride = "lucky",
+                characterDisplayNameOverride = "金乘",
+                enableRoleplayProtocol = false,
+            ),
+            assistant = Assistant(id = "assistant-1", name = "金乘"),
+            settings = AppSettings(),
+        )
+
+        assertTrue(prompt.contains("金乘 没有看向lucky"))
+        assertTrue(prompt.contains("场景标题：金乘的夜班"))
+        assertTrue(prompt.contains("lucky 走进值班室时，金乘 正低头扣上颈间的金属扣"))
+        assertTrue(prompt.contains("lucky 听见那声轻响时"))
+    }
+}

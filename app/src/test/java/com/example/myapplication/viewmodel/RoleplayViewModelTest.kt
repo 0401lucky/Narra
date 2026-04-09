@@ -12,6 +12,7 @@ import com.example.myapplication.data.repository.context.ConversationSummaryRepo
 import com.example.myapplication.data.repository.context.MemoryRepository
 import com.example.myapplication.data.repository.context.InMemoryPendingMemoryProposalRepository
 import com.example.myapplication.data.repository.context.PendingMemoryProposalRepository
+import com.example.myapplication.data.repository.phone.EmptyPhoneSnapshotRepository
 import com.example.myapplication.data.repository.roleplay.RoleplayRepository
 import com.example.myapplication.data.repository.roleplay.RoleplaySessionStartResult
 import com.example.myapplication.model.AppSettings
@@ -1991,6 +1992,7 @@ class RoleplayViewModelTest {
                 userInputText: String,
                 recentMessages: List<ChatMessage>,
                 promptMode: com.example.myapplication.model.PromptMode,
+                includePhoneSnapshot: Boolean,
             ): PromptContextResult {
                 return PromptContextResult(
                     systemPrompt = systemPrompt,
@@ -2316,6 +2318,7 @@ class RoleplayViewModelTest {
             memoryRepository = memoryRepository,
             conversationSummaryRepository = conversationSummaryRepository,
             pendingMemoryProposalRepository = pendingMemoryProposalRepository,
+            phoneSnapshotRepository = EmptyPhoneSnapshotRepository,
             memoryWriteService = DefaultMemoryWriteService(
                 settingsStore = services.settingsStore,
                 memoryRepository = memoryRepository,
@@ -2420,4 +2423,10 @@ private class FakeRoleplayRepository(
     override suspend fun getSession(sessionId: String): RoleplaySession? {
         return sessionsState.value.firstOrNull { it.id == sessionId }
     }
+
+    override suspend fun getOnlineMeta(conversationId: String): com.example.myapplication.model.RoleplayOnlineMeta? = null
+
+    override suspend fun upsertOnlineMeta(meta: com.example.myapplication.model.RoleplayOnlineMeta) = Unit
+
+    override suspend fun deleteOnlineMeta(conversationId: String) = Unit
 }

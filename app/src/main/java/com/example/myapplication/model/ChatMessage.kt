@@ -26,6 +26,11 @@ data class ChatMessage(
     val reasoningSteps: List<ChatReasoningStep> = emptyList(),
     val attachments: List<MessageAttachment> = emptyList(),
     val parts: List<ChatMessagePart> = emptyList(),
+    val replyToMessageId: String = "",
+    val replyToPreview: String = "",
+    val replyToSpeakerName: String = "",
+    val isRecalled: Boolean = false,
+    val systemEventKind: RoleplayOnlineEventKind = RoleplayOnlineEventKind.NONE,
     val citations: List<MessageCitation> = emptyList(),
     val roleplayOutputFormat: RoleplayOutputFormat = RoleplayOutputFormat.UNSPECIFIED,
 )

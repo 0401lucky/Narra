@@ -214,6 +214,9 @@ object RoleplayStateSupport {
             errorMessage = null,
             streamingContent = "",
             suggestionErrorMessage = null,
+            replyToMessageId = "",
+            replyToPreview = "",
+            replyToSpeakerName = "",
         )
     }
 

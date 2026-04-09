@@ -7,6 +7,8 @@ import com.example.myapplication.data.repository.ConversationRepository
 import com.example.myapplication.model.ChatMessage
 import com.example.myapplication.model.DEFAULT_ASSISTANT_ID
 import com.example.myapplication.model.MessageRole
+import com.example.myapplication.model.RoleplayInteractionMode
+import com.example.myapplication.model.RoleplayOnlineMeta
 import com.example.myapplication.model.RoleplayOutputFormat
 import com.example.myapplication.model.RoleplayScenario
 import com.example.myapplication.model.RoleplaySession
@@ -55,6 +57,12 @@ interface RoleplayRepository {
     suspend fun getSessionByScenario(scenarioId: String): RoleplaySession?
 
     suspend fun getSession(sessionId: String): RoleplaySession?
+
+    suspend fun getOnlineMeta(conversationId: String): RoleplayOnlineMeta?
+
+    suspend fun upsertOnlineMeta(meta: RoleplayOnlineMeta)
+
+    suspend fun deleteOnlineMeta(conversationId: String)
 }
 
 @OptIn(ExperimentalCoroutinesApi::class)
@@ -123,6 +131,7 @@ class RoomRoleplayRepository(
         val session = roleplayDao.getSessionByScenario(scenarioId)
         if (session != null) {
             conversationRepository.deleteConversationById(session.conversationId)
+            roleplayDao.deleteOnlineMeta(session.conversationId)
         }
         roleplayDao.deleteScenario(scenarioId)
     }
@@ -183,6 +192,7 @@ class RoomRoleplayRepository(
         val existingSession = roleplayDao.getSessionByScenario(scenarioId)
         existingSession?.let { session ->
             conversationRepository.deleteConversationById(session.conversationId)
+            roleplayDao.deleteOnlineMeta(session.conversationId)
         }
         val conversation = conversationRepository.createConversation(
             assistantId = scenario.assistantId.ifBlank { DEFAULT_ASSISTANT_ID },
@@ -218,7 +228,35 @@ class RoomRoleplayRepository(
         return roleplayDao.getSession(sessionId)?.let(::toSessionDomain)
     }
 
+    override suspend fun getOnlineMeta(conversationId: String): RoleplayOnlineMeta? {
+        return roleplayDao.getOnlineMeta(conversationId)?.let(::toOnlineMetaDomain)
+    }
+
+    override suspend fun upsertOnlineMeta(meta: RoleplayOnlineMeta) {
+        roleplayDao.upsertOnlineMeta(
+            com.example.myapplication.data.local.roleplay.RoleplayOnlineMetaEntity(
+                conversationId = meta.conversationId,
+                lastCompensationBucket = meta.lastCompensationBucket,
+                lastConsumedObservationUpdatedAt = meta.lastConsumedObservationUpdatedAt,
+                lastSystemEventToken = meta.lastSystemEventToken,
+                updatedAt = meta.updatedAt,
+            ),
+        )
+    }
+
+    override suspend fun deleteOnlineMeta(conversationId: String) {
+        roleplayDao.deleteOnlineMeta(conversationId)
+    }
+
     private fun toScenarioDomain(entity: RoleplayScenarioEntity): RoleplayScenario {
+        val resolvedInteractionMode = if (
+            entity.longformModeEnabled &&
+            RoleplayInteractionMode.fromStorageValue(entity.interactionMode) == RoleplayInteractionMode.OFFLINE_DIALOGUE
+        ) {
+            RoleplayInteractionMode.OFFLINE_LONGFORM
+        } else {
+            RoleplayInteractionMode.fromStorageValue(entity.interactionMode)
+        }
         return RoleplayScenario(
             id = entity.id,
             title = entity.title,
@@ -232,6 +270,7 @@ class RoomRoleplayRepository(
             characterPortraitUri = entity.characterPortraitUri,
             characterPortraitUrl = entity.characterPortraitUrl,
             openingNarration = entity.openingNarration,
+            interactionMode = resolvedInteractionMode,
             enableNarration = entity.enableNarration,
             enableRoleplayProtocol = entity.enableRoleplayProtocol,
             longformModeEnabled = entity.longformModeEnabled,
@@ -255,6 +294,7 @@ class RoomRoleplayRepository(
             characterPortraitUri = scenario.characterPortraitUri.trim(),
             characterPortraitUrl = scenario.characterPortraitUrl.trim(),
             openingNarration = scenario.openingNarration.trim(),
+            interactionMode = scenario.interactionMode.storageValue,
             enableNarration = scenario.enableNarration,
             enableRoleplayProtocol = scenario.enableRoleplayProtocol,
             longformModeEnabled = scenario.longformModeEnabled,
@@ -270,6 +310,18 @@ class RoomRoleplayRepository(
             scenarioId = entity.scenarioId,
             conversationId = entity.conversationId,
             createdAt = entity.createdAt,
+            updatedAt = entity.updatedAt,
+        )
+    }
+
+    private fun toOnlineMetaDomain(
+        entity: com.example.myapplication.data.local.roleplay.RoleplayOnlineMetaEntity,
+    ): RoleplayOnlineMeta {
+        return RoleplayOnlineMeta(
+            conversationId = entity.conversationId,
+            lastCompensationBucket = entity.lastCompensationBucket,
+            lastConsumedObservationUpdatedAt = entity.lastConsumedObservationUpdatedAt,
+            lastSystemEventToken = entity.lastSystemEventToken,
             updatedAt = entity.updatedAt,
         )
     }

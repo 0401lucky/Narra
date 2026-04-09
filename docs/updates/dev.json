@@ -1,17 +1,17 @@
 {
   "app_id": "com.narra.app.dev",
   "channel": "dev",
-  "latest_version_name": "1.1.4-dev",
-  "latest_version_code": 10104,
+  "latest_version_name": "1.1.5-dev",
+  "latest_version_code": 10105,
   "minimum_supported_version_code": 0,
-  "apk_url": "https://download.lsa1230.dpdns.org/dev/Narra-v1.1.4-dev-10104-dev.apk",
-  "apk_sha256": "b3ad5b2858d8f7e508a11593a6bcfe4f0d61d40dc7ab9154aeb93ee79378c6bc",
-  "published_at": "2026-04-08T10:36:23+08:00",
+  "apk_url": "https://download.lsa1230.dpdns.org/dev/Narra-v1.1.5-dev-10105-dev.apk",
+  "apk_sha256": "1012C9DD1E48A0CB450D1D90B2708BBBC63858827411365C77FD4D190E63B985",
+  "published_at": "2026-04-09T12:19:59+08:00",
   "release_notes": [
-    "沉浸式长文模式新增智能分段兜底，模型未主动换段时也能拆成更自然的小说段落",
-    "RP 提示词强化了角色锁定、互动边界和剧情推进规则，并补入角色描述与创作者导演说明",
-    "搜索结果协议升级为 query / answer / items[]，并为每条搜索结果生成稳定 id",
-    "聊天页新增搜索选择器，可直接查看当前搜索源、LLM 搜索代理状态和默认返回条数",
-    "搜索型消息新增搜索结果预览面板，并补齐回答内引用到来源的点击闭环"
+    "查手机扩展为双对象快照，支持查看角色手机与用户手机，并把查看结果继承进后续聊天",
+    "沉浸式新增线上模式，提供手机聊天壳、时间分隔、AI帮写与正常强度旁白并存的聊天体验",
+    "线上模式支持长按引用消息、撤回最近一条消息、截图聊天事件和对方连发提示",
+    "久未联系后重新进入线上模式时，角色会按真实时间差触发一次补偿开场",
+    "修复 Tavern 设定里的 {{User}} / {{char}} 占位符未替换，以及查手机链路误判提供商配置的问题"
   ]
 }

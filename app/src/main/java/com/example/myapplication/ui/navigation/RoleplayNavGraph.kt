@@ -11,6 +11,7 @@ import androidx.navigation.NavHostController
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.navigation
 import com.example.myapplication.di.AppGraph
+import com.example.myapplication.model.PhoneSnapshotOwnerType
 import com.example.myapplication.ui.screen.roleplay.RoleplayReadingMode
 import com.example.myapplication.ui.screen.roleplay.RoleplayScenarioEditScreen
 import com.example.myapplication.ui.screen.roleplay.RoleplayScenarioListScreen
@@ -126,6 +127,9 @@ internal fun NavGraphBuilder.registerRoleplayGraph(
                 suggestions = roleplayState.suggestions,
                 input = roleplayState.input,
                 inputFocusToken = roleplayState.inputFocusToken,
+                replyToMessageId = roleplayState.replyToMessageId,
+                replyToPreview = roleplayState.replyToPreview,
+                replyToSpeakerName = roleplayState.replyToSpeakerName,
                 isSending = roleplayState.isSending,
                 isGeneratingSuggestions = roleplayState.isGeneratingSuggestions,
                 isScenarioLoading = roleplayState.isScenarioLoading,
@@ -144,6 +148,10 @@ internal fun NavGraphBuilder.registerRoleplayGraph(
                 onClearSuggestions = roleplayViewModel::clearSuggestions,
                 onRetryTurn = roleplayViewModel::retryTurn,
                 onEditUserMessage = roleplayViewModel::editUserMessage,
+                onQuoteMessage = roleplayViewModel::quoteMessage,
+                onClearQuotedMessage = roleplayViewModel::clearQuotedMessage,
+                onRecallMessage = roleplayViewModel::recallMessage,
+                onCaptureOnlineChat = roleplayViewModel::captureOnlineChat,
                 onSendSpecialPlay = roleplayViewModel::sendSpecialPlay,
                 onConfirmTransferReceipt = roleplayViewModel::confirmTransferReceipt,
                 onSend = roleplayViewModel::sendMessage,
@@ -152,6 +160,20 @@ internal fun NavGraphBuilder.registerRoleplayGraph(
                 onRejectPendingMemoryProposal = roleplayViewModel::rejectPendingMemoryProposal,
                 onRestartSession = roleplayViewModel::restartCurrentSession,
                 onDismissAssistantMismatch = roleplayViewModel::dismissAssistantMismatchDialog,
+                onOpenPhoneCheck = { ownerType ->
+                    val conversationId = roleplayState.currentSession?.conversationId.orEmpty()
+                    if (conversationId.isNotBlank()) {
+                        navController.navigate(
+                            AppRoutes.phoneCheck(
+                                conversationId = conversationId,
+                                scenarioId = scenarioId,
+                                ownerType = ownerType,
+                            ),
+                        ) {
+                            launchSingleTop = true
+                        }
+                    }
+                },
                 onOpenReadingMode = {
                     navController.navigate(AppRoutes.roleplayReading(scenarioId)) {
                         launchSingleTop = true
@@ -225,6 +247,7 @@ internal fun NavGraphBuilder.registerRoleplayGraph(
                 onUpdateShowRoleplayStatusStrip = settingsViewModel::updateShowRoleplayStatusStrip,
                 onUpdateShowRoleplayAiHelper = settingsViewModel::updateShowRoleplayAiHelper,
                 onUpdateRoleplayLongformTargetChars = settingsViewModel::updateRoleplayLongformTargetChars,
+                onUpdateScenarioInteractionMode = roleplayViewModel::updateCurrentScenarioInteractionMode,
                 onUpdateRoleplayImmersiveMode = settingsViewModel::updateRoleplayImmersiveMode,
                 onUpdateRoleplayHighContrast = settingsViewModel::updateRoleplayHighContrast,
                 onUpdateRoleplayLineHeightScale = settingsViewModel::updateRoleplayLineHeightScale,

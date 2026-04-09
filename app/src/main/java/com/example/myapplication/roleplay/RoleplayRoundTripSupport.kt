@@ -45,6 +45,9 @@ object RoleplayRoundTripSupport {
         baseMessages: List<ChatMessage>,
         conversationId: String,
         userParts: List<ChatMessagePart>,
+        replyToMessageId: String,
+        replyToPreview: String,
+        replyToSpeakerName: String,
         selectedModel: String,
         roleplayOutputFormat: RoleplayOutputFormat,
         nowProvider: () -> Long,
@@ -57,6 +60,9 @@ object RoleplayRoundTripSupport {
             nowProvider = nowProvider,
             messageIdProvider = messageIdProvider,
             parts = userParts,
+            replyToMessageId = replyToMessageId,
+            replyToPreview = replyToPreview,
+            replyToSpeakerName = replyToSpeakerName,
         )
         val loadingMessage = buildMessage(
             conversationId = conversationId,
@@ -144,6 +150,9 @@ object RoleplayRoundTripSupport {
         reasoningContent: String = "",
         reasoningSteps: List<ChatReasoningStep> = emptyList(),
         parts: List<ChatMessagePart> = emptyList(),
+        replyToMessageId: String = "",
+        replyToPreview: String = "",
+        replyToSpeakerName: String = "",
         roleplayOutputFormat: RoleplayOutputFormat = RoleplayOutputFormat.UNSPECIFIED,
     ): ChatMessage {
         return ChatMessage(
@@ -157,6 +166,9 @@ object RoleplayRoundTripSupport {
             reasoningContent = reasoningContent.ifBlank { reasoningStepsToContent(reasoningSteps) },
             reasoningSteps = normalizeChatReasoningSteps(reasoningSteps),
             parts = normalizeChatMessageParts(parts),
+            replyToMessageId = replyToMessageId,
+            replyToPreview = replyToPreview,
+            replyToSpeakerName = replyToSpeakerName,
             roleplayOutputFormat = roleplayOutputFormat,
         )
     }

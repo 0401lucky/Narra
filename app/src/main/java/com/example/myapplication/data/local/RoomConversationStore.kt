@@ -14,6 +14,7 @@ import com.example.myapplication.model.MessageCitation
 import com.example.myapplication.model.MessageAttachment
 import com.example.myapplication.model.MessageRole
 import com.example.myapplication.model.MessageStatus
+import com.example.myapplication.model.RoleplayOnlineEventKind
 import com.example.myapplication.model.RoleplayOutputFormat
 import com.example.myapplication.model.normalizeChatMessageParts
 import com.example.myapplication.model.normalizeChatReasoningSteps
@@ -190,6 +191,11 @@ class RoomConversationStore(
                     gson.fromJson<List<ChatMessagePart>>(partsJson, partListType).orEmpty()
                 }.getOrDefault(emptyList()),
             ),
+            replyToMessageId = replyToMessageId,
+            replyToPreview = replyToPreview,
+            replyToSpeakerName = replyToSpeakerName,
+            isRecalled = isRecalled,
+            systemEventKind = RoleplayOnlineEventKind.fromStorageValue(systemEventKind),
             citations = runCatching {
                 gson.fromJson<List<MessageCitation>>(citationsJson, citationListType).orEmpty()
             }.getOrDefault(emptyList()),
@@ -213,6 +219,11 @@ class RoomConversationStore(
             reasoningStepsJson = gson.toJson(normalizedReasoningSteps),
             attachmentsJson = gson.toJson(attachments),
             partsJson = gson.toJson(normalizeChatMessageParts(parts)),
+            replyToMessageId = replyToMessageId,
+            replyToPreview = replyToPreview,
+            replyToSpeakerName = replyToSpeakerName,
+            isRecalled = isRecalled,
+            systemEventKind = systemEventKind.storageValue,
             citationsJson = gson.toJson(citations),
             roleplayOutputFormat = roleplayOutputFormat.name,
         )

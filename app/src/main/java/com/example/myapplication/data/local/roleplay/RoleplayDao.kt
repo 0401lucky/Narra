@@ -34,6 +34,15 @@ interface RoleplayDao {
     @Query("SELECT * FROM roleplay_sessions WHERE id = :sessionId LIMIT 1")
     suspend fun getSession(sessionId: String): RoleplaySessionEntity?
 
+    @Query("SELECT * FROM roleplay_online_meta WHERE conversationId = :conversationId LIMIT 1")
+    suspend fun getOnlineMeta(conversationId: String): RoleplayOnlineMetaEntity?
+
+    @Upsert
+    suspend fun upsertOnlineMeta(meta: RoleplayOnlineMetaEntity)
+
+    @Query("DELETE FROM roleplay_online_meta WHERE conversationId = :conversationId")
+    suspend fun deleteOnlineMeta(conversationId: String)
+
     @Upsert
     suspend fun upsertScenario(scenario: RoleplayScenarioEntity)
 

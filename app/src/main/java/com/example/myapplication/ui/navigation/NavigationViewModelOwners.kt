@@ -6,10 +6,14 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavBackStackEntry
 import androidx.navigation.NavHostController
+import android.net.Uri
+import com.example.myapplication.conversation.PhoneContextBuilder
 import com.example.myapplication.data.repository.ImageFileStorage
 import com.example.myapplication.di.AppGraph
+import com.example.myapplication.model.PhoneSnapshotOwnerType
 import com.example.myapplication.viewmodel.ContextTransferViewModel
 import com.example.myapplication.viewmodel.MemoryManagementViewModel
+import com.example.myapplication.viewmodel.PhoneCheckViewModel
 import com.example.myapplication.viewmodel.RoleplayViewModel
 import com.example.myapplication.viewmodel.WorldBookViewModel
 
@@ -36,6 +40,7 @@ internal fun rememberRoleplayViewModel(
             memoryRepository = appGraph.memoryRepository,
             conversationSummaryRepository = appGraph.conversationSummaryRepository,
             pendingMemoryProposalRepository = appGraph.pendingMemoryProposalRepository,
+            phoneSnapshotRepository = appGraph.phoneSnapshotRepository,
             memoryWriteService = appGraph.memoryWriteService,
             imageSaver = { b64Data ->
                 ImageFileStorage.saveBase64Image(context, b64Data)
@@ -102,6 +107,34 @@ internal fun rememberContextTransferViewModel(
                     fileNamePrefix = "assistant-avatar-${importedAvatar.assistantId}",
                 ).path
             },
+        ),
+    )
+}
+
+@Composable
+internal fun rememberPhoneCheckViewModel(
+    appGraph: AppGraph,
+    backStackEntry: NavBackStackEntry,
+): PhoneCheckViewModel {
+    val rawConversationId = backStackEntry.arguments?.getString("conversationId").orEmpty()
+    val rawScenarioId = backStackEntry.arguments?.getString("scenarioId").orEmpty()
+    val rawOwnerType = backStackEntry.arguments?.getString("ownerType").orEmpty()
+    val conversationId = Uri.decode(rawConversationId)
+    val scenarioId = Uri.decode(rawScenarioId)
+    val ownerType = PhoneSnapshotOwnerType.fromStorageValue(Uri.decode(rawOwnerType))
+    return viewModel(
+        factory = PhoneCheckViewModel.factory(
+            conversationId = conversationId,
+            scenarioId = scenarioId,
+            ownerType = ownerType,
+            settingsRepository = appGraph.aiSettingsRepository,
+            conversationRepository = appGraph.conversationRepository,
+            roleplayRepository = appGraph.roleplayRepository,
+            phoneSnapshotRepository = appGraph.phoneSnapshotRepository,
+            aiPromptExtrasService = appGraph.aiPromptExtrasService,
+            phoneContextBuilder = PhoneContextBuilder(
+                promptContextAssembler = appGraph.promptContextAssembler,
+            ),
         ),
     )
 }

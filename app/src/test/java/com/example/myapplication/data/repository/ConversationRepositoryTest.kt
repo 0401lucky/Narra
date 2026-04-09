@@ -1,7 +1,11 @@
 package com.example.myapplication.data.repository
 
+import com.example.myapplication.data.repository.phone.PhoneSnapshotRepository
+import com.example.myapplication.model.PhoneObservationState
 import com.example.myapplication.model.ChatMessage
 import com.example.myapplication.model.Conversation
+import com.example.myapplication.model.PhoneSnapshot
+import com.example.myapplication.model.PhoneSnapshotOwnerType
 import com.example.myapplication.model.DEFAULT_ASSISTANT_ID
 import com.example.myapplication.model.DEFAULT_CONVERSATION_TITLE
 import com.example.myapplication.model.MessageRole
@@ -13,6 +17,8 @@ import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.flowOf
 
 class ConversationRepositoryTest {
     @Test
@@ -128,6 +134,34 @@ class ConversationRepositoryTest {
     }
 
     @Test
+    fun clearConversation_deletesPhoneSnapshot() = runBlocking {
+        val store = FakeConversationStore(
+            conversations = listOf(
+                Conversation(
+                    id = "c1",
+                    title = "旧标题",
+                    model = "model-a",
+                    createdAt = 1L,
+                    updatedAt = 1L,
+                ),
+            ),
+        )
+        val phoneSnapshotRepository = RecordingPhoneSnapshotRepository()
+        val repository = ConversationRepository(
+            conversationStore = store,
+            phoneSnapshotRepository = phoneSnapshotRepository,
+            nowProvider = { 300L },
+        )
+
+        repository.clearConversation(
+            conversationId = "c1",
+            selectedModel = "model-c",
+        )
+
+        assertEquals(listOf("c1"), phoneSnapshotRepository.deletedConversationIds.distinct())
+    }
+
+    @Test
     fun deleteConversation_returnsRemainingConversation() = runBlocking {
         val store = FakeConversationStore(
             conversations = listOf(
@@ -187,6 +221,34 @@ class ConversationRepositoryTest {
         assertEquals(DEFAULT_CONVERSATION_TITLE, nextConversation.title)
         assertEquals("model-z", nextConversation.model)
         assertEquals(1, store.listConversations().size)
+    }
+
+    @Test
+    fun deleteConversation_deletesPhoneSnapshot() = runBlocking {
+        val store = FakeConversationStore(
+            conversations = listOf(
+                Conversation(
+                    id = "c1",
+                    title = "唯一会话",
+                    model = "model-a",
+                    createdAt = 1L,
+                    updatedAt = 1L,
+                ),
+            ),
+        )
+        val phoneSnapshotRepository = RecordingPhoneSnapshotRepository()
+        val repository = ConversationRepository(
+            conversationStore = store,
+            phoneSnapshotRepository = phoneSnapshotRepository,
+            nowProvider = { 500L },
+        )
+
+        repository.deleteConversation(
+            conversationId = "c1",
+            selectedModel = "model-z",
+        )
+
+        assertEquals(listOf("c1"), phoneSnapshotRepository.deletedConversationIds.distinct())
     }
 
     @Test
@@ -544,5 +606,35 @@ class ConversationRepositoryTest {
         )
 
         assertEquals("legacy", resolved.id)
+    }
+
+    private class RecordingPhoneSnapshotRepository : PhoneSnapshotRepository {
+        val deletedConversationIds = mutableListOf<String>()
+
+        override fun observeSnapshot(
+            conversationId: String,
+            ownerType: PhoneSnapshotOwnerType,
+        ): Flow<PhoneSnapshot?> = flowOf(null)
+
+        override suspend fun getSnapshot(
+            conversationId: String,
+            ownerType: PhoneSnapshotOwnerType,
+        ): PhoneSnapshot? = null
+
+        override suspend fun upsertSnapshot(snapshot: PhoneSnapshot) = Unit
+
+        override suspend fun deleteSnapshot(conversationId: String) {
+            deletedConversationIds += conversationId
+        }
+
+        override fun observeObservation(conversationId: String): Flow<PhoneObservationState?> = flowOf(null)
+
+        override suspend fun getObservation(conversationId: String): PhoneObservationState? = null
+
+        override suspend fun upsertObservation(observation: PhoneObservationState) = Unit
+
+        override suspend fun deleteObservation(conversationId: String) {
+            deletedConversationIds += conversationId
+        }
     }
 }

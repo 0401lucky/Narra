@@ -24,6 +24,7 @@ import androidx.compose.material.icons.filled.CardGiftcard
 import androidx.compose.material.icons.filled.ChevronRight
 import androidx.compose.material.icons.filled.Event
 import androidx.compose.material.icons.filled.Share
+import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
@@ -77,6 +78,8 @@ private val GiftRose = Color(0xFFE46074)
 private val GiftRoseSoft = Color(0xFFFFEEF1)
 private val TaskAmber = Color(0xFFD78B31)
 private val TaskAmberSoft = Color(0xFFFFF2E1)
+private val PhoneBlue = Color(0xFF4A86D9)
+private val PhoneBlueSoft = Color(0xFFEAF2FF)
 
 private val specialPlayOptions = listOf(
     SpecialPlayOption(
@@ -111,6 +114,15 @@ private val specialPlayOptions = listOf(
         iconTint = TaskAmber,
         iconBackground = TaskAmberSoft,
     ),
+)
+
+private val phoneCheckOption = SpecialPlayOption(
+    type = ChatSpecialType.TASK,
+    title = "查手机",
+    description = "进入独立手机页，浏览已经生成或保存下来的消息、备忘录、相册、购物和搜索内容。",
+    icon = Icons.Default.Visibility,
+    iconTint = PhoneBlue,
+    iconBackground = PhoneBlueSoft,
 )
 
 val TransferPlayDraftSaver: Saver<TransferPlayDraft, Any> = listSaver(
@@ -164,6 +176,7 @@ val TaskPlayDraftSaver: Saver<TaskPlayDraft, Any> = listSaver(
 fun SpecialPlaySheet(
     onDismissRequest: () -> Unit,
     onOpenPlay: (ChatSpecialType) -> Unit,
+    onOpenPhoneCheck: () -> Unit,
 ) {
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     ModalBottomSheet(
@@ -183,10 +196,17 @@ fun SpecialPlaySheet(
                 fontWeight = FontWeight.SemiBold,
             )
             Text(
-                text = "把社交互动和剧情推进变成可见卡片。",
+                text = "既可以发送卡片玩法，也可以直接进入独立页面玩法。",
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
+
+            SpecialPlayGroup(title = "独立页面") {
+                SpecialPlayEntry(
+                    option = phoneCheckOption,
+                    onClick = onOpenPhoneCheck,
+                )
+            }
 
             SpecialPlayGroup(title = "社交互动") {
                 specialPlayOptions

@@ -95,6 +95,21 @@ object RoleplayMessageUiMapper {
     ) {
         val normalizedParts = normalizeChatMessageParts(message.parts)
         val initialSize = target.size
+        if (message.isRecalled) {
+            target += RoleplayMessageUiModel(
+                sourceMessageId = message.id,
+                contentType = RoleplayContentType.NARRATION,
+                speaker = RoleplaySpeaker.SYSTEM,
+                speakerName = "系统",
+                content = message.content.ifBlank { "你撤回了一条消息" },
+                isRecalled = true,
+                systemEventKind = message.systemEventKind,
+                createdAt = message.createdAt,
+                messageStatus = message.status,
+                copyText = "",
+            )
+            return
+        }
         if (normalizedParts.isEmpty()) {
             val content = message.content.trim().ifBlank { "（无文本内容）" }
             target += RoleplayMessageUiModel(
@@ -103,6 +118,11 @@ object RoleplayMessageUiMapper {
                 speaker = RoleplaySpeaker.USER,
                 speakerName = userName,
                 content = content,
+                replyToMessageId = message.replyToMessageId,
+                replyToPreview = message.replyToPreview,
+                replyToSpeakerName = message.replyToSpeakerName,
+                isRecalled = message.isRecalled,
+                systemEventKind = message.systemEventKind,
                 createdAt = message.createdAt,
                 messageStatus = message.status,
                 copyText = content,
@@ -134,6 +154,11 @@ object RoleplayMessageUiMapper {
                         speaker = RoleplaySpeaker.USER,
                         speakerName = userName,
                         content = content,
+                        replyToMessageId = message.replyToMessageId,
+                        replyToPreview = message.replyToPreview,
+                        replyToSpeakerName = message.replyToSpeakerName,
+                        isRecalled = message.isRecalled,
+                        systemEventKind = message.systemEventKind,
                         createdAt = message.createdAt,
                         messageStatus = message.status,
                         copyText = content,
@@ -149,6 +174,11 @@ object RoleplayMessageUiMapper {
                 speaker = RoleplaySpeaker.USER,
                 speakerName = userName,
                 content = content,
+                replyToMessageId = message.replyToMessageId,
+                replyToPreview = message.replyToPreview,
+                replyToSpeakerName = message.replyToSpeakerName,
+                isRecalled = message.isRecalled,
+                systemEventKind = message.systemEventKind,
                 createdAt = message.createdAt,
                 messageStatus = message.status,
                 copyText = content,
@@ -218,6 +248,8 @@ object RoleplayMessageUiMapper {
                 userName = userName,
                 characterName = characterName,
                 allowNarration = scenario.enableNarration,
+                isRecalled = message.isRecalled,
+                systemEventKind = message.systemEventKind,
                 createdAt = message.createdAt,
                 messageStatus = message.status,
                 canRetry = canRetry,
@@ -251,6 +283,8 @@ object RoleplayMessageUiMapper {
                         userName = userName,
                         characterName = characterName,
                         allowNarration = scenario.enableNarration,
+                        isRecalled = message.isRecalled,
+                        systemEventKind = message.systemEventKind,
                         createdAt = message.createdAt,
                         messageStatus = message.status,
                         canRetry = canRetry,
@@ -267,11 +301,33 @@ object RoleplayMessageUiMapper {
                 userName = userName,
                 characterName = characterName,
                 allowNarration = scenario.enableNarration,
+                isRecalled = message.isRecalled,
+                systemEventKind = message.systemEventKind,
                 createdAt = message.createdAt,
                 messageStatus = message.status,
                 canRetry = canRetry,
                 outputParser = outputParser,
             )
+        }
+        if (scenario.interactionMode == com.example.myapplication.model.RoleplayInteractionMode.ONLINE_PHONE) {
+            val newlyAdded = target.drop(initialSize)
+            val dialogueCount = newlyAdded.count { it.contentType == RoleplayContentType.DIALOGUE }
+            if (dialogueCount >= 3) {
+                target.add(
+                    initialSize,
+                    RoleplayMessageUiModel(
+                        sourceMessageId = "${message.id}-burst",
+                        contentType = RoleplayContentType.NARRATION,
+                        speaker = RoleplaySpeaker.SYSTEM,
+                        speakerName = "系统",
+                        content = "对方连发了 $dialogueCount 条消息",
+                        systemEventKind = com.example.myapplication.model.RoleplayOnlineEventKind.BURST,
+                        createdAt = message.createdAt,
+                        messageStatus = message.status,
+                        copyText = "",
+                    ),
+                )
+            }
         }
     }
 
@@ -282,6 +338,8 @@ object RoleplayMessageUiMapper {
         userName: String,
         characterName: String,
         allowNarration: Boolean,
+        isRecalled: Boolean,
+        systemEventKind: com.example.myapplication.model.RoleplayOnlineEventKind,
         createdAt: Long,
         messageStatus: MessageStatus,
         canRetry: Boolean,
@@ -307,6 +365,11 @@ object RoleplayMessageUiMapper {
                     RoleplaySpeaker.SYSTEM -> segment.speakerName
                 },
                 content = segment.content,
+                replyToMessageId = segment.replyToMessageId,
+                replyToPreview = segment.replyToPreview,
+                replyToSpeakerName = segment.replyToSpeakerName,
+                isRecalled = isRecalled,
+                systemEventKind = systemEventKind,
                 emotion = segment.emotion,
                 createdAt = createdAt,
                 messageStatus = messageStatus,

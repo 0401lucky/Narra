@@ -15,6 +15,7 @@ data class RoleplayScenario(
     val characterPortraitUri: String = "",
     val characterPortraitUrl: String = "",
     val openingNarration: String = "",
+    val interactionMode: RoleplayInteractionMode = RoleplayInteractionMode.OFFLINE_DIALOGUE,
     val enableNarration: Boolean = true,
     val enableRoleplayProtocol: Boolean = true,
     val longformModeEnabled: Boolean = false,
