@@ -1,16 +1,16 @@
 {
   "app_id": "com.narra.app.dev",
   "channel": "dev",
-  "latest_version_name": "1.2.0-dev",
-  "latest_version_code": 10200,
+  "latest_version_name": "1.2.1-dev",
+  "latest_version_code": 10201,
   "minimum_supported_version_code": 0,
-  "apk_url": "https://download.lsa1230.dpdns.org/dev/Narra-v1.2.0-dev-10200-dev.apk",
-  "apk_sha256": "81172732ff31afaedcf7f2e500b2dfafa86f8d3ae1cd0326b8eae6b0c6a00f5a",
-  "published_at": "2026-04-09T21:30:52+08:00",
+  "apk_url": "https://download.lsa1230.dpdns.org/dev/Narra-v1.2.1-dev-10201-dev.apk",
+  "apk_sha256": "ea95b7af6b88589b904bb45721ad00c8ae9246268e601f419ba6fb8bf68dfa5d",
+  "published_at": "2026-04-10T00:11:27+08:00",
   "release_notes": [
-    "查手机新增独立模型位，生成改为消息优先、其余板块并行补齐，并显示实时进度",
-    "修复我的手机在模型返回空内容或非法 JSON 时仍提示刷新成功并写入空快照的问题",
-    "我的手机生成出部分板块后会自动落到第一个有内容的标签，不再停在空白消息页",
-    "线上模式移除“对方连发了几条消息”提示，回复条数改为按当前聊天内容、上下文和记忆自然决定"
+    "线上模式改为使用场景背景图作为聊天壁纸，顶部栏、时间分隔、引用条和输入区统一换成半透明聊天壳",
+    "修复线上模式无论场景是否配置背景图都固定显示纯白背景的问题",
+    "模型选择弹层支持按提供商名、ID、基础域名和当前默认模型搜索提供商",
+    "修复搜索词命中当前提供商但未命中模型名时误报“未找到模型”的问题"
   ]
 }
