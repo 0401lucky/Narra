@@ -1,17 +1,17 @@
 {
   "app_id": "com.narra.app.dev",
   "channel": "dev",
-  "latest_version_name": "1.1.7-dev",
-  "latest_version_code": 10107,
+  "latest_version_name": "1.1.8-dev",
+  "latest_version_code": 10108,
   "minimum_supported_version_code": 0,
-  "apk_url": "https://0401lucky.github.io/Narra/downloads/dev/Narra-v1.1.7-dev-10107-dev.apk",
-  "apk_sha256": "d6dded46eac08912b81ce1c786d667b5f683778655f592cbb36bad5885b1961c",
-  "published_at": "2026-04-09T14:47:57+08:00",
+  "apk_url": "https://download.lsa1230.dpdns.org/dev/Narra-v1.1.8-dev-10108-dev.apk",
+  "apk_sha256": "5365b75bdeaf1948a8b592ad127f10a300f5a7fd0e51f741acbd3eceb8b75a7f",
+  "published_at": "2026-04-09T15:23:57+08:00",
   "release_notes": [
+    "修复特殊玩法选项卡在新增惩罚后无法继续下滑的问题，现在可以正常滚动浏览全部玩法",
     "沉浸设置新增线上模式显示旁白开关，可切换成更接近纯手机聊天的体验",
     "关闭旁白后，线上模式会同时收住 prompt 和显示层，尽量只保留对白与系统事件提示",
     "特殊玩法惩罚卡继续保留，支持方式、次数、强度、原因和附注",
-    "线上模式顶部状态栏重叠修复、用户气泡自适应和我的手机语义修正继续包含在此版本中",
-    "应用内更新测试包已推进到 1.1.7-dev，可通过 GitHub Pages 直链下载新 APK"
+    "应用内更新测试包已推进到 1.1.8-dev，并恢复使用 Cloudflare R2 自定义域名下载"
   ]
 }
