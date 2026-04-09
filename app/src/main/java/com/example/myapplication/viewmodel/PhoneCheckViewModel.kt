@@ -21,10 +21,13 @@ import com.example.myapplication.model.PhoneSnapshotSection
 import com.example.myapplication.model.PhoneViewMode
 import com.example.myapplication.model.RoleplayOutputFormat
 import com.example.myapplication.model.RoleplayScenario
-import com.example.myapplication.model.ProviderFunction
 import com.example.myapplication.model.ChatMessage
 import com.example.myapplication.model.MessageRole
+import com.example.myapplication.model.ProviderFunction
 import com.example.myapplication.model.textMessagePart
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -33,6 +36,8 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 
 data class PhoneCheckUiState(
     val conversationId: String = "",
@@ -42,6 +47,9 @@ data class PhoneCheckUiState(
     val snapshot: PhoneSnapshot? = null,
     val isLoading: Boolean = true,
     val isGenerating: Boolean = false,
+    val generationRequestedSections: Set<PhoneSnapshotSection> = emptySet(),
+    val generationCompletedSections: Set<PhoneSnapshotSection> = emptySet(),
+    val generationStatusText: String = "",
     val loadingSearchEntryId: String = "",
     val errorMessage: String? = null,
     val noticeMessage: String? = null,
@@ -139,6 +147,9 @@ class PhoneCheckViewModel(
             _uiState.update { current ->
                 current.copy(
                     isGenerating = true,
+                    generationRequestedSections = sections.ifEmpty { PhoneSnapshotSection.entries.toSet() },
+                    generationCompletedSections = emptySet(),
+                    generationStatusText = "",
                     errorMessage = null,
                     noticeMessage = null,
                 )
@@ -146,7 +157,7 @@ class PhoneCheckViewModel(
             val existingSnapshot = _uiState.value.snapshot
             runCatching {
                 val runtime = resolveGenerationRuntimeContext() ?: error("当前会话不存在，无法生成手机内容")
-                refreshSnapshotSectionsSequentially(
+                refreshSnapshotSectionsInStages(
                     runtime = runtime,
                     requestedSections = sections,
                     existingSnapshot = existingSnapshot,
@@ -157,6 +168,9 @@ class PhoneCheckViewModel(
                         snapshot = snapshot,
                         ownerName = snapshot.ownerName,
                         isGenerating = false,
+                        generationRequestedSections = emptySet(),
+                        generationCompletedSections = emptySet(),
+                        generationStatusText = "",
                         noticeMessage = if (existingSnapshot == null) "手机内容已生成" else "已刷新所选内容",
                     )
                 }
@@ -164,6 +178,9 @@ class PhoneCheckViewModel(
                 _uiState.update { current ->
                     current.copy(
                         isGenerating = false,
+                        generationRequestedSections = emptySet(),
+                        generationCompletedSections = emptySet(),
+                        generationStatusText = "",
                         errorMessage = throwable.message ?: "手机内容生成失败",
                     )
                 }
@@ -171,27 +188,36 @@ class PhoneCheckViewModel(
         }
     }
 
-    private suspend fun refreshSnapshotSectionsSequentially(
+    private suspend fun refreshSnapshotSectionsInStages(
         runtime: RuntimeContext,
         requestedSections: Set<PhoneSnapshotSection>,
         existingSnapshot: PhoneSnapshot?,
     ): PhoneSnapshot {
-        val normalizedSections = requestedSections
-            .ifEmpty { PhoneSnapshotSection.entries.toSet() }
-            .sortedBy { section -> section.ordinal }
+        val normalizedSections = requestedSections.ifEmpty { PhoneSnapshotSection.entries.toSet() }
+        val batches = buildGenerationBatches(normalizedSections)
         var workingSnapshot = existingSnapshot ?: PhoneSnapshot(
             conversationId = initialConversationId,
             ownerType = initialOwnerType,
             contentSemanticsVersion = PhoneSnapshot.currentContentSemanticsVersion(initialOwnerType),
         )
-        val failedSections = mutableListOf<String>()
+        val completedSections = linkedSetOf<PhoneSnapshotSection>()
+        val failedSections = linkedSetOf<Set<PhoneSnapshotSection>>()
         var lastErrorMessage = ""
 
-        normalizedSections.forEach { section ->
+        val messageBatch = batches.firstOrNull { PhoneSnapshotSection.MESSAGES in it }
+        val parallelBatches = batches.filterNot { it == messageBatch }
+
+        updateGenerationProgress(
+            requestedSections = normalizedSections,
+            completedSections = completedSections,
+            pendingBatches = if (messageBatch != null) listOf(messageBatch) else parallelBatches,
+        )
+
+        messageBatch?.let { batch ->
             runCatching {
-                aiPromptExtrasService.generatePhoneSnapshotSections(
+                generateSectionBatch(
                     context = runtime.context,
-                    requestedSections = setOf(section),
+                    requestedSections = batch,
                     existingSnapshot = workingSnapshot,
                     baseUrl = runtime.provider.baseUrl,
                     apiKey = runtime.provider.apiKey,
@@ -200,20 +226,89 @@ class PhoneCheckViewModel(
                     provider = runtime.provider,
                 )
             }.onSuccess { generatedSections ->
-                workingSnapshot = workingSnapshot.mergeSections(
+                if (!generatedSections.hasContentFor(batch)) {
+                    error("模型返回了空白的${batch.describeSections()}内容")
+                }
+                workingSnapshot = mergeBatchIntoSnapshot(
+                    currentSnapshot = workingSnapshot,
                     sections = generatedSections,
-                    requestedSections = setOf(section),
-                    updatedAt = nowProvider(),
-                    ownerType = initialOwnerType,
-                    scenarioId = initialScenarioId,
-                    assistantId = runtime.assistant?.id.orEmpty(),
-                    contentSemanticsVersion = PhoneSnapshot.currentContentSemanticsVersion(initialOwnerType),
-                    ownerName = runtime.ownerName,
+                    requestedSections = batch,
+                    runtime = runtime,
                 )
+                completedSections += batch
                 phoneSnapshotRepository.upsertSnapshot(workingSnapshot)
+                _uiState.update { current ->
+                    current.copy(
+                        snapshot = workingSnapshot,
+                        ownerName = workingSnapshot.ownerName,
+                    )
+                }
             }.onFailure { throwable ->
-                failedSections += section.displayName
+                failedSections += batch
                 lastErrorMessage = throwable.message.orEmpty()
+            }
+
+            updateGenerationProgress(
+                requestedSections = normalizedSections,
+                completedSections = completedSections,
+                pendingBatches = parallelBatches,
+            )
+        }
+
+        if (parallelBatches.isNotEmpty()) {
+            val settledBatches = mutableSetOf<Set<PhoneSnapshotSection>>()
+            val progressMutex = Mutex()
+            val snapshotSeed = workingSnapshot
+
+            coroutineScope {
+                parallelBatches.map { batch ->
+                    async {
+                        val result = runCatching {
+                            generateSectionBatch(
+                                context = runtime.context,
+                                requestedSections = batch,
+                                existingSnapshot = snapshotSeed,
+                                baseUrl = runtime.provider.baseUrl,
+                                apiKey = runtime.provider.apiKey,
+                                modelId = runtime.modelId,
+                                apiProtocol = runtime.provider.resolvedApiProtocol(),
+                                provider = runtime.provider,
+                            )
+                        }
+
+                        progressMutex.withLock {
+                            result.onSuccess { generatedSections ->
+                                if (!generatedSections.hasContentFor(batch)) {
+                                    error("模型返回了空白的${batch.describeSections()}内容")
+                                }
+                                workingSnapshot = mergeBatchIntoSnapshot(
+                                    currentSnapshot = workingSnapshot,
+                                    sections = generatedSections,
+                                    requestedSections = batch,
+                                    runtime = runtime,
+                                )
+                                completedSections += batch
+                                phoneSnapshotRepository.upsertSnapshot(workingSnapshot)
+                                _uiState.update { current ->
+                                    current.copy(
+                                        snapshot = workingSnapshot,
+                                        ownerName = workingSnapshot.ownerName,
+                                    )
+                                }
+                            }.onFailure { throwable ->
+                                failedSections += batch
+                                lastErrorMessage = throwable.message.orEmpty()
+                            }
+
+                            settledBatches += batch
+                            updateGenerationProgress(
+                                requestedSections = normalizedSections,
+                                completedSections = completedSections,
+                                pendingBatches = parallelBatches.filterNot { it in settledBatches },
+                            )
+                        }
+                    }
+                }.awaitAll()
             }
         }
 
@@ -233,14 +328,14 @@ class PhoneCheckViewModel(
             return workingSnapshot
         }
 
-        if (failedSections.size == normalizedSections.size) {
+        if (failedSections.flatMap { it }.toSet().size == normalizedSections.size) {
             val detail = lastErrorMessage.takeIf { it.isNotBlank() }?.let { "：$it" }.orEmpty()
-            error("手机内容生成失败（${failedSections.joinToString("、")}）$detail")
+            error("手机内容生成失败（${failedSections.flattenDisplayName()}）$detail")
         }
 
         _uiState.update { current ->
             current.copy(
-                errorMessage = "部分内容刷新失败：${failedSections.joinToString("、")}，其余内容已保留",
+                errorMessage = "部分内容刷新失败：${failedSections.flattenDisplayName()}，其余内容已保留",
             )
         }
         return workingSnapshot
@@ -362,7 +457,7 @@ class PhoneCheckViewModel(
         val messages = conversationRepository.listMessages(initialConversationId)
         val activeProvider = currentSettings.activeProvider()
             ?: error("当前未配置可用提供商")
-        val modelId = activeProvider.resolveFunctionModel(ProviderFunction.CHAT_SUGGESTION)
+        val modelId = activeProvider.resolveFunctionModel(ProviderFunction.PHONE_SNAPSHOT)
             .ifBlank { activeProvider.selectedModel.trim() }
         if (modelId.isBlank()) {
             error("当前未配置可用模型")
@@ -501,6 +596,130 @@ class PhoneCheckViewModel(
         val baseContext: BaseContext,
         val resolution: LoadedSnapshotResolution,
     )
+
+    private fun buildGenerationBatches(
+        requestedSections: Set<PhoneSnapshotSection>,
+    ): List<Set<PhoneSnapshotSection>> {
+        val normalizedSections = requestedSections.ifEmpty { PhoneSnapshotSection.entries.toSet() }
+        return buildList {
+            if (PhoneSnapshotSection.MESSAGES in normalizedSections) {
+                add(setOf(PhoneSnapshotSection.MESSAGES))
+            }
+            setOf(PhoneSnapshotSection.NOTES, PhoneSnapshotSection.SHOPPING)
+                .intersect(normalizedSections)
+                .takeIf { it.isNotEmpty() }
+                ?.let(::add)
+            setOf(PhoneSnapshotSection.GALLERY, PhoneSnapshotSection.SEARCH)
+                .intersect(normalizedSections)
+                .takeIf { it.isNotEmpty() }
+                ?.let(::add)
+        }
+    }
+
+    private suspend fun generateSectionBatch(
+        context: PhoneGenerationContext,
+        requestedSections: Set<PhoneSnapshotSection>,
+        existingSnapshot: PhoneSnapshot,
+        baseUrl: String,
+        apiKey: String,
+        modelId: String,
+        apiProtocol: com.example.myapplication.model.ProviderApiProtocol,
+        provider: com.example.myapplication.model.ProviderSettings,
+    ) = aiPromptExtrasService.generatePhoneSnapshotSections(
+        context = context,
+        requestedSections = requestedSections,
+        existingSnapshot = existingSnapshot,
+        baseUrl = baseUrl,
+        apiKey = apiKey,
+        modelId = modelId,
+        apiProtocol = apiProtocol,
+        provider = provider,
+    )
+
+    private fun mergeBatchIntoSnapshot(
+        currentSnapshot: PhoneSnapshot,
+        sections: com.example.myapplication.model.PhoneSnapshotSections,
+        requestedSections: Set<PhoneSnapshotSection>,
+        runtime: RuntimeContext,
+    ): PhoneSnapshot {
+        return currentSnapshot.mergeSections(
+            sections = sections,
+            requestedSections = requestedSections,
+            updatedAt = nowProvider(),
+            ownerType = initialOwnerType,
+            scenarioId = initialScenarioId,
+            assistantId = runtime.assistant?.id.orEmpty(),
+            contentSemanticsVersion = PhoneSnapshot.currentContentSemanticsVersion(initialOwnerType),
+            ownerName = runtime.ownerName,
+        )
+    }
+
+    private fun updateGenerationProgress(
+        requestedSections: Set<PhoneSnapshotSection>,
+        completedSections: Set<PhoneSnapshotSection>,
+        pendingBatches: List<Set<PhoneSnapshotSection>>,
+    ) {
+        val statusText = if (pendingBatches.isEmpty()) {
+            ""
+        } else {
+            buildGenerationStatusText(
+                requestedSections = requestedSections,
+                completedSections = completedSections,
+                pendingBatches = pendingBatches,
+            )
+        }
+        _uiState.update { current ->
+            current.copy(
+                generationRequestedSections = requestedSections,
+                generationCompletedSections = completedSections.toSet(),
+                generationStatusText = statusText,
+            )
+        }
+    }
+
+    private fun buildGenerationStatusText(
+        requestedSections: Set<PhoneSnapshotSection>,
+        completedSections: Set<PhoneSnapshotSection>,
+        pendingBatches: List<Set<PhoneSnapshotSection>>,
+    ): String {
+        val completedCount = completedSections.size
+        val totalCount = requestedSections.size
+        val batchLabel = pendingBatches.joinToString(" / ") { batch ->
+            batch.sortedBy(PhoneSnapshotSection::ordinal).joinToString("、") { it.displayName }
+        }
+        return if (pendingBatches.size > 1) {
+            "已完成 $completedCount/$totalCount，正在并行生成：$batchLabel"
+        } else {
+            "已完成 $completedCount/$totalCount，正在生成：$batchLabel"
+        }
+    }
+
+    private fun Collection<Set<PhoneSnapshotSection>>.flattenDisplayName(): String {
+        return flatMap { it }
+            .distinct()
+            .sortedBy(PhoneSnapshotSection::ordinal)
+            .joinToString("、") { it.displayName }
+    }
+
+    private fun Set<PhoneSnapshotSection>.describeSections(): String {
+        return sortedBy(PhoneSnapshotSection::ordinal).joinToString("、") { it.displayName }
+    }
+
+    private fun com.example.myapplication.model.PhoneSnapshotSections.hasContentFor(
+        requestedSections: Set<PhoneSnapshotSection>,
+    ): Boolean {
+        return requestedSections.any { section ->
+            when (section) {
+                PhoneSnapshotSection.MESSAGES -> {
+                    !relationshipHighlights.isNullOrEmpty() || !messageThreads.isNullOrEmpty()
+                }
+                PhoneSnapshotSection.NOTES -> !notes.isNullOrEmpty()
+                PhoneSnapshotSection.GALLERY -> !gallery.isNullOrEmpty()
+                PhoneSnapshotSection.SHOPPING -> !shoppingRecords.isNullOrEmpty()
+                PhoneSnapshotSection.SEARCH -> !searchHistory.isNullOrEmpty()
+            }
+        }
+    }
 
     companion object {
         fun factory(

@@ -7,6 +7,7 @@ import com.example.myapplication.model.OpenAiTextApiMode
 import com.example.myapplication.model.PhoneSnapshotOwnerType
 import com.example.myapplication.model.PhoneSnapshotSection
 import com.example.myapplication.model.PhoneViewMode
+import com.example.myapplication.model.PromptMode
 import com.example.myapplication.model.ProviderSettings
 import com.example.myapplication.model.RoleplaySuggestionAxis
 import com.google.gson.JsonParser
@@ -17,6 +18,7 @@ import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
+import org.junit.Assert.fail
 import org.junit.Before
 import org.junit.Test
 
@@ -585,6 +587,10 @@ class AiPromptExtrasServiceTest {
         assertEquals("沈砚清", result.relationshipHighlights?.first()?.name)
         assertEquals(1, result.messageThreads?.size)
         assertEquals("今晚别再躲我了。", result.messageThreads?.first()?.messages?.first()?.text)
+
+        val request = JsonParser.parseString(server.takeRequest().body.readUtf8()).asJsonObject
+        assertTrue(request.has("temperature"))
+        assertTrue(request.has("top_p"))
     }
 
     @Test
@@ -750,6 +756,105 @@ class AiPromptExtrasServiceTest {
         assertTrue(prompt.contains("请为用户手机里的一个搜索词生成点开后的详情内容"))
         assertTrue(prompt.contains("主体必须仍是用户自己会搜的内容"))
         assertFalse(prompt.contains("请为角色手机里的一个搜索词生成点开后的详情内容"))
+    }
+
+    @Test
+    fun generatePhoneSnapshotSections_chatPromptOmitsRoleplaySampling() = runBlocking {
+        server.enqueue(
+            MockResponse().setResponseCode(200).setBody(
+                """
+                {
+                  "choices": [
+                    {
+                      "index": 0,
+                      "message": {
+                        "role": "assistant",
+                        "content": "{\"relationship_highlights\":[],\"message_threads\":[],\"notes\":[],\"gallery\":[],\"shopping_records\":[],\"search_history\":[]}"
+                      }
+                    }
+                  ]
+                }
+                """.trimIndent(),
+            ),
+        )
+        val service = createService()
+
+        service.generatePhoneSnapshotSections(
+            context = PhoneGenerationContext(
+                ownerType = PhoneSnapshotOwnerType.CHARACTER,
+                viewerType = PhoneSnapshotOwnerType.USER,
+                viewMode = PhoneViewMode.USER_LOOKS_CHARACTER_PHONE,
+                ownerName = "沈砚清",
+                viewerName = "lucky",
+                userName = "lucky",
+                assistantName = "沈砚清",
+                relationshipDirection = "用户正在查看对方的手机内容",
+                timeGapContext = "",
+                promptMode = PromptMode.CHAT,
+                systemContext = "【助手简介】冷静克制。",
+                scenarioContext = "",
+                conversationExcerpt = "lucky：今天在做什么？",
+            ),
+            requestedSections = setOf(PhoneSnapshotSection.SEARCH),
+            existingSnapshot = null,
+            baseUrl = server.url("/v1/").toString(),
+            apiKey = "test-key",
+            modelId = "deepseek-chat",
+        )
+
+        val request = JsonParser.parseString(server.takeRequest().body.readUtf8()).asJsonObject
+        assertFalse(request.has("temperature"))
+        assertFalse(request.has("top_p"))
+    }
+
+    @Test
+    fun generatePhoneSnapshotSections_throwsWhenModelReturnsInvalidJson() = runBlocking {
+        server.enqueue(
+            MockResponse().setResponseCode(200).setBody(
+                """
+                {
+                  "choices": [
+                    {
+                      "index": 0,
+                      "message": {
+                        "role": "assistant",
+                        "content": "不是 JSON"
+                      }
+                    }
+                  ]
+                }
+                """.trimIndent(),
+            ),
+        )
+        val service = createService()
+
+        try {
+            service.generatePhoneSnapshotSections(
+                context = PhoneGenerationContext(
+                    ownerType = PhoneSnapshotOwnerType.CHARACTER,
+                    viewerType = PhoneSnapshotOwnerType.USER,
+                    viewMode = PhoneViewMode.USER_LOOKS_CHARACTER_PHONE,
+                    ownerName = "沈砚清",
+                    viewerName = "lucky",
+                    userName = "lucky",
+                    assistantName = "沈砚清",
+                    relationshipDirection = "用户正在查看对方的手机内容",
+                    timeGapContext = "",
+                    promptMode = PromptMode.CHAT,
+                    systemContext = "",
+                    scenarioContext = "",
+                    conversationExcerpt = "",
+                ),
+                requestedSections = setOf(PhoneSnapshotSection.MESSAGES),
+                existingSnapshot = null,
+                baseUrl = server.url("/v1/").toString(),
+                apiKey = "test-key",
+                modelId = "deepseek-chat",
+            )
+            fail("预期应抛出非法 JSON 异常")
+        } catch (error: IllegalStateException) {
+            assertTrue(error.message.orEmpty().contains("合法 JSON"))
+        }
     }
 
     private fun createService(): DefaultAiPromptExtrasService {

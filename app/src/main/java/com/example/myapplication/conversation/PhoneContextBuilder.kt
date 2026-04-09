@@ -47,13 +47,20 @@ class PhoneContextBuilder(
         val completedMessages = recentMessages.filter { message ->
             message.status == MessageStatus.COMPLETED && message.hasSendableContent()
         }
+        val promptMessages = completedMessages.takeLast(
+            if (scenario != null) PHONE_PROMPT_ROLEPLAY_MESSAGE_LIMIT else PHONE_PROMPT_CHAT_MESSAGE_LIMIT,
+        )
         val promptMode = if (scenario != null) PromptMode.ROLEPLAY else PromptMode.CHAT
+        val compactAssistant = assistant?.copy(
+            memoryMaxItems = assistant.memoryMaxItems.coerceAtMost(PHONE_PROMPT_MEMORY_MAX_ITEMS),
+            worldBookMaxEntries = assistant.worldBookMaxEntries.coerceAtMost(PHONE_PROMPT_WORLD_BOOK_MAX_ITEMS),
+        )
         val assembledContext = promptContextAssembler.assemble(
             settings = settings,
-            assistant = assistant,
+            assistant = compactAssistant,
             conversation = conversation,
             userInputText = "",
-            recentMessages = completedMessages,
+            recentMessages = promptMessages,
             promptMode = promptMode,
             includePhoneSnapshot = false,
         )
@@ -113,7 +120,7 @@ class PhoneContextBuilder(
                     }
                 }.trim(),
                 conversationExcerpt = RoleplayTranscriptFormatter.formatMessages(
-                    messages = completedMessages.takeLast(12),
+                    messages = promptMessages,
                     userName = userName,
                     characterName = assistantName,
                     allowNarration = scenario.enableNarration,
@@ -156,8 +163,7 @@ class PhoneContextBuilder(
                 promptMode = PromptMode.CHAT,
                 systemContext = assembledContext.systemPrompt,
                 scenarioContext = "",
-                conversationExcerpt = completedMessages
-                    .takeLast(10)
+                conversationExcerpt = promptMessages
                     .joinToString(separator = "\n") { message ->
                         val speaker = if (message.role == MessageRole.USER) userName else assistantName
                         "$speaker：${message.parts.toPlainText().ifBlank { message.content }.trim()}"
@@ -236,4 +242,11 @@ class PhoneContextBuilder(
         val third: C,
         val fourth: D,
     )
+
+    private companion object {
+        const val PHONE_PROMPT_CHAT_MESSAGE_LIMIT = 6
+        const val PHONE_PROMPT_ROLEPLAY_MESSAGE_LIMIT = 8
+        const val PHONE_PROMPT_MEMORY_MAX_ITEMS = 3
+        const val PHONE_PROMPT_WORLD_BOOK_MAX_ITEMS = 4
+    }
 }

@@ -60,12 +60,14 @@ class AppSettingsTest {
             translationModel = "translation-model",
             titleSummaryModel = "title-model",
             chatSuggestionModel = "suggestion-model",
+            phoneSnapshotModel = "phone-model",
             searchModel = "search-model",
         )
 
         assertEquals("translation-model", provider.resolveFunctionModel(ProviderFunction.TRANSLATION))
         assertEquals("title-model", provider.resolveFunctionModel(ProviderFunction.TITLE_SUMMARY))
         assertEquals("suggestion-model", provider.resolveFunctionModel(ProviderFunction.CHAT_SUGGESTION))
+        assertEquals("phone-model", provider.resolveFunctionModel(ProviderFunction.PHONE_SNAPSHOT))
         assertEquals("search-model", provider.resolveFunctionModel(ProviderFunction.SEARCH))
     }
 
@@ -78,6 +80,7 @@ class AppSettingsTest {
         assertEquals("chat-model", provider.resolveFunctionModel(ProviderFunction.TRANSLATION))
         assertEquals("chat-model", provider.resolveFunctionModel(ProviderFunction.TITLE_SUMMARY))
         assertEquals("chat-model", provider.resolveFunctionModel(ProviderFunction.CHAT_SUGGESTION))
+        assertEquals("chat-model", provider.resolveFunctionModel(ProviderFunction.PHONE_SNAPSHOT))
         assertEquals("chat-model", provider.resolveFunctionModel(ProviderFunction.SEARCH))
     }
 

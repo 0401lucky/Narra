@@ -98,6 +98,17 @@ fun PhoneCheckScreen(
     var showRefreshDialog by remember { mutableStateOf(false) }
     var selectedRefreshSections by remember { mutableStateOf(PhoneSnapshotSection.entries.toSet()) }
 
+    LaunchedEffect(uiState.snapshot, detailState) {
+        val snapshot = uiState.snapshot ?: return@LaunchedEffect
+        if (detailState != null || !snapshot.hasContent()) {
+            return@LaunchedEffect
+        }
+        val availableSections = snapshot.availableSections()
+        if (availableSections.isNotEmpty() && selectedTab !in availableSections) {
+            selectedTab = availableSections.first()
+        }
+    }
+
     LaunchedEffect(uiState.errorMessage) {
         uiState.errorMessage?.let { message ->
             snackbarHostState.showSnackbar(message)
@@ -124,6 +135,7 @@ fun PhoneCheckScreen(
                 title = uiState.ownerName.ifBlank { "角色" } + "的手机",
                 showRefresh = uiState.snapshot?.hasContent() == true,
                 isGenerating = uiState.isGenerating,
+                generationStatusText = uiState.generationStatusText,
                 showingDetail = detailState != null,
                 onNavigateBack = {
                     if (detailState != null) {
@@ -235,6 +247,7 @@ fun PhoneCheckScreen(
                 else -> {
                     PhoneEmptyState(
                         isGenerating = uiState.isGenerating,
+                        generationStatusText = uiState.generationStatusText,
                         onGenerate = onGenerateSnapshot,
                     )
                 }
@@ -269,6 +282,7 @@ private fun PhoneTopBar(
     title: String,
     showRefresh: Boolean,
     isGenerating: Boolean,
+    generationStatusText: String,
     showingDetail: Boolean,
     onNavigateBack: () -> Unit,
     onRefresh: () -> Unit,
@@ -286,15 +300,30 @@ private fun PhoneTopBar(
                 contentDescription = "返回",
             )
         }
-        Text(
-            text = if (showingDetail) "手机详情" else title,
+        Column(
             modifier = Modifier.weight(1f),
-            style = MaterialTheme.typography.titleLarge,
-            fontWeight = FontWeight.Bold,
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis,
-            textAlign = TextAlign.Center,
-        )
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(2.dp),
+        ) {
+            Text(
+                text = if (showingDetail) "手机详情" else title,
+                style = MaterialTheme.typography.titleLarge,
+                fontWeight = FontWeight.Bold,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+                textAlign = TextAlign.Center,
+            )
+            if (!showingDetail && generationStatusText.isNotBlank()) {
+                Text(
+                    text = generationStatusText,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = PhoneMutedText,
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis,
+                    textAlign = TextAlign.Center,
+                )
+            }
+        }
         if (showRefresh) {
             IconButton(onClick = onRefresh, enabled = !isGenerating) {
                 if (isGenerating) {
@@ -641,6 +670,7 @@ private fun PhoneListCard(
 @Composable
 private fun PhoneEmptyState(
     isGenerating: Boolean,
+    generationStatusText: String,
     onGenerate: () -> Unit,
 ) {
     Column(
@@ -675,6 +705,15 @@ private fun PhoneEmptyState(
             color = PhoneMutedText,
             textAlign = TextAlign.Center,
         )
+        if (generationStatusText.isNotBlank()) {
+            Spacer(modifier = Modifier.height(10.dp))
+            Text(
+                text = generationStatusText,
+                color = PhoneMutedText,
+                textAlign = TextAlign.Center,
+                style = MaterialTheme.typography.bodySmall,
+            )
+        }
         Spacer(modifier = Modifier.height(24.dp))
         NarraButton(
             onClick = onGenerate,
@@ -935,4 +974,24 @@ private sealed interface PhoneDetailState {
     data class Gallery(val entryId: String) : PhoneDetailState
     data class Shopping(val entryId: String) : PhoneDetailState
     data class Search(val entryId: String) : PhoneDetailState
+}
+
+private fun PhoneSnapshot.availableSections(): List<PhoneSnapshotSection> {
+    return buildList {
+        if (relationshipHighlights.isNotEmpty() || messageThreads.isNotEmpty()) {
+            add(PhoneSnapshotSection.MESSAGES)
+        }
+        if (notes.isNotEmpty()) {
+            add(PhoneSnapshotSection.NOTES)
+        }
+        if (gallery.isNotEmpty()) {
+            add(PhoneSnapshotSection.GALLERY)
+        }
+        if (shoppingRecords.isNotEmpty()) {
+            add(PhoneSnapshotSection.SHOPPING)
+        }
+        if (searchHistory.isNotEmpty()) {
+            add(PhoneSnapshotSection.SEARCH)
+        }
+    }
 }

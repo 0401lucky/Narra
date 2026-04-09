@@ -96,7 +96,8 @@ class RoleplayPromptDecoratorTest {
         )
 
         assertTrue(prompt.contains("不使用 narration 标签"))
-        assertTrue(prompt.contains("尽量像真实聊天软件里的连续气泡"))
+        assertTrue(prompt.contains("由当前话题、情绪强度、上下文压力和记忆线索自然决定"))
+        assertTrue(prompt.contains("真实聊天软件里的连续气泡感"))
         assertTrue(!prompt.contains("不要丢掉正常强度的旁白表现"))
     }
 }

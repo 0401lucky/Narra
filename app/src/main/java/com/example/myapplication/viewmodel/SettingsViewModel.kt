@@ -388,6 +388,15 @@ class SettingsViewModel(
         }
     }
 
+    fun updateProviderPhoneSnapshotModel(providerId: String, modelId: String) {
+        updateProvider(providerId) {
+            it.copy(
+                phoneSnapshotModel = modelId,
+                phoneSnapshotModelMode = ProviderFunctionModelMode.CUSTOM,
+            )
+        }
+    }
+
     fun updateProviderSearchModel(providerId: String, modelId: String) {
         updateProvider(providerId) {
             it.copy(
@@ -438,6 +447,15 @@ class SettingsViewModel(
             it.copy(
                 translationModelMode = mode,
                 translationModel = if (mode == ProviderFunctionModelMode.CUSTOM) it.translationModel else "",
+            )
+        }
+    }
+
+    fun updateProviderPhoneSnapshotModelMode(providerId: String, mode: ProviderFunctionModelMode) {
+        updateProvider(providerId) {
+            it.copy(
+                phoneSnapshotModelMode = mode,
+                phoneSnapshotModel = if (mode == ProviderFunctionModelMode.CUSTOM) it.phoneSnapshotModel else "",
             )
         }
     }

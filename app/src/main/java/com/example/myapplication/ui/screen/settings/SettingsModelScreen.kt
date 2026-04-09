@@ -64,12 +64,14 @@ fun SettingsModelScreen(
     onUpdateChatSuggestionModel: (String, String) -> Unit,
     onUpdateMemoryModel: (String, String) -> Unit,
     onUpdateTranslationModel: (String, String) -> Unit,
+    onUpdatePhoneSnapshotModel: (String, String) -> Unit,
     onUpdateSearchModel: (String, String) -> Unit,
     onUpdateGiftImageModel: (String, String) -> Unit,
     onUpdateTitleSummaryModelMode: (String, ProviderFunctionModelMode) -> Unit,
     onUpdateChatSuggestionModelMode: (String, ProviderFunctionModelMode) -> Unit,
     onUpdateMemoryModelMode: (String, ProviderFunctionModelMode) -> Unit,
     onUpdateTranslationModelMode: (String, ProviderFunctionModelMode) -> Unit,
+    onUpdatePhoneSnapshotModelMode: (String, ProviderFunctionModelMode) -> Unit,
     onUpdateSearchModelMode: (String, ProviderFunctionModelMode) -> Unit,
     onUpdateGiftImageModelMode: (String, ProviderFunctionModelMode) -> Unit,
     onConsumeMessage: () -> Unit,
@@ -215,6 +217,19 @@ fun SettingsModelScreen(
                 }
 
                 item {
+                    val cardState = provider.toRoleModelCardState(ProviderFunction.PHONE_SNAPSHOT)
+                    RoleModelCard(
+                        icon = Icons.Outlined.Build,
+                        title = "查手机模型",
+                        subtitle = "用于手机快照与搜索详情",
+                        statusLabel = cardState.statusLabel,
+                        currentModelId = cardState.displayModelId,
+                        emptyStateText = cardState.emptyStateText,
+                        onClick = { selectingRole = "phone_snapshot" },
+                    )
+                }
+
+                item {
                     val cardState = provider.toRoleModelCardState(ProviderFunction.SEARCH)
                     RoleModelCard(
                         icon = Icons.Outlined.Search,
@@ -257,6 +272,7 @@ fun SettingsModelScreen(
             "suggestion" -> "选择聊天建议模型 · ${provider?.name.orEmpty().ifBlank { "当前提供商" }}"
             "memory" -> "选择记忆模型 · ${provider?.name.orEmpty().ifBlank { "当前提供商" }}"
             "translation" -> "选择翻译模型 · ${provider?.name.orEmpty().ifBlank { "当前提供商" }}"
+            "phone_snapshot" -> "选择查手机模型 · ${provider?.name.orEmpty().ifBlank { "当前提供商" }}"
             "search" -> "选择搜索模型 · ${provider?.name.orEmpty().ifBlank { "当前提供商" }}"
             "gift_image" -> "选择礼物生图模型 · ${provider?.name.orEmpty().ifBlank { "当前提供商" }}"
             else -> "选择模型"
@@ -316,6 +332,10 @@ fun SettingsModelScreen(
                         selectedProviderId,
                         if (optionId == QuickActionFollowDefault) ProviderFunctionModelMode.FOLLOW_DEFAULT else ProviderFunctionModelMode.DISABLED,
                     )
+                    "phone_snapshot" -> onUpdatePhoneSnapshotModelMode(
+                        selectedProviderId,
+                        if (optionId == QuickActionFollowDefault) ProviderFunctionModelMode.FOLLOW_DEFAULT else ProviderFunctionModelMode.DISABLED,
+                    )
                     "search" -> onUpdateSearchModelMode(
                         selectedProviderId,
                         if (optionId == QuickActionFollowDefault) ProviderFunctionModelMode.FOLLOW_DEFAULT else ProviderFunctionModelMode.DISABLED,
@@ -334,6 +354,7 @@ fun SettingsModelScreen(
                     "suggestion" -> onUpdateChatSuggestionModel(selectedProviderId, model)
                     "memory" -> onUpdateMemoryModel(selectedProviderId, model)
                     "translation" -> onUpdateTranslationModel(selectedProviderId, model)
+                    "phone_snapshot" -> onUpdatePhoneSnapshotModel(selectedProviderId, model)
                     "search" -> onUpdateSearchModel(selectedProviderId, model)
                     "gift_image" -> onUpdateGiftImageModel(selectedProviderId, model)
                 }
@@ -536,6 +557,7 @@ private fun String.toProviderFunctionOrNull(): ProviderFunction? {
         "suggestion" -> ProviderFunction.CHAT_SUGGESTION
         "memory" -> ProviderFunction.MEMORY
         "translation" -> ProviderFunction.TRANSLATION
+        "phone_snapshot" -> ProviderFunction.PHONE_SNAPSHOT
         "search" -> ProviderFunction.SEARCH
         "gift_image" -> ProviderFunction.GIFT_IMAGE
         else -> null

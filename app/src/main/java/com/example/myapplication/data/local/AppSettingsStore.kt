@@ -505,6 +505,7 @@ class AppSettingsStore(
         val normalizedChatSuggestionModel = (provider.chatSuggestionModel as String?).orEmpty().trim()
         val normalizedMemoryModel = (provider.memoryModel as String?).orEmpty().trim()
         val normalizedTranslationModel = (provider.translationModel as String?).orEmpty().trim()
+        val normalizedPhoneSnapshotModel = (provider.phoneSnapshotModel as String?).orEmpty().trim()
         val normalizedSearchModel = (provider.searchModel as String?).orEmpty().trim()
         val normalizedGiftImageModel = (provider.giftImageModel as String?).orEmpty().trim()
         return provider.copy(
@@ -536,6 +537,12 @@ class AppSettingsStore(
             translationModelMode = normalizeFunctionModelMode(
                 rawMode = provider.translationModelMode as ProviderFunctionModelMode?,
                 rawModel = normalizedTranslationModel,
+                blankMode = ProviderFunctionModelMode.FOLLOW_DEFAULT,
+            ),
+            phoneSnapshotModel = normalizedPhoneSnapshotModel,
+            phoneSnapshotModelMode = normalizeFunctionModelMode(
+                rawMode = provider.phoneSnapshotModelMode as ProviderFunctionModelMode?,
+                rawModel = normalizedPhoneSnapshotModel,
                 blankMode = ProviderFunctionModelMode.FOLLOW_DEFAULT,
             ),
             searchModel = normalizedSearchModel,
@@ -628,6 +635,7 @@ class AppSettingsStore(
                 chatSuggestionModel = (provider.chatSuggestionModel as String?).orEmpty().trim(),
                 memoryModel = (provider.memoryModel as String?).orEmpty().trim(),
                 translationModel = (provider.translationModel as String?).orEmpty().trim(),
+                phoneSnapshotModel = (provider.phoneSnapshotModel as String?).orEmpty().trim(),
                 searchModel = (provider.searchModel as String?).orEmpty().trim(),
                 giftImageModel = (provider.giftImageModel as String?).orEmpty().trim(),
                 chatCompletionsPath = normalizeChatCompletionsPath(provider.chatCompletionsPath),

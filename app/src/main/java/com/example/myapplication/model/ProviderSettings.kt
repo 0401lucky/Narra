@@ -27,6 +27,8 @@ data class ProviderSettings(
     val memoryModelMode: ProviderFunctionModelMode = ProviderFunctionModelMode.FOLLOW_DEFAULT,
     val translationModel: String = "",
     val translationModelMode: ProviderFunctionModelMode = ProviderFunctionModelMode.FOLLOW_DEFAULT,
+    val phoneSnapshotModel: String = "",
+    val phoneSnapshotModelMode: ProviderFunctionModelMode = ProviderFunctionModelMode.FOLLOW_DEFAULT,
     val searchModel: String = "",
     val searchModelMode: ProviderFunctionModelMode = ProviderFunctionModelMode.FOLLOW_DEFAULT,
     val giftImageModel: String = "",
@@ -108,6 +110,7 @@ data class ProviderSettings(
             ProviderFunction.CHAT_SUGGESTION -> chatSuggestionModelMode
             ProviderFunction.MEMORY -> memoryModelMode
             ProviderFunction.TRANSLATION -> translationModelMode
+            ProviderFunction.PHONE_SNAPSHOT -> phoneSnapshotModelMode
             ProviderFunction.SEARCH -> searchModelMode
             ProviderFunction.GIFT_IMAGE -> giftImageModelMode
         }
@@ -131,6 +134,7 @@ data class ProviderSettings(
             ProviderFunction.CHAT_SUGGESTION -> chatSuggestionModel
             ProviderFunction.MEMORY -> memoryModel
             ProviderFunction.TRANSLATION -> translationModel
+            ProviderFunction.PHONE_SNAPSHOT -> phoneSnapshotModel
             ProviderFunction.SEARCH -> searchModel
             ProviderFunction.GIFT_IMAGE -> giftImageModel
         }.trim()
@@ -175,6 +179,7 @@ enum class ProviderFunction {
     CHAT_SUGGESTION,
     MEMORY,
     TRANSLATION,
+    PHONE_SNAPSHOT,
     SEARCH,
     GIFT_IMAGE,
 }

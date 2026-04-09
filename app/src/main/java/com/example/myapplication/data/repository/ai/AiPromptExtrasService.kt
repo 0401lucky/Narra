@@ -22,6 +22,7 @@ import com.example.myapplication.model.PhoneShoppingEntry
 import com.example.myapplication.model.PhoneSnapshot
 import com.example.myapplication.model.PhoneSnapshotSection
 import com.example.myapplication.model.PhoneSnapshotSections
+import com.example.myapplication.model.PromptMode
 import com.example.myapplication.model.ProviderApiProtocol
 import com.example.myapplication.model.ProviderSettings
 import com.example.myapplication.model.RoleplaySuggestionUiModel
@@ -694,16 +695,18 @@ class DefaultAiPromptExtrasService(
                 messages = listOf(ChatMessageDto(role = "user", content = prompt)),
                 baseUrl = baseUrl,
                 apiProtocol = apiProtocol,
+                promptMode = context.promptMode,
             ),
             apiProtocol = apiProtocol,
             provider = provider,
             allowRoleplaySamplingFallback = true,
         ).trim()
         if (content.isBlank()) {
-            return PhoneSnapshotSections()
+            error("手机内容生成失败：模型未返回任何内容")
         }
-        val parsedJson = runCatching { JsonParser.parseString(content).asJsonObject }.getOrNull()
-            ?: return PhoneSnapshotSections()
+        val parsedJson = runCatching { JsonParser.parseString(content).asJsonObject }.getOrElse {
+            error("手机内容生成失败：模型未返回合法 JSON")
+        }
         return parsePhoneSnapshotSections(parsedJson)
     }
 
@@ -753,6 +756,7 @@ class DefaultAiPromptExtrasService(
                 messages = listOf(ChatMessageDto(role = "user", content = prompt)),
                 baseUrl = baseUrl,
                 apiProtocol = apiProtocol,
+                promptMode = context.promptMode,
             ),
             apiProtocol = apiProtocol,
             provider = provider,
@@ -892,8 +896,9 @@ class DefaultAiPromptExtrasService(
         messages: List<ChatMessageDto>,
         baseUrl: String,
         apiProtocol: ProviderApiProtocol,
+        promptMode: PromptMode = PromptMode.ROLEPLAY,
     ): ChatCompletionRequest {
-        val sampling = resolveRoleplaySampling(baseUrl, apiProtocol)
+        val sampling = resolveRoleplaySampling(baseUrl, apiProtocol, promptMode)
         return ChatCompletionRequest(
             model = model,
             messages = messages,
@@ -905,7 +910,11 @@ class DefaultAiPromptExtrasService(
     private fun resolveRoleplaySampling(
         baseUrl: String,
         apiProtocol: ProviderApiProtocol,
+        promptMode: PromptMode,
     ): PromptExtrasRoleplaySamplingConfig? {
+        if (promptMode != PromptMode.ROLEPLAY) {
+            return null
+        }
         val normalizedBaseUrl = apiServiceFactory.normalizeBaseUrl(baseUrl, apiProtocol)
         if (roleplaySamplingDisabledBaseUrls.contains(normalizedBaseUrl)) {
             return null

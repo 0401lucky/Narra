@@ -309,26 +309,6 @@ object RoleplayMessageUiMapper {
                 outputParser = outputParser,
             )
         }
-        if (scenario.interactionMode == com.example.myapplication.model.RoleplayInteractionMode.ONLINE_PHONE) {
-            val newlyAdded = target.drop(initialSize)
-            val dialogueCount = newlyAdded.count { it.contentType == RoleplayContentType.DIALOGUE }
-            if (dialogueCount >= 3) {
-                target.add(
-                    initialSize,
-                    RoleplayMessageUiModel(
-                        sourceMessageId = "${message.id}-burst",
-                        contentType = RoleplayContentType.NARRATION,
-                        speaker = RoleplaySpeaker.SYSTEM,
-                        speakerName = "系统",
-                        content = "对方连发了 $dialogueCount 条消息",
-                        systemEventKind = com.example.myapplication.model.RoleplayOnlineEventKind.BURST,
-                        createdAt = message.createdAt,
-                        messageStatus = message.status,
-                        copyText = "",
-                    ),
-                )
-            }
-        }
     }
 
     private fun appendAssistantTextSegments(

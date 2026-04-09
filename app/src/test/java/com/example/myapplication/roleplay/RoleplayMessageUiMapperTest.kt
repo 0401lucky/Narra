@@ -6,6 +6,7 @@ import com.example.myapplication.model.ChatMessage
 import com.example.myapplication.model.MessageRole
 import com.example.myapplication.model.MessageStatus
 import com.example.myapplication.model.RoleplayContentType
+import com.example.myapplication.model.RoleplayInteractionMode
 import com.example.myapplication.model.RoleplayOutputFormat
 import com.example.myapplication.model.RoleplayScenario
 import com.example.myapplication.model.TransferDirection
@@ -222,6 +223,45 @@ class RoleplayMessageUiMapperTest {
 
         assertEquals(1, mapped.size)
         assertTrue(!mapped.single().canRetry)
+    }
+
+    @Test
+    fun mapMessages_onlineModeDoesNotInsertBurstSystemMessage() {
+        val scenario = RoleplayScenario(
+            id = "scene-1",
+            title = "线上模式",
+            userDisplayNameOverride = "林晚",
+            characterDisplayNameOverride = "陆宴清",
+            interactionMode = RoleplayInteractionMode.ONLINE_PHONE,
+            enableNarration = false,
+        )
+
+        val mapped = RoleplayMessageUiMapper.mapMessages(
+            scenario = scenario,
+            assistant = Assistant(id = "assistant-1", name = "陆宴清"),
+            settings = AppSettings(),
+            rawMessages = listOf(
+                ChatMessage(
+                    id = "assistant-1",
+                    conversationId = "conv-1",
+                    role = MessageRole.ASSISTANT,
+                    content = """
+                        <dialogue>我看见了。</dialogue>
+                        <dialogue>先别躲。</dialogue>
+                        <dialogue>把话说完。</dialogue>
+                    """.trimIndent(),
+                    createdAt = 2L,
+                    status = MessageStatus.COMPLETED,
+                ),
+            ),
+            streamingContent = null,
+            outputParser = RoleplayOutputParser(),
+            nowProvider = { 20L },
+        )
+
+        assertTrue(mapped.isNotEmpty())
+        assertTrue(mapped.none { it.speakerName == "系统" })
+        assertTrue(mapped.none { it.content.contains("连发了") })
     }
 
     @Test

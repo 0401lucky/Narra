@@ -12,24 +12,39 @@ import com.example.myapplication.model.AppSettings
 import com.example.myapplication.model.Assistant
 import com.example.myapplication.model.ChatMessage
 import com.example.myapplication.model.Conversation
+import com.example.myapplication.model.PhoneGalleryEntry
+import com.example.myapplication.model.PhoneMessageItem
+import com.example.myapplication.model.PhoneMessageThread
+import com.example.myapplication.model.PhoneNoteEntry
 import com.example.myapplication.model.PhoneObservationState
+import com.example.myapplication.model.PhoneRelationshipHighlight
+import com.example.myapplication.model.PhoneSearchEntry
 import com.example.myapplication.model.PhoneSnapshot
 import com.example.myapplication.model.PhoneSnapshotOwnerType
+import com.example.myapplication.model.PhoneSnapshotSection
+import com.example.myapplication.model.PhoneSnapshotSections
+import com.example.myapplication.model.PhoneShoppingEntry
 import com.example.myapplication.model.PromptMode
+import com.example.myapplication.model.ProviderSettings
 import com.example.myapplication.model.RoleplayOnlineMeta
 import com.example.myapplication.model.RoleplayScenario
 import com.example.myapplication.model.RoleplaySession
 import com.example.myapplication.model.RoleplaySuggestionUiModel
+import com.example.myapplication.model.createDefaultProvider
 import com.example.myapplication.testutil.FakeConversationStore
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.test.advanceTimeBy
 import kotlinx.coroutines.test.advanceUntilIdle
+import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
+import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
 
@@ -119,6 +134,183 @@ class PhoneCheckViewModelTest {
         )
         assertEquals(listOf("conversation-1"), phoneSnapshotRepository.deletedObservations)
     }
+
+    @Test
+    fun generateSnapshot_stagesMessagesBeforeParallelBatchesAndUsesDedicatedPhoneModel() = runTest(mainDispatcherRule.dispatcher.scheduler) {
+        val phoneService = RecordingPhoneAiPromptExtrasService(
+            delayBySections = mapOf(
+                setOf(PhoneSnapshotSection.MESSAGES) to 10L,
+                setOf(PhoneSnapshotSection.NOTES, PhoneSnapshotSection.SHOPPING) to 50L,
+                setOf(PhoneSnapshotSection.GALLERY, PhoneSnapshotSection.SEARCH) to 100L,
+            ),
+        )
+        val phoneSnapshotRepository = RecordingPhoneSnapshotRepository()
+        val viewModel = createPhoneCheckViewModel(
+            provider = createDefaultProvider(
+                id = "provider-1",
+                baseUrl = "https://example.com/v1/",
+                apiKey = "test-key",
+                selectedModel = "chat-model",
+            ).copy(
+                chatSuggestionModel = "suggestion-model",
+                phoneSnapshotModel = "phone-model",
+            ),
+            phoneSnapshotRepository = phoneSnapshotRepository,
+            aiPromptExtrasService = phoneService,
+        )
+
+        advanceUntilIdle()
+        viewModel.generateSnapshot()
+        runCurrent()
+
+        assertTrue(viewModel.uiState.value.isGenerating)
+        assertEquals(
+            "已完成 0/5，正在生成：消息",
+            viewModel.uiState.value.generationStatusText,
+        )
+
+        advanceTimeBy(10)
+        runCurrent()
+
+        val afterMessageBatch = viewModel.uiState.value
+        assertTrue(afterMessageBatch.snapshot?.messageThreads?.isNotEmpty() == true)
+        assertTrue(afterMessageBatch.snapshot?.notes?.isEmpty() == true)
+        assertEquals(
+            setOf(PhoneSnapshotSection.MESSAGES),
+            afterMessageBatch.generationCompletedSections,
+        )
+        assertEquals(
+            "已完成 1/5，正在并行生成：备忘录、购物 / 相册、搜索",
+            afterMessageBatch.generationStatusText,
+        )
+
+        advanceTimeBy(50)
+        runCurrent()
+
+        val afterSecondBatch = viewModel.uiState.value
+        assertTrue(afterSecondBatch.snapshot?.notes?.isNotEmpty() == true)
+        assertTrue(afterSecondBatch.snapshot?.shoppingRecords?.isNotEmpty() == true)
+        assertTrue(afterSecondBatch.snapshot?.gallery?.isEmpty() == true)
+        assertEquals(
+            setOf(
+                PhoneSnapshotSection.MESSAGES,
+                PhoneSnapshotSection.NOTES,
+                PhoneSnapshotSection.SHOPPING,
+            ),
+            afterSecondBatch.generationCompletedSections,
+        )
+        assertEquals(
+            "已完成 3/5，正在生成：相册、搜索",
+            afterSecondBatch.generationStatusText,
+        )
+
+        advanceUntilIdle()
+
+        val finalState = viewModel.uiState.value
+        assertFalse(finalState.isGenerating)
+        assertEquals("手机内容已生成", finalState.noticeMessage)
+        assertTrue(finalState.snapshot?.gallery?.isNotEmpty() == true)
+        assertTrue(finalState.snapshot?.searchHistory?.isNotEmpty() == true)
+        assertEquals(emptySet<PhoneSnapshotSection>(), finalState.generationCompletedSections)
+        assertEquals(
+            listOf(
+                PhoneBatchCall(setOf(PhoneSnapshotSection.MESSAGES), "phone-model"),
+                PhoneBatchCall(setOf(PhoneSnapshotSection.NOTES, PhoneSnapshotSection.SHOPPING), "phone-model"),
+                PhoneBatchCall(setOf(PhoneSnapshotSection.GALLERY, PhoneSnapshotSection.SEARCH), "phone-model"),
+            ),
+            phoneService.calls,
+        )
+        assertEquals(3, phoneSnapshotRepository.upsertedSnapshots.size)
+    }
+
+    @Test
+    fun refreshSections_fallsBackToDefaultChatModelWhenDedicatedPhoneModelMissing() = runTest(mainDispatcherRule.dispatcher.scheduler) {
+        val phoneService = RecordingPhoneAiPromptExtrasService()
+        val viewModel = createPhoneCheckViewModel(
+            provider = createDefaultProvider(
+                id = "provider-1",
+                baseUrl = "https://example.com/v1/",
+                apiKey = "test-key",
+                selectedModel = "chat-model",
+            ).copy(
+                chatSuggestionModel = "suggestion-model",
+            ),
+            aiPromptExtrasService = phoneService,
+        )
+
+        advanceUntilIdle()
+        viewModel.refreshSections(setOf(PhoneSnapshotSection.NOTES))
+        advanceUntilIdle()
+
+        assertEquals(
+            listOf(PhoneBatchCall(setOf(PhoneSnapshotSection.NOTES), "chat-model")),
+            phoneService.calls,
+        )
+    }
+
+    @Test
+    fun generateSnapshot_preservesSuccessfulBatchesWhenOneParallelBatchFails() = runTest(mainDispatcherRule.dispatcher.scheduler) {
+        val phoneService = RecordingPhoneAiPromptExtrasService(
+            failingSections = setOf(
+                setOf(PhoneSnapshotSection.GALLERY, PhoneSnapshotSection.SEARCH),
+            ),
+        )
+        val viewModel = createPhoneCheckViewModel(
+            provider = createDefaultProvider(
+                id = "provider-1",
+                baseUrl = "https://example.com/v1/",
+                apiKey = "test-key",
+                selectedModel = "chat-model",
+            ).copy(
+                phoneSnapshotModel = "phone-model",
+            ),
+            aiPromptExtrasService = phoneService,
+        )
+
+        advanceUntilIdle()
+        viewModel.generateSnapshot()
+        advanceUntilIdle()
+
+        val state = viewModel.uiState.value
+        assertFalse(state.isGenerating)
+        assertEquals("部分内容刷新失败：相册、搜索，其余内容已保留", state.errorMessage)
+        assertTrue(state.snapshot?.messageThreads?.isNotEmpty() == true)
+        assertTrue(state.snapshot?.notes?.isNotEmpty() == true)
+        assertTrue(state.snapshot?.gallery?.isEmpty() == true)
+        assertTrue(state.snapshot?.searchHistory?.isEmpty() == true)
+    }
+
+    @Test
+    fun generateSnapshot_reportsErrorWhenModelReturnsCompletelyEmptyBatch() = runTest(mainDispatcherRule.dispatcher.scheduler) {
+        val phoneService = RecordingPhoneAiPromptExtrasService(
+            emptySections = setOf(
+                setOf(PhoneSnapshotSection.MESSAGES),
+                setOf(PhoneSnapshotSection.NOTES, PhoneSnapshotSection.SHOPPING),
+                setOf(PhoneSnapshotSection.GALLERY, PhoneSnapshotSection.SEARCH),
+            ),
+        )
+        val viewModel = createPhoneCheckViewModel(
+            provider = createDefaultProvider(
+                id = "provider-1",
+                baseUrl = "https://example.com/v1/",
+                apiKey = "test-key",
+                selectedModel = "chat-model",
+            ).copy(
+                phoneSnapshotModel = "phone-model",
+            ),
+            aiPromptExtrasService = phoneService,
+        )
+
+        advanceUntilIdle()
+        viewModel.generateSnapshot()
+        advanceUntilIdle()
+
+        val state = viewModel.uiState.value
+        assertFalse(state.isGenerating)
+        assertTrue(state.errorMessage.orEmpty().isNotBlank())
+        assertTrue(state.noticeMessage.isNullOrBlank())
+        assertNull(state.snapshot)
+    }
 }
 
 private class RecordingPhoneSnapshotRepository(
@@ -126,6 +318,7 @@ private class RecordingPhoneSnapshotRepository(
 ) : PhoneSnapshotRepository {
     val deletedScopedSnapshots = mutableListOf<Pair<String, PhoneSnapshotOwnerType>>()
     val deletedObservations = mutableListOf<String>()
+    val upsertedSnapshots = mutableListOf<PhoneSnapshot>()
 
     override fun observeSnapshot(
         conversationId: String,
@@ -139,6 +332,7 @@ private class RecordingPhoneSnapshotRepository(
 
     override suspend fun upsertSnapshot(snapshot: PhoneSnapshot) {
         snapshots[snapshot.conversationId to snapshot.ownerType] = snapshot
+        upsertedSnapshots += snapshot
     }
 
     override suspend fun deleteSnapshot(conversationId: String) {
@@ -283,4 +477,183 @@ private object NoOpAiPromptExtrasService : AiPromptExtrasService {
         apiProtocol: com.example.myapplication.model.ProviderApiProtocol,
         provider: com.example.myapplication.model.ProviderSettings?,
     ): List<String> = emptyList()
+}
+
+private data class PhoneBatchCall(
+    val requestedSections: Set<PhoneSnapshotSection>,
+    val modelId: String,
+)
+
+private class RecordingPhoneAiPromptExtrasService(
+    private val delayBySections: Map<Set<PhoneSnapshotSection>, Long> = emptyMap(),
+    private val failingSections: Set<Set<PhoneSnapshotSection>> = emptySet(),
+    private val emptySections: Set<Set<PhoneSnapshotSection>> = emptySet(),
+) : AiPromptExtrasService by NoOpAiPromptExtrasService {
+    val calls = mutableListOf<PhoneBatchCall>()
+
+    override suspend fun generatePhoneSnapshotSections(
+        context: com.example.myapplication.conversation.PhoneGenerationContext,
+        requestedSections: Set<PhoneSnapshotSection>,
+        existingSnapshot: PhoneSnapshot?,
+        baseUrl: String,
+        apiKey: String,
+        modelId: String,
+        apiProtocol: com.example.myapplication.model.ProviderApiProtocol,
+        provider: ProviderSettings?,
+    ): PhoneSnapshotSections {
+        calls += PhoneBatchCall(requestedSections, modelId)
+        delay(delayBySections[requestedSections] ?: 0L)
+        if (requestedSections in failingSections) {
+            error("模拟失败")
+        }
+        if (requestedSections in emptySections) {
+            return PhoneSnapshotSections()
+        }
+        return PhoneSnapshotSections(
+            relationshipHighlights = if (PhoneSnapshotSection.MESSAGES in requestedSections) {
+                listOf(
+                    PhoneRelationshipHighlight(
+                        id = "relationship-1",
+                        name = "沈砚清",
+                        relationLabel = "恋人",
+                        stance = "克制",
+                        note = "最近在试探 lucky 的态度",
+                    ),
+                )
+            } else {
+                null
+            },
+            messageThreads = if (PhoneSnapshotSection.MESSAGES in requestedSections) {
+                listOf(
+                    PhoneMessageThread(
+                        id = "thread-1",
+                        contactName = "沈砚清",
+                        relationLabel = "恋人",
+                        preview = "今晚别再躲我了。",
+                        timeLabel = "22:15",
+                        avatarLabel = "沈",
+                        messages = listOf(
+                            PhoneMessageItem(
+                                id = "message-1",
+                                senderName = "沈砚清",
+                                text = "今晚别再躲我了。",
+                                timeLabel = "22:15",
+                                isOwner = false,
+                            ),
+                        ),
+                    ),
+                )
+            } else {
+                null
+            },
+            notes = if (PhoneSnapshotSection.NOTES in requestedSections) {
+                listOf(
+                    PhoneNoteEntry(
+                        id = "note-1",
+                        title = "复盘",
+                        summary = "记下今天的试探细节",
+                        content = "要继续观察他的反应。",
+                        timeLabel = "今天",
+                        icon = "note",
+                    ),
+                )
+            } else {
+                null
+            },
+            gallery = if (PhoneSnapshotSection.GALLERY in requestedSections) {
+                listOf(
+                    PhoneGalleryEntry(
+                        id = "gallery-1",
+                        title = "天台夜景",
+                        summary = "夜里并肩站在风口的抓拍。",
+                        description = "我站在风口拍下他偏头看过来的那一下，灯影把眼神压得很深。",
+                        timeLabel = "昨晚",
+                    ),
+                )
+            } else {
+                null
+            },
+            shoppingRecords = if (PhoneSnapshotSection.SHOPPING in requestedSections) {
+                listOf(
+                    PhoneShoppingEntry(
+                        id = "shopping-1",
+                        title = "黑色衬衫",
+                        status = "待收货",
+                        priceLabel = "299",
+                        note = "想看他穿",
+                        detail = "下单了和他气质很像的款。",
+                        timeLabel = "今天",
+                    ),
+                )
+            } else {
+                null
+            },
+            searchHistory = if (PhoneSnapshotSection.SEARCH in requestedSections) {
+                listOf(
+                    PhoneSearchEntry(
+                        id = "search-1",
+                        query = "怎么判断对方是不是在吃醋",
+                        timeLabel = "刚刚",
+                    ),
+                )
+            } else {
+                null
+            },
+        )
+    }
+}
+
+private fun createPhoneCheckViewModel(
+    provider: ProviderSettings,
+    phoneSnapshotRepository: RecordingPhoneSnapshotRepository = RecordingPhoneSnapshotRepository(),
+    aiPromptExtrasService: AiPromptExtrasService = NoOpAiPromptExtrasService,
+): PhoneCheckViewModel {
+    val settingsRepository = object : AiSettingsRepository {
+        override val settingsFlow = MutableStateFlow(
+            AppSettings(
+                userDisplayName = "lucky",
+                providers = listOf(provider),
+                selectedProviderId = provider.id,
+                assistants = listOf(Assistant(id = "assistant-1", name = "沈砚清")),
+                selectedAssistantId = "assistant-1",
+            ),
+        )
+    }
+    val conversationRepository = ConversationRepository(
+        conversationStore = FakeConversationStore(
+            conversations = listOf(
+                Conversation(
+                    id = "conversation-1",
+                    createdAt = 1L,
+                    updatedAt = 1L,
+                    assistantId = "assistant-1",
+                ),
+            ),
+        ),
+    )
+    return PhoneCheckViewModel(
+        initialConversationId = "conversation-1",
+        initialScenarioId = "",
+        initialOwnerType = PhoneSnapshotOwnerType.CHARACTER,
+        settingsRepository = settingsRepository,
+        conversationRepository = conversationRepository,
+        roleplayRepository = FakePhoneCheckRoleplayRepository(scenario = null),
+        phoneSnapshotRepository = phoneSnapshotRepository,
+        aiPromptExtrasService = aiPromptExtrasService,
+        phoneContextBuilder = PhoneContextBuilder(
+            promptContextAssembler = object : PromptContextAssembler {
+                override suspend fun assemble(
+                    settings: AppSettings,
+                    assistant: Assistant?,
+                    conversation: Conversation,
+                    userInputText: String,
+                    recentMessages: List<ChatMessage>,
+                    promptMode: PromptMode,
+                    includePhoneSnapshot: Boolean,
+                ): PromptContextResult {
+                    return PromptContextResult(systemPrompt = "")
+                }
+            },
+        ),
+    )
 }
