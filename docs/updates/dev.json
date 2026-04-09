@@ -1,16 +1,16 @@
 {
   "app_id": "com.narra.app.dev",
   "channel": "dev",
-  "latest_version_name": "1.1.9-dev",
-  "latest_version_code": 10109,
+  "latest_version_name": "1.2.0-dev",
+  "latest_version_code": 10200,
   "minimum_supported_version_code": 0,
-  "apk_url": "https://download.lsa1230.dpdns.org/dev/Narra-v1.1.9-dev-10109-dev.apk",
-  "apk_sha256": "b24d072fb66edffb53109bf21fcbbec84b70d90b8caef0b1f05061890f30d399",
-  "published_at": "2026-04-09T17:08:13+08:00",
+  "apk_url": "https://download.lsa1230.dpdns.org/dev/Narra-v1.2.0-dev-10200-dev.apk",
+  "apk_sha256": "81172732ff31afaedcf7f2e500b2dfafa86f8d3ae1cd0326b8eae6b0c6a00f5a",
+  "published_at": "2026-04-09T21:30:52+08:00",
   "release_notes": [
-    "修复内置助手的提示词、作者备注等配置编辑后退出再进入仍恢复旧值的问题",
-    "修复助手提示词页在同一路由复用时可能继续显示上一个助手旧草稿的问题",
-    "线上模式显示旁白开关、惩罚卡和特殊玩法滚动修复继续包含在此版本中",
-    "应用内更新测试包已推进到 1.1.9-dev，并继续使用 Cloudflare R2 自定义域名下载"
+    "查手机新增独立模型位，生成改为消息优先、其余板块并行补齐，并显示实时进度",
+    "修复我的手机在模型返回空内容或非法 JSON 时仍提示刷新成功并写入空快照的问题",
+    "我的手机生成出部分板块后会自动落到第一个有内容的标签，不再停在空白消息页",
+    "线上模式移除“对方连发了几条消息”提示，回复条数改为按当前聊天内容、上下文和记忆自然决定"
   ]
 }
