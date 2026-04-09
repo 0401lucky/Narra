@@ -224,9 +224,31 @@ internal fun ModelPickerSheet(
         mutableStateOf(currentProviderId)
     }
     var searchQuery by rememberSaveable(selectedProviderId) { mutableStateOf("") }
+    val normalizedQuery = remember(searchQuery) { searchQuery.trim().lowercase() }
     val selectedProvider = remember(providerOptions, selectedProviderId) {
         providerOptions.firstOrNull { it.id == selectedProviderId }
             ?: providerOptions.firstOrNull()
+    }
+    val matchedProviderOptions = remember(providerOptions, normalizedQuery) {
+        if (normalizedQuery.isBlank()) {
+            emptyList()
+        } else {
+            providerOptions.filter { provider ->
+                buildProviderSearchKeywords(provider).contains(normalizedQuery)
+            }
+        }
+    }
+    val visibleProviderOptions = remember(providerOptions, normalizedQuery, matchedProviderOptions) {
+        when {
+            normalizedQuery.isBlank() -> providerOptions
+            matchedProviderOptions.isNotEmpty() -> matchedProviderOptions
+            else -> providerOptions
+        }
+    }
+    val selectedProviderMatchesSearch = remember(selectedProvider, matchedProviderOptions, normalizedQuery) {
+        normalizedQuery.isBlank() || selectedProvider?.id?.let { providerId ->
+            matchedProviderOptions.any { it.id == providerId }
+        } == true
     }
     val modelInfos = remember(selectedProvider) {
         buildList {
@@ -242,15 +264,14 @@ internal fun ModelPickerSheet(
             }
         }
     }
-    val filteredModelInfos = remember(modelInfos, searchQuery) {
-        val query = searchQuery.trim().lowercase()
-        if (query.isBlank()) {
-            modelInfos
-        } else {
-            modelInfos.filter { model ->
-                buildModelSearchKeywords(model).contains(query)
-            }
-        }
+    val filteredModelInfos = remember(modelInfos, normalizedQuery, selectedProviderMatchesSearch, matchedProviderOptions) {
+        filterModelInfosForQuery(
+            modelInfos = modelInfos,
+            normalizedQuery = normalizedQuery,
+            providerMatchesQuery = normalizedQuery.isNotBlank() &&
+                matchedProviderOptions.isNotEmpty() &&
+                selectedProviderMatchesSearch,
+        )
     }
     val quickActionOptions = remember(selectedProvider) {
         quickActions(selectedProvider)
@@ -282,7 +303,7 @@ internal fun ModelPickerSheet(
                 LazyRow(
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
                 ) {
-                    items(providerOptions, key = { it.id }) { provider ->
+                    items(visibleProviderOptions, key = { it.id }) { provider ->
                         FilterChip(
                             selected = provider.id == selectedProvider?.id,
                             onClick = {
@@ -313,7 +334,7 @@ internal fun ModelPickerSheet(
                 onValueChange = { searchQuery = it },
                 modifier = Modifier.fillMaxWidth(),
                 singleLine = true,
-                placeholder = { Text("输入模型名、ID 或关键词") },
+                placeholder = { Text("输入模型名、提供商名、ID 或关键词") },
                 leadingIcon = {
                     Icon(
                         imageVector = Icons.Default.Search,
@@ -349,6 +370,18 @@ internal fun ModelPickerSheet(
                         body = "请先到参数设置中补齐 Base URL 与 API Key。",
                         containerColor = MaterialTheme.colorScheme.errorContainer,
                         contentColor = MaterialTheme.colorScheme.onErrorContainer,
+                    )
+                }
+
+                normalizedQuery.isNotBlank() &&
+                    matchedProviderOptions.isNotEmpty() &&
+                    !selectedProviderMatchesSearch &&
+                    filteredModelInfos.isEmpty() -> {
+                    NoticeCard(
+                        title = "已筛出提供商",
+                        body = "上方已找到 ${matchedProviderOptions.size} 个匹配提供商，点一下对应提供商后就能查看它下面的模型。",
+                        containerColor = MaterialTheme.colorScheme.tertiaryContainer,
+                        contentColor = MaterialTheme.colorScheme.onTertiaryContainer,
                     )
                 }
 
@@ -574,5 +607,37 @@ internal fun buildModelSearchKeywords(model: ModelInfo): String {
             append(' ')
             append(abilities.joinToString(separator = " ") { it.label.lowercase() })
         }
+    }
+}
+
+internal fun buildProviderSearchKeywords(provider: ProviderSettings): String {
+    return buildString {
+        append(provider.id.lowercase())
+        append(' ')
+        append(provider.name.ifBlank { "未命名提供商" }.lowercase())
+        provider.baseUrl.trim().takeIf { it.isNotBlank() }?.let { baseUrl ->
+            append(' ')
+            append(baseUrl.lowercase())
+        }
+        provider.selectedModel.trim().takeIf { it.isNotBlank() }?.let { modelId ->
+            append(' ')
+            append(modelId.lowercase())
+        }
+    }
+}
+
+internal fun filterModelInfosForQuery(
+    modelInfos: List<ModelInfo>,
+    normalizedQuery: String,
+    providerMatchesQuery: Boolean,
+): List<ModelInfo> {
+    if (normalizedQuery.isBlank()) {
+        return modelInfos
+    }
+    if (providerMatchesQuery) {
+        return modelInfos
+    }
+    return modelInfos.filter { model ->
+        buildModelSearchKeywords(model).contains(normalizedQuery)
     }
 }

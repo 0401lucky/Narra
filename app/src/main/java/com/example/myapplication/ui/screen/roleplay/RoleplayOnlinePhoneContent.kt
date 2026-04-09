@@ -35,6 +35,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
@@ -51,7 +52,9 @@ import com.example.myapplication.model.RoleplaySpeaker
 import com.example.myapplication.model.RoleplaySuggestionUiModel
 import com.example.myapplication.ui.component.AppSnackbarHost
 import com.example.myapplication.ui.component.NarraIconButton
+import com.example.myapplication.ui.component.roleplay.ImmersiveBackdropState
 import com.example.myapplication.ui.component.roleplay.ImmersiveRoleplayColors
+import com.example.myapplication.ui.component.roleplay.RoleplaySceneBackground
 import com.example.myapplication.ui.component.roleplay.RoleplayInputBar
 import com.example.myapplication.ui.component.roleplay.RoleplayMessageItem
 import com.example.myapplication.ui.component.roleplay.RoleplayMessageBubbleMode
@@ -61,8 +64,8 @@ import java.util.Date
 import java.util.Locale
 import kotlinx.coroutines.launch
 
-private val OnlineSurface = Color(0xFFF5F7FB)
-private val OnlineCard = Color(0xFFFFFFFF)
+private val OnlineFallbackCard = Color(0xFFFFFFFF)
+private val OnlineTextPrimary = Color(0xFF1F2430)
 private val OnlineMuted = Color(0xFF7F8A9A)
 private val OnlineAccent = Color(0xFF5B91D7)
 private val OnlineUserAccent = Color(0xFF8BC0FF)
@@ -72,6 +75,7 @@ internal fun RoleplayOnlinePhoneContent(
     scenario: RoleplayScenario,
     assistant: Assistant?,
     settings: AppSettings,
+    backdropState: ImmersiveBackdropState,
     contextStatus: RoleplayContextStatus,
     messages: List<RoleplayMessageUiModel>,
     suggestions: List<RoleplaySuggestionUiModel>,
@@ -105,18 +109,24 @@ internal fun RoleplayOnlinePhoneContent(
     onOpenSettings: () -> Unit,
     onNavigateBack: () -> Unit,
 ) {
-    val colors = remember {
-        ImmersiveRoleplayColors(
-            textPrimary = Color(0xFF1F2430),
-            textMuted = OnlineMuted,
-            characterAccent = OnlineAccent,
-            userAccent = OnlineUserAccent,
-            thoughtText = OnlineMuted,
-            panelBackground = Color(0xFFF0F3F9),
-            panelBackgroundStrong = Color(0xFFE8EDF7),
-            errorText = Color(0xFFB3261E),
-            errorBackground = Color(0xFFFFE9E8),
-            errorBackgroundStrong = Color(0xFFFFDAD6),
+    val colors = rememberOnlinePhoneColors(backdropState)
+    val palette = backdropState.palette
+    val chromeSurfaceColor = remember(backdropState.hasImage, colors.panelBackgroundStrong) {
+        colors.panelBackgroundStrong.copy(
+            alpha = if (backdropState.hasImage) 0.92f else 1f,
+        )
+    }
+    val timestampSurfaceColor = remember(backdropState.hasImage, colors.panelBackgroundStrong) {
+        colors.panelBackgroundStrong.copy(
+            alpha = if (backdropState.hasImage) 0.84f else 0.96f,
+        )
+    }
+    val onlineBackdropScrim = remember(backdropState.hasImage, palette) {
+        Brush.verticalGradient(
+            colors = listOf(
+                palette.scrimTop.copy(alpha = if (backdropState.hasImage) 0.30f else 0.14f),
+                palette.scrimBottom.copy(alpha = if (backdropState.hasImage) 0.54f else 0.24f),
+            ),
         )
     }
     val listState = rememberLazyListState()
@@ -136,30 +146,50 @@ internal fun RoleplayOnlinePhoneContent(
         }
     }
 
-    Column(
+    Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(OnlineSurface)
-            .imePadding()
-            .navigationBarsPadding(),
     ) {
-        Surface(
+        RoleplaySceneBackground(
+            backdropState = backdropState,
+            modifier = Modifier.fillMaxSize(),
+        )
+        Box(
             modifier = Modifier
-                .fillMaxWidth()
-                .statusBarsPadding(),
-            color = OnlineCard,
-            tonalElevation = 2.dp,
+                .fillMaxSize()
+                .background(onlineBackdropScrim),
+        )
+
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .imePadding()
+                .navigationBarsPadding(),
         ) {
-            Row(
+            Surface(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 10.dp, vertical = 12.dp),
-                verticalAlignment = Alignment.CenterVertically,
+                    .statusBarsPadding(),
+                color = chromeSurfaceColor,
+                tonalElevation = 2.dp,
             ) {
-                NarraIconButton(onClick = onNavigateBack) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 10.dp, vertical = 12.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                NarraIconButton(
+                    onClick = onNavigateBack,
+                    colors = androidx.compose.material3.IconButtonDefaults.iconButtonColors(
+                        containerColor = Color.Transparent,
+                        contentColor = colors.textPrimary,
+                    ),
+                ) {
                     Icon(
                         imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                         contentDescription = "返回",
+                        tint = colors.textPrimary,
                     )
                 }
                 Column(
@@ -174,6 +204,7 @@ internal fun RoleplayOnlinePhoneContent(
                             .ifBlank { "角色" },
                         style = MaterialTheme.typography.titleLarge,
                         fontWeight = FontWeight.Bold,
+                        color = colors.textPrimary,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis,
                     )
@@ -186,20 +217,34 @@ internal fun RoleplayOnlinePhoneContent(
                             }
                         },
                         style = MaterialTheme.typography.bodySmall,
-                        color = OnlineMuted,
+                        color = colors.textMuted,
                     )
                 }
-                NarraIconButton(onClick = onOpenPhoneCheck) {
+                NarraIconButton(
+                    onClick = onOpenPhoneCheck,
+                    colors = androidx.compose.material3.IconButtonDefaults.iconButtonColors(
+                        containerColor = Color.Transparent,
+                        contentColor = colors.textPrimary,
+                    ),
+                ) {
                     Icon(
                         imageVector = Icons.Default.PhoneAndroid,
                         contentDescription = "查手机",
+                        tint = colors.textPrimary,
                     )
                 }
                 Box {
-                    NarraIconButton(onClick = { showMenu = true }) {
+                    NarraIconButton(
+                        onClick = { showMenu = true },
+                        colors = androidx.compose.material3.IconButtonDefaults.iconButtonColors(
+                            containerColor = Color.Transparent,
+                            contentColor = colors.textPrimary,
+                        ),
+                    ) {
                         Icon(
                             imageVector = Icons.Default.MoreVert,
                             contentDescription = "更多",
+                            tint = colors.textPrimary,
                         )
                     }
                     DropdownMenu(expanded = showMenu, onDismissRequest = { showMenu = false }) {
@@ -219,15 +264,15 @@ internal fun RoleplayOnlinePhoneContent(
                         )
                     }
                 }
+                }
             }
-        }
 
         pendingMemoryProposal?.let { proposal ->
             Surface(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(horizontal = 12.dp, vertical = 10.dp),
-                color = OnlineCard,
+                color = chromeSurfaceColor,
                 shape = RoundedCornerShape(18.dp),
             ) {
                 Column(
@@ -266,14 +311,14 @@ internal fun RoleplayOnlinePhoneContent(
                             contentAlignment = Alignment.Center,
                         ) {
                             Surface(
-                                color = Color.White.copy(alpha = 0.82f),
+                                color = timestampSurfaceColor,
                                 shape = RoundedCornerShape(999.dp),
                             ) {
                                 Text(
                                     text = formatOnlineTime(message.createdAt),
                                     modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp),
                                     style = MaterialTheme.typography.labelSmall,
-                                    color = OnlineMuted,
+                                    color = colors.textMuted,
                                 )
                             }
                         }
@@ -311,14 +356,14 @@ internal fun RoleplayOnlinePhoneContent(
                     modifier = Modifier
                         .align(Alignment.BottomStart)
                         .padding(start = 12.dp, bottom = 12.dp),
-                    color = OnlineCard,
+                    color = chromeSurfaceColor,
                     shape = RoundedCornerShape(16.dp),
                 ) {
                     Text(
                         text = "对方正在输入…",
                         modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
                         style = MaterialTheme.typography.bodySmall,
-                        color = OnlineMuted,
+                        color = colors.textMuted,
                     )
                 }
             }
@@ -342,7 +387,7 @@ internal fun RoleplayOnlinePhoneContent(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(horizontal = 12.dp, vertical = 6.dp),
-                color = OnlineCard,
+                color = chromeSurfaceColor,
                 shape = RoundedCornerShape(16.dp),
             ) {
                 Row(
@@ -365,7 +410,7 @@ internal fun RoleplayOnlinePhoneContent(
                         Text(
                             text = replyToPreview,
                             style = MaterialTheme.typography.bodySmall,
-                            color = OnlineMuted,
+                            color = colors.textMuted,
                             maxLines = 2,
                             overflow = TextOverflow.Ellipsis,
                         )
@@ -389,6 +434,7 @@ internal fun RoleplayOnlinePhoneContent(
         )
     }
 }
+}
 
 private fun shouldShowOnlineTimestamp(
     previous: RoleplayMessageUiModel?,
@@ -408,4 +454,34 @@ private fun formatOnlineTime(timestamp: Long): String {
         return "刚刚"
     }
     return SimpleDateFormat("MM-dd HH:mm", Locale.getDefault()).format(Date(timestamp))
+}
+
+@Composable
+private fun rememberOnlinePhoneColors(
+    backdropState: ImmersiveBackdropState,
+): ImmersiveRoleplayColors {
+    val palette = backdropState.palette
+    val hasImage = backdropState.hasImage
+    return remember(palette, hasImage) {
+        ImmersiveRoleplayColors(
+            textPrimary = if (hasImage) palette.onGlass else OnlineTextPrimary,
+            textMuted = if (hasImage) palette.onGlassMuted else OnlineMuted,
+            characterAccent = if (hasImage) palette.characterAccent else OnlineAccent,
+            userAccent = if (hasImage) palette.userAccent else OnlineUserAccent,
+            thoughtText = if (hasImage) palette.thoughtText else OnlineMuted,
+            panelBackground = if (hasImage) {
+                palette.panelTintStrong.copy(alpha = 0.56f)
+            } else {
+                OnlineFallbackCard.copy(alpha = 0.86f)
+            },
+            panelBackgroundStrong = if (hasImage) {
+                palette.readingSurface.copy(alpha = 0.74f)
+            } else {
+                OnlineFallbackCard.copy(alpha = 0.94f)
+            },
+            errorText = Color(0xFFB3261E),
+            errorBackground = Color(0xFFFFE9E8).copy(alpha = if (hasImage) 0.74f else 1f),
+            errorBackgroundStrong = Color(0xFFFFDAD6).copy(alpha = if (hasImage) 0.86f else 1f),
+        )
+    }
 }

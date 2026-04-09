@@ -193,6 +193,7 @@ fun RoleplayScreen(
             scenario = scenario,
             assistant = assistant,
             settings = settings,
+            backdropState = backdropState,
             contextStatus = contextStatus,
             messages = messages,
             suggestions = suggestions,
