@@ -1,17 +1,17 @@
 {
   "app_id": "com.narra.app.dev",
   "channel": "dev",
-  "latest_version_name": "1.1.6-dev",
-  "latest_version_code": 10106,
+  "latest_version_name": "1.1.7-dev",
+  "latest_version_code": 10107,
   "minimum_supported_version_code": 0,
-  "apk_url": "https://0401lucky.github.io/Narra/downloads/dev/Narra-v1.1.6-dev-10106-dev.apk",
-  "apk_sha256": "7607e4fcb70bf3b2603835891bb830617f93f0dc2a1276e6dac83f9e86754464",
-  "published_at": "2026-04-09T14:07:45+08:00",
+  "apk_url": "https://0401lucky.github.io/Narra/downloads/dev/Narra-v1.1.7-dev-10107-dev.apk",
+  "apk_sha256": "d6dded46eac08912b81ce1c786d667b5f683778655f592cbb36bad5885b1961c",
+  "published_at": "2026-04-09T14:47:57+08:00",
   "release_notes": [
-    "特殊玩法新增惩罚卡，支持方式、次数、强度、原因和附注，聊天页与 RP 页都可直接发送",
-    "线上模式顶部栏补齐状态栏安全区，刘海屏下不再和系统状态栏重叠",
-    "线上模式用户消息气泡改为短句自适应、长句封顶，更接近真实聊天应用",
-    "我的手机语义收口为用户内容加触发点，旧缓存会自动判旧失效并提示重新生成",
-    "应用内更新测试包已推进到 1.1.6-dev，可通过 GitHub Pages 直链下载新 APK"
+    "沉浸设置新增线上模式显示旁白开关，可切换成更接近纯手机聊天的体验",
+    "关闭旁白后，线上模式会同时收住 prompt 和显示层，尽量只保留对白与系统事件提示",
+    "特殊玩法惩罚卡继续保留，支持方式、次数、强度、原因和附注",
+    "线上模式顶部状态栏重叠修复、用户气泡自适应和我的手机语义修正继续包含在此版本中",
+    "应用内更新测试包已推进到 1.1.7-dev，可通过 GitHub Pages 直链下载新 APK"
   ]
 }

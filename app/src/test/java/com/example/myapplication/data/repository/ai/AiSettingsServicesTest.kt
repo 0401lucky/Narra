@@ -78,6 +78,7 @@ class AiSettingsServicesTest {
             roleplayLongformTargetChars = 900,
             showRoleplayPresenceStrip = false,
             showRoleplayStatusStrip = true,
+            showOnlineRoleplayNarration = false,
             roleplayImmersiveMode = RoleplayImmersiveMode.HIDE_SYSTEM_BARS,
             roleplayHighContrast = true,
             roleplayLineHeightScale = RoleplayLineHeightScale.RELAXED,
@@ -121,6 +122,7 @@ class AiSettingsServicesTest {
         assertEquals(1.1f, saved.messageTextScale)
         assertEquals(RoleplayImmersiveMode.HIDE_SYSTEM_BARS, saved.roleplayImmersiveMode)
         assertTrue(saved.roleplayHighContrast)
+        assertTrue(!saved.showOnlineRoleplayNarration)
         assertEquals(RoleplayLineHeightScale.RELAXED, saved.roleplayLineHeightScale)
         assertTrue(saved.screenTranslationSettings.serviceEnabled)
         assertEquals("英语", saved.screenTranslationSettings.targetLanguage)

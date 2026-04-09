@@ -18,6 +18,7 @@ data class AppSettings(
     val roleplayLongformTargetChars: Int = DEFAULT_ROLEPLAY_LONGFORM_TARGET_CHARS,
     val showRoleplayPresenceStrip: Boolean = true,
     val showRoleplayStatusStrip: Boolean = false,
+    val showOnlineRoleplayNarration: Boolean = true,
     val suppressRoleplayAssistantMismatchDialog: Boolean = false,
     val roleplayImmersiveMode: RoleplayImmersiveMode = RoleplayImmersiveMode.EDGE_TO_EDGE,
     val roleplayHighContrast: Boolean = false,

@@ -136,6 +136,7 @@ class SettingsAssistantCoordinatorTest {
             roleplayLongformTargetChars: Int,
             showRoleplayPresenceStrip: Boolean,
             showRoleplayStatusStrip: Boolean,
+            showOnlineRoleplayNarration: Boolean,
             roleplayImmersiveMode: RoleplayImmersiveMode,
             roleplayHighContrast: Boolean,
             roleplayLineHeightScale: RoleplayLineHeightScale,

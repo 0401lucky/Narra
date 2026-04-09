@@ -494,6 +494,31 @@ class SettingsViewModelTest {
     }
 
     @Test
+    fun saveSettings_persistsOnlineRoleplayNarrationVisibility() = runTest(mainDispatcherRule.dispatcher.scheduler) {
+        val provider = ProviderSettings(
+            id = "provider-a",
+            name = "Provider A",
+            baseUrl = "https://a.example.com/v1/",
+            apiKey = "key-a",
+            selectedModel = "model-a",
+            availableModels = listOf("model-a"),
+        )
+        val viewModel = createViewModel(
+            settings = AppSettings(
+                providers = listOf(provider),
+                selectedProviderId = provider.id,
+            ),
+        )
+
+        advanceUntilIdle()
+        viewModel.updateShowOnlineRoleplayNarration(false)
+        viewModel.saveSettings {}
+        advanceUntilIdle()
+
+        assertTrue(!viewModel.storedSettings.value.showOnlineRoleplayNarration)
+    }
+
+    @Test
     fun saveSettings_persistsScreenTranslationPreferences() = runTest(mainDispatcherRule.dispatcher.scheduler) {
         val provider = ProviderSettings(
             id = "provider-a",

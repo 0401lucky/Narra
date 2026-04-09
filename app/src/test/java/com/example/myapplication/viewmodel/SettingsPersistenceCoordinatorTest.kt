@@ -46,6 +46,7 @@ class SettingsPersistenceCoordinatorTest {
             roleplayLongformTargetChars = 1200,
             showRoleplayPresenceStrip = false,
             showRoleplayStatusStrip = true,
+            showOnlineRoleplayNarration = false,
             roleplayImmersiveMode = RoleplayImmersiveMode.HIDE_SYSTEM_BARS,
             roleplayHighContrast = true,
             roleplayLineHeightScale = RoleplayLineHeightScale.RELAXED,
@@ -81,6 +82,7 @@ class SettingsPersistenceCoordinatorTest {
         assertTrue(editor.savedCodeBlockAutoCollapse)
         assertEquals(RoleplayImmersiveMode.HIDE_SYSTEM_BARS, editor.savedRoleplayImmersiveMode)
         assertTrue(editor.savedRoleplayHighContrast)
+        assertFalse(editor.savedShowOnlineRoleplayNarration)
         assertEquals(RoleplayLineHeightScale.RELAXED, editor.savedRoleplayLineHeightScale)
         assertEquals("日语", editor.savedScreenTranslationSettings.targetLanguage)
         assertTrue(editor.savedScreenTranslationSettings.serviceEnabled)
@@ -220,6 +222,7 @@ class SettingsPersistenceCoordinatorTest {
         var savedRoleplayLongformTargetChars: Int = 0
         var savedShowRoleplayPresenceStrip: Boolean = true
         var savedShowRoleplayStatusStrip: Boolean = false
+        var savedShowOnlineRoleplayNarration: Boolean = true
         var savedRoleplayImmersiveMode: RoleplayImmersiveMode = RoleplayImmersiveMode.EDGE_TO_EDGE
         var savedRoleplayHighContrast: Boolean = false
         var savedRoleplayLineHeightScale: RoleplayLineHeightScale = RoleplayLineHeightScale.NORMAL
@@ -251,6 +254,7 @@ class SettingsPersistenceCoordinatorTest {
             roleplayLongformTargetChars: Int,
             showRoleplayPresenceStrip: Boolean,
             showRoleplayStatusStrip: Boolean,
+            showOnlineRoleplayNarration: Boolean,
             roleplayImmersiveMode: RoleplayImmersiveMode,
             roleplayHighContrast: Boolean,
             roleplayLineHeightScale: RoleplayLineHeightScale,
@@ -267,6 +271,7 @@ class SettingsPersistenceCoordinatorTest {
             savedRoleplayLongformTargetChars = roleplayLongformTargetChars
             savedShowRoleplayPresenceStrip = showRoleplayPresenceStrip
             savedShowRoleplayStatusStrip = showRoleplayStatusStrip
+            savedShowOnlineRoleplayNarration = showOnlineRoleplayNarration
             savedRoleplayImmersiveMode = roleplayImmersiveMode
             savedRoleplayHighContrast = roleplayHighContrast
             savedRoleplayLineHeightScale = roleplayLineHeightScale

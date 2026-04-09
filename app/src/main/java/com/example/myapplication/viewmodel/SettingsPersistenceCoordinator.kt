@@ -43,6 +43,7 @@ class SettingsPersistenceCoordinator(
             roleplayLongformTargetChars = currentState.roleplayLongformTargetChars,
             showRoleplayPresenceStrip = currentState.showRoleplayPresenceStrip,
             showRoleplayStatusStrip = currentState.showRoleplayStatusStrip,
+            showOnlineRoleplayNarration = currentState.showOnlineRoleplayNarration,
             roleplayImmersiveMode = currentState.roleplayImmersiveMode,
             roleplayHighContrast = currentState.roleplayHighContrast,
             roleplayLineHeightScale = currentState.roleplayLineHeightScale,

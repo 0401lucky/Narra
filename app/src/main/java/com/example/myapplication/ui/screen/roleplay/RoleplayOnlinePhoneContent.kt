@@ -47,6 +47,7 @@ import com.example.myapplication.model.RoleplayContentType
 import com.example.myapplication.model.RoleplayContextStatus
 import com.example.myapplication.model.RoleplayMessageUiModel
 import com.example.myapplication.model.RoleplayScenario
+import com.example.myapplication.model.RoleplaySpeaker
 import com.example.myapplication.model.RoleplaySuggestionUiModel
 import com.example.myapplication.ui.component.AppSnackbarHost
 import com.example.myapplication.ui.component.NarraIconButton
@@ -121,7 +122,13 @@ internal fun RoleplayOnlinePhoneContent(
     val listState = rememberLazyListState()
     val scope = rememberCoroutineScope()
     var showMenu by remember { androidx.compose.runtime.mutableStateOf(false) }
-    val visibleMessages = messages.filter { it.contentType != RoleplayContentType.SYSTEM }
+    val visibleMessages = messages.filter { message ->
+        message.contentType != RoleplayContentType.SYSTEM &&
+            (
+                settings.showOnlineRoleplayNarration ||
+                    !(message.contentType == RoleplayContentType.NARRATION && message.speaker == RoleplaySpeaker.NARRATOR)
+                )
+    }
 
     LaunchedEffect(visibleMessages.size, visibleMessages.lastOrNull()?.content) {
         if (visibleMessages.isNotEmpty()) {

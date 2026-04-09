@@ -94,6 +94,7 @@ internal fun RoleplaySettingsContent(
     onOpenPromptDebugSheet: () -> Unit,
     onUpdateShowRoleplayPresenceStrip: (Boolean) -> Unit,
     onUpdateShowRoleplayStatusStrip: (Boolean) -> Unit,
+    onUpdateShowOnlineRoleplayNarration: (Boolean) -> Unit,
     onUpdateShowRoleplayAiHelper: (Boolean) -> Unit,
     onUpdateScenarioInteractionMode: (RoleplayInteractionMode) -> Unit,
     systemHighContrastEnabled: Boolean,
@@ -181,6 +182,26 @@ internal fun RoleplaySettingsContent(
                     checked = settings.showRoleplayAiHelper,
                     onCheckedChange = onUpdateShowRoleplayAiHelper,
                 )
+                if (scenario?.interactionMode == RoleplayInteractionMode.ONLINE_PHONE) {
+                    HorizontalDivider(
+                        modifier = Modifier.padding(start = 56.dp, end = 18.dp),
+                        color = palette.panelBorder.copy(alpha = 0.44f),
+                    )
+                    RoleplaySettingSwitchRow(
+                        palette = palette,
+                        icon = {
+                            Icon(
+                                imageVector = Icons.Default.AutoStories,
+                                contentDescription = null,
+                                tint = palette.onGlass,
+                            )
+                        },
+                        title = "线上模式显示旁白",
+                        supportingText = "关闭后会更像纯线上聊天，只保留对白和系统事件提示。",
+                        checked = settings.showOnlineRoleplayNarration,
+                        onCheckedChange = onUpdateShowOnlineRoleplayNarration,
+                    )
+                }
             }
         }
 

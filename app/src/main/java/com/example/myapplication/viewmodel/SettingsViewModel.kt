@@ -53,6 +53,7 @@ data class SettingsUiState(
     val roleplayLongformTargetChars: Int = DEFAULT_ROLEPLAY_LONGFORM_TARGET_CHARS,
     val showRoleplayPresenceStrip: Boolean = true,
     val showRoleplayStatusStrip: Boolean = false,
+    val showOnlineRoleplayNarration: Boolean = true,
     val roleplayImmersiveMode: com.example.myapplication.model.RoleplayImmersiveMode = com.example.myapplication.model.RoleplayImmersiveMode.EDGE_TO_EDGE,
     val roleplayHighContrast: Boolean = false,
     val roleplayLineHeightScale: com.example.myapplication.model.RoleplayLineHeightScale = com.example.myapplication.model.RoleplayLineHeightScale.NORMAL,
@@ -98,6 +99,7 @@ data class SettingsUiState(
             roleplayLongformTargetChars != savedSettings.roleplayLongformTargetChars ||
             showRoleplayPresenceStrip != savedSettings.showRoleplayPresenceStrip ||
             showRoleplayStatusStrip != savedSettings.showRoleplayStatusStrip ||
+            showOnlineRoleplayNarration != savedSettings.showOnlineRoleplayNarration ||
             roleplayImmersiveMode != savedSettings.roleplayImmersiveMode ||
             roleplayHighContrast != savedSettings.roleplayHighContrast ||
             roleplayLineHeightScale != savedSettings.roleplayLineHeightScale ||
@@ -527,6 +529,12 @@ class SettingsViewModel(
     fun updateShowRoleplayStatusStrip(enabled: Boolean) {
         _uiState.update { current ->
             SettingsPreferenceDraftSupport.updateShowRoleplayStatusStrip(current, enabled)
+        }
+    }
+
+    fun updateShowOnlineRoleplayNarration(enabled: Boolean) {
+        _uiState.update { current ->
+            SettingsPreferenceDraftSupport.updateShowOnlineRoleplayNarration(current, enabled)
         }
     }
 

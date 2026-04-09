@@ -2,6 +2,7 @@ package com.example.myapplication.roleplay
 
 import com.example.myapplication.model.AppSettings
 import com.example.myapplication.model.Assistant
+import com.example.myapplication.model.RoleplayInteractionMode
 import com.example.myapplication.model.RoleplayScenario
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -77,5 +78,25 @@ class RoleplayPromptDecoratorTest {
         assertTrue(prompt.contains("场景标题：金乘的夜班"))
         assertTrue(prompt.contains("lucky 走进值班室时，金乘 正低头扣上颈间的金属扣"))
         assertTrue(prompt.contains("lucky 听见那声轻响时"))
+    }
+
+    @Test
+    fun decorate_onlineModeWithoutNarrationRequestsDialogueOnly() {
+        val prompt = RoleplayPromptDecorator.decorate(
+            baseSystemPrompt = "",
+            scenario = RoleplayScenario(
+                id = "scene-1",
+                userDisplayNameOverride = "林晚",
+                characterDisplayNameOverride = "余罪",
+                interactionMode = RoleplayInteractionMode.ONLINE_PHONE,
+                enableNarration = true,
+            ),
+            assistant = Assistant(id = "assistant-1", name = "余罪"),
+            settings = AppSettings(showOnlineRoleplayNarration = false),
+        )
+
+        assertTrue(prompt.contains("不使用 narration 标签"))
+        assertTrue(prompt.contains("尽量像真实聊天软件里的连续气泡"))
+        assertTrue(!prompt.contains("不要丢掉正常强度的旁白表现"))
     }
 }

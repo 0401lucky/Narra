@@ -21,6 +21,7 @@ object RoleplayPromptDecorator {
         val characterName = scenario.characterDisplayNameOverride.trim()
             .ifBlank { assistant?.name?.trim().orEmpty() }
             .ifBlank { "角色" }
+        val allowOnlineNarration = scenario.enableNarration && settings.showOnlineRoleplayNarration
         val resolvedBaseSystemPrompt = ContextPlaceholderResolver.resolve(
             text = baseSystemPrompt,
             userName = playerName,
@@ -98,15 +99,27 @@ object RoleplayPromptDecorator {
                     buildString {
                         append("【线上手机聊天模式】\n")
                         append("1. 当前是手机线上聊天，不是面对面现场互动。\n")
-                        append("2. 角色回复应以短消息、多气泡为主，但允许自然穿插旁白/叙述性插段。\n")
+                        if (allowOnlineNarration) {
+                            append("2. 角色回复应以短消息、多气泡为主，但允许自然穿插旁白/叙述性插段。\n")
+                        } else {
+                            append("2. 角色回复应以短消息、多气泡为主，不使用 narration 标签，不写独立旁白段。\n")
+                        }
                         append("3. 角色对白继续使用 <dialogue speaker=\"character\" emotion=\"情绪\">内容</dialogue>。\n")
                         append("4. 如果要引用旧消息，可在 dialogue 标签上附加属性：reply_to=\"消息ID\" reply_speaker=\"名字\" reply_preview=\"预览\"。\n")
-                        append("5. 叙述性内容继续使用 <narration>内容</narration>，用于状态条、聊天中的动作/停顿/情绪铺垫。\n")
-                        append("6. 不要把整轮写成长篇散文；每轮通常输出 1 到 6 段 dialogue/narration。\n")
-                        append("7. 聊天语境要有时间感、等待感和手机互动感，但不要丢掉正常强度的旁白表现。\n")
-                        append("8. 如果近期失联较久，可按角色人设自然表现委屈、生气、阴阳怪气、克制或想念。\n")
-                        append("9. 如果当前剧情里存在“看过对方手机”的既有事件，角色可以自然引用或延续其情绪后效。\n")
-                        append("10. 不要输出 Markdown、代码块或额外格式说明。")
+                        if (allowOnlineNarration) {
+                            append("5. 叙述性内容继续使用 <narration>内容</narration>，用于状态条、聊天中的动作/停顿/情绪铺垫。\n")
+                            append("6. 不要把整轮写成长篇散文；每轮通常输出 1 到 6 段 dialogue/narration。\n")
+                            append("7. 聊天语境要有时间感、等待感和手机互动感，但不要丢掉正常强度的旁白表现。\n")
+                            append("8. 如果近期失联较久，可按角色人设自然表现委屈、生气、阴阳怪气、克制或想念。\n")
+                            append("9. 如果当前剧情里存在“看过对方手机”的既有事件，角色可以自然引用或延续其情绪后效。\n")
+                            append("10. 不要输出 Markdown、代码块或额外格式说明。")
+                        } else {
+                            append("5. 每轮通常只输出 1 到 6 段 dialogue，尽量像真实聊天软件里的连续气泡。\n")
+                            append("6. 聊天语境要有时间感、等待感和手机互动感，但通过对白本身表达，不额外插入旁白。\n")
+                            append("7. 如果近期失联较久，可按角色人设自然表现委屈、生气、阴阳怪气、克制或想念。\n")
+                            append("8. 如果当前剧情里存在“看过对方手机”的既有事件，角色可以自然引用或延续其情绪后效。\n")
+                            append("9. 不要输出 Markdown、代码块或额外格式说明。")
+                        }
                     },
                 )
             } else if (scenario.longformModeEnabled || scenario.interactionMode == RoleplayInteractionMode.OFFLINE_LONGFORM) {

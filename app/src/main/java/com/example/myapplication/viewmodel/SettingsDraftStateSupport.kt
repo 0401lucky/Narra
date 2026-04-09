@@ -53,6 +53,7 @@ object SettingsDraftStateSupport {
                 roleplayLongformTargetChars = settings.roleplayLongformTargetChars,
                 showRoleplayPresenceStrip = settings.showRoleplayPresenceStrip,
                 showRoleplayStatusStrip = settings.showRoleplayStatusStrip,
+                showOnlineRoleplayNarration = settings.showOnlineRoleplayNarration,
                 roleplayImmersiveMode = settings.roleplayImmersiveMode,
                 roleplayHighContrast = settings.roleplayHighContrast,
                 roleplayLineHeightScale = settings.roleplayLineHeightScale,
