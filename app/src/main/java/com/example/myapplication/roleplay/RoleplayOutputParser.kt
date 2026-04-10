@@ -16,16 +16,16 @@ data class RoleplayParsedSegment(
 
 class RoleplayOutputParser {
     private val tagPattern = Regex(
-        """(?s)<narration>(.*?)</narration>|<dialogue\b([^>]*)>(.*?)</dialogue>""",
+        """(?s)<narration>(.*?)</narration>|<thought>(.*?)</thought>|<dialogue\b([^>]*)>(.*?)</dialogue>""",
     )
     private val attributePattern = Regex("(\\w+)=\"([^\"]*)\"")
     private val stripTagPattern = Regex("""<[^>]+>""")
     private val danglingOpenTagPattern = Regex("""<[^>]*$""")
-    private val protocolHintPattern = Regex("""(?is)</?(dialogue|narration)\b|\b(speaker|emotion|reply_to|reply_preview|reply_speaker)\s*=""")
+    private val protocolHintPattern = Regex("""(?is)</?(dialogue|narration|thought)\b|\b(speaker|emotion|reply_to|reply_preview|reply_speaker)\s*=""")
     private val protocolAttributeNoisePattern = Regex(
         """(?is)\b(speaker|emotion|reply_to|reply_preview|reply_speaker)\s*=\s*("[^"]*"|'[^']*'|[^\s<>]+)?""",
     )
-    private val protocolTagNamePattern = Regex("""(?is)</?(dialogue|narration)\b""")
+    private val protocolTagNamePattern = Regex("""(?is)</?(dialogue|narration|thought)\b""")
     private val angleBracketPattern = Regex("""[<>]""")
     private val emptyProtocolLinePattern = Regex("""(?m)^[\s"'=:：/\\-]+$""")
 
@@ -34,7 +34,7 @@ class RoleplayOutputParser {
         characterName: String,
         allowNarration: Boolean,
     ): List<RoleplayParsedSegment> {
-        val normalized = rawContent.trim()
+        val normalized = normalizeRoleplayProtocolAliases(rawContent).trim()
         if (normalized.isBlank()) {
             return emptyList()
         }
@@ -48,8 +48,11 @@ class RoleplayOutputParser {
             )
         }
 
-        val hasTaggedDialogue = matches.any { it.groups[3]?.value.orEmpty().trim().isNotBlank() }
-        val hasTaggedNarration = matches.any { it.groups[1]?.value.orEmpty().trim().isNotBlank() }
+        val hasTaggedDialogue = matches.any { it.groups[4]?.value.orEmpty().trim().isNotBlank() }
+        val hasTaggedNarration = matches.any {
+            it.groups[1]?.value.orEmpty().trim().isNotBlank() ||
+                it.groups[2]?.value.orEmpty().trim().isNotBlank()
+        }
         val segments = mutableListOf<RoleplayParsedSegment>()
         var cursor = 0
         matches.forEach { match ->
@@ -64,8 +67,9 @@ class RoleplayOutputParser {
             }
 
             val narrationContent = match.groups[1]?.value.orEmpty().trim()
-            val dialogueAttributes = match.groups[2]?.value.orEmpty()
-            val dialogueContent = match.groups[3]?.value.orEmpty().trim()
+            val thoughtContent = match.groups[2]?.value.orEmpty().trim()
+            val dialogueAttributes = match.groups[3]?.value.orEmpty()
+            val dialogueContent = match.groups[4]?.value.orEmpty().trim()
             when {
                 narrationContent.isNotBlank() && allowNarration -> {
                     segments += RoleplayParsedSegment(
@@ -82,6 +86,15 @@ class RoleplayOutputParser {
                         speaker = RoleplaySpeaker.CHARACTER,
                         speakerName = characterName,
                         content = stripMarkup(narrationContent),
+                    )
+                }
+
+                thoughtContent.isNotBlank() -> {
+                    segments += RoleplayParsedSegment(
+                        contentType = RoleplayContentType.THOUGHT,
+                        speaker = RoleplaySpeaker.CHARACTER,
+                        speakerName = characterName,
+                        content = stripMarkup(thoughtContent),
                     )
                 }
 
@@ -117,14 +130,18 @@ class RoleplayOutputParser {
     }
 
     fun stripMarkup(rawContent: String): String {
-        return rawContent
-            .replace(danglingOpenTagPattern, "")
+        return sanitizeMalformedProtocolText(
+            normalizeRoleplayProtocolAliases(rawContent),
+        )
             .replace(stripTagPattern, "")
+            .replace(danglingOpenTagPattern, "")
+            .replace(Regex("""[ \t]{2,}"""), " ")
+            .replace(Regex("""\n{3,}"""), "\n\n")
+            .trim()
             .replace("&lt;", "<")
             .replace("&gt;", ">")
             .replace("&quot;", "\"")
             .replace("&amp;", "&")
-            .trim()
     }
 
     private fun parseAttributes(rawAttributes: String): Map<String, String> {
@@ -433,10 +450,11 @@ class RoleplayOutputParser {
     private fun sanitizeMalformedProtocolText(
         rawContent: String,
     ): String {
-        if (!protocolHintPattern.containsMatchIn(rawContent)) {
-            return rawContent
+        val normalized = normalizeRoleplayProtocolAliases(rawContent)
+        if (!protocolHintPattern.containsMatchIn(normalized)) {
+            return normalized
         }
-        return rawContent
+        return normalized
             .replace(protocolTagNamePattern, " ")
             .replace(protocolAttributeNoisePattern, " ")
             .replace(angleBracketPattern, " ")

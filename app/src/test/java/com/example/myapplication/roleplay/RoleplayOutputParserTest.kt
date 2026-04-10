@@ -31,6 +31,24 @@ class RoleplayOutputParserTest {
     }
 
     @Test
+    fun parseAssistantOutput_recognizesThoughtSegments() {
+        val result = parser.parseAssistantOutput(
+            rawContent = """
+                <thought>指尖停在发送键上方，却还是没按下去。</thought>
+                <dialogue speaker="character">算了，你先忙。</dialogue>
+            """.trimIndent(),
+            characterName = "霜岚",
+            allowNarration = true,
+        )
+
+        assertEquals(2, result.size)
+        assertEquals(RoleplayContentType.THOUGHT, result[0].contentType)
+        assertEquals(RoleplaySpeaker.CHARACTER, result[0].speaker)
+        assertEquals("指尖停在发送键上方，却还是没按下去。", result[0].content)
+        assertEquals(RoleplayContentType.DIALOGUE, result[1].contentType)
+    }
+
+    @Test
     fun parseAssistantOutput_fallsBackToSingleDialogueWhenNoTagsPresent() {
         val result = parser.parseAssistantOutput(
             rawContent = "她抬眼看向你，声音压得很低：今晚别走散。",
@@ -168,5 +186,21 @@ class RoleplayOutputParserTest {
         assertEquals(1, result.size)
         assertEquals(RoleplayContentType.DIALOGUE, result.single().contentType)
         assertEquals("声音放得很低。", result.single().content)
+    }
+
+    @Test
+    fun stripMarkup_normalizesNarrativeAliasAndMalformedProtocolForStreaming() {
+        val stripped = parser.stripMarkup(
+            """
+                <narrative>手指抵着杯壁磨了磨。</narrative>
+                <dialogue speaker="沈晏清" emotion="无意中带着一丝讨好"
+                声音放得很低。
+            """.trimIndent(),
+        )
+
+        assertTrue(!stripped.contains("<narrative"))
+        assertTrue(!stripped.contains("speaker="))
+        assertTrue(stripped.contains("手指抵着杯壁磨了磨。"))
+        assertTrue(stripped.contains("声音放得很低。"))
     }
 }

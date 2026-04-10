@@ -169,7 +169,7 @@ internal fun RoleplayOnlinePhoneContent(
         message.contentType != RoleplayContentType.SYSTEM &&
             (
                 settings.showOnlineRoleplayNarration ||
-                    !(message.contentType == RoleplayContentType.NARRATION && message.speaker == RoleplaySpeaker.NARRATOR)
+                    message.contentType != RoleplayContentType.THOUGHT
                 )
     }
 

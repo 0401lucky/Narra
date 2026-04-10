@@ -170,6 +170,11 @@ fun RoleplayReadingMode(
                                 backdropState = backdropState,
                                 lineHeightScale = lineHeightScale,
                             )
+                            RoleplayContentType.THOUGHT -> ThoughtReadingBlock(
+                                message = message,
+                                backdropState = backdropState,
+                                lineHeightScale = lineHeightScale,
+                            )
                             RoleplayContentType.SYSTEM -> SystemReadingBlock(message, backdropState)
                             RoleplayContentType.DIALOGUE -> DialogueReadingBlock(
                                 message = message,
@@ -185,6 +190,48 @@ fun RoleplayReadingMode(
                         }
                     }
                 }
+            }
+        }
+    }
+}
+
+@Composable
+private fun ThoughtReadingBlock(
+    message: RoleplayMessageUiModel,
+    backdropState: ImmersiveBackdropState,
+    lineHeightScale: Float,
+) {
+    val paragraphs = remember(message.content) {
+        message.content.toLongformParagraphs()
+    }
+    Box(
+        modifier = Modifier.fillMaxWidth(),
+        contentAlignment = Alignment.Center,
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth(0.78f)
+                .background(
+                    color = backdropState.palette.panelTint.copy(alpha = 0.16f),
+                    shape = RoundedCornerShape(20.dp),
+                )
+                .padding(horizontal = 14.dp, vertical = 12.dp),
+            verticalArrangement = Arrangement.spacedBy(10.dp),
+        ) {
+            paragraphs.forEach { paragraph ->
+                Text(
+                    text = buildQuotedDialogueAnnotatedString(
+                        text = paragraph,
+                        narrationColor = backdropState.palette.thoughtText,
+                        dialogueColor = RoleplayQuotedDialogueHighlightColor,
+                    ),
+                    style = MaterialTheme.typography.bodyMedium.copy(
+                        fontSize = 15.sp,
+                        lineHeight = 26.sp * lineHeightScale,
+                        letterSpacing = 0.3.sp,
+                    ),
+                    color = backdropState.palette.thoughtText,
+                )
             }
         }
     }

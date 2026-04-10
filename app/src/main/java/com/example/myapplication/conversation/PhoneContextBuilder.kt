@@ -115,7 +115,13 @@ class PhoneContextBuilder(
                         append('\n')
                     }
                     if (scenario.openingNarration.isNotBlank()) {
-                        append("开场旁白：")
+                        append(
+                            if (scenario.interactionMode == com.example.myapplication.model.RoleplayInteractionMode.ONLINE_PHONE) {
+                                "开场心声/状态提示："
+                            } else {
+                                "开场旁白："
+                            },
+                        )
                         append(scenario.openingNarration.trim())
                     }
                 }.trim(),
@@ -124,6 +130,7 @@ class PhoneContextBuilder(
                     userName = userName,
                     characterName = assistantName,
                     allowNarration = scenario.enableNarration,
+                    interactionMode = scenario.interactionMode,
                 ),
             )
         } else {

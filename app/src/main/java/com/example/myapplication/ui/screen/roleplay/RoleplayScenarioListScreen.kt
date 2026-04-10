@@ -216,7 +216,11 @@ private fun RoleplayScenarioCard(
                 }
                 if (scenario.enableNarration) {
                     SettingsStatusPill(
-                        text = "启用旁白",
+                        text = if (scenario.interactionMode == com.example.myapplication.model.RoleplayInteractionMode.ONLINE_PHONE) {
+                            "启用心声"
+                        } else {
+                            "启用旁白"
+                        },
                         containerColor = palette.surfaceTint,
                         contentColor = palette.body,
                     )

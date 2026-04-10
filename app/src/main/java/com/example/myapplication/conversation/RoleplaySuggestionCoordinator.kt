@@ -94,6 +94,7 @@ class RoleplaySuggestionCoordinator(
             userName = userName,
             characterName = characterName,
             allowNarration = request.scenario.enableNarration,
+            interactionMode = request.scenario.interactionMode,
         )
         val activeProvider = request.settings.activeProvider()
         val baseUrl = activeProvider?.baseUrl ?: request.settings.baseUrl

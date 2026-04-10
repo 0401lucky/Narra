@@ -698,6 +698,49 @@ internal fun RoleplayMessageItem(
             }
         }
 
+        RoleplayContentType.THOUGHT -> RoleplayMessageMenuWrapper(message, onRetryTurn, onEditUserMessage, onQuoteMessage = onQuoteMessage, onRecallMessage = onRecallMessage) {
+            if (bubbleMode == RoleplayMessageBubbleMode.ONLINE_PHONE) {
+                OnlinePhoneThoughtBubble(
+                    message = message,
+                    colors = colors,
+                    backdropState = backdropState,
+                    lineHeightScale = lineHeightScale,
+                )
+            } else {
+                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.Center) {
+                    ImmersiveGlassSurface(
+                        backdropState = backdropState,
+                        modifier = Modifier.fillMaxWidth(0.82f),
+                        shape = RoundedCornerShape(18.dp),
+                        overlayColor = colors.panelBackground.copy(alpha = 0.18f),
+                    ) {
+                        Column(
+                            modifier = Modifier.padding(horizontal = 14.dp, vertical = 12.dp),
+                            verticalArrangement = Arrangement.spacedBy(10.dp),
+                        ) {
+                            val paragraphs = remember(message.content) { message.content.toLongformParagraphs() }
+                            paragraphs.forEach { paragraph ->
+                                Text(
+                                    text = buildQuotedDialogueAnnotatedString(
+                                        text = paragraph,
+                                        narrationColor = colors.thoughtText,
+                                        dialogueColor = RoleplayQuotedDialogueHighlightColor,
+                                    ),
+                                    style = MaterialTheme.typography.bodyMedium.copy(
+                                        fontSize = 15.sp,
+                                        fontStyle = FontStyle.Italic,
+                                        lineHeight = 24.sp * lineHeightScale,
+                                        letterSpacing = 0.5.sp,
+                                    ),
+                                    color = colors.thoughtText,
+                                )
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
         RoleplayContentType.DIALOGUE -> {
             if (message.speaker == RoleplaySpeaker.USER) {
                 val isOnlinePhoneBubble = bubbleMode == RoleplayMessageBubbleMode.ONLINE_PHONE
@@ -1040,6 +1083,50 @@ private fun OnlinePhoneNarrationBubble(
 }
 
 @Composable
+private fun OnlinePhoneThoughtBubble(
+    message: RoleplayMessageUiModel,
+    colors: ImmersiveRoleplayColors,
+    backdropState: ImmersiveBackdropState,
+    lineHeightScale: Float,
+) {
+    BoxWithConstraints(
+        modifier = Modifier.fillMaxWidth(),
+        contentAlignment = Alignment.Center,
+    ) {
+        ImmersiveGlassSurface(
+            backdropState = backdropState,
+            modifier = Modifier.widthIn(max = maxWidth * 0.76f),
+            shape = RoundedCornerShape(18.dp),
+            blurRadius = 16.dp,
+            overlayColor = colors.panelBackground.copy(alpha = 0.24f),
+        ) {
+            Column(
+                modifier = Modifier.padding(horizontal = 14.dp, vertical = 10.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                val paragraphs = remember(message.content) { message.content.toLongformParagraphs() }
+                paragraphs.forEach { paragraph ->
+                    Text(
+                        text = buildQuotedDialogueAnnotatedString(
+                            text = paragraph,
+                            narrationColor = colors.thoughtText,
+                            dialogueColor = RoleplayQuotedDialogueHighlightColor,
+                        ),
+                        style = MaterialTheme.typography.bodyMedium.copy(
+                            fontSize = 13.sp,
+                            fontStyle = FontStyle.Italic,
+                            lineHeight = 22.sp * lineHeightScale,
+                            letterSpacing = 0.4.sp,
+                        ),
+                        color = colors.thoughtText,
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
 internal fun RoleplayMessageMenuWrapper(
     message: RoleplayMessageUiModel,
     onRetryTurn: (String) -> Unit,
@@ -1059,7 +1146,12 @@ internal fun RoleplayMessageMenuWrapper(
         message.content.isNotBlank()
     val canQuoteMessage = onQuoteMessage != null &&
         message.sourceMessageId.isNotBlank() &&
-        message.contentType in setOf(RoleplayContentType.DIALOGUE, RoleplayContentType.NARRATION, RoleplayContentType.LONGFORM)
+        message.contentType in setOf(
+            RoleplayContentType.DIALOGUE,
+            RoleplayContentType.NARRATION,
+            RoleplayContentType.THOUGHT,
+            RoleplayContentType.LONGFORM,
+        )
     val canRecallMessage = onRecallMessage != null &&
         message.sourceMessageId.isNotBlank() &&
         message.speaker == RoleplaySpeaker.USER &&

@@ -1,16 +1,16 @@
 {
   "app_id": "com.narra.app.dev",
   "channel": "dev",
-  "latest_version_name": "1.2.2-dev",
-  "latest_version_code": 10202,
+  "latest_version_name": "1.2.3-dev",
+  "latest_version_code": 10203,
   "minimum_supported_version_code": 0,
-  "apk_url": "https://download.lsa1230.dpdns.org/dev/Narra-v1.2.2-dev-10202-dev.apk",
-  "apk_sha256": "1b5bb6fe65f5d9a426f312c26b24d01d173f42dfaa3ca4ec884a904d95912c1e",
-  "published_at": "2026-04-10T13:47:19+08:00",
+  "apk_url": "https://download.lsa1230.dpdns.org/dev/Narra-v1.2.3-dev-10203-dev.apk",
+  "apk_sha256": "41cb9c9f4b8afea5ff02b91bfb7eafc71d7d76ec716a2b25e09e9297de326bd4",
+  "published_at": "2026-04-10T17:58:28+08:00",
   "release_notes": [
-    "线上模式顶部栏收紧为更轻的悬浮聊天栏，并把对方正在输入状态并到顶部状态文案里",
-    "线上模式角色消息气泡改为按内容长度自适应宽度，更接近真实聊天软件的消息观感",
-    "修复切到长文或其他模式后旧消息偶发直接露出协议标签的问题",
-    "修复模型返回半截协议时把 emotion=、speaker= 等残留属性直接渲染到正文里的问题"
+    "线上模式改成对白主导 + 心声轻提示的手机聊天观感",
+    "修复线上切回线下后再次生成时偶发露出 <narrative>/<dialogue> 协议标签的问题",
+    "修复协议消息里带 <thought> 时被误判成长文链路导致掉格式的问题",
+    "线上模式设置与场景编辑文案正式收口到心声 / 状态提示"
   ]
 }

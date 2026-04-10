@@ -7,6 +7,7 @@ import com.example.myapplication.model.MessageRole
 import com.example.myapplication.model.MessageStatus
 import com.example.myapplication.model.RoleplayContentType
 import com.example.myapplication.model.RoleplayInteractionMode
+import com.example.myapplication.model.RoleplayOnlineEventKind
 import com.example.myapplication.model.RoleplayOutputFormat
 import com.example.myapplication.model.RoleplayScenario
 import com.example.myapplication.model.TransferDirection
@@ -333,6 +334,77 @@ class RoleplayMessageUiMapperTest {
         assertTrue(mapped.isNotEmpty())
         assertTrue(mapped.none { it.speakerName == "系统" })
         assertTrue(mapped.none { it.content.contains("连发了") })
+    }
+
+    @Test
+    fun mapMessages_onlineModeConvertsNarrationToThought() {
+        val scenario = RoleplayScenario(
+            id = "scene-1",
+            title = "线上模式",
+            userDisplayNameOverride = "林晚",
+            characterDisplayNameOverride = "陆宴清",
+            interactionMode = RoleplayInteractionMode.ONLINE_PHONE,
+            enableNarration = true,
+        )
+
+        val mapped = RoleplayMessageUiMapper.mapMessages(
+            scenario = scenario,
+            assistant = Assistant(id = "assistant-1", name = "陆宴清"),
+            settings = AppSettings(),
+            rawMessages = listOf(
+                ChatMessage(
+                    id = "assistant-1",
+                    conversationId = "conv-1",
+                    role = MessageRole.ASSISTANT,
+                    content = "<narration>他盯着已读标记，指尖悬了一秒。</narration><dialogue>现在才回？</dialogue>",
+                    createdAt = 2L,
+                    status = MessageStatus.COMPLETED,
+                ),
+            ),
+            streamingContent = null,
+            outputParser = RoleplayOutputParser(),
+            nowProvider = { 20L },
+        )
+
+        assertEquals(2, mapped.size)
+        assertEquals(RoleplayContentType.THOUGHT, mapped[0].contentType)
+        assertEquals("陆宴清", mapped[0].speakerName)
+        assertEquals(RoleplayContentType.DIALOGUE, mapped[1].contentType)
+    }
+
+    @Test
+    fun mapMessages_onlineModePreservesSystemNarrationHints() {
+        val scenario = RoleplayScenario(
+            id = "scene-1",
+            title = "线上模式",
+            characterDisplayNameOverride = "陆宴清",
+            interactionMode = RoleplayInteractionMode.ONLINE_PHONE,
+            enableNarration = true,
+        )
+
+        val mapped = RoleplayMessageUiMapper.mapMessages(
+            scenario = scenario,
+            assistant = Assistant(id = "assistant-1", name = "陆宴清"),
+            settings = AppSettings(),
+            rawMessages = listOf(
+                ChatMessage(
+                    id = "event-1",
+                    conversationId = "conv-1",
+                    role = MessageRole.ASSISTANT,
+                    content = "<narration>你截了一张聊天截图。</narration>",
+                    createdAt = 2L,
+                    status = MessageStatus.COMPLETED,
+                    systemEventKind = RoleplayOnlineEventKind.SCREENSHOT,
+                ),
+            ),
+            streamingContent = null,
+            outputParser = RoleplayOutputParser(),
+            nowProvider = { 20L },
+        )
+
+        assertEquals(1, mapped.size)
+        assertEquals(RoleplayContentType.NARRATION, mapped.single().contentType)
+        assertEquals("旁白", mapped.single().speakerName)
     }
 
     @Test

@@ -7,9 +7,20 @@ import com.example.myapplication.model.RoleplayOutputFormat
 import com.example.myapplication.model.RoleplayScenario
 import com.example.myapplication.model.toPlainText
 
+private val roleplayProtocolAliasPattern = Regex("""(?is)<(/?)narrative\b""")
+
+internal fun normalizeRoleplayProtocolAliases(rawContent: String): String {
+    return roleplayProtocolAliasPattern.replace(rawContent) { match ->
+        "<${match.groupValues[1]}narration"
+    }
+}
+
 object RoleplayMessageFormatSupport {
-    private val longformTagPattern = Regex("""(?is)<(/?)(char|thought)>""")
-    private val protocolTagPattern = Regex("""(?is)<(/?)(dialogue|narration)\b""")
+    private val longformSpeechTagPattern = Regex("""(?is)<(/?)char>""")
+    private val sharedThoughtTagPattern = Regex("""(?is)<(/?)thought>""")
+    private val sharedThoughtOnlyTagPattern = Regex("""(?is)</?thought>""")
+    private val protocolStructuralTagPattern = Regex("""(?is)<(/?)(dialogue|narration)\b""")
+    private val genericTagPattern = Regex("""(?is)<[^>]+>""")
 
     fun resolveScenarioOutputFormat(
         scenario: RoleplayScenario,
@@ -47,29 +58,32 @@ object RoleplayMessageFormatSupport {
         preferredFormat: RoleplayOutputFormat,
         rawContent: String,
     ): RoleplayOutputFormat {
-        val inferredFormat = inferLegacyAssistantOutputFormat(rawContent)
-        if (preferredFormat == RoleplayOutputFormat.UNSPECIFIED) {
-            return inferredFormat
+        val normalizedContent = normalizeRoleplayProtocolAliases(rawContent)
+        if (normalizedContent.isBlank()) {
+            return RoleplayOutputFormat.PLAIN
         }
+        val hasProtocolStructure = protocolStructuralTagPattern.containsMatchIn(normalizedContent)
+        val hasLongformSpeech = longformSpeechTagPattern.containsMatchIn(normalizedContent)
+        val hasThought = sharedThoughtTagPattern.containsMatchIn(normalizedContent)
         return when {
-            inferredFormat == RoleplayOutputFormat.LONGFORM &&
-                preferredFormat != RoleplayOutputFormat.LONGFORM -> RoleplayOutputFormat.LONGFORM
-            inferredFormat == RoleplayOutputFormat.PROTOCOL &&
-                preferredFormat != RoleplayOutputFormat.PROTOCOL -> RoleplayOutputFormat.PROTOCOL
-            else -> preferredFormat
+            hasProtocolStructure -> RoleplayOutputFormat.PROTOCOL
+            hasLongformSpeech -> RoleplayOutputFormat.LONGFORM
+            hasThought && preferredFormat == RoleplayOutputFormat.PROTOCOL && hasVisibleTextOutsideThoughtBlocks(normalizedContent) -> {
+                RoleplayOutputFormat.LONGFORM
+            }
+            hasThought && preferredFormat == RoleplayOutputFormat.PROTOCOL -> RoleplayOutputFormat.PROTOCOL
+            hasThought && preferredFormat == RoleplayOutputFormat.LONGFORM -> RoleplayOutputFormat.LONGFORM
+            hasThought -> RoleplayOutputFormat.LONGFORM
+            preferredFormat != RoleplayOutputFormat.UNSPECIFIED -> preferredFormat
+            else -> RoleplayOutputFormat.PLAIN
         }
     }
 
-    private fun inferLegacyAssistantOutputFormat(
+    private fun hasVisibleTextOutsideThoughtBlocks(
         rawContent: String,
-    ): RoleplayOutputFormat {
-        if (rawContent.isBlank()) {
-            return RoleplayOutputFormat.PLAIN
-        }
-        return when {
-            longformTagPattern.containsMatchIn(rawContent) -> RoleplayOutputFormat.LONGFORM
-            protocolTagPattern.containsMatchIn(rawContent) -> RoleplayOutputFormat.PROTOCOL
-            else -> RoleplayOutputFormat.PLAIN
-        }
+    ): Boolean {
+        return genericTagPattern
+            .replace(sharedThoughtOnlyTagPattern.replace(rawContent, " "), " ")
+            .any { !it.isWhitespace() }
     }
 }

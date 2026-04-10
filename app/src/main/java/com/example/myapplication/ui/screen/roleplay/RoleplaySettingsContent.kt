@@ -196,8 +196,8 @@ internal fun RoleplaySettingsContent(
                                 tint = palette.onGlass,
                             )
                         },
-                        title = "线上模式显示旁白",
-                        supportingText = "关闭后会更像纯线上聊天，只保留对白和系统事件提示。",
+                        title = "显示心声与状态提示",
+                        supportingText = "关闭后会隐藏独立心声，仍保留必要的系统状态提示。",
                         checked = settings.showOnlineRoleplayNarration,
                         onCheckedChange = onUpdateShowOnlineRoleplayNarration,
                     )

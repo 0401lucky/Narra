@@ -62,6 +62,7 @@ object RoleplayConversationSupport {
             userName = userName,
             characterName = characterName,
             allowNarration = scenario.enableNarration,
+            interactionMode = scenario.interactionMode,
         ).take(maxLength)
     }
 

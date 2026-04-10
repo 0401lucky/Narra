@@ -115,6 +115,7 @@ fun RoleplayScenarioEditScreen(
     var enableRoleplayProtocol by rememberSaveable(baseScenario.id) { mutableStateOf(baseScenario.enableRoleplayProtocol) }
     var longformModeEnabled by rememberSaveable(baseScenario.id) { mutableStateOf(baseScenario.longformModeEnabled) }
     var autoHighlightSpeaker by rememberSaveable(baseScenario.id) { mutableStateOf(baseScenario.autoHighlightSpeaker) }
+    val isOnlinePhoneMode = interactionMode == RoleplayInteractionMode.ONLINE_PHONE
 
     val backgroundLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.OpenDocument(),
@@ -338,7 +339,15 @@ fun RoleplayScenarioEditScreen(
                             value = openingNarration,
                             onValueChange = { openingNarration = it },
                             modifier = Modifier.fillMaxWidth(),
-                            label = { Text("开场旁白") },
+                            label = {
+                                Text(
+                                    if (isOnlinePhoneMode) {
+                                        "开场心声 / 状态提示"
+                                    } else {
+                                        "开场旁白"
+                                    },
+                                )
+                            },
                             minLines = 3,
                             maxLines = 5,
                             shape = RoundedCornerShape(18.dp),
@@ -351,7 +360,7 @@ fun RoleplayScenarioEditScreen(
             item {
                 SettingsSectionHeader(
                     title = "演出开关",
-                    description = "先选择剧情交互模式，再补充旁白和输出协议行为。",
+                    description = "先选择剧情交互模式，再补充演出语义和输出协议行为。",
                 )
             }
             item {
@@ -407,8 +416,12 @@ fun RoleplayScenarioEditScreen(
                             },
                         )
                         SwitchRow(
-                            title = "启用旁白",
-                            subtitle = "关闭后会尽量减少独立旁白段落，更偏纯对白推进。",
+                            title = if (isOnlinePhoneMode) "启用心声提示" else "启用旁白",
+                            subtitle = if (isOnlinePhoneMode) {
+                                "关闭后会尽量只保留真实聊天气泡，减少独立心声提示。"
+                            } else {
+                                "关闭后会尽量减少独立旁白段落，更偏纯对白推进。"
+                            },
                             value = enableNarration,
                             onValueChange = { enableNarration = it },
                         )
@@ -417,7 +430,7 @@ fun RoleplayScenarioEditScreen(
                             subtitle = if (longformModeEnabled) {
                                 "长文小说模式下会忽略这项设置。"
                             } else if (interactionMode == RoleplayInteractionMode.ONLINE_PHONE) {
-                                "线上模式默认也会走 narration/dialogue 协议。"
+                                "线上模式默认走 dialogue / thought 协议，并兼容旧 narration 历史。"
                             } else {
                                 "开启后要求模型输出 narration/dialogue 标签，结构更稳定。"
                             },

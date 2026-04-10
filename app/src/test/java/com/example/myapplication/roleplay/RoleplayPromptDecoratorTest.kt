@@ -81,6 +81,26 @@ class RoleplayPromptDecoratorTest {
     }
 
     @Test
+    fun decorate_onlineModePrefersThoughtHintsOverNarration() {
+        val prompt = RoleplayPromptDecorator.decorate(
+            baseSystemPrompt = "",
+            scenario = RoleplayScenario(
+                id = "scene-1",
+                userDisplayNameOverride = "林晚",
+                characterDisplayNameOverride = "余罪",
+                interactionMode = RoleplayInteractionMode.ONLINE_PHONE,
+                enableNarration = true,
+            ),
+            assistant = Assistant(id = "assistant-1", name = "余罪"),
+            settings = AppSettings(showOnlineRoleplayNarration = true),
+        )
+
+        assertTrue(prompt.contains("<thought>内容</thought>"))
+        assertTrue(prompt.contains("不要主动使用 <narration>"))
+        assertTrue(prompt.contains("短、少、轻"))
+    }
+
+    @Test
     fun decorate_onlineModeWithoutNarrationRequestsDialogueOnly() {
         val prompt = RoleplayPromptDecorator.decorate(
             baseSystemPrompt = "",
@@ -95,9 +115,9 @@ class RoleplayPromptDecoratorTest {
             settings = AppSettings(showOnlineRoleplayNarration = false),
         )
 
-        assertTrue(prompt.contains("不使用 narration 标签"))
+        assertTrue(prompt.contains("不使用 <thought>、<narration> 标签"))
         assertTrue(prompt.contains("由当前话题、情绪强度、上下文压力和记忆线索自然决定"))
         assertTrue(prompt.contains("真实聊天软件里的连续气泡感"))
-        assertTrue(!prompt.contains("不要丢掉正常强度的旁白表现"))
+        assertTrue(!prompt.contains("不要主动使用 <narration>"))
     }
 }

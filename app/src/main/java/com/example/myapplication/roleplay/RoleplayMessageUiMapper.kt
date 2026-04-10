@@ -6,7 +6,9 @@ import com.example.myapplication.model.ChatMessage
 import com.example.myapplication.model.MessageRole
 import com.example.myapplication.model.MessageStatus
 import com.example.myapplication.model.RoleplayContentType
+import com.example.myapplication.model.RoleplayInteractionMode
 import com.example.myapplication.model.RoleplayMessageUiModel
+import com.example.myapplication.model.RoleplayOnlineEventKind
 import com.example.myapplication.model.RoleplayOutputFormat
 import com.example.myapplication.model.RoleplayScenario
 import com.example.myapplication.model.RoleplaySpeaker
@@ -252,6 +254,7 @@ object RoleplayMessageUiMapper {
                 rawContent = content,
                 userName = userName,
                 characterName = characterName,
+                interactionMode = scenario.interactionMode,
                 allowNarration = scenario.enableNarration,
                 isRecalled = message.isRecalled,
                 systemEventKind = message.systemEventKind,
@@ -287,6 +290,7 @@ object RoleplayMessageUiMapper {
                         rawContent = part.text,
                         userName = userName,
                         characterName = characterName,
+                        interactionMode = scenario.interactionMode,
                         allowNarration = scenario.enableNarration,
                         isRecalled = message.isRecalled,
                         systemEventKind = message.systemEventKind,
@@ -305,6 +309,7 @@ object RoleplayMessageUiMapper {
                 rawContent = message.content,
                 userName = userName,
                 characterName = characterName,
+                interactionMode = scenario.interactionMode,
                 allowNarration = scenario.enableNarration,
                 isRecalled = message.isRecalled,
                 systemEventKind = message.systemEventKind,
@@ -322,9 +327,10 @@ object RoleplayMessageUiMapper {
         rawContent: String,
         userName: String,
         characterName: String,
+        interactionMode: RoleplayInteractionMode,
         allowNarration: Boolean,
         isRecalled: Boolean,
-        systemEventKind: com.example.myapplication.model.RoleplayOnlineEventKind,
+        systemEventKind: RoleplayOnlineEventKind,
         createdAt: Long,
         messageStatus: MessageStatus,
         canRetry: Boolean,
@@ -338,7 +344,13 @@ object RoleplayMessageUiMapper {
             rawContent = normalizedContent,
             characterName = characterName,
             allowNarration = allowNarration,
-        ).forEach { segment ->
+        ).forEach { parsedSegment ->
+            val segment = normalizeAssistantSegment(
+                segment = parsedSegment,
+                interactionMode = interactionMode,
+                systemEventKind = systemEventKind,
+                characterName = characterName,
+            )
             target += RoleplayMessageUiModel(
                 sourceMessageId = sourceMessageId,
                 contentType = segment.contentType,
@@ -361,6 +373,25 @@ object RoleplayMessageUiMapper {
                 copyText = segment.content,
                 canRetry = canRetry,
             )
+        }
+    }
+
+    private fun normalizeAssistantSegment(
+        segment: RoleplayParsedSegment,
+        interactionMode: RoleplayInteractionMode,
+        systemEventKind: RoleplayOnlineEventKind,
+        characterName: String,
+    ): RoleplayParsedSegment {
+        if (interactionMode != RoleplayInteractionMode.ONLINE_PHONE || systemEventKind != RoleplayOnlineEventKind.NONE) {
+            return segment
+        }
+        return when (segment.contentType) {
+            RoleplayContentType.NARRATION -> segment.copy(
+                contentType = RoleplayContentType.THOUGHT,
+                speaker = RoleplaySpeaker.CHARACTER,
+                speakerName = characterName,
+            )
+            else -> segment
         }
     }
 }
