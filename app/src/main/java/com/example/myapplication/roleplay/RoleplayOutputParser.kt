@@ -21,6 +21,13 @@ class RoleplayOutputParser {
     private val attributePattern = Regex("(\\w+)=\"([^\"]*)\"")
     private val stripTagPattern = Regex("""<[^>]+>""")
     private val danglingOpenTagPattern = Regex("""<[^>]*$""")
+    private val protocolHintPattern = Regex("""(?is)</?(dialogue|narration)\b|\b(speaker|emotion|reply_to|reply_preview|reply_speaker)\s*=""")
+    private val protocolAttributeNoisePattern = Regex(
+        """(?is)\b(speaker|emotion|reply_to|reply_preview|reply_speaker)\s*=\s*("[^"]*"|'[^']*'|[^\s<>]+)?""",
+    )
+    private val protocolTagNamePattern = Regex("""(?is)</?(dialogue|narration)\b""")
+    private val angleBracketPattern = Regex("""[<>]""")
+    private val emptyProtocolLinePattern = Regex("""(?m)^[\s"'=:：/\\-]+$""")
 
     fun parseAssistantOutput(
         rawContent: String,
@@ -35,7 +42,7 @@ class RoleplayOutputParser {
         val matches = tagPattern.findAll(normalized).toList()
         if (matches.isEmpty()) {
             return parsePlainTextOutput(
-                rawContent = normalized,
+                rawContent = sanitizeMalformedProtocolText(normalized),
                 characterName = characterName,
                 allowNarration = allowNarration,
             )
@@ -162,13 +169,14 @@ class RoleplayOutputParser {
         hasTaggedDialogue: Boolean,
         hasTaggedNarration: Boolean,
     ): List<RoleplayParsedSegment> {
+        val sanitizedContent = sanitizeMalformedProtocolText(rawContent)
         val defaultFallbackKind = when {
             hasTaggedDialogue -> PlainSegmentKind.NARRATION
             hasTaggedNarration -> PlainSegmentKind.DIALOGUE
             else -> PlainSegmentKind.DIALOGUE
         }
         return parsePlainTextOutput(
-            rawContent = rawContent,
+            rawContent = sanitizedContent,
             characterName = characterName,
             allowNarration = allowNarration,
             defaultFallbackKind = defaultFallbackKind,
@@ -420,6 +428,22 @@ class RoleplayOutputParser {
             markerStart = value.indexOf(startChar, markerStart + 1)
         }
         return null
+    }
+
+    private fun sanitizeMalformedProtocolText(
+        rawContent: String,
+    ): String {
+        if (!protocolHintPattern.containsMatchIn(rawContent)) {
+            return rawContent
+        }
+        return rawContent
+            .replace(protocolTagNamePattern, " ")
+            .replace(protocolAttributeNoisePattern, " ")
+            .replace(angleBracketPattern, " ")
+            .replace(emptyProtocolLinePattern, "")
+            .replace(Regex("""[ \t]{2,}"""), " ")
+            .replace(Regex("""\n{3,}"""), "\n\n")
+            .trim()
     }
 
     private data class PlainSegmentCandidate(

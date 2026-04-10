@@ -1,6 +1,7 @@
 package com.example.myapplication.ui.screen.roleplay
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -8,21 +9,28 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.asPaddingValues
+import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.PhoneAndroid
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Surface
@@ -38,9 +46,12 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.example.myapplication.model.AppSettings
 import com.example.myapplication.model.Assistant
 import com.example.myapplication.model.PendingMemoryProposal
@@ -49,16 +60,18 @@ import com.example.myapplication.model.RoleplayContextStatus
 import com.example.myapplication.model.RoleplayMessageUiModel
 import com.example.myapplication.model.RoleplayScenario
 import com.example.myapplication.model.RoleplaySpeaker
+import com.example.myapplication.model.RoleplaySuggestionAxis
 import com.example.myapplication.model.RoleplaySuggestionUiModel
 import com.example.myapplication.ui.component.AppSnackbarHost
 import com.example.myapplication.ui.component.NarraIconButton
 import com.example.myapplication.ui.component.roleplay.ImmersiveBackdropState
+import com.example.myapplication.ui.component.roleplay.ImmersiveGlassSurface
 import com.example.myapplication.ui.component.roleplay.ImmersiveRoleplayColors
 import com.example.myapplication.ui.component.roleplay.RoleplaySceneBackground
+import com.example.myapplication.ui.component.roleplay.RoleplayEmotionChip
 import com.example.myapplication.ui.component.roleplay.RoleplayInputBar
 import com.example.myapplication.ui.component.roleplay.RoleplayMessageItem
 import com.example.myapplication.ui.component.roleplay.RoleplayMessageBubbleMode
-import com.example.myapplication.ui.component.roleplay.RoleplaySuggestionSection
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -111,14 +124,29 @@ internal fun RoleplayOnlinePhoneContent(
 ) {
     val colors = rememberOnlinePhoneColors(backdropState)
     val palette = backdropState.palette
+    val statusBarTopPadding = WindowInsets.statusBars.asPaddingValues().calculateTopPadding()
     val chromeSurfaceColor = remember(backdropState.hasImage, colors.panelBackgroundStrong) {
         colors.panelBackgroundStrong.copy(
             alpha = if (backdropState.hasImage) 0.92f else 1f,
         )
     }
-    val timestampSurfaceColor = remember(backdropState.hasImage, colors.panelBackgroundStrong) {
+    val headerOverlayColor = remember(backdropState.hasImage, colors.panelBackgroundStrong) {
         colors.panelBackgroundStrong.copy(
-            alpha = if (backdropState.hasImage) 0.84f else 0.96f,
+            alpha = if (backdropState.hasImage) 0.76f else 0.94f,
+        )
+    }
+    val timestampSurfaceColor = remember(backdropState.hasImage, colors.panelBackground) {
+        colors.panelBackground.copy(
+            alpha = if (backdropState.hasImage) 0.72f else 0.92f,
+        )
+    }
+    val topChromeScrim = remember(backdropState.hasImage, palette, headerOverlayColor) {
+        Brush.verticalGradient(
+            colors = listOf(
+                palette.scrimTop.copy(alpha = if (backdropState.hasImage) 0.74f else 0.24f),
+                headerOverlayColor.copy(alpha = if (backdropState.hasImage) 0.96f else 1f),
+                Color.Transparent,
+            ),
         )
     }
     val onlineBackdropScrim = remember(backdropState.hasImage, palette) {
@@ -131,7 +159,12 @@ internal fun RoleplayOnlinePhoneContent(
     }
     val listState = rememberLazyListState()
     val scope = rememberCoroutineScope()
-    var showMenu by remember { androidx.compose.runtime.mutableStateOf(false) }
+    var showMenu by remember { mutableStateOf(false) }
+    val characterName = remember(scenario.characterDisplayNameOverride, assistant?.name) {
+        scenario.characterDisplayNameOverride.trim()
+            .ifBlank { assistant?.name?.trim().orEmpty() }
+            .ifBlank { "角色" }
+    }
     val visibleMessages = messages.filter { message ->
         message.contentType != RoleplayContentType.SYSTEM &&
             (
@@ -166,104 +199,95 @@ internal fun RoleplayOnlinePhoneContent(
                 .imePadding()
                 .navigationBarsPadding(),
         ) {
-            Surface(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .statusBarsPadding(),
-                color = chromeSurfaceColor,
-                tonalElevation = 2.dp,
-            ) {
-                Row(
+            Box(modifier = Modifier.fillMaxWidth()) {
+                Box(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(horizontal = 10.dp, vertical = 12.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                NarraIconButton(
-                    onClick = onNavigateBack,
-                    colors = androidx.compose.material3.IconButtonDefaults.iconButtonColors(
-                        containerColor = Color.Transparent,
-                        contentColor = colors.textPrimary,
-                    ),
-                ) {
-                    Icon(
-                        imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                        contentDescription = "返回",
-                        tint = colors.textPrimary,
-                    )
-                }
-                Column(
+                        .height(statusBarTopPadding + 44.dp)
+                        .background(topChromeScrim),
+                )
+                ImmersiveGlassSurface(
+                    backdropState = backdropState,
                     modifier = Modifier
-                        .weight(1f)
-                        .padding(horizontal = 8.dp),
-                    verticalArrangement = Arrangement.spacedBy(2.dp),
+                        .fillMaxWidth()
+                        .padding(horizontal = 12.dp)
+                        .padding(top = statusBarTopPadding + 6.dp, bottom = 6.dp),
+                    shape = RoundedCornerShape(22.dp),
+                    blurRadius = 22.dp,
+                    overlayColor = headerOverlayColor,
                 ) {
-                    Text(
-                        text = scenario.characterDisplayNameOverride.trim()
-                            .ifBlank { assistant?.name?.trim().orEmpty() }
-                            .ifBlank { "角色" },
-                        style = MaterialTheme.typography.titleLarge,
-                        fontWeight = FontWeight.Bold,
-                        color = colors.textPrimary,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
-                    )
-                    Text(
-                        text = buildString {
-                            append("线上模式")
-                            if (contextStatus.isContinuingSession) append(" · 继续聊天")
-                            contextStatus.summaryCoveredMessageCount.takeIf { it > 0 }?.let {
-                                append(" · 摘要 $it")
-                            }
-                        },
-                        style = MaterialTheme.typography.bodySmall,
-                        color = colors.textMuted,
-                    )
-                }
-                NarraIconButton(
-                    onClick = onOpenPhoneCheck,
-                    colors = androidx.compose.material3.IconButtonDefaults.iconButtonColors(
-                        containerColor = Color.Transparent,
-                        contentColor = colors.textPrimary,
-                    ),
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.PhoneAndroid,
-                        contentDescription = "查手机",
-                        tint = colors.textPrimary,
-                    )
-                }
-                Box {
-                    NarraIconButton(
-                        onClick = { showMenu = true },
-                        colors = androidx.compose.material3.IconButtonDefaults.iconButtonColors(
-                            containerColor = Color.Transparent,
-                            contentColor = colors.textPrimary,
-                        ),
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 10.dp, vertical = 8.dp),
+                        verticalAlignment = Alignment.CenterVertically,
                     ) {
-                        Icon(
-                            imageVector = Icons.Default.MoreVert,
-                            contentDescription = "更多",
-                            tint = colors.textPrimary,
+                        OnlinePhoneHeaderButton(
+                            onClick = onNavigateBack,
+                            icon = Icons.AutoMirrored.Filled.ArrowBack,
+                            contentDescription = "返回",
+                            colors = colors,
                         )
+                        Column(
+                            modifier = Modifier
+                                .weight(1f)
+                                .padding(horizontal = 10.dp),
+                            verticalArrangement = Arrangement.spacedBy(2.dp),
+                        ) {
+                            Text(
+                                text = characterName,
+                                style = MaterialTheme.typography.titleMedium,
+                                fontWeight = FontWeight.Bold,
+                                color = colors.textPrimary,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis,
+                            )
+                            Text(
+                                text = buildString {
+                                    append("线上模式")
+                                    if (contextStatus.isContinuingSession) append(" · 继续聊天")
+                                    if (isSending) append(" · 正在输入")
+                                    contextStatus.summaryCoveredMessageCount.takeIf { it > 0 }?.let { count ->
+                                        append(" · 摘要 $count")
+                                    }
+                                },
+                                style = MaterialTheme.typography.bodySmall,
+                                color = colors.textMuted,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis,
+                            )
+                        }
+                        OnlinePhoneHeaderButton(
+                            onClick = onOpenPhoneCheck,
+                            icon = Icons.Default.PhoneAndroid,
+                            contentDescription = "查手机",
+                            colors = colors,
+                        )
+                        Box {
+                            OnlinePhoneHeaderButton(
+                                onClick = { showMenu = true },
+                                icon = Icons.Default.MoreVert,
+                                contentDescription = "更多",
+                                colors = colors,
+                            )
+                            DropdownMenu(expanded = showMenu, onDismissRequest = { showMenu = false }) {
+                                DropdownMenuItem(
+                                    text = { Text("截图聊天") },
+                                    onClick = {
+                                        showMenu = false
+                                        onScreenshotChat()
+                                    },
+                                )
+                                DropdownMenuItem(
+                                    text = { Text("设置") },
+                                    onClick = {
+                                        showMenu = false
+                                        onOpenSettings()
+                                    },
+                                )
+                            }
+                        }
                     }
-                    DropdownMenu(expanded = showMenu, onDismissRequest = { showMenu = false }) {
-                        DropdownMenuItem(
-                            text = { Text("截图聊天") },
-                            onClick = {
-                                showMenu = false
-                                onScreenshotChat()
-                            },
-                        )
-                        DropdownMenuItem(
-                            text = { Text("设置") },
-                            onClick = {
-                                showMenu = false
-                                onOpenSettings()
-                            },
-                        )
-                    }
-                }
                 }
             }
 
@@ -326,6 +350,7 @@ internal fun RoleplayOnlinePhoneContent(
                     RoleplayMessageItem(
                         message = message,
                         colors = colors,
+                        backdropState = backdropState,
                         onRetryTurn = onRetryTurn,
                         onEditUserMessage = onEditUserMessage,
                         onQuoteMessage = onQuoteMessage,
@@ -350,27 +375,12 @@ internal fun RoleplayOnlinePhoneContent(
                     .align(Alignment.BottomCenter)
                     .padding(bottom = 8.dp),
             )
-
-            if (isSending) {
-                Surface(
-                    modifier = Modifier
-                        .align(Alignment.BottomStart)
-                        .padding(start = 12.dp, bottom = 12.dp),
-                    color = chromeSurfaceColor,
-                    shape = RoundedCornerShape(16.dp),
-                ) {
-                    Text(
-                        text = "对方正在输入…",
-                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
-                        style = MaterialTheme.typography.bodySmall,
-                        color = colors.textMuted,
-                    )
-                }
             }
-        }
 
         if (settings.showRoleplayAiHelper) {
-            RoleplaySuggestionSection(
+            RoleplayOnlineAiHelperBar(
+                modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
+                backdropState = backdropState,
                 colors = colors,
                 suggestions = suggestions,
                 isGeneratingSuggestions = isGeneratingSuggestions,
@@ -422,18 +432,270 @@ internal fun RoleplayOnlinePhoneContent(
             }
         }
 
-        RoleplayInputBar(
-            colors = colors,
-            input = input,
-            inputFocusToken = inputFocusToken,
-            isSending = isSending,
-            onInputChange = onInputChange,
-            onSend = onSend,
-            onCancel = onCancelSending,
-            onOpenSpecialPlay = onOpenSpecialPlay,
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 12.dp, vertical = 8.dp),
+        ) {
+            RoleplayInputBar(
+                colors = colors,
+                backdropState = backdropState,
+                input = input,
+                inputFocusToken = inputFocusToken,
+                isSending = isSending,
+                onInputChange = onInputChange,
+                onSend = onSend,
+                onCancel = onCancelSending,
+                onOpenSpecialPlay = onOpenSpecialPlay,
+            )
+        }
+    }
+}
+}
+
+@Composable
+private fun OnlinePhoneHeaderButton(
+    onClick: () -> Unit,
+    icon: ImageVector,
+    contentDescription: String,
+    colors: ImmersiveRoleplayColors,
+) {
+    NarraIconButton(
+        onClick = onClick,
+        modifier = Modifier
+            .size(36.dp)
+            .background(
+                color = colors.panelBackground.copy(alpha = 0.56f),
+                shape = CircleShape,
+            ),
+        colors = IconButtonDefaults.iconButtonColors(
+            containerColor = Color.Transparent,
+            contentColor = colors.textPrimary,
+        ),
+    ) {
+        Icon(
+            imageVector = icon,
+            contentDescription = contentDescription,
+            tint = colors.textPrimary,
         )
     }
 }
+
+@Composable
+private fun RoleplayOnlineAiHelperBar(
+    modifier: Modifier = Modifier,
+    backdropState: ImmersiveBackdropState,
+    colors: ImmersiveRoleplayColors,
+    suggestions: List<RoleplaySuggestionUiModel>,
+    isGeneratingSuggestions: Boolean,
+    suggestionErrorMessage: String?,
+    isSending: Boolean,
+    onGenerateSuggestions: () -> Unit,
+    onApplySuggestion: (String) -> Unit,
+    onClearSuggestions: () -> Unit,
+) {
+    val showPanel = suggestions.isNotEmpty() || isGeneratingSuggestions || !suggestionErrorMessage.isNullOrBlank()
+    val actionEnabled = !isSending && !isGeneratingSuggestions
+    val view = LocalView.current
+    val shape = RoundedCornerShape(24.dp)
+    ImmersiveGlassSurface(
+        backdropState = backdropState,
+        modifier = modifier.fillMaxWidth(),
+        shape = shape,
+        blurRadius = 20.dp,
+        overlayColor = colors.panelBackgroundStrong.copy(alpha = 0.88f),
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 14.dp, vertical = 12.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp),
+        ) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.Top,
+            ) {
+                Column(
+                    modifier = Modifier
+                        .weight(1f)
+                        .padding(end = 12.dp),
+                    verticalArrangement = Arrangement.spacedBy(4.dp),
+                ) {
+                    Text(
+                        text = "AI 帮写",
+                        style = MaterialTheme.typography.labelLarge,
+                        fontWeight = FontWeight.Bold,
+                        color = colors.characterAccent,
+                    )
+                    Text(
+                        text = if (showPanel) {
+                            "给你下一句、换个语气，或者直接推进剧情。"
+                        } else {
+                            "卡住时点一下，直接给你三条能发出去的话。"
+                        },
+                        style = MaterialTheme.typography.bodySmall.copy(lineHeight = 20.sp),
+                        color = colors.textMuted,
+                    )
+                }
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    if (showPanel) {
+                        androidx.compose.material3.TextButton(onClick = onClearSuggestions) {
+                            Text(
+                                text = "收起",
+                                color = colors.textMuted,
+                            )
+                        }
+                    }
+                    OnlineAiHelperPrimaryAction(
+                        text = when {
+                            isGeneratingSuggestions -> "生成中"
+                            showPanel -> "换一批"
+                            else -> "生成"
+                        },
+                        enabled = actionEnabled,
+                        colors = colors,
+                        onClick = {
+                            view.performHapticFeedback(androidx.core.view.HapticFeedbackConstantsCompat.SEGMENT_FREQUENT_TICK)
+                            onGenerateSuggestions()
+                        },
+                    )
+                }
+            }
+
+            if (showPanel) {
+                if (isGeneratingSuggestions) {
+                    Row(
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        CircularProgressIndicator(
+                            modifier = Modifier.size(16.dp),
+                            strokeWidth = 2.dp,
+                            color = colors.characterAccent,
+                        )
+                        Text(
+                            text = "正在生成建议…",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = colors.textMuted,
+                        )
+                    }
+                }
+                if (!suggestionErrorMessage.isNullOrBlank()) {
+                    Text(
+                        text = suggestionErrorMessage,
+                        style = MaterialTheme.typography.bodySmall.copy(lineHeight = 20.sp),
+                        color = colors.errorText,
+                    )
+                }
+                suggestions.forEach { suggestion ->
+                    RoleplayOnlineSuggestionCard(
+                        suggestion = suggestion,
+                        backdropState = backdropState,
+                        colors = colors,
+                        enabled = !isSending,
+                        onClick = {
+                            view.performHapticFeedback(androidx.core.view.HapticFeedbackConstantsCompat.SEGMENT_FREQUENT_TICK)
+                            onApplySuggestion(suggestion.text)
+                        },
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun OnlineAiHelperPrimaryAction(
+    text: String,
+    enabled: Boolean,
+    colors: ImmersiveRoleplayColors,
+    onClick: () -> Unit,
+) {
+    Box(
+        modifier = Modifier
+            .background(
+                color = if (enabled) {
+                    colors.characterAccent.copy(alpha = 0.92f)
+                } else {
+                    colors.panelBackground.copy(alpha = 0.88f)
+                },
+                shape = RoundedCornerShape(999.dp),
+            )
+            .clickable(enabled = enabled, onClick = onClick)
+            .padding(horizontal = 14.dp, vertical = 8.dp),
+    ) {
+        Text(
+            text = text,
+            style = MaterialTheme.typography.labelLarge,
+            fontWeight = FontWeight.Bold,
+            color = if (enabled) {
+                Color.Black.copy(alpha = 0.88f)
+            } else {
+                colors.textMuted
+            },
+        )
+    }
+}
+
+@Composable
+private fun RoleplayOnlineSuggestionCard(
+    suggestion: RoleplaySuggestionUiModel,
+    backdropState: ImmersiveBackdropState,
+    colors: ImmersiveRoleplayColors,
+    enabled: Boolean,
+    onClick: () -> Unit,
+) {
+    val shape = RoundedCornerShape(18.dp)
+    ImmersiveGlassSurface(
+        backdropState = backdropState,
+        modifier = Modifier.fillMaxWidth(),
+        shape = shape,
+        blurRadius = 18.dp,
+        overlayColor = colors.panelBackground.copy(alpha = 0.68f),
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clickable(enabled = enabled, onClick = onClick)
+                .padding(horizontal = 12.dp, vertical = 12.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                RoleplayEmotionChip(
+                    text = suggestion.axis.toOnlineReadableLabel(),
+                    textColor = colors.characterAccent,
+                    containerColor = colors.panelBackground.copy(alpha = 0.58f),
+                    borderColor = colors.characterAccent.copy(alpha = 0.22f),
+                )
+                Text(
+                    text = suggestion.label,
+                    style = MaterialTheme.typography.labelLarge,
+                    fontWeight = FontWeight.SemiBold,
+                    color = colors.textPrimary,
+                )
+            }
+            Text(
+                text = suggestion.text,
+                style = MaterialTheme.typography.bodyMedium.copy(lineHeight = 22.sp),
+                color = colors.textPrimary,
+            )
+        }
+    }
+}
+
+private fun RoleplaySuggestionAxis.toOnlineReadableLabel(): String {
+    return when (this) {
+        RoleplaySuggestionAxis.PLOT -> "推进"
+        RoleplaySuggestionAxis.INFO -> "探索"
+        RoleplaySuggestionAxis.EMOTION -> "情绪"
+    }
 }
 
 private fun shouldShowOnlineTimestamp(
@@ -478,6 +740,11 @@ private fun rememberOnlinePhoneColors(
                 palette.readingSurface.copy(alpha = 0.74f)
             } else {
                 OnlineFallbackCard.copy(alpha = 0.94f)
+            },
+            panelBorder = if (hasImage) {
+                palette.panelBorder.copy(alpha = 0.28f)
+            } else {
+                OnlineMuted.copy(alpha = 0.22f)
             },
             errorText = Color(0xFFB3261E),
             errorBackground = Color(0xFFFFE9E8).copy(alpha = if (hasImage) 0.74f else 1f),

@@ -59,10 +59,14 @@ object RoleplayMessageUiMapper {
                 }
             }
             if (!streamingContent.isNullOrBlank()) {
-                val streamingFormat = rawMessages
+                val preferredStreamingFormat = rawMessages
                     .lastOrNull { it.role == MessageRole.ASSISTANT && it.status == MessageStatus.LOADING }
                     ?.let(RoleplayMessageFormatSupport::resolveAssistantMessageOutputFormat)
                     ?: RoleplayMessageFormatSupport.resolveScenarioOutputFormat(scenario)
+                val streamingFormat = RoleplayMessageFormatSupport.resolveContentOutputFormat(
+                    preferredFormat = preferredStreamingFormat,
+                    rawContent = streamingContent,
+                )
                 add(
                     RoleplayMessageUiModel(
                         sourceMessageId = "streaming",
@@ -198,6 +202,7 @@ object RoleplayMessageUiMapper {
         val initialSize = target.size
         val canRetry = !RoleplayConversationSupport.isOpeningNarrationMessageId(message.id, scenario.id) &&
             (message.status == MessageStatus.COMPLETED || message.status == MessageStatus.ERROR)
+        val rawContent = RoleplayMessageFormatSupport.resolveAssistantRawContent(message)
         val outputFormat = RoleplayMessageFormatSupport.resolveAssistantMessageOutputFormat(message)
         if (outputFormat == RoleplayOutputFormat.LONGFORM) {
             val specialParts = normalizedParts.filter { it.isSpecialPlayPart() }
@@ -215,7 +220,7 @@ object RoleplayMessageUiMapper {
                     specialPart = part,
                 )
             }
-            val longformSource = RoleplayMessageFormatSupport.resolveAssistantRawContent(message)
+            val longformSource = rawContent
             val displayLongformContent = RoleplayLongformMarkupParser.stripMarkupForDisplay(longformSource)
             if (message.status == MessageStatus.LOADING && displayLongformContent.isBlank()) {
                 return
@@ -237,7 +242,7 @@ object RoleplayMessageUiMapper {
             return
         }
         if (normalizedParts.isEmpty()) {
-            val content = message.content.trim()
+            val content = rawContent
             if (message.status == MessageStatus.LOADING && content.isBlank()) {
                 return
             }

@@ -157,6 +157,77 @@ class RoleplayMessageUiMapperTest {
     }
 
     @Test
+    fun mapMessages_prefersProtocolTagsWhenStoredFormatWasLongform() {
+        val scenario = RoleplayScenario(
+            id = "scene-1",
+            title = "切模式修复",
+            characterDisplayNameOverride = "陆宴清",
+            longformModeEnabled = false,
+            enableNarration = true,
+        )
+
+        val mapped = RoleplayMessageUiMapper.mapMessages(
+            scenario = scenario,
+            assistant = Assistant(id = "assistant-1", name = "陆宴清"),
+            settings = AppSettings(),
+            rawMessages = listOf(
+                ChatMessage(
+                    id = "assistant-1",
+                    conversationId = "conv-1",
+                    role = MessageRole.ASSISTANT,
+                    content = "<narration>夜色沉了下去。</narration><dialogue>先别走。</dialogue>",
+                    createdAt = 2L,
+                    status = MessageStatus.COMPLETED,
+                    roleplayOutputFormat = RoleplayOutputFormat.LONGFORM,
+                ),
+            ),
+            streamingContent = null,
+            outputParser = RoleplayOutputParser(),
+            nowProvider = { 20L },
+        )
+
+        assertEquals(2, mapped.size)
+        assertEquals(RoleplayContentType.NARRATION, mapped[0].contentType)
+        assertEquals("夜色沉了下去。", mapped[0].content)
+        assertEquals(RoleplayContentType.DIALOGUE, mapped[1].contentType)
+        assertEquals("先别走。", mapped[1].content)
+    }
+
+    @Test
+    fun mapMessages_prefersLongformTagsWhenStoredFormatWasProtocol() {
+        val scenario = RoleplayScenario(
+            id = "scene-1",
+            title = "切模式修复",
+            characterDisplayNameOverride = "陆宴清",
+            longformModeEnabled = false,
+        )
+
+        val mapped = RoleplayMessageUiMapper.mapMessages(
+            scenario = scenario,
+            assistant = Assistant(id = "assistant-1", name = "陆宴清"),
+            settings = AppSettings(),
+            rawMessages = listOf(
+                ChatMessage(
+                    id = "assistant-1",
+                    conversationId = "conv-1",
+                    role = MessageRole.ASSISTANT,
+                    content = "雨声压了下来。<thought>不能后退。</thought>",
+                    createdAt = 2L,
+                    status = MessageStatus.COMPLETED,
+                    roleplayOutputFormat = RoleplayOutputFormat.PROTOCOL,
+                ),
+            ),
+            streamingContent = null,
+            outputParser = RoleplayOutputParser(),
+            nowProvider = { 20L },
+        )
+
+        assertEquals(1, mapped.size)
+        assertEquals(RoleplayContentType.LONGFORM, mapped.single().contentType)
+        assertEquals("雨声压了下来。不能后退。", mapped.single().content)
+    }
+
+    @Test
     fun mapMessages_infersLegacyLongformTagsWhenMessageFormatIsMissing() {
         val scenario = RoleplayScenario(
             id = "scene-1",

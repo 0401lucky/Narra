@@ -218,6 +218,7 @@ fun RoleplayDialoguePanel(
                         RoleplayMessageItem(
                             message = message,
                             colors = colors,
+                            backdropState = backdropState,
                             onRetryTurn = onRetryTurn,
                             onEditUserMessage = onEditUserMessage,
                             onConfirmTransferReceipt = onConfirmTransferReceipt,
@@ -278,6 +279,7 @@ fun RoleplayDialoguePanel(
         if (showAiHelper) {
             RoleplaySuggestionSection(
                 colors = colors,
+                backdropState = backdropState,
                 suggestions = suggestions,
                 isGeneratingSuggestions = isGeneratingSuggestions,
                 suggestionErrorMessage = suggestionErrorMessage,
@@ -289,6 +291,7 @@ fun RoleplayDialoguePanel(
         }
         RoleplayInputBar(
             colors = colors,
+            backdropState = backdropState,
             input = input,
             inputFocusToken = inputFocusToken,
             isSending = isSending,

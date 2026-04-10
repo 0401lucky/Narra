@@ -29,9 +29,10 @@ object RoleplayMessageFormatSupport {
         if (message.role != MessageRole.ASSISTANT) {
             return RoleplayOutputFormat.UNSPECIFIED
         }
-        return message.roleplayOutputFormat.takeIf {
-            it != RoleplayOutputFormat.UNSPECIFIED
-        } ?: inferLegacyAssistantOutputFormat(resolveAssistantRawContent(message))
+        return resolveContentOutputFormat(
+            preferredFormat = message.roleplayOutputFormat,
+            rawContent = resolveAssistantRawContent(message),
+        )
     }
 
     fun resolveAssistantRawContent(
@@ -40,6 +41,23 @@ object RoleplayMessageFormatSupport {
         return message.parts.toPlainText()
             .ifBlank { message.content }
             .trim()
+    }
+
+    fun resolveContentOutputFormat(
+        preferredFormat: RoleplayOutputFormat,
+        rawContent: String,
+    ): RoleplayOutputFormat {
+        val inferredFormat = inferLegacyAssistantOutputFormat(rawContent)
+        if (preferredFormat == RoleplayOutputFormat.UNSPECIFIED) {
+            return inferredFormat
+        }
+        return when {
+            inferredFormat == RoleplayOutputFormat.LONGFORM &&
+                preferredFormat != RoleplayOutputFormat.LONGFORM -> RoleplayOutputFormat.LONGFORM
+            inferredFormat == RoleplayOutputFormat.PROTOCOL &&
+                preferredFormat != RoleplayOutputFormat.PROTOCOL -> RoleplayOutputFormat.PROTOCOL
+            else -> preferredFormat
+        }
     }
 
     private fun inferLegacyAssistantOutputFormat(

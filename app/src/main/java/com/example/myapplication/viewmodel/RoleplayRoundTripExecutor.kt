@@ -28,10 +28,13 @@ import com.example.myapplication.model.MessageRole
 import com.example.myapplication.model.MessageStatus
 import com.example.myapplication.model.PhoneSnapshotOwnerType
 import com.example.myapplication.model.PromptMode
+import com.example.myapplication.model.RoleplayOutputFormat
 import com.example.myapplication.model.imageMessagePart
 import com.example.myapplication.model.reasoningStepsToContent
 import com.example.myapplication.model.toContentMirror
 import com.example.myapplication.roleplay.RoleplayConversationSupport
+import com.example.myapplication.roleplay.RoleplayLongformMarkupParser
+import com.example.myapplication.roleplay.RoleplayMessageFormatSupport
 import com.example.myapplication.roleplay.RoleplayOutputParser
 import com.example.myapplication.roleplay.RoleplayPromptDecorator
 import kotlinx.coroutines.CancellationException
@@ -199,6 +202,7 @@ internal class RoleplayRoundTripExecutor(
                                 fullReasoningSteps = fullReasoningSteps,
                                 fullParts = fullParts,
                                 toolingOptions = toolingOptions,
+                                expectedOutputFormat = loadingMessage.roleplayOutputFormat,
                             )
                         },
                         currentPayload = {
@@ -348,6 +352,7 @@ internal class RoleplayRoundTripExecutor(
         fullReasoningSteps: MutableList<ChatReasoningStep>,
         fullParts: MutableList<ChatMessagePart>,
         toolingOptions: GatewayToolingOptions,
+        expectedOutputFormat: RoleplayOutputFormat,
     ) {
         aiGateway.sendMessageStream(
             messages = requestMessages,
@@ -359,9 +364,20 @@ internal class RoleplayRoundTripExecutor(
                 is ChatStreamEvent.ContentDelta -> {
                     fullContent.append(event.value)
                     updateUiState { current ->
+                        val streamingText = when (
+                            RoleplayMessageFormatSupport.resolveContentOutputFormat(
+                                preferredFormat = expectedOutputFormat,
+                                rawContent = fullContent.toString(),
+                            )
+                        ) {
+                            RoleplayOutputFormat.LONGFORM -> RoleplayLongformMarkupParser.stripMarkupForDisplay(
+                                fullContent.toString(),
+                            )
+                            else -> outputParser.stripMarkup(fullContent.toString())
+                        }
                         RoleplayStateSupport.applyStreamingContent(
                             current,
-                            outputParser.stripMarkup(fullContent.toString()),
+                            streamingText,
                         )
                     }
                 }

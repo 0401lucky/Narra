@@ -153,4 +153,20 @@ class RoleplayOutputParserTest {
         assertEquals("倔强的挑衅", result[2].emotion)
         assertEquals("你以为你是谁？", result[2].content)
     }
+
+    @Test
+    fun parseAssistantOutput_dropsMalformedProtocolAttributesFromBody() {
+        val result = parser.parseAssistantOutput(
+            rawContent = """
+                <dialogue speaker="沈晏清" emotion="无意中带着一丝讨好"
+                声音放得很低。
+            """.trimIndent(),
+            characterName = "沈晏清",
+            allowNarration = true,
+        )
+
+        assertEquals(1, result.size)
+        assertEquals(RoleplayContentType.DIALOGUE, result.single().contentType)
+        assertEquals("声音放得很低。", result.single().content)
+    }
 }

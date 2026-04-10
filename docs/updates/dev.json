@@ -1,16 +1,16 @@
 {
   "app_id": "com.narra.app.dev",
   "channel": "dev",
-  "latest_version_name": "1.2.1-dev",
-  "latest_version_code": 10201,
+  "latest_version_name": "1.2.2-dev",
+  "latest_version_code": 10202,
   "minimum_supported_version_code": 0,
-  "apk_url": "https://download.lsa1230.dpdns.org/dev/Narra-v1.2.1-dev-10201-dev.apk",
-  "apk_sha256": "ea95b7af6b88589b904bb45721ad00c8ae9246268e601f419ba6fb8bf68dfa5d",
-  "published_at": "2026-04-10T00:11:27+08:00",
+  "apk_url": "https://download.lsa1230.dpdns.org/dev/Narra-v1.2.2-dev-10202-dev.apk",
+  "apk_sha256": "1b5bb6fe65f5d9a426f312c26b24d01d173f42dfaa3ca4ec884a904d95912c1e",
+  "published_at": "2026-04-10T13:47:19+08:00",
   "release_notes": [
-    "线上模式改为使用场景背景图作为聊天壁纸，顶部栏、时间分隔、引用条和输入区统一换成半透明聊天壳",
-    "修复线上模式无论场景是否配置背景图都固定显示纯白背景的问题",
-    "模型选择弹层支持按提供商名、ID、基础域名和当前默认模型搜索提供商",
-    "修复搜索词命中当前提供商但未命中模型名时误报“未找到模型”的问题"
+    "线上模式顶部栏收紧为更轻的悬浮聊天栏，并把对方正在输入状态并到顶部状态文案里",
+    "线上模式角色消息气泡改为按内容长度自适应宽度，更接近真实聊天软件的消息观感",
+    "修复切到长文或其他模式后旧消息偶发直接露出协议标签的问题",
+    "修复模型返回半截协议时把 emotion=、speaker= 等残留属性直接渲染到正文里的问题"
   ]
 }

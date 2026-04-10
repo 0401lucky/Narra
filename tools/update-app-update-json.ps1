@@ -15,6 +15,8 @@ param(
     [Parameter(Mandatory = $true)]
     [string]$ApkPath,
 
+    [int]$MinimumSupportedVersionCode = 0,
+
     [string]$PublishedAt = (Get-Date).ToString("yyyy-MM-ddTHH:mm:ssK"),
 
     [string[]]$ReleaseNotes = @("更新应用内测试包")
@@ -44,7 +46,7 @@ $payload = [ordered]@{
     channel = $Channel
     latest_version_name = $VersionName
     latest_version_code = $VersionCode
-    minimum_supported_version_code = $VersionCode
+    minimum_supported_version_code = $MinimumSupportedVersionCode
     apk_url = $ApkUrl
     apk_sha256 = $sha256
     published_at = $PublishedAt

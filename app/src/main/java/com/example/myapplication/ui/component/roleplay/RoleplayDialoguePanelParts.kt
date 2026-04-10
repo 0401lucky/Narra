@@ -93,6 +93,7 @@ internal data class ImmersiveRoleplayColors(
     val thoughtText: Color,
     val panelBackground: Color,
     val panelBackgroundStrong: Color,
+    val panelBorder: Color,
     val errorText: Color,
     val errorBackground: Color,
     val errorBackgroundStrong: Color,
@@ -118,6 +119,7 @@ internal fun rememberImmersiveRoleplayColors(
             thoughtText = palette.thoughtText,
             panelBackground = palette.panelTint.copy(alpha = 0.24f),
             panelBackgroundStrong = palette.panelTintStrong.copy(alpha = 0.34f),
+            panelBorder = palette.panelBorder.copy(alpha = 0.28f),
             errorText = errorText,
             errorBackground = errorText.copy(alpha = 0.12f),
             errorBackgroundStrong = errorText.copy(alpha = 0.18f),
@@ -128,6 +130,7 @@ internal fun rememberImmersiveRoleplayColors(
 @Composable
 internal fun RoleplaySuggestionSection(
     colors: ImmersiveRoleplayColors,
+    backdropState: ImmersiveBackdropState,
     suggestions: List<RoleplaySuggestionUiModel>,
     isGeneratingSuggestions: Boolean,
     suggestionErrorMessage: String?,
@@ -139,22 +142,23 @@ internal fun RoleplaySuggestionSection(
     val view = LocalView.current
     val showPanel = suggestions.isNotEmpty() || isGeneratingSuggestions || !suggestionErrorMessage.isNullOrBlank()
     if (!showPanel) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .combinedClickable(
-                    enabled = !isSending,
-                    onClick = onGenerateSuggestions,
-                    onLongClick = {},
-                )
-                .background(
-                    color = colors.panelBackground,
-                    shape = RoundedCornerShape(16.dp),
-                )
-                .padding(horizontal = 14.dp, vertical = 10.dp),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically,
+        ImmersiveGlassSurface(
+            backdropState = backdropState,
+            modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(16.dp),
+            overlayColor = colors.panelBackground,
         ) {
+            Row(
+                modifier = Modifier
+                    .combinedClickable(
+                        enabled = !isSending,
+                        onClick = onGenerateSuggestions,
+                        onLongClick = {},
+                    )
+                    .padding(horizontal = 14.dp, vertical = 10.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
             Text(
                 stringResource(id = R.string.roleplay_ai_helper_title),
                 style = MaterialTheme.typography.labelMedium,
@@ -171,18 +175,19 @@ internal fun RoleplaySuggestionSection(
                 color = if (isSending) colors.textMuted else colors.characterAccent,
             )
         }
+        }
         return
     }
 
     val suggestionListState = rememberLazyListState()
+    ImmersiveGlassSurface(
+        backdropState = backdropState,
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(18.dp),
+        overlayColor = colors.panelBackgroundStrong,
+    ) {
     Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .background(
-                color = colors.panelBackgroundStrong,
-                shape = RoundedCornerShape(18.dp),
-            )
-            .padding(horizontal = 12.dp, vertical = 10.dp),
+        modifier = Modifier.padding(horizontal = 12.dp, vertical = 10.dp),
         verticalArrangement = Arrangement.spacedBy(8.dp),
     ) {
         Row(
@@ -238,9 +243,14 @@ internal fun RoleplaySuggestionSection(
                 verticalArrangement = Arrangement.spacedBy(6.dp),
             ) {
                 items(suggestions, key = { it.id }) { suggestion ->
+                    ImmersiveGlassSurface(
+                        backdropState = backdropState,
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(14.dp),
+                        overlayColor = colors.panelBackground,
+                    ) {
                     Column(
                         modifier = Modifier
-                            .fillMaxWidth()
                             .combinedClickable(
                                 enabled = !isSending,
                                 onClick = {
@@ -248,10 +258,6 @@ internal fun RoleplaySuggestionSection(
                                     onApplySuggestion(suggestion.text)
                                 },
                                 onLongClick = {},
-                            )
-                            .background(
-                                color = colors.panelBackground,
-                                shape = RoundedCornerShape(14.dp),
                             )
                             .padding(horizontal = 12.dp, vertical = 10.dp),
                         verticalArrangement = Arrangement.spacedBy(4.dp),
@@ -279,9 +285,11 @@ internal fun RoleplaySuggestionSection(
                             color = colors.textPrimary,
                         )
                     }
+                    }
                 }
             }
         }
+    }
     }
 }
 
@@ -422,6 +430,7 @@ private fun com.example.myapplication.model.RoleplaySuggestionAxis.toReadableLab
 @Composable
 internal fun RoleplayInputBar(
     colors: ImmersiveRoleplayColors,
+    backdropState: ImmersiveBackdropState,
     input: String,
     inputFocusToken: Long,
     isSending: Boolean,
@@ -466,14 +475,14 @@ internal fun RoleplayInputBar(
         }
     }
 
+    ImmersiveGlassSurface(
+        backdropState = backdropState,
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(24.dp),
+        overlayColor = colors.panelBackgroundStrong,
+    ) {
     Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .background(
-                color = colors.panelBackgroundStrong,
-                shape = RoundedCornerShape(24.dp),
-            )
-            .padding(start = 8.dp, top = 6.dp, end = 6.dp, bottom = 6.dp),
+        modifier = Modifier.padding(start = 8.dp, top = 6.dp, end = 6.dp, bottom = 6.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(6.dp),
     ) {
@@ -617,6 +626,7 @@ internal fun RoleplayInputBar(
             }
         }
     }
+    }
 
     ExpandedDraftEditorDialog(
         visible = showExpandedEditor,
@@ -634,6 +644,7 @@ internal fun RoleplayInputBar(
 internal fun RoleplayMessageItem(
     message: RoleplayMessageUiModel,
     colors: ImmersiveRoleplayColors,
+    backdropState: ImmersiveBackdropState,
     onRetryTurn: (String) -> Unit,
     onEditUserMessage: (String) -> Unit,
     onQuoteMessage: ((String, String, String) -> Unit)? = null,
@@ -645,32 +656,44 @@ internal fun RoleplayMessageItem(
 ) {
     when (message.contentType) {
         RoleplayContentType.NARRATION -> RoleplayMessageMenuWrapper(message, onRetryTurn, onEditUserMessage, onQuoteMessage = onQuoteMessage, onRecallMessage = onRecallMessage) {
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .background(
-                        color = colors.panelBackground,
-                        shape = RoundedCornerShape(20.dp),
-                    )
-                    .padding(horizontal = 14.dp, vertical = 12.dp),
-                verticalArrangement = Arrangement.spacedBy(10.dp),
-            ) {
-                val paragraphs = remember(message.content) { message.content.toLongformParagraphs() }
-                paragraphs.forEach { paragraph ->
-                    Text(
-                        text = buildQuotedDialogueAnnotatedString(
-                            text = paragraph,
-                            narrationColor = colors.textMuted,
-                            dialogueColor = RoleplayQuotedDialogueHighlightColor,
-                        ),
-                        style = MaterialTheme.typography.bodyMedium.copy(
-                            fontSize = 15.sp,
-                            fontStyle = FontStyle.Italic,
-                            lineHeight = 25.sp * lineHeightScale,
-                            letterSpacing = 0.6.sp,
-                        ),
-                        color = colors.textMuted,
-                    )
+            if (bubbleMode == RoleplayMessageBubbleMode.ONLINE_PHONE) {
+                OnlinePhoneNarrationBubble(
+                    message = message,
+                    colors = colors,
+                    backdropState = backdropState,
+                    lineHeightScale = lineHeightScale,
+                )
+            } else {
+                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.Center) {
+                    ImmersiveGlassSurface(
+                        backdropState = backdropState,
+                        modifier = Modifier.fillMaxWidth(0.92f),
+                        shape = RoundedCornerShape(18.dp),
+                        overlayColor = colors.panelBackground,
+                    ) {
+                        Column(
+                            modifier = Modifier.padding(horizontal = 14.dp, vertical = 12.dp),
+                            verticalArrangement = Arrangement.spacedBy(10.dp),
+                        ) {
+                            val paragraphs = remember(message.content) { message.content.toLongformParagraphs() }
+                            paragraphs.forEach { paragraph ->
+                                Text(
+                                    text = buildQuotedDialogueAnnotatedString(
+                                        text = paragraph,
+                                        narrationColor = colors.textMuted,
+                                        dialogueColor = RoleplayQuotedDialogueHighlightColor,
+                                    ),
+                                    style = MaterialTheme.typography.bodyMedium.copy(
+                                        fontSize = 15.sp,
+                                        fontStyle = FontStyle.Italic,
+                                        lineHeight = 25.sp * lineHeightScale,
+                                        letterSpacing = 0.6.sp,
+                                    ),
+                                    color = colors.textMuted,
+                                )
+                            }
+                        }
+                    }
                 }
             }
         }
@@ -694,6 +717,7 @@ internal fun RoleplayMessageItem(
                             UserDialogueBubbleContent(
                                 message = message,
                                 colors = colors,
+                                backdropState = backdropState,
                                 lineHeightScale = lineHeightScale,
                                 onOpenQuotedMessage = onOpenQuotedMessage,
                                 fillWidth = false,
@@ -713,6 +737,7 @@ internal fun RoleplayMessageItem(
                             UserDialogueBubbleContent(
                                 message = message,
                                 colors = colors,
+                                backdropState = backdropState,
                                 lineHeightScale = lineHeightScale,
                                 onOpenQuotedMessage = onOpenQuotedMessage,
                                 fillWidth = true,
@@ -722,73 +747,49 @@ internal fun RoleplayMessageItem(
                 }
             } else {
                 val isError = message.messageStatus == MessageStatus.ERROR
-                RoleplayMessageMenuWrapper(message, onRetryTurn, onEditUserMessage, onQuoteMessage = onQuoteMessage, onRecallMessage = onRecallMessage) {
-                    Column(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .background(
-                                color = if (isError) colors.errorBackground else colors.panelBackgroundStrong,
-                                shape = RoundedCornerShape(22.dp),
-                            )
-                            .padding(horizontal = 14.dp, vertical = 12.dp),
-                        verticalArrangement = Arrangement.spacedBy(6.dp),
+                if (bubbleMode == RoleplayMessageBubbleMode.ONLINE_PHONE) {
+                    BoxWithConstraints(
+                        modifier = Modifier.fillMaxWidth(),
+                        contentAlignment = Alignment.CenterStart,
                     ) {
-                        if (message.replyToPreview.isNotBlank()) {
-                            RoleplayReplyPreview(
+                        RoleplayMessageMenuWrapper(
+                            message = message,
+                            onRetryTurn = onRetryTurn,
+                            onEditUserMessage = onEditUserMessage,
+                            modifier = Modifier.widthIn(max = maxWidth * 0.84f),
+                            onQuoteMessage = onQuoteMessage,
+                            onRecallMessage = onRecallMessage,
+                        ) {
+                            CharacterDialogueBubbleContent(
                                 message = message,
                                 colors = colors,
-                                onOpenQuotedMessage = onOpenQuotedMessage,
-                            )
-                        }
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(6.dp),
-                        ) {
-                            Text(
-                                message.speakerName,
-                                style = MaterialTheme.typography.labelLarge,
-                                fontWeight = FontWeight.Bold,
-                                color = if (isError) colors.errorText else colors.characterAccent,
-                            )
-                            if (message.emotion.isNotBlank()) {
-                                RoleplayEmotionChip(
-                                    text = message.emotion,
-                                    textColor = if (isError) colors.errorText else colors.characterAccent,
-                                    containerColor = if (isError) colors.errorBackgroundStrong else colors.panelBackground,
-                                )
-                            }
-                        }
-                        if (isError) {
-                            FailedTurnHint(colors = colors)
-                        }
-                        if (message.isStreaming) {
-                            StreamingLogText(
-                                content = message.content,
-                                textColor = colors.textPrimary,
-                                accentColor = colors.characterAccent,
+                                backdropState = backdropState,
                                 lineHeightScale = lineHeightScale,
+                                onOpenQuotedMessage = onOpenQuotedMessage,
+                                isError = isError,
+                                fillWidth = false,
                             )
-                        } else {
-                            val paragraphs = remember(message.content) { message.content.toLongformParagraphs() }
-                            Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                                paragraphs.forEach { paragraph ->
-                                    val rendered = remember(paragraph, colors, isError) {
-                                        buildCharacterDialogueAnnotatedString(
-                                            text = paragraph,
-                                            narrationColor = if (isError) colors.errorText.copy(alpha = 0.84f) else colors.textPrimary.copy(alpha = 0.78f),
-                                            dialogueColor = if (isError) colors.errorText else RoleplayQuotedDialogueHighlightColor,
-                                        )
-                                    }
-                                    Text(
-                                        text = rendered,
-                                        style = MaterialTheme.typography.bodyLarge.copy(
-                                            fontSize = 16.sp,
-                                            lineHeight = 26.sp * lineHeightScale,
-                                            letterSpacing = 0.6.sp,
-                                        ),
-                                    )
-                                }
-                            }
+                        }
+                    }
+                } else {
+                    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.Start) {
+                        RoleplayMessageMenuWrapper(
+                            message = message,
+                            onRetryTurn = onRetryTurn,
+                            onEditUserMessage = onEditUserMessage,
+                            modifier = Modifier.fillMaxWidth(0.88f),
+                            onQuoteMessage = onQuoteMessage,
+                            onRecallMessage = onRecallMessage
+                        ) {
+                            CharacterDialogueBubbleContent(
+                                message = message,
+                                colors = colors,
+                                backdropState = backdropState,
+                                lineHeightScale = lineHeightScale,
+                                onOpenQuotedMessage = onOpenQuotedMessage,
+                                isError = isError,
+                                fillWidth = true,
+                            )
                         }
                     }
                 }
@@ -850,22 +851,25 @@ internal fun RoleplayMessageItem(
 private fun UserDialogueBubbleContent(
     message: RoleplayMessageUiModel,
     colors: ImmersiveRoleplayColors,
+    backdropState: ImmersiveBackdropState,
     lineHeightScale: Float,
     onOpenQuotedMessage: ((String) -> Unit)?,
     fillWidth: Boolean,
 ) {
+    val shape = RoundedCornerShape(
+        topStart = 20.dp,
+        topEnd = 6.dp,
+        bottomStart = 20.dp,
+        bottomEnd = 20.dp,
+    )
+    ImmersiveGlassSurface(
+        backdropState = backdropState,
+        modifier = if (fillWidth) Modifier.fillMaxWidth() else Modifier,
+        shape = shape,
+        overlayColor = colors.panelBackgroundStrong,
+    ) {
     Column(
-        modifier = (if (fillWidth) Modifier.fillMaxWidth() else Modifier)
-            .background(
-                color = colors.panelBackgroundStrong,
-                shape = RoundedCornerShape(
-                    topStart = 20.dp,
-                    topEnd = 6.dp,
-                    bottomStart = 20.dp,
-                    bottomEnd = 20.dp,
-                ),
-            )
-            .padding(horizontal = 14.dp, vertical = 10.dp),
+        modifier = Modifier.padding(horizontal = 14.dp, vertical = 10.dp),
         verticalArrangement = Arrangement.spacedBy(4.dp),
     ) {
         if (message.replyToPreview.isNotBlank()) {
@@ -900,6 +904,134 @@ private fun UserDialogueBubbleContent(
                             letterSpacing = 0.6.sp,
                         ),
                         color = colors.textPrimary,
+                    )
+                }
+            }
+        }
+    }
+    }
+}
+
+@Composable
+private fun CharacterDialogueBubbleContent(
+    message: RoleplayMessageUiModel,
+    colors: ImmersiveRoleplayColors,
+    backdropState: ImmersiveBackdropState,
+    lineHeightScale: Float,
+    onOpenQuotedMessage: ((String) -> Unit)?,
+    isError: Boolean,
+    fillWidth: Boolean,
+) {
+    val shape = RoundedCornerShape(topStart = 6.dp, topEnd = 20.dp, bottomStart = 20.dp, bottomEnd = 20.dp)
+    ImmersiveGlassSurface(
+        backdropState = backdropState,
+        modifier = if (fillWidth) Modifier.fillMaxWidth() else Modifier,
+        shape = shape,
+        overlayColor = if (isError) colors.errorBackground else colors.panelBackgroundStrong,
+    ) {
+        Column(
+            modifier = Modifier.padding(horizontal = 14.dp, vertical = 12.dp),
+            verticalArrangement = Arrangement.spacedBy(6.dp),
+        ) {
+            if (message.replyToPreview.isNotBlank()) {
+                RoleplayReplyPreview(
+                    message = message,
+                    colors = colors,
+                    onOpenQuotedMessage = onOpenQuotedMessage,
+                )
+            }
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(6.dp),
+            ) {
+                Text(
+                    message.speakerName,
+                    style = MaterialTheme.typography.labelLarge,
+                    fontWeight = FontWeight.Bold,
+                    color = if (isError) colors.errorText else colors.characterAccent,
+                )
+                if (message.emotion.isNotBlank()) {
+                    RoleplayEmotionChip(
+                        text = message.emotion,
+                        textColor = if (isError) colors.errorText else colors.characterAccent,
+                        containerColor = if (isError) colors.errorBackgroundStrong else colors.panelBackground,
+                    )
+                }
+            }
+            if (isError) {
+                FailedTurnHint(colors = colors)
+            }
+            if (message.isStreaming) {
+                StreamingLogText(
+                    content = message.content,
+                    textColor = colors.textPrimary,
+                    accentColor = colors.characterAccent,
+                    lineHeightScale = lineHeightScale,
+                )
+            } else {
+                val paragraphs = remember(message.content) { message.content.toLongformParagraphs() }
+                Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                    paragraphs.forEach { paragraph ->
+                        val rendered = remember(paragraph, colors, isError) {
+                            buildCharacterDialogueAnnotatedString(
+                                text = paragraph,
+                                narrationColor = if (isError) colors.errorText.copy(alpha = 0.84f) else colors.textPrimary.copy(alpha = 0.78f),
+                                dialogueColor = if (isError) colors.errorText else RoleplayQuotedDialogueHighlightColor,
+                            )
+                        }
+                        Text(
+                            text = rendered,
+                            style = MaterialTheme.typography.bodyLarge.copy(
+                                fontSize = 16.sp,
+                                lineHeight = 26.sp * lineHeightScale,
+                                letterSpacing = 0.6.sp,
+                            ),
+                        )
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun OnlinePhoneNarrationBubble(
+    message: RoleplayMessageUiModel,
+    colors: ImmersiveRoleplayColors,
+    backdropState: ImmersiveBackdropState,
+    lineHeightScale: Float,
+) {
+    val shape = RoundedCornerShape(20.dp)
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.Center,
+    ) {
+    ImmersiveGlassSurface(
+        backdropState = backdropState,
+        modifier = Modifier.fillMaxWidth(0.96f),
+        shape = shape,
+        blurRadius = 18.dp,
+        overlayColor = colors.panelBackground.copy(alpha = 0.42f),
+    ) {
+            Column(
+                modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                val paragraphs = remember(message.content) { message.content.toLongformParagraphs() }
+                paragraphs.forEach { paragraph ->
+                    Text(
+                        text = buildQuotedDialogueAnnotatedString(
+                            text = paragraph,
+                            narrationColor = colors.textMuted.copy(alpha = 0.92f),
+                            dialogueColor = RoleplayQuotedDialogueHighlightColor,
+                        ),
+                        style = MaterialTheme.typography.bodyMedium.copy(
+                            fontSize = 14.sp,
+                            fontStyle = FontStyle.Italic,
+                            lineHeight = 24.sp * lineHeightScale,
+                            letterSpacing = 0.5.sp,
+                        ),
+                        color = colors.textMuted.copy(alpha = 0.92f),
                     )
                 }
             }
