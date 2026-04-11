@@ -680,6 +680,7 @@ class RoleplayViewModel(
                     selectedModel = selectedModel,
                     assistant = assistant,
                     requestMessages = baseMessages.filter { it.status == MessageStatus.COMPLETED && it.hasSendableContent() },
+                    cancelledMessages = baseMessages,
                     initialPersistence = RoundTripInitialPersistence.Append(messages = listOf(loadingMessage)),
                     loadingMessage = loadingMessage,
                     buildFinalMessages = { completedAssistant ->

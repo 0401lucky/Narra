@@ -79,6 +79,7 @@ internal class RoleplaySendActionSupport(
                     selectedModel = selectedModel,
                     assistant = assistant,
                     requestMessages = preparedRetry.requestMessages,
+                    cancelledMessages = preparedRetry.baseMessages,
                     initialPersistence = RoundTripInitialPersistence.ReplaceSnapshot(
                         messages = preparedRetry.initialMessages,
                     ),
@@ -418,6 +419,7 @@ internal class RoleplaySendActionSupport(
                     selectedModel = selectedModel,
                     assistant = assistant,
                     requestMessages = preparedRoundTrip.requestMessages,
+                    cancelledMessages = preparedRoundTrip.baseMessages + preparedRoundTrip.userMessage,
                     initialPersistence = RoundTripInitialPersistence.Append(
                         messages = listOf(preparedRoundTrip.userMessage, preparedRoundTrip.loadingMessage),
                     ),

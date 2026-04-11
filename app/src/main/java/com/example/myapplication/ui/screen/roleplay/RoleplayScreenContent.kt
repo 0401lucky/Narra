@@ -23,8 +23,6 @@ import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.DisposableEffect
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -35,16 +33,12 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.lerp
-import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import androidx.core.view.WindowCompat
-import androidx.core.view.WindowInsetsControllerCompat
-import androidx.core.view.WindowInsetsCompat
 import com.example.myapplication.R
 import com.example.myapplication.model.AppSettings
 import com.example.myapplication.model.Assistant
@@ -150,55 +144,10 @@ internal fun RoleplaySceneContent(
     var chromeVisible by rememberSaveable(scenario.id) { mutableStateOf(true) }
     val immersiveMode = settings.roleplayImmersiveMode
 
-    // 系统栏明暗自适应：基于顶部/底部区域亮度
-    val view = LocalView.current
-    LaunchedEffect(backdropState.imageBitmap) {
-        val window = (view.context as? android.app.Activity)?.window ?: return@LaunchedEffect
-        val controller = WindowCompat.getInsetsController(window, view)
-
-        val topLuminance = com.example.myapplication.ui.component.roleplay.calculateTopRegionLuminance(
-            backdropState.imageBitmap,
-        )
-        val bottomLuminance = com.example.myapplication.ui.component.roleplay.calculateBottomRegionLuminance(
-            backdropState.imageBitmap,
-        )
-
-        // 亮度阈值 0.5：高于则用深色图标，低于则用浅色图标
-        controller.isAppearanceLightStatusBars = topLuminance > 0.5f
-        controller.isAppearanceLightNavigationBars = bottomLuminance > 0.5f
-    }
-
-    // 沉浸模式控制
-    DisposableEffect(view, immersiveMode) {
-        val window = (view.context as? android.app.Activity)?.window
-        if (window == null) {
-            onDispose {}
-        } else {
-            val controller = WindowCompat.getInsetsController(window, view)
-            controller.show(WindowInsetsCompat.Type.systemBars())
-            controller.systemBarsBehavior = WindowInsetsControllerCompat.BEHAVIOR_DEFAULT
-
-            when (immersiveMode) {
-                RoleplayImmersiveMode.EDGE_TO_EDGE -> {
-                    WindowCompat.setDecorFitsSystemWindows(window, false)
-                }
-                RoleplayImmersiveMode.HIDE_SYSTEM_BARS -> {
-                    WindowCompat.setDecorFitsSystemWindows(window, false)
-                    controller.hide(WindowInsetsCompat.Type.systemBars())
-                    controller.systemBarsBehavior = WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
-                }
-                RoleplayImmersiveMode.NONE -> {
-                    WindowCompat.setDecorFitsSystemWindows(window, true)
-                }
-            }
-
-            onDispose {
-                WindowCompat.setDecorFitsSystemWindows(window, false)
-                controller.show(WindowInsetsCompat.Type.systemBars())
-                controller.systemBarsBehavior = WindowInsetsControllerCompat.BEHAVIOR_DEFAULT
-            }
-        }
-    }
+    ApplyRoleplaySystemBars(
+        backdropState = backdropState,
+        immersiveMode = immersiveMode,
+    )
 
     Box(modifier = Modifier.fillMaxSize()) {
         RoleplaySceneBackground(

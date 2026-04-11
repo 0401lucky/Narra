@@ -7,6 +7,7 @@ import com.example.myapplication.data.repository.ConversationRepository
 import com.example.myapplication.model.ChatMessage
 import com.example.myapplication.model.DEFAULT_ASSISTANT_ID
 import com.example.myapplication.model.MessageRole
+import com.example.myapplication.model.MessageStatus
 import com.example.myapplication.model.RoleplayInteractionMode
 import com.example.myapplication.model.RoleplayOnlineMeta
 import com.example.myapplication.model.RoleplayOutputFormat
@@ -150,7 +151,10 @@ class RoomRoleplayRepository(
                 return RoleplaySessionStartResult(
                     session = toSessionDomain(refreshedSession),
                     reusedExistingSession = true,
-                    hasHistory = historyMessages.any { !it.isOpeningNarrationMessage(scenario.id) },
+                    hasHistory = historyMessages.any {
+                        !it.isOpeningNarrationMessage(scenario.id) &&
+                            it.status != MessageStatus.LOADING
+                    },
                     assistantMismatch = normalizeAssistantId(existingConversation.assistantId) !=
                         normalizeAssistantId(scenario.assistantId),
                     conversationAssistantId = normalizeAssistantId(existingConversation.assistantId),

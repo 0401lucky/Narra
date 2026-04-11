@@ -3,10 +3,15 @@ package com.example.myapplication.viewmodel
 import com.example.myapplication.context.PromptContextAssembler
 import com.example.myapplication.context.PromptContextResult
 import com.example.myapplication.context.DefaultPromptContextAssembler
+import com.example.myapplication.conversation.ConversationAssistantRoundTripRunner
+import com.example.myapplication.conversation.RoundTripInitialPersistence
 import com.example.myapplication.data.remote.ApiServiceFactory
 import com.example.myapplication.data.remote.OpenAiCompatibleApi
 import com.example.myapplication.data.repository.ConversationRepository
+import com.example.myapplication.data.repository.ImageGenerationResult
+import com.example.myapplication.data.repository.ParsedAssistantSpecialOutput
 import com.example.myapplication.data.repository.SavedImageFile
+import com.example.myapplication.data.repository.ai.AiGateway
 import com.example.myapplication.data.repository.ai.tooling.DefaultMemoryWriteService
 import com.example.myapplication.data.repository.context.ConversationSummaryRepository
 import com.example.myapplication.data.repository.context.MemoryRepository
@@ -17,15 +22,18 @@ import com.example.myapplication.data.repository.roleplay.RoleplayRepository
 import com.example.myapplication.data.repository.roleplay.RoleplaySessionStartResult
 import com.example.myapplication.model.AppSettings
 import com.example.myapplication.model.Assistant
+import com.example.myapplication.model.AssistantReply
 import com.example.myapplication.model.AssistantMessageDto
 import com.example.myapplication.model.ChatCompletionRequest
 import com.example.myapplication.model.ChatCompletionResponse
 import com.example.myapplication.model.ChatChoiceDto
 import com.example.myapplication.model.ChatMessage
+import com.example.myapplication.model.ChatMessagePart
 import com.example.myapplication.model.Conversation
 import com.example.myapplication.model.ContextSummaryState
 import com.example.myapplication.model.GiftImageStatus
 import com.example.myapplication.model.GiftPlayDraft
+import com.example.myapplication.model.GatewayToolingOptions
 import com.example.myapplication.model.ImageGenerationRequest
 import com.example.myapplication.model.ImageGenerationResponse
 import com.example.myapplication.model.PunishIntensity
@@ -49,6 +57,7 @@ import com.example.myapplication.model.TransferStatus
 import com.example.myapplication.model.giftImageStatus
 import com.example.myapplication.model.isTransferPart
 import com.example.myapplication.model.specialMetadataValue
+import com.example.myapplication.model.textMessagePart
 import com.example.myapplication.model.transferMessagePart
 import com.example.myapplication.testutil.FakeConversationStore
 import com.example.myapplication.testutil.FakeConversationSummaryRepository
@@ -70,6 +79,7 @@ import kotlinx.coroutines.test.runTest
 import okhttp3.OkHttpClient
 import okhttp3.mockwebserver.MockResponse
 import okhttp3.mockwebserver.MockWebServer
+import okhttp3.mockwebserver.SocketPolicy
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -78,6 +88,9 @@ import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
 import retrofit2.Response
+import java.util.concurrent.TimeUnit
+import kotlinx.coroutines.cancelAndJoin
+import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class RoleplayViewModelTest {
@@ -884,6 +897,351 @@ class RoleplayViewModelTest {
         assertEquals(listOf("第一句", "第一句回复"), store.listMessages(session.conversationId).map { it.content })
         assertTrue(state.messages.none { it.sourceMessageId == "user-2" })
         assertTrue(state.messages.none { it.sourceMessageId == "assistant-2" })
+    }
+
+    @Test
+    fun enterScenario_ignoresStaleStartResultFromPreviousScenario() = runTest(mainDispatcherRule.dispatcher.scheduler) {
+        val assistantA = Assistant(id = "assistant-a", name = "甲")
+        val assistantB = Assistant(id = "assistant-b", name = "乙")
+        val scenarioA = RoleplayScenario(id = "scene-a", assistantId = assistantA.id, title = "A 场景")
+        val scenarioB = RoleplayScenario(id = "scene-b", assistantId = assistantB.id, title = "B 场景")
+        val sessionA = RoleplaySession(
+            id = "session-a",
+            scenarioId = scenarioA.id,
+            conversationId = "conv-a",
+            createdAt = 1L,
+            updatedAt = 2L,
+        )
+        val sessionB = RoleplaySession(
+            id = "session-b",
+            scenarioId = scenarioB.id,
+            conversationId = "conv-b",
+            createdAt = 3L,
+            updatedAt = 4L,
+        )
+        val store = FakeConversationStore(
+            conversations = listOf(
+                Conversation(
+                    id = sessionA.conversationId,
+                    title = "A",
+                    model = "chat-model",
+                    createdAt = 1L,
+                    updatedAt = 2L,
+                    assistantId = assistantA.id,
+                ),
+                Conversation(
+                    id = sessionB.conversationId,
+                    title = "B",
+                    model = "chat-model",
+                    createdAt = 3L,
+                    updatedAt = 4L,
+                    assistantId = assistantB.id,
+                ),
+            ),
+            messagesByConversation = mapOf(
+                sessionA.conversationId to listOf(
+                    ChatMessage(
+                        id = "assistant-a-1",
+                        conversationId = sessionA.conversationId,
+                        role = MessageRole.ASSISTANT,
+                        content = "A 会话内容",
+                        status = MessageStatus.COMPLETED,
+                        createdAt = 10L,
+                    ),
+                ),
+                sessionB.conversationId to listOf(
+                    ChatMessage(
+                        id = "assistant-b-1",
+                        conversationId = sessionB.conversationId,
+                        role = MessageRole.ASSISTANT,
+                        content = "B 会话内容",
+                        status = MessageStatus.COMPLETED,
+                        createdAt = 11L,
+                    ),
+                ),
+            ),
+        )
+        val provider = ProviderSettings(
+            id = "provider-1",
+            name = "测试 Provider",
+            baseUrl = "https://example.com/v1/",
+            apiKey = "test-key",
+            selectedModel = "chat-model",
+        )
+        val viewModel = createViewModel(
+            store = store,
+            roleplayRepository = DelayedStartRoleplayRepository(
+                conversationStore = store,
+                scenarios = listOf(scenarioA, scenarioB),
+                sessions = listOf(sessionA, sessionB),
+                startDelayByScenarioId = mapOf(
+                    scenarioA.id to 200L,
+                    scenarioB.id to 20L,
+                ),
+            ),
+            settings = AppSettings(
+                baseUrl = provider.baseUrl,
+                apiKey = provider.apiKey,
+                selectedModel = provider.selectedModel,
+                providers = listOf(provider),
+                selectedProviderId = provider.id,
+                assistants = listOf(assistantA, assistantB),
+                selectedAssistantId = assistantA.id,
+            ),
+            promptContextAssembler = fixedPromptAssembler("提示词上下文"),
+        )
+
+        viewModel.enterScenario(scenarioA.id)
+        runCurrent()
+        viewModel.enterScenario(scenarioB.id)
+        advanceUntilIdle()
+
+        val state = viewModel.uiState.value
+        assertEquals(scenarioB.id, state.currentScenario?.id)
+        assertEquals(sessionB.id, state.currentSession?.id)
+        assertTrue(state.messages.any { it.content.contains("B 会话内容") })
+        assertTrue(state.messages.none { it.content.contains("A 会话内容") })
+    }
+
+    @Test
+    fun switchingScenario_clearsQuotedReplyBeforeSending() = runTest(mainDispatcherRule.dispatcher.scheduler) {
+        enqueueStreamResponse("新的回复")
+
+        val assistantA = Assistant(id = "assistant-a", name = "甲")
+        val assistantB = Assistant(id = "assistant-b", name = "乙")
+        val scenarioA = RoleplayScenario(id = "scene-a", assistantId = assistantA.id, title = "A 场景")
+        val scenarioB = RoleplayScenario(id = "scene-b", assistantId = assistantB.id, title = "B 场景")
+        val sessionA = RoleplaySession(
+            id = "session-a",
+            scenarioId = scenarioA.id,
+            conversationId = "conv-a",
+            createdAt = 1L,
+            updatedAt = 2L,
+        )
+        val sessionB = RoleplaySession(
+            id = "session-b",
+            scenarioId = scenarioB.id,
+            conversationId = "conv-b",
+            createdAt = 3L,
+            updatedAt = 4L,
+        )
+        val store = FakeConversationStore(
+            conversations = listOf(
+                Conversation(
+                    id = sessionA.conversationId,
+                    title = "A",
+                    model = "chat-model",
+                    createdAt = 1L,
+                    updatedAt = 2L,
+                    assistantId = assistantA.id,
+                ),
+                Conversation(
+                    id = sessionB.conversationId,
+                    title = "B",
+                    model = "chat-model",
+                    createdAt = 3L,
+                    updatedAt = 4L,
+                    assistantId = assistantB.id,
+                ),
+            ),
+        )
+        val provider = ProviderSettings(
+            id = "provider-1",
+            name = "测试 Provider",
+            baseUrl = server.url("/v1/").toString(),
+            apiKey = "test-key",
+            selectedModel = "chat-model",
+        )
+        val viewModel = createViewModel(
+            store = store,
+            roleplayRepository = FakeRoleplayRepository(
+                conversationStore = store,
+                scenarios = listOf(scenarioA, scenarioB),
+                sessions = listOf(sessionA, sessionB),
+            ),
+            settings = AppSettings(
+                baseUrl = provider.baseUrl,
+                apiKey = provider.apiKey,
+                selectedModel = provider.selectedModel,
+                providers = listOf(provider),
+                selectedProviderId = provider.id,
+                assistants = listOf(assistantA, assistantB),
+                selectedAssistantId = assistantA.id,
+            ),
+            promptContextAssembler = fixedPromptAssembler("提示词上下文"),
+            messageIdProvider = idProviderOf("user-b", "assistant-b"),
+        )
+
+        viewModel.enterScenario(scenarioA.id)
+        advanceUntilIdle()
+        viewModel.quoteMessage("quoted-1", "旧角色", "旧预览")
+        assertEquals("quoted-1", viewModel.uiState.value.replyToMessageId)
+
+        viewModel.leaveScenario()
+        viewModel.enterScenario(scenarioB.id)
+        advanceUntilIdle()
+
+        assertEquals("", viewModel.uiState.value.replyToMessageId)
+        viewModel.updateInput("现在说正事")
+        viewModel.sendMessage()
+        advanceUntilIdle()
+
+        val savedUserMessage = store.listMessages(sessionB.conversationId)
+            .first { it.role == MessageRole.USER }
+        assertEquals("", savedUserMessage.replyToMessageId)
+        assertEquals("", savedUserMessage.replyToPreview)
+        assertEquals("", savedUserMessage.replyToSpeakerName)
+    }
+
+    @Test
+    fun cancelSending_removesLoadingAssistantMessage() = runTest(mainDispatcherRule.dispatcher.scheduler) {
+        val assistant = Assistant(id = "assistant-1", name = "陆宴清")
+        val scenario = RoleplayScenario(id = "scene-1", assistantId = assistant.id)
+        val session = RoleplaySession(
+            id = "session-1",
+            scenarioId = scenario.id,
+            conversationId = "conv-1",
+            createdAt = 1L,
+            updatedAt = 2L,
+        )
+        val store = FakeConversationStore(
+            conversations = listOf(
+                Conversation(
+                    id = session.conversationId,
+                    title = "剧情",
+                    model = "chat-model",
+                    createdAt = 1L,
+                    updatedAt = 2L,
+                    assistantId = assistant.id,
+                ),
+            ),
+        )
+        val settings = AppSettings(
+            baseUrl = "https://example.com/v1/",
+            apiKey = "test-key",
+            selectedModel = "chat-model",
+            assistants = listOf(assistant),
+            selectedAssistantId = assistant.id,
+        )
+        val roleplayRepository = FakeRoleplayRepository(
+            conversationStore = store,
+            scenarios = listOf(scenario),
+            sessions = listOf(session),
+        )
+        val conversationRepository = ConversationRepository(
+            conversationStore = store,
+            nowProvider = incrementingNowProvider(1L),
+        )
+        val promptContextAssembler = fixedPromptAssembler("提示词上下文")
+        val hangingGateway = object : AiGateway {
+            override suspend fun generateImage(prompt: String, modelId: String): List<ImageGenerationResult> {
+                return emptyList()
+            }
+
+            override suspend fun sendMessage(
+                messages: List<ChatMessage>,
+                systemPrompt: String,
+                toolingOptions: GatewayToolingOptions,
+            ): AssistantReply {
+                error("不应调用非流式发送")
+            }
+
+            override fun sendMessageStream(
+                messages: List<ChatMessage>,
+                systemPrompt: String,
+                promptMode: com.example.myapplication.model.PromptMode,
+                toolingOptions: GatewayToolingOptions,
+            ) = kotlinx.coroutines.flow.flow<com.example.myapplication.model.ChatStreamEvent> {
+                delay(Long.MAX_VALUE)
+            }
+
+            override fun parseAssistantSpecialOutput(
+                content: String,
+                existingParts: List<ChatMessagePart>,
+            ): ParsedAssistantSpecialOutput {
+                return ParsedAssistantSpecialOutput(
+                    content = content,
+                    parts = existingParts,
+                )
+            }
+        }
+        val assistantRoundTripRunner = ConversationAssistantRoundTripRunner(
+            conversationRepository = conversationRepository,
+            aiGateway = hangingGateway,
+        )
+        var latestState = RoleplayUiState(
+            settings = settings,
+            currentScenario = scenario,
+            currentSession = session,
+            currentAssistant = assistant,
+            isSending = true,
+        )
+        var latestRawMessages: List<ChatMessage> = emptyList()
+        val userMessage = ChatMessage(
+            id = "user-1",
+            conversationId = session.conversationId,
+            role = MessageRole.USER,
+            content = "先停一下",
+            createdAt = 10L,
+            parts = listOf(textMessagePart("先停一下")),
+        )
+        val loadingMessage = ChatMessage(
+            id = "assistant-loading",
+            conversationId = session.conversationId,
+            role = MessageRole.ASSISTANT,
+            content = "",
+            status = MessageStatus.LOADING,
+            createdAt = 11L,
+            modelName = "chat-model",
+            roleplayOutputFormat = RoleplayOutputFormat.PROTOCOL,
+        )
+        val executor = RoleplayRoundTripExecutor(
+            aiGateway = hangingGateway,
+            conversationRepository = conversationRepository,
+            conversationSummaryRepository = FakeConversationSummaryRepository(),
+            phoneSnapshotRepository = EmptyPhoneSnapshotRepository,
+            roleplayRepository = roleplayRepository,
+            promptContextAssembler = promptContextAssembler,
+            assistantRoundTripRunner = assistantRoundTripRunner,
+            outputParser = com.example.myapplication.roleplay.RoleplayOutputParser(),
+            nowProvider = incrementingNowProvider(100L),
+            currentUiState = { latestState },
+            updateUiState = { reducer -> latestState = reducer(latestState) },
+            updateRawMessages = { messages -> latestRawMessages = messages },
+            launchGiftImageGeneration = { _, _ -> },
+            launchConversationSummaryGeneration = { _, _, _, _, _ -> },
+            launchAutomaticMemoryExtraction = { _, _, _, _, _ -> },
+        )
+
+        val executeJob = launch {
+            executor.execute(
+                state = latestState,
+                scenario = scenario,
+                session = session,
+                selectedModel = "chat-model",
+                assistant = assistant,
+                requestMessages = listOf(userMessage),
+                cancelledMessages = listOf(userMessage),
+                initialPersistence = RoundTripInitialPersistence.Append(
+                    messages = listOf(userMessage, loadingMessage),
+                ),
+                loadingMessage = loadingMessage,
+                buildFinalMessages = { completedAssistant ->
+                    listOf(userMessage, completedAssistant)
+                },
+            )
+        }
+        runCurrent()
+        assertTrue(store.listMessages(session.conversationId).any { it.status == MessageStatus.LOADING })
+        executeJob.cancelAndJoin()
+        advanceUntilIdle()
+
+        val savedMessages = store.listMessages(session.conversationId)
+        assertFalse(latestState.isSending)
+        assertEquals(listOf(userMessage), latestRawMessages)
+        assertTrue(savedMessages.none { it.status == MessageStatus.LOADING })
+        assertEquals(1, savedMessages.size)
+        assertEquals("先停一下", savedMessages.single().content)
     }
 
     @Test
@@ -2576,6 +2934,92 @@ private class FakeRoleplayRepository(
     }
 
     override suspend fun startScenario(scenarioId: String): RoleplaySessionStartResult {
+        val scenario = getScenario(scenarioId) ?: error("场景不存在")
+        val session = sessionsState.value.firstOrNull { it.scenarioId == scenarioId }
+            ?: error("测试未预置会话")
+        val conversationMessages = conversationStore.listMessages(session.conversationId)
+        return RoleplaySessionStartResult(
+            session = session,
+            reusedExistingSession = true,
+            hasHistory = conversationMessages.isNotEmpty(),
+            assistantMismatch = false,
+            conversationAssistantId = scenario.assistantId,
+            conversationMessages = conversationMessages,
+        )
+    }
+
+    override suspend fun restartScenario(scenarioId: String): RoleplaySessionStartResult {
+        return startScenario(scenarioId)
+    }
+
+    override suspend fun getSessionByScenario(scenarioId: String): RoleplaySession? {
+        return sessionsState.value.firstOrNull { it.scenarioId == scenarioId }
+    }
+
+    override suspend fun getSession(sessionId: String): RoleplaySession? {
+        return sessionsState.value.firstOrNull { it.id == sessionId }
+    }
+
+    override suspend fun getOnlineMeta(conversationId: String): com.example.myapplication.model.RoleplayOnlineMeta? = null
+
+    override suspend fun upsertOnlineMeta(meta: com.example.myapplication.model.RoleplayOnlineMeta) = Unit
+
+    override suspend fun deleteOnlineMeta(conversationId: String) = Unit
+}
+
+@OptIn(ExperimentalCoroutinesApi::class)
+private class DelayedStartRoleplayRepository(
+    private val conversationStore: FakeConversationStore,
+    scenarios: List<RoleplayScenario>,
+    sessions: List<RoleplaySession>,
+    private val startDelayByScenarioId: Map<String, Long>,
+) : RoleplayRepository {
+    private val scenariosState = MutableStateFlow(scenarios)
+    private val sessionsState = MutableStateFlow(sessions)
+
+    override fun observeScenarios(): Flow<List<RoleplayScenario>> = scenariosState
+
+    override fun observeScenario(scenarioId: String): Flow<RoleplayScenario?> {
+        return scenariosState.map { scenarios ->
+            scenarios.firstOrNull { it.id == scenarioId }
+        }
+    }
+
+    override fun observeSessionByScenario(scenarioId: String): Flow<RoleplaySession?> {
+        return sessionsState.map { sessions ->
+            sessions.firstOrNull { it.scenarioId == scenarioId }
+        }
+    }
+
+    override fun observeSessions(): Flow<List<RoleplaySession>> = sessionsState
+
+    override fun observeConversationMessages(scenarioId: String): Flow<List<ChatMessage>> {
+        return observeSessionByScenario(scenarioId).flatMapLatest { session ->
+            if (session == null) {
+                flowOf(emptyList())
+            } else {
+                conversationStore.observeMessages(session.conversationId)
+            }
+        }
+    }
+
+    override suspend fun listScenarios(): List<RoleplayScenario> = scenariosState.value
+
+    override suspend fun getScenario(scenarioId: String): RoleplayScenario? {
+        return scenariosState.value.firstOrNull { it.id == scenarioId }
+    }
+
+    override suspend fun upsertScenario(scenario: RoleplayScenario) {
+        scenariosState.value = scenariosState.value.filterNot { it.id == scenario.id } + scenario
+    }
+
+    override suspend fun deleteScenario(scenarioId: String) {
+        scenariosState.value = scenariosState.value.filterNot { it.id == scenarioId }
+        sessionsState.value = sessionsState.value.filterNot { it.scenarioId == scenarioId }
+    }
+
+    override suspend fun startScenario(scenarioId: String): RoleplaySessionStartResult {
+        delay(startDelayByScenarioId[scenarioId] ?: 0L)
         val scenario = getScenario(scenarioId) ?: error("场景不存在")
         val session = sessionsState.value.firstOrNull { it.scenarioId == scenarioId }
             ?: error("测试未预置会话")

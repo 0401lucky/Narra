@@ -37,6 +37,7 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -59,6 +60,7 @@ import com.example.myapplication.model.RoleplayContentType
 import com.example.myapplication.model.RoleplayContextStatus
 import com.example.myapplication.model.RoleplayMessageUiModel
 import com.example.myapplication.model.RoleplayScenario
+import com.example.myapplication.model.RoleplayImmersiveMode
 import com.example.myapplication.model.RoleplaySpeaker
 import com.example.myapplication.model.RoleplaySuggestionAxis
 import com.example.myapplication.model.RoleplaySuggestionUiModel
@@ -122,9 +124,18 @@ internal fun RoleplayOnlinePhoneContent(
     onOpenSettings: () -> Unit,
     onNavigateBack: () -> Unit,
 ) {
+    val immersiveMode = settings.roleplayImmersiveMode
+    ApplyRoleplaySystemBars(
+        backdropState = backdropState,
+        immersiveMode = immersiveMode,
+    )
     val colors = rememberOnlinePhoneColors(backdropState)
     val palette = backdropState.palette
-    val statusBarTopPadding = WindowInsets.statusBars.asPaddingValues().calculateTopPadding()
+    val statusBarTopPadding = if (immersiveMode == RoleplayImmersiveMode.NONE) {
+        0.dp
+    } else {
+        WindowInsets.statusBars.asPaddingValues().calculateTopPadding()
+    }
     val chromeSurfaceColor = remember(backdropState.hasImage, colors.panelBackgroundStrong) {
         colors.panelBackgroundStrong.copy(
             alpha = if (backdropState.hasImage) 0.92f else 1f,
@@ -172,9 +183,32 @@ internal fun RoleplayOnlinePhoneContent(
                     message.contentType != RoleplayContentType.THOUGHT
                 )
     }
+    val shouldStickToBottom by remember(listState, visibleMessages.size) {
+        derivedStateOf {
+            val layoutInfo = listState.layoutInfo
+            if (visibleMessages.isEmpty()) {
+                true
+            } else {
+                val lastVisibleIndex = layoutInfo.visibleItemsInfo.lastOrNull()?.index ?: -1
+                lastVisibleIndex >= layoutInfo.totalItemsCount - 2
+            }
+        }
+    }
 
-    LaunchedEffect(visibleMessages.size, visibleMessages.lastOrNull()?.content) {
+    LaunchedEffect(
+        visibleMessages.firstOrNull()?.sourceMessageId,
+        visibleMessages.firstOrNull()?.createdAt,
+    ) {
         if (visibleMessages.isNotEmpty()) {
+            listState.scrollToItem(visibleMessages.lastIndex)
+        }
+    }
+    LaunchedEffect(
+        visibleMessages.size,
+        visibleMessages.lastOrNull()?.content?.length,
+        visibleMessages.lastOrNull()?.isStreaming,
+    ) {
+        if (visibleMessages.isNotEmpty() && shouldStickToBottom) {
             listState.animateScrollToItem(visibleMessages.lastIndex)
         }
     }
@@ -197,7 +231,13 @@ internal fun RoleplayOnlinePhoneContent(
             modifier = Modifier
                 .fillMaxSize()
                 .imePadding()
-                .navigationBarsPadding(),
+                .then(
+                    if (immersiveMode == RoleplayImmersiveMode.NONE) {
+                        Modifier
+                    } else {
+                        Modifier.navigationBarsPadding()
+                    },
+                ),
         ) {
             Box(modifier = Modifier.fillMaxWidth()) {
                 Box(

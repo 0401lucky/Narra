@@ -8,7 +8,10 @@ import com.example.myapplication.model.Assistant
 import com.example.myapplication.model.ChatMessage
 import com.example.myapplication.model.RoleplayScenario
 import com.example.myapplication.roleplay.RoleplayConversationSupport
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
@@ -26,35 +29,53 @@ internal class RoleplayScenarioActionSupport(
     private val refreshContextStatus: (String?, Boolean, Int, Int) -> Unit,
     private val clearConversationScopedContext: suspend (String) -> Unit,
 ) {
+    private var enterScenarioJob: Job? = null
+
     fun enterScenario(scenarioId: String) {
         if (scenarioId.isBlank()) {
             return
         }
+        enterScenarioJob?.cancel()
         currentScenarioIdFlow.value = scenarioId
         updateUiState { current ->
             RoleplayStateSupport.enterScenario(current, scenarioId)
         }
-        scope.launch {
-            runCatching {
+        enterScenarioJob = scope.launch {
+            val runningJob = currentCoroutineContext()[Job]
+            try {
                 val scenario = roleplayRepository.getScenario(scenarioId)
                     ?: error("场景不存在")
                 val startResult = roleplayRepository.startScenario(scenarioId)
+                if (currentScenarioIdFlow.value != scenarioId) {
+                    return@launch
+                }
                 applySessionStartResult(
                     startResult = startResult,
                     scenario = scenario,
                 )
-            }.onFailure { throwable ->
+            } catch (cancellation: CancellationException) {
+                throw cancellation
+            } catch (throwable: Throwable) {
+                if (currentScenarioIdFlow.value != scenarioId) {
+                    return@launch
+                }
                 updateUiState { current ->
                     RoleplayStateSupport.applyScenarioLoadFailure(
                         current,
                         throwable.message ?: "启动场景失败",
                     )
                 }
+            } finally {
+                if (enterScenarioJob === runningJob) {
+                    enterScenarioJob = null
+                }
             }
         }
     }
 
     fun leaveScenario() {
+        enterScenarioJob?.cancel()
+        enterScenarioJob = null
         currentScenarioIdFlow.value = null
         currentRawMessagesFlow.value = emptyList()
         updateUiState { current ->

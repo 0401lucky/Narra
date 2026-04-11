@@ -72,6 +72,9 @@ object RoleplayStateSupport {
             contextGovernance = null,
             streamingContent = "",
             suggestionErrorMessage = null,
+            replyToMessageId = "",
+            replyToPreview = "",
+            replyToSpeakerName = "",
             pendingMemoryProposal = null,
             recentMemoryProposalHistory = emptyList(),
             contextStatus = RoleplayContextStatus(),
@@ -99,6 +102,9 @@ object RoleplayStateSupport {
             contextGovernance = null,
             streamingContent = "",
             suggestionErrorMessage = null,
+            replyToMessageId = "",
+            replyToPreview = "",
+            replyToSpeakerName = "",
             pendingMemoryProposal = null,
             recentMemoryProposalHistory = emptyList(),
         )
@@ -255,6 +261,9 @@ object RoleplayStateSupport {
             ),
             contextGovernance = null,
             noticeMessage = "剧情已清空",
+            replyToMessageId = "",
+            replyToPreview = "",
+            replyToSpeakerName = "",
             pendingMemoryProposal = null,
             recentMemoryProposalHistory = emptyList(),
         )
@@ -273,6 +282,9 @@ object RoleplayStateSupport {
             previousAssistantName = "",
             currentAssistantName = "",
             contextGovernance = null,
+            replyToMessageId = "",
+            replyToPreview = "",
+            replyToSpeakerName = "",
             pendingMemoryProposal = null,
             recentMemoryProposalHistory = emptyList(),
         )
@@ -292,6 +304,9 @@ object RoleplayStateSupport {
             streamingContent = "",
             latestPromptDebugDump = "",
             contextGovernance = null,
+            replyToMessageId = "",
+            replyToPreview = "",
+            replyToSpeakerName = "",
             inputFocusToken = inputFocusToken,
         )
     }

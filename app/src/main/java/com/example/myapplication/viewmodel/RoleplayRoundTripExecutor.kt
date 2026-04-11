@@ -64,6 +64,7 @@ internal class RoleplayRoundTripExecutor(
         selectedModel: String,
         assistant: Assistant?,
         requestMessages: List<ChatMessage>,
+        cancelledMessages: List<ChatMessage>,
         initialPersistence: RoundTripInitialPersistence,
         loadingMessage: ChatMessage,
         buildFinalMessages: (ChatMessage) -> List<ChatMessage>,
@@ -232,7 +233,10 @@ internal class RoleplayRoundTripExecutor(
                             )
                         },
                         onCancelled = { _, _ ->
-                            null
+                            AssistantRoundTripOutcome(
+                                messages = cancelledMessages,
+                                errorMessage = null,
+                            )
                         },
                         onFailed = { _, throwable, loading ->
                             val errorText = throwable.message ?: "发送失败"
@@ -276,6 +280,11 @@ internal class RoleplayRoundTripExecutor(
                 }
 
                 is AssistantRoundTripResult.Cancelled -> {
+                    conversationRepository.replaceConversationSnapshot(
+                        conversationId = session.conversationId,
+                        messages = result.messages,
+                        selectedModel = selectedModel,
+                    )
                     updateRawMessages(result.messages)
                     updateUiState { current ->
                         RoleplayStateSupport.finishSending(current, errorMessage = result.errorMessage)
@@ -290,6 +299,12 @@ internal class RoleplayRoundTripExecutor(
                 }
             }
         } catch (cancellation: CancellationException) {
+            conversationRepository.replaceConversationSnapshot(
+                conversationId = session.conversationId,
+                messages = cancelledMessages,
+                selectedModel = selectedModel,
+            )
+            updateRawMessages(cancelledMessages)
             if (currentUiState().isSending) {
                 updateUiState { current ->
                     RoleplayStateSupport.finishSending(current, errorMessage = null)

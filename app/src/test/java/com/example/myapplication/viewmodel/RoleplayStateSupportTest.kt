@@ -252,6 +252,32 @@ class RoleplayStateSupportTest {
     }
 
     @Test
+    fun enterAndLeaveScenario_clearQuotedReplyState() {
+        val entering = RoleplayStateSupport.enterScenario(
+            current = RoleplayUiState(
+                replyToMessageId = "quoted-1",
+                replyToPreview = "旧预览",
+                replyToSpeakerName = "旧角色",
+            ),
+            scenarioId = "scene-1",
+        )
+        val leaving = RoleplayStateSupport.leaveScenario(
+            current = RoleplayUiState(
+                replyToMessageId = "quoted-1",
+                replyToPreview = "旧预览",
+                replyToSpeakerName = "旧角色",
+            ),
+        )
+
+        assertEquals("", entering.replyToMessageId)
+        assertEquals("", entering.replyToPreview)
+        assertEquals("", entering.replyToSpeakerName)
+        assertEquals("", leaving.replyToMessageId)
+        assertEquals("", leaving.replyToPreview)
+        assertEquals("", leaving.replyToSpeakerName)
+    }
+
+    @Test
     fun applyPromptContext_updatesCountsAndDebugDump() {
         val snapshot = ContextGovernanceSnapshot(summaryCoveredMessageCount = 4)
         val updated = RoleplayStateSupport.applyPromptContext(
