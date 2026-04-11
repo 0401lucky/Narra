@@ -1,4 +1,4 @@
-# Narra GitHub 更新文件说明
+# Narra 更新文件说明
 
 ## 固定更新地址
 
@@ -19,12 +19,12 @@ https://0401lucky.github.io/Narra/updates
 1. 把当前仓库 push 到 `main`
 2. 启用 GitHub Pages，让 `docs/` 目录发布成静态站点
 3. 每次构建出新 APK 后：
-   - 上传 APK 到 GitHub Releases
-   - 复制 APK 直链
+   - 上传 APK 到 Cloudflare R2 的 `narra-updates/dev/` 目录
+   - 优先使用自定义下载域名 `https://download.lsa1230.dpdns.org`
    - 修改对应渠道的 JSON：
-     - `latest_version_name`
-     - `latest_version_code`
-     - `minimum_supported_version_code`
+      - `latest_version_name`
+      - `latest_version_code`
+      - `minimum_supported_version_code`
      - `apk_url`
      - `apk_sha256`
      - `published_at`
@@ -49,7 +49,7 @@ https://0401lucky.github.io/Narra/updates
   "latest_version_name": "1.0.1-dev",
   "latest_version_code": 10001,
   "minimum_supported_version_code": 10000,
-  "apk_url": "https://github.com/0401lucky/Narra/releases/download/v1.0.1-dev/Narra-v1.0.1-dev-10001-dev.apk",
+  "apk_url": "https://download.lsa1230.dpdns.org/dev/Narra-v1.0.1-dev-10001-dev.apk",
   "apk_sha256": "替换成真实 sha256",
   "published_at": "2026-03-22T12:00:00+08:00",
   "release_notes": [

@@ -58,11 +58,7 @@ class AppUpdateRepository(
                 fromCache = false,
             )
             stateStore.saveLastCheckAt(now)
-            if (outcome.availability == AppUpdateAvailability.OPTIONAL) {
-                stateStore.saveCachedMetadataJson(rawJson)
-            } else {
-                stateStore.clearCachedMetadata()
-            }
+            stateStore.saveCachedMetadataJson(rawJson)
             outcome
         } catch (throwable: Throwable) {
             val cachedOptionalOutcome = evaluateCachedOutcome(environment)

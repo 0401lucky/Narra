@@ -46,8 +46,8 @@ fun AppRoot(
             environment = AppUpdateEnvironment(
                 appId = BuildConfig.APPLICATION_ID,
                 channel = BuildConfig.APP_CHANNEL,
-                versionName = BuildConfig.APP_VERSION_NAME_VALUE,
-                versionCode = BuildConfig.APP_VERSION_CODE_VALUE,
+                versionName = BuildConfig.VERSION_NAME,
+                versionCode = BuildConfig.VERSION_CODE,
                 metadataBaseUrl = BuildConfig.APP_UPDATE_METADATA_BASE_URL,
             ),
         ),

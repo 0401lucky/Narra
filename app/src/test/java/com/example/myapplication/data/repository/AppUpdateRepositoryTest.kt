@@ -117,6 +117,35 @@ class AppUpdateRepositoryTest {
         assertEquals(AppUpdateAvailability.DISABLED, outcome?.availability)
     }
 
+    @Test
+    fun checkForUpdates_cachesUpToDateMetadataAndReusesItWithinThrottleWindow() = runTest {
+        val store = FakeAppUpdateStateStore()
+        var fetchCount = 0
+        val repository = AppUpdateRepository(
+            stateStore = store,
+            metadataFetcher = {
+                fetchCount++
+                currentVersionJson()
+            },
+            nowProvider = { if (fetchCount == 0) 1_000L else 2_000L },
+        )
+
+        val firstOutcome = repository.checkForUpdates(
+            environment = testEnvironment(),
+            manual = true,
+        )
+        val secondOutcome = repository.checkForUpdates(
+            environment = testEnvironment(),
+            manual = false,
+        )
+
+        assertEquals(AppUpdateAvailability.UP_TO_DATE, firstOutcome?.availability)
+        assertEquals(AppUpdateAvailability.UP_TO_DATE, secondOutcome?.availability)
+        assertTrue(secondOutcome?.fromCache == true)
+        assertEquals(1, fetchCount)
+        assertTrue(store.currentState().cachedMetadataJson.isNotBlank())
+    }
+
     private fun testEnvironment(
         versionCode: Int = 10000,
         metadataBaseUrl: String = "https://updates.example.com",
@@ -158,6 +187,22 @@ class AppUpdateRepositoryTest {
               "apk_sha256": "abcdef",
               "published_at": "2026-03-22T12:00:00+08:00",
               "release_notes": ["新增功能 A", "修复问题 B"]
+            }
+        """.trimIndent()
+    }
+
+    private fun currentVersionJson(): String {
+        return """
+            {
+              "app_id": "com.narra.app",
+              "channel": "release",
+              "latest_version_name": "1.0.0",
+              "latest_version_code": 10000,
+              "minimum_supported_version_code": 0,
+              "apk_url": "",
+              "apk_sha256": "",
+              "published_at": "2026-04-11T12:00:00+08:00",
+              "release_notes": ["当前已是最新版本"]
             }
         """.trimIndent()
     }

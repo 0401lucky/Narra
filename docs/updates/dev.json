@@ -1,16 +1,16 @@
 {
   "app_id": "com.narra.app.dev",
   "channel": "dev",
-  "latest_version_name": "1.2.3-dev",
-  "latest_version_code": 10203,
+  "latest_version_name": "1.2.4-dev",
+  "latest_version_code": 10204,
   "minimum_supported_version_code": 0,
-  "apk_url": "https://download.lsa1230.dpdns.org/dev/Narra-v1.2.3-dev-10203-dev.apk",
-  "apk_sha256": "41cb9c9f4b8afea5ff02b91bfb7eafc71d7d76ec716a2b25e09e9297de326bd4",
-  "published_at": "2026-04-10T17:58:28+08:00",
+  "apk_url": "https://download.lsa1230.dpdns.org/dev/Narra-v1.2.4-dev-10204-dev.apk?ts=20260411162951",
+  "apk_sha256": "8bb4bf1e75c02c27935f7916dcb8848b1011e996594747e29f828d213579a79f",
+  "published_at": "2026-04-11T16:29:51+08:00",
   "release_notes": [
-    "线上模式改成对白主导 + 心声轻提示的手机聊天观感",
-    "修复线上切回线下后再次生成时偶发露出 <narrative>/<dialogue> 协议标签的问题",
-    "修复协议消息里带 <thought> 时被误判成长文链路导致掉格式的问题",
-    "线上模式设置与场景编辑文案正式收口到心声 / 状态提示"
+    "修复沉浸扮演快速切场景时旧异步结果串回新场景的问题",
+    "修复引用态残留与取消发送后 LOADING 助手消息残留的问题",
+    "修复线上模式不响应沉浸模式设置，以及浏览旧消息时被强制拉回底部的问题",
+    "修复 dev 渠道版本与更新页漏掉 -dev 后缀，且已是最新版本状态会在 24 小时节流窗口内稳定保留"
   ]
 }
