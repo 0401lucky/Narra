@@ -96,8 +96,10 @@ class RoleplayPromptDecoratorTest {
         )
 
         assertTrue(prompt.contains("合法 JSON 数组"))
-        assertTrue(prompt.contains("reply_to、recall、emoji、voice_message、ai_photo、location、transfer、poke、video_call"))
+        assertTrue(prompt.contains("reply_to、thought、recall、emoji、voice_message、ai_photo、location、transfer、poke、video_call"))
         assertTrue(prompt.contains("不是面对面现场互动"))
+        assertTrue(prompt.contains("圆括号()中的内容只是背景观察"))
+        assertTrue(prompt.contains("吃饭了吗？(肚子咕咕叫)"))
     }
 
     @Test
@@ -138,6 +140,8 @@ class RoleplayPromptDecoratorTest {
         assertTrue(prompt.contains("只通过真实聊天消息表达情绪与推进"))
         assertTrue(prompt.contains("不写心声、旁白或小说段落"))
         assertTrue(prompt.contains("不要机械每轮都发动作对象"))
+        assertTrue(!prompt.contains("reply_to、thought、recall"))
+        assertTrue(prompt.contains("当前不允许输出 thought"))
     }
 
     @Test

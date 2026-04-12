@@ -34,6 +34,16 @@ class ChatMessagePartTest {
     }
 
     @Test
+    fun toPlainText_decodesOnlineThoughtMarker() {
+        val plainText = listOf(
+            thoughtMessagePart("其实刚才已经删了三次。"),
+            textMessagePart("现在才肯回我？"),
+        ).toPlainText()
+
+        assertEquals("其实刚才已经删了三次。\n\n现在才肯回我？", plainText)
+    }
+
+    @Test
     fun normalizeChatMessageParts_trimsTaskMetadata() {
         val normalized = normalizeChatMessageParts(
             listOf(

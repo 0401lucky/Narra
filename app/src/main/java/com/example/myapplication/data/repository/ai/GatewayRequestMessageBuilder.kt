@@ -11,7 +11,9 @@ import com.example.myapplication.model.MessageRole
 import com.example.myapplication.model.MessageStatus
 import com.example.myapplication.model.PromptMode
 import com.example.myapplication.model.TextContentPartDto
+import com.example.myapplication.model.decodeOnlineThoughtText
 import com.example.myapplication.model.hasSendableContent
+import com.example.myapplication.model.isOnlineThoughtPart
 import com.example.myapplication.model.normalizeChatMessageParts
 import com.example.myapplication.model.textMessagePart
 import com.example.myapplication.model.toChatMessagePart
@@ -100,7 +102,14 @@ internal object GatewayRequestMessageBuilder {
             if (assistantParts.isNotEmpty()) {
                 val assistantContext = assistantParts.mapNotNull { part ->
                     when (part.type) {
-                        ChatMessagePartType.TEXT -> part.text.takeIf { it.isNotBlank() }
+                        ChatMessagePartType.TEXT -> when {
+                            part.isOnlineThoughtPart() -> {
+                                decodeOnlineThoughtText(part.text)
+                                    .takeIf { it.isNotBlank() }
+                                    ?.let { thought -> "【心声】$thought" }
+                            }
+                            else -> part.text.takeIf { it.isNotBlank() }
+                        }
                         ChatMessagePartType.ACTION -> null
                         ChatMessagePartType.SPECIAL -> GatewaySpecialPlaySupport.buildSpecialPlayPrompt(part)
                         ChatMessagePartType.IMAGE,

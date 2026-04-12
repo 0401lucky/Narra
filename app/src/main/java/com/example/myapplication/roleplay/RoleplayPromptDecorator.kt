@@ -132,9 +132,17 @@ object RoleplayPromptDecorator {
                         append("。\n")
                         append("2. 所有输出必须是合法 JSON 数组，数组中的每个元素代表一条独立消息。\n")
                         append("3. 普通文本消息直接输出字符串，例如：[\"你好\",\"还没睡？\"]。\n")
-                        append("4. 允许的对象消息类型只有：reply_to、recall、emoji、voice_message、ai_photo、location、transfer、poke、video_call。\n")
+                        append("4. 允许的对象消息类型只有：")
+                        append(
+                            if (allowOnlineThoughtHints) {
+                                "reply_to、thought、recall、emoji、voice_message、ai_photo、location、transfer、poke、video_call"
+                            } else {
+                                "reply_to、recall、emoji、voice_message、ai_photo、location、transfer、poke、video_call"
+                            },
+                        )
+                        append("。\n")
                         append("5. 本轮不允许输出 Markdown、代码块、XML 标签、<dialogue>/<thought>/<narration> 或额外解释。\n")
-                        append("6. 可以一次连续发 1 到 4 条消息；优先保持真实聊天节奏，不要一条消息里塞成长段总结。\n")
+                        append("6. 默认一次连续发 2 到 3 条消息；一句就能说完、高冷或冷战场景可以更少，情绪明显上来时可以更多，但最多 20 条。\n")
                         append("7. 你必须始终以 ")
                         append(characterName)
                         append(" 的身份说话，不要跳出角色，不要把用户写成旁白人物。\n")
@@ -151,23 +159,35 @@ object RoleplayPromptDecorator {
                         } else {
                             append("【线上手机聊天模式】\n")
                             append("1. 当前是手机线上聊天，不是面对面现场互动。\n")
-                            append("2. 回复必须以短消息、多气泡为主，像真实聊天软件；能一句说完就不要拖成一大段。\n")
+                            append("2. 回复必须像真实聊天软件里的独立气泡，优先一句一气泡，不要把整轮内容塞进一个长段落。\n")
                             append("3. 如果要引用旧消息，使用对象：{\"type\":\"reply_to\",\"message_id\":\"消息ID\",\"content\":\"回复内容\"}。\n")
-                            append("4. 当剧情适合时，可以主动使用 emoji、voice_message、ai_photo、location、poke、transfer、video_call 这些高频动作。\n")
+                            if (allowOnlineThoughtHints) {
+                                append("4. 如果要写没发出去的心声，使用对象：{\"type\":\"thought\",\"content\":\"心声内容\"}。\n")
+                                append("5. 当剧情适合时，可以主动使用 emoji、voice_message、ai_photo、location、poke、transfer、video_call 这些高频动作。\n")
+                            } else {
+                                append("4. 当前不允许输出 thought；没说出口的情绪只能通过正常聊天消息侧写出来。\n")
+                                append("5. 当剧情适合时，可以主动使用 emoji、voice_message、ai_photo、location、poke、transfer、video_call 这些高频动作。\n")
+                            }
                         }
+                        append("【线上细节提醒】\n")
                         if (allowOnlineThoughtHints) {
-                            append("【线上细节提醒】\n")
-                            append("1. 可以把没有完全说出口的克制、犹豫、停顿，转译成更短的追发消息，而不是写心声标签。\n")
-                            append("2. 如果近期失联较久，可按角色人设自然表现想念、别扭、试探、委屈或压着情绪的冷淡。\n")
-                            append("3. 如果当前剧情里存在“看过对方手机”的既有事件，角色可以自然引用或延续其情绪后效。\n")
-                            append("4. 不要机械每轮都发动作对象；只有真正适合时再用。")
+                            append("1. thought 只在克制、犹豫、压情绪、欲言又止、断联后试探等场景下偶尔使用；每轮最多 1 条，默认不要连续两轮都发。\n")
+                            append("2. 心声只是调味，不是主菜；绝大多数推进仍应落在真实聊天气泡里。\n")
+                            append("3. 如果近期失联较久，可按角色人设自然表现想念、别扭、试探、委屈或压着情绪的冷淡。\n")
+                            append("4. 如果当前剧情里存在“看过对方手机”的既有事件，角色可以自然引用或延续其情绪后效。\n")
+                            append("5. 不要机械每轮都发动作对象；只有真正适合时再用。\n")
                         } else {
-                            append("【线上细节提醒】\n")
                             append("1. 只通过真实聊天消息表达情绪与推进，不写心声、旁白或小说段落。\n")
                             append("2. 如果近期失联较久，可按角色人设自然表现想念、别扭、试探、委屈或压着情绪的冷淡。\n")
                             append("3. 如果当前剧情里存在“看过对方手机”的既有事件，角色可以自然引用或延续其情绪后效。\n")
-                            append("4. 不要机械每轮都发动作对象；只有真正适合时再用。")
+                            append("4. 不要机械每轮都发动作对象；只有真正适合时再用。\n")
                         }
+                        append("【禁区与 OOC 防护】\n")
+                        append("1. 严格禁止动作描写、神态描写、心理描写、环境描写；你只能通过聊天消息本身表达内容。\n")
+                        append("2. 用户消息里圆括号()中的内容只是背景观察，不等于用户实际说出口的话，也不等于你能直接听见用户的内心。\n")
+                        append("3. 正例：用户说“吃饭了吗？(肚子咕咕叫)”时，你可以回“刚吃过，要不要一起去吃点热的？”，这是基于表面话题和可观察状态自然接话。\n")
+                        append("4. 反例：不要回“我听到你肚子叫了”或“你括号里说的是什么意思”。\n")
+                        append("5. 不要把线上聊天写成面对面小说，不要抢用户视角，不要替用户补完整轮心理活动。")
                     },
                 )
             } else if (scenario.longformModeEnabled || scenario.interactionMode == RoleplayInteractionMode.OFFLINE_LONGFORM) {

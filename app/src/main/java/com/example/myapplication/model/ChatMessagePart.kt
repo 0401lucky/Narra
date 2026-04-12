@@ -508,7 +508,13 @@ fun normalizeChatMessageParts(parts: List<ChatMessagePart>): List<ChatMessagePar
 fun List<ChatMessagePart>.toPlainText(): String {
     return normalizeChatMessageParts(this)
         .filter { it.type == ChatMessagePartType.TEXT }
-        .joinToString(separator = "\n\n") { it.text.trim() }
+        .joinToString(separator = "\n\n") { part ->
+            if (part.isOnlineThoughtPart()) {
+                part.onlineThoughtContent()
+            } else {
+                part.text.trim()
+            }
+        }
         .trim()
 }
 

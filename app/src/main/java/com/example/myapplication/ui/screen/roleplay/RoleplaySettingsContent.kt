@@ -197,7 +197,7 @@ internal fun RoleplaySettingsContent(
                             )
                         },
                         title = "显示心声与状态提示",
-                        supportingText = "关闭后会隐藏独立心声，仍保留必要的系统状态提示。",
+                        supportingText = "关闭后不会继续生成或显示线上心声星标，仍保留必要的系统状态提示。",
                         checked = settings.showOnlineRoleplayNarration,
                         onCheckedChange = onUpdateShowOnlineRoleplayNarration,
                     )

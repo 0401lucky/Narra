@@ -79,6 +79,7 @@ object RoleplayConversationSupport {
         settings: AppSettings,
         outputParser: RoleplayOutputParser,
         isVideoCallActive: Boolean = false,
+        referenceCandidates: List<OnlineMessageReferenceCandidate> = emptyList(),
         nowProvider: () -> Long = { System.currentTimeMillis() },
     ): String {
         val (userName, characterName) = resolveRoleplayNames(
@@ -176,28 +177,12 @@ object RoleplayConversationSupport {
                         append(timeGuidance)
                         append("。\n")
                     }
-                val quoteCandidates = messages
-                    .takeLast(6)
-                    .filter { it.status == com.example.myapplication.model.MessageStatus.COMPLETED }
-                    .mapNotNull { message ->
-                        val preview = message.parts.toPlainText()
-                            .ifBlank { message.content }
-                            .trim()
-                            .takeIf { it.isNotBlank() }
-                            ?.replace('\n', ' ')
-                            ?.take(40)
-                            ?: return@mapNotNull null
-                        val speaker = if (message.role == MessageRole.USER) userName else characterName
-                        "id=${message.id} speaker=$speaker preview=$preview"
-                    }
-                if (quoteCandidates.isNotEmpty()) {
-                    append("可引用消息候选：\n")
-                    quoteCandidates.forEach { candidate ->
-                        append("- ")
-                        append(candidate)
+                RoleplayOnlineReferenceSupport.formatCandidatesForPrompt(referenceCandidates)
+                    .takeIf { it.isNotBlank() }
+                    ?.let { formattedCandidates ->
+                        append(formattedCandidates)
                         append('\n')
                     }
-                }
             }
             if (repeatedOpeners.isNotEmpty()) {
                 append("避免直接复用最近出现过的起手句或动作模板：")

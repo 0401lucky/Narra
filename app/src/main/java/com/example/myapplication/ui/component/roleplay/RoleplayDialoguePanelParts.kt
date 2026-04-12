@@ -25,6 +25,7 @@ import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.OpenInFull
 import androidx.compose.material.icons.filled.Share
+import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.outlined.ContentCopy
 import androidx.compose.material.icons.outlined.Edit
 import androidx.compose.material.icons.outlined.Refresh
@@ -1204,37 +1205,79 @@ private fun OnlinePhoneThoughtBubble(
     backdropState: ImmersiveBackdropState,
     lineHeightScale: Float,
 ) {
-    BoxWithConstraints(
+    var expanded by rememberSaveable(
+        message.sourceMessageId,
+        message.createdAt,
+        message.content,
+    ) {
+        mutableStateOf(false)
+    }
+    Column(
         modifier = Modifier.fillMaxWidth(),
-        contentAlignment = Alignment.Center,
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(8.dp),
     ) {
         ImmersiveGlassSurface(
             backdropState = backdropState,
-            modifier = Modifier.widthIn(max = maxWidth * 0.76f),
-            shape = RoundedCornerShape(18.dp),
-            blurRadius = 16.dp,
-            overlayColor = colors.panelBackground.copy(alpha = 0.24f),
+            modifier = Modifier
+                .wrapContentWidth()
+                .clickable { expanded = !expanded },
+            shape = RoundedCornerShape(999.dp),
+            blurRadius = 14.dp,
+            overlayColor = colors.panelBackground.copy(alpha = if (expanded) 0.34f else 0.24f),
         ) {
-            Column(
-                modifier = Modifier.padding(horizontal = 14.dp, vertical = 10.dp),
-                verticalArrangement = Arrangement.spacedBy(8.dp),
+            Row(
+                modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(6.dp),
             ) {
-                val paragraphs = remember(message.content) { message.content.toLongformParagraphs() }
-                paragraphs.forEach { paragraph ->
-                    Text(
-                        text = buildQuotedDialogueAnnotatedString(
-                            text = paragraph,
-                            narrationColor = colors.thoughtText,
-                            dialogueColor = RoleplayQuotedDialogueHighlightColor,
-                        ),
-                        style = MaterialTheme.typography.bodyMedium.copy(
-                            fontSize = 13.sp,
-                            fontStyle = FontStyle.Italic,
-                            lineHeight = 22.sp * lineHeightScale,
-                            letterSpacing = 0.4.sp,
-                        ),
-                        color = colors.thoughtText,
-                    )
+                Icon(
+                    imageVector = Icons.Filled.Star,
+                    contentDescription = if (expanded) "收起心声" else "展开心声",
+                    tint = colors.characterAccent,
+                    modifier = Modifier.size(14.dp),
+                )
+                Text(
+                    text = if (expanded) "收起心声" else "查看心声",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = colors.thoughtText,
+                )
+            }
+        }
+        if (expanded) {
+            BoxWithConstraints(
+                modifier = Modifier.fillMaxWidth(),
+                contentAlignment = Alignment.Center,
+            ) {
+                ImmersiveGlassSurface(
+                    backdropState = backdropState,
+                    modifier = Modifier.widthIn(max = maxWidth * 0.76f),
+                    shape = RoundedCornerShape(18.dp),
+                    blurRadius = 16.dp,
+                    overlayColor = colors.panelBackground.copy(alpha = 0.24f),
+                ) {
+                    Column(
+                        modifier = Modifier.padding(horizontal = 14.dp, vertical = 10.dp),
+                        verticalArrangement = Arrangement.spacedBy(8.dp),
+                    ) {
+                        val paragraphs = remember(message.content) { message.content.toLongformParagraphs() }
+                        paragraphs.forEach { paragraph ->
+                            Text(
+                                text = buildQuotedDialogueAnnotatedString(
+                                    text = paragraph,
+                                    narrationColor = colors.thoughtText,
+                                    dialogueColor = RoleplayQuotedDialogueHighlightColor,
+                                ),
+                                style = MaterialTheme.typography.bodyMedium.copy(
+                                    fontSize = 13.sp,
+                                    fontStyle = FontStyle.Italic,
+                                    lineHeight = 22.sp * lineHeightScale,
+                                    letterSpacing = 0.4.sp,
+                                ),
+                                color = colors.thoughtText,
+                            )
+                        }
+                    }
                 }
             }
         }

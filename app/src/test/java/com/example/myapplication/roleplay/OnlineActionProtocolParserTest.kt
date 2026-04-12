@@ -2,7 +2,10 @@ package com.example.myapplication.roleplay
 
 import com.example.myapplication.model.ChatActionType
 import com.example.myapplication.model.TransferDirection
+import com.example.myapplication.model.isOnlineThoughtPart
+import com.example.myapplication.model.onlineThoughtContent
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
@@ -57,5 +60,48 @@ class OnlineActionProtocolParserTest {
         )
 
         assertEquals(null, result)
+    }
+
+    @Test
+    fun parse_supportsThoughtObjectAndTrailingCommaRepair() {
+        val result = OnlineActionProtocolParser.parse(
+            rawContent = """
+                ```json
+                [
+                  {"type":"thought","content":"其实已经盯着这条消息看了很久"},
+                  {"type":"reply_to","message_id":1007,"content":"我刚才不是不回你。"},
+                ]
+                ```
+            """.trimIndent(),
+            characterName = "沈砚清",
+        )!!
+
+        assertEquals(2, result.parts.size)
+        assertTrue(result.parts[0].isOnlineThoughtPart())
+        assertEquals("其实已经盯着这条消息看了很久", result.parts[0].onlineThoughtContent())
+        assertEquals("1007", result.parts[1].replyToMessageId)
+    }
+
+    @Test
+    fun extractStreamingPreview_readsCompletedPrefixBeforeWholeArrayCloses() {
+        val preview = OnlineActionProtocolParser.extractStreamingPreview(
+            rawContent = """
+                [
+                  {"type":"reply_to","message_id":"1007","content":"这句我已经看见了"},
+                  {"type":"thought","content":"差一点就想直接拨过去"}
+            """.trimIndent(),
+        )
+
+        assertTrue(preview.contains("这句我已经看见了"))
+        assertTrue(preview.contains("心声：差一点就想直接拨过去"))
+    }
+
+    @Test
+    fun extractStreamingPreview_returnsEmptyForIncompleteFirstItem() {
+        val preview = OnlineActionProtocolParser.extractStreamingPreview(
+            rawContent = "[{\"type\":\"reply_to\",\"message_id\":\"1007\",\"content\":\"这句我还没说完\"",
+        )
+
+        assertFalse(preview.isNotBlank())
     }
 }

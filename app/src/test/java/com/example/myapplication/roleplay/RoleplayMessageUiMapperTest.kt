@@ -15,6 +15,7 @@ import com.example.myapplication.model.TransferStatus
 import com.example.myapplication.model.inviteMessagePart
 import com.example.myapplication.model.specialMetadataValue
 import com.example.myapplication.model.textMessagePart
+import com.example.myapplication.model.thoughtMessagePart
 import com.example.myapplication.model.transferMessagePart
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
@@ -405,6 +406,47 @@ class RoleplayMessageUiMapperTest {
         assertEquals(1, mapped.size)
         assertEquals(RoleplayContentType.NARRATION, mapped.single().contentType)
         assertEquals("旁白", mapped.single().speakerName)
+    }
+
+    @Test
+    fun mapMessages_onlineModeMapsThoughtPartsToThoughtUiModel() {
+        val scenario = RoleplayScenario(
+            id = "scene-1",
+            title = "线上模式",
+            characterDisplayNameOverride = "陆宴清",
+            interactionMode = RoleplayInteractionMode.ONLINE_PHONE,
+            enableNarration = true,
+        )
+
+        val mapped = RoleplayMessageUiMapper.mapMessages(
+            scenario = scenario,
+            assistant = Assistant(id = "assistant-1", name = "陆宴清"),
+            settings = AppSettings(showOnlineRoleplayNarration = true),
+            rawMessages = listOf(
+                ChatMessage(
+                    id = "assistant-1",
+                    conversationId = "conv-1",
+                    role = MessageRole.ASSISTANT,
+                    content = "",
+                    createdAt = 2L,
+                    status = MessageStatus.COMPLETED,
+                    roleplayOutputFormat = RoleplayOutputFormat.PROTOCOL,
+                    parts = listOf(
+                        thoughtMessagePart("其实已经在输入框里删了三次。"),
+                        textMessagePart("你现在终于肯回我了？"),
+                    ),
+                ),
+            ),
+            streamingContent = null,
+            outputParser = RoleplayOutputParser(),
+            nowProvider = { 20L },
+        )
+
+        assertEquals(2, mapped.size)
+        assertEquals(RoleplayContentType.THOUGHT, mapped[0].contentType)
+        assertEquals("其实已经在输入框里删了三次。", mapped[0].content)
+        assertEquals(RoleplayContentType.DIALOGUE, mapped[1].contentType)
+        assertEquals("你现在终于肯回我了？", mapped[1].content)
     }
 
     @Test

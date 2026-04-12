@@ -432,7 +432,7 @@ fun RoleplayScenarioEditScreen(
                         SwitchRow(
                             title = if (isOnlinePhoneMode) "启用心声提示" else "启用旁白",
                             subtitle = if (isOnlinePhoneMode) {
-                                "关闭后会尽量只保留真实聊天气泡，减少独立心声提示。"
+                                "关闭后该场景会尽量只保留真实聊天气泡，不再额外生成心声星标。"
                             } else {
                                 "关闭后会尽量减少独立旁白段落，更偏纯对白推进。"
                             },
@@ -444,7 +444,7 @@ fun RoleplayScenarioEditScreen(
                             subtitle = if (longformModeEnabled) {
                                 "长文小说模式下会忽略这项设置。"
                             } else if (interactionMode == RoleplayInteractionMode.ONLINE_PHONE) {
-                                "线上模式默认走 dialogue / thought 协议，并兼容旧 narration 历史。"
+                                "线上模式默认走 JSON 数组协议，并兼容旧 thought / narration 历史。"
                             } else {
                                 "开启后要求模型输出 narration/dialogue 标签，结构更稳定。"
                             },

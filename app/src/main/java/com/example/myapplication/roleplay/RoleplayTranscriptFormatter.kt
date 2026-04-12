@@ -6,6 +6,9 @@ import com.example.myapplication.model.RoleplayContentType
 import com.example.myapplication.model.RoleplayInteractionMode
 import com.example.myapplication.model.RoleplayOnlineEventKind
 import com.example.myapplication.model.RoleplaySpeaker
+import com.example.myapplication.model.isOnlineThoughtPart
+import com.example.myapplication.model.normalizeChatMessageParts
+import com.example.myapplication.model.onlineThoughtContent
 import com.example.myapplication.model.toPlainText
 
 object RoleplayTranscriptFormatter {
@@ -52,6 +55,24 @@ object RoleplayTranscriptFormatter {
             }
 
             MessageRole.ASSISTANT -> {
+                val normalizedParts = normalizeChatMessageParts(message.parts)
+                if (interactionMode == RoleplayInteractionMode.ONLINE_PHONE && normalizedParts.isNotEmpty()) {
+                    return normalizedParts.mapNotNull { part ->
+                        when {
+                            part.isOnlineThoughtPart() -> {
+                                part.onlineThoughtContent()
+                                    .takeIf { it.isNotBlank() }
+                                    ?.let { thought -> "${characterName.ifBlank { "角色" }}心声：$thought" }
+                            }
+                            part.text.isNotBlank() -> {
+                                part.text.trim()
+                                    .takeIf { it.isNotBlank() }
+                                    ?.let { text -> "${characterName.ifBlank { "角色" }}：$text" }
+                            }
+                            else -> null
+                        }
+                    }
+                }
                 val content = RoleplayMessageFormatSupport.resolveAssistantRawContent(message)
                 if (content.isBlank()) {
                     emptyList()

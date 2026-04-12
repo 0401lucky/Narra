@@ -39,6 +39,7 @@ import com.example.myapplication.roleplay.OnlineActionProtocolParser
 import com.example.myapplication.roleplay.RoleplayConversationSupport
 import com.example.myapplication.roleplay.RoleplayLongformMarkupParser
 import com.example.myapplication.roleplay.RoleplayMessageFormatSupport
+import com.example.myapplication.roleplay.RoleplayOnlineReferenceSupport
 import com.example.myapplication.roleplay.RoleplayOutputParser
 import com.example.myapplication.roleplay.RoleplayPromptDecorator
 import kotlinx.coroutines.CancellationException
@@ -118,13 +119,33 @@ internal class RoleplayRoundTripExecutor(
                 recentMessages = requestMessages,
                 promptMode = PromptMode.ROLEPLAY,
             )
+            val effectiveRequestMessages = resolveRequestMessagesForRoundTrip(
+                conversation = conversation,
+                assistant = assistant,
+                requestMessages = requestMessages,
+            )
+            val requestMessagesForModel = RoleplayOnlineReferenceSupport.sanitizeRequestMessages(
+                messages = effectiveRequestMessages,
+                scenario = scenario,
+                assistant = assistant,
+                settings = state.settings,
+                outputParser = outputParser,
+            )
+            val referenceCandidates = RoleplayOnlineReferenceSupport.buildCandidates(
+                messages = requestMessagesForModel,
+                scenario = scenario,
+                assistant = assistant,
+                settings = state.settings,
+                outputParser = outputParser,
+            )
             val directorNote = RoleplayConversationSupport.buildDynamicDirectorNote(
-                messages = requestMessages,
+                messages = requestMessagesForModel,
                 scenario = scenario,
                 assistant = assistant,
                 settings = state.settings,
                 outputParser = outputParser,
                 isVideoCallActive = state.isVideoCallActive,
+                referenceCandidates = referenceCandidates,
             )
             val decoratedPrompt = RoleplayPromptDecorator.decorate(
                 baseSystemPrompt = promptContext.systemPrompt,
@@ -135,18 +156,13 @@ internal class RoleplayRoundTripExecutor(
                 isVideoCallActive = state.isVideoCallActive,
                 directorNote = directorNote,
             )
-            val effectiveRequestMessages = resolveRequestMessagesForRoundTrip(
-                conversation = conversation,
-                assistant = assistant,
-                requestMessages = requestMessages,
-            )
             val toolingOptions = GatewayToolingOptions.localContextOnly(
                 GatewayToolRuntimeContext(
                     promptMode = PromptMode.ROLEPLAY,
                     assistant = assistant,
                     conversation = conversation,
                     userInputText = RoleplayConversationSupport.resolveLatestUserInputText(requestMessages),
-                    recentMessages = requestMessages,
+                    recentMessages = requestMessagesForModel,
                 ),
             )
             val debugDump = buildString {
@@ -177,7 +193,7 @@ internal class RoleplayRoundTripExecutor(
                         promptMode = PromptMode.ROLEPLAY,
                         selectedModel = selectedModel,
                         requestMessages = requestMessages,
-                        effectiveRequestMessages = effectiveRequestMessages,
+                        effectiveRequestMessages = requestMessagesForModel,
                         promptContext = promptContext,
                         completedMessageCount = requestMessages.count { it.status == MessageStatus.COMPLETED },
                         triggerMessageCount = SUMMARY_TRIGGER_MESSAGE_COUNT,
@@ -198,7 +214,7 @@ internal class RoleplayRoundTripExecutor(
                     AssistantRoundTripRequest(
                         conversationId = session.conversationId,
                         selectedModel = selectedModel,
-                        requestMessages = effectiveRequestMessages,
+                        requestMessages = requestMessagesForModel,
                         loadingMessage = loadingMessage,
                         buildFinalMessages = buildFinalMessages,
                         systemPrompt = decoratedPrompt,
@@ -238,7 +254,10 @@ internal class RoleplayRoundTripExecutor(
                                 ?.parts
                                 ?.let { onlineParts ->
                                     normalizeChatMessageParts(
-                                        onlineParts + parsedOutput.parts.filter { part ->
+                                        RoleplayOnlineReferenceSupport.resolveReplyTargets(
+                                            parts = onlineParts,
+                                            candidates = referenceCandidates,
+                                        ) + parsedOutput.parts.filter { part ->
                                             part.type != com.example.myapplication.model.ChatMessagePartType.TEXT
                                         },
                                     )

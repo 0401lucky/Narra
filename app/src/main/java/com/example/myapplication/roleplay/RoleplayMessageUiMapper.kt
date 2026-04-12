@@ -16,8 +16,10 @@ import com.example.myapplication.model.RoleplayScenario
 import com.example.myapplication.model.RoleplaySpeaker
 import com.example.myapplication.model.hasSendableContent
 import com.example.myapplication.model.isActionPart
+import com.example.myapplication.model.isOnlineThoughtPart
 import com.example.myapplication.model.isSpecialPlayPart
 import com.example.myapplication.model.normalizeChatMessageParts
+import com.example.myapplication.model.onlineThoughtContent
 import com.example.myapplication.model.toActionCopyText
 import com.example.myapplication.model.toPlainText
 import com.example.myapplication.model.toSpecialPlayCopyText
@@ -335,6 +337,23 @@ object RoleplayMessageUiMapper {
                 part.text.isNotBlank() -> {
                     if (
                         scenario.interactionMode == RoleplayInteractionMode.ONLINE_PHONE &&
+                        part.isOnlineThoughtPart()
+                    ) {
+                        target += RoleplayMessageUiModel(
+                            sourceMessageId = message.id,
+                            contentType = RoleplayContentType.THOUGHT,
+                            speaker = RoleplaySpeaker.CHARACTER,
+                            speakerName = characterName,
+                            content = part.onlineThoughtContent(),
+                            createdAt = message.createdAt,
+                            messageStatus = message.status,
+                            copyText = part.onlineThoughtContent(),
+                            canRetry = canRetry,
+                        )
+                        return@forEach
+                    }
+                    if (
+                        scenario.interactionMode == RoleplayInteractionMode.ONLINE_PHONE &&
                         appendOnlineProtocolAssistantMessages(
                             target = target,
                             sourceMessageId = message.id,
@@ -440,6 +459,21 @@ object RoleplayMessageUiMapper {
                 }
 
                 part.text.isNotBlank() -> {
+                    if (part.isOnlineThoughtPart()) {
+                        val thoughtContent = part.onlineThoughtContent()
+                        target += RoleplayMessageUiModel(
+                            sourceMessageId = sourceMessageId,
+                            contentType = RoleplayContentType.THOUGHT,
+                            speaker = RoleplaySpeaker.CHARACTER,
+                            speakerName = characterName,
+                            content = thoughtContent,
+                            createdAt = createdAt,
+                            messageStatus = messageStatus,
+                            copyText = thoughtContent,
+                            canRetry = canRetry,
+                        )
+                        return@forEach
+                    }
                     val content = part.text.trim()
                     target += RoleplayMessageUiModel(
                         sourceMessageId = sourceMessageId,
