@@ -533,6 +533,7 @@ internal fun RoleplaySpecialPlayOverlays(
     onDismissSpecialPlay: () -> Unit,
     onOpenSpecialPlayEditor: (ChatSpecialType) -> Unit,
     onOpenPhoneCheck: () -> Unit,
+    onOpenVideoCall: (() -> Unit)? = null,
     onDismissSpecialPlayEditor: () -> Unit,
     onSpecialPlayDraftChange: (ChatSpecialPlayDraft) -> Unit,
     onSpecialPlayConfirm: () -> Unit,
@@ -542,6 +543,7 @@ internal fun RoleplaySpecialPlayOverlays(
             onDismissRequest = onDismissSpecialPlay,
             onOpenPlay = onOpenSpecialPlayEditor,
             onOpenPhoneCheck = onOpenPhoneCheck,
+            onOpenVideoCall = onOpenVideoCall,
         )
     }
 

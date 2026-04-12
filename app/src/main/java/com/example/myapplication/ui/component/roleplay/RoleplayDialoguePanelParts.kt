@@ -438,6 +438,8 @@ internal fun RoleplayInputBar(
     onSend: () -> Unit,
     onCancel: (() -> Unit)?,
     onOpenSpecialPlay: () -> Unit,
+    showActionButton: Boolean = true,
+    showExpandButton: Boolean = true,
 ) {
     val canSend = input.isNotBlank() && !isSending
     var showActionMenu by remember { mutableStateOf(false) }
@@ -486,33 +488,35 @@ internal fun RoleplayInputBar(
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(6.dp),
     ) {
-        Box {
-            NarraIconButton(
-                onClick = { showActionMenu = true },
-                enabled = !isSending,
-                modifier = Modifier
-                    .size(RoleplayInteractiveIconButtonSize)
-                    .background(
-                        color = colors.panelBackground,
-                        shape = CircleShape,
+        if (showActionButton) {
+            Box {
+                NarraIconButton(
+                    onClick = { showActionMenu = true },
+                    enabled = !isSending,
+                    modifier = Modifier
+                        .size(RoleplayInteractiveIconButtonSize)
+                        .background(
+                            color = colors.panelBackground,
+                            shape = CircleShape,
+                        ),
+                    colors = IconButtonDefaults.iconButtonColors(
+                        containerColor = Color.Transparent,
+                        contentColor = colors.textPrimary,
                     ),
-                colors = IconButtonDefaults.iconButtonColors(
-                    containerColor = Color.Transparent,
-                    contentColor = colors.textPrimary,
-                ),
-            ) {
-                Icon(
-                    Icons.Default.Add,
-                    contentDescription = stringResource(id = R.string.roleplay_more_actions),
-                    modifier = Modifier.size(18.dp),
-                )
-            }
-            DropdownMenu(expanded = showActionMenu, onDismissRequest = { showActionMenu = false }) {
-                DropdownMenuItem(
-                    text = { Text(stringResource(id = R.string.roleplay_special_play)) },
-                    leadingIcon = { Icon(Icons.Default.Share, contentDescription = null) },
-                    onClick = { showActionMenu = false; onOpenSpecialPlay() },
-                )
+                ) {
+                    Icon(
+                        Icons.Default.Add,
+                        contentDescription = stringResource(id = R.string.roleplay_more_actions),
+                        modifier = Modifier.size(18.dp),
+                    )
+                }
+                DropdownMenu(expanded = showActionMenu, onDismissRequest = { showActionMenu = false }) {
+                    DropdownMenuItem(
+                        text = { Text(stringResource(id = R.string.roleplay_special_play)) },
+                        leadingIcon = { Icon(Icons.Default.Share, contentDescription = null) },
+                        onClick = { showActionMenu = false; onOpenSpecialPlay() },
+                    )
+                }
             }
         }
         BasicTextField(
@@ -570,22 +574,24 @@ internal fun RoleplayInputBar(
                 innerTextField()
             },
         )
-        NarraIconButton(
-            onClick = { showExpandedEditor = true },
-            enabled = !isSending,
-            modifier = Modifier.size(RoleplayInteractiveIconButtonSize),
-            colors = IconButtonDefaults.iconButtonColors(
-                containerColor = colors.panelBackground,
-                contentColor = colors.textPrimary,
-                disabledContainerColor = colors.panelBackground.copy(alpha = 0.45f),
-                disabledContentColor = colors.textMuted.copy(alpha = 0.55f),
-            ),
-        ) {
-            Icon(
-                Icons.Default.OpenInFull,
-                contentDescription = stringResource(id = R.string.roleplay_expand_editor),
-                modifier = Modifier.size(16.dp),
-            )
+        if (showExpandButton) {
+            NarraIconButton(
+                onClick = { showExpandedEditor = true },
+                enabled = !isSending,
+                modifier = Modifier.size(RoleplayInteractiveIconButtonSize),
+                colors = IconButtonDefaults.iconButtonColors(
+                    containerColor = colors.panelBackground,
+                    contentColor = colors.textPrimary,
+                    disabledContainerColor = colors.panelBackground.copy(alpha = 0.45f),
+                    disabledContentColor = colors.textMuted.copy(alpha = 0.55f),
+                ),
+            ) {
+                Icon(
+                    Icons.Default.OpenInFull,
+                    contentDescription = stringResource(id = R.string.roleplay_expand_editor),
+                    modifier = Modifier.size(16.dp),
+                )
+            }
         }
         if (isSending && onCancel != null) {
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {

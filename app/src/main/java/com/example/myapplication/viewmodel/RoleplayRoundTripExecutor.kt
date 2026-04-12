@@ -120,6 +120,7 @@ internal class RoleplayRoundTripExecutor(
                 assistant = assistant,
                 settings = state.settings,
                 outputParser = outputParser,
+                isVideoCallActive = state.isVideoCallActive,
             )
             val decoratedPrompt = RoleplayPromptDecorator.decorate(
                 baseSystemPrompt = promptContext.systemPrompt,
@@ -127,6 +128,7 @@ internal class RoleplayRoundTripExecutor(
                 assistant = assistant,
                 settings = state.settings,
                 includeOpeningNarrationReference = requestMessages.none { it.role == MessageRole.USER },
+                isVideoCallActive = state.isVideoCallActive,
                 directorNote = directorNote,
             )
             val effectiveRequestMessages = resolveRequestMessagesForRoundTrip(
@@ -355,6 +357,8 @@ internal class RoleplayRoundTripExecutor(
                 lastCompensationBucket = meta?.lastCompensationBucket.orEmpty(),
                 lastConsumedObservationUpdatedAt = observation.updatedAt,
                 lastSystemEventToken = meta?.lastSystemEventToken.orEmpty(),
+                activeVideoCallSessionId = meta?.activeVideoCallSessionId.orEmpty(),
+                activeVideoCallStartedAt = meta?.activeVideoCallStartedAt ?: 0L,
                 updatedAt = nowProvider(),
             ),
         )

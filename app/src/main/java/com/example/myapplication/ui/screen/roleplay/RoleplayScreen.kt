@@ -85,6 +85,7 @@ fun RoleplayScreen(
     onRestartSession: () -> Unit,
     onDismissAssistantMismatch: (Boolean) -> Unit,
     onOpenPhoneCheck: (PhoneSnapshotOwnerType) -> Unit,
+    onOpenVideoCall: () -> Unit,
     onOpenReadingMode: () -> Unit,
     onOpenSettings: () -> Unit,
     onNavigateBack: () -> Unit,
@@ -335,6 +336,7 @@ fun RoleplayScreen(
                 activeSpecialPlayTypeName = type.name
             },
             onOpenPhoneCheck = { showPhoneOwnerPicker = true },
+            onOpenVideoCall = onOpenVideoCall,
             onDismissSpecialPlayEditor = { activeSpecialPlayTypeName = null },
             onSpecialPlayDraftChange = { draft ->
                 when (draft) {

@@ -30,7 +30,7 @@ import com.example.myapplication.data.local.worldbook.WorldBookEntryEntity
         PhoneSnapshotEntity::class,
         PhoneObservationEntity::class,
     ],
-    version = 19,
+    version = 20,
     exportSchema = true,
 )
 abstract class ChatDatabase : RoomDatabase() {
@@ -444,6 +444,21 @@ abstract class ChatDatabase : RoomDatabase() {
                 if (!hasColumn(db, "phone_observations", "usedFindingKeysJson")) {
                     db.execSQL(
                         "ALTER TABLE phone_observations ADD COLUMN usedFindingKeysJson TEXT NOT NULL DEFAULT '[]'",
+                    )
+                }
+            }
+        }
+
+        val MIGRATION_19_20 = object : Migration(19, 20) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                if (!hasColumn(db, "roleplay_online_meta", "activeVideoCallSessionId")) {
+                    db.execSQL(
+                        "ALTER TABLE roleplay_online_meta ADD COLUMN activeVideoCallSessionId TEXT NOT NULL DEFAULT ''",
+                    )
+                }
+                if (!hasColumn(db, "roleplay_online_meta", "activeVideoCallStartedAt")) {
+                    db.execSQL(
+                        "ALTER TABLE roleplay_online_meta ADD COLUMN activeVideoCallStartedAt INTEGER NOT NULL DEFAULT 0",
                     )
                 }
             }

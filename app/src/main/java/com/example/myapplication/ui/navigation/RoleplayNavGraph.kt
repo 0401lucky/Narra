@@ -17,6 +17,7 @@ import com.example.myapplication.ui.screen.roleplay.RoleplayScenarioEditScreen
 import com.example.myapplication.ui.screen.roleplay.RoleplayScenarioListScreen
 import com.example.myapplication.ui.screen.roleplay.RoleplayScreen
 import com.example.myapplication.ui.screen.roleplay.RoleplaySettingsScreen
+import com.example.myapplication.ui.screen.roleplay.RoleplayVideoCallScreen
 import com.example.myapplication.viewmodel.SettingsViewModel
 
 internal fun NavGraphBuilder.registerRoleplayGraph(
@@ -174,6 +175,11 @@ internal fun NavGraphBuilder.registerRoleplayGraph(
                         }
                     }
                 },
+                onOpenVideoCall = {
+                    navController.navigate(AppRoutes.roleplayVideoCall(scenarioId)) {
+                        launchSingleTop = true
+                    }
+                },
                 onOpenReadingMode = {
                     navController.navigate(AppRoutes.roleplayReading(scenarioId)) {
                         launchSingleTop = true
@@ -292,6 +298,50 @@ internal fun NavGraphBuilder.registerRoleplayGraph(
                 lineHeightScale = roleplayState.settings.roleplayLineHeightScale.scaleFactor,
                 highContrast = roleplayState.settings.roleplayHighContrast,
                 onDismiss = { navController.popBackStack() },
+            )
+        }
+
+        composable(AppRoutes.ROLEPLAY_VIDEO_CALL) { backStackEntry ->
+            val roleplayViewModel = rememberRoleplayViewModel(
+                navController = navController,
+                appGraph = appGraph,
+                backStackEntry = backStackEntry,
+            )
+            val roleplayState by roleplayViewModel.uiState.collectAsStateWithLifecycle()
+            val rawScenarioId = backStackEntry.arguments?.getString("scenarioId").orEmpty()
+            val scenarioId = Uri.decode(rawScenarioId)
+            val routeScenario = roleplayState.currentScenario?.takeIf { it.id == scenarioId }
+                ?: roleplayState.scenarios.firstOrNull { it.id == scenarioId }
+            val routeAssistant = routeScenario?.let { scenario ->
+                roleplayState.settings.resolvedAssistants().firstOrNull { it.id == scenario.assistantId }
+            } ?: roleplayState.currentAssistant
+            LaunchedEffect(scenarioId, roleplayState.currentScenario?.id) {
+                if (roleplayState.currentScenario?.id != scenarioId) {
+                    roleplayViewModel.enterScenario(scenarioId)
+                }
+                roleplayViewModel.startVideoCall()
+            }
+            RoleplayVideoCallScreen(
+                scenario = routeScenario,
+                assistant = routeAssistant,
+                settings = roleplayState.settings,
+                messages = roleplayState.messages,
+                input = roleplayState.input,
+                inputFocusToken = roleplayState.inputFocusToken,
+                isSending = roleplayState.isSending,
+                activeVideoCallStartedAt = roleplayState.activeVideoCallStartedAt,
+                isVideoCallActive = roleplayState.isVideoCallActive,
+                noticeMessage = roleplayState.noticeMessage,
+                errorMessage = roleplayState.errorMessage,
+                onClearNoticeMessage = roleplayViewModel::clearNoticeMessage,
+                onClearErrorMessage = roleplayViewModel::clearErrorMessage,
+                onInputChange = roleplayViewModel::updateInput,
+                onSend = roleplayViewModel::sendMessage,
+                onCancelSending = roleplayViewModel::cancelSending,
+                onHangup = {
+                    roleplayViewModel.hangupVideoCall()
+                    navController.popBackStack()
+                },
             )
         }
     }

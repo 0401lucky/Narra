@@ -78,6 +78,7 @@ object RoleplayConversationSupport {
         assistant: Assistant?,
         settings: AppSettings,
         outputParser: RoleplayOutputParser,
+        isVideoCallActive: Boolean = false,
         nowProvider: () -> Long = { System.currentTimeMillis() },
     ): String {
         val (userName, characterName) = resolveRoleplayNames(
@@ -159,8 +160,14 @@ object RoleplayConversationSupport {
                 append("。\n")
             }
             if (scenario.interactionMode == RoleplayInteractionMode.ONLINE_PHONE) {
-                if (recentUserInput.isBlank()) {
+                if (isVideoCallActive && recentUserInput.isBlank()) {
+                    append("当前状态：视频通话已经接通，但用户暂时还没开口；角色不要自顾自长篇独白。\n")
+                } else if (recentUserInput.isBlank()) {
                     append("当前状态：用户重新打开了聊天界面，但还没有发言。\n")
+                }
+                if (isVideoCallActive) {
+                    append("语境提醒：当前是实时视频通话，角色能看到对方当下的表情、动作和停顿，但最终仍以简短气泡输出。\n")
+                    append("避免把当前互动写成已读、输入中、隔着聊天框等待回复的普通线上聊天。\n")
                 }
                 resolveTimeGapGuidance(messages, nowProvider)
                     .takeIf { it.isNotBlank() }

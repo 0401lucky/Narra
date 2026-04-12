@@ -47,6 +47,7 @@ import com.example.myapplication.model.ProviderSettings
 import com.example.myapplication.model.ProviderFunctionModelMode
 import com.example.myapplication.model.RoleplayContentType
 import com.example.myapplication.model.RoleplayInteractionMode
+import com.example.myapplication.model.RoleplayOnlineEventKind
 import com.example.myapplication.model.RoleplayOutputFormat
 import com.example.myapplication.model.RoleplayScenario
 import com.example.myapplication.model.RoleplaySuggestionAxis
@@ -2148,6 +2149,235 @@ class RoleplayViewModelTest {
     }
 
     @Test
+    fun startVideoCall_recordsConnectedEventWithoutAutoReply() = runTest(mainDispatcherRule.dispatcher.scheduler) {
+        val assistant = Assistant(
+            id = "assistant-1",
+            name = "余罪",
+        )
+        val scenario = RoleplayScenario(
+            id = "scene-1",
+            title = "旧夜",
+            assistantId = assistant.id,
+            userDisplayNameOverride = "林晚",
+            characterDisplayNameOverride = "余罪",
+            interactionMode = RoleplayInteractionMode.ONLINE_PHONE,
+            enableNarration = true,
+            enableRoleplayProtocol = true,
+        )
+        val session = RoleplaySession(
+            id = "session-1",
+            scenarioId = scenario.id,
+            conversationId = "conv-1",
+            createdAt = 1L,
+            updatedAt = 2L,
+        )
+        val store = FakeConversationStore(
+            conversations = listOf(
+                Conversation(
+                    id = session.conversationId,
+                    title = "旧夜",
+                    model = "",
+                    createdAt = 1L,
+                    updatedAt = 2L,
+                    assistantId = assistant.id,
+                ),
+            ),
+        )
+        val repository = FakeRoleplayRepository(
+            conversationStore = store,
+            scenarios = listOf(scenario),
+            sessions = listOf(session),
+        )
+        var now = 1_000L
+        val viewModel = createViewModel(
+            store = store,
+            roleplayRepository = repository,
+            settings = AppSettings(
+                assistants = listOf(assistant),
+                selectedAssistantId = assistant.id,
+            ),
+            promptContextAssembler = fixedPromptAssembler("提示词上下文"),
+            nowProvider = {
+                val value = now
+                now += 1_000L
+                value
+            },
+        )
+
+        viewModel.enterScenario(scenario.id)
+        advanceUntilIdle()
+        viewModel.startVideoCall()
+        advanceUntilIdle()
+
+        val latestState = viewModel.uiState.value
+        val conversationMessages = store.listMessages(session.conversationId)
+
+        assertTrue(latestState.isVideoCallActive)
+        assertFalse(latestState.isSending)
+        assertEquals(1, conversationMessages.size)
+        assertEquals(RoleplayOnlineEventKind.VIDEO_CALL_CONNECTED, conversationMessages.single().systemEventKind)
+        assertEquals("<narration>已接通视频通话</narration>", conversationMessages.single().content)
+    }
+
+    @Test
+    fun sendMessage_duringVideoCallUsesVideoCallPrompt() = runTest(mainDispatcherRule.dispatcher.scheduler) {
+        enqueueStreamResponse("<dialogue speaker=\"character\">看着我。</dialogue>")
+
+        val assistant = Assistant(
+            id = "assistant-1",
+            name = "余罪",
+        )
+        val scenario = RoleplayScenario(
+            id = "scene-1",
+            title = "旧夜",
+            assistantId = assistant.id,
+            userDisplayNameOverride = "林晚",
+            characterDisplayNameOverride = "余罪",
+            interactionMode = RoleplayInteractionMode.ONLINE_PHONE,
+            enableNarration = true,
+            enableRoleplayProtocol = true,
+        )
+        val session = RoleplaySession(
+            id = "session-1",
+            scenarioId = scenario.id,
+            conversationId = "conv-1",
+            createdAt = 1L,
+            updatedAt = 2L,
+        )
+        val store = FakeConversationStore(
+            conversations = listOf(
+                Conversation(
+                    id = session.conversationId,
+                    title = "旧夜",
+                    model = "chat-model",
+                    createdAt = 1L,
+                    updatedAt = 2L,
+                    assistantId = assistant.id,
+                ),
+            ),
+        )
+        val provider = ProviderSettings(
+            id = "provider-1",
+            name = "测试 Provider",
+            baseUrl = server.url("/v1/").toString(),
+            apiKey = "test-key",
+            selectedModel = "chat-model",
+        )
+        var now = 1_000L
+        val viewModel = createViewModel(
+            store = store,
+            roleplayRepository = FakeRoleplayRepository(
+                conversationStore = store,
+                scenarios = listOf(scenario),
+                sessions = listOf(session),
+            ),
+            settings = AppSettings(
+                baseUrl = provider.baseUrl,
+                apiKey = provider.apiKey,
+                selectedModel = provider.selectedModel,
+                providers = listOf(provider),
+                selectedProviderId = provider.id,
+                assistants = listOf(assistant),
+                selectedAssistantId = assistant.id,
+            ),
+            promptContextAssembler = fixedPromptAssembler("提示词上下文"),
+            messageIdProvider = idProviderOf("user-1", "assistant-1"),
+            nowProvider = {
+                val value = now
+                now += 1_000L
+                value
+            },
+        )
+
+        viewModel.enterScenario(scenario.id)
+        advanceUntilIdle()
+        viewModel.startVideoCall()
+        advanceUntilIdle()
+        viewModel.updateInput("你现在能看清我吗？")
+        viewModel.sendMessage()
+        advanceUntilIdle()
+
+        val requestBody = JsonParser.parseString(server.takeRequest().body.readUtf8()).asJsonObject
+        val systemPrompt = requestBody.getAsJsonArray("messages")[0].asJsonObject["content"].asString
+
+        assertTrue(systemPrompt.contains("【线上视频通话模式】"))
+        assertTrue(systemPrompt.contains("实时视频通话"))
+        assertTrue(systemPrompt.contains("不要把语境写成已读、打字中"))
+    }
+
+    @Test
+    fun hangupVideoCall_recordsEndedEventAndClearsState() = runTest(mainDispatcherRule.dispatcher.scheduler) {
+        val assistant = Assistant(
+            id = "assistant-1",
+            name = "余罪",
+        )
+        val scenario = RoleplayScenario(
+            id = "scene-1",
+            title = "旧夜",
+            assistantId = assistant.id,
+            userDisplayNameOverride = "林晚",
+            characterDisplayNameOverride = "余罪",
+            interactionMode = RoleplayInteractionMode.ONLINE_PHONE,
+            enableNarration = true,
+            enableRoleplayProtocol = true,
+        )
+        val session = RoleplaySession(
+            id = "session-1",
+            scenarioId = scenario.id,
+            conversationId = "conv-1",
+            createdAt = 1L,
+            updatedAt = 2L,
+        )
+        val store = FakeConversationStore(
+            conversations = listOf(
+                Conversation(
+                    id = session.conversationId,
+                    title = "旧夜",
+                    model = "",
+                    createdAt = 1L,
+                    updatedAt = 2L,
+                    assistantId = assistant.id,
+                ),
+            ),
+        )
+        val repository = FakeRoleplayRepository(
+            conversationStore = store,
+            scenarios = listOf(scenario),
+            sessions = listOf(session),
+        )
+        var now = 1_000L
+        val viewModel = createViewModel(
+            store = store,
+            roleplayRepository = repository,
+            settings = AppSettings(
+                assistants = listOf(assistant),
+                selectedAssistantId = assistant.id,
+            ),
+            promptContextAssembler = fixedPromptAssembler("提示词上下文"),
+            nowProvider = {
+                val value = now
+                now += 1_000L
+                value
+            },
+        )
+
+        viewModel.enterScenario(scenario.id)
+        advanceUntilIdle()
+        viewModel.startVideoCall()
+        advanceUntilIdle()
+        viewModel.hangupVideoCall()
+        advanceUntilIdle()
+
+        val latestState = viewModel.uiState.value
+        val conversationMessages = store.listMessages(session.conversationId)
+
+        assertFalse(latestState.isVideoCallActive)
+        assertEquals(2, conversationMessages.size)
+        assertEquals(RoleplayOnlineEventKind.VIDEO_CALL_ENDED, conversationMessages.last().systemEventKind)
+        assertTrue(conversationMessages.last().content.contains("视频通话已结束，通话时长 00:02"))
+    }
+
+    @Test
     fun dismissAssistantMismatchDialog_withSuppression_persistsPreference() = runTest(mainDispatcherRule.dispatcher.scheduler) {
         val assistant = Assistant(
             id = "assistant-1",
@@ -2888,9 +3118,11 @@ private class FakeRoleplayRepository(
     private val conversationStore: FakeConversationStore,
     scenarios: List<RoleplayScenario>,
     sessions: List<RoleplaySession>,
+    onlineMetaByConversation: Map<String, com.example.myapplication.model.RoleplayOnlineMeta> = emptyMap(),
 ) : RoleplayRepository {
     private val scenariosState = MutableStateFlow(scenarios)
     private val sessionsState = MutableStateFlow(sessions)
+    private val onlineMetaState = MutableStateFlow(onlineMetaByConversation)
 
     override fun observeScenarios(): Flow<List<RoleplayScenario>> = scenariosState
 
@@ -2960,11 +3192,21 @@ private class FakeRoleplayRepository(
         return sessionsState.value.firstOrNull { it.id == sessionId }
     }
 
-    override suspend fun getOnlineMeta(conversationId: String): com.example.myapplication.model.RoleplayOnlineMeta? = null
+    override suspend fun getOnlineMeta(conversationId: String): com.example.myapplication.model.RoleplayOnlineMeta? {
+        return onlineMetaState.value[conversationId]
+    }
 
-    override suspend fun upsertOnlineMeta(meta: com.example.myapplication.model.RoleplayOnlineMeta) = Unit
+    override suspend fun upsertOnlineMeta(meta: com.example.myapplication.model.RoleplayOnlineMeta) {
+        onlineMetaState.value = onlineMetaState.value.toMutableMap().apply {
+            this[meta.conversationId] = meta
+        }
+    }
 
-    override suspend fun deleteOnlineMeta(conversationId: String) = Unit
+    override suspend fun deleteOnlineMeta(conversationId: String) {
+        onlineMetaState.value = onlineMetaState.value.toMutableMap().apply {
+            remove(conversationId)
+        }
+    }
 }
 
 @OptIn(ExperimentalCoroutinesApi::class)
@@ -2973,9 +3215,11 @@ private class DelayedStartRoleplayRepository(
     scenarios: List<RoleplayScenario>,
     sessions: List<RoleplaySession>,
     private val startDelayByScenarioId: Map<String, Long>,
+    onlineMetaByConversation: Map<String, com.example.myapplication.model.RoleplayOnlineMeta> = emptyMap(),
 ) : RoleplayRepository {
     private val scenariosState = MutableStateFlow(scenarios)
     private val sessionsState = MutableStateFlow(sessions)
+    private val onlineMetaState = MutableStateFlow(onlineMetaByConversation)
 
     override fun observeScenarios(): Flow<List<RoleplayScenario>> = scenariosState
 
@@ -3046,9 +3290,19 @@ private class DelayedStartRoleplayRepository(
         return sessionsState.value.firstOrNull { it.id == sessionId }
     }
 
-    override suspend fun getOnlineMeta(conversationId: String): com.example.myapplication.model.RoleplayOnlineMeta? = null
+    override suspend fun getOnlineMeta(conversationId: String): com.example.myapplication.model.RoleplayOnlineMeta? {
+        return onlineMetaState.value[conversationId]
+    }
 
-    override suspend fun upsertOnlineMeta(meta: com.example.myapplication.model.RoleplayOnlineMeta) = Unit
+    override suspend fun upsertOnlineMeta(meta: com.example.myapplication.model.RoleplayOnlineMeta) {
+        onlineMetaState.value = onlineMetaState.value.toMutableMap().apply {
+            this[meta.conversationId] = meta
+        }
+    }
 
-    override suspend fun deleteOnlineMeta(conversationId: String) = Unit
+    override suspend fun deleteOnlineMeta(conversationId: String) {
+        onlineMetaState.value = onlineMetaState.value.toMutableMap().apply {
+            remove(conversationId)
+        }
+    }
 }

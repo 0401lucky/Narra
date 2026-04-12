@@ -1,16 +1,15 @@
 {
   "app_id": "com.narra.app.dev",
   "channel": "dev",
-  "latest_version_name": "1.2.4-dev",
-  "latest_version_code": 10204,
+  "latest_version_name": "1.2.5-dev",
+  "latest_version_code": 10205,
   "minimum_supported_version_code": 0,
-  "apk_url": "https://download.lsa1230.dpdns.org/dev/Narra-v1.2.4-dev-10204-dev.apk?ts=20260411162951",
-  "apk_sha256": "8bb4bf1e75c02c27935f7916dcb8848b1011e996594747e29f828d213579a79f",
-  "published_at": "2026-04-11T16:29:51+08:00",
+  "apk_url": "https://download.lsa1230.dpdns.org/dev/Narra-v1.2.5-dev-10205-dev.apk?ts=20260412125231",
+  "apk_sha256": "898269ace81a9496a4fc0747e7ceeeff5a05df17f362b08c2e14ee30dce1e655",
+  "published_at": "2026-04-12T12:52:30+08:00",
   "release_notes": [
-    "修复沉浸扮演快速切场景时旧异步结果串回新场景的问题",
-    "修复引用态残留与取消发送后 LOADING 助手消息残留的问题",
-    "修复线上模式不响应沉浸模式设置，以及浏览旧消息时被强制拉回底部的问题",
-    "修复 dev 渠道版本与更新页漏掉 -dev 后缀，且已是最新版本状态会在 24 小时节流窗口内稳定保留"
+    "沉浸扮演线上模式新增视频通话特殊玩法，接通后进入独立视频页",
+    "视频通话期间不再自动触发 AI 开场，用户先发第一句后角色再继续回复",
+    "挂断后通话内容会回流到原线上聊天页，并写回接通/结束/时长事件"
   ]
 }

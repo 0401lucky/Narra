@@ -32,6 +32,7 @@ object AppRoutes {
     const val ROLEPLAY_PLAY = "roleplay/play/{scenarioId}"
     const val ROLEPLAY_SETTINGS = "roleplay/play/{scenarioId}/settings"
     const val ROLEPLAY_READING = "roleplay/play/{scenarioId}/reading"
+    const val ROLEPLAY_VIDEO_CALL = "roleplay/play/{scenarioId}/video-call"
     const val PHONE_CHECK = "phone-check/{conversationId}?scenarioId={scenarioId}&ownerType={ownerType}"
 
     fun settingsProviderDetail(providerId: String): String {
@@ -84,6 +85,10 @@ object AppRoutes {
 
     fun roleplayReading(scenarioId: String): String {
         return "roleplay/play/${Uri.encode(scenarioId)}/reading"
+    }
+
+    fun roleplayVideoCall(scenarioId: String): String {
+        return "roleplay/play/${Uri.encode(scenarioId)}/video-call"
     }
 
     fun phoneCheck(

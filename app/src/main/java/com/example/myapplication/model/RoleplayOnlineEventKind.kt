@@ -5,7 +5,9 @@ enum class RoleplayOnlineEventKind(val storageValue: String) {
     SCREENSHOT("screenshot"),
     RECALL("recall"),
     BURST("burst"),
-    COMPENSATION_OPENING("compensation_opening");
+    COMPENSATION_OPENING("compensation_opening"),
+    VIDEO_CALL_CONNECTED("video_call_connected"),
+    VIDEO_CALL_ENDED("video_call_ended");
 
     companion object {
         fun fromStorageValue(value: String): RoleplayOnlineEventKind {

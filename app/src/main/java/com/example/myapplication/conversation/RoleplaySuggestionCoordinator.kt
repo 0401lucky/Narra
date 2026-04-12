@@ -23,6 +23,7 @@ data class RoleplaySuggestionRequest(
     val session: RoleplaySession,
     val settings: AppSettings,
     val currentInput: String,
+    val isVideoCallActive: Boolean = false,
     val recentMessageWindow: Int,
     val conversationMessages: List<ChatMessage>,
     val resolveAssistant: (AppSettings, String) -> Assistant?,
@@ -82,6 +83,7 @@ class RoleplaySuggestionCoordinator(
             assistant = assistant,
             settings = request.settings,
             includeOpeningNarrationReference = allMessages.isEmpty(),
+            isVideoCallActive = request.isVideoCallActive,
             directorNote = directorNote,
         )
         val (userName, characterName) = request.resolveRoleplayNames(

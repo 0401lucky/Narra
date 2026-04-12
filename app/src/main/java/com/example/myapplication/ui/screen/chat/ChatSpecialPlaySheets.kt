@@ -28,6 +28,7 @@ import androidx.compose.material.icons.filled.Event
 import androidx.compose.material.icons.filled.Gavel
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material.icons.filled.Visibility
+import androidx.compose.material.icons.filled.Videocam
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
@@ -142,6 +143,15 @@ private val phoneCheckOption = SpecialPlayOption(
     iconBackground = PhoneBlueSoft,
 )
 
+private val videoCallOption = SpecialPlayOption(
+    type = ChatSpecialType.INVITE,
+    title = "视频通话",
+    description = "进入独立视频通话页，保持同一条线上聊天会话，挂断后文本内容会回流到聊天里。",
+    icon = Icons.Default.Videocam,
+    iconTint = InviteBlue,
+    iconBackground = InviteBlueSoft,
+)
+
 val TransferPlayDraftSaver: Saver<TransferPlayDraft, Any> = listSaver(
     save = { listOf(it.counterparty, it.amount, it.note) },
     restore = {
@@ -216,6 +226,7 @@ fun SpecialPlaySheet(
     onDismissRequest: () -> Unit,
     onOpenPlay: (ChatSpecialType) -> Unit,
     onOpenPhoneCheck: () -> Unit,
+    onOpenVideoCall: (() -> Unit)? = null,
 ) {
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     ModalBottomSheet(
@@ -246,6 +257,12 @@ fun SpecialPlaySheet(
                     option = phoneCheckOption,
                     onClick = onOpenPhoneCheck,
                 )
+                onOpenVideoCall?.let { openVideoCall ->
+                    SpecialPlayEntry(
+                        option = videoCallOption,
+                        onClick = openVideoCall,
+                    )
+                }
             }
 
             SpecialPlayGroup(title = "社交互动") {

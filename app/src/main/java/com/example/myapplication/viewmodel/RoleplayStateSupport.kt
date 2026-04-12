@@ -75,6 +75,8 @@ object RoleplayStateSupport {
             replyToMessageId = "",
             replyToPreview = "",
             replyToSpeakerName = "",
+            activeVideoCallSessionId = "",
+            activeVideoCallStartedAt = 0L,
             pendingMemoryProposal = null,
             recentMemoryProposalHistory = emptyList(),
             contextStatus = RoleplayContextStatus(),
@@ -105,6 +107,8 @@ object RoleplayStateSupport {
             replyToMessageId = "",
             replyToPreview = "",
             replyToSpeakerName = "",
+            activeVideoCallSessionId = "",
+            activeVideoCallStartedAt = 0L,
             pendingMemoryProposal = null,
             recentMemoryProposalHistory = emptyList(),
         )
@@ -264,6 +268,8 @@ object RoleplayStateSupport {
             replyToMessageId = "",
             replyToPreview = "",
             replyToSpeakerName = "",
+            activeVideoCallSessionId = "",
+            activeVideoCallStartedAt = 0L,
             pendingMemoryProposal = null,
             recentMemoryProposalHistory = emptyList(),
         )
@@ -285,6 +291,8 @@ object RoleplayStateSupport {
             replyToMessageId = "",
             replyToPreview = "",
             replyToSpeakerName = "",
+            activeVideoCallSessionId = "",
+            activeVideoCallStartedAt = 0L,
             pendingMemoryProposal = null,
             recentMemoryProposalHistory = emptyList(),
         )
@@ -457,6 +465,8 @@ object RoleplayStateSupport {
             currentSession = session,
             pendingMemoryProposal = null,
             recentMemoryProposalHistory = emptyList(),
+            activeVideoCallSessionId = if (session == null) "" else current.activeVideoCallSessionId,
+            activeVideoCallStartedAt = if (session == null) 0L else current.activeVideoCallStartedAt,
             contextStatus = if (session == null) {
                 RoleplayContextStatus()
             } else {
@@ -486,6 +496,27 @@ object RoleplayStateSupport {
             contextStatus = current.contextStatus.copy(
                 isContinuingSession = startResult.hasHistory,
             ),
+        )
+    }
+
+    fun applyVideoCallState(
+        current: RoleplayUiState,
+        callSessionId: String,
+        startedAt: Long,
+        inputFocusToken: Long = current.inputFocusToken,
+    ): RoleplayUiState {
+        return current.copy(
+            activeVideoCallSessionId = callSessionId,
+            activeVideoCallStartedAt = startedAt,
+            inputFocusToken = inputFocusToken,
+            errorMessage = null,
+        )
+    }
+
+    fun clearVideoCallState(current: RoleplayUiState): RoleplayUiState {
+        return current.copy(
+            activeVideoCallSessionId = "",
+            activeVideoCallStartedAt = 0L,
         )
     }
 }

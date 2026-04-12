@@ -120,4 +120,26 @@ class RoleplayPromptDecoratorTest {
         assertTrue(prompt.contains("真实聊天软件里的连续气泡感"))
         assertTrue(!prompt.contains("不要主动使用 <narration>"))
     }
+
+    @Test
+    fun decorate_videoCallModeAddsRealtimeConstraints() {
+        val prompt = RoleplayPromptDecorator.decorate(
+            baseSystemPrompt = "",
+            scenario = RoleplayScenario(
+                id = "scene-1",
+                userDisplayNameOverride = "林晚",
+                characterDisplayNameOverride = "余罪",
+                interactionMode = RoleplayInteractionMode.ONLINE_PHONE,
+                enableNarration = true,
+            ),
+            assistant = Assistant(id = "assistant-1", name = "余罪"),
+            settings = AppSettings(showOnlineRoleplayNarration = true),
+            isVideoCallActive = true,
+        )
+
+        assertTrue(prompt.contains("【线上视频通话模式】"))
+        assertTrue(prompt.contains("实时视频通话"))
+        assertTrue(prompt.contains("不要把语境写成已读、打字中"))
+        assertTrue(prompt.contains("通话中的即时反应"))
+    }
 }

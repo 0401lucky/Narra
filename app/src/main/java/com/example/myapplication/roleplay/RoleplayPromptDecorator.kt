@@ -14,6 +14,7 @@ object RoleplayPromptDecorator {
         assistant: Assistant?,
         settings: AppSettings,
         includeOpeningNarrationReference: Boolean = true,
+        isVideoCallActive: Boolean = false,
         directorNote: String = "",
     ): String {
         val playerName = scenario.userDisplayNameOverride.trim()
@@ -103,28 +104,91 @@ object RoleplayPromptDecorator {
             if (scenario.interactionMode == RoleplayInteractionMode.ONLINE_PHONE) {
                 add(
                     buildString {
-                        append("【线上手机聊天模式】\n")
-                        append("1. 当前是手机线上聊天，不是面对面现场互动。\n")
-                        append("2. 角色回复必须以短消息、多气泡为主，让聊天看起来像真实聊天软件；能一句说完就不要拉成长段。\n")
-                        append("3. 正常发出去的内容使用 <dialogue speaker=\"character\" emotion=\"情绪\">内容</dialogue>。\n")
-                        append("4. speaker 属性固定写 character，不要写角色真实名字；emotion 属性只有确定时再写，拿不准就省略。\n")
-                        append("5. 所有属性必须完整写在 opening tag 内，绝不能把 speaker=、emotion= 或半截标签输出到正文里；如果协议快写错了，宁可直接输出纯中文内容，也不要输出坏掉的标签。\n")
-                        append("6. 如果要引用旧消息，可在 dialogue 标签上附加属性：reply_to=\"消息ID\" reply_speaker=\"名字\" reply_preview=\"预览\"。\n")
-                        if (allowOnlineThoughtHints) {
-                            append("7. 只有角色没真正发出去的心里话、情绪余波、看完消息后的停顿或克制反应，才使用 <thought>内容</thought>。\n")
-                            append("8. <thought> 必须短、少、轻，一次回复最多 0 到 1 段；不要写成长段旁白，不要抢走聊天主视线。\n")
-                            append("9. 不要主动使用 <narration>；线上聊天感主要通过 dialogue 和少量 thought 表达。\n")
-                            append("10. 本轮输出多少段 dialogue/thought 由当前话题、情绪强度、上下文压力和记忆线索自然决定，能一句说完就少发，需要追发时再连续多发。\n")
-                            append("11. 如果近期失联较久，可按角色人设自然表现委屈、生气、阴阳怪气、克制或想念。\n")
-                            append("12. 如果当前剧情里存在“看过对方手机”的既有事件，角色可以自然引用或延续其情绪后效。\n")
-                            append("13. 不要输出 Markdown、代码块或额外格式说明。")
+                        if (isVideoCallActive) {
+                            append("【线上视频通话模式】\n")
+                            append("1. 当前是已经接通的实时视频通话，不是普通文字聊天，也不是面对面线下现场。\n")
+                            append("2. 角色能看到对方当下的表情、停顿、动作和镜头里的状态，但最终仍以短句、多气泡的方式输出，保持屏幕阅读友好。\n")
+                            append("3. 正常发出去的内容使用 <dialogue speaker=\"character\" emotion=\"情绪\">内容</dialogue>。\n")
+                            append("4. speaker 属性固定写 character，不要写角色真实名字；emotion 属性只有确定时再写，拿不准就省略。\n")
+                            append("5. 所有属性必须完整写在 opening tag 内，绝不能把 speaker=、emotion= 或半截标签输出到正文里；如果协议快写错了，宁可直接输出纯中文内容，也不要输出坏掉的标签。\n")
+                            append("6. 不要把语境写成已读、打字中、隔着屏幕发消息或普通聊天框等待回复；重点是正在通话中的即时反应。\n")
+                            append("7. 如果要引用旧消息，可在 dialogue 标签上附加属性：reply_to=\"消息ID\" reply_speaker=\"名字\" reply_preview=\"预览\"。\n")
                         } else {
-                            append("7. 不使用 <thought>、<narration> 标签，不写独立心声或旁白段。\n")
-                            append("8. 输出多少段 dialogue 由当前话题、情绪强度、上下文压力和记忆线索自然决定，能一句说完就少发，需要追发时再连续多发，整体保持真实聊天软件里的连续气泡感。\n")
-                            append("9. 聊天语境要有时间感、等待感和手机互动感，但通过对白本身表达，不额外插入心声或旁白。\n")
-                            append("10. 如果近期失联较久，可按角色人设自然表现委屈、生气、阴阳怪气、克制或想念。\n")
-                            append("11. 如果当前剧情里存在“看过对方手机”的既有事件，角色可以自然引用或延续其情绪后效。\n")
-                            append("12. 不要输出 Markdown、代码块或额外格式说明。")
+                            append("【线上手机聊天模式】\n")
+                            append("1. 当前是手机线上聊天，不是面对面现场互动。\n")
+                            append("2. 角色回复必须以短消息、多气泡为主，让聊天看起来像真实聊天软件；能一句说完就不要拉成长段。\n")
+                            append("3. 正常发出去的内容使用 <dialogue speaker=\"character\" emotion=\"情绪\">内容</dialogue>。\n")
+                            append("4. speaker 属性固定写 character，不要写角色真实名字；emotion 属性只有确定时再写，拿不准就省略。\n")
+                            append("5. 所有属性必须完整写在 opening tag 内，绝不能把 speaker=、emotion= 或半截标签输出到正文里；如果协议快写错了，宁可直接输出纯中文内容，也不要输出坏掉的标签。\n")
+                            append("6. 如果要引用旧消息，可在 dialogue 标签上附加属性：reply_to=\"消息ID\" reply_speaker=\"名字\" reply_preview=\"预览\"。\n")
+                        }
+                        if (allowOnlineThoughtHints) {
+                            append(if (isVideoCallActive) {
+                                "8. 只有角色没真正说出口的心里话、短暂停顿、呼吸变化或克制反应，才使用 <thought>内容</thought>。\n"
+                            } else {
+                                "7. 只有角色没真正发出去的心里话、情绪余波、看完消息后的停顿或克制反应，才使用 <thought>内容</thought>。\n"
+                            })
+                            append(if (isVideoCallActive) {
+                                "9. <thought> 必须短、少、轻，一次回复最多 0 到 1 段；不要写成长段旁白，不要抢走通话中的对白主视线。\n"
+                            } else {
+                                "8. <thought> 必须短、少、轻，一次回复最多 0 到 1 段；不要写成长段旁白，不要抢走聊天主视线。\n"
+                            })
+                            append(if (isVideoCallActive) {
+                                "10. 不要主动使用 <narration>；视频通话感主要通过 dialogue 和少量 thought 表达。\n"
+                            } else {
+                                "9. 不要主动使用 <narration>；线上聊天感主要通过 dialogue 和少量 thought 表达。\n"
+                            })
+                            append(if (isVideoCallActive) {
+                                "11. 本轮输出多少段 dialogue/thought 由当前情绪、镜头状态和上下文压力自然决定，能一句说完就少发，需要追发时再连续多发。\n"
+                            } else {
+                                "10. 本轮输出多少段 dialogue/thought 由当前话题、情绪强度、上下文压力和记忆线索自然决定，能一句说完就少发，需要追发时再连续多发。\n"
+                            })
+                            append(if (isVideoCallActive) {
+                                "12. 可以自然带出看见对方后的即时反应，但不要大段描写镜头语言，不要写成小说旁白。\n"
+                            } else {
+                                "11. 如果近期失联较久，可按角色人设自然表现委屈、生气、阴阳怪气、克制或想念。\n"
+                            })
+                            append(if (isVideoCallActive) {
+                                "13. 如果当前剧情里存在“看过对方手机”的既有事件，角色可以自然引用或延续其情绪后效。\n"
+                            } else {
+                                "12. 如果当前剧情里存在“看过对方手机”的既有事件，角色可以自然引用或延续其情绪后效。\n"
+                            })
+                            append(if (isVideoCallActive) {
+                                "14. 不要输出 Markdown、代码块或额外格式说明。"
+                            } else {
+                                "13. 不要输出 Markdown、代码块或额外格式说明。"
+                            })
+                        } else {
+                            append(if (isVideoCallActive) {
+                                "8. 不使用 <thought>、<narration> 标签，不写独立心声或旁白段。\n"
+                            } else {
+                                "7. 不使用 <thought>、<narration> 标签，不写独立心声或旁白段。\n"
+                            })
+                            append(if (isVideoCallActive) {
+                                "9. 输出多少段 dialogue 由当前情绪、镜头状态和上下文压力自然决定，能一句说完就少发，需要追发时再连续多发。\n"
+                            } else {
+                                "8. 输出多少段 dialogue 由当前话题、情绪强度、上下文压力和记忆线索自然决定，能一句说完就少发，需要追发时再连续多发，整体保持真实聊天软件里的连续气泡感。\n"
+                            })
+                            append(if (isVideoCallActive) {
+                                "10. 视频通话语境要有即时性和临场反应感，但通过对白本身表达，不额外插入心声或旁白。\n"
+                            } else {
+                                "9. 聊天语境要有时间感、等待感和手机互动感，但通过对白本身表达，不额外插入心声或旁白。\n"
+                            })
+                            append(if (isVideoCallActive) {
+                                "11. 可以自然提到看见对方后的即时感受，但不要写成大段镜头描写。\n"
+                            } else {
+                                "10. 如果近期失联较久，可按角色人设自然表现委屈、生气、阴阳怪气、克制或想念。\n"
+                            })
+                            append(if (isVideoCallActive) {
+                                "12. 如果当前剧情里存在“看过对方手机”的既有事件，角色可以自然引用或延续其情绪后效。\n"
+                            } else {
+                                "11. 如果当前剧情里存在“看过对方手机”的既有事件，角色可以自然引用或延续其情绪后效。\n"
+                            })
+                            append(if (isVideoCallActive) {
+                                "13. 不要输出 Markdown、代码块或额外格式说明。"
+                            } else {
+                                "12. 不要输出 Markdown、代码块或额外格式说明。"
+                            })
                         }
                     },
                 )

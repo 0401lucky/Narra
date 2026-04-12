@@ -243,6 +243,8 @@ class RoomRoleplayRepository(
                 lastCompensationBucket = meta.lastCompensationBucket,
                 lastConsumedObservationUpdatedAt = meta.lastConsumedObservationUpdatedAt,
                 lastSystemEventToken = meta.lastSystemEventToken,
+                activeVideoCallSessionId = meta.activeVideoCallSessionId,
+                activeVideoCallStartedAt = meta.activeVideoCallStartedAt,
                 updatedAt = meta.updatedAt,
             ),
         )
@@ -326,6 +328,8 @@ class RoomRoleplayRepository(
             lastCompensationBucket = entity.lastCompensationBucket,
             lastConsumedObservationUpdatedAt = entity.lastConsumedObservationUpdatedAt,
             lastSystemEventToken = entity.lastSystemEventToken,
+            activeVideoCallSessionId = entity.activeVideoCallSessionId,
+            activeVideoCallStartedAt = entity.activeVideoCallStartedAt,
             updatedAt = entity.updatedAt,
         )
     }

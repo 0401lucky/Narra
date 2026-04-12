@@ -96,6 +96,7 @@ internal class RoleplaySuggestionActionSupport(
                         scenario = scenario,
                         settings = latestState.settings,
                         currentInput = latestState.input,
+                        isVideoCallActive = latestState.isVideoCallActive,
                         session = session,
                         recentMessageWindow = recentMessageWindow,
                         conversationMessages = currentRawMessages.value,
@@ -109,6 +110,7 @@ internal class RoleplaySuggestionActionSupport(
                                 assistant = currentAssistant,
                                 settings = currentSettings,
                                 outputParser = outputParser,
+                                isVideoCallActive = latestState.isVideoCallActive,
                             )
                         },
                     ),

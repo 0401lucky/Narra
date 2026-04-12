@@ -72,6 +72,7 @@ import com.example.myapplication.roleplay.RoleplayPromptDecorator
 import com.example.myapplication.roleplay.RoleplayRoundTripSupport
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.filterNotNull
@@ -119,7 +120,12 @@ data class RoleplayUiState(
     val replyToMessageId: String = "",
     val replyToPreview: String = "",
     val replyToSpeakerName: String = "",
-)
+    val activeVideoCallSessionId: String = "",
+    val activeVideoCallStartedAt: Long = 0L,
+) {
+    val isVideoCallActive: Boolean
+        get() = activeVideoCallSessionId.isNotBlank() && activeVideoCallStartedAt > 0L
+}
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class RoleplayViewModel(
@@ -312,6 +318,9 @@ class RoleplayViewModel(
                     conversationId = session?.conversationId,
                     isContinuingSession = _uiState.value.contextStatus.isContinuingSession,
                 )
+                viewModelScope.launch {
+                    syncVideoCallState(session)
+                }
             },
         )
         observePendingMemoryProposal()
@@ -440,6 +449,126 @@ class RoleplayViewModel(
 
     fun confirmTransferReceipt(specialId: String) {
         sendActionSupport.confirmTransferReceipt(specialId)
+    }
+
+    fun startVideoCall() {
+        val state = _uiState.value
+        val scenario = state.currentScenario ?: return
+        if (scenario.interactionMode != RoleplayInteractionMode.ONLINE_PHONE) {
+            return
+        }
+        suggestionActionSupport.cancelSuggestionGeneration(resetState = false)
+        viewModelScope.launch {
+            try {
+                val session = ensureSessionForVideoCall(state, scenario) ?: return@launch
+                val meta = roleplayRepository.getOnlineMeta(session.conversationId)
+                val existingCallSessionId = meta?.activeVideoCallSessionId.orEmpty()
+                val existingStartedAt = meta?.activeVideoCallStartedAt ?: 0L
+                if (existingCallSessionId.isNotBlank() && existingStartedAt > 0L) {
+                    _uiState.update { current ->
+                        RoleplayStateSupport.applyVideoCallState(
+                            current = current,
+                            callSessionId = existingCallSessionId,
+                            startedAt = existingStartedAt,
+                            inputFocusToken = nowProvider(),
+                        )
+                    }
+                    return@launch
+                }
+
+                val startedAt = nowProvider()
+                val callSessionId = "video-call-${session.conversationId}-$startedAt"
+                val selectedModel = RoleplayConversationSupport.resolveSelectedModelId(_uiState.value.settings)
+                conversationRepository.appendSystemEventMessage(
+                    conversationId = session.conversationId,
+                    message = buildVideoCallSystemMessage(
+                        conversationId = session.conversationId,
+                        createdAt = startedAt,
+                        content = "<narration>已接通视频通话</narration>",
+                        eventKind = RoleplayOnlineEventKind.VIDEO_CALL_CONNECTED,
+                    ),
+                    selectedModel = selectedModel,
+                )
+                currentRawMessages.value = conversationRepository.listMessages(session.conversationId)
+                roleplayRepository.upsertOnlineMeta(
+                    com.example.myapplication.model.RoleplayOnlineMeta(
+                        conversationId = session.conversationId,
+                        lastCompensationBucket = meta?.lastCompensationBucket.orEmpty(),
+                        lastConsumedObservationUpdatedAt = meta?.lastConsumedObservationUpdatedAt ?: 0L,
+                        lastSystemEventToken = meta?.lastSystemEventToken.orEmpty(),
+                        activeVideoCallSessionId = callSessionId,
+                        activeVideoCallStartedAt = startedAt,
+                        updatedAt = startedAt,
+                    ),
+                )
+                _uiState.update { current ->
+                    RoleplayStateSupport.applyVideoCallState(
+                        current = current,
+                        callSessionId = callSessionId,
+                        startedAt = startedAt,
+                        inputFocusToken = startedAt,
+                    )
+                }
+            } catch (throwable: Throwable) {
+                _uiState.update { current ->
+                    RoleplayStateSupport.applyErrorMessage(current, throwable.message ?: "启动视频通话失败")
+                }
+            }
+        }
+    }
+
+    fun hangupVideoCall() {
+        val state = _uiState.value
+        val session = state.currentSession ?: return
+        if (!state.isVideoCallActive) {
+            return
+        }
+        suggestionActionSupport.cancelSuggestionGeneration(resetState = false)
+        viewModelScope.launch {
+            try {
+                sendingJob?.cancelAndJoin()
+                compensationJob?.cancelAndJoin()
+                val meta = roleplayRepository.getOnlineMeta(session.conversationId)
+                val activeCallSessionId = meta?.activeVideoCallSessionId
+                    .orEmpty()
+                    .ifBlank { state.activeVideoCallSessionId }
+                val activeStartedAt = (meta?.activeVideoCallStartedAt ?: 0L)
+                    .takeIf { it > 0L }
+                    ?: state.activeVideoCallStartedAt
+                val endedAt = nowProvider()
+                if (activeCallSessionId.isNotBlank() && activeStartedAt > 0L) {
+                    val selectedModel = RoleplayConversationSupport.resolveSelectedModelId(_uiState.value.settings)
+                    val durationText = formatVideoCallDuration(endedAt - activeStartedAt)
+                    conversationRepository.appendSystemEventMessage(
+                        conversationId = session.conversationId,
+                        message = buildVideoCallSystemMessage(
+                            conversationId = session.conversationId,
+                            createdAt = endedAt,
+                            content = "<narration>视频通话已结束，通话时长 $durationText</narration>",
+                            eventKind = RoleplayOnlineEventKind.VIDEO_CALL_ENDED,
+                        ),
+                        selectedModel = selectedModel,
+                    )
+                    currentRawMessages.value = conversationRepository.listMessages(session.conversationId)
+                }
+                roleplayRepository.upsertOnlineMeta(
+                    com.example.myapplication.model.RoleplayOnlineMeta(
+                        conversationId = session.conversationId,
+                        lastCompensationBucket = meta?.lastCompensationBucket.orEmpty(),
+                        lastConsumedObservationUpdatedAt = meta?.lastConsumedObservationUpdatedAt ?: 0L,
+                        lastSystemEventToken = meta?.lastSystemEventToken.orEmpty(),
+                        updatedAt = endedAt,
+                    ),
+                )
+                _uiState.update { current ->
+                    RoleplayStateSupport.clearVideoCallState(current)
+                }
+            } catch (throwable: Throwable) {
+                _uiState.update { current ->
+                    RoleplayStateSupport.applyErrorMessage(current, throwable.message ?: "挂断视频通话失败")
+                }
+            }
+        }
     }
 
     fun clearSuggestions() {
@@ -642,7 +771,7 @@ class RoleplayViewModel(
         if (scenario.interactionMode != RoleplayInteractionMode.ONLINE_PHONE) {
             return
         }
-        if (state.isSending || state.input.isNotBlank() || compensationJob?.isActive == true) {
+        if (state.isVideoCallActive || state.isSending || state.input.isNotBlank() || compensationJob?.isActive == true) {
             return
         }
         val bucket = resolveOnlineCompensationBucket(currentRawMessages.value) ?: return
@@ -693,6 +822,8 @@ class RoleplayViewModel(
                         lastCompensationBucket = bucket,
                         lastConsumedObservationUpdatedAt = roleplayRepository.getOnlineMeta(session.conversationId)?.lastConsumedObservationUpdatedAt ?: 0L,
                         lastSystemEventToken = "compensation-$bucket",
+                        activeVideoCallSessionId = roleplayRepository.getOnlineMeta(session.conversationId)?.activeVideoCallSessionId.orEmpty(),
+                        activeVideoCallStartedAt = roleplayRepository.getOnlineMeta(session.conversationId)?.activeVideoCallStartedAt ?: 0L,
                         updatedAt = nowProvider(),
                     ),
                 )
@@ -770,6 +901,7 @@ class RoleplayViewModel(
             assistant = assistant,
             settings = settings,
             outputParser = outputParser,
+            isVideoCallActive = current.isVideoCallActive,
         )
         val decoratedPrompt = RoleplayPromptDecorator.decorate(
             baseSystemPrompt = promptContext.systemPrompt,
@@ -777,6 +909,7 @@ class RoleplayViewModel(
             assistant = assistant,
             settings = settings,
             includeOpeningNarrationReference = requestMessages.none { it.role == MessageRole.USER },
+            isVideoCallActive = current.isVideoCallActive,
             directorNote = directorNote,
         )
         val effectiveRequestMessages = resolveRoleplayRequestMessagesForRoundTrip(
@@ -850,6 +983,74 @@ class RoleplayViewModel(
                 ?: 0,
             recentWindow = resolveSummaryRecentWindow(assistant),
         )
+    }
+
+    private suspend fun ensureSessionForVideoCall(
+        state: RoleplayUiState,
+        scenario: RoleplayScenario,
+    ): RoleplaySession? {
+        val currentSession = state.currentSession
+        if (currentSession != null) {
+            return currentSession
+        }
+        val startResult = roleplayRepository.startScenario(scenario.id)
+        scenarioActionSupport.applySessionStartResult(
+            startResult = startResult,
+            scenario = scenario,
+        )
+        currentRawMessages.value = startResult.conversationMessages
+        if (startResult.assistantMismatch) {
+            return null
+        }
+        return startResult.session
+    }
+
+    private suspend fun syncVideoCallState(session: RoleplaySession?) {
+        if (session == null) {
+            _uiState.update { current ->
+                RoleplayStateSupport.clearVideoCallState(current)
+            }
+            return
+        }
+        val meta = roleplayRepository.getOnlineMeta(session.conversationId)
+        val activeCallSessionId = meta?.activeVideoCallSessionId.orEmpty()
+        val activeStartedAt = meta?.activeVideoCallStartedAt ?: 0L
+        _uiState.update { current ->
+            if (activeCallSessionId.isNotBlank() && activeStartedAt > 0L) {
+                RoleplayStateSupport.applyVideoCallState(
+                    current = current,
+                    callSessionId = activeCallSessionId,
+                    startedAt = activeStartedAt,
+                )
+            } else {
+                RoleplayStateSupport.clearVideoCallState(current)
+            }
+        }
+    }
+
+    private fun buildVideoCallSystemMessage(
+        conversationId: String,
+        createdAt: Long,
+        content: String,
+        eventKind: RoleplayOnlineEventKind,
+    ): ChatMessage {
+        return ChatMessage(
+            id = "online-event-${eventKind.storageValue}-$conversationId-$createdAt",
+            conversationId = conversationId,
+            role = MessageRole.ASSISTANT,
+            content = content,
+            createdAt = createdAt,
+            parts = listOf(textMessagePart(content)),
+            systemEventKind = eventKind,
+            roleplayOutputFormat = RoleplayOutputFormat.PROTOCOL,
+        )
+    }
+
+    private fun formatVideoCallDuration(durationMillis: Long): String {
+        val totalSeconds = (durationMillis / 1000L).coerceAtLeast(0L)
+        val minutes = totalSeconds / 60L
+        val seconds = totalSeconds % 60L
+        return "%02d:%02d".format(minutes, seconds)
     }
 
     private fun observePendingMemoryProposal() {
