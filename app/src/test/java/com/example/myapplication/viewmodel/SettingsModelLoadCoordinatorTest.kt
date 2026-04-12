@@ -127,7 +127,7 @@ class SettingsModelLoadCoordinatorTest {
 
         override suspend fun saveSearchSettings(settings: SearchSettings) = Unit
 
-        override suspend fun saveUserProfile(displayName: String, avatarUri: String, avatarUrl: String) = Unit
+        override suspend fun saveUserProfile(displayName: String, personaPrompt: String, avatarUri: String, avatarUrl: String) = Unit
         override suspend fun saveRoleplayAssistantMismatchDialogPreference(suppressed: Boolean) = Unit
     }
 }

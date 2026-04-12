@@ -29,6 +29,7 @@ import com.example.myapplication.model.ChatMessagePartType
 import com.example.myapplication.model.MessageCitation
 import com.example.myapplication.model.MessageAttachment
 import com.example.myapplication.model.MessageRole
+import com.example.myapplication.model.toActionCopyText
 import com.example.myapplication.model.toMessageAttachmentOrNull
 import com.example.myapplication.model.toSpecialPlayCopyText
 import com.mikepenz.markdown.model.MarkdownPadding
@@ -103,6 +104,19 @@ internal fun UserStructuredMessageContent(
                                     contentColor = contentColor,
                                 )
                             }
+                        }
+                    }
+
+                    ChatMessagePartType.ACTION -> {
+                        if (part.toActionCopyText().isNotBlank()) {
+                            UserTextBubble(
+                                text = part.toActionCopyText(),
+                                contentColor = contentColor,
+                                bubbleColor = bubbleColor,
+                                bubbleBorder = bubbleBorder,
+                                bubbleShape = bubbleShape,
+                                messageTextScale = messageTextScale,
+                            )
                         }
                     }
 
@@ -229,6 +243,8 @@ internal fun buildMessageCopyPayload(
                 part.type == ChatMessagePartType.FILE -> {
                     "文件：${part.fileName.ifBlank { "未命名文件" }}"
                 }
+
+                part.type == ChatMessagePartType.ACTION -> part.toActionCopyText().lineSequence().firstOrNull().orEmpty()
 
                 part.type == ChatMessagePartType.SPECIAL -> part.toSpecialPlayCopyText().lineSequence().firstOrNull().orEmpty()
 

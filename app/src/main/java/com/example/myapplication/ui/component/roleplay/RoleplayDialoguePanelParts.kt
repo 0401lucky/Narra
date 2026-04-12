@@ -74,6 +74,8 @@ import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.myapplication.R
+import com.example.myapplication.model.actionMetadataValue
+import com.example.myapplication.model.ChatActionType
 import com.example.myapplication.model.MessageStatus
 import com.example.myapplication.model.RoleplayContentType
 import com.example.myapplication.model.RoleplayMessageUiModel
@@ -657,6 +659,7 @@ internal fun RoleplayMessageItem(
     onRecallMessage: ((String) -> Unit)? = null,
     onOpenQuotedMessage: ((String) -> Unit)? = null,
     onConfirmTransferReceipt: (String) -> Unit,
+    onOpenVideoCall: (() -> Unit)? = null,
     lineHeightScale: Float = 1.0f,
     bubbleMode: RoleplayMessageBubbleMode = RoleplayMessageBubbleMode.DEFAULT,
 ) {
@@ -867,6 +870,36 @@ internal fun RoleplayMessageItem(
             }
         }
 
+        RoleplayContentType.ACTION -> {
+            val actionPart = message.actionPart ?: return
+            val isUserMessage = message.speaker == RoleplaySpeaker.USER
+            Box(
+                modifier = Modifier.fillMaxWidth(),
+                contentAlignment = if (isUserMessage) Alignment.CenterEnd else Alignment.CenterStart,
+            ) {
+                RoleplayMessageMenuWrapper(
+                    message = message,
+                    onRetryTurn = onRetryTurn,
+                    onEditUserMessage = onEditUserMessage,
+                    modifier = if (isUserMessage) Modifier.fillMaxWidth(0.82f) else Modifier.fillMaxWidth(0.92f),
+                    onQuoteMessage = onQuoteMessage,
+                    onRecallMessage = onRecallMessage,
+                ) {
+                    RoleplayActionCard(
+                        message = message,
+                        actionPart = actionPart,
+                        colors = colors,
+                        backdropState = backdropState,
+                        onOpenVideoCall = if (actionPart.actionType == ChatActionType.VIDEO_CALL && !isUserMessage) {
+                            onOpenVideoCall
+                        } else {
+                            null
+                        },
+                    )
+                }
+            }
+        }
+
         RoleplayContentType.SPECIAL_PLAY -> {
             val specialPart = message.specialPart ?: return
             val isUserMessage = message.speaker == RoleplaySpeaker.USER
@@ -893,6 +926,82 @@ internal fun RoleplayMessageItem(
         }
 
         RoleplayContentType.SYSTEM -> Unit
+    }
+}
+
+@Composable
+private fun RoleplayActionCard(
+    message: RoleplayMessageUiModel,
+    actionPart: com.example.myapplication.model.ChatMessagePart,
+    colors: ImmersiveRoleplayColors,
+    backdropState: ImmersiveBackdropState,
+    onOpenVideoCall: (() -> Unit)?,
+) {
+    val isUserMessage = message.speaker == RoleplaySpeaker.USER
+    val title = when (actionPart.actionType) {
+        ChatActionType.EMOJI -> "表情"
+        ChatActionType.VOICE_MESSAGE -> "语音消息"
+        ChatActionType.AI_PHOTO -> "照片"
+        ChatActionType.LOCATION -> "位置"
+        ChatActionType.POKE -> "互动"
+        ChatActionType.VIDEO_CALL -> "视频通话"
+        null -> "消息"
+    }
+    val body = when (actionPart.actionType) {
+        ChatActionType.EMOJI -> actionPart.actionMetadataValue("description")
+        ChatActionType.VOICE_MESSAGE -> actionPart.actionMetadataValue("content")
+        ChatActionType.AI_PHOTO -> actionPart.actionMetadataValue("description")
+        ChatActionType.LOCATION -> buildString {
+            append(actionPart.actionMetadataValue("location_name"))
+            actionPart.actionMetadataValue("address").takeIf { it.isNotBlank() }?.let { address ->
+                append("\n")
+                append(address)
+            }
+            actionPart.actionMetadataValue("coordinates").takeIf { it.isNotBlank() }?.let { coordinates ->
+                append("\n")
+                append(coordinates)
+            }
+        }
+        ChatActionType.POKE -> if (isUserMessage) "你戳了戳对方" else "戳了戳你"
+        ChatActionType.VIDEO_CALL -> actionPart.actionMetadataValue("reason")
+        null -> message.copyText
+    }.trim().ifBlank { message.copyText }
+    val cardModifier = if (actionPart.actionType == ChatActionType.VIDEO_CALL && onOpenVideoCall != null) {
+        Modifier.clickable(onClick = onOpenVideoCall)
+    } else {
+        Modifier
+    }
+    ImmersiveGlassSurface(
+        backdropState = backdropState,
+        modifier = Modifier
+            .fillMaxWidth()
+            .then(cardModifier),
+        shape = RoundedCornerShape(22.dp),
+        overlayColor = if (isUserMessage) colors.panelBackgroundStrong else colors.panelBackground,
+    ) {
+        Column(
+            modifier = Modifier.padding(horizontal = 14.dp, vertical = 12.dp),
+            verticalArrangement = Arrangement.spacedBy(6.dp),
+        ) {
+            Text(
+                text = title,
+                style = MaterialTheme.typography.labelLarge,
+                fontWeight = FontWeight.SemiBold,
+                color = if (isUserMessage) colors.userAccent else colors.characterAccent,
+            )
+            Text(
+                text = body,
+                style = MaterialTheme.typography.bodyMedium,
+                color = colors.textPrimary,
+            )
+            if (actionPart.actionType == ChatActionType.VIDEO_CALL && onOpenVideoCall != null) {
+                Text(
+                    text = "点这里接通",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = colors.textMuted,
+                )
+            }
+        }
     }
 }
 

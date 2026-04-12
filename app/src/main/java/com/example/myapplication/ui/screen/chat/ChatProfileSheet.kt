@@ -47,9 +47,11 @@ import com.example.myapplication.ui.component.rememberUserProfileAvatarState
 @Composable
 internal fun ProfileEditorSheet(
     displayName: String,
+    personaPrompt: String,
     avatarUri: String,
     avatarUrl: String,
     onDisplayNameChange: (String) -> Unit,
+    onPersonaPromptChange: (String) -> Unit,
     onAvatarUrlChange: (String) -> Unit,
     onPickLocalAvatar: () -> Unit,
     onClearAvatar: () -> Unit,
@@ -107,7 +109,7 @@ internal fun ProfileEditorSheet(
                     style = MaterialTheme.typography.titleLarge,
                 )
                 Text(
-                    text = "这里会同步更新侧边栏顶部的用户名和头像。",
+                    text = "这里会同步更新侧边栏顶部的用户名、头像和线上模式里的用户人设。",
                     style = MaterialTheme.typography.bodyMedium,
                     color = colorScheme.onSurfaceVariant,
                 )
@@ -240,6 +242,19 @@ internal fun ProfileEditorSheet(
                             else -> "填写链接后会优先使用链接头像，并覆盖本地图片。"
                         },
                     )
+                },
+            )
+
+            OutlinedTextField(
+                value = personaPrompt,
+                onValueChange = onPersonaPromptChange,
+                modifier = Modifier.fillMaxWidth(),
+                minLines = 4,
+                maxLines = 8,
+                label = { Text("用户人设") },
+                placeholder = { Text("填写你在角色扮演中的全局身份、性格和关系设定") },
+                supportingText = {
+                    Text("线上模式会优先读取这里的内容，场景页可再做局部覆写。")
                 },
             )
 

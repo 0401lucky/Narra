@@ -101,6 +101,7 @@ internal object GatewayRequestMessageBuilder {
                 val assistantContext = assistantParts.mapNotNull { part ->
                     when (part.type) {
                         ChatMessagePartType.TEXT -> part.text.takeIf { it.isNotBlank() }
+                        ChatMessagePartType.ACTION -> null
                         ChatMessagePartType.SPECIAL -> GatewaySpecialPlaySupport.buildSpecialPlayPrompt(part)
                         ChatMessagePartType.IMAGE,
                         ChatMessagePartType.FILE,
@@ -168,6 +169,8 @@ internal object GatewayRequestMessageBuilder {
                             ?: return@forEach
                         add(TextContentPartDto(text = filePromptResolver(attachment)))
                     }
+
+                    ChatMessagePartType.ACTION -> Unit
 
                     ChatMessagePartType.SPECIAL -> {
                         GatewaySpecialPlaySupport.buildSpecialPlayPrompt(part)?.let { prompt ->

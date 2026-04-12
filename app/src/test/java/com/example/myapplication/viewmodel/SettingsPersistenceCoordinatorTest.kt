@@ -197,12 +197,14 @@ class SettingsPersistenceCoordinatorTest {
 
         val result = coordinator.saveUserProfile(
             displayName = "测试用户",
+            personaPrompt = "一个会主动试探边界的角色扮演用户",
             avatarUri = "content://avatar/test",
             avatarUrl = "https://cdn.example.com/avatar.png",
         )
 
         assertEquals("个人资料已更新", result.message)
         assertEquals("测试用户", editor.savedDisplayName)
+        assertEquals("一个会主动试探边界的角色扮演用户", editor.savedPersonaPrompt)
         assertEquals("content://avatar/test", editor.savedAvatarUri)
         assertEquals("https://cdn.example.com/avatar.png", editor.savedAvatarUrl)
     }
@@ -229,6 +231,7 @@ class SettingsPersistenceCoordinatorTest {
         var savedScreenTranslationSettings: ScreenTranslationSettings = ScreenTranslationSettings()
         var savedSearchSettings: SearchSettings = SearchSettings()
         var savedDisplayName: String = ""
+        var savedPersonaPrompt: String = ""
         var savedAvatarUri: String = ""
         var savedAvatarUrl: String = ""
 
@@ -285,8 +288,9 @@ class SettingsPersistenceCoordinatorTest {
             savedSearchSettings = settings
         }
 
-        override suspend fun saveUserProfile(displayName: String, avatarUri: String, avatarUrl: String) {
+        override suspend fun saveUserProfile(displayName: String, personaPrompt: String, avatarUri: String, avatarUrl: String) {
             savedDisplayName = displayName
+            savedPersonaPrompt = personaPrompt
             savedAvatarUri = avatarUri
             savedAvatarUrl = avatarUrl
         }

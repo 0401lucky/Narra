@@ -2,6 +2,8 @@ package com.example.myapplication.roleplay
 
 import com.example.myapplication.model.AppSettings
 import com.example.myapplication.model.Assistant
+import com.example.myapplication.model.actionMetadataValue
+import com.example.myapplication.model.ChatActionType
 import com.example.myapplication.model.ChatMessage
 import com.example.myapplication.model.MessageRole
 import com.example.myapplication.model.MessageStatus
@@ -13,8 +15,10 @@ import com.example.myapplication.model.RoleplayOutputFormat
 import com.example.myapplication.model.RoleplayScenario
 import com.example.myapplication.model.RoleplaySpeaker
 import com.example.myapplication.model.hasSendableContent
+import com.example.myapplication.model.isActionPart
 import com.example.myapplication.model.isSpecialPlayPart
 import com.example.myapplication.model.normalizeChatMessageParts
+import com.example.myapplication.model.toActionCopyText
 import com.example.myapplication.model.toPlainText
 import com.example.myapplication.model.toSpecialPlayCopyText
 
@@ -138,6 +142,16 @@ object RoleplayMessageUiMapper {
 
         normalizedParts.forEach { part ->
             when {
+                part.isActionPart() -> {
+                    target += part.toRoleplayActionUiModel(
+                        sourceMessageId = message.id,
+                        speaker = RoleplaySpeaker.USER,
+                        speakerName = userName,
+                        createdAt = message.createdAt,
+                        messageStatus = message.status,
+                    )
+                }
+
                 part.isSpecialPlayPart() -> {
                     target += RoleplayMessageUiModel(
                         sourceMessageId = message.id,
@@ -160,9 +174,9 @@ object RoleplayMessageUiMapper {
                         speaker = RoleplaySpeaker.USER,
                         speakerName = userName,
                         content = content,
-                        replyToMessageId = message.replyToMessageId,
-                        replyToPreview = message.replyToPreview,
-                        replyToSpeakerName = message.replyToSpeakerName,
+                        replyToMessageId = part.replyToMessageId.ifBlank { message.replyToMessageId },
+                        replyToPreview = part.replyToPreview.ifBlank { message.replyToPreview },
+                        replyToSpeakerName = part.replyToSpeakerName.ifBlank { message.replyToSpeakerName },
                         isRecalled = message.isRecalled,
                         systemEventKind = message.systemEventKind,
                         createdAt = message.createdAt,
@@ -207,6 +221,16 @@ object RoleplayMessageUiMapper {
         val rawContent = RoleplayMessageFormatSupport.resolveAssistantRawContent(message)
         val outputFormat = RoleplayMessageFormatSupport.resolveAssistantMessageOutputFormat(message)
         if (outputFormat == RoleplayOutputFormat.LONGFORM) {
+            normalizedParts.filter { it.isActionPart() }.forEach { part ->
+                target += part.toRoleplayActionUiModel(
+                    sourceMessageId = message.id,
+                    speaker = RoleplaySpeaker.CHARACTER,
+                    speakerName = characterName,
+                    createdAt = message.createdAt,
+                    messageStatus = message.status,
+                    canRetry = canRetry,
+                )
+            }
             val specialParts = normalizedParts.filter { it.isSpecialPlayPart() }
             specialParts.forEach { part ->
                 target += RoleplayMessageUiModel(
@@ -248,6 +272,20 @@ object RoleplayMessageUiMapper {
             if (message.status == MessageStatus.LOADING && content.isBlank()) {
                 return
             }
+            if (
+                scenario.interactionMode == RoleplayInteractionMode.ONLINE_PHONE &&
+                appendOnlineProtocolAssistantMessages(
+                    target = target,
+                    sourceMessageId = message.id,
+                    rawContent = content,
+                    characterName = characterName,
+                    createdAt = message.createdAt,
+                    messageStatus = message.status,
+                    canRetry = canRetry,
+                )
+            ) {
+                return
+            }
             appendAssistantTextSegments(
                 target = target,
                 sourceMessageId = message.id,
@@ -268,6 +306,17 @@ object RoleplayMessageUiMapper {
 
         normalizedParts.forEach { part ->
             when {
+                part.isActionPart() -> {
+                    target += part.toRoleplayActionUiModel(
+                        sourceMessageId = message.id,
+                        speaker = RoleplaySpeaker.CHARACTER,
+                        speakerName = characterName,
+                        createdAt = message.createdAt,
+                        messageStatus = message.status,
+                        canRetry = canRetry,
+                    )
+                }
+
                 part.isSpecialPlayPart() -> {
                     target += RoleplayMessageUiModel(
                         sourceMessageId = message.id,
@@ -284,6 +333,20 @@ object RoleplayMessageUiMapper {
                 }
 
                 part.text.isNotBlank() -> {
+                    if (
+                        scenario.interactionMode == RoleplayInteractionMode.ONLINE_PHONE &&
+                        appendOnlineProtocolAssistantMessages(
+                            target = target,
+                            sourceMessageId = message.id,
+                            rawContent = part.text,
+                            characterName = characterName,
+                            createdAt = message.createdAt,
+                            messageStatus = message.status,
+                            canRetry = canRetry,
+                        )
+                    ) {
+                        return@forEach
+                    }
                     appendAssistantTextSegments(
                         target = target,
                         sourceMessageId = message.id,
@@ -303,6 +366,20 @@ object RoleplayMessageUiMapper {
             }
         }
         if (target.size == initialSize && message.content.isNotBlank()) {
+            if (
+                scenario.interactionMode == RoleplayInteractionMode.ONLINE_PHONE &&
+                appendOnlineProtocolAssistantMessages(
+                    target = target,
+                    sourceMessageId = message.id,
+                    rawContent = message.content,
+                    characterName = characterName,
+                    createdAt = message.createdAt,
+                    messageStatus = message.status,
+                    canRetry = canRetry,
+                )
+            ) {
+                return
+            }
             appendAssistantTextSegments(
                 target = target,
                 sourceMessageId = message.id,
@@ -319,6 +396,69 @@ object RoleplayMessageUiMapper {
                 outputParser = outputParser,
             )
         }
+    }
+
+    private fun appendOnlineProtocolAssistantMessages(
+        target: MutableList<RoleplayMessageUiModel>,
+        sourceMessageId: String,
+        rawContent: String,
+        characterName: String,
+        createdAt: Long,
+        messageStatus: MessageStatus,
+        canRetry: Boolean,
+    ): Boolean {
+        val protocolResult = OnlineActionProtocolParser.parse(
+            rawContent = rawContent,
+            characterName = characterName,
+        ) ?: return false
+        protocolResult.parts.forEach { part ->
+            when {
+                part.isActionPart() -> {
+                    target += part.toRoleplayActionUiModel(
+                        sourceMessageId = sourceMessageId,
+                        speaker = RoleplaySpeaker.CHARACTER,
+                        speakerName = characterName,
+                        createdAt = createdAt,
+                        messageStatus = messageStatus,
+                        canRetry = canRetry,
+                    )
+                }
+
+                part.isSpecialPlayPart() -> {
+                    target += RoleplayMessageUiModel(
+                        sourceMessageId = sourceMessageId,
+                        contentType = RoleplayContentType.SPECIAL_PLAY,
+                        speaker = RoleplaySpeaker.CHARACTER,
+                        speakerName = characterName,
+                        content = "",
+                        createdAt = createdAt,
+                        messageStatus = messageStatus,
+                        copyText = part.toSpecialPlayCopyText(),
+                        canRetry = canRetry,
+                        specialPart = part,
+                    )
+                }
+
+                part.text.isNotBlank() -> {
+                    val content = part.text.trim()
+                    target += RoleplayMessageUiModel(
+                        sourceMessageId = sourceMessageId,
+                        contentType = RoleplayContentType.DIALOGUE,
+                        speaker = RoleplaySpeaker.CHARACTER,
+                        speakerName = characterName,
+                        content = content,
+                        replyToMessageId = part.replyToMessageId,
+                        replyToPreview = part.replyToPreview,
+                        replyToSpeakerName = part.replyToSpeakerName,
+                        createdAt = createdAt,
+                        messageStatus = messageStatus,
+                        copyText = content,
+                        canRetry = canRetry,
+                    )
+                }
+            }
+        }
+        return true
     }
 
     private fun appendAssistantTextSegments(
@@ -393,5 +533,38 @@ object RoleplayMessageUiMapper {
             )
             else -> segment
         }
+    }
+
+    private fun com.example.myapplication.model.ChatMessagePart.toRoleplayActionUiModel(
+        sourceMessageId: String,
+        speaker: RoleplaySpeaker,
+        speakerName: String,
+        createdAt: Long,
+        messageStatus: MessageStatus,
+        canRetry: Boolean = false,
+    ): RoleplayMessageUiModel {
+        return RoleplayMessageUiModel(
+            sourceMessageId = sourceMessageId,
+            contentType = RoleplayContentType.ACTION,
+            speaker = speaker,
+            speakerName = speakerName,
+            content = when (actionType) {
+                ChatActionType.EMOJI -> actionMetadataValue("description")
+                ChatActionType.VOICE_MESSAGE -> actionMetadataValue("content")
+                ChatActionType.AI_PHOTO -> actionMetadataValue("description")
+                ChatActionType.LOCATION -> actionMetadataValue("location_name")
+                ChatActionType.POKE -> "戳了戳你"
+                ChatActionType.VIDEO_CALL -> actionMetadataValue("reason")
+                null -> ""
+            },
+            replyToMessageId = replyToMessageId,
+            replyToPreview = replyToPreview,
+            replyToSpeakerName = replyToSpeakerName,
+            createdAt = createdAt,
+            messageStatus = messageStatus,
+            copyText = toActionCopyText(),
+            canRetry = canRetry,
+            actionPart = this,
+        )
     }
 }

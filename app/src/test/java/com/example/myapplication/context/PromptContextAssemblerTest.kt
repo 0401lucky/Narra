@@ -301,6 +301,25 @@ class PromptContextAssemblerTest {
     }
 
     @Test
+    fun assemble_roleplayIncludesGlobalUserPersonaPrompt() = runBlocking {
+        val result = assembler.assemble(
+            settings = AppSettings(userPersonaPrompt = "lucky是个表面轻佻、实际很会试探边界的人。"),
+            assistant = Assistant(
+                id = "assistant-1",
+                name = "沈砚清",
+                systemPrompt = "你要一直维持角色口吻。",
+            ),
+            conversation = Conversation(id = "c1", createdAt = 1L, updatedAt = 1L),
+            userInputText = "继续聊",
+            recentMessages = emptyList(),
+            promptMode = PromptMode.ROLEPLAY,
+        )
+
+        assertTrue(result.systemPrompt.contains("【对话者设定】"))
+        assertTrue(result.systemPrompt.contains("lucky是个表面轻佻"))
+    }
+
+    @Test
     fun assemble_replacesTavernStylePlaceholders() = runBlocking {
         val result = assembler.assemble(
             settings = AppSettings(userDisplayName = "lucky"),

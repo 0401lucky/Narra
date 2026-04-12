@@ -880,6 +880,7 @@ class SettingsViewModel(
 
     fun saveUserProfile(
         displayName: String,
+        personaPrompt: String,
         avatarUri: String,
         avatarUrl: String,
     ) {
@@ -888,6 +889,7 @@ class SettingsViewModel(
             action = {
                 persistenceCoordinator.saveUserProfile(
                     displayName = displayName,
+                    personaPrompt = personaPrompt,
                     avatarUri = avatarUri,
                     avatarUrl = avatarUrl,
                 )

@@ -30,7 +30,7 @@ import com.example.myapplication.data.local.worldbook.WorldBookEntryEntity
         PhoneSnapshotEntity::class,
         PhoneObservationEntity::class,
     ],
-    version = 20,
+    version = 21,
     exportSchema = true,
 )
 abstract class ChatDatabase : RoomDatabase() {
@@ -182,6 +182,7 @@ abstract class ChatDatabase : RoomDatabase() {
                         assistantId TEXT NOT NULL DEFAULT 'default-assistant',
                         backgroundUri TEXT NOT NULL DEFAULT '',
                         userDisplayNameOverride TEXT NOT NULL DEFAULT '',
+                        userPersonaOverride TEXT NOT NULL DEFAULT '',
                         userPortraitUri TEXT NOT NULL DEFAULT '',
                         userPortraitUrl TEXT NOT NULL DEFAULT '',
                         characterDisplayNameOverride TEXT NOT NULL DEFAULT '',
@@ -459,6 +460,16 @@ abstract class ChatDatabase : RoomDatabase() {
                 if (!hasColumn(db, "roleplay_online_meta", "activeVideoCallStartedAt")) {
                     db.execSQL(
                         "ALTER TABLE roleplay_online_meta ADD COLUMN activeVideoCallStartedAt INTEGER NOT NULL DEFAULT 0",
+                    )
+                }
+            }
+        }
+
+        val MIGRATION_20_21 = object : Migration(20, 21) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                if (!hasColumn(db, "roleplay_scenarios", "userPersonaOverride")) {
+                    db.execSQL(
+                        "ALTER TABLE roleplay_scenarios ADD COLUMN userPersonaOverride TEXT NOT NULL DEFAULT ''",
                     )
                 }
             }

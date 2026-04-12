@@ -47,6 +47,7 @@ interface AiSettingsEditor {
 
     suspend fun saveUserProfile(
         displayName: String,
+        personaPrompt: String,
         avatarUri: String,
         avatarUrl: String,
     )
@@ -142,11 +143,13 @@ class DefaultAiSettingsEditor(
 
     override suspend fun saveUserProfile(
         displayName: String,
+        personaPrompt: String,
         avatarUri: String,
         avatarUrl: String,
     ) {
         settingsStore.saveUserProfile(
             displayName = displayName.trim(),
+            personaPrompt = personaPrompt,
             avatarUri = avatarUri.trim(),
             avatarUrl = avatarUrl.trim(),
         )

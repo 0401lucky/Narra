@@ -6,25 +6,25 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBars
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.itemsIndexed
-import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.BasicTextField
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.Send
 import androidx.compose.material.icons.filled.CallEnd
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButtonDefaults
@@ -34,7 +34,6 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.remember
@@ -44,9 +43,11 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
@@ -55,19 +56,26 @@ import com.example.myapplication.model.Assistant
 import com.example.myapplication.model.RoleplayContentType
 import com.example.myapplication.model.RoleplayMessageUiModel
 import com.example.myapplication.model.RoleplayScenario
+import com.example.myapplication.model.RoleplaySpeaker
 import com.example.myapplication.ui.component.AppSnackbarHost
 import com.example.myapplication.ui.component.NarraIconButton
 import com.example.myapplication.ui.component.UserAvatarLoadState
-import com.example.myapplication.ui.component.rememberUserProfileAvatarState
 import com.example.myapplication.ui.component.rememberSystemHighTextContrastEnabled
+import com.example.myapplication.ui.component.rememberUserProfileAvatarState
+import com.example.myapplication.ui.component.roleplay.ImmersiveBackdropState
 import com.example.myapplication.ui.component.roleplay.ImmersiveGlassSurface
-import com.example.myapplication.ui.component.roleplay.RoleplayInputBar
-import com.example.myapplication.ui.component.roleplay.RoleplayMessageBubbleMode
-import com.example.myapplication.ui.component.roleplay.RoleplayMessageItem
+import com.example.myapplication.ui.component.roleplay.ImmersiveRoleplayColors
 import com.example.myapplication.ui.component.roleplay.RoleplaySceneBackground
 import com.example.myapplication.ui.component.roleplay.rememberImmersiveBackdropState
 import com.example.myapplication.ui.component.roleplay.rememberImmersiveRoleplayColors
 import kotlinx.coroutines.delay
+
+private const val MAX_VIDEO_CALL_FLOATING_MESSAGES = 4
+
+internal data class VideoCallPresentationState(
+    val carryoverCount: Int,
+    val visibleMessages: List<RoleplayMessageUiModel>,
+)
 
 @Composable
 internal fun RoleplayVideoCallScreen(
@@ -136,37 +144,13 @@ internal fun RoleplayVideoCallScreen(
             .ifBlank { settings.resolvedUserDisplayName() }
             .ifBlank { "你" }
     }
-    val visibleMessages = remember(messages, activeVideoCallStartedAt) {
-        messages.filter { message ->
-            message.contentType != RoleplayContentType.SYSTEM &&
-                activeVideoCallStartedAt > 0L &&
-                message.createdAt >= activeVideoCallStartedAt
-        }
+    val presentationState = remember(messages, activeVideoCallStartedAt) {
+        buildVideoCallPresentationState(
+            messages = messages,
+            activeVideoCallStartedAt = activeVideoCallStartedAt,
+        )
     }
-    val listState = rememberLazyListState()
-    val shouldStickToBottom by remember(listState, visibleMessages.size) {
-        derivedStateOf {
-            val layoutInfo = listState.layoutInfo
-            if (visibleMessages.isEmpty()) {
-                true
-            } else {
-                val lastVisibleIndex = layoutInfo.visibleItemsInfo.lastOrNull()?.index ?: -1
-                lastVisibleIndex >= layoutInfo.totalItemsCount - 2
-            }
-        }
-    }
-
-    LaunchedEffect(visibleMessages.firstOrNull()?.sourceMessageId, visibleMessages.firstOrNull()?.createdAt) {
-        if (visibleMessages.isNotEmpty()) {
-            listState.scrollToItem(visibleMessages.lastIndex)
-        }
-    }
-    LaunchedEffect(visibleMessages.size, visibleMessages.lastOrNull()?.content, visibleMessages.lastOrNull()?.isStreaming) {
-        if (visibleMessages.isNotEmpty() && shouldStickToBottom) {
-            listState.animateScrollToItem(visibleMessages.lastIndex)
-        }
-    }
-
+    val visibleMessages = presentationState.visibleMessages
     val statusBarTopPadding = if (settings.roleplayImmersiveMode.storageValue == "none") {
         0.dp
     } else {
@@ -300,36 +284,24 @@ internal fun RoleplayVideoCallScreen(
                         shape = RoundedCornerShape(24.dp),
                     ) {
                         Text(
-                            text = "通话已接通，你先发一句，TA 才会接着回你。",
+                            text = buildVideoCallEmptyHint(
+                                carryoverCount = presentationState.carryoverCount,
+                            ),
                             modifier = Modifier.padding(horizontal = 18.dp, vertical = 12.dp),
                             color = colors.textPrimary,
                             style = MaterialTheme.typography.bodyMedium,
                         )
                     }
                 } else {
-                    LazyColumn(
-                        state = listState,
+                    VideoCallFloatingTranscript(
+                        messages = visibleMessages,
+                        carryoverCount = presentationState.carryoverCount,
+                        colors = colors,
+                        backdropState = backdropState,
                         modifier = Modifier
-                            .fillMaxSize()
-                            .padding(horizontal = 12.dp),
-                        contentPadding = PaddingValues(top = 24.dp, bottom = 12.dp),
-                        verticalArrangement = Arrangement.spacedBy(10.dp),
-                    ) {
-                        itemsIndexed(
-                            items = visibleMessages,
-                            key = { _, item -> "${item.sourceMessageId}-${item.createdAt}-${item.contentType}-${item.copyText.hashCode()}" },
-                        ) { _, message ->
-                            RoleplayMessageItem(
-                                message = message,
-                                colors = colors,
-                                backdropState = backdropState,
-                                onRetryTurn = {},
-                                onEditUserMessage = {},
-                                onConfirmTransferReceipt = {},
-                                bubbleMode = RoleplayMessageBubbleMode.ONLINE_PHONE,
-                            )
-                        }
-                    }
+                            .align(Alignment.BottomCenter)
+                            .padding(horizontal = 16.dp, vertical = 24.dp),
+                    )
                 }
 
                 AppSnackbarHost(
@@ -346,7 +318,7 @@ internal fun RoleplayVideoCallScreen(
                     .padding(horizontal = 12.dp, vertical = 12.dp),
                 verticalArrangement = Arrangement.spacedBy(12.dp),
             ) {
-                RoleplayInputBar(
+                VideoCallInputBar(
                     colors = colors,
                     backdropState = backdropState,
                     input = input,
@@ -354,10 +326,7 @@ internal fun RoleplayVideoCallScreen(
                     isSending = isSending,
                     onInputChange = onInputChange,
                     onSend = onSend,
-                    onCancel = onCancelSending,
-                    onOpenSpecialPlay = {},
-                    showActionButton = false,
-                    showExpandButton = false,
+                    onCancelSending = onCancelSending,
                 )
                 Box(
                     modifier = Modifier.fillMaxWidth(),
@@ -383,6 +352,239 @@ internal fun RoleplayVideoCallScreen(
                         )
                     }
                 }
+            }
+        }
+    }
+}
+
+internal fun buildVideoCallPresentationState(
+    messages: List<RoleplayMessageUiModel>,
+    activeVideoCallStartedAt: Long,
+    maxVisibleMessages: Int = MAX_VIDEO_CALL_FLOATING_MESSAGES,
+): VideoCallPresentationState {
+    if (activeVideoCallStartedAt <= 0L) {
+        return VideoCallPresentationState(
+            carryoverCount = 0,
+            visibleMessages = emptyList(),
+        )
+    }
+    val conversationMessages = messages.filter { message ->
+        message.contentType != RoleplayContentType.SYSTEM
+    }
+    return VideoCallPresentationState(
+        carryoverCount = conversationMessages.count { it.createdAt < activeVideoCallStartedAt },
+        visibleMessages = conversationMessages
+            .filter { it.createdAt >= activeVideoCallStartedAt }
+            .takeLast(maxVisibleMessages.coerceAtLeast(0)),
+    )
+}
+
+private fun buildVideoCallEmptyHint(carryoverCount: Int): String {
+    return if (carryoverCount > 0) {
+        "通话已接通，已承接前面的聊天内容，直接接着上一句继续聊。"
+    } else {
+        "通话已接通，你先发一句，TA 才会接着回你。"
+    }
+}
+
+@Composable
+private fun VideoCallFloatingTranscript(
+    messages: List<RoleplayMessageUiModel>,
+    carryoverCount: Int,
+    colors: ImmersiveRoleplayColors,
+    backdropState: ImmersiveBackdropState,
+    modifier: Modifier = Modifier,
+) {
+    Column(
+        modifier = modifier.fillMaxWidth(),
+        verticalArrangement = Arrangement.spacedBy(10.dp),
+    ) {
+        if (carryoverCount > 0) {
+            Surface(
+                modifier = Modifier.align(Alignment.CenterHorizontally),
+                color = colors.panelBackgroundStrong.copy(alpha = 0.72f),
+                shape = RoundedCornerShape(999.dp),
+            ) {
+                Text(
+                    text = "已承接通话前 $carryoverCount 条聊天内容",
+                    modifier = Modifier.padding(horizontal = 14.dp, vertical = 8.dp),
+                    style = MaterialTheme.typography.labelMedium,
+                    color = colors.textMuted,
+                )
+            }
+        }
+
+        messages.forEachIndexed { index, message ->
+            val isLatest = index == messages.lastIndex
+            VideoCallFloatingMessageCard(
+                message = message,
+                isLatest = isLatest,
+                colors = colors,
+                backdropState = backdropState,
+            )
+        }
+    }
+}
+
+@Composable
+private fun VideoCallFloatingMessageCard(
+    message: RoleplayMessageUiModel,
+    isLatest: Boolean,
+    colors: ImmersiveRoleplayColors,
+    backdropState: ImmersiveBackdropState,
+) {
+    val speakerLabel = remember(message.speaker, message.speakerName) {
+        resolveVideoCallSpeakerLabel(message)
+    }
+    val cardWidthFraction = if (isLatest) 0.92f else 0.84f
+    val bubbleAlpha = if (isLatest) 0.88f else 0.70f
+    val horizontalArrangement = when (message.speaker) {
+        RoleplaySpeaker.USER -> Arrangement.End
+        RoleplaySpeaker.CHARACTER -> Arrangement.Start
+        RoleplaySpeaker.NARRATOR,
+        RoleplaySpeaker.SYSTEM,
+        -> Arrangement.Center
+    }
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = horizontalArrangement,
+    ) {
+        ImmersiveGlassSurface(
+            backdropState = backdropState,
+            modifier = Modifier.fillMaxWidth(cardWidthFraction),
+            shape = RoundedCornerShape(28.dp),
+            blurRadius = 16.dp,
+            overlayColor = colors.panelBackgroundStrong.copy(alpha = bubbleAlpha),
+        ) {
+            Column(
+                modifier = Modifier.padding(horizontal = 16.dp, vertical = 14.dp),
+                verticalArrangement = Arrangement.spacedBy(6.dp),
+            ) {
+                if (speakerLabel.isNotBlank()) {
+                    Text(
+                        text = speakerLabel,
+                        style = MaterialTheme.typography.labelMedium,
+                        color = colors.textMuted,
+                    )
+                }
+                Text(
+                    text = message.content.trim().ifBlank { message.copyText.trim() },
+                    style = if (isLatest) {
+                        MaterialTheme.typography.bodyLarge
+                    } else {
+                        MaterialTheme.typography.bodyMedium
+                    },
+                    color = colors.textPrimary,
+                    maxLines = if (isLatest) 8 else 5,
+                    overflow = TextOverflow.Ellipsis,
+                )
+            }
+        }
+    }
+}
+
+private fun resolveVideoCallSpeakerLabel(message: RoleplayMessageUiModel): String {
+    val explicitName = message.speakerName.trim()
+    if (explicitName.isNotBlank()) {
+        return explicitName
+    }
+    return when (message.speaker) {
+        RoleplaySpeaker.USER -> "你"
+        RoleplaySpeaker.CHARACTER -> "TA"
+        RoleplaySpeaker.NARRATOR -> "画面"
+        RoleplaySpeaker.SYSTEM -> ""
+    }
+}
+
+@Composable
+private fun VideoCallInputBar(
+    colors: ImmersiveRoleplayColors,
+    backdropState: ImmersiveBackdropState,
+    input: String,
+    inputFocusToken: Long,
+    isSending: Boolean,
+    onInputChange: (String) -> Unit,
+    onSend: () -> Unit,
+    onCancelSending: () -> Unit,
+) {
+    ImmersiveGlassSurface(
+        backdropState = backdropState,
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(32.dp),
+        blurRadius = 18.dp,
+        overlayColor = colors.panelBackgroundStrong.copy(alpha = 0.92f),
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 14.dp, vertical = 10.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(10.dp),
+        ) {
+            BasicTextField(
+                value = input,
+                onValueChange = onInputChange,
+                modifier = Modifier.weight(1f),
+                textStyle = MaterialTheme.typography.bodyLarge.copy(color = colors.textPrimary),
+                cursorBrush = SolidColor(colors.characterAccent),
+                singleLine = true,
+                keyboardOptions = KeyboardOptions(imeAction = ImeAction.Send),
+                keyboardActions = KeyboardActions(
+                    onSend = {
+                        if (isSending) {
+                            onCancelSending()
+                        } else if (input.isNotBlank()) {
+                            onSend()
+                        }
+                    },
+                ),
+                decorationBox = { innerTextField ->
+                    Box(
+                        modifier = Modifier.fillMaxWidth(),
+                        contentAlignment = Alignment.CenterStart,
+                    ) {
+                        if (input.isBlank()) {
+                            Text(
+                                text = "直接继续聊...",
+                                style = MaterialTheme.typography.bodyLarge,
+                                color = colors.textMuted,
+                            )
+                        }
+                        innerTextField()
+                    }
+                },
+            )
+            NarraIconButton(
+                onClick = {
+                    if (isSending) {
+                        onCancelSending()
+                    } else {
+                        onSend()
+                    }
+                },
+                enabled = isSending || input.isNotBlank(),
+                modifier = Modifier
+                    .size(42.dp)
+                    .background(
+                        color = if (isSending) {
+                            Color.White.copy(alpha = 0.16f)
+                        } else {
+                            colors.characterAccent.copy(alpha = 0.96f)
+                        },
+                        shape = CircleShape,
+                    ),
+                colors = IconButtonDefaults.iconButtonColors(
+                    containerColor = Color.Transparent,
+                    contentColor = Color.White,
+                    disabledContainerColor = Color.Transparent,
+                    disabledContentColor = Color.White.copy(alpha = 0.72f),
+                ),
+            ) {
+                Icon(
+                    imageVector = if (isSending) Icons.Default.Close else Icons.AutoMirrored.Filled.Send,
+                    contentDescription = if (isSending) "取消发送" else "发送消息",
+                    modifier = Modifier.size(20.dp),
+                )
             }
         }
     }

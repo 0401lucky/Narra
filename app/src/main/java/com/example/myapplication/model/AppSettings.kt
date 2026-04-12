@@ -24,6 +24,7 @@ data class AppSettings(
     val roleplayHighContrast: Boolean = false,
     val roleplayLineHeightScale: RoleplayLineHeightScale = RoleplayLineHeightScale.NORMAL,
     val userDisplayName: String = DEFAULT_USER_DISPLAY_NAME,
+    val userPersonaPrompt: String = "",
     val userAvatarUri: String = "",
     val userAvatarUrl: String = "",
     val translationHistory: List<TranslationHistoryEntry> = emptyList(),

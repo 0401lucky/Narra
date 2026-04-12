@@ -12,9 +12,11 @@ internal fun ChatScreenOverlays(
     uiState: ChatUiState,
     showProfileSheet: Boolean,
     draftUserDisplayName: String,
+    draftUserPersonaPrompt: String,
     draftUserAvatarUri: String,
     draftUserAvatarUrl: String,
     onDisplayNameChange: (String) -> Unit,
+    onPersonaPromptChange: (String) -> Unit,
     onAvatarUrlChange: (String) -> Unit,
     onPickLocalAvatar: () -> Unit,
     onClearAvatar: () -> Unit,
@@ -90,9 +92,11 @@ internal fun ChatScreenOverlays(
     if (showProfileSheet) {
         ProfileEditorSheet(
             displayName = draftUserDisplayName,
+            personaPrompt = draftUserPersonaPrompt,
             avatarUri = draftUserAvatarUri,
             avatarUrl = draftUserAvatarUrl,
             onDisplayNameChange = onDisplayNameChange,
+            onPersonaPromptChange = onPersonaPromptChange,
             onAvatarUrlChange = onAvatarUrlChange,
             onPickLocalAvatar = onPickLocalAvatar,
             onClearAvatar = onClearAvatar,

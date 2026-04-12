@@ -74,6 +74,7 @@ import androidx.compose.ui.unit.dp
 import com.example.myapplication.model.ChatMessagePart
 import com.example.myapplication.model.ChatMessagePartType
 import com.example.myapplication.model.MessageAttachment
+import com.example.myapplication.model.toActionCopyText
 import com.example.myapplication.model.toMessageAttachmentOrNull
 
 @Composable
@@ -538,6 +539,7 @@ private fun PendingAttachmentBanner(
                 imageVector = when (part.type) {
                     ChatMessagePartType.IMAGE -> Icons.Default.Image
                     ChatMessagePartType.FILE -> Icons.Default.Description
+                    ChatMessagePartType.ACTION -> Icons.Default.Share
                     ChatMessagePartType.SPECIAL -> Icons.Default.Share
                     ChatMessagePartType.TEXT -> Icons.Default.Description
                 },
@@ -552,6 +554,7 @@ private fun PendingAttachmentBanner(
                     text = when (part.type) {
                         ChatMessagePartType.IMAGE -> attachment?.fileName?.ifBlank { "已选择图片" } ?: "已选择图片"
                         ChatMessagePartType.FILE -> attachment?.fileName?.ifBlank { "已选择文件" } ?: "已选择文件"
+                        ChatMessagePartType.ACTION -> part.toActionCopyText().ifBlank { "已恢复动作消息" }
                         ChatMessagePartType.SPECIAL -> part.specialType?.displayName?.let { "已恢复${it}卡片" } ?: "已恢复特殊玩法"
                         ChatMessagePartType.TEXT -> "待发送文本"
                     },
@@ -563,6 +566,7 @@ private fun PendingAttachmentBanner(
                     text = when (part.type) {
                         ChatMessagePartType.IMAGE -> "发送时作为图片附件上传"
                         ChatMessagePartType.FILE -> "发送时会提取文本内容作为上下文"
+                        ChatMessagePartType.ACTION -> "发送时会按原动作结构重新发出"
                         ChatMessagePartType.SPECIAL -> "发送时会按原消息结构重新发出"
                         ChatMessagePartType.TEXT -> "发送时会作为普通文本发出"
                     },

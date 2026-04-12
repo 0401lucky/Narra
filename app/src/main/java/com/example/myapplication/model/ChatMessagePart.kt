@@ -7,7 +7,33 @@ enum class ChatMessagePartType {
     TEXT,
     IMAGE,
     FILE,
+    ACTION,
     SPECIAL,
+}
+
+enum class ChatActionType {
+    EMOJI,
+    VOICE_MESSAGE,
+    AI_PHOTO,
+    LOCATION,
+    POKE,
+    VIDEO_CALL;
+
+    val protocolValue: String
+        get() = when (this) {
+            EMOJI -> "emoji"
+            VOICE_MESSAGE -> "voice_message"
+            AI_PHOTO -> "ai_photo"
+            LOCATION -> "location"
+            POKE -> "poke"
+            VIDEO_CALL -> "video_call"
+        }
+
+    companion object {
+        fun fromProtocolValue(value: String): ChatActionType? {
+            return entries.firstOrNull { it.protocolValue == value.trim().lowercase() }
+        }
+    }
 }
 
 enum class ChatSpecialType {
@@ -69,6 +95,9 @@ data class ChatMessagePart(
     val uri: String = "",
     val mimeType: String = "",
     val fileName: String = "",
+    val actionType: ChatActionType? = null,
+    val actionId: String = "",
+    val actionMetadata: Map<String, String> = emptyMap(),
     val specialType: ChatSpecialType? = null,
     val specialId: String = "",
     val specialDirection: TransferDirection? = null,
@@ -77,12 +106,23 @@ data class ChatMessagePart(
     val specialAmount: String = "",
     val specialNote: String = "",
     val specialMetadata: Map<String, String> = emptyMap(),
+    val replyToMessageId: String = "",
+    val replyToPreview: String = "",
+    val replyToSpeakerName: String = "",
 )
 
-fun textMessagePart(text: String): ChatMessagePart {
+fun textMessagePart(
+    text: String,
+    replyToMessageId: String = "",
+    replyToPreview: String = "",
+    replyToSpeakerName: String = "",
+): ChatMessagePart {
     return ChatMessagePart(
         type = ChatMessagePartType.TEXT,
         text = text,
+        replyToMessageId = replyToMessageId.trim(),
+        replyToPreview = replyToPreview.trim(),
+        replyToSpeakerName = replyToSpeakerName.trim(),
     )
 }
 
@@ -109,6 +149,93 @@ fun fileMessagePart(
         uri = uri,
         mimeType = mimeType,
         fileName = fileName,
+    )
+}
+
+fun emojiMessagePart(
+    description: String,
+    id: String = UUID.randomUUID().toString(),
+): ChatMessagePart {
+    return ChatMessagePart(
+        type = ChatMessagePartType.ACTION,
+        actionType = ChatActionType.EMOJI,
+        actionId = id,
+        actionMetadata = normalizeActionMetadata(
+            mapOf(ACTION_DESCRIPTION_KEY to description),
+        ),
+    )
+}
+
+fun voiceMessageActionPart(
+    content: String,
+    id: String = UUID.randomUUID().toString(),
+): ChatMessagePart {
+    return ChatMessagePart(
+        type = ChatMessagePartType.ACTION,
+        actionType = ChatActionType.VOICE_MESSAGE,
+        actionId = id,
+        actionMetadata = normalizeActionMetadata(
+            mapOf(ACTION_CONTENT_KEY to content),
+        ),
+    )
+}
+
+fun aiPhotoMessagePart(
+    description: String,
+    id: String = UUID.randomUUID().toString(),
+): ChatMessagePart {
+    return ChatMessagePart(
+        type = ChatMessagePartType.ACTION,
+        actionType = ChatActionType.AI_PHOTO,
+        actionId = id,
+        actionMetadata = normalizeActionMetadata(
+            mapOf(ACTION_DESCRIPTION_KEY to description),
+        ),
+    )
+}
+
+fun locationMessagePart(
+    locationName: String,
+    coordinates: String = "",
+    address: String = "",
+    id: String = UUID.randomUUID().toString(),
+): ChatMessagePart {
+    return ChatMessagePart(
+        type = ChatMessagePartType.ACTION,
+        actionType = ChatActionType.LOCATION,
+        actionId = id,
+        actionMetadata = normalizeActionMetadata(
+            mapOf(
+                ACTION_LOCATION_NAME_KEY to locationName,
+                ACTION_COORDINATES_KEY to coordinates,
+                ACTION_ADDRESS_KEY to address,
+            ),
+        ),
+    )
+}
+
+fun pokeMessagePart(
+    id: String = UUID.randomUUID().toString(),
+): ChatMessagePart {
+    return ChatMessagePart(
+        type = ChatMessagePartType.ACTION,
+        actionType = ChatActionType.POKE,
+        actionId = id,
+        actionMetadata = emptyMap(),
+    )
+}
+
+fun videoCallMessagePart(
+    reason: String,
+    id: String = UUID.randomUUID().toString(),
+): ChatMessagePart {
+    return ChatMessagePart(
+        type = ChatMessagePartType.ACTION,
+        actionType = ChatActionType.VIDEO_CALL,
+        actionId = id,
+        actionMetadata = normalizeActionMetadata(
+            mapOf(ACTION_REASON_KEY to reason),
+        ),
     )
 }
 
@@ -257,6 +384,7 @@ fun ChatMessagePart.toMessageAttachmentOrNull(): MessageAttachment? {
             fileName = fileName,
         )
 
+        ChatMessagePartType.ACTION -> null
         ChatMessagePartType.SPECIAL -> null
     }
 }
@@ -278,18 +406,26 @@ fun normalizeChatMessageParts(parts: List<ChatMessagePart>): List<ChatMessagePar
                 if (part.text.isBlank()) {
                     return@forEach
                 }
-                val previous = normalized.lastOrNull()
-                if (previous?.type == ChatMessagePartType.TEXT) {
-                    normalized[normalized.lastIndex] = previous.copy(
-                        text = previous.text + part.text,
-                    )
-                } else {
-                    normalized += part.copy(
-                        text = part.text,
-                        uri = "",
-                        mimeType = "",
-                    )
-                }
+                normalized += part.copy(
+                    text = part.text,
+                    uri = "",
+                    mimeType = "",
+                    fileName = "",
+                    actionType = null,
+                    actionId = "",
+                    actionMetadata = emptyMap(),
+                    specialType = null,
+                    specialId = "",
+                    specialDirection = null,
+                    specialStatus = null,
+                    specialCounterparty = "",
+                    specialAmount = "",
+                    specialNote = "",
+                    specialMetadata = emptyMap(),
+                    replyToMessageId = part.replyToMessageId.trim(),
+                    replyToPreview = part.replyToPreview.trim(),
+                    replyToSpeakerName = part.replyToSpeakerName.trim(),
+                )
             }
 
             ChatMessagePartType.IMAGE,
@@ -300,6 +436,45 @@ fun normalizeChatMessageParts(parts: List<ChatMessagePart>): List<ChatMessagePar
                 }
                 normalized += part.copy(
                     text = "",
+                    actionType = null,
+                    actionId = "",
+                    actionMetadata = emptyMap(),
+                    specialType = null,
+                    specialId = "",
+                    specialDirection = null,
+                    specialStatus = null,
+                    specialCounterparty = "",
+                    specialAmount = "",
+                    specialNote = "",
+                    specialMetadata = emptyMap(),
+                    replyToMessageId = "",
+                    replyToPreview = "",
+                    replyToSpeakerName = "",
+                )
+            }
+
+            ChatMessagePartType.ACTION -> {
+                if (!part.isValidActionPart()) {
+                    return@forEach
+                }
+                normalized += part.copy(
+                    text = "",
+                    uri = "",
+                    mimeType = "",
+                    fileName = "",
+                    actionId = part.actionId.ifBlank { UUID.randomUUID().toString() },
+                    actionMetadata = normalizeActionMetadata(part.actionMetadata),
+                    specialType = null,
+                    specialId = "",
+                    specialDirection = null,
+                    specialStatus = null,
+                    specialCounterparty = "",
+                    specialAmount = "",
+                    specialNote = "",
+                    specialMetadata = emptyMap(),
+                    replyToMessageId = part.replyToMessageId.trim(),
+                    replyToPreview = part.replyToPreview.trim(),
+                    replyToSpeakerName = part.replyToSpeakerName.trim(),
                 )
             }
 
@@ -316,6 +491,12 @@ fun normalizeChatMessageParts(parts: List<ChatMessagePart>): List<ChatMessagePar
                     specialAmount = part.specialAmount.trim(),
                     specialNote = part.specialNote.trim(),
                     specialMetadata = normalizeSpecialMetadata(part.specialMetadata),
+                    actionType = null,
+                    actionId = "",
+                    actionMetadata = emptyMap(),
+                    replyToMessageId = "",
+                    replyToPreview = "",
+                    replyToSpeakerName = "",
                 )
             }
         }
@@ -345,11 +526,18 @@ fun List<ChatMessagePart>.toContentMirror(
     return when {
         normalized.any { it.type == ChatMessagePartType.IMAGE && it.uri.isNotBlank() } -> imageFallback
         normalized.any { it.type == ChatMessagePartType.FILE && it.uri.isNotBlank() } -> fileFallback
+        normalized.any { it.type == ChatMessagePartType.ACTION } -> normalized.firstOrNull {
+            it.type == ChatMessagePartType.ACTION
+        }?.actionFallbackText().orEmpty().ifBlank { specialFallback }
         normalized.any { it.type == ChatMessagePartType.SPECIAL } -> normalized.firstOrNull {
             it.type == ChatMessagePartType.SPECIAL
         }?.specialPlayFallbackText().orEmpty().ifBlank { specialFallback }
         else -> ""
     }
+}
+
+fun ChatMessagePart.isActionPart(): Boolean {
+    return type == ChatMessagePartType.ACTION && actionType != null
 }
 
 fun ChatMessagePart.isSpecialPlayPart(): Boolean {
@@ -518,6 +706,21 @@ fun ChatMessagePart.isValidSpecialPart(): Boolean {
     }
 }
 
+fun ChatMessagePart.isValidActionPart(): Boolean {
+    if (!isActionPart()) {
+        return false
+    }
+    return when (actionType) {
+        ChatActionType.EMOJI -> actionMetadataValue(ACTION_DESCRIPTION_KEY).isNotBlank()
+        ChatActionType.VOICE_MESSAGE -> actionMetadataValue(ACTION_CONTENT_KEY).isNotBlank()
+        ChatActionType.AI_PHOTO -> actionMetadataValue(ACTION_DESCRIPTION_KEY).isNotBlank()
+        ChatActionType.LOCATION -> actionMetadataValue(ACTION_LOCATION_NAME_KEY).isNotBlank()
+        ChatActionType.POKE -> true
+        ChatActionType.VIDEO_CALL -> actionMetadataValue(ACTION_REASON_KEY).isNotBlank()
+        null -> false
+    }
+}
+
 fun ChatMessagePart.formatTransferAmount(): String {
     val normalizedAmount = specialAmount.trim()
     if (normalizedAmount.isBlank()) {
@@ -570,6 +773,10 @@ fun ChatMessagePart.toTransferCopyText(): String {
 
 fun ChatMessagePart.specialMetadataValue(key: String): String {
     return specialMetadata[key].orEmpty().trim()
+}
+
+fun ChatMessagePart.actionMetadataValue(key: String): String {
+    return actionMetadata[key].orEmpty().trim()
 }
 
 fun ChatMessagePart.specialPlayTitle(): String {
@@ -631,6 +838,24 @@ fun ChatMessagePart.specialPlayFallbackText(): String {
             }
         }
         null -> "特殊玩法"
+    }
+}
+
+fun ChatMessagePart.actionFallbackText(): String {
+    return when (actionType) {
+        ChatActionType.EMOJI -> "表情：${actionMetadataValue(ACTION_DESCRIPTION_KEY)}"
+        ChatActionType.VOICE_MESSAGE -> "语音消息"
+        ChatActionType.AI_PHOTO -> "照片"
+        ChatActionType.LOCATION -> buildString {
+            append("位置")
+            actionMetadataValue(ACTION_LOCATION_NAME_KEY).takeIf { it.isNotBlank() }?.let { name ->
+                append("：")
+                append(name)
+            }
+        }
+        ChatActionType.POKE -> "戳一戳"
+        ChatActionType.VIDEO_CALL -> "视频通话"
+        null -> ""
     }
 }
 
@@ -699,6 +924,44 @@ fun ChatMessagePart.toSpecialPlayCopyText(): String {
     }
 }
 
+fun ChatMessagePart.toActionCopyText(): String {
+    return when (actionType) {
+        ChatActionType.EMOJI -> buildString {
+            append("表情：")
+            append(actionMetadataValue(ACTION_DESCRIPTION_KEY))
+        }
+        ChatActionType.VOICE_MESSAGE -> buildString {
+            append("语音消息：")
+            append(actionMetadataValue(ACTION_CONTENT_KEY))
+        }
+        ChatActionType.AI_PHOTO -> buildString {
+            append("照片：")
+            append(actionMetadataValue(ACTION_DESCRIPTION_KEY))
+        }
+        ChatActionType.LOCATION -> buildString {
+            append("位置：")
+            append(actionMetadataValue(ACTION_LOCATION_NAME_KEY))
+            actionMetadataValue(ACTION_ADDRESS_KEY).takeIf { it.isNotBlank() }?.let { address ->
+                append("\n地址：")
+                append(address)
+            }
+            actionMetadataValue(ACTION_COORDINATES_KEY).takeIf { it.isNotBlank() }?.let { coordinates ->
+                append("\n坐标：")
+                append(coordinates)
+            }
+        }
+        ChatActionType.POKE -> "戳一戳"
+        ChatActionType.VIDEO_CALL -> buildString {
+            append("视频通话")
+            actionMetadataValue(ACTION_REASON_KEY).takeIf { it.isNotBlank() }?.let { reason ->
+                append("\n理由：")
+                append(reason)
+            }
+        }
+        null -> ""
+    }
+}
+
 private fun normalizeSpecialMetadata(source: Map<String, String>): Map<String, String> {
     return source.entries
         .mapNotNull { entry ->
@@ -713,6 +976,31 @@ private fun normalizeSpecialMetadata(source: Map<String, String>): Map<String, S
         .toMap(linkedMapOf())
 }
 
+private fun normalizeActionMetadata(source: Map<String, String>): Map<String, String> {
+    return source.entries
+        .mapNotNull { entry ->
+            val key = entry.key.trim()
+            val value = entry.value.trim()
+            if (key.isBlank()) {
+                null
+            } else if (key == ACTION_POKE_NOTE_KEY) {
+                key to value
+            } else if (value.isBlank()) {
+                null
+            } else {
+                key to value
+            }
+        }
+        .toMap(linkedMapOf())
+}
+
+private const val ACTION_DESCRIPTION_KEY = "description"
+private const val ACTION_CONTENT_KEY = "content"
+private const val ACTION_LOCATION_NAME_KEY = "location_name"
+private const val ACTION_COORDINATES_KEY = "coordinates"
+private const val ACTION_ADDRESS_KEY = "address"
+private const val ACTION_REASON_KEY = "reason"
+private const val ACTION_POKE_NOTE_KEY = "note"
 private const val GIFT_IMAGE_STATUS_KEY = "gift_image_status"
 private const val GIFT_IMAGE_URI_KEY = "gift_image_uri"
 private const val GIFT_IMAGE_MIME_TYPE_KEY = "gift_image_mime_type"

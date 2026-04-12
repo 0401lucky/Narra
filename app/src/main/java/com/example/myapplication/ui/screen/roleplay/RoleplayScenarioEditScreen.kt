@@ -93,6 +93,7 @@ fun RoleplayScenarioEditScreen(
     var assistantId by rememberSaveable(baseScenario.id) { mutableStateOf(baseScenario.assistantId) }
     var backgroundUri by rememberSaveable(baseScenario.id) { mutableStateOf(baseScenario.backgroundUri) }
     var userDisplayNameOverride by rememberSaveable(baseScenario.id) { mutableStateOf(baseScenario.userDisplayNameOverride) }
+    var userPersonaOverride by rememberSaveable(baseScenario.id) { mutableStateOf(baseScenario.userPersonaOverride) }
     var userPortraitUri by rememberSaveable(baseScenario.id) { mutableStateOf(baseScenario.userPortraitUri) }
     var userPortraitUrl by rememberSaveable(baseScenario.id) { mutableStateOf(baseScenario.userPortraitUrl) }
     var characterDisplayNameOverride by rememberSaveable(baseScenario.id) { mutableStateOf(baseScenario.characterDisplayNameOverride) }
@@ -327,6 +328,19 @@ fun RoleplayScenarioEditScreen(
                             colors = outlineColors,
                         )
                         OutlinedTextField(
+                            value = userPersonaOverride,
+                            onValueChange = { userPersonaOverride = it },
+                            modifier = Modifier.fillMaxWidth(),
+                            label = { Text("用户人设覆写") },
+                            minLines = 4,
+                            maxLines = 8,
+                            supportingText = {
+                                Text("留空则回退到全局个人资料中的用户人设。")
+                            },
+                            shape = RoundedCornerShape(18.dp),
+                            colors = outlineColors,
+                        )
+                        OutlinedTextField(
                             value = characterDisplayNameOverride,
                             onValueChange = { characterDisplayNameOverride = it },
                             modifier = Modifier.fillMaxWidth(),
@@ -468,6 +482,7 @@ fun RoleplayScenarioEditScreen(
                                         assistantId = assistantId,
                                         backgroundUri = backgroundUri.trim(),
                                         userDisplayNameOverride = userDisplayNameOverride.trim(),
+                                        userPersonaOverride = userPersonaOverride.replace("\r\n", "\n").trim(),
                                         userPortraitUri = userPortraitUri.trim(),
                                         userPortraitUrl = userPortraitUrl.trim(),
                                         characterDisplayNameOverride = characterDisplayNameOverride.trim(),

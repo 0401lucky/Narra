@@ -176,7 +176,7 @@ fun ChatScreen(
     onSelectProvider: (String) -> Unit,
     onSelectModel: (String, String) -> Unit,
     onUpdateThinkingBudget: (String, Int?) -> Unit,
-    onSaveUserProfile: (String, String, String) -> Unit,
+    onSaveUserProfile: (String, String, String, String) -> Unit,
     onOpenSettings: () -> Unit,
     onOpenHome: () -> Unit,
     onOpenTranslator: () -> Unit,
@@ -215,11 +215,13 @@ fun ChatScreen(
     }
     val currentAssistantName = uiState.currentAssistant?.name.orEmpty().ifBlank { "对方" }
     val userDisplayName = uiState.settings.resolvedUserDisplayName()
+    val userPersonaPrompt = uiState.settings.userPersonaPrompt
     val userAvatarUri = uiState.settings.userAvatarUri
     val userAvatarUrl = uiState.settings.userAvatarUrl
     val colorScheme = MaterialTheme.colorScheme
     val localState = rememberChatScreenLocalState(
         userDisplayName = userDisplayName,
+        userPersonaPrompt = userPersonaPrompt,
         userAvatarUri = userAvatarUri,
         userAvatarUrl = userAvatarUrl,
     )
@@ -261,6 +263,9 @@ fun ChatScreen(
 
     fun saveProfileDraft() {
         val normalizedName = localState.draftUserDisplayName.trim().ifBlank { DEFAULT_USER_DISPLAY_NAME }
+        val normalizedPersonaPrompt = localState.draftUserPersonaPrompt
+            .replace("\r\n", "\n")
+            .trim()
         val normalizedUrl = localState.draftUserAvatarUrl.trim()
         if (normalizedUrl.isNotBlank() && !isSupportedAvatarUrl(normalizedUrl)) {
             scope.launch {
@@ -273,7 +278,7 @@ fun ChatScreen(
         } else {
             ""
         }
-        onSaveUserProfile(normalizedName, normalizedUri, normalizedUrl)
+        onSaveUserProfile(normalizedName, normalizedPersonaPrompt, normalizedUri, normalizedUrl)
         localState.setShowProfileSheet(false)
     }
 
@@ -687,9 +692,11 @@ fun ChatScreen(
         uiState = uiState,
         showProfileSheet = localState.showProfileSheet,
         draftUserDisplayName = localState.draftUserDisplayName,
+        draftUserPersonaPrompt = localState.draftUserPersonaPrompt,
         draftUserAvatarUri = localState.draftUserAvatarUri,
         draftUserAvatarUrl = localState.draftUserAvatarUrl,
         onDisplayNameChange = localState.setDraftUserDisplayName,
+        onPersonaPromptChange = localState.setDraftUserPersonaPrompt,
         onAvatarUrlChange = {
             localState.setDraftUserAvatarUrl(it)
             if (it.isNotBlank()) {

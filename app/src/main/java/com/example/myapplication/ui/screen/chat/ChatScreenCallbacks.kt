@@ -53,7 +53,7 @@ data class SettingsCallbacks(
     val onSelectProvider: (String) -> Unit,
     val onSelectModel: (providerId: String, modelId: String) -> Unit,
     val onUpdateThinkingBudget: (modelId: String, budget: Int?) -> Unit,
-    val onSaveUserProfile: (displayName: String, avatarUri: String, avatarUrl: String) -> Unit,
+    val onSaveUserProfile: (displayName: String, personaPrompt: String, avatarUri: String, avatarUrl: String) -> Unit,
     val onSelectAssistant: (String) -> Unit,
     val onOpenAssistantDetail: (String) -> Unit,
     val onOpenProviderDetail: (String) -> Unit,

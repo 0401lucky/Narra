@@ -181,6 +181,11 @@ fun RoleplayReadingMode(
                                 backdropState = backdropState,
                                 lineHeightScale = lineHeightScale,
                             )
+                            RoleplayContentType.ACTION -> DialogueReadingBlock(
+                                message = message,
+                                backdropState = backdropState,
+                                lineHeightScale = lineHeightScale,
+                            )
                             RoleplayContentType.LONGFORM -> LongformReadingBlock(
                                 message = message,
                                 backdropState = backdropState,

@@ -72,6 +72,7 @@ interface SettingsStore {
 
     suspend fun saveUserProfile(
         displayName: String,
+        personaPrompt: String,
         avatarUri: String,
         avatarUrl: String,
     )
@@ -173,6 +174,7 @@ class AppSettingsStore(
             userDisplayName = preferences[PreferencesKeys.userDisplayName]
                 .orEmpty()
                 .ifBlank { com.example.myapplication.model.DEFAULT_USER_DISPLAY_NAME },
+            userPersonaPrompt = preferences[PreferencesKeys.userPersonaPrompt].orEmpty(),
             userAvatarUri = preferences[PreferencesKeys.userAvatarUri].orEmpty(),
             userAvatarUrl = preferences[PreferencesKeys.userAvatarUrl].orEmpty(),
             translationHistory = decodeTranslationHistory(
@@ -361,6 +363,7 @@ class AppSettingsStore(
 
     override suspend fun saveUserProfile(
         displayName: String,
+        personaPrompt: String,
         avatarUri: String,
         avatarUrl: String,
     ) {
@@ -368,6 +371,9 @@ class AppSettingsStore(
             preferences[PreferencesKeys.userDisplayName] = displayName
                 .trim()
                 .ifBlank { com.example.myapplication.model.DEFAULT_USER_DISPLAY_NAME }
+            preferences[PreferencesKeys.userPersonaPrompt] = personaPrompt
+                .replace("\r\n", "\n")
+                .trim()
             preferences[PreferencesKeys.userAvatarUri] = avatarUri.trim()
             preferences[PreferencesKeys.userAvatarUrl] = avatarUrl.trim()
         }
@@ -774,6 +780,7 @@ class AppSettingsStore(
         val roleplayLineHeightScale = stringPreferencesKey("roleplay_line_height_scale")
         val suppressRoleplayAssistantMismatchDialog = booleanPreferencesKey("suppress_roleplay_assistant_mismatch_dialog")
         val userDisplayName = stringPreferencesKey("user_display_name")
+        val userPersonaPrompt = stringPreferencesKey("user_persona_prompt")
         val userAvatarUri = stringPreferencesKey("user_avatar_uri")
         val userAvatarUrl = stringPreferencesKey("user_avatar_url")
         val translationHistoryJson = stringPreferencesKey("translation_history_json")

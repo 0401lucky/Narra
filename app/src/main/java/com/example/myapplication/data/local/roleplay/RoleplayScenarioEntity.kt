@@ -15,6 +15,7 @@ data class RoleplayScenarioEntity(
     val assistantId: String,
     val backgroundUri: String,
     val userDisplayNameOverride: String,
+    val userPersonaOverride: String,
     val userPortraitUri: String,
     val userPortraitUrl: String,
     val characterDisplayNameOverride: String,

@@ -174,11 +174,13 @@ class SettingsPersistenceCoordinator(
 
     suspend fun saveUserProfile(
         displayName: String,
+        personaPrompt: String,
         avatarUri: String,
         avatarUrl: String,
     ): SettingsPersistenceResult {
         settingsEditor.saveUserProfile(
             displayName = displayName,
+            personaPrompt = personaPrompt,
             avatarUri = avatarUri,
             avatarUrl = avatarUrl,
         )

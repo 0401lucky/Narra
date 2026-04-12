@@ -81,7 +81,7 @@ class RoleplayPromptDecoratorTest {
     }
 
     @Test
-    fun decorate_onlineModePrefersThoughtHintsOverNarration() {
+    fun decorate_onlineModeRequiresJsonArrayProtocol() {
         val prompt = RoleplayPromptDecorator.decorate(
             baseSystemPrompt = "",
             scenario = RoleplayScenario(
@@ -95,13 +95,33 @@ class RoleplayPromptDecoratorTest {
             settings = AppSettings(showOnlineRoleplayNarration = true),
         )
 
-        assertTrue(prompt.contains("<thought>内容</thought>"))
-        assertTrue(prompt.contains("不要主动使用 <narration>"))
-        assertTrue(prompt.contains("短、少、轻"))
+        assertTrue(prompt.contains("合法 JSON 数组"))
+        assertTrue(prompt.contains("reply_to、recall、emoji、voice_message、ai_photo、location、transfer、poke、video_call"))
+        assertTrue(prompt.contains("不是面对面现场互动"))
     }
 
     @Test
-    fun decorate_onlineModeWithoutNarrationRequestsDialogueOnly() {
+    fun decorate_onlineModeWithUserPersonaOverrideIncludesSceneSpecificUserPrompt() {
+        val prompt = RoleplayPromptDecorator.decorate(
+            baseSystemPrompt = "",
+            scenario = RoleplayScenario(
+                id = "scene-1",
+                userDisplayNameOverride = "lucky",
+                userPersonaOverride = "lucky是个嘴硬但会主动试探的人。",
+                characterDisplayNameOverride = "余罪",
+                interactionMode = RoleplayInteractionMode.ONLINE_PHONE,
+                enableNarration = true,
+            ),
+            assistant = Assistant(id = "assistant-1", name = "余罪"),
+            settings = AppSettings(showOnlineRoleplayNarration = true),
+        )
+
+        assertTrue(prompt.contains("【本场景对话者覆写】"))
+        assertTrue(prompt.contains("lucky是个嘴硬但会主动试探的人"))
+    }
+
+    @Test
+    fun decorate_onlineModeWithoutNarrationKeepsPureChatReminder() {
         val prompt = RoleplayPromptDecorator.decorate(
             baseSystemPrompt = "",
             scenario = RoleplayScenario(
@@ -115,10 +135,9 @@ class RoleplayPromptDecoratorTest {
             settings = AppSettings(showOnlineRoleplayNarration = false),
         )
 
-        assertTrue(prompt.contains("不使用 <thought>、<narration> 标签"))
-        assertTrue(prompt.contains("由当前话题、情绪强度、上下文压力和记忆线索自然决定"))
-        assertTrue(prompt.contains("真实聊天软件里的连续气泡感"))
-        assertTrue(!prompt.contains("不要主动使用 <narration>"))
+        assertTrue(prompt.contains("只通过真实聊天消息表达情绪与推进"))
+        assertTrue(prompt.contains("不写心声、旁白或小说段落"))
+        assertTrue(prompt.contains("不要机械每轮都发动作对象"))
     }
 
     @Test
@@ -139,7 +158,7 @@ class RoleplayPromptDecoratorTest {
 
         assertTrue(prompt.contains("【线上视频通话模式】"))
         assertTrue(prompt.contains("实时视频通话"))
-        assertTrue(prompt.contains("不要把语境写成已读、打字中"))
-        assertTrue(prompt.contains("通话中的即时反应"))
+        assertTrue(prompt.contains("不要再输出 video_call 动作"))
+        assertTrue(prompt.contains("更短、更即时"))
     }
 }

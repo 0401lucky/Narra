@@ -36,6 +36,7 @@ import com.example.myapplication.model.AttachmentType
 import com.example.myapplication.model.ChatMessage
 import com.example.myapplication.model.ChatMessagePart
 import com.example.myapplication.model.ChatMessagePartType
+import com.example.myapplication.model.toActionCopyText
 import com.example.myapplication.model.MessageRole
 import com.example.myapplication.model.normalizeChatMessageParts
 import com.example.myapplication.model.reasoningStepsToContent
@@ -585,6 +586,7 @@ private fun resolveAttachmentSummaries(message: ChatMessage): List<String> {
                 if (part.uri.isBlank()) null else "文件：${part.fileName.ifBlank { part.uri }}"
             }
 
+            ChatMessagePartType.ACTION -> part.toActionCopyText().trim().takeIf { it.isNotBlank() }
             ChatMessagePartType.SPECIAL -> part.toSpecialPlayCopyText().trim().takeIf { it.isNotBlank() }
             ChatMessagePartType.TEXT -> null
         }

@@ -128,6 +128,13 @@ class DefaultPromptContextAssembler(
                 characterName = resolvedCharacterName,
             )?.let(::add)
 
+            formatUserPersonaSection(
+                userPersonaPrompt = settings.userPersonaPrompt,
+                promptMode = promptMode,
+                userName = resolvedUserName,
+                characterName = resolvedCharacterName,
+            )?.let(::add)
+
             assistant?.scenario
                 ?.trim()
                 ?.takeIf { it.isNotEmpty() }
@@ -321,6 +328,32 @@ class DefaultPromptContextAssembler(
                 append("：\n")
                 append(limitEntryContent(dialogue))
             }
+        }
+    }
+
+    private fun formatUserPersonaSection(
+        userPersonaPrompt: String,
+        promptMode: PromptMode,
+        userName: String,
+        characterName: String,
+    ): String? {
+        val normalizedPrompt = userPersonaPrompt
+            .replace("\r\n", "\n")
+            .trim()
+        if (normalizedPrompt.isBlank() || promptMode != PromptMode.ROLEPLAY) {
+            return null
+        }
+        return buildString {
+            append("【对话者设定】\n")
+            append(
+                limitEntryContent(
+                    ContextPlaceholderResolver.resolve(
+                        text = normalizedPrompt,
+                        userName = userName,
+                        characterName = characterName,
+                    ),
+                ),
+            )
         }
     }
 

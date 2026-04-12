@@ -45,6 +45,8 @@ internal data class ChatScreenLocalState(
     val setExportOptions: (ConversationExportOptions) -> Unit,
     val draftUserDisplayName: String,
     val setDraftUserDisplayName: (String) -> Unit,
+    val draftUserPersonaPrompt: String,
+    val setDraftUserPersonaPrompt: (String) -> Unit,
     val draftUserAvatarUri: String,
     val setDraftUserAvatarUri: (String) -> Unit,
     val draftUserAvatarUrl: String,
@@ -85,6 +87,7 @@ internal data class ChatScreenLocalState(
 @Composable
 internal fun rememberChatScreenLocalState(
     userDisplayName: String,
+    userPersonaPrompt: String,
     userAvatarUri: String,
     userAvatarUrl: String,
 ): ChatScreenLocalState {
@@ -113,6 +116,7 @@ internal fun rememberChatScreenLocalState(
     }
     var exportOptions by remember { mutableStateOf(ConversationExportOptions()) }
     var draftUserDisplayName by rememberSaveable { mutableStateOf("") }
+    var draftUserPersonaPrompt by rememberSaveable { mutableStateOf("") }
     var draftUserAvatarUri by rememberSaveable { mutableStateOf("") }
     var draftUserAvatarUrl by rememberSaveable { mutableStateOf("") }
     var activeMessageActionId by remember { mutableStateOf<String?>(null) }
@@ -152,6 +156,8 @@ internal fun rememberChatScreenLocalState(
         setExportOptions = { exportOptions = it },
         draftUserDisplayName = draftUserDisplayName,
         setDraftUserDisplayName = { draftUserDisplayName = it },
+        draftUserPersonaPrompt = draftUserPersonaPrompt,
+        setDraftUserPersonaPrompt = { draftUserPersonaPrompt = it },
         draftUserAvatarUri = draftUserAvatarUri,
         setDraftUserAvatarUri = { draftUserAvatarUri = it },
         draftUserAvatarUrl = draftUserAvatarUrl,
@@ -168,6 +174,7 @@ internal fun rememberChatScreenLocalState(
         setPendingMessageExport = { pendingMessageExport = it },
         openProfileSheet = {
             draftUserDisplayName = userDisplayName
+            draftUserPersonaPrompt = userPersonaPrompt
             draftUserAvatarUri = userAvatarUri
             draftUserAvatarUrl = userAvatarUrl
             showProfileSheet = true

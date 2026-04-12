@@ -2302,7 +2302,8 @@ class RoleplayViewModelTest {
 
         assertTrue(systemPrompt.contains("【线上视频通话模式】"))
         assertTrue(systemPrompt.contains("实时视频通话"))
-        assertTrue(systemPrompt.contains("不要把语境写成已读、打字中"))
+        assertTrue(systemPrompt.contains("不要再输出 video_call 动作"))
+        assertTrue(systemPrompt.contains("合法 JSON 数组"))
     }
 
     @Test

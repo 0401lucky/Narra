@@ -225,6 +225,7 @@ fun RoleplayScreen(
             onApprovePendingMemoryProposal = onApprovePendingMemoryProposal,
             onRejectPendingMemoryProposal = onRejectPendingMemoryProposal,
             onOpenPhoneCheck = { showPhoneOwnerPicker = true },
+            onOpenVideoCall = onOpenVideoCall,
             onOpenSettings = onOpenSettings,
             onNavigateBack = onNavigateBack,
         )

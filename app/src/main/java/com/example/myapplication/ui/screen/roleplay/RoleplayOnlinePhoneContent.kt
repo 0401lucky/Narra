@@ -121,6 +121,7 @@ internal fun RoleplayOnlinePhoneContent(
     onApprovePendingMemoryProposal: () -> Unit,
     onRejectPendingMemoryProposal: () -> Unit,
     onOpenPhoneCheck: () -> Unit,
+    onOpenVideoCall: () -> Unit,
     onOpenSettings: () -> Unit,
     onNavigateBack: () -> Unit,
 ) {
@@ -404,6 +405,7 @@ internal fun RoleplayOnlinePhoneContent(
                             }
                         },
                         onConfirmTransferReceipt = onConfirmTransferReceipt,
+                        onOpenVideoCall = onOpenVideoCall,
                         bubbleMode = RoleplayMessageBubbleMode.ONLINE_PHONE,
                     )
                 }

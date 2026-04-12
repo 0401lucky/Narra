@@ -113,6 +113,7 @@ class AiSettingsServicesTest {
         )
         editor.saveUserProfile(
             displayName = "测试用户",
+            personaPrompt = "测试用户的人设",
             avatarUri = "content://avatar/test",
             avatarUrl = "https://cdn.example.com/avatar.png",
         )
@@ -130,6 +131,7 @@ class AiSettingsServicesTest {
         assertEquals("assistant-1", saved.selectedAssistantId)
         assertEquals("陆宴清", saved.assistants.first().name)
         assertEquals("测试用户", saved.userDisplayName)
+        assertEquals("测试用户的人设", saved.userPersonaPrompt)
         assertEquals("content://avatar/test", saved.userAvatarUri)
         assertEquals("https://cdn.example.com/avatar.png", saved.userAvatarUrl)
     }

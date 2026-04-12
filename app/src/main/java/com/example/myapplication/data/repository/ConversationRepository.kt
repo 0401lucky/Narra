@@ -10,6 +10,7 @@ import com.example.myapplication.model.Conversation
 import com.example.myapplication.model.DEFAULT_ASSISTANT_ID
 import com.example.myapplication.model.DEFAULT_CONVERSATION_TITLE
 import com.example.myapplication.model.MessageRole
+import com.example.myapplication.model.MessageStatus
 import com.example.myapplication.model.RoleplayOnlineEventKind
 import kotlinx.coroutines.flow.Flow
 import java.util.UUID
@@ -270,6 +271,51 @@ class ConversationRepository(
                 if (message.id == messageId) {
                     message.copy(
                         content = "你撤回了一条消息",
+                        isRecalled = true,
+                        systemEventKind = RoleplayOnlineEventKind.RECALL,
+                        parts = emptyList(),
+                        replyToMessageId = "",
+                        replyToPreview = "",
+                        replyToSpeakerName = "",
+                    )
+                } else {
+                    message
+                }
+            }
+        }
+    }
+
+    suspend fun recallLatestAssistantMessage(
+        conversationId: String,
+        selectedModel: String,
+        excludingMessageId: String = "",
+    ): List<ChatMessage> {
+        val currentConversation = requireConversation(conversationId)
+        val updatedConversation = buildUpdatedConversation(
+            currentConversation = currentConversation,
+            selectedModel = selectedModel,
+            title = currentConversation.title.ifBlank { DEFAULT_CONVERSATION_TITLE },
+        )
+        return conversationStore.updateConversationMessages(
+            conversation = updatedConversation,
+            conversationId = conversationId,
+        ) { existingMessages ->
+            val targetMessageId = existingMessages
+                .lastOrNull { message ->
+                    message.role == MessageRole.ASSISTANT &&
+                        message.status == MessageStatus.COMPLETED &&
+                        !message.isRecalled &&
+                        message.id != excludingMessageId
+                }
+                ?.id
+                .orEmpty()
+            if (targetMessageId.isBlank()) {
+                return@updateConversationMessages existingMessages
+            }
+            existingMessages.map { message ->
+                if (message.id == targetMessageId) {
+                    message.copy(
+                        content = "对方撤回了一条消息",
                         isRecalled = true,
                         systemEventKind = RoleplayOnlineEventKind.RECALL,
                         parts = emptyList(),

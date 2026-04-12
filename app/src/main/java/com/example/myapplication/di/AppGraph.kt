@@ -87,6 +87,7 @@ class AppGraph(
             ChatDatabase.MIGRATION_17_18,
             ChatDatabase.MIGRATION_18_19,
             ChatDatabase.MIGRATION_19_20,
+            ChatDatabase.MIGRATION_20_21,
         ).build()
     }
 

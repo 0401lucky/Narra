@@ -77,6 +77,7 @@ import com.example.myapplication.model.ChatMessagePartType
 import com.example.myapplication.model.ChatReasoningStep
 import com.example.myapplication.model.MessageCitation
 import com.example.myapplication.model.ModelAbility
+import com.example.myapplication.model.toActionCopyText
 import com.example.myapplication.model.toMessageAttachmentOrNull
 import com.mikepenz.markdown.compose.components.MarkdownComponents
 import com.mikepenz.markdown.compose.components.markdownComponents
@@ -156,6 +157,20 @@ internal fun MessagePartsRenderer(
                         contentColor = contentColor,
                     )
                 }
+            }
+
+            ChatMessagePartType.ACTION -> {
+                RenderMessageText(
+                    text = part.toActionCopyText(),
+                    useMarkdown = false,
+                    contentColor = contentColor,
+                    assistantMarkdownTypography = markdownTypography,
+                    assistantMarkdownPadding = markdownPadding,
+                    plainTextStyle = plainTextStyle,
+                    codeBlockAutoWrap = codeBlockAutoWrap,
+                    codeBlockAutoCollapse = codeBlockAutoCollapse,
+                    performanceMode = performanceMode,
+                )
             }
 
             ChatMessagePartType.SPECIAL -> {

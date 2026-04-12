@@ -66,6 +66,7 @@ class FakeSettingsStore(
             roleplayLineHeightScale = state.value.roleplayLineHeightScale,
             suppressRoleplayAssistantMismatchDialog = state.value.suppressRoleplayAssistantMismatchDialog,
             userDisplayName = state.value.userDisplayName,
+            userPersonaPrompt = state.value.userPersonaPrompt,
             userAvatarUri = state.value.userAvatarUri,
             userAvatarUrl = state.value.userAvatarUrl,
             translationHistory = state.value.translationHistory,
@@ -131,11 +132,13 @@ class FakeSettingsStore(
 
     override suspend fun saveUserProfile(
         displayName: String,
+        personaPrompt: String,
         avatarUri: String,
         avatarUrl: String,
     ) {
         state.value = state.value.copy(
             userDisplayName = displayName,
+            userPersonaPrompt = personaPrompt,
             userAvatarUri = avatarUri,
             userAvatarUrl = avatarUrl,
         )

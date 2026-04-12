@@ -7,6 +7,7 @@ enum class RoleplayContentType {
     THOUGHT,
     DIALOGUE,
     LONGFORM,
+    ACTION,
     SPECIAL_PLAY,
     SYSTEM,
 }
@@ -37,5 +38,6 @@ data class RoleplayMessageUiModel(
     val copyText: String = content,
     val richTextSource: String = content,
     val canRetry: Boolean = false,
+    val actionPart: ChatMessagePart? = null,
     val specialPart: ChatMessagePart? = null,
 )

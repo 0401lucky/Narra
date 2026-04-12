@@ -30,8 +30,12 @@ import com.example.myapplication.model.PhoneSnapshotOwnerType
 import com.example.myapplication.model.PromptMode
 import com.example.myapplication.model.RoleplayOutputFormat
 import com.example.myapplication.model.imageMessagePart
+import com.example.myapplication.model.normalizeChatMessageParts
 import com.example.myapplication.model.reasoningStepsToContent
 import com.example.myapplication.model.toContentMirror
+import com.example.myapplication.roleplay.OnlineActionDirective
+import com.example.myapplication.roleplay.OnlineActionProtocolParseResult
+import com.example.myapplication.roleplay.OnlineActionProtocolParser
 import com.example.myapplication.roleplay.RoleplayConversationSupport
 import com.example.myapplication.roleplay.RoleplayLongformMarkupParser
 import com.example.myapplication.roleplay.RoleplayMessageFormatSupport
@@ -187,6 +191,7 @@ internal class RoleplayRoundTripExecutor(
             val fullContent = StringBuilder()
             val fullParts = mutableListOf<ChatMessagePart>()
             val fullReasoningSteps = mutableListOf<ChatReasoningStep>()
+            var onlineProtocolResult: OnlineActionProtocolParseResult? = null
 
             when (
                 val result = assistantRoundTripRunner.execute(
@@ -218,20 +223,42 @@ internal class RoleplayRoundTripExecutor(
                             )
                         },
                         onCompleted = { payload, parsedOutput, loading ->
+                            onlineProtocolResult = scenario.takeIf {
+                                it.interactionMode == com.example.myapplication.model.RoleplayInteractionMode.ONLINE_PHONE
+                            }?.let {
+                                OnlineActionProtocolParser.parse(
+                                    rawContent = payload.content,
+                                    characterName = roleplayStateCharacterName(
+                                        scenario = scenario,
+                                        assistant = assistant,
+                                    ),
+                                )
+                            }
+                            val completedParts = onlineProtocolResult
+                                ?.parts
+                                ?.let { onlineParts ->
+                                    normalizeChatMessageParts(
+                                        onlineParts + parsedOutput.parts.filter { part ->
+                                            part.type != com.example.myapplication.model.ChatMessagePartType.TEXT
+                                        },
+                                    )
+                                }
+                                ?: parsedOutput.parts
+                            val resolvedContent = completedParts.toContentMirror(
+                                imageFallback = "角色返回了图片",
+                                specialFallback = "角色已回应",
+                            )
                             loading.copy(
-                                content = parsedOutput.content.takeIf { it.isNotBlank() }
+                                content = parsedOutput.content.takeIf { it.isNotBlank() && onlineProtocolResult == null }
                                     ?: if (parsedOutput.transferUpdates.isNotEmpty()) {
                                         "已收款"
                                     } else {
-                                        parsedOutput.parts.toContentMirror(
-                                            imageFallback = "角色返回了图片",
-                                            specialFallback = "角色已回应",
-                                        ).ifBlank { "模型未返回有效内容" }
+                                        resolvedContent.ifBlank { "模型未返回有效内容" }
                                     },
                                 status = MessageStatus.COMPLETED,
                                 reasoningContent = payload.reasoning,
                                 reasoningSteps = payload.reasoningSteps,
-                                parts = parsedOutput.parts,
+                                parts = completedParts,
                             )
                         },
                         onCancelled = { _, _ ->
@@ -257,24 +284,33 @@ internal class RoleplayRoundTripExecutor(
                 )
             ) {
                 is AssistantRoundTripResult.Completed -> {
-                    updateRawMessages(result.messages)
+                    val postDirectiveMessages = applyOnlineProtocolDirectivesIfNeeded(
+                        conversationId = session.conversationId,
+                        selectedModel = selectedModel,
+                        messages = result.messages,
+                        completedAssistantId = result.messages.lastOrNull {
+                            it.role == MessageRole.ASSISTANT && it.status == MessageStatus.COMPLETED
+                        }?.id.orEmpty(),
+                        protocolResult = onlineProtocolResult,
+                    )
+                    updateRawMessages(postDirectiveMessages)
                     markPhoneObservationConsumedIfNeeded(
                         conversationId = session.conversationId,
-                        assistantMessage = result.messages.lastOrNull { it.role == MessageRole.ASSISTANT && it.status == MessageStatus.COMPLETED },
+                        assistantMessage = postDirectiveMessages.lastOrNull { it.role == MessageRole.ASSISTANT && it.status == MessageStatus.COMPLETED },
                     )
                     updateUiState { current ->
                         RoleplayStateSupport.finishSending(current, errorMessage = null)
                     }
                     launchConversationSummaryGeneration(
                         session.conversationId,
-                        result.messages,
+                        postDirectiveMessages,
                         state.settings,
                         assistant,
                         scenario,
                     )
                     launchAutomaticMemoryExtraction(
                         session.conversationId,
-                        result.messages,
+                        postDirectiveMessages,
                         state.settings,
                         assistant,
                         scenario,
@@ -392,7 +428,10 @@ internal class RoleplayRoundTripExecutor(
                             RoleplayOutputFormat.LONGFORM -> RoleplayLongformMarkupParser.stripMarkupForDisplay(
                                 fullContent.toString(),
                             )
-                            else -> outputParser.stripMarkup(fullContent.toString())
+                            else -> {
+                                OnlineActionProtocolParser.extractStreamingPreview(fullContent.toString())
+                                    .ifBlank { outputParser.stripMarkup(fullContent.toString()) }
+                            }
                         }
                         RoleplayStateSupport.applyStreamingContent(
                             current,
@@ -467,6 +506,37 @@ internal class RoleplayRoundTripExecutor(
     ): Int {
         return assistant?.contextMessageSize?.takeIf { it > 0 }
             ?: SUMMARY_RECENT_MESSAGE_WINDOW
+    }
+
+    private suspend fun applyOnlineProtocolDirectivesIfNeeded(
+        conversationId: String,
+        selectedModel: String,
+        messages: List<ChatMessage>,
+        completedAssistantId: String,
+        protocolResult: OnlineActionProtocolParseResult?,
+    ): List<ChatMessage> {
+        val directives = protocolResult?.directives.orEmpty()
+        if (directives.isEmpty()) {
+            return messages
+        }
+        var updatedMessages = messages
+        if (OnlineActionDirective.RecallPreviousAssistant in directives) {
+            updatedMessages = conversationRepository.recallLatestAssistantMessage(
+                conversationId = conversationId,
+                selectedModel = selectedModel,
+                excludingMessageId = completedAssistantId,
+            )
+        }
+        return updatedMessages
+    }
+
+    private fun roleplayStateCharacterName(
+        scenario: com.example.myapplication.model.RoleplayScenario,
+        assistant: Assistant?,
+    ): String {
+        return scenario.characterDisplayNameOverride.trim()
+            .ifBlank { assistant?.name?.trim().orEmpty() }
+            .ifBlank { "角色" }
     }
 
     private companion object {
