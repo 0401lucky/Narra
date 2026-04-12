@@ -75,22 +75,28 @@ object RoleplayMessageUiMapper {
                     preferredFormat = preferredStreamingFormat,
                     rawContent = streamingContent,
                 )
+                val streamingThoughtContent = streamingThoughtPreviewContent(
+                    scenario = scenario,
+                    rawContent = streamingContent,
+                )
                 add(
                     RoleplayMessageUiModel(
                         sourceMessageId = "streaming",
-                        contentType = if (streamingFormat == RoleplayOutputFormat.LONGFORM) {
-                            RoleplayContentType.LONGFORM
-                        } else {
-                            RoleplayContentType.DIALOGUE
+                        contentType = when {
+                            streamingFormat == RoleplayOutputFormat.LONGFORM -> RoleplayContentType.LONGFORM
+                            streamingThoughtContent != null -> RoleplayContentType.THOUGHT
+                            else -> RoleplayContentType.DIALOGUE
                         },
                         speaker = RoleplaySpeaker.CHARACTER,
                         speakerName = characterName,
-                        content = streamingContent,
+                        content = streamingThoughtContent ?: streamingContent,
                         createdAt = nowProvider(),
                         isStreaming = true,
                         messageStatus = MessageStatus.LOADING,
                         copyText = if (streamingFormat == RoleplayOutputFormat.LONGFORM) {
                             RoleplayLongformMarkupParser.stripMarkupForDisplay(streamingContent)
+                        } else if (streamingThoughtContent != null) {
+                            streamingThoughtContent
                         } else {
                             outputParser.stripMarkup(streamingContent)
                         },
@@ -335,10 +341,7 @@ object RoleplayMessageUiMapper {
                 }
 
                 part.text.isNotBlank() -> {
-                    if (
-                        scenario.interactionMode == RoleplayInteractionMode.ONLINE_PHONE &&
-                        part.isOnlineThoughtPart()
-                    ) {
+                    if (part.isOnlineThoughtPart()) {
                         target += RoleplayMessageUiModel(
                             sourceMessageId = message.id,
                             contentType = RoleplayContentType.THOUGHT,
@@ -493,6 +496,24 @@ object RoleplayMessageUiMapper {
             }
         }
         return true
+    }
+
+    private fun streamingThoughtPreviewContent(
+        scenario: RoleplayScenario,
+        rawContent: String,
+    ): String? {
+        if (scenario.interactionMode != RoleplayInteractionMode.ONLINE_PHONE) {
+            return null
+        }
+        val lines = rawContent.lines()
+            .map { it.trim() }
+            .filter { it.isNotBlank() }
+        if (lines.isEmpty() || lines.any { !it.startsWith("心声：") }) {
+            return null
+        }
+        return lines.joinToString(separator = "\n\n") { line ->
+            line.removePrefix("心声：").trim()
+        }.trim().takeIf { it.isNotBlank() }
     }
 
     private fun appendAssistantTextSegments(

@@ -56,7 +56,7 @@ object RoleplayTranscriptFormatter {
 
             MessageRole.ASSISTANT -> {
                 val normalizedParts = normalizeChatMessageParts(message.parts)
-                if (interactionMode == RoleplayInteractionMode.ONLINE_PHONE && normalizedParts.isNotEmpty()) {
+                if (normalizedParts.any { it.isOnlineThoughtPart() }) {
                     return normalizedParts.mapNotNull { part ->
                         when {
                             part.isOnlineThoughtPart() -> {

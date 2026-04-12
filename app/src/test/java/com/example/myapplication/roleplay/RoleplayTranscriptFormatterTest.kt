@@ -5,6 +5,7 @@ import com.example.myapplication.model.MessageRole
 import com.example.myapplication.model.RoleplayInteractionMode
 import com.example.myapplication.model.RoleplayOutputFormat
 import com.example.myapplication.model.textMessagePart
+import com.example.myapplication.model.thoughtMessagePart
 import org.junit.Assert.assertEquals
 import org.junit.Test
 
@@ -88,6 +89,35 @@ class RoleplayTranscriptFormatterTest {
 
         assertEquals(
             "陆宴清心声：他把删到一半的话又咽了回去。\n陆宴清：行，那你先忙。",
+            transcript,
+        )
+    }
+
+    @Test
+    fun formatMessages_offlineModeStillDecodesStoredOnlineThoughtPart() {
+        val transcript = RoleplayTranscriptFormatter.formatMessages(
+            messages = listOf(
+                ChatMessage(
+                    id = "assistant-1",
+                    conversationId = "conv-1",
+                    role = MessageRole.ASSISTANT,
+                    content = "",
+                    createdAt = 2L,
+                    parts = listOf(
+                        thoughtMessagePart("其实已经删掉好几次了。"),
+                        textMessagePart("你终于肯回我了。"),
+                    ),
+                    roleplayOutputFormat = RoleplayOutputFormat.PROTOCOL,
+                ),
+            ),
+            userName = "林晚",
+            characterName = "陆宴清",
+            allowNarration = true,
+            interactionMode = RoleplayInteractionMode.OFFLINE_DIALOGUE,
+        )
+
+        assertEquals(
+            "陆宴清心声：其实已经删掉好几次了。\n陆宴清：你终于肯回我了。",
             transcript,
         )
     }

@@ -450,6 +450,71 @@ class RoleplayMessageUiMapperTest {
     }
 
     @Test
+    fun mapMessages_offlineModeStillDecodesStoredOnlineThoughtParts() {
+        val scenario = RoleplayScenario(
+            id = "scene-1",
+            title = "切回线下",
+            characterDisplayNameOverride = "陆宴清",
+            interactionMode = RoleplayInteractionMode.OFFLINE_DIALOGUE,
+            enableNarration = true,
+        )
+
+        val mapped = RoleplayMessageUiMapper.mapMessages(
+            scenario = scenario,
+            assistant = Assistant(id = "assistant-1", name = "陆宴清"),
+            settings = AppSettings(showOnlineRoleplayNarration = true),
+            rawMessages = listOf(
+                ChatMessage(
+                    id = "assistant-1",
+                    conversationId = "conv-1",
+                    role = MessageRole.ASSISTANT,
+                    content = "",
+                    createdAt = 2L,
+                    status = MessageStatus.COMPLETED,
+                    roleplayOutputFormat = RoleplayOutputFormat.PROTOCOL,
+                    parts = listOf(
+                        thoughtMessagePart("其实已经删删改改很多次了。"),
+                        textMessagePart("你终于回我了。"),
+                    ),
+                ),
+            ),
+            streamingContent = null,
+            outputParser = RoleplayOutputParser(),
+            nowProvider = { 20L },
+        )
+
+        assertEquals(2, mapped.size)
+        assertEquals(RoleplayContentType.THOUGHT, mapped[0].contentType)
+        assertEquals("其实已经删删改改很多次了。", mapped[0].content)
+        assertEquals(RoleplayContentType.DIALOGUE, mapped[1].contentType)
+    }
+
+    @Test
+    fun mapMessages_onlineModeStreamingThoughtPreviewUsesThoughtBubbleType() {
+        val scenario = RoleplayScenario(
+            id = "scene-1",
+            title = "线上模式",
+            characterDisplayNameOverride = "陆宴清",
+            interactionMode = RoleplayInteractionMode.ONLINE_PHONE,
+            enableNarration = true,
+        )
+
+        val mapped = RoleplayMessageUiMapper.mapMessages(
+            scenario = scenario,
+            assistant = Assistant(id = "assistant-1", name = "陆宴清"),
+            settings = AppSettings(showOnlineRoleplayNarration = true),
+            rawMessages = emptyList(),
+            streamingContent = "心声：其实已经想拨过去了。",
+            outputParser = RoleplayOutputParser(),
+            nowProvider = { 20L },
+        )
+
+        assertEquals(1, mapped.size)
+        assertEquals(RoleplayContentType.THOUGHT, mapped.single().contentType)
+        assertEquals("其实已经想拨过去了。", mapped.single().content)
+    }
+
+    @Test
     fun mapMessages_mapsInviteCardToSpecialPlay() {
         val scenario = RoleplayScenario(
             id = "scene-1",
