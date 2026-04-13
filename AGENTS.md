@@ -33,6 +33,9 @@ Kotlin 统一使用 4 空格缩进，遵循 Android Studio 默认格式。类、
 - 默认分发与内置更新测试只走 `dev` 渠道，优先执行 `.\gradlew.bat assembleDebug`。
 - 除非用户明确要求并且已经提供正式签名配置，否则不要主动构建或发布正式 `release` 包。
 - 需要给用户可上传的安装包时，默认提供 `app/build/outputs/apk/debug/Narra-v{versionName}-dev-{versionCode}-dev.apk`。
-- 用户提供 GitHub Release 下载链接后，默认同步更新 `docs/updates/dev.json`，用于应用内更新测试。
+- 应用内更新默认不再依赖 GitHub Release，优先使用 Cloudflare R2 下载源。
+- 当前 `dev` 渠道默认下载域名为 `https://download.lsa1230.dpdns.org`，上传新 `dev` 包后，默认将 APK 放到 `narra-updates` 桶下的 `dev/` 目录，并同步更新 `docs/updates/dev.json`。
+- 若自定义下载域名暂时不可用，可临时回退到对应的 `r2.dev` 公网地址；恢复后再切回自定义域名。
+- GitHub Release 现在仅作为可选的展示页与备份下载页，不再是内置更新的前置条件。
 - 未拿到最终 APK 下载链接前，不要提前把更新 JSON 改成新版本，避免内置更新指向空地址或错误地址。
 - 应用内更新默认只做“可选更新提示”，不要实现或配置成强制更新；`minimum_supported_version_code` 仅保留兼容字段，不作为锁定使用的依据。

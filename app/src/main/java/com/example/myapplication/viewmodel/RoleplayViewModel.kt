@@ -649,6 +649,7 @@ class RoleplayViewModel(
                 parts = listOf(textMessagePart("你截了一张聊天截图。")),
                 systemEventKind = RoleplayOnlineEventKind.SCREENSHOT,
                 roleplayOutputFormat = RoleplayOutputFormat.PROTOCOL,
+                roleplayInteractionMode = RoleplayInteractionMode.ONLINE_PHONE,
             )
             conversationRepository.appendSystemEventMessage(
                 conversationId = session.conversationId,
@@ -802,6 +803,7 @@ class RoleplayViewModel(
             modelName = selectedModel,
             systemEventKind = RoleplayOnlineEventKind.COMPENSATION_OPENING,
             roleplayOutputFormat = RoleplayOutputFormat.PROTOCOL,
+            roleplayInteractionMode = RoleplayInteractionMode.ONLINE_PHONE,
         )
         compensationJob = viewModelScope.launch {
             try {
@@ -1047,6 +1049,7 @@ class RoleplayViewModel(
             parts = listOf(textMessagePart(content)),
             systemEventKind = eventKind,
             roleplayOutputFormat = RoleplayOutputFormat.PROTOCOL,
+            roleplayInteractionMode = RoleplayInteractionMode.ONLINE_PHONE,
         )
     }
 

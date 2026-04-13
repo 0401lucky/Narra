@@ -527,6 +527,42 @@ class RoleplayMessageUiMapperTest {
     }
 
     @Test
+    fun mapMessages_prefersStoredInteractionModeOverCurrentScenario() {
+        val scenario = RoleplayScenario(
+            id = "scene-1",
+            title = "切到线上",
+            characterDisplayNameOverride = "陆宴清",
+            interactionMode = RoleplayInteractionMode.ONLINE_PHONE,
+            enableNarration = true,
+        )
+
+        val mapped = RoleplayMessageUiMapper.mapMessages(
+            scenario = scenario,
+            assistant = Assistant(id = "assistant-1", name = "陆宴清"),
+            settings = AppSettings(showOnlineRoleplayNarration = true),
+            rawMessages = listOf(
+                ChatMessage(
+                    id = "assistant-1",
+                    conversationId = "conv-1",
+                    role = MessageRole.ASSISTANT,
+                    content = "风把窗帘掀起一角。<char>“我没有忘。”</char>",
+                    createdAt = 2L,
+                    status = MessageStatus.COMPLETED,
+                    roleplayOutputFormat = RoleplayOutputFormat.LONGFORM,
+                    roleplayInteractionMode = RoleplayInteractionMode.OFFLINE_LONGFORM,
+                ),
+            ),
+            streamingContent = null,
+            outputParser = RoleplayOutputParser(),
+            nowProvider = { 20L },
+        )
+
+        assertEquals(1, mapped.size)
+        assertEquals(RoleplayContentType.LONGFORM, mapped.single().contentType)
+        assertEquals("风把窗帘掀起一角。“我没有忘。”", mapped.single().content)
+    }
+
+    @Test
     fun mapMessages_onlineModeStreamingThoughtPreviewUsesThoughtBubbleType() {
         val scenario = RoleplayScenario(
             id = "scene-1",
@@ -549,6 +585,43 @@ class RoleplayMessageUiMapperTest {
         assertEquals(1, mapped.size)
         assertEquals(RoleplayContentType.THOUGHT, mapped.single().contentType)
         assertEquals("其实已经想拨过去了。", mapped.single().content)
+    }
+
+    @Test
+    fun mapMessages_onlineModeErrorMessageFallsBackToPlainDialogue() {
+        val scenario = RoleplayScenario(
+            id = "scene-1",
+            title = "线上模式",
+            characterDisplayNameOverride = "沈宴清",
+            interactionMode = RoleplayInteractionMode.ONLINE_PHONE,
+            enableNarration = true,
+        )
+
+        val mapped = RoleplayMessageUiMapper.mapMessages(
+            scenario = scenario,
+            assistant = Assistant(id = "assistant-1", name = "沈宴清"),
+            settings = AppSettings(showOnlineRoleplayNarration = true),
+            rawMessages = listOf(
+                ChatMessage(
+                    id = "assistant-error",
+                    conversationId = "conv-1",
+                    role = MessageRole.ASSISTANT,
+                    content = "type\nbad_response_status.code\nparam\n.",
+                    createdAt = 2L,
+                    status = MessageStatus.ERROR,
+                    roleplayOutputFormat = RoleplayOutputFormat.PROTOCOL,
+                    roleplayInteractionMode = RoleplayInteractionMode.ONLINE_PHONE,
+                ),
+            ),
+            streamingContent = null,
+            outputParser = RoleplayOutputParser(),
+            nowProvider = { 20L },
+        )
+
+        assertEquals(1, mapped.size)
+        assertEquals(RoleplayContentType.DIALOGUE, mapped.single().contentType)
+        assertEquals(MessageStatus.ERROR, mapped.single().messageStatus)
+        assertEquals("type\nbad_response_status.code\nparam\n.", mapped.single().content)
     }
 
     @Test

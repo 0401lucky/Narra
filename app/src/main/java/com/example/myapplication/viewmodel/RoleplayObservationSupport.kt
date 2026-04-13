@@ -171,16 +171,28 @@ internal object RoleplayObservationSupport {
     ) {
         scope.launch {
             combine(currentRawMessages, settings, uiState) { rawMessages, settingsState, uiStateState ->
-                RoleplayMessageUiMapper.mapMessages(
-                    scenario = uiStateState.currentScenario,
-                    assistant = uiStateState.currentAssistant,
-                    settings = settingsState,
-                    rawMessages = rawMessages,
-                    streamingContent = uiStateState.streamingContent.takeIf { uiStateState.isSending },
-                    outputParser = outputParser,
-                    nowProvider = nowProvider,
-                )
-            }.collect { mappedMessages ->
+                Triple(rawMessages, settingsState, uiStateState)
+            }.collect { (rawMessages, settingsState, uiStateState) ->
+                val mappedMessages = runCatching {
+                    RoleplayMessageUiMapper.mapMessages(
+                        scenario = uiStateState.currentScenario,
+                        assistant = uiStateState.currentAssistant,
+                        settings = settingsState,
+                        rawMessages = rawMessages,
+                        streamingContent = uiStateState.streamingContent.takeIf { uiStateState.isSending },
+                        outputParser = outputParser,
+                        nowProvider = nowProvider,
+                    )
+                }.getOrElse { throwable ->
+                    uiState.update { current ->
+                        if (current.errorMessage.isNullOrBlank()) {
+                            current.copy(errorMessage = throwable.message ?: "剧情消息渲染失败")
+                        } else {
+                            current
+                        }
+                    }
+                    emptyList()
+                }
                 uiState.update { current ->
                     RoleplayStateSupport.applyMappedMessages(current, mappedMessages)
                 }

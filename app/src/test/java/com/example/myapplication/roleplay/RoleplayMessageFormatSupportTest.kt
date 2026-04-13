@@ -1,5 +1,10 @@
 package com.example.myapplication.roleplay
 
+import com.example.myapplication.model.ChatMessage
+import com.example.myapplication.model.MessageRole
+import com.example.myapplication.model.RoleplayInteractionMode
+import com.example.myapplication.model.textMessagePart
+import com.example.myapplication.model.thoughtMessagePart
 import com.example.myapplication.model.RoleplayOutputFormat
 import org.junit.Assert.assertEquals
 import org.junit.Test
@@ -27,5 +32,44 @@ class RoleplayMessageFormatSupportTest {
         )
 
         assertEquals(RoleplayOutputFormat.LONGFORM, format)
+    }
+
+    @Test
+    fun resolveMessageInteractionMode_prefersStoredModeOverCurrentScene() {
+        val message = ChatMessage(
+            id = "assistant-1",
+            role = MessageRole.ASSISTANT,
+            content = "风从窗缝里挤进来。<char>“我没有忘。”</char>",
+            roleplayOutputFormat = RoleplayOutputFormat.LONGFORM,
+            roleplayInteractionMode = RoleplayInteractionMode.OFFLINE_LONGFORM,
+        )
+
+        val interactionMode = RoleplayMessageFormatSupport.resolveMessageInteractionMode(
+            message = message,
+            fallbackInteractionMode = RoleplayInteractionMode.ONLINE_PHONE,
+        )
+
+        assertEquals(RoleplayInteractionMode.OFFLINE_LONGFORM, interactionMode)
+    }
+
+    @Test
+    fun resolveMessageInteractionMode_legacyOnlinePartsStillResolveToOnlinePhone() {
+        val message = ChatMessage(
+            id = "assistant-1",
+            role = MessageRole.ASSISTANT,
+            content = "",
+            parts = listOf(
+                thoughtMessagePart("刚才差点把对话框关掉。"),
+                textMessagePart("你终于回了。"),
+            ),
+            roleplayOutputFormat = RoleplayOutputFormat.PROTOCOL,
+        )
+
+        val interactionMode = RoleplayMessageFormatSupport.resolveMessageInteractionMode(
+            message = message,
+            fallbackInteractionMode = RoleplayInteractionMode.OFFLINE_DIALOGUE,
+        )
+
+        assertEquals(RoleplayInteractionMode.ONLINE_PHONE, interactionMode)
     }
 }

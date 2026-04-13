@@ -376,6 +376,7 @@ internal class RoleplaySendActionSupport(
                     replyToSpeakerName = state.replyToSpeakerName,
                     selectedModel = selectedModel,
                     roleplayOutputFormat = RoleplayMessageFormatSupport.resolveScenarioOutputFormat(scenario),
+                    roleplayInteractionMode = RoleplayMessageFormatSupport.resolveScenarioInteractionMode(scenario),
                     nowProvider = nowProvider,
                     messageIdProvider = messageIdProvider,
                 )

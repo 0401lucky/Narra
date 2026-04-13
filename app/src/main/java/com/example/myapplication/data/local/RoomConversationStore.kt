@@ -15,6 +15,7 @@ import com.example.myapplication.model.MessageAttachment
 import com.example.myapplication.model.MessageRole
 import com.example.myapplication.model.MessageStatus
 import com.example.myapplication.model.RoleplayOnlineEventKind
+import com.example.myapplication.model.RoleplayInteractionMode
 import com.example.myapplication.model.RoleplayOutputFormat
 import com.example.myapplication.model.normalizeChatMessageParts
 import com.example.myapplication.model.normalizeChatReasoningSteps
@@ -202,6 +203,9 @@ class RoomConversationStore(
             roleplayOutputFormat = runCatching {
                 RoleplayOutputFormat.valueOf(roleplayOutputFormat)
             }.getOrDefault(RoleplayOutputFormat.UNSPECIFIED),
+            roleplayInteractionMode = RoleplayInteractionMode.fromStorageValueOrNull(
+                roleplayInteractionMode,
+            ),
         )
     }
 
@@ -226,6 +230,7 @@ class RoomConversationStore(
             systemEventKind = systemEventKind.storageValue,
             citationsJson = gson.toJson(citations),
             roleplayOutputFormat = roleplayOutputFormat.name,
+            roleplayInteractionMode = roleplayInteractionMode?.storageValue.orEmpty(),
         )
     }
 

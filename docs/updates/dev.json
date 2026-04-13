@@ -1,15 +1,15 @@
 {
   "app_id": "com.narra.app.dev",
   "channel": "dev",
-  "latest_version_name": "1.2.9-dev",
-  "latest_version_code": 10209,
+  "latest_version_name": "1.3.0-dev",
+  "latest_version_code": 10300,
   "minimum_supported_version_code": 0,
-  "apk_url": "https://download.lsa1230.dpdns.org/dev/Narra-v1.2.9-dev-10209-dev.apk?ts=20260413172411",
-  "apk_sha256": "145d7b3d6da993780d98d72aaff273ce730a4e0c5280f68c39425fe9e64be0f4",
-  "published_at": "2026-04-13T17:24:11+08:00",
+  "apk_url": "https://download.lsa1230.dpdns.org/dev/Narra-v1.3.0-dev-10300-dev.apk?ts=20260413201532",
+  "apk_sha256": "58731d961d8ac12ed50e2bf8ccd21f6ea3e1f7dd3cc862dd4a7cfe3df78b6fc3",
+  "published_at": "2026-04-13T20:15:31+08:00",
   "release_notes": [
-    "修复线上聊天在进入/退出视频通话后容易掉回普通文本风格的问题",
-    "线上系统事件不再把旧 narration 标签原样回喂模型，切换玩法后聊天协议更稳定",
-    "版本切到 1.2.9-dev，并继续保持 dev 渠道可选更新链路"
+    "沉浸式 RP 补进更强的去八股和去油腻约束，角色回复会更自然",
+    "长文线下、普通对白、线上模式之间切换后，新回复会更稳定地跟随当前模式",
+    "沉浸式错误消息改为纯文本兜底展示，降低报错后直接闪退的概率"
   ]
 }

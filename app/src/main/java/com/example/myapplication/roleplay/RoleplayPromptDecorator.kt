@@ -123,6 +123,8 @@ object RoleplayPromptDecorator {
                 },
             )
 
+            add(RoleplayAntiClicheSupport.buildPromptSection())
+
             if (scenario.interactionMode == RoleplayInteractionMode.ONLINE_PHONE) {
                 add(
                     buildString {

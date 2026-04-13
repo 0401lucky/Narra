@@ -244,7 +244,8 @@ internal class RoleplayRoundTripExecutor(
                                 fullReasoningSteps = fullReasoningSteps,
                                 fullParts = fullParts,
                                 toolingOptions = toolingOptions,
-                                expectedOutputFormat = loadingMessage.roleplayOutputFormat,
+                                expectedInteractionMode = loadingMessage.roleplayInteractionMode
+                                    ?: scenario.interactionMode,
                             )
                         },
                         currentPayload = {
@@ -446,7 +447,7 @@ internal class RoleplayRoundTripExecutor(
         fullReasoningSteps: MutableList<ChatReasoningStep>,
         fullParts: MutableList<ChatMessagePart>,
         toolingOptions: GatewayToolingOptions,
-        expectedOutputFormat: RoleplayOutputFormat,
+        expectedInteractionMode: com.example.myapplication.model.RoleplayInteractionMode,
     ) {
         aiGateway.sendMessageStream(
             messages = requestMessages,
@@ -458,18 +459,16 @@ internal class RoleplayRoundTripExecutor(
                 is ChatStreamEvent.ContentDelta -> {
                     fullContent.append(event.value)
                     updateUiState { current ->
-                        val streamingText = when (
-                            RoleplayMessageFormatSupport.resolveContentOutputFormat(
-                                preferredFormat = expectedOutputFormat,
-                                rawContent = fullContent.toString(),
-                            )
-                        ) {
-                            RoleplayOutputFormat.LONGFORM -> RoleplayLongformMarkupParser.stripMarkupForDisplay(
-                                fullContent.toString(),
-                            )
-                            else -> {
+                        val streamingText = when (expectedInteractionMode) {
+                            com.example.myapplication.model.RoleplayInteractionMode.OFFLINE_LONGFORM -> {
+                                RoleplayLongformMarkupParser.stripMarkupForDisplay(fullContent.toString())
+                            }
+                            com.example.myapplication.model.RoleplayInteractionMode.ONLINE_PHONE -> {
                                 OnlineActionProtocolParser.extractStreamingPreview(fullContent.toString())
                                     .ifBlank { outputParser.stripMarkup(fullContent.toString()) }
+                            }
+                            com.example.myapplication.model.RoleplayInteractionMode.OFFLINE_DIALOGUE -> {
+                                outputParser.stripMarkup(fullContent.toString())
                             }
                         }
                         RoleplayStateSupport.applyStreamingContent(

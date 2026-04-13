@@ -5,6 +5,7 @@ import com.example.myapplication.model.ChatMessagePart
 import com.example.myapplication.model.ChatReasoningStep
 import com.example.myapplication.model.MessageRole
 import com.example.myapplication.model.MessageStatus
+import com.example.myapplication.model.RoleplayInteractionMode
 import com.example.myapplication.model.RoleplayOutputFormat
 import com.example.myapplication.model.hasSendableContent
 import com.example.myapplication.model.normalizeChatMessageParts
@@ -50,6 +51,7 @@ object RoleplayRoundTripSupport {
         replyToSpeakerName: String,
         selectedModel: String,
         roleplayOutputFormat: RoleplayOutputFormat,
+        roleplayInteractionMode: RoleplayInteractionMode,
         nowProvider: () -> Long,
         messageIdProvider: () -> String,
     ): PreparedRoleplayRoundTrip {
@@ -63,6 +65,7 @@ object RoleplayRoundTripSupport {
             replyToMessageId = replyToMessageId,
             replyToPreview = replyToPreview,
             replyToSpeakerName = replyToSpeakerName,
+            roleplayInteractionMode = roleplayInteractionMode,
         )
         val loadingMessage = buildMessage(
             conversationId = conversationId,
@@ -73,6 +76,7 @@ object RoleplayRoundTripSupport {
             status = MessageStatus.LOADING,
             modelName = selectedModel,
             roleplayOutputFormat = roleplayOutputFormat,
+            roleplayInteractionMode = roleplayInteractionMode,
         )
         return PreparedRoleplayRoundTrip(
             baseMessages = baseMessages,
@@ -154,6 +158,7 @@ object RoleplayRoundTripSupport {
         replyToPreview: String = "",
         replyToSpeakerName: String = "",
         roleplayOutputFormat: RoleplayOutputFormat = RoleplayOutputFormat.UNSPECIFIED,
+        roleplayInteractionMode: RoleplayInteractionMode? = null,
     ): ChatMessage {
         return ChatMessage(
             id = messageIdProvider(),
@@ -170,6 +175,7 @@ object RoleplayRoundTripSupport {
             replyToPreview = replyToPreview,
             replyToSpeakerName = replyToSpeakerName,
             roleplayOutputFormat = roleplayOutputFormat,
+            roleplayInteractionMode = roleplayInteractionMode,
         )
     }
 }

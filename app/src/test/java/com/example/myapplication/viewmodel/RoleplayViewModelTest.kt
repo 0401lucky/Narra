@@ -2111,7 +2111,9 @@ class RoleplayViewModelTest {
         val storedMessages = store.listMessages(session.conversationId)
         val assistantMessages = storedMessages.filter { it.role == MessageRole.ASSISTANT }
         assertEquals(RoleplayOutputFormat.LONGFORM, assistantMessages[0].roleplayOutputFormat)
+        assertEquals(RoleplayInteractionMode.OFFLINE_LONGFORM, assistantMessages[0].roleplayInteractionMode)
         assertEquals(RoleplayOutputFormat.PROTOCOL, assistantMessages[1].roleplayOutputFormat)
+        assertEquals(RoleplayInteractionMode.OFFLINE_DIALOGUE, assistantMessages[1].roleplayInteractionMode)
 
         val finalState = viewModel.uiState.value
         assertTrue(
@@ -2125,9 +2127,12 @@ class RoleplayViewModelTest {
         server.takeRequest()
         val secondRequest = JsonParser.parseString(server.takeRequest().body.readUtf8()).asJsonObject
         val sentContext = secondRequest.getAsJsonArray("messages")
+            .filter { element -> element.asJsonObject["role"].asString != "system" }
             .map { element -> element.asJsonObject["content"].asString }
             .joinToString(separator = "\n")
-        assertTrue(sentContext.contains("<char>“我没有忘。”</char>"))
+        assertTrue(sentContext.contains("我没有忘。"))
+        assertFalse(sentContext.contains("<char>"))
+        assertFalse(sentContext.contains("<thought>"))
     }
 
     @Test
@@ -2221,6 +2226,224 @@ class RoleplayViewModelTest {
         assertTrue(secondAssistantMessages.none { it.content.contains("<") || it.content.contains("speaker=") })
         assertTrue(secondAssistantMessages.any { it.contentType == RoleplayContentType.THOUGHT })
         assertTrue(secondAssistantMessages.any { it.contentType == RoleplayContentType.DIALOGUE && it.content.contains("这次别再含糊过去") })
+    }
+
+    @Test
+    fun sendMessage_switchingFromLongformToOnlineUsesOnlinePromptAndSanitizedHistory() = runTest(mainDispatcherRule.dispatcher.scheduler) {
+        enqueueStreamResponse("风从窗缝里挤进来，吹得他的声音更轻。<char>“我没有忘。”</char>")
+        enqueueStreamResponse("""["我没躲着你。","刚才那句我看到了。"]""")
+
+        val assistant = Assistant(
+            id = "assistant-1",
+            name = "余罪",
+        )
+        val scenario = RoleplayScenario(
+            id = "scene-1",
+            title = "旧夜",
+            assistantId = assistant.id,
+            userDisplayNameOverride = "林晚",
+            characterDisplayNameOverride = "余罪",
+            longformModeEnabled = true,
+            enableRoleplayProtocol = true,
+        )
+        val session = RoleplaySession(
+            id = "session-1",
+            scenarioId = scenario.id,
+            conversationId = "conv-1",
+            createdAt = 1L,
+            updatedAt = 2L,
+        )
+        val store = FakeConversationStore(
+            conversations = listOf(
+                Conversation(
+                    id = session.conversationId,
+                    title = "旧夜",
+                    model = "chat-model",
+                    createdAt = 1L,
+                    updatedAt = 2L,
+                    assistantId = assistant.id,
+                ),
+            ),
+        )
+        val repository = FakeRoleplayRepository(
+            conversationStore = store,
+            scenarios = listOf(scenario),
+            sessions = listOf(session),
+        )
+        val provider = ProviderSettings(
+            id = "provider-1",
+            name = "测试 Provider",
+            baseUrl = server.url("/v1/").toString(),
+            apiKey = "test-key",
+            selectedModel = "chat-model",
+        )
+        val viewModel = createViewModel(
+            store = store,
+            roleplayRepository = repository,
+            settings = AppSettings(
+                baseUrl = provider.baseUrl,
+                apiKey = provider.apiKey,
+                selectedModel = provider.selectedModel,
+                providers = listOf(provider),
+                selectedProviderId = provider.id,
+                assistants = listOf(assistant),
+                selectedAssistantId = assistant.id,
+            ),
+            promptContextAssembler = fixedPromptAssembler("提示词上下文"),
+            messageIdProvider = idProviderOf("user-1", "assistant-1", "user-2", "assistant-2"),
+        )
+
+        viewModel.enterScenario(scenario.id)
+        advanceUntilIdle()
+
+        viewModel.updateInput("你还记得那一晚吗？")
+        viewModel.sendMessage()
+        advanceUntilIdle()
+
+        repository.upsertScenario(
+            scenario.copy(
+                interactionMode = RoleplayInteractionMode.ONLINE_PHONE,
+                longformModeEnabled = false,
+                updatedAt = 99L,
+            ),
+        )
+        advanceUntilIdle()
+
+        viewModel.updateInput("那你现在直接发给我。")
+        viewModel.sendMessage()
+        advanceUntilIdle()
+
+        val storedMessages = store.listMessages(session.conversationId)
+        val assistantMessages = storedMessages.filter { it.role == MessageRole.ASSISTANT }
+        assertEquals(RoleplayInteractionMode.OFFLINE_LONGFORM, assistantMessages[0].roleplayInteractionMode)
+        assertEquals(RoleplayInteractionMode.ONLINE_PHONE, assistantMessages[1].roleplayInteractionMode)
+        assertEquals(RoleplayOutputFormat.PROTOCOL, assistantMessages[1].roleplayOutputFormat)
+
+        val secondAssistantMessages = viewModel.uiState.value.messages.filter { it.sourceMessageId == "assistant-2" }
+        assertTrue(secondAssistantMessages.isNotEmpty())
+        assertTrue(secondAssistantMessages.none { it.contentType == RoleplayContentType.LONGFORM })
+        assertTrue(secondAssistantMessages.any { it.contentType == RoleplayContentType.DIALOGUE && it.content.contains("我没躲着你") })
+        assertTrue(viewModel.uiState.value.latestPromptDebugDump.contains("【线上模式公共约束】"))
+        assertFalse(viewModel.uiState.value.latestPromptDebugDump.contains("【长文小说模式】"))
+
+        server.takeRequest()
+        val secondRequest = JsonParser.parseString(server.takeRequest().body.readUtf8()).asJsonObject
+        val sentContext = secondRequest.getAsJsonArray("messages")
+            .filter { element -> element.asJsonObject["role"].asString != "system" }
+            .map { element -> element.asJsonObject["content"].asString }
+            .joinToString(separator = "\n")
+        assertTrue(sentContext.contains("我没有忘。"))
+        assertFalse(sentContext.contains("<char>"))
+        assertFalse(sentContext.contains("<thought>"))
+    }
+
+    @Test
+    fun sendMessage_switchingFromOnlineToLongformUsesLongformPromptAndStripsOnlineProtocolFromHistory() = runTest(mainDispatcherRule.dispatcher.scheduler) {
+        enqueueStreamResponse("""["你终于回了。",{"type":"thought","content":"刚才差点把对话框关掉。"}]""")
+        enqueueStreamResponse("他把杯子放回桌面。<char>“这次我会说清楚。”</char>")
+
+        val assistant = Assistant(
+            id = "assistant-1",
+            name = "余罪",
+        )
+        val scenario = RoleplayScenario(
+            id = "scene-1",
+            title = "旧夜",
+            assistantId = assistant.id,
+            userDisplayNameOverride = "林晚",
+            characterDisplayNameOverride = "余罪",
+            interactionMode = RoleplayInteractionMode.ONLINE_PHONE,
+            enableNarration = true,
+            enableRoleplayProtocol = true,
+        )
+        val session = RoleplaySession(
+            id = "session-1",
+            scenarioId = scenario.id,
+            conversationId = "conv-1",
+            createdAt = 1L,
+            updatedAt = 2L,
+        )
+        val store = FakeConversationStore(
+            conversations = listOf(
+                Conversation(
+                    id = session.conversationId,
+                    title = "旧夜",
+                    model = "chat-model",
+                    createdAt = 1L,
+                    updatedAt = 2L,
+                    assistantId = assistant.id,
+                ),
+            ),
+        )
+        val repository = FakeRoleplayRepository(
+            conversationStore = store,
+            scenarios = listOf(scenario),
+            sessions = listOf(session),
+        )
+        val provider = ProviderSettings(
+            id = "provider-1",
+            name = "测试 Provider",
+            baseUrl = server.url("/v1/").toString(),
+            apiKey = "test-key",
+            selectedModel = "chat-model",
+        )
+        val viewModel = createViewModel(
+            store = store,
+            roleplayRepository = repository,
+            settings = AppSettings(
+                baseUrl = provider.baseUrl,
+                apiKey = provider.apiKey,
+                selectedModel = provider.selectedModel,
+                providers = listOf(provider),
+                selectedProviderId = provider.id,
+                assistants = listOf(assistant),
+                selectedAssistantId = assistant.id,
+            ),
+            promptContextAssembler = fixedPromptAssembler("提示词上下文"),
+            messageIdProvider = idProviderOf("user-1", "assistant-1", "user-2", "assistant-2"),
+        )
+
+        viewModel.enterScenario(scenario.id)
+        advanceUntilIdle()
+
+        viewModel.updateInput("你刚刚想说什么？")
+        viewModel.sendMessage()
+        advanceUntilIdle()
+
+        repository.upsertScenario(
+            scenario.copy(
+                interactionMode = RoleplayInteractionMode.OFFLINE_LONGFORM,
+                longformModeEnabled = true,
+                enableRoleplayProtocol = false,
+                updatedAt = 99L,
+            ),
+        )
+        advanceUntilIdle()
+
+        viewModel.updateInput("那你现在好好说。")
+        viewModel.sendMessage()
+        advanceUntilIdle()
+
+        val storedMessages = store.listMessages(session.conversationId)
+        val assistantMessages = storedMessages.filter { it.role == MessageRole.ASSISTANT }
+        assertEquals(RoleplayInteractionMode.ONLINE_PHONE, assistantMessages[0].roleplayInteractionMode)
+        assertEquals(RoleplayInteractionMode.OFFLINE_LONGFORM, assistantMessages[1].roleplayInteractionMode)
+        assertEquals(RoleplayOutputFormat.LONGFORM, assistantMessages[1].roleplayOutputFormat)
+
+        val secondAssistantMessages = viewModel.uiState.value.messages.filter { it.sourceMessageId == "assistant-2" }
+        assertTrue(secondAssistantMessages.any { it.contentType == RoleplayContentType.LONGFORM })
+        assertTrue(viewModel.uiState.value.latestPromptDebugDump.contains("【长文小说模式】"))
+        assertFalse(viewModel.uiState.value.latestPromptDebugDump.contains("【线上模式公共约束】"))
+
+        server.takeRequest()
+        val secondRequest = JsonParser.parseString(server.takeRequest().body.readUtf8()).asJsonObject
+        val sentContext = secondRequest.getAsJsonArray("messages")
+            .filter { element -> element.asJsonObject["role"].asString != "system" }
+            .map { element -> element.asJsonObject["content"].asString }
+            .joinToString(separator = "\n")
+        assertTrue(sentContext.contains("刚才差点把对话框关掉"))
+        assertFalse(sentContext.contains("\"type\":\"thought\""))
+        assertFalse(sentContext.contains("[[rp_online_thought]]"))
     }
 
     @Test

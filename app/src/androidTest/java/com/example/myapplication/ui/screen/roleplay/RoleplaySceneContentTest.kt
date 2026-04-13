@@ -55,6 +55,7 @@ class RoleplaySceneContentTest {
                 onConfirmTransferReceipt = {},
                 onSend = {},
                 onCancelSending = {},
+                onOpenPhoneCheck = {},
                 onApprovePendingMemoryProposal = {},
                 onRejectPendingMemoryProposal = {},
                 onOpenSettings = {},

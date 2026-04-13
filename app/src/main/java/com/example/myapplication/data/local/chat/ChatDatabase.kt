@@ -30,7 +30,7 @@ import com.example.myapplication.data.local.worldbook.WorldBookEntryEntity
         PhoneSnapshotEntity::class,
         PhoneObservationEntity::class,
     ],
-    version = 21,
+    version = 22,
     exportSchema = true,
 )
 abstract class ChatDatabase : RoomDatabase() {
@@ -470,6 +470,16 @@ abstract class ChatDatabase : RoomDatabase() {
                 if (!hasColumn(db, "roleplay_scenarios", "userPersonaOverride")) {
                     db.execSQL(
                         "ALTER TABLE roleplay_scenarios ADD COLUMN userPersonaOverride TEXT NOT NULL DEFAULT ''",
+                    )
+                }
+            }
+        }
+
+        val MIGRATION_21_22 = object : Migration(21, 22) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                if (!hasColumn(db, "messages", "roleplayInteractionMode")) {
+                    db.execSQL(
+                        "ALTER TABLE messages ADD COLUMN roleplayInteractionMode TEXT NOT NULL DEFAULT ''",
                     )
                 }
             }

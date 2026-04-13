@@ -36,4 +36,5 @@ data class MessageEntity(
     val systemEventKind: String = "none",
     val citationsJson: String = "[]",
     val roleplayOutputFormat: String = "UNSPECIFIED",
+    val roleplayInteractionMode: String = "",
 )

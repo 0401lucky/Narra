@@ -4,6 +4,7 @@ import com.example.myapplication.model.AppSettings
 import com.example.myapplication.model.Assistant
 import com.example.myapplication.model.RoleplayInteractionMode
 import com.example.myapplication.model.RoleplayScenario
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
@@ -29,6 +30,10 @@ class RoleplayPromptDecoratorTest {
         )
 
         assertTrue(prompt.contains("【角色锁定与互动边界】"))
+        assertTrue(prompt.contains("【去八股与表达约束】"))
+        assertTrue(prompt.contains("禁止油腻八股词"))
+        assertTrue(prompt.contains("石子"))
+        assertTrue(prompt.contains("神明"))
         assertTrue(prompt.contains("不替 林晚 做决定"))
         assertTrue(prompt.contains("每轮先接住对方刚刚的动作、情绪、问题或态度"))
         assertTrue(prompt.contains("自然段落感优先于机械凑字数"))
@@ -96,6 +101,8 @@ class RoleplayPromptDecoratorTest {
         )
 
         assertTrue(prompt.contains("合法 JSON 数组"))
+        assertTrue(prompt.contains("【去八股与表达约束】"))
+        assertTrue(prompt.contains("不要把对方叫成“东西”或“小东西”"))
         assertTrue(prompt.contains("reply_to、thought、recall、emoji、voice_message、ai_photo、location、transfer、transfer_action、poke、video_call"))
         assertTrue(prompt.contains("不是面对面现场互动"))
         assertTrue(prompt.contains("\"type\":\"transfer_action\",\"action\":\"accept\""))
@@ -141,7 +148,7 @@ class RoleplayPromptDecoratorTest {
         assertTrue(prompt.contains("只通过真实聊天消息表达情绪与推进"))
         assertTrue(prompt.contains("不写心声、旁白或小说段落"))
         assertTrue(prompt.contains("不要机械每轮都发动作对象"))
-        assertTrue(!prompt.contains("reply_to、thought、recall"))
+        assertFalse(prompt.contains("reply_to、thought、recall"))
         assertTrue(prompt.contains("当前不允许输出 thought"))
         assertTrue(prompt.contains("transfer_action"))
     }

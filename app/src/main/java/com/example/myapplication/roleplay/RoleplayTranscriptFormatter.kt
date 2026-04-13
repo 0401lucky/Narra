@@ -42,6 +42,10 @@ object RoleplayTranscriptFormatter {
         allowNarration: Boolean,
         interactionMode: RoleplayInteractionMode,
     ): List<String> {
+        val resolvedInteractionMode = RoleplayMessageFormatSupport.resolveMessageInteractionMode(
+            message = message,
+            fallbackInteractionMode = interactionMode,
+        )
         return when (message.role) {
             MessageRole.USER -> {
                 val content = message.parts.toPlainText()
@@ -93,7 +97,7 @@ object RoleplayTranscriptFormatter {
                             ).mapNotNull { parsedSegment ->
                                 val segment = normalizeAssistantSegmentForTranscript(
                                     segment = parsedSegment,
-                                    interactionMode = interactionMode,
+                                    interactionMode = resolvedInteractionMode,
                                     systemEventKind = message.systemEventKind,
                                     characterName = characterName,
                                 )

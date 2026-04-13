@@ -42,6 +42,7 @@ object RoleplayMessageUiMapper {
         val characterName = scenario.characterDisplayNameOverride.trim()
             .ifBlank { assistant?.name?.trim().orEmpty() }
             .ifBlank { "角色" }
+        val currentScenarioInteractionMode = RoleplayMessageFormatSupport.resolveScenarioInteractionMode(scenario)
 
         return buildList {
             rawMessages.forEach { message ->
@@ -67,23 +68,26 @@ object RoleplayMessageUiMapper {
                 }
             }
             if (!streamingContent.isNullOrBlank()) {
-                val preferredStreamingFormat = rawMessages
-                    .lastOrNull { it.role == MessageRole.ASSISTANT && it.status == MessageStatus.LOADING }
-                    ?.let(RoleplayMessageFormatSupport::resolveAssistantMessageOutputFormat)
-                    ?: RoleplayMessageFormatSupport.resolveScenarioOutputFormat(scenario)
-                val streamingFormat = RoleplayMessageFormatSupport.resolveContentOutputFormat(
-                    preferredFormat = preferredStreamingFormat,
-                    rawContent = streamingContent,
-                )
+                val loadingMessage = rawMessages.lastOrNull {
+                    it.role == MessageRole.ASSISTANT && it.status == MessageStatus.LOADING
+                }
+                val streamingInteractionMode = loadingMessage?.let {
+                    RoleplayMessageFormatSupport.resolveMessageInteractionMode(
+                        message = it,
+                        fallbackInteractionMode = currentScenarioInteractionMode,
+                    )
+                } ?: currentScenarioInteractionMode
                 val streamingThoughtContent = streamingThoughtPreviewContent(
-                    scenario = scenario,
+                    interactionMode = streamingInteractionMode,
                     rawContent = streamingContent,
                 )
                 add(
                     RoleplayMessageUiModel(
                         sourceMessageId = "streaming",
                         contentType = when {
-                            streamingFormat == RoleplayOutputFormat.LONGFORM -> RoleplayContentType.LONGFORM
+                            streamingInteractionMode == RoleplayInteractionMode.OFFLINE_LONGFORM -> {
+                                RoleplayContentType.LONGFORM
+                            }
                             streamingThoughtContent != null -> RoleplayContentType.THOUGHT
                             else -> RoleplayContentType.DIALOGUE
                         },
@@ -93,7 +97,7 @@ object RoleplayMessageUiMapper {
                         createdAt = nowProvider(),
                         isStreaming = true,
                         messageStatus = MessageStatus.LOADING,
-                        copyText = if (streamingFormat == RoleplayOutputFormat.LONGFORM) {
+                        copyText = if (streamingInteractionMode == RoleplayInteractionMode.OFFLINE_LONGFORM) {
                             RoleplayLongformMarkupParser.stripMarkupForDisplay(streamingContent)
                         } else if (streamingThoughtContent != null) {
                             streamingThoughtContent
@@ -222,13 +226,30 @@ object RoleplayMessageUiMapper {
         characterName: String,
         outputParser: RoleplayOutputParser,
     ) {
+        val currentScenarioInteractionMode = RoleplayMessageFormatSupport.resolveScenarioInteractionMode(scenario)
         val normalizedParts = normalizeChatMessageParts(message.parts)
         val initialSize = target.size
         val canRetry = !RoleplayConversationSupport.isOpeningNarrationMessageId(message.id, scenario.id) &&
             (message.status == MessageStatus.COMPLETED || message.status == MessageStatus.ERROR)
         val rawContent = RoleplayMessageFormatSupport.resolveAssistantRawContent(message)
         val outputFormat = RoleplayMessageFormatSupport.resolveAssistantMessageOutputFormat(message)
-        if (outputFormat == RoleplayOutputFormat.LONGFORM) {
+        val messageInteractionMode = RoleplayMessageFormatSupport.resolveMessageInteractionMode(
+            message = message,
+            fallbackInteractionMode = currentScenarioInteractionMode,
+        )
+        if (message.status == MessageStatus.ERROR) {
+            appendAssistantErrorMessage(
+                target = target,
+                message = message,
+                characterName = characterName,
+                canRetry = canRetry,
+                outputParser = outputParser,
+            )
+            return
+        }
+        if (outputFormat == RoleplayOutputFormat.LONGFORM &&
+            messageInteractionMode == RoleplayInteractionMode.OFFLINE_LONGFORM
+        ) {
             normalizedParts.filter { it.isActionPart() }.forEach { part ->
                 target += part.toRoleplayActionUiModel(
                     sourceMessageId = message.id,
@@ -281,7 +302,7 @@ object RoleplayMessageUiMapper {
                 return
             }
             if (
-                scenario.interactionMode == RoleplayInteractionMode.ONLINE_PHONE &&
+                messageInteractionMode == RoleplayInteractionMode.ONLINE_PHONE &&
                 appendOnlineProtocolAssistantMessages(
                     target = target,
                     sourceMessageId = message.id,
@@ -300,7 +321,7 @@ object RoleplayMessageUiMapper {
                 rawContent = content,
                 userName = userName,
                 characterName = characterName,
-                interactionMode = scenario.interactionMode,
+                interactionMode = messageInteractionMode,
                 allowNarration = scenario.enableNarration,
                 isRecalled = message.isRecalled,
                 systemEventKind = message.systemEventKind,
@@ -356,7 +377,7 @@ object RoleplayMessageUiMapper {
                         return@forEach
                     }
                     if (
-                        scenario.interactionMode == RoleplayInteractionMode.ONLINE_PHONE &&
+                        messageInteractionMode == RoleplayInteractionMode.ONLINE_PHONE &&
                         appendOnlineProtocolAssistantMessages(
                             target = target,
                             sourceMessageId = message.id,
@@ -375,7 +396,7 @@ object RoleplayMessageUiMapper {
                         rawContent = part.text,
                         userName = userName,
                         characterName = characterName,
-                        interactionMode = scenario.interactionMode,
+                        interactionMode = messageInteractionMode,
                         allowNarration = scenario.enableNarration,
                         isRecalled = message.isRecalled,
                         systemEventKind = message.systemEventKind,
@@ -389,7 +410,7 @@ object RoleplayMessageUiMapper {
         }
         if (target.size == initialSize && message.content.isNotBlank()) {
             if (
-                scenario.interactionMode == RoleplayInteractionMode.ONLINE_PHONE &&
+                messageInteractionMode == RoleplayInteractionMode.ONLINE_PHONE &&
                 appendOnlineProtocolAssistantMessages(
                     target = target,
                     sourceMessageId = message.id,
@@ -408,7 +429,7 @@ object RoleplayMessageUiMapper {
                 rawContent = message.content,
                 userName = userName,
                 characterName = characterName,
-                interactionMode = scenario.interactionMode,
+                interactionMode = messageInteractionMode,
                 allowNarration = scenario.enableNarration,
                 isRecalled = message.isRecalled,
                 systemEventKind = message.systemEventKind,
@@ -498,11 +519,46 @@ object RoleplayMessageUiMapper {
         return true
     }
 
+    private fun appendAssistantErrorMessage(
+        target: MutableList<RoleplayMessageUiModel>,
+        message: ChatMessage,
+        characterName: String,
+        canRetry: Boolean,
+        outputParser: RoleplayOutputParser,
+    ) {
+        val content = buildString {
+            val normalizedParts = normalizeChatMessageParts(message.parts)
+            if (normalizedParts.isNotEmpty()) {
+                append(
+                    normalizedParts.joinToString(separator = "\n\n") { part ->
+                        part.onlineThoughtContent().takeIf { part.isOnlineThoughtPart() }
+                            ?: part.text.trim()
+                    }.trim(),
+                )
+            } else {
+                append(outputParser.stripMarkup(message.content))
+            }
+        }.trim().ifBlank {
+            message.content.trim().ifBlank { "发送失败" }
+        }
+        target += RoleplayMessageUiModel(
+            sourceMessageId = message.id,
+            contentType = RoleplayContentType.DIALOGUE,
+            speaker = RoleplaySpeaker.CHARACTER,
+            speakerName = characterName,
+            content = content,
+            createdAt = message.createdAt,
+            messageStatus = message.status,
+            copyText = content,
+            canRetry = canRetry,
+        )
+    }
+
     private fun streamingThoughtPreviewContent(
-        scenario: RoleplayScenario,
+        interactionMode: RoleplayInteractionMode,
         rawContent: String,
     ): String? {
-        if (scenario.interactionMode != RoleplayInteractionMode.ONLINE_PHONE) {
+        if (interactionMode != RoleplayInteractionMode.ONLINE_PHONE) {
             return null
         }
         val lines = rawContent.lines()

@@ -9,8 +9,11 @@ import com.example.myapplication.model.MessageStatus
 import com.example.myapplication.model.RoleplayContentType
 import com.example.myapplication.model.RoleplayInteractionMode
 import com.example.myapplication.model.RoleplayOnlineEventKind
+import com.example.myapplication.model.RoleplayOutputFormat
 import com.example.myapplication.model.RoleplayScenario
 import com.example.myapplication.model.isOnlineThoughtPart
+import com.example.myapplication.model.textMessagePart
+import com.example.myapplication.model.thoughtMessagePart
 import com.example.myapplication.model.toContentMirror
 
 data class OnlineMessageReferenceCandidate(
@@ -39,7 +42,7 @@ internal object RoleplayOnlineReferenceSupport {
         outputParser: RoleplayOutputParser,
         maxCandidates: Int = DEFAULT_MAX_CANDIDATES,
     ): List<OnlineMessageReferenceCandidate> {
-        if (scenario.interactionMode != RoleplayInteractionMode.ONLINE_PHONE) {
+        if (RoleplayMessageFormatSupport.resolveScenarioInteractionMode(scenario) != RoleplayInteractionMode.ONLINE_PHONE) {
             return emptyList()
         }
         val mappedMessages = RoleplayMessageUiMapper.mapMessages(
@@ -127,18 +130,34 @@ internal object RoleplayOnlineReferenceSupport {
         settings: AppSettings,
         outputParser: RoleplayOutputParser,
     ): List<ChatMessage> {
-        if (scenario.interactionMode != RoleplayInteractionMode.ONLINE_PHONE) {
-            return messages
-        }
+        val currentInteractionMode = RoleplayMessageFormatSupport.resolveScenarioInteractionMode(scenario)
         val allowThought = scenario.enableNarration && settings.showOnlineRoleplayNarration
         val characterName = scenario.characterDisplayNameOverride.trim()
             .ifBlank { assistant?.name?.trim().orEmpty() }
             .ifBlank { "角色" }
         return messages.mapNotNull { message ->
-            if (message.role == MessageRole.ASSISTANT && message.systemEventKind != RoleplayOnlineEventKind.NONE) {
+            if (message.role != MessageRole.ASSISTANT) {
+                return@mapNotNull message
+            }
+            if (
+                currentInteractionMode == RoleplayInteractionMode.ONLINE_PHONE &&
+                message.systemEventKind != RoleplayOnlineEventKind.NONE
+            ) {
                 return@mapNotNull null
             }
-            if (message.role != MessageRole.ASSISTANT) {
+            val sourceMode = RoleplayMessageFormatSupport.resolveMessageInteractionMode(
+                message = message,
+                fallbackInteractionMode = currentInteractionMode,
+            )
+            if (sourceMode != currentInteractionMode) {
+                return@mapNotNull sanitizeAssistantMessageForCurrentMode(
+                    message = message,
+                    scenario = scenario,
+                    characterName = characterName,
+                    allowThought = allowThought,
+                )
+            }
+            if (currentInteractionMode != RoleplayInteractionMode.ONLINE_PHONE) {
                 return@mapNotNull message
             }
             if (allowThought || message.systemEventKind != RoleplayOnlineEventKind.NONE) {
@@ -171,6 +190,95 @@ internal object RoleplayOnlineReferenceSupport {
                 message
             } else {
                 message.copy(content = cleanedContent, parts = emptyList())
+            }
+        }
+    }
+
+    private fun sanitizeAssistantMessageForCurrentMode(
+        message: ChatMessage,
+        scenario: RoleplayScenario,
+        characterName: String,
+        allowThought: Boolean,
+    ): ChatMessage? {
+        val currentInteractionMode = RoleplayMessageFormatSupport.resolveScenarioInteractionMode(scenario)
+        val transcriptLines = extractAssistantTranscriptLines(
+            message = message,
+            scenario = scenario,
+            characterName = characterName,
+        )
+        if (transcriptLines.isEmpty()) {
+            return null
+        }
+        return when (currentInteractionMode) {
+            RoleplayInteractionMode.ONLINE_PHONE -> {
+                val parts = transcriptLines.mapNotNull { line ->
+                    when (line.kind) {
+                        AssistantTranscriptLineKind.DIALOGUE -> textMessagePart(line.content)
+                        AssistantTranscriptLineKind.THOUGHT,
+                        AssistantTranscriptLineKind.NARRATION,
+                        -> {
+                            if (allowThought) thoughtMessagePart(line.content) else null
+                        }
+                    }
+                }
+                if (parts.isEmpty()) {
+                    null
+                } else {
+                    message.copy(
+                        content = parts.toContentMirror(
+                            imageFallback = "",
+                            fileFallback = "",
+                            specialFallback = "",
+                        ),
+                        parts = parts,
+                        roleplayOutputFormat = RoleplayOutputFormat.PROTOCOL,
+                        roleplayInteractionMode = RoleplayInteractionMode.ONLINE_PHONE,
+                    )
+                }
+            }
+
+            RoleplayInteractionMode.OFFLINE_DIALOGUE -> {
+                val parts = transcriptLines.mapNotNull { line ->
+                    when (line.kind) {
+                        AssistantTranscriptLineKind.THOUGHT -> thoughtMessagePart(line.content)
+                        AssistantTranscriptLineKind.DIALOGUE,
+                        AssistantTranscriptLineKind.NARRATION,
+                        -> textMessagePart(line.content)
+                    }
+                }
+                if (parts.isEmpty()) {
+                    null
+                } else {
+                    message.copy(
+                        content = parts.toContentMirror(
+                            imageFallback = "",
+                            fileFallback = "",
+                            specialFallback = "",
+                        ),
+                        parts = parts,
+                        roleplayOutputFormat = RoleplayMessageFormatSupport.resolveScenarioOutputFormat(scenario),
+                        roleplayInteractionMode = RoleplayInteractionMode.OFFLINE_DIALOGUE,
+                    )
+                }
+            }
+
+            RoleplayInteractionMode.OFFLINE_LONGFORM -> {
+                val content = transcriptLines.joinToString(separator = "\n") { line ->
+                    when (line.kind) {
+                        AssistantTranscriptLineKind.THOUGHT -> "（${line.content}）"
+                        AssistantTranscriptLineKind.DIALOGUE,
+                        AssistantTranscriptLineKind.NARRATION,
+                        -> line.content
+                    }
+                }.trim()
+                content.takeIf { it.isNotBlank() }?.let { sanitizedContent ->
+                    message.copy(
+                        content = sanitizedContent,
+                        parts = emptyList(),
+                        roleplayOutputFormat = RoleplayOutputFormat.LONGFORM,
+                        roleplayInteractionMode = RoleplayInteractionMode.OFFLINE_LONGFORM,
+                    )
+                }
             }
         }
     }
@@ -227,6 +335,69 @@ internal object RoleplayOnlineReferenceSupport {
             else -> plainText.takeIf { it.isNotBlank() }
         }?.trim()
     }
+
+    private fun extractAssistantTranscriptLines(
+        message: ChatMessage,
+        scenario: RoleplayScenario,
+        characterName: String,
+    ): List<AssistantTranscriptLine> {
+        val normalizedCharacterName = characterName.ifBlank { "角色" }
+        val dialoguePrefix = "$normalizedCharacterName："
+        val thoughtPrefix = "${normalizedCharacterName}心声："
+        return RoleplayTranscriptFormatter.formatMessages(
+            messages = listOf(message),
+            userName = "",
+            characterName = normalizedCharacterName,
+            allowNarration = scenario.enableNarration,
+            interactionMode = RoleplayMessageFormatSupport.resolveScenarioInteractionMode(scenario),
+        ).lines()
+            .mapNotNull { rawLine ->
+                val line = rawLine.trim()
+                when {
+                    line.isBlank() -> null
+                    line.startsWith(thoughtPrefix) -> {
+                        AssistantTranscriptLine(
+                            kind = AssistantTranscriptLineKind.THOUGHT,
+                            content = line.removePrefix(thoughtPrefix).trim(),
+                        )
+                    }
+                    line.startsWith(dialoguePrefix) -> {
+                        AssistantTranscriptLine(
+                            kind = AssistantTranscriptLineKind.DIALOGUE,
+                            content = line.removePrefix(dialoguePrefix).trim(),
+                        )
+                    }
+                    line.startsWith("旁白：") -> {
+                        AssistantTranscriptLine(
+                            kind = AssistantTranscriptLineKind.NARRATION,
+                            content = line.removePrefix("旁白：").trim(),
+                        )
+                    }
+                    line.startsWith("系统：") -> {
+                        AssistantTranscriptLine(
+                            kind = AssistantTranscriptLineKind.NARRATION,
+                            content = line.removePrefix("系统：").trim(),
+                        )
+                    }
+                    else -> AssistantTranscriptLine(
+                        kind = AssistantTranscriptLineKind.DIALOGUE,
+                        content = line,
+                    )
+                }
+            }
+            .filter { it.content.isNotBlank() }
+    }
+
+    private enum class AssistantTranscriptLineKind {
+        DIALOGUE,
+        THOUGHT,
+        NARRATION,
+    }
+
+    private data class AssistantTranscriptLine(
+        val kind: AssistantTranscriptLineKind,
+        val content: String,
+    )
 
     private fun defaultSpeakerName(
         message: com.example.myapplication.model.RoleplayMessageUiModel,

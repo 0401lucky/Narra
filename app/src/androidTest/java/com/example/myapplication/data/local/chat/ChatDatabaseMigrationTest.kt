@@ -52,8 +52,13 @@ class ChatDatabaseMigrationTest {
                 "UNSPECIFIED",
                 queryString(db, "SELECT roleplayOutputFormat FROM messages WHERE id = 'm1'"),
             )
+            assertEquals(
+                "",
+                queryString(db, "SELECT roleplayInteractionMode FROM messages WHERE id = 'm1'"),
+            )
             assertEquals(0L, queryLong(db, "SELECT searchEnabled FROM conversations WHERE id = 'c1'"))
             assertTrue(hasColumn(db, "roleplay_scenarios", "longformModeEnabled"))
+            assertTrue(hasColumn(db, "messages", "roleplayInteractionMode"))
             assertTrue(hasIndex(db, "conversations", "index_conversations_updatedAt"))
         }
     }
@@ -164,6 +169,10 @@ class ChatDatabaseMigrationTest {
                 "UNSPECIFIED",
                 queryString(db, "SELECT roleplayOutputFormat FROM messages WHERE id = 'm11'"),
             )
+            assertEquals(
+                "",
+                queryString(db, "SELECT roleplayInteractionMode FROM messages WHERE id = 'm11'"),
+            )
         }
     }
 
@@ -202,6 +211,10 @@ class ChatDatabaseMigrationTest {
             assertTrue(reasoningStepsJson.contains("\"createdAt\":42"))
             assertTrue(reasoningStepsJson.contains("\"finishedAt\":42"))
             assertTrue(reasoningStepsJson.contains("分析目标"))
+            assertEquals(
+                "",
+                queryString(db, "SELECT roleplayInteractionMode FROM messages WHERE id = 'm13'"),
+            )
         }
     }
 
@@ -494,6 +507,14 @@ class ChatDatabaseMigrationTest {
             ChatDatabase.MIGRATION_11_12,
             ChatDatabase.MIGRATION_12_13,
             ChatDatabase.MIGRATION_13_14,
+            ChatDatabase.MIGRATION_14_15,
+            ChatDatabase.MIGRATION_15_16,
+            ChatDatabase.MIGRATION_16_17,
+            ChatDatabase.MIGRATION_17_18,
+            ChatDatabase.MIGRATION_18_19,
+            ChatDatabase.MIGRATION_19_20,
+            ChatDatabase.MIGRATION_20_21,
+            ChatDatabase.MIGRATION_21_22,
         )
     }
 }

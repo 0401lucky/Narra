@@ -2,9 +2,13 @@ package com.example.myapplication.roleplay
 
 import com.example.myapplication.model.ChatMessage
 import com.example.myapplication.model.MessageRole
+import com.example.myapplication.model.RoleplayOnlineEventKind
 import com.example.myapplication.model.RoleplayInteractionMode
 import com.example.myapplication.model.RoleplayOutputFormat
 import com.example.myapplication.model.RoleplayScenario
+import com.example.myapplication.model.isActionPart
+import com.example.myapplication.model.isOnlineThoughtPart
+import com.example.myapplication.model.normalizeChatMessageParts
 import com.example.myapplication.model.toPlainText
 
 private val roleplayProtocolAliasPattern = Regex("""(?is)<(/?)narrative\b""")
@@ -22,15 +26,28 @@ object RoleplayMessageFormatSupport {
     private val protocolStructuralTagPattern = Regex("""(?is)<(/?)(dialogue|narration)\b""")
     private val genericTagPattern = Regex("""(?is)<[^>]+>""")
 
+    fun resolveScenarioInteractionMode(
+        scenario: RoleplayScenario,
+    ): RoleplayInteractionMode {
+        return when {
+            scenario.interactionMode == RoleplayInteractionMode.ONLINE_PHONE -> RoleplayInteractionMode.ONLINE_PHONE
+            scenario.interactionMode == RoleplayInteractionMode.OFFLINE_LONGFORM || scenario.longformModeEnabled -> {
+                RoleplayInteractionMode.OFFLINE_LONGFORM
+            }
+            else -> RoleplayInteractionMode.OFFLINE_DIALOGUE
+        }
+    }
+
     fun resolveScenarioOutputFormat(
         scenario: RoleplayScenario,
     ): RoleplayOutputFormat {
-        return when {
-            scenario.interactionMode == RoleplayInteractionMode.OFFLINE_LONGFORM ||
-                scenario.longformModeEnabled -> RoleplayOutputFormat.LONGFORM
-            scenario.interactionMode == RoleplayInteractionMode.ONLINE_PHONE -> RoleplayOutputFormat.PROTOCOL
+        return when (resolveScenarioInteractionMode(scenario)) {
+            RoleplayInteractionMode.OFFLINE_LONGFORM -> RoleplayOutputFormat.LONGFORM
+            RoleplayInteractionMode.ONLINE_PHONE -> RoleplayOutputFormat.PROTOCOL
+            RoleplayInteractionMode.OFFLINE_DIALOGUE -> when {
             scenario.enableRoleplayProtocol -> RoleplayOutputFormat.PROTOCOL
-            else -> RoleplayOutputFormat.PLAIN
+                else -> RoleplayOutputFormat.PLAIN
+            }
         }
     }
 
@@ -44,6 +61,38 @@ object RoleplayMessageFormatSupport {
             preferredFormat = message.roleplayOutputFormat,
             rawContent = resolveAssistantRawContent(message),
         )
+    }
+
+    fun resolveMessageInteractionMode(
+        message: ChatMessage,
+        fallbackInteractionMode: RoleplayInteractionMode,
+    ): RoleplayInteractionMode {
+        message.roleplayInteractionMode?.let { return it }
+        if (message.role != MessageRole.ASSISTANT) {
+            return fallbackInteractionMode
+        }
+        val outputFormat = resolveAssistantMessageOutputFormat(message)
+        if (outputFormat == RoleplayOutputFormat.LONGFORM) {
+            return RoleplayInteractionMode.OFFLINE_LONGFORM
+        }
+        if (message.systemEventKind != RoleplayOnlineEventKind.NONE) {
+            return RoleplayInteractionMode.ONLINE_PHONE
+        }
+        val normalizedParts = normalizeChatMessageParts(message.parts)
+        if (normalizedParts.any { part -> part.isOnlineThoughtPart() || part.isActionPart() }) {
+            return RoleplayInteractionMode.ONLINE_PHONE
+        }
+        val rawContent = resolveAssistantRawContent(message)
+        if (OnlineActionProtocolParser.parse(rawContent = rawContent, characterName = "角色") != null) {
+            return RoleplayInteractionMode.ONLINE_PHONE
+        }
+        return when {
+            outputFormat == RoleplayOutputFormat.PROTOCOL && fallbackInteractionMode == RoleplayInteractionMode.ONLINE_PHONE -> {
+                RoleplayInteractionMode.ONLINE_PHONE
+            }
+            outputFormat == RoleplayOutputFormat.PROTOCOL -> RoleplayInteractionMode.OFFLINE_DIALOGUE
+            else -> fallbackInteractionMode
+        }
     }
 
     fun resolveAssistantRawContent(

@@ -121,4 +121,30 @@ class RoleplayTranscriptFormatterTest {
             transcript,
         )
     }
+
+    @Test
+    fun formatMessages_prefersStoredMessageInteractionModeAfterSceneSwitch() {
+        val transcript = RoleplayTranscriptFormatter.formatMessages(
+            messages = listOf(
+                ChatMessage(
+                    id = "assistant-1",
+                    conversationId = "conv-1",
+                    role = MessageRole.ASSISTANT,
+                    content = "风把窗帘掀起一角。<char>“我没有忘。”</char>",
+                    createdAt = 2L,
+                    roleplayOutputFormat = RoleplayOutputFormat.LONGFORM,
+                    roleplayInteractionMode = RoleplayInteractionMode.OFFLINE_LONGFORM,
+                ),
+            ),
+            userName = "林晚",
+            characterName = "陆宴清",
+            allowNarration = true,
+            interactionMode = RoleplayInteractionMode.ONLINE_PHONE,
+        )
+
+        assertEquals(
+            "陆宴清：风把窗帘掀起一角。“我没有忘。”",
+            transcript,
+        )
+    }
 }

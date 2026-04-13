@@ -63,7 +63,7 @@ object RoleplayConversationSupport {
             userName = userName,
             characterName = characterName,
             allowNarration = scenario.enableNarration,
-            interactionMode = scenario.interactionMode,
+            interactionMode = RoleplayMessageFormatSupport.resolveScenarioInteractionMode(scenario),
         ).take(maxLength)
     }
 
@@ -129,6 +129,7 @@ object RoleplayConversationSupport {
                     RoleplayMessageFormatSupport.resolveAssistantRawContent(message),
                 ).trim().takeIf { it.isNotBlank() }
             }
+        val recentClichePhrases = RoleplayAntiClicheSupport.detectRecentClichePhrases(recentAssistantTexts)
         val relationTension = resolveRelationTension(recentUserInput)
         val roundPriority = resolveRoundPriority(recentUserInput)
         val currentObstacle = resolveCurrentObstacle(
@@ -136,6 +137,7 @@ object RoleplayConversationSupport {
             recentEmotions = recentEmotions,
             recentUserInput = recentUserInput,
         )
+        val currentInteractionMode = RoleplayMessageFormatSupport.resolveScenarioInteractionMode(scenario)
         val continuityAnchor = recentAssistantTexts.lastOrNull()
             ?.take(42)
             ?.takeIf { it.isNotBlank() }
@@ -161,7 +163,7 @@ object RoleplayConversationSupport {
                 append(continuityAnchor)
                 append("。\n")
             }
-            if (scenario.interactionMode == RoleplayInteractionMode.ONLINE_PHONE) {
+            if (currentInteractionMode == RoleplayInteractionMode.ONLINE_PHONE) {
                 if (isVideoCallActive && recentUserInput.isBlank()) {
                     append("当前状态：视频通话已经接通，但用户暂时还没开口；角色不要自顾自长篇独白。\n")
                 } else if (recentUserInput.isBlank()) {
@@ -193,6 +195,11 @@ object RoleplayConversationSupport {
             if (recentEmotions.isNotEmpty()) {
                 append("减少重复使用这些情绪标签：")
                 append(recentEmotions.joinToString("、"))
+                append("。\n")
+            }
+            if (recentClichePhrases.isNotEmpty()) {
+                append("避免继续复用这些油腻八股词：")
+                append(recentClichePhrases.joinToString("、"))
                 append("。\n")
             }
             append("允许停顿、试探、反问和转折，让 ")

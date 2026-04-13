@@ -33,6 +33,7 @@ data class ChatMessage(
     val systemEventKind: RoleplayOnlineEventKind = RoleplayOnlineEventKind.NONE,
     val citations: List<MessageCitation> = emptyList(),
     val roleplayOutputFormat: RoleplayOutputFormat = RoleplayOutputFormat.UNSPECIFIED,
+    val roleplayInteractionMode: RoleplayInteractionMode? = null,
 )
 
 fun ChatMessage.hasSendableContent(): Boolean {

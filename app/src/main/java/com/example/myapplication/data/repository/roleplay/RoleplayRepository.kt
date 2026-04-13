@@ -371,6 +371,7 @@ class RoomRoleplayRepository(
                         textMessagePart(renderedOpeningNarration),
                     ),
                     roleplayOutputFormat = outputFormat,
+                    roleplayInteractionMode = RoleplayMessageFormatSupport.resolveScenarioInteractionMode(scenario),
                 ),
             ),
             selectedModel = "",

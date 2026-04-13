@@ -63,6 +63,10 @@ class RoleplaySettingsContentTest {
                 onUpdateRoleplayLineHeightScale = { scale ->
                     settings = settings.copy(roleplayLineHeightScale = scale)
                 },
+                onUpdateShowOnlineRoleplayNarration = { enabled ->
+                    settings = settings.copy(showOnlineRoleplayNarration = enabled)
+                },
+                onUpdateScenarioInteractionMode = {},
                 onShowRestartDialog = {},
                 onShowResetDialog = {},
             )
