@@ -67,7 +67,7 @@ object RoleplayPromptDecorator {
                     if (includeOpeningNarrationReference && scenario.openingNarration.isNotBlank()) {
                         append(
                             if (scenario.interactionMode == RoleplayInteractionMode.ONLINE_PHONE) {
-                                "\n开场心声/状态提示参考："
+                                "\n开场旁白参考："
                             } else {
                                 "\n开场旁白参考："
                             },

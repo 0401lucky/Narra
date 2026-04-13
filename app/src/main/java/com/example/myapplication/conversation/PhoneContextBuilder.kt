@@ -117,7 +117,7 @@ class PhoneContextBuilder(
                     if (scenario.openingNarration.isNotBlank()) {
                         append(
                             if (scenario.interactionMode == com.example.myapplication.model.RoleplayInteractionMode.ONLINE_PHONE) {
-                                "开场心声/状态提示："
+                                "开场旁白："
                             } else {
                                 "开场旁白："
                             },

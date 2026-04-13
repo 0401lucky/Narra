@@ -97,6 +97,7 @@ object RoleplayTranscriptFormatter {
                             ).mapNotNull { parsedSegment ->
                                 val segment = normalizeAssistantSegmentForTranscript(
                                     segment = parsedSegment,
+                                    message = message,
                                     interactionMode = resolvedInteractionMode,
                                     systemEventKind = message.systemEventKind,
                                     characterName = characterName,
@@ -144,6 +145,7 @@ object RoleplayTranscriptFormatter {
 
     private fun normalizeAssistantSegmentForTranscript(
         segment: RoleplayParsedSegment,
+        message: ChatMessage,
         interactionMode: RoleplayInteractionMode,
         systemEventKind: RoleplayOnlineEventKind,
         characterName: String,
@@ -152,6 +154,13 @@ object RoleplayTranscriptFormatter {
             return segment
         }
         if (systemEventKind != RoleplayOnlineEventKind.NONE) {
+            return segment.copy(
+                contentType = RoleplayContentType.NARRATION,
+                speaker = RoleplaySpeaker.NARRATOR,
+                speakerName = "旁白",
+            )
+        }
+        if (message.id.startsWith("rp-opening-")) {
             return segment.copy(
                 contentType = RoleplayContentType.NARRATION,
                 speaker = RoleplaySpeaker.NARRATOR,

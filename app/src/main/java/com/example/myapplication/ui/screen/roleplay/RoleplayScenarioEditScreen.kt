@@ -356,7 +356,7 @@ fun RoleplayScenarioEditScreen(
                             label = {
                                 Text(
                                     if (isOnlinePhoneMode) {
-                                        "开场心声 / 状态提示"
+                                        "开场旁白"
                                     } else {
                                         "开场旁白"
                                     },

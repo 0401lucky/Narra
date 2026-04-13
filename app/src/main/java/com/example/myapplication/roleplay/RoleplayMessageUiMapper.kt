@@ -318,6 +318,7 @@ object RoleplayMessageUiMapper {
             appendAssistantTextSegments(
                 target = target,
                 sourceMessageId = message.id,
+                scenarioId = scenario.id,
                 rawContent = content,
                 userName = userName,
                 characterName = characterName,
@@ -393,6 +394,7 @@ object RoleplayMessageUiMapper {
                     appendAssistantTextSegments(
                         target = target,
                         sourceMessageId = message.id,
+                        scenarioId = scenario.id,
                         rawContent = part.text,
                         userName = userName,
                         characterName = characterName,
@@ -426,6 +428,7 @@ object RoleplayMessageUiMapper {
             appendAssistantTextSegments(
                 target = target,
                 sourceMessageId = message.id,
+                scenarioId = scenario.id,
                 rawContent = message.content,
                 userName = userName,
                 characterName = characterName,
@@ -575,6 +578,7 @@ object RoleplayMessageUiMapper {
     private fun appendAssistantTextSegments(
         target: MutableList<RoleplayMessageUiModel>,
         sourceMessageId: String,
+        scenarioId: String,
         rawContent: String,
         userName: String,
         characterName: String,
@@ -598,6 +602,8 @@ object RoleplayMessageUiMapper {
         ).forEach { parsedSegment ->
             val segment = normalizeAssistantSegment(
                 segment = parsedSegment,
+                sourceMessageId = sourceMessageId,
+                scenarioId = scenarioId,
                 interactionMode = interactionMode,
                 systemEventKind = systemEventKind,
                 characterName = characterName,
@@ -629,6 +635,8 @@ object RoleplayMessageUiMapper {
 
     private fun normalizeAssistantSegment(
         segment: RoleplayParsedSegment,
+        sourceMessageId: String,
+        scenarioId: String,
         interactionMode: RoleplayInteractionMode,
         systemEventKind: RoleplayOnlineEventKind,
         characterName: String,
@@ -637,6 +645,13 @@ object RoleplayMessageUiMapper {
             return segment
         }
         if (systemEventKind != RoleplayOnlineEventKind.NONE) {
+            return segment.copy(
+                contentType = RoleplayContentType.NARRATION,
+                speaker = RoleplaySpeaker.NARRATOR,
+                speakerName = "旁白",
+            )
+        }
+        if (RoleplayConversationSupport.isOpeningNarrationMessageId(sourceMessageId, scenarioId)) {
             return segment.copy(
                 contentType = RoleplayContentType.NARRATION,
                 speaker = RoleplaySpeaker.NARRATOR,

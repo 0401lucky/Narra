@@ -299,6 +299,45 @@ class RoleplayMessageUiMapperTest {
     }
 
     @Test
+    fun mapMessages_onlineOpeningNarrationStaysNarrationInsteadOfThought() {
+        val scenario = RoleplayScenario(
+            id = "scene-1",
+            title = "线上开场",
+            characterDisplayNameOverride = "陆宴清",
+            interactionMode = RoleplayInteractionMode.ONLINE_PHONE,
+            enableNarration = true,
+        )
+
+        val mapped = RoleplayMessageUiMapper.mapMessages(
+            scenario = scenario,
+            assistant = Assistant(id = "assistant-1", name = "陆宴清"),
+            settings = AppSettings(),
+            rawMessages = listOf(
+                ChatMessage(
+                    id = RoleplayConversationSupport.openingNarrationMessageId(
+                        scenarioId = scenario.id,
+                        conversationId = "conv-1",
+                    ),
+                    conversationId = "conv-1",
+                    role = MessageRole.ASSISTANT,
+                    content = "<narration>夜色渐深，聊天框还停在昨晚那句没回完的话上。</narration>",
+                    createdAt = 1L,
+                    status = MessageStatus.COMPLETED,
+                    roleplayOutputFormat = RoleplayOutputFormat.PROTOCOL,
+                    roleplayInteractionMode = RoleplayInteractionMode.ONLINE_PHONE,
+                ),
+            ),
+            streamingContent = null,
+            outputParser = RoleplayOutputParser(),
+            nowProvider = { 20L },
+        )
+
+        assertEquals(1, mapped.size)
+        assertEquals(RoleplayContentType.NARRATION, mapped.single().contentType)
+        assertEquals("夜色渐深，聊天框还停在昨晚那句没回完的话上。", mapped.single().content)
+    }
+
+    @Test
     fun mapMessages_onlineModeDoesNotInsertBurstSystemMessage() {
         val scenario = RoleplayScenario(
             id = "scene-1",

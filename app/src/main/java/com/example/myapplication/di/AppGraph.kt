@@ -67,28 +67,7 @@ class AppGraph(
             application,
             ChatDatabase::class.java,
             CHAT_DATABASE_NAME,
-        ).addMigrations(
-            ChatDatabase.MIGRATION_1_2,
-            ChatDatabase.MIGRATION_2_3,
-            ChatDatabase.MIGRATION_3_4,
-            ChatDatabase.MIGRATION_4_5,
-            ChatDatabase.MIGRATION_5_6,
-            ChatDatabase.MIGRATION_6_7,
-            ChatDatabase.MIGRATION_7_8,
-            ChatDatabase.MIGRATION_8_9,
-            ChatDatabase.MIGRATION_9_10,
-            ChatDatabase.MIGRATION_10_11,
-            ChatDatabase.MIGRATION_11_12,
-            ChatDatabase.MIGRATION_12_13,
-            ChatDatabase.MIGRATION_13_14,
-            ChatDatabase.MIGRATION_14_15,
-            ChatDatabase.MIGRATION_15_16,
-            ChatDatabase.MIGRATION_16_17,
-            ChatDatabase.MIGRATION_17_18,
-            ChatDatabase.MIGRATION_18_19,
-            ChatDatabase.MIGRATION_19_20,
-            ChatDatabase.MIGRATION_20_21,
-        ).build()
+        ).addMigrations(*ChatDatabase.ALL_MIGRATIONS).build()
     }
 
     val settingsStore: AppSettingsStore by lazy {

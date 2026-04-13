@@ -123,6 +123,35 @@ class RoleplayTranscriptFormatterTest {
     }
 
     @Test
+    fun formatMessages_onlineOpeningNarrationStaysNarration() {
+        val transcript = RoleplayTranscriptFormatter.formatMessages(
+            messages = listOf(
+                ChatMessage(
+                    id = RoleplayConversationSupport.openingNarrationMessageId(
+                        scenarioId = "scene-1",
+                        conversationId = "conv-1",
+                    ),
+                    conversationId = "conv-1",
+                    role = MessageRole.ASSISTANT,
+                    content = "<narration>夜色渐深，聊天框还停在昨晚那句没回完的话上。</narration>",
+                    createdAt = 2L,
+                    roleplayOutputFormat = RoleplayOutputFormat.PROTOCOL,
+                    roleplayInteractionMode = RoleplayInteractionMode.ONLINE_PHONE,
+                ),
+            ),
+            userName = "林晚",
+            characterName = "陆宴清",
+            allowNarration = true,
+            interactionMode = RoleplayInteractionMode.ONLINE_PHONE,
+        )
+
+        assertEquals(
+            "旁白：夜色渐深，聊天框还停在昨晚那句没回完的话上。",
+            transcript,
+        )
+    }
+
+    @Test
     fun formatMessages_prefersStoredMessageInteractionModeAfterSceneSwitch() {
         val transcript = RoleplayTranscriptFormatter.formatMessages(
             messages = listOf(
