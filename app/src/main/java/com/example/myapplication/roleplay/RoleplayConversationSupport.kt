@@ -6,6 +6,7 @@ import com.example.myapplication.model.ChatMessage
 import com.example.myapplication.model.MessageRole
 import com.example.myapplication.model.ProviderFunction
 import com.example.myapplication.model.RoleplayInteractionMode
+import com.example.myapplication.model.RoleplayOnlineEventKind
 import com.example.myapplication.model.RoleplayScenario
 import com.example.myapplication.model.toPlainText
 
@@ -95,7 +96,7 @@ object RoleplayConversationSupport {
             .ifBlank { messages.lastOrNull { it.role == MessageRole.USER }?.content.orEmpty() }
             .trim()
         val repeatedOpeners = messages
-            .filter { it.role == MessageRole.ASSISTANT }
+            .filter { it.role == MessageRole.ASSISTANT && it.systemEventKind == RoleplayOnlineEventKind.NONE }
             .takeLast(3)
             .mapNotNull { message ->
                 val plainText = outputParser.stripMarkup(
@@ -105,7 +106,7 @@ object RoleplayConversationSupport {
             }
             .distinct()
         val recentEmotions = messages
-            .filter { it.role == MessageRole.ASSISTANT }
+            .filter { it.role == MessageRole.ASSISTANT && it.systemEventKind == RoleplayOnlineEventKind.NONE }
             .takeLast(3)
             .flatMap { message ->
                 when (RoleplayMessageFormatSupport.resolveAssistantMessageOutputFormat(message)) {
@@ -121,7 +122,7 @@ object RoleplayConversationSupport {
             }
             .distinct()
         val recentAssistantTexts = messages
-            .filter { it.role == MessageRole.ASSISTANT }
+            .filter { it.role == MessageRole.ASSISTANT && it.systemEventKind == RoleplayOnlineEventKind.NONE }
             .takeLast(2)
             .mapNotNull { message ->
                 outputParser.stripMarkup(

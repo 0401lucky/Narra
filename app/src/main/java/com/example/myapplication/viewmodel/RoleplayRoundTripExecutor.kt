@@ -115,18 +115,14 @@ internal class RoleplayRoundTripExecutor(
                     updatedAt = nowProvider(),
                     assistantId = scenario.assistantId,
                 )
-            val promptContext = promptContextAssembler.assemble(
-                settings = state.settings,
-                assistant = assistant,
-                conversation = conversation,
-                userInputText = RoleplayConversationSupport.resolveLatestUserInputText(requestMessages),
-                recentMessages = requestMessages,
-                promptMode = PromptMode.ROLEPLAY,
-            )
             val effectiveRequestMessages = resolveRequestMessagesForRoundTrip(
                 conversation = conversation,
                 assistant = assistant,
                 requestMessages = requestMessages,
+            )
+            val onlineSystemEventContext = RoleplayOnlineReferenceSupport.buildSystemEventPromptContext(
+                messages = effectiveRequestMessages,
+                outputParser = outputParser,
             )
             val requestMessagesForModel = RoleplayOnlineReferenceSupport.sanitizeRequestMessages(
                 messages = effectiveRequestMessages,
@@ -134,6 +130,14 @@ internal class RoleplayRoundTripExecutor(
                 assistant = assistant,
                 settings = state.settings,
                 outputParser = outputParser,
+            )
+            val promptContext = promptContextAssembler.assemble(
+                settings = state.settings,
+                assistant = assistant,
+                conversation = conversation,
+                userInputText = RoleplayConversationSupport.resolveLatestUserInputText(requestMessagesForModel),
+                recentMessages = requestMessagesForModel,
+                promptMode = PromptMode.ROLEPLAY,
             )
             val referenceCandidates = RoleplayOnlineReferenceSupport.buildCandidates(
                 messages = requestMessagesForModel,
@@ -158,7 +162,17 @@ internal class RoleplayRoundTripExecutor(
                 settings = state.settings,
                 includeOpeningNarrationReference = requestMessages.none { it.role == MessageRole.USER },
                 isVideoCallActive = state.isVideoCallActive,
-                directorNote = directorNote,
+                directorNote = buildString {
+                    onlineSystemEventContext.takeIf { it.isNotBlank() }?.let { context ->
+                        append(context)
+                    }
+                    directorNote.takeIf { it.isNotBlank() }?.let { note ->
+                        if (isNotBlank()) {
+                            append("\n\n")
+                        }
+                        append(note)
+                    }
+                },
             )
             val toolingOptions = GatewayToolingOptions.localContextOnly(
                 GatewayToolRuntimeContext(

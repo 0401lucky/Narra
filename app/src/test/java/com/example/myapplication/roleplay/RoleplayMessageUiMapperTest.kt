@@ -409,6 +409,43 @@ class RoleplayMessageUiMapperTest {
     }
 
     @Test
+    fun mapMessages_onlineModeMapsPlainTextSystemEventToNarration() {
+        val scenario = RoleplayScenario(
+            id = "scene-1",
+            title = "线上模式",
+            characterDisplayNameOverride = "陆宴清",
+            interactionMode = RoleplayInteractionMode.ONLINE_PHONE,
+            enableNarration = true,
+        )
+
+        val mapped = RoleplayMessageUiMapper.mapMessages(
+            scenario = scenario,
+            assistant = Assistant(id = "assistant-1", name = "陆宴清"),
+            settings = AppSettings(),
+            rawMessages = listOf(
+                ChatMessage(
+                    id = "event-1",
+                    conversationId = "conv-1",
+                    role = MessageRole.ASSISTANT,
+                    content = "视频通话已结束，通话时长 00:12",
+                    createdAt = 2L,
+                    status = MessageStatus.COMPLETED,
+                    systemEventKind = RoleplayOnlineEventKind.VIDEO_CALL_ENDED,
+                    roleplayOutputFormat = RoleplayOutputFormat.PROTOCOL,
+                    parts = listOf(textMessagePart("视频通话已结束，通话时长 00:12")),
+                ),
+            ),
+            streamingContent = null,
+            outputParser = RoleplayOutputParser(),
+            nowProvider = { 20L },
+        )
+
+        assertEquals(1, mapped.size)
+        assertEquals(RoleplayContentType.NARRATION, mapped.single().contentType)
+        assertEquals("旁白", mapped.single().speakerName)
+    }
+
+    @Test
     fun mapMessages_onlineModeMapsThoughtPartsToThoughtUiModel() {
         val scenario = RoleplayScenario(
             id = "scene-1",

@@ -85,6 +85,7 @@ import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
+import org.junit.Assert.fail
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
@@ -2290,7 +2291,7 @@ class RoleplayViewModelTest {
         assertFalse(latestState.isSending)
         assertEquals(1, conversationMessages.size)
         assertEquals(RoleplayOnlineEventKind.VIDEO_CALL_CONNECTED, conversationMessages.single().systemEventKind)
-        assertEquals("<narration>已接通视频通话</narration>", conversationMessages.single().content)
+        assertEquals("已接通视频通话", conversationMessages.single().content)
     }
 
     @Test
@@ -2450,6 +2451,97 @@ class RoleplayViewModelTest {
         assertEquals(2, conversationMessages.size)
         assertEquals(RoleplayOnlineEventKind.VIDEO_CALL_ENDED, conversationMessages.last().systemEventKind)
         assertTrue(conversationMessages.last().content.contains("视频通话已结束，通话时长 00:02"))
+    }
+
+    @Test
+    fun hangupVideoCall_thenImmediateSend_usesOnlineChatPromptAndNoTaggedVideoEvents() = runTest(mainDispatcherRule.dispatcher.scheduler) {
+        enqueueStreamResponse("""["下班了吗？"]""")
+
+        val assistant = Assistant(
+            id = "assistant-1",
+            name = "余罪",
+        )
+        val scenario = RoleplayScenario(
+            id = "scene-1",
+            title = "旧夜",
+            assistantId = assistant.id,
+            userDisplayNameOverride = "林晚",
+            characterDisplayNameOverride = "余罪",
+            interactionMode = RoleplayInteractionMode.ONLINE_PHONE,
+            enableNarration = true,
+            enableRoleplayProtocol = true,
+        )
+        val session = RoleplaySession(
+            id = "session-1",
+            scenarioId = scenario.id,
+            conversationId = "conv-1",
+            createdAt = 1L,
+            updatedAt = 2L,
+        )
+        val store = FakeConversationStore(
+            conversations = listOf(
+                Conversation(
+                    id = session.conversationId,
+                    title = "旧夜",
+                    model = "chat-model",
+                    createdAt = 1L,
+                    updatedAt = 2L,
+                    assistantId = assistant.id,
+                ),
+            ),
+        )
+        val provider = ProviderSettings(
+            id = "provider-1",
+            name = "测试 Provider",
+            baseUrl = server.url("/v1/").toString(),
+            apiKey = "test-key",
+            selectedModel = "chat-model",
+        )
+        var now = 1_000L
+        val viewModel = createViewModel(
+            store = store,
+            roleplayRepository = FakeRoleplayRepository(
+                conversationStore = store,
+                scenarios = listOf(scenario),
+                sessions = listOf(session),
+            ),
+            settings = AppSettings(
+                baseUrl = provider.baseUrl,
+                apiKey = provider.apiKey,
+                selectedModel = provider.selectedModel,
+                providers = listOf(provider),
+                selectedProviderId = provider.id,
+                assistants = listOf(assistant),
+                selectedAssistantId = assistant.id,
+            ),
+            promptContextAssembler = fixedPromptAssembler("提示词上下文"),
+            messageIdProvider = idProviderOf("user-1", "assistant-1"),
+            nowProvider = {
+                val value = now
+                now += 1_000L
+                value
+            },
+        )
+
+        viewModel.enterScenario(scenario.id)
+        advanceUntilIdle()
+        viewModel.startVideoCall()
+        advanceUntilIdle()
+        viewModel.hangupVideoCall()
+        viewModel.updateInput("下班了吗？")
+        viewModel.sendMessage()
+        advanceUntilIdle()
+
+        val request = server.takeRequest(5, TimeUnit.SECONDS)
+        assertTrue("预期应发送一条线上聊天请求", request != null)
+        val requestBodyText = request!!.body.readUtf8()
+        val requestBody = JsonParser.parseString(requestBodyText).asJsonObject
+        val systemPrompt = requestBody.getAsJsonArray("messages")[0].asJsonObject["content"].asString
+
+        assertTrue(systemPrompt.contains("【线上手机聊天模式】"))
+        assertTrue(!systemPrompt.contains("【线上视频通话模式】"))
+        assertTrue(!requestBodyText.contains("<narration>已接通视频通话</narration>"))
+        assertTrue(!requestBodyText.contains("<narration>视频通话已结束"))
     }
 
     @Test

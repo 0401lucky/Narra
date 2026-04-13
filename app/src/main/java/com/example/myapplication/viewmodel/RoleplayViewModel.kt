@@ -484,7 +484,7 @@ class RoleplayViewModel(
                     message = buildVideoCallSystemMessage(
                         conversationId = session.conversationId,
                         createdAt = startedAt,
-                        content = "<narration>已接通视频通话</narration>",
+                        content = "已接通视频通话",
                         eventKind = RoleplayOnlineEventKind.VIDEO_CALL_CONNECTED,
                     ),
                     selectedModel = selectedModel,
@@ -524,10 +524,17 @@ class RoleplayViewModel(
             return
         }
         suggestionActionSupport.cancelSuggestionGeneration(resetState = false)
+        val hangingSendingJob = sendingJob
+        val hangingCompensationJob = compensationJob
+        sendingJob = null
+        compensationJob = null
+        _uiState.update { current ->
+            RoleplayStateSupport.clearVideoCallState(current)
+        }
         viewModelScope.launch {
             try {
-                sendingJob?.cancelAndJoin()
-                compensationJob?.cancelAndJoin()
+                hangingSendingJob?.cancelAndJoin()
+                hangingCompensationJob?.cancelAndJoin()
                 val meta = roleplayRepository.getOnlineMeta(session.conversationId)
                 val activeCallSessionId = meta?.activeVideoCallSessionId
                     .orEmpty()
@@ -544,7 +551,7 @@ class RoleplayViewModel(
                         message = buildVideoCallSystemMessage(
                             conversationId = session.conversationId,
                             createdAt = endedAt,
-                            content = "<narration>视频通话已结束，通话时长 $durationText</narration>",
+                            content = "视频通话已结束，通话时长 $durationText",
                             eventKind = RoleplayOnlineEventKind.VIDEO_CALL_ENDED,
                         ),
                         selectedModel = selectedModel,
@@ -560,9 +567,6 @@ class RoleplayViewModel(
                         updatedAt = endedAt,
                     ),
                 )
-                _uiState.update { current ->
-                    RoleplayStateSupport.clearVideoCallState(current)
-                }
             } catch (throwable: Throwable) {
                 _uiState.update { current ->
                     RoleplayStateSupport.applyErrorMessage(current, throwable.message ?: "挂断视频通话失败")
@@ -640,9 +644,9 @@ class RoleplayViewModel(
                 id = "online-event-screenshot-${session.conversationId}-${nowProvider()}",
                 conversationId = session.conversationId,
                 role = MessageRole.ASSISTANT,
-                content = "<narration>你截了一张聊天截图。</narration>",
+                content = "你截了一张聊天截图。",
                 createdAt = nowProvider(),
-                parts = listOf(textMessagePart("<narration>你截了一张聊天截图。</narration>")),
+                parts = listOf(textMessagePart("你截了一张聊天截图。")),
                 systemEventKind = RoleplayOnlineEventKind.SCREENSHOT,
                 roleplayOutputFormat = RoleplayOutputFormat.PROTOCOL,
             )

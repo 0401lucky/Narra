@@ -144,8 +144,15 @@ object RoleplayTranscriptFormatter {
         systemEventKind: RoleplayOnlineEventKind,
         characterName: String,
     ): RoleplayParsedSegment {
-        if (interactionMode != RoleplayInteractionMode.ONLINE_PHONE || systemEventKind != RoleplayOnlineEventKind.NONE) {
+        if (interactionMode != RoleplayInteractionMode.ONLINE_PHONE) {
             return segment
+        }
+        if (systemEventKind != RoleplayOnlineEventKind.NONE) {
+            return segment.copy(
+                contentType = RoleplayContentType.NARRATION,
+                speaker = RoleplaySpeaker.NARRATOR,
+                speakerName = "旁白",
+            )
         }
         return when (segment.contentType) {
             RoleplayContentType.NARRATION -> segment.copy(

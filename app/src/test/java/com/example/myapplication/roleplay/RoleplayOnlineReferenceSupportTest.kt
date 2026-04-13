@@ -6,6 +6,7 @@ import com.example.myapplication.model.ChatMessage
 import com.example.myapplication.model.MessageRole
 import com.example.myapplication.model.MessageStatus
 import com.example.myapplication.model.RoleplayInteractionMode
+import com.example.myapplication.model.RoleplayOnlineEventKind
 import com.example.myapplication.model.RoleplayScenario
 import com.example.myapplication.model.textMessagePart
 import com.example.myapplication.model.thoughtMessagePart
@@ -89,6 +90,70 @@ class RoleplayOnlineReferenceSupportTest {
 
         assertEquals(1, sanitized.single().parts.size)
         assertEquals("你先说。", sanitized.single().parts.single().text)
+    }
+
+    @Test
+    fun sanitizeRequestMessages_dropsAssistantSystemEventsFromModelHistory() {
+        val sanitized = RoleplayOnlineReferenceSupport.sanitizeRequestMessages(
+            messages = listOf(
+                ChatMessage(
+                    id = "event-1",
+                    conversationId = "conv-1",
+                    role = MessageRole.ASSISTANT,
+                    content = "<narration>视频通话已结束，通话时长 00:12</narration>",
+                    createdAt = 2L,
+                    status = MessageStatus.COMPLETED,
+                    systemEventKind = RoleplayOnlineEventKind.VIDEO_CALL_ENDED,
+                ),
+                ChatMessage(
+                    id = "assistant-1",
+                    conversationId = "conv-1",
+                    role = MessageRole.ASSISTANT,
+                    content = "",
+                    createdAt = 3L,
+                    status = MessageStatus.COMPLETED,
+                    parts = listOf(textMessagePart("回去路上给我发一句。")),
+                ),
+            ),
+            scenario = scenario,
+            assistant = assistant,
+            settings = AppSettings(showOnlineRoleplayNarration = true),
+            outputParser = RoleplayOutputParser(),
+        )
+
+        assertEquals(1, sanitized.size)
+        assertEquals("assistant-1", sanitized.single().id)
+    }
+
+    @Test
+    fun buildSystemEventPromptContext_rewritesVideoEndAndScreenshotAsPlainContext() {
+        val context = RoleplayOnlineReferenceSupport.buildSystemEventPromptContext(
+            messages = listOf(
+                ChatMessage(
+                    id = "event-1",
+                    conversationId = "conv-1",
+                    role = MessageRole.ASSISTANT,
+                    content = "<narration>视频通话已结束，通话时长 00:12</narration>",
+                    createdAt = 2L,
+                    status = MessageStatus.COMPLETED,
+                    systemEventKind = RoleplayOnlineEventKind.VIDEO_CALL_ENDED,
+                ),
+                ChatMessage(
+                    id = "event-2",
+                    conversationId = "conv-1",
+                    role = MessageRole.ASSISTANT,
+                    content = "<narration>你截了一张聊天截图。</narration>",
+                    createdAt = 3L,
+                    status = MessageStatus.COMPLETED,
+                    systemEventKind = RoleplayOnlineEventKind.SCREENSHOT,
+                ),
+            ),
+            outputParser = RoleplayOutputParser(),
+        )
+
+        assertTrue(context.contains("当前已回到普通线上聊天"))
+        assertTrue(context.contains("用户刚截了一张聊天截图"))
+        assertTrue(!context.contains("<narration>"))
     }
 
     @Test
