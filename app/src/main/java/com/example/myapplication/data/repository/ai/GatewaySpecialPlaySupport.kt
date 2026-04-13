@@ -27,13 +27,15 @@ internal object GatewaySpecialPlaySupport {
 - 你可以输出 XML 自闭合标签：
   <play id="唯一ID" type="transfer|invite|gift|task|punish" ... />
 - 字段要求：
-  1. 转账：type="transfer"，并带 direction="assistant_to_user|user_to_assistant" amount="88.00" counterparty="用户" note="备注" status="pending|received"
+  1. 转账：type="transfer"，并带 direction="assistant_to_user|user_to_assistant" amount="88.00" counterparty="用户" note="备注" status="pending|received|rejected"
   2. 邀约：type="invite"，并带 target="用户" place="天台" time="今晚九点" note="附言"
   3. 礼物：type="gift"，并带 target="用户" item="黑胶唱片" note="附言"
   4. 委托：type="task"，并带 title="寻找钥匙" objective="在旧图书馆找到铜钥匙" reward="一个答案" deadline="天亮前"
   5. 惩罚：type="punish"，并带 method="戒尺" count="三下" intensity="light|medium|heavy" reason="撒谎" note="边抽边认错"
 - 当你确认已经收下用户之前发来的转账时，输出：
   <play-update ref="之前的转账ID" status="received" />
+- 当你决定退回用户之前发来的转账时，输出：
+  <play-update ref="之前的转账ID" status="rejected" />
 - 非转账玩法不要输出 update 标签。
 - 惩罚卡只会由用户手动发出；当你看见它时，只需要在正文里回应，不要主动生成或回发惩罚卡。
 - 标签不要放进代码块，不要解释标签语法本身。
@@ -68,6 +70,7 @@ internal object GatewaySpecialPlaySupport {
                     val status = when (part.specialStatus) {
                         TransferStatus.PENDING -> "pending"
                         TransferStatus.RECEIVED -> "received"
+                        TransferStatus.REJECTED -> "rejected"
                         null -> return null
                     }
                     append(" direction=\"").append(direction).append('"')
@@ -146,11 +149,15 @@ internal object GatewaySpecialPlaySupport {
             when {
                 match.value.startsWith("<play-update") -> {
                     val refId = attributes["ref"].orEmpty().trim()
-                    val status = attributes["status"].orEmpty().trim()
-                    if (refId.isNotBlank() && status == "received") {
+                    val status = when (attributes["status"].orEmpty().trim()) {
+                        "received" -> TransferStatus.RECEIVED
+                        "rejected" -> TransferStatus.REJECTED
+                        else -> null
+                    }
+                    if (refId.isNotBlank() && status != null) {
                         transferUpdates += TransferUpdateDirective(
                             refId = refId,
-                            status = TransferStatus.RECEIVED,
+                            status = status,
                         )
                     }
                 }
@@ -210,6 +217,7 @@ internal object GatewaySpecialPlaySupport {
                         direction = direction,
                         status = when (attributes["status"].orEmpty().trim()) {
                             "received" -> TransferStatus.RECEIVED
+                            "rejected" -> TransferStatus.REJECTED
                             else -> TransferStatus.PENDING
                         },
                         counterparty = attributes["counterparty"].orEmpty().ifBlank { "对方" },

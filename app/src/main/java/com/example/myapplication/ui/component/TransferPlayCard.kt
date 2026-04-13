@@ -101,10 +101,11 @@ fun SpecialPlayCard(
     val palette = remember(part.specialType, isUserMessage) {
         resolveSpecialPlayPalette(part.specialType, isUserMessage)
     }
+    val compactTransfer = part.specialType == ChatSpecialType.TRANSFER
 
     Surface(
         modifier = modifier.scale(scale),
-        shape = RoundedCornerShape(22.dp),
+        shape = RoundedCornerShape(if (compactTransfer) 18.dp else 22.dp),
         color = Color.Transparent,
     ) {
         Column(
@@ -114,7 +115,7 @@ fun SpecialPlayCard(
                     brush = Brush.verticalGradient(
                         colors = listOf(palette.topColor, palette.bottomColor),
                     ),
-                    shape = RoundedCornerShape(22.dp),
+                    shape = RoundedCornerShape(if (compactTransfer) 18.dp else 22.dp),
                 )
                 .let { baseModifier ->
                     if (reduceMotion) {
@@ -123,12 +124,16 @@ fun SpecialPlayCard(
                         baseModifier.animateContentSize()
                     }
                 }
-                .padding(horizontal = 16.dp, vertical = 16.dp),
-            verticalArrangement = Arrangement.spacedBy(10.dp),
+                .padding(
+                    horizontal = if (compactTransfer) 13.dp else 16.dp,
+                    vertical = if (compactTransfer) 12.dp else 16.dp,
+                ),
+            verticalArrangement = Arrangement.spacedBy(if (compactTransfer) 8.dp else 10.dp),
         ) {
             SpecialPlayHeader(
                 icon = resolveSpecialPlayIcon(part.specialType),
                 title = part.specialPlayTitle(),
+                compact = compactTransfer,
             )
 
             when (part.specialType) {
@@ -175,14 +180,15 @@ fun TransferPlayCard(
 private fun SpecialPlayHeader(
     icon: ImageVector,
     title: String,
+    compact: Boolean = false,
 ) {
     Row(
         verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(10.dp),
+        horizontalArrangement = Arrangement.spacedBy(if (compact) 8.dp else 10.dp),
     ) {
         Box(
             modifier = Modifier
-                .size(36.dp)
+                .size(if (compact) 30.dp else 36.dp)
                 .background(
                     color = Color.White.copy(alpha = 0.18f),
                     shape = CircleShape,
@@ -192,13 +198,13 @@ private fun SpecialPlayHeader(
             Icon(
                 imageVector = icon,
                 contentDescription = null,
-                modifier = Modifier.size(18.dp),
+                modifier = Modifier.size(if (compact) 15.dp else 18.dp),
                 tint = Color.White,
             )
         }
         Text(
             text = title,
-            style = MaterialTheme.typography.titleMedium,
+            style = if (compact) MaterialTheme.typography.titleSmall else MaterialTheme.typography.titleMedium,
             color = Color.White,
             fontWeight = FontWeight.SemiBold,
         )
@@ -221,7 +227,7 @@ private fun TransferPlayBody(
 
     Text(
         text = part.formatTransferAmount(),
-        style = MaterialTheme.typography.headlineMedium,
+        style = MaterialTheme.typography.titleLarge,
         fontWeight = FontWeight.Bold,
         color = Color.White,
     )
@@ -229,7 +235,7 @@ private fun TransferPlayBody(
     if (part.specialNote.isNotBlank()) {
         Text(
             text = part.specialNote,
-            style = MaterialTheme.typography.bodyMedium,
+            style = MaterialTheme.typography.bodySmall,
             color = Color.White.copy(alpha = 0.92f),
         )
     }
@@ -238,7 +244,7 @@ private fun TransferPlayBody(
 
     Text(
         text = part.transferStatusLabel(),
-        style = MaterialTheme.typography.labelMedium,
+        style = MaterialTheme.typography.labelSmall,
         color = Color.White.copy(alpha = 0.92f),
     )
 

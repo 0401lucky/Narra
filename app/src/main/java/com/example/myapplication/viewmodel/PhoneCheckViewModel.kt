@@ -329,7 +329,11 @@ class PhoneCheckViewModel(
         }
 
         if (failedSections.flatMap { it }.toSet().size == normalizedSections.size) {
-            val detail = lastErrorMessage.takeIf { it.isNotBlank() }?.let { "：$it" }.orEmpty()
+            val detail = lastErrorMessage
+                .substringAfter("手机内容生成失败：", lastErrorMessage)
+                .takeIf { it.isNotBlank() }
+                ?.let { "：$it" }
+                .orEmpty()
             error("手机内容生成失败（${failedSections.flattenDisplayName()}）$detail")
         }
 

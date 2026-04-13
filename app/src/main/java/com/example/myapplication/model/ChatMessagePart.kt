@@ -71,6 +71,7 @@ enum class TransferDirection {
 enum class TransferStatus {
     PENDING,
     RECEIVED,
+    REJECTED,
 }
 
 enum class GiftImageStatus {
@@ -756,7 +757,16 @@ fun ChatMessagePart.transferStatusLabel(): String {
         }
 
         TransferStatus.RECEIVED -> "已收款"
+        TransferStatus.REJECTED -> "已退回"
         null -> "处理中"
+    }
+}
+
+fun TransferStatus.transferResultText(): String {
+    return when (this) {
+        TransferStatus.PENDING -> "待收款"
+        TransferStatus.RECEIVED -> "已收款"
+        TransferStatus.REJECTED -> "已退回"
     }
 }
 

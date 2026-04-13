@@ -34,7 +34,10 @@ class RoleplayVideoCallScreenTest {
         )
 
         assertEquals(2, state.carryoverCount)
-        assertEquals(listOf("call-2", "call-3", "call-4", "call-5"), state.visibleMessages.map { it.sourceMessageId })
+        assertEquals(
+            listOf("call-1", "call-2", "call-3", "call-4", "call-5"),
+            state.visibleMessages.map { it.sourceMessageId },
+        )
     }
 
     @Test

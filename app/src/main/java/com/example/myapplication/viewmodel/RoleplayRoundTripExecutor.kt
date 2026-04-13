@@ -10,6 +10,7 @@ import com.example.myapplication.conversation.ConversationMessageTransforms
 import com.example.myapplication.conversation.GiftImageGenerationRequest
 import com.example.myapplication.conversation.RoundTripInitialPersistence
 import com.example.myapplication.conversation.StreamedAssistantPayload
+import com.example.myapplication.data.repository.TransferUpdateDirective
 import com.example.myapplication.context.PromptContextAssembler
 import com.example.myapplication.data.repository.ConversationRepository
 import com.example.myapplication.data.repository.ai.AiGateway
@@ -29,10 +30,13 @@ import com.example.myapplication.model.MessageStatus
 import com.example.myapplication.model.PhoneSnapshotOwnerType
 import com.example.myapplication.model.PromptMode
 import com.example.myapplication.model.RoleplayOutputFormat
+import com.example.myapplication.model.TransferDirection
+import com.example.myapplication.model.TransferStatus
 import com.example.myapplication.model.imageMessagePart
 import com.example.myapplication.model.normalizeChatMessageParts
 import com.example.myapplication.model.reasoningStepsToContent
 import com.example.myapplication.model.toContentMirror
+import com.example.myapplication.model.transferResultText
 import com.example.myapplication.roleplay.OnlineActionDirective
 import com.example.myapplication.roleplay.OnlineActionProtocolParseResult
 import com.example.myapplication.roleplay.OnlineActionProtocolParser
@@ -267,13 +271,15 @@ internal class RoleplayRoundTripExecutor(
                                 imageFallback = "角色返回了图片",
                                 specialFallback = "角色已回应",
                             )
+                            val protocolDirectiveContent = onlineProtocolResult
+                                ?.directives
+                                ?.toDirectiveResultText()
+                                .orEmpty()
                             loading.copy(
                                 content = parsedOutput.content.takeIf { it.isNotBlank() && onlineProtocolResult == null }
-                                    ?: if (parsedOutput.transferUpdates.isNotEmpty()) {
-                                        "已收款"
-                                    } else {
-                                        resolvedContent.ifBlank { "模型未返回有效内容" }
-                                    },
+                                    ?: parsedOutput.transferUpdates.lastOrNull()?.status?.transferResultText()
+                                    ?: protocolDirectiveContent.takeIf { it.isNotBlank() }
+                                    ?: resolvedContent.ifBlank { "模型未返回有效内容" },
                                 status = MessageStatus.COMPLETED,
                                 reasoningContent = payload.reasoning,
                                 reasoningSteps = payload.reasoningSteps,
@@ -546,7 +552,50 @@ internal class RoleplayRoundTripExecutor(
                 excludingMessageId = completedAssistantId,
             )
         }
+        directives.filterIsInstance<OnlineActionDirective.UpdateTransferStatus>()
+            .forEach { directive ->
+                val targetTransferId = directive.refId.ifBlank {
+                    findLatestPendingIncomingTransferId(updatedMessages)
+                }
+                if (targetTransferId.isBlank()) {
+                    return@forEach
+                }
+                updatedMessages = conversationRepository.applyTransferUpdates(
+                    conversationId = conversationId,
+                    updates = listOf(
+                        TransferUpdateDirective(
+                            refId = targetTransferId,
+                            status = directive.status,
+                        ),
+                    ),
+                    selectedModel = selectedModel,
+                )
+            }
         return updatedMessages
+    }
+
+    private fun findLatestPendingIncomingTransferId(
+        messages: List<ChatMessage>,
+    ): String {
+        return messages.asReversed()
+            .firstNotNullOfOrNull { message ->
+                message.parts.asReversed().firstOrNull { part ->
+                    part.specialDirection == TransferDirection.USER_TO_ASSISTANT &&
+                        part.specialStatus == TransferStatus.PENDING &&
+                        part.specialId.isNotBlank()
+                }?.specialId
+            }
+            .orEmpty()
+    }
+
+    private fun List<OnlineActionDirective>.toDirectiveResultText(): String {
+        return mapNotNull { directive ->
+            when (directive) {
+                OnlineActionDirective.RecallPreviousAssistant -> "已撤回上一条回复"
+                is OnlineActionDirective.UpdateTransferStatus -> directive.status.transferResultText()
+            }
+        }.distinct()
+            .joinToString(separator = "\n")
     }
 
     private fun roleplayStateCharacterName(

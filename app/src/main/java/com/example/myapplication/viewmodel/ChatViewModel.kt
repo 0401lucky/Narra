@@ -55,6 +55,7 @@ import com.example.myapplication.model.isTransferPart
 import com.example.myapplication.model.normalizeChatMessageParts
 import com.example.myapplication.model.specialMetadataValue
 import com.example.myapplication.model.toContentMirror
+import com.example.myapplication.model.transferResultText
 import com.example.myapplication.model.withGiftImageGenerating
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -889,11 +890,7 @@ class ChatViewModel(
                             onCompleted = { payload, parsedOutput, loading ->
                                 val finalParts = parsedOutput.parts
                                 val resolvedContent = parsedOutput.content.takeIf { it.isNotBlank() }
-                                    ?: if (parsedOutput.transferUpdates.isNotEmpty()) {
-                                        "已收款"
-                                    } else {
-                                        null
-                                    }
+                                    ?: parsedOutput.transferUpdates.lastOrNull()?.status?.transferResultText()
                                     ?: finalParts.toContentMirror(specialFallback = "特殊玩法")
                                         .ifBlank { "模型未返回有效内容" }
                                 loading.copy(

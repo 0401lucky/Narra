@@ -6,8 +6,8 @@ import com.example.myapplication.model.Assistant
 import com.example.myapplication.model.DEFAULT_ROLEPLAY_LONGFORM_TARGET_CHARS
 import com.example.myapplication.model.RoleplayInteractionMode
 import com.example.myapplication.model.RoleplayScenario
-import java.time.ZonedDateTime
-import java.time.format.DateTimeFormatter
+import java.text.SimpleDateFormat
+import java.util.Date
 import java.util.Locale
 
 object RoleplayPromptDecorator {
@@ -135,9 +135,9 @@ object RoleplayPromptDecorator {
                         append("4. 允许的对象消息类型只有：")
                         append(
                             if (allowOnlineThoughtHints) {
-                                "reply_to、thought、recall、emoji、voice_message、ai_photo、location、transfer、poke、video_call"
+                                "reply_to、thought、recall、emoji、voice_message、ai_photo、location、transfer、transfer_action、poke、video_call"
                             } else {
-                                "reply_to、recall、emoji、voice_message、ai_photo、location、transfer、poke、video_call"
+                                "reply_to、recall、emoji、voice_message、ai_photo、location、transfer、transfer_action、poke、video_call"
                             },
                         )
                         append("。\n")
@@ -168,6 +168,8 @@ object RoleplayPromptDecorator {
                                 append("4. 当前不允许输出 thought；没说出口的情绪只能通过正常聊天消息侧写出来。\n")
                                 append("5. 当剧情适合时，可以主动使用 emoji、voice_message、ai_photo、location、poke、transfer、video_call 这些高频动作。\n")
                             }
+                            append("6. 如果你要主动给用户转账，必须单独输出对象：{\"type\":\"transfer\",\"amount\":520,\"note\":\"备注\"}；禁止用文字描述转账动作。\n")
+                            append("7. 如果用户之前给你发了转账，你必须明确表态是否收下：收款用 {\"type\":\"transfer_action\",\"action\":\"accept\"}，退回用 {\"type\":\"transfer_action\",\"action\":\"reject\"}。\n")
                         }
                         append("【线上细节提醒】\n")
                         if (allowOnlineThoughtHints) {
@@ -255,9 +257,10 @@ object RoleplayPromptDecorator {
 
     private fun formatCurrentPromptTime(): String {
         return runCatching {
-            ZonedDateTime.now().format(
-                DateTimeFormatter.ofPattern("yyyy年M月d日 EEEE HH:mm", Locale.SIMPLIFIED_CHINESE),
-            )
+            SimpleDateFormat(
+                "yyyy年M月d日 EEEE HH:mm",
+                Locale.SIMPLIFIED_CHINESE,
+            ).format(Date())
         }.getOrDefault("当前时间未知")
     }
 }

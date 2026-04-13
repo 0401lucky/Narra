@@ -3,12 +3,15 @@ package com.example.myapplication.ui.screen.roleplay
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.asPaddingValues
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.imePadding
@@ -69,8 +72,6 @@ import com.example.myapplication.ui.component.roleplay.RoleplaySceneBackground
 import com.example.myapplication.ui.component.roleplay.rememberImmersiveBackdropState
 import com.example.myapplication.ui.component.roleplay.rememberImmersiveRoleplayColors
 import kotlinx.coroutines.delay
-
-private const val MAX_VIDEO_CALL_FLOATING_MESSAGES = 4
 
 internal data class VideoCallPresentationState(
     val carryoverCount: Int,
@@ -151,12 +152,19 @@ internal fun RoleplayVideoCallScreen(
         )
     }
     val visibleMessages = presentationState.visibleMessages
+    val transcriptScrollState = rememberScrollState()
     val statusBarTopPadding = if (settings.roleplayImmersiveMode.storageValue == "none") {
         0.dp
     } else {
         WindowInsets.statusBars.asPaddingValues().calculateTopPadding()
     }
     val elapsedText = rememberVideoCallElapsedText(activeVideoCallStartedAt)
+
+    LaunchedEffect(visibleMessages.lastOrNull()?.sourceMessageId, visibleMessages.lastOrNull()?.content) {
+        if (visibleMessages.isNotEmpty()) {
+            transcriptScrollState.animateScrollTo(transcriptScrollState.maxValue)
+        }
+    }
 
     Box(modifier = Modifier.fillMaxSize()) {
         RoleplaySceneBackground(
@@ -298,8 +306,10 @@ internal fun RoleplayVideoCallScreen(
                         carryoverCount = presentationState.carryoverCount,
                         colors = colors,
                         backdropState = backdropState,
+                        scrollState = transcriptScrollState,
                         modifier = Modifier
                             .align(Alignment.BottomCenter)
+                            .fillMaxHeight(0.78f)
                             .padding(horizontal = 16.dp, vertical = 24.dp),
                     )
                 }
@@ -360,7 +370,6 @@ internal fun RoleplayVideoCallScreen(
 internal fun buildVideoCallPresentationState(
     messages: List<RoleplayMessageUiModel>,
     activeVideoCallStartedAt: Long,
-    maxVisibleMessages: Int = MAX_VIDEO_CALL_FLOATING_MESSAGES,
 ): VideoCallPresentationState {
     if (activeVideoCallStartedAt <= 0L) {
         return VideoCallPresentationState(
@@ -374,8 +383,7 @@ internal fun buildVideoCallPresentationState(
     return VideoCallPresentationState(
         carryoverCount = conversationMessages.count { it.createdAt < activeVideoCallStartedAt },
         visibleMessages = conversationMessages
-            .filter { it.createdAt >= activeVideoCallStartedAt }
-            .takeLast(maxVisibleMessages.coerceAtLeast(0)),
+            .filter { it.createdAt >= activeVideoCallStartedAt },
     )
 }
 
@@ -393,35 +401,43 @@ private fun VideoCallFloatingTranscript(
     carryoverCount: Int,
     colors: ImmersiveRoleplayColors,
     backdropState: ImmersiveBackdropState,
+    scrollState: androidx.compose.foundation.ScrollState,
     modifier: Modifier = Modifier,
 ) {
-    Column(
+    Box(
         modifier = modifier.fillMaxWidth(),
-        verticalArrangement = Arrangement.spacedBy(10.dp),
+        contentAlignment = Alignment.BottomCenter,
     ) {
-        if (carryoverCount > 0) {
-            Surface(
-                modifier = Modifier.align(Alignment.CenterHorizontally),
-                color = colors.panelBackgroundStrong.copy(alpha = 0.72f),
-                shape = RoundedCornerShape(999.dp),
-            ) {
-                Text(
-                    text = "已承接通话前 $carryoverCount 条聊天内容",
-                    modifier = Modifier.padding(horizontal = 14.dp, vertical = 8.dp),
-                    style = MaterialTheme.typography.labelMedium,
-                    color = colors.textMuted,
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .verticalScroll(scrollState),
+            verticalArrangement = Arrangement.spacedBy(10.dp),
+        ) {
+            if (carryoverCount > 0) {
+                Surface(
+                    modifier = Modifier.align(Alignment.CenterHorizontally),
+                    color = colors.panelBackgroundStrong.copy(alpha = 0.72f),
+                    shape = RoundedCornerShape(999.dp),
+                ) {
+                    Text(
+                        text = "已承接通话前 $carryoverCount 条聊天内容",
+                        modifier = Modifier.padding(horizontal = 14.dp, vertical = 8.dp),
+                        style = MaterialTheme.typography.labelMedium,
+                        color = colors.textMuted,
+                    )
+                }
+            }
+
+            messages.forEachIndexed { index, message ->
+                val isLatest = index == messages.lastIndex
+                VideoCallFloatingMessageCard(
+                    message = message,
+                    isLatest = isLatest,
+                    colors = colors,
+                    backdropState = backdropState,
                 )
             }
-        }
-
-        messages.forEachIndexed { index, message ->
-            val isLatest = index == messages.lastIndex
-            VideoCallFloatingMessageCard(
-                message = message,
-                isLatest = isLatest,
-                colors = colors,
-                backdropState = backdropState,
-            )
         }
     }
 }
@@ -475,8 +491,6 @@ private fun VideoCallFloatingMessageCard(
                         MaterialTheme.typography.bodyMedium
                     },
                     color = colors.textPrimary,
-                    maxLines = if (isLatest) 8 else 5,
-                    overflow = TextOverflow.Ellipsis,
                 )
             }
         }

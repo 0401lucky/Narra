@@ -3,6 +3,7 @@
 package com.example.myapplication.ui.screen.chat
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.layout.Arrangement
@@ -10,6 +11,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.navigationBarsPadding
@@ -23,7 +25,6 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Assignment
 import androidx.compose.material.icons.filled.CardGiftcard
-import androidx.compose.material.icons.filled.ChevronRight
 import androidx.compose.material.icons.filled.Event
 import androidx.compose.material.icons.filled.Gavel
 import androidx.compose.material.icons.filled.Share
@@ -76,6 +77,11 @@ private data class SpecialPlayOption(
     val icon: ImageVector,
     val iconTint: Color,
     val iconBackground: Color,
+)
+
+private data class SpecialPlayModuleEntry(
+    val option: SpecialPlayOption,
+    val onClick: () -> Unit,
 )
 
 private val TransferGreen = Color(0xFF07C160)
@@ -229,6 +235,45 @@ fun SpecialPlaySheet(
     onOpenVideoCall: (() -> Unit)? = null,
 ) {
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+    val standaloneEntries = buildList {
+        add(
+            SpecialPlayModuleEntry(
+                option = phoneCheckOption,
+                onClick = onOpenPhoneCheck,
+            ),
+        )
+        onOpenVideoCall?.let { openVideoCall ->
+            add(
+                SpecialPlayModuleEntry(
+                    option = videoCallOption,
+                    onClick = openVideoCall,
+                ),
+            )
+        }
+    }
+    val socialEntries = specialPlayOptions
+        .filter {
+            it.type in setOf(
+                ChatSpecialType.TRANSFER,
+                ChatSpecialType.INVITE,
+                ChatSpecialType.GIFT,
+                ChatSpecialType.PUNISH,
+            )
+        }
+        .map { option ->
+            SpecialPlayModuleEntry(
+                option = option,
+                onClick = { onOpenPlay(option.type) },
+            )
+        }
+    val storyEntries = specialPlayOptions
+        .filter { it.type == ChatSpecialType.TASK }
+        .map { option ->
+            SpecialPlayModuleEntry(
+                option = option,
+                onClick = { onOpenPlay(option.type) },
+            )
+        }
     ModalBottomSheet(
         onDismissRequest = onDismissRequest,
         sheetState = sheetState,
@@ -252,41 +297,21 @@ fun SpecialPlaySheet(
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
 
-            SpecialPlayGroup(title = "独立页面") {
-                SpecialPlayEntry(
-                    option = phoneCheckOption,
-                    onClick = onOpenPhoneCheck,
-                )
-                onOpenVideoCall?.let { openVideoCall ->
-                    SpecialPlayEntry(
-                        option = videoCallOption,
-                        onClick = openVideoCall,
-                    )
-                }
-            }
-
-            SpecialPlayGroup(title = "社交互动") {
-                specialPlayOptions
-                    .filter {
-                        it.type in setOf(
-                            ChatSpecialType.TRANSFER,
-                            ChatSpecialType.INVITE,
-                            ChatSpecialType.GIFT,
-                            ChatSpecialType.PUNISH,
-                        )
-                    }
-                    .forEach { option ->
-                        SpecialPlayEntry(option = option, onClick = { onOpenPlay(option.type) })
-                    }
-            }
-
-            SpecialPlayGroup(title = "剧情推进") {
-                specialPlayOptions
-                    .filter { it.type == ChatSpecialType.TASK }
-                    .forEach { option ->
-                        SpecialPlayEntry(option = option, onClick = { onOpenPlay(option.type) })
-                    }
-            }
+            SpecialPlayGroup(
+                title = "独立页面",
+                subtitle = "直接进入完整玩法页，更适合连续操作和浏览。",
+                entries = standaloneEntries,
+            )
+            SpecialPlayGroup(
+                title = "社交互动",
+                subtitle = "先编辑，再发送结构化互动卡片。",
+                entries = socialEntries,
+            )
+            SpecialPlayGroup(
+                title = "剧情推进",
+                subtitle = "把目标、委托和阶段推进单独做成模块。",
+                entries = storyEntries,
+            )
         }
     }
 }
@@ -486,76 +511,85 @@ fun SpecialPlayEditorSheet(
 @Composable
 private fun SpecialPlayGroup(
     title: String,
-    content: @Composable () -> Unit,
+    subtitle: String,
+    entries: List<SpecialPlayModuleEntry>,
 ) {
-    Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+    if (entries.isEmpty()) {
+        return
+    }
+    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
         Text(
             text = title,
             style = MaterialTheme.typography.titleSmall,
             fontWeight = FontWeight.SemiBold,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
-        Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-            content()
+        Text(
+            text = subtitle,
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+        entries.chunked(4).forEach { rowEntries ->
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
+            ) {
+                rowEntries.forEach { entry ->
+                    SpecialPlayEntry(
+                        entry = entry,
+                        modifier = Modifier.weight(1f),
+                    )
+                }
+                repeat(4 - rowEntries.size) {
+                    Spacer(modifier = Modifier.weight(1f))
+                }
+            }
         }
     }
 }
 
 @Composable
 private fun SpecialPlayEntry(
-    option: SpecialPlayOption,
-    onClick: () -> Unit,
+    entry: SpecialPlayModuleEntry,
+    modifier: Modifier = Modifier,
 ) {
     Surface(
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(26.dp),
+        modifier = modifier,
+        shape = RoundedCornerShape(24.dp),
         color = Color.White,
         tonalElevation = 2.dp,
         shadowElevation = 0.dp,
-        onClick = onClick,
+        onClick = entry.onClick,
     ) {
-        Row(
+        Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 18.dp, vertical = 18.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(14.dp),
+                .heightIn(min = 118.dp)
+                .padding(horizontal = 10.dp, vertical = 14.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(10.dp),
         ) {
             Box(
                 modifier = Modifier
-                    .size(50.dp)
+                    .size(56.dp)
                     .background(
-                        color = option.iconBackground,
-                        shape = RoundedCornerShape(16.dp),
+                        color = entry.option.iconTint,
+                        shape = CircleShape,
                     ),
                 contentAlignment = Alignment.Center,
             ) {
                 Icon(
-                    imageVector = option.icon,
+                    imageVector = entry.option.icon,
                     contentDescription = null,
-                    tint = option.iconTint,
-                    modifier = Modifier.size(24.dp),
+                    tint = Color.White,
+                    modifier = Modifier.size(26.dp),
                 )
             }
-            Column(
-                modifier = Modifier.weight(1f),
-                verticalArrangement = Arrangement.spacedBy(4.dp),
-            ) {
-                Text(
-                    text = option.title,
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.SemiBold,
-                )
-                Text(
-                    text = option.description,
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-            }
-            Icon(
-                imageVector = Icons.Default.ChevronRight,
-                contentDescription = null,
-                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+            Text(
+                text = entry.option.title,
+                style = MaterialTheme.typography.titleSmall,
+                fontWeight = FontWeight.SemiBold,
+                maxLines = 2,
             )
         }
     }
@@ -623,6 +657,20 @@ private fun TransferDraftFields(
                     innerTextField()
                 },
             )
+        }
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .horizontalScroll(rememberScrollState()),
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+            listOf("52", "99", "520", "1314").forEach { amount ->
+                FilterChip(
+                    selected = draft.amount == amount,
+                    onClick = { onDraftChange(draft.copy(amount = amount)) },
+                    label = { Text("¥$amount") },
+                )
+            }
         }
     }
 

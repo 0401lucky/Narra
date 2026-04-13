@@ -594,6 +594,102 @@ class AiPromptExtrasServiceTest {
     }
 
     @Test
+    fun generatePhoneSnapshotSections_parsesJsonObjectWrappedInMarkdownCodeFence() = runBlocking {
+        server.enqueue(
+            MockResponse().setResponseCode(200).setBody(
+                """
+                {
+                  "choices": [
+                    {
+                      "index": 0,
+                      "message": {
+                        "role": "assistant",
+                        "content": "```json\n{\"relationship_highlights\":[],\"message_threads\":[],\"notes\":[{\"id\":\"n1\",\"title\":\"周五安排\",\"summary\":\"晚八点见面。\",\"content\":\"确认咖啡馆包间。\",\"time_label\":\"今天\",\"icon\":\"memo\"}],\"gallery\":[],\"shopping_records\":[],\"search_history\":[]}\n```"
+                      }
+                    }
+                  ]
+                }
+                """.trimIndent(),
+            ),
+        )
+        val service = createService()
+
+        val result = service.generatePhoneSnapshotSections(
+            context = PhoneGenerationContext(
+                ownerType = PhoneSnapshotOwnerType.CHARACTER,
+                viewerType = PhoneSnapshotOwnerType.USER,
+                viewMode = PhoneViewMode.USER_LOOKS_CHARACTER_PHONE,
+                ownerName = "沈砚清",
+                viewerName = "lucky",
+                userName = "lucky",
+                assistantName = "沈砚清",
+                relationshipDirection = "用户正在查看角色的私人手机内容",
+                timeGapContext = "",
+                promptMode = PromptMode.ROLEPLAY,
+                systemContext = "",
+                scenarioContext = "",
+                conversationExcerpt = "",
+            ),
+            requestedSections = setOf(PhoneSnapshotSection.NOTES),
+            existingSnapshot = null,
+            baseUrl = server.url("/v1/").toString(),
+            apiKey = "test-key",
+            modelId = "deepseek-chat",
+        )
+
+        assertEquals(1, result.notes?.size)
+        assertEquals("周五安排", result.notes?.first()?.title)
+    }
+
+    @Test
+    fun generatePhoneSnapshotSections_extractsJsonObjectFromSurroundingText() = runBlocking {
+        server.enqueue(
+            MockResponse().setResponseCode(200).setBody(
+                """
+                {
+                  "choices": [
+                    {
+                      "index": 0,
+                      "message": {
+                        "role": "assistant",
+                        "content": "下面是整理好的手机内容：\n{\"relationship_highlights\":[],\"message_threads\":[],\"notes\":[],\"gallery\":[],\"shopping_records\":[],\"search_history\":[{\"id\":\"s1\",\"query\":\"怎么判断对方是不是吃醋\",\"time_label\":\"刚刚\"}]}\n你可以直接使用。"
+                      }
+                    }
+                  ]
+                }
+                """.trimIndent(),
+            ),
+        )
+        val service = createService()
+
+        val result = service.generatePhoneSnapshotSections(
+            context = PhoneGenerationContext(
+                ownerType = PhoneSnapshotOwnerType.CHARACTER,
+                viewerType = PhoneSnapshotOwnerType.USER,
+                viewMode = PhoneViewMode.USER_LOOKS_CHARACTER_PHONE,
+                ownerName = "沈砚清",
+                viewerName = "lucky",
+                userName = "lucky",
+                assistantName = "沈砚清",
+                relationshipDirection = "用户正在查看角色的私人手机内容",
+                timeGapContext = "",
+                promptMode = PromptMode.ROLEPLAY,
+                systemContext = "",
+                scenarioContext = "",
+                conversationExcerpt = "",
+            ),
+            requestedSections = setOf(PhoneSnapshotSection.SEARCH),
+            existingSnapshot = null,
+            baseUrl = server.url("/v1/").toString(),
+            apiKey = "test-key",
+            modelId = "deepseek-chat",
+        )
+
+        assertEquals(1, result.searchHistory?.size)
+        assertEquals("怎么判断对方是不是吃醋", result.searchHistory?.first()?.query)
+    }
+
+    @Test
     fun generatePhoneSnapshotSections_userPhonePromptKeepsUserAsOwner() = runBlocking {
         server.enqueue(
             MockResponse().setResponseCode(200).setBody(
@@ -699,6 +795,104 @@ class AiPromptExtrasServiceTest {
         assertEquals("古典文学中的克制美学", result.title)
         assertTrue(result.summary.contains("留白"))
         assertTrue(result.content.contains("压低直白表达"))
+    }
+
+    @Test
+    fun generatePhoneSearchDetail_parsesJsonObjectWrappedInMarkdownCodeFence() = runBlocking {
+        server.enqueue(
+            MockResponse().setResponseCode(200).setBody(
+                """
+                {
+                  "choices": [
+                    {
+                      "index": 0,
+                      "message": {
+                        "role": "assistant",
+                        "content": "```json\n{\"title\":\"夜跑后为什么心跳停不下来\",\"summary\":\"常见原因包括运动强度过高和恢复不足。\",\"content\":\"如果结束运动后心率长时间偏高，通常与强度过猛、睡眠不足或焦虑叠加有关。\"}\n```"
+                      }
+                    }
+                  ]
+                }
+                """.trimIndent(),
+            ),
+        )
+        val service = createService()
+
+        val result = service.generatePhoneSearchDetail(
+            context = PhoneGenerationContext(
+                ownerType = PhoneSnapshotOwnerType.CHARACTER,
+                viewerType = PhoneSnapshotOwnerType.USER,
+                viewMode = PhoneViewMode.USER_LOOKS_CHARACTER_PHONE,
+                ownerName = "沈砚清",
+                viewerName = "lucky",
+                userName = "lucky",
+                assistantName = "沈砚清",
+                relationshipDirection = "用户正在查看角色的私人手机内容",
+                timeGapContext = "",
+                promptMode = PromptMode.ROLEPLAY,
+                systemContext = "",
+                scenarioContext = "",
+                conversationExcerpt = "",
+            ),
+            query = "夜跑后为什么心跳停不下来",
+            relatedContext = "",
+            baseUrl = server.url("/v1/").toString(),
+            apiKey = "test-key",
+            modelId = "deepseek-chat",
+        )
+
+        assertEquals("夜跑后为什么心跳停不下来", result.title)
+        assertTrue(result.summary.contains("恢复不足"))
+        assertTrue(result.content.contains("睡眠不足"))
+    }
+
+    @Test
+    fun generatePhoneSearchDetail_extractsJsonObjectFromSurroundingText() = runBlocking {
+        server.enqueue(
+            MockResponse().setResponseCode(200).setBody(
+                """
+                {
+                  "choices": [
+                    {
+                      "index": 0,
+                      "message": {
+                        "role": "assistant",
+                        "content": "我整理成对象了：\n{\"title\":\"怎么让人看起来像只是顺手关心\",\"summary\":\"控制频率、避免连续追问。\",\"content\":\"如果想显得自然，可以把关心拆成零散的小动作，而不是连续盘问。\"}\n补充完毕。"
+                      }
+                    }
+                  ]
+                }
+                """.trimIndent(),
+            ),
+        )
+        val service = createService()
+
+        val result = service.generatePhoneSearchDetail(
+            context = PhoneGenerationContext(
+                ownerType = PhoneSnapshotOwnerType.USER,
+                viewerType = PhoneSnapshotOwnerType.CHARACTER,
+                viewMode = PhoneViewMode.CHARACTER_LOOKS_USER_PHONE,
+                ownerName = "lucky",
+                viewerName = "沈砚清",
+                userName = "lucky",
+                assistantName = "沈砚清",
+                relationshipDirection = "角色正在查看用户的私人手机内容；内容主体必须来自用户本人，但可优先保留最能触发角色反应的线索",
+                timeGapContext = "",
+                promptMode = PromptMode.ROLEPLAY,
+                systemContext = "",
+                scenarioContext = "",
+                conversationExcerpt = "",
+            ),
+            query = "怎么让人看起来像只是顺手关心",
+            relatedContext = "",
+            baseUrl = server.url("/v1/").toString(),
+            apiKey = "test-key",
+            modelId = "deepseek-chat",
+        )
+
+        assertEquals("怎么让人看起来像只是顺手关心", result.title)
+        assertTrue(result.summary.contains("避免连续追问"))
+        assertTrue(result.content.contains("零散的小动作"))
     }
 
     @Test
@@ -853,7 +1047,59 @@ class AiPromptExtrasServiceTest {
             )
             fail("预期应抛出非法 JSON 异常")
         } catch (error: IllegalStateException) {
-            assertTrue(error.message.orEmpty().contains("合法 JSON"))
+            assertTrue(error.message.orEmpty().contains("格式不符合要求"))
+            assertTrue(error.message.orEmpty().contains("JSON 对象"))
+        }
+    }
+
+    @Test
+    fun generatePhoneSearchDetail_throwsWhenModelReturnsInvalidJson() = runBlocking {
+        server.enqueue(
+            MockResponse().setResponseCode(200).setBody(
+                """
+                {
+                  "choices": [
+                    {
+                      "index": 0,
+                      "message": {
+                        "role": "assistant",
+                        "content": "不是 JSON"
+                      }
+                    }
+                  ]
+                }
+                """.trimIndent(),
+            ),
+        )
+        val service = createService()
+
+        try {
+            service.generatePhoneSearchDetail(
+                context = PhoneGenerationContext(
+                    ownerType = PhoneSnapshotOwnerType.CHARACTER,
+                    viewerType = PhoneSnapshotOwnerType.USER,
+                    viewMode = PhoneViewMode.USER_LOOKS_CHARACTER_PHONE,
+                    ownerName = "沈砚清",
+                    viewerName = "lucky",
+                    userName = "lucky",
+                    assistantName = "沈砚清",
+                    relationshipDirection = "用户正在查看对方的手机内容",
+                    timeGapContext = "",
+                    promptMode = PromptMode.CHAT,
+                    systemContext = "",
+                    scenarioContext = "",
+                    conversationExcerpt = "",
+                ),
+                query = "测试搜索词",
+                relatedContext = "",
+                baseUrl = server.url("/v1/").toString(),
+                apiKey = "test-key",
+                modelId = "deepseek-chat",
+            )
+            fail("预期应抛出非法 JSON 异常")
+        } catch (error: IllegalStateException) {
+            assertTrue(error.message.orEmpty().contains("格式不符合要求"))
+            assertTrue(error.message.orEmpty().contains("JSON 对象"))
         }
     }
 

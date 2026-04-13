@@ -2,6 +2,7 @@ package com.example.myapplication.roleplay
 
 import com.example.myapplication.model.ChatActionType
 import com.example.myapplication.model.TransferDirection
+import com.example.myapplication.model.TransferStatus
 import com.example.myapplication.model.isOnlineThoughtPart
 import com.example.myapplication.model.onlineThoughtContent
 import org.junit.Assert.assertEquals
@@ -53,6 +54,25 @@ class OnlineActionProtocolParserTest {
     }
 
     @Test
+    fun parse_transferActionProducesReceiptDirective() {
+        val result = OnlineActionProtocolParser.parse(
+            rawContent = """[{"type":"transfer_action","action":"reject"}]""",
+            characterName = "沈砚清",
+        )!!
+
+        assertTrue(result.parts.isEmpty())
+        assertEquals(
+            listOf(
+                OnlineActionDirective.UpdateTransferStatus(
+                    status = TransferStatus.REJECTED,
+                    refId = "",
+                ),
+            ),
+            result.directives,
+        )
+    }
+
+    @Test
     fun parse_invalidJsonReturnsNull() {
         val result = OnlineActionProtocolParser.parse(
             rawContent = """{"type":"emoji"}""",
@@ -94,6 +114,15 @@ class OnlineActionProtocolParserTest {
 
         assertTrue(preview.contains("这句我已经看见了"))
         assertTrue(preview.contains("心声：差一点就想直接拨过去"))
+    }
+
+    @Test
+    fun extractStreamingPreview_includesTransferActionDirectiveText() {
+        val preview = OnlineActionProtocolParser.extractStreamingPreview(
+            rawContent = """[{"type":"transfer_action","action":"accept"}]""",
+        )
+
+        assertEquals("已收款", preview)
     }
 
     @Test

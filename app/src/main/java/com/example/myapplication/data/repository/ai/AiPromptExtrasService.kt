@@ -701,12 +701,10 @@ class DefaultAiPromptExtrasService(
             provider = provider,
             allowRoleplaySamplingFallback = true,
         ).trim()
-        if (content.isBlank()) {
-            error("手机内容生成失败：模型未返回任何内容")
-        }
-        val parsedJson = runCatching { JsonParser.parseString(content).asJsonObject }.getOrElse {
-            error("手机内容生成失败：模型未返回合法 JSON")
-        }
+        val parsedJson = parseRequiredStructuredJsonObject(
+            content = content,
+            operation = "手机内容生成失败",
+        )
         return parsePhoneSnapshotSections(parsedJson)
     }
 
@@ -762,13 +760,15 @@ class DefaultAiPromptExtrasService(
             provider = provider,
             allowRoleplaySamplingFallback = true,
         ).trim()
-        val parsedJson = runCatching { JsonParser.parseString(content).asJsonObject }.getOrNull()
+        val parsedJson = parseRequiredStructuredJsonObject(
+            content = content,
+            operation = "搜索详情生成失败",
+        )
         return PhoneSearchDetail(
-            title = parsedJson?.get("title")?.takeIf { !it.isJsonNull }?.asString?.trim().orEmpty()
+            title = parsedJson.stringValue("title")
                 .ifBlank { query.trim() },
-            summary = parsedJson?.get("summary")?.takeIf { !it.isJsonNull }?.asString?.trim().orEmpty(),
-            content = parsedJson?.get("content")?.takeIf { !it.isJsonNull }?.asString?.trim().orEmpty()
-                .ifBlank { content },
+            summary = parsedJson.stringValue("summary"),
+            content = parsedJson.stringValue("content"),
         )
     }
 
@@ -958,6 +958,75 @@ class DefaultAiPromptExtrasService(
             OpenAiTextApiMode.RESPONSES -> "/responses"
         }
         return normalizedBaseUrl.removeSuffix("/") + path
+    }
+
+    private fun parseRequiredStructuredJsonObject(
+        content: String,
+        operation: String,
+    ): JsonObject {
+        if (content.isBlank()) {
+            error("$operation：模型未返回任何内容")
+        }
+        return extractStructuredJsonObject(content)
+            ?: error("$operation：模型返回格式不符合要求，未提取到合法 JSON 对象")
+    }
+
+    private fun extractStructuredJsonObject(
+        rawContent: String,
+    ): JsonObject? {
+        val candidate = extractFirstCompleteJsonObject(
+            stripMarkdownCodeFence(rawContent),
+        ) ?: return null
+        return runCatching { JsonParser.parseString(candidate).asJsonObject }.getOrNull()
+    }
+
+    private fun stripMarkdownCodeFence(
+        rawContent: String,
+    ): String {
+        val trimmed = rawContent.trim()
+        if (!trimmed.startsWith("```")) {
+            return trimmed
+        }
+        return trimmed
+            .removePrefix("```json")
+            .removePrefix("```JSON")
+            .removePrefix("```")
+            .removeSuffix("```")
+            .trim()
+    }
+
+    private fun extractFirstCompleteJsonObject(
+        rawContent: String,
+    ): String? {
+        val startIndex = rawContent.indexOf('{')
+        if (startIndex == -1) {
+            return null
+        }
+        var inString = false
+        var escaped = false
+        var depth = 0
+        for (index in startIndex until rawContent.length) {
+            val char = rawContent[index]
+            if (inString) {
+                when {
+                    escaped -> escaped = false
+                    char == '\\' -> escaped = true
+                    char == '"' -> inString = false
+                }
+                continue
+            }
+            when (char) {
+                '"' -> inString = true
+                '{' -> depth += 1
+                '}' -> {
+                    depth -= 1
+                    if (depth == 0) {
+                        return rawContent.substring(startIndex, index + 1)
+                    }
+                }
+            }
+        }
+        return null
     }
 
     private suspend fun requestRoleplaySuggestions(

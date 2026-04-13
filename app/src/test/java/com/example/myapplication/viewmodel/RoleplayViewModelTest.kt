@@ -1315,6 +1315,80 @@ class RoleplayViewModelTest {
     }
 
     @Test
+    fun sendTransferPlay_inOnlineModeAcceptsPendingTransferViaDirective() = runTest(mainDispatcherRule.dispatcher.scheduler) {
+        enqueueStreamResponse("""["收下了。",{"type":"transfer_action","action":"accept"}]""")
+
+        val assistant = Assistant(
+            id = "assistant-1",
+            name = "陆宴清",
+        )
+        val scenario = RoleplayScenario(
+            id = "scene-1",
+            assistantId = assistant.id,
+            userDisplayNameOverride = "林晚",
+            characterDisplayNameOverride = "陆宴清",
+            interactionMode = RoleplayInteractionMode.ONLINE_PHONE,
+            enableNarration = true,
+        )
+        val session = RoleplaySession(
+            id = "session-1",
+            scenarioId = scenario.id,
+            conversationId = "conv-1",
+            createdAt = 1L,
+            updatedAt = 2L,
+        )
+        val store = FakeConversationStore(
+            conversations = listOf(
+                Conversation(
+                    id = session.conversationId,
+                    title = "剧情",
+                    model = "chat-model",
+                    createdAt = 1L,
+                    updatedAt = 2L,
+                    assistantId = assistant.id,
+                ),
+            ),
+        )
+        val provider = ProviderSettings(
+            id = "provider-1",
+            name = "测试 Provider",
+            baseUrl = server.url("/v1/").toString(),
+            apiKey = "test-key",
+            selectedModel = "chat-model",
+        )
+        val viewModel = createViewModel(
+            store = store,
+            roleplayRepository = FakeRoleplayRepository(
+                conversationStore = store,
+                scenarios = listOf(scenario),
+                sessions = listOf(session),
+            ),
+            settings = AppSettings(
+                baseUrl = provider.baseUrl,
+                apiKey = provider.apiKey,
+                selectedModel = provider.selectedModel,
+                providers = listOf(provider),
+                selectedProviderId = provider.id,
+                assistants = listOf(assistant),
+                selectedAssistantId = assistant.id,
+                showOnlineRoleplayNarration = true,
+            ),
+            promptContextAssembler = fixedPromptAssembler("提示词上下文"),
+        )
+
+        viewModel.enterScenario(scenario.id)
+        advanceUntilIdle()
+        viewModel.sendTransferPlay("陆宴清", "88.00", "晚饭钱")
+        advanceUntilIdle()
+
+        val transferPart = store.listMessages(session.conversationId)
+            .first { it.role == MessageRole.USER }
+            .parts
+            .first()
+        assertEquals(TransferStatus.RECEIVED, transferPart.specialStatus)
+    }
+
+    @Test
     fun confirmTransferReceipt_updatesPendingTransferStatus() = runTest(mainDispatcherRule.dispatcher.scheduler) {
         val assistant = Assistant(
             id = "assistant-1",

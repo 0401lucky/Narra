@@ -49,6 +49,39 @@ class ConversationMessageTransformsTest {
     }
 
     @Test
+    fun applyTransferUpdates_supportsRejectedTransferStatus() {
+        val original = listOf(
+            ChatMessage(
+                id = "m1",
+                conversationId = "c1",
+                role = MessageRole.USER,
+                content = "待收款",
+                parts = listOf(
+                    transferMessagePart(
+                        id = "transfer-1",
+                        direction = TransferDirection.USER_TO_ASSISTANT,
+                        status = TransferStatus.PENDING,
+                        counterparty = "陆宴清",
+                        amount = "88.00",
+                    ),
+                ),
+            ),
+        )
+
+        val updated = ConversationMessageTransforms.applyTransferUpdates(
+            messages = original,
+            updates = listOf(
+                TransferUpdateDirective(
+                    refId = "transfer-1",
+                    status = TransferStatus.REJECTED,
+                ),
+            ),
+        )
+
+        assertEquals(TransferStatus.REJECTED, updated.single().parts.single().specialStatus)
+    }
+
+    @Test
     fun applyTransferUpdates_returnsSameListWhenNothingMatches() {
         val original = listOf(
             ChatMessage(

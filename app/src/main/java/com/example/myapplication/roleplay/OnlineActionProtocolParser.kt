@@ -15,9 +15,11 @@ import com.example.myapplication.model.thoughtMessagePart
 import com.example.myapplication.model.toActionCopyText
 import com.example.myapplication.model.toSpecialPlayCopyText
 import com.example.myapplication.model.transferMessagePart
+import com.example.myapplication.model.transferResultText
 import com.example.myapplication.model.videoCallMessagePart
 import com.example.myapplication.model.voiceMessageActionPart
 import com.example.myapplication.model.TransferDirection
+import com.example.myapplication.model.TransferStatus
 import com.google.gson.JsonArray
 import com.google.gson.JsonElement
 import com.google.gson.JsonObject
@@ -30,6 +32,10 @@ internal data class OnlineActionProtocolParseResult(
 
 internal sealed class OnlineActionDirective {
     data object RecallPreviousAssistant : OnlineActionDirective()
+    data class UpdateTransferStatus(
+        val status: TransferStatus,
+        val refId: String = "",
+    ) : OnlineActionDirective()
 }
 
 internal object OnlineActionProtocolParser {
@@ -58,9 +64,12 @@ internal object OnlineActionProtocolParser {
             array = parsedRoot.asJsonArray,
             characterName = "角色",
         )
-        return result.parts.joinToString(separator = "\n") { part ->
-            part.toStreamingPreviewText()
-        }.trim()
+        return buildList {
+            addAll(result.parts.map { part -> part.toStreamingPreviewText() })
+            addAll(result.directives.map { directive -> directive.toPreviewText() })
+        }.filter { it.isNotBlank() }
+            .joinToString(separator = "\n")
+            .trim()
     }
 
     private fun parseArray(
@@ -174,6 +183,22 @@ internal object OnlineActionProtocolParser {
                         counterparty = characterName,
                         amount = amount,
                         note = item.stringValue("note"),
+                    )
+                }
+            }
+
+            "transfer_action" -> {
+                val status = when (item.stringValue("action").lowercase()) {
+                    "accept", "accepted", "receive", "received", "收下", "收款" -> TransferStatus.RECEIVED
+                    "reject", "rejected", "return", "returned", "refuse", "退回", "不收", "拒绝" -> TransferStatus.REJECTED
+                    else -> null
+                }
+                if (status != null) {
+                    directives += OnlineActionDirective.UpdateTransferStatus(
+                        status = status,
+                        refId = item.stringValue("ref_id")
+                            .ifBlank { item.stringValue("transfer_id") }
+                            .ifBlank { item.stringValue("message_id") },
                     )
                 }
             }
@@ -397,6 +422,13 @@ internal object OnlineActionProtocolParser {
             isOnlineThoughtPart() -> "心声：${decodeOnlineThoughtText(text)}"
             text.isNotBlank() -> text.trim()
             else -> toActionOrSpecialCopyText()
+        }
+    }
+
+    private fun OnlineActionDirective.toPreviewText(): String {
+        return when (this) {
+            OnlineActionDirective.RecallPreviousAssistant -> "已撤回上一条回复"
+            is OnlineActionDirective.UpdateTransferStatus -> status.transferResultText()
         }
     }
 }
