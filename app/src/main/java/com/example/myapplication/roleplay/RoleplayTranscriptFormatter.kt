@@ -59,7 +59,10 @@ object RoleplayTranscriptFormatter {
             }
 
             MessageRole.ASSISTANT -> {
-                val normalizedParts = normalizeChatMessageParts(message.parts)
+                val normalizedParts = resolveAssistantTranscriptParts(
+                    message = message,
+                    interactionMode = interactionMode,
+                )
                 if (normalizedParts.any { it.isOnlineThoughtPart() }) {
                     return normalizedParts.mapNotNull { part ->
                         when {
@@ -175,5 +178,27 @@ object RoleplayTranscriptFormatter {
             )
             else -> segment
         }
+    }
+
+    private fun resolveAssistantTranscriptParts(
+        message: ChatMessage,
+        interactionMode: RoleplayInteractionMode,
+    ): List<com.example.myapplication.model.ChatMessagePart> {
+        val normalizedParts = normalizeChatMessageParts(message.parts)
+        if (interactionMode != RoleplayInteractionMode.ONLINE_PHONE) {
+            return normalizedParts
+        }
+        if (normalizedParts.any { it.isOnlineThoughtPart() }) {
+            return normalizedParts
+        }
+        if (normalizedParts.size == 1 && normalizedParts.single().text.isNotBlank()) {
+            OnlineInlineThoughtFallback.splitToParts(normalizedParts.single().text)?.let { return it }
+            OnlineInlineThoughtFallback.splitDialogueOnlyToParts(normalizedParts.single().text)?.let { return it }
+        }
+        if (normalizedParts.isEmpty()) {
+            OnlineInlineThoughtFallback.splitToParts(message.content)?.let { return it }
+            OnlineInlineThoughtFallback.splitDialogueOnlyToParts(message.content)?.let { return it }
+        }
+        return normalizedParts
     }
 }

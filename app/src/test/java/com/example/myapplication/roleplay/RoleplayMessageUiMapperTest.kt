@@ -448,6 +448,88 @@ class RoleplayMessageUiMapperTest {
     }
 
     @Test
+    fun mapMessages_onlineModeSplitsInlineThoughtAndDialogueFallback() {
+        val scenario = RoleplayScenario(
+            id = "scene-1",
+            title = "线上模式",
+            characterDisplayNameOverride = "沈宴清",
+            interactionMode = RoleplayInteractionMode.ONLINE_PHONE,
+            enableNarration = true,
+        )
+
+        val mapped = RoleplayMessageUiMapper.mapMessages(
+            scenario = scenario,
+            assistant = Assistant(id = "assistant-1", name = "沈宴清"),
+            settings = AppSettings(showOnlineRoleplayNarration = true),
+            rawMessages = listOf(
+                ChatMessage(
+                    id = "assistant-inline",
+                    conversationId = "conv-1",
+                    role = MessageRole.ASSISTANT,
+                    content = "【心声】看到这几个字，嘴角不自觉地动了动，想压下去没压住。 ...... 在家就好好休息。 又没干正事。 晚上想吃什么，下课带过去。",
+                    createdAt = 2L,
+                    status = MessageStatus.COMPLETED,
+                    roleplayOutputFormat = RoleplayOutputFormat.PROTOCOL,
+                    roleplayInteractionMode = RoleplayInteractionMode.ONLINE_PHONE,
+                    parts = listOf(
+                        textMessagePart("【心声】看到这几个字，嘴角不自觉地动了动，想压下去没压住。 ...... 在家就好好休息。 又没干正事。 晚上想吃什么，下课带过去。"),
+                    ),
+                ),
+            ),
+            streamingContent = null,
+            outputParser = RoleplayOutputParser(),
+            nowProvider = { 20L },
+        )
+
+        assertEquals(4, mapped.size)
+        assertEquals(RoleplayContentType.THOUGHT, mapped[0].contentType)
+        assertEquals("看到这几个字，嘴角不自觉地动了动，想压下去没压住。", mapped[0].content)
+        assertEquals("在家就好好休息。", mapped[1].content)
+        assertEquals("又没干正事。", mapped[2].content)
+        assertEquals("晚上想吃什么，下课带过去。", mapped[3].content)
+    }
+
+    @Test
+    fun mapMessages_onlineModeSplitsShortPlainTextFallbackIntoMultipleBubbles() {
+        val scenario = RoleplayScenario(
+            id = "scene-1",
+            title = "线上模式",
+            characterDisplayNameOverride = "沈宴清",
+            interactionMode = RoleplayInteractionMode.ONLINE_PHONE,
+            enableNarration = true,
+        )
+
+        val mapped = RoleplayMessageUiMapper.mapMessages(
+            scenario = scenario,
+            assistant = Assistant(id = "assistant-1", name = "沈宴清"),
+            settings = AppSettings(showOnlineRoleplayNarration = true),
+            rawMessages = listOf(
+                ChatMessage(
+                    id = "assistant-short",
+                    conversationId = "conv-1",
+                    role = MessageRole.ASSISTANT,
+                    content = "嗯，刚从教室回来。 还在整理这周的论文批改。 你呢，在家？",
+                    createdAt = 3L,
+                    status = MessageStatus.COMPLETED,
+                    roleplayOutputFormat = RoleplayOutputFormat.PROTOCOL,
+                    roleplayInteractionMode = RoleplayInteractionMode.ONLINE_PHONE,
+                    parts = listOf(
+                        textMessagePart("嗯，刚从教室回来。 还在整理这周的论文批改。 你呢，在家？"),
+                    ),
+                ),
+            ),
+            streamingContent = null,
+            outputParser = RoleplayOutputParser(),
+            nowProvider = { 20L },
+        )
+
+        assertEquals(3, mapped.size)
+        assertEquals("嗯，刚从教室回来。", mapped[0].content)
+        assertEquals("还在整理这周的论文批改。", mapped[1].content)
+        assertEquals("你呢，在家？", mapped[2].content)
+    }
+
+    @Test
     fun mapMessages_onlineModeMapsPlainTextSystemEventToNarration() {
         val scenario = RoleplayScenario(
             id = "scene-1",

@@ -12,6 +12,7 @@ import com.example.myapplication.model.RoleplayOnlineEventKind
 import com.example.myapplication.model.RoleplayOutputFormat
 import com.example.myapplication.model.RoleplayScenario
 import com.example.myapplication.model.isOnlineThoughtPart
+import com.example.myapplication.model.normalizeChatMessageParts
 import com.example.myapplication.model.textMessagePart
 import com.example.myapplication.model.thoughtMessagePart
 import com.example.myapplication.model.toContentMirror
@@ -159,6 +160,16 @@ internal object RoleplayOnlineReferenceSupport {
             }
             if (currentInteractionMode != RoleplayInteractionMode.ONLINE_PHONE) {
                 return@mapNotNull message
+            }
+            resolveInlineFallbackParts(message)?.let { fallbackParts ->
+                return@mapNotNull message.copy(
+                    content = fallbackParts.toContentMirror(
+                        imageFallback = "",
+                        fileFallback = "",
+                        specialFallback = "",
+                    ),
+                    parts = fallbackParts,
+                )
             }
             if (allowThought || message.systemEventKind != RoleplayOnlineEventKind.NONE) {
                 return@mapNotNull message
@@ -414,5 +425,31 @@ internal object RoleplayOnlineReferenceSupport {
                 .ifBlank { "对方" }
             else -> message.speakerName.ifBlank { "对方" }
         }
+    }
+
+    private fun resolveInlineFallbackParts(
+        message: ChatMessage,
+    ): List<ChatMessagePart>? {
+        val normalizedParts = normalizeChatMessageParts(message.parts)
+        if (normalizedParts.any { it.isOnlineThoughtPart() }) {
+            return null
+        }
+        if (normalizedParts.size == 1 && normalizedParts.single().text.isNotBlank()) {
+            OnlineInlineThoughtFallback.splitToParts(normalizedParts.single().text)?.let {
+                return normalizeChatMessageParts(it)
+            }
+            OnlineInlineThoughtFallback.splitDialogueOnlyToParts(normalizedParts.single().text)?.let {
+                return normalizeChatMessageParts(it)
+            }
+        }
+        if (normalizedParts.isEmpty()) {
+            OnlineInlineThoughtFallback.splitToParts(message.content)?.let {
+                return normalizeChatMessageParts(it)
+            }
+            OnlineInlineThoughtFallback.splitDialogueOnlyToParts(message.content)?.let {
+                return normalizeChatMessageParts(it)
+            }
+        }
+        return null
     }
 }

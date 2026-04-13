@@ -101,11 +101,11 @@ fun SpecialPlayCard(
     val palette = remember(part.specialType, isUserMessage) {
         resolveSpecialPlayPalette(part.specialType, isUserMessage)
     }
-    val compactTransfer = part.specialType == ChatSpecialType.TRANSFER
+    val compactCard = part.specialType != ChatSpecialType.GIFT
 
     Surface(
         modifier = modifier.scale(scale),
-        shape = RoundedCornerShape(if (compactTransfer) 18.dp else 22.dp),
+        shape = RoundedCornerShape(if (compactCard) 18.dp else 22.dp),
         color = Color.Transparent,
     ) {
         Column(
@@ -115,7 +115,7 @@ fun SpecialPlayCard(
                     brush = Brush.verticalGradient(
                         colors = listOf(palette.topColor, palette.bottomColor),
                     ),
-                    shape = RoundedCornerShape(if (compactTransfer) 18.dp else 22.dp),
+                    shape = RoundedCornerShape(if (compactCard) 18.dp else 22.dp),
                 )
                 .let { baseModifier ->
                     if (reduceMotion) {
@@ -125,15 +125,15 @@ fun SpecialPlayCard(
                     }
                 }
                 .padding(
-                    horizontal = if (compactTransfer) 13.dp else 16.dp,
-                    vertical = if (compactTransfer) 12.dp else 16.dp,
+                    horizontal = if (compactCard) 13.dp else 16.dp,
+                    vertical = if (compactCard) 11.dp else 16.dp,
                 ),
-            verticalArrangement = Arrangement.spacedBy(if (compactTransfer) 8.dp else 10.dp),
+            verticalArrangement = Arrangement.spacedBy(if (compactCard) 7.dp else 10.dp),
         ) {
             SpecialPlayHeader(
                 icon = resolveSpecialPlayIcon(part.specialType),
                 title = part.specialPlayTitle(),
-                compact = compactTransfer,
+                compact = compactCard,
             )
 
             when (part.specialType) {
@@ -144,13 +144,13 @@ fun SpecialPlayCard(
                     actionColor = palette.emphasisColor,
                 )
 
-                ChatSpecialType.INVITE -> InvitePlayBody(part = part)
+                ChatSpecialType.INVITE -> InvitePlayBody(part = part, compact = compactCard)
                 ChatSpecialType.GIFT -> GiftPlayBody(
                     part = part,
                     autoPreviewImages = autoPreviewImages,
                 )
-                ChatSpecialType.TASK -> TaskPlayBody(part = part)
-                ChatSpecialType.PUNISH -> PunishPlayBody(part = part)
+                ChatSpecialType.TASK -> TaskPlayBody(part = part, compact = compactCard)
+                ChatSpecialType.PUNISH -> PunishPlayBody(part = part, compact = compactCard)
                 null -> Unit
             }
         }
@@ -262,24 +262,30 @@ private fun TransferPlayBody(
 }
 
 @Composable
-private fun InvitePlayBody(part: ChatMessagePart) {
+private fun InvitePlayBody(
+    part: ChatMessagePart,
+    compact: Boolean,
+) {
     HighlightBlock(
         headline = part.specialMetadataValue("place").ifBlank { "待定地点" },
         supporting = part.specialMetadataValue("time").ifBlank { "待定时间" },
+        compact = compact,
     )
     part.specialMetadataValue("note").takeIf { it.isNotBlank() }?.let { note ->
         Text(
             text = note,
-            style = MaterialTheme.typography.bodyMedium,
+            style = if (compact) MaterialTheme.typography.bodySmall else MaterialTheme.typography.bodyMedium,
             color = Color.White.copy(alpha = 0.92f),
         )
     }
-    HorizontalDivider(color = Color.White.copy(alpha = 0.18f))
-    Text(
-        text = "等你赴约",
-        style = MaterialTheme.typography.labelMedium,
-        color = Color.White.copy(alpha = 0.88f),
-    )
+    if (!compact) {
+        HorizontalDivider(color = Color.White.copy(alpha = 0.18f))
+        Text(
+            text = "等你赴约",
+            style = MaterialTheme.typography.labelMedium,
+            color = Color.White.copy(alpha = 0.88f),
+        )
+    }
 }
 
 @Composable
@@ -431,70 +437,81 @@ private fun GiftImageStateOverlay(
 }
 
 @Composable
-private fun TaskPlayBody(part: ChatMessagePart) {
+private fun TaskPlayBody(
+    part: ChatMessagePart,
+    compact: Boolean,
+) {
     HighlightBlock(
         headline = part.specialMetadataValue("title").ifBlank { "新的委托" },
         supporting = part.specialMetadataValue("objective").ifBlank { "暂无目标说明" },
+        compact = compact,
     )
     part.specialMetadataValue("reward").takeIf { it.isNotBlank() }?.let { reward ->
         Text(
             text = "奖励：$reward",
-            style = MaterialTheme.typography.bodyMedium,
+            style = if (compact) MaterialTheme.typography.bodySmall else MaterialTheme.typography.bodyMedium,
             color = Color.White.copy(alpha = 0.92f),
         )
     }
     part.specialMetadataValue("deadline").takeIf { it.isNotBlank() }?.let { deadline ->
         Text(
             text = "期限：$deadline",
-            style = MaterialTheme.typography.labelLarge,
+            style = if (compact) MaterialTheme.typography.labelMedium else MaterialTheme.typography.labelLarge,
             color = Color.White.copy(alpha = 0.92f),
         )
     }
 }
 
 @Composable
-private fun PunishPlayBody(part: ChatMessagePart) {
+private fun PunishPlayBody(
+    part: ChatMessagePart,
+    compact: Boolean,
+) {
     HighlightBlock(
         headline = part.specialMetadataValue("method").ifBlank { "待定方式" },
         supporting = "强度 ${part.punishIntensityLabel()} · 次数 ${part.specialMetadataValue("count").ifBlank { "一下" }}",
+        compact = compact,
     )
     part.specialMetadataValue("reason").takeIf { it.isNotBlank() }?.let { reason ->
         Text(
             text = "原因：$reason",
-            style = MaterialTheme.typography.bodyMedium,
+            style = if (compact) MaterialTheme.typography.bodySmall else MaterialTheme.typography.bodyMedium,
             color = Color.White.copy(alpha = 0.92f),
         )
     }
     part.specialMetadataValue("note").takeIf { it.isNotBlank() }?.let { note ->
         Text(
             text = "附注：$note",
-            style = MaterialTheme.typography.bodyMedium,
+            style = if (compact) MaterialTheme.typography.bodySmall else MaterialTheme.typography.bodyMedium,
             color = Color.White.copy(alpha = 0.92f),
         )
     }
-    HorizontalDivider(color = Color.White.copy(alpha = 0.18f))
-    Text(
-        text = "等待对方反应",
-        style = MaterialTheme.typography.labelMedium,
-        color = Color.White.copy(alpha = 0.88f),
-    )
+    if (!compact) {
+        HorizontalDivider(color = Color.White.copy(alpha = 0.18f))
+        Text(
+            text = "等待对方反应",
+            style = MaterialTheme.typography.labelMedium,
+            color = Color.White.copy(alpha = 0.88f),
+        )
+    }
 }
 
 @Composable
 private fun HighlightBlock(
     headline: String,
     supporting: String,
+    compact: Boolean = false,
 ) {
-    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+    Column(verticalArrangement = Arrangement.spacedBy(if (compact) 2.dp else 4.dp)) {
         Text(
             text = headline,
-            style = MaterialTheme.typography.headlineSmall,
+            style = if (compact) MaterialTheme.typography.titleLarge else MaterialTheme.typography.headlineSmall,
             fontWeight = FontWeight.Bold,
             color = Color.White,
         )
         Text(
             text = supporting,
-            style = MaterialTheme.typography.bodyMedium,
+            style = if (compact) MaterialTheme.typography.bodySmall else MaterialTheme.typography.bodyMedium,
             color = Color.White.copy(alpha = 0.92f),
         )
     }

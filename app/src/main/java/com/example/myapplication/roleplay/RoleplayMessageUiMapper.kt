@@ -227,7 +227,10 @@ object RoleplayMessageUiMapper {
         outputParser: RoleplayOutputParser,
     ) {
         val currentScenarioInteractionMode = RoleplayMessageFormatSupport.resolveScenarioInteractionMode(scenario)
-        val normalizedParts = normalizeChatMessageParts(message.parts)
+        val normalizedParts = resolveAssistantDisplayParts(
+            message = message,
+            interactionMode = currentScenarioInteractionMode,
+        )
         val initialSize = target.size
         val canRetry = !RoleplayConversationSupport.isOpeningNarrationMessageId(message.id, scenario.id) &&
             (message.status == MessageStatus.COMPLETED || message.status == MessageStatus.ERROR)
@@ -555,6 +558,36 @@ object RoleplayMessageUiMapper {
             copyText = content,
             canRetry = canRetry,
         )
+    }
+
+    private fun resolveAssistantDisplayParts(
+        message: ChatMessage,
+        interactionMode: RoleplayInteractionMode,
+    ): List<com.example.myapplication.model.ChatMessagePart> {
+        val normalizedParts = normalizeChatMessageParts(message.parts)
+        if (interactionMode != RoleplayInteractionMode.ONLINE_PHONE) {
+            return normalizedParts
+        }
+        if (normalizedParts.any { it.isOnlineThoughtPart() }) {
+            return normalizedParts
+        }
+        if (normalizedParts.size == 1 && normalizedParts.single().text.isNotBlank()) {
+            OnlineInlineThoughtFallback.splitToParts(normalizedParts.single().text)?.let { fallbackParts ->
+                return normalizeChatMessageParts(fallbackParts)
+            }
+            OnlineInlineThoughtFallback.splitDialogueOnlyToParts(normalizedParts.single().text)?.let { fallbackParts ->
+                return normalizeChatMessageParts(fallbackParts)
+            }
+        }
+        if (normalizedParts.isEmpty()) {
+            OnlineInlineThoughtFallback.splitToParts(message.content)?.let { fallbackParts ->
+                return normalizeChatMessageParts(fallbackParts)
+            }
+            OnlineInlineThoughtFallback.splitDialogueOnlyToParts(message.content)?.let { fallbackParts ->
+                return normalizeChatMessageParts(fallbackParts)
+            }
+        }
+        return normalizedParts
     }
 
     private fun streamingThoughtPreviewContent(

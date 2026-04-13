@@ -176,4 +176,33 @@ class RoleplayTranscriptFormatterTest {
             transcript,
         )
     }
+
+    @Test
+    fun formatMessages_onlineInlineThoughtFallbackSplitsTranscript() {
+        val transcript = RoleplayTranscriptFormatter.formatMessages(
+            messages = listOf(
+                ChatMessage(
+                    id = "assistant-inline",
+                    conversationId = "conv-1",
+                    role = MessageRole.ASSISTANT,
+                    content = "【心声】看到这几个字，嘴角不自觉地动了动，想压下去没压住。 ...... 在家就好好休息。 又没干正事。 晚上想吃什么，下课带过去。",
+                    createdAt = 2L,
+                    roleplayOutputFormat = RoleplayOutputFormat.PROTOCOL,
+                    roleplayInteractionMode = RoleplayInteractionMode.ONLINE_PHONE,
+                    parts = listOf(
+                        textMessagePart("【心声】看到这几个字，嘴角不自觉地动了动，想压下去没压住。 ...... 在家就好好休息。 又没干正事。 晚上想吃什么，下课带过去。"),
+                    ),
+                ),
+            ),
+            userName = "林晚",
+            characterName = "沈宴清",
+            allowNarration = true,
+            interactionMode = RoleplayInteractionMode.ONLINE_PHONE,
+        )
+
+        assertEquals(
+            "沈宴清心声：看到这几个字，嘴角不自觉地动了动，想压下去没压住。\n沈宴清：在家就好好休息。\n沈宴清：又没干正事。\n沈宴清：晚上想吃什么，下课带过去。",
+            transcript,
+        )
+    }
 }
