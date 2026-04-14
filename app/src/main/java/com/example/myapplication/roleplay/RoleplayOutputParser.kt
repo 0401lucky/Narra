@@ -21,6 +21,10 @@ class RoleplayOutputParser {
     private val attributePattern = Regex("(\\w+)=\"([^\"]*)\"")
     private val stripTagPattern = Regex("""<[^>]+>""")
     private val danglingOpenTagPattern = Regex("""<[^>]*$""")
+    private val llmControlTagPattern = Regex("""(?is)<(?:\||｜)[^>\n]{0,80}(?:\||｜)>""")
+    private val llmControlWordPattern = Regex(
+        """(?is)\b(?:begin_of_text|end_of_text|begin_of_sentence|end_of_sentence|eot_id|eom_id|bos|eos)\b\s*\|>""",
+    )
     private val protocolHintPattern = Regex("""(?is)</?(dialogue|narration|thought)\b|\b(speaker|emotion|reply_to|reply_preview|reply_speaker)\s*=""")
     private val protocolAttributeNoisePattern = Regex(
         """(?is)\b(speaker|emotion|reply_to|reply_preview|reply_speaker)\s*=\s*("[^"]*"|'[^']*'|[^\s<>]+)?""",
@@ -34,7 +38,9 @@ class RoleplayOutputParser {
         characterName: String,
         allowNarration: Boolean,
     ): List<RoleplayParsedSegment> {
-        val normalized = normalizeRoleplayProtocolAliases(rawContent).trim()
+        val normalized = stripControlArtifacts(
+            normalizeRoleplayProtocolAliases(rawContent),
+        ).trim()
         if (normalized.isBlank()) {
             return emptyList()
         }
@@ -131,7 +137,9 @@ class RoleplayOutputParser {
 
     fun stripMarkup(rawContent: String): String {
         return sanitizeMalformedProtocolText(
-            normalizeRoleplayProtocolAliases(rawContent),
+            stripControlArtifacts(
+                normalizeRoleplayProtocolAliases(rawContent),
+            ),
         )
             .replace(stripTagPattern, "")
             .replace(danglingOpenTagPattern, "")
@@ -450,9 +458,14 @@ class RoleplayOutputParser {
     private fun sanitizeMalformedProtocolText(
         rawContent: String,
     ): String {
-        val normalized = normalizeRoleplayProtocolAliases(rawContent)
+        val normalized = stripControlArtifacts(
+            normalizeRoleplayProtocolAliases(rawContent),
+        )
         if (!protocolHintPattern.containsMatchIn(normalized)) {
             return normalized
+                .replace(llmControlTagPattern, " ")
+                .replace(llmControlWordPattern, " ")
+                .trim()
         }
         return normalized
             .replace(protocolTagNamePattern, " ")
@@ -462,6 +475,14 @@ class RoleplayOutputParser {
             .replace(Regex("""[ \t]{2,}"""), " ")
             .replace(Regex("""\n{3,}"""), "\n\n")
             .trim()
+    }
+
+    private fun stripControlArtifacts(
+        rawContent: String,
+    ): String {
+        return rawContent
+            .replace(llmControlTagPattern, " ")
+            .replace(llmControlWordPattern, " ")
     }
 
     private data class PlainSegmentCandidate(

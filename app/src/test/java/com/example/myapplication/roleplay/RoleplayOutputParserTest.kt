@@ -203,4 +203,17 @@ class RoleplayOutputParserTest {
         assertTrue(stripped.contains("手指抵着杯壁磨了磨。"))
         assertTrue(stripped.contains("声音放得很低。"))
     }
+
+    @Test
+    fun stripMarkup_removesLlMControlTokensFromVisibleText() {
+        val stripped = parser.stripMarkup(
+            """
+                <dialogue speaker="character">你先别躲。</dialogue>
+                <|end_of_sentence|>
+                end_of_sentence|>
+            """.trimIndent(),
+        )
+
+        assertEquals("你先别躲。", stripped)
+    }
 }

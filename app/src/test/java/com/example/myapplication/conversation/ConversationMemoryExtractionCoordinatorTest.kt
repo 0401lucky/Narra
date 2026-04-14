@@ -117,6 +117,68 @@ class ConversationMemoryExtractionCoordinatorTest {
         assertTrue(entries.any { it.scopeType == MemoryScopeType.CONVERSATION && it.scopeId == "conv-1" })
     }
 
+    @Test
+    fun updateChatMemories_respectsConfiguredAssistantLimitWhenCondensing() = runBlocking {
+        val repository = FakeMemoryRepository(
+            initialEntries = (1..6).map { index ->
+                com.example.myapplication.model.MemoryEntry(
+                    id = "memory-$index",
+                    scopeType = MemoryScopeType.ASSISTANT,
+                    scopeId = "assistant-1",
+                    content = "旧记忆$index",
+                    importance = 60,
+                    sourceMessageId = "old-$index",
+                    lastUsedAt = index.toLong(),
+                    createdAt = index.toLong(),
+                    updatedAt = index.toLong(),
+                )
+            },
+        )
+        val coordinator = ConversationMemoryExtractionCoordinator(
+            aiPromptExtrasService = fakePromptExtrasService(
+                memoryEntries = listOf("新记忆A", "新记忆B"),
+            ),
+            memoryRepository = repository,
+            nowProvider = { 120L },
+        )
+        val provider = ProviderSettings(
+            id = "provider-1",
+            name = "Provider",
+            baseUrl = "https://example.com/v1/",
+            apiKey = "key",
+            selectedModel = "chat-model",
+            memoryModel = "memory-model",
+        )
+        val assistant = Assistant(
+            id = "assistant-1",
+            name = "陆宴清",
+            memoryEnabled = true,
+            useGlobalMemory = false,
+            memoryMaxItems = 6,
+        )
+
+        val updated = coordinator.updateChatMemories(
+            assistant = assistant,
+            completedMessages = listOf(
+                ChatMessage(id = "m1", conversationId = "conv-1", role = MessageRole.USER, content = "你好", createdAt = 1L),
+                ChatMessage(id = "m2", conversationId = "conv-1", role = MessageRole.ASSISTANT, content = "在呢", createdAt = 2L),
+            ),
+            settings = AppSettings(
+                providers = listOf(provider),
+                selectedProviderId = provider.id,
+            ),
+            recentMessageWindow = 6,
+            buildMemoryInput = { "用户：你好\n助手：在呢" },
+        )
+
+        assertTrue(updated)
+        val entries = repository.currentEntries()
+        assertEquals(6, entries.size)
+        assertTrue(entries.any { it.content == "新记忆A" })
+        assertTrue(entries.any { it.content == "新记忆B" })
+        assertTrue(entries.all { it.scopeType == MemoryScopeType.ASSISTANT && it.scopeId == "assistant-1" })
+    }
+
     private fun fakePromptExtrasService(
         memoryEntries: List<String> = emptyList(),
         roleplayMemoryEntries: StructuredMemoryExtractionResult = StructuredMemoryExtractionResult(),
@@ -149,7 +211,7 @@ class ConversationMemoryExtractionCoordinatorTest {
                 modelId: String,
                 apiProtocol: com.example.myapplication.model.ProviderApiProtocol,
                 provider: com.example.myapplication.model.ProviderSettings?,
-            ): List<String> = memoryEntries.take(maxItems)
+            ): List<String> = memoryItems.takeLast(maxItems)
         }
     }
 }

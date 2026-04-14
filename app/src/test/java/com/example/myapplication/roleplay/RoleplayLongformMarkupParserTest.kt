@@ -89,4 +89,23 @@ class RoleplayLongformMarkupParserTest {
         assertTrue(paragraphs.size >= 2)
         assertTrue(paragraphs.all { it.isNotBlank() })
     }
+
+    @Test
+    fun parseParagraphs_ignoresProtocolArtifactsAndControlTokens() {
+        val paragraphs = RoleplayLongformMarkupParser.parseParagraphs(
+            """
+                <narration>风从窗缝里挤进来。</narration>
+                <dialogue speaker="character" emotion="低沉">“我没有忘。”</dialogue>
+                <thought>（只是还没准备好现在说。）</thought>
+                <|end_of_sentence|>
+                end_of_sentence|>
+            """.trimIndent(),
+        )
+
+        assertTrue(paragraphs.isNotEmpty())
+        assertEquals(
+            "风从窗缝里挤进来。“我没有忘。”（只是还没准备好现在说。）",
+            paragraphs.joinToString(separator = "") { it.plainText },
+        )
+    }
 }

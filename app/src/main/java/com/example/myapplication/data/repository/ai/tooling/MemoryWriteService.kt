@@ -244,10 +244,7 @@ class DefaultMemoryWriteService(
 
         val pinnedEntries = scopedEntries.filter { it.pinned }
         val mutableEntries = scopedEntries.filterNot { it.pinned }
-        val targetCount = when (scopeType) {
-            MemoryScopeType.CONVERSATION -> 4
-            MemoryScopeType.GLOBAL, MemoryScopeType.ASSISTANT -> maxItems.coerceAtLeast(1).coerceAtMost(3)
-        }
+        val targetCount = maxItems.coerceAtLeast(1)
         val normalizedItems = mutableEntries
             .map { entry -> normalizeMemoryContent(entry.content) }
             .filter { it.isNotBlank() }

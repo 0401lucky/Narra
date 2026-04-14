@@ -880,10 +880,11 @@ class ChatViewModelTest {
         advanceUntilIdle()
 
         val memories = memoryRepository.currentEntries()
-        assertEquals(2, memories.size)
+        assertEquals(4, memories.size)
         assertTrue(memories.all { it.scopeType == MemoryScopeType.GLOBAL })
         assertTrue(memories.all { it.scopeId.isBlank() })
         assertTrue(memories.any { it.content.contains("中文和短句") })
+        assertTrue(memories.any { it.content.contains("别写太长") })
     }
 
     @Test

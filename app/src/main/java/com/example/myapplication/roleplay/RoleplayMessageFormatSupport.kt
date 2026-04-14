@@ -24,6 +24,10 @@ object RoleplayMessageFormatSupport {
     private val sharedThoughtTagPattern = Regex("""(?is)<(/?)thought>""")
     private val sharedThoughtOnlyTagPattern = Regex("""(?is)</?thought>""")
     private val protocolStructuralTagPattern = Regex("""(?is)<(/?)(dialogue|narration)\b""")
+    private val llmControlTagPattern = Regex("""(?is)<(?:\||｜)[^>\n]{0,80}(?:\||｜)>""")
+    private val llmControlWordPattern = Regex(
+        """(?is)\b(?:begin_of_text|end_of_text|begin_of_sentence|end_of_sentence|eot_id|eom_id|bos|eos)\b\s*\|>""",
+    )
     private val genericTagPattern = Regex("""(?is)<[^>]+>""")
 
     fun resolveScenarioInteractionMode(
@@ -71,8 +75,15 @@ object RoleplayMessageFormatSupport {
         if (message.role != MessageRole.ASSISTANT) {
             return fallbackInteractionMode
         }
+        val rawContent = resolveAssistantRawContent(message)
         val outputFormat = resolveAssistantMessageOutputFormat(message)
         if (outputFormat == RoleplayOutputFormat.LONGFORM) {
+            if (
+                fallbackInteractionMode == RoleplayInteractionMode.ONLINE_PHONE &&
+                shouldPreferOnlinePhoneForLegacyMessage(rawContent)
+            ) {
+                return RoleplayInteractionMode.ONLINE_PHONE
+            }
             return RoleplayInteractionMode.OFFLINE_LONGFORM
         }
         if (message.systemEventKind != RoleplayOnlineEventKind.NONE) {
@@ -82,7 +93,6 @@ object RoleplayMessageFormatSupport {
         if (normalizedParts.any { part -> part.isOnlineThoughtPart() || part.isActionPart() }) {
             return RoleplayInteractionMode.ONLINE_PHONE
         }
-        val rawContent = resolveAssistantRawContent(message)
         if (OnlineActionProtocolParser.parse(rawContent = rawContent, characterName = "角色") != null) {
             return RoleplayInteractionMode.ONLINE_PHONE
         }
@@ -134,5 +144,17 @@ object RoleplayMessageFormatSupport {
         return genericTagPattern
             .replace(sharedThoughtOnlyTagPattern.replace(rawContent, " "), " ")
             .any { !it.isWhitespace() }
+    }
+
+    private fun shouldPreferOnlinePhoneForLegacyMessage(
+        rawContent: String,
+    ): Boolean {
+        val normalizedContent = normalizeRoleplayProtocolAliases(rawContent)
+        return !longformSpeechTagPattern.containsMatchIn(normalizedContent) &&
+            (
+                sharedThoughtTagPattern.containsMatchIn(normalizedContent) ||
+                    llmControlTagPattern.containsMatchIn(normalizedContent) ||
+                    llmControlWordPattern.containsMatchIn(normalizedContent)
+                )
     }
 }

@@ -138,7 +138,7 @@ class ConversationMemoryExtractionCoordinator(
         val normalizedItems = (mutableEntries.map { normalizeMemoryContent(it.content) } + memoryItems.map(::normalizeMemoryContent))
             .filter { it.isNotBlank() }
             .distinct()
-        val condensedTargetCount = assistant.memoryMaxItems.coerceAtLeast(1).coerceAtMost(3)
+        val condensedTargetCount = assistant.memoryMaxItems.coerceAtLeast(1)
         val condensedItems = if (normalizedItems.size > condensedTargetCount) {
             runCatching {
                 aiPromptExtrasService.condenseRoleplayMemories(
@@ -208,7 +208,7 @@ class ConversationMemoryExtractionCoordinator(
             latestMessageId = latestMessageId,
             importance = 60,
             maxItems = assistant.memoryMaxItems.coerceAtLeast(1),
-            condensedTargetCount = assistant.memoryMaxItems.coerceAtLeast(1).coerceAtMost(3),
+            condensedTargetCount = assistant.memoryMaxItems.coerceAtLeast(1),
             baseUrl = baseUrl,
             apiKey = apiKey,
             modelId = modelId,
@@ -223,7 +223,7 @@ class ConversationMemoryExtractionCoordinator(
             latestMessageId = latestMessageId,
             importance = 70,
             maxItems = sceneMemoryMaxItems,
-            condensedTargetCount = 4,
+            condensedTargetCount = sceneMemoryMaxItems.coerceAtLeast(1),
             baseUrl = baseUrl,
             apiKey = apiKey,
             modelId = modelId,

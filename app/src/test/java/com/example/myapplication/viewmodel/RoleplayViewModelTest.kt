@@ -1641,10 +1641,11 @@ class RoleplayViewModelTest {
             it.scopeType == com.example.myapplication.model.MemoryScopeType.CONVERSATION &&
                 it.scopeId == session.conversationId
         }
-        assertEquals(3, assistantMemories.size)
-        assertEquals(4, sceneMemories.size)
+        assertEquals(4, assistantMemories.size)
+        assertEquals(5, sceneMemories.size)
         assertTrue(assistantMemories.any { it.content.contains("密门位置") })
-        assertTrue(sceneMemories.any { it.content.contains("钟楼已经响过") })
+        assertTrue(sceneMemories.any { it.content.contains("钟楼响过") })
+        assertTrue(sceneMemories.any { it.content.contains("双方还在相互试探") })
     }
 
     @Test

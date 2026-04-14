@@ -27,6 +27,14 @@ object RoleplayLongformMarkupParser {
     private val supportedTagRegex = Regex("""(?is)</?(char|thought)>""")
     private val parserTagRegex = Regex("""(?is)<(/?)(char|thought)>""")
     private val danglingTagRegex = Regex("""(?is)<[^>\n]*$""")
+    private val unsupportedProtocolTagRegex = Regex("""(?is)</?(dialogue|narration)\b[^>]*>""")
+    private val protocolAttributeNoisePattern = Regex(
+        """(?is)\b(speaker|emotion|reply_to|reply_preview|reply_speaker)\s*=\s*("[^"]*"|'[^']*'|[^\s<>]+)?""",
+    )
+    private val llmControlTagPattern = Regex("""(?is)<(?:\||｜)[^>\n]{0,80}(?:\||｜)>""")
+    private val llmControlWordPattern = Regex(
+        """(?is)\b(?:begin_of_text|end_of_text|begin_of_sentence|end_of_sentence|eot_id|eom_id|bos|eos)\b\s*\|>""",
+    )
     private val paragraphBreakRegex = Regex("""\n\s*\n+""")
     private val strongBoundaryChars = setOf('。', '！', '？', '!', '?', '；', ';')
     private val weakBoundaryChars = setOf('，', '、', '：')
@@ -58,7 +66,7 @@ object RoleplayLongformMarkupParser {
     }
 
     fun stripMarkupForDisplay(rawContent: String): String {
-        return rawContent.replace("\r\n", "\n")
+        return sanitizeLongformArtifacts(rawContent)
             .replace(danglingTagRegex, "")
             .replace(supportedTagRegex, "")
             .trim()
@@ -213,7 +221,7 @@ object RoleplayLongformMarkupParser {
             return
         }
 
-        val normalized = text
+        val normalized = sanitizeLongformArtifacts(text)
             .replace(danglingTagRegex, "")
             .replace(supportedTagRegex, "")
         if (normalized.isBlank()) {
@@ -235,7 +243,7 @@ object RoleplayLongformMarkupParser {
         rawContent: String,
         stripSupportedTags: Boolean,
     ): List<String> {
-        var normalized = rawContent.replace("\r\n", "\n")
+        var normalized = sanitizeLongformArtifacts(rawContent)
             .replace(danglingTagRegex, "")
             .trim()
         if (stripSupportedTags) {
@@ -413,5 +421,16 @@ object RoleplayLongformMarkupParser {
             merged += RoleplayLongformParagraph(previous.spans + tail.spans)
         }
         return merged
+    }
+
+    private fun sanitizeLongformArtifacts(
+        rawContent: String,
+    ): String {
+        return rawContent.replace("\r\n", "\n")
+            .replace(llmControlTagPattern, " ")
+            .replace(llmControlWordPattern, " ")
+            .replace(unsupportedProtocolTagRegex, " ")
+            .replace(protocolAttributeNoisePattern, " ")
+            .replace(Regex("""[ \t]{2,}"""), " ")
     }
 }

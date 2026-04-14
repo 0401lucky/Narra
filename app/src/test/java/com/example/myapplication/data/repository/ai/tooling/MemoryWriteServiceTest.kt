@@ -115,6 +115,61 @@ class MemoryWriteServiceTest {
         assertTrue(proposalRepository.getProposal(proposal.id) == null)
     }
 
+    @Test
+    fun saveSceneMemory_respectsSceneScopeLimitWithoutOverCondensing() = runBlocking {
+        val repository = FakeMemoryRepository(
+            initialEntries = (1..12).map { index ->
+                MemoryEntry(
+                    id = "scene-$index",
+                    scopeType = MemoryScopeType.CONVERSATION,
+                    scopeId = "conversation-1",
+                    content = "剧情记忆$index",
+                    importance = 60,
+                    sourceMessageId = "old-$index",
+                    lastUsedAt = index.toLong(),
+                    createdAt = index.toLong(),
+                    updatedAt = index.toLong(),
+                )
+            },
+        )
+        val service = createService(repository)
+
+        service.saveSceneMemory(
+            toolContext = ToolContext(
+                searchRepository = fakeSearchRepository(),
+                memoryRepository = repository,
+                runtimeContext = GatewayToolRuntimeContext(
+                    promptMode = com.example.myapplication.model.PromptMode.ROLEPLAY,
+                    assistant = Assistant(
+                        id = "assistant-1",
+                        memoryEnabled = true,
+                    ),
+                    conversation = Conversation(
+                        id = "conversation-1",
+                        createdAt = 1L,
+                        updatedAt = 1L,
+                    ),
+                    recentMessages = listOf(
+                        com.example.myapplication.model.ChatMessage(
+                            id = "message-13",
+                            conversationId = "conversation-1",
+                            role = com.example.myapplication.model.MessageRole.USER,
+                            content = "继续推进",
+                            createdAt = 13L,
+                        ),
+                    ),
+                ),
+            ),
+            content = "剧情记忆13",
+            importance = 70,
+        )
+
+        val entries = repository.currentEntries()
+        assertEquals(12, entries.size)
+        assertTrue(entries.any { it.content == "剧情记忆13" })
+        assertTrue(entries.any { it.content == "剧情记忆2" })
+    }
+
     private fun createService(
         memoryRepository: FakeMemoryRepository,
         proposalRepository: InMemoryPendingMemoryProposalRepository = InMemoryPendingMemoryProposalRepository(),

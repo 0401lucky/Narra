@@ -109,6 +109,15 @@ fun MemoryManagementScreen(
                     )
                 }
 
+                item {
+                    SettingsHintCard(
+                        title = "摘要刷新入口",
+                        body = "当前摘要支持手动刷新，但入口在对应聊天或沉浸式会话里的“上下文治理”面板，不在这个管理页内。",
+                        containerColor = palette.surfaceTint,
+                        contentColor = palette.title,
+                    )
+                }
+
             item {
                 OutlinedTextField(
                     value = searchQuery,

@@ -72,4 +72,21 @@ class RoleplayMessageFormatSupportTest {
 
         assertEquals(RoleplayInteractionMode.ONLINE_PHONE, interactionMode)
     }
+
+    @Test
+    fun resolveMessageInteractionMode_onlineFallbackKeepsLegacyThoughtMarkupInOnlineMode() {
+        val message = ChatMessage(
+            id = "assistant-1",
+            role = MessageRole.ASSISTANT,
+            content = "<thought>刚才差点就直接拨过去了。</thought>\nend_of_sentence|>",
+            roleplayOutputFormat = RoleplayOutputFormat.UNSPECIFIED,
+        )
+
+        val interactionMode = RoleplayMessageFormatSupport.resolveMessageInteractionMode(
+            message = message,
+            fallbackInteractionMode = RoleplayInteractionMode.ONLINE_PHONE,
+        )
+
+        assertEquals(RoleplayInteractionMode.ONLINE_PHONE, interactionMode)
+    }
 }
