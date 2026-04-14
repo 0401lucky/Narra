@@ -5,6 +5,7 @@ import com.example.myapplication.model.ContextDataBundle
 import com.example.myapplication.model.DEFAULT_WORLD_BOOK_MAX_ENTRIES
 import com.example.myapplication.model.WorldBookEntry
 import com.example.myapplication.model.WorldBookScopeType
+import com.example.myapplication.model.deriveWorldBookBookId
 import com.google.gson.Gson
 import com.google.gson.JsonElement
 import com.google.gson.JsonArray
@@ -115,6 +116,7 @@ class TavernCharacterAdapter(
         val bookName = characterBook.getString("name").trim()
         val bookEntries = characterBook.getArray("entries") ?: return emptyList()
         val baseTimestamp = System.currentTimeMillis()
+        val bookId = deriveWorldBookBookId(bookName)
         return bookEntries.mapIndexedNotNull { index, element ->
             val entry = element.asJsonObjectOrNull() ?: return@mapIndexedNotNull null
             val keys = parseStringList(entry.get("keys"))
@@ -148,6 +150,7 @@ class TavernCharacterAdapter(
             val entryTimestamp = baseTimestamp + index
             WorldBookEntry(
                 id = stableEntryId,
+                bookId = bookId,
                 title = title,
                 content = content,
                 keywords = keys,

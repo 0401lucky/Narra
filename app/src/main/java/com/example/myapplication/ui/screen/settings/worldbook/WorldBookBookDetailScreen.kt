@@ -33,6 +33,7 @@ import com.example.myapplication.ui.screen.settings.rememberSettingsPalette
 
 @Composable
 fun WorldBookBookDetailScreen(
+    bookId: String,
     bookName: String,
     entries: List<WorldBookEntry>,
     isSaving: Boolean,
@@ -102,7 +103,7 @@ fun WorldBookBookDetailScreen(
                         AnimatedSettingButton(
                             text = if (isSaving) "处理中…" else "重命名这本书",
                             onClick = {
-                                onRenameBook(bookName, renameText)
+                                onRenameBook(bookId, renameText)
                             },
                             enabled = !isSaving && renameText.trim().isNotBlank() && renameText.trim() != bookName,
                             isPrimary = true,
@@ -150,7 +151,7 @@ fun WorldBookBookDetailScreen(
                 NarraTextButton(
                     onClick = {
                         showDeleteDialog = false
-                        onDeleteBook(bookName)
+                        onDeleteBook(bookId)
                     },
                 ) {
                     androidx.compose.material3.Text("确认删除")

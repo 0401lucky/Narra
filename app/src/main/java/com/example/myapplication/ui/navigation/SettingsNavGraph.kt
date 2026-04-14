@@ -30,6 +30,7 @@ import com.example.myapplication.ui.screen.settings.memory.MemoryManagementScree
 import com.example.myapplication.ui.screen.settings.worldbook.WorldBookBookDetailScreen
 import com.example.myapplication.ui.screen.settings.worldbook.WorldBookEditScreen
 import com.example.myapplication.ui.screen.settings.worldbook.WorldBookListScreen
+import com.example.myapplication.ui.screen.settings.worldbook.buildWorldBookBooks
 import com.example.myapplication.viewmodel.AppUpdateViewModel
 import com.example.myapplication.viewmodel.SettingsViewModel
 
@@ -327,16 +328,12 @@ internal fun NavGraphBuilder.registerSettingsNavGraph(
 
             AssistantDetailScreen(
                 assistant = assistant,
-                linkedWorldBookCount = worldBookState.entries.count { entry ->
-                    when (entry.scopeType) {
-                        com.example.myapplication.model.WorldBookScopeType.GLOBAL -> true
-                        com.example.myapplication.model.WorldBookScopeType.ATTACHABLE -> entry.id in assistant.linkedWorldBookIds
-                        com.example.myapplication.model.WorldBookScopeType.ASSISTANT -> {
-                            entry.scopeId == assistant.id
-                        }
-                        com.example.myapplication.model.WorldBookScopeType.CONVERSATION -> false
-                    }
-                },
+                linkedWorldBookCount = buildWorldBookBooks(
+                    worldBookState.entries.filter { entry ->
+                        entry.scopeType == com.example.myapplication.model.WorldBookScopeType.ATTACHABLE &&
+                            entry.resolvedBookId() in assistant.linkedWorldBookBookIds
+                    },
+                ).size,
                 assistantMemoryCount = memoryManagementState.memories.count { memory ->
                     memory.scopeType == com.example.myapplication.model.MemoryScopeType.ASSISTANT &&
                         memory.scopeId == assistant.id
@@ -472,8 +469,8 @@ internal fun NavGraphBuilder.registerSettingsNavGraph(
             val worldBookState by worldBookViewModel.uiState.collectAsStateWithLifecycle()
             WorldBookListScreen(
                 entries = worldBookState.entries,
-                onOpenBook = { bookName ->
-                    navController.navigate(AppRoutes.settingsWorldBookBook(bookName)) {
+                onOpenBook = { bookId ->
+                    navController.navigate(AppRoutes.settingsWorldBookBook(bookId)) {
                         launchSingleTop = true
                     }
                 },
@@ -505,26 +502,30 @@ internal fun NavGraphBuilder.registerSettingsNavGraph(
                 backStackEntry = backStackEntry,
             )
             val worldBookState by worldBookViewModel.uiState.collectAsStateWithLifecycle()
-            val rawBookName = backStackEntry.arguments?.getString("bookName").orEmpty()
-            val bookName = Uri.decode(rawBookName)
+            val rawBookId = backStackEntry.arguments?.getString("bookId").orEmpty()
+            val bookId = Uri.decode(rawBookId)
             val bookEntries = worldBookState.entries
-                .filter { it.sourceBookName == bookName }
+                .filter { it.resolvedBookId() == bookId }
                 .sortedWith(
                     compareBy<com.example.myapplication.model.WorldBookEntry>(
                         { it.insertionOrder },
                         { it.createdAt },
                     ).thenByDescending { it.updatedAt },
                 )
+            val bookName = bookEntries.firstNotNullOfOrNull { entry ->
+                entry.sourceBookName.trim().takeIf { it.isNotBlank() }
+            }.orEmpty()
             WorldBookBookDetailScreen(
+                bookId = bookId,
                 bookName = bookName,
                 entries = bookEntries,
                 isSaving = worldBookState.isSaving,
-                onRenameBook = { originalName, newName ->
-                    worldBookViewModel.renameBook(originalName, newName)
+                onRenameBook = { targetBookId, newName ->
+                    worldBookViewModel.renameBook(targetBookId, newName)
                     navController.popBackStack()
                 },
-                onDeleteBook = { targetBookName ->
-                    worldBookViewModel.deleteBook(targetBookName)
+                onDeleteBook = { targetBookId ->
+                    worldBookViewModel.deleteBook(targetBookId)
                     navController.popBackStack()
                 },
                 onAddEntry = {

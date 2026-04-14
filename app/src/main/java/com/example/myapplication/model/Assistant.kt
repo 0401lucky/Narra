@@ -14,6 +14,7 @@ data class Assistant(
     val exampleDialogues: List<String> = emptyList(),
     val creatorNotes: String = "",
     val linkedWorldBookIds: List<String> = emptyList(),
+    val linkedWorldBookBookIds: List<String> = emptyList(),
     val memoryEnabled: Boolean = false,
     val useGlobalMemory: Boolean = false,
     val memoryMaxItems: Int = DEFAULT_MEMORY_MAX_ITEMS,

@@ -85,6 +85,7 @@ fun RoleplayScreen(
     onRestartSession: () -> Unit,
     onDismissAssistantMismatch: (Boolean) -> Unit,
     onOpenPhoneCheck: (PhoneSnapshotOwnerType) -> Unit,
+    onOpenMoments: () -> Unit,
     onOpenVideoCall: () -> Unit,
     onOpenReadingMode: () -> Unit,
     onOpenSettings: () -> Unit,
@@ -225,6 +226,7 @@ fun RoleplayScreen(
             onApprovePendingMemoryProposal = onApprovePendingMemoryProposal,
             onRejectPendingMemoryProposal = onRejectPendingMemoryProposal,
             onOpenPhoneCheck = { showPhoneOwnerPicker = true },
+            onOpenMoments = onOpenMoments,
             onOpenVideoCall = onOpenVideoCall,
             onOpenSettings = onOpenSettings,
             onNavigateBack = onNavigateBack,
@@ -338,6 +340,7 @@ fun RoleplayScreen(
             },
             onOpenPhoneCheck = { showPhoneOwnerPicker = true },
             onOpenVideoCall = onOpenVideoCall,
+            onOpenMoments = onOpenMoments,
             onDismissSpecialPlayEditor = { activeSpecialPlayTypeName = null },
             onSpecialPlayDraftChange = { draft ->
                 when (draft) {

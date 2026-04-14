@@ -141,7 +141,7 @@ class PhoneCheckViewModelTest {
             delayBySections = mapOf(
                 setOf(PhoneSnapshotSection.MESSAGES) to 10L,
                 setOf(PhoneSnapshotSection.NOTES, PhoneSnapshotSection.SHOPPING) to 50L,
-                setOf(PhoneSnapshotSection.GALLERY, PhoneSnapshotSection.SEARCH) to 100L,
+                setOf(PhoneSnapshotSection.GALLERY, PhoneSnapshotSection.SEARCH, PhoneSnapshotSection.SOCIAL_POSTS) to 100L,
             ),
         )
         val phoneSnapshotRepository = RecordingPhoneSnapshotRepository()
@@ -165,7 +165,7 @@ class PhoneCheckViewModelTest {
 
         assertTrue(viewModel.uiState.value.isGenerating)
         assertEquals(
-            "已完成 0/5，正在生成：消息",
+            "已完成 0/6，正在生成：消息",
             viewModel.uiState.value.generationStatusText,
         )
 
@@ -180,7 +180,7 @@ class PhoneCheckViewModelTest {
             afterMessageBatch.generationCompletedSections,
         )
         assertEquals(
-            "已完成 1/5，正在并行生成：备忘录、购物 / 相册、搜索",
+            "已完成 1/6，正在并行生成：备忘录、购物 / 相册、搜索、动态",
             afterMessageBatch.generationStatusText,
         )
 
@@ -200,7 +200,7 @@ class PhoneCheckViewModelTest {
             afterSecondBatch.generationCompletedSections,
         )
         assertEquals(
-            "已完成 3/5，正在生成：相册、搜索",
+            "已完成 3/6，正在生成：相册、搜索、动态",
             afterSecondBatch.generationStatusText,
         )
 
@@ -216,7 +216,7 @@ class PhoneCheckViewModelTest {
             listOf(
                 PhoneBatchCall(setOf(PhoneSnapshotSection.MESSAGES), "phone-model"),
                 PhoneBatchCall(setOf(PhoneSnapshotSection.NOTES, PhoneSnapshotSection.SHOPPING), "phone-model"),
-                PhoneBatchCall(setOf(PhoneSnapshotSection.GALLERY, PhoneSnapshotSection.SEARCH), "phone-model"),
+                PhoneBatchCall(setOf(PhoneSnapshotSection.GALLERY, PhoneSnapshotSection.SEARCH, PhoneSnapshotSection.SOCIAL_POSTS), "phone-model"),
             ),
             phoneService.calls,
         )
@@ -252,7 +252,7 @@ class PhoneCheckViewModelTest {
     fun generateSnapshot_preservesSuccessfulBatchesWhenOneParallelBatchFails() = runTest(mainDispatcherRule.dispatcher.scheduler) {
         val phoneService = RecordingPhoneAiPromptExtrasService(
             failingSections = setOf(
-                setOf(PhoneSnapshotSection.GALLERY, PhoneSnapshotSection.SEARCH),
+                setOf(PhoneSnapshotSection.GALLERY, PhoneSnapshotSection.SEARCH, PhoneSnapshotSection.SOCIAL_POSTS),
             ),
         )
         val viewModel = createPhoneCheckViewModel(
@@ -273,11 +273,12 @@ class PhoneCheckViewModelTest {
 
         val state = viewModel.uiState.value
         assertFalse(state.isGenerating)
-        assertEquals("部分内容刷新失败：相册、搜索，其余内容已保留", state.errorMessage)
+        assertEquals("部分内容刷新失败：相册、搜索、动态，其余内容已保留", state.errorMessage)
         assertTrue(state.snapshot?.messageThreads?.isNotEmpty() == true)
         assertTrue(state.snapshot?.notes?.isNotEmpty() == true)
         assertTrue(state.snapshot?.gallery?.isEmpty() == true)
         assertTrue(state.snapshot?.searchHistory?.isEmpty() == true)
+        assertTrue(state.snapshot?.socialPosts?.isEmpty() == true)
     }
 
     @Test
@@ -286,7 +287,7 @@ class PhoneCheckViewModelTest {
             emptySections = setOf(
                 setOf(PhoneSnapshotSection.MESSAGES),
                 setOf(PhoneSnapshotSection.NOTES, PhoneSnapshotSection.SHOPPING),
-                setOf(PhoneSnapshotSection.GALLERY, PhoneSnapshotSection.SEARCH),
+                setOf(PhoneSnapshotSection.GALLERY, PhoneSnapshotSection.SEARCH, PhoneSnapshotSection.SOCIAL_POSTS),
             ),
         )
         val viewModel = createPhoneCheckViewModel(
@@ -593,6 +594,19 @@ private class RecordingPhoneAiPromptExtrasService(
                     PhoneSearchEntry(
                         id = "search-1",
                         query = "怎么判断对方是不是在吃醋",
+                        timeLabel = "刚刚",
+                    ),
+                )
+            } else {
+                null
+            },
+            socialPosts = if (PhoneSnapshotSection.SOCIAL_POSTS in requestedSections) {
+                listOf(
+                    com.example.myapplication.model.PhoneSocialPost(
+                        id = "social-1",
+                        authorName = "沈砚清",
+                        authorLabel = "手机主人",
+                        content = "风有点大，但今晚很适合站一会儿。",
                         timeLabel = "刚刚",
                     ),
                 )

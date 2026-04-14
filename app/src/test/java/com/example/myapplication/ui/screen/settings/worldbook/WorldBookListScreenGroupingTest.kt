@@ -11,6 +11,7 @@ class WorldBookListScreenGroupingTest {
             listOf(
                 WorldBookEntry(
                     id = "entry-2",
+                    bookId = "book-lizhu",
                     title = "夜巡守则",
                     content = "B",
                     sourceBookName = "璃珠都市设定",
@@ -27,6 +28,7 @@ class WorldBookListScreenGroupingTest {
                 ),
                 WorldBookEntry(
                     id = "entry-1",
+                    bookId = "book-lizhu",
                     title = "璃珠都市",
                     content = "A",
                     sourceBookName = "璃珠都市设定",
@@ -35,6 +37,7 @@ class WorldBookListScreenGroupingTest {
                 ),
                 WorldBookEntry(
                     id = "entry-3",
+                    bookId = "book-white",
                     title = "白塔城",
                     content = "C",
                     sourceBookName = "白塔设定",
@@ -45,6 +48,7 @@ class WorldBookListScreenGroupingTest {
         )
 
         assertEquals(listOf("白塔设定", "璃珠都市设定"), books.map { it.name })
+        assertEquals(listOf("book-white", "book-lizhu"), books.map { it.id })
         assertEquals(listOf("璃珠都市", "夜巡守则"), books.last().entries.map { it.title })
     }
 }

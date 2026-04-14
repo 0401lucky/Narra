@@ -147,7 +147,11 @@ class RoomRoleplayRepository(
             if (existingConversation != null) {
                 val refreshedSession = existingSession.copy(updatedAt = timestamp)
                 roleplayDao.upsertSession(refreshedSession)
-                val historyMessages = conversationRepository.listMessages(existingSession.conversationId)
+                val historyMessages = cleanOrphanedLoadingMessages(
+                    conversationId = existingSession.conversationId,
+                    selectedModel = existingConversation.model,
+                    messages = conversationRepository.listMessages(existingSession.conversationId),
+                )
                 return RoleplaySessionStartResult(
                     session = toSessionDomain(refreshedSession),
                     reusedExistingSession = true,
@@ -252,6 +256,23 @@ class RoomRoleplayRepository(
 
     override suspend fun deleteOnlineMeta(conversationId: String) {
         roleplayDao.deleteOnlineMeta(conversationId)
+    }
+
+    private suspend fun cleanOrphanedLoadingMessages(
+        conversationId: String,
+        selectedModel: String,
+        messages: List<ChatMessage>,
+    ): List<ChatMessage> {
+        if (messages.none { it.status == MessageStatus.LOADING }) {
+            return messages
+        }
+        val cleanedMessages = messages.filterNot { it.status == MessageStatus.LOADING }
+        conversationRepository.replaceConversationSnapshot(
+            conversationId = conversationId,
+            messages = cleanedMessages,
+            selectedModel = selectedModel,
+        )
+        return cleanedMessages
     }
 
     private fun toScenarioDomain(entity: RoleplayScenarioEntity): RoleplayScenario {

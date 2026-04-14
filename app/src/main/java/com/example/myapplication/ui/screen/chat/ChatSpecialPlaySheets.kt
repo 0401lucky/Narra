@@ -30,6 +30,7 @@ import androidx.compose.material.icons.filled.Gavel
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material.icons.filled.Videocam
+import androidx.compose.material.icons.filled.Forum
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
@@ -69,6 +70,8 @@ import com.example.myapplication.model.transferMessagePart
 import com.example.myapplication.ui.component.NarraButton
 import com.example.myapplication.ui.component.NarraTextButton
 import com.example.myapplication.ui.component.SpecialPlayCard
+import com.example.myapplication.ui.theme.MomentsAccent
+import com.example.myapplication.ui.theme.MomentsAccentSoft
 
 private data class SpecialPlayOption(
     val type: ChatSpecialType,
@@ -158,6 +161,15 @@ private val videoCallOption = SpecialPlayOption(
     iconBackground = InviteBlueSoft,
 )
 
+private val momentsOption = SpecialPlayOption(
+    type = ChatSpecialType.INVITE,
+    title = "动态",
+    description = "浏览朋友圈动态，点赞评论后角色会自动回复互动。",
+    icon = Icons.Default.Forum,
+    iconTint = MomentsAccent,
+    iconBackground = MomentsAccentSoft,
+)
+
 val TransferPlayDraftSaver: Saver<TransferPlayDraft, Any> = listSaver(
     save = { listOf(it.counterparty, it.amount, it.note) },
     restore = {
@@ -233,6 +245,7 @@ fun SpecialPlaySheet(
     onOpenPlay: (ChatSpecialType) -> Unit,
     onOpenPhoneCheck: () -> Unit,
     onOpenVideoCall: (() -> Unit)? = null,
+    onOpenMoments: (() -> Unit)? = null,
 ) {
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     val standaloneEntries = buildList {
@@ -247,6 +260,14 @@ fun SpecialPlaySheet(
                 SpecialPlayModuleEntry(
                     option = videoCallOption,
                     onClick = openVideoCall,
+                ),
+            )
+        }
+        onOpenMoments?.let { openMoments ->
+            add(
+                SpecialPlayModuleEntry(
+                    option = momentsOption,
+                    onClick = openMoments,
                 ),
             )
         }

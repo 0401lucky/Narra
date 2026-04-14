@@ -96,7 +96,7 @@ fun AssistantDetailScreen(
                     AssistantEntryRow(
                         icon = { EntryGlyph(icon = { Icon(Icons.AutoMirrored.Filled.MenuBook, null) }) },
                         title = "扩展管理",
-                        badge = if (linkedWorldBookCount > 0) "$linkedWorldBookCount 条可用" else "无可用",
+                        badge = if (linkedWorldBookCount > 0) "$linkedWorldBookCount 项可用" else "无可用",
                         onClick = onOpenExtensions,
                     )
                     SettingsGroupDivider()
@@ -190,7 +190,7 @@ private fun AssistantHeroPanel(
                         contentColor = palette.subtleChipContent,
                     )
                     SettingsStatusPill(
-                        text = "$linkedWorldBookCount 条可用",
+                        text = "$linkedWorldBookCount 本可用",
                         containerColor = palette.surfaceTint,
                         contentColor = palette.body,
                     )

@@ -15,13 +15,22 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
 @OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
 internal object RoleplayObservationSupport {
+    private data class MapperInputs(
+        val currentScenario: RoleplayScenario?,
+        val currentAssistant: Assistant?,
+        val streamingContent: String?,
+        val isSending: Boolean,
+    )
+
     fun observeSettings(
         scope: CoroutineScope,
         settings: StateFlow<AppSettings>,
@@ -170,16 +179,24 @@ internal object RoleplayObservationSupport {
         nowProvider: () -> Long,
     ) {
         scope.launch {
-            combine(currentRawMessages, settings, uiState) { rawMessages, settingsState, uiStateState ->
-                Triple(rawMessages, settingsState, uiStateState)
-            }.collect { (rawMessages, settingsState, uiStateState) ->
+            val mapperInputs = uiState.map { state ->
+                MapperInputs(
+                    currentScenario = state.currentScenario,
+                    currentAssistant = state.currentAssistant,
+                    streamingContent = state.streamingContent.takeIf { state.isSending },
+                    isSending = state.isSending,
+                )
+            }.distinctUntilChanged()
+            combine(currentRawMessages, settings, mapperInputs) { rawMessages, settingsState, inputs ->
+                Triple(rawMessages, settingsState, inputs)
+            }.collect { (rawMessages, settingsState, inputs) ->
                 val mappedMessages = runCatching {
                     RoleplayMessageUiMapper.mapMessages(
-                        scenario = uiStateState.currentScenario,
-                        assistant = uiStateState.currentAssistant,
+                        scenario = inputs.currentScenario,
+                        assistant = inputs.currentAssistant,
                         settings = settingsState,
                         rawMessages = rawMessages,
-                        streamingContent = uiStateState.streamingContent.takeIf { uiStateState.isSending },
+                        streamingContent = inputs.streamingContent.takeIf { inputs.isSending },
                         outputParser = outputParser,
                         nowProvider = nowProvider,
                     )

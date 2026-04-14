@@ -25,6 +25,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.MoreVert
+import androidx.compose.material.icons.filled.Forum
 import androidx.compose.material.icons.filled.PhoneAndroid
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenu
@@ -121,6 +122,7 @@ internal fun RoleplayOnlinePhoneContent(
     onApprovePendingMemoryProposal: () -> Unit,
     onRejectPendingMemoryProposal: () -> Unit,
     onOpenPhoneCheck: () -> Unit,
+    onOpenMoments: () -> Unit,
     onOpenVideoCall: () -> Unit,
     onOpenSettings: () -> Unit,
     onNavigateBack: () -> Unit,
@@ -298,6 +300,12 @@ internal fun RoleplayOnlinePhoneContent(
                                 overflow = TextOverflow.Ellipsis,
                             )
                         }
+                        OnlinePhoneHeaderButton(
+                            onClick = onOpenMoments,
+                            icon = Icons.Default.Forum,
+                            contentDescription = "动态",
+                            colors = colors,
+                        )
                         OnlinePhoneHeaderButton(
                             onClick = onOpenPhoneCheck,
                             icon = Icons.Default.PhoneAndroid,

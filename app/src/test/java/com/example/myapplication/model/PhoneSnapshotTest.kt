@@ -2,6 +2,7 @@ package com.example.myapplication.model
 
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
+import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class PhoneSnapshotTest {
@@ -93,5 +94,65 @@ class PhoneSnapshotTest {
         assertNull(updated.searchHistory.first().detail)
         assertEquals("如何让爱人更开心", updated.searchHistory[1].detail?.title)
         assertEquals(108L, updated.updatedAt)
+    }
+
+    @Test
+    fun withSocialPostLikeToggled_updatesLikeStateForTargetPost() {
+        val original = PhoneSnapshot(
+            conversationId = "conversation-1",
+            socialPosts = listOf(
+                PhoneSocialPost(
+                    id = "p1",
+                    authorName = "沈砚清",
+                    content = "夜风很轻。",
+                    timeLabel = "刚刚",
+                ),
+            ),
+        )
+
+        val liked = original.withSocialPostLikeToggled(
+            postId = "p1",
+            viewerName = "lucky",
+            updatedAt = 120L,
+        )
+        val unliked = liked.withSocialPostLikeToggled(
+            postId = "p1",
+            viewerName = "lucky",
+            updatedAt = 121L,
+        )
+
+        assertEquals(1, liked.socialPosts.single().likeCount)
+        assertTrue("lucky" in liked.socialPosts.single().likedByNames)
+        assertEquals(0, unliked.socialPosts.single().likeCount)
+        assertTrue("lucky" !in unliked.socialPosts.single().likedByNames)
+    }
+
+    @Test
+    fun withSocialPostComment_appendsCommentToTargetPost() {
+        val original = PhoneSnapshot(
+            conversationId = "conversation-1",
+            socialPosts = listOf(
+                PhoneSocialPost(
+                    id = "p1",
+                    authorName = "沈砚清",
+                    content = "夜风很轻。",
+                    timeLabel = "刚刚",
+                ),
+            ),
+        )
+
+        val updated = original.withSocialPostComment(
+            postId = "p1",
+            comment = PhoneSocialComment(
+                id = "c1",
+                authorName = "lucky",
+                text = "你今天心情不错？",
+            ),
+            updatedAt = 122L,
+        )
+
+        assertEquals(1, updated.socialPosts.single().comments.size)
+        assertEquals("你今天心情不错？", updated.socialPosts.single().comments.single().text)
+        assertEquals(122L, updated.updatedAt)
     }
 }

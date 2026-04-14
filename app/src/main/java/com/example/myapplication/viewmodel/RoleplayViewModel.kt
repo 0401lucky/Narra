@@ -779,6 +779,9 @@ class RoleplayViewModel(
         if (state.isVideoCallActive || state.isSending || state.input.isNotBlank() || compensationJob?.isActive == true) {
             return
         }
+        if (currentRawMessages.value.any { it.status == MessageStatus.LOADING }) {
+            return
+        }
         val bucket = resolveOnlineCompensationBucket(currentRawMessages.value) ?: return
         val meta = roleplayRepository.getOnlineMeta(session.conversationId)
         if (meta?.lastCompensationBucket == bucket) {

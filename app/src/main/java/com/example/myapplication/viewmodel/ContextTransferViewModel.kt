@@ -527,6 +527,17 @@ class ContextTransferViewModel(
                 } else {
                     assistant.copy(
                         linkedWorldBookIds = (assistant.linkedWorldBookIds + scopedEntryIds).distinct(),
+                        linkedWorldBookBookIds = (
+                            assistant.linkedWorldBookBookIds +
+                                bundle.worldBookEntries
+                                    .filter { entry ->
+                                        entry.scopeType == com.example.myapplication.model.WorldBookScopeType.ASSISTANT &&
+                                            entry.scopeId == assistant.id
+                                    }
+                                    .mapNotNull { entry ->
+                                        entry.resolvedBookId().takeIf { it.isNotBlank() }
+                                    }
+                        ).distinct(),
                     )
                 }
             },

@@ -20,7 +20,7 @@ object AppRoutes {
     const val SETTINGS_ASSISTANT_EXTENSIONS = "settings/assistants/{assistantId}/extensions"
     const val SETTINGS_ASSISTANT_MEMORY = "settings/assistants/{assistantId}/memory"
     const val SETTINGS_WORLD_BOOKS = "settings/worldbook"
-    const val SETTINGS_WORLD_BOOK_BOOK = "settings/worldbook/book/{bookName}"
+    const val SETTINGS_WORLD_BOOK_BOOK = "settings/worldbook/book/{bookId}"
     const val SETTINGS_WORLD_BOOK_EDIT = "settings/worldbook/{entryId}?bookName={bookName}"
     const val SETTINGS_MEMORY = "settings/memory"
     const val SETTINGS_CONTEXT_TRANSFER = "settings/context-transfer"
@@ -34,6 +34,7 @@ object AppRoutes {
     const val ROLEPLAY_READING = "roleplay/play/{scenarioId}/reading"
     const val ROLEPLAY_VIDEO_CALL = "roleplay/play/{scenarioId}/video-call"
     const val PHONE_CHECK = "phone-check/{conversationId}?scenarioId={scenarioId}&ownerType={ownerType}"
+    const val MOMENTS = "moments/{conversationId}?scenarioId={scenarioId}&ownerType={ownerType}"
 
     fun settingsProviderDetail(providerId: String): String {
         return "settings/providers/$providerId"
@@ -67,8 +68,8 @@ object AppRoutes {
         return "settings/worldbook/$entryId?bookName=$encodedBookName"
     }
 
-    fun settingsWorldBookBook(bookName: String): String {
-        return "settings/worldbook/book/${Uri.encode(bookName)}"
+    fun settingsWorldBookBook(bookId: String): String {
+        return "settings/worldbook/book/${Uri.encode(bookId)}"
     }
 
     fun roleplayEdit(scenarioId: String): String {
@@ -99,5 +100,15 @@ object AppRoutes {
         val encodedConversationId = Uri.encode(conversationId)
         val encodedScenarioId = Uri.encode(scenarioId.orEmpty())
         return "phone-check/$encodedConversationId?scenarioId=$encodedScenarioId&ownerType=${ownerType.storageValue}"
+    }
+
+    fun moments(
+        conversationId: String,
+        scenarioId: String? = null,
+        ownerType: com.example.myapplication.model.PhoneSnapshotOwnerType = com.example.myapplication.model.PhoneSnapshotOwnerType.CHARACTER,
+    ): String {
+        val encodedConversationId = Uri.encode(conversationId)
+        val encodedScenarioId = Uri.encode(scenarioId.orEmpty())
+        return "moments/$encodedConversationId?scenarioId=$encodedScenarioId&ownerType=${ownerType.storageValue}"
     }
 }

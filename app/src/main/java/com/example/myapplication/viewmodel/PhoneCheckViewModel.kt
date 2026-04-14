@@ -18,6 +18,7 @@ import com.example.myapplication.model.PhoneSearchEntry
 import com.example.myapplication.model.PhoneSnapshot
 import com.example.myapplication.model.PhoneSnapshotOwnerType
 import com.example.myapplication.model.PhoneSnapshotSection
+import com.example.myapplication.model.PhoneSocialComment
 import com.example.myapplication.model.PhoneViewMode
 import com.example.myapplication.model.RoleplayOutputFormat
 import com.example.myapplication.model.RoleplayScenario
@@ -398,6 +399,44 @@ class PhoneCheckViewModel(
         }
     }
 
+    fun toggleLikePost(postId: String) {
+        val snapshot = _uiState.value.snapshot ?: return
+        val viewerName = _uiState.value.ownerName.ifBlank { "我" }
+        val updatedSnapshot = snapshot.withSocialPostLikeToggled(
+            postId = postId,
+            viewerName = viewerName,
+            updatedAt = nowProvider(),
+        )
+        _uiState.update { current ->
+            current.copy(snapshot = updatedSnapshot)
+        }
+        viewModelScope.launch {
+            phoneSnapshotRepository.upsertSnapshot(updatedSnapshot)
+        }
+    }
+
+    fun addCommentToPost(postId: String, commentText: String) {
+        if (commentText.isBlank()) return
+        val snapshot = _uiState.value.snapshot ?: return
+        val viewerName = _uiState.value.ownerName.ifBlank { "我" }
+        val comment = PhoneSocialComment(
+            id = "user-comment-${System.currentTimeMillis()}",
+            authorName = viewerName,
+            text = commentText.trim(),
+        )
+        val updatedSnapshot = snapshot.withSocialPostComment(
+            postId = postId,
+            comment = comment,
+            updatedAt = nowProvider(),
+        )
+        _uiState.update { current ->
+            current.copy(snapshot = updatedSnapshot)
+        }
+        viewModelScope.launch {
+            phoneSnapshotRepository.upsertSnapshot(updatedSnapshot)
+        }
+    }
+
     fun clearErrorMessage() {
         _uiState.update { current -> current.copy(errorMessage = null) }
     }
@@ -547,6 +586,7 @@ class PhoneCheckViewModel(
             snapshot.gallery.firstOrNull()?.title?.takeIf { it.isNotBlank() }?.let { add("相册：$it") }
             snapshot.shoppingRecords.firstOrNull()?.title?.takeIf { it.isNotBlank() }?.let { add("购物：$it") }
             snapshot.messageThreads.firstOrNull()?.preview?.takeIf { it.isNotBlank() }?.let { add("消息：$it") }
+            snapshot.socialPosts.firstOrNull()?.content?.take(30)?.takeIf { it.isNotBlank() }?.let { add("动态：$it") }
         }.distinct().take(3)
     }
 
@@ -613,7 +653,7 @@ class PhoneCheckViewModel(
                 .intersect(normalizedSections)
                 .takeIf { it.isNotEmpty() }
                 ?.let(::add)
-            setOf(PhoneSnapshotSection.GALLERY, PhoneSnapshotSection.SEARCH)
+            setOf(PhoneSnapshotSection.GALLERY, PhoneSnapshotSection.SEARCH, PhoneSnapshotSection.SOCIAL_POSTS)
                 .intersect(normalizedSections)
                 .takeIf { it.isNotEmpty() }
                 ?.let(::add)
@@ -721,6 +761,7 @@ class PhoneCheckViewModel(
                 PhoneSnapshotSection.GALLERY -> !gallery.isNullOrEmpty()
                 PhoneSnapshotSection.SHOPPING -> !shoppingRecords.isNullOrEmpty()
                 PhoneSnapshotSection.SEARCH -> !searchHistory.isNullOrEmpty()
+                PhoneSnapshotSection.SOCIAL_POSTS -> !socialPosts.isNullOrEmpty()
             }
         }
     }

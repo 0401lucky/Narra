@@ -56,3 +56,11 @@ val md_theme_dark_outline = Color(0xFF475569)
 val md_theme_dark_inverseOnSurface = Color(0xFF0B0F19)
 val md_theme_dark_inverseSurface = Color(0xFFF1F5F9)
 val md_theme_dark_inversePrimary = Color(0xFF2563EB)
+
+// ── Moments 模块共用色 ──
+val MomentsBackground = Color(0xFFF3F6FB)
+val MomentsCardBackground = Color.White
+val MomentsAccent = Color(0xFF7B61D9)
+val MomentsAccentSoft = Color(0xFFF0ECFF)
+val MomentsMutedText = Color(0xFF7B8797)
+val MomentsLikeRed = Color(0xFFE8456B)

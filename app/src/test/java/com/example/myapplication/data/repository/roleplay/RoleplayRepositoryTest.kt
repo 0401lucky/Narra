@@ -5,7 +5,9 @@ import com.example.myapplication.data.local.roleplay.RoleplayOnlineMetaEntity
 import com.example.myapplication.data.local.roleplay.RoleplayScenarioEntity
 import com.example.myapplication.data.local.roleplay.RoleplaySessionEntity
 import com.example.myapplication.data.repository.ConversationRepository
+import com.example.myapplication.model.ChatMessage
 import com.example.myapplication.model.MessageRole
+import com.example.myapplication.model.MessageStatus
 import com.example.myapplication.model.Conversation
 import com.example.myapplication.testutil.FakeConversationStore
 import kotlinx.coroutines.flow.Flow
@@ -129,6 +131,92 @@ class RoleplayRepositoryTest {
         assertEquals(conversation.id, session.conversationId)
         assertEquals(1, conversationStore.listConversations().size)
         assertTrue(startResult.reusedExistingSession)
+    }
+
+    @Test
+    fun startScenario_reusesExistingSessionAndCleansOrphanedLoadingMessages() = runBlocking {
+        val conversation = Conversation(
+            id = "conversation-1",
+            title = "旧剧情",
+            model = "chat-model",
+            createdAt = 1L,
+            updatedAt = 1L,
+            assistantId = "assistant-1",
+        )
+        val dao = FakeRoleplayDao(
+            scenarios = listOf(
+                RoleplayScenarioEntity(
+                    id = "scene-1",
+                    title = "初遇",
+                    description = "",
+                    assistantId = "assistant-1",
+                    backgroundUri = "",
+                    userDisplayNameOverride = "",
+                    userPersonaOverride = "",
+                    userPortraitUri = "",
+                    userPortraitUrl = "",
+                    characterDisplayNameOverride = "",
+                    characterPortraitUri = "",
+                    characterPortraitUrl = "",
+                    openingNarration = "",
+                    enableNarration = true,
+                    enableRoleplayProtocol = true,
+                    autoHighlightSpeaker = true,
+                    createdAt = 1L,
+                    updatedAt = 1L,
+                ),
+            ),
+            sessions = listOf(
+                RoleplaySessionEntity(
+                    id = "session-1",
+                    scenarioId = "scene-1",
+                    conversationId = conversation.id,
+                    createdAt = 1L,
+                    updatedAt = 1L,
+                ),
+            ),
+        )
+        val conversationStore = FakeConversationStore(
+            conversations = listOf(conversation),
+            messagesByConversation = mapOf(
+                conversation.id to listOf(
+                    ChatMessage(
+                        id = "user-1",
+                        conversationId = conversation.id,
+                        role = MessageRole.USER,
+                        content = "还记得昨晚吗？",
+                        createdAt = 1L,
+                    ),
+                    ChatMessage(
+                        id = "assistant-loading",
+                        conversationId = conversation.id,
+                        role = MessageRole.ASSISTANT,
+                        content = "",
+                        status = MessageStatus.LOADING,
+                        createdAt = 2L,
+                    ),
+                ),
+            ),
+        )
+        val conversationRepository = ConversationRepository(
+            conversationStore = conversationStore,
+            nowProvider = { 10L },
+        )
+        val repository = RoomRoleplayRepository(
+            roleplayDao = dao,
+            conversationRepository = conversationRepository,
+            nowProvider = { 10L },
+        )
+
+        val startResult = repository.startScenario("scene-1")
+        val savedMessages = conversationStore.listMessages(conversation.id)
+
+        assertTrue(startResult.reusedExistingSession)
+        assertTrue(startResult.hasHistory)
+        assertTrue(startResult.conversationMessages.none { it.status == MessageStatus.LOADING })
+        assertTrue(savedMessages.none { it.status == MessageStatus.LOADING })
+        assertEquals(1, savedMessages.size)
+        assertEquals(1, conversationStore.replaceConversationSnapshotCount)
     }
 
     @Test

@@ -1,5 +1,6 @@
 package com.example.myapplication.model
 
+import java.nio.charset.StandardCharsets
 import java.util.UUID
 
 enum class WorldBookScopeType(
@@ -20,6 +21,7 @@ enum class WorldBookScopeType(
 
 data class WorldBookEntry(
     val id: String = UUID.randomUUID().toString(),
+    val bookId: String = "",
     val title: String = "",
     val content: String = "",
     val keywords: List<String> = emptyList(),
@@ -54,4 +56,25 @@ data class WorldBookEntry(
     fun resolvedScopeId(): String {
         return scopeId.trim()
     }
+
+    fun resolvedBookId(): String {
+        return bookId.trim().ifBlank {
+            sourceBookName.trim()
+                .takeIf { it.isNotBlank() }
+                ?.let(::deriveWorldBookBookId)
+                .orEmpty()
+        }
+    }
+}
+
+fun deriveWorldBookBookId(bookName: String): String {
+    val normalizedBookName = bookName.trim()
+        .replace(Regex("""\s+"""), " ")
+        .lowercase()
+    if (normalizedBookName.isBlank()) {
+        return ""
+    }
+    return "worldbook-" + UUID.nameUUIDFromBytes(
+        normalizedBookName.toByteArray(StandardCharsets.UTF_8),
+    ).toString()
 }

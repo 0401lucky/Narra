@@ -69,17 +69,17 @@ class WorldBookViewModel(
     }
 
     fun renameBook(
-        originalBookName: String,
+        bookId: String,
         newBookName: String,
     ) {
-        val oldName = originalBookName.trim()
+        val normalizedBookId = bookId.trim()
         val renamedBook = newBookName.trim()
-        if (oldName.isBlank() || renamedBook.isBlank()) return
+        if (normalizedBookId.isBlank() || renamedBook.isBlank()) return
         viewModelScope.launch {
             _uiState.update { it.copy(isSaving = true, message = null) }
             val now = System.currentTimeMillis()
             repository.listEntries()
-                .filter { it.sourceBookName == oldName }
+                .filter { it.resolvedBookId() == normalizedBookId }
                 .forEach { entry ->
                     repository.upsertEntry(
                         entry.copy(
@@ -97,13 +97,13 @@ class WorldBookViewModel(
         }
     }
 
-    fun deleteBook(bookName: String) {
-        val normalizedBookName = bookName.trim()
-        if (normalizedBookName.isBlank()) return
+    fun deleteBook(bookId: String) {
+        val normalizedBookId = bookId.trim()
+        if (normalizedBookId.isBlank()) return
         viewModelScope.launch {
             _uiState.update { it.copy(isSaving = true, message = null) }
             repository.listEntries()
-                .filter { it.sourceBookName == normalizedBookName }
+                .filter { it.resolvedBookId() == normalizedBookId }
                 .forEach { entry ->
                     repository.deleteEntry(entry.id)
                 }

@@ -238,4 +238,30 @@ class WorldBookMatcherTest {
         assertTrue(withoutLink.entries.isEmpty())
         assertEquals(listOf("旧港夜路"), withLink.entries.map { it.title })
     }
+
+    @Test
+    fun match_attachableEntryHitsWhenBookIsLinked() {
+        val attachableEntry = WorldBookEntry(
+            id = "entry-attachable",
+            bookId = "book-1",
+            title = "旧港夜路",
+            content = "旧港的夜路总有巡逻队出没。",
+            keywords = listOf("旧港"),
+            sourceBookName = "港区档案",
+            scopeType = WorldBookScopeType.ATTACHABLE,
+        )
+
+        val result = matcher.match(
+            entries = listOf(attachableEntry),
+            assistant = Assistant(
+                id = "assistant-1",
+                linkedWorldBookBookIds = listOf("book-1"),
+            ),
+            conversation = Conversation(id = "c1", createdAt = 1L, updatedAt = 1L),
+            userInputText = "今晚要去旧港。",
+            recentMessages = emptyList(),
+        )
+
+        assertEquals(listOf("旧港夜路"), result.entries.map { it.title })
+    }
 }

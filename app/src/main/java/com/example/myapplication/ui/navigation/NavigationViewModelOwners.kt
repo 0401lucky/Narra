@@ -13,6 +13,7 @@ import com.example.myapplication.di.AppGraph
 import com.example.myapplication.model.PhoneSnapshotOwnerType
 import com.example.myapplication.viewmodel.ContextTransferViewModel
 import com.example.myapplication.viewmodel.MemoryManagementViewModel
+import com.example.myapplication.viewmodel.MomentsViewModel
 import com.example.myapplication.viewmodel.PhoneCheckViewModel
 import com.example.myapplication.viewmodel.RoleplayViewModel
 import com.example.myapplication.viewmodel.WorldBookViewModel
@@ -124,6 +125,34 @@ internal fun rememberPhoneCheckViewModel(
     val ownerType = PhoneSnapshotOwnerType.fromStorageValue(Uri.decode(rawOwnerType))
     return viewModel(
         factory = PhoneCheckViewModel.factory(
+            conversationId = conversationId,
+            scenarioId = scenarioId,
+            ownerType = ownerType,
+            settingsRepository = appGraph.aiSettingsRepository,
+            conversationRepository = appGraph.conversationRepository,
+            roleplayRepository = appGraph.roleplayRepository,
+            phoneSnapshotRepository = appGraph.phoneSnapshotRepository,
+            aiPromptExtrasService = appGraph.aiPromptExtrasService,
+            phoneContextBuilder = PhoneContextBuilder(
+                promptContextAssembler = appGraph.promptContextAssembler,
+            ),
+        ),
+    )
+}
+
+@Composable
+internal fun rememberMomentsViewModel(
+    appGraph: AppGraph,
+    backStackEntry: NavBackStackEntry,
+): MomentsViewModel {
+    val rawConversationId = backStackEntry.arguments?.getString("conversationId").orEmpty()
+    val rawScenarioId = backStackEntry.arguments?.getString("scenarioId").orEmpty()
+    val rawOwnerType = backStackEntry.arguments?.getString("ownerType").orEmpty()
+    val conversationId = Uri.decode(rawConversationId)
+    val scenarioId = Uri.decode(rawScenarioId)
+    val ownerType = PhoneSnapshotOwnerType.fromStorageValue(Uri.decode(rawOwnerType))
+    return viewModel(
+        factory = MomentsViewModel.factory(
             conversationId = conversationId,
             scenarioId = scenarioId,
             ownerType = ownerType,

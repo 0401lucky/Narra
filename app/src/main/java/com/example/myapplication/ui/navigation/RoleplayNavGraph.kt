@@ -175,6 +175,20 @@ internal fun NavGraphBuilder.registerRoleplayGraph(
                         }
                     }
                 },
+                onOpenMoments = {
+                    val conversationId = roleplayState.currentSession?.conversationId.orEmpty()
+                    if (conversationId.isNotBlank()) {
+                        navController.navigate(
+                            AppRoutes.moments(
+                                conversationId = conversationId,
+                                scenarioId = scenarioId,
+                                ownerType = PhoneSnapshotOwnerType.CHARACTER,
+                            ),
+                        ) {
+                            launchSingleTop = true
+                        }
+                    }
+                },
                 onOpenVideoCall = {
                     navController.navigate(AppRoutes.roleplayVideoCall(scenarioId)) {
                         launchSingleTop = true

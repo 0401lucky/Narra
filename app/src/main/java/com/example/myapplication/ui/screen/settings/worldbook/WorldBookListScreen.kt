@@ -151,10 +151,10 @@ fun WorldBookListScreen(
                             description = "",
                         )
                     }
-                    items(filteredBooks, key = { it.name }) { book ->
+                    items(filteredBooks, key = { it.id }) { book ->
                         WorldBookBookCard(
                             book = book,
-                            onClick = { onOpenBook(book.name) },
+                            onClick = { onOpenBook(book.id) },
                         )
                     }
                 }
@@ -388,6 +388,7 @@ internal fun WorldBookEntryCard(
 }
 
 internal data class WorldBookBook(
+    val id: String,
     val name: String,
     val entries: List<WorldBookEntry>,
 ) {
@@ -403,11 +404,21 @@ internal data class WorldBookBook(
 
 internal fun buildWorldBookBooks(entries: List<WorldBookEntry>): List<WorldBookBook> {
     return entries
-        .filter { it.sourceBookName.isNotBlank() }
-        .groupBy { it.sourceBookName }
-        .map { (bookName, bookEntries) ->
+        .mapNotNull { entry ->
+            entry.resolvedBookId()
+                .takeIf { it.isNotBlank() && entry.sourceBookName.isNotBlank() }
+                ?.let { bookId -> bookId to entry }
+        }
+        .groupBy(
+            keySelector = { it.first },
+            valueTransform = { it.second },
+        )
+        .map { (bookId, bookEntries) ->
             WorldBookBook(
-                name = bookName,
+                id = bookId,
+                name = bookEntries.firstNotNullOfOrNull { entry ->
+                    entry.sourceBookName.trim().takeIf { it.isNotBlank() }
+                }.orEmpty().ifBlank { "未命名世界书" },
                 entries = bookEntries.sortedWith(
                     compareBy<WorldBookEntry>(
                         { it.insertionOrder },

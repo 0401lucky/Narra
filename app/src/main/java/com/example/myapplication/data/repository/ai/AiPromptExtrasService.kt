@@ -19,6 +19,8 @@ import com.example.myapplication.model.PhoneRelationshipHighlight
 import com.example.myapplication.model.PhoneSearchDetail
 import com.example.myapplication.model.PhoneSearchEntry
 import com.example.myapplication.model.PhoneShoppingEntry
+import com.example.myapplication.model.PhoneSocialComment
+import com.example.myapplication.model.PhoneSocialPost
 import com.example.myapplication.model.PhoneSnapshot
 import com.example.myapplication.model.PhoneSnapshotSection
 import com.example.myapplication.model.PhoneSnapshotSections
@@ -165,6 +167,24 @@ interface AiPromptExtrasService {
         summary = "",
         content = "",
     )
+
+    /**
+     * 用户在动态下评论后，AI 生成 1-3 条角色/NPC 回复。
+     * 返回 List<Pair<authorName, text>>。
+     */
+    suspend fun generateSocialCommentReplies(
+        context: PhoneGenerationContext,
+        postAuthorName: String,
+        postAuthorLabel: String,
+        postContent: String,
+        existingComments: String,
+        userComment: String,
+        baseUrl: String,
+        apiKey: String,
+        modelId: String,
+        apiProtocol: ProviderApiProtocol = ProviderApiProtocol.OPENAI_COMPATIBLE,
+        provider: ProviderSettings? = null,
+    ): List<Pair<String, String>> = emptyList()
 }
 
 class DefaultAiPromptExtrasService(
@@ -649,7 +669,7 @@ class DefaultAiPromptExtrasService(
             append("。")
             append("\n如果重建“消息”板块，必须同时输出 relationship_highlights 和 message_threads。")
             append("\n严格输出 JSON 对象，不要 Markdown，不要解释。")
-            append("""JSON 键固定为：relationship_highlights、message_threads、notes、gallery、shopping_records、search_history。""")
+            append("""JSON 键固定为：relationship_highlights、message_threads、notes、gallery、shopping_records、search_history、social_posts。""")
             append("\n每个数组项都必须包含 id 字段。")
             append("\n字段要求：")
             append("\n1. relationship_highlights: [{id,name,relation_label,stance,note}]")
@@ -658,6 +678,7 @@ class DefaultAiPromptExtrasService(
             append("\n4. gallery: [{id,title,summary,description,time_label}]")
             append("\n5. shopping_records: [{id,title,status,price_label,note,detail,time_label}]")
             append("\n6. search_history: [{id,query,time_label}]")
+            append("\n7. social_posts: [{id,author_name,author_label,content,time_label,like_count,liked_by_names:[...],comments:[{id,author_name,text}]}]")
             append("\n其中相册需要额外遵守这些规则：")
             append("\n- title 要像手机相册里真正会起的照片名，短、具体、带对象或场景。")
             append("\n- summary 是一句简短的画面摘要，突出镜头主体、场景或拍摄瞬间，控制在 12 到 30 字。")
@@ -667,6 +688,14 @@ class DefaultAiPromptExtrasService(
             append("\n- description 允许带轻微私密感和暧昧感，但必须仍然像相册说明，不要写成露骨对白或纯欲望宣泄。")
             append("\n- 优先生成值得收藏、带明显关系痕迹或个人执念的照片，不要生成泛泛的风景照。")
             append("\n- messages[].is_owner 表示该消息是否由手机主人本人发出。")
+            append("\n其中动态（social_posts）需要额外遵守这些规则：")
+            append("\n- 动态像微信朋友圈或 Instagram 帖文，包含发布者、正文、点赞和评论。")
+            append("\n- author_name 是发布者昵称，author_label 是身份标签（闺蜜、同事、手机主人等），手机主人自己也可以发动态。")
+            append("\n- content 是动态正文，应像朋友圈真实文案：生活碎片、情感感悟、日常记录、暧昧暗示等，避免过于书面或模板化。")
+            append("\n- like_count 是点赞总数，liked_by_names 是具体点赞人名列表，评论人可以和点赞人部分重叠。")
+            append("\n- comments 是评论列表，每条包含评论人和正文，评论要自然口语化，像真实社交互动。")
+            append("\n- 优先生成带关系痕迹、情绪暗示或戏剧性的动态，不要生成完全无关的鸡汤或广告。")
+            append("\n- 动态数量建议 3-5 条。")
             append(phoneSnapshotOwnerRules(context))
             append("\n除非本次重建该板块，否则对应键返回 []。")
             if (context.systemContext.isNotBlank()) {
@@ -1126,6 +1155,16 @@ class DefaultAiPromptExtrasService(
                     appendLine()
                 }
             }
+            if (PhoneSnapshotSection.SOCIAL_POSTS !in excludeSections && snapshot.socialPosts.isNotEmpty()) {
+                appendLine("动态概览：")
+                snapshot.socialPosts.take(4).forEach { post ->
+                    append("- ")
+                    append(post.authorName)
+                    append("：")
+                    append(post.content.take(40))
+                    appendLine()
+                }
+            }
         }.trim()
     }
 
@@ -1267,6 +1306,38 @@ class DefaultAiPromptExtrasService(
                     )
                 }
                 ?.filter { it.query.isNotBlank() },
+            socialPosts = jsonObject.getAsJsonArrayOrNull("social_posts")
+                ?.mapIndexed { index, element ->
+                    val item = element.asJsonObjectOrNull()
+                    PhoneSocialPost(
+                        id = item.stringValue("id").ifBlank { "social-${index + 1}" },
+                        authorName = item.stringValue("author_name"),
+                        authorLabel = item.stringValue("author_label"),
+                        content = item.stringValue("content"),
+                        timeLabel = item.stringValue("time_label"),
+                        likeCount = item?.get("like_count")
+                            ?.takeIf { !it.isJsonNull }
+                            ?.runCatching { asInt }?.getOrNull() ?: 0,
+                        likedByNames = item?.getAsJsonArrayOrNull("liked_by_names")
+                            ?.mapNotNull { nameElement ->
+                                runCatching { nameElement.asString.trim() }.getOrNull()
+                                    ?.takeIf { it.isNotEmpty() }
+                            }
+                            .orEmpty(),
+                        comments = item?.getAsJsonArrayOrNull("comments")
+                            ?.mapIndexed { commentIndex, commentElement ->
+                                val commentItem = commentElement.asJsonObjectOrNull()
+                                PhoneSocialComment(
+                                    id = commentItem.stringValue("id").ifBlank { "comment-${index + 1}-${commentIndex + 1}" },
+                                    authorName = commentItem.stringValue("author_name"),
+                                    text = commentItem.stringValue("text"),
+                                )
+                            }
+                            ?.filter { it.text.isNotBlank() }
+                            .orEmpty(),
+                    )
+                }
+                ?.filter { it.authorName.isNotBlank() && it.content.isNotBlank() },
         )
     }
 
@@ -1298,6 +1369,112 @@ class DefaultAiPromptExtrasService(
 
     private fun com.google.gson.JsonElement.asJsonObjectOrNull(): JsonObject? {
         return runCatching { asJsonObject }.getOrNull()
+    }
+
+    override suspend fun generateSocialCommentReplies(
+        context: PhoneGenerationContext,
+        postAuthorName: String,
+        postAuthorLabel: String,
+        postContent: String,
+        existingComments: String,
+        userComment: String,
+        baseUrl: String,
+        apiKey: String,
+        modelId: String,
+        apiProtocol: ProviderApiProtocol,
+        provider: ProviderSettings?,
+    ): List<Pair<String, String>> {
+        val prompt = buildString {
+            appendLine("你正在模拟一个社交动态的评论区互动。")
+            appendLine("以下是本次扮演的完整人设和场景背景，所有角色的评论回复必须严格遵守各自人设，不得 OOC（即不得偏离角色性格、口吻和关系定位）。")
+            appendLine()
+            // 注入人设和场景
+            if (context.systemContext.isNotBlank()) {
+                appendLine("【角色人设与基础设定】")
+                appendLine(context.systemContext)
+                appendLine()
+            }
+            if (context.scenarioContext.isNotBlank()) {
+                appendLine("【当前场景】")
+                appendLine(context.scenarioContext)
+                appendLine()
+            }
+            if (context.conversationExcerpt.isNotBlank()) {
+                appendLine("【最近剧情上下文】")
+                appendLine(context.conversationExcerpt)
+                appendLine()
+            }
+            appendLine("【动态信息】")
+            appendLine("发布者：$postAuthorName（$postAuthorLabel）")
+            appendLine("正文：$postContent")
+            if (existingComments.isNotBlank()) {
+                appendLine()
+                appendLine("【已有评论】")
+                appendLine(existingComments)
+            }
+            appendLine()
+            appendLine("【${context.viewerName} 刚发表的新评论】")
+            appendLine("${context.viewerName}：$userComment")
+            appendLine()
+            appendLine("现在请生成 1-3 条其他人对这条评论的自然回复，候选包括：")
+            appendLine("- 动态发布者 $postAuthorName 本人的回应")
+            appendLine("- 手机主人 ${context.ownerName} 的反应")
+            appendLine("- 其他 NPC/朋友的互动（吃醋、帮腔、打趣、隐晦暗示等）")
+            appendLine()
+            appendLine("【强制约束 - 必须严格遵守】")
+            appendLine("1. 每个角色的评论必须符合其在人设中的性格、说话习惯和对 ${context.viewerName} 的关系定位")
+            appendLine("2. 禁止 OOC：不得让角色说出与其人设矛盾的话，不得让性格冷淡的角色突然热情，不得让不认识的角色冒泡")
+            appendLine("3. 评论要口语化、简短、有个性，像真实朋友圈互动，而非书面语或旁白")
+            appendLine("4. 允许角色之间争风吃醋、暗中较劲、含蓄表达情绪，但须符合人设")
+            appendLine("5. 严格仅输出 JSON 数组，不要输出任何额外说明、标题或 Markdown")
+            appendLine("格式：[{\"author_name\":\"xxx\",\"text\":\"xxx\"}]")
+        }
+        val content = requestCompletionContent(
+            baseUrl = baseUrl,
+            apiKey = apiKey,
+            operation = "评论回复生成失败",
+            request = buildRequestWithRoleplaySampling(
+                model = modelId,
+                messages = listOf(
+                    ChatMessageDto(role = "user", content = prompt),
+                ),
+                baseUrl = baseUrl,
+                apiProtocol = apiProtocol,
+                promptMode = context.promptMode,
+            ),
+            apiProtocol = apiProtocol,
+            provider = provider,
+            allowRoleplaySamplingFallback = true,
+        )
+        return runCatching {
+            val cleaned = content.trim()
+                .removePrefix("```json").removePrefix("```JSON")
+                .removePrefix("```")
+                .removeSuffix("```").trim()
+            val parsed = JsonParser.parseString(cleaned)
+            // 兼容直接数组 [...] 和包裹对象 {"replies": [...]} 两种格式
+            val array = if (parsed.isJsonArray) {
+                parsed.asJsonArray
+            } else if (parsed.isJsonObject) {
+                val obj = parsed.asJsonObject
+                obj.get("replies")
+                    ?.takeIf { it.isJsonArray }
+                    ?.asJsonArray
+                    ?: obj.entrySet()
+                        .map { it.value }
+                        .singleOrNull { it.isJsonArray }
+                        ?.asJsonArray
+                    ?: return@runCatching emptyList()
+            } else {
+                return@runCatching emptyList()
+            }
+            array.mapNotNull { element ->
+                val obj = element.asJsonObjectOrNull() ?: return@mapNotNull null
+                val authorName = obj.stringValue("author_name")
+                val text = obj.stringValue("text")
+                if (authorName.isNotBlank() && text.isNotBlank()) authorName to text else null
+            }
+        }.getOrDefault(emptyList())
     }
 
 }

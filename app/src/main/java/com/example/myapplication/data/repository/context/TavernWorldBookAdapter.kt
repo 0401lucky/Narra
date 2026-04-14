@@ -3,6 +3,7 @@ package com.example.myapplication.data.repository.context
 import com.example.myapplication.model.ContextDataBundle
 import com.example.myapplication.model.WorldBookEntry
 import com.example.myapplication.model.WorldBookScopeType
+import com.example.myapplication.model.deriveWorldBookBookId
 import com.google.gson.Gson
 import com.google.gson.JsonArray
 import com.google.gson.JsonElement
@@ -52,6 +53,7 @@ class TavernWorldBookAdapter(
             return emptyList()
         }
         val baseTimestamp = System.currentTimeMillis()
+        val bookId = deriveWorldBookBookId(bookName)
         return entryObjects.mapIndexedNotNull { index, entry ->
             val keys = parseStringList(entry.get("key")) + parseStringList(entry.get("keys"))
             val secondaryKeys = parseStringList(entry.get("keysecondary")) +
@@ -86,6 +88,7 @@ class TavernWorldBookAdapter(
             val timestamp = baseTimestamp + index
             WorldBookEntry(
                 id = stableId,
+                bookId = bookId,
                 title = title.trim(),
                 content = content,
                 keywords = keys.distinct(),

@@ -8,11 +8,13 @@ import androidx.room.PrimaryKey
     tableName = "worldbook_entries",
     indices = [
         Index(value = ["scopeType", "scopeId"]),
+        Index(value = ["bookId"]),
         Index(value = ["updatedAt"]),
     ],
 )
 data class WorldBookEntryEntity(
     @PrimaryKey val id: String,
+    val bookId: String = "",
     val title: String,
     val content: String,
     val keywordsJson: String = "[]",

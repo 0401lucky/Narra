@@ -30,7 +30,8 @@ enum class PhoneSnapshotSection(val storageValue: String, val displayName: Strin
     NOTES("notes", "备忘录"),
     GALLERY("gallery", "相册"),
     SHOPPING("shopping", "购物"),
-    SEARCH("search", "搜索");
+    SEARCH("search", "搜索"),
+    SOCIAL_POSTS("social_posts", "动态");
 
     companion object {
         fun fromStorageValue(value: String): PhoneSnapshotSection? {
@@ -54,6 +55,7 @@ data class PhoneSnapshot(
     val gallery: List<PhoneGalleryEntry> = emptyList(),
     val shoppingRecords: List<PhoneShoppingEntry> = emptyList(),
     val searchHistory: List<PhoneSearchEntry> = emptyList(),
+    val socialPosts: List<PhoneSocialPost> = emptyList(),
 ) {
     fun hasContent(): Boolean {
         return relationshipHighlights.isNotEmpty() ||
@@ -61,7 +63,8 @@ data class PhoneSnapshot(
             notes.isNotEmpty() ||
             gallery.isNotEmpty() ||
             shoppingRecords.isNotEmpty() ||
-            searchHistory.isNotEmpty()
+            searchHistory.isNotEmpty() ||
+            socialPosts.isNotEmpty()
     }
 
     fun mergeSections(
@@ -112,6 +115,11 @@ data class PhoneSnapshot(
             } else {
                 searchHistory
             },
+            socialPosts = if (PhoneSnapshotSection.SOCIAL_POSTS in normalizedRequested) {
+                sections.socialPosts.orEmpty()
+            } else {
+                socialPosts
+            },
         )
     }
 
@@ -130,6 +138,38 @@ data class PhoneSnapshot(
                     entry.copy(detail = detail)
                 } else {
                     entry
+                }
+            },
+        )
+    }
+
+    fun withSocialPostLikeToggled(
+        postId: String,
+        viewerName: String,
+        updatedAt: Long,
+    ): PhoneSnapshot {
+        if (postId.isBlank()) return this
+        return copy(
+            updatedAt = updatedAt,
+            socialPosts = socialPosts.map { post ->
+                if (post.id == postId) post.toggleLike(viewerName) else post
+            },
+        )
+    }
+
+    fun withSocialPostComment(
+        postId: String,
+        comment: PhoneSocialComment,
+        updatedAt: Long,
+    ): PhoneSnapshot {
+        if (postId.isBlank()) return this
+        return copy(
+            updatedAt = updatedAt,
+            socialPosts = socialPosts.map { post ->
+                if (post.id == postId) {
+                    post.copy(comments = post.comments + comment)
+                } else {
+                    post
                 }
             },
         )
@@ -160,6 +200,7 @@ data class PhoneSnapshotSections(
     val gallery: List<PhoneGalleryEntry>? = null,
     val shoppingRecords: List<PhoneShoppingEntry>? = null,
     val searchHistory: List<PhoneSearchEntry>? = null,
+    val socialPosts: List<PhoneSocialPost>? = null,
 )
 
 @Immutable
@@ -234,4 +275,32 @@ data class PhoneSearchDetail(
     val title: String,
     val summary: String,
     val content: String,
+)
+
+@Immutable
+data class PhoneSocialPost(
+    val id: String,
+    val authorName: String,
+    val authorLabel: String = "",
+    val content: String,
+    val timeLabel: String,
+    val likeCount: Int = 0,
+    val likedByNames: List<String> = emptyList(),
+    val comments: List<PhoneSocialComment> = emptyList(),
+) {
+    /** 切换指定用户的点赞状态，返回新实例 */
+    fun toggleLike(viewerName: String): PhoneSocialPost {
+        val alreadyLiked = viewerName in likedByNames
+        return copy(
+            likeCount = if (alreadyLiked) (likeCount - 1).coerceAtLeast(0) else likeCount + 1,
+            likedByNames = if (alreadyLiked) likedByNames - viewerName else likedByNames + viewerName,
+        )
+    }
+}
+
+@Immutable
+data class PhoneSocialComment(
+    val id: String,
+    val authorName: String,
+    val text: String,
 )

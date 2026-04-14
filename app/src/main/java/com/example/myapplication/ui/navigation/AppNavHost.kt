@@ -8,6 +8,7 @@ import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import com.example.myapplication.di.AppGraph
 import com.example.myapplication.ui.screen.home.HomeScreen
+import com.example.myapplication.ui.screen.moments.MomentsScreen
 import com.example.myapplication.ui.screen.phone.PhoneCheckScreen
 import com.example.myapplication.viewmodel.AppUpdateViewModel
 import com.example.myapplication.viewmodel.SettingsViewModel
@@ -81,6 +82,22 @@ fun AppNavHost(
                 onLoadSearchDetail = phoneCheckViewModel::loadSearchDetail,
                 onClearErrorMessage = phoneCheckViewModel::clearErrorMessage,
                 onClearNoticeMessage = phoneCheckViewModel::clearNoticeMessage,
+            )
+        }
+
+        composable(AppRoutes.MOMENTS) { backStackEntry ->
+            val momentsViewModel = rememberMomentsViewModel(
+                appGraph = appGraph,
+                backStackEntry = backStackEntry,
+            )
+            val uiState by momentsViewModel.uiState.collectAsStateWithLifecycle()
+            MomentsScreen(
+                uiState = uiState,
+                viewerName = uiState.viewerName,
+                onNavigateBack = { navController.popBackStack() },
+                onToggleLikePost = momentsViewModel::toggleLikePost,
+                onAddComment = momentsViewModel::addCommentToPost,
+                onClearErrorMessage = momentsViewModel::clearErrorMessage,
             )
         }
     }

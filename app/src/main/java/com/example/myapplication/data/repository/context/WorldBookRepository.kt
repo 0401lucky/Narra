@@ -4,6 +4,7 @@ import com.example.myapplication.data.local.worldbook.WorldBookDao
 import com.example.myapplication.data.local.worldbook.WorldBookEntryEntity
 import com.example.myapplication.model.WorldBookEntry
 import com.example.myapplication.model.WorldBookScopeType
+import com.example.myapplication.model.deriveWorldBookBookId
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
 import kotlinx.coroutines.flow.Flow
@@ -49,7 +50,12 @@ class RoomWorldBookRepository(
     }
 
     override suspend fun upsertEntry(entry: WorldBookEntry) {
-        worldBookDao.upsertEntry(toEntity(entry))
+        worldBookDao.upsertEntry(
+            toEntity(
+                entry = entry,
+                existingEntries = worldBookDao.listEntries(),
+            ),
+        )
     }
 
     override suspend fun deleteEntry(entryId: String) {
@@ -59,6 +65,7 @@ class RoomWorldBookRepository(
     private fun toDomain(entity: WorldBookEntryEntity): WorldBookEntry {
         return WorldBookEntry(
             id = entity.id,
+            bookId = entity.bookId,
             title = entity.title,
             content = entity.content,
             keywords = decodeStringList(entity.keywordsJson),
@@ -78,9 +85,23 @@ class RoomWorldBookRepository(
         )
     }
 
-    private fun toEntity(entry: WorldBookEntry): WorldBookEntryEntity {
+    private fun toEntity(
+        entry: WorldBookEntry,
+        existingEntries: List<WorldBookEntryEntity>,
+    ): WorldBookEntryEntity {
+        val normalizedSourceBookName = entry.sourceBookName.trim()
+        val resolvedBookId = entry.bookId.trim().ifBlank {
+            existingEntries.firstOrNull { existing ->
+                existing.id != entry.id &&
+                    existing.sourceBookName.trim().equals(normalizedSourceBookName, ignoreCase = true) &&
+                    existing.bookId.isNotBlank()
+            }?.bookId.orEmpty().ifBlank {
+                normalizedSourceBookName.takeIf { it.isNotBlank() }?.let(::deriveWorldBookBookId).orEmpty()
+            }
+        }
         return WorldBookEntryEntity(
             id = entry.id,
+            bookId = resolvedBookId,
             title = entry.title.trim(),
             content = entry.content.trim(),
             keywordsJson = gson.toJson(normalizeStringList(entry.keywords)),
@@ -92,7 +113,7 @@ class RoomWorldBookRepository(
             caseSensitive = entry.caseSensitive,
             priority = entry.priority,
             insertionOrder = entry.insertionOrder,
-            sourceBookName = entry.sourceBookName.trim(),
+            sourceBookName = normalizedSourceBookName,
             scopeType = entry.scopeType.storageValue,
             scopeId = entry.resolvedScopeId(),
             createdAt = entry.createdAt,

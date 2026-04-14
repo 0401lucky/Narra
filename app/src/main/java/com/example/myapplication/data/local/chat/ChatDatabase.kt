@@ -41,7 +41,7 @@ abstract class ChatDatabase : RoomDatabase() {
     abstract fun phoneSnapshotDao(): PhoneSnapshotDao
 
     companion object {
-        const val CURRENT_VERSION = 22
+        const val CURRENT_VERSION = 23
 
         val MIGRATION_1_2 = object : Migration(1, 2) {
             override fun migrate(db: SupportSQLiteDatabase) {
@@ -88,6 +88,7 @@ abstract class ChatDatabase : RoomDatabase() {
                     """
                     CREATE TABLE IF NOT EXISTS worldbook_entries (
                         id TEXT NOT NULL PRIMARY KEY,
+                        bookId TEXT NOT NULL DEFAULT '',
                         title TEXT NOT NULL DEFAULT '',
                         content TEXT NOT NULL DEFAULT '',
                         keywordsJson TEXT NOT NULL DEFAULT '[]',
@@ -128,6 +129,9 @@ abstract class ChatDatabase : RoomDatabase() {
                         updatedAt INTEGER NOT NULL DEFAULT 0
                     )
                     """.trimIndent(),
+                )
+                db.execSQL(
+                    "CREATE INDEX IF NOT EXISTS index_worldbook_entries_bookId ON worldbook_entries (bookId)",
                 )
                 db.execSQL(
                     "CREATE INDEX IF NOT EXISTS index_worldbook_entries_scopeType_scopeId ON worldbook_entries (scopeType, scopeId)",
@@ -487,6 +491,29 @@ abstract class ChatDatabase : RoomDatabase() {
             }
         }
 
+        val MIGRATION_22_23 = object : Migration(22, 23) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                if (!hasColumn(db, "worldbook_entries", "bookId")) {
+                    db.execSQL(
+                        "ALTER TABLE worldbook_entries ADD COLUMN bookId TEXT NOT NULL DEFAULT ''",
+                    )
+                }
+                db.execSQL(
+                    """
+                    UPDATE worldbook_entries
+                    SET bookId = CASE
+                        WHEN TRIM(bookId) != '' THEN TRIM(bookId)
+                        WHEN TRIM(sourceBookName) = '' THEN ''
+                        ELSE 'legacy-book:' || LOWER(TRIM(sourceBookName))
+                    END
+                    """.trimIndent(),
+                )
+                db.execSQL(
+                    "CREATE INDEX IF NOT EXISTS index_worldbook_entries_bookId ON worldbook_entries (bookId)",
+                )
+            }
+        }
+
         val ALL_MIGRATIONS = arrayOf(
             MIGRATION_1_2,
             MIGRATION_2_3,
@@ -509,6 +536,7 @@ abstract class ChatDatabase : RoomDatabase() {
             MIGRATION_19_20,
             MIGRATION_20_21,
             MIGRATION_21_22,
+            MIGRATION_22_23,
         )
 
         private fun hasColumn(

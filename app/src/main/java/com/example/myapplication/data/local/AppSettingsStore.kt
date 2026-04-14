@@ -720,6 +720,7 @@ class AppSettingsStore(
             exampleDialogues = sanitizeStringList(assistant.exampleDialogues as? List<*>),
             creatorNotes = sanitizeMultilineText(assistant.creatorNotes as String?),
             linkedWorldBookIds = sanitizeStringList(assistant.linkedWorldBookIds as? List<*>),
+            linkedWorldBookBookIds = sanitizeStringList(assistant.linkedWorldBookBookIds as? List<*>),
             memoryMaxItems = assistant.memoryMaxItems.takeIf { it > 0 } ?: DEFAULT_MEMORY_MAX_ITEMS,
             worldBookMaxEntries = assistant.worldBookMaxEntries.takeIf { it > 0 }
                 ?: DEFAULT_WORLD_BOOK_MAX_ENTRIES,

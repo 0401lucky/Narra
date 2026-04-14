@@ -36,6 +36,9 @@ import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.ShoppingCart
 import androidx.compose.material.icons.filled.Textsms
+import androidx.compose.material.icons.filled.Forum
+import androidx.compose.material.icons.filled.Favorite
+import androidx.compose.material.icons.filled.FavoriteBorder
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.FilterChip
@@ -69,6 +72,7 @@ import com.example.myapplication.model.PhoneMessageThread
 import com.example.myapplication.model.PhoneNoteEntry
 import com.example.myapplication.model.PhoneSearchEntry
 import com.example.myapplication.model.PhoneShoppingEntry
+import com.example.myapplication.model.PhoneSocialPost
 import com.example.myapplication.model.PhoneSnapshot
 import com.example.myapplication.model.PhoneSnapshotSection
 import com.example.myapplication.ui.component.AppSnackbarHost
@@ -183,6 +187,12 @@ fun PhoneCheckScreen(
                         icon = Icons.Default.Search,
                         onSelect = { selectedTab = it },
                     )
+                    PhoneTabNavigationItem(
+                        section = PhoneSnapshotSection.SOCIAL_POSTS,
+                        selectedTab = selectedTab,
+                        icon = Icons.Default.Forum,
+                        onSelect = { selectedTab = it },
+                    )
                 }
             }
         },
@@ -233,6 +243,9 @@ fun PhoneCheckScreen(
                                 if (entry.detail == null) {
                                     onLoadSearchDetail(entry.id)
                                 }
+                            },
+                            onOpenSocialPost = { post ->
+                                detailState = PhoneDetailState.SocialPost(post.id)
                             },
                         )
                     } else {
@@ -385,6 +398,7 @@ private fun PhoneSnapshotTabsContent(
     onOpenGallery: (PhoneGalleryEntry) -> Unit,
     onOpenShopping: (PhoneShoppingEntry) -> Unit,
     onOpenSearch: (PhoneSearchEntry) -> Unit,
+    onOpenSocialPost: (PhoneSocialPost) -> Unit,
 ) {
     when (selectedTab) {
         PhoneSnapshotSection.MESSAGES -> LazyColumn(
@@ -581,6 +595,113 @@ private fun PhoneSnapshotTabsContent(
                                 style = MaterialTheme.typography.bodySmall,
                                 color = PhoneMutedText,
                             )
+                        }
+                    }
+                }
+            }
+        }
+
+        PhoneSnapshotSection.SOCIAL_POSTS -> LazyColumn(
+            modifier = Modifier.fillMaxSize(),
+            contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp),
+        ) {
+            items(snapshot.socialPosts, key = { it.id }) { post ->
+                Surface(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable { onOpenSocialPost(post) },
+                    shape = RoundedCornerShape(22.dp),
+                    color = PhoneCardBackground,
+                ) {
+                    Column(
+                        modifier = Modifier.padding(16.dp),
+                        verticalArrangement = Arrangement.spacedBy(10.dp),
+                    ) {
+                        Row(
+                            horizontalArrangement = Arrangement.spacedBy(10.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                        ) {
+                            Box(
+                                modifier = Modifier
+                                    .size(40.dp)
+                                    .clip(CircleShape)
+                                    .background(PhoneAccentSoft),
+                                contentAlignment = Alignment.Center,
+                            ) {
+                                Text(
+                                    text = post.authorName.take(1),
+                                    color = PhoneAccent,
+                                    fontWeight = FontWeight.Bold,
+                                )
+                            }
+                            Column(modifier = Modifier.weight(1f)) {
+                                Row(
+                                    horizontalArrangement = Arrangement.spacedBy(6.dp),
+                                    verticalAlignment = Alignment.CenterVertically,
+                                ) {
+                                    Text(
+                                        text = post.authorName,
+                                        fontWeight = FontWeight.SemiBold,
+                                        maxLines = 1,
+                                        overflow = TextOverflow.Ellipsis,
+                                    )
+                                    if (post.authorLabel.isNotBlank()) {
+                                        Surface(
+                                            shape = RoundedCornerShape(999.dp),
+                                            color = PhoneAccentSoft,
+                                        ) {
+                                            Text(
+                                                text = post.authorLabel,
+                                                modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
+                                                style = MaterialTheme.typography.labelSmall,
+                                                color = PhoneAccent,
+                                            )
+                                        }
+                                    }
+                                }
+                                Text(
+                                    text = post.timeLabel,
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = PhoneMutedText,
+                                )
+                            }
+                        }
+                        Text(
+                            text = post.content,
+                            style = MaterialTheme.typography.bodyMedium,
+                            maxLines = 4,
+                            overflow = TextOverflow.Ellipsis,
+                        )
+                        Row(
+                            horizontalArrangement = Arrangement.spacedBy(16.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                        ) {
+                            Row(
+                                horizontalArrangement = Arrangement.spacedBy(4.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                            ) {
+                                Icon(
+                                    imageVector = if (post.likeCount > 0) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
+                                    contentDescription = null,
+                                    modifier = Modifier.size(16.dp),
+                                    tint = if (post.likeCount > 0) Color(0xFFE8456B) else PhoneMutedText,
+                                )
+                                if (post.likeCount > 0) {
+                                    Text(
+                                        text = "${post.likeCount}",
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = PhoneMutedText,
+                                    )
+                                }
+                            }
+                            if (post.comments.isNotEmpty()) {
+                                Text(
+                                    text = "${post.comments.size} 条评论",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = PhoneMutedText,
+                                )
+                            }
                         }
                     }
                 }
@@ -882,6 +1003,127 @@ private fun PhoneDetailContent(
             }
         }
 
+        is PhoneDetailState.SocialPost -> {
+            val post = snapshot.socialPosts.firstOrNull { it.id == detailState.postId } ?: return
+            LazyColumn(
+                modifier = Modifier.fillMaxSize(),
+                contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
+                verticalArrangement = Arrangement.spacedBy(16.dp),
+            ) {
+                item {
+                    Surface(
+                        shape = RoundedCornerShape(28.dp),
+                        color = PhoneCardBackground,
+                    ) {
+                        Column(
+                            modifier = Modifier.padding(18.dp),
+                            verticalArrangement = Arrangement.spacedBy(12.dp),
+                        ) {
+                            Row(
+                                horizontalArrangement = Arrangement.spacedBy(10.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                            ) {
+                                Box(
+                                    modifier = Modifier
+                                        .size(44.dp)
+                                        .clip(CircleShape)
+                                        .background(PhoneAccentSoft),
+                                    contentAlignment = Alignment.Center,
+                                ) {
+                                    Text(
+                                        text = post.authorName.take(1),
+                                        fontWeight = FontWeight.Bold,
+                                        color = PhoneAccent,
+                                    )
+                                }
+                                Column(
+                                    modifier = Modifier.weight(1f),
+                                    verticalArrangement = Arrangement.spacedBy(4.dp),
+                                ) {
+                                    Row(
+                                        horizontalArrangement = Arrangement.spacedBy(6.dp),
+                                        verticalAlignment = Alignment.CenterVertically,
+                                    ) {
+                                        Text(
+                                            text = post.authorName,
+                                            fontWeight = FontWeight.Bold,
+                                        )
+                                        post.authorLabel.takeIf { it.isNotBlank() }?.let { authorLabel ->
+                                            Surface(
+                                                shape = RoundedCornerShape(999.dp),
+                                                color = PhoneAccentSoft,
+                                            ) {
+                                                Text(
+                                                    text = authorLabel,
+                                                    modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
+                                                    style = MaterialTheme.typography.labelSmall,
+                                                    color = PhoneAccent,
+                                                )
+                                            }
+                                        }
+                                    }
+                                    Text(
+                                        text = post.timeLabel,
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = PhoneMutedText,
+                                    )
+                                }
+                            }
+                            Text(
+                                text = post.content,
+                                style = MaterialTheme.typography.bodyMedium,
+                            )
+                            Row(
+                                horizontalArrangement = Arrangement.spacedBy(16.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                            ) {
+                                Row(
+                                    horizontalArrangement = Arrangement.spacedBy(4.dp),
+                                    verticalAlignment = Alignment.CenterVertically,
+                                ) {
+                                    Icon(
+                                        imageVector = if (post.likeCount > 0) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
+                                        contentDescription = null,
+                                        modifier = Modifier.size(16.dp),
+                                        tint = if (post.likeCount > 0) Color(0xFFE8456B) else PhoneMutedText,
+                                    )
+                                    Text(
+                                        text = "${post.likeCount}",
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = PhoneMutedText,
+                                    )
+                                }
+                                Text(
+                                    text = "${post.comments.size} 条评论",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = PhoneMutedText,
+                                )
+                            }
+                        }
+                    }
+                }
+                if (post.comments.isNotEmpty()) {
+                    items(post.comments, key = { it.id }) { comment ->
+                        Surface(
+                            shape = RoundedCornerShape(20.dp),
+                            color = PhoneCardBackground,
+                        ) {
+                            Column(
+                                modifier = Modifier.padding(14.dp),
+                                verticalArrangement = Arrangement.spacedBy(6.dp),
+                            ) {
+                                Text(
+                                    text = comment.authorName,
+                                    fontWeight = FontWeight.SemiBold,
+                                )
+                                Text(comment.text)
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
         null -> Unit
     }
 }
@@ -968,12 +1210,14 @@ private fun RefreshSectionsDialog(
     )
 }
 
+
 private sealed interface PhoneDetailState {
     data class MessageThread(val threadId: String) : PhoneDetailState
     data class Note(val entryId: String) : PhoneDetailState
     data class Gallery(val entryId: String) : PhoneDetailState
     data class Shopping(val entryId: String) : PhoneDetailState
     data class Search(val entryId: String) : PhoneDetailState
+    data class SocialPost(val postId: String) : PhoneDetailState
 }
 
 private fun PhoneSnapshot.availableSections(): List<PhoneSnapshotSection> {
@@ -992,6 +1236,9 @@ private fun PhoneSnapshot.availableSections(): List<PhoneSnapshotSection> {
         }
         if (searchHistory.isNotEmpty()) {
             add(PhoneSnapshotSection.SEARCH)
+        }
+        if (socialPosts.isNotEmpty()) {
+            add(PhoneSnapshotSection.SOCIAL_POSTS)
         }
     }
 }

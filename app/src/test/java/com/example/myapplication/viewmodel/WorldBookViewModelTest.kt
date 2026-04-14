@@ -21,18 +21,21 @@ class WorldBookViewModelTest {
             initialEntries = listOf(
                 WorldBookEntry(
                     id = "entry-1",
+                    bookId = "book-1",
                     title = "璃珠都市",
                     content = "A",
                     sourceBookName = "旧书名",
                 ),
                 WorldBookEntry(
                     id = "entry-2",
+                    bookId = "book-1",
                     title = "夜巡守则",
                     content = "B",
                     sourceBookName = "旧书名",
                 ),
                 WorldBookEntry(
                     id = "entry-3",
+                    bookId = "book-2",
                     title = "独立条目",
                     content = "C",
                     sourceBookName = "",
@@ -42,7 +45,7 @@ class WorldBookViewModelTest {
         val viewModel = WorldBookViewModel(repository)
 
         advanceUntilIdle()
-        viewModel.renameBook("旧书名", "新书名")
+        viewModel.renameBook("book-1", "新书名")
         advanceUntilIdle()
 
         val entriesById = repository.listEntries().associateBy { it.id }
@@ -58,18 +61,21 @@ class WorldBookViewModelTest {
             initialEntries = listOf(
                 WorldBookEntry(
                     id = "entry-1",
+                    bookId = "book-target",
                     title = "璃珠都市",
                     content = "A",
                     sourceBookName = "目标书",
                 ),
                 WorldBookEntry(
                     id = "entry-2",
+                    bookId = "book-target",
                     title = "夜巡守则",
                     content = "B",
                     sourceBookName = "目标书",
                 ),
                 WorldBookEntry(
                     id = "entry-3",
+                    bookId = "book-keep",
                     title = "白塔城",
                     content = "C",
                     sourceBookName = "保留书",
@@ -79,7 +85,7 @@ class WorldBookViewModelTest {
         val viewModel = WorldBookViewModel(repository)
 
         advanceUntilIdle()
-        viewModel.deleteBook("目标书")
+        viewModel.deleteBook("book-target")
         advanceUntilIdle()
 
         val remainingEntries = repository.listEntries()

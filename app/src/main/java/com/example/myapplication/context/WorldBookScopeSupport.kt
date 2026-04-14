@@ -17,13 +17,21 @@ object WorldBookScopeSupport {
             }
             ?.toSet()
             .orEmpty()
+        val linkedBookIds = assistant?.linkedWorldBookBookIds
+            ?.mapNotNull { value ->
+                value.trim().takeIf { it.isNotEmpty() }
+            }
+            ?.toSet()
+            .orEmpty()
         val assistantId = assistant?.id?.trim().orEmpty()
         val conversationId = conversation?.id.orEmpty()
 
         return entries.filter { entry ->
             when (entry.scopeType) {
                 WorldBookScopeType.GLOBAL -> true
-                WorldBookScopeType.ATTACHABLE -> linkedIds.contains(entry.id)
+                WorldBookScopeType.ATTACHABLE -> {
+                    linkedIds.contains(entry.id) || linkedBookIds.contains(entry.resolvedBookId())
+                }
                 WorldBookScopeType.ASSISTANT -> {
                     assistantId.isNotBlank() && entry.resolvedScopeId() == assistantId
                 }
