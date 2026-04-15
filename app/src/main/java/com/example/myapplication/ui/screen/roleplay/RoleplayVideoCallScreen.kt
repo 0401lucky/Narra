@@ -57,6 +57,7 @@ import androidx.compose.ui.unit.dp
 import com.example.myapplication.model.AppSettings
 import com.example.myapplication.model.Assistant
 import com.example.myapplication.model.RoleplayContentType
+import com.example.myapplication.model.RoleplayImmersiveMode
 import com.example.myapplication.model.RoleplayMessageUiModel
 import com.example.myapplication.model.RoleplayScenario
 import com.example.myapplication.model.RoleplaySpeaker
@@ -153,7 +154,8 @@ internal fun RoleplayVideoCallScreen(
     }
     val visibleMessages = presentationState.visibleMessages
     val transcriptScrollState = rememberScrollState()
-    val statusBarTopPadding = if (settings.roleplayImmersiveMode.storageValue == "none") {
+    val immersiveMode = settings.roleplayImmersiveMode
+    val statusBarTopPadding = if (immersiveMode == RoleplayImmersiveMode.HIDE_SYSTEM_BARS) {
         0.dp
     } else {
         WindowInsets.statusBars.asPaddingValues().calculateTopPadding()
@@ -195,7 +197,7 @@ internal fun RoleplayVideoCallScreen(
                 .fillMaxSize()
                 .imePadding()
                 .then(
-                    if (settings.roleplayImmersiveMode.storageValue == "none") {
+                    if (immersiveMode == RoleplayImmersiveMode.HIDE_SYSTEM_BARS) {
                         Modifier
                     } else {
                         Modifier.navigationBarsPadding()

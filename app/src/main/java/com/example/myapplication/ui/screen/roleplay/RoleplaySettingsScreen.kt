@@ -1,18 +1,32 @@
 package com.example.myapplication.ui.screen.roleplay
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.dp
 import com.example.myapplication.model.AppSettings
 import com.example.myapplication.model.Assistant
 import com.example.myapplication.model.ContextGovernanceSnapshot
@@ -21,11 +35,13 @@ import com.example.myapplication.model.ProviderSettings
 import com.example.myapplication.model.RoleplayContextStatus
 import com.example.myapplication.model.RoleplayInteractionMode
 import com.example.myapplication.model.RoleplayScenario
+import com.example.myapplication.ui.component.NarraIconButton
 import com.example.myapplication.ui.component.rememberSystemHighTextContrastEnabled
 import com.example.myapplication.ui.component.ContextGovernanceSheet
+import com.example.myapplication.ui.component.roleplay.ImmersiveGlassSurface
 import com.example.myapplication.ui.component.roleplay.RoleplaySceneBackground
 import com.example.myapplication.ui.component.roleplay.rememberImmersiveBackdropState
-import com.example.myapplication.ui.screen.settings.SettingsTopBar
+import com.example.myapplication.ui.screen.settings.SettingsScreenPadding
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -74,27 +90,66 @@ fun RoleplaySettingsScreen(
     var longformCharsText by rememberSaveable(settings.roleplayLongformTargetChars) {
         mutableStateOf(settings.roleplayLongformTargetChars.toString())
     }
+    val scenarioTitle = scenario?.title?.trim().orEmpty().ifBlank { "沉浸扮演" }
+    val palette = backdropState.palette
     Box(modifier = Modifier.fillMaxSize()) {
         RoleplaySceneBackground(
             backdropState = backdropState,
             modifier = Modifier.fillMaxSize(),
         )
         Box(modifier = Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.3f)))
-        Scaffold(
-            topBar = {
-                SettingsTopBar(
-                    title = "沉浸设置",
-                    subtitle = scenario?.title?.trim().orEmpty().ifBlank { "沉浸扮演" },
-                    onNavigateBack = onNavigateBack,
-                )
-            },
-            containerColor = Color.Transparent,
-        ) { innerPadding ->
-            Box(
+        Column(modifier = Modifier.fillMaxSize()) {
+            // 自定义沉浸式顶栏
+            ImmersiveGlassSurface(
+                backdropState = backdropState,
                 modifier = Modifier
-                    .fillMaxSize()
-                    .padding(innerPadding),
+                    .fillMaxWidth()
+                    .statusBarsPadding()
+                    .padding(horizontal = SettingsScreenPadding, vertical = 8.dp),
+                shape = RoundedCornerShape(24.dp),
+                blurRadius = 20.dp,
+                overlayColor = palette.panelTintStrong.copy(alpha = 0.72f),
             ) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 10.dp, vertical = 10.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    NarraIconButton(onClick = onNavigateBack) {
+                        Icon(
+                            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                            contentDescription = "返回",
+                            tint = palette.onGlass,
+                        )
+                    }
+                    Column(
+                        modifier = Modifier
+                            .weight(1f)
+                            .padding(horizontal = 10.dp),
+                        verticalArrangement = Arrangement.spacedBy(2.dp),
+                    ) {
+                        Text(
+                            text = "沉浸设置",
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Bold,
+                            color = palette.onGlass,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                        )
+                        Text(
+                            text = scenarioTitle,
+                            style = MaterialTheme.typography.bodySmall,
+                            color = palette.onGlassMuted,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                        )
+                    }
+                }
+            }
+
+            // 设置内容
+            Box(modifier = Modifier.fillMaxSize()) {
                 RoleplaySettingsContent(
                     scenario = scenario,
                     assistant = assistant,

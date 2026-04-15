@@ -80,7 +80,7 @@ import java.util.Date
 import java.util.Locale
 import kotlinx.coroutines.launch
 
-private val OnlineFallbackCard = Color(0xFFFFFFFF)
+private val OnlineFallbackCard = Color(0xFFF5F7FA)
 private val OnlineTextPrimary = Color(0xFF1F2430)
 private val OnlineMuted = Color(0xFF7F8A9A)
 private val OnlineAccent = Color(0xFF5B91D7)
@@ -134,7 +134,7 @@ internal fun RoleplayOnlinePhoneContent(
     )
     val colors = rememberOnlinePhoneColors(backdropState)
     val palette = backdropState.palette
-    val statusBarTopPadding = if (immersiveMode == RoleplayImmersiveMode.NONE) {
+    val statusBarTopPadding = if (immersiveMode == RoleplayImmersiveMode.HIDE_SYSTEM_BARS) {
         0.dp
     } else {
         WindowInsets.statusBars.asPaddingValues().calculateTopPadding()
@@ -144,23 +144,9 @@ internal fun RoleplayOnlinePhoneContent(
             alpha = if (backdropState.hasImage) 0.92f else 1f,
         )
     }
-    val headerOverlayColor = remember(backdropState.hasImage, colors.panelBackgroundStrong) {
-        colors.panelBackgroundStrong.copy(
-            alpha = if (backdropState.hasImage) 0.76f else 0.94f,
-        )
-    }
     val timestampSurfaceColor = remember(backdropState.hasImage, colors.panelBackground) {
         colors.panelBackground.copy(
             alpha = if (backdropState.hasImage) 0.72f else 0.92f,
-        )
-    }
-    val topChromeScrim = remember(backdropState.hasImage, palette, headerOverlayColor) {
-        Brush.verticalGradient(
-            colors = listOf(
-                palette.scrimTop.copy(alpha = if (backdropState.hasImage) 0.74f else 0.24f),
-                headerOverlayColor.copy(alpha = if (backdropState.hasImage) 0.96f else 1f),
-                Color.Transparent,
-            ),
         )
     }
     val onlineBackdropScrim = remember(backdropState.hasImage, palette) {
@@ -234,30 +220,20 @@ internal fun RoleplayOnlinePhoneContent(
             modifier = Modifier
                 .fillMaxSize()
                 .imePadding()
-                .then(
-                    if (immersiveMode == RoleplayImmersiveMode.NONE) {
-                        Modifier
-                    } else {
-                        Modifier.navigationBarsPadding()
-                    },
-                ),
+                .roleplayNavigationBarPadding(immersiveMode),
         ) {
             Box(modifier = Modifier.fillMaxWidth()) {
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(statusBarTopPadding + 44.dp)
-                        .background(topChromeScrim),
-                )
                 ImmersiveGlassSurface(
                     backdropState = backdropState,
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(horizontal = 12.dp)
                         .padding(top = statusBarTopPadding + 6.dp, bottom = 6.dp),
-                    shape = RoundedCornerShape(22.dp),
+                    shape = RoundedCornerShape(28.dp),
                     blurRadius = 22.dp,
-                    overlayColor = headerOverlayColor,
+                    overlayColor = palette.panelTintStrong.copy(
+                        alpha = if (backdropState.hasImage) 0.82f else 0.94f,
+                    ),
                 ) {
                     Row(
                         modifier = Modifier
@@ -514,12 +490,7 @@ private fun OnlinePhoneHeaderButton(
 ) {
     NarraIconButton(
         onClick = onClick,
-        modifier = Modifier
-            .size(36.dp)
-            .background(
-                color = colors.panelBackground.copy(alpha = 0.56f),
-                shape = CircleShape,
-            ),
+        modifier = Modifier.size(36.dp),
         colors = IconButtonDefaults.iconButtonColors(
             containerColor = Color.Transparent,
             contentColor = colors.textPrimary,

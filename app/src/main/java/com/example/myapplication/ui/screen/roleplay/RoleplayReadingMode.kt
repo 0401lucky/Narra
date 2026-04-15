@@ -63,6 +63,8 @@ fun RoleplayReadingMode(
     )
     val palette = backdropState.palette
 
+    // 阅读模式始终显示系统栏并添加安全区 padding，不跟随 immersiveMode 设置。
+    // 设计意图：阅读模式的核心目标是"高可读性的全文回顾"，需要稳定的可视区域和易于退出的系统栏。
     Box(
         modifier = Modifier
             .fillMaxSize()

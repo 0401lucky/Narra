@@ -39,7 +39,6 @@ import androidx.compose.ui.graphics.asAndroidBitmap
 import androidx.compose.ui.graphics.asComposeRenderEffect
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.lerp
-import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.layout.onGloballyPositioned
@@ -291,9 +290,9 @@ fun ImmersiveGlassSurface(
                     drawRect(
                         brush = Brush.verticalGradient(
                             colors = listOf(
-                                backdropState.palette.panelHighlight.copy(alpha = 0.08f),
+                                backdropState.palette.panelHighlight.copy(alpha = 0.14f),
                                 Color.Transparent,
-                                backdropState.palette.shadowColor.copy(alpha = 0.04f),
+                                backdropState.palette.shadowColor.copy(alpha = 0.06f),
                             ),
                         ),
                     )
@@ -490,9 +489,9 @@ private fun deriveImmersiveGlassPalette(
     val readingBorderAlpha = if (highContrast) 0.45f else 0.22f
 
     return ImmersiveGlassPalette(
-        panelTint = panelTint.copy(alpha = if (highContrast) 0.88f else 0.74f),
-        panelTintStrong = panelTintStrong.copy(alpha = if (highContrast) 0.94f else 0.86f),
-        panelHighlight = Color.White.copy(alpha = if (highContrast) 0.28f else 0.18f),
+        panelTint = panelTint.copy(alpha = if (highContrast) 0.88f else 0.62f),
+        panelTintStrong = panelTintStrong.copy(alpha = if (highContrast) 0.94f else 0.88f),
+        panelHighlight = Color.White.copy(alpha = if (highContrast) 0.28f else 0.24f),
         panelBorder = Color.White.copy(alpha = borderAlpha),
         shadowColor = Color.Black.copy(alpha = shadowAlpha),
         scrimTop = Color.Black.copy(alpha = scrimTopAlpha),

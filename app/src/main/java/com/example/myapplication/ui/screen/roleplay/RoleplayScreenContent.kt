@@ -8,9 +8,7 @@ import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -36,7 +34,6 @@ import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.example.myapplication.R
@@ -55,7 +52,6 @@ import com.example.myapplication.ui.component.AppSnackbarHost
 import com.example.myapplication.ui.component.NarraIconButton
 import com.example.myapplication.ui.component.NarraTextButton
 import com.example.myapplication.ui.component.roleplay.ImmersiveBackdropState
-import com.example.myapplication.ui.component.roleplay.ImmersiveGlassChip
 import com.example.myapplication.ui.component.roleplay.ImmersiveGlassSurface
 import com.example.myapplication.ui.component.roleplay.RoleplayDialoguePanel
 import com.example.myapplication.ui.component.roleplay.RoleplayPortraitLayer
@@ -176,15 +172,7 @@ internal fun RoleplaySceneContent(
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .then(
-                    if (immersiveMode == RoleplayImmersiveMode.NONE) {
-                        Modifier
-                    } else {
-                        Modifier
-                            .statusBarsPadding()
-                            .navigationBarsPadding()
-                    },
-                )
+                .roleplayImmersivePadding(immersiveMode)
                 .imePadding(),
         ) {
             AnimatedVisibility(
@@ -197,6 +185,10 @@ internal fun RoleplaySceneContent(
                         characterName = characterName,
                         sceneMoodState = sceneMoodState,
                         sceneMoodColor = sceneMoodColor,
+                        backdropState = backdropState,
+                        scenario = scenario,
+                        contextStatus = contextStatus,
+                        showStatusStrip = settings.showRoleplayStatusStrip,
                         onOpenSettings = onOpenSettings,
                         onNavigateBack = onNavigateBack,
                         onToggleChrome = { chromeVisible = false },
@@ -214,17 +206,6 @@ internal fun RoleplaySceneContent(
                                 .fillMaxWidth()
                                 .height(120.dp)
                                 .padding(horizontal = 12.dp, vertical = 2.dp),
-                        )
-                    }
-
-                    if (settings.showRoleplayStatusStrip) {
-                        RoleplayStatusStrip(
-                            backdropState = backdropState,
-                            scenario = scenario,
-                            contextStatus = contextStatus,
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(horizontal = 12.dp, vertical = 6.dp),
                         )
                     }
 
@@ -283,13 +264,7 @@ internal fun RoleplaySceneContent(
             hostState = snackbarHostState,
             modifier = Modifier
                 .align(Alignment.BottomCenter)
-                .then(
-                    if (immersiveMode == RoleplayImmersiveMode.NONE) {
-                        Modifier
-                    } else {
-                        Modifier.navigationBarsPadding()
-                    },
-                ),
+                .roleplayNavigationBarPadding(immersiveMode),
         )
     }
 
@@ -368,63 +343,94 @@ private fun RoleplaySceneTopBar(
     characterName: String,
     sceneMoodState: RoleplaySceneMoodState,
     sceneMoodColor: Color,
+    backdropState: ImmersiveBackdropState,
+    scenario: RoleplayScenario,
+    contextStatus: RoleplayContextStatus,
+    showStatusStrip: Boolean,
     onOpenSettings: () -> Unit,
     onNavigateBack: () -> Unit,
     onToggleChrome: () -> Unit,
 ) {
-    Row(
+    val palette = backdropState.palette
+    ImmersiveGlassSurface(
+        backdropState = backdropState,
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 12.dp, vertical = 10.dp),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.SpaceBetween,
+            .padding(horizontal = 12.dp, vertical = 6.dp),
+        shape = RoundedCornerShape(24.dp),
+        blurRadius = 20.dp,
+        overlayColor = palette.panelTintStrong.copy(alpha = 0.72f),
     ) {
-        NarraIconButton(onClick = onNavigateBack) {
-            Icon(
-                Icons.AutoMirrored.Filled.ArrowBack,
-                contentDescription = stringResource(id = R.string.common_back),
-                tint = Color.White,
-            )
-        }
-
-        Column(
+        Row(
             modifier = Modifier
-                .weight(1f)
+                .fillMaxWidth()
                 .clickable(onClick = onToggleChrome)
-                .testTag("roleplay_scene_title")
-                .padding(horizontal = 8.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(6.dp),
+                .padding(horizontal = 10.dp, vertical = 10.dp),
+            verticalAlignment = Alignment.CenterVertically,
         ) {
-            Text(
-                text = characterName,
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.Bold,
-                color = Color.White,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-                textAlign = TextAlign.Center,
-            )
-            Surface(
-                shape = RoundedCornerShape(999.dp),
-                color = sceneMoodColor.copy(alpha = 0.22f),
-                contentColor = Color.White,
-            ) {
-                Text(
-                    text = "当前氛围：${sceneMoodState.label}",
-                    modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp),
-                    style = MaterialTheme.typography.labelMedium,
-                    color = Color.White,
+            NarraIconButton(onClick = onNavigateBack) {
+                Icon(
+                    Icons.AutoMirrored.Filled.ArrowBack,
+                    contentDescription = stringResource(id = R.string.common_back),
+                    tint = palette.onGlass,
                 )
             }
-        }
 
-        NarraIconButton(onClick = onOpenSettings) {
-            Icon(
-                Icons.Default.MoreVert,
-                contentDescription = stringResource(id = R.string.roleplay_settings_button),
-                tint = Color.White,
-            )
+            Column(
+                modifier = Modifier
+                    .weight(1f)
+                    .padding(horizontal = 8.dp),
+            ) {
+                Text(
+                    text = characterName,
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = palette.onGlass,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(4.dp),
+                ) {
+                    // 氛围圆点
+                    Box(
+                        modifier = Modifier
+                            .size(8.dp)
+                            .background(color = sceneMoodColor, shape = RoundedCornerShape(4.dp)),
+                    )
+                    val subtitle = buildString {
+                        append(sceneMoodState.label)
+                        if (showStatusStrip) {
+                            append(" · ")
+                            append(if (scenario.longformModeEnabled) "长文" else "对白")
+                            append(" · ")
+                            append(if (contextStatus.isContinuingSession) "继续" else "新剧情")
+                            if (contextStatus.worldBookHitCount > 0) {
+                                append(" · 世界书 ${contextStatus.worldBookHitCount}")
+                            }
+                            if (contextStatus.memoryInjectionCount > 0) {
+                                append(" · 记忆 ${contextStatus.memoryInjectionCount}")
+                            }
+                        }
+                    }
+                    Text(
+                        text = subtitle,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = palette.onGlassMuted,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                }
+            }
+
+            NarraIconButton(onClick = onOpenSettings) {
+                Icon(
+                    Icons.Default.MoreVert,
+                    contentDescription = stringResource(id = R.string.roleplay_settings_button),
+                    tint = palette.onGlass,
+                )
+            }
         }
     }
 }
@@ -487,43 +493,6 @@ internal fun RoleplayPresenceStrip(
         isSpeaking = isSending,
         modifier = modifier,
     )
-}
-
-@Composable
-internal fun RoleplayStatusStrip(
-    backdropState: ImmersiveBackdropState,
-    scenario: RoleplayScenario,
-    contextStatus: RoleplayContextStatus,
-    modifier: Modifier = Modifier,
-) {
-    val scrollState = rememberScrollState()
-    Row(
-        modifier = modifier.horizontalScroll(scrollState),
-        horizontalArrangement = Arrangement.spacedBy(8.dp),
-    ) {
-        ImmersiveGlassChip(
-            text = if (scenario.longformModeEnabled) "长文模式" else "对白模式",
-            backdropState = backdropState,
-        )
-        ImmersiveGlassChip(
-            text = if (contextStatus.isContinuingSession) "继续剧情" else "新剧情",
-            backdropState = backdropState,
-        )
-        ImmersiveGlassChip(
-            text = "世界书 ${contextStatus.worldBookHitCount}",
-            backdropState = backdropState,
-        )
-        ImmersiveGlassChip(
-            text = "记忆 ${contextStatus.memoryInjectionCount}",
-            backdropState = backdropState,
-        )
-        if (contextStatus.hasSummary) {
-            ImmersiveGlassChip(
-                text = "摘要 ${contextStatus.summaryCoveredMessageCount}",
-                backdropState = backdropState,
-            )
-        }
-    }
 }
 
 @Composable
