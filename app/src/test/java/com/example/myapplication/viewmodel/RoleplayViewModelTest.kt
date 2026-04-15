@@ -566,6 +566,130 @@ class RoleplayViewModelTest {
     }
 
     @Test
+    fun generateDraftInput_doesNotFillMalformedStructuredPayload() = runTest(mainDispatcherRule.dispatcher.scheduler) {
+        val assistant = Assistant(
+            id = "assistant-1",
+            name = "陆宴清",
+            systemPrompt = "保持冷静克制。",
+        )
+        val scenario = RoleplayScenario(
+            id = "scene-1",
+            title = "雨夜对峙",
+            assistantId = assistant.id,
+            userDisplayNameOverride = "林晚",
+            characterDisplayNameOverride = "陆宴清",
+        )
+        val session = RoleplaySession(
+            id = "session-1",
+            scenarioId = scenario.id,
+            conversationId = "conv-1",
+            createdAt = 1L,
+            updatedAt = 2L,
+        )
+        val conversation = Conversation(
+            id = session.conversationId,
+            title = "雨夜",
+            model = "chat-model",
+            createdAt = 1L,
+            updatedAt = 2L,
+            assistantId = assistant.id,
+        )
+        val store = FakeConversationStore(
+            conversations = listOf(conversation),
+            messagesByConversation = mapOf(
+                conversation.id to listOf(
+                    ChatMessage(
+                        id = "m1",
+                        conversationId = conversation.id,
+                        role = MessageRole.USER,
+                        content = "你今晚看起来不太对劲。",
+                        createdAt = 10L,
+                    ),
+                ),
+            ),
+        )
+        val provider = ProviderSettings(
+            id = "provider-1",
+            name = "测试 Provider",
+            baseUrl = "https://example.com/v1/",
+            apiKey = "test-key",
+            selectedModel = "chat-model",
+            chatSuggestionModel = "rp-suggestion-model",
+        )
+        val viewModel = createViewModel(
+            store = store,
+            roleplayRepository = FakeRoleplayRepository(
+                conversationStore = store,
+                scenarios = listOf(scenario),
+                sessions = listOf(session),
+            ),
+            settings = AppSettings(
+                baseUrl = provider.baseUrl,
+                apiKey = provider.apiKey,
+                selectedModel = provider.selectedModel,
+                providers = listOf(provider),
+                selectedProviderId = provider.id,
+                assistants = listOf(assistant),
+                selectedAssistantId = assistant.id,
+            ),
+            promptContextAssembler = fixedPromptAssembler("【对话摘要】两人正处于互相试探阶段。"),
+            apiServiceProvider = { _, _ ->
+                object : OpenAiCompatibleApi {
+                    override suspend fun listModels(): Response<ModelsResponse> {
+                        error("不应调用模型列表")
+                    }
+
+                    override suspend fun createChatCompletion(request: ChatCompletionRequest): Response<ChatCompletionResponse> {
+                        return Response.success(
+                            ChatCompletionResponse(
+                                choices = listOf(
+                                    ChatChoiceDto(
+                                        index = 0,
+                                        message = AssistantMessageDto(
+                                            role = "assistant",
+                                            content = """
+                                            plot: {label: "逼近真相", text: "你刚才那句到底是什么意思？"}
+                                            info: {label: "追问细节", text: "先告诉我，这里之前到底发生了什么。"}
+                                            emotion: {label: "逼近关系", text: "你还想把我推开到什么时候？"}
+                                            """.trimIndent(),
+                                        ),
+                                    ),
+                                ),
+                            ),
+                        )
+                    }
+
+                    override suspend fun createChatCompletionAt(url: String, request: ChatCompletionRequest): Response<ChatCompletionResponse> = createChatCompletion(request)
+
+                    override suspend fun createResponseAt(url: String, request: com.example.myapplication.model.ResponseApiRequest): Response<com.example.myapplication.model.ResponseApiResponse> {
+                        error("不应调用 responses 接口")
+                    }
+
+                    override suspend fun generateImage(request: ImageGenerationRequest): Response<ImageGenerationResponse> {
+                        error("不应调用生图接口")
+                    }
+                }
+            },
+        )
+
+        viewModel.enterScenario(scenario.id)
+        advanceUntilIdle()
+        viewModel.updateInput("我自己先写了一句")
+        advanceUntilIdle()
+
+        val originalMessages = store.listMessages(session.conversationId)
+        viewModel.generateDraftInput()
+        advanceUntilIdle()
+
+        val state = viewModel.uiState.value
+        assertEquals("我自己先写了一句", state.input)
+        assertEquals("AI 没有生成可用草稿", state.suggestionErrorMessage)
+        assertFalse(state.isGeneratingSuggestions)
+        assertTrue(state.suggestions.isEmpty())
+        assertEquals(originalMessages, store.listMessages(session.conversationId))
+    }
+
+    @Test
     fun sendMessage_clearsSuggestionsBeforeSending() = runTest(mainDispatcherRule.dispatcher.scheduler) {
         enqueueStreamResponse("我沉默了几秒，终于开口：那你想知道到什么程度？")
 

@@ -123,7 +123,7 @@ internal class RoleplaySuggestionActionSupport(
                         ?.text
                         .orEmpty()
                         .trim()
-                    if (draftText.isBlank()) {
+                    if (!RoleplaySuggestionDraftGuard.isUsableDraft(draftText)) {
                         updateUiState { current ->
                             RoleplayStateSupport.applySuggestionDraftFailure(current)
                         }

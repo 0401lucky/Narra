@@ -14,7 +14,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
@@ -160,10 +160,12 @@ fun RoleplayReadingMode(
                         }
                     }
 
-                    items(
-                        messages,
-                        key = { "${it.sourceMessageId}-${it.createdAt}-${it.content.hashCode()}" },
-                    ) { message ->
+                    itemsIndexed(
+                        items = messages,
+                        key = { index, item ->
+                            "${item.sourceMessageId}-${item.createdAt}-${item.content.hashCode()}-$index"
+                        },
+                    ) { _, message ->
                         when (message.contentType) {
                             RoleplayContentType.NARRATION -> NarrationReadingBlock(
                                 message = message,

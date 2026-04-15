@@ -375,7 +375,9 @@ internal fun RoleplayOnlinePhoneContent(
             ) {
                 itemsIndexed(
                     items = visibleMessages,
-                    key = { _, item -> "${item.sourceMessageId}-${item.createdAt}-${item.contentType}-${item.copyText.hashCode()}" },
+                    key = { index, item ->
+                        "${item.sourceMessageId}-${item.createdAt}-${item.contentType}-${item.copyText.hashCode()}-$index"
+                    },
                 ) { index, message ->
                     val previous = visibleMessages.getOrNull(index - 1)
                     if (shouldShowOnlineTimestamp(previous, message)) {

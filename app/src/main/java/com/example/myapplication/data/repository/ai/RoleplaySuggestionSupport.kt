@@ -35,7 +35,11 @@ internal object RoleplaySuggestionSupport {
                     append("不要输出 Markdown，不要输出代码块，不要输出额外解释。")
                     append("3 条建议的 axis 必须分别覆盖：plot、info、emotion，且各出现一次。")
                     append("label 由你自由生成，为 2 到 6 个字的短标签，不要复用固定模板。")
-                    append("只输出 JSON 数组，格式固定为：")
+                    append("首选且默认只输出 JSON 数组。")
+                    append("如果提供方强制要求对象包装，唯一允许的包装形式是 {\"suggestions\":[...]}。")
+                    append("严禁输出 {\"plot\":{...},\"info\":{...},\"emotion\":{...}} 这类按轴分组的外层对象。")
+                    append("每条建议的完整正文必须全部写进 text 字段，不要再拆成 content、dialogue、action 或其他子字段。")
+                    append("格式固定为：")
                     append("[{\"axis\":\"plot\",\"label\":\"推进试探\",\"text\":\"...\"},{\"axis\":\"info\",\"label\":\"追问细节\",\"text\":\"...\"},{\"axis\":\"emotion\",\"label\":\"情绪逼近\",\"text\":\"...\"}]")
                 },
             ),

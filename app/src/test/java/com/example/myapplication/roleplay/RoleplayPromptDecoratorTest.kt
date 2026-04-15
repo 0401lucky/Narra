@@ -38,6 +38,8 @@ class RoleplayPromptDecoratorTest {
         assertTrue(prompt.contains("每轮先接住对方刚刚的动作、情绪、问题或态度"))
         assertTrue(prompt.contains("自然段落感优先于机械凑字数"))
         assertTrue(prompt.contains("每一段只承载一个主要动作、情绪重心或信息推进"))
+        assertTrue(prompt.contains("不要把上一轮已经表达过的立场、威胁、安抚、解释或结论换个说法再复述一遍"))
+        assertTrue(prompt.contains("每轮至少带来一个新的有效变化"))
         assertTrue(prompt.contains("【本轮导演提示】"))
     }
 

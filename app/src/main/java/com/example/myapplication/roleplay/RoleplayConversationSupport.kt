@@ -162,6 +162,9 @@ object RoleplayConversationSupport {
                 append("优先接住上一轮已经抛出的线索或态度：")
                 append(continuityAnchor)
                 append("。\n")
+                append("不要把上一轮已经表达过的核心态度换个说法再重复：")
+                append(continuityAnchor)
+                append("。\n")
             }
             if (currentInteractionMode == RoleplayInteractionMode.ONLINE_PHONE) {
                 if (isVideoCallActive && recentUserInput.isBlank()) {
@@ -202,6 +205,8 @@ object RoleplayConversationSupport {
                 append(recentClichePhrases.joinToString("、"))
                 append("。\n")
             }
+            append("本轮必须新增一个有效推进点：新的观察、动作反馈、信息补充、态度转折四者至少其一。\n")
+            append("如果上一轮已经质问、安抚、表态或试探过，本轮不要只做同义复述，要换成接招、补充、转折或抛出新线索。\n")
             append("允许停顿、试探、反问和转折，让 ")
             append(characterName)
             append(" 像在临场反应，不要每轮都完整解释动机。\n")

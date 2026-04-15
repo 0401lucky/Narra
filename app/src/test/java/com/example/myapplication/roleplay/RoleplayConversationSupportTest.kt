@@ -41,6 +41,8 @@ class RoleplayConversationSupportTest {
         assertTrue(note.contains("当前目标或优先推进点："))
         assertTrue(note.contains("当前阻碍："))
         assertTrue(note.contains("优先接住上一轮已经抛出的线索或态度"))
+        assertTrue(note.contains("不要把上一轮已经表达过的核心态度换个说法再重复"))
+        assertTrue(note.contains("本轮必须新增一个有效推进点"))
         assertTrue(note.contains("推进时先回应，再顺势往前推一小步"))
     }
 }

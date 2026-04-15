@@ -13,7 +13,7 @@ import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -214,7 +214,12 @@ fun RoleplayDialoguePanel(
                     contentPadding = PaddingValues(bottom = 8.dp),
                     verticalArrangement = Arrangement.spacedBy(4.dp),
                 ) {
-                    items(storyMessages, key = { "${it.sourceMessageId}-${it.createdAt}-${it.contentType}-${it.copyText.hashCode()}" }) { message ->
+                    itemsIndexed(
+                        items = storyMessages,
+                        key = { index, item ->
+                            "${item.sourceMessageId}-${item.createdAt}-${item.contentType}-${item.copyText.hashCode()}-$index"
+                        },
+                    ) { _, message ->
                         RoleplayMessageItem(
                             message = message,
                             colors = colors,
