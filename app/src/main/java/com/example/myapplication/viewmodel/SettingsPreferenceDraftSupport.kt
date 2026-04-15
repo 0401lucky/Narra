@@ -62,6 +62,10 @@ object SettingsPreferenceDraftSupport {
         return current.copy(showOnlineRoleplayNarration = enabled, message = null)
     }
 
+    fun updateEnableRoleplayNetMeme(current: SettingsUiState, enabled: Boolean): SettingsUiState {
+        return current.copy(enableRoleplayNetMeme = enabled, message = null)
+    }
+
     fun updateRoleplayImmersiveMode(
         current: SettingsUiState,
         mode: com.example.myapplication.model.RoleplayImmersiveMode,

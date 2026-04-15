@@ -58,6 +58,7 @@ object SettingsUiMutationSupport {
             showRoleplayPresenceStrip = sourceState.showRoleplayPresenceStrip,
             showRoleplayStatusStrip = sourceState.showRoleplayStatusStrip,
             showOnlineRoleplayNarration = sourceState.showOnlineRoleplayNarration,
+            enableRoleplayNetMeme = sourceState.enableRoleplayNetMeme,
             roleplayImmersiveMode = sourceState.roleplayImmersiveMode,
             roleplayHighContrast = sourceState.roleplayHighContrast,
             roleplayLineHeightScale = sourceState.roleplayLineHeightScale,

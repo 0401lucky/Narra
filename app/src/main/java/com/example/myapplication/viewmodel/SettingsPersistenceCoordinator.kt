@@ -44,6 +44,7 @@ class SettingsPersistenceCoordinator(
             showRoleplayPresenceStrip = currentState.showRoleplayPresenceStrip,
             showRoleplayStatusStrip = currentState.showRoleplayStatusStrip,
             showOnlineRoleplayNarration = currentState.showOnlineRoleplayNarration,
+            enableRoleplayNetMeme = currentState.enableRoleplayNetMeme,
             roleplayImmersiveMode = currentState.roleplayImmersiveMode,
             roleplayHighContrast = currentState.roleplayHighContrast,
             roleplayLineHeightScale = currentState.roleplayLineHeightScale,

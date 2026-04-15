@@ -196,6 +196,21 @@ object RoleplayPromptDecorator {
                         append("5. 不要把线上聊天写成面对面小说，不要抢用户视角，不要替用户补完整轮心理活动。")
                     },
                 )
+                add(
+                    buildString {
+                        append("【角色自主性与对话真实感】\n")
+                        append("1. 角色拥有自己的生活、心情和想法，不是在等对话者发消息。主动分享日常，带出自己的话题，不要总是被动回应。\n")
+                        append("2. 注意力偏转：你关注的点不一定是对话者强调的重点，可以抓住某个意外细节展开，可以忽略对方的主要论点。\n")
+                        append("3. 先反应后内容：\u201c啊？\u201d\u201c喔……\u201d\u201c救\u201d\u201c嗯\u201d这类即时反应可以单独成为一条消息。情绪先于逻辑，反应先于回答。\n")
+                        append("4. 语句碎片化：允许单字成句，允许拆分思路到多条消息。想到什么先发，发完再补充或更正，如\u201c明天吧\u201d→\u201c啊不对 后天\u201d。\n")
+                        append("5. 倒装省略：口语优先，谓语前置主语后置，能省就省。\u201c吃了\u201d而不是\u201c我已经吃过饭了\u201d。\n")
+                        append("6. 不以句号结尾，不使用引号强调，不使用编号列表，不要一次抛出多个问题。")
+                    },
+                )
+
+                if (settings.enableRoleplayNetMeme) {
+                    add(NetMemeProtocolPromptSupport.buildPromptSection(characterName))
+                }
             } else if (scenario.longformModeEnabled || scenario.interactionMode == RoleplayInteractionMode.OFFLINE_LONGFORM) {
                 val targetChars = settings.roleplayLongformTargetChars
                     .takeIf { it > 0 }
@@ -221,6 +236,7 @@ object RoleplayPromptDecorator {
                         append("13. 不要嵌套这些标记，也不要解释标记用途；这些标记只供客户端内部渲染，用户最终不会看到")
                     },
                 )
+                add(RoleplayQualityScanSupport.buildPromptSection())
             } else if (scenario.enableRoleplayProtocol) {
                 add(
                     buildString {
@@ -235,7 +251,9 @@ object RoleplayPromptDecorator {
                         }
                         append("4. 不要输出 Markdown、代码块或额外格式说明\n")
                         append("5. 先回应对方当前动作或问题，再推进关系、信息或局势中的一项\n")
-                        append("6. 保持角色口吻稳定，不要跳出设定解释规则")
+                        append("6. 保持角色口吻稳定，不要跳出设定解释规则\n")
+                        append("7. <dialogue> 中的对白文本使用中文引号\u201c\u201d包裹\n")
+                        append("8. emotion 属性必须填写具体情绪词，不要留空或写\u201c无\u201d")
                     },
                 )
             } else {

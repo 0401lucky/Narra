@@ -59,6 +59,7 @@ interface SettingsStore {
         showRoleplayPresenceStrip: Boolean,
         showRoleplayStatusStrip: Boolean,
         showOnlineRoleplayNarration: Boolean,
+        enableRoleplayNetMeme: Boolean,
         roleplayImmersiveMode: com.example.myapplication.model.RoleplayImmersiveMode,
         roleplayHighContrast: Boolean,
         roleplayLineHeightScale: com.example.myapplication.model.RoleplayLineHeightScale,
@@ -163,6 +164,7 @@ class AppSettingsStore(
             showRoleplayPresenceStrip = preferences[PreferencesKeys.showRoleplayPresenceStrip] ?: true,
             showRoleplayStatusStrip = preferences[PreferencesKeys.showRoleplayStatusStrip] ?: false,
             showOnlineRoleplayNarration = preferences[PreferencesKeys.showOnlineRoleplayNarration] ?: true,
+            enableRoleplayNetMeme = preferences[PreferencesKeys.enableRoleplayNetMeme] ?: false,
             roleplayImmersiveMode = com.example.myapplication.model.RoleplayImmersiveMode.fromStorageValue(
                 preferences[PreferencesKeys.roleplayImmersiveMode].orEmpty(),
             ),
@@ -308,6 +310,7 @@ class AppSettingsStore(
         showRoleplayPresenceStrip: Boolean,
         showRoleplayStatusStrip: Boolean,
         showOnlineRoleplayNarration: Boolean,
+        enableRoleplayNetMeme: Boolean,
         roleplayImmersiveMode: com.example.myapplication.model.RoleplayImmersiveMode,
         roleplayHighContrast: Boolean,
         roleplayLineHeightScale: com.example.myapplication.model.RoleplayLineHeightScale,
@@ -327,6 +330,7 @@ class AppSettingsStore(
             preferences[PreferencesKeys.showRoleplayPresenceStrip] = showRoleplayPresenceStrip
             preferences[PreferencesKeys.showRoleplayStatusStrip] = showRoleplayStatusStrip
             preferences[PreferencesKeys.showOnlineRoleplayNarration] = showOnlineRoleplayNarration
+            preferences[PreferencesKeys.enableRoleplayNetMeme] = enableRoleplayNetMeme
             preferences[PreferencesKeys.roleplayImmersiveMode] = roleplayImmersiveMode.storageValue
             preferences[PreferencesKeys.roleplayHighContrast] = roleplayHighContrast
             preferences[PreferencesKeys.roleplayLineHeightScale] = roleplayLineHeightScale.storageValue
@@ -776,6 +780,7 @@ class AppSettingsStore(
         val showRoleplayPresenceStrip = booleanPreferencesKey("show_roleplay_presence_strip")
         val showRoleplayStatusStrip = booleanPreferencesKey("show_roleplay_status_strip")
         val showOnlineRoleplayNarration = booleanPreferencesKey("show_online_roleplay_narration")
+        val enableRoleplayNetMeme = booleanPreferencesKey("enable_roleplay_net_meme")
         val roleplayImmersiveMode = stringPreferencesKey("roleplay_immersive_mode")
         val roleplayHighContrast = booleanPreferencesKey("roleplay_high_contrast")
         val roleplayLineHeightScale = stringPreferencesKey("roleplay_line_height_scale")

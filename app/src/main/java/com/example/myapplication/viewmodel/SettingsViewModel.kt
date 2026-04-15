@@ -54,6 +54,7 @@ data class SettingsUiState(
     val showRoleplayPresenceStrip: Boolean = true,
     val showRoleplayStatusStrip: Boolean = false,
     val showOnlineRoleplayNarration: Boolean = true,
+    val enableRoleplayNetMeme: Boolean = false,
     val roleplayImmersiveMode: com.example.myapplication.model.RoleplayImmersiveMode = com.example.myapplication.model.RoleplayImmersiveMode.EDGE_TO_EDGE,
     val roleplayHighContrast: Boolean = false,
     val roleplayLineHeightScale: com.example.myapplication.model.RoleplayLineHeightScale = com.example.myapplication.model.RoleplayLineHeightScale.NORMAL,
@@ -100,6 +101,7 @@ data class SettingsUiState(
             showRoleplayPresenceStrip != savedSettings.showRoleplayPresenceStrip ||
             showRoleplayStatusStrip != savedSettings.showRoleplayStatusStrip ||
             showOnlineRoleplayNarration != savedSettings.showOnlineRoleplayNarration ||
+            enableRoleplayNetMeme != savedSettings.enableRoleplayNetMeme ||
             roleplayImmersiveMode != savedSettings.roleplayImmersiveMode ||
             roleplayHighContrast != savedSettings.roleplayHighContrast ||
             roleplayLineHeightScale != savedSettings.roleplayLineHeightScale ||
@@ -553,6 +555,12 @@ class SettingsViewModel(
     fun updateShowOnlineRoleplayNarration(enabled: Boolean) {
         _uiState.update { current ->
             SettingsPreferenceDraftSupport.updateShowOnlineRoleplayNarration(current, enabled)
+        }
+    }
+
+    fun updateEnableRoleplayNetMeme(enabled: Boolean) {
+        _uiState.update { current ->
+            SettingsPreferenceDraftSupport.updateEnableRoleplayNetMeme(current, enabled)
         }
     }
 

@@ -93,6 +93,7 @@ internal fun RoleplaySettingsContent(
     onUpdateShowRoleplayPresenceStrip: (Boolean) -> Unit,
     onUpdateShowRoleplayStatusStrip: (Boolean) -> Unit,
     onUpdateShowOnlineRoleplayNarration: (Boolean) -> Unit,
+    onUpdateEnableRoleplayNetMeme: (Boolean) -> Unit,
     onUpdateShowRoleplayAiHelper: (Boolean) -> Unit,
     onUpdateScenarioInteractionMode: (RoleplayInteractionMode) -> Unit,
     systemHighContrastEnabled: Boolean,
@@ -199,6 +200,24 @@ internal fun RoleplaySettingsContent(
                         supportingText = "关闭后不会继续生成或显示线上心声星标，仍保留必要的系统状态提示。",
                         checked = settings.showOnlineRoleplayNarration,
                         onCheckedChange = onUpdateShowOnlineRoleplayNarration,
+                    )
+                    HorizontalDivider(
+                        modifier = Modifier.padding(start = 56.dp, end = 18.dp),
+                        color = palette.panelBorder.copy(alpha = 0.44f),
+                    )
+                    RoleplaySettingSwitchRow(
+                        palette = palette,
+                        icon = {
+                            Icon(
+                                imageVector = Icons.Default.SettingsSuggest,
+                                contentDescription = null,
+                                tint = palette.onGlass,
+                            )
+                        },
+                        title = "网络热梗",
+                        supportingText = "开启后角色会在闲聊时自然使用网络热梗和流行语，仅线上模式生效。",
+                        checked = settings.enableRoleplayNetMeme,
+                        onCheckedChange = onUpdateEnableRoleplayNetMeme,
                     )
                 }
             }

@@ -66,6 +66,9 @@ class RoleplaySettingsContentTest {
                 onUpdateShowOnlineRoleplayNarration = { enabled ->
                     settings = settings.copy(showOnlineRoleplayNarration = enabled)
                 },
+                onUpdateEnableRoleplayNetMeme = { enabled ->
+                    settings = settings.copy(enableRoleplayNetMeme = enabled)
+                },
                 onUpdateScenarioInteractionMode = {},
                 onShowRestartDialog = {},
                 onShowResetDialog = {},

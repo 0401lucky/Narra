@@ -79,6 +79,7 @@ class AiSettingsServicesTest {
             showRoleplayPresenceStrip = false,
             showRoleplayStatusStrip = true,
             showOnlineRoleplayNarration = false,
+            enableRoleplayNetMeme = false,
             roleplayImmersiveMode = RoleplayImmersiveMode.HIDE_SYSTEM_BARS,
             roleplayHighContrast = true,
             roleplayLineHeightScale = RoleplayLineHeightScale.RELAXED,

@@ -19,6 +19,7 @@ data class AppSettings(
     val showRoleplayPresenceStrip: Boolean = true,
     val showRoleplayStatusStrip: Boolean = false,
     val showOnlineRoleplayNarration: Boolean = true,
+    val enableRoleplayNetMeme: Boolean = false,
     val suppressRoleplayAssistantMismatchDialog: Boolean = false,
     val roleplayImmersiveMode: RoleplayImmersiveMode = RoleplayImmersiveMode.EDGE_TO_EDGE,
     val roleplayHighContrast: Boolean = false,

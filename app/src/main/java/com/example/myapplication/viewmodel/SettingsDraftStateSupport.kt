@@ -54,6 +54,7 @@ object SettingsDraftStateSupport {
                 showRoleplayPresenceStrip = settings.showRoleplayPresenceStrip,
                 showRoleplayStatusStrip = settings.showRoleplayStatusStrip,
                 showOnlineRoleplayNarration = settings.showOnlineRoleplayNarration,
+                enableRoleplayNetMeme = settings.enableRoleplayNetMeme,
                 roleplayImmersiveMode = settings.roleplayImmersiveMode,
                 roleplayHighContrast = settings.roleplayHighContrast,
                 roleplayLineHeightScale = settings.roleplayLineHeightScale,

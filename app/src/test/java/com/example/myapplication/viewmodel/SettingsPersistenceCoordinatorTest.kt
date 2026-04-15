@@ -258,6 +258,7 @@ class SettingsPersistenceCoordinatorTest {
             showRoleplayPresenceStrip: Boolean,
             showRoleplayStatusStrip: Boolean,
             showOnlineRoleplayNarration: Boolean,
+            enableRoleplayNetMeme: Boolean,
             roleplayImmersiveMode: RoleplayImmersiveMode,
             roleplayHighContrast: Boolean,
             roleplayLineHeightScale: RoleplayLineHeightScale,
