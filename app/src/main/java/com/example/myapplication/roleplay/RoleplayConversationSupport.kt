@@ -176,6 +176,18 @@ object RoleplayConversationSupport {
                     append("语境提醒：当前是实时视频通话，角色能看到对方当下的表情、动作和停顿，但最终仍以简短气泡输出。\n")
                     append("避免把当前互动写成已读、输入中、隔着聊天框等待回复的普通线上聊天。\n")
                 }
+                // 时间断层旁白：30 分钟以上触发
+                val latestMessageTimestamp = messages
+                    .filter { it.createdAt > 0L }
+                    .maxOfOrNull { it.createdAt }
+                    ?: 0L
+                val currentTime = nowProvider()
+                TimeGapNarrationSupport.buildTimeGapNarration(latestMessageTimestamp, currentTime)
+                    ?.let { narration ->
+                        append(narration)
+                        append("\n")
+                    }
+                // 高层关系影响指导（6小时以上才触发附加行为提示）
                 resolveTimeGapGuidance(messages, nowProvider)
                     .takeIf { it.isNotBlank() }
                     ?.let { timeGuidance ->

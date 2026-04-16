@@ -71,6 +71,7 @@ import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -874,6 +875,13 @@ internal fun RoleplayMessageItem(
         RoleplayContentType.ACTION -> {
             val actionPart = message.actionPart ?: return
             val isUserMessage = message.speaker == RoleplaySpeaker.USER
+            if (actionPart.actionType == ChatActionType.POKE) {
+                // 微信风格灰色居中文本
+                RoleplayPokeSystemMessage(
+                    message = message,
+                    colors = colors,
+                )
+            } else {
             Box(
                 modifier = Modifier.fillMaxWidth(),
                 contentAlignment = if (isUserMessage) Alignment.CenterEnd else Alignment.CenterStart,
@@ -898,6 +906,7 @@ internal fun RoleplayMessageItem(
                         },
                     )
                 }
+            }
             }
         }
 
@@ -1420,5 +1429,43 @@ private fun RoleplayReplyPreview(
                 overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
             )
         }
+    }
+}
+
+@Composable
+private fun RoleplayPokeSystemMessage(
+    message: RoleplayMessageUiModel,
+    colors: ImmersiveRoleplayColors,
+) {
+    val pokeText = buildString {
+        val speakerName = message.speakerName.ifBlank { "对方" }
+        val content = message.content.trim()
+        if (content.isNotBlank() && content != "戳了戳你" && content != "你戳了戳对方") {
+            append(speakerName)
+            append(" ")
+            append(content)
+        } else if (message.speaker == RoleplaySpeaker.USER) {
+            append("你戳了戳 ")
+            append(speakerName)
+        } else {
+            append(speakerName)
+            append(" 戳了戳你")
+        }
+    }
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 4.dp),
+        horizontalArrangement = Arrangement.Center,
+    ) {
+        Text(
+            text = pokeText,
+            style = MaterialTheme.typography.bodySmall.copy(
+                fontSize = 12.sp,
+                letterSpacing = 0.3.sp,
+            ),
+            color = colors.textMuted.copy(alpha = 0.65f),
+            textAlign = TextAlign.Center,
+        )
     }
 }

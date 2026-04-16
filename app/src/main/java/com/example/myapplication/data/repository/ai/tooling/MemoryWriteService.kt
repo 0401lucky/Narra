@@ -54,6 +54,7 @@ class DefaultMemoryWriteService(
     ): MemoryWriteResult {
         val runtimeContext = toolContext.runtimeContext
             ?: error("当前没有可用会话上下文")
+        val resolvedCharacterId = runtimeContext.assistant?.id?.trim().orEmpty()
         val conversation = runtimeContext.conversation
             ?: error("当前没有可用会话")
         val normalizedContent = normalizeMemoryContent(content)
@@ -92,6 +93,7 @@ class DefaultMemoryWriteService(
             MemoryEntry(
                 scopeType = MemoryScopeType.CONVERSATION,
                 scopeId = normalizedScopeId,
+                characterId = resolvedCharacterId,
                 content = normalizedContent,
                 importance = importance,
                 pinned = false,
@@ -173,6 +175,7 @@ class DefaultMemoryWriteService(
             MemoryEntry(
                 scopeType = proposal.scopeType,
                 scopeId = normalizedScopeId,
+                characterId = proposal.assistantId.trim(),
                 content = normalizedContent,
                 importance = proposal.importance,
                 pinned = false,
@@ -259,6 +262,16 @@ class DefaultMemoryWriteService(
             memoryRepository.deleteEntry(entry.id)
         }
 
+        // 从被 condense 的旧条目中推断 characterId
+        val inferredCharacterId = mutableEntries
+            .map { it.characterId }
+            .filter { it.isNotBlank() }
+            .groupingBy { it }
+            .eachCount()
+            .maxByOrNull { it.value }
+            ?.key
+            .orEmpty()
+
         val timestamp = nowProvider()
         condensedItems
             .take((maxItems - pinnedEntries.size).coerceAtLeast(0))
@@ -267,6 +280,7 @@ class DefaultMemoryWriteService(
                     MemoryEntry(
                         scopeType = scopeType,
                         scopeId = normalizedScopeId,
+                        characterId = inferredCharacterId,
                         content = content,
                         importance = if (scopeType == MemoryScopeType.CONVERSATION) 70 else 60,
                         pinned = false,

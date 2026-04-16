@@ -216,14 +216,29 @@ fun locationMessagePart(
 }
 
 fun pokeMessagePart(
+    target: String = "",
+    suffix: String = "",
     id: String = UUID.randomUUID().toString(),
 ): ChatMessagePart {
     return ChatMessagePart(
         type = ChatMessagePartType.ACTION,
         actionType = ChatActionType.POKE,
         actionId = id,
-        actionMetadata = emptyMap(),
+        actionMetadata = normalizeActionMetadata(
+            mapOf(
+                ACTION_POKE_TARGET_KEY to target,
+                ACTION_POKE_SUFFIX_KEY to suffix,
+            ),
+        ),
     )
+}
+
+fun ChatMessagePart.pokeTarget(): String {
+    return actionMetadataValue(ACTION_POKE_TARGET_KEY)
+}
+
+fun ChatMessagePart.pokeSuffix(): String {
+    return actionMetadataValue(ACTION_POKE_SUFFIX_KEY)
 }
 
 fun videoCallMessagePart(
@@ -869,7 +884,11 @@ fun ChatMessagePart.actionFallbackText(): String {
                 append(name)
             }
         }
-        ChatActionType.POKE -> "戳一戳"
+        ChatActionType.POKE -> buildPokeDisplayText(
+            target = actionMetadataValue(ACTION_POKE_TARGET_KEY),
+            suffix = actionMetadataValue(ACTION_POKE_SUFFIX_KEY),
+            fallback = "戳一戳",
+        )
         ChatActionType.VIDEO_CALL -> "视频通话"
         null -> ""
     }
@@ -966,7 +985,11 @@ fun ChatMessagePart.toActionCopyText(): String {
                 append(coordinates)
             }
         }
-        ChatActionType.POKE -> "戳一戳"
+        ChatActionType.POKE -> buildPokeDisplayText(
+            target = actionMetadataValue(ACTION_POKE_TARGET_KEY),
+            suffix = actionMetadataValue(ACTION_POKE_SUFFIX_KEY),
+            fallback = "戳一戳",
+        )
         ChatActionType.VIDEO_CALL -> buildString {
             append("视频通话")
             actionMetadataValue(ACTION_REASON_KEY).takeIf { it.isNotBlank() }?.let { reason ->
@@ -1017,6 +1040,29 @@ private const val ACTION_COORDINATES_KEY = "coordinates"
 private const val ACTION_ADDRESS_KEY = "address"
 private const val ACTION_REASON_KEY = "reason"
 private const val ACTION_POKE_NOTE_KEY = "note"
+private const val ACTION_POKE_TARGET_KEY = "poke_target"
+private const val ACTION_POKE_SUFFIX_KEY = "poke_suffix"
+
+private fun buildPokeDisplayText(
+    target: String,
+    suffix: String,
+    fallback: String,
+): String {
+    if (suffix.isBlank() && target.isBlank()) {
+        return fallback
+    }
+    return buildString {
+        append("拍了拍")
+        when (target.lowercase()) {
+            "自己", "self" -> append("自己")
+            "用户", "user", "对方" -> append("你")
+            else -> if (target.isNotBlank()) append(target) else append("你")
+        }
+        if (suffix.isNotBlank()) {
+            append(suffix)
+        }
+    }
+}
 private const val GIFT_IMAGE_STATUS_KEY = "gift_image_status"
 private const val GIFT_IMAGE_URI_KEY = "gift_image_uri"
 private const val GIFT_IMAGE_MIME_TYPE_KEY = "gift_image_mime_type"

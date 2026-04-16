@@ -10,12 +10,14 @@ import androidx.room.PrimaryKey
         Index(value = ["scopeType", "scopeId"]),
         Index(value = ["pinned"]),
         Index(value = ["updatedAt"]),
+        Index(value = ["characterId"]),
     ],
 )
 data class MemoryEntryEntity(
     @PrimaryKey val id: String,
     val scopeType: String = "global",
     val scopeId: String = "",
+    val characterId: String = "",
     val content: String = "",
     val importance: Int = 0,
     val pinned: Boolean = false,

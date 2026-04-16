@@ -17,6 +17,7 @@ data class TransferUpdateDirective(
 data class StructuredMemoryExtractionResult(
     val persistentMemories: List<String> = emptyList(),
     val sceneStateMemories: List<String> = emptyList(),
+    val mentalStateSnapshot: String = "",
 )
 
 enum class RoleplayMemoryCondenseMode {

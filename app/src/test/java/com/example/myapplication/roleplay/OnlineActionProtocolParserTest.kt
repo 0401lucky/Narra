@@ -196,4 +196,43 @@ class OnlineActionProtocolParserTest {
         assertEquals("【她低下头，视线落在他手上。】", result.parts[0].text)
         assertEquals("你怎么了", result.parts[1].text)
     }
+    @Test
+    fun parse_pokeWithTargetAndSuffixExtractsMetadata() {
+        val result = OnlineActionProtocolParser.parse(
+            rawContent = """[{"type":"poke","target":"用户","suffix":"的脑袋"}]""",
+            characterName = "望汐",
+        )!!
+
+        assertEquals(1, result.parts.size)
+        assertEquals(ChatActionType.POKE, result.parts[0].actionType)
+        assertEquals("用户", result.parts[0].actionMetadata["poke_target"])
+        assertEquals("的脑袋", result.parts[0].actionMetadata["poke_suffix"])
+    }
+
+    @Test
+    fun parse_pokeWithSelfTargetExtractsMetadata() {
+        val result = OnlineActionProtocolParser.parse(
+            rawContent = """[{"type":"poke","target":"自己","suffix":"说你别生气了"}]""",
+            characterName = "望汐",
+        )!!
+
+        assertEquals(1, result.parts.size)
+        assertEquals(ChatActionType.POKE, result.parts[0].actionType)
+        assertEquals("自己", result.parts[0].actionMetadata["poke_target"])
+        assertEquals("说你别生气了", result.parts[0].actionMetadata["poke_suffix"])
+    }
+
+    @Test
+    fun parse_pokeLegacyNoFieldsStillValid() {
+        val result = OnlineActionProtocolParser.parse(
+            rawContent = """[{"type":"poke"}]""",
+            characterName = "角色",
+        )!!
+
+        assertEquals(1, result.parts.size)
+        assertEquals(ChatActionType.POKE, result.parts[0].actionType)
+        // 无 target/suffix 时 metadata 中对应值为空
+        assertEquals("", result.parts[0].actionMetadata["poke_target"].orEmpty())
+        assertEquals("", result.parts[0].actionMetadata["poke_suffix"].orEmpty())
+    }
 }

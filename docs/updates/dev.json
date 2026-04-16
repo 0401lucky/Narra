@@ -1,18 +1,18 @@
 {
   "app_id": "com.narra.app.dev",
   "channel": "dev",
-  "latest_version_name": "1.4.1-dev",
-  "latest_version_code": 10401,
+  "latest_version_name": "1.4.2-dev",
+  "latest_version_code": 10402,
   "minimum_supported_version_code": 0,
-  "apk_url": "https://download.lsa1230.dpdns.org/dev/Narra-v1.4.1-dev-10401-dev.apk",
-  "apk_sha256": "2456ecf1a48103d74f4b36cc865ecb98ff300c0b3cfc92d58b1eb8378619e1b0",
-  "published_at": "2026-04-16T16:50:00+08:00",
+  "apk_url": "https://download.lsa1230.dpdns.org/dev/Narra-v1.4.2-dev-10402-dev.apk",
+  "apk_sha256": "c3554e39c49cdd8a8ca3e4b6f077aaa8459aa50f616709eeb159a5ea1a94a71d",
+  "published_at": "2026-04-16T19:00:00+08:00",
   "release_notes": [
-    "修复线上模式 ID 泄漏：自动剥离模型误输出的引用候选 ID 前缀",
-    "线上模式旁白渲染：【...】包裹的叙述文本以斜体旁白气泡呈现",
-    "长文模式叙述段心声自动渲染：全角括号内容斜体+思想配色",
-    "角色锁定新增禁止复读规则：禁止照搬或改写后重复用户原话",
-    "AI 帮写建议独立性强化：每条建议必须完整可独立发送",
-    "修复设置页返回时意外重新加载场景的问题"
+    "拍一拍增强：支持 target/suffix，微信风格居中系统文本渲染",
+    "时间感知系统：30min/2h/12h 三级阈值自动注入时间断层旁白",
+    "结构化心境提取：AI 自动提取角色当前情绪基调与未说出口的心结",
+    "记忆角色隔离：不同角色的记忆互不可见，渐进迁移兼容旧数据",
+    "心声 prompt 强化为脑内弹幕定位，增加碎片化要求和外语翻译规则",
+    "修复所有 MemoryEntry 创建站点遗漏 characterId 的角色隔离漏洞"
   ]
 }

@@ -74,6 +74,7 @@ class ChatMessageMemoryCoordinator(
                 id = entryIdProvider(),
                 scopeType = scope.first,
                 scopeId = scope.second,
+                characterId = assistantId,
                 content = memoryContent,
                 importance = 80,
                 pinned = true,

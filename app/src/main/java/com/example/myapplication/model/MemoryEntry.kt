@@ -21,6 +21,7 @@ data class MemoryEntry(
     val id: String = UUID.randomUUID().toString(),
     val scopeType: MemoryScopeType = MemoryScopeType.GLOBAL,
     val scopeId: String = "",
+    val characterId: String = "",
     val content: String = "",
     val importance: Int = 0,
     val pinned: Boolean = false,

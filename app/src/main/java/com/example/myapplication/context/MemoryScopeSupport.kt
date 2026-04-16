@@ -12,7 +12,13 @@ object MemoryScopeSupport {
         conversation: Conversation?,
     ): List<MemoryEntry> {
         val resolvedConversationId = conversation?.id.orEmpty()
+        val resolvedAssistantId = assistant?.id.orEmpty()
         return entries.filter { entry ->
+            // 角色隔离：如果记忆绑定了特定角色，只对匹配的 assistant 可见
+            // characterId 为空代表全局记忆（渐进迁移兼容），任何角色可见
+            if (entry.characterId.isNotBlank() && entry.characterId != resolvedAssistantId) {
+                return@filter false
+            }
             when (entry.scopeType) {
                 MemoryScopeType.GLOBAL -> true
                 MemoryScopeType.ASSISTANT -> {

@@ -416,17 +416,19 @@ class DefaultAiPromptExtrasService(
     ): StructuredMemoryExtractionResult {
         val prompt = buildString {
             append("你是沉浸式剧情记忆提取器。")
-            append("请从下面的剧情记录中提取两类记忆。")
+            append("请从下面的剧情记录中提取三类记忆。")
             append("persistent_memories 用来保存长期稳定事实、关系、偏好和设定。")
             append("scene_state_memories 用来保存当前剧情线的地点、任务进度、关键事件、关系阶段和线索。")
+            append("mental_state 用来保存角色此刻的心境快照——对方处于什么情绪基调、对用户是什么态度、有没有未说出口的心结。")
             append("忽略寒暄、重复信息、一次性情绪和无长期价值的细节。")
-            append("若某一类没有内容，返回空数组。\n")
+            append("若某一类没有内容，返回空数组或空字符串。\n")
             append("记忆质量约束：\n")
             append("1. 严禁编造对话中不存在的内容，只提取实际发生的事实。\n")
             append("2. 记忆条目应包含近似时间标记（如果对话中有提及）。\n")
             append("3. 关系类记忆必须保留变化方向和强度（如\u201c关系升温\u201d\u201c产生芥蒂\u201d等）。\n")
+            append("4. mental_state 应该是一句话概括角色当下心境，如\"表面冷淡但内心在意，因为昨天的吵架还在别扭\"。\n")
             append("只输出 JSON 对象：")
-            append("{\"persistent_memories\":[...],\"scene_state_memories\":[...]}。")
+            append("{\"persistent_memories\":[...],\"scene_state_memories\":[...],\"mental_state\":\"...\"}。")
             append("每项都必须是简体中文短句，不要输出额外解释：\n")
             append(conversationExcerpt)
         }
@@ -469,6 +471,11 @@ class DefaultAiPromptExtrasService(
                     .filter { it.isNotEmpty() }
                     .distinct()
                     .take(6),
+                mentalStateSnapshot = parsedJson["mental_state"]
+                    ?.takeIf { it.isJsonPrimitive }
+                    ?.asString
+                    ?.trim()
+                    .orEmpty(),
             )
         }
 

@@ -459,11 +459,17 @@ class DefaultPromptContextAssembler(
             return null
         }
         if (promptMode == PromptMode.ROLEPLAY) {
-            val longTermEntries = entries.filter { entry ->
+            val mentalStateEntries = entries.filter { entry ->
+                entry.content.startsWith("【心境】")
+            }
+            val regularEntries = entries.filterNot { entry ->
+                entry.content.startsWith("【心境】")
+            }
+            val longTermEntries = regularEntries.filter { entry ->
                 entry.scopeType == com.example.myapplication.model.MemoryScopeType.ASSISTANT ||
                     entry.scopeType == com.example.myapplication.model.MemoryScopeType.GLOBAL
             }
-            val sceneEntries = entries.filter { entry ->
+            val sceneEntries = regularEntries.filter { entry ->
                 entry.scopeType == com.example.myapplication.model.MemoryScopeType.CONVERSATION
             }
             return buildString {
@@ -487,6 +493,18 @@ class DefaultPromptContextAssembler(
                     sceneEntries.forEach { entry ->
                         append("- ")
                         append(limitEntryContent(entry.content))
+                        append('\n')
+                    }
+                }
+                if (mentalStateEntries.isNotEmpty()) {
+                    if (isNotBlank()) {
+                        append('\n')
+                    }
+                    append("【角色当前心境】\n")
+                    append("以下是角色此刻的内在状态，用于指导回复的情绪基调和态度方向，而不是直接说出来。\n")
+                    mentalStateEntries.forEach { entry ->
+                        append("- ")
+                        append(limitEntryContent(entry.content.removePrefix("【心境】").trim()))
                         append('\n')
                     }
                 }

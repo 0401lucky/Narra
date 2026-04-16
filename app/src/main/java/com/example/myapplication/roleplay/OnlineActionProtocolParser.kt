@@ -289,7 +289,10 @@ internal object OnlineActionProtocolParser {
             }
 
             "poke" -> {
-                parts += pokeMessagePart()
+                parts += pokeMessagePart(
+                    target = item.stringValue("target"),
+                    suffix = item.stringValue("suffix"),
+                )
             }
 
             "video_call" -> {

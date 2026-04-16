@@ -23,6 +23,8 @@ import com.example.myapplication.model.onlineThoughtContent
 import com.example.myapplication.model.toActionCopyText
 import com.example.myapplication.model.toPlainText
 import com.example.myapplication.model.toSpecialPlayCopyText
+import com.example.myapplication.model.pokeSuffix
+import com.example.myapplication.model.pokeTarget
 
 object RoleplayMessageUiMapper {
     fun mapMessages(
@@ -737,7 +739,21 @@ object RoleplayMessageUiMapper {
                 ChatActionType.VOICE_MESSAGE -> actionMetadataValue("content")
                 ChatActionType.AI_PHOTO -> actionMetadataValue("description")
                 ChatActionType.LOCATION -> actionMetadataValue("location_name")
-                ChatActionType.POKE -> "戳了戳你"
+                ChatActionType.POKE -> buildString {
+                    val target = pokeTarget()
+                    val suffix = pokeSuffix()
+                    if (suffix.isBlank() && target.isBlank()) {
+                        append("戳了戳你")
+                    } else {
+                        append("拍了拍")
+                        when (target.lowercase()) {
+                            "自己", "self" -> append("自己")
+                            "用户", "user", "对方" -> append("你")
+                            else -> if (target.isNotBlank()) append(target) else append("你")
+                        }
+                        if (suffix.isNotBlank()) append(suffix)
+                    }
+                }
                 ChatActionType.VIDEO_CALL -> actionMetadataValue("reason")
                 null -> ""
             },

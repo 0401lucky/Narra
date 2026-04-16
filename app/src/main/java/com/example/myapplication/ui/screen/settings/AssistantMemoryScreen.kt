@@ -135,6 +135,7 @@ fun AssistantMemoryScreen(
                                     editingMemory = MemoryEntry(
                                         scopeType = if (useGlobalMemory) MemoryScopeType.GLOBAL else MemoryScopeType.ASSISTANT,
                                         scopeId = if (useGlobalMemory) "" else assistant.id,
+                                        characterId = assistant.id,
                                         pinned = true,
                                         importance = 80,
                                     )

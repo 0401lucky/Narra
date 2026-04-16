@@ -17,6 +17,42 @@
 
 ## [Unreleased]
 
+---
+
+## [1.4.2-dev] - 2026-04-16
+
+### Added
+
+- 拍一拍增强：解析 `target`/`suffix` 字段，支持拍的对象和部位描述，UI 渲染为微信风格灰色居中系统文本
+- 时间感知系统：新增 `TimeGapNarrationSupport`，根据 30min/2h/12h 三级阈值生成时间断层旁白注入 prompt
+- 结构化心境提取：记忆提取升级为三维（语义/情景/心境），AI 提取角色当前情绪基调与未说出口的心结
+- 记忆角色隔离：`MemoryEntry` 新增 `characterId` 字段，记忆按角色隔离存储和访问
+
+### Changed
+
+- 心声 prompt 强化为"脑内弹幕"定位，明确碎片化要求、触发场景和外语翻译规则
+- 记忆注入新增独立【角色当前心境】段落，指导 AI 回复的情绪基调和态度方向
+- 拍一拍 prompt 新增 JSON 格式说明、使用场景指导和频率约束
+- 时间感知 prompt 新增规则段落，约束 AI 按当前时间点调整状态并感知时间流逝
+
+### Fixed
+
+- 修复所有 MemoryEntry 创建站点（手动 toggle、工具写入、提案审批、condense 重建、UI 新建）遗漏 `characterId` 的问题
+- 修复 `ChatDatabaseMigrationRegistryTest` 断言未更新为最新迁移的问题
+
+### Refactored
+
+- 数据库版本升级到 25，新增 `MIGRATION_24_25`（`memory_entries` 表添加 `characterId` 列及索引）
+- 心境快照使用固定 ID（`mental-state:{conversationId}`）做 upsert 覆盖，确保每场景只保留最新心境
+
+### Docs
+
+- `dev` 渠道构建版本推进到 `1.4.2-dev (10402)`，同步更新版本记录、候选包记录与应用内更新元数据
+
+---
+
+## [1.4.1-dev] - 2026-04-16
+
 ### Changed
 
 - 沉浸式 RP 三种互动模式统一补进 `去八股 / 去油腻` 约束，集中压住高频八股词、比喻腔、抽象总结句和模板桥接句

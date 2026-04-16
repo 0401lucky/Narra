@@ -41,7 +41,7 @@ abstract class ChatDatabase : RoomDatabase() {
     abstract fun phoneSnapshotDao(): PhoneSnapshotDao
 
     companion object {
-        const val CURRENT_VERSION = 24
+        const val CURRENT_VERSION = 25
 
         val MIGRATION_1_2 = object : Migration(1, 2) {
             override fun migrate(db: SupportSQLiteDatabase) {
@@ -524,6 +524,19 @@ abstract class ChatDatabase : RoomDatabase() {
             }
         }
 
+        val MIGRATION_24_25 = object : Migration(24, 25) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                if (!hasColumn(db, "memory_entries", "characterId")) {
+                    db.execSQL(
+                        "ALTER TABLE memory_entries ADD COLUMN characterId TEXT NOT NULL DEFAULT ''",
+                    )
+                }
+                db.execSQL(
+                    "CREATE INDEX IF NOT EXISTS index_memory_entries_characterId ON memory_entries (characterId)",
+                )
+            }
+        }
+
         val ALL_MIGRATIONS = arrayOf(
             MIGRATION_1_2,
             MIGRATION_2_3,
@@ -548,6 +561,7 @@ abstract class ChatDatabase : RoomDatabase() {
             MIGRATION_21_22,
             MIGRATION_22_23,
             MIGRATION_23_24,
+            MIGRATION_24_25,
         )
 
         private fun hasColumn(

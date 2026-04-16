@@ -91,7 +91,7 @@ class ConversationMemoryExtractionCoordinator(
             apiProtocol = activeProvider.resolvedApiProtocol(),
             provider = activeProvider,
         )
-        if (memoryResult.persistentMemories.isEmpty() && memoryResult.sceneStateMemories.isEmpty()) {
+        if (memoryResult.persistentMemories.isEmpty() && memoryResult.sceneStateMemories.isEmpty() && memoryResult.mentalStateSnapshot.isBlank()) {
             return false
         }
         persistRoleplayMemories(
@@ -105,6 +105,15 @@ class ConversationMemoryExtractionCoordinator(
             modelId = memoryModel,
             apiProtocol = activeProvider.resolvedApiProtocol(),
         )
+        // 心境快照作为独立条目保存
+        if (memoryResult.mentalStateSnapshot.isNotBlank()) {
+            persistMentalState(
+                conversationId = conversationId,
+                characterId = assistant.id.trim(),
+                mentalState = memoryResult.mentalStateSnapshot,
+                latestMessageId = latestMessageId,
+            )
+        }
         return true
     }
 
@@ -166,6 +175,7 @@ class ConversationMemoryExtractionCoordinator(
                     MemoryEntry(
                         scopeType = scopeType,
                         scopeId = scopeId,
+                        characterId = assistant.id.trim(),
                         content = content,
                         importance = 60,
                         pinned = false,
@@ -204,6 +214,7 @@ class ConversationMemoryExtractionCoordinator(
             existingEntries = existingEntries,
             scopeType = longTermScopeType,
             scopeId = longTermScopeId,
+            characterId = assistant.id.trim(),
             memoryItems = memoryResult.persistentMemories,
             latestMessageId = latestMessageId,
             importance = 60,
@@ -219,6 +230,7 @@ class ConversationMemoryExtractionCoordinator(
             existingEntries = existingEntries,
             scopeType = MemoryScopeType.CONVERSATION,
             scopeId = conversationId,
+            characterId = assistant.id.trim(),
             memoryItems = memoryResult.sceneStateMemories,
             latestMessageId = latestMessageId,
             importance = 70,
@@ -236,6 +248,7 @@ class ConversationMemoryExtractionCoordinator(
         existingEntries: MutableList<MemoryEntry>,
         scopeType: MemoryScopeType,
         scopeId: String,
+        characterId: String = "",
         memoryItems: List<String>,
         latestMessageId: String,
         importance: Int,
@@ -295,6 +308,7 @@ class ConversationMemoryExtractionCoordinator(
                 val entry = MemoryEntry(
                     scopeType = scopeType,
                     scopeId = normalizedScopeId,
+                    characterId = characterId,
                     content = content,
                     importance = importance,
                     sourceMessageId = latestMessageId.trim(),
@@ -343,5 +357,39 @@ class ConversationMemoryExtractionCoordinator(
             .removePrefix("-")
             .removePrefix("•")
             .trim()
+    }
+
+    /**
+     * 心境快照使用固定 ID（按 conversationId 派生），每次 upsert 覆盖旧值，
+     * 确保一个场景只保留最新的角色心境。
+     */
+    private suspend fun persistMentalState(
+        conversationId: String,
+        characterId: String,
+        mentalState: String,
+        latestMessageId: String,
+    ) {
+        val timestamp = nowProvider()
+        val entryId = "$MENTAL_STATE_ID_PREFIX$conversationId"
+        memoryRepository.upsertEntry(
+            MemoryEntry(
+                id = entryId,
+                scopeType = MemoryScopeType.CONVERSATION,
+                scopeId = conversationId,
+                characterId = characterId,
+                content = "$MENTAL_STATE_CONTENT_PREFIX$mentalState",
+                importance = 80,
+                pinned = false,
+                sourceMessageId = latestMessageId,
+                lastUsedAt = timestamp,
+                createdAt = timestamp,
+                updatedAt = timestamp,
+            ),
+        )
+    }
+
+    companion object {
+        const val MENTAL_STATE_ID_PREFIX = "mental-state:"
+        const val MENTAL_STATE_CONTENT_PREFIX = "【心境】"
     }
 }
