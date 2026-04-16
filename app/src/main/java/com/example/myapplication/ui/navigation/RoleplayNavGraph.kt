@@ -117,7 +117,10 @@ internal fun NavGraphBuilder.registerRoleplayGraph(
                 roleplayState.settings.providers.filter { it.enabled }
             }
             LaunchedEffect(scenarioId) {
-                roleplayViewModel.enterScenario(scenarioId)
+                // 仅在场景尚未加载或会话缺失时才进入，避免从设置页返回时重置消息列表
+                if (roleplayState.currentScenario?.id != scenarioId || roleplayState.currentSession == null) {
+                    roleplayViewModel.enterScenario(scenarioId)
+                }
             }
             RoleplayScreen(
                 scenario = routeScenario,
