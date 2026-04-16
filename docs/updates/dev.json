@@ -1,21 +1,18 @@
 {
   "app_id": "com.narra.app.dev",
   "channel": "dev",
-  "latest_version_name": "1.4.0-dev",
-  "latest_version_code": 10400,
+  "latest_version_name": "1.4.1-dev",
+  "latest_version_code": 10401,
   "minimum_supported_version_code": 0,
-  "apk_url": "https://download.lsa1230.dpdns.org/dev/Narra-v1.4.0-dev-10400-dev.apk",
-  "apk_sha256": "1113dc7cabc2f706a3fc543424f23440adf4ccc783db7aa1c42763d2e048e554",
-  "published_at": "2026-04-16T13:17:00+08:00",
+  "apk_url": "https://download.lsa1230.dpdns.org/dev/Narra-v1.4.1-dev-10401-dev.apk",
+  "apk_sha256": "2456ecf1a48103d74f4b36cc865ecb98ff300c0b3cfc92d58b1eb8378619e1b0",
+  "published_at": "2026-04-16T16:50:00+08:00",
   "release_notes": [
-    "新增深度沉浸模式：活人逻辑、解剖学直写协议，场景编辑面板一键开关",
-    "模型自检协议：按模型家族(Claude/GPT/Gemini/DeepSeek/GLM/Qwen)动态注入纠偏清单",
-    "心声提示词全面优化：场景驱动、反差优先、情绪碎片化表达",
-    "长文模式心声渲染优化：斜体+特定颜色+去重括号",
-    "线上/长文模式格式保持强化：近因效应防掉格式",
-    "修复线上模式消息被错误解析导致旁白/对话类型混淆",
-    "修复系统事件消息(视频通话结束等)在线上模式显示为对话气泡",
-    "新增 429 速率限制自动重试拦截器",
-    "DB 迁移 23→24，新增 enableDeepImmersion 字段"
+    "修复线上模式 ID 泄漏：自动剥离模型误输出的引用候选 ID 前缀",
+    "线上模式旁白渲染：【...】包裹的叙述文本以斜体旁白气泡呈现",
+    "长文模式叙述段心声自动渲染：全角括号内容斜体+思想配色",
+    "角色锁定新增禁止复读规则：禁止照搬或改写后重复用户原话",
+    "AI 帮写建议独立性强化：每条建议必须完整可独立发送",
+    "修复设置页返回时意外重新加载场景的问题"
   ]
 }
