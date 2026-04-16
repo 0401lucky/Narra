@@ -230,7 +230,9 @@ internal fun NavGraphBuilder.registerRoleplayGraph(
                 roleplayState.settings.providers.filter { it.enabled }
             }
             LaunchedEffect(scenarioId) {
-                if (roleplayState.currentScenario?.id != scenarioId) {
+                // Settings 页依托已有的共享 ViewModel，不需要重新 enter 场景。
+                // 如果因为深链或重建丢失了场景，仅在当前 session 也为 null 时才补 enter。
+                if (roleplayState.currentScenario?.id != scenarioId && roleplayState.currentSession == null) {
                     roleplayViewModel.enterScenario(scenarioId)
                 }
             }
@@ -302,7 +304,7 @@ internal fun NavGraphBuilder.registerRoleplayGraph(
             val rawScenarioId = backStackEntry.arguments?.getString("scenarioId").orEmpty()
             val scenarioId = Uri.decode(rawScenarioId)
             LaunchedEffect(scenarioId) {
-                if (roleplayState.currentScenario?.id != scenarioId) {
+                if (roleplayState.currentScenario?.id != scenarioId && roleplayState.currentSession == null) {
                     roleplayViewModel.enterScenario(scenarioId)
                 }
             }
@@ -331,7 +333,7 @@ internal fun NavGraphBuilder.registerRoleplayGraph(
                 roleplayState.settings.resolvedAssistants().firstOrNull { it.id == scenario.assistantId }
             } ?: roleplayState.currentAssistant
             LaunchedEffect(scenarioId) {
-                if (roleplayState.currentScenario?.id != scenarioId) {
+                if (roleplayState.currentScenario?.id != scenarioId && roleplayState.currentSession == null) {
                     roleplayViewModel.enterScenario(scenarioId)
                 }
                 roleplayViewModel.startVideoCall()

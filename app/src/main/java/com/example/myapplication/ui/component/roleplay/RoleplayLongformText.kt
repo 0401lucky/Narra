@@ -16,6 +16,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
+import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
@@ -117,10 +118,11 @@ private fun buildLongformAnnotatedString(
             when (span.type) {
                 RoleplayLongformSpanType.NARRATION -> {
                     append(
-                        buildQuotedDialogueAnnotatedString(
+                        buildNarrationWithThoughtFallback(
                             text = span.text,
                             narrationColor = narrationColor,
                             dialogueColor = dialogueColor,
+                            thoughtColor = thoughtColor,
                         ),
                     )
                 }
@@ -142,6 +144,7 @@ private fun buildLongformAnnotatedString(
                     withStyle(
                         SpanStyle(
                             color = thoughtColor,
+                            fontStyle = FontStyle.Italic,
                             fontWeight = FontWeight.Normal,
                             fontSize = 15.sp,
                             letterSpacing = 0.5.sp,
@@ -240,3 +243,64 @@ private fun buildDialogueAnnotatedString(
 private val DialogueQuotedTextRegex = Regex(
     pattern = "“[^”\\n]*”|\"[^\"\\n]*\"",
 )
+
+// 模型有时遗漏 <thought> 标签，但思想内容仍用全角括号（……）包裹。
+// 在叙述段中探测这种模式，自动应用思想样式。
+private val NarrationInlineThoughtRegex = Regex("（[^）\\n]*）")
+
+private fun buildNarrationWithThoughtFallback(
+    text: String,
+    narrationColor: Color,
+    dialogueColor: Color,
+    thoughtColor: Color,
+): AnnotatedString {
+    return buildAnnotatedString {
+        if (text.isBlank()) {
+            return@buildAnnotatedString
+        }
+        val thoughtMatches = NarrationInlineThoughtRegex.findAll(text).toList()
+        if (thoughtMatches.isEmpty()) {
+            append(
+                buildQuotedDialogueAnnotatedString(
+                    text = text,
+                    narrationColor = narrationColor,
+                    dialogueColor = dialogueColor,
+                ),
+            )
+            return@buildAnnotatedString
+        }
+        var cursor = 0
+        thoughtMatches.forEach { match ->
+            if (match.range.first > cursor) {
+                append(
+                    buildQuotedDialogueAnnotatedString(
+                        text = text.substring(cursor, match.range.first),
+                        narrationColor = narrationColor,
+                        dialogueColor = dialogueColor,
+                    ),
+                )
+            }
+            withStyle(
+                SpanStyle(
+                    color = thoughtColor,
+                    fontStyle = FontStyle.Italic,
+                    fontWeight = FontWeight.Normal,
+                    fontSize = 15.sp,
+                    letterSpacing = 0.5.sp,
+                ),
+            ) {
+                append(match.value)
+            }
+            cursor = match.range.last + 1
+        }
+        if (cursor < text.length) {
+            append(
+                buildQuotedDialogueAnnotatedString(
+                    text = text.substring(cursor),
+                    narrationColor = narrationColor,
+                    dialogueColor = dialogueColor,
+                ),
+            )
+        }
+    }
+}

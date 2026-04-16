@@ -133,4 +133,67 @@ class OnlineActionProtocolParserTest {
 
         assertFalse(preview.isNotBlank())
     }
+
+    @Test
+    fun parse_stringElementWithBracketThoughtPrefix_createsThoughtPart() {
+        val result = OnlineActionProtocolParser.parse(
+            rawContent = """["【心声】谁也没你重要","你在干嘛"]""",
+            characterName = "角色",
+        )!!
+
+        assertEquals(2, result.parts.size)
+        assertTrue(result.parts[0].isOnlineThoughtPart())
+        assertEquals("谁也没你重要", result.parts[0].onlineThoughtContent())
+        assertEquals("你在干嘛", result.parts[1].text)
+    }
+
+    @Test
+    fun parse_stringElementWithColonThoughtPrefix_createsThoughtPart() {
+        val result = OnlineActionProtocolParser.parse(
+            rawContent = """["心声：其实很想见你","晚安"]""",
+            characterName = "角色",
+        )!!
+
+        assertEquals(2, result.parts.size)
+        assertTrue(result.parts[0].isOnlineThoughtPart())
+        assertEquals("其实很想见你", result.parts[0].onlineThoughtContent())
+        assertEquals("晚安", result.parts[1].text)
+    }
+
+    @Test
+    fun parse_stripsReferenceIdPrefixFromDialogueText() {
+        val result = OnlineActionProtocolParser.parse(
+            rawContent = """["ID:1010 刚才班长看你的眼神","你要是真想玩真心话","ID:1004 我问你答，或者你问我答"]""",
+            characterName = "角色",
+        )!!
+
+        assertEquals(3, result.parts.size)
+        assertEquals("刚才班长看你的眼神", result.parts[0].text)
+        assertEquals("你要是真想玩真心话", result.parts[1].text)
+        assertEquals("我问你答，或者你问我答", result.parts[2].text)
+    }
+
+    @Test
+    fun parse_stripsReferenceIdPrefixFromReplyToContent() {
+        val result = OnlineActionProtocolParser.parse(
+            rawContent = """[{"type":"reply_to","message_id":"1007","content":"ID:1007 这句话我看见了"}]""",
+            characterName = "角色",
+        )!!
+
+        assertEquals(1, result.parts.size)
+        assertEquals("这句话我看见了", result.parts[0].text)
+    }
+
+    @Test
+    fun parse_narrationBracketTextPreservedAsIs() {
+        val result = OnlineActionProtocolParser.parse(
+            rawContent = """["【她低下头，视线落在他手上。】","你怎么了"]""",
+            characterName = "角色",
+        )!!
+
+        assertEquals(2, result.parts.size)
+        // 旁白检测由 RoleplayMessageUiMapper 负责，解析器只保留原文
+        assertEquals("【她低下头，视线落在他手上。】", result.parts[0].text)
+        assertEquals("你怎么了", result.parts[1].text)
+    }
 }

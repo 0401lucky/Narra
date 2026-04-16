@@ -508,20 +508,35 @@ object RoleplayMessageUiMapper {
                         return@forEach
                     }
                     val content = part.text.trim()
-                    target += RoleplayMessageUiModel(
-                        sourceMessageId = sourceMessageId,
-                        contentType = RoleplayContentType.DIALOGUE,
-                        speaker = RoleplaySpeaker.CHARACTER,
-                        speakerName = characterName,
-                        content = content,
-                        replyToMessageId = part.replyToMessageId,
-                        replyToPreview = part.replyToPreview,
-                        replyToSpeakerName = part.replyToSpeakerName,
-                        createdAt = createdAt,
-                        messageStatus = messageStatus,
-                        copyText = content,
-                        canRetry = canRetry,
-                    )
+                    val narrationContent = extractOnlineNarrationContent(content)
+                    if (narrationContent != null) {
+                        target += RoleplayMessageUiModel(
+                            sourceMessageId = sourceMessageId,
+                            contentType = RoleplayContentType.NARRATION,
+                            speaker = RoleplaySpeaker.NARRATOR,
+                            speakerName = "旁白",
+                            content = narrationContent,
+                            createdAt = createdAt,
+                            messageStatus = messageStatus,
+                            copyText = narrationContent,
+                            canRetry = canRetry,
+                        )
+                    } else {
+                        target += RoleplayMessageUiModel(
+                            sourceMessageId = sourceMessageId,
+                            contentType = RoleplayContentType.DIALOGUE,
+                            speaker = RoleplaySpeaker.CHARACTER,
+                            speakerName = characterName,
+                            content = content,
+                            replyToMessageId = part.replyToMessageId,
+                            replyToPreview = part.replyToPreview,
+                            replyToSpeakerName = part.replyToSpeakerName,
+                            createdAt = createdAt,
+                            messageStatus = messageStatus,
+                            copyText = content,
+                            canRetry = canRetry,
+                        )
+                    }
                 }
             }
         }
@@ -735,5 +750,17 @@ object RoleplayMessageUiMapper {
             canRetry = canRetry,
             actionPart = this,
         )
+    }
+
+    // 模型有时在线上模式输出【…】包裹的叙述性旁白文本。
+    // 检测到此模式后返回剥离括号的内容，用于以旁白气泡（斜体）渲染。
+    private fun extractOnlineNarrationContent(text: String): String? {
+        val trimmed = text.trim()
+        if (trimmed.length < 3) return null
+        if (!trimmed.startsWith("【") || !trimmed.endsWith("】")) return null
+        // 排除心声前缀——这些已由 inlineThoughtPrefixes 处理
+        if (trimmed.startsWith("【心声】")) return null
+        val inner = trimmed.removePrefix("【").removeSuffix("】").trim()
+        return inner.takeIf { it.isNotBlank() }
     }
 }

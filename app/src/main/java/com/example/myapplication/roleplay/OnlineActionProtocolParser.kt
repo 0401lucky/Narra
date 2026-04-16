@@ -163,7 +163,12 @@ internal object OnlineActionProtocolParser {
                 element.isJsonPrimitive && element.asJsonPrimitive.isString -> {
                     val content = element.asString.trim()
                     if (content.isNotBlank()) {
-                        parts += textMessagePart(content)
+                        val thoughtContent = extractInlineThoughtContent(content)
+                        if (thoughtContent != null) {
+                            parts += thoughtMessagePart(thoughtContent)
+                        } else {
+                            parts += textMessagePart(sanitizeOnlineDialogueText(content))
+                        }
                     }
                 }
 
@@ -191,7 +196,7 @@ internal object OnlineActionProtocolParser {
     ) {
         when (item.stringValue("type").lowercase()) {
             "reply_to" -> {
-                val content = item.stringValue("content")
+                val content = sanitizeOnlineDialogueText(item.stringValue("content"))
                 if (content.isNotBlank()) {
                     parts += textMessagePart(
                         text = content,
@@ -472,6 +477,25 @@ internal object OnlineActionProtocolParser {
             }
         }
         return -1
+    }
+
+    // 模型有时把心声作为纯字符串输出（如 "【心声】谁也没你重要"），
+    // 而不是正确的 {"type":"thought","content":"..."}。
+    // 在这里做前缀探测，让 parseArray 对字符串元素也能生成 thoughtMessagePart。
+    private val inlineThoughtPrefixes = listOf("【心声】", "心声：", "心声:")
+
+    // 模型有时将引用候选 ID 残留在对话文本中（如 "ID:1010 刚才班长看你的眼神"），
+    // 这些 ID 是 prompt 中的引用短 ID，不应出现在最终文本里。
+    private val referenceIdPrefixRegex = Regex("""^ID:\d+\s*""")
+
+    private fun extractInlineThoughtContent(text: String): String? {
+        val prefix = inlineThoughtPrefixes.firstOrNull { text.startsWith(it) }
+            ?: return null
+        return text.removePrefix(prefix).trim().takeIf { it.isNotBlank() }
+    }
+
+    private fun sanitizeOnlineDialogueText(text: String): String {
+        return referenceIdPrefixRegex.replace(text.trim(), "").trim()
     }
 
     private fun JsonObject.stringValue(key: String): String {
