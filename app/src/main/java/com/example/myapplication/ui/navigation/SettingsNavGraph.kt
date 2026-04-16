@@ -591,6 +591,7 @@ internal fun NavGraphBuilder.registerSettingsNavGraph(
         }
 
         composable(AppRoutes.SETTINGS_MEMORY) { backStackEntry ->
+            val storedSettings by settingsViewModel.storedSettings.collectAsStateWithLifecycle()
             val memoryManagementViewModel = rememberMemoryManagementViewModel(
                 navController = navController,
                 appGraph = appGraph,
@@ -599,6 +600,7 @@ internal fun NavGraphBuilder.registerSettingsNavGraph(
             val memoryManagementState by memoryManagementViewModel.uiState.collectAsStateWithLifecycle()
             MemoryManagementScreen(
                 uiState = memoryManagementState,
+                assistants = storedSettings.resolvedAssistants(),
                 onTogglePinned = memoryManagementViewModel::togglePinned,
                 onDeleteMemory = memoryManagementViewModel::deleteMemory,
                 onDeleteSummary = memoryManagementViewModel::deleteSummary,

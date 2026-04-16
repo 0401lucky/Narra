@@ -235,7 +235,13 @@ internal object OnlineActionProtocolParser {
                 item.stringValue("content")
                     .takeIf { it.isNotBlank() }
                     ?.let { content ->
-                        parts += voiceMessageActionPart(content)
+                        val durationSeconds = item.numericStringValue("duration_seconds")
+                            .ifBlank { item.numericStringValue("durationSeconds") }
+                            .toIntOrNull()
+                        parts += voiceMessageActionPart(
+                            content = content,
+                            durationSeconds = durationSeconds,
+                        )
                     }
             }
 

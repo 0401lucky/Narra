@@ -9,21 +9,25 @@ import com.example.myapplication.model.ChatMessagePart
 import com.example.myapplication.model.GiftPlayDraft
 import com.example.myapplication.model.InvitePlayDraft
 import com.example.myapplication.model.PunishPlayDraft
+import com.example.myapplication.model.RoleplayInteractionMode
 import com.example.myapplication.model.TaskPlayDraft
 import com.example.myapplication.model.TransferPlayDraft
 import com.example.myapplication.model.TransferDirection
 import com.example.myapplication.model.TransferStatus
+import com.example.myapplication.model.VoiceMessageDraft
 import com.example.myapplication.model.giftMessagePart
 import com.example.myapplication.model.inviteMessagePart
 import com.example.myapplication.model.isGiftPart
 import com.example.myapplication.model.normalizeChatMessageParts
 import com.example.myapplication.model.ProviderFunction
 import com.example.myapplication.model.punishMessagePart
+import com.example.myapplication.model.resolveVoiceMessageDurationSeconds
 import com.example.myapplication.model.specialMetadataValue
 import com.example.myapplication.model.taskMessagePart
 import com.example.myapplication.model.transferMessagePart
 import com.example.myapplication.model.textMessagePart
 import com.example.myapplication.model.toPlainText
+import com.example.myapplication.model.voiceMessageActionPart
 import com.example.myapplication.model.withGiftImageGenerating
 import com.example.myapplication.roleplay.RoleplayConversationSupport
 import com.example.myapplication.roleplay.RoleplayMessageFormatSupport
@@ -228,6 +232,57 @@ internal class RoleplaySendActionSupport(
             state = state,
             scenario = scenario,
             userParts = listOf(specialPart),
+            nextInput = state.input,
+        )
+    }
+
+    fun sendVoiceMessage(
+        draft: VoiceMessageDraft,
+    ): Job? {
+        val state = uiState()
+        val scenario = state.currentScenario
+        if (scenario == null) {
+            updateUiState { current ->
+                RoleplayStateSupport.applyErrorMessage(current, "当前场景不存在")
+            }
+            return null
+        }
+        if (scenario.interactionMode != RoleplayInteractionMode.ONLINE_PHONE) {
+            updateUiState { current ->
+                RoleplayStateSupport.applyErrorMessage(current, "当前场景暂不支持语音消息")
+            }
+            return null
+        }
+        if (!state.settings.hasRequiredConfig()) {
+            updateUiState { current ->
+                RoleplayStateSupport.applyErrorMessage(current, "请先完成模型配置后再开始剧情互动")
+            }
+            return null
+        }
+        if (state.isSending) {
+            return null
+        }
+
+        val normalizedContent = draft.content.trim()
+        if (normalizedContent.isBlank()) {
+            updateUiState { current ->
+                RoleplayStateSupport.applyErrorMessage(current, "请先输入语音内容")
+            }
+            return null
+        }
+
+        return startRoleplaySend(
+            state = state,
+            scenario = scenario,
+            userParts = listOf(
+                voiceMessageActionPart(
+                    content = normalizedContent,
+                    durationSeconds = resolveVoiceMessageDurationSeconds(
+                        content = normalizedContent,
+                        preferredDurationSeconds = draft.durationSeconds,
+                    ),
+                ),
+            ),
             nextInput = state.input,
         )
     }

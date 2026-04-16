@@ -24,9 +24,17 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.Assignment
+import androidx.compose.material.icons.filled.CardGiftcard
+import androidx.compose.material.icons.filled.Event
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Forum
+import androidx.compose.material.icons.filled.Gavel
+import androidx.compose.material.icons.filled.KeyboardVoice
 import androidx.compose.material.icons.filled.PhoneAndroid
+import androidx.compose.material.icons.filled.Share
+import androidx.compose.material.icons.filled.Videocam
+import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
@@ -70,6 +78,7 @@ import com.example.myapplication.ui.component.NarraIconButton
 import com.example.myapplication.ui.component.roleplay.ImmersiveBackdropState
 import com.example.myapplication.ui.component.roleplay.ImmersiveGlassSurface
 import com.example.myapplication.ui.component.roleplay.ImmersiveRoleplayColors
+import com.example.myapplication.ui.component.roleplay.RoleplayInputQuickAction
 import com.example.myapplication.ui.component.roleplay.RoleplaySceneBackground
 import com.example.myapplication.ui.component.roleplay.RoleplayEmotionChip
 import com.example.myapplication.ui.component.roleplay.RoleplayInputBar
@@ -85,6 +94,10 @@ private val OnlineTextPrimary = Color(0xFF1F2430)
 private val OnlineMuted = Color(0xFF7F8A9A)
 private val OnlineAccent = Color(0xFF5B91D7)
 private val OnlineUserAccent = Color(0xFF8BC0FF)
+private val OnlineGiftAccent = Color(0xFFE77F93)
+private val OnlineTaskAccent = Color(0xFFD78B31)
+private val OnlinePunishAccent = Color(0xFFD55C73)
+private val OnlineVideoAccent = Color(0xFF6C84FF)
 
 @Composable
 internal fun RoleplayOnlinePhoneContent(
@@ -115,7 +128,12 @@ internal fun RoleplayOnlinePhoneContent(
     onClearQuotedMessage: () -> Unit,
     onRecallMessage: (String) -> Unit,
     onScreenshotChat: () -> Unit,
-    onOpenSpecialPlay: () -> Unit,
+    onOpenVoiceMessage: () -> Unit,
+    onOpenTransferPlay: () -> Unit,
+    onOpenInvitePlay: () -> Unit,
+    onOpenGiftPlay: () -> Unit,
+    onOpenTaskPlay: () -> Unit,
+    onOpenPunishPlay: () -> Unit,
     onConfirmTransferReceipt: (String) -> Unit,
     onSend: () -> Unit,
     onCancelSending: () -> Unit,
@@ -160,6 +178,92 @@ internal fun RoleplayOnlinePhoneContent(
     val listState = rememberLazyListState()
     val scope = rememberCoroutineScope()
     var showMenu by remember { mutableStateOf(false) }
+    val quickActions = remember(
+        onOpenVoiceMessage,
+        onOpenPhoneCheck,
+        onOpenTransferPlay,
+        onOpenInvitePlay,
+        onOpenGiftPlay,
+        onOpenTaskPlay,
+        onOpenPunishPlay,
+        onOpenMoments,
+        onOpenVideoCall,
+    ) {
+        buildList {
+            add(
+                RoleplayInputQuickAction(
+                    label = "语音",
+                    icon = Icons.Default.KeyboardVoice,
+                    accentColor = OnlineAccent,
+                    onClick = onOpenVoiceMessage,
+                ),
+            )
+            add(
+                RoleplayInputQuickAction(
+                    label = "查手机",
+                    icon = Icons.Default.Visibility,
+                    accentColor = OnlineAccent,
+                    onClick = onOpenPhoneCheck,
+                ),
+            )
+            add(
+                RoleplayInputQuickAction(
+                    label = "转账",
+                    icon = Icons.Default.Share,
+                    accentColor = Color(0xFF07C160),
+                    onClick = onOpenTransferPlay,
+                ),
+            )
+            add(
+                RoleplayInputQuickAction(
+                    label = "邀约",
+                    icon = Icons.Default.Event,
+                    accentColor = OnlineAccent,
+                    onClick = onOpenInvitePlay,
+                ),
+            )
+            add(
+                RoleplayInputQuickAction(
+                    label = "礼物",
+                    icon = Icons.Default.CardGiftcard,
+                    accentColor = OnlineGiftAccent,
+                    onClick = onOpenGiftPlay,
+                ),
+            )
+            add(
+                RoleplayInputQuickAction(
+                    label = "委托",
+                    icon = Icons.AutoMirrored.Filled.Assignment,
+                    accentColor = OnlineTaskAccent,
+                    onClick = onOpenTaskPlay,
+                ),
+            )
+            add(
+                RoleplayInputQuickAction(
+                    label = "惩罚",
+                    icon = Icons.Default.Gavel,
+                    accentColor = OnlinePunishAccent,
+                    onClick = onOpenPunishPlay,
+                ),
+            )
+            add(
+                RoleplayInputQuickAction(
+                    label = "动态",
+                    icon = Icons.Default.Forum,
+                    accentColor = Color(0xFF7C93F6),
+                    onClick = onOpenMoments,
+                ),
+            )
+            add(
+                RoleplayInputQuickAction(
+                    label = "视频",
+                    icon = Icons.Default.Videocam,
+                    accentColor = OnlineVideoAccent,
+                    onClick = onOpenVideoCall,
+                ),
+            )
+        }
+    }
     val characterName = remember(scenario.characterDisplayNameOverride, assistant?.name) {
         scenario.characterDisplayNameOverride.trim()
             .ifBlank { assistant?.name?.trim().orEmpty() }
@@ -474,7 +578,8 @@ internal fun RoleplayOnlinePhoneContent(
                 onInputChange = onInputChange,
                 onSend = onSend,
                 onCancel = onCancelSending,
-                onOpenSpecialPlay = onOpenSpecialPlay,
+                onOpenSpecialPlay = onOpenTransferPlay,
+                quickActions = quickActions,
             )
         }
     }

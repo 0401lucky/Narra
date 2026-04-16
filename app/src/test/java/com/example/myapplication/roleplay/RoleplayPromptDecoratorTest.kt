@@ -107,6 +107,7 @@ class RoleplayPromptDecoratorTest {
         assertTrue(prompt.contains("不要把对方叫成“东西”或“小东西”"))
         assertTrue(prompt.contains("reply_to、thought、recall、emoji、voice_message、ai_photo、location、transfer、transfer_action、poke、video_call"))
         assertTrue(prompt.contains("不是面对面现场互动"))
+        assertTrue(prompt.contains("\"type\":\"voice_message\",\"content\":\"语音内容\",\"duration_seconds\":6"))
         assertTrue(prompt.contains("\"type\":\"transfer_action\",\"action\":\"accept\""))
         assertTrue(prompt.contains("圆括号()中的内容只是背景观察"))
         assertTrue(prompt.contains("吃饭了吗？(肚子咕咕叫)"))

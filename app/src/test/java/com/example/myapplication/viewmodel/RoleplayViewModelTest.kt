@@ -27,6 +27,7 @@ import com.example.myapplication.model.AssistantMessageDto
 import com.example.myapplication.model.ChatCompletionRequest
 import com.example.myapplication.model.ChatCompletionResponse
 import com.example.myapplication.model.ChatChoiceDto
+import com.example.myapplication.model.ChatActionType
 import com.example.myapplication.model.ChatMessage
 import com.example.myapplication.model.ChatMessagePart
 import com.example.myapplication.model.Conversation
@@ -55,6 +56,7 @@ import com.example.myapplication.model.RoleplaySession
 import com.example.myapplication.model.RoleplaySpeaker
 import com.example.myapplication.model.TransferDirection
 import com.example.myapplication.model.TransferStatus
+import com.example.myapplication.model.VoiceMessageDraft
 import com.example.myapplication.model.giftImageStatus
 import com.example.myapplication.model.isTransferPart
 import com.example.myapplication.model.specialMetadataValue
@@ -3657,6 +3659,82 @@ class RoleplayViewModelTest {
         assertTrue(viewModel.uiState.value.messages.any {
             it.contentType == RoleplayContentType.DIALOGUE && it.content.contains("知道了")
         })
+    }
+
+    @Test
+    fun sendVoiceMessage_sendsVoiceActionForOnlineRoleplay() = runTest(mainDispatcherRule.dispatcher.scheduler) {
+        val assistant = Assistant(
+            id = "assistant-1",
+            name = "陆宴清",
+        )
+        val scenario = RoleplayScenario(
+            id = "scene-1",
+            title = "线上夜聊",
+            assistantId = assistant.id,
+            userDisplayNameOverride = "林晚",
+            characterDisplayNameOverride = "陆宴清",
+            interactionMode = RoleplayInteractionMode.ONLINE_PHONE,
+        )
+        val session = RoleplaySession(
+            id = "session-1",
+            scenarioId = scenario.id,
+            conversationId = "conversation-1",
+            createdAt = 1L,
+            updatedAt = 2L,
+        )
+        val provider = ProviderSettings(
+            id = "provider-1",
+            name = "测试 Provider",
+            baseUrl = server.url("/v1/").toString(),
+            apiKey = "test-key",
+            selectedModel = "chat-model",
+        )
+        val store = FakeConversationStore(
+            conversations = listOf(
+                Conversation(
+                    id = session.conversationId,
+                    title = "线上夜聊",
+                    model = "chat-model",
+                    createdAt = 1L,
+                    updatedAt = 2L,
+                    assistantId = assistant.id,
+                ),
+            ),
+        )
+        enqueueStreamResponse("""["收到你的语音了。"]""")
+        val viewModel = createViewModel(
+            store = store,
+            roleplayRepository = FakeRoleplayRepository(
+                conversationStore = store,
+                scenarios = listOf(scenario),
+                sessions = listOf(session),
+            ),
+            settings = AppSettings(
+                baseUrl = provider.baseUrl,
+                apiKey = provider.apiKey,
+                selectedModel = provider.selectedModel,
+                providers = listOf(provider),
+                selectedProviderId = provider.id,
+                assistants = listOf(assistant),
+                selectedAssistantId = assistant.id,
+            ),
+            promptContextAssembler = DefaultPromptContextAssembler(),
+        )
+
+        viewModel.enterScenario(scenario.id)
+        advanceUntilIdle()
+        viewModel.sendVoiceMessage(
+            VoiceMessageDraft(
+                content = "我一会儿回你电话。",
+                durationSeconds = 7,
+            ),
+        )
+        advanceUntilIdle()
+
+        val voiceMessage = viewModel.uiState.value.messages.first { it.contentType == RoleplayContentType.ACTION }
+        assertEquals(ChatActionType.VOICE_MESSAGE, voiceMessage.actionPart?.actionType)
+        assertEquals("我一会儿回你电话。", voiceMessage.actionPart?.actionMetadata?.get("content"))
+        assertEquals("7", voiceMessage.actionPart?.actionMetadata?.get("duration_seconds"))
     }
 
     private fun createViewModel(

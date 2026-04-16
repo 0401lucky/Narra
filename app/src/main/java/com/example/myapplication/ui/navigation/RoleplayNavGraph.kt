@@ -154,6 +154,7 @@ internal fun NavGraphBuilder.registerRoleplayGraph(
                 onRecallMessage = roleplayViewModel::recallMessage,
                 onCaptureOnlineChat = roleplayViewModel::captureOnlineChat,
                 onSendSpecialPlay = roleplayViewModel::sendSpecialPlay,
+                onSendVoiceMessage = roleplayViewModel::sendVoiceMessage,
                 onConfirmTransferReceipt = roleplayViewModel::confirmTransferReceipt,
                 onSend = roleplayViewModel::sendMessage,
                 onCancelSending = roleplayViewModel::cancelSending,

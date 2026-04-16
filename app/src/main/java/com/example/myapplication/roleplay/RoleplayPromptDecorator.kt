@@ -191,10 +191,11 @@ object RoleplayPromptDecorator {
                                 append("4. 当前不允许输出 thought；没说出口的情绪只能通过正常聊天消息侧写出来。\n")
                                 append("5. 当剧情适合时，可以主动使用 emoji、voice_message、ai_photo、location、poke、transfer、video_call 这些高频动作。\n")
                             }
-                            append("6. 如果你要主动给用户转账，必须单独输出对象：{\"type\":\"transfer\",\"amount\":520,\"note\":\"备注\"}；禁止用文字描述转账动作。\n")
-                            append("7. 如果用户之前给你发了转账，你必须明确表态是否收下：收款用 {\"type\":\"transfer_action\",\"action\":\"accept\"}，退回用 {\"type\":\"transfer_action\",\"action\":\"reject\"}。\n")
-                            append("8. 如果你要发送照片（自拍、风景、截图等），必须使用对象：{\"type\":\"ai_photo\",\"description\":\"照片内容的文字描述\"}；description 要写得像真实照片的画面描述，例如 \"刚拍的窗外风景，阳光透过树叶洒在地上\"；严禁用纯文字 \"图片\" \"[图片]\" 或 \"发了一张照片\" 代替。\n")
-                            append("9. 如果你想拍一拍对方或拍一拍自己，使用对象：{\"type\":\"poke\",\"target\":\"用户/自己\",\"suffix\":\"的脑袋\"}。target 为拍的对象，suffix 为拍的部位或附加动作描述（如'的脑袋'、'说你别生气了'、'并蹭了蹭'）。\n")
+                            append("6. 如果你要发送语音，必须使用对象：{\"type\":\"voice_message\",\"content\":\"语音内容\",\"duration_seconds\":6}；其中 content 必填，duration_seconds 可选，不写时客户端会自动估算时长。\n")
+                            append("7. 如果你要主动给用户转账，必须单独输出对象：{\"type\":\"transfer\",\"amount\":520,\"note\":\"备注\"}；禁止用文字描述转账动作。\n")
+                            append("8. 如果用户之前给你发了转账，你必须明确表态是否收下：收款用 {\"type\":\"transfer_action\",\"action\":\"accept\"}，退回用 {\"type\":\"transfer_action\",\"action\":\"reject\"}。\n")
+                            append("9. 如果你要发送照片（自拍、风景、截图等），必须使用对象：{\"type\":\"ai_photo\",\"description\":\"照片内容的文字描述\"}；description 要写得像真实照片的画面描述，例如 \"刚拍的窗外风景，阳光透过树叶洒在地上\"；严禁用纯文字 \"图片\" \"[图片]\" 或 \"发了一张照片\" 代替。\n")
+                            append("10. 如果你想拍一拍对方或拍一拍自己，使用对象：{\"type\":\"poke\",\"target\":\"用户/自己\",\"suffix\":\"的脑袋\"}。target 为拍的对象，suffix 为拍的部位或附加动作描述（如'的脑袋'、'说你别生气了'、'并蹭了蹭'）。\n")
                             append("   - 拍一拍适用场景：道歉、撒娇、吃醋、试探、无聊想引起注意、表达轻微不满或亲昵。\n")
                             append("   - 不要滥用，通常整轮对话最多用一次。\n")
                         }

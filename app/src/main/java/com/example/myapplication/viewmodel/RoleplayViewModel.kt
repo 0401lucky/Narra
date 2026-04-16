@@ -59,6 +59,7 @@ import com.example.myapplication.model.RoleplayMessageUiModel
 import com.example.myapplication.model.RoleplayScenario
 import com.example.myapplication.model.RoleplaySuggestionUiModel
 import com.example.myapplication.model.RoleplaySession
+import com.example.myapplication.model.VoiceMessageDraft
 import com.example.myapplication.model.imageMessagePart
 import com.example.myapplication.model.textMessagePart
 import com.example.myapplication.model.transferMessagePart
@@ -429,6 +430,12 @@ class RoleplayViewModel(
 
     fun sendSpecialPlay(draft: ChatSpecialPlayDraft) {
         sendActionSupport.sendSpecialPlay(draft)?.let { job ->
+            sendingJob = job
+        }
+    }
+
+    fun sendVoiceMessage(draft: VoiceMessageDraft) {
+        sendActionSupport.sendVoiceMessage(draft)?.let { job ->
             sendingJob = job
         }
     }

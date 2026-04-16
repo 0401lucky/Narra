@@ -21,6 +21,8 @@ import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Send
+import androidx.compose.material.icons.filled.Pause
+import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.OpenInFull
@@ -52,6 +54,7 @@ import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.input.key.Key
 import androidx.compose.ui.input.key.KeyEventType
 import androidx.compose.ui.input.key.isShiftPressed
@@ -83,11 +86,16 @@ import com.example.myapplication.model.RoleplayContentType
 import com.example.myapplication.model.RoleplayMessageUiModel
 import com.example.myapplication.model.RoleplaySpeaker
 import com.example.myapplication.model.RoleplaySuggestionUiModel
+import com.example.myapplication.model.voiceMessageContent
+import com.example.myapplication.model.voiceMessageDurationLabel
+import com.example.myapplication.model.voiceMessageDurationSeconds
 import com.example.myapplication.ui.component.ExpandedDraftEditorDialog
 import com.example.myapplication.ui.component.NarraIconButton
 import com.example.myapplication.ui.component.NarraTextButton
 import com.example.myapplication.ui.component.SpecialPlayCard
 import com.example.myapplication.ui.component.copyPlainTextToClipboard
+import kotlin.math.abs
+import kotlinx.coroutines.delay
 
 internal data class ImmersiveRoleplayColors(
     val textPrimary: Color,
@@ -107,6 +115,13 @@ internal enum class RoleplayMessageBubbleMode {
     DEFAULT,
     ONLINE_PHONE,
 }
+
+internal data class RoleplayInputQuickAction(
+    val label: String,
+    val icon: ImageVector,
+    val accentColor: Color,
+    val onClick: () -> Unit,
+)
 
 @Composable
 internal fun rememberImmersiveRoleplayColors(
@@ -442,11 +457,14 @@ internal fun RoleplayInputBar(
     onSend: () -> Unit,
     onCancel: (() -> Unit)?,
     onOpenSpecialPlay: () -> Unit,
+    quickActions: List<RoleplayInputQuickAction> = emptyList(),
     showActionButton: Boolean = true,
     showExpandButton: Boolean = true,
 ) {
     val canSend = input.isNotBlank() && !isSending
+    val hasQuickActions = quickActions.isNotEmpty()
     var showActionMenu by remember { mutableStateOf(false) }
+    var showActionPanel by remember { mutableStateOf(false) }
     var showExpandedEditor by rememberSaveable { mutableStateOf(false) }
     var allowNextInlineNewline by remember { mutableStateOf(false) }
     val focusRequester = remember { FocusRequester() }
@@ -487,155 +505,196 @@ internal fun RoleplayInputBar(
         shape = RoundedCornerShape(24.dp),
         overlayColor = colors.panelBackgroundStrong,
     ) {
-    Row(
-        modifier = Modifier.padding(start = 8.dp, top = 6.dp, end = 6.dp, bottom = 6.dp),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(6.dp),
-    ) {
-        if (showActionButton) {
-            Box {
-                NarraIconButton(
-                    onClick = { showActionMenu = true },
-                    enabled = !isSending,
-                    modifier = Modifier
-                        .size(RoleplayInteractiveIconButtonSize)
-                        .background(
-                            color = colors.panelBackground,
-                            shape = CircleShape,
-                        ),
-                    colors = IconButtonDefaults.iconButtonColors(
-                        containerColor = Color.Transparent,
-                        contentColor = colors.textPrimary,
-                    ),
-                ) {
-                    Icon(
-                        Icons.Default.Add,
-                        contentDescription = stringResource(id = R.string.roleplay_more_actions),
-                        modifier = Modifier.size(18.dp),
-                    )
-                }
-                DropdownMenu(expanded = showActionMenu, onDismissRequest = { showActionMenu = false }) {
-                    DropdownMenuItem(
-                        text = { Text(stringResource(id = R.string.roleplay_special_play)) },
-                        leadingIcon = { Icon(Icons.Default.Share, contentDescription = null) },
-                        onClick = { showActionMenu = false; onOpenSpecialPlay() },
-                    )
-                }
+        Column(
+            modifier = Modifier.padding(start = 8.dp, top = 6.dp, end = 6.dp, bottom = 6.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+            if (showActionButton && hasQuickActions && showActionPanel) {
+                RoleplayQuickActionPanel(
+                    actions = quickActions,
+                    textColor = colors.textPrimary,
+                    mutedTextColor = colors.textMuted,
+                    onActionClick = { action ->
+                        showActionPanel = false
+                        action.onClick()
+                    },
+                )
             }
-        }
-        BasicTextField(
-            value = input,
-            onValueChange = handleInputChange,
-            modifier = Modifier
-                .weight(1f)
-                .focusRequester(focusRequester)
-                .padding(vertical = 8.dp)
-                .onPreviewKeyEvent { event ->
-                    if (
-                        event.type == KeyEventType.KeyDown &&
-                        event.key == Key.Enter &&
-                        !event.isShiftPressed
-                    ) {
-                        if (canSend) {
-                            onSend()
-                            true
-                        } else {
-                            false
+
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(6.dp),
+            ) {
+                if (showActionButton) {
+                    Box {
+                        NarraIconButton(
+                            onClick = {
+                                if (hasQuickActions) {
+                                    showActionPanel = !showActionPanel
+                                } else {
+                                    showActionMenu = true
+                                }
+                            },
+                            enabled = !isSending,
+                            modifier = Modifier
+                                .size(RoleplayInteractiveIconButtonSize)
+                                .background(
+                                    color = if (hasQuickActions && showActionPanel) {
+                                        colors.characterAccent.copy(alpha = 0.2f)
+                                    } else {
+                                        colors.panelBackground
+                                    },
+                                    shape = CircleShape,
+                                ),
+                            colors = IconButtonDefaults.iconButtonColors(
+                                containerColor = Color.Transparent,
+                                contentColor = if (hasQuickActions && showActionPanel) {
+                                    colors.characterAccent
+                                } else {
+                                    colors.textPrimary
+                                },
+                            ),
+                        ) {
+                            Icon(
+                                Icons.Default.Add,
+                                contentDescription = stringResource(id = R.string.roleplay_more_actions),
+                                modifier = Modifier.size(18.dp),
+                            )
                         }
-                    } else if (
-                        event.type == KeyEventType.KeyDown &&
-                        event.key == Key.Enter &&
-                        event.isShiftPressed
-                    ) {
-                        allowNextInlineNewline = true
-                        false
-                    } else {
-                        false
+                        if (!hasQuickActions) {
+                            DropdownMenu(expanded = showActionMenu, onDismissRequest = { showActionMenu = false }) {
+                                DropdownMenuItem(
+                                    text = { Text(stringResource(id = R.string.roleplay_special_play)) },
+                                    leadingIcon = { Icon(Icons.Default.Share, contentDescription = null) },
+                                    onClick = { showActionMenu = false; onOpenSpecialPlay() },
+                                )
+                            }
+                        }
                     }
-                },
-            enabled = !isSending,
-            maxLines = 3,
-            textStyle = MaterialTheme.typography.bodyLarge.copy(color = colors.textPrimary),
-            cursorBrush = SolidColor(colors.characterAccent),
-            keyboardOptions = KeyboardOptions(
-                imeAction = ImeAction.Send,
-            ),
-            keyboardActions = KeyboardActions(
-                onSend = {
-                    if (canSend) {
-                        onSend()
-                    }
-                },
-            ),
-            decorationBox = { innerTextField ->
-                if (input.isEmpty()) {
-                    Text(
-                        stringResource(id = R.string.roleplay_input_placeholder),
-                        style = MaterialTheme.typography.bodyLarge,
-                        color = colors.textMuted.copy(alpha = 0.56f),
-                    )
                 }
-                innerTextField()
-            },
-        )
-        if (showExpandButton) {
-            NarraIconButton(
-                onClick = { showExpandedEditor = true },
-                enabled = !isSending,
-                modifier = Modifier.size(RoleplayInteractiveIconButtonSize),
-                colors = IconButtonDefaults.iconButtonColors(
-                    containerColor = colors.panelBackground,
-                    contentColor = colors.textPrimary,
-                    disabledContainerColor = colors.panelBackground.copy(alpha = 0.45f),
-                    disabledContentColor = colors.textMuted.copy(alpha = 0.55f),
-                ),
-            ) {
-                Icon(
-                    Icons.Default.OpenInFull,
-                    contentDescription = stringResource(id = R.string.roleplay_expand_editor),
-                    modifier = Modifier.size(16.dp),
-                )
-            }
-        }
-        if (isSending && onCancel != null) {
-            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-                CircularProgressIndicator(modifier = Modifier.size(16.dp), strokeWidth = 2.dp, color = colors.characterAccent)
-                NarraIconButton(
-                    onClick = onCancel,
-                    modifier = Modifier.size(RoleplayInteractiveIconButtonSize),
-                    colors = IconButtonDefaults.iconButtonColors(
-                        containerColor = RoleplayErrorActionContainerColor.copy(alpha = 0.7f),
-                        contentColor = Color.White,
+                BasicTextField(
+                    value = input,
+                    onValueChange = handleInputChange,
+                    modifier = Modifier
+                        .weight(1f)
+                        .focusRequester(focusRequester)
+                        .padding(vertical = 8.dp)
+                        .onPreviewKeyEvent { event ->
+                            if (
+                                event.type == KeyEventType.KeyDown &&
+                                event.key == Key.Enter &&
+                                !event.isShiftPressed
+                            ) {
+                                if (canSend) {
+                                    showActionPanel = false
+                                    onSend()
+                                    true
+                                } else {
+                                    false
+                                }
+                            } else if (
+                                event.type == KeyEventType.KeyDown &&
+                                event.key == Key.Enter &&
+                                event.isShiftPressed
+                            ) {
+                                allowNextInlineNewline = true
+                                false
+                            } else {
+                                false
+                            }
+                        },
+                    enabled = !isSending,
+                    maxLines = 3,
+                    textStyle = MaterialTheme.typography.bodyLarge.copy(color = colors.textPrimary),
+                    cursorBrush = SolidColor(colors.characterAccent),
+                    keyboardOptions = KeyboardOptions(
+                        imeAction = ImeAction.Send,
                     ),
-                ) {
-                    Icon(
-                        Icons.Default.Close,
-                        contentDescription = stringResource(id = R.string.common_cancel),
-                        modifier = Modifier.size(16.dp),
-                    )
+                    keyboardActions = KeyboardActions(
+                        onSend = {
+                            if (canSend) {
+                                showActionPanel = false
+                                onSend()
+                            }
+                        },
+                    ),
+                    decorationBox = { innerTextField ->
+                        if (input.isEmpty()) {
+                            Text(
+                                stringResource(id = R.string.roleplay_input_placeholder),
+                                style = MaterialTheme.typography.bodyLarge,
+                                color = colors.textMuted.copy(alpha = 0.56f),
+                            )
+                        }
+                        innerTextField()
+                    },
+                )
+                if (showExpandButton) {
+                    NarraIconButton(
+                        onClick = {
+                            showActionPanel = false
+                            showExpandedEditor = true
+                        },
+                        enabled = !isSending,
+                        modifier = Modifier.size(RoleplayInteractiveIconButtonSize),
+                        colors = IconButtonDefaults.iconButtonColors(
+                            containerColor = colors.panelBackground,
+                            contentColor = colors.textPrimary,
+                            disabledContainerColor = colors.panelBackground.copy(alpha = 0.45f),
+                            disabledContentColor = colors.textMuted.copy(alpha = 0.55f),
+                        ),
+                    ) {
+                        Icon(
+                            Icons.Default.OpenInFull,
+                            contentDescription = stringResource(id = R.string.roleplay_expand_editor),
+                            modifier = Modifier.size(16.dp),
+                        )
+                    }
+                }
+                if (isSending && onCancel != null) {
+                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                        CircularProgressIndicator(modifier = Modifier.size(16.dp), strokeWidth = 2.dp, color = colors.characterAccent)
+                        NarraIconButton(
+                            onClick = {
+                                showActionPanel = false
+                                onCancel()
+                            },
+                            modifier = Modifier.size(RoleplayInteractiveIconButtonSize),
+                            colors = IconButtonDefaults.iconButtonColors(
+                                containerColor = RoleplayErrorActionContainerColor.copy(alpha = 0.7f),
+                                contentColor = Color.White,
+                            ),
+                        ) {
+                            Icon(
+                                Icons.Default.Close,
+                                contentDescription = stringResource(id = R.string.common_cancel),
+                                modifier = Modifier.size(16.dp),
+                            )
+                        }
+                    }
+                } else {
+                    NarraIconButton(
+                        onClick = {
+                            showActionPanel = false
+                            view.performHapticFeedback(HapticFeedbackConstantsCompat.SEGMENT_FREQUENT_TICK)
+                            onSend()
+                        },
+                        enabled = canSend,
+                        modifier = Modifier.size(RoleplayInteractiveIconButtonSize),
+                        colors = IconButtonDefaults.iconButtonColors(
+                            containerColor = if (canSend) colors.characterAccent.copy(alpha = 0.88f) else colors.panelBackground,
+                            contentColor = if (canSend) Color.Black.copy(alpha = 0.88f) else colors.textMuted.copy(alpha = 0.55f),
+                        ),
+                    ) {
+                        Icon(
+                            Icons.AutoMirrored.Filled.Send,
+                            contentDescription = stringResource(id = R.string.common_send),
+                            modifier = Modifier.size(16.dp),
+                        )
+                    }
                 }
             }
-        } else {
-            NarraIconButton(
-                onClick = {
-                    view.performHapticFeedback(HapticFeedbackConstantsCompat.SEGMENT_FREQUENT_TICK)
-                    onSend()
-                },
-                enabled = canSend,
-                modifier = Modifier.size(RoleplayInteractiveIconButtonSize),
-                colors = IconButtonDefaults.iconButtonColors(
-                    containerColor = if (canSend) colors.characterAccent.copy(alpha = 0.88f) else colors.panelBackground,
-                    contentColor = if (canSend) Color.Black.copy(alpha = 0.88f) else colors.textMuted.copy(alpha = 0.55f),
-                ),
-            ) {
-                Icon(
-                    Icons.AutoMirrored.Filled.Send,
-                    contentDescription = stringResource(id = R.string.common_send),
-                    modifier = Modifier.size(16.dp),
-                )
-            }
         }
-    }
     }
 
     ExpandedDraftEditorDialog(
@@ -648,6 +707,86 @@ internal fun RoleplayInputBar(
         contentColor = MaterialTheme.colorScheme.onSurface,
         accentColor = colors.characterAccent,
     )
+}
+
+@Composable
+private fun RoleplayQuickActionPanel(
+    actions: List<RoleplayInputQuickAction>,
+    textColor: Color,
+    mutedTextColor: Color,
+    onActionClick: (RoleplayInputQuickAction) -> Unit,
+) {
+    Surface(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(22.dp),
+        color = Color.White.copy(alpha = 0.96f),
+        tonalElevation = 1.dp,
+        shadowElevation = 0.dp,
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 10.dp, vertical = 12.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp),
+        ) {
+            Text(
+                text = "快捷功能",
+                style = MaterialTheme.typography.labelLarge,
+                fontWeight = FontWeight.SemiBold,
+                color = textColor,
+            )
+            actions.chunked(4).forEach { rowActions ->
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                ) {
+                    rowActions.forEach { action ->
+                        Surface(
+                            modifier = Modifier.weight(1f),
+                            shape = RoundedCornerShape(18.dp),
+                            color = action.accentColor.copy(alpha = 0.12f),
+                            tonalElevation = 0.dp,
+                            onClick = { onActionClick(action) },
+                        ) {
+                            Column(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(horizontal = 8.dp, vertical = 12.dp),
+                                horizontalAlignment = Alignment.CenterHorizontally,
+                                verticalArrangement = Arrangement.spacedBy(8.dp),
+                            ) {
+                                Box(
+                                    modifier = Modifier
+                                        .size(42.dp)
+                                        .background(
+                                            color = action.accentColor,
+                                            shape = CircleShape,
+                                        ),
+                                    contentAlignment = Alignment.Center,
+                                ) {
+                                    Icon(
+                                        imageVector = action.icon,
+                                        contentDescription = action.label,
+                                        tint = Color.White,
+                                        modifier = Modifier.size(20.dp),
+                                    )
+                                }
+                                Text(
+                                    text = action.label,
+                                    style = MaterialTheme.typography.labelMedium,
+                                    color = mutedTextColor.copy(alpha = 0.92f),
+                                    textAlign = TextAlign.Center,
+                                )
+                            }
+                        }
+                    }
+                    repeat(4 - rowActions.size) {
+                        Spacer(modifier = Modifier.weight(1f))
+                    }
+                }
+            }
+        }
+    }
 }
 
 @Composable
@@ -947,6 +1086,16 @@ private fun RoleplayActionCard(
     onOpenVideoCall: (() -> Unit)?,
 ) {
     val isUserMessage = message.speaker == RoleplaySpeaker.USER
+    if (actionPart.actionType == ChatActionType.VOICE_MESSAGE) {
+        RoleplayVoiceMessageCard(
+            message = message,
+            actionPart = actionPart,
+            colors = colors,
+            backdropState = backdropState,
+            isUserMessage = isUserMessage,
+        )
+        return
+    }
     val title = when (actionPart.actionType) {
         ChatActionType.EMOJI -> "表情"
         ChatActionType.VOICE_MESSAGE -> "语音消息"
@@ -1011,6 +1160,134 @@ private fun RoleplayActionCard(
                 )
             }
         }
+    }
+}
+
+@Composable
+private fun RoleplayVoiceMessageCard(
+    message: RoleplayMessageUiModel,
+    actionPart: com.example.myapplication.model.ChatMessagePart,
+    colors: ImmersiveRoleplayColors,
+    backdropState: ImmersiveBackdropState,
+    isUserMessage: Boolean,
+) {
+    var isPlaying by rememberSaveable(message.sourceMessageId, actionPart.actionId) { mutableStateOf(false) }
+    val waveform = remember(actionPart.actionId, actionPart.voiceMessageContent()) {
+        buildVoiceWaveformSeed(
+            seed = "${actionPart.actionId}:${actionPart.voiceMessageContent()}",
+            count = 12,
+        )
+    }
+    val infiniteTransition = rememberInfiniteTransition(label = "roleplay_voice_wave")
+    val animatedWavePulses = List(waveform.size) { index ->
+        infiniteTransition.animateFloat(
+            initialValue = 0.82f,
+            targetValue = 1.18f,
+            animationSpec = infiniteRepeatable(
+                animation = tween(
+                    durationMillis = 420 + index * 45,
+                    delayMillis = index * 50,
+                ),
+                repeatMode = RepeatMode.Reverse,
+            ),
+            label = "roleplay_voice_wave_$index",
+        ).value
+    }
+
+    LaunchedEffect(isPlaying, actionPart.actionId) {
+        if (isPlaying) {
+            val fakePlaybackMillis = actionPart.voiceMessageDurationSeconds()
+                .coerceIn(1, 8) * 420L
+            delay(fakePlaybackMillis)
+            isPlaying = false
+        }
+    }
+
+    ImmersiveGlassSurface(
+        backdropState = backdropState,
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(22.dp),
+        overlayColor = if (isUserMessage) colors.panelBackgroundStrong else colors.panelBackground,
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clickable { isPlaying = !isPlaying }
+                .padding(horizontal = 14.dp, vertical = 12.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(38.dp)
+                    .background(
+                        color = if (isUserMessage) colors.userAccent else colors.characterAccent,
+                        shape = CircleShape,
+                    ),
+                contentAlignment = Alignment.Center,
+            ) {
+                Icon(
+                    imageVector = if (isPlaying) Icons.Default.Pause else Icons.Default.PlayArrow,
+                    contentDescription = if (isPlaying) "暂停语音" else "播放语音",
+                    tint = Color.White,
+                    modifier = Modifier.size(20.dp),
+                )
+            }
+            Row(
+                modifier = Modifier.weight(1f),
+                horizontalArrangement = Arrangement.spacedBy(3.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                waveform.forEachIndexed { index, baseHeight ->
+                    val animatedHeight = if (isPlaying) {
+                        baseHeight * animatedWavePulses[index]
+                    } else {
+                        baseHeight
+                    }
+                    Box(
+                        modifier = Modifier
+                            .width(4.dp)
+                            .height((10f + animatedHeight * 18f).dp)
+                            .background(
+                                color = if (isUserMessage) {
+                                    colors.userAccent.copy(alpha = 0.95f)
+                                } else {
+                                    colors.characterAccent.copy(alpha = 0.92f)
+                                },
+                                shape = RoundedCornerShape(999.dp),
+                            ),
+                    )
+                }
+            }
+            Column(
+                horizontalAlignment = Alignment.End,
+                verticalArrangement = Arrangement.spacedBy(2.dp),
+            ) {
+                Text(
+                    text = actionPart.voiceMessageDurationLabel(),
+                    style = MaterialTheme.typography.labelLarge,
+                    fontWeight = FontWeight.SemiBold,
+                    color = colors.textPrimary,
+                )
+                Text(
+                    text = if (isPlaying) "播放中" else "语音消息",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = colors.textMuted,
+                )
+            }
+        }
+    }
+}
+
+private fun buildVoiceWaveformSeed(
+    seed: String,
+    count: Int,
+): List<Float> {
+    var state = seed.hashCode().let { if (it == Int.MIN_VALUE) 7 else abs(it) + 7 }
+    return List(count) {
+        state = (state * 1103515245 + 12345)
+        val normalized = abs(state % 1000) / 1000f
+        0.35f + normalized * 0.75f
     }
 }
 

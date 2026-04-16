@@ -169,14 +169,23 @@ fun emojiMessagePart(
 
 fun voiceMessageActionPart(
     content: String,
+    durationSeconds: Int? = null,
     id: String = UUID.randomUUID().toString(),
 ): ChatMessagePart {
+    val normalizedContent = content.trim()
     return ChatMessagePart(
         type = ChatMessagePartType.ACTION,
         actionType = ChatActionType.VOICE_MESSAGE,
         actionId = id,
         actionMetadata = normalizeActionMetadata(
-            mapOf(ACTION_CONTENT_KEY to content),
+            buildMap {
+                put(ACTION_CONTENT_KEY, normalizedContent)
+                durationSeconds
+                    ?.coerceIn(1, 60)
+                    ?.let { normalizedDuration ->
+                        put(ACTION_DURATION_SECONDS_KEY, normalizedDuration.toString())
+                    }
+            },
         ),
     )
 }
@@ -810,6 +819,27 @@ fun ChatMessagePart.actionMetadataValue(key: String): String {
     return actionMetadata[key].orEmpty().trim()
 }
 
+fun ChatMessagePart.voiceMessageContent(): String {
+    return actionMetadataValue(ACTION_CONTENT_KEY)
+}
+
+fun ChatMessagePart.voiceMessageDurationSeconds(): Int {
+    if (actionType != ChatActionType.VOICE_MESSAGE) {
+        return 0
+    }
+    return resolveVoiceMessageDurationSeconds(
+        content = voiceMessageContent(),
+        preferredDurationSeconds = actionMetadataValue(ACTION_DURATION_SECONDS_KEY).toIntOrNull(),
+    )
+}
+
+fun ChatMessagePart.voiceMessageDurationLabel(): String {
+    if (actionType != ChatActionType.VOICE_MESSAGE) {
+        return ""
+    }
+    return "${voiceMessageDurationSeconds()}″"
+}
+
 fun ChatMessagePart.specialPlayTitle(): String {
     return when (specialType) {
         ChatSpecialType.TRANSFER -> transferDirectionLabel()
@@ -1035,6 +1065,7 @@ private fun normalizeActionMetadata(source: Map<String, String>): Map<String, St
 
 private const val ACTION_DESCRIPTION_KEY = "description"
 private const val ACTION_CONTENT_KEY = "content"
+private const val ACTION_DURATION_SECONDS_KEY = "duration_seconds"
 private const val ACTION_LOCATION_NAME_KEY = "location_name"
 private const val ACTION_COORDINATES_KEY = "coordinates"
 private const val ACTION_ADDRESS_KEY = "address"

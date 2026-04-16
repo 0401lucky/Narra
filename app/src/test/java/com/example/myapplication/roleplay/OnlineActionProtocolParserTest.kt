@@ -5,6 +5,7 @@ import com.example.myapplication.model.TransferDirection
 import com.example.myapplication.model.TransferStatus
 import com.example.myapplication.model.isOnlineThoughtPart
 import com.example.myapplication.model.onlineThoughtContent
+import com.example.myapplication.model.voiceMessageDurationSeconds
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
@@ -51,6 +52,21 @@ class OnlineActionProtocolParserTest {
 
         assertTrue(result.parts.isEmpty())
         assertEquals(listOf(OnlineActionDirective.RecallPreviousAssistant), result.directives)
+    }
+
+    @Test
+    fun parse_voiceMessageAcceptsOptionalDurationKeys() {
+        val snakeCaseResult = OnlineActionProtocolParser.parse(
+            rawContent = """[{"type":"voice_message","content":"晚点再说","duration_seconds":9}]""",
+            characterName = "沈砚清",
+        )!!
+        val camelCaseResult = OnlineActionProtocolParser.parse(
+            rawContent = """[{"type":"voice_message","content":"我在听","durationSeconds":"7"}]""",
+            characterName = "沈砚清",
+        )!!
+
+        assertEquals(9, snakeCaseResult.parts.single().voiceMessageDurationSeconds())
+        assertEquals(7, camelCaseResult.parts.single().voiceMessageDurationSeconds())
     }
 
     @Test

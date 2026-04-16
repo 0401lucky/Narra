@@ -25,6 +25,7 @@ import com.example.myapplication.model.toPlainText
 import com.example.myapplication.model.toSpecialPlayCopyText
 import com.example.myapplication.model.pokeSuffix
 import com.example.myapplication.model.pokeTarget
+import com.example.myapplication.model.voiceMessageContent
 
 object RoleplayMessageUiMapper {
     fun mapMessages(
@@ -736,7 +737,7 @@ object RoleplayMessageUiMapper {
             speakerName = speakerName,
             content = when (actionType) {
                 ChatActionType.EMOJI -> actionMetadataValue("description")
-                ChatActionType.VOICE_MESSAGE -> actionMetadataValue("content")
+                ChatActionType.VOICE_MESSAGE -> voiceMessageContent()
                 ChatActionType.AI_PHOTO -> actionMetadataValue("description")
                 ChatActionType.LOCATION -> actionMetadataValue("location_name")
                 ChatActionType.POKE -> buildString {

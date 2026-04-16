@@ -1,18 +1,17 @@
 {
   "app_id": "com.narra.app.dev",
   "channel": "dev",
-  "latest_version_name": "1.4.2-dev",
-  "latest_version_code": 10402,
+  "latest_version_name": "1.4.3-dev",
+  "latest_version_code": 10403,
   "minimum_supported_version_code": 0,
-  "apk_url": "https://download.lsa1230.dpdns.org/dev/Narra-v1.4.2-dev-10402-dev.apk",
-  "apk_sha256": "c3554e39c49cdd8a8ca3e4b6f077aaa8459aa50f616709eeb159a5ea1a94a71d",
-  "published_at": "2026-04-16T19:00:00+08:00",
+  "apk_url": "https://download.lsa1230.dpdns.org/dev/Narra-v1.4.3-dev-10403-dev.apk",
+  "apk_sha256": "ae1a7bb1fdffd08836a650b9b020303c49c76fe3a82f854bc990364fbcd29bae",
+  "published_at": "2026-04-16T20:53:11+08:00",
   "release_notes": [
-    "拍一拍增强：支持 target/suffix，微信风格居中系统文本渲染",
-    "时间感知系统：30min/2h/12h 三级阈值自动注入时间断层旁白",
-    "结构化心境提取：AI 自动提取角色当前情绪基调与未说出口的心结",
-    "记忆角色隔离：不同角色的记忆互不可见，渐进迁移兼容旧数据",
-    "心声 prompt 强化为脑内弹幕定位，增加碎片化要求和外语翻译规则",
-    "修复所有 MemoryEntry 创建站点遗漏 characterId 的角色隔离漏洞"
+    "线上模式加号入口升级为快捷功能宫格，常用玩法可直接展开",
+    "新增协议语音发送入口，支持 voice_message 时长编辑与语音条渲染",
+    "记忆与摘要页升级为按角色筛选的记忆查看器，支持核心记忆/情景记忆/剧情总结/时间线",
+    "修复记忆与摘要总览页不同角色内容混在一起的问题",
+    "线上模式切回线下对白或长文时，继续承接同一场景会话历史"
   ]
 }

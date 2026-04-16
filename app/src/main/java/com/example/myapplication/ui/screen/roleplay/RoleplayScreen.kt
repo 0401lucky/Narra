@@ -31,6 +31,7 @@ import com.example.myapplication.model.RoleplayScenario
 import com.example.myapplication.model.RoleplaySuggestionUiModel
 import com.example.myapplication.model.TaskPlayDraft
 import com.example.myapplication.model.TransferPlayDraft
+import com.example.myapplication.model.VoiceMessageDraft
 import com.example.myapplication.ui.component.NarraTextButton
 import com.example.myapplication.ui.component.rememberSystemHighTextContrastEnabled
 import com.example.myapplication.ui.component.roleplay.rememberImmersiveBackdropState
@@ -77,6 +78,7 @@ fun RoleplayScreen(
     onRecallMessage: (String) -> Unit,
     onCaptureOnlineChat: () -> Unit,
     onSendSpecialPlay: (ChatSpecialPlayDraft) -> Unit,
+    onSendVoiceMessage: (VoiceMessageDraft) -> Unit,
     onConfirmTransferReceipt: (String) -> Unit,
     onSend: () -> Unit,
     onCancelSending: () -> Unit,
@@ -126,8 +128,12 @@ fun RoleplayScreen(
     )
 
     var showSpecialPlaySheet by rememberSaveable { mutableStateOf(false) }
+    var showVoiceMessageSheet by rememberSaveable { mutableStateOf(false) }
     var showPhoneOwnerPicker by rememberSaveable { mutableStateOf(false) }
     var activeSpecialPlayTypeName by rememberSaveable { mutableStateOf<String?>(null) }
+    var voiceDraft by rememberSaveable(stateSaver = VoiceMessageDraftSaver) {
+        mutableStateOf(VoiceMessageDraft())
+    }
     var transferDraft by rememberSaveable(stateSaver = TransferPlayDraftSaver) {
         mutableStateOf(TransferPlayDraft(counterparty = characterName))
     }
@@ -190,6 +196,10 @@ fun RoleplayScreen(
         }
     }
 
+    fun resetVoiceDraft() {
+        voiceDraft = VoiceMessageDraft()
+    }
+
     if (scenario.interactionMode == RoleplayInteractionMode.ONLINE_PHONE) {
         RoleplayOnlinePhoneContent(
             scenario = scenario,
@@ -219,7 +229,27 @@ fun RoleplayScreen(
             onClearQuotedMessage = onClearQuotedMessage,
             onRecallMessage = onRecallMessage,
             onScreenshotChat = onCaptureOnlineChat,
-            onOpenSpecialPlay = { showSpecialPlaySheet = true },
+            onOpenVoiceMessage = { showVoiceMessageSheet = true },
+            onOpenTransferPlay = {
+                primeSpecialPlayDraft(ChatSpecialType.TRANSFER)
+                activeSpecialPlayTypeName = ChatSpecialType.TRANSFER.name
+            },
+            onOpenInvitePlay = {
+                primeSpecialPlayDraft(ChatSpecialType.INVITE)
+                activeSpecialPlayTypeName = ChatSpecialType.INVITE.name
+            },
+            onOpenGiftPlay = {
+                primeSpecialPlayDraft(ChatSpecialType.GIFT)
+                activeSpecialPlayTypeName = ChatSpecialType.GIFT.name
+            },
+            onOpenTaskPlay = {
+                primeSpecialPlayDraft(ChatSpecialType.TASK)
+                activeSpecialPlayTypeName = ChatSpecialType.TASK.name
+            },
+            onOpenPunishPlay = {
+                primeSpecialPlayDraft(ChatSpecialType.PUNISH)
+                activeSpecialPlayTypeName = ChatSpecialType.PUNISH.name
+            },
             onConfirmTransferReceipt = onConfirmTransferReceipt,
             onSend = onSend,
             onCancelSending = onCancelSending,
@@ -360,5 +390,21 @@ fun RoleplayScreen(
                 }
             },
         )
+        if (showVoiceMessageSheet) {
+            VoiceMessageEditorSheet(
+                draft = voiceDraft,
+                isSending = isSending,
+                onDraftChange = { voiceDraft = it },
+                onDismissRequest = {
+                    showVoiceMessageSheet = false
+                    resetVoiceDraft()
+                },
+                onConfirm = {
+                    onSendVoiceMessage(voiceDraft)
+                    showVoiceMessageSheet = false
+                    resetVoiceDraft()
+                },
+            )
+        }
     }
 }
