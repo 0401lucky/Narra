@@ -116,122 +116,121 @@ fun ContextTransferScreen(
             ) {
                 item {
                     SettingsPageIntro(
-                        overline = "JSON 数据包",
                         title = "统一迁移角色卡、世界书、记忆与摘要",
                         summary = "采用合并导入，不会删除现有数据。相同 ID 的条目会被导入内容覆盖。",
                     )
                 }
 
-            // Current Data Overview
-            item { SettingsSectionHeader("当前数据概览", "") }
-            item {
-                SettingsGroup {
-                    SettingsListRow(
-                        title = "自定义角色卡",
-                        supportingText = "当前共有 ${uiState.customAssistantCount} 条",
-                        enabled = false,
-                        showArrow = false,
-                    )
-                    SettingsGroupDivider()
-                    SettingsListRow(
-                        title = "世界书条目",
-                        supportingText = "当前共有 ${uiState.worldBookCount} 条",
-                        enabled = false,
-                        showArrow = false,
-                    )
-                    SettingsGroupDivider()
-                    SettingsListRow(
-                        title = "记忆条目",
-                        supportingText = "当前共有 ${uiState.memoryCount} 条",
-                        enabled = false,
-                        showArrow = false,
-                    )
-                    SettingsGroupDivider()
-                    SettingsListRow(
-                        title = "对话摘要",
-                        supportingText = "当前共有 ${uiState.summaryCount} 条",
-                        enabled = false,
-                        showArrow = false,
-                    )
-                }
-            }
-
-            // Transfer Actions — each section is its own clean group
-            item { SettingsSectionHeader("导入导出操作", "") }
-
-            item {
-                TransferSectionGroup(
-                    title = "全部资料",
-                    description = "统一迁移角色卡、世界书、记忆和摘要",
-                    isBusy = uiState.isBusy,
-                    onExport = {
-                        pendingExportSection = ContextTransferSection.ALL
-                        exportLauncher.launch(ContextTransferSection.ALL.exportFileName)
-                    },
-                    onImport = {
-                        pendingImportSection = ContextTransferSection.ALL
-                        importLauncher.launch(arrayOf("application/json", "text/plain", "image/png"))
-                    },
-                )
-            }
-            item {
-                TransferSectionGroup(
-                    title = "角色卡",
-                    description = "支持本应用角色卡 JSON 和 Tavern PNG 角色卡",
-                    isBusy = uiState.isBusy,
-                    onExport = {
-                        pendingExportSection = ContextTransferSection.ASSISTANTS
-                        exportLauncher.launch(ContextTransferSection.ASSISTANTS.exportFileName)
-                    },
-                    onImport = {
-                        pendingImportSection = ContextTransferSection.ASSISTANTS
-                        importLauncher.launch(arrayOf("application/json", "text/plain", "image/png"))
-                    },
-                )
-            }
-            item {
-                TransferSectionGroup(
-                    title = "世界书",
-                    description = "支持本应用 JSON、独立世界书 JSON，以及从角色卡 JSON/PNG 中抽取世界书",
-                    isBusy = uiState.isBusy,
-                    onExport = {
-                        pendingExportSection = ContextTransferSection.WORLD_BOOK
-                        exportLauncher.launch(ContextTransferSection.WORLD_BOOK.exportFileName)
-                    },
-                    onImport = {
-                        pendingImportSection = ContextTransferSection.WORLD_BOOK
-                        importLauncher.launch(arrayOf("application/json", "text/plain", "image/png"))
-                    },
-                )
-            }
-            item {
-                TransferSectionGroup(
-                    title = "记忆与摘要",
-                    description = "单独迁移记忆条目和对话摘要",
-                    isBusy = uiState.isBusy,
-                    onExport = {
-                        pendingExportSection = ContextTransferSection.MEMORY
-                        exportLauncher.launch(ContextTransferSection.MEMORY.exportFileName)
-                    },
-                    onImport = {
-                        pendingImportSection = ContextTransferSection.MEMORY
-                        importLauncher.launch(arrayOf("application/json", "text/plain"))
-                    },
-                )
-            }
-
-            // Import Preview
-            uiState.importPreview?.let { preview ->
-                item { SettingsSectionHeader("导入预览", "") }
+                // Current Data Overview
+                item { SettingsSectionHeader("当前数据概览", "") }
                 item {
-                    ImportPreviewCard(
-                        preview = preview,
+                    SettingsGroup {
+                        SettingsListRow(
+                            title = "自定义角色卡",
+                            supportingText = "当前共有 ${uiState.customAssistantCount} 条",
+                            enabled = false,
+                            showArrow = false,
+                        )
+                        SettingsGroupDivider()
+                        SettingsListRow(
+                            title = "世界书条目",
+                            supportingText = "当前共有 ${uiState.worldBookCount} 条",
+                            enabled = false,
+                            showArrow = false,
+                        )
+                        SettingsGroupDivider()
+                        SettingsListRow(
+                            title = "记忆条目",
+                            supportingText = "当前共有 ${uiState.memoryCount} 条",
+                            enabled = false,
+                            showArrow = false,
+                        )
+                        SettingsGroupDivider()
+                        SettingsListRow(
+                            title = "对话摘要",
+                            supportingText = "当前共有 ${uiState.summaryCount} 条",
+                            enabled = false,
+                            showArrow = false,
+                        )
+                    }
+                }
+
+                // Transfer Actions — each section is its own clean group
+                item { SettingsSectionHeader("导入导出操作", "") }
+
+                item {
+                    TransferSectionGroup(
+                        title = "全部资料",
+                        description = "统一迁移角色卡、世界书、记忆和摘要",
                         isBusy = uiState.isBusy,
-                        onConfirmImport = onConfirmImport,
-                        onDismiss = onDismissImportPreview,
+                        onExport = {
+                            pendingExportSection = ContextTransferSection.ALL
+                            exportLauncher.launch(ContextTransferSection.ALL.exportFileName)
+                        },
+                        onImport = {
+                            pendingImportSection = ContextTransferSection.ALL
+                            importLauncher.launch(arrayOf("application/json", "text/plain", "image/png"))
+                        },
                     )
                 }
-            }
+                item {
+                    TransferSectionGroup(
+                        title = "角色卡",
+                        description = "支持本应用角色卡 JSON 和 Tavern PNG 角色卡",
+                        isBusy = uiState.isBusy,
+                        onExport = {
+                            pendingExportSection = ContextTransferSection.ASSISTANTS
+                            exportLauncher.launch(ContextTransferSection.ASSISTANTS.exportFileName)
+                        },
+                        onImport = {
+                            pendingImportSection = ContextTransferSection.ASSISTANTS
+                            importLauncher.launch(arrayOf("application/json", "text/plain", "image/png"))
+                        },
+                    )
+                }
+                item {
+                    TransferSectionGroup(
+                        title = "世界书",
+                        description = "支持本应用 JSON、独立世界书 JSON，以及从角色卡 JSON/PNG 中抽取世界书",
+                        isBusy = uiState.isBusy,
+                        onExport = {
+                            pendingExportSection = ContextTransferSection.WORLD_BOOK
+                            exportLauncher.launch(ContextTransferSection.WORLD_BOOK.exportFileName)
+                        },
+                        onImport = {
+                            pendingImportSection = ContextTransferSection.WORLD_BOOK
+                            importLauncher.launch(arrayOf("application/json", "text/plain", "image/png"))
+                        },
+                    )
+                }
+                item {
+                    TransferSectionGroup(
+                        title = "记忆与摘要",
+                        description = "单独迁移记忆条目和对话摘要",
+                        isBusy = uiState.isBusy,
+                        onExport = {
+                            pendingExportSection = ContextTransferSection.MEMORY
+                            exportLauncher.launch(ContextTransferSection.MEMORY.exportFileName)
+                        },
+                        onImport = {
+                            pendingImportSection = ContextTransferSection.MEMORY
+                            importLauncher.launch(arrayOf("application/json", "text/plain"))
+                        },
+                    )
+                }
+
+                // Import Preview
+                uiState.importPreview?.let { preview ->
+                    item { SettingsSectionHeader("导入预览", "") }
+                    item {
+                        ImportPreviewCard(
+                            preview = preview,
+                            isBusy = uiState.isBusy,
+                            onConfirmImport = onConfirmImport,
+                            onDismiss = onDismissImportPreview,
+                        )
+                    }
+                }
             }
             TopAppSnackbarHost(
                 hostState = snackbarHostState,

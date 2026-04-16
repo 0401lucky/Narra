@@ -198,7 +198,6 @@ fun SettingsTopBar(
 
 @Composable
 fun SettingsPageIntro(
-    overline: String,
     title: String,
     summary: String = "",
 ) {

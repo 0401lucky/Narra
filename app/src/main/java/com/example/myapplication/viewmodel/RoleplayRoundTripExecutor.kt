@@ -173,6 +173,7 @@ internal class RoleplayRoundTripExecutor(
                         append(note)
                     }
                 },
+                modelId = selectedModel,
             )
             val toolingOptions = GatewayToolingOptions.localContextOnly(
                 GatewayToolRuntimeContext(
@@ -261,7 +262,7 @@ internal class RoleplayRoundTripExecutor(
                             onlineProtocolResult = scenario.takeIf {
                                 it.interactionMode == com.example.myapplication.model.RoleplayInteractionMode.ONLINE_PHONE
                             }?.let {
-                                OnlineActionProtocolParser.parse(
+                                OnlineActionProtocolParser.parseWithFallback(
                                     rawContent = payload.content,
                                     characterName = roleplayStateCharacterName(
                                         scenario = scenario,

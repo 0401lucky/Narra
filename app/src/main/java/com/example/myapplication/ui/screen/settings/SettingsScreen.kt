@@ -102,17 +102,9 @@ fun SettingsScreen(
     val displaySummary = buildString {
         append(displayScaleLabel(uiState.messageTextScale))
         append(" · ")
-        append(if (uiState.autoPreviewImages) "自动预览已开启" else "自动预览已关闭")
+        append(if (uiState.autoPreviewImages) "自动预览" else "手动预览")
         append(" · ")
-        append(if (uiState.reasoningExpandedByDefault) "思考默认展开" else "思考默认收起")
-        append(" · ")
-        append(if (uiState.showThinkingContent) "生成中显示思考" else "生成中隐藏思考")
-        append(" · ")
-        append(if (uiState.autoCollapseThinking) "结束后自动收起思考" else "结束后保留思考展开")
-        append(" · ")
-        append(if (uiState.codeBlockAutoWrap) "代码自动换行" else "代码横向滚动")
-        append(" · ")
-        append(if (uiState.codeBlockAutoCollapse) "代码自动折叠" else "代码完整展开")
+        append(if (uiState.reasoningExpandedByDefault) "思考展开" else "思考收起")
     }
 
     Scaffold(

@@ -41,7 +41,7 @@ abstract class ChatDatabase : RoomDatabase() {
     abstract fun phoneSnapshotDao(): PhoneSnapshotDao
 
     companion object {
-        const val CURRENT_VERSION = 23
+        const val CURRENT_VERSION = 24
 
         val MIGRATION_1_2 = object : Migration(1, 2) {
             override fun migrate(db: SupportSQLiteDatabase) {
@@ -514,6 +514,16 @@ abstract class ChatDatabase : RoomDatabase() {
             }
         }
 
+        val MIGRATION_23_24 = object : Migration(23, 24) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                if (!hasColumn(db, "roleplay_scenarios", "enableDeepImmersion")) {
+                    db.execSQL(
+                        "ALTER TABLE roleplay_scenarios ADD COLUMN enableDeepImmersion INTEGER NOT NULL DEFAULT 0",
+                    )
+                }
+            }
+        }
+
         val ALL_MIGRATIONS = arrayOf(
             MIGRATION_1_2,
             MIGRATION_2_3,
@@ -537,6 +547,7 @@ abstract class ChatDatabase : RoomDatabase() {
             MIGRATION_20_21,
             MIGRATION_21_22,
             MIGRATION_22_23,
+            MIGRATION_23_24,
         )
 
         private fun hasColumn(

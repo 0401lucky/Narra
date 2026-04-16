@@ -104,7 +104,6 @@ fun MemoryManagementScreen(
             ) {
                 item {
                     SettingsPageIntro(
-                        overline = "长期上下文",
                         title = "记忆与摘要",
                     )
                 }

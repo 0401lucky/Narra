@@ -99,7 +99,6 @@ fun RoleplayScenarioListScreen(
         ) {
             item {
                 SettingsPageIntro(
-                    overline = "Roleplay",
                     title = "把现有角色与上下文系统变成视觉小说式体验",
                     summary = "每个场景都有自己的背景、立绘覆写和独立会话绑定；同一个助手也可以被多个场景复用。",
                 )

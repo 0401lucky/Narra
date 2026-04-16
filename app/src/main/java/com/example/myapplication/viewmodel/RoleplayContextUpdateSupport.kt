@@ -13,6 +13,8 @@ import com.example.myapplication.model.RoleplayScenario
 import com.example.myapplication.roleplay.RoleplayConversationSupport
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 
 internal class RoleplayContextUpdateSupport(
     private val scope: CoroutineScope,
@@ -25,6 +27,9 @@ internal class RoleplayContextUpdateSupport(
     private val aiPromptExtrasService: com.example.myapplication.data.repository.ai.AiPromptExtrasService,
     private val refreshContextGovernance: suspend (String, List<ChatMessage>, AppSettings, Assistant?, RoleplayScenario) -> Unit,
 ) {
+    /** 确保后台 API 请求（摘要/记忆提取）串行执行，避免并发触发 429。 */
+    private val backgroundApiMutex = Mutex()
+
     fun launchConversationSummaryGeneration(
         conversationId: String,
         completedMessages: List<ChatMessage>,
@@ -38,19 +43,21 @@ internal class RoleplayContextUpdateSupport(
         forceRefresh: Boolean = false,
     ) {
         scope.launch {
-            runCatching {
-                updateConversationSummary(
-                    conversationId = conversationId,
-                    completedMessages = completedMessages,
-                    settings = settings,
-                    assistant = assistant,
-                    scenario = scenario,
-                    summaryTriggerMessageCount = summaryTriggerMessageCount,
-                    summaryRecentMessageWindow = summaryRecentMessageWindow,
-                    summaryMinCoveredMessageCount = summaryMinCoveredMessageCount,
-                    maxSummaryInputLength = maxSummaryInputLength,
-                    forceRefresh = forceRefresh,
-                )
+            backgroundApiMutex.withLock {
+                runCatching {
+                    updateConversationSummary(
+                        conversationId = conversationId,
+                        completedMessages = completedMessages,
+                        settings = settings,
+                        assistant = assistant,
+                        scenario = scenario,
+                        summaryTriggerMessageCount = summaryTriggerMessageCount,
+                        summaryRecentMessageWindow = summaryRecentMessageWindow,
+                        summaryMinCoveredMessageCount = summaryMinCoveredMessageCount,
+                        maxSummaryInputLength = maxSummaryInputLength,
+                        forceRefresh = forceRefresh,
+                    )
+                }
             }
         }
     }
@@ -122,24 +129,26 @@ internal class RoleplayContextUpdateSupport(
     ) {
         val targetAssistant = assistant ?: return
         scope.launch {
-            runCatching {
-                memoryExtractionCoordinator.updateRoleplayMemories(
-                    conversationId = conversationId,
-                    assistant = targetAssistant,
-                    completedMessages = completedMessages,
-                    settings = settings,
-                    recentMessageWindow = autoMemoryMessageWindow,
-                    sceneMemoryMaxItems = roleplaySceneMemoryMaxItems,
-                    buildMemoryInput = { messages ->
-                        RoleplayConversationSupport.buildTranscriptInput(
-                            messages = messages,
-                            scenario = scenario,
-                            assistant = assistant,
-                            settings = settings,
-                            maxLength = maxMemoryInputLength,
-                        )
-                    },
-                )
+            backgroundApiMutex.withLock {
+                runCatching {
+                    memoryExtractionCoordinator.updateRoleplayMemories(
+                        conversationId = conversationId,
+                        assistant = targetAssistant,
+                        completedMessages = completedMessages,
+                        settings = settings,
+                        recentMessageWindow = autoMemoryMessageWindow,
+                        sceneMemoryMaxItems = roleplaySceneMemoryMaxItems,
+                        buildMemoryInput = { messages ->
+                            RoleplayConversationSupport.buildTranscriptInput(
+                                messages = messages,
+                                scenario = scenario,
+                                assistant = assistant,
+                                settings = settings,
+                                maxLength = maxMemoryInputLength,
+                            )
+                        },
+                    )
+                }
             }
         }
     }

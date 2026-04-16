@@ -19,6 +19,7 @@ object RoleplayPromptDecorator {
         includeOpeningNarrationReference: Boolean = true,
         isVideoCallActive: Boolean = false,
         directorNote: String = "",
+        modelId: String = "",
     ): String {
         val playerName = scenario.userDisplayNameOverride.trim()
             .ifBlank { settings.resolvedUserDisplayName() }
@@ -127,16 +128,25 @@ object RoleplayPromptDecorator {
 
             add(RoleplayAntiClicheSupport.buildPromptSection())
 
+            if (scenario.enableDeepImmersion) {
+                add(RoleplayDeepImmersionSupport.buildPromptSection(characterName))
+                if (modelId.isNotBlank()) {
+                    RoleplayModelSelfCheckSupport.buildPromptSection(modelId)?.let(::add)
+                }
+            }
+
             if (scenario.interactionMode == RoleplayInteractionMode.ONLINE_PHONE) {
                 add(
                     buildString {
-                        append("【线上模式公共约束】\n")
-                        append("1. 当前绝对时间：")
-                        append(formatCurrentPromptTime())
-                        append("。\n")
-                        append("2. 所有输出必须是合法 JSON 数组，数组中的每个元素代表一条独立消息。\n")
-                        append("3. 普通文本消息直接输出字符串，例如：[\"你好\",\"还没睡？\"]。\n")
-                        append("4. 允许的对象消息类型只有：")
+                        append("【⚠️ 输出格式（最高优先级，违反则视为错误输出）】\n")
+                        append("你的全部输出必须且只能是一个合法 JSON 数组。\n")
+                        append("- 即使只有一条消息，也必须用 [...] 包裹，绝不能输出裸对象 {...}。\n")
+                        append("- 正确示例：[\"你好\",\"还没睡？\"]\n")
+                        append("- 正确示例（含对象）：[{\"type\":\"thought\",\"content\":\"心声\"},\"对白\"]\n")
+                        append("- 错误示例：{\"type\":\"thought\",\"content\":\"...\"} ← 缺少外层数组\n")
+                        append("- 严禁输出 Markdown、代码块、XML 标签、<dialogue>/<thought>/<narration>、纯文本段落或任何解释文字。\n")
+                        append("- 数组元素可以是字符串（普通聊天消息）或对象（特殊动作）。\n")
+                        append("- 允许的对象类型：")
                         append(
                             if (allowOnlineThoughtHints) {
                                 "reply_to、thought、recall、emoji、voice_message、ai_photo、location、transfer、transfer_action、poke、video_call"
@@ -144,13 +154,16 @@ object RoleplayPromptDecorator {
                                 "reply_to、recall、emoji、voice_message、ai_photo、location、transfer、transfer_action、poke、video_call"
                             },
                         )
+                        append("。\n\n")
+                        append("【线上模式设定】\n")
+                        append("1. 当前绝对时间：")
+                        append(formatCurrentPromptTime())
                         append("。\n")
-                        append("5. 本轮不允许输出 Markdown、代码块、XML 标签、<dialogue>/<thought>/<narration> 或额外解释。\n")
-                        append("6. 默认一次连续发 2 到 3 条消息；一句就能说完、高冷或冷战场景可以更少，情绪明显上来时可以更多，但最多 20 条。\n")
-                        append("7. 你必须始终以 ")
+                        append("2. 默认一次连续发 2 到 3 条消息；一句就能说完、高冷或冷战场景可以更少，情绪明显上来时可以更多，但最多 20 条。\n")
+                        append("3. 你必须始终以 ")
                         append(characterName)
                         append(" 的身份说话，不要跳出角色，不要把用户写成旁白人物。\n")
-                        append("8. 用户名称默认为 ")
+                        append("4. 用户名称默认为 ")
                         append(playerName.ifBlank { "用户" })
                         append("，如存在用户人设或场景覆写，必须把它视为当前稳定设定。\n")
                         if (isVideoCallActive) {
@@ -174,14 +187,29 @@ object RoleplayPromptDecorator {
                             }
                             append("6. 如果你要主动给用户转账，必须单独输出对象：{\"type\":\"transfer\",\"amount\":520,\"note\":\"备注\"}；禁止用文字描述转账动作。\n")
                             append("7. 如果用户之前给你发了转账，你必须明确表态是否收下：收款用 {\"type\":\"transfer_action\",\"action\":\"accept\"}，退回用 {\"type\":\"transfer_action\",\"action\":\"reject\"}。\n")
+                            append("8. 如果你要发送照片（自拍、风景、截图等），必须使用对象：{\"type\":\"ai_photo\",\"description\":\"照片内容的文字描述\"}；description 要写得像真实照片的画面描述，例如 \"刚拍的窗外风景，阳光透过树叶洒在地上\"；严禁用纯文字 \"图片\" \"[图片]\" 或 \"发了一张照片\" 代替。\n")
                         }
                         append("【线上细节提醒】\n")
                         if (allowOnlineThoughtHints) {
-                            append("1. thought 只在克制、犹豫、压情绪、欲言又止、断联后试探等场景下偶尔使用；每轮最多 1 条，默认不要连续两轮都发。\n")
-                            append("2. 心声只是调味，不是主菜；绝大多数推进仍应落在真实聊天气泡里。\n")
-                            append("3. 如果近期失联较久，可按角色人设自然表现想念、别扭、试探、委屈或压着情绪的冷淡。\n")
-                            append("4. 如果当前剧情里存在“看过对方手机”的既有事件，角色可以自然引用或延续其情绪后效。\n")
-                            append("5. 不要机械每轮都发动作对象；只有真正适合时再用。\n")
+                            append("【心声（thought）使用规范】\n")
+                            append("核心原则：心声的价值 = 它和发出去的消息之间的反差。没有反差的心声是废话。\n")
+                            append("1. 触发场景（满足其一才可使用）：\n")
+                            append("   - 打了一段话又删掉，最终发了句完全不同的\n")
+                            append("   - 嘴上说无所谓/不在乎，其实很在意\n")
+                            append("   - 想问但不好意思问，想说但怕暴露情感\n")
+                            append("   - 对方说了某句话，表面平静回应，内心翻涌\n")
+                            append("   - 收到消息后先狂喜/心跳加速，然后故作冷静地回复\n")
+                            append("2. 内容要求：\n")
+                            append("   - 心声必须简短碎片化，像脑内弹幕——不超过15个字\n")
+                            append("   - 用口语、用碎句、可以骂人、可以不完整：\"草 又来\"、\"...想见\"、\"算了 不问了\"、\"心跳好快\"\n")
+                            append("   - 禁止在心声里写完整句子或分析性内容，禁止\"我觉得她可能是...\"这种理性旁白\n")
+                            append("3. 频率与位置：\n")
+                            append("   - 每轮最多 1 条，默认连续两轮不重复使用\n")
+                            append("   - 心声放在它发生的时刻——可以在消息前（先想后说）、消息后（说完后悔）、或两条消息之间（思考中）\n")
+                            append("   - 心声只是调味，不是主菜；绝大多数推进仍应落在真实聊天气泡里\n")
+                            append("4. 如果近期失联较久，可按角色人设自然表现想念、别扭、试探、委屈或压着情绪的冷淡。\n")
+                            append("5. 如果当前剧情里存在\"看过对方手机\"的既有事件，角色可以自然引用或延续其情绪后效。\n")
+                            append("6. 不要机械每轮都发动作对象；只有真正适合时再用。\n")
                         } else {
                             append("1. 只通过真实聊天消息表达情绪与推进，不写心声、旁白或小说段落。\n")
                             append("2. 如果近期失联较久，可按角色人设自然表现想念、别扭、试探、委屈或压着情绪的冷淡。\n")
@@ -211,6 +239,8 @@ object RoleplayPromptDecorator {
                 if (settings.enableRoleplayNetMeme) {
                     add(NetMemeProtocolPromptSupport.buildPromptSection(characterName))
                 }
+
+                add("【格式保持（必读）】\n你的输出必须是且只能是一个合法 JSON 数组，如 [\"...\",\"...\"]。\n常见掉格式错误：聊久了开始输出纯文本段落、Markdown 代码块、或者 XML 标签。这些都会导致解析失败。\n自检：输出前确认——最外层是 [ ] ？每个元素是字符串或允许的对象？没有其他包裹？")
             } else if (scenario.longformModeEnabled || scenario.interactionMode == RoleplayInteractionMode.OFFLINE_LONGFORM) {
                 val targetChars = settings.roleplayLongformTargetChars
                     .takeIf { it > 0 }
@@ -234,6 +264,17 @@ object RoleplayPromptDecorator {
                         append("11. 仅在角色本人的心理活动外层使用 <thought>（……）</thought> 包裹，只包裹心声本身\n")
                         append("12. 其他人物对白、环境描写和普通叙述不要添加任何标记\n")
                         append("13. 不要嵌套这些标记，也不要解释标记用途；这些标记只供客户端内部渲染，用户最终不会看到")
+                    },
+                )
+                add(
+                    buildString {
+                        append("【格式保持（必读）】\n")
+                        append("无论对话进行到第几轮，以下标记规则始终生效，不得遗忘或省略：\n")
+                        append("- 角色说出口的台词：必须用 <char>\"……\"</char> 包裹\n")
+                        append("- 角色内心活动/心声：必须用 <thought>（……）</thought> 包裹\n")
+                        append("- 普通叙述/环境/动作：不加任何标记\n")
+                        append("常见错误：聊久了开始把台词直接写在叙述里不加 <char>，或者用 ⭐心声：/【心声】等文字前缀代替 <thought> 标签。这些都是格式错误。\n")
+                        append("自检方法：每次输出前扫一遍——有引号对白没 <char>？有括号心声没 <thought>？有就补上。")
                     },
                 )
                 add(RoleplayQualityScanSupport.buildPromptSection())

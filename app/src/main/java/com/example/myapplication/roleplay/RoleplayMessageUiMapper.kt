@@ -306,6 +306,7 @@ object RoleplayMessageUiMapper {
             }
             if (
                 messageInteractionMode == RoleplayInteractionMode.ONLINE_PHONE &&
+                message.systemEventKind == RoleplayOnlineEventKind.NONE &&
                 appendOnlineProtocolAssistantMessages(
                     target = target,
                     sourceMessageId = message.id,
@@ -382,6 +383,7 @@ object RoleplayMessageUiMapper {
                     }
                     if (
                         messageInteractionMode == RoleplayInteractionMode.ONLINE_PHONE &&
+                        message.systemEventKind == RoleplayOnlineEventKind.NONE &&
                         appendOnlineProtocolAssistantMessages(
                             target = target,
                             sourceMessageId = message.id,
@@ -416,6 +418,7 @@ object RoleplayMessageUiMapper {
         if (target.size == initialSize && message.content.isNotBlank()) {
             if (
                 messageInteractionMode == RoleplayInteractionMode.ONLINE_PHONE &&
+                message.systemEventKind == RoleplayOnlineEventKind.NONE &&
                 appendOnlineProtocolAssistantMessages(
                     target = target,
                     sourceMessageId = message.id,
@@ -456,7 +459,7 @@ object RoleplayMessageUiMapper {
         messageStatus: MessageStatus,
         canRetry: Boolean,
     ): Boolean {
-        val protocolResult = OnlineActionProtocolParser.parse(
+        val protocolResult = OnlineActionProtocolParser.parseWithFallback(
             rawContent = rawContent,
             characterName = characterName,
         ) ?: return false

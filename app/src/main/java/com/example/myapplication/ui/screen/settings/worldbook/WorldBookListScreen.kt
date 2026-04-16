@@ -97,7 +97,6 @@ fun WorldBookListScreen(
         ) {
             item {
                 SettingsPageIntro(
-                    overline = "背景设定",
                     title = "世界书",
                 )
             }

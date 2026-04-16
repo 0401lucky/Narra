@@ -315,9 +315,9 @@ private fun ProviderCard(
                     brandColor = brandColor,
                 )
                 Icon(
-                    imageVector = Icons.Default.MoreVert,
-                    contentDescription = "选项",
-                    tint = palette.title
+                    imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
+                    contentDescription = "详情",
+                    tint = palette.body.copy(alpha = 0.6f),
                 )
             }
 
@@ -350,13 +350,13 @@ private fun ProviderCard(
             ) {
                 SettingsStatusPill(
                     text = if (provider.enabled) "启用" else "停用",
-                    containerColor = Color(0xFFE8F5E9),
-                    contentColor = Color(0xFF4CAF50),
+                    containerColor = if (provider.enabled) palette.accentSoft else palette.surfaceTint,
+                    contentColor = if (provider.enabled) palette.accent else palette.body,
                 )
                 SettingsStatusPill(
                     text = "$modelCount 个模型",
-                    containerColor = Color(0xFFE3F2FD),
-                    contentColor = Color(0xFF2196F3),
+                    containerColor = palette.subtleChip,
+                    contentColor = palette.subtleChipContent,
                 )
             }
         }

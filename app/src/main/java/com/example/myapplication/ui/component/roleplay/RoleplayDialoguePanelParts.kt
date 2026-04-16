@@ -912,7 +912,7 @@ internal fun RoleplayMessageItem(
                     message = message,
                     onRetryTurn = onRetryTurn,
                     onEditUserMessage = onEditUserMessage,
-                    modifier = if (isUserMessage) Modifier.fillMaxWidth(0.82f) else Modifier.fillMaxWidth(),
+                    modifier = if (isUserMessage) Modifier.fillMaxWidth(0.82f) else Modifier.fillMaxWidth(0.82f),
                     onQuoteMessage = onQuoteMessage,
                     onRecallMessage = onRecallMessage,
                 ) {
@@ -920,7 +920,6 @@ internal fun RoleplayMessageItem(
                         part = specialPart,
                         isUserMessage = isUserMessage,
                         onConfirmTransferReceipt = onConfirmTransferReceipt,
-                        modifier = Modifier.fillMaxWidth(),
                     )
                 }
             }

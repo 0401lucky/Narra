@@ -116,6 +116,7 @@ fun RoleplayScenarioEditScreen(
     var enableRoleplayProtocol by rememberSaveable(baseScenario.id) { mutableStateOf(baseScenario.enableRoleplayProtocol) }
     var longformModeEnabled by rememberSaveable(baseScenario.id) { mutableStateOf(baseScenario.longformModeEnabled) }
     var autoHighlightSpeaker by rememberSaveable(baseScenario.id) { mutableStateOf(baseScenario.autoHighlightSpeaker) }
+    var enableDeepImmersion by rememberSaveable(baseScenario.id) { mutableStateOf(baseScenario.enableDeepImmersion) }
     val isOnlinePhoneMode = interactionMode == RoleplayInteractionMode.ONLINE_PHONE
 
     val backgroundLauncher = rememberLauncherForActivityResult(
@@ -462,6 +463,12 @@ fun RoleplayScenarioEditScreen(
                             value = autoHighlightSpeaker,
                             onValueChange = { autoHighlightSpeaker = it },
                         )
+                        SwitchRow(
+                            title = "深度沉浸",
+                            subtitle = "解锁角色表达自由度，注入活人逻辑、文风戒律与直白描写指令。实际效果取决于模型能力。",
+                            value = enableDeepImmersion,
+                            onValueChange = { enableDeepImmersion = it },
+                        )
                     }
                 }
             }
@@ -494,6 +501,7 @@ fun RoleplayScenarioEditScreen(
                                         enableRoleplayProtocol = enableRoleplayProtocol,
                                         longformModeEnabled = longformModeEnabled,
                                         autoHighlightSpeaker = autoHighlightSpeaker,
+                                        enableDeepImmersion = enableDeepImmersion,
                                     ),
                                 )
                             },

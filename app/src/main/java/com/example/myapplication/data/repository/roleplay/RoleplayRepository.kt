@@ -303,6 +303,7 @@ class RoomRoleplayRepository(
             enableRoleplayProtocol = entity.enableRoleplayProtocol,
             longformModeEnabled = entity.longformModeEnabled,
             autoHighlightSpeaker = entity.autoHighlightSpeaker,
+            enableDeepImmersion = entity.enableDeepImmersion,
             createdAt = entity.createdAt,
             updatedAt = entity.updatedAt,
         )
@@ -328,6 +329,7 @@ class RoomRoleplayRepository(
             enableRoleplayProtocol = scenario.enableRoleplayProtocol,
             longformModeEnabled = scenario.longformModeEnabled,
             autoHighlightSpeaker = scenario.autoHighlightSpeaker,
+            enableDeepImmersion = scenario.enableDeepImmersion,
             createdAt = scenario.createdAt,
             updatedAt = scenario.updatedAt,
         )

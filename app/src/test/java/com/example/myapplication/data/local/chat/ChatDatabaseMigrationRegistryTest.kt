@@ -9,7 +9,7 @@ class ChatDatabaseMigrationRegistryTest {
     fun allMigrations_containsLatestRegisteredMigration() {
         assertTrue(ChatDatabase.ALL_MIGRATIONS.isNotEmpty())
         assertSame(
-            ChatDatabase.MIGRATION_22_23,
+            ChatDatabase.MIGRATION_23_24,
             ChatDatabase.ALL_MIGRATIONS.last(),
         )
     }

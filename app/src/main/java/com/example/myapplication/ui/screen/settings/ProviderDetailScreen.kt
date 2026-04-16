@@ -127,8 +127,8 @@ fun ProviderDetailScreen(
                             Surface(
                                 modifier = Modifier.align(Alignment.TopEnd).offset(x = 8.dp, y = (-6).dp),
                                 shape = CircleShape,
-                                color = MaterialTheme.colorScheme.error,
-                                contentColor = MaterialTheme.colorScheme.onError
+                                color = palette.accentStrong,
+                                contentColor = palette.accentOnStrong
                             ) {
                                 Text(
                                     text = modelCount.toString(),

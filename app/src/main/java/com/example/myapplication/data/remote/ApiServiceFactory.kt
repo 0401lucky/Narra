@@ -50,6 +50,7 @@ class ApiServiceFactory {
                     .build()
                 chain.proceed(request)
             }
+            .addInterceptor(RateLimitRetryInterceptor())
             .build()
 
         val api = Retrofit.Builder()
@@ -90,6 +91,7 @@ class ApiServiceFactory {
                     .build()
                 chain.proceed(request)
             }
+            .addInterceptor(RateLimitRetryInterceptor())
             .build()
 
         val api = Retrofit.Builder()
@@ -130,6 +132,7 @@ class ApiServiceFactory {
                     .build()
                 chain.proceed(request)
             }
+            .addInterceptor(RateLimitRetryInterceptor())
             .build()
 
         cachedStreamBaseUrl = normalizedBaseUrl
@@ -164,6 +167,7 @@ class ApiServiceFactory {
                     .build()
                 chain.proceed(request)
             }
+            .addInterceptor(RateLimitRetryInterceptor())
             .build()
 
         cachedAnthropicStreamBaseUrl = normalizedBaseUrl

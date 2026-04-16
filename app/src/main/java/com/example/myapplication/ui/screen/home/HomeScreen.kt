@@ -127,7 +127,7 @@ fun HomeScreen(
                         ambientColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.1f),
                     ),
                 shape = androidx.compose.foundation.shape.RoundedCornerShape(HomePrimaryCardCornerRadius),
-                color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f),
+                color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.72f),
                 tonalElevation = 0.dp
             ) {
                 Column(

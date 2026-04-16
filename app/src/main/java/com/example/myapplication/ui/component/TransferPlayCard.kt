@@ -4,19 +4,23 @@ import androidx.compose.animation.animateContentSize
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Assignment
+import androidx.compose.material.icons.filled.AccountBalanceWallet
 import androidx.compose.material.icons.filled.CardGiftcard
 import androidx.compose.material.icons.filled.Event
 import androidx.compose.material.icons.filled.Gavel
@@ -86,6 +90,18 @@ fun SpecialPlayCard(
         return
     }
 
+    // 转账使用独立的微信风格卡片
+    if (part.specialType == ChatSpecialType.TRANSFER) {
+        WeChatTransferCard(
+            part = part,
+            isUserMessage = isUserMessage,
+            onConfirmTransferReceipt = onConfirmTransferReceipt,
+            reduceMotion = reduceMotion,
+            modifier = modifier,
+        )
+        return
+    }
+
     var emphasized by remember(part.specialId) { mutableStateOf(reduceMotion) }
     LaunchedEffect(part.specialId, reduceMotion) {
         emphasized = reduceMotion
@@ -104,8 +120,10 @@ fun SpecialPlayCard(
     val compactCard = part.specialType != ChatSpecialType.GIFT
 
     Surface(
-        modifier = modifier.scale(scale),
-        shape = RoundedCornerShape(if (compactCard) 18.dp else 22.dp),
+        modifier = modifier
+            .scale(scale)
+            .widthIn(max = 280.dp),
+        shape = RoundedCornerShape(if (compactCard) 16.dp else 20.dp),
         color = Color.Transparent,
     ) {
         Column(
@@ -115,7 +133,7 @@ fun SpecialPlayCard(
                     brush = Brush.verticalGradient(
                         colors = listOf(palette.topColor, palette.bottomColor),
                     ),
-                    shape = RoundedCornerShape(if (compactCard) 18.dp else 22.dp),
+                    shape = RoundedCornerShape(if (compactCard) 16.dp else 20.dp),
                 )
                 .let { baseModifier ->
                     if (reduceMotion) {
@@ -125,10 +143,10 @@ fun SpecialPlayCard(
                     }
                 }
                 .padding(
-                    horizontal = if (compactCard) 13.dp else 16.dp,
-                    vertical = if (compactCard) 11.dp else 16.dp,
+                    horizontal = if (compactCard) 12.dp else 14.dp,
+                    vertical = if (compactCard) 9.dp else 14.dp,
                 ),
-            verticalArrangement = Arrangement.spacedBy(if (compactCard) 7.dp else 10.dp),
+            verticalArrangement = Arrangement.spacedBy(if (compactCard) 6.dp else 8.dp),
         ) {
             SpecialPlayHeader(
                 icon = resolveSpecialPlayIcon(part.specialType),
@@ -137,13 +155,6 @@ fun SpecialPlayCard(
             )
 
             when (part.specialType) {
-                ChatSpecialType.TRANSFER -> TransferPlayBody(
-                    part = part,
-                    isUserMessage = isUserMessage,
-                    onConfirmTransferReceipt = onConfirmTransferReceipt,
-                    actionColor = palette.emphasisColor,
-                )
-
                 ChatSpecialType.INVITE -> InvitePlayBody(part = part, compact = compactCard)
                 ChatSpecialType.GIFT -> GiftPlayBody(
                     part = part,
@@ -151,7 +162,120 @@ fun SpecialPlayCard(
                 )
                 ChatSpecialType.TASK -> TaskPlayBody(part = part, compact = compactCard)
                 ChatSpecialType.PUNISH -> PunishPlayBody(part = part, compact = compactCard)
-                null -> Unit
+                ChatSpecialType.TRANSFER, null -> Unit
+            }
+        }
+    }
+}
+
+/** 微信风格转账卡片：固定宽度、橙色主体 + 灰色底栏 */
+@Composable
+private fun WeChatTransferCard(
+    part: ChatMessagePart,
+    isUserMessage: Boolean,
+    onConfirmTransferReceipt: ((String) -> Unit)?,
+    reduceMotion: Boolean,
+    modifier: Modifier = Modifier,
+) {
+    var emphasized by remember(part.specialId) { mutableStateOf(reduceMotion) }
+    LaunchedEffect(part.specialId, reduceMotion) {
+        emphasized = reduceMotion
+        if (!reduceMotion) {
+            emphasized = true
+        }
+    }
+    val scale by animateFloatAsState(
+        targetValue = if (reduceMotion) 1f else if (emphasized) 1f else 0.97f,
+        animationSpec = tween(durationMillis = 220),
+        label = "transfer_card_scale",
+    )
+
+    val isAssistantToUser = part.specialDirection == TransferDirection.ASSISTANT_TO_USER
+    val canConfirmReceipt = !isUserMessage &&
+        isAssistantToUser &&
+        part.specialStatus == TransferStatus.PENDING &&
+        onConfirmTransferReceipt != null &&
+        part.specialId.isNotBlank()
+
+    val cardShape = RoundedCornerShape(12.dp)
+    val isDark = isSystemInDarkTheme()
+    val footerBackground = if (isDark) Color(0xFF2C2C2C) else Color(0xFFF5F5F5)
+    val footerTextColor = if (isDark) Color(0xFF888888) else Color(0xFF999999)
+
+    Surface(
+        modifier = modifier
+            .scale(scale)
+            .widthIn(min = 200.dp, max = 250.dp),
+        shape = cardShape,
+        color = Color.Transparent,
+        shadowElevation = 1.dp,
+    ) {
+        Column(modifier = Modifier.fillMaxWidth()) {
+            // 主体区域：橙色背景
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .background(
+                        brush = Brush.verticalGradient(
+                            colors = listOf(Color(0xFFF9A825), Color(0xFFF57F17)),
+                        ),
+                        shape = RoundedCornerShape(topStart = 12.dp, topEnd = 12.dp),
+                    )
+                    .padding(horizontal = 16.dp, vertical = 14.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                // 标题行
+                Text(
+                    text = part.specialPlayTitle().ifBlank { "转账" },
+                    style = MaterialTheme.typography.labelMedium,
+                    color = Color.White.copy(alpha = 0.88f),
+                )
+                // 金额
+                Text(
+                    text = part.formatTransferAmount(),
+                    style = MaterialTheme.typography.headlineMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = Color.White,
+                )
+                // 备注
+                if (part.specialNote.isNotBlank()) {
+                    Text(
+                        text = part.specialNote,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = Color.White.copy(alpha = 0.85f),
+                        maxLines = 2,
+                    )
+                }
+            }
+            // 底栏：状态区域
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .background(
+                        color = footerBackground,
+                        shape = RoundedCornerShape(bottomStart = 12.dp, bottomEnd = 12.dp),
+                    )
+                    .padding(horizontal = 16.dp, vertical = 10.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween,
+            ) {
+                Text(
+                    text = part.transferStatusLabel(),
+                    style = MaterialTheme.typography.labelSmall,
+                    color = footerTextColor,
+                )
+                if (canConfirmReceipt) {
+                    NarraFilledTonalButton(
+                        onClick = { onConfirmTransferReceipt?.invoke(part.specialId) },
+                        colors = ButtonDefaults.filledTonalButtonColors(
+                            containerColor = Color(0xFFF9A825),
+                            contentColor = Color.White,
+                        ),
+                        contentPadding = PaddingValues(horizontal = 14.dp, vertical = 4.dp),
+                    ) {
+                        Text("确认收款", style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold)
+                    }
+                }
             }
         }
     }
@@ -184,11 +308,11 @@ private fun SpecialPlayHeader(
 ) {
     Row(
         verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(if (compact) 8.dp else 10.dp),
+        horizontalArrangement = Arrangement.spacedBy(if (compact) 6.dp else 8.dp),
     ) {
         Box(
             modifier = Modifier
-                .size(if (compact) 30.dp else 36.dp)
+                .size(if (compact) 26.dp else 32.dp)
                 .background(
                     color = Color.White.copy(alpha = 0.18f),
                     shape = CircleShape,
@@ -198,66 +322,16 @@ private fun SpecialPlayHeader(
             Icon(
                 imageVector = icon,
                 contentDescription = null,
-                modifier = Modifier.size(if (compact) 15.dp else 18.dp),
+                modifier = Modifier.size(if (compact) 13.dp else 16.dp),
                 tint = Color.White,
             )
         }
         Text(
             text = title,
-            style = if (compact) MaterialTheme.typography.titleSmall else MaterialTheme.typography.titleMedium,
+            style = if (compact) MaterialTheme.typography.labelLarge else MaterialTheme.typography.titleSmall,
             color = Color.White,
             fontWeight = FontWeight.SemiBold,
         )
-    }
-}
-
-@Composable
-private fun TransferPlayBody(
-    part: ChatMessagePart,
-    isUserMessage: Boolean,
-    onConfirmTransferReceipt: ((String) -> Unit)?,
-    actionColor: Color,
-) {
-    val isAssistantToUser = part.specialDirection == TransferDirection.ASSISTANT_TO_USER
-    val canConfirmReceipt = !isUserMessage &&
-        isAssistantToUser &&
-        part.specialStatus == TransferStatus.PENDING &&
-        onConfirmTransferReceipt != null &&
-        part.specialId.isNotBlank()
-
-    Text(
-        text = part.formatTransferAmount(),
-        style = MaterialTheme.typography.titleLarge,
-        fontWeight = FontWeight.Bold,
-        color = Color.White,
-    )
-
-    if (part.specialNote.isNotBlank()) {
-        Text(
-            text = part.specialNote,
-            style = MaterialTheme.typography.bodySmall,
-            color = Color.White.copy(alpha = 0.92f),
-        )
-    }
-
-    HorizontalDivider(color = Color.White.copy(alpha = 0.18f))
-
-    Text(
-        text = part.transferStatusLabel(),
-        style = MaterialTheme.typography.labelSmall,
-        color = Color.White.copy(alpha = 0.92f),
-    )
-
-    if (canConfirmReceipt) {
-        NarraFilledTonalButton(
-            onClick = { onConfirmTransferReceipt?.invoke(part.specialId) },
-            colors = ButtonDefaults.filledTonalButtonColors(
-                containerColor = Color.White,
-                contentColor = actionColor,
-            ),
-        ) {
-            Text("确认收款")
-        }
     }
 }
 
@@ -502,10 +576,10 @@ private fun HighlightBlock(
     supporting: String,
     compact: Boolean = false,
 ) {
-    Column(verticalArrangement = Arrangement.spacedBy(if (compact) 2.dp else 4.dp)) {
+    Column(verticalArrangement = Arrangement.spacedBy(if (compact) 2.dp else 3.dp)) {
         Text(
             text = headline,
-            style = if (compact) MaterialTheme.typography.titleLarge else MaterialTheme.typography.headlineSmall,
+            style = if (compact) MaterialTheme.typography.titleMedium else MaterialTheme.typography.titleLarge,
             fontWeight = FontWeight.Bold,
             color = Color.White,
         )
@@ -519,7 +593,7 @@ private fun HighlightBlock(
 
 private fun resolveSpecialPlayIcon(type: ChatSpecialType?): ImageVector {
     return when (type) {
-        ChatSpecialType.TRANSFER -> Icons.Default.Share
+        ChatSpecialType.TRANSFER -> Icons.Default.AccountBalanceWallet
         ChatSpecialType.INVITE -> Icons.Default.Event
         ChatSpecialType.GIFT -> Icons.Default.CardGiftcard
         ChatSpecialType.TASK -> Icons.AutoMirrored.Filled.Assignment

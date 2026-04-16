@@ -229,7 +229,7 @@ internal fun NavGraphBuilder.registerRoleplayGraph(
             val providerOptions = remember(roleplayState.settings) {
                 roleplayState.settings.providers.filter { it.enabled }
             }
-            LaunchedEffect(scenarioId, roleplayState.currentScenario?.id) {
+            LaunchedEffect(scenarioId) {
                 if (roleplayState.currentScenario?.id != scenarioId) {
                     roleplayViewModel.enterScenario(scenarioId)
                 }
@@ -301,7 +301,7 @@ internal fun NavGraphBuilder.registerRoleplayGraph(
             val roleplayState by roleplayViewModel.uiState.collectAsStateWithLifecycle()
             val rawScenarioId = backStackEntry.arguments?.getString("scenarioId").orEmpty()
             val scenarioId = Uri.decode(rawScenarioId)
-            LaunchedEffect(scenarioId, roleplayState.currentScenario?.id) {
+            LaunchedEffect(scenarioId) {
                 if (roleplayState.currentScenario?.id != scenarioId) {
                     roleplayViewModel.enterScenario(scenarioId)
                 }
@@ -330,7 +330,7 @@ internal fun NavGraphBuilder.registerRoleplayGraph(
             val routeAssistant = routeScenario?.let { scenario ->
                 roleplayState.settings.resolvedAssistants().firstOrNull { it.id == scenario.assistantId }
             } ?: roleplayState.currentAssistant
-            LaunchedEffect(scenarioId, roleplayState.currentScenario?.id) {
+            LaunchedEffect(scenarioId) {
                 if (roleplayState.currentScenario?.id != scenarioId) {
                     roleplayViewModel.enterScenario(scenarioId)
                 }

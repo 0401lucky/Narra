@@ -54,61 +54,12 @@ fun AssistantListScreen(
     Scaffold(
         containerColor = palette.background,
         topBar = {
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .statusBarsPadding()
-                    .padding(horizontal = 24.dp, vertical = 12.dp),
-            ) {
-                // Return and Add button in a clean row
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Surface(
-                        onClick = onNavigateBack,
-                        shape = CircleShape,
-                        color = palette.surface.copy(alpha = 0.5f),
-                        border = BorderStroke(0.5.dp, palette.border.copy(alpha = 0.3f)),
-                        modifier = Modifier.size(40.dp),
-                    ) {
-                        Box(contentAlignment = Alignment.Center) {
-                            Icon(
-                                imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                                contentDescription = "返回",
-                                tint = palette.title,
-                                modifier = Modifier.size(20.dp)
-                            )
-                        }
-                    }
-
-                    // 重新设计的大标题
-                    Text(
-                        text = "助手设置",
-                        style = MaterialTheme.typography.titleLarge,
-                        fontWeight = FontWeight.Black,
-                        fontSize = 26.sp,
-                        color = palette.title,
-                    )
-
-                    Surface(
-                        onClick = { onNavigateToAssistantConfig(null) },
-                        shape = CircleShape,
-                        color = palette.accentStrong,
-                        modifier = Modifier.size(40.dp)
-                    ) {
-                        Box(contentAlignment = Alignment.Center) {
-                            Icon(
-                                imageVector = Icons.Default.Add,
-                                contentDescription = "新建",
-                                tint = palette.accentOnStrong,
-                                modifier = Modifier.size(24.dp)
-                            )
-                        }
-                    }
-                }
-            }
+            SettingsTopBar(
+                title = "助手",
+                onNavigateBack = onNavigateBack,
+                actionLabel = "新增",
+                onAction = { onNavigateToAssistantConfig(null) },
+            )
         }
     ) { paddingValues ->
         LazyColumn(

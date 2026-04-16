@@ -85,6 +85,7 @@ class RoleplaySuggestionCoordinator(
             includeOpeningNarrationReference = allMessages.isEmpty(),
             isVideoCallActive = request.isVideoCallActive,
             directorNote = directorNote,
+            modelId = request.resolveSuggestionModelId(request.settings),
         )
         val (userName, characterName) = request.resolveRoleplayNames(
             request.scenario,

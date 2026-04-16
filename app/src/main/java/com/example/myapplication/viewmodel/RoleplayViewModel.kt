@@ -920,6 +920,7 @@ class RoleplayViewModel(
             includeOpeningNarrationReference = requestMessages.none { it.role == MessageRole.USER },
             isVideoCallActive = current.isVideoCallActive,
             directorNote = directorNote,
+            modelId = RoleplayConversationSupport.resolveSelectedModelId(settings),
         )
         val effectiveRequestMessages = resolveRoleplayRequestMessagesForRoundTrip(
             conversationId = conversationId,

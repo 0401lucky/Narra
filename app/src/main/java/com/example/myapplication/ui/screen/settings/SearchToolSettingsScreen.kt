@@ -39,6 +39,7 @@ fun SearchToolSettingsScreen(
 ) {
     BackHandler(onBack = onNavigateBack)
 
+    val palette = rememberSettingsPalette()
     val effectiveSettings = uiState.savedSettings.copy(
         providers = uiState.providers,
         selectedProviderId = uiState.selectedProviderId,
@@ -55,6 +56,7 @@ fun SearchToolSettingsScreen(
                 onNavigateBack = onNavigateBack,
             )
         },
+        containerColor = palette.background,
     ) { innerPadding ->
         Box(
             modifier = Modifier
@@ -71,6 +73,12 @@ fun SearchToolSettingsScreen(
                 ),
                 verticalArrangement = Arrangement.spacedBy(20.dp),
             ) {
+                item {
+                    SettingsPageIntro(
+                        title = "搜索与工具",
+                        summary = "配置聊天中可用的搜索能力，支持多种搜索源和 LLM 搜索代理。",
+                    )
+                }
                 item {
                     SettingsSectionHeader("默认行为", "")
                 }

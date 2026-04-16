@@ -27,6 +27,7 @@ import androidx.compose.material.icons.outlined.QuestionAnswer
 import androidx.compose.material.icons.outlined.Search
 import androidx.compose.material.icons.outlined.Subtitles
 import androidx.compose.material.icons.outlined.Translate
+import androidx.compose.material.icons.outlined.Tune
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -132,8 +133,7 @@ fun SettingsModelScreen(
             ) {
                 item {
                     SettingsPageIntro(
-                        overline = "模型",
-                        title = uiState.selectedModel.ifBlank { "还没选择默认模型" },
+                        title = "默认模型与功能模型",
                     )
                 }
 
@@ -463,8 +463,8 @@ private fun RoleModelCard(
                 ) {
                     Box(contentAlignment = Alignment.Center) {
                         Icon(
-                            imageVector = Icons.Outlined.Build,
-                            contentDescription = "参数设置",
+                            imageVector = Icons.Outlined.Tune,
+                            contentDescription = "选择模型",
                             tint = palette.accentStrong,
                             modifier = Modifier.size(18.dp),
                         )

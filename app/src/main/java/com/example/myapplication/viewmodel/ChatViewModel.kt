@@ -71,6 +71,8 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import java.util.UUID
 
 data class ChatUiState(
@@ -139,6 +141,8 @@ class ChatViewModel(
     val uiState: StateFlow<ChatUiState> = _uiState.asStateFlow()
 
     private var sendingJob: Job? = null
+    /** 确保后台 API 请求（摘要/记忆提取）串行执行，避免并发触发 429。 */
+    private val backgroundApiMutex = Mutex()
     private val assistantRoundTripRunner = ConversationAssistantRoundTripRunner(
         conversationRepository = conversationRepository,
         aiGateway = aiGateway,
@@ -1260,23 +1264,25 @@ class ChatViewModel(
         val state = _uiState.value
         val assistant = state.currentAssistant ?: state.settings.activeAssistant()
         viewModelScope.launch {
-            val result = runCatching {
-                updateConversationSummary(
-                    conversationId = conversationId,
-                    messages = messages,
-                    settings = state.settings,
-                    assistant = assistant,
-                )
-            }.getOrDefault(SummaryUpdateResult())
-            if (result.updated && _uiState.value.currentConversationId == conversationId) {
-                rebuildContextGovernanceSnapshot(
-                    conversationId = conversationId,
-                    messages = messages,
-                    settings = state.settings,
-                    assistant = assistant,
-                )
-                _uiState.update { current ->
-                    ChatStateSupport.applyNoticeMessage(current, "上下文摘要已更新")
+            backgroundApiMutex.withLock {
+                val result = runCatching {
+                    updateConversationSummary(
+                        conversationId = conversationId,
+                        messages = messages,
+                        settings = state.settings,
+                        assistant = assistant,
+                    )
+                }.getOrDefault(SummaryUpdateResult())
+                if (result.updated && _uiState.value.currentConversationId == conversationId) {
+                    rebuildContextGovernanceSnapshot(
+                        conversationId = conversationId,
+                        messages = messages,
+                        settings = state.settings,
+                        assistant = assistant,
+                    )
+                    _uiState.update { current ->
+                        ChatStateSupport.applyNoticeMessage(current, "上下文摘要已更新")
+                    }
                 }
             }
         }
@@ -1290,20 +1296,22 @@ class ChatViewModel(
         val state = _uiState.value
         val assistant = state.currentAssistant ?: state.settings.activeAssistant() ?: return
         viewModelScope.launch {
-            runCatching {
-                memoryExtractionCoordinator.updateChatMemories(
-                    assistant = assistant,
-                    completedMessages = completedMessages,
-                    settings = state.settings,
-                    recentMessageWindow = AUTO_MEMORY_MESSAGE_WINDOW,
-                    buildMemoryInput = { messages ->
-                        ChatConversationSupport.buildConversationExcerpt(
-                            messages = messages,
-                            maxLength = MAX_MEMORY_INPUT_LENGTH,
-                            perMessageLimit = 240,
-                        )
-                    },
-                )
+            backgroundApiMutex.withLock {
+                runCatching {
+                    memoryExtractionCoordinator.updateChatMemories(
+                        assistant = assistant,
+                        completedMessages = completedMessages,
+                        settings = state.settings,
+                        recentMessageWindow = AUTO_MEMORY_MESSAGE_WINDOW,
+                        buildMemoryInput = { messages ->
+                            ChatConversationSupport.buildConversationExcerpt(
+                                messages = messages,
+                                maxLength = MAX_MEMORY_INPUT_LENGTH,
+                                perMessageLimit = 240,
+                            )
+                        },
+                    )
+                }
             }
         }
     }

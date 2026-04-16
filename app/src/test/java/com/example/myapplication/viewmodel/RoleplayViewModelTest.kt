@@ -2554,7 +2554,7 @@ class RoleplayViewModelTest {
         assertTrue(secondAssistantMessages.isNotEmpty())
         assertTrue(secondAssistantMessages.none { it.contentType == RoleplayContentType.LONGFORM })
         assertTrue(secondAssistantMessages.any { it.contentType == RoleplayContentType.DIALOGUE && it.content.contains("我没躲着你") })
-        assertTrue(viewModel.uiState.value.latestPromptDebugDump.contains("【线上模式公共约束】"))
+        assertTrue(viewModel.uiState.value.latestPromptDebugDump.contains("合法 JSON 数组"))
         assertFalse(viewModel.uiState.value.latestPromptDebugDump.contains("【长文小说模式】"))
 
         server.takeRequest()
@@ -2664,7 +2664,7 @@ class RoleplayViewModelTest {
         val secondAssistantMessages = viewModel.uiState.value.messages.filter { it.sourceMessageId == "assistant-2" }
         assertTrue(secondAssistantMessages.any { it.contentType == RoleplayContentType.LONGFORM })
         assertTrue(viewModel.uiState.value.latestPromptDebugDump.contains("【长文小说模式】"))
-        assertFalse(viewModel.uiState.value.latestPromptDebugDump.contains("【线上模式公共约束】"))
+        assertFalse(viewModel.uiState.value.latestPromptDebugDump.contains("合法 JSON 数组"))
 
         server.takeRequest()
         val secondRequest = JsonParser.parseString(server.takeRequest().body.readUtf8()).asJsonObject

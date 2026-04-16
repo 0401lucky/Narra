@@ -43,14 +43,94 @@ internal object OnlineActionProtocolParser {
         rawContent: String,
         characterName: String,
     ): OnlineActionProtocolParseResult? {
-        val candidate = prepareProtocolArrayCandidate(rawContent) ?: return null
-        val parsedRoot = runCatching { JsonParser.parseString(candidate) }.getOrNull() ?: return null
-        if (!parsedRoot.isJsonArray) {
+        // 优先尝试标准 JSON 数组解析
+        val candidate = prepareProtocolArrayCandidate(rawContent)
+        if (candidate != null) {
+            val parsedRoot = runCatching { JsonParser.parseString(candidate) }.getOrNull()
+            if (parsedRoot != null && parsedRoot.isJsonArray) {
+                return parseArray(
+                    array = parsedRoot.asJsonArray,
+                    characterName = characterName,
+                )
+            }
+        }
+        return trySingleJsonObject(rawContent, characterName)
+    }
+
+    /**
+     * 在已经确定是线上模式的场景下调用。先走标准 parse，若失败则将内容拆成纯文本气泡。
+     * 不要在"判断是否为线上格式"的代码路径中使用此方法。
+     */
+    fun parseWithFallback(
+        rawContent: String,
+        characterName: String,
+    ): OnlineActionProtocolParseResult? {
+        return parse(rawContent, characterName) ?: fallbackPlainText(rawContent)
+    }
+
+    /**
+     * 模型有时输出单个 JSON 对象而非数组，如 {"type":"thought","content":"..."} 。
+     * 尝试解析为单对象，成功则包装为数组处理。
+     */
+    private fun trySingleJsonObject(rawContent: String, characterName: String): OnlineActionProtocolParseResult? {
+        val stripped = stripMarkdownCodeFence(rawContent)
+        val trimmed = stripped.trim()
+        val objectCandidate = if (trimmed.startsWith("{") && trimmed.endsWith("}")) {
+            trimmed
+        } else {
+            val firstBrace = stripped.indexOf('{')
+            val lastBrace = stripped.lastIndexOf('}')
+            if (firstBrace != -1 && lastBrace > firstBrace) {
+                stripped.substring(firstBrace, lastBrace + 1)
+            } else {
+                return null
+            }
+        }
+        val parsedObject = runCatching { JsonParser.parseString(objectCandidate) }.getOrNull()
+            ?.takeIf { it.isJsonObject }
+            ?.asJsonObject
+            ?: return null
+        val wrappedArray = JsonArray().apply { add(parsedObject) }
+        val result = parseArray(wrappedArray, characterName)
+        return result.takeIf { it.parts.isNotEmpty() || it.directives.isNotEmpty() }
+    }
+
+    /**
+     * 当模型输出非 JSON 格式时，将纯文本按段落拆分为独立气泡。
+     * 会剥离 Markdown 代码块、XML 标签以及 JSON 字段残留。
+     */
+    private fun fallbackPlainText(rawContent: String): OnlineActionProtocolParseResult? {
+        // 包含协议结构标签时应交给 RoleplayOutputParser 处理，不在此暴力剥掉
+        if (Regex("""(?is)<(/?)(dialogue|narration)\b""").containsMatchIn(rawContent)) {
             return null
         }
-        return parseArray(
-            array = parsedRoot.asJsonArray,
-            characterName = characterName,
+        val cleaned = rawContent
+            .replace(Regex("```[\\s\\S]*?```"), "")
+            .replace(Regex("<(?:dialogue|narration|thought|char)[^>]*>"), "")
+            .replace(Regex("</(?:dialogue|narration|thought|char)>"), "")
+            // 清理 JSON 字段残留：移除 "type":、"content":、"thought": 等键名
+            .replace(Regex("""[{}\[\]]"""), "")
+            .replace(Regex(""""(?:type|content|thought|message|text|action|description)"\s*:\s*"""), "")
+            .replace(Regex("""(?<=^|,)\s*"[^"]+"\s*:\s*"""), "")
+            .trim()
+        if (cleaned.isBlank()) {
+            return null
+        }
+        val lines = cleaned.split('\n')
+            .map { line ->
+                line.trim()
+                    .removeSurrounding("\"")
+                    .trim()
+                    .removeSuffix(",")
+                    .trim()
+            }
+            .filter { it.isNotBlank() }
+        if (lines.isEmpty()) {
+            return null
+        }
+        val parts = lines.map { textMessagePart(it) }
+        return OnlineActionProtocolParseResult(
+            parts = normalizeChatMessageParts(parts),
         )
     }
 

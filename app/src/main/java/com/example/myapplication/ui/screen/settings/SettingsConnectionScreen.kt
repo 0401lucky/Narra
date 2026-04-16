@@ -66,8 +66,7 @@ fun SettingsConnectionScreen(
             ) {
                 item {
                     SettingsPageIntro(
-                        overline = "连接与凭据",
-                        title = "连接与凭据",
+                        title = "API 连接配置",
                     )
                 }
                 item {

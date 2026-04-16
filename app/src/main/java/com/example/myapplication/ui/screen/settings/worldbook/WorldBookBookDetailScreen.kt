@@ -74,7 +74,6 @@ fun WorldBookBookDetailScreen(
         ) {
             item {
                 SettingsPageIntro(
-                    overline = "书内条目",
                     title = "书内条目",
                 )
             }

@@ -174,13 +174,15 @@ internal fun MessagePartsRenderer(
             }
 
             ChatMessagePartType.SPECIAL -> {
-                SpecialPlayCard(
-                    part = part,
-                    isUserMessage = isUser,
-                    onConfirmTransferReceipt = onConfirmTransferReceipt,
-                    autoPreviewImages = autoPreviewImages,
-                    reduceMotion = performanceMode != ChatMessagePerformanceMode.FULL,
-                )
+                Box(modifier = Modifier.widthIn(max = 280.dp)) {
+                    SpecialPlayCard(
+                        part = part,
+                        isUserMessage = isUser,
+                        onConfirmTransferReceipt = onConfirmTransferReceipt,
+                        autoPreviewImages = autoPreviewImages,
+                        reduceMotion = performanceMode != ChatMessagePerformanceMode.FULL,
+                    )
+                }
             }
         }
     }

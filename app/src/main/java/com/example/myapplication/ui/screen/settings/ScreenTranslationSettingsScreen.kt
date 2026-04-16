@@ -124,7 +124,6 @@ fun ScreenTranslationSettingsScreen(
         ) {
             item {
                 SettingsPageIntro(
-                    overline = "系统级翻译",
                     title = "悬浮球 · 选中即译 · 后台常驻",
                     summary = "配置后台翻译服务、悬浮球行为和相关系统权限。更改会在离开页面时自动保存。",
                 )

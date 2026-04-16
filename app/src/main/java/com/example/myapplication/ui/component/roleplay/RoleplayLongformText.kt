@@ -137,13 +137,26 @@ private fun buildLongformAnnotatedString(
                 }
 
                 RoleplayLongformSpanType.THOUGHT -> {
-                    append(
-                        buildQuotedDialogueAnnotatedString(
-                            text = span.text,
-                            narrationColor = thoughtColor,
-                            dialogueColor = dialogueColor,
+                    val trimmedText = span.text.trim()
+                    val alreadyWrapped = trimmedText.startsWith("（") && trimmedText.endsWith("）")
+                    withStyle(
+                        SpanStyle(
+                            color = thoughtColor,
+                            fontWeight = FontWeight.Normal,
+                            fontSize = 15.sp,
+                            letterSpacing = 0.5.sp,
                         ),
-                    )
+                    ) {
+                        if (!alreadyWrapped) append("（")
+                        append(
+                            buildQuotedDialogueAnnotatedString(
+                                text = span.text,
+                                narrationColor = thoughtColor,
+                                dialogueColor = dialogueColor,
+                            ),
+                        )
+                        if (!alreadyWrapped) append("）")
+                    }
                 }
             }
         }
