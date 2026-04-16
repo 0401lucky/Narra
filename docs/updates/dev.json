@@ -1,18 +1,21 @@
 {
   "app_id": "com.narra.app.dev",
   "channel": "dev",
-  "latest_version_name": "1.3.8-dev",
-  "latest_version_code": 10308,
+  "latest_version_name": "1.4.0-dev",
+  "latest_version_code": 10400,
   "minimum_supported_version_code": 0,
-  "apk_url": "https://download.lsa1230.dpdns.org/dev/Narra-v1.3.8-dev-10308-dev.apk",
-  "apk_sha256": "666c20eb992c5c1e57aa3bfddb9649d4295d8067f58eae5a960731decf1f9fd4",
-  "published_at": "2026-04-16T09:50:00+08:00",
+  "apk_url": "https://download.lsa1230.dpdns.org/dev/Narra-v1.4.0-dev-10400-dev.apk",
+  "apk_sha256": "1113dc7cabc2f706a3fc543424f23440adf4ccc783db7aa1c42763d2e048e554",
+  "published_at": "2026-04-16T13:17:00+08:00",
   "release_notes": [
-    "沉浸式 RP 三种互动模式统一补进去八股/去油腻约束",
-    "跨模式切换后新回复、流式预览和提示词约束更稳定跟随当前模式",
-    "修复 1.3.0-dev 更新后应用启动闪退（补 DB 21→22 迁移）",
-    "修复线上模式心声与对白挤进同一气泡、补轻量拆泡兜底",
-    "RP 消息补上消息级互动模式来源，历史消息展示不再靠猜",
-    "跨模式历史消息注入 prompt 前先转当前模式可读文本"
+    "新增深度沉浸模式：活人逻辑、解剖学直写协议，场景编辑面板一键开关",
+    "模型自检协议：按模型家族(Claude/GPT/Gemini/DeepSeek/GLM/Qwen)动态注入纠偏清单",
+    "心声提示词全面优化：场景驱动、反差优先、情绪碎片化表达",
+    "长文模式心声渲染优化：斜体+特定颜色+去重括号",
+    "线上/长文模式格式保持强化：近因效应防掉格式",
+    "修复线上模式消息被错误解析导致旁白/对话类型混淆",
+    "修复系统事件消息(视频通话结束等)在线上模式显示为对话气泡",
+    "新增 429 速率限制自动重试拦截器",
+    "DB 迁移 23→24，新增 enableDeepImmersion 字段"
   ]
 }
