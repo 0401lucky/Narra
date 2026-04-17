@@ -1588,6 +1588,25 @@ class AiGatewayTest {
         assertEquals("heavy", parsed.parts.last().specialMetadataValue("intensity"))
     }
 
+    @Test
+    fun parseAssistantSpecialOutput_extractsTaskCardWithSingleQuotedAttributes() {
+        val gateway = createGateway(settings = AppSettings())
+
+        val parsed = gateway.parseAssistantSpecialOutput(
+            content = "去吧。<play id='task_lunch_99' type='task' title='牛骨汤令' objective='帮园汇报午餐内容，不许胡嗦。' reward='晚上的惩罚豁免令' deadline='13:00' />",
+            existingParts = emptyList(),
+        )
+
+        assertEquals("去吧。", parsed.content)
+        assertEquals(ChatMessagePartType.SPECIAL, parsed.parts.last().type)
+        assertEquals("task", parsed.parts.last().specialType?.protocolValue)
+        assertEquals("task_lunch_99", parsed.parts.last().specialId)
+        assertEquals("牛骨汤令", parsed.parts.last().specialMetadataValue("title"))
+        assertEquals("帮园汇报午餐内容，不许胡嗦。", parsed.parts.last().specialMetadataValue("objective"))
+        assertEquals("晚上的惩罚豁免令", parsed.parts.last().specialMetadataValue("reward"))
+        assertEquals("13:00", parsed.parts.last().specialMetadataValue("deadline"))
+    }
+
     private fun createGateway(
         settings: AppSettings,
         apiServiceProvider: ((String, String) -> OpenAiCompatibleApi)? = null,

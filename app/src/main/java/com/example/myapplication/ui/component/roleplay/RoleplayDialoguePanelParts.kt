@@ -1,6 +1,7 @@
 package com.example.myapplication.ui.component.roleplay
 
 import android.widget.Toast
+import androidx.compose.animation.animateContentSize
 import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.animateFloatAsState
@@ -1172,9 +1173,12 @@ private fun RoleplayVoiceMessageCard(
     isUserMessage: Boolean,
 ) {
     var isPlaying by rememberSaveable(message.sourceMessageId, actionPart.actionId) { mutableStateOf(false) }
-    val waveform = remember(actionPart.actionId, actionPart.voiceMessageContent()) {
+    var isExpanded by rememberSaveable(message.sourceMessageId, actionPart.actionId) { mutableStateOf(false) }
+    val voiceContent = actionPart.voiceMessageContent()
+    val durationSeconds = actionPart.voiceMessageDurationSeconds()
+    val waveform = remember(actionPart.actionId, voiceContent) {
         buildVoiceWaveformSeed(
-            seed = "${actionPart.actionId}:${actionPart.voiceMessageContent()}",
+            seed = "${actionPart.actionId}:$voiceContent",
             count = 12,
         )
     }
@@ -1196,83 +1200,100 @@ private fun RoleplayVoiceMessageCard(
 
     LaunchedEffect(isPlaying, actionPart.actionId) {
         if (isPlaying) {
-            val fakePlaybackMillis = actionPart.voiceMessageDurationSeconds()
+            val fakePlaybackMillis = durationSeconds
                 .coerceIn(1, 8) * 420L
             delay(fakePlaybackMillis)
             isPlaying = false
         }
     }
 
+    // 根据语音时长动态计算宽度：短语音窄、长语音宽（类似微信）
+    val dynamicWidth = (120 + (durationSeconds.coerceIn(1, 12) - 1) * 12).coerceAtMost(260).dp
+
     ImmersiveGlassSurface(
         backdropState = backdropState,
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier.widthIn(min = 120.dp, max = dynamicWidth),
         shape = RoundedCornerShape(22.dp),
         overlayColor = if (isUserMessage) colors.panelBackgroundStrong else colors.panelBackground,
     ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .clickable { isPlaying = !isPlaying }
-                .padding(horizontal = 14.dp, vertical = 12.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(12.dp),
+        Column(
+            modifier = Modifier.animateContentSize(),
         ) {
-            Box(
-                modifier = Modifier
-                    .size(38.dp)
-                    .background(
-                        color = if (isUserMessage) colors.userAccent else colors.characterAccent,
-                        shape = CircleShape,
-                    ),
-                contentAlignment = Alignment.Center,
-            ) {
-                Icon(
-                    imageVector = if (isPlaying) Icons.Default.Pause else Icons.Default.PlayArrow,
-                    contentDescription = if (isPlaying) "暂停语音" else "播放语音",
-                    tint = Color.White,
-                    modifier = Modifier.size(20.dp),
-                )
-            }
             Row(
-                modifier = Modifier.weight(1f),
-                horizontalArrangement = Arrangement.spacedBy(3.dp),
+                modifier = Modifier
+                    .clickable { isExpanded = !isExpanded }
+                    .padding(horizontal = 14.dp, vertical = 12.dp),
                 verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(10.dp),
             ) {
-                waveform.forEachIndexed { index, baseHeight ->
-                    val animatedHeight = if (isPlaying) {
-                        baseHeight * animatedWavePulses[index]
-                    } else {
-                        baseHeight
-                    }
-                    Box(
-                        modifier = Modifier
-                            .width(4.dp)
-                            .height((10f + animatedHeight * 18f).dp)
-                            .background(
-                                color = if (isUserMessage) {
-                                    colors.userAccent.copy(alpha = 0.95f)
-                                } else {
-                                    colors.characterAccent.copy(alpha = 0.92f)
-                                },
-                                shape = RoundedCornerShape(999.dp),
-                            ),
+                Box(
+                    modifier = Modifier
+                        .size(34.dp)
+                        .background(
+                            color = if (isUserMessage) colors.userAccent else colors.characterAccent,
+                            shape = CircleShape,
+                        )
+                        .clickable(
+                            indication = null,
+                            interactionSource = remember { androidx.compose.foundation.interaction.MutableInteractionSource() },
+                        ) { isPlaying = !isPlaying },
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Icon(
+                        imageVector = if (isPlaying) Icons.Default.Pause else Icons.Default.PlayArrow,
+                        contentDescription = if (isPlaying) "暂停语音" else "播放语音",
+                        tint = Color.White,
+                        modifier = Modifier.size(18.dp),
                     )
                 }
-            }
-            Column(
-                horizontalAlignment = Alignment.End,
-                verticalArrangement = Arrangement.spacedBy(2.dp),
-            ) {
+                Row(
+                    modifier = Modifier.weight(1f),
+                    horizontalArrangement = Arrangement.spacedBy(3.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    waveform.forEachIndexed { index, baseHeight ->
+                        val animatedHeight = if (isPlaying) {
+                            baseHeight * animatedWavePulses[index]
+                        } else {
+                            baseHeight
+                        }
+                        Box(
+                            modifier = Modifier
+                                .width(3.dp)
+                                .height((8f + animatedHeight * 14f).dp)
+                                .background(
+                                    color = if (isUserMessage) {
+                                        colors.userAccent.copy(alpha = 0.95f)
+                                    } else {
+                                        colors.characterAccent.copy(alpha = 0.92f)
+                                    },
+                                    shape = RoundedCornerShape(999.dp),
+                                ),
+                        )
+                    }
+                }
                 Text(
                     text = actionPart.voiceMessageDurationLabel(),
-                    style = MaterialTheme.typography.labelLarge,
+                    style = MaterialTheme.typography.labelMedium,
                     fontWeight = FontWeight.SemiBold,
-                    color = colors.textPrimary,
-                )
-                Text(
-                    text = if (isPlaying) "播放中" else "语音消息",
-                    style = MaterialTheme.typography.labelSmall,
                     color = colors.textMuted,
+                )
+            }
+            // 点击展开语音文字内容
+            if (isExpanded && voiceContent.isNotBlank()) {
+                Text(
+                    text = voiceContent,
+                    style = MaterialTheme.typography.bodyMedium.copy(
+                        fontSize = 14.sp,
+                        lineHeight = 22.sp,
+                        letterSpacing = 0.4.sp,
+                    ),
+                    color = colors.textPrimary.copy(alpha = 0.88f),
+                    modifier = Modifier.padding(
+                        start = 14.dp,
+                        end = 14.dp,
+                        bottom = 12.dp,
+                    ),
                 )
             }
         }

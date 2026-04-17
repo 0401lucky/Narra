@@ -1,13 +1,15 @@
 {
   "app_id": "com.narra.app.dev",
   "channel": "dev",
-  "latest_version_name": "1.4.4-dev",
-  "latest_version_code": 10404,
+  "latest_version_name": "1.4.5-dev",
+  "latest_version_code": 10405,
   "minimum_supported_version_code": 0,
-  "apk_url": "https://download.lsa1230.dpdns.org/dev/Narra-v1.4.4-dev-10404-dev.apk",
-  "apk_sha256": "b80ddf773d2520c674b27678b56984ad53a3e8993745aaaddb61b1ef62040197",
-  "published_at": "2026-04-17T08:57:00+08:00",
+  "apk_url": "https://download.lsa1230.dpdns.org/dev/Narra-v1.4.5-dev-10405-dev.apk",
+  "apk_sha256": "d07afbef920bd0bc7b4d5f3f8a8acc465b52ecf19522b3ea5e6903e2f6b13c46",
+  "published_at": "2026-04-17T12:53:07+08:00",
   "release_notes": [
-    "修复从沉浸设置页返回后聊天内容消失、显示空白\"输入第一句对白\"的问题"
+    "修复线上模式特殊玩法标签在单引号属性下无法解析成卡片的问题",
+    "修复 <play /> / <play-update /> 协议文本泄漏到聊天气泡里的问题",
+    "优化线上模式语音条宽度与展开交互，并补上圆括号旁白识别"
   ]
 }

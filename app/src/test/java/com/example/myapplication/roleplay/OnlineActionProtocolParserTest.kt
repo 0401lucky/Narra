@@ -251,4 +251,17 @@ class OnlineActionProtocolParserTest {
         assertEquals("", result.parts[0].actionMetadata["poke_target"].orEmpty())
         assertEquals("", result.parts[0].actionMetadata["poke_suffix"].orEmpty())
     }
+
+    @Test
+    fun parseWithFallback_stripsSpecialPlayTagsFromPlainText() {
+        val result = OnlineActionProtocolParser.parseWithFallback(
+            rawContent = "去吧。<play id='task_lunch_99' type='task' title='牛骨汤令' objective='帮园汇报午餐内容，不许胡嗦。' reward='晚上的惩罚豁免令' deadline='13:00' />记得准时。",
+            characterName = "角色",
+        )!!
+
+        assertEquals(2, result.parts.size)
+        assertEquals("去吧。", result.parts[0].text)
+        assertEquals("记得准时。", result.parts[1].text)
+        assertTrue(result.parts.none { it.text.contains("<play") || it.text.contains("task_lunch_99") })
+    }
 }

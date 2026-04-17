@@ -769,15 +769,23 @@ object RoleplayMessageUiMapper {
         )
     }
 
-    // 模型有时在线上模式输出【…】包裹的叙述性旁白文本。
+    // 模型在线上模式输出叙述性旁白文本时，可能用【】、（）或 () 包裹。
     // 检测到此模式后返回剥离括号的内容，用于以旁白气泡（斜体）渲染。
+    private val narrationBracketPairs = listOf(
+        "【" to "】",
+        "（" to "）",
+        "(" to ")",
+    )
+
     private fun extractOnlineNarrationContent(text: String): String? {
         val trimmed = text.trim()
         if (trimmed.length < 3) return null
-        if (!trimmed.startsWith("【") || !trimmed.endsWith("】")) return null
         // 排除心声前缀——这些已由 inlineThoughtPrefixes 处理
         if (trimmed.startsWith("【心声】")) return null
-        val inner = trimmed.removePrefix("【").removeSuffix("】").trim()
+        val pair = narrationBracketPairs.firstOrNull { (open, close) ->
+            trimmed.startsWith(open) && trimmed.endsWith(close)
+        } ?: return null
+        val inner = trimmed.removePrefix(pair.first).removeSuffix(pair.second).trim()
         return inner.takeIf { it.isNotBlank() }
     }
 }

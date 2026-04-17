@@ -1,15 +1,20 @@
 package com.example.myapplication.roleplay
 
 import com.example.myapplication.model.ChatMessagePart
+import com.example.myapplication.model.PunishIntensity
 import com.example.myapplication.model.aiPhotoMessagePart
 import com.example.myapplication.model.decodeOnlineThoughtText
 import com.example.myapplication.model.emojiMessagePart
+import com.example.myapplication.model.giftMessagePart
+import com.example.myapplication.model.inviteMessagePart
 import com.example.myapplication.model.isActionPart
 import com.example.myapplication.model.isOnlineThoughtPart
 import com.example.myapplication.model.isSpecialPlayPart
 import com.example.myapplication.model.locationMessagePart
 import com.example.myapplication.model.normalizeChatMessageParts
 import com.example.myapplication.model.pokeMessagePart
+import com.example.myapplication.model.punishMessagePart
+import com.example.myapplication.model.taskMessagePart
 import com.example.myapplication.model.textMessagePart
 import com.example.myapplication.model.thoughtMessagePart
 import com.example.myapplication.model.toActionCopyText
@@ -39,6 +44,8 @@ internal sealed class OnlineActionDirective {
 }
 
 internal object OnlineActionProtocolParser {
+    private val specialPlayTagPattern = Regex("""(?is)<play(?:-update)?\b[^>]*?/>""")
+
     fun parse(
         rawContent: String,
         characterName: String,
@@ -106,6 +113,8 @@ internal object OnlineActionProtocolParser {
         }
         val cleaned = rawContent
             .replace(Regex("```[\\s\\S]*?```"), "")
+            // 线上模式中的特殊玩法标签由 GatewaySpecialPlaySupport 负责转成卡片，不应原样显示到文本气泡里
+            .replace(specialPlayTagPattern, "\n")
             .replace(Regex("<(?:dialogue|narration|thought|char)[^>]*>"), "")
             .replace(Regex("</(?:dialogue|narration|thought|char)>"), "")
             // 清理 JSON 字段残留：移除 "type":、"content":、"thought": 等键名
@@ -307,6 +316,76 @@ internal object OnlineActionProtocolParser {
                     ?.let { reason ->
                         parts += videoCallMessagePart(reason)
                     }
+            }
+
+            // AI 主动输出的特殊玩法类型
+            "task", "委托" -> {
+                val title = item.stringValue("title")
+                    .ifBlank { item.stringValue("name") }
+                val objective = item.stringValue("objective")
+                    .ifBlank { item.stringValue("content") }
+                    .ifBlank { item.stringValue("description") }
+                if (title.isNotBlank() && objective.isNotBlank()) {
+                    parts += taskMessagePart(
+                        title = title,
+                        objective = objective,
+                        reward = item.stringValue("reward"),
+                        deadline = item.stringValue("deadline"),
+                    )
+                }
+            }
+
+            "invite", "邀约" -> {
+                val place = item.stringValue("place")
+                    .ifBlank { item.stringValue("location") }
+                val time = item.stringValue("time")
+                if (place.isNotBlank() && time.isNotBlank()) {
+                    parts += inviteMessagePart(
+                        target = item.stringValue("target").ifBlank { characterName },
+                        place = place,
+                        time = time,
+                        note = item.stringValue("note"),
+                    )
+                }
+            }
+
+            "gift", "礼物" -> {
+                val itemName = item.stringValue("item")
+                    .ifBlank { item.stringValue("name") }
+                    .ifBlank { item.stringValue("gift") }
+                if (itemName.isNotBlank()) {
+                    parts += giftMessagePart(
+                        target = item.stringValue("target").ifBlank { "用户" },
+                        item = itemName,
+                        note = item.stringValue("note"),
+                    )
+                }
+            }
+
+            "punish", "惩罚" -> {
+                val method = item.stringValue("method")
+                    .ifBlank { item.stringValue("content") }
+                if (method.isNotBlank()) {
+                    parts += punishMessagePart(
+                        method = method,
+                        count = item.stringValue("count").ifBlank { "1" },
+                        intensity = PunishIntensity.fromStorageValue(
+                            item.stringValue("intensity"),
+                        ) ?: PunishIntensity.MEDIUM,
+                        reason = item.stringValue("reason"),
+                        note = item.stringValue("note"),
+                    )
+                }
+            }
+
+            // 未知类型兜底：尝试提取 content 作为纯文本，避免内容丢失
+            else -> {
+                val content = item.stringValue("content")
+                    .ifBlank { item.stringValue("text") }
+                    .ifBlank { item.stringValue("message") }
+                if (content.isNotBlank()) {
+                    parts += textMessagePart(sanitizeOnlineDialogueText(content))
+                }
             }
         }
     }

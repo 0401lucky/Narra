@@ -784,4 +784,81 @@ class RoleplayMessageUiMapperTest {
         assertEquals(RoleplayContentType.SPECIAL_PLAY, mapped.single().contentType)
         assertEquals("江边步道", mapped.single().specialPart?.specialMetadataValue("place"))
     }
+
+    @Test
+    fun mapMessages_onlineModeChineseParenNarrationRecognized() {
+        val scenario = RoleplayScenario(
+            id = "scene-1",
+            title = "线上模式",
+            characterDisplayNameOverride = "闰青",
+            interactionMode = RoleplayInteractionMode.ONLINE_PHONE,
+            enableNarration = true,
+        )
+
+        val mapped = RoleplayMessageUiMapper.mapMessages(
+            scenario = scenario,
+            assistant = Assistant(id = "assistant-1", name = "闰青"),
+            settings = AppSettings(showOnlineRoleplayNarration = true),
+            rawMessages = listOf(
+                ChatMessage(
+                    id = "assistant-narration",
+                    conversationId = "conv-1",
+                    role = MessageRole.ASSISTANT,
+                    content = """["（闰青盯着递到眼前的手机，并没伸手去接，反而发出一声意味不明的冷哼。）","聊幽落，你是不是觉得，只要把手机递给我，我就能大度到当什么都没发生？"]""",
+                    createdAt = 2L,
+                    status = MessageStatus.COMPLETED,
+                    roleplayOutputFormat = RoleplayOutputFormat.PROTOCOL,
+                    roleplayInteractionMode = RoleplayInteractionMode.ONLINE_PHONE,
+                ),
+            ),
+            streamingContent = null,
+            outputParser = RoleplayOutputParser(),
+            nowProvider = { 20L },
+        )
+
+        assertEquals(2, mapped.size)
+        assertEquals(RoleplayContentType.NARRATION, mapped[0].contentType)
+        assertEquals("旁白", mapped[0].speakerName)
+        assertEquals("闰青盯着递到眼前的手机，并没伸手去接，反而发出一声意味不明的冷哼。", mapped[0].content)
+        assertEquals(RoleplayContentType.DIALOGUE, mapped[1].contentType)
+    }
+
+    @Test
+    fun mapMessages_onlineModeAsciiParenNarrationRecognized() {
+        val scenario = RoleplayScenario(
+            id = "scene-1",
+            title = "线上模式",
+            characterDisplayNameOverride = "闰青",
+            interactionMode = RoleplayInteractionMode.ONLINE_PHONE,
+            enableNarration = true,
+        )
+
+        val mapped = RoleplayMessageUiMapper.mapMessages(
+            scenario = scenario,
+            assistant = Assistant(id = "assistant-1", name = "闰青"),
+            settings = AppSettings(showOnlineRoleplayNarration = true),
+            rawMessages = listOf(
+                ChatMessage(
+                    id = "assistant-ascii-narration",
+                    conversationId = "conv-1",
+                    role = MessageRole.ASSISTANT,
+                    content = """["(他最终还是接了过去，指尖恼怒地在屏幕上划拉了几下。)","你倒是大方。"]""",
+                    createdAt = 3L,
+                    status = MessageStatus.COMPLETED,
+                    roleplayOutputFormat = RoleplayOutputFormat.PROTOCOL,
+                    roleplayInteractionMode = RoleplayInteractionMode.ONLINE_PHONE,
+                ),
+            ),
+            streamingContent = null,
+            outputParser = RoleplayOutputParser(),
+            nowProvider = { 20L },
+        )
+
+        assertEquals(2, mapped.size)
+        assertEquals(RoleplayContentType.NARRATION, mapped[0].contentType)
+        assertEquals("旁白", mapped[0].speakerName)
+        assertEquals("他最终还是接了过去，指尖恼怒地在屏幕上划拉了几下。", mapped[0].content)
+        assertEquals(RoleplayContentType.DIALOGUE, mapped[1].contentType)
+        assertEquals("你倒是大方。", mapped[1].content)
+    }
 }

@@ -44,7 +44,7 @@ internal object GatewaySpecialPlaySupport {
 
     private val playTagRegex = Regex("""<play\s+([^>]+)/>""")
     private val playUpdateTagRegex = Regex("""<play-update\s+([^>]+)/>""")
-    private val xmlAttributeRegex = Regex("(\\w+)=\"([^\"]*)\"")
+    private val xmlAttributeRegex = Regex("""(\w+)\s*=\s*(["'])(.*?)\2""")
 
     fun shouldInjectSpecialPlayPrompt(messages: List<ChatMessage>): Boolean {
         return messages.any { it.hasAnySpecialPlayPart() }
@@ -188,7 +188,7 @@ internal object GatewaySpecialPlaySupport {
     private fun String.parseXmlAttributes(): Map<String, String> {
         return xmlAttributeRegex.findAll(this)
             .associate { match ->
-                match.groupValues[1] to match.groupValues[2]
+                match.groupValues[1] to match.groupValues[3]
             }
     }
 
