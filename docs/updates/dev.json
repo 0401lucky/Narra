@@ -1,17 +1,13 @@
 {
   "app_id": "com.narra.app.dev",
   "channel": "dev",
-  "latest_version_name": "1.4.3-dev",
-  "latest_version_code": 10403,
+  "latest_version_name": "1.4.4-dev",
+  "latest_version_code": 10404,
   "minimum_supported_version_code": 0,
-  "apk_url": "https://download.lsa1230.dpdns.org/dev/Narra-v1.4.3-dev-10403-dev.apk",
-  "apk_sha256": "ae1a7bb1fdffd08836a650b9b020303c49c76fe3a82f854bc990364fbcd29bae",
-  "published_at": "2026-04-16T20:53:11+08:00",
+  "apk_url": "https://download.lsa1230.dpdns.org/dev/Narra-v1.4.4-dev-10404-dev.apk",
+  "apk_sha256": "b80ddf773d2520c674b27678b56984ad53a3e8993745aaaddb61b1ef62040197",
+  "published_at": "2026-04-17T08:57:00+08:00",
   "release_notes": [
-    "线上模式加号入口升级为快捷功能宫格，常用玩法可直接展开",
-    "新增协议语音发送入口，支持 voice_message 时长编辑与语音条渲染",
-    "记忆与摘要页升级为按角色筛选的记忆查看器，支持核心记忆/情景记忆/剧情总结/时间线",
-    "修复记忆与摘要总览页不同角色内容混在一起的问题",
-    "线上模式切回线下对白或长文时，继续承接同一场景会话历史"
+    "修复从沉浸设置页返回后聊天内容消失、显示空白\"输入第一句对白\"的问题"
   ]
 }
