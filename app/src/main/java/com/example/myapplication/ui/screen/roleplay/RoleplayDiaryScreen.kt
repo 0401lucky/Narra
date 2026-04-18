@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -31,8 +32,12 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -45,11 +50,11 @@ import com.example.myapplication.ui.component.AppSnackbarHost
 import com.example.myapplication.ui.component.NarraIconButton
 import com.example.myapplication.ui.component.NarraTextButton
 import com.example.myapplication.ui.component.rememberSystemHighTextContrastEnabled
-import com.example.myapplication.ui.component.roleplay.ImmersiveGlassChip
 import com.example.myapplication.ui.component.roleplay.ImmersiveGlassSurface
 import com.example.myapplication.ui.component.roleplay.RoleplaySceneBackground
 import com.example.myapplication.ui.component.roleplay.rememberImmersiveBackdropState
 import com.example.myapplication.ui.component.roleplay.rememberRoleplayDiaryAnnotatedString
+import com.example.myapplication.ui.component.roleplay.stripRoleplayDiaryMarkers
 
 @Composable
 fun RoleplayDiaryScreen(
@@ -97,6 +102,10 @@ fun RoleplayDiaryScreen(
         .ifBlank { assistant?.name?.trim().orEmpty() }
         .ifBlank { stringResource(R.string.roleplay_character_fallback) }
 
+    // 根据壁纸亮度自适应遮罩，避免浅色壁纸下白字糊掉。
+    val scrimAlpha = if (palette.onGlass.luminance() > 0.5f) 0.36f else 0.18f
+    val hasDiary = diaryEntries.isNotEmpty()
+
     Box(
         modifier = Modifier
             .fillMaxSize()
@@ -110,7 +119,7 @@ fun RoleplayDiaryScreen(
         Box(
             modifier = Modifier
                 .fillMaxSize()
-                .background(MaterialTheme.colorScheme.scrim.copy(alpha = 0.18f)),
+                .background(MaterialTheme.colorScheme.scrim.copy(alpha = scrimAlpha)),
         )
         Column(
             modifier = Modifier
@@ -143,12 +152,24 @@ fun RoleplayDiaryScreen(
                         modifier = Modifier.weight(1f),
                         verticalArrangement = Arrangement.spacedBy(4.dp),
                     ) {
-                        Text(
-                            text = "角色日记",
-                            style = MaterialTheme.typography.titleMedium,
-                            fontWeight = FontWeight.Bold,
-                            color = palette.onGlass,
-                        )
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        ) {
+                            Text(
+                                text = "角色日记",
+                                style = MaterialTheme.typography.titleMedium,
+                                fontWeight = FontWeight.Bold,
+                                color = palette.onGlass,
+                            )
+                            if (hasDiary) {
+                                Text(
+                                    text = "· 共 ${diaryEntries.size} 篇",
+                                    style = MaterialTheme.typography.labelMedium,
+                                    color = palette.onGlassMuted,
+                                )
+                            }
+                        }
                         Text(
                             text = characterName,
                             style = MaterialTheme.typography.bodySmall,
@@ -157,24 +178,34 @@ fun RoleplayDiaryScreen(
                             overflow = TextOverflow.Ellipsis,
                         )
                     }
-                    NarraTextButton(
-                        onClick = onGenerateDiary,
-                        enabled = !isGeneratingDiary,
-                    ) {
-                        if (isGeneratingDiary) {
-                            CircularProgressIndicator(
-                                modifier = Modifier.padding(end = 8.dp),
-                                strokeWidth = 2.dp,
-                            )
-                            Text("生成中")
-                        } else {
-                            Text(if (diaryEntries.isEmpty()) "生成" else "重新生成")
+                    // 空态下顶部不再显示 CTA，由空态卡片唯一入口触发，避免双 CTA。
+                    if (hasDiary || isGeneratingDiary) {
+                        NarraTextButton(
+                            onClick = onGenerateDiary,
+                            enabled = !isGeneratingDiary,
+                        ) {
+                            if (isGeneratingDiary) {
+                                CircularProgressIndicator(
+                                    modifier = Modifier
+                                        .padding(end = 8.dp)
+                                        .size(14.dp),
+                                    strokeWidth = 2.dp,
+                                    color = palette.onGlass,
+                                )
+                                Text(
+                                    text = "生成中…",
+                                    style = MaterialTheme.typography.labelMedium,
+                                    color = palette.onGlassMuted,
+                                )
+                            } else {
+                                Text("重新生成")
+                            }
                         }
                     }
                 }
             }
 
-            if (diaryEntries.isEmpty()) {
+            if (!hasDiary) {
                 ImmersiveGlassSurface(
                     backdropState = backdropState,
                     modifier = Modifier.fillMaxWidth(),
@@ -185,14 +216,15 @@ fun RoleplayDiaryScreen(
                     Column(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(horizontal = 20.dp, vertical = 28.dp),
+                            .padding(horizontal = 24.dp, vertical = 32.dp),
                         horizontalAlignment = Alignment.CenterHorizontally,
-                        verticalArrangement = Arrangement.spacedBy(14.dp),
+                        verticalArrangement = Arrangement.spacedBy(16.dp),
                     ) {
                         Icon(
                             imageVector = Icons.Default.AutoStories,
                             contentDescription = null,
                             tint = palette.characterAccent,
+                            modifier = Modifier.size(48.dp),
                         )
                         Text(
                             text = "还没有生成过日记",
@@ -204,12 +236,25 @@ fun RoleplayDiaryScreen(
                             text = "会结合当前角色设定、长期上下文和最近剧情，生成一组更私密的角色日记。",
                             style = MaterialTheme.typography.bodyMedium.copy(lineHeight = 24.sp),
                             color = palette.onGlassMuted,
+                            textAlign = TextAlign.Center,
                         )
                         NarraTextButton(
                             onClick = onGenerateDiary,
                             enabled = !isGeneratingDiary,
+                            modifier = Modifier.fillMaxWidth(0.65f),
                         ) {
-                            Text("开始生成")
+                            if (isGeneratingDiary) {
+                                CircularProgressIndicator(
+                                    modifier = Modifier
+                                        .padding(end = 8.dp)
+                                        .size(14.dp),
+                                    strokeWidth = 2.dp,
+                                    color = palette.onGlass,
+                                )
+                                Text("生成中…")
+                            } else {
+                                Text("开始生成")
+                            }
                         }
                     }
                 }
@@ -217,14 +262,8 @@ fun RoleplayDiaryScreen(
                 LazyColumn(
                     modifier = Modifier.fillMaxSize(),
                     contentPadding = PaddingValues(bottom = 24.dp),
-                    verticalArrangement = Arrangement.spacedBy(12.dp),
+                    verticalArrangement = Arrangement.spacedBy(16.dp),
                 ) {
-                    item {
-                        ImmersiveGlassChip(
-                            text = "共 ${diaryEntries.size} 篇",
-                            backdropState = backdropState,
-                        )
-                    }
                     items(
                         items = diaryEntries,
                         key = { it.id },
@@ -258,8 +297,12 @@ private fun RoleplayDiaryEntryCard(
         text = entry.content,
         revealMasked = revealMasked,
         primaryText = palette.onGlass,
+        accent = palette.characterAccent,
     )
     val hasMaskedContent = remember(entry.content) { entry.content.contains("||") }
+    val screenReaderContent = remember(entry.content, revealMasked) {
+        stripRoleplayDiaryMarkers(entry.content, revealMasked = revealMasked)
+    }
     ImmersiveGlassSurface(
         backdropState = backdropState,
         modifier = Modifier.fillMaxWidth(),
@@ -270,15 +313,16 @@ private fun RoleplayDiaryEntryCard(
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 18.dp, vertical = 18.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp),
+                .padding(horizontal = 20.dp, vertical = 20.dp),
+            verticalArrangement = Arrangement.spacedBy(14.dp),
         ) {
             Text(
                 text = entry.title,
-                style = MaterialTheme.typography.titleMedium,
+                style = MaterialTheme.typography.titleLarge,
                 fontWeight = FontWeight.Bold,
                 color = palette.onGlass,
             )
+            // 使用 Color.Unspecified，让 SpanStyle 里的 color 生效；未标记部分仍使用 palette.onGlass。
             Text(
                 text = annotated,
                 style = MaterialTheme.typography.bodyLarge.copy(
@@ -286,6 +330,9 @@ private fun RoleplayDiaryEntryCard(
                     letterSpacing = 0.2.sp,
                 ),
                 color = palette.onGlass,
+                modifier = Modifier.semantics {
+                    contentDescription = screenReaderContent
+                },
             )
             if (hasMaskedContent) {
                 NarraTextButton(onClick = { revealMasked = !revealMasked }) {

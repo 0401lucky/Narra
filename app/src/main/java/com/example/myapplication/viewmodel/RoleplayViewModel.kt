@@ -714,10 +714,14 @@ class RoleplayViewModel(
                 }
             } catch (throwable: Throwable) {
                 if (_uiState.value.currentSession?.conversationId == conversationId) {
+                    val failureMessage = throwable.localizedMessage
+                        ?: throwable.message
+                        ?: throwable::class.simpleName
+                        ?: "角色日记生成失败"
                     _uiState.update { current ->
                         RoleplayStateSupport.failDiaryGeneration(
                             current,
-                            throwable.message ?: "角色日记生成失败",
+                            failureMessage,
                         )
                     }
                 }

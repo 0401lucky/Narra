@@ -277,8 +277,8 @@ class RoomRoleplayRepository(
         if (conversationId.isBlank()) {
             return emptyList()
         }
-        roleplayDao.deleteDiaryEntriesForConversation(conversationId)
         if (entries.isEmpty()) {
+            roleplayDao.replaceDiaryEntriesForConversation(conversationId, emptyList())
             return emptyList()
         }
         val timestamp = nowProvider()
@@ -294,7 +294,7 @@ class RoomRoleplayRepository(
                 updatedAt = timestamp,
             )
         }
-        roleplayDao.upsertDiaryEntries(diaryEntities)
+        roleplayDao.replaceDiaryEntriesForConversation(conversationId, diaryEntities)
         return diaryEntities.map(::toDiaryEntryDomain)
     }
 

@@ -1,5 +1,11 @@
 package com.example.myapplication.ui.component.roleplay
 
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.animateContentSize
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -119,19 +125,27 @@ internal fun RoleplayInputBar(
         overlayColor = colors.panelBackgroundStrong,
     ) {
         Column(
-            modifier = Modifier.padding(start = 8.dp, top = 6.dp, end = 6.dp, bottom = 6.dp),
+            modifier = Modifier
+                .padding(start = 8.dp, top = 6.dp, end = 6.dp, bottom = 6.dp)
+                .animateContentSize(),
             verticalArrangement = Arrangement.spacedBy(8.dp),
         ) {
-            if (showActionButton && hasQuickActions && showActionPanel) {
-                RoleplayQuickActionPanel(
-                    actions = quickActions,
-                    textColor = colors.textPrimary,
-                    mutedTextColor = colors.textMuted,
-                    onActionClick = { action ->
-                        showActionPanel = false
-                        action.onClick()
-                    },
-                )
+            if (showActionButton && hasQuickActions) {
+                AnimatedVisibility(
+                    visible = showActionPanel,
+                    enter = expandVertically() + fadeIn(),
+                    exit = shrinkVertically() + fadeOut(),
+                ) {
+                    RoleplayQuickActionPanel(
+                        actions = quickActions,
+                        textColor = colors.textPrimary,
+                        mutedTextColor = colors.textMuted,
+                        onActionClick = { action ->
+                            showActionPanel = false
+                            action.onClick()
+                        },
+                    )
+                }
             }
 
             Row(

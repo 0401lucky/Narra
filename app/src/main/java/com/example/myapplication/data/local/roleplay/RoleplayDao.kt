@@ -2,6 +2,7 @@ package com.example.myapplication.data.local.roleplay
 
 import androidx.room.Dao
 import androidx.room.Query
+import androidx.room.Transaction
 import androidx.room.Upsert
 import kotlinx.coroutines.flow.Flow
 
@@ -63,4 +64,15 @@ interface RoleplayDao {
 
     @Query("DELETE FROM roleplay_diary_entries WHERE conversationId = :conversationId")
     suspend fun deleteDiaryEntriesForConversation(conversationId: String)
+
+    @Transaction
+    suspend fun replaceDiaryEntriesForConversation(
+        conversationId: String,
+        entries: List<RoleplayDiaryEntryEntity>,
+    ) {
+        deleteDiaryEntriesForConversation(conversationId)
+        if (entries.isNotEmpty()) {
+            upsertDiaryEntries(entries)
+        }
+    }
 }

@@ -1,15 +1,18 @@
 {
   "app_id": "com.narra.app.dev",
   "channel": "dev",
-  "latest_version_name": "1.4.6-dev",
-  "latest_version_code": 10406,
+  "latest_version_name": "1.4.7-dev",
+  "latest_version_code": 10407,
   "minimum_supported_version_code": 0,
-  "apk_url": "https://download.lsa1230.dpdns.org/dev/Narra-v1.4.6-dev-10406-dev.apk",
-  "apk_sha256": "f8d4bf50697f77d0b05186dc86243913a18bd435840635a75e09615cdab27bdb",
-  "published_at": "2026-04-18T09:45:34+08:00",
+  "apk_url": "https://download.lsa1230.dpdns.org/dev/Narra-v1.4.7-dev-10407-dev.apk",
+  "apk_sha256": "1a345bc4ce7494a1f94a6ef68a30064fc6db40cfcdca14d9e7eb398d15ebb9cf",
+  "published_at": "2026-04-18T11:09:03+08:00",
   "release_notes": [
-    "新增沉浸式角色日记链路，并补齐线上模式视频通话状态同步",
-    "继续重构聊天、手机、动态和沉浸设置页，补齐暗色适配与删除确认",
-    "修复长会话摘要与导演提示词截断时丢失最近内容和说话人前缀的问题"
+    "角色日记链路补齐：DAO 事务化保证生成失败时不再清空已有日记",
+    "日记提示词对用户名做转义，避免昵称含引号/换行破坏 JSON",
+    "日记渲染色值改为沿用场景 palette，深色壁纸下高亮与下划线不再发灰",
+    "涂黑段落在未显示状态下不再注入明文，屏幕阅读器/复制无法泄露",
+    "日记页顶部与空态 CTA 互斥，生成中的进度圈不再撑破按钮",
+    "沉浸输入条加号面板切换动画，不再出现突兀的跳变"
   ]
 }

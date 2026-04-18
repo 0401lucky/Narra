@@ -112,11 +112,13 @@ fun RoleplayScenarioEditScreen(
             },
         )
     }
-    var enableNarration by rememberSaveable(baseScenario.id) { mutableStateOf(baseScenario.enableNarration) }
+    // enableNarration / enableDeepImmersion 仅在沉浸设置页“场景插件”区维护，
+    // 这里直接透传基线值以免重复 state 与老版本覆盖。
+    val enableNarration = baseScenario.enableNarration
     var enableRoleplayProtocol by rememberSaveable(baseScenario.id) { mutableStateOf(baseScenario.enableRoleplayProtocol) }
     var longformModeEnabled by rememberSaveable(baseScenario.id) { mutableStateOf(baseScenario.longformModeEnabled) }
     var autoHighlightSpeaker by rememberSaveable(baseScenario.id) { mutableStateOf(baseScenario.autoHighlightSpeaker) }
-    var enableDeepImmersion by rememberSaveable(baseScenario.id) { mutableStateOf(baseScenario.enableDeepImmersion) }
+    val enableDeepImmersion = baseScenario.enableDeepImmersion
     val isOnlinePhoneMode = interactionMode == RoleplayInteractionMode.ONLINE_PHONE
 
     val backgroundLauncher = rememberLauncherForActivityResult(

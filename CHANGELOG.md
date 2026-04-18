@@ -19,6 +19,33 @@
 
 ---
 
+## [1.4.7-dev] - 2026-04-18
+
+### Fixed
+
+- 角色日记"先删后插"改为 Room `@Transaction`，生成失败或异步取消时不再清空已有日记
+- 日记生成提示词对角色名/用户名做转义（引号、换行、花括号），避免昵称破坏 JSON 指令
+- 日记 JSON 解析增加对象兜底（`entries` / `diaries` / `data` / 唯一数组字段），降低模型包壳导致"生成后空白"的概率
+- 日记生成失败消息透传 `localizedMessage`，HTTP 错误详情对用户可见
+- 涂黑（`|| ||`）未显示状态下不再把原文写入 `AnnotatedString`，屏幕阅读器、复制、无障碍服务都无法读取
+- 日记页顶部按钮与空态按钮互斥，避免同屏出现两个"生成"CTA
+- 日记生成中的 `CircularProgressIndicator` 显式 `size=14dp` + `color=palette.onGlass`，不再撑破按钮或跳色
+
+### Changed
+
+- 日记渲染色值从硬编码迁到场景 `palette`，高亮背景/下划线/强调色按 `characterAccent` 派生，暗色/亮色壁纸自适应
+- 日记正文给 `Text` 添加 `semantics { contentDescription }`，屏幕阅读器读到去标记后的纯文本
+- 日记空态图标尺寸升到 48dp，按钮宽度限制在 65%，避免孤零零短按钮
+- 日记顶栏用"· 共 N 篇"副文案代替原先独立的 `ImmersiveGlassChip`
+- 沉浸输入条加号面板切换改用 `AnimatedVisibility` + `animateContentSize`，消除键盘上方抖动
+- 场景编辑页不再持有 `enableNarration` / `enableDeepImmersion` 的 `rememberSaveable` state，改为直读 `baseScenario`，避免旧值覆盖沉浸设置页改动
+
+### Docs
+
+- `dev` 渠道推进到 `1.4.7-dev (10407)`，APK 与元数据已上传 Cloudflare R2 / `docs/updates/dev.json`
+
+---
+
 ## [1.4.6-dev] - 2026-04-18
 
 ### Added

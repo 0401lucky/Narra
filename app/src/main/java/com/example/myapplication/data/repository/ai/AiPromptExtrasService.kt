@@ -613,14 +613,17 @@ class DefaultAiPromptExtrasService(
         apiProtocol: ProviderApiProtocol,
         provider: ProviderSettings?,
     ): List<RoleplayDiaryDraft> {
+        val safeCharacterName = sanitizeDiaryIdentifier(characterName).ifBlank { "角色" }
+        val safeUserName = sanitizeDiaryIdentifier(userName).ifBlank { "聊天对象" }
+        val safeTodayLabel = sanitizeDiaryIdentifier(todayLabel)
         val prompt = buildString {
             appendLine("# 你的任务")
             appendLine("你是一个虚拟生活模拟器和故事作家。")
-            appendLine("你的任务是扮演角色“$characterName”，并根据其人设、记忆、世界设定和最近的互动，虚构出【5到8篇】TA最近可能会写的日记。")
+            appendLine("你的任务是扮演角色“$safeCharacterName”，并根据其人设、记忆、世界设定和最近的互动，虚构出【5到8篇】TA最近可能会写的日记。")
             appendLine()
             appendLine("# 核心规则")
             appendLine("1. 【时间（最高优先级）】")
-            appendLine("- 今天的日期是 $todayLabel。")
+            appendLine("- 今天的日期是 $safeTodayLabel。")
             appendLine("- 你生成的所有日记标题日期，必须是今天或今天以前的日期。")
             appendLine("- 绝对禁止生成任何未来日期。")
             appendLine("2. 【沉浸感】")
@@ -636,7 +639,7 @@ class DefaultAiPromptExtrasService(
             appendLine("- 数组元素格式固定为：{\"title\":\"...\",\"content\":\"...\"}。")
             appendLine("5. 【占位符替换（最高优先级）】")
             appendLine("- 日记内容里绝对不能出现 `{{user}}`。")
-            appendLine("- 你必须使用“$userName”来指代聊天对象。")
+            appendLine("- 你必须使用“$safeUserName”来指代聊天对象。")
             appendLine("6. 【日记专属标记语法（必须使用）】")
             appendLine("- `**加粗文字**`：强调。")
             appendLine("- `~~划掉的文字~~`：改变主意或自我否定。")
@@ -687,6 +690,15 @@ class DefaultAiPromptExtrasService(
         }
         val cleaned = stripMarkdownCodeFence(content)
         val parsedArray = runCatching { JsonParser.parseString(cleaned).asJsonArray }.getOrNull()
+            ?: runCatching {
+                val obj = JsonParser.parseString(cleaned).asJsonObject
+                obj.get("entries")?.takeIf { it.isJsonArray }?.asJsonArray
+                    ?: obj.get("diaries")?.takeIf { it.isJsonArray }?.asJsonArray
+                    ?: obj.get("data")?.takeIf { it.isJsonArray }?.asJsonArray
+                    ?: obj.entrySet().map { it.value }
+                        .singleOrNull { it.isJsonArray }
+                        ?.asJsonArray
+            }.getOrNull()
             ?: return emptyList()
         return parsedArray.mapNotNull { element ->
             val item = element.asJsonObjectOrNull() ?: return@mapNotNull null
@@ -1158,6 +1170,18 @@ class DefaultAiPromptExtrasService(
             .removePrefix("```JSON")
             .removePrefix("```")
             .removeSuffix("```")
+            .trim()
+    }
+
+    private fun sanitizeDiaryIdentifier(value: String): String {
+        return value
+            .replace("\r", "")
+            .replace("\n", " ")
+            .replace("\"", "'")
+            .replace("“", "'")
+            .replace("”", "'")
+            .replace("{", "〈")
+            .replace("}", "〉")
             .trim()
     }
 
