@@ -1,5 +1,7 @@
 package com.example.myapplication.ui.theme
 
+import androidx.compose.foundation.isSystemInDarkTheme
+import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.Color
 
 // Android 12 以下的回退色板：采用高端、清晰的现代色系
@@ -57,10 +59,11 @@ val md_theme_dark_inverseOnSurface = Color(0xFF0B0F19)
 val md_theme_dark_inverseSurface = Color(0xFFF1F5F9)
 val md_theme_dark_inversePrimary = Color(0xFF2563EB)
 
-// ── Moments 模块共用色 ──
-val MomentsBackground = Color(0xFFF3F6FB)
-val MomentsCardBackground = Color.White
-val MomentsAccent = Color(0xFF7B61D9)
-val MomentsAccentSoft = Color(0xFFF0ECFF)
-val MomentsMutedText = Color(0xFF7B8797)
-val MomentsLikeRed = Color(0xFFE8456B)
+// ── Moments / PhoneCheck 模块共用色（亮暗自适应）──
+
+@Composable fun MomentsBackground() = if (isSystemInDarkTheme()) Color(0xFF1A1D24) else Color(0xFFF3F6FB)
+@Composable fun MomentsCardBackground() = if (isSystemInDarkTheme()) Color(0xFF242830) else Color.White
+@Composable fun MomentsAccent() = if (isSystemInDarkTheme()) Color(0xFF9C85E8) else Color(0xFF7B61D9)
+@Composable fun MomentsAccentSoft() = if (isSystemInDarkTheme()) Color(0xFF2A2540) else Color(0xFFF0ECFF)
+@Composable fun MomentsMutedText() = if (isSystemInDarkTheme()) Color(0xFF8A94A3) else Color(0xFF7B8797)
+@Composable fun MomentsLikeRed() = if (isSystemInDarkTheme()) Color(0xFFEF6B85) else Color(0xFFE8456B)

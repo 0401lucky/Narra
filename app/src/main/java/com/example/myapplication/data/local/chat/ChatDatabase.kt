@@ -5,6 +5,7 @@ import androidx.room.RoomDatabase
 import androidx.room.migration.Migration
 import androidx.sqlite.db.SupportSQLiteDatabase
 import com.example.myapplication.data.local.roleplay.RoleplayDao
+import com.example.myapplication.data.local.roleplay.RoleplayDiaryEntryEntity
 import com.example.myapplication.data.local.roleplay.RoleplayOnlineMetaEntity
 import com.example.myapplication.data.local.roleplay.RoleplayScenarioEntity
 import com.example.myapplication.data.local.roleplay.RoleplaySessionEntity
@@ -27,6 +28,7 @@ import com.example.myapplication.data.local.worldbook.WorldBookEntryEntity
         RoleplayScenarioEntity::class,
         RoleplaySessionEntity::class,
         RoleplayOnlineMetaEntity::class,
+        RoleplayDiaryEntryEntity::class,
         PhoneSnapshotEntity::class,
         PhoneObservationEntity::class,
     ],
@@ -41,7 +43,7 @@ abstract class ChatDatabase : RoomDatabase() {
     abstract fun phoneSnapshotDao(): PhoneSnapshotDao
 
     companion object {
-        const val CURRENT_VERSION = 25
+        const val CURRENT_VERSION = 26
 
         val MIGRATION_1_2 = object : Migration(1, 2) {
             override fun migrate(db: SupportSQLiteDatabase) {
@@ -537,6 +539,44 @@ abstract class ChatDatabase : RoomDatabase() {
             }
         }
 
+        val MIGRATION_25_26 = object : Migration(25, 26) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                if (!hasColumn(db, "roleplay_scenarios", "enableTimeAwareness")) {
+                    db.execSQL(
+                        "ALTER TABLE roleplay_scenarios ADD COLUMN enableTimeAwareness INTEGER NOT NULL DEFAULT 1",
+                    )
+                }
+                if (!hasColumn(db, "roleplay_scenarios", "enableNetMeme")) {
+                    db.execSQL(
+                        "ALTER TABLE roleplay_scenarios ADD COLUMN enableNetMeme INTEGER NOT NULL DEFAULT 0",
+                    )
+                }
+                db.execSQL(
+                    """
+                    CREATE TABLE IF NOT EXISTS roleplay_diary_entries (
+                        id TEXT NOT NULL PRIMARY KEY,
+                        conversationId TEXT NOT NULL DEFAULT '',
+                        scenarioId TEXT NOT NULL DEFAULT '',
+                        title TEXT NOT NULL DEFAULT '',
+                        content TEXT NOT NULL DEFAULT '',
+                        sortOrder INTEGER NOT NULL DEFAULT 0,
+                        createdAt INTEGER NOT NULL DEFAULT 0,
+                        updatedAt INTEGER NOT NULL DEFAULT 0
+                    )
+                    """.trimIndent(),
+                )
+                db.execSQL(
+                    "CREATE INDEX IF NOT EXISTS index_roleplay_diary_entries_conversationId ON roleplay_diary_entries (conversationId)",
+                )
+                db.execSQL(
+                    "CREATE INDEX IF NOT EXISTS index_roleplay_diary_entries_scenarioId ON roleplay_diary_entries (scenarioId)",
+                )
+                db.execSQL(
+                    "CREATE INDEX IF NOT EXISTS index_roleplay_diary_entries_conversationId_sortOrder ON roleplay_diary_entries (conversationId, sortOrder)",
+                )
+            }
+        }
+
         val ALL_MIGRATIONS = arrayOf(
             MIGRATION_1_2,
             MIGRATION_2_3,
@@ -562,6 +602,7 @@ abstract class ChatDatabase : RoomDatabase() {
             MIGRATION_22_23,
             MIGRATION_23_24,
             MIGRATION_24_25,
+            MIGRATION_25_26,
         )
 
         private fun hasColumn(

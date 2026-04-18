@@ -54,6 +54,7 @@ import com.example.myapplication.ui.component.NarraTextButton
 import com.example.myapplication.ui.component.roleplay.ImmersiveBackdropState
 import com.example.myapplication.ui.component.roleplay.ImmersiveGlassSurface
 import com.example.myapplication.ui.component.roleplay.RoleplayDialoguePanel
+import com.example.myapplication.ui.component.roleplay.RoleplayInputQuickAction
 import com.example.myapplication.ui.component.roleplay.RoleplayPortraitLayer
 import com.example.myapplication.ui.component.roleplay.RoleplayPortraitSpec
 import com.example.myapplication.ui.component.roleplay.RoleplaySceneBackground
@@ -86,6 +87,7 @@ internal fun RoleplaySceneContent(
     onRetryTurn: (String) -> Unit,
     onEditUserMessage: (String) -> Unit,
     onOpenSpecialPlay: () -> Unit,
+    quickActions: List<RoleplayInputQuickAction>,
     onOpenPhoneCheck: () -> Unit,
     onConfirmTransferReceipt: (String) -> Unit,
     onSend: () -> Unit,
@@ -249,6 +251,7 @@ internal fun RoleplaySceneContent(
                 onRetryTurn = onRetryTurn,
                 onEditUserMessage = onEditUserMessage,
                 onOpenSpecialPlay = onOpenSpecialPlay,
+                quickActions = quickActions,
                 onConfirmTransferReceipt = onConfirmTransferReceipt,
                 onSend = onSend,
                 onCancel = onCancelSending,

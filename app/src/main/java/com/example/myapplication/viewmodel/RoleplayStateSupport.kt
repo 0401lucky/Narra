@@ -6,6 +6,7 @@ import com.example.myapplication.model.ContextGovernanceSnapshot
 import com.example.myapplication.model.MemoryProposalHistoryItem
 import com.example.myapplication.model.PendingMemoryProposal
 import com.example.myapplication.model.RoleplayContextStatus
+import com.example.myapplication.model.RoleplayDiaryEntry
 import com.example.myapplication.model.RoleplayMessageUiModel
 import com.example.myapplication.model.RoleplayScenario
 import com.example.myapplication.model.RoleplaySession
@@ -79,6 +80,8 @@ object RoleplayStateSupport {
             activeVideoCallStartedAt = 0L,
             pendingMemoryProposal = null,
             recentMemoryProposalHistory = emptyList(),
+            diaryEntries = emptyList(),
+            isGeneratingDiary = false,
             contextStatus = RoleplayContextStatus(),
         )
     }
@@ -111,6 +114,8 @@ object RoleplayStateSupport {
             activeVideoCallStartedAt = 0L,
             pendingMemoryProposal = null,
             recentMemoryProposalHistory = emptyList(),
+            diaryEntries = emptyList(),
+            isGeneratingDiary = false,
         )
     }
 
@@ -272,6 +277,8 @@ object RoleplayStateSupport {
             activeVideoCallStartedAt = 0L,
             pendingMemoryProposal = null,
             recentMemoryProposalHistory = emptyList(),
+            diaryEntries = emptyList(),
+            isGeneratingDiary = false,
         )
     }
 
@@ -295,6 +302,8 @@ object RoleplayStateSupport {
             activeVideoCallStartedAt = 0L,
             pendingMemoryProposal = null,
             recentMemoryProposalHistory = emptyList(),
+            diaryEntries = emptyList(),
+            isGeneratingDiary = false,
         )
     }
 
@@ -358,6 +367,43 @@ object RoleplayStateSupport {
         history: List<MemoryProposalHistoryItem>,
     ): RoleplayUiState {
         return current.copy(recentMemoryProposalHistory = history)
+    }
+
+    fun applyDiaryEntries(
+        current: RoleplayUiState,
+        entries: List<RoleplayDiaryEntry>,
+    ): RoleplayUiState {
+        return current.copy(diaryEntries = entries)
+    }
+
+    fun beginDiaryGeneration(current: RoleplayUiState): RoleplayUiState {
+        return current.copy(
+            isGeneratingDiary = true,
+            errorMessage = null,
+            noticeMessage = null,
+        )
+    }
+
+    fun finishDiaryGeneration(
+        current: RoleplayUiState,
+        entries: List<RoleplayDiaryEntry>,
+    ): RoleplayUiState {
+        return current.copy(
+            diaryEntries = entries,
+            isGeneratingDiary = false,
+            errorMessage = null,
+            noticeMessage = if (entries.isEmpty()) "未生成可用日记" else "角色日记已更新",
+        )
+    }
+
+    fun failDiaryGeneration(
+        current: RoleplayUiState,
+        errorMessage: String,
+    ): RoleplayUiState {
+        return current.copy(
+            isGeneratingDiary = false,
+            errorMessage = errorMessage,
+        )
     }
 
     fun applyPendingMemoryProposalSaved(

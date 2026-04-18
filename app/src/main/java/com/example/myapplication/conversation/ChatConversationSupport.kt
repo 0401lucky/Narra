@@ -57,14 +57,18 @@ object ChatConversationSupport {
         maxLength: Int,
         perMessageLimit: Int,
     ): String {
-        return messages.joinToString(separator = "\n") { message ->
+        val segments = messages.mapNotNull { message ->
             val role = if (message.role == MessageRole.USER) "用户" else "助手"
             val content = message.parts.toPlainText()
                 .ifBlank { message.content }
                 .trim()
                 .take(perMessageLimit)
-            "$role: $content"
-        }.take(maxLength)
+            content.takeIf { it.isNotBlank() }?.let { "$role: $it" }
+        }
+        return PromptExcerptSupport.joinLatestSegments(
+            segments = segments,
+            maxLength = maxLength,
+        )
     }
 
     fun resolveSelectedModelId(settings: AppSettings): String {

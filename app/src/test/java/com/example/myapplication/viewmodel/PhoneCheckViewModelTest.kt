@@ -1,5 +1,6 @@
 package com.example.myapplication.viewmodel
 
+import com.example.myapplication.context.DefaultPromptContextAssembler
 import com.example.myapplication.context.PromptContextAssembler
 import com.example.myapplication.context.PromptContextResult
 import com.example.myapplication.conversation.PhoneContextBuilder
@@ -12,6 +13,7 @@ import com.example.myapplication.model.AppSettings
 import com.example.myapplication.model.Assistant
 import com.example.myapplication.model.ChatMessage
 import com.example.myapplication.model.Conversation
+import com.example.myapplication.model.ConversationSummary
 import com.example.myapplication.model.PhoneGalleryEntry
 import com.example.myapplication.model.PhoneMessageItem
 import com.example.myapplication.model.PhoneMessageThread
@@ -32,6 +34,7 @@ import com.example.myapplication.model.RoleplaySession
 import com.example.myapplication.model.RoleplaySuggestionUiModel
 import com.example.myapplication.model.createDefaultProvider
 import com.example.myapplication.testutil.FakeConversationStore
+import com.example.myapplication.testutil.FakeConversationSummaryRepository
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
@@ -249,6 +252,75 @@ class PhoneCheckViewModelTest {
     }
 
     @Test
+    fun generateSnapshot_includesConversationSummaryInPhoneSystemContext() = runTest(mainDispatcherRule.dispatcher.scheduler) {
+        val phoneService = RecordingPhoneAiPromptExtrasService()
+        val summaryRepository = FakeConversationSummaryRepository(
+            initialSummaries = listOf(
+                ConversationSummary(
+                    conversationId = "conversation-1",
+                    assistantId = "assistant-1",
+                    summary = "关键推进：周六聚会已经结束了，现在双方已经正式在一起。",
+                    coveredMessageCount = 12,
+                    updatedAt = 100L,
+                ),
+            ),
+        )
+        val provider = createDefaultProvider(
+            id = "provider-1",
+            baseUrl = "https://example.com/v1/",
+            apiKey = "test-key",
+            selectedModel = "chat-model",
+        ).copy(
+            phoneSnapshotModel = "phone-model",
+        )
+        val settingsRepository = object : AiSettingsRepository {
+            override val settingsFlow = MutableStateFlow(
+                AppSettings(
+                    userDisplayName = "lucky",
+                    providers = listOf(provider),
+                    selectedProviderId = provider.id,
+                    assistants = listOf(Assistant(id = "assistant-1", name = "沈砚清")),
+                    selectedAssistantId = "assistant-1",
+                ),
+            )
+        }
+        val conversationRepository = ConversationRepository(
+            conversationStore = FakeConversationStore(
+                conversations = listOf(
+                    Conversation(
+                        id = "conversation-1",
+                        createdAt = 1L,
+                        updatedAt = 1L,
+                        assistantId = "assistant-1",
+                    ),
+                ),
+            ),
+        )
+        val viewModel = PhoneCheckViewModel(
+            initialConversationId = "conversation-1",
+            initialScenarioId = "",
+            initialOwnerType = PhoneSnapshotOwnerType.CHARACTER,
+            settingsRepository = settingsRepository,
+            conversationRepository = conversationRepository,
+            roleplayRepository = FakePhoneCheckRoleplayRepository(scenario = null),
+            phoneSnapshotRepository = RecordingPhoneSnapshotRepository(),
+            aiPromptExtrasService = phoneService,
+            phoneContextBuilder = PhoneContextBuilder(
+                promptContextAssembler = DefaultPromptContextAssembler(
+                    conversationSummaryRepository = summaryRepository,
+                ),
+            ),
+        )
+
+        advanceUntilIdle()
+        viewModel.refreshSections(setOf(PhoneSnapshotSection.MESSAGES))
+        advanceUntilIdle()
+
+        assertTrue(phoneService.capturedSystemContexts.first().contains("关键推进：周六聚会已经结束了"))
+        assertTrue(phoneService.capturedSystemContexts.first().contains("双方已经正式在一起"))
+    }
+
+    @Test
     fun generateSnapshot_preservesSuccessfulBatchesWhenOneParallelBatchFails() = runTest(mainDispatcherRule.dispatcher.scheduler) {
         val phoneService = RecordingPhoneAiPromptExtrasService(
             failingSections = setOf(
@@ -374,6 +446,9 @@ private class FakePhoneCheckRoleplayRepository(
 
     override fun observeConversationMessages(scenarioId: String): Flow<List<ChatMessage>> = flowOf(emptyList())
 
+    override fun observeDiaryEntries(conversationId: String): Flow<List<com.example.myapplication.model.RoleplayDiaryEntry>> =
+        flowOf(emptyList())
+
     override suspend fun listScenarios(): List<RoleplayScenario> = scenario?.let(::listOf).orEmpty()
 
     override suspend fun getScenario(scenarioId: String): RoleplayScenario? {
@@ -392,11 +467,22 @@ private class FakePhoneCheckRoleplayRepository(
 
     override suspend fun getSession(sessionId: String): RoleplaySession? = null
 
+    override suspend fun listDiaryEntries(conversationId: String): List<com.example.myapplication.model.RoleplayDiaryEntry> =
+        emptyList()
+
+    override suspend fun replaceDiaryEntries(
+        conversationId: String,
+        scenarioId: String,
+        entries: List<com.example.myapplication.model.RoleplayDiaryDraft>,
+    ): List<com.example.myapplication.model.RoleplayDiaryEntry> = emptyList()
+
     override suspend fun getOnlineMeta(conversationId: String): RoleplayOnlineMeta? = null
 
     override suspend fun upsertOnlineMeta(meta: RoleplayOnlineMeta) = Unit
 
     override suspend fun deleteOnlineMeta(conversationId: String) = Unit
+
+    override suspend fun deleteDiaryEntriesForConversation(conversationId: String) = Unit
 }
 
 private object NoOpAiPromptExtrasService : AiPromptExtrasService {
@@ -491,6 +577,8 @@ private class RecordingPhoneAiPromptExtrasService(
     private val emptySections: Set<Set<PhoneSnapshotSection>> = emptySet(),
 ) : AiPromptExtrasService by NoOpAiPromptExtrasService {
     val calls = mutableListOf<PhoneBatchCall>()
+    val capturedSystemContexts = mutableListOf<String>()
+    val capturedConversationExcerpts = mutableListOf<String>()
 
     override suspend fun generatePhoneSnapshotSections(
         context: com.example.myapplication.conversation.PhoneGenerationContext,
@@ -503,6 +591,8 @@ private class RecordingPhoneAiPromptExtrasService(
         provider: ProviderSettings?,
     ): PhoneSnapshotSections {
         calls += PhoneBatchCall(requestedSections, modelId)
+        capturedSystemContexts += context.systemContext
+        capturedConversationExcerpts += context.conversationExcerpt
         delay(delayBySections[requestedSections] ?: 0L)
         if (requestedSections in failingSections) {
             error("模拟失败")

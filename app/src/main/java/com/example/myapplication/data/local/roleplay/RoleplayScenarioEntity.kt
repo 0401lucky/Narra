@@ -28,6 +28,8 @@ data class RoleplayScenarioEntity(
     val longformModeEnabled: Boolean = false,
     val autoHighlightSpeaker: Boolean,
     val enableDeepImmersion: Boolean = false,
+    val enableTimeAwareness: Boolean = true,
+    val enableNetMeme: Boolean = false,
     val createdAt: Long,
     val updatedAt: Long,
 )

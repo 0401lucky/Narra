@@ -96,17 +96,17 @@ import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalClipboard
+import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.res.stringResource
+import com.example.myapplication.R
 import com.example.myapplication.model.AttachmentType
 import com.example.myapplication.model.Assistant
-import com.example.myapplication.model.ChatSpecialPlayDraft
 import com.example.myapplication.model.ChatSpecialType
-import com.example.myapplication.model.ChatMessagePart
 import com.example.myapplication.model.Conversation
 import com.example.myapplication.model.DEFAULT_USER_DISPLAY_NAME
 import com.example.myapplication.model.GiftPlayDraft
@@ -141,7 +141,7 @@ import java.util.Date
 import java.util.Locale
 import kotlin.math.abs
 
-private val ScreenPadding = 20.dp
+
 private val SectionSpacing = 12.dp
 private const val StreamFollowScrollWindowMillis = 64L
 private const val BottomFollowTolerancePx = 48
@@ -154,48 +154,50 @@ fun ChatScreen(
     isLoadingModels: Boolean,
     loadingProviderId: String,
     isSavingModel: Boolean,
-    onInputChange: (String) -> Unit,
-    onSend: () -> Unit,
-    onCreateConversation: () -> Unit,
-    onSelectConversation: (String) -> Unit,
-    onClearConversation: (String) -> Unit,
-    onDeleteConversation: (String) -> Unit,
-    onDeleteCurrentConversation: () -> Unit,
-    onClearCurrentConversation: () -> Unit,
-    onRetryMessage: (String) -> Unit,
-    onEditUserMessage: (String) -> Unit,
-    onToggleMemoryMessage: (String) -> Unit,
-    onToggleSearch: () -> Unit,
-    onSelectSearchSource: (String) -> Unit,
-    onUpdateSearchResultCount: (Int) -> Unit,
-    onTranslateDraft: () -> Unit,
-    onTranslateMessage: (String) -> Unit,
-    onDismissTranslationSheet: () -> Unit,
-    onApplyTranslationToInput: (Boolean) -> Unit,
-    onSendTranslationAsMessage: () -> Unit,
-    onSelectProvider: (String) -> Unit,
-    onSelectModel: (String, String) -> Unit,
-    onUpdateThinkingBudget: (String, Int?) -> Unit,
-    onSaveUserProfile: (String, String, String, String) -> Unit,
-    onOpenSettings: () -> Unit,
-    onOpenHome: () -> Unit,
-    onOpenTranslator: () -> Unit,
-    onOpenRoleplay: () -> Unit,
-    onOpenPhoneCheck: (String) -> Unit,
-    onOpenProviderDetail: (String) -> Unit,
-    onClearErrorMessage: () -> Unit,
-    onClearNoticeMessage: () -> Unit,
-    onRefreshConversationSummary: () -> Unit,
-    onCancelSending: () -> Unit = {},
-    onAddPendingParts: (List<ChatMessagePart>) -> Unit,
-    onRemovePendingPart: (Int) -> Unit,
-    onSendSpecialPlay: (ChatSpecialPlayDraft) -> Unit,
-    onConfirmTransferReceipt: (String) -> Unit,
-    onSelectAssistant: (String) -> Unit = {},
-    onOpenAssistantDetail: (String) -> Unit = {},
+    callbacks: ChatScreenCallbacks,
 ) {
+    val onInputChange = callbacks.message.onInputChange
+    val onSend = callbacks.message.onSend
+    val onRetryMessage = callbacks.message.onRetryMessage
+    val onEditUserMessage = callbacks.message.onEditUserMessage
+    val onToggleMemoryMessage = callbacks.message.onToggleMemoryMessage
+    val onCancelSending = callbacks.message.onCancelSending
+    val onAddPendingParts = callbacks.message.onAddPendingParts
+    val onRemovePendingPart = callbacks.message.onRemovePendingPart
+    val onSendSpecialPlay = callbacks.message.onSendSpecialPlay
+    val onConfirmTransferReceipt = callbacks.message.onConfirmTransferReceipt
+    val onCreateConversation = callbacks.conversation.onCreateConversation
+    val onSelectConversation = callbacks.conversation.onSelectConversation
+    val onClearConversation = callbacks.conversation.onClearConversation
+    val onDeleteConversation = callbacks.conversation.onDeleteConversation
+    val onClearCurrentConversation = callbacks.conversation.onClearCurrentConversation
+    val onRefreshConversationSummary = callbacks.conversation.onRefreshConversationSummary
+    val onToggleSearch = callbacks.search.onToggleSearch
+    val onSelectSearchSource = callbacks.search.onSelectSearchSource
+    val onUpdateSearchResultCount = callbacks.search.onUpdateSearchResultCount
+    val onTranslateDraft = callbacks.translation.onTranslateDraft
+    val onTranslateMessage = callbacks.translation.onTranslateMessage
+    val onDismissTranslationSheet = callbacks.translation.onDismissTranslationSheet
+    val onApplyTranslationToInput = callbacks.translation.onApplyTranslationToInput
+    val onSendTranslationAsMessage = callbacks.translation.onSendTranslationAsMessage
+    val onSelectProvider = callbacks.model.onSelectProvider
+    val onSelectModel = callbacks.model.onSelectModel
+    val onUpdateThinkingBudget = callbacks.model.onUpdateThinkingBudget
+    val onSaveUserProfile = callbacks.profile.onSaveUserProfile
+    val onSelectAssistant = callbacks.profile.onSelectAssistant
+    val onOpenAssistantDetail = callbacks.profile.onOpenAssistantDetail
+    val onOpenSettings = callbacks.navigation.onOpenSettings
+    val onOpenHome = callbacks.navigation.onOpenHome
+    val onOpenTranslator = callbacks.navigation.onOpenTranslator
+    val onOpenRoleplay = callbacks.navigation.onOpenRoleplay
+    val onOpenPhoneCheck = callbacks.navigation.onOpenPhoneCheck
+    val onOpenProviderDetail = callbacks.navigation.onOpenProviderDetail
+    val onClearErrorMessage = callbacks.ui.onClearErrorMessage
+    val onClearNoticeMessage = callbacks.ui.onClearNoticeMessage
+
     val context = LocalContext.current
     val clipboard = LocalClipboard.current
+    val resources = LocalResources.current
     val listState = remember(uiState.displayedConversationId) { LazyListState() }
     val snackbarHostState = remember { SnackbarHostState() }
     val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
@@ -213,7 +215,9 @@ fun ChatScreen(
     val currentConversation = remember(uiState.currentConversationId, uiState.conversations) {
         uiState.conversations.firstOrNull { it.id == uiState.currentConversationId }
     }
-    val currentAssistantName = uiState.currentAssistant?.name.orEmpty().ifBlank { "对方" }
+    val currentAssistantName = uiState.currentAssistant?.name.orEmpty().ifBlank {
+        resources.getString(R.string.chat_default_other_name)
+    }
     val userDisplayName = uiState.settings.resolvedUserDisplayName()
     val userPersonaPrompt = uiState.settings.userPersonaPrompt
     val userAvatarUri = uiState.settings.userAvatarUri
@@ -255,7 +259,7 @@ fun ChatScreen(
         }.onFailure { throwable ->
             scope.launch {
                 snackbarHostState.showSnackbar(
-                    throwable.message ?: "读取附件失败，请稍后重试",
+                    throwable.message ?: resources.getString(R.string.chat_error_read_attachment),
                 )
             }
         }
@@ -269,7 +273,7 @@ fun ChatScreen(
         val normalizedUrl = localState.draftUserAvatarUrl.trim()
         if (normalizedUrl.isNotBlank() && !isSupportedAvatarUrl(normalizedUrl)) {
             scope.launch {
-                snackbarHostState.showSnackbar("头像链接仅支持 http 或 https 地址")
+                snackbarHostState.showSnackbar(resources.getString(R.string.chat_error_avatar_url_http))
             }
             return
         }
@@ -376,14 +380,16 @@ fun ChatScreen(
         runCatching {
             context.contentResolver.openOutputStream(uri)?.use { output ->
                 output.write(markdown.toByteArray(Charsets.UTF_8))
-            } ?: error("无法写入导出文件")
+            } ?: error(resources.getString(R.string.chat_error_write_export))
         }.onSuccess {
             scope.launch {
-                snackbarHostState.showSnackbar("Markdown 已导出")
+                snackbarHostState.showSnackbar(resources.getString(R.string.chat_export_msg_md_success))
             }
         }.onFailure { throwable ->
             scope.launch {
-                snackbarHostState.showSnackbar(throwable.message ?: "导出 Markdown 失败")
+                snackbarHostState.showSnackbar(
+                    throwable.message ?: resources.getString(R.string.chat_error_export_md_fail),
+                )
             }
         }
     }
@@ -442,46 +448,36 @@ fun ChatScreen(
             ModelAbility.TOOL in currentModelAbilities &&
             uiState.settings.hasConfiguredSearchSource()
     }
-    val searchUnavailableMessage = remember(
-        currentConversation,
-        hasRequiredConfig,
-        currentModel,
-        currentModelAbilities,
-        currentModelIsImageGeneration,
-        uiState.settings,
-        selectedSearchSource,
-        selectedSearchProvider,
-    ) {
+    val searchUnavailableMessage =
         when {
-            currentConversation == null -> "当前会话尚未就绪"
-            !hasRequiredConfig -> "请先完成模型与连接配置"
-            currentModel.isBlank() -> "请先选择聊天模型"
-            currentModelIsImageGeneration -> "生图模型不支持搜索工具"
-            ModelAbility.TOOL !in currentModelAbilities -> "当前模型不支持工具调用"
+            currentConversation == null -> resources.getString(R.string.chat_search_unavail_no_conversation)
+            !hasRequiredConfig -> resources.getString(R.string.chat_search_unavail_no_config)
+            currentModel.isBlank() -> resources.getString(R.string.chat_search_unavail_no_model)
+            currentModelIsImageGeneration -> resources.getString(R.string.chat_search_unavail_image_model)
+            ModelAbility.TOOL !in currentModelAbilities -> resources.getString(R.string.chat_search_unavail_no_tool)
             !uiState.settings.hasConfiguredSearchSource() -> {
                 if (selectedSearchSource?.type == com.example.myapplication.model.SearchSourceType.LLM_SEARCH) {
                     when {
-                        selectedSearchSource.providerId.isBlank() -> "请先在搜索与工具里为 LLM 搜索选择搜索提供商"
-                        selectedSearchProvider == null -> "所选搜索提供商不可用，请检查是否已启用"
+                        selectedSearchSource.providerId.isBlank() -> resources.getString(R.string.chat_search_unavail_no_provider)
+                        selectedSearchProvider == null -> resources.getString(R.string.chat_search_unavail_provider_disabled)
                         !selectedSearchProvider.supportsLlmSearchSource() -> {
-                            "所选搜索提供商需要使用 Responses API 或 Anthropic 协议"
+                            resources.getString(R.string.chat_search_unavail_need_responses)
                         }
                         selectedSearchProvider.resolveFunctionModel(com.example.myapplication.model.ProviderFunction.SEARCH).isBlank() -> {
-                            "所选搜索提供商已关闭搜索模型，请先在模型页开启搜索模型"
+                            resources.getString(R.string.chat_search_unavail_model_off)
                         }
                         selectedSearchProvider.resolveFunctionModelMode(com.example.myapplication.model.ProviderFunction.SEARCH) ==
                             com.example.myapplication.model.ProviderFunctionModelMode.FOLLOW_DEFAULT -> {
-                            "所选搜索提供商当前会跟随其聊天模型执行搜索"
+                            resources.getString(R.string.chat_search_unavail_follow_chat)
                         }
-                        else -> "请先在设置里启用可用搜索源"
+                        else -> resources.getString(R.string.chat_search_unavail_enable_source)
                     }
                 } else {
-                    "请先在设置里配置可用搜索源"
+                    resources.getString(R.string.chat_search_unavail_configure_source)
                 }
             }
-            else -> "当前状态暂不可用"
+            else -> resources.getString(R.string.chat_search_unavail_unknown)
         }
-    }
     val messageMarkdownExportLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.CreateDocument("text/markdown"),
     ) { uri ->
@@ -490,14 +486,16 @@ fun ChatScreen(
         runCatching {
             context.contentResolver.openOutputStream(uri)?.use { output ->
                 output.write(payload.markdown.toByteArray(Charsets.UTF_8))
-            } ?: error("无法写入导出文件")
+            } ?: error(resources.getString(R.string.chat_error_write_export))
         }.onSuccess {
             scope.launch {
-                snackbarHostState.showSnackbar("消息 Markdown 已导出")
+                snackbarHostState.showSnackbar(resources.getString(R.string.chat_export_msg_md_success))
             }
         }.onFailure { throwable ->
             scope.launch {
-                snackbarHostState.showSnackbar(throwable.message ?: "导出消息 Markdown 失败")
+                snackbarHostState.showSnackbar(
+                    throwable.message ?: resources.getString(R.string.chat_error_export_msg_md_fail),
+                )
             }
         }
         localState.setPendingMessageExport(null)
@@ -505,13 +503,15 @@ fun ChatScreen(
     val reasoningBudgetHint = remember(activeProvider, currentModel) {
         activeProvider?.let { reasoningBudgetSupportHint(it, currentModel) }.orEmpty()
     }
-    val reasoningActionLabel = remember(activeProvider?.thinkingBudget, canAdjustThinkingBudget) {
+    val reasoningActionLabel =
         if (canAdjustThinkingBudget) {
-            "思考 · ${resolveReasoningBudgetLabel(activeProvider?.thinkingBudget)}"
+            resources.getString(
+                R.string.chat_thinking_with_budget,
+                resolveReasoningBudgetLabel(activeProvider?.thinkingBudget),
+            )
         } else {
-            "思考"
+            resources.getString(R.string.chat_thinking)
         }
-    }
 
     val lastMessage = uiState.messages.lastOrNull()
     val lastMessageContentLength = when {
@@ -792,7 +792,7 @@ fun ChatScreen(
             )
             scope.copyPlainTextToClipboard(clipboard, "conversation-plain-text", plainText)
             scope.launch {
-                snackbarHostState.showSnackbar("会话纯文本已复制")
+                snackbarHostState.showSnackbar(resources.getString(R.string.chat_copy_plain_text_done))
             }
             localState.setShowExportSheet(false)
         },
@@ -805,7 +805,7 @@ fun ChatScreen(
             context.startActivity(
                 Intent.createChooser(
                     buildShareIntent(shareText),
-                    "分享会话",
+                    resources.getString(R.string.chat_share_conversation),
                 ),
             )
             localState.setShowExportSheet(false)
@@ -843,7 +843,7 @@ fun ChatScreen(
             context.startActivity(
                 Intent.createChooser(
                     buildShareIntent(buildMessageMarkdown(message)),
-                    "分享消息",
+                    resources.getString(R.string.chat_share_message),
                 ),
             )
             localState.setActiveMessageActionId(null)

@@ -82,7 +82,7 @@ private enum class RoleplayJumpIndicator {
 }
 
 @Composable
-fun RoleplayDialoguePanel(
+internal fun RoleplayDialoguePanel(
     backdropState: ImmersiveBackdropState,
     messages: List<RoleplayMessageUiModel>,
     suggestions: List<RoleplaySuggestionUiModel>,
@@ -99,6 +99,7 @@ fun RoleplayDialoguePanel(
     onRetryTurn: (String) -> Unit,
     onEditUserMessage: (String) -> Unit,
     onOpenSpecialPlay: () -> Unit,
+    quickActions: List<RoleplayInputQuickAction> = emptyList(),
     onConfirmTransferReceipt: (String) -> Unit,
     onSend: () -> Unit,
     modifier: Modifier = Modifier,
@@ -228,6 +229,13 @@ fun RoleplayDialoguePanel(
                             onEditUserMessage = onEditUserMessage,
                             onConfirmTransferReceipt = onConfirmTransferReceipt,
                             lineHeightScale = lineHeightScale,
+                            modifier = Modifier.animateItem(
+                                fadeInSpec = androidx.compose.animation.core.tween(durationMillis = 240),
+                                fadeOutSpec = androidx.compose.animation.core.tween(durationMillis = 160),
+                                placementSpec = androidx.compose.animation.core.spring(
+                                    stiffness = androidx.compose.animation.core.Spring.StiffnessMediumLow,
+                                ),
+                            ),
                         )
                     }
                 }
@@ -304,6 +312,7 @@ fun RoleplayDialoguePanel(
             onSend = onSend,
             onCancel = onCancel,
             onOpenSpecialPlay = onOpenSpecialPlay,
+            quickActions = quickActions,
         )
     }
 }

@@ -1,5 +1,13 @@
 package com.example.myapplication.ui.screen.roleplay
 
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.Assignment
+import androidx.compose.material.icons.filled.AutoStories
+import androidx.compose.material.icons.filled.CardGiftcard
+import androidx.compose.material.icons.filled.Event
+import androidx.compose.material.icons.filled.Gavel
+import androidx.compose.material.icons.filled.Share
+import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
@@ -15,9 +23,11 @@ import androidx.compose.ui.Modifier
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.Row
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
+import com.example.myapplication.R
 import com.example.myapplication.model.AppSettings
 import com.example.myapplication.model.Assistant
-import com.example.myapplication.model.ChatSpecialPlayDraft
 import com.example.myapplication.model.ChatSpecialType
 import com.example.myapplication.model.GiftPlayDraft
 import com.example.myapplication.model.InvitePlayDraft
@@ -33,6 +43,7 @@ import com.example.myapplication.model.TaskPlayDraft
 import com.example.myapplication.model.TransferPlayDraft
 import com.example.myapplication.model.VoiceMessageDraft
 import com.example.myapplication.ui.component.NarraTextButton
+import com.example.myapplication.ui.component.roleplay.RoleplayInputQuickAction
 import com.example.myapplication.ui.component.rememberSystemHighTextContrastEnabled
 import com.example.myapplication.ui.component.roleplay.rememberImmersiveBackdropState
 import com.example.myapplication.ui.screen.chat.GiftPlayDraftSaver
@@ -65,34 +76,37 @@ fun RoleplayScreen(
     errorMessage: String?,
     suggestionErrorMessage: String?,
     pendingMemoryProposal: PendingMemoryProposal?,
-    onClearNoticeMessage: () -> Unit,
-    onClearErrorMessage: () -> Unit,
-    onInputChange: (String) -> Unit,
-    onGenerateSuggestions: () -> Unit,
-    onApplySuggestion: (String) -> Unit,
-    onClearSuggestions: () -> Unit,
-    onRetryTurn: (String) -> Unit,
-    onEditUserMessage: (String) -> Unit,
-    onQuoteMessage: (String, String, String) -> Unit,
-    onClearQuotedMessage: () -> Unit,
-    onRecallMessage: (String) -> Unit,
-    onCaptureOnlineChat: () -> Unit,
-    onSendSpecialPlay: (ChatSpecialPlayDraft) -> Unit,
-    onSendVoiceMessage: (VoiceMessageDraft) -> Unit,
-    onConfirmTransferReceipt: (String) -> Unit,
-    onSend: () -> Unit,
-    onCancelSending: () -> Unit,
-    onApprovePendingMemoryProposal: () -> Unit,
-    onRejectPendingMemoryProposal: () -> Unit,
-    onRestartSession: () -> Unit,
-    onDismissAssistantMismatch: (Boolean) -> Unit,
-    onOpenPhoneCheck: (PhoneSnapshotOwnerType) -> Unit,
-    onOpenMoments: () -> Unit,
-    onOpenVideoCall: () -> Unit,
-    onOpenReadingMode: () -> Unit,
-    onOpenSettings: () -> Unit,
-    onNavigateBack: () -> Unit,
+    callbacks: RoleplayScreenCallbacks,
 ) {
+    // 解构 callbacks 为局部变量，保持内部代码不变
+    val onClearNoticeMessage = callbacks.ui.onClearNoticeMessage
+    val onClearErrorMessage = callbacks.ui.onClearErrorMessage
+    val onInputChange = callbacks.message.onInputChange
+    val onSend = callbacks.message.onSend
+    val onCancelSending = callbacks.message.onCancelSending
+    val onRetryTurn = callbacks.message.onRetryTurn
+    val onEditUserMessage = callbacks.message.onEditUserMessage
+    val onQuoteMessage = callbacks.message.onQuoteMessage
+    val onClearQuotedMessage = callbacks.message.onClearQuotedMessage
+    val onRecallMessage = callbacks.message.onRecallMessage
+    val onCaptureOnlineChat = callbacks.message.onCaptureOnlineChat
+    val onSendSpecialPlay = callbacks.message.onSendSpecialPlay
+    val onSendVoiceMessage = callbacks.message.onSendVoiceMessage
+    val onConfirmTransferReceipt = callbacks.message.onConfirmTransferReceipt
+    val onGenerateSuggestions = callbacks.suggestion.onGenerateSuggestions
+    val onApplySuggestion = callbacks.suggestion.onApplySuggestion
+    val onClearSuggestions = callbacks.suggestion.onClearSuggestions
+    val onOpenDiary = callbacks.navigation.onOpenDiary
+    val onOpenPhoneCheck = callbacks.navigation.onOpenPhoneCheck
+    val onOpenMoments = callbacks.navigation.onOpenMoments
+    val onOpenVideoCall = callbacks.navigation.onOpenVideoCall
+    val onOpenSettings = callbacks.navigation.onOpenSettings
+    val onNavigateBack = callbacks.navigation.onNavigateBack
+    val onRestartSession = callbacks.session.onRestartSession
+    val onDismissAssistantMismatch = callbacks.session.onDismissAssistantMismatch
+    val onApprovePendingMemoryProposal = callbacks.session.onApprovePendingMemoryProposal
+    val onRejectPendingMemoryProposal = callbacks.session.onRejectPendingMemoryProposal
+
     val snackbarHostState = remember { SnackbarHostState() }
 
     LaunchedEffect(noticeMessage) {
@@ -113,14 +127,17 @@ fun RoleplayScreen(
             modifier = Modifier.fillMaxSize(),
             contentAlignment = Alignment.Center,
         ) {
-            Text(if (isScenarioLoading) "正在载入场景…" else "场景不存在或已被删除")
+            Text(
+                if (isScenarioLoading) stringResource(id = R.string.roleplay_scenario_loading)
+                else stringResource(id = R.string.roleplay_scenario_missing)
+            )
         }
         return
     }
 
     val characterName = scenario.characterDisplayNameOverride.trim()
         .ifBlank { assistant?.name?.trim().orEmpty() }
-        .ifBlank { "角色" }
+        .ifBlank { stringResource(id = R.string.roleplay_character_fallback) }
     val effectiveHighContrast = settings.roleplayHighContrast || rememberSystemHighTextContrastEnabled()
     val backdropState = rememberImmersiveBackdropState(
         backgroundUri = scenario.backgroundUri,
@@ -200,6 +217,86 @@ fun RoleplayScreen(
         voiceDraft = VoiceMessageDraft()
     }
 
+    val offlineQuickActions = remember(
+        onOpenDiary,
+        onOpenSettings,
+        onOpenPhoneCheck,
+    ) {
+        buildList {
+            add(
+                RoleplayInputQuickAction(
+                    label = "日记",
+                    icon = Icons.Default.AutoStories,
+                    accentColor = Color(0xFFC78A38),
+                    onClick = onOpenDiary,
+                ),
+            )
+            add(
+                RoleplayInputQuickAction(
+                    label = "查手机",
+                    icon = Icons.Default.Visibility,
+                    accentColor = Color(0xFF5B91D7),
+                    onClick = { showPhoneOwnerPicker = true },
+                ),
+            )
+            add(
+                RoleplayInputQuickAction(
+                    label = "转账",
+                    icon = Icons.Default.Share,
+                    accentColor = Color(0xFF07C160),
+                    onClick = {
+                        primeSpecialPlayDraft(ChatSpecialType.TRANSFER)
+                        activeSpecialPlayTypeName = ChatSpecialType.TRANSFER.name
+                    },
+                ),
+            )
+            add(
+                RoleplayInputQuickAction(
+                    label = "邀约",
+                    icon = Icons.Default.Event,
+                    accentColor = Color(0xFF5B91D7),
+                    onClick = {
+                        primeSpecialPlayDraft(ChatSpecialType.INVITE)
+                        activeSpecialPlayTypeName = ChatSpecialType.INVITE.name
+                    },
+                ),
+            )
+            add(
+                RoleplayInputQuickAction(
+                    label = "礼物",
+                    icon = Icons.Default.CardGiftcard,
+                    accentColor = Color(0xFFE77F93),
+                    onClick = {
+                        primeSpecialPlayDraft(ChatSpecialType.GIFT)
+                        activeSpecialPlayTypeName = ChatSpecialType.GIFT.name
+                    },
+                ),
+            )
+            add(
+                RoleplayInputQuickAction(
+                    label = "委托",
+                    icon = Icons.AutoMirrored.Filled.Assignment,
+                    accentColor = Color(0xFFD78B31),
+                    onClick = {
+                        primeSpecialPlayDraft(ChatSpecialType.TASK)
+                        activeSpecialPlayTypeName = ChatSpecialType.TASK.name
+                    },
+                ),
+            )
+            add(
+                RoleplayInputQuickAction(
+                    label = "惩罚",
+                    icon = Icons.Default.Gavel,
+                    accentColor = Color(0xFFD55C73),
+                    onClick = {
+                        primeSpecialPlayDraft(ChatSpecialType.PUNISH)
+                        activeSpecialPlayTypeName = ChatSpecialType.PUNISH.name
+                    },
+                ),
+            )
+        }
+    }
+
     if (scenario.interactionMode == RoleplayInteractionMode.ONLINE_PHONE) {
         RoleplayOnlinePhoneContent(
             scenario = scenario,
@@ -229,6 +326,7 @@ fun RoleplayScreen(
             onClearQuotedMessage = onClearQuotedMessage,
             onRecallMessage = onRecallMessage,
             onScreenshotChat = onCaptureOnlineChat,
+            onOpenDiary = onOpenDiary,
             onOpenVoiceMessage = { showVoiceMessageSheet = true },
             onOpenTransferPlay = {
                 primeSpecialPlayDraft(ChatSpecialType.TRANSFER)
@@ -284,6 +382,7 @@ fun RoleplayScreen(
             onRetryTurn = onRetryTurn,
             onEditUserMessage = onEditUserMessage,
             onOpenSpecialPlay = { showSpecialPlaySheet = true },
+            quickActions = offlineQuickActions,
             onOpenPhoneCheck = { showPhoneOwnerPicker = true },
             onConfirmTransferReceipt = onConfirmTransferReceipt,
             onSend = onSend,
@@ -332,14 +431,14 @@ fun RoleplayScreen(
     if (showPhoneOwnerPicker) {
         androidx.compose.material3.AlertDialog(
             onDismissRequest = { showPhoneOwnerPicker = false },
-            title = { Text("选择查看对象") },
-            text = { Text("这次你想看谁的手机？") },
+            title = { Text(stringResource(R.string.roleplay_phone_owner_title)) },
+            text = { Text(stringResource(R.string.roleplay_phone_owner_body)) },
             confirmButton = {
                 NarraTextButton(onClick = {
                     showPhoneOwnerPicker = false
                     onOpenPhoneCheck(PhoneSnapshotOwnerType.CHARACTER)
                 }) {
-                    Text("TA的手机")
+                    Text(stringResource(R.string.roleplay_phone_owner_character))
                 }
             },
             dismissButton = {
@@ -348,10 +447,10 @@ fun RoleplayScreen(
                         showPhoneOwnerPicker = false
                         onOpenPhoneCheck(PhoneSnapshotOwnerType.USER)
                     }) {
-                        Text("我的手机")
+                        Text(stringResource(R.string.roleplay_phone_owner_self))
                     }
                     NarraTextButton(onClick = { showPhoneOwnerPicker = false }) {
-                        Text("取消")
+                        Text(stringResource(R.string.common_cancel))
                     }
                 }
             },

@@ -183,6 +183,7 @@ internal class RoleplayScenarioActionSupport(
                     selectedModel = RoleplayConversationSupport.resolveSelectedModelId(state.settings),
                 )
                 roleplayRepository.deleteOnlineMeta(session.conversationId)
+                roleplayRepository.deleteDiaryEntriesForConversation(session.conversationId)
                 clearConversationScopedContext(session.conversationId)
             }.onSuccess {
                 currentRawMessagesFlow.value = emptyList()
@@ -209,6 +210,7 @@ internal class RoleplayScenarioActionSupport(
                 val oldConversationId = session.conversationId
                 val startResult = roleplayRepository.restartScenario(scenario.id)
                 roleplayRepository.deleteOnlineMeta(oldConversationId)
+                roleplayRepository.deleteDiaryEntriesForConversation(oldConversationId)
                 clearConversationScopedContext(oldConversationId)
                 applySessionStartResult(
                     startResult = startResult,

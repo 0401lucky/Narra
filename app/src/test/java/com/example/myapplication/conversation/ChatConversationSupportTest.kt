@@ -64,6 +64,49 @@ class ChatConversationSupportTest {
     }
 
     @Test
+    fun buildConversationExcerpt_keepsLatestMessagesWithinLimit() {
+        val expected = listOf(
+            "用户: 最新进展一",
+            "助手: 最新进展二",
+        ).joinToString(separator = "\n")
+
+        val excerpt = ChatConversationSupport.buildConversationExcerpt(
+            messages = listOf(
+                ChatMessage(id = "m1", conversationId = "conv-1", role = MessageRole.USER, content = "最早铺垫一", createdAt = 1L),
+                ChatMessage(id = "m2", conversationId = "conv-1", role = MessageRole.ASSISTANT, content = "最早铺垫二", createdAt = 2L),
+                ChatMessage(id = "m3", conversationId = "conv-1", role = MessageRole.USER, content = "最新进展一", createdAt = 3L),
+                ChatMessage(id = "m4", conversationId = "conv-1", role = MessageRole.ASSISTANT, content = "最新进展二", createdAt = 4L),
+            ),
+            maxLength = expected.length,
+            perMessageLimit = 200,
+        )
+
+        assertEquals(expected, excerpt)
+        assertFalse(excerpt.contains("最早铺垫"))
+    }
+
+    @Test
+    fun buildConversationExcerpt_keepsLatestTailWhenSingleMessageTooLong() {
+        val excerpt = ChatConversationSupport.buildConversationExcerpt(
+            messages = listOf(
+                ChatMessage(
+                    id = "m1",
+                    conversationId = "conv-1",
+                    role = MessageRole.USER,
+                    content = "前情铺垫很长很长，真正关键的是最后一句：周六聚会已经结束，现在已经正式交往了",
+                    createdAt = 1L,
+                ),
+            ),
+            maxLength = 20,
+            perMessageLimit = 200,
+        )
+
+        assertTrue(excerpt.startsWith("用户: …"))
+        assertTrue(excerpt.contains("现在已经正式交往了"))
+        assertFalse(excerpt.contains("前情铺垫很长"))
+    }
+
+    @Test
     fun supportsImageGeneration_usesProviderAbilities() {
         val settings = AppSettings(
             providers = listOf(

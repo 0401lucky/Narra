@@ -16,6 +16,7 @@ import androidx.compose.material.icons.automirrored.filled.Assignment
 import androidx.compose.material.icons.automirrored.filled.MenuBook
 import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material.icons.filled.Backup
+import androidx.compose.material.icons.filled.DarkMode
 import androidx.compose.material.icons.filled.Dns
 import androidx.compose.material.icons.filled.Extension
 import androidx.compose.material.icons.filled.Face
@@ -51,7 +52,9 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import com.example.myapplication.R
 import com.example.myapplication.model.ThemeMode
 import com.example.myapplication.viewmodel.SettingsUiState
 
@@ -97,22 +100,22 @@ fun SettingsScreen(
         .ifBlank { uiState.savedSettings.baseUrl }
         .ifBlank { "未配置 Base URL" }
     val searchSummary = uiState.searchSettings.selectedSourceOrNull()?.let { source ->
-        "${source.name} · 默认 ${uiState.searchSettings.defaultResultCount} 条"
-    } ?: "未配置可用搜索源"
+        stringResource(R.string.settings_search_default_count, source.name, uiState.searchSettings.defaultResultCount)
+    } ?: stringResource(R.string.settings_search_not_configured)
     val displaySummary = buildString {
         append(displayScaleLabel(uiState.messageTextScale))
         append(" · ")
-        append(if (uiState.autoPreviewImages) "自动预览" else "手动预览")
+        append(if (uiState.autoPreviewImages) stringResource(R.string.settings_auto_preview) else stringResource(R.string.settings_manual_preview))
         append(" · ")
-        append(if (uiState.reasoningExpandedByDefault) "思考展开" else "思考收起")
+        append(if (uiState.reasoningExpandedByDefault) stringResource(R.string.settings_thinking_expanded) else stringResource(R.string.settings_thinking_collapsed))
     }
 
     Scaffold(
         topBar = {
             SettingsTopBar(
-                title = "设置",
+                title = stringResource(R.string.settings_title),
                 onNavigateBack = onNavigateBack,
-                actionLabel = if (savedHasRequiredConfig) "聊天" else "欢迎页",
+                actionLabel = if (savedHasRequiredConfig) stringResource(R.string.settings_chat_label) else stringResource(R.string.settings_welcome_label),
                 onAction = if (savedHasRequiredConfig) onOpenChat else onOpenHome,
             )
         },
@@ -133,12 +136,12 @@ fun SettingsScreen(
                 ),
                 verticalArrangement = Arrangement.spacedBy(20.dp),
             ) {
-            item { SettingsSectionHeader("通用设置", "") }
+            item { SettingsSectionHeader(stringResource(R.string.settings_section_general), "") }
             item {
                 SettingsGroup {
                     SettingsListRow(
                         leadingContent = { Icon(Icons.Default.LightMode, contentDescription = null, tint = palette.title) },
-                        title = "颜色模式",
+                        title = stringResource(R.string.settings_color_mode),
                         supportingText = uiState.themeMode.label,
                         onClick = { showThemeModeSheet = true },
                         trailingContent = {
@@ -160,74 +163,74 @@ fun SettingsScreen(
                     SettingsGroupDivider()
                     SettingsListRow(
                         leadingContent = { Icon(Icons.Default.Settings, contentDescription = null, tint = palette.title) },
-                        title = "显示设置",
+                        title = stringResource(R.string.settings_display),
                         supportingText = displaySummary,
                         onClick = { showDisplaySettingsSheet = true },
                     )
                     SettingsGroupDivider()
                     SettingsListRow(
                         leadingContent = { Icon(Icons.AutoMirrored.Filled.Assignment, contentDescription = null, tint = palette.title) },
-                        title = "版本与更新",
+                        title = stringResource(R.string.settings_version_update),
                         onClick = onOpenUpdateSettings,
                     )
                     SettingsGroupDivider()
                     SettingsListRow(
                         leadingContent = { Icon(Icons.Default.Face, contentDescription = null, tint = palette.title) },
-                        title = "助手",
+                        title = stringResource(R.string.settings_assistant_label),
                         onClick = onOpenAssistantSettings,
                     )
                     SettingsGroupDivider()
                     SettingsListRow(
                         leadingContent = { Icon(Icons.AutoMirrored.Filled.MenuBook, contentDescription = null, tint = palette.title) },
-                        title = "世界书",
+                        title = stringResource(R.string.settings_world_book_label),
                         onClick = onOpenWorldBookSettings,
                     )
                     SettingsGroupDivider()
                     SettingsListRow(
                         leadingContent = { Icon(Icons.Default.Psychology, contentDescription = null, tint = palette.title) },
-                        title = "记忆与摘要",
+                        title = stringResource(R.string.settings_memory_summary),
                         onClick = onOpenMemorySettings,
                     )
                     SettingsGroupDivider()
                     SettingsListRow(
                         leadingContent = { Icon(Icons.Default.Backup, contentDescription = null, tint = palette.title) },
-                        title = "资料导入导出",
+                        title = stringResource(R.string.settings_data_transfer),
                         onClick = onOpenContextTransferSettings,
                     )
                     SettingsGroupDivider()
                     SettingsListRow(
                         leadingContent = { Icon(Icons.Default.Translate, contentDescription = null, tint = palette.title) },
-                        title = "悬浮翻译",
+                        title = stringResource(R.string.settings_floating_translate),
                         onClick = onOpenScreenTranslationSettings,
                     )
                 }
             }
 
-            item { SettingsSectionHeader("模型与服务", "") }
+            item { SettingsSectionHeader(stringResource(R.string.settings_section_model_service), "") }
             item {
                 SettingsGroup {
                     SettingsListRow(
                         leadingContent = { Icon(Icons.Default.AutoAwesome, contentDescription = null, tint = palette.title) },
-                        title = "默认模型和提示词",
+                        title = stringResource(R.string.settings_default_model_prompt),
                         onClick = onOpenModelSettings,
                     )
                     SettingsGroupDivider()
                     SettingsListRow(
                         leadingContent = { Icon(Icons.Default.Psychology, contentDescription = null, tint = palette.title) },
-                        title = "提供商",
+                        title = stringResource(R.string.settings_provider),
                         onClick = onOpenProviderSettings,
                     )
                     SettingsGroupDivider()
                     SettingsListRow(
                         leadingContent = { Icon(Icons.Default.Key, contentDescription = null, tint = palette.title) },
-                        title = "连接与凭据",
+                        title = stringResource(R.string.settings_connection_credentials),
                         supportingText = connectionSummary,
                         onClick = onOpenConnectionSettings,
                     )
                     SettingsGroupDivider()
                     SettingsListRow(
                         leadingContent = { Icon(Icons.Default.Search, contentDescription = null, tint = palette.title) },
-                        title = "搜索与工具",
+                        title = stringResource(R.string.settings_search_and_tools),
                         supportingText = searchSummary,
                         onClick = onOpenSearchToolSettings,
                     )
@@ -292,19 +295,24 @@ private fun ThemeModeSheet(
             verticalArrangement = Arrangement.spacedBy(10.dp),
         ) {
             Text(
-                text = "颜色模式",
+                text = stringResource(R.string.settings_color_mode),
                 style = MaterialTheme.typography.titleLarge,
             )
             ThemeMode.entries.forEach { themeMode ->
+                val icon = when (themeMode) {
+                    ThemeMode.SYSTEM -> Icons.Default.Settings
+                    ThemeMode.LIGHT -> Icons.Default.LightMode
+                    ThemeMode.DARK -> Icons.Default.DarkMode
+                }
                 SettingsListRow(
                     leadingContent = {
-                        Icon(Icons.Default.LightMode, contentDescription = null)
+                        Icon(icon, contentDescription = null)
                     },
                     title = themeMode.label,
                     onClick = { onSelectMode(themeMode) },
                     trailingContent = {
                         if (themeMode == selectedMode) {
-                            Text("当前", color = MaterialTheme.colorScheme.primary)
+                            Text(stringResource(R.string.settings_current_label), color = MaterialTheme.colorScheme.primary)
                         }
                     },
                 )
@@ -342,7 +350,7 @@ private fun DisplaySettingsSheet(
             verticalArrangement = Arrangement.spacedBy(18.dp),
         ) {
             Text(
-                text = "显示设置",
+                text = stringResource(R.string.settings_display),
                 style = MaterialTheme.typography.titleLarge,
             )
             SettingsGroup {
@@ -351,7 +359,7 @@ private fun DisplaySettingsSheet(
                     verticalArrangement = Arrangement.spacedBy(12.dp),
                 ) {
                     Text(
-                        text = "消息字号",
+                        text = stringResource(R.string.settings_message_text_scale),
                         style = MaterialTheme.typography.titleMedium,
                     )
                     Text(
@@ -372,32 +380,32 @@ private fun DisplaySettingsSheet(
                     verticalArrangement = Arrangement.spacedBy(14.dp),
                 ) {
                     DisplaySwitchRow(
-                        title = "思考默认展开",
+                        title = stringResource(R.string.settings_thinking_default_expanded),
                         checked = reasoningExpandedByDefault,
                         onCheckedChange = onReasoningExpandedByDefaultChange,
                     )
                     DisplaySwitchRow(
-                        title = "生成中显示思考",
+                        title = stringResource(R.string.settings_show_thinking_in_progress),
                         checked = showThinkingContent,
                         onCheckedChange = onShowThinkingContentChange,
                     )
                     DisplaySwitchRow(
-                        title = "结束后自动收起思考",
+                        title = stringResource(R.string.settings_auto_collapse_after),
                         checked = autoCollapseThinking,
                         onCheckedChange = onAutoCollapseThinkingChange,
                     )
                     DisplaySwitchRow(
-                        title = "自动预览图片",
+                        title = stringResource(R.string.settings_auto_preview_images),
                         checked = autoPreviewImages,
                         onCheckedChange = onAutoPreviewImagesChange,
                     )
                     DisplaySwitchRow(
-                        title = "代码块自动换行",
+                        title = stringResource(R.string.settings_code_block_auto_wrap),
                         checked = codeBlockAutoWrap,
                         onCheckedChange = onCodeBlockAutoWrapChange,
                     )
                     DisplaySwitchRow(
-                        title = "代码块自动折叠",
+                        title = stringResource(R.string.settings_code_block_auto_collapse),
                         checked = codeBlockAutoCollapse,
                         onCheckedChange = onCodeBlockAutoCollapseChange,
                     )
@@ -439,10 +447,11 @@ private fun DisplaySwitchRow(
     }
 }
 
+@Composable
 private fun displayScaleLabel(scale: Float): String {
     return when {
-        scale <= 0.92f -> "紧凑"
-        scale >= 1.12f -> "偏大"
-        else -> "标准"
+        scale <= 0.92f -> stringResource(R.string.settings_text_scale_compact)
+        scale >= 1.12f -> stringResource(R.string.settings_text_scale_large)
+        else -> stringResource(R.string.settings_text_scale_standard)
     }
 }

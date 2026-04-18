@@ -13,9 +13,16 @@ import androidx.navigation.compose.navigation
 import com.example.myapplication.di.AppGraph
 import com.example.myapplication.model.PhoneSnapshotOwnerType
 import com.example.myapplication.ui.screen.roleplay.RoleplayReadingMode
+import com.example.myapplication.ui.screen.roleplay.RoleplayDiaryScreen
 import com.example.myapplication.ui.screen.roleplay.RoleplayScenarioEditScreen
 import com.example.myapplication.ui.screen.roleplay.RoleplayScenarioListScreen
 import com.example.myapplication.ui.screen.roleplay.RoleplayScreen
+import com.example.myapplication.ui.screen.roleplay.RoleplayScreenCallbacks
+import com.example.myapplication.ui.screen.roleplay.RoleplayMessageCallbacks
+import com.example.myapplication.ui.screen.roleplay.RoleplaySuggestionCallbacks
+import com.example.myapplication.ui.screen.roleplay.RoleplayNavigationCallbacks
+import com.example.myapplication.ui.screen.roleplay.RoleplaySessionCallbacks
+import com.example.myapplication.ui.screen.roleplay.RoleplayUiCallbacks
 import com.example.myapplication.ui.screen.roleplay.RoleplaySettingsScreen
 import com.example.myapplication.ui.screen.roleplay.RoleplayVideoCallScreen
 import com.example.myapplication.viewmodel.SettingsViewModel
@@ -144,74 +151,91 @@ internal fun NavGraphBuilder.registerRoleplayGraph(
                 errorMessage = roleplayState.errorMessage,
                 suggestionErrorMessage = roleplayState.suggestionErrorMessage,
                 pendingMemoryProposal = roleplayState.pendingMemoryProposal,
-                onClearNoticeMessage = roleplayViewModel::clearNoticeMessage,
-                onClearErrorMessage = roleplayViewModel::clearErrorMessage,
-                onInputChange = roleplayViewModel::updateInput,
-                onGenerateSuggestions = roleplayViewModel::generateDraftInput,
-                onApplySuggestion = roleplayViewModel::applySuggestion,
-                onClearSuggestions = roleplayViewModel::clearSuggestions,
-                onRetryTurn = roleplayViewModel::retryTurn,
-                onEditUserMessage = roleplayViewModel::editUserMessage,
-                onQuoteMessage = roleplayViewModel::quoteMessage,
-                onClearQuotedMessage = roleplayViewModel::clearQuotedMessage,
-                onRecallMessage = roleplayViewModel::recallMessage,
-                onCaptureOnlineChat = roleplayViewModel::captureOnlineChat,
-                onSendSpecialPlay = roleplayViewModel::sendSpecialPlay,
-                onSendVoiceMessage = roleplayViewModel::sendVoiceMessage,
-                onConfirmTransferReceipt = roleplayViewModel::confirmTransferReceipt,
-                onSend = roleplayViewModel::sendMessage,
-                onCancelSending = roleplayViewModel::cancelSending,
-                onApprovePendingMemoryProposal = roleplayViewModel::approvePendingMemoryProposal,
-                onRejectPendingMemoryProposal = roleplayViewModel::rejectPendingMemoryProposal,
-                onRestartSession = roleplayViewModel::restartCurrentSession,
-                onDismissAssistantMismatch = roleplayViewModel::dismissAssistantMismatchDialog,
-                onOpenPhoneCheck = { ownerType ->
-                    val conversationId = roleplayState.currentSession?.conversationId.orEmpty()
-                    if (conversationId.isNotBlank()) {
-                        navController.navigate(
-                            AppRoutes.phoneCheck(
-                                conversationId = conversationId,
-                                scenarioId = scenarioId,
-                                ownerType = ownerType,
-                            ),
-                        ) {
-                            launchSingleTop = true
-                        }
-                    }
-                },
-                onOpenMoments = {
-                    val conversationId = roleplayState.currentSession?.conversationId.orEmpty()
-                    if (conversationId.isNotBlank()) {
-                        navController.navigate(
-                            AppRoutes.moments(
-                                conversationId = conversationId,
-                                scenarioId = scenarioId,
-                                ownerType = PhoneSnapshotOwnerType.CHARACTER,
-                            ),
-                        ) {
-                            launchSingleTop = true
-                        }
-                    }
-                },
-                onOpenVideoCall = {
-                    navController.navigate(AppRoutes.roleplayVideoCall(scenarioId)) {
-                        launchSingleTop = true
-                    }
-                },
-                onOpenReadingMode = {
-                    navController.navigate(AppRoutes.roleplayReading(scenarioId)) {
-                        launchSingleTop = true
-                    }
-                },
-                onOpenSettings = {
-                    navController.navigate(AppRoutes.roleplaySettings(scenarioId)) {
-                        launchSingleTop = true
-                    }
-                },
-                onNavigateBack = {
-                    roleplayViewModel.leaveScenario()
-                    navController.popBackStack()
-                },
+                callbacks = RoleplayScreenCallbacks(
+                    message = RoleplayMessageCallbacks(
+                        onInputChange = roleplayViewModel::updateInput,
+                        onSend = roleplayViewModel::sendMessage,
+                        onCancelSending = roleplayViewModel::cancelSending,
+                        onRetryTurn = roleplayViewModel::retryTurn,
+                        onEditUserMessage = roleplayViewModel::editUserMessage,
+                        onQuoteMessage = roleplayViewModel::quoteMessage,
+                        onClearQuotedMessage = roleplayViewModel::clearQuotedMessage,
+                        onRecallMessage = roleplayViewModel::recallMessage,
+                        onCaptureOnlineChat = roleplayViewModel::captureOnlineChat,
+                        onSendSpecialPlay = roleplayViewModel::sendSpecialPlay,
+                        onSendVoiceMessage = roleplayViewModel::sendVoiceMessage,
+                        onConfirmTransferReceipt = roleplayViewModel::confirmTransferReceipt,
+                    ),
+                    suggestion = RoleplaySuggestionCallbacks(
+                        onGenerateSuggestions = roleplayViewModel::generateDraftInput,
+                        onApplySuggestion = roleplayViewModel::applySuggestion,
+                        onClearSuggestions = roleplayViewModel::clearSuggestions,
+                    ),
+                    navigation = RoleplayNavigationCallbacks(
+                        onOpenDiary = {
+                            navController.navigate(AppRoutes.roleplayDiary(scenarioId)) {
+                                launchSingleTop = true
+                            }
+                        },
+                        onOpenPhoneCheck = { ownerType ->
+                            val conversationId = roleplayState.currentSession?.conversationId.orEmpty()
+                            if (conversationId.isNotBlank()) {
+                                navController.navigate(
+                                    AppRoutes.phoneCheck(
+                                        conversationId = conversationId,
+                                        scenarioId = scenarioId,
+                                        ownerType = ownerType,
+                                    ),
+                                ) {
+                                    launchSingleTop = true
+                                }
+                            }
+                        },
+                        onOpenMoments = {
+                            val conversationId = roleplayState.currentSession?.conversationId.orEmpty()
+                            if (conversationId.isNotBlank()) {
+                                navController.navigate(
+                                    AppRoutes.moments(
+                                        conversationId = conversationId,
+                                        scenarioId = scenarioId,
+                                        ownerType = PhoneSnapshotOwnerType.CHARACTER,
+                                    ),
+                                ) {
+                                    launchSingleTop = true
+                                }
+                            }
+                        },
+                        onOpenVideoCall = {
+                            navController.navigate(AppRoutes.roleplayVideoCall(scenarioId)) {
+                                launchSingleTop = true
+                            }
+                        },
+                        onOpenReadingMode = {
+                            navController.navigate(AppRoutes.roleplayReading(scenarioId)) {
+                                launchSingleTop = true
+                            }
+                        },
+                        onOpenSettings = {
+                            navController.navigate(AppRoutes.roleplaySettings(scenarioId)) {
+                                launchSingleTop = true
+                            }
+                        },
+                        onNavigateBack = {
+                            roleplayViewModel.leaveScenario()
+                            navController.popBackStack()
+                        },
+                    ),
+                    session = RoleplaySessionCallbacks(
+                        onRestartSession = roleplayViewModel::restartCurrentSession,
+                        onDismissAssistantMismatch = roleplayViewModel::dismissAssistantMismatchDialog,
+                        onApprovePendingMemoryProposal = roleplayViewModel::approvePendingMemoryProposal,
+                        onRejectPendingMemoryProposal = roleplayViewModel::rejectPendingMemoryProposal,
+                    ),
+                    ui = RoleplayUiCallbacks(
+                        onClearNoticeMessage = roleplayViewModel::clearNoticeMessage,
+                        onClearErrorMessage = roleplayViewModel::clearErrorMessage,
+                    ),
+                ),
             )
         }
 
@@ -273,8 +297,11 @@ internal fun NavGraphBuilder.registerRoleplayGraph(
                 onUpdateShowRoleplayPresenceStrip = settingsViewModel::updateShowRoleplayPresenceStrip,
                 onUpdateShowRoleplayStatusStrip = settingsViewModel::updateShowRoleplayStatusStrip,
                 onUpdateShowOnlineRoleplayNarration = settingsViewModel::updateShowOnlineRoleplayNarration,
-                onUpdateEnableRoleplayNetMeme = settingsViewModel::updateEnableRoleplayNetMeme,
                 onUpdateShowRoleplayAiHelper = settingsViewModel::updateShowRoleplayAiHelper,
+                onUpdateScenarioNarrationEnabled = roleplayViewModel::updateCurrentScenarioNarrationEnabled,
+                onUpdateScenarioDeepImmersionEnabled = roleplayViewModel::updateCurrentScenarioDeepImmersionEnabled,
+                onUpdateScenarioTimeAwarenessEnabled = roleplayViewModel::updateCurrentScenarioTimeAwarenessEnabled,
+                onUpdateScenarioNetMemeEnabled = roleplayViewModel::updateCurrentScenarioNetMemeEnabled,
                 onUpdateRoleplayLongformTargetChars = settingsViewModel::updateRoleplayLongformTargetChars,
                 onUpdateScenarioInteractionMode = roleplayViewModel::updateCurrentScenarioInteractionMode,
                 onUpdateRoleplayImmersiveMode = settingsViewModel::updateRoleplayImmersiveMode,
@@ -319,6 +346,40 @@ internal fun NavGraphBuilder.registerRoleplayGraph(
                 lineHeightScale = roleplayState.settings.roleplayLineHeightScale.scaleFactor,
                 highContrast = roleplayState.settings.roleplayHighContrast,
                 onDismiss = { navController.popBackStack() },
+            )
+        }
+
+        composable(AppRoutes.ROLEPLAY_DIARY) { backStackEntry ->
+            val roleplayViewModel = rememberRoleplayViewModel(
+                navController = navController,
+                appGraph = appGraph,
+                backStackEntry = backStackEntry,
+            )
+            val roleplayState by roleplayViewModel.uiState.collectAsStateWithLifecycle()
+            val rawScenarioId = backStackEntry.arguments?.getString("scenarioId").orEmpty()
+            val scenarioId = Uri.decode(rawScenarioId)
+            val routeScenario = roleplayState.currentScenario?.takeIf { it.id == scenarioId }
+                ?: roleplayState.scenarios.firstOrNull { it.id == scenarioId }
+            val routeAssistant = routeScenario?.let { scenario ->
+                roleplayState.settings.resolvedAssistants().firstOrNull { it.id == scenario.assistantId }
+            } ?: roleplayState.currentAssistant
+            LaunchedEffect(scenarioId) {
+                if (roleplayState.currentScenario?.id != scenarioId && roleplayState.currentSession == null) {
+                    roleplayViewModel.enterScenario(scenarioId)
+                }
+            }
+            RoleplayDiaryScreen(
+                scenario = routeScenario,
+                assistant = routeAssistant,
+                settings = roleplayState.settings,
+                diaryEntries = roleplayState.diaryEntries,
+                isGeneratingDiary = roleplayState.isGeneratingDiary,
+                noticeMessage = roleplayState.noticeMessage,
+                errorMessage = roleplayState.errorMessage,
+                onClearNoticeMessage = roleplayViewModel::clearNoticeMessage,
+                onClearErrorMessage = roleplayViewModel::clearErrorMessage,
+                onGenerateDiary = roleplayViewModel::generateRoleplayDiaries,
+                onNavigateBack = { navController.popBackStack() },
             )
         }
 

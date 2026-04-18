@@ -431,16 +431,6 @@ fun RoleplayScenarioEditScreen(
                             },
                         )
                         SwitchRow(
-                            title = if (isOnlinePhoneMode) "启用心声提示" else "启用旁白",
-                            subtitle = if (isOnlinePhoneMode) {
-                                "关闭后该场景会尽量只保留真实聊天气泡，不再额外生成心声星标。"
-                            } else {
-                                "关闭后会尽量减少独立旁白段落，更偏纯对白推进。"
-                            },
-                            value = enableNarration,
-                            onValueChange = { enableNarration = it },
-                        )
-                        SwitchRow(
                             title = "启用 RP 协议输出",
                             subtitle = if (longformModeEnabled) {
                                 "长文小说模式下会忽略这项设置。"
@@ -462,12 +452,6 @@ fun RoleplayScenarioEditScreen(
                             subtitle = "根据最近一轮发言和回复状态，自动强调当前剧情焦点角色。",
                             value = autoHighlightSpeaker,
                             onValueChange = { autoHighlightSpeaker = it },
-                        )
-                        SwitchRow(
-                            title = "深度沉浸",
-                            subtitle = "解锁角色表达自由度，注入活人逻辑、文风戒律与直白描写指令。实际效果取决于模型能力。",
-                            value = enableDeepImmersion,
-                            onValueChange = { enableDeepImmersion = it },
                         )
                     }
                 }

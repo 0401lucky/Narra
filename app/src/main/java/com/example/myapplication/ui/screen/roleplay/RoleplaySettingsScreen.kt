@@ -63,8 +63,11 @@ fun RoleplaySettingsScreen(
     onUpdateShowRoleplayPresenceStrip: (Boolean) -> Unit,
     onUpdateShowRoleplayStatusStrip: (Boolean) -> Unit,
     onUpdateShowOnlineRoleplayNarration: (Boolean) -> Unit,
-    onUpdateEnableRoleplayNetMeme: (Boolean) -> Unit,
     onUpdateShowRoleplayAiHelper: (Boolean) -> Unit,
+    onUpdateScenarioNarrationEnabled: (Boolean) -> Unit,
+    onUpdateScenarioDeepImmersionEnabled: (Boolean) -> Unit,
+    onUpdateScenarioTimeAwarenessEnabled: (Boolean) -> Unit,
+    onUpdateScenarioNetMemeEnabled: (Boolean) -> Unit,
     onUpdateRoleplayLongformTargetChars: (Int) -> Unit,
     onUpdateScenarioInteractionMode: (RoleplayInteractionMode) -> Unit,
     onUpdateRoleplayImmersiveMode: (com.example.myapplication.model.RoleplayImmersiveMode) -> Unit,
@@ -175,8 +178,11 @@ fun RoleplaySettingsScreen(
                     onUpdateShowRoleplayPresenceStrip = onUpdateShowRoleplayPresenceStrip,
                     onUpdateShowRoleplayStatusStrip = onUpdateShowRoleplayStatusStrip,
                     onUpdateShowOnlineRoleplayNarration = onUpdateShowOnlineRoleplayNarration,
-                    onUpdateEnableRoleplayNetMeme = onUpdateEnableRoleplayNetMeme,
                     onUpdateShowRoleplayAiHelper = onUpdateShowRoleplayAiHelper,
+                    onUpdateScenarioNarrationEnabled = onUpdateScenarioNarrationEnabled,
+                    onUpdateScenarioDeepImmersionEnabled = onUpdateScenarioDeepImmersionEnabled,
+                    onUpdateScenarioTimeAwarenessEnabled = onUpdateScenarioTimeAwarenessEnabled,
+                    onUpdateScenarioNetMemeEnabled = onUpdateScenarioNetMemeEnabled,
                     onUpdateScenarioInteractionMode = onUpdateScenarioInteractionMode,
                     systemHighContrastEnabled = systemHighContrastEnabled,
                     onUpdateRoleplayImmersiveMode = onUpdateRoleplayImmersiveMode,
@@ -232,4 +238,3 @@ fun RoleplaySettingsScreen(
         },
     )
 }
-

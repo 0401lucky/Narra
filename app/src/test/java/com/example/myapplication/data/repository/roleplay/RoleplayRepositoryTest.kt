@@ -1,6 +1,7 @@
 package com.example.myapplication.data.repository.roleplay
 
 import com.example.myapplication.data.local.roleplay.RoleplayDao
+import com.example.myapplication.data.local.roleplay.RoleplayDiaryEntryEntity
 import com.example.myapplication.data.local.roleplay.RoleplayOnlineMetaEntity
 import com.example.myapplication.data.local.roleplay.RoleplayScenarioEntity
 import com.example.myapplication.data.local.roleplay.RoleplaySessionEntity
@@ -12,6 +13,7 @@ import com.example.myapplication.model.Conversation
 import com.example.myapplication.testutil.FakeConversationStore
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertEquals
@@ -336,6 +338,7 @@ private class FakeRoleplayDao(
 ) : RoleplayDao {
     private val scenariosState = MutableStateFlow(scenarios)
     private val sessionsState = MutableStateFlow(sessions)
+    private val diaryEntriesState = MutableStateFlow<List<RoleplayDiaryEntryEntity>>(emptyList())
     val deletedScenarioIds = mutableListOf<String>()
 
     override fun observeScenarios(): Flow<List<RoleplayScenarioEntity>> {
@@ -354,12 +357,20 @@ private class FakeRoleplayDao(
         return sessionsState
     }
 
+    override fun observeDiaryEntries(conversationId: String): Flow<List<RoleplayDiaryEntryEntity>> {
+        return diaryEntriesState.map { list -> list.filter { it.conversationId == conversationId } }
+    }
+
     override suspend fun listScenarios(): List<RoleplayScenarioEntity> {
         return scenariosState.value
     }
 
     override suspend fun listSessions(): List<RoleplaySessionEntity> {
         return sessionsState.value
+    }
+
+    override suspend fun listDiaryEntries(conversationId: String): List<RoleplayDiaryEntryEntity> {
+        return diaryEntriesState.value.filter { it.conversationId == conversationId }
     }
 
     override suspend fun getScenario(scenarioId: String): RoleplayScenarioEntity? {
@@ -388,9 +399,18 @@ private class FakeRoleplayDao(
         sessionsState.value = sessionsState.value.filterNot { it.id == session.id } + session
     }
 
+    override suspend fun upsertDiaryEntries(entries: List<RoleplayDiaryEntryEntity>) {
+        val targetIds = entries.map { it.id }.toSet()
+        diaryEntriesState.value = diaryEntriesState.value.filterNot { it.id in targetIds } + entries
+    }
+
     override suspend fun deleteScenario(scenarioId: String) {
         deletedScenarioIds += scenarioId
         scenariosState.value = scenariosState.value.filterNot { it.id == scenarioId }
         sessionsState.value = sessionsState.value.filterNot { it.scenarioId == scenarioId }
+    }
+
+    override suspend fun deleteDiaryEntriesForConversation(conversationId: String) {
+        diaryEntriesState.value = diaryEntriesState.value.filterNot { it.conversationId == conversationId }
     }
 }

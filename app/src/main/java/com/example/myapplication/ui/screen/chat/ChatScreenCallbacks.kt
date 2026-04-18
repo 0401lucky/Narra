@@ -3,37 +3,23 @@ package com.example.myapplication.ui.screen.chat
 import com.example.myapplication.model.ChatMessagePart
 import com.example.myapplication.model.ChatSpecialPlayDraft
 
-/**
- * ChatScreen 的所有用户交互回调，按职责分组。
- */
 data class ChatScreenCallbacks(
-    val conversation: ConversationCallbacks,
-    val message: MessageCallbacks,
-    val translation: TranslationCallbacks,
-    val settings: SettingsCallbacks,
-    val navigation: NavigationCallbacks,
-    val ui: UiCallbacks,
+    val message: ChatMessageCallbacks,
+    val conversation: ChatConversationCallbacks,
+    val search: ChatSearchCallbacks,
+    val translation: ChatTranslationCallbacks,
+    val model: ChatModelCallbacks,
+    val profile: ChatProfileCallbacks,
+    val navigation: ChatNavigationCallbacks,
+    val ui: ChatUiCallbacks,
 )
 
-data class ConversationCallbacks(
-    val onCreate: () -> Unit,
-    val onSelect: (String) -> Unit,
-    val onClear: (String) -> Unit,
-    val onDelete: (String) -> Unit,
-    val onDeleteCurrent: () -> Unit,
-    val onClearCurrent: () -> Unit,
-    val onToggleSearch: () -> Unit,
-)
-
-data class MessageCallbacks(
+data class ChatMessageCallbacks(
     val onInputChange: (String) -> Unit,
     val onSend: () -> Unit,
-    val onRetry: (String) -> Unit,
+    val onRetryMessage: (String) -> Unit,
     val onEditUserMessage: (String) -> Unit,
-    val onToggleMemory: (String) -> Unit,
-    val onShareMessage: (String) -> Unit,
-    val onExportMessageMarkdown: (String) -> Unit,
-    val onOpenMessagePreview: (String) -> Unit,
+    val onToggleMemoryMessage: (String) -> Unit,
     val onCancelSending: () -> Unit,
     val onAddPendingParts: (List<ChatMessagePart>) -> Unit,
     val onRemovePendingPart: (Int) -> Unit,
@@ -41,32 +27,51 @@ data class MessageCallbacks(
     val onConfirmTransferReceipt: (String) -> Unit,
 )
 
-data class TranslationCallbacks(
+data class ChatConversationCallbacks(
+    val onCreateConversation: () -> Unit,
+    val onSelectConversation: (String) -> Unit,
+    val onClearConversation: (String) -> Unit,
+    val onDeleteConversation: (String) -> Unit,
+    val onClearCurrentConversation: () -> Unit,
+    val onRefreshConversationSummary: () -> Unit,
+)
+
+data class ChatSearchCallbacks(
+    val onToggleSearch: () -> Unit,
+    val onSelectSearchSource: (String) -> Unit,
+    val onUpdateSearchResultCount: (Int) -> Unit,
+)
+
+data class ChatTranslationCallbacks(
     val onTranslateDraft: () -> Unit,
     val onTranslateMessage: (String) -> Unit,
-    val onDismissSheet: () -> Unit,
-    val onApplyToInput: (replace: Boolean) -> Unit,
-    val onSendAsMessage: () -> Unit,
+    val onDismissTranslationSheet: () -> Unit,
+    val onApplyTranslationToInput: (Boolean) -> Unit,
+    val onSendTranslationAsMessage: () -> Unit,
 )
 
-data class SettingsCallbacks(
+data class ChatModelCallbacks(
     val onSelectProvider: (String) -> Unit,
-    val onSelectModel: (providerId: String, modelId: String) -> Unit,
-    val onUpdateThinkingBudget: (modelId: String, budget: Int?) -> Unit,
-    val onSaveUserProfile: (displayName: String, personaPrompt: String, avatarUri: String, avatarUrl: String) -> Unit,
+    val onSelectModel: (String, String) -> Unit,
+    val onUpdateThinkingBudget: (String, Int?) -> Unit,
+)
+
+data class ChatProfileCallbacks(
+    val onSaveUserProfile: (String, String, String, String) -> Unit,
     val onSelectAssistant: (String) -> Unit,
     val onOpenAssistantDetail: (String) -> Unit,
-    val onOpenProviderDetail: (String) -> Unit,
 )
 
-data class NavigationCallbacks(
+data class ChatNavigationCallbacks(
     val onOpenSettings: () -> Unit,
     val onOpenHome: () -> Unit,
     val onOpenTranslator: () -> Unit,
     val onOpenRoleplay: () -> Unit,
+    val onOpenPhoneCheck: (String) -> Unit,
+    val onOpenProviderDetail: (String) -> Unit,
 )
 
-data class UiCallbacks(
+data class ChatUiCallbacks(
     val onClearErrorMessage: () -> Unit,
     val onClearNoticeMessage: () -> Unit,
 )

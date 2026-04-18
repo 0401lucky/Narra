@@ -23,14 +23,13 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.Send
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.FavoriteBorder
+import androidx.compose.foundation.layout.imePadding
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -46,9 +45,11 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import com.example.myapplication.R
 import com.example.myapplication.model.PhoneSocialPost
 import com.example.myapplication.ui.theme.MomentsAccent
 import com.example.myapplication.ui.theme.MomentsAccentSoft
@@ -56,6 +57,8 @@ import com.example.myapplication.ui.theme.MomentsBackground
 import com.example.myapplication.ui.theme.MomentsCardBackground
 import com.example.myapplication.ui.theme.MomentsLikeRed
 import com.example.myapplication.ui.theme.MomentsMutedText
+import com.example.myapplication.ui.component.AppSnackbarHost
+import com.example.myapplication.ui.component.NarraIconButton
 import com.example.myapplication.viewmodel.MomentsUiState
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -81,25 +84,25 @@ fun MomentsScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("动态", fontWeight = FontWeight.Bold) },
+                title = { Text(stringResource(R.string.moments_title), fontWeight = FontWeight.Bold) },
                 navigationIcon = {
-                    IconButton(onClick = {
+                    NarraIconButton(onClick = {
                         if (selectedPostId != null) {
                             selectedPostId = null
                         } else {
                             onNavigateBack()
                         }
                     }) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "返回")
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.common_back))
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MomentsBackground,
+                    containerColor = MomentsBackground(),
                 ),
             )
         },
-        snackbarHost = { SnackbarHost(snackbarHostState) },
-        containerColor = MomentsBackground,
+        snackbarHost = { AppSnackbarHost(hostState = snackbarHostState) },
+        containerColor = MomentsBackground(),
     ) { innerPadding ->
         Box(
             modifier = Modifier
@@ -112,7 +115,7 @@ fun MomentsScreen(
                         modifier = Modifier.fillMaxSize(),
                         contentAlignment = Alignment.Center,
                     ) {
-                        CircularProgressIndicator(color = MomentsAccent)
+                        CircularProgressIndicator(color = MomentsAccent())
                     }
                 }
 
@@ -125,15 +128,15 @@ fun MomentsScreen(
                         verticalArrangement = Arrangement.Center,
                     ) {
                         Text(
-                            text = "还没有动态",
+                            text = stringResource(R.string.moments_empty_title),
                             style = MaterialTheme.typography.titleMedium,
-                            color = MomentsMutedText,
+                            color = MomentsMutedText(),
                         )
                         Spacer(modifier = Modifier.height(8.dp))
                         Text(
-                            text = "在「查手机」中生成手机内容后即可浏览",
+                            text = stringResource(R.string.moments_empty_body),
                             style = MaterialTheme.typography.bodyMedium,
-                            color = MomentsMutedText,
+                            color = MomentsMutedText(),
                         )
                     }
                 }
@@ -188,7 +191,7 @@ private fun MomentsListContent(
                     .fillMaxWidth()
                     .clickable { onOpenPost(post) },
                 shape = RoundedCornerShape(22.dp),
-                color = MomentsCardBackground,
+                color = MomentsCardBackground(),
             ) {
                 Column(
                     modifier = Modifier.padding(16.dp),
@@ -203,12 +206,12 @@ private fun MomentsListContent(
                             modifier = Modifier
                                 .size(42.dp)
                                 .clip(CircleShape)
-                                .background(MomentsAccentSoft),
+                                .background(MomentsAccentSoft()),
                             contentAlignment = Alignment.Center,
                         ) {
                             Text(
                                 text = post.authorName.take(1),
-                                color = MomentsAccent,
+                                color = MomentsAccent(),
                                 fontWeight = FontWeight.Bold,
                             )
                         }
@@ -226,13 +229,13 @@ private fun MomentsListContent(
                                 if (post.authorLabel.isNotBlank()) {
                                     Surface(
                                         shape = RoundedCornerShape(999.dp),
-                                        color = MomentsAccentSoft,
+                                        color = MomentsAccentSoft(),
                                     ) {
                                         Text(
                                             text = post.authorLabel,
                                             modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
                                             style = MaterialTheme.typography.labelSmall,
-                                            color = MomentsAccent,
+                                            color = MomentsAccent(),
                                         )
                                     }
                                 }
@@ -240,7 +243,7 @@ private fun MomentsListContent(
                             Text(
                                 text = post.timeLabel,
                                 style = MaterialTheme.typography.bodySmall,
-                                color = MomentsMutedText,
+                                color = MomentsMutedText(),
                             )
                         }
                     }
@@ -255,7 +258,7 @@ private fun MomentsListContent(
                     if (post.comments.isNotEmpty()) {
                         Surface(
                             shape = RoundedCornerShape(12.dp),
-                            color = MomentsBackground,
+                            color = MomentsBackground(),
                         ) {
                             Column(
                                 modifier = Modifier.padding(10.dp),
@@ -263,7 +266,11 @@ private fun MomentsListContent(
                             ) {
                                 post.comments.takeLast(2).forEach { comment ->
                                     Text(
-                                        text = "${comment.authorName}：${comment.text}",
+                                        text = stringResource(
+                                            R.string.moments_preview_comment,
+                                            comment.authorName,
+                                            comment.text,
+                                        ),
                                         style = MaterialTheme.typography.bodySmall,
                                         maxLines = 1,
                                         overflow = TextOverflow.Ellipsis,
@@ -271,9 +278,9 @@ private fun MomentsListContent(
                                 }
                                 if (post.comments.size > 2) {
                                     Text(
-                                        text = "查看全部 ${post.comments.size} 条评论",
+                                        text = stringResource(R.string.moments_view_all_comments, post.comments.size),
                                         style = MaterialTheme.typography.labelSmall,
-                                        color = MomentsAccent,
+                                        color = MomentsAccent(),
                                     )
                                 }
                             }
@@ -294,21 +301,21 @@ private fun MomentsListContent(
                                 imageVector = if (isLikedByViewer) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
                                 contentDescription = null,
                                 modifier = Modifier.size(18.dp),
-                                tint = if (isLikedByViewer) MomentsLikeRed else MomentsMutedText,
+                                tint = if (isLikedByViewer) MomentsLikeRed() else MomentsMutedText(),
                             )
                             if (post.likeCount > 0) {
                                 Text(
                                     text = "${post.likeCount}",
                                     style = MaterialTheme.typography.bodySmall,
-                                    color = MomentsMutedText,
+                                    color = MomentsMutedText(),
                                 )
                             }
                         }
                         if (post.comments.isNotEmpty()) {
                             Text(
-                                text = "${post.comments.size} 条评论",
+                                text = stringResource(R.string.moments_comments_count, post.comments.size),
                                 style = MaterialTheme.typography.bodySmall,
-                                color = MomentsMutedText,
+                                color = MomentsMutedText(),
                             )
                         }
                     }
@@ -338,7 +345,7 @@ private fun MomentsDetailContent(
             item {
                 Surface(
                     shape = RoundedCornerShape(24.dp),
-                    color = MomentsCardBackground,
+                    color = MomentsCardBackground(),
                 ) {
                     Column(
                         modifier = Modifier
@@ -354,12 +361,12 @@ private fun MomentsDetailContent(
                                 modifier = Modifier
                                     .size(48.dp)
                                     .clip(CircleShape)
-                                    .background(MomentsAccentSoft),
+                                    .background(MomentsAccentSoft()),
                                 contentAlignment = Alignment.Center,
                             ) {
                                 Text(
                                     text = post.authorName.take(1),
-                                    color = MomentsAccent,
+                                    color = MomentsAccent(),
                                     fontWeight = FontWeight.Bold,
                                     style = MaterialTheme.typography.titleMedium,
                                 )
@@ -377,13 +384,13 @@ private fun MomentsDetailContent(
                                     if (post.authorLabel.isNotBlank()) {
                                         Surface(
                                             shape = RoundedCornerShape(999.dp),
-                                            color = MomentsAccentSoft,
+                                            color = MomentsAccentSoft(),
                                         ) {
                                             Text(
                                                 text = post.authorLabel,
                                                 modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp),
                                                 style = MaterialTheme.typography.labelSmall,
-                                                color = MomentsAccent,
+                                                color = MomentsAccent(),
                                             )
                                         }
                                     }
@@ -391,7 +398,7 @@ private fun MomentsDetailContent(
                                 Text(
                                     text = post.timeLabel,
                                     style = MaterialTheme.typography.bodySmall,
-                                    color = MomentsMutedText,
+                                    color = MomentsMutedText(),
                                 )
                             }
                         }
@@ -407,7 +414,7 @@ private fun MomentsDetailContent(
             item {
                 Surface(
                     shape = RoundedCornerShape(20.dp),
-                    color = MomentsCardBackground,
+                    color = MomentsCardBackground(),
                 ) {
                     Column(
                         modifier = Modifier
@@ -428,24 +435,28 @@ private fun MomentsDetailContent(
                                     imageVector = if (post.likeCount > 0) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
                                     contentDescription = null,
                                     modifier = Modifier.size(20.dp),
-                                    tint = if (post.likeCount > 0) MomentsLikeRed else MomentsMutedText,
+                                    tint = if (post.likeCount > 0) MomentsLikeRed() else MomentsMutedText(),
                                 )
                                 Text(
-                                    text = "${post.likeCount} 人赞",
+                                    text = stringResource(R.string.moments_likes_count, post.likeCount),
                                     style = MaterialTheme.typography.bodyMedium,
-                                    color = MomentsMutedText,
+                                    color = MomentsMutedText(),
                                 )
                             }
                             Surface(
                                 modifier = Modifier.clickable(onClick = onToggleLike),
                                 shape = RoundedCornerShape(999.dp),
-                                color = MomentsAccentSoft,
+                                color = MomentsAccentSoft(),
                             ) {
                                 Text(
-                                    text = if (viewerName in post.likedByNames) "取消赞" else "赞",
+                                    text = if (viewerName in post.likedByNames) {
+                                        stringResource(R.string.moments_unlike_action)
+                                    } else {
+                                        stringResource(R.string.moments_like_action)
+                                    },
                                     modifier = Modifier.padding(horizontal = 16.dp, vertical = 6.dp),
                                     style = MaterialTheme.typography.labelMedium,
-                                    color = MomentsAccent,
+                                    color = MomentsAccent(),
                                     fontWeight = FontWeight.SemiBold,
                                 )
                             }
@@ -454,7 +465,7 @@ private fun MomentsDetailContent(
                             Text(
                                 text = post.likedByNames.joinToString("、"),
                                 style = MaterialTheme.typography.bodySmall,
-                                color = MomentsMutedText,
+                                color = MomentsMutedText(),
                             )
                         }
                     }
@@ -465,7 +476,7 @@ private fun MomentsDetailContent(
             if (post.comments.isNotEmpty() || isGeneratingReplies) {
                 item {
                     Text(
-                        text = "评论 ${post.comments.size}",
+                        text = stringResource(R.string.moments_comments_title, post.comments.size),
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.Bold,
                         modifier = Modifier.padding(horizontal = 2.dp),
@@ -477,7 +488,7 @@ private fun MomentsDetailContent(
             items(post.comments, key = { it.id }) { comment ->
                 Surface(
                     shape = RoundedCornerShape(18.dp),
-                    color = MomentsCardBackground,
+                    color = MomentsCardBackground(),
                 ) {
                     Row(
                         modifier = Modifier
@@ -489,12 +500,12 @@ private fun MomentsDetailContent(
                             modifier = Modifier
                                 .size(32.dp)
                                 .clip(CircleShape)
-                                .background(MomentsAccentSoft),
+                                .background(MomentsAccentSoft()),
                             contentAlignment = Alignment.Center,
                         ) {
                             Text(
                                 text = comment.authorName.take(1),
-                                color = MomentsAccent,
+                                color = MomentsAccent(),
                                 style = MaterialTheme.typography.labelSmall,
                                 fontWeight = FontWeight.Bold,
                             )
@@ -522,7 +533,7 @@ private fun MomentsDetailContent(
                 item {
                     Surface(
                         shape = RoundedCornerShape(18.dp),
-                        color = MomentsCardBackground,
+                        color = MomentsCardBackground(),
                     ) {
                         Row(
                             modifier = Modifier
@@ -534,12 +545,12 @@ private fun MomentsDetailContent(
                             CircularProgressIndicator(
                                 modifier = Modifier.size(20.dp),
                                 strokeWidth = 2.dp,
-                                color = MomentsAccent,
+                                color = MomentsAccent(),
                             )
                             Text(
-                                text = "对方正在输入…",
+                                text = stringResource(R.string.moments_replying_hint),
                                 style = MaterialTheme.typography.bodyMedium,
-                                color = MomentsMutedText,
+                                color = MomentsMutedText(),
                             )
                         }
                     }
@@ -549,7 +560,8 @@ private fun MomentsDetailContent(
 
         // 评论输入栏
         Surface(
-            color = MomentsCardBackground,
+            modifier = Modifier.imePadding(),
+            color = MomentsCardBackground(),
             shadowElevation = 4.dp,
         ) {
             Row(
@@ -563,11 +575,11 @@ private fun MomentsDetailContent(
                     value = commentInput,
                     onValueChange = { commentInput = it },
                     modifier = Modifier.weight(1f),
-                    placeholder = { Text("写评论…", color = MomentsMutedText) },
+                    placeholder = { Text(stringResource(R.string.moments_comment_placeholder), color = MomentsMutedText()) },
                     singleLine = true,
                     shape = RoundedCornerShape(999.dp),
                 )
-                IconButton(
+                NarraIconButton(
                     onClick = {
                         if (commentInput.isNotBlank()) {
                             onAddComment(commentInput.trim())
@@ -578,8 +590,8 @@ private fun MomentsDetailContent(
                 ) {
                     Icon(
                         imageVector = Icons.AutoMirrored.Filled.Send,
-                        contentDescription = "发送评论",
-                        tint = if (commentInput.isNotBlank() && !isGeneratingReplies) MomentsAccent else MomentsMutedText,
+                        contentDescription = stringResource(R.string.moments_send_comment),
+                        tint = if (commentInput.isNotBlank() && !isGeneratingReplies) MomentsAccent() else MomentsMutedText(),
                     )
                 }
             }

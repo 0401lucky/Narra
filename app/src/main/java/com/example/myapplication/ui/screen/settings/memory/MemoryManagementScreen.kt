@@ -21,16 +21,18 @@ import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.PushPin
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.outlined.Psychology
-import androidx.compose.material3.DropdownMenu
-import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -39,9 +41,12 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.res.stringResource
+import com.example.myapplication.R
 import com.example.myapplication.model.Assistant
 import com.example.myapplication.model.ConversationSummary
 import com.example.myapplication.model.MemoryEntry
@@ -96,6 +101,7 @@ private sealed interface MemoryViewerTimelineItem {
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MemoryManagementScreen(
     uiState: MemoryManagementUiState,
@@ -112,9 +118,10 @@ fun MemoryManagementScreen(
         message = uiState.message,
         onConsumeMessage = onConsumeMessage,
     )
-    val assistantOptions = remember(assistants) {
+    val allRolesLabel = stringResource(R.string.memory_filter_all_roles)
+    val assistantOptions = remember(assistants, allRolesLabel) {
         buildList {
-            add(MemoryViewerRoleOption(id = AllAssistantFilterKey, label = "全部角色"))
+            add(MemoryViewerRoleOption(id = AllAssistantFilterKey, label = allRolesLabel))
             addAll(
                 assistants
                     .distinctBy { it.id }
@@ -186,7 +193,7 @@ fun MemoryManagementScreen(
     Scaffold(
         topBar = {
             SettingsTopBar(
-                title = "记忆查看器",
+                title = stringResource(R.string.memory_viewer_title),
                 onNavigateBack = onNavigateBack,
             )
         },
@@ -209,15 +216,15 @@ fun MemoryManagementScreen(
             ) {
                 item {
                     SettingsPageIntro(
-                        title = "记忆查看器",
-                        summary = "按角色筛选核心记忆、情景记忆与剧情摘要，避免不同角色内容混在一起。",
+                        title = stringResource(R.string.memory_viewer_title),
+                        summary = stringResource(R.string.memory_viewer_desc),
                     )
                 }
 
                 item {
                     SettingsHintCard(
-                        title = "摘要刷新入口",
-                        body = "当前摘要支持手动刷新，但入口仍在对应聊天或沉浸式会话里的“上下文治理”面板，不在这个查看页内。",
+                        title = stringResource(R.string.memory_summary_refresh_title),
+                        body = stringResource(R.string.memory_summary_refresh_body),
                         containerColor = palette.surfaceTint,
                         contentColor = palette.title,
                     )
@@ -238,12 +245,11 @@ fun MemoryManagementScreen(
                         ) {
                             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                                 Text(
-                                    text = "选择角色：",
+                                    text = stringResource(R.string.memory_select_role_label),
                                     style = MaterialTheme.typography.titleSmall,
                                     fontWeight = FontWeight.SemiBold,
                                     color = palette.title,
                                 )
-                                Box {
                                     Surface(
                                         modifier = Modifier
                                             .fillMaxWidth()
@@ -263,7 +269,7 @@ fun MemoryManagementScreen(
                                             horizontalArrangement = Arrangement.SpaceBetween,
                                         ) {
                                             Text(
-                                                text = selectedAssistantLabel.ifBlank { "请选择角色" },
+                                                text = selectedAssistantLabel.ifBlank { stringResource(R.string.memory_select_role_hint) },
                                                 style = MaterialTheme.typography.bodyLarge,
                                                 color = if (selectedAssistantLabel.isBlank()) {
                                                     palette.body.copy(alpha = 0.56f)
@@ -273,26 +279,11 @@ fun MemoryManagementScreen(
                                             )
                                             Icon(
                                                 imageVector = Icons.Default.ArrowDropDown,
-                                                contentDescription = "展开角色列表",
+                                                contentDescription = stringResource(R.string.memory_expand_role_list),
                                                 tint = palette.body,
                                             )
                                         }
                                     }
-                                    DropdownMenu(
-                                        expanded = showAssistantMenu,
-                                        onDismissRequest = { showAssistantMenu = false },
-                                    ) {
-                                        assistantOptions.forEach { option: MemoryViewerRoleOption ->
-                                            DropdownMenuItem(
-                                                text = { Text(option.label) },
-                                                onClick = {
-                                                    selectedAssistantId = option.id
-                                                    showAssistantMenu = false
-                                                },
-                                            )
-                                        }
-                                    }
-                                }
                             }
 
                             Row(
@@ -306,7 +297,7 @@ fun MemoryManagementScreen(
                                     modifier = Modifier.weight(1f),
                                     singleLine = true,
                                     shape = RoundedCornerShape(18.dp),
-                                    placeholder = { Text("搜索记忆内容...") },
+                                    placeholder = { Text(stringResource(R.string.memory_search_placeholder)) },
                                     colors = rememberSettingsOutlineColors(),
                                 )
                                 Surface(
@@ -317,7 +308,7 @@ fun MemoryManagementScreen(
                                     Box(contentAlignment = Alignment.Center) {
                                         Icon(
                                             imageVector = Icons.Default.Search,
-                                            contentDescription = "搜索",
+                                            contentDescription = stringResource(R.string.common_search),
                                             tint = MaterialTheme.colorScheme.onPrimary,
                                         )
                                     }
@@ -352,8 +343,8 @@ fun MemoryManagementScreen(
                 if (!roleReady) {
                     item {
                         MemoryViewerEmptyState(
-                            title = "请选择角色查看记忆",
-                            body = "先选一个角色，再查看它的核心记忆、情景记忆和剧情摘要。",
+                            title = stringResource(R.string.memory_please_select_role_title),
+                            body = stringResource(R.string.memory_please_select_role_body),
                         )
                     }
                 } else {
@@ -364,16 +355,16 @@ fun MemoryManagementScreen(
                             if (!hasMemory && !hasSummary) {
                                 item {
                                     MemoryViewerEmptyState(
-                                        title = "暂无内容",
-                                        body = "当前筛选下还没有记忆或剧情摘要。",
+                                        title = stringResource(R.string.memory_no_content_title),
+                                        body = stringResource(R.string.memory_no_content_body),
                                     )
                                 }
                             } else {
                                 if (hasMemory) {
                                     item {
                                         MemoryViewerSectionHeader(
-                                            title = "记忆",
-                                            subtitle = "包含核心记忆与情景记忆",
+                                            title = stringResource(R.string.memory_section_memories),
+                                            subtitle = stringResource(R.string.memory_section_memories_subtitle),
                                         )
                                     }
                                     items(allMemories, key = { it.id }) { entry ->
@@ -389,8 +380,8 @@ fun MemoryManagementScreen(
                                 if (hasSummary) {
                                     item {
                                         MemoryViewerSectionHeader(
-                                            title = "剧情总结",
-                                            subtitle = "会话摘要与阶段性回顾",
+                                            title = stringResource(R.string.memory_section_summaries),
+                                            subtitle = stringResource(R.string.memory_section_summaries_subtitle),
                                         )
                                     }
                                     items(storySummaries, key = { it.conversationId }) { summary ->
@@ -409,8 +400,8 @@ fun MemoryManagementScreen(
                             if (coreMemories.isEmpty()) {
                                 item {
                                     MemoryViewerEmptyState(
-                                        title = "暂无核心记忆",
-                                        body = "当前角色还没有长期记忆或助手记忆。",
+                                        title = stringResource(R.string.memory_no_core_title),
+                                        body = stringResource(R.string.memory_no_core_body),
                                     )
                                 }
                             } else {
@@ -430,8 +421,8 @@ fun MemoryManagementScreen(
                             if (sceneMemories.isEmpty()) {
                                 item {
                                     MemoryViewerEmptyState(
-                                        title = "暂无情景记忆",
-                                        body = "当前角色还没有会话级或场景级记忆。",
+                                        title = stringResource(R.string.memory_no_scene_title),
+                                        body = stringResource(R.string.memory_no_scene_body),
                                     )
                                 }
                             } else {
@@ -451,8 +442,8 @@ fun MemoryManagementScreen(
                             if (storySummaries.isEmpty()) {
                                 item {
                                     MemoryViewerEmptyState(
-                                        title = "暂无剧情总结",
-                                        body = "当前角色还没有生成过会话摘要。",
+                                        title = stringResource(R.string.memory_no_summary_title),
+                                        body = stringResource(R.string.memory_no_summary_body),
                                     )
                                 }
                             } else {
@@ -471,16 +462,16 @@ fun MemoryManagementScreen(
                             if (timelineItems.isEmpty()) {
                                 item {
                                     MemoryViewerEmptyState(
-                                        title = "暂无时间线",
-                                        body = "当前筛选下还没有可以按时间排列的内容。",
+                                        title = stringResource(R.string.memory_no_timeline_title),
+                                        body = stringResource(R.string.memory_no_timeline_body),
                                     )
                                 }
                             } else {
                                 items(timelineItems, key = { it.stableKey }) { item ->
                                     MemoryViewerTimelineHeader(
                                         kind = when (item) {
-                                            is MemoryViewerTimelineItem.Memory -> "记忆"
-                                            is MemoryViewerTimelineItem.Summary -> "摘要"
+                                            is MemoryViewerTimelineItem.Memory -> stringResource(R.string.memory_timeline_memory)
+                                            is MemoryViewerTimelineItem.Summary -> stringResource(R.string.memory_timeline_summary)
                                         },
                                         timestamp = item.timestamp,
                                     )
@@ -516,6 +507,50 @@ fun MemoryManagementScreen(
                 modifier = Modifier.align(Alignment.TopCenter),
                 contentTopInset = innerPadding.calculateTopPadding(),
             )
+        }
+    }
+
+    if (showAssistantMenu) {
+        ModalBottomSheet(
+            onDismissRequest = { showAssistantMenu = false },
+        ) {
+            LazyColumn(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 20.dp, vertical = 8.dp),
+                verticalArrangement = Arrangement.spacedBy(4.dp),
+                contentPadding = PaddingValues(bottom = 24.dp),
+            ) {
+                item {
+                    Text(
+                        text = stringResource(R.string.memory_select_role),
+                        style = MaterialTheme.typography.titleLarge,
+                        modifier = Modifier.padding(bottom = 8.dp),
+                    )
+                }
+                items(assistantOptions, key = { it.id }) { option ->
+                    Surface(
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(16.dp),
+                        color = if (option.id == selectedAssistantId) {
+                            MaterialTheme.colorScheme.primaryContainer
+                        } else {
+                            Color.Transparent
+                        },
+                        onClick = {
+                            selectedAssistantId = option.id
+                            showAssistantMenu = false
+                        },
+                    ) {
+                        Text(
+                            text = option.label,
+                            style = MaterialTheme.typography.bodyLarge,
+                            fontWeight = if (option.id == selectedAssistantId) FontWeight.SemiBold else FontWeight.Normal,
+                            modifier = Modifier.padding(horizontal = 16.dp, vertical = 14.dp),
+                        )
+                    }
+                }
+            }
         }
     }
 }
@@ -626,6 +661,7 @@ private fun MemoryEntryCard(
     onDelete: () -> Unit,
 ) {
     val palette = rememberSettingsPalette()
+    var showDeleteConfirm by remember { mutableStateOf(false) }
     Surface(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(24.dp),
@@ -650,7 +686,7 @@ private fun MemoryEntryCard(
             ) {
                 if (entry.pinned) {
                     SettingsStatusPill(
-                        text = "置顶",
+                        text = stringResource(R.string.memory_pinned_label),
                         containerColor = palette.accentSoft,
                         contentColor = palette.accent,
                     )
@@ -681,7 +717,7 @@ private fun MemoryEntryCard(
                 )
                 if (entry.sourceMessageId.isNotBlank()) {
                     SettingsStatusPill(
-                        text = "来自消息",
+                        text = stringResource(R.string.memory_from_message),
                         containerColor = palette.surfaceTint,
                         contentColor = palette.body,
                     )
@@ -696,21 +732,42 @@ private fun MemoryEntryCard(
                 NarraIconButton(onClick = onTogglePinned, modifier = Modifier.size(36.dp)) {
                     Icon(
                         imageVector = Icons.Default.PushPin,
-                        contentDescription = if (entry.pinned) "取消置顶" else "置顶",
+                        contentDescription = if (entry.pinned) stringResource(R.string.memory_unpin) else stringResource(R.string.memory_pinned_label),
                         tint = if (entry.pinned) palette.accent else palette.body.copy(alpha = 0.5f),
                         modifier = Modifier.size(20.dp),
                     )
                 }
-                NarraIconButton(onClick = onDelete, modifier = Modifier.size(36.dp)) {
+                NarraIconButton(onClick = { showDeleteConfirm = true }, modifier = Modifier.size(36.dp)) {
                     Icon(
                         imageVector = Icons.Default.Delete,
-                        contentDescription = "删除",
+                        contentDescription = stringResource(R.string.common_delete),
                         tint = MaterialTheme.colorScheme.error.copy(alpha = 0.7f),
                         modifier = Modifier.size(20.dp),
                     )
                 }
             }
         }
+    }
+
+    if (showDeleteConfirm) {
+        AlertDialog(
+            onDismissRequest = { showDeleteConfirm = false },
+            title = { Text("删除记忆") },
+            text = { Text("确定要删除这条记忆吗？此操作不可撤销。") },
+            confirmButton = {
+                TextButton(onClick = {
+                    showDeleteConfirm = false
+                    onDelete()
+                }) {
+                    Text(stringResource(R.string.common_delete), color = MaterialTheme.colorScheme.error)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showDeleteConfirm = false }) {
+                    Text(stringResource(R.string.common_cancel))
+                }
+            },
+        )
     }
 }
 
@@ -722,6 +779,7 @@ private fun SummaryCard(
     onDelete: () -> Unit,
 ) {
     val palette = rememberSettingsPalette()
+    var showDeleteConfirm by remember { mutableStateOf(false) }
     Surface(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(24.dp),
@@ -742,7 +800,7 @@ private fun SummaryCard(
                 verticalArrangement = Arrangement.spacedBy(8.dp),
             ) {
                 SettingsStatusPill(
-                    text = "覆盖 ${summary.coveredMessageCount} 条",
+                    text = stringResource(R.string.memory_summary_covered_count, summary.coveredMessageCount),
                     containerColor = palette.subtleChip,
                     contentColor = palette.subtleChipContent,
                 )
@@ -766,16 +824,37 @@ private fun SummaryCard(
                 horizontalArrangement = Arrangement.End,
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                NarraIconButton(onClick = onDelete, modifier = Modifier.size(36.dp)) {
+                NarraIconButton(onClick = { showDeleteConfirm = true }, modifier = Modifier.size(36.dp)) {
                     Icon(
                         imageVector = Icons.Default.Delete,
-                        contentDescription = "删除摘要",
+                        contentDescription = stringResource(R.string.memory_delete_summary_cd),
                         tint = MaterialTheme.colorScheme.error.copy(alpha = 0.7f),
                         modifier = Modifier.size(20.dp),
                     )
                 }
             }
         }
+    }
+
+    if (showDeleteConfirm) {
+        AlertDialog(
+            onDismissRequest = { showDeleteConfirm = false },
+            title = { Text("删除摘要") },
+            text = { Text("确定要删除这条剧情摘要吗？此操作不可撤销。") },
+            confirmButton = {
+                TextButton(onClick = {
+                    showDeleteConfirm = false
+                    onDelete()
+                }) {
+                    Text(stringResource(R.string.common_delete), color = MaterialTheme.colorScheme.error)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showDeleteConfirm = false }) {
+                    Text(stringResource(R.string.common_cancel))
+                }
+            },
+        )
     }
 }
 

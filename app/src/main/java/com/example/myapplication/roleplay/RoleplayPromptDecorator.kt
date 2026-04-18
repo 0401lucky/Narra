@@ -6,9 +6,6 @@ import com.example.myapplication.model.Assistant
 import com.example.myapplication.model.DEFAULT_ROLEPLAY_LONGFORM_TARGET_CHARS
 import com.example.myapplication.model.RoleplayInteractionMode
 import com.example.myapplication.model.RoleplayScenario
-import java.text.SimpleDateFormat
-import java.util.Date
-import java.util.Locale
 
 object RoleplayPromptDecorator {
     fun decorate(
@@ -26,7 +23,7 @@ object RoleplayPromptDecorator {
         val characterName = scenario.characterDisplayNameOverride.trim()
             .ifBlank { assistant?.name?.trim().orEmpty() }
             .ifBlank { "角色" }
-        val allowOnlineThoughtHints = scenario.enableNarration && settings.showOnlineRoleplayNarration
+        val allowOnlineThoughtHints = scenario.enableNarration
         val resolvedBaseSystemPrompt = ContextPlaceholderResolver.resolve(
             text = baseSystemPrompt,
             userName = playerName,
@@ -136,6 +133,17 @@ object RoleplayPromptDecorator {
                 }
             }
 
+            if (
+                scenario.enableTimeAwareness &&
+                scenario.interactionMode != RoleplayInteractionMode.ONLINE_PHONE
+            ) {
+                add(
+                    RoleplayTimeAwarenessSupport.buildPromptSection(
+                        interactionMode = scenario.interactionMode,
+                    ),
+                )
+            }
+
             if (scenario.interactionMode == RoleplayInteractionMode.ONLINE_PHONE) {
                 add(
                     buildString {
@@ -156,20 +164,20 @@ object RoleplayPromptDecorator {
                             },
                         )
                         append("。\n\n")
-                        append("【线上模式设定】\n")
-                        append("1. 当前绝对时间：")
-                        append(formatCurrentPromptTime())
-                        append("。\n")
-                        append("【时间感知规则】\n")
-                        append("- 你必须结合当前时间点主动调整回复状态：深夜应困倦/慵懒，清晨应刚醒/迷糊，工作时段应忙碌/分心。\n")
-                        append("- 如果用户在不合理时间做出反常行为（如凌晨3点说去上课），角色应自然质疑而不是无视。\n")
-                        append("- 如果系统注入了【时间旁白】，你必须自然感知时间流逝：可以吐槽对方消失太久、表达想念、假装不在意、或冷淡回应，具体反应取决于角色人设和关系阶段。\n")
-                        append("- 禁止变成'催睡打卡机'——不要每次深夜都催对方睡觉，除非角色人设就是这样。\n")
-                        append("2. 默认一次连续发 2 到 3 条消息；一句就能说完、高冷或冷战场景可以更少，情绪明显上来时可以更多，但最多 20 条。\n")
-                        append("3. 你必须始终以 ")
+                        if (scenario.enableTimeAwareness) {
+                            append(
+                                RoleplayTimeAwarenessSupport.buildPromptSection(
+                                    interactionMode = RoleplayInteractionMode.ONLINE_PHONE,
+                                ),
+                            )
+                            append('\n')
+                        }
+                        append("【线上行为基线】\n")
+                        append("1. 默认一次连续发 2 到 3 条消息；一句就能说完、高冷或冷战场景可以更少，情绪明显上来时可以更多，但最多 20 条。\n")
+                        append("2. 你必须始终以 ")
                         append(characterName)
                         append(" 的身份说话，不要跳出角色，不要把用户写成旁白人物。\n")
-                        append("4. 用户名称默认为 ")
+                        append("3. 用户名称默认为 ")
                         append(playerName.ifBlank { "用户" })
                         append("，如存在用户人设或场景覆写，必须把它视为当前稳定设定。\n")
                         if (isVideoCallActive) {
@@ -249,7 +257,7 @@ object RoleplayPromptDecorator {
                     },
                 )
 
-                if (settings.enableRoleplayNetMeme) {
+                if (scenario.enableNetMeme) {
                     add(NetMemeProtocolPromptSupport.buildPromptSection(characterName))
                 }
 
@@ -329,14 +337,5 @@ object RoleplayPromptDecorator {
         }
 
         return sections.joinToString(separator = "\n\n").trim()
-    }
-
-    private fun formatCurrentPromptTime(): String {
-        return runCatching {
-            SimpleDateFormat(
-                "yyyy年M月d日 EEEE HH:mm",
-                Locale.SIMPLIFIED_CHINESE,
-            ).format(Date())
-        }.getOrDefault("当前时间未知")
     }
 }

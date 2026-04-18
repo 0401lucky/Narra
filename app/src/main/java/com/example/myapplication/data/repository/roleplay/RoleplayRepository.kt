@@ -1,6 +1,7 @@
 package com.example.myapplication.data.repository.roleplay
 
 import com.example.myapplication.data.local.roleplay.RoleplayDao
+import com.example.myapplication.data.local.roleplay.RoleplayDiaryEntryEntity
 import com.example.myapplication.data.local.roleplay.RoleplayScenarioEntity
 import com.example.myapplication.data.local.roleplay.RoleplaySessionEntity
 import com.example.myapplication.data.repository.ConversationRepository
@@ -8,6 +9,8 @@ import com.example.myapplication.model.ChatMessage
 import com.example.myapplication.model.DEFAULT_ASSISTANT_ID
 import com.example.myapplication.model.MessageRole
 import com.example.myapplication.model.MessageStatus
+import com.example.myapplication.model.RoleplayDiaryDraft
+import com.example.myapplication.model.RoleplayDiaryEntry
 import com.example.myapplication.model.RoleplayInteractionMode
 import com.example.myapplication.model.RoleplayOnlineMeta
 import com.example.myapplication.model.RoleplayOutputFormat
@@ -43,6 +46,8 @@ interface RoleplayRepository {
 
     fun observeConversationMessages(scenarioId: String): Flow<List<ChatMessage>>
 
+    fun observeDiaryEntries(conversationId: String): Flow<List<RoleplayDiaryEntry>>
+
     suspend fun listScenarios(): List<RoleplayScenario>
 
     suspend fun getScenario(scenarioId: String): RoleplayScenario?
@@ -59,11 +64,21 @@ interface RoleplayRepository {
 
     suspend fun getSession(sessionId: String): RoleplaySession?
 
+    suspend fun listDiaryEntries(conversationId: String): List<RoleplayDiaryEntry>
+
+    suspend fun replaceDiaryEntries(
+        conversationId: String,
+        scenarioId: String,
+        entries: List<RoleplayDiaryDraft>,
+    ): List<RoleplayDiaryEntry>
+
     suspend fun getOnlineMeta(conversationId: String): RoleplayOnlineMeta?
 
     suspend fun upsertOnlineMeta(meta: RoleplayOnlineMeta)
 
     suspend fun deleteOnlineMeta(conversationId: String)
+
+    suspend fun deleteDiaryEntriesForConversation(conversationId: String)
 }
 
 @OptIn(ExperimentalCoroutinesApi::class)
@@ -106,6 +121,15 @@ class RoomRoleplayRepository(
         }
     }
 
+    override fun observeDiaryEntries(conversationId: String): Flow<List<RoleplayDiaryEntry>> {
+        if (conversationId.isBlank()) {
+            return flowOf(emptyList())
+        }
+        return roleplayDao.observeDiaryEntries(conversationId).map { entries ->
+            entries.map(::toDiaryEntryDomain)
+        }
+    }
+
     override suspend fun listScenarios(): List<RoleplayScenario> {
         return roleplayDao.listScenarios().map(::toScenarioDomain)
     }
@@ -133,6 +157,7 @@ class RoomRoleplayRepository(
         if (session != null) {
             conversationRepository.deleteConversationById(session.conversationId)
             roleplayDao.deleteOnlineMeta(session.conversationId)
+            roleplayDao.deleteDiaryEntriesForConversation(session.conversationId)
         }
         roleplayDao.deleteScenario(scenarioId)
     }
@@ -201,6 +226,7 @@ class RoomRoleplayRepository(
         existingSession?.let { session ->
             conversationRepository.deleteConversationById(session.conversationId)
             roleplayDao.deleteOnlineMeta(session.conversationId)
+            roleplayDao.deleteDiaryEntriesForConversation(session.conversationId)
         }
         val conversation = conversationRepository.createConversation(
             assistantId = scenario.assistantId.ifBlank { DEFAULT_ASSISTANT_ID },
@@ -236,6 +262,42 @@ class RoomRoleplayRepository(
         return roleplayDao.getSession(sessionId)?.let(::toSessionDomain)
     }
 
+    override suspend fun listDiaryEntries(conversationId: String): List<RoleplayDiaryEntry> {
+        if (conversationId.isBlank()) {
+            return emptyList()
+        }
+        return roleplayDao.listDiaryEntries(conversationId).map(::toDiaryEntryDomain)
+    }
+
+    override suspend fun replaceDiaryEntries(
+        conversationId: String,
+        scenarioId: String,
+        entries: List<RoleplayDiaryDraft>,
+    ): List<RoleplayDiaryEntry> {
+        if (conversationId.isBlank()) {
+            return emptyList()
+        }
+        roleplayDao.deleteDiaryEntriesForConversation(conversationId)
+        if (entries.isEmpty()) {
+            return emptyList()
+        }
+        val timestamp = nowProvider()
+        val diaryEntities = entries.mapIndexed { index, entry ->
+            RoleplayDiaryEntryEntity(
+                id = UUID.randomUUID().toString(),
+                conversationId = conversationId,
+                scenarioId = scenarioId,
+                title = entry.title.trim(),
+                content = entry.content.trim(),
+                sortOrder = index,
+                createdAt = timestamp,
+                updatedAt = timestamp,
+            )
+        }
+        roleplayDao.upsertDiaryEntries(diaryEntities)
+        return diaryEntities.map(::toDiaryEntryDomain)
+    }
+
     override suspend fun getOnlineMeta(conversationId: String): RoleplayOnlineMeta? {
         return roleplayDao.getOnlineMeta(conversationId)?.let(::toOnlineMetaDomain)
     }
@@ -256,6 +318,13 @@ class RoomRoleplayRepository(
 
     override suspend fun deleteOnlineMeta(conversationId: String) {
         roleplayDao.deleteOnlineMeta(conversationId)
+    }
+
+    override suspend fun deleteDiaryEntriesForConversation(conversationId: String) {
+        if (conversationId.isBlank()) {
+            return
+        }
+        roleplayDao.deleteDiaryEntriesForConversation(conversationId)
     }
 
     private suspend fun cleanOrphanedLoadingMessages(
@@ -304,6 +373,8 @@ class RoomRoleplayRepository(
             longformModeEnabled = entity.longformModeEnabled,
             autoHighlightSpeaker = entity.autoHighlightSpeaker,
             enableDeepImmersion = entity.enableDeepImmersion,
+            enableTimeAwareness = entity.enableTimeAwareness,
+            enableNetMeme = entity.enableNetMeme,
             createdAt = entity.createdAt,
             updatedAt = entity.updatedAt,
         )
@@ -330,6 +401,8 @@ class RoomRoleplayRepository(
             longformModeEnabled = scenario.longformModeEnabled,
             autoHighlightSpeaker = scenario.autoHighlightSpeaker,
             enableDeepImmersion = scenario.enableDeepImmersion,
+            enableTimeAwareness = scenario.enableTimeAwareness,
+            enableNetMeme = scenario.enableNetMeme,
             createdAt = scenario.createdAt,
             updatedAt = scenario.updatedAt,
         )
@@ -355,6 +428,19 @@ class RoomRoleplayRepository(
             lastSystemEventToken = entity.lastSystemEventToken,
             activeVideoCallSessionId = entity.activeVideoCallSessionId,
             activeVideoCallStartedAt = entity.activeVideoCallStartedAt,
+            updatedAt = entity.updatedAt,
+        )
+    }
+
+    private fun toDiaryEntryDomain(entity: RoleplayDiaryEntryEntity): RoleplayDiaryEntry {
+        return RoleplayDiaryEntry(
+            id = entity.id,
+            conversationId = entity.conversationId,
+            scenarioId = entity.scenarioId,
+            title = entity.title,
+            content = entity.content,
+            sortOrder = entity.sortOrder,
+            createdAt = entity.createdAt,
             updatedAt = entity.updatedAt,
         )
     }

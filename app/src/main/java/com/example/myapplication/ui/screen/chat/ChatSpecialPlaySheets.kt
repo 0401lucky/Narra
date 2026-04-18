@@ -72,6 +72,8 @@ import com.example.myapplication.ui.component.NarraTextButton
 import com.example.myapplication.ui.component.SpecialPlayCard
 import com.example.myapplication.ui.theme.MomentsAccent
 import com.example.myapplication.ui.theme.MomentsAccentSoft
+import androidx.compose.foundation.isSystemInDarkTheme
+import androidx.compose.runtime.remember
 
 private data class SpecialPlayOption(
     val type: ChatSpecialType,
@@ -88,87 +90,102 @@ private data class SpecialPlayModuleEntry(
 )
 
 private val TransferGreen = Color(0xFF07C160)
-private val TransferGreenSoft = Color(0xFFE9F8EF)
 private val InviteBlue = Color(0xFF4D86E8)
-private val InviteBlueSoft = Color(0xFFEAF1FF)
 private val GiftRose = Color(0xFFE46074)
-private val GiftRoseSoft = Color(0xFFFFEEF1)
 private val TaskAmber = Color(0xFFD78B31)
-private val TaskAmberSoft = Color(0xFFFFF2E1)
 private val PunishCrimson = Color(0xFFD54F63)
-private val PunishCrimsonSoft = Color(0xFFFFEEF1)
 private val PhoneBlue = Color(0xFF4A86D9)
-private val PhoneBlueSoft = Color(0xFFEAF2FF)
 
-private val specialPlayOptions = listOf(
-    SpecialPlayOption(
-        type = ChatSpecialType.TRANSFER,
-        title = "转账",
-        description = "模拟收发转账，适合红包、垫付和情绪互动。",
-        icon = Icons.Default.Share,
-        iconTint = TransferGreen,
-        iconBackground = TransferGreenSoft,
-    ),
-    SpecialPlayOption(
+@Composable
+private fun specialPlayOptions(): List<SpecialPlayOption> {
+    val dark = isSystemInDarkTheme()
+    return remember(dark) {
+        listOf(
+            SpecialPlayOption(
+                type = ChatSpecialType.TRANSFER,
+                title = "转账",
+                description = "模拟收发转账，适合红包、垫付和情绪互动。",
+                icon = Icons.Default.Share,
+                iconTint = TransferGreen,
+                iconBackground = if (dark) Color(0xFF1A2E22) else Color(0xFFE9F8EF),
+            ),
+            SpecialPlayOption(
+                type = ChatSpecialType.INVITE,
+                title = "邀约",
+                description = "把见面、约会和碰头做成可见卡片。",
+                icon = Icons.Default.Event,
+                iconTint = InviteBlue,
+                iconBackground = if (dark) Color(0xFF1E2840) else Color(0xFFEAF1FF),
+            ),
+            SpecialPlayOption(
+                type = ChatSpecialType.GIFT,
+                title = "礼物",
+                description = "把赠送物品、纪念品和惊喜变成具象互动。",
+                icon = Icons.Default.CardGiftcard,
+                iconTint = GiftRose,
+                iconBackground = if (dark) Color(0xFF3A1E24) else Color(0xFFFFEEF1),
+            ),
+            SpecialPlayOption(
+                type = ChatSpecialType.TASK,
+                title = "委托",
+                description = "适合剧情线索、目标推进和阶段任务。",
+                icon = Icons.AutoMirrored.Filled.Assignment,
+                iconTint = TaskAmber,
+                iconBackground = if (dark) Color(0xFF332614) else Color(0xFFFFF2E1),
+            ),
+            SpecialPlayOption(
+                type = ChatSpecialType.PUNISH,
+                title = "惩罚",
+                description = "把抽打、教训和压迫感做成结构化动作卡，方便角色直接接反应。",
+                icon = Icons.Default.Gavel,
+                iconTint = PunishCrimson,
+                iconBackground = if (dark) Color(0xFF3A1E24) else Color(0xFFFFEEF1),
+            ),
+        )
+    }
+}
+
+@Composable
+private fun phoneCheckOption(): SpecialPlayOption {
+    val dark = isSystemInDarkTheme()
+    return remember(dark) {
+        SpecialPlayOption(
+            type = ChatSpecialType.TASK,
+            title = "查手机",
+            description = "进入独立手机页，浏览已经生成或保存下来的消息、备忘录、相册、购物和搜索内容。",
+            icon = Icons.Default.Visibility,
+            iconTint = PhoneBlue,
+            iconBackground = if (dark) Color(0xFF1E2A3E) else Color(0xFFEAF2FF),
+        )
+    }
+}
+
+@Composable
+private fun videoCallOption(): SpecialPlayOption {
+    val dark = isSystemInDarkTheme()
+    return remember(dark) {
+        SpecialPlayOption(
+            type = ChatSpecialType.INVITE,
+            title = "视频通话",
+            description = "进入独立视频通话页，保持同一条线上聊天会话，挂断后文本内容会回流到聊天里。",
+            icon = Icons.Default.Videocam,
+            iconTint = InviteBlue,
+            iconBackground = if (dark) Color(0xFF1E2840) else Color(0xFFEAF1FF),
+        )
+    }
+}
+
+@Composable
+private fun momentsOption(): SpecialPlayOption {
+    return SpecialPlayOption(
         type = ChatSpecialType.INVITE,
-        title = "邀约",
-        description = "把见面、约会和碰头做成可见卡片。",
-        icon = Icons.Default.Event,
-        iconTint = InviteBlue,
-        iconBackground = InviteBlueSoft,
-    ),
-    SpecialPlayOption(
-        type = ChatSpecialType.GIFT,
-        title = "礼物",
-        description = "把赠送物品、纪念品和惊喜变成具象互动。",
-        icon = Icons.Default.CardGiftcard,
-        iconTint = GiftRose,
-        iconBackground = GiftRoseSoft,
-    ),
-    SpecialPlayOption(
-        type = ChatSpecialType.TASK,
-        title = "委托",
-        description = "适合剧情线索、目标推进和阶段任务。",
-        icon = Icons.AutoMirrored.Filled.Assignment,
-        iconTint = TaskAmber,
-        iconBackground = TaskAmberSoft,
-    ),
-    SpecialPlayOption(
-        type = ChatSpecialType.PUNISH,
-        title = "惩罚",
-        description = "把抽打、教训和压迫感做成结构化动作卡，方便角色直接接反应。",
-        icon = Icons.Default.Gavel,
-        iconTint = PunishCrimson,
-        iconBackground = PunishCrimsonSoft,
-    ),
-)
-
-private val phoneCheckOption = SpecialPlayOption(
-    type = ChatSpecialType.TASK,
-    title = "查手机",
-    description = "进入独立手机页，浏览已经生成或保存下来的消息、备忘录、相册、购物和搜索内容。",
-    icon = Icons.Default.Visibility,
-    iconTint = PhoneBlue,
-    iconBackground = PhoneBlueSoft,
-)
-
-private val videoCallOption = SpecialPlayOption(
-    type = ChatSpecialType.INVITE,
-    title = "视频通话",
-    description = "进入独立视频通话页，保持同一条线上聊天会话，挂断后文本内容会回流到聊天里。",
-    icon = Icons.Default.Videocam,
-    iconTint = InviteBlue,
-    iconBackground = InviteBlueSoft,
-)
-
-private val momentsOption = SpecialPlayOption(
-    type = ChatSpecialType.INVITE,
-    title = "动态",
-    description = "浏览朋友圈动态，点赞评论后角色会自动回复互动。",
-    icon = Icons.Default.Forum,
-    iconTint = MomentsAccent,
-    iconBackground = MomentsAccentSoft,
-)
+        title = "动态",
+        description = "浏览朋友圈动态，点赞评论后角色会自动回复互动。",
+        icon = Icons.Default.Forum,
+        iconTint = MomentsAccent(),
+        iconBackground = MomentsAccentSoft(),
+    )
+}
 
 val TransferPlayDraftSaver: Saver<TransferPlayDraft, Any> = listSaver(
     save = { listOf(it.counterparty, it.amount, it.note) },
@@ -248,17 +265,20 @@ fun SpecialPlaySheet(
     onOpenMoments: (() -> Unit)? = null,
 ) {
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+    val phoneCheck = phoneCheckOption()
+    val videoCall = if (onOpenVideoCall != null) videoCallOption() else null
+    val moments = if (onOpenMoments != null) momentsOption() else null
     val standaloneEntries = buildList {
         add(
             SpecialPlayModuleEntry(
-                option = phoneCheckOption,
+                option = phoneCheck,
                 onClick = onOpenPhoneCheck,
             ),
         )
         onOpenVideoCall?.let { openVideoCall ->
             add(
                 SpecialPlayModuleEntry(
-                    option = videoCallOption,
+                    option = videoCall!!,
                     onClick = openVideoCall,
                 ),
             )
@@ -266,13 +286,13 @@ fun SpecialPlaySheet(
         onOpenMoments?.let { openMoments ->
             add(
                 SpecialPlayModuleEntry(
-                    option = momentsOption,
+                    option = moments!!,
                     onClick = openMoments,
                 ),
             )
         }
     }
-    val socialEntries = specialPlayOptions
+    val socialEntries = specialPlayOptions()
         .filter {
             it.type in setOf(
                 ChatSpecialType.TRANSFER,
@@ -287,7 +307,7 @@ fun SpecialPlaySheet(
                 onClick = { onOpenPlay(option.type) },
             )
         }
-    val storyEntries = specialPlayOptions
+    val storyEntries = specialPlayOptions()
         .filter { it.type == ChatSpecialType.TASK }
         .map { option ->
             SpecialPlayModuleEntry(
@@ -424,7 +444,7 @@ fun SpecialPlayEditorSheet(
                 Surface(
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(30.dp),
-                    color = Color.White,
+                    color = MaterialTheme.colorScheme.surface,
                     tonalElevation = 2.dp,
                 ) {
                     Column(
@@ -472,7 +492,7 @@ fun SpecialPlayEditorSheet(
                 Surface(
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(26.dp),
-                    color = Color.White,
+                    color = MaterialTheme.colorScheme.surface,
                     tonalElevation = 1.dp,
                 ) {
                     Column(
@@ -577,7 +597,7 @@ private fun SpecialPlayEntry(
     Surface(
         modifier = modifier,
         shape = RoundedCornerShape(24.dp),
-        color = Color.White,
+        color = MaterialTheme.colorScheme.surface,
         tonalElevation = 2.dp,
         shadowElevation = 0.dp,
         onClick = entry.onClick,
@@ -923,8 +943,9 @@ private fun SpecialLineField(
     }
 }
 
+@Composable
 private fun rememberOption(type: ChatSpecialType): SpecialPlayOption {
-    return specialPlayOptions.first { it.type == type }
+    return specialPlayOptions().first { it.type == type }
 }
 
 private fun canConfirmDraft(draft: ChatSpecialPlayDraft): Boolean {

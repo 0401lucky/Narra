@@ -25,6 +25,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.Assignment
+import androidx.compose.material.icons.filled.AutoStories
 import androidx.compose.material.icons.filled.CardGiftcard
 import androidx.compose.material.icons.filled.Event
 import androidx.compose.material.icons.filled.MoreVert
@@ -128,6 +129,7 @@ internal fun RoleplayOnlinePhoneContent(
     onClearQuotedMessage: () -> Unit,
     onRecallMessage: (String) -> Unit,
     onScreenshotChat: () -> Unit,
+    onOpenDiary: () -> Unit,
     onOpenVoiceMessage: () -> Unit,
     onOpenTransferPlay: () -> Unit,
     onOpenInvitePlay: () -> Unit,
@@ -180,6 +182,7 @@ internal fun RoleplayOnlinePhoneContent(
     var showMenu by remember { mutableStateOf(false) }
     val quickActions = remember(
         onOpenVoiceMessage,
+        onOpenDiary,
         onOpenPhoneCheck,
         onOpenTransferPlay,
         onOpenInvitePlay,
@@ -190,6 +193,14 @@ internal fun RoleplayOnlinePhoneContent(
         onOpenVideoCall,
     ) {
         buildList {
+            add(
+                RoleplayInputQuickAction(
+                    label = "日记",
+                    icon = Icons.Default.AutoStories,
+                    accentColor = Color(0xFFC78A38),
+                    onClick = onOpenDiary,
+                ),
+            )
             add(
                 RoleplayInputQuickAction(
                     label = "语音",
@@ -459,26 +470,37 @@ internal fun RoleplayOnlinePhoneContent(
                         "${item.sourceMessageId}-${item.createdAt}-${item.contentType}-${item.copyText.hashCode()}-$index"
                     },
                 ) { index, message ->
-                    val previous = visibleMessages.getOrNull(index - 1)
-                    if (shouldShowOnlineTimestamp(previous, message)) {
-                        Box(
-                            modifier = Modifier.fillMaxWidth(),
-                            contentAlignment = Alignment.Center,
-                        ) {
-                            Surface(
-                                color = timestampSurfaceColor,
-                                shape = RoundedCornerShape(999.dp),
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .animateItem(
+                                fadeInSpec = androidx.compose.animation.core.tween(durationMillis = 240),
+                                fadeOutSpec = androidx.compose.animation.core.tween(durationMillis = 160),
+                                placementSpec = androidx.compose.animation.core.spring(
+                                    stiffness = androidx.compose.animation.core.Spring.StiffnessMediumLow,
+                                ),
+                            ),
+                    ) {
+                        val previous = visibleMessages.getOrNull(index - 1)
+                        if (shouldShowOnlineTimestamp(previous, message)) {
+                            Box(
+                                modifier = Modifier.fillMaxWidth(),
+                                contentAlignment = Alignment.Center,
                             ) {
-                                Text(
-                                    text = formatOnlineTime(message.createdAt),
-                                    modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp),
-                                    style = MaterialTheme.typography.labelSmall,
-                                    color = colors.textMuted,
-                                )
+                                Surface(
+                                    color = timestampSurfaceColor,
+                                    shape = RoundedCornerShape(999.dp),
+                                ) {
+                                    Text(
+                                        text = formatOnlineTime(message.createdAt),
+                                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp),
+                                        style = MaterialTheme.typography.labelSmall,
+                                        color = colors.textMuted,
+                                    )
+                                }
                             }
                         }
-                    }
-                    RoleplayMessageItem(
+                        RoleplayMessageItem(
                         message = message,
                         colors = colors,
                         backdropState = backdropState,
@@ -498,6 +520,7 @@ internal fun RoleplayOnlinePhoneContent(
                         onOpenVideoCall = onOpenVideoCall,
                         bubbleMode = RoleplayMessageBubbleMode.ONLINE_PHONE,
                     )
+                    }
                 }
             }
 

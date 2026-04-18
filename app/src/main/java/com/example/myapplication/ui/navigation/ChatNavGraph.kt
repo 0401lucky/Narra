@@ -10,7 +10,16 @@ import androidx.navigation.NavHostController
 import androidx.navigation.compose.composable
 import com.example.myapplication.data.repository.ImageFileStorage
 import com.example.myapplication.di.AppGraph
+import com.example.myapplication.ui.screen.chat.ChatConversationCallbacks
+import com.example.myapplication.ui.screen.chat.ChatMessageCallbacks
+import com.example.myapplication.ui.screen.chat.ChatModelCallbacks
+import com.example.myapplication.ui.screen.chat.ChatNavigationCallbacks
+import com.example.myapplication.ui.screen.chat.ChatProfileCallbacks
+import com.example.myapplication.ui.screen.chat.ChatScreenCallbacks
+import com.example.myapplication.ui.screen.chat.ChatSearchCallbacks
 import com.example.myapplication.ui.screen.chat.ChatScreen
+import com.example.myapplication.ui.screen.chat.ChatTranslationCallbacks
+import com.example.myapplication.ui.screen.chat.ChatUiCallbacks
 import com.example.myapplication.ui.screen.translate.TranslationScreen
 import com.example.myapplication.viewmodel.ChatViewModel
 import com.example.myapplication.viewmodel.SettingsViewModel
@@ -45,76 +54,93 @@ internal fun NavGraphBuilder.registerChatNavGraph(
             isLoadingModels = settingsUiState.isLoadingModels,
             loadingProviderId = settingsUiState.loadingProviderId,
             isSavingModel = settingsUiState.isSaving,
-            onInputChange = chatViewModel::updateInput,
-            onSend = chatViewModel::sendMessage,
-            onCreateConversation = chatViewModel::createConversation,
-            onSelectConversation = chatViewModel::selectConversation,
-            onClearConversation = chatViewModel::clearConversation,
-            onDeleteConversation = chatViewModel::deleteConversation,
-            onDeleteCurrentConversation = chatViewModel::deleteCurrentConversation,
-            onClearCurrentConversation = chatViewModel::clearCurrentConversation,
-            onRetryMessage = chatViewModel::retryMessage,
-            onEditUserMessage = chatViewModel::editUserMessage,
-            onToggleMemoryMessage = chatViewModel::toggleMessageMemory,
-            onToggleSearch = chatViewModel::toggleConversationSearch,
-            onSelectSearchSource = settingsViewModel::selectSearchSource,
-            onUpdateSearchResultCount = settingsViewModel::updateSearchResultCount,
-            onTranslateDraft = chatViewModel::translateDraftInput,
-            onTranslateMessage = chatViewModel::translateMessage,
-            onDismissTranslationSheet = chatViewModel::dismissTranslationSheet,
-            onApplyTranslationToInput = chatViewModel::applyTranslationToInput,
-            onSendTranslationAsMessage = chatViewModel::sendTranslationAsMessage,
-            onSelectProvider = settingsViewModel::saveSelectedProvider,
-            onSelectModel = settingsViewModel::saveSelectedModelForProvider,
-            onUpdateThinkingBudget = settingsViewModel::saveThinkingBudgetForProvider,
-            onSaveUserProfile = settingsViewModel::saveUserProfile,
-            onOpenSettings = {
-                navController.navigate(AppRoutes.SETTINGS) {
-                    launchSingleTop = true
-                }
-            },
-            onOpenHome = {
-                navController.navigate(AppRoutes.HOME) {
-                    launchSingleTop = true
-                }
-            },
-            onOpenTranslator = {
-                navController.navigate(AppRoutes.TRANSLATOR) {
-                    launchSingleTop = true
-                }
-            },
-            onOpenRoleplay = {
-                navController.navigate(AppRoutes.ROLEPLAY) {
-                    launchSingleTop = true
-                }
-            },
-            onOpenPhoneCheck = { conversationId ->
-                navController.navigate(AppRoutes.phoneCheck(conversationId)) {
-                    launchSingleTop = true
-                }
-            },
-            onOpenProviderDetail = { providerId ->
-                navController.navigate(AppRoutes.settingsProviderDetail(providerId)) {
-                    launchSingleTop = true
-                }
-            },
-            onClearErrorMessage = chatViewModel::clearErrorMessage,
-            onClearNoticeMessage = chatViewModel::clearNoticeMessage,
-            onRefreshConversationSummary = chatViewModel::refreshConversationSummary,
-            onCancelSending = chatViewModel::cancelSending,
-            onAddPendingParts = chatViewModel::addPendingParts,
-            onRemovePendingPart = chatViewModel::removePendingPart,
-            onSendSpecialPlay = chatViewModel::sendSpecialPlay,
-            onConfirmTransferReceipt = chatViewModel::confirmTransferReceipt,
-            onSelectAssistant = { assistantId ->
-                settingsViewModel.selectAssistant(assistantId)
-                chatViewModel.selectAssistant(assistantId)
-            },
-            onOpenAssistantDetail = { assistantId ->
-                navController.navigate(AppRoutes.settingsAssistantDetail(assistantId)) {
-                    launchSingleTop = true
-                }
-            },
+            callbacks = ChatScreenCallbacks(
+                message = ChatMessageCallbacks(
+                    onInputChange = chatViewModel::updateInput,
+                    onSend = chatViewModel::sendMessage,
+                    onRetryMessage = chatViewModel::retryMessage,
+                    onEditUserMessage = chatViewModel::editUserMessage,
+                    onToggleMemoryMessage = chatViewModel::toggleMessageMemory,
+                    onCancelSending = chatViewModel::cancelSending,
+                    onAddPendingParts = chatViewModel::addPendingParts,
+                    onRemovePendingPart = chatViewModel::removePendingPart,
+                    onSendSpecialPlay = chatViewModel::sendSpecialPlay,
+                    onConfirmTransferReceipt = chatViewModel::confirmTransferReceipt,
+                ),
+                conversation = ChatConversationCallbacks(
+                    onCreateConversation = chatViewModel::createConversation,
+                    onSelectConversation = chatViewModel::selectConversation,
+                    onClearConversation = chatViewModel::clearConversation,
+                    onDeleteConversation = chatViewModel::deleteConversation,
+                    onClearCurrentConversation = chatViewModel::clearCurrentConversation,
+                    onRefreshConversationSummary = chatViewModel::refreshConversationSummary,
+                ),
+                search = ChatSearchCallbacks(
+                    onToggleSearch = chatViewModel::toggleConversationSearch,
+                    onSelectSearchSource = settingsViewModel::selectSearchSource,
+                    onUpdateSearchResultCount = settingsViewModel::updateSearchResultCount,
+                ),
+                translation = ChatTranslationCallbacks(
+                    onTranslateDraft = chatViewModel::translateDraftInput,
+                    onTranslateMessage = chatViewModel::translateMessage,
+                    onDismissTranslationSheet = chatViewModel::dismissTranslationSheet,
+                    onApplyTranslationToInput = chatViewModel::applyTranslationToInput,
+                    onSendTranslationAsMessage = chatViewModel::sendTranslationAsMessage,
+                ),
+                model = ChatModelCallbacks(
+                    onSelectProvider = settingsViewModel::saveSelectedProvider,
+                    onSelectModel = settingsViewModel::saveSelectedModelForProvider,
+                    onUpdateThinkingBudget = settingsViewModel::saveThinkingBudgetForProvider,
+                ),
+                profile = ChatProfileCallbacks(
+                    onSaveUserProfile = settingsViewModel::saveUserProfile,
+                    onSelectAssistant = { assistantId ->
+                        settingsViewModel.selectAssistant(assistantId)
+                        chatViewModel.selectAssistant(assistantId)
+                    },
+                    onOpenAssistantDetail = { assistantId ->
+                        navController.navigate(AppRoutes.settingsAssistantDetail(assistantId)) {
+                            launchSingleTop = true
+                        }
+                    },
+                ),
+                navigation = ChatNavigationCallbacks(
+                    onOpenSettings = {
+                        navController.navigate(AppRoutes.SETTINGS) {
+                            launchSingleTop = true
+                        }
+                    },
+                    onOpenHome = {
+                        navController.navigate(AppRoutes.HOME) {
+                            launchSingleTop = true
+                        }
+                    },
+                    onOpenTranslator = {
+                        navController.navigate(AppRoutes.TRANSLATOR) {
+                            launchSingleTop = true
+                        }
+                    },
+                    onOpenRoleplay = {
+                        navController.navigate(AppRoutes.ROLEPLAY) {
+                            launchSingleTop = true
+                        }
+                    },
+                    onOpenPhoneCheck = { conversationId ->
+                        navController.navigate(AppRoutes.phoneCheck(conversationId)) {
+                            launchSingleTop = true
+                        }
+                    },
+                    onOpenProviderDetail = { providerId ->
+                        navController.navigate(AppRoutes.settingsProviderDetail(providerId)) {
+                            launchSingleTop = true
+                        }
+                    },
+                ),
+                ui = ChatUiCallbacks(
+                    onClearErrorMessage = chatViewModel::clearErrorMessage,
+                    onClearNoticeMessage = chatViewModel::clearNoticeMessage,
+                ),
+            ),
         )
     }
 

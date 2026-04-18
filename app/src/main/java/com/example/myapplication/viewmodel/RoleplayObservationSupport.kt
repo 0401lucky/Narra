@@ -4,6 +4,7 @@ import com.example.myapplication.data.repository.roleplay.RoleplayRepository
 import com.example.myapplication.model.AppSettings
 import com.example.myapplication.model.Assistant
 import com.example.myapplication.model.ChatMessage
+import com.example.myapplication.model.RoleplayDiaryEntry
 import com.example.myapplication.model.RoleplayMessageUiModel
 import com.example.myapplication.model.RoleplayScenario
 import com.example.myapplication.model.RoleplaySession
@@ -214,6 +215,30 @@ internal object RoleplayObservationSupport {
                     RoleplayStateSupport.applyMappedMessages(current, mappedMessages)
                 }
             }
+        }
+    }
+
+    fun observeDiaryEntries(
+        scope: CoroutineScope,
+        roleplayRepository: RoleplayRepository,
+        uiState: MutableStateFlow<RoleplayUiState>,
+    ) {
+        scope.launch {
+            uiState
+                .map { it.currentSession?.conversationId.orEmpty() }
+                .distinctUntilChanged()
+                .flatMapLatest { conversationId ->
+                    if (conversationId.isBlank()) {
+                        flowOf(emptyList<RoleplayDiaryEntry>())
+                    } else {
+                        roleplayRepository.observeDiaryEntries(conversationId)
+                    }
+                }
+                .collect { entries ->
+                    uiState.update { current ->
+                        RoleplayStateSupport.applyDiaryEntries(current, entries)
+                    }
+                }
         }
     }
 }

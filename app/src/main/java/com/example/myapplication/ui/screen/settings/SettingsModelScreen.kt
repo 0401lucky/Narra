@@ -61,20 +61,8 @@ fun SettingsModelScreen(
     onLoadModels: () -> Unit,
     onSelectProvider: (String) -> Unit,
     onSelectedModelChange: (String, String) -> Unit,
-    onUpdateTitleSummaryModel: (String, String) -> Unit,
-    onUpdateChatSuggestionModel: (String, String) -> Unit,
-    onUpdateMemoryModel: (String, String) -> Unit,
-    onUpdateTranslationModel: (String, String) -> Unit,
-    onUpdatePhoneSnapshotModel: (String, String) -> Unit,
-    onUpdateSearchModel: (String, String) -> Unit,
-    onUpdateGiftImageModel: (String, String) -> Unit,
-    onUpdateTitleSummaryModelMode: (String, ProviderFunctionModelMode) -> Unit,
-    onUpdateChatSuggestionModelMode: (String, ProviderFunctionModelMode) -> Unit,
-    onUpdateMemoryModelMode: (String, ProviderFunctionModelMode) -> Unit,
-    onUpdateTranslationModelMode: (String, ProviderFunctionModelMode) -> Unit,
-    onUpdatePhoneSnapshotModelMode: (String, ProviderFunctionModelMode) -> Unit,
-    onUpdateSearchModelMode: (String, ProviderFunctionModelMode) -> Unit,
-    onUpdateGiftImageModelMode: (String, ProviderFunctionModelMode) -> Unit,
+    onUpdateFunctionModel: (ProviderFunction, String, String) -> Unit,
+    onUpdateFunctionModelMode: (ProviderFunction, String, ProviderFunctionModelMode) -> Unit,
     onConsumeMessage: () -> Unit,
     onNavigateBack: () -> Unit,
 ) {
@@ -315,48 +303,19 @@ fun SettingsModelScreen(
                 }
             },
             onSelectQuickAction = { selectedProviderId, optionId ->
-                when (selectingRole) {
-                    "title" -> onUpdateTitleSummaryModelMode(
-                        selectedProviderId,
-                        if (optionId == QuickActionFollowDefault) ProviderFunctionModelMode.FOLLOW_DEFAULT else ProviderFunctionModelMode.DISABLED,
-                    )
-                    "suggestion" -> onUpdateChatSuggestionModelMode(
-                        selectedProviderId,
-                        if (optionId == QuickActionFollowDefault) ProviderFunctionModelMode.FOLLOW_DEFAULT else ProviderFunctionModelMode.DISABLED,
-                    )
-                    "memory" -> onUpdateMemoryModelMode(
-                        selectedProviderId,
-                        if (optionId == QuickActionFollowDefault) ProviderFunctionModelMode.FOLLOW_DEFAULT else ProviderFunctionModelMode.DISABLED,
-                    )
-                    "translation" -> onUpdateTranslationModelMode(
-                        selectedProviderId,
-                        if (optionId == QuickActionFollowDefault) ProviderFunctionModelMode.FOLLOW_DEFAULT else ProviderFunctionModelMode.DISABLED,
-                    )
-                    "phone_snapshot" -> onUpdatePhoneSnapshotModelMode(
-                        selectedProviderId,
-                        if (optionId == QuickActionFollowDefault) ProviderFunctionModelMode.FOLLOW_DEFAULT else ProviderFunctionModelMode.DISABLED,
-                    )
-                    "search" -> onUpdateSearchModelMode(
-                        selectedProviderId,
-                        if (optionId == QuickActionFollowDefault) ProviderFunctionModelMode.FOLLOW_DEFAULT else ProviderFunctionModelMode.DISABLED,
-                    )
-                    "gift_image" -> onUpdateGiftImageModelMode(
-                        selectedProviderId,
-                        if (optionId == QuickActionFollowDefault) ProviderFunctionModelMode.FOLLOW_DEFAULT else ProviderFunctionModelMode.DISABLED,
-                    )
+                val function = selectingRole.toProviderFunctionOrNull()
+                if (function != null && function != ProviderFunction.CHAT) {
+                    val mode = if (optionId == QuickActionFollowDefault) ProviderFunctionModelMode.FOLLOW_DEFAULT else ProviderFunctionModelMode.DISABLED
+                    onUpdateFunctionModelMode(function, selectedProviderId, mode)
                 }
                 selectingRole = ""
             },
             onSelectModel = { selectedProviderId, model ->
-                when (selectingRole) {
-                    "chat" -> onSelectedModelChange(selectedProviderId, model)
-                    "title" -> onUpdateTitleSummaryModel(selectedProviderId, model)
-                    "suggestion" -> onUpdateChatSuggestionModel(selectedProviderId, model)
-                    "memory" -> onUpdateMemoryModel(selectedProviderId, model)
-                    "translation" -> onUpdateTranslationModel(selectedProviderId, model)
-                    "phone_snapshot" -> onUpdatePhoneSnapshotModel(selectedProviderId, model)
-                    "search" -> onUpdateSearchModel(selectedProviderId, model)
-                    "gift_image" -> onUpdateGiftImageModel(selectedProviderId, model)
+                val function = selectingRole.toProviderFunctionOrNull()
+                if (function == null || function == ProviderFunction.CHAT) {
+                    onSelectedModelChange(selectedProviderId, model)
+                } else {
+                    onUpdateFunctionModel(function, selectedProviderId, model)
                 }
                 selectingRole = ""
             },

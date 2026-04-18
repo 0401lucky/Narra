@@ -19,11 +19,17 @@ interface RoleplayDao {
     @Query("SELECT * FROM roleplay_sessions ORDER BY updatedAt DESC, createdAt DESC")
     fun observeSessions(): Flow<List<RoleplaySessionEntity>>
 
+    @Query("SELECT * FROM roleplay_diary_entries WHERE conversationId = :conversationId ORDER BY sortOrder ASC, createdAt DESC")
+    fun observeDiaryEntries(conversationId: String): Flow<List<RoleplayDiaryEntryEntity>>
+
     @Query("SELECT * FROM roleplay_scenarios ORDER BY updatedAt DESC, createdAt DESC")
     suspend fun listScenarios(): List<RoleplayScenarioEntity>
 
     @Query("SELECT * FROM roleplay_sessions ORDER BY updatedAt DESC, createdAt DESC")
     suspend fun listSessions(): List<RoleplaySessionEntity>
+
+    @Query("SELECT * FROM roleplay_diary_entries WHERE conversationId = :conversationId ORDER BY sortOrder ASC, createdAt DESC")
+    suspend fun listDiaryEntries(conversationId: String): List<RoleplayDiaryEntryEntity>
 
     @Query("SELECT * FROM roleplay_scenarios WHERE id = :scenarioId LIMIT 1")
     suspend fun getScenario(scenarioId: String): RoleplayScenarioEntity?
@@ -49,6 +55,12 @@ interface RoleplayDao {
     @Upsert
     suspend fun upsertSession(session: RoleplaySessionEntity)
 
+    @Upsert
+    suspend fun upsertDiaryEntries(entries: List<RoleplayDiaryEntryEntity>)
+
     @Query("DELETE FROM roleplay_scenarios WHERE id = :scenarioId")
     suspend fun deleteScenario(scenarioId: String)
+
+    @Query("DELETE FROM roleplay_diary_entries WHERE conversationId = :conversationId")
+    suspend fun deleteDiaryEntriesForConversation(conversationId: String)
 }

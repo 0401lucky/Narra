@@ -70,7 +70,9 @@ import androidx.compose.ui.input.key.onPreviewKeyEvent
 import androidx.compose.ui.input.key.type
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import com.example.myapplication.R
 import com.example.myapplication.model.ChatMessagePart
 import com.example.myapplication.model.ChatMessagePartType
 import com.example.myapplication.model.MessageAttachment
@@ -114,10 +116,10 @@ fun MessageInputBar(
         allowImageAttachments || allowFileAttachments || allowSpecialPlay
     )
     val inputPlaceholder = when {
-        pendingParts.any { it.type == ChatMessagePartType.IMAGE } && pendingParts.any { it.type == ChatMessagePartType.FILE } -> "补充说明，让 AI 结合图片和文件回答"
-        pendingParts.any { it.type == ChatMessagePartType.IMAGE } -> "补充说明，让 AI 结合图片回答"
-        pendingParts.any { it.type == ChatMessagePartType.FILE } -> "输入你的要求，让 AI 结合文件内容回答"
-        else -> "输入消息，与 AI 聊天"
+        pendingParts.any { it.type == ChatMessagePartType.IMAGE } && pendingParts.any { it.type == ChatMessagePartType.FILE } -> stringResource(R.string.input_placeholder_image_and_file)
+        pendingParts.any { it.type == ChatMessagePartType.IMAGE } -> stringResource(R.string.input_placeholder_image)
+        pendingParts.any { it.type == ChatMessagePartType.FILE } -> stringResource(R.string.input_placeholder_file)
+        else -> stringResource(R.string.input_placeholder_default)
     }
     var showExpandedEditor by rememberSaveable { mutableStateOf(false) }
     var allowNextInlineNewline by remember { mutableStateOf(false) }
@@ -288,7 +290,7 @@ fun MessageInputBar(
                         ) {
                             Icon(
                                 imageVector = Icons.Default.OpenInFull,
-                                contentDescription = "展开输入编辑",
+                                contentDescription = stringResource(R.string.input_expand_editor),
                                 modifier = Modifier.size(18.dp),
                             )
                         }
@@ -302,34 +304,47 @@ fun MessageInputBar(
                 horizontalArrangement = Arrangement.SpaceBetween,
             ) {
                 Row(
-                    horizontalArrangement = Arrangement.spacedBy(4.dp),
+                    modifier = Modifier.weight(1f),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
-                    ModelSelectorButton(
-                        currentModel = currentModel,
-                        enabled = !isSending,
-                        onClick = onOpenModelPicker,
-                    )
+                    LazyRow(
+                        horizontalArrangement = Arrangement.spacedBy(4.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        item {
+                            ModelSelectorButton(
+                                currentModel = currentModel,
+                                enabled = !isSending,
+                                onClick = onOpenModelPicker,
+                            )
+                        }
 
-                    if (showReasoningAction) {
-                        ReasoningActionChip(
-                            label = reasoningLabel,
-                            enabled = !isSending,
-                            onClick = onOpenReasoningPicker,
-                        )
+                        if (showReasoningAction) {
+                            item {
+                                ReasoningActionChip(
+                                    label = reasoningLabel,
+                                    enabled = !isSending,
+                                    onClick = onOpenReasoningPicker,
+                                )
+                            }
+                        }
+
+                        item {
+                            SearchActionChip(
+                                enabled = enabled && !isSending,
+                                available = searchAvailable,
+                                selected = searchEnabled,
+                                onClick = onOpenSearchPicker,
+                            )
+                        }
+
+                        item {
+                            TranslationActionChip(
+                                enabled = !isSending && value.isNotBlank(),
+                                onClick = onTranslateInputClick,
+                            )
+                        }
                     }
-
-                    SearchActionChip(
-                        enabled = enabled && !isSending,
-                        available = searchAvailable,
-                        selected = searchEnabled,
-                        onClick = onOpenSearchPicker,
-                    )
-
-                    TranslationActionChip(
-                        enabled = !isSending && value.isNotBlank(),
-                        onClick = onTranslateInputClick,
-                    )
                 }
 
                 Row(
@@ -351,7 +366,7 @@ fun MessageInputBar(
                         ) {
                             Icon(
                                 imageVector = Icons.Default.Add,
-                                contentDescription = "添加附件",
+                                contentDescription = stringResource(R.string.input_add_attachment),
                             )
                         }
 
@@ -360,7 +375,7 @@ fun MessageInputBar(
                             onDismissRequest = { showAttachmentMenu = false },
                         ) {
                             DropdownMenuItem(
-                                text = { Text("选择图片") },
+                                text = { Text(stringResource(R.string.input_pick_image)) },
                                 enabled = allowImageAttachments,
                                 leadingIcon = {
                                     Icon(
@@ -374,7 +389,7 @@ fun MessageInputBar(
                                 },
                             )
                             DropdownMenuItem(
-                                text = { Text("上传文件") },
+                                text = { Text(stringResource(R.string.input_upload_file)) },
                                 enabled = allowFileAttachments,
                                 leadingIcon = {
                                     Icon(
@@ -388,7 +403,7 @@ fun MessageInputBar(
                                 },
                             )
                             DropdownMenuItem(
-                                text = { Text("特殊玩法") },
+                                text = { Text(stringResource(R.string.input_special_play)) },
                                 enabled = allowSpecialPlay,
                                 leadingIcon = {
                                     Icon(
@@ -419,7 +434,7 @@ fun MessageInputBar(
                         ) {
                             Icon(
                                 imageVector = Icons.Default.Close,
-                                contentDescription = "取消",
+                                contentDescription = stringResource(R.string.input_cancel),
                                 modifier = Modifier.size(22.dp),
                             )
                         }
@@ -447,7 +462,7 @@ fun MessageInputBar(
                         ) {
                             Icon(
                                 imageVector = Icons.AutoMirrored.Filled.Send,
-                                contentDescription = "发送",
+                                contentDescription = stringResource(R.string.input_send),
                                 modifier = Modifier.size(22.dp),
                             )
                         }
@@ -509,7 +524,7 @@ private fun SearchActionChip(
         ) {
             Icon(
                 imageVector = Icons.Default.Search,
-                contentDescription = if (selected) "关闭搜索" else "开启搜索",
+                contentDescription = if (selected) stringResource(R.string.search_disable) else stringResource(R.string.search_enable),
                 modifier = Modifier.size(20.dp),
             )
         }
@@ -552,11 +567,11 @@ private fun PendingAttachmentBanner(
             ) {
                 Text(
                     text = when (part.type) {
-                        ChatMessagePartType.IMAGE -> attachment?.fileName?.ifBlank { "已选择图片" } ?: "已选择图片"
-                        ChatMessagePartType.FILE -> attachment?.fileName?.ifBlank { "已选择文件" } ?: "已选择文件"
-                        ChatMessagePartType.ACTION -> part.toActionCopyText().ifBlank { "已恢复动作消息" }
-                        ChatMessagePartType.SPECIAL -> part.specialType?.displayName?.let { "已恢复${it}卡片" } ?: "已恢复特殊玩法"
-                        ChatMessagePartType.TEXT -> "待发送文本"
+                        ChatMessagePartType.IMAGE -> attachment?.fileName?.ifBlank { stringResource(R.string.input_selected_image) } ?: stringResource(R.string.input_selected_image)
+                        ChatMessagePartType.FILE -> attachment?.fileName?.ifBlank { stringResource(R.string.input_selected_file) } ?: stringResource(R.string.input_selected_file)
+                        ChatMessagePartType.ACTION -> part.toActionCopyText().ifBlank { stringResource(R.string.input_attached_action) }
+                        ChatMessagePartType.SPECIAL -> part.specialType?.displayName?.let { stringResource(R.string.input_attached_special_card, it) } ?: stringResource(R.string.input_attached_special)
+                        ChatMessagePartType.TEXT -> stringResource(R.string.input_content_text)
                     },
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
@@ -564,11 +579,11 @@ private fun PendingAttachmentBanner(
                 )
                 Text(
                     text = when (part.type) {
-                        ChatMessagePartType.IMAGE -> "发送时作为图片附件上传"
-                        ChatMessagePartType.FILE -> "发送时会提取文本内容作为上下文"
-                        ChatMessagePartType.ACTION -> "发送时会按原动作结构重新发出"
-                        ChatMessagePartType.SPECIAL -> "发送时会按原消息结构重新发出"
-                        ChatMessagePartType.TEXT -> "发送时会作为普通文本发出"
+                        ChatMessagePartType.IMAGE -> stringResource(R.string.input_hint_image_upload)
+                        ChatMessagePartType.FILE -> stringResource(R.string.input_hint_file_extract)
+                        ChatMessagePartType.ACTION -> stringResource(R.string.input_hint_action_resend)
+                        ChatMessagePartType.SPECIAL -> stringResource(R.string.input_hint_special_resend)
+                        ChatMessagePartType.TEXT -> stringResource(R.string.input_hint_text_send)
                     },
                     style = MaterialTheme.typography.labelMedium,
                     color = MaterialTheme.colorScheme.onSecondaryContainer.copy(alpha = 0.78f),
@@ -581,7 +596,7 @@ private fun PendingAttachmentBanner(
             ) {
                 Icon(
                     imageVector = Icons.Default.Close,
-                    contentDescription = "移除附件",
+                    contentDescription = stringResource(R.string.input_remove_attachment),
                     modifier = Modifier.size(16.dp),
                 )
             }
@@ -682,7 +697,7 @@ private fun TranslationActionChip(
         ) {
             Icon(
                 imageVector = Icons.Default.Translate,
-                contentDescription = "翻译输入",
+                contentDescription = stringResource(R.string.input_translate),
                 modifier = Modifier.size(20.dp),
             )
         }
@@ -702,7 +717,7 @@ private fun PendingImageThumbnail(
     ) {
         coil3.compose.AsyncImage(
             model = attachment.uri.toUri(),
-            contentDescription = attachment.fileName.ifBlank { "已选择图片" },
+            contentDescription = attachment.fileName.ifBlank { stringResource(R.string.input_selected_image) },
             modifier = Modifier
                 .size(72.dp)
                 .clip(RoundedCornerShape(14.dp)),
@@ -721,7 +736,7 @@ private fun PendingImageThumbnail(
         ) {
             Icon(
                 imageVector = Icons.Default.Close,
-                contentDescription = "移除图片",
+                contentDescription = stringResource(R.string.input_remove_image),
                 modifier = Modifier.size(14.dp),
             )
         }

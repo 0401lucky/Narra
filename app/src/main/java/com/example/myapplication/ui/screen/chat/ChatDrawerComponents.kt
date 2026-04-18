@@ -32,6 +32,7 @@ import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Translate
 import androidx.compose.material.icons.outlined.DeleteOutline
 import androidx.compose.material.icons.outlined.Refresh
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
@@ -57,13 +58,22 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.res.stringResource
+import com.example.myapplication.R
 import com.example.myapplication.model.Assistant
 import com.example.myapplication.model.Conversation
 import com.example.myapplication.ui.component.AssistantAvatar
+import com.example.myapplication.ui.component.NarraTextButton
 import java.text.SimpleDateFormat
 import java.util.Calendar
 import java.util.Date
 import java.util.Locale
+
+private sealed interface DrawerDestructiveAction {
+    data class ClearCurrentConversation(val title: String) : DrawerDestructiveAction
+    data class ClearConversation(val conversationId: String, val title: String) : DrawerDestructiveAction
+    data class DeleteConversation(val conversationId: String, val title: String) : DrawerDestructiveAction
+}
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -90,7 +100,9 @@ internal fun ConversationDrawerContent(
     onEditProfile: () -> Unit,
 ) {
     var searchQuery by rememberSaveable { mutableStateOf("") }
+    var pendingDestructiveAction by remember { mutableStateOf<DrawerDestructiveAction?>(null) }
     val drawerPalette = rememberChatDrawerPalette()
+    val unnamedConversationTitle = stringResource(R.string.drawer_unnamed)
     val greeting = remember {
         resolveDrawerGreeting(Calendar.getInstance().get(Calendar.HOUR_OF_DAY))
     }
@@ -99,6 +111,12 @@ internal fun ConversationDrawerContent(
             conversations = conversations,
             searchQuery = searchQuery,
         )
+    }
+    val currentConversationTitle = remember(conversations, currentConversationId, unnamedConversationTitle) {
+        conversations.firstOrNull { it.id == currentConversationId }
+            ?.title
+            ?.ifBlank { unnamedConversationTitle }
+            ?: unnamedConversationTitle
     }
 
     ModalDrawerSheet(
@@ -138,7 +156,7 @@ internal fun ConversationDrawerContent(
 
             DrawerInfoRow(
                 icon = Icons.Default.Description,
-                title = "聊天历史",
+                title = stringResource(R.string.drawer_chat_history),
                 trailing = {
                     StatusPill(
                         text = "${conversations.size}",
@@ -159,7 +177,7 @@ internal fun ConversationDrawerContent(
                 contentColor = drawerPalette.onSurface,
             ) {
                 Text(
-                    text = "新消息",
+                    text = stringResource(R.string.drawer_new_message),
                     modifier = Modifier.padding(horizontal = 16.dp, vertical = 13.dp),
                     style = MaterialTheme.typography.titleMedium,
                     color = drawerPalette.onSurface,
@@ -168,8 +186,8 @@ internal fun ConversationDrawerContent(
 
             if (conversationSections.isEmpty()) {
                 NoticeCard(
-                    title = if (searchQuery.isBlank()) "尚无聊天记录" else "无匹配结果",
-                    body = if (searchQuery.isBlank()) "新聊天会显示在这里" else "请换个关键词试试",
+                    title = if (searchQuery.isBlank()) stringResource(R.string.drawer_no_history_title) else stringResource(R.string.drawer_no_search_result_title),
+                    body = if (searchQuery.isBlank()) stringResource(R.string.drawer_no_history_body) else stringResource(R.string.drawer_no_search_result_body),
                     containerColor = drawerPalette.card,
                     contentColor = drawerPalette.onSurface,
                 )
@@ -196,8 +214,18 @@ internal fun ConversationDrawerContent(
                                 conversation = conversation,
                                 isCurrent = conversation.id == currentConversationId,
                                 onClick = { onSelectConversation(conversation.id) },
-                                onClear = { onClearConversation(conversation.id) },
-                                onDelete = { onDeleteConversation(conversation.id) },
+                                onClearRequest = {
+                                    pendingDestructiveAction = DrawerDestructiveAction.ClearConversation(
+                                        conversationId = conversation.id,
+                                        title = conversation.title.ifBlank { unnamedConversationTitle },
+                                    )
+                                },
+                                onDeleteRequest = {
+                                    pendingDestructiveAction = DrawerDestructiveAction.DeleteConversation(
+                                        conversationId = conversation.id,
+                                        title = conversation.title.ifBlank { unnamedConversationTitle },
+                                    )
+                                },
                                 cardColor = drawerPalette.background,
                                 selectedColor = drawerPalette.selectedCard,
                                 primaryTextColor = drawerPalette.onSurface,
@@ -225,40 +253,104 @@ internal fun ConversationDrawerContent(
             ) {
                 DrawerFooterAction(
                     icon = Icons.Default.Add,
-                    contentDescription = "新建会话",
+                    contentDescription = stringResource(R.string.common_new_conversation),
                     onClick = onCreateConversation,
                     containerColor = drawerPalette.footerButton,
                     contentColor = drawerPalette.accentContent,
                 )
                 DrawerFooterAction(
                     icon = Icons.Outlined.Refresh,
-                    contentDescription = "清空当前会话",
-                    onClick = onClearCurrentConversation,
+                    contentDescription = stringResource(R.string.drawer_clear_conversation),
+                    onClick = {
+                        pendingDestructiveAction = DrawerDestructiveAction.ClearCurrentConversation(
+                            title = currentConversationTitle,
+                        )
+                    },
                     containerColor = drawerPalette.footerButton,
                     contentColor = drawerPalette.accentContent,
                 )
                 DrawerFooterAction(
                     icon = Icons.Default.Translate,
-                    contentDescription = "打开翻译",
+                    contentDescription = stringResource(R.string.drawer_open_translator),
                     onClick = onOpenTranslator,
                     containerColor = drawerPalette.footerButton,
                     contentColor = drawerPalette.accentContent,
                 )
                 DrawerFooterAction(
                     icon = Icons.Default.AutoStories,
-                    contentDescription = "沉浸扮演",
+                    contentDescription = stringResource(R.string.drawer_immersive_roleplay),
                     onClick = onOpenRoleplay,
                     containerColor = drawerPalette.footerButton,
                     contentColor = drawerPalette.accentContent,
                 )
                 DrawerFooterAction(
                     icon = Icons.Default.Settings,
-                    contentDescription = "打开设置",
+                    contentDescription = stringResource(R.string.drawer_open_settings),
                     onClick = onOpenSettings,
                     containerColor = drawerPalette.accentContainer,
                     contentColor = drawerPalette.accentContent,
                 )
             }
+        }
+
+        pendingDestructiveAction?.let { action ->
+            AlertDialog(
+                onDismissRequest = { pendingDestructiveAction = null },
+                title = {
+                    Text(
+                        text = when (action) {
+                            is DrawerDestructiveAction.DeleteConversation -> stringResource(R.string.drawer_confirm_delete_title)
+                            is DrawerDestructiveAction.ClearConversation,
+                            is DrawerDestructiveAction.ClearCurrentConversation,
+                            -> stringResource(R.string.drawer_confirm_clear_title)
+                        },
+                    )
+                },
+                text = {
+                    Text(
+                        text = when (action) {
+                            is DrawerDestructiveAction.DeleteConversation -> {
+                                stringResource(R.string.drawer_confirm_delete_message, action.title)
+                            }
+
+                            is DrawerDestructiveAction.ClearConversation -> {
+                                stringResource(R.string.drawer_confirm_clear_message, action.title)
+                            }
+
+                            is DrawerDestructiveAction.ClearCurrentConversation -> {
+                                stringResource(R.string.drawer_confirm_clear_message, action.title)
+                            }
+                        },
+                    )
+                },
+                confirmButton = {
+                    NarraTextButton(
+                        onClick = {
+                            when (action) {
+                                is DrawerDestructiveAction.DeleteConversation -> {
+                                    onDeleteConversation(action.conversationId)
+                                }
+
+                                is DrawerDestructiveAction.ClearConversation -> {
+                                    onClearConversation(action.conversationId)
+                                }
+
+                                is DrawerDestructiveAction.ClearCurrentConversation -> {
+                                    onClearCurrentConversation()
+                                }
+                            }
+                            pendingDestructiveAction = null
+                        },
+                    ) {
+                        Text(stringResource(R.string.common_confirm))
+                    }
+                },
+                dismissButton = {
+                    NarraTextButton(onClick = { pendingDestructiveAction = null }) {
+                        Text(stringResource(R.string.common_cancel))
+                    }
+                },
+            )
         }
     }
 }
@@ -308,8 +400,8 @@ private fun AssistantDrawerBar(
     onOpenAssistantDetail: (String) -> Unit,
 ) {
     var showAssistantPicker by rememberSaveable { mutableStateOf(false) }
-    val assistantName = currentAssistant?.name?.ifBlank { null } ?: "默认助手"
-    val assistantFirstChar = assistantName.firstOrNull()?.toString() ?: "默"
+    val assistantName = currentAssistant?.name?.ifBlank { null } ?: stringResource(R.string.drawer_default_assistant)
+    val assistantFirstChar = assistantName.firstOrNull()?.toString() ?: stringResource(R.string.drawer_default_assistant_char)
 
     Surface(
         modifier = Modifier.fillMaxWidth(),
@@ -390,7 +482,7 @@ private fun AssistantDrawerBar(
                 verticalArrangement = Arrangement.spacedBy(4.dp),
             ) {
                 Text(
-                    text = "选择助手",
+                    text = stringResource(R.string.drawer_select_assistant),
                     style = MaterialTheme.typography.titleMedium,
                     modifier = Modifier.padding(bottom = 8.dp),
                 )
@@ -434,7 +526,7 @@ private fun AssistantDrawerBar(
                             )
                             Column(modifier = Modifier.weight(1f)) {
                                 Text(
-                                    text = assistant.name.ifBlank { "未命名" },
+                                    text = assistant.name.ifBlank { stringResource(R.string.drawer_unnamed) },
                                     style = MaterialTheme.typography.titleSmall,
                                     fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
                                 )
@@ -525,7 +617,7 @@ private fun DrawerProfileHeader(
             ) {
                 Icon(
                     imageVector = Icons.Default.Edit,
-                    contentDescription = "编辑资料",
+                    contentDescription = stringResource(R.string.drawer_edit_profile),
                     modifier = Modifier.size(16.dp),
                 )
             }
@@ -568,7 +660,7 @@ private fun DrawerSearchBar(
                 decorationBox = { innerTextField ->
                     if (value.isBlank()) {
                         Text(
-                            text = "搜索聊天",
+                            text = stringResource(R.string.drawer_search_chat),
                             style = MaterialTheme.typography.bodyMedium,
                             color = hintColor,
                         )
@@ -620,8 +712,8 @@ private fun DrawerConversationItem(
     conversation: Conversation,
     isCurrent: Boolean,
     onClick: () -> Unit,
-    onClear: () -> Unit,
-    onDelete: () -> Unit,
+    onClearRequest: () -> Unit,
+    onDeleteRequest: () -> Unit,
     cardColor: Color,
     selectedColor: Color,
     primaryTextColor: Color,
@@ -646,7 +738,7 @@ private fun DrawerConversationItem(
                 verticalArrangement = Arrangement.spacedBy(4.dp),
             ) {
                 Text(
-                    text = conversation.title.ifBlank { "新对话" },
+                    text = conversation.title.ifBlank { stringResource(R.string.drawer_new_conversation) },
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
                     style = MaterialTheme.typography.titleMedium,
@@ -667,7 +759,7 @@ private fun DrawerConversationItem(
             onDismissRequest = { showMenu = false },
         ) {
             DropdownMenuItem(
-                text = { Text("清空会话") },
+                text = { Text(stringResource(R.string.drawer_clear_conversation_menu)) },
                 leadingIcon = {
                     Icon(
                         imageVector = Icons.Outlined.Refresh,
@@ -676,11 +768,11 @@ private fun DrawerConversationItem(
                 },
                 onClick = {
                     showMenu = false
-                    onClear()
+                    onClearRequest()
                 },
             )
             DropdownMenuItem(
-                text = { Text("删除") },
+                text = { Text(stringResource(R.string.common_delete)) },
                 leadingIcon = {
                     Icon(
                         imageVector = Icons.Outlined.DeleteOutline,
@@ -689,7 +781,7 @@ private fun DrawerConversationItem(
                 },
                 onClick = {
                     showMenu = false
-                    onDelete()
+                    onDeleteRequest()
                 },
             )
         }

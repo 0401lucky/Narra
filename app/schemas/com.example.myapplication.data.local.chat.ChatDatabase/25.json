@@ -2,7 +2,7 @@
   "formatVersion": 1,
   "database": {
     "version": 25,
-    "identityHash": "1d399834d72b527276d08a8576a399df",
+    "identityHash": "0e4e1529271aa57c960c45d9623f4dda",
     "entities": [
       {
         "tableName": "conversations",
@@ -550,7 +550,7 @@
       },
       {
         "tableName": "roleplay_scenarios",
-        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` TEXT NOT NULL, `title` TEXT NOT NULL, `description` TEXT NOT NULL, `assistantId` TEXT NOT NULL, `backgroundUri` TEXT NOT NULL, `userDisplayNameOverride` TEXT NOT NULL, `userPersonaOverride` TEXT NOT NULL, `userPortraitUri` TEXT NOT NULL, `userPortraitUrl` TEXT NOT NULL, `characterDisplayNameOverride` TEXT NOT NULL, `characterPortraitUri` TEXT NOT NULL, `characterPortraitUrl` TEXT NOT NULL, `openingNarration` TEXT NOT NULL, `interactionMode` TEXT NOT NULL, `enableNarration` INTEGER NOT NULL, `enableRoleplayProtocol` INTEGER NOT NULL, `longformModeEnabled` INTEGER NOT NULL, `autoHighlightSpeaker` INTEGER NOT NULL, `enableDeepImmersion` INTEGER NOT NULL, `createdAt` INTEGER NOT NULL, `updatedAt` INTEGER NOT NULL, PRIMARY KEY(`id`))",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` TEXT NOT NULL, `title` TEXT NOT NULL, `description` TEXT NOT NULL, `assistantId` TEXT NOT NULL, `backgroundUri` TEXT NOT NULL, `userDisplayNameOverride` TEXT NOT NULL, `userPersonaOverride` TEXT NOT NULL, `userPortraitUri` TEXT NOT NULL, `userPortraitUrl` TEXT NOT NULL, `characterDisplayNameOverride` TEXT NOT NULL, `characterPortraitUri` TEXT NOT NULL, `characterPortraitUrl` TEXT NOT NULL, `openingNarration` TEXT NOT NULL, `interactionMode` TEXT NOT NULL, `enableNarration` INTEGER NOT NULL, `enableRoleplayProtocol` INTEGER NOT NULL, `longformModeEnabled` INTEGER NOT NULL, `autoHighlightSpeaker` INTEGER NOT NULL, `enableDeepImmersion` INTEGER NOT NULL, `enableTimeAwareness` INTEGER NOT NULL, `enableNetMeme` INTEGER NOT NULL, `createdAt` INTEGER NOT NULL, `updatedAt` INTEGER NOT NULL, PRIMARY KEY(`id`))",
         "fields": [
           {
             "fieldPath": "id",
@@ -663,6 +663,18 @@
           {
             "fieldPath": "enableDeepImmersion",
             "columnName": "enableDeepImmersion",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "enableTimeAwareness",
+            "columnName": "enableTimeAwareness",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "enableNetMeme",
+            "columnName": "enableNetMeme",
             "affinity": "INTEGER",
             "notNull": true
           },
@@ -1010,7 +1022,7 @@
     ],
     "setupQueries": [
       "CREATE TABLE IF NOT EXISTS room_master_table (id INTEGER PRIMARY KEY,identity_hash TEXT)",
-      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, '1d399834d72b527276d08a8576a399df')"
+      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, '0e4e1529271aa57c960c45d9623f4dda')"
     ]
   }
 }

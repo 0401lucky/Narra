@@ -1,5 +1,6 @@
 package com.example.myapplication.roleplay
 
+import com.example.myapplication.conversation.PromptExcerptSupport
 import com.example.myapplication.model.AppSettings
 import com.example.myapplication.model.Assistant
 import com.example.myapplication.model.ChatMessage
@@ -11,10 +12,7 @@ import com.example.myapplication.model.RoleplayScenario
 import com.example.myapplication.model.toPlainText
 
 object RoleplayConversationSupport {
-    private val tensionHighKeywords = listOf("为什么", "凭什么", "到底", "说清楚", "解释", "你敢", "不准", "别过来", "休想", "骗")
-    private val tensionTenderKeywords = listOf("靠近", "轻声", "抱", "握住", "吻", "温柔", "心疼", "安抚")
-    private val actionPriorityKeywords = listOf("靠近", "后退", "伸手", "抬手", "抓住", "握住", "抱住", "推开", "看着", "逼近", "退开")
-    private val emotionPriorityKeywords = listOf("难过", "委屈", "生气", "害怕", "紧张", "失望", "愤怒", "不安", "心虚", "哽咽")
+    // 词表与匹配逻辑抽至 RoleplayDirectorKeywords，便于复用、测试和扩展。
 
     fun resolveRoleplayNames(
         scenario: RoleplayScenario,
@@ -58,13 +56,17 @@ object RoleplayConversationSupport {
             assistant = assistant,
             settings = settings,
         )
-        return RoleplayTranscriptFormatter.formatMessages(
+        val transcriptSegments = RoleplayTranscriptFormatter.formatMessageSegments(
             messages = messages,
             userName = userName,
             characterName = characterName,
             allowNarration = scenario.enableNarration,
             interactionMode = RoleplayMessageFormatSupport.resolveScenarioInteractionMode(scenario),
-        ).take(maxLength)
+        )
+        return PromptExcerptSupport.joinLatestSegments(
+            segments = transcriptSegments,
+            maxLength = maxLength,
+        )
     }
 
     fun resolveLatestUserInputText(requestMessages: List<ChatMessage>): String {
@@ -177,24 +179,26 @@ object RoleplayConversationSupport {
                     append("避免把当前互动写成已读、输入中、隔着聊天框等待回复的普通线上聊天。\n")
                 }
                 // 时间断层旁白：30 分钟以上触发
-                val latestMessageTimestamp = messages
-                    .filter { it.createdAt > 0L }
-                    .maxOfOrNull { it.createdAt }
-                    ?: 0L
-                val currentTime = nowProvider()
-                TimeGapNarrationSupport.buildTimeGapNarration(latestMessageTimestamp, currentTime)
-                    ?.let { narration ->
-                        append(narration)
-                        append("\n")
-                    }
-                // 高层关系影响指导（6小时以上才触发附加行为提示）
-                resolveTimeGapGuidance(messages, nowProvider)
-                    .takeIf { it.isNotBlank() }
-                    ?.let { timeGuidance ->
-                        append("时间差提示：")
-                        append(timeGuidance)
-                        append("。\n")
-                    }
+                if (scenario.enableTimeAwareness) {
+                    val latestMessageTimestamp = messages
+                        .filter { it.createdAt > 0L }
+                        .maxOfOrNull { it.createdAt }
+                        ?: 0L
+                    val currentTime = nowProvider()
+                    TimeGapNarrationSupport.buildTimeGapNarration(latestMessageTimestamp, currentTime)
+                        ?.let { narration ->
+                            append(narration)
+                            append("\n")
+                        }
+                    // 高层关系影响指导（6小时以上才触发附加行为提示）
+                    resolveTimeGapGuidance(messages, nowProvider)
+                        .takeIf { it.isNotBlank() }
+                        ?.let { timeGuidance ->
+                            append("时间差提示：")
+                            append(timeGuidance)
+                            append("。\n")
+                        }
+                }
                 RoleplayOnlineReferenceSupport.formatCandidatesForPrompt(referenceCandidates)
                     .takeIf { it.isNotBlank() }
                     ?.let { formattedCandidates ->
@@ -263,15 +267,14 @@ object RoleplayConversationSupport {
     private fun resolveRelationTension(
         recentUserInput: String,
     ): String {
+        val text = RoleplayDirectorKeywords.normalize(recentUserInput)
         return when {
-            recentUserInput.isBlank() -> "持续互动"
-            tensionHighKeywords.any { it in recentUserInput } || recentUserInput.any { it == '？' || it == '!' || it == '！' } -> {
-                "高压对峙"
-            }
-            tensionTenderKeywords.any { it in recentUserInput } -> "暧昧靠近"
-            recentUserInput.contains("吗") || recentUserInput.contains("会不会") || recentUserInput.contains("是不是") -> {
-                "试探拉扯"
-            }
+            text.isBlank() -> "持续互动"
+            RoleplayDirectorKeywords.containsAny(text, RoleplayDirectorKeywords.tensionHigh)
+                || RoleplayDirectorKeywords.hasQuestionMark(text)
+                || RoleplayDirectorKeywords.hasExclamation(text) -> "高压对峙"
+            RoleplayDirectorKeywords.containsAny(text, RoleplayDirectorKeywords.tensionTender) -> "暧昧靠近"
+            text.contains("吗") || text.contains("会不会") || text.contains("是不是") -> "试探拉扯"
             else -> "持续拉扯"
         }
     }
@@ -279,11 +282,14 @@ object RoleplayConversationSupport {
     private fun resolveRoundPriority(
         recentUserInput: String,
     ): String {
+        val text = RoleplayDirectorKeywords.normalize(recentUserInput)
         return when {
-            recentUserInput.isBlank() -> "先贴住当前氛围，再推进关系、信息或局势中的一项"
-            recentUserInput.any { it == '？' || it == '?' } -> "优先正面回应对方刚抛出的追问或质疑"
-            actionPriorityKeywords.any { it in recentUserInput } -> "优先接住对方刚做出的动作，并给出角色的即时反应"
-            emotionPriorityKeywords.any { it in recentUserInput } -> "优先回应对方当前情绪，再决定如何推进"
+            text.isBlank() -> "先贴住当前氛围，再推进关系、信息或局势中的一项"
+            RoleplayDirectorKeywords.hasQuestionMark(text) -> "优先正面回应对方刚抛出的追问或质疑"
+            RoleplayDirectorKeywords.containsAny(text, RoleplayDirectorKeywords.actionPriority) ->
+                "优先接住对方刚做出的动作，并给出角色的即时反应"
+            RoleplayDirectorKeywords.containsAny(text, RoleplayDirectorKeywords.emotionPriority) ->
+                "优先回应对方当前情绪，再决定如何推进"
             else -> "先回应当下互动，再自然推进关系、信息或局势中的一项"
         }
     }
@@ -293,11 +299,12 @@ object RoleplayConversationSupport {
         recentEmotions: List<String>,
         recentUserInput: String,
     ): String {
+        val text = RoleplayDirectorKeywords.normalize(recentUserInput)
         return when {
             repeatedOpeners.isNotEmpty() -> "避免重复模板化起手和惯性动作"
             recentEmotions.isNotEmpty() -> "避免连续复用同一类情绪标签或同一种反应节奏"
-            recentUserInput.any { it == '？' || it == '?' } -> "不能回避对方刚刚逼过来的关键问题"
-            recentUserInput.isBlank() -> "不要自顾自讲背景，必须贴着当前互动往前走"
+            RoleplayDirectorKeywords.hasQuestionMark(text) -> "不能回避对方刚刚逼过来的关键问题"
+            text.isBlank() -> "不要自顾自讲背景，必须贴着当前互动往前走"
             else -> "不要把关系和局势重置回初始状态"
         }
     }

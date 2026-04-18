@@ -27,6 +27,7 @@ import com.example.myapplication.model.PhoneSnapshotSections
 import com.example.myapplication.model.PromptMode
 import com.example.myapplication.model.ProviderApiProtocol
 import com.example.myapplication.model.ProviderSettings
+import com.example.myapplication.model.RoleplayDiaryDraft
 import com.example.myapplication.model.RoleplaySuggestionUiModel
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
@@ -117,6 +118,20 @@ interface AiPromptExtrasService {
         provider: ProviderSettings? = null,
         longformMode: Boolean = false,
     ): List<RoleplaySuggestionUiModel>
+
+    suspend fun generateRoleplayDiaries(
+        characterContext: String,
+        scenarioContext: String,
+        conversationExcerpt: String,
+        characterName: String,
+        userName: String,
+        todayLabel: String,
+        baseUrl: String,
+        apiKey: String,
+        modelId: String,
+        apiProtocol: ProviderApiProtocol = ProviderApiProtocol.OPENAI_COMPATIBLE,
+        provider: ProviderSettings? = null,
+    ): List<RoleplayDiaryDraft> = emptyList()
 
     suspend fun generateGiftImagePrompt(
         giftName: String,
@@ -583,6 +598,109 @@ class DefaultAiPromptExtrasService(
             apiProtocol = apiProtocol,
             provider = provider,
         ).trim()
+    }
+
+    override suspend fun generateRoleplayDiaries(
+        characterContext: String,
+        scenarioContext: String,
+        conversationExcerpt: String,
+        characterName: String,
+        userName: String,
+        todayLabel: String,
+        baseUrl: String,
+        apiKey: String,
+        modelId: String,
+        apiProtocol: ProviderApiProtocol,
+        provider: ProviderSettings?,
+    ): List<RoleplayDiaryDraft> {
+        val prompt = buildString {
+            appendLine("# 你的任务")
+            appendLine("你是一个虚拟生活模拟器和故事作家。")
+            appendLine("你的任务是扮演角色“$characterName”，并根据其人设、记忆、世界设定和最近的互动，虚构出【5到8篇】TA最近可能会写的日记。")
+            appendLine()
+            appendLine("# 核心规则")
+            appendLine("1. 【时间（最高优先级）】")
+            appendLine("- 今天的日期是 $todayLabel。")
+            appendLine("- 你生成的所有日记标题日期，必须是今天或今天以前的日期。")
+            appendLine("- 绝对禁止生成任何未来日期。")
+            appendLine("2. 【沉浸感】")
+            appendLine("- 每篇日记都必须使用第一人称视角“我”来写。")
+            appendLine("- 绝对禁止把自己写成第三人称“他/她/TA”。")
+            appendLine("- 内容必须像角色私下写给自己的秘密记录，而不是剧情总结。")
+            appendLine("3. 【长度】")
+            appendLine("- 每篇正文不少于 300 字。")
+            appendLine("4. 【格式铁律（最高优先级）】")
+            appendLine("- 你的回复必须且只能是一个 JSON 数组字符串。")
+            appendLine("- 回复必须以 `[` 开始，并以 `]` 结束。")
+            appendLine("- 绝对禁止在 JSON 前后添加解释、标题、Markdown 代码块或额外文字。")
+            appendLine("- 数组元素格式固定为：{\"title\":\"...\",\"content\":\"...\"}。")
+            appendLine("5. 【占位符替换（最高优先级）】")
+            appendLine("- 日记内容里绝对不能出现 `{{user}}`。")
+            appendLine("- 你必须使用“$userName”来指代聊天对象。")
+            appendLine("6. 【日记专属标记语法（必须使用）】")
+            appendLine("- `**加粗文字**`：强调。")
+            appendLine("- `~~划掉的文字~~`：改变主意或自我否定。")
+            appendLine("- `!h{黄色高亮}`：标记关键词或重要信息。")
+            appendLine("- `!u{粉色下划线}`：标注人名、地名或特殊名词。")
+            appendLine("- `!e{粉色强调}`：表达强烈情绪。")
+            appendLine("- `!w{手写体}`：写下引言、歌词或特殊笔记。")
+            appendLine("- `!m{凌乱手写体}`：表达激动、慌乱或潦草记录。")
+            appendLine("- `||涂黑||`：隐藏秘密或敏感词汇，每次涂黑 2 到 5 个字。")
+            appendLine("7. 【内容约束】")
+            appendLine("- 所有内容必须基于给定的人设、记忆、关系、剧情和最近对话自然推导。")
+            appendLine("- 可以适度扩展，但不能脱离上下文乱编。")
+            appendLine("- 多篇日记之间要体现时间推进和情绪变化，不要写成同一件事的重复改写。")
+            appendLine()
+            if (characterContext.isNotBlank()) {
+                appendLine("# 角色与长期上下文")
+                appendLine(characterContext.trim())
+                appendLine()
+            }
+            if (scenarioContext.isNotBlank()) {
+                appendLine("# 当前场景")
+                appendLine(scenarioContext.trim())
+                appendLine()
+            }
+            if (conversationExcerpt.isNotBlank()) {
+                appendLine("# 最近互动记录")
+                appendLine(conversationExcerpt.trim())
+                appendLine()
+            }
+            appendLine("现在，请开始输出这组充满真情实感、并熟练运用了日记标记语法的角色日记。")
+        }
+        val content = requestCompletionContent(
+            baseUrl = baseUrl,
+            apiKey = apiKey,
+            operation = "角色日记生成失败",
+            request = buildRequestWithRoleplaySampling(
+                model = modelId,
+                messages = listOf(ChatMessageDto(role = "user", content = prompt)),
+                baseUrl = baseUrl,
+                apiProtocol = apiProtocol,
+            ),
+            apiProtocol = apiProtocol,
+            provider = provider,
+            allowRoleplaySamplingFallback = true,
+        ).trim()
+        if (content.isBlank()) {
+            return emptyList()
+        }
+        val cleaned = stripMarkdownCodeFence(content)
+        val parsedArray = runCatching { JsonParser.parseString(cleaned).asJsonArray }.getOrNull()
+            ?: return emptyList()
+        return parsedArray.mapNotNull { element ->
+            val item = element.asJsonObjectOrNull() ?: return@mapNotNull null
+            val title = item.stringValue("title")
+            val body = item.stringValue("content")
+            if (title.isBlank() || body.isBlank()) {
+                null
+            } else {
+                RoleplayDiaryDraft(
+                    title = title,
+                    content = body,
+                )
+            }
+        }
     }
 
     override suspend fun condenseRoleplayMemories(

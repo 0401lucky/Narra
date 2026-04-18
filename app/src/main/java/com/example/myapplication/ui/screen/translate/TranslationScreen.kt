@@ -51,9 +51,11 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalClipboard
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import com.example.myapplication.R
 import com.example.myapplication.model.TranslationHistoryEntry
 import com.example.myapplication.ui.component.AppSnackbarHost
 import com.example.myapplication.ui.component.ModelIcon
@@ -114,19 +116,19 @@ fun TranslationScreen(
                     NarraIconButton(onClick = onNavigateBack) {
                         Icon(
                             imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = "返回",
+                            contentDescription = stringResource(R.string.common_back),
                         )
                     }
                 },
                 title = {
-                    Text("翻译")
+                    Text(stringResource(R.string.translation_screen_title))
                 },
                 actions = {
                     if (uiState.history.isNotEmpty()) {
                         NarraIconButton(onClick = { showHistorySheet = true }) {
                             Icon(
                                 imageVector = Icons.Default.History,
-                                contentDescription = "翻译记录",
+                                contentDescription = stringResource(R.string.translation_history_cd),
                             )
                         }
                     }
@@ -139,7 +141,7 @@ fun TranslationScreen(
                         } else {
                             Icon(
                                 imageVector = Icons.Default.Translate,
-                                contentDescription = "选择翻译模型",
+                                contentDescription = stringResource(R.string.translation_select_model_cd),
                             )
                         }
                     }
@@ -174,7 +176,7 @@ fun TranslationScreen(
                     onValueChange = onInputTextChange,
                     modifier = Modifier.fillMaxWidth(),
                     placeholder = {
-                        Text("请输入要翻译的文本...")
+                        Text(stringResource(R.string.translation_input_placeholder))
                     },
                     minLines = 8,
                     maxLines = 14,
@@ -194,7 +196,7 @@ fun TranslationScreen(
                     shape = RoundedCornerShape(999.dp),
                 ) {
                     Icon(Icons.Default.ContentPaste, contentDescription = null)
-                    Text("粘贴文本", modifier = Modifier.padding(start = 8.dp))
+                    Text(stringResource(R.string.translation_paste_text), modifier = Modifier.padding(start = 8.dp))
                 }
             }
 
@@ -205,7 +207,10 @@ fun TranslationScreen(
             item {
                 if (uiState.inputText.isNotBlank()) {
                     Text(
-                        text = "自动检测：${uiState.detectedSourceLanguageLabel}",
+                        text = stringResource(
+                            R.string.translation_auto_detect_label,
+                            uiState.detectedSourceLanguageLabel,
+                        ),
                         style = MaterialTheme.typography.labelLarge,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
@@ -215,9 +220,13 @@ fun TranslationScreen(
             item {
                 Text(
                     text = uiState.translatedText.ifBlank {
-                        if (uiState.isTranslating) "翻译中…" else "翻译结果将显示在这里"
+                        if (uiState.isTranslating) {
+                            stringResource(R.string.translation_result_loading)
+                        } else {
+                            stringResource(R.string.translation_result_placeholder)
+                        }
                     },
-                    style = MaterialTheme.typography.headlineSmall,
+                    style = MaterialTheme.typography.titleMedium,
                     color = MaterialTheme.colorScheme.onSurface,
                 )
             }
@@ -230,7 +239,7 @@ fun TranslationScreen(
                         },
                     ) {
                         Icon(Icons.Default.ContentCopy, contentDescription = null)
-                        Text("复制翻译结果", modifier = Modifier.padding(start = 8.dp))
+                        Text(stringResource(R.string.translation_copy_result), modifier = Modifier.padding(start = 8.dp))
                     }
                 }
             }
@@ -239,7 +248,7 @@ fun TranslationScreen(
 
     if (showLanguageSheet) {
         SelectionSheet(
-            title = "选择目标语言",
+            title = stringResource(R.string.translation_choose_target_language),
             options = supportedLanguages.filterNot { it == DefaultAutoDetectLanguage },
             currentValue = uiState.targetLanguage,
             onDismissRequest = { showLanguageSheet = false },
@@ -252,7 +261,7 @@ fun TranslationScreen(
 
     if (showModelSheet) {
         SelectionSheet(
-            title = "选择翻译模型",
+            title = stringResource(R.string.translation_choose_model),
             options = uiState.availableModels,
             currentValue = uiState.activeModelName,
             onDismissRequest = { showModelSheet = false },
@@ -318,10 +327,10 @@ private fun TranslationBottomBar(
                         modifier = Modifier.size(18.dp),
                         strokeWidth = 2.dp,
                     )
-                    Text("取消", modifier = Modifier.padding(start = 8.dp))
+                    Text(stringResource(R.string.common_cancel), modifier = Modifier.padding(start = 8.dp))
                 } else {
                     Icon(Icons.Default.Translate, contentDescription = null)
-                    Text("翻译", modifier = Modifier.padding(start = 8.dp))
+                    Text(stringResource(R.string.translation_action_start), modifier = Modifier.padding(start = 8.dp))
                 }
             }
         }
@@ -407,12 +416,12 @@ private fun TranslationHistorySheet(
                     horizontalArrangement = Arrangement.SpaceBetween,
                 ) {
                     Text(
-                        text = "翻译记录",
+                        text = stringResource(R.string.translation_history_title),
                         style = MaterialTheme.typography.titleLarge,
                     )
                     if (history.isNotEmpty()) {
                         NarraOutlinedButton(onClick = onClearHistory) {
-                            Text("清空记录")
+                            Text(stringResource(R.string.translation_history_clear))
                         }
                     }
                 }
@@ -424,7 +433,7 @@ private fun TranslationHistorySheet(
                     onValueChange = onHistorySearchQueryChange,
                     modifier = Modifier.fillMaxWidth(),
                     singleLine = true,
-                    placeholder = { Text("搜索原文、译文、语言或模型") },
+                    placeholder = { Text(stringResource(R.string.translation_history_search_placeholder)) },
                     leadingIcon = {
                         Icon(Icons.Default.Search, contentDescription = null)
                     },
@@ -434,7 +443,7 @@ private fun TranslationHistorySheet(
             if (history.isEmpty()) {
                 item {
                     Text(
-                        text = "暂无匹配记录",
+                        text = stringResource(R.string.translation_history_empty),
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
@@ -452,7 +461,11 @@ private fun TranslationHistorySheet(
                             verticalArrangement = Arrangement.spacedBy(8.dp),
                         ) {
                             Text(
-                                text = "${entry.sourceLanguage} → ${entry.targetLanguage}",
+                                text = stringResource(
+                                    R.string.translation_history_lang_pair,
+                                    entry.sourceLanguage,
+                                    entry.targetLanguage,
+                                ),
                                 style = MaterialTheme.typography.labelLarge,
                                 color = MaterialTheme.colorScheme.primary,
                             )

@@ -1,4 +1,4 @@
-package com.example.myapplication.ui.screen.chat
+﻿package com.example.myapplication.ui.screen.chat
 
 import com.example.myapplication.ui.component.*
 
@@ -50,6 +50,8 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.res.stringResource
+import com.example.myapplication.R
 import com.example.myapplication.model.ModelAbility
 import com.example.myapplication.model.ModelInfo
 import com.example.myapplication.model.ProviderSettings
@@ -101,11 +103,11 @@ internal fun ReasoningBudgetSheet(
         ) {
             Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
                 Text(
-                    text = "思考",
+                    text = stringResource(R.string.model_thinking_title),
                     style = MaterialTheme.typography.titleLarge,
                 )
                 Text(
-                    text = if (canAdjustThinkingBudget) "调节思考强度，发送下一条消息时生效" else "是否返回思考过程取决于服务端设置",
+                    text = if (canAdjustThinkingBudget) stringResource(R.string.model_thinking_adjustable_hint) else stringResource(R.string.model_thinking_server_hint),
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
@@ -113,8 +115,8 @@ internal fun ReasoningBudgetSheet(
 
             if (provider == null || currentModel.isBlank() || !selectedModelSupportsReasoning) {
                 NoticeCard(
-                    title = "当前模型未开启思考",
-                    body = "请先选择支持推理能力的模型。",
+                    title = stringResource(R.string.model_thinking_not_enabled_title),
+                    body = stringResource(R.string.model_thinking_not_enabled_body),
                     containerColor = MaterialTheme.colorScheme.secondaryContainer,
                     contentColor = MaterialTheme.colorScheme.onSecondaryContainer,
                 )
@@ -140,7 +142,7 @@ internal fun ReasoningBudgetSheet(
                             verticalArrangement = Arrangement.spacedBy(6.dp),
                         ) {
                             Text(
-                                text = provider.name.ifBlank { "当前提供商" },
+                                text = provider.name.ifBlank { stringResource(R.string.model_current_provider) },
                                 style = MaterialTheme.typography.titleMedium,
                             )
                             Text(
@@ -159,14 +161,14 @@ internal fun ReasoningBudgetSheet(
                 if (canAdjustThinkingBudget) {
                     Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
                         Text(
-                            text = "思考程度",
+                            text = stringResource(R.string.model_thinking_degree),
                             style = MaterialTheme.typography.titleMedium,
                         )
                         ReasoningBudgetPreset.entries.forEach { preset ->
                             SheetOptionRow(
                                 title = preset.label,
                                 supportingText = if (preset.budget == null) {
-                                    "交给模型自行分配"
+                                    stringResource(R.string.model_budget_auto)
                                 } else {
                                     "预估约 ${preset.budget} tokens"
                                 },
@@ -181,7 +183,7 @@ internal fun ReasoningBudgetSheet(
 
                 if (reasoningBudgetHint.isNotBlank()) {
                     NoticeCard(
-                        title = if (canAdjustThinkingBudget) "说明" else "接口限制",
+                        title = if (canAdjustThinkingBudget) stringResource(R.string.model_hint_adjustable) else stringResource(R.string.model_hint_api_limit),
                         body = reasoningBudgetHint,
                         containerColor = MaterialTheme.colorScheme.tertiaryContainer,
                         contentColor = MaterialTheme.colorScheme.onTertiaryContainer,
@@ -194,7 +196,7 @@ internal fun ReasoningBudgetSheet(
                         modifier = Modifier.fillMaxWidth(),
                         enabled = !isSavingModel,
                     ) {
-                        Text("知道了")
+                        Text(stringResource(R.string.model_got_it))
                     }
                 }
             }
@@ -313,7 +315,7 @@ internal fun ModelPickerSheet(
                             },
                             label = {
                                 Text(
-                                    text = provider.name.ifBlank { "未命名提供商" },
+                                    text = provider.name.ifBlank { stringResource(R.string.model_unnamed_provider) },
                                     maxLines = 1,
                                     overflow = TextOverflow.Ellipsis,
                                 )
@@ -334,7 +336,7 @@ internal fun ModelPickerSheet(
                 onValueChange = { searchQuery = it },
                 modifier = Modifier.fillMaxWidth(),
                 singleLine = true,
-                placeholder = { Text("输入模型名、提供商名、ID 或关键词") },
+                placeholder = { Text(stringResource(R.string.model_search_placeholder)) },
                 leadingIcon = {
                     Icon(
                         imageVector = Icons.Default.Search,
@@ -366,8 +368,8 @@ internal fun ModelPickerSheet(
             when {
                 !selectedProviderHasCredentials -> {
                     NoticeCard(
-                        title = "尚未保存连接配置",
-                        body = "请先到参数设置中补齐 Base URL 与 API Key。",
+                        title = stringResource(R.string.model_no_credentials_title),
+                        body = stringResource(R.string.model_no_credentials_body),
                         containerColor = MaterialTheme.colorScheme.errorContainer,
                         contentColor = MaterialTheme.colorScheme.onErrorContainer,
                     )
@@ -378,7 +380,7 @@ internal fun ModelPickerSheet(
                     !selectedProviderMatchesSearch &&
                     filteredModelInfos.isEmpty() -> {
                     NoticeCard(
-                        title = "已筛出提供商",
+                        title = stringResource(R.string.model_filtered_providers_title),
                         body = "上方已找到 ${matchedProviderOptions.size} 个匹配提供商，点一下对应提供商后就能查看它下面的模型。",
                         containerColor = MaterialTheme.colorScheme.tertiaryContainer,
                         contentColor = MaterialTheme.colorScheme.onTertiaryContainer,
@@ -387,8 +389,8 @@ internal fun ModelPickerSheet(
 
                 modelInfos.isEmpty() -> {
                     NoticeCard(
-                        title = "模型列表为空",
-                        body = "请到设置详情页点击「更新模型列表」获取模型。",
+                        title = stringResource(R.string.model_list_empty_title),
+                        body = stringResource(R.string.model_list_empty_body),
                         containerColor = MaterialTheme.colorScheme.secondaryContainer,
                         contentColor = MaterialTheme.colorScheme.onSecondaryContainer,
                     )
@@ -396,8 +398,8 @@ internal fun ModelPickerSheet(
 
                 filteredModelInfos.isEmpty() -> {
                     NoticeCard(
-                        title = "未找到模型",
-                        body = "换个关键词试试，或清空搜索查看所有模型。",
+                        title = stringResource(R.string.model_not_found_title),
+                        body = stringResource(R.string.model_not_found_body),
                         containerColor = MaterialTheme.colorScheme.tertiaryContainer,
                         contentColor = MaterialTheme.colorScheme.onTertiaryContainer,
                     )
@@ -523,7 +525,7 @@ internal fun SheetOptionRow(
                     )
                     if (selected) {
                         StatusPill(
-                            text = "当前",
+                            text = stringResource(R.string.model_current_label),
                             containerColor = MaterialTheme.colorScheme.secondaryContainer,
                             contentColor = MaterialTheme.colorScheme.onSecondaryContainer,
                         )

@@ -3839,6 +3839,10 @@ private class FakeRoleplayRepository(
 
     override fun observeSessions(): Flow<List<RoleplaySession>> = sessionsState
 
+    override fun observeDiaryEntries(conversationId: String): Flow<List<com.example.myapplication.model.RoleplayDiaryEntry>> {
+        return flowOf(emptyList())
+    }
+
     override fun observeConversationMessages(scenarioId: String): Flow<List<ChatMessage>> {
         return observeSessionByScenario(scenarioId).flatMapLatest { session ->
             if (session == null) {
@@ -3891,6 +3895,18 @@ private class FakeRoleplayRepository(
         return sessionsState.value.firstOrNull { it.id == sessionId }
     }
 
+    override suspend fun listDiaryEntries(conversationId: String): List<com.example.myapplication.model.RoleplayDiaryEntry> {
+        return emptyList()
+    }
+
+    override suspend fun replaceDiaryEntries(
+        conversationId: String,
+        scenarioId: String,
+        entries: List<com.example.myapplication.model.RoleplayDiaryDraft>,
+    ): List<com.example.myapplication.model.RoleplayDiaryEntry> {
+        return emptyList()
+    }
+
     override suspend fun getOnlineMeta(conversationId: String): com.example.myapplication.model.RoleplayOnlineMeta? {
         return onlineMetaState.value[conversationId]
     }
@@ -3906,6 +3922,8 @@ private class FakeRoleplayRepository(
             remove(conversationId)
         }
     }
+
+    override suspend fun deleteDiaryEntriesForConversation(conversationId: String) = Unit
 }
 
 @OptIn(ExperimentalCoroutinesApi::class)
@@ -3935,6 +3953,10 @@ private class DelayedStartRoleplayRepository(
     }
 
     override fun observeSessions(): Flow<List<RoleplaySession>> = sessionsState
+
+    override fun observeDiaryEntries(conversationId: String): Flow<List<com.example.myapplication.model.RoleplayDiaryEntry>> {
+        return flowOf(emptyList())
+    }
 
     override fun observeConversationMessages(scenarioId: String): Flow<List<ChatMessage>> {
         return observeSessionByScenario(scenarioId).flatMapLatest { session ->
@@ -3989,6 +4011,18 @@ private class DelayedStartRoleplayRepository(
         return sessionsState.value.firstOrNull { it.id == sessionId }
     }
 
+    override suspend fun listDiaryEntries(conversationId: String): List<com.example.myapplication.model.RoleplayDiaryEntry> {
+        return emptyList()
+    }
+
+    override suspend fun replaceDiaryEntries(
+        conversationId: String,
+        scenarioId: String,
+        entries: List<com.example.myapplication.model.RoleplayDiaryDraft>,
+    ): List<com.example.myapplication.model.RoleplayDiaryEntry> {
+        return emptyList()
+    }
+
     override suspend fun getOnlineMeta(conversationId: String): com.example.myapplication.model.RoleplayOnlineMeta? {
         return onlineMetaState.value[conversationId]
     }
@@ -4004,4 +4038,6 @@ private class DelayedStartRoleplayRepository(
             remove(conversationId)
         }
     }
+
+    override suspend fun deleteDiaryEntriesForConversation(conversationId: String) = Unit
 }

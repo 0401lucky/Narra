@@ -1,4 +1,4 @@
-package com.example.myapplication.ui.screen.chat
+﻿package com.example.myapplication.ui.screen.chat
 
 import com.example.myapplication.ui.component.*
 
@@ -32,6 +32,8 @@ import androidx.compose.ui.platform.LocalClipboard
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.res.stringResource
+import com.example.myapplication.R
 import com.example.myapplication.model.AttachmentType
 import com.example.myapplication.model.ChatMessage
 import com.example.myapplication.model.ChatMessagePart
@@ -96,7 +98,7 @@ fun TranslationResultSheet(
         ) {
             Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
                 Text(
-                    text = "翻译结果",
+                    text = stringResource(R.string.translation_result),
                     style = MaterialTheme.typography.titleLarge,
                 )
                 Text(
@@ -115,13 +117,13 @@ fun TranslationResultSheet(
             }
 
             SheetPreviewCard(
-                title = "原文",
+                title = stringResource(R.string.translation_original),
                 body = translation.sourceText,
             )
 
             SheetPreviewCard(
-                title = if (translation.isLoading) "译文生成中" else "译文",
-                body = if (translation.isLoading) "正在调用翻译模型…" else translation.translatedText,
+                title = if (translation.isLoading) stringResource(R.string.translation_translating) else stringResource(R.string.translation_translated),
+                body = if (translation.isLoading) stringResource(R.string.translation_loading_hint) else translation.translatedText,
             )
 
             Row(
@@ -135,14 +137,14 @@ fun TranslationResultSheet(
                     modifier = Modifier.weight(1f),
                     enabled = !translation.isLoading && translation.translatedText.isNotBlank(),
                 ) {
-                    Text("复制")
+                    Text(stringResource(R.string.translation_copy))
                 }
                 NarraOutlinedButton(
                     onClick = onReplaceInput,
                     modifier = Modifier.weight(1f),
                     enabled = !translation.isLoading && translation.translatedText.isNotBlank(),
                 ) {
-                    Text("替换输入框")
+                    Text(stringResource(R.string.translation_replace_input))
                 }
             }
 
@@ -155,14 +157,14 @@ fun TranslationResultSheet(
                     modifier = Modifier.weight(1f),
                     enabled = !translation.isLoading && translation.translatedText.isNotBlank(),
                 ) {
-                    Text("插入输入框")
+                    Text(stringResource(R.string.translation_insert_input))
                 }
                 NarraButton(
                     onClick = onSendAsMessage,
                     modifier = Modifier.weight(1f),
                     enabled = !translation.isLoading && translation.translatedText.isNotBlank(),
                 ) {
-                    Text("发送译文")
+                    Text(stringResource(R.string.translation_send))
                 }
             }
         }
@@ -195,32 +197,32 @@ fun ConversationExportSheet(
         ) {
             Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
                 Text(
-                    text = "导出与分享",
+                    text = stringResource(R.string.export_title),
                     style = MaterialTheme.typography.titleLarge,
                 )
                 Text(
-                    text = title.ifBlank { "未命名会话" },
+                    text = title.ifBlank { stringResource(R.string.export_unnamed_conversation) },
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
 
             ExportOptionRow(
-                title = "包含思考内容",
+                title = stringResource(R.string.export_include_thinking),
                 checked = options.includeReasoning,
                 onCheckedChange = {
                     onUpdateOptions(options.copy(includeReasoning = it))
                 },
             )
             ExportOptionRow(
-                title = "包含模型名称",
+                title = stringResource(R.string.export_include_model_name),
                 checked = options.includeModelName,
                 onCheckedChange = {
                     onUpdateOptions(options.copy(includeModelName = it))
                 },
             )
             ExportOptionRow(
-                title = "包含图片链接",
+                title = stringResource(R.string.export_include_image_links),
                 checked = options.includeImageLinks,
                 onCheckedChange = {
                     onUpdateOptions(options.copy(includeImageLinks = it))
@@ -235,13 +237,13 @@ fun ConversationExportSheet(
                     onClick = onCopyPlainText,
                     modifier = Modifier.weight(1f),
                 ) {
-                    Text("复制纯文本")
+                    Text(stringResource(R.string.export_copy_plain_text))
                 }
                 NarraOutlinedButton(
                     onClick = onShareConversation,
                     modifier = Modifier.weight(1f),
                 ) {
-                    Text("系统分享")
+                    Text(stringResource(R.string.export_system_share))
                 }
             }
 
@@ -249,7 +251,7 @@ fun ConversationExportSheet(
                 onClick = onExportMarkdown,
                 modifier = Modifier.fillMaxWidth(),
             ) {
-                Text("导出 Markdown")
+                Text(stringResource(R.string.export_markdown))
             }
         }
     }
@@ -308,7 +310,7 @@ private fun SheetPreviewCard(
                 fontWeight = FontWeight.SemiBold,
             )
             Text(
-                text = body.ifBlank { "暂无内容" },
+                text = body.ifBlank { stringResource(R.string.export_no_content) },
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurface,
                 maxLines = 8,

@@ -57,18 +57,10 @@ import kotlin.math.roundToInt
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
-// 调色板缓存：访问顺序驱逐，避免热点场景被随机移除
-private val paletteCache = object : LinkedHashMap<String, ImmersiveGlassPalette>(
-    ImmersivePaletteCacheMaxEntries,
-    0.75f,
-    true,
-) {
-    override fun removeEldestEntry(
-        eldest: MutableMap.MutableEntry<String, ImmersiveGlassPalette>?,
-    ): Boolean {
-        return size > ImmersivePaletteCacheMaxEntries
-    }
-}
+// 调色板缓存：LRU 驱逐，避免热点场景被随机移除。
+// androidx.collection.LruCache 内置线程安全且语义更贴 Android 生态。
+private val paletteCache =
+    androidx.collection.LruCache<String, ImmersiveGlassPalette>(ImmersivePaletteCacheMaxEntries)
 
 @Immutable
 data class ImmersiveGlassPalette(
@@ -172,18 +164,14 @@ fun rememberImmersiveBackdropState(
 }
 
 private fun readPaletteCache(key: String): ImmersiveGlassPalette? {
-    return synchronized(paletteCache) {
-        paletteCache[key]
-    }
+    return paletteCache.get(key)
 }
 
 private fun writePaletteCache(
     key: String,
     palette: ImmersiveGlassPalette,
 ) {
-    synchronized(paletteCache) {
-        paletteCache[key] = palette
-    }
+    paletteCache.put(key, palette)
 }
 
 @Composable
@@ -192,65 +180,73 @@ fun ImmersiveBackdrop(
     modifier: Modifier = Modifier,
 ) {
     Box(modifier = modifier.fillMaxSize()) {
-        if (backdropState.imageBitmap != null) {
-            Image(
-                bitmap = backdropState.imageBitmap,
-                contentDescription = null,
-                modifier = Modifier.fillMaxSize(),
-                contentScale = ContentScale.Crop,
-            )
-        } else {
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .background(
-                        Brush.verticalGradient(
-                            colors = listOf(
-                                Color(0xFF1A2744),
-                                Color(0xFF12203A),
-                            )
-                        )
-                    )
-            ) {
-                // 左上角蓝色光晕
-                Box(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .background(
-                            Brush.radialGradient(
-                                colors = listOf(Color(0xFF3B6B9F).copy(alpha = 0.35f), Color.Transparent),
-                                radius = backdropState.screenSize.width * 1.5f,
-                                center = Offset(0f, 0f)
-                            )
-                        )
+        // 背景图切换时使用 Crossfade 过渡，避免场景切换/首次加载时的突兀替换。
+        // 320ms 与 produceState 异步计算调色板的感知时延接近，体验上"调色板与底图同步"。
+        androidx.compose.animation.Crossfade(
+            targetState = backdropState.imageBitmap,
+            animationSpec = androidx.compose.animation.core.tween(durationMillis = 320),
+            label = "immersive_backdrop_crossfade",
+        ) { bitmap ->
+            if (bitmap != null) {
+                Image(
+                    bitmap = bitmap,
+                    contentDescription = null,
+                    modifier = Modifier.fillMaxSize(),
+                    contentScale = ContentScale.Crop,
                 )
-                // 右下角紫色光晕
+            } else {
                 Box(
                     modifier = Modifier
                         .fillMaxSize()
                         .background(
-                            Brush.radialGradient(
-                                colors = listOf(Color(0xFF6D4AAE).copy(alpha = 0.18f), Color.Transparent),
-                                radius = backdropState.screenSize.width * 1.2f,
-                                center = Offset(backdropState.screenSize.width.toFloat(), backdropState.screenSize.height.toFloat())
-                            )
-                        )
-                )
-                // 中心暖色点缀
-                Box(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .background(
-                            Brush.radialGradient(
-                                colors = listOf(Color(0xFF5C7EA3).copy(alpha = 0.12f), Color.Transparent),
-                                radius = backdropState.screenSize.width * 0.8f,
-                                center = Offset(
-                                    backdropState.screenSize.width * 0.5f,
-                                    backdropState.screenSize.height * 0.3f,
+                            Brush.verticalGradient(
+                                colors = listOf(
+                                    Color(0xFF1A2744),
+                                    Color(0xFF12203A),
                                 )
                             )
                         )
-                )
+                ) {
+                    // 左上角蓝色光晕
+                    Box(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .background(
+                                Brush.radialGradient(
+                                    colors = listOf(Color(0xFF3B6B9F).copy(alpha = 0.35f), Color.Transparent),
+                                    radius = backdropState.screenSize.width * 1.5f,
+                                    center = Offset(0f, 0f)
+                                )
+                            )
+                    )
+                    // 右下角紫色光晕
+                    Box(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .background(
+                                Brush.radialGradient(
+                                    colors = listOf(Color(0xFF6D4AAE).copy(alpha = 0.18f), Color.Transparent),
+                                    radius = backdropState.screenSize.width * 1.2f,
+                                    center = Offset(backdropState.screenSize.width.toFloat(), backdropState.screenSize.height.toFloat())
+                                )
+                            )
+                    )
+                    // 中心暖色点缀
+                    Box(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .background(
+                                Brush.radialGradient(
+                                    colors = listOf(Color(0xFF5C7EA3).copy(alpha = 0.12f), Color.Transparent),
+                                    radius = backdropState.screenSize.width * 0.8f,
+                                    center = Offset(
+                                        backdropState.screenSize.width * 0.5f,
+                                        backdropState.screenSize.height * 0.3f,
+                                    )
+                                )
+                            )
+                    )
+                }
             }
         }
     }
@@ -425,88 +421,155 @@ private fun deriveImmersiveGlassPalette(
     val baseHsl = FloatArray(3)
     ColorUtils.colorToHSL(sampled.toArgb(), baseHsl)
     val hue = baseHsl[0]
+    val baseSaturation = baseHsl[1]
 
-    // 高对比度模式：提高饱和度和明度差异，增强可读性
-    val contrastMultiplier = if (highContrast) 1.5f else 1.0f
-    val panelSaturation = ((baseHsl[1] * 0.62f) * contrastMultiplier).coerceIn(
-        if (highContrast) 0.25f else 0.12f,
-        if (highContrast) 0.50f else 0.34f,
-    )
-    val panelLightness = ((baseHsl[2] * 0.56f) * contrastMultiplier).coerceIn(
-        if (highContrast) 0.12f else 0.18f,
-        if (highContrast) 0.40f else 0.34f,
-    )
+    val profile = if (highContrast) HighContrastProfile else NormalContrastProfile
+
+    val panelSaturation = (baseSaturation * 0.62f * profile.contrastMultiplier)
+        .coerceIn(profile.panelSatRange)
+    val panelLightness = (baseHsl[2] * 0.56f * profile.contrastMultiplier)
+        .coerceIn(profile.panelLightRange)
 
     val panelTint = colorFromHsl(
         hue = hue,
         saturation = panelSaturation,
-        lightness = (panelLightness + 0.06f).coerceAtMost(if (highContrast) 0.30f else 0.40f),
+        lightness = (panelLightness + 0.06f).coerceAtMost(profile.panelTintLightnessMax),
     )
     val panelTintStrong = colorFromHsl(
         hue = hue,
-        saturation = (panelSaturation + 0.03f).coerceAtMost(if (highContrast) 0.55f else 0.38f),
+        saturation = (panelSaturation + 0.03f).coerceAtMost(profile.panelStrongSatMax),
         lightness = panelLightness,
     )
     val characterAccent = colorFromHsl(
         hue = hue,
-        saturation = ((baseHsl[1] * 0.9f) * contrastMultiplier).coerceIn(
-            if (highContrast) 0.40f else 0.28f,
-            if (highContrast) 0.75f else 0.62f,
-        ),
-        lightness = if (highContrast) 0.85f else 0.76f,
+        saturation = (baseSaturation * 0.9f * profile.contrastMultiplier)
+            .coerceIn(profile.characterAccentSatRange),
+        lightness = profile.characterAccentLightness,
     )
     val userAccent = colorFromHsl(
         hue = (hue + 18f) % 360f,
-        saturation = ((baseHsl[1] * 0.58f) * contrastMultiplier).coerceIn(
-            if (highContrast) 0.30f else 0.18f,
-            if (highContrast) 0.55f else 0.42f,
-        ),
-        lightness = if (highContrast) 0.88f else 0.80f,
+        saturation = (baseSaturation * 0.58f * profile.contrastMultiplier)
+            .coerceIn(profile.userAccentSatRange),
+        lightness = profile.userAccentLightness,
     )
-    val onGlass = if (highContrast) Color(0xFFFFFFFF) else Color(0xFFF8FBFF)
-    val onGlassMuted = if (highContrast) {
-        lerp(onGlass, characterAccent, 0.10f).copy(alpha = 0.92f)
-    } else {
-        lerp(onGlass, characterAccent, 0.18f).copy(alpha = 0.78f)
-    }
-    val chipTint = if (highContrast) {
-        lerp(panelTintStrong, characterAccent, 0.20f).copy(alpha = 0.96f)
-    } else {
-        lerp(panelTintStrong, characterAccent, 0.30f).copy(alpha = 0.92f)
-    }
-    val thoughtText = if (highContrast) {
-        lerp(onGlassMuted, userAccent, 0.15f).copy(alpha = 0.95f)
-    } else {
-        lerp(onGlassMuted, userAccent, 0.22f).copy(alpha = 0.88f)
-    }
-
-    // 高对比度：增强边框、阴影和 scrim
-    val borderAlpha = if (highContrast) 0.35f else 0.15f
-    val shadowAlpha = if (highContrast) 0.55f else 0.36f
-    val scrimTopAlpha = if (highContrast) 0.30f else 0.16f
-    val scrimBottomAlpha = if (highContrast) 0.60f else 0.40f
-    val readingSurfaceAlpha = if (highContrast) 0.90f else 0.78f
-    val readingBorderAlpha = if (highContrast) 0.45f else 0.22f
+    val onGlass = profile.onGlass
+    val onGlassMuted = lerp(onGlass, characterAccent, profile.onGlassMutedBlend)
+        .copy(alpha = profile.onGlassMutedAlpha)
+    val chipTint = lerp(panelTintStrong, characterAccent, profile.chipTintBlend)
+        .copy(alpha = profile.chipTintAlpha)
+    val thoughtText = lerp(onGlassMuted, userAccent, profile.thoughtTextBlend)
+        .copy(alpha = profile.thoughtTextAlpha)
 
     return ImmersiveGlassPalette(
-        panelTint = panelTint.copy(alpha = if (highContrast) 0.88f else 0.62f),
-        panelTintStrong = panelTintStrong.copy(alpha = if (highContrast) 0.94f else 0.88f),
-        panelHighlight = Color.White.copy(alpha = if (highContrast) 0.28f else 0.24f),
-        panelBorder = Color.White.copy(alpha = borderAlpha),
-        shadowColor = Color.Black.copy(alpha = shadowAlpha),
-        scrimTop = Color.Black.copy(alpha = scrimTopAlpha),
-        scrimBottom = Color.Black.copy(alpha = scrimBottomAlpha),
+        panelTint = panelTint.copy(alpha = profile.panelTintAlpha),
+        panelTintStrong = panelTintStrong.copy(alpha = profile.panelTintStrongAlpha),
+        panelHighlight = Color.White.copy(alpha = profile.panelHighlightAlpha),
+        panelBorder = Color.White.copy(alpha = profile.borderAlpha),
+        shadowColor = Color.Black.copy(alpha = profile.shadowAlpha),
+        scrimTop = Color.Black.copy(alpha = profile.scrimTopAlpha),
+        scrimBottom = Color.Black.copy(alpha = profile.scrimBottomAlpha),
         onGlass = onGlass,
         onGlassMuted = onGlassMuted,
         chipTint = chipTint,
-        chipText = Color.White.copy(alpha = if (highContrast) 1.0f else 0.96f),
+        chipText = Color.White.copy(alpha = profile.chipTextAlpha),
         characterAccent = characterAccent,
         userAccent = userAccent,
         thoughtText = thoughtText,
-        readingSurface = panelTintStrong.copy(alpha = readingSurfaceAlpha),
-        readingBorder = characterAccent.copy(alpha = readingBorderAlpha),
+        readingSurface = panelTintStrong.copy(alpha = profile.readingSurfaceAlpha),
+        readingBorder = characterAccent.copy(alpha = profile.readingBorderAlpha),
     )
 }
+
+/**
+ * 高/低对比度两组阈值打包成一个数据结构，避免 deriveImmersiveGlassPalette 里
+ * 到处写 `if (highContrast) A else B`。
+ */
+private data class ImmersiveContrastProfile(
+    val contrastMultiplier: Float,
+    val panelSatRange: ClosedFloatingPointRange<Float>,
+    val panelLightRange: ClosedFloatingPointRange<Float>,
+    val panelTintLightnessMax: Float,
+    val panelStrongSatMax: Float,
+    val characterAccentSatRange: ClosedFloatingPointRange<Float>,
+    val characterAccentLightness: Float,
+    val userAccentSatRange: ClosedFloatingPointRange<Float>,
+    val userAccentLightness: Float,
+    val onGlass: Color,
+    val onGlassMutedBlend: Float,
+    val onGlassMutedAlpha: Float,
+    val chipTintBlend: Float,
+    val chipTintAlpha: Float,
+    val thoughtTextBlend: Float,
+    val thoughtTextAlpha: Float,
+    val panelTintAlpha: Float,
+    val panelTintStrongAlpha: Float,
+    val panelHighlightAlpha: Float,
+    val borderAlpha: Float,
+    val shadowAlpha: Float,
+    val scrimTopAlpha: Float,
+    val scrimBottomAlpha: Float,
+    val chipTextAlpha: Float,
+    val readingSurfaceAlpha: Float,
+    val readingBorderAlpha: Float,
+)
+
+private val NormalContrastProfile = ImmersiveContrastProfile(
+    contrastMultiplier = 1.0f,
+    panelSatRange = 0.12f..0.34f,
+    panelLightRange = 0.18f..0.34f,
+    panelTintLightnessMax = 0.40f,
+    panelStrongSatMax = 0.38f,
+    characterAccentSatRange = 0.28f..0.62f,
+    characterAccentLightness = 0.76f,
+    userAccentSatRange = 0.18f..0.42f,
+    userAccentLightness = 0.80f,
+    onGlass = Color(0xFFF8FBFF),
+    onGlassMutedBlend = 0.18f,
+    onGlassMutedAlpha = 0.78f,
+    chipTintBlend = 0.30f,
+    chipTintAlpha = 0.92f,
+    thoughtTextBlend = 0.22f,
+    thoughtTextAlpha = 0.88f,
+    panelTintAlpha = 0.62f,
+    panelTintStrongAlpha = 0.88f,
+    panelHighlightAlpha = 0.24f,
+    borderAlpha = 0.15f,
+    shadowAlpha = 0.36f,
+    scrimTopAlpha = 0.16f,
+    scrimBottomAlpha = 0.40f,
+    chipTextAlpha = 0.96f,
+    readingSurfaceAlpha = 0.78f,
+    readingBorderAlpha = 0.22f,
+)
+
+private val HighContrastProfile = ImmersiveContrastProfile(
+    contrastMultiplier = 1.5f,
+    panelSatRange = 0.25f..0.50f,
+    panelLightRange = 0.12f..0.40f,
+    panelTintLightnessMax = 0.30f,
+    panelStrongSatMax = 0.55f,
+    characterAccentSatRange = 0.40f..0.75f,
+    characterAccentLightness = 0.85f,
+    userAccentSatRange = 0.30f..0.55f,
+    userAccentLightness = 0.88f,
+    onGlass = Color(0xFFFFFFFF),
+    onGlassMutedBlend = 0.10f,
+    onGlassMutedAlpha = 0.92f,
+    chipTintBlend = 0.20f,
+    chipTintAlpha = 0.96f,
+    thoughtTextBlend = 0.15f,
+    thoughtTextAlpha = 0.95f,
+    panelTintAlpha = 0.88f,
+    panelTintStrongAlpha = 0.94f,
+    panelHighlightAlpha = 0.28f,
+    borderAlpha = 0.35f,
+    shadowAlpha = 0.55f,
+    scrimTopAlpha = 0.30f,
+    scrimBottomAlpha = 0.60f,
+    chipTextAlpha = 1.0f,
+    readingSurfaceAlpha = 0.90f,
+    readingBorderAlpha = 0.45f,
+)
 
 private fun colorFromHsl(
     hue: Float,

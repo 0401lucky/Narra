@@ -14,13 +14,13 @@ import com.example.myapplication.model.toPlainText
 object RoleplayTranscriptFormatter {
     private val parser = RoleplayOutputParser()
 
-    fun formatMessages(
+    fun formatMessageSegments(
         messages: List<ChatMessage>,
         userName: String,
         characterName: String,
         allowNarration: Boolean,
         interactionMode: RoleplayInteractionMode = RoleplayInteractionMode.OFFLINE_DIALOGUE,
-    ): String {
+    ): List<String> {
         return messages
             .flatMap { message ->
                 formatMessage(
@@ -31,6 +31,22 @@ object RoleplayTranscriptFormatter {
                     interactionMode = interactionMode,
                 )
             }
+    }
+
+    fun formatMessages(
+        messages: List<ChatMessage>,
+        userName: String,
+        characterName: String,
+        allowNarration: Boolean,
+        interactionMode: RoleplayInteractionMode = RoleplayInteractionMode.OFFLINE_DIALOGUE,
+    ): String {
+        return formatMessageSegments(
+            messages = messages,
+            userName = userName,
+            characterName = characterName,
+            allowNarration = allowNarration,
+            interactionMode = interactionMode,
+        )
             .joinToString(separator = "\n")
             .trim()
     }

@@ -17,9 +17,11 @@ import com.example.myapplication.conversation.ContextGovernanceSupport
 import com.example.myapplication.conversation.GiftImageGenerationCoordinator
 import com.example.myapplication.conversation.RoundTripInitialPersistence
 import com.example.myapplication.conversation.RoleplaySuggestionCoordinator
+import com.example.myapplication.conversation.RoleplayVideoCallCoordinator
 import com.example.myapplication.conversation.StreamedAssistantPayload
 import com.example.myapplication.conversation.SummaryUpdateResult
 import com.example.myapplication.conversation.persistInitialRoundTripState
+import com.example.myapplication.context.ContextPlaceholderResolver
 import com.example.myapplication.context.PromptContextAssembler
 import com.example.myapplication.data.repository.ConversationRepository
 import com.example.myapplication.data.repository.SavedImageFile
@@ -41,23 +43,18 @@ import com.example.myapplication.model.ChatMessagePart
 import com.example.myapplication.model.ChatSpecialPlayDraft
 import com.example.myapplication.model.ChatStreamEvent
 import com.example.myapplication.model.Conversation
-import com.example.myapplication.model.ContextGovernanceSnapshot
 import com.example.myapplication.model.GatewayToolingOptions
 import com.example.myapplication.model.MemoryScopeType
 import com.example.myapplication.model.MessageRole
 import com.example.myapplication.model.MessageStatus
-import com.example.myapplication.model.MemoryProposalHistoryItem
-import com.example.myapplication.model.PendingMemoryProposal
 import com.example.myapplication.model.PromptMode
+import com.example.myapplication.model.RoleplayDiaryDraft
 import com.example.myapplication.model.RoleplayOnlineEventKind
 import com.example.myapplication.model.RoleplayOutputFormat
 import com.example.myapplication.model.TransferDirection
 import com.example.myapplication.model.TransferStatus
-import com.example.myapplication.model.RoleplayContextStatus
 import com.example.myapplication.model.RoleplayInteractionMode
-import com.example.myapplication.model.RoleplayMessageUiModel
 import com.example.myapplication.model.RoleplayScenario
-import com.example.myapplication.model.RoleplaySuggestionUiModel
 import com.example.myapplication.model.RoleplaySession
 import com.example.myapplication.model.VoiceMessageDraft
 import com.example.myapplication.model.imageMessagePart
@@ -71,6 +68,7 @@ import com.example.myapplication.roleplay.RoleplayConversationSupport
 import com.example.myapplication.roleplay.RoleplayOutputParser
 import com.example.myapplication.roleplay.RoleplayPromptDecorator
 import com.example.myapplication.roleplay.RoleplayRoundTripSupport
+import com.example.myapplication.roleplay.RoleplayTimeAwarenessSupport
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.cancelAndJoin
@@ -88,45 +86,10 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 import java.util.UUID
-
-data class RoleplayUiState(
-    val settings: AppSettings = AppSettings(),
-    val scenarios: List<RoleplayScenario> = emptyList(),
-    val currentScenario: RoleplayScenario? = null,
-    val currentSession: RoleplaySession? = null,
-    val currentAssistant: Assistant? = null,
-    val contextStatus: RoleplayContextStatus = RoleplayContextStatus(),
-    val scenarioSessionIds: Set<String> = emptySet(),
-    val messages: List<RoleplayMessageUiModel> = emptyList(),
-    val suggestions: List<RoleplaySuggestionUiModel> = emptyList(),
-    val input: String = "",
-    val isSending: Boolean = false,
-    val isGeneratingSuggestions: Boolean = false,
-    val isScenarioLoading: Boolean = false,
-    val showAssistantMismatchDialog: Boolean = false,
-    val previousAssistantName: String = "",
-    val currentAssistantName: String = "",
-    val errorMessage: String? = null,
-    val noticeMessage: String? = null,
-    val latestPromptDebugDump: String = "",
-    val contextGovernance: ContextGovernanceSnapshot? = null,
-    val streamingContent: String = "",
-    val suggestionErrorMessage: String? = null,
-    val pendingMemoryProposal: PendingMemoryProposal? = null,
-    val recentMemoryProposalHistory: List<MemoryProposalHistoryItem> = emptyList(),
-    val currentModel: String = "",
-    val currentProviderId: String = "",
-    val inputFocusToken: Long = 0L,
-    val replyToMessageId: String = "",
-    val replyToPreview: String = "",
-    val replyToSpeakerName: String = "",
-    val activeVideoCallSessionId: String = "",
-    val activeVideoCallStartedAt: Long = 0L,
-) {
-    val isVideoCallActive: Boolean
-        get() = activeVideoCallSessionId.isNotBlank() && activeVideoCallStartedAt > 0L
-}
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class RoleplayViewModel(
@@ -160,6 +123,7 @@ class RoleplayViewModel(
 
     private var sendingJob: Job? = null
     private var compensationJob: Job? = null
+    private var diaryJob: Job? = null
     private val assistantRoundTripRunner = ConversationAssistantRoundTripRunner(
         conversationRepository = conversationRepository,
         aiGateway = aiGateway,
@@ -192,6 +156,11 @@ class RoleplayViewModel(
         aiGateway = aiGateway,
         conversationRepository = conversationRepository,
         imageSaver = imageSaver,
+    )
+    private val videoCallCoordinator = RoleplayVideoCallCoordinator(
+        conversationRepository = conversationRepository,
+        roleplayRepository = roleplayRepository,
+        nowProvider = nowProvider,
     )
     private val suggestionActionSupport = RoleplaySuggestionActionSupport(
         scope = viewModelScope,
@@ -326,6 +295,11 @@ class RoleplayViewModel(
         )
         observePendingMemoryProposal()
         observeMemoryProposalHistory()
+        RoleplayObservationSupport.observeDiaryEntries(
+            scope = viewModelScope,
+            roleplayRepository = roleplayRepository,
+            uiState = _uiState,
+        )
         RoleplayObservationSupport.observeCurrentMessages(
             scope = viewModelScope,
             roleplayRepository = roleplayRepository,
@@ -468,52 +442,18 @@ class RoleplayViewModel(
         viewModelScope.launch {
             try {
                 val session = ensureSessionForVideoCall(state, scenario) ?: return@launch
-                val meta = roleplayRepository.getOnlineMeta(session.conversationId)
-                val existingCallSessionId = meta?.activeVideoCallSessionId.orEmpty()
-                val existingStartedAt = meta?.activeVideoCallStartedAt ?: 0L
-                if (existingCallSessionId.isNotBlank() && existingStartedAt > 0L) {
-                    _uiState.update { current ->
-                        RoleplayStateSupport.applyVideoCallState(
-                            current = current,
-                            callSessionId = existingCallSessionId,
-                            startedAt = existingStartedAt,
-                            inputFocusToken = nowProvider(),
-                        )
-                    }
-                    return@launch
-                }
-
-                val startedAt = nowProvider()
-                val callSessionId = "video-call-${session.conversationId}-$startedAt"
                 val selectedModel = RoleplayConversationSupport.resolveSelectedModelId(_uiState.value.settings)
-                conversationRepository.appendSystemEventMessage(
+                val outcome = videoCallCoordinator.startCall(
                     conversationId = session.conversationId,
-                    message = buildVideoCallSystemMessage(
-                        conversationId = session.conversationId,
-                        createdAt = startedAt,
-                        content = "已接通视频通话",
-                        eventKind = RoleplayOnlineEventKind.VIDEO_CALL_CONNECTED,
-                    ),
                     selectedModel = selectedModel,
                 )
-                currentRawMessages.value = conversationRepository.listMessages(session.conversationId)
-                roleplayRepository.upsertOnlineMeta(
-                    com.example.myapplication.model.RoleplayOnlineMeta(
-                        conversationId = session.conversationId,
-                        lastCompensationBucket = meta?.lastCompensationBucket.orEmpty(),
-                        lastConsumedObservationUpdatedAt = meta?.lastConsumedObservationUpdatedAt ?: 0L,
-                        lastSystemEventToken = meta?.lastSystemEventToken.orEmpty(),
-                        activeVideoCallSessionId = callSessionId,
-                        activeVideoCallStartedAt = startedAt,
-                        updatedAt = startedAt,
-                    ),
-                )
+                outcome.refreshedMessages?.let { currentRawMessages.value = it }
                 _uiState.update { current ->
                     RoleplayStateSupport.applyVideoCallState(
                         current = current,
-                        callSessionId = callSessionId,
-                        startedAt = startedAt,
-                        inputFocusToken = startedAt,
+                        callSessionId = outcome.callSessionId,
+                        startedAt = outcome.startedAt,
+                        inputFocusToken = if (outcome.alreadyActive) nowProvider() else outcome.startedAt,
                     )
                 }
             } catch (throwable: Throwable) {
@@ -542,38 +482,14 @@ class RoleplayViewModel(
             try {
                 hangingSendingJob?.cancelAndJoin()
                 hangingCompensationJob?.cancelAndJoin()
-                val meta = roleplayRepository.getOnlineMeta(session.conversationId)
-                val activeCallSessionId = meta?.activeVideoCallSessionId
-                    .orEmpty()
-                    .ifBlank { state.activeVideoCallSessionId }
-                val activeStartedAt = (meta?.activeVideoCallStartedAt ?: 0L)
-                    .takeIf { it > 0L }
-                    ?: state.activeVideoCallStartedAt
-                val endedAt = nowProvider()
-                if (activeCallSessionId.isNotBlank() && activeStartedAt > 0L) {
-                    val selectedModel = RoleplayConversationSupport.resolveSelectedModelId(_uiState.value.settings)
-                    val durationText = formatVideoCallDuration(endedAt - activeStartedAt)
-                    conversationRepository.appendSystemEventMessage(
-                        conversationId = session.conversationId,
-                        message = buildVideoCallSystemMessage(
-                            conversationId = session.conversationId,
-                            createdAt = endedAt,
-                            content = "视频通话已结束，通话时长 $durationText",
-                            eventKind = RoleplayOnlineEventKind.VIDEO_CALL_ENDED,
-                        ),
-                        selectedModel = selectedModel,
-                    )
-                    currentRawMessages.value = conversationRepository.listMessages(session.conversationId)
-                }
-                roleplayRepository.upsertOnlineMeta(
-                    com.example.myapplication.model.RoleplayOnlineMeta(
-                        conversationId = session.conversationId,
-                        lastCompensationBucket = meta?.lastCompensationBucket.orEmpty(),
-                        lastConsumedObservationUpdatedAt = meta?.lastConsumedObservationUpdatedAt ?: 0L,
-                        lastSystemEventToken = meta?.lastSystemEventToken.orEmpty(),
-                        updatedAt = endedAt,
-                    ),
+                val selectedModel = RoleplayConversationSupport.resolveSelectedModelId(_uiState.value.settings)
+                val outcome = videoCallCoordinator.hangupCall(
+                    conversationId = session.conversationId,
+                    selectedModel = selectedModel,
+                    fallbackSessionId = state.activeVideoCallSessionId,
+                    fallbackStartedAt = state.activeVideoCallStartedAt,
                 )
+                outcome.refreshedMessages?.let { currentRawMessages.value = it }
             } catch (throwable: Throwable) {
                 _uiState.update { current ->
                     RoleplayStateSupport.applyErrorMessage(current, throwable.message ?: "挂断视频通话失败")
@@ -683,6 +599,132 @@ class RoleplayViewModel(
                 },
             ),
         )
+    }
+
+    fun updateCurrentScenarioNarrationEnabled(enabled: Boolean) {
+        val scenario = _uiState.value.currentScenario ?: return
+        upsertScenario(scenario.copy(enableNarration = enabled))
+    }
+
+    fun updateCurrentScenarioDeepImmersionEnabled(enabled: Boolean) {
+        val scenario = _uiState.value.currentScenario ?: return
+        upsertScenario(scenario.copy(enableDeepImmersion = enabled))
+    }
+
+    fun updateCurrentScenarioTimeAwarenessEnabled(enabled: Boolean) {
+        val scenario = _uiState.value.currentScenario ?: return
+        upsertScenario(scenario.copy(enableTimeAwareness = enabled))
+    }
+
+    fun updateCurrentScenarioNetMemeEnabled(enabled: Boolean) {
+        val scenario = _uiState.value.currentScenario ?: return
+        upsertScenario(scenario.copy(enableNetMeme = enabled))
+    }
+
+    fun generateRoleplayDiaries() {
+        val state = _uiState.value
+        val scenario = state.currentScenario ?: return
+        val session = state.currentSession ?: return
+        val assistant = state.currentAssistant ?: RoleplayConversationSupport.resolveAssistant(
+            settings = state.settings,
+            assistantId = scenario.assistantId,
+        )
+        val activeProvider = state.settings.activeProvider()
+        val selectedModel = RoleplayConversationSupport.resolveSelectedModelId(state.settings)
+        if (state.isGeneratingDiary || diaryJob?.isActive == true) {
+            return
+        }
+        if (state.isSending) {
+            _uiState.update { current ->
+                RoleplayStateSupport.applyErrorMessage(current, "请等待当前回复完成后再生成日记")
+            }
+            return
+        }
+        if (
+            activeProvider == null ||
+            activeProvider.baseUrl.isBlank() ||
+            activeProvider.apiKey.isBlank() ||
+            selectedModel.isBlank()
+        ) {
+            _uiState.update { current ->
+                RoleplayStateSupport.applyErrorMessage(current, "请先完成当前模型配置后再生成日记")
+            }
+            return
+        }
+
+        val conversationId = session.conversationId
+        diaryJob = viewModelScope.launch {
+            try {
+                _uiState.update { current ->
+                    RoleplayStateSupport.beginDiaryGeneration(current)
+                }
+                val conversation = conversationRepository.getConversation(conversationId)
+                    ?: Conversation(
+                        id = conversationId,
+                        createdAt = nowProvider(),
+                        updatedAt = nowProvider(),
+                        assistantId = scenario.assistantId,
+                    )
+                val requestMessages = currentRawMessages.value.filter { it.status == MessageStatus.COMPLETED }
+                val promptContext = promptContextAssembler.assemble(
+                    settings = state.settings,
+                    assistant = assistant,
+                    conversation = conversation,
+                    userInputText = RoleplayConversationSupport.resolveLatestUserInputText(requestMessages),
+                    recentMessages = requestMessages,
+                    promptMode = PromptMode.ROLEPLAY,
+                )
+                val diaryDrafts = aiPromptExtrasService.generateRoleplayDiaries(
+                    characterContext = this@RoleplayViewModel.buildDiaryCharacterContext(
+                        systemPrompt = promptContext.systemPrompt,
+                        scenario = scenario,
+                        assistant = assistant,
+                        settings = state.settings,
+                    ),
+                    scenarioContext = this@RoleplayViewModel.buildDiaryScenarioContext(
+                        scenario = scenario,
+                        assistant = assistant,
+                        settings = state.settings,
+                    ),
+                    conversationExcerpt = RoleplayConversationSupport.buildTranscriptInput(
+                        messages = requestMessages,
+                        scenario = scenario,
+                        assistant = assistant,
+                        settings = state.settings,
+                        maxLength = MAX_SUMMARY_INPUT_LENGTH,
+                    ),
+                    characterName = this@RoleplayViewModel.resolveCharacterName(scenario, assistant),
+                    userName = this@RoleplayViewModel.resolveUserName(scenario, state.settings),
+                    todayLabel = this@RoleplayViewModel.formatDiaryTodayLabel(),
+                    baseUrl = activeProvider.baseUrl,
+                    apiKey = activeProvider.apiKey,
+                    modelId = selectedModel,
+                    apiProtocol = activeProvider.resolvedApiProtocol(),
+                    provider = activeProvider,
+                )
+                val savedEntries = roleplayRepository.replaceDiaryEntries(
+                    conversationId = conversationId,
+                    scenarioId = scenario.id,
+                    entries = diaryDrafts,
+                )
+                if (_uiState.value.currentSession?.conversationId == conversationId) {
+                    _uiState.update { current ->
+                        RoleplayStateSupport.finishDiaryGeneration(current, savedEntries)
+                    }
+                }
+            } catch (throwable: Throwable) {
+                if (_uiState.value.currentSession?.conversationId == conversationId) {
+                    _uiState.update { current ->
+                        RoleplayStateSupport.failDiaryGeneration(
+                            current,
+                            throwable.message ?: "角色日记生成失败",
+                        )
+                    }
+                }
+            } finally {
+                diaryJob = null
+            }
+        }
     }
 
     fun approvePendingMemoryProposal() {
@@ -879,8 +921,11 @@ class RoleplayViewModel(
     private fun resolveSummaryRecentWindow(
         assistant: Assistant?,
     ): Int {
-        return assistant?.contextMessageSize?.takeIf { it > 0 }
-            ?: SUMMARY_RECENT_MESSAGE_WINDOW
+        // 下限保护：Assistant 若把 contextMessageSize 配成 1 或 2，
+        // olderMessages 会被拉得过大导致摘要输入爆炸，强制不小于 MIN。
+        return (assistant?.contextMessageSize?.takeIf { it > 0 }
+            ?: SUMMARY_RECENT_MESSAGE_WINDOW)
+            .coerceAtLeast(SUMMARY_RECENT_MESSAGE_WINDOW_MIN)
     }
 
     private suspend fun rebuildContextGovernanceSnapshot(
@@ -1029,15 +1074,13 @@ class RoleplayViewModel(
             }
             return
         }
-        val meta = roleplayRepository.getOnlineMeta(session.conversationId)
-        val activeCallSessionId = meta?.activeVideoCallSessionId.orEmpty()
-        val activeStartedAt = meta?.activeVideoCallStartedAt ?: 0L
+        val activeCall = videoCallCoordinator.fetchActiveCall(session.conversationId)
         _uiState.update { current ->
-            if (activeCallSessionId.isNotBlank() && activeStartedAt > 0L) {
+            if (activeCall.isActive) {
                 RoleplayStateSupport.applyVideoCallState(
                     current = current,
-                    callSessionId = activeCallSessionId,
-                    startedAt = activeStartedAt,
+                    callSessionId = activeCall.callSessionId,
+                    startedAt = activeCall.startedAt,
                 )
             } else {
                 RoleplayStateSupport.clearVideoCallState(current)
@@ -1045,30 +1088,70 @@ class RoleplayViewModel(
         }
     }
 
-    private fun buildVideoCallSystemMessage(
-        conversationId: String,
-        createdAt: Long,
-        content: String,
-        eventKind: RoleplayOnlineEventKind,
-    ): ChatMessage {
-        return ChatMessage(
-            id = "online-event-${eventKind.storageValue}-$conversationId-$createdAt",
-            conversationId = conversationId,
-            role = MessageRole.ASSISTANT,
-            content = content,
-            createdAt = createdAt,
-            parts = listOf(textMessagePart(content)),
-            systemEventKind = eventKind,
-            roleplayOutputFormat = RoleplayOutputFormat.PROTOCOL,
-            roleplayInteractionMode = RoleplayInteractionMode.ONLINE_PHONE,
+    private fun buildDiaryCharacterContext(
+        systemPrompt: String,
+        scenario: RoleplayScenario,
+        assistant: Assistant?,
+        settings: AppSettings,
+    ): String {
+        val userName = resolveUserName(scenario, settings)
+        val characterName = resolveCharacterName(scenario, assistant)
+        return ContextPlaceholderResolver.resolve(
+            text = systemPrompt.trim(),
+            userName = userName,
+            characterName = characterName,
         )
     }
 
-    private fun formatVideoCallDuration(durationMillis: Long): String {
-        val totalSeconds = (durationMillis / 1000L).coerceAtLeast(0L)
-        val minutes = totalSeconds / 60L
-        val seconds = totalSeconds % 60L
-        return "%02d:%02d".format(minutes, seconds)
+    private fun buildDiaryScenarioContext(
+        scenario: RoleplayScenario,
+        assistant: Assistant?,
+        settings: AppSettings,
+    ): String {
+        val userName = resolveUserName(scenario, settings)
+        val characterName = resolveCharacterName(scenario, assistant)
+        return buildString {
+            appendLine("角色：$characterName")
+            appendLine("对话对象：$userName")
+            if (scenario.title.isNotBlank()) {
+                appendLine("场景标题：${scenario.title.trim()}")
+            }
+            if (scenario.description.isNotBlank()) {
+                appendLine("场景描述：${scenario.description.trim()}")
+            }
+            if (scenario.openingNarration.isNotBlank()) {
+                appendLine("开场旁白参考：${scenario.openingNarration.trim()}")
+            }
+            appendLine("交互模式：${scenario.interactionMode.displayName}")
+            appendLine("心声/旁白生成：${if (scenario.enableNarration) "开启" else "关闭"}")
+            appendLine("深度沉浸：${if (scenario.enableDeepImmersion) "开启" else "关闭"}")
+            appendLine("时间感知：${if (scenario.enableTimeAwareness) "开启" else "关闭"}")
+            appendLine("网络热梗：${if (scenario.enableNetMeme) "开启" else "关闭"}")
+        }.trim()
+    }
+
+    private fun resolveUserName(
+        scenario: RoleplayScenario,
+        settings: AppSettings,
+    ): String {
+        return scenario.userDisplayNameOverride.trim()
+            .ifBlank { settings.resolvedUserDisplayName() }
+    }
+
+    private fun resolveCharacterName(
+        scenario: RoleplayScenario,
+        assistant: Assistant?,
+    ): String {
+        return scenario.characterDisplayNameOverride.trim()
+            .ifBlank { assistant?.name?.trim().orEmpty() }
+            .ifBlank { "角色" }
+    }
+
+    private fun formatDiaryTodayLabel(): String {
+        return runCatching {
+            SimpleDateFormat("yyyy/M/d", Locale.SIMPLIFIED_CHINESE)
+                .format(Date(nowProvider()))
+        }.getOrDefault(RoleplayTimeAwarenessSupport.formatCurrentPromptTime(nowProvider()))
     }
 
     private fun observePendingMemoryProposal() {
@@ -1117,6 +1200,7 @@ class RoleplayViewModel(
         private const val SUMMARY_TRIGGER_MESSAGE_COUNT = 12
         private const val SUMMARY_MIN_COVERED_MESSAGE_COUNT = 4
         private const val SUMMARY_RECENT_MESSAGE_WINDOW = 8
+        private const val SUMMARY_RECENT_MESSAGE_WINDOW_MIN = 4
         private const val SUGGESTION_RECENT_MESSAGE_WINDOW = 10
         private const val MAX_SUMMARY_INPUT_LENGTH = 4_000
         private const val AUTO_MEMORY_MESSAGE_WINDOW = 12

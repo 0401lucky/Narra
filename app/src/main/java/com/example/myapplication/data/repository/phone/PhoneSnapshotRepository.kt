@@ -4,8 +4,18 @@ import com.example.myapplication.data.local.phone.PhoneSnapshotDao
 import com.example.myapplication.data.local.phone.PhoneObservationEntity
 import com.example.myapplication.data.local.phone.PhoneSnapshotEntity
 import com.example.myapplication.model.PhoneObservationState
+import com.example.myapplication.model.PhoneGalleryEntry
+import com.example.myapplication.model.PhoneMessageItem
+import com.example.myapplication.model.PhoneMessageThread
+import com.example.myapplication.model.PhoneNoteEntry
+import com.example.myapplication.model.PhoneRelationshipHighlight
+import com.example.myapplication.model.PhoneSearchDetail
+import com.example.myapplication.model.PhoneSearchEntry
 import com.example.myapplication.model.PhoneSnapshot
 import com.example.myapplication.model.PhoneSnapshotOwnerType
+import com.example.myapplication.model.PhoneShoppingEntry
+import com.example.myapplication.model.PhoneSocialComment
+import com.example.myapplication.model.PhoneSocialPost
 import com.example.myapplication.model.PhoneViewMode
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
@@ -176,13 +186,244 @@ fun PhoneSnapshot.toEntity(gson: Gson = Gson()): PhoneSnapshotEntity {
 
 fun PhoneSnapshotEntity.toDomain(gson: Gson = Gson()): PhoneSnapshot? {
     return runCatching {
-        gson.fromJson(snapshotJson, PhoneSnapshot::class.java)
-    }.getOrNull()?.copy(
+        gson.fromJson(snapshotJson, PhoneSnapshotPayload::class.java)?.toDomain(
+            conversationId = conversationId,
+            ownerType = PhoneSnapshotOwnerType.fromStorageValue(ownerType),
+            scenarioId = scenarioId.trim(),
+            assistantId = assistantId.trim(),
+            updatedAt = updatedAt,
+        )
+    }.getOrNull()
+}
+
+private data class PhoneSnapshotPayload(
+    val contentSemanticsVersion: Int? = null,
+    val ownerName: String? = null,
+    val relationshipHighlights: List<PhoneRelationshipHighlightPayload?>? = null,
+    val messageThreads: List<PhoneMessageThreadPayload?>? = null,
+    val notes: List<PhoneNoteEntryPayload?>? = null,
+    val gallery: List<PhoneGalleryEntryPayload?>? = null,
+    val shoppingRecords: List<PhoneShoppingEntryPayload?>? = null,
+    val searchHistory: List<PhoneSearchEntryPayload?>? = null,
+    val socialPosts: List<PhoneSocialPostPayload?>? = null,
+)
+
+private data class PhoneRelationshipHighlightPayload(
+    val id: String? = null,
+    val name: String? = null,
+    val relationLabel: String? = null,
+    val stance: String? = null,
+    val note: String? = null,
+)
+
+private data class PhoneMessageThreadPayload(
+    val id: String? = null,
+    val contactName: String? = null,
+    val relationLabel: String? = null,
+    val preview: String? = null,
+    val timeLabel: String? = null,
+    val avatarLabel: String? = null,
+    val messages: List<PhoneMessageItemPayload?>? = null,
+)
+
+private data class PhoneMessageItemPayload(
+    val id: String? = null,
+    val senderName: String? = null,
+    val text: String? = null,
+    val timeLabel: String? = null,
+    val isOwner: Boolean? = null,
+)
+
+private data class PhoneNoteEntryPayload(
+    val id: String? = null,
+    val title: String? = null,
+    val summary: String? = null,
+    val content: String? = null,
+    val timeLabel: String? = null,
+    val icon: String? = null,
+)
+
+private data class PhoneGalleryEntryPayload(
+    val id: String? = null,
+    val title: String? = null,
+    val summary: String? = null,
+    val description: String? = null,
+    val timeLabel: String? = null,
+)
+
+private data class PhoneShoppingEntryPayload(
+    val id: String? = null,
+    val title: String? = null,
+    val status: String? = null,
+    val priceLabel: String? = null,
+    val note: String? = null,
+    val detail: String? = null,
+    val timeLabel: String? = null,
+)
+
+private data class PhoneSearchEntryPayload(
+    val id: String? = null,
+    val query: String? = null,
+    val timeLabel: String? = null,
+    val detail: PhoneSearchDetailPayload? = null,
+)
+
+private data class PhoneSearchDetailPayload(
+    val title: String? = null,
+    val summary: String? = null,
+    val content: String? = null,
+)
+
+private data class PhoneSocialPostPayload(
+    val id: String? = null,
+    val authorName: String? = null,
+    val authorLabel: String? = null,
+    val content: String? = null,
+    val timeLabel: String? = null,
+    val likeCount: Int? = null,
+    val likedByNames: List<String?>? = null,
+    val comments: List<PhoneSocialCommentPayload?>? = null,
+)
+
+private data class PhoneSocialCommentPayload(
+    val id: String? = null,
+    val authorName: String? = null,
+    val text: String? = null,
+)
+
+private fun PhoneSnapshotPayload.toDomain(
+    conversationId: String,
+    ownerType: PhoneSnapshotOwnerType,
+    scenarioId: String,
+    assistantId: String,
+    updatedAt: Long,
+): PhoneSnapshot {
+    return PhoneSnapshot(
         conversationId = conversationId,
-        ownerType = PhoneSnapshotOwnerType.fromStorageValue(ownerType),
-        scenarioId = scenarioId.trim(),
-        assistantId = assistantId.trim(),
+        ownerType = ownerType,
+        scenarioId = scenarioId,
+        assistantId = assistantId,
+        contentSemanticsVersion = contentSemanticsVersion
+            ?: PhoneSnapshot.DEFAULT_PHONE_CONTENT_SEMANTICS_VERSION,
+        ownerName = ownerName.orEmpty(),
         updatedAt = updatedAt,
+        relationshipHighlights = relationshipHighlights.orEmpty()
+            .mapNotNull { it?.toDomain() },
+        messageThreads = messageThreads.orEmpty()
+            .mapNotNull { it?.toDomain() },
+        notes = notes.orEmpty()
+            .mapNotNull { it?.toDomain() },
+        gallery = gallery.orEmpty()
+            .mapNotNull { it?.toDomain() },
+        shoppingRecords = shoppingRecords.orEmpty()
+            .mapNotNull { it?.toDomain() },
+        searchHistory = searchHistory.orEmpty()
+            .mapNotNull { it?.toDomain() },
+        socialPosts = socialPosts.orEmpty()
+            .mapNotNull { it?.toDomain() },
+    )
+}
+
+private fun PhoneRelationshipHighlightPayload.toDomain(): PhoneRelationshipHighlight {
+    return PhoneRelationshipHighlight(
+        id = id.orEmpty(),
+        name = name.orEmpty(),
+        relationLabel = relationLabel.orEmpty(),
+        stance = stance.orEmpty(),
+        note = note.orEmpty(),
+    )
+}
+
+private fun PhoneMessageThreadPayload.toDomain(): PhoneMessageThread {
+    return PhoneMessageThread(
+        id = id.orEmpty(),
+        contactName = contactName.orEmpty(),
+        relationLabel = relationLabel.orEmpty(),
+        preview = preview.orEmpty(),
+        timeLabel = timeLabel.orEmpty(),
+        avatarLabel = avatarLabel.orEmpty(),
+        messages = messages.orEmpty().mapNotNull { it?.toDomain() },
+    )
+}
+
+private fun PhoneMessageItemPayload.toDomain(): PhoneMessageItem {
+    return PhoneMessageItem(
+        id = id.orEmpty(),
+        senderName = senderName.orEmpty(),
+        text = text.orEmpty(),
+        timeLabel = timeLabel.orEmpty(),
+        isOwner = isOwner ?: false,
+    )
+}
+
+private fun PhoneNoteEntryPayload.toDomain(): PhoneNoteEntry {
+    return PhoneNoteEntry(
+        id = id.orEmpty(),
+        title = title.orEmpty(),
+        summary = summary.orEmpty(),
+        content = content.orEmpty(),
+        timeLabel = timeLabel.orEmpty(),
+        icon = icon.orEmpty(),
+    )
+}
+
+private fun PhoneGalleryEntryPayload.toDomain(): PhoneGalleryEntry {
+    return PhoneGalleryEntry(
+        id = id.orEmpty(),
+        title = title.orEmpty(),
+        summary = summary.orEmpty(),
+        description = description.orEmpty(),
+        timeLabel = timeLabel.orEmpty(),
+    )
+}
+
+private fun PhoneShoppingEntryPayload.toDomain(): PhoneShoppingEntry {
+    return PhoneShoppingEntry(
+        id = id.orEmpty(),
+        title = title.orEmpty(),
+        status = status.orEmpty(),
+        priceLabel = priceLabel.orEmpty(),
+        note = note.orEmpty(),
+        detail = detail.orEmpty(),
+        timeLabel = timeLabel.orEmpty(),
+    )
+}
+
+private fun PhoneSearchEntryPayload.toDomain(): PhoneSearchEntry {
+    return PhoneSearchEntry(
+        id = id.orEmpty(),
+        query = query.orEmpty(),
+        timeLabel = timeLabel.orEmpty(),
+        detail = detail?.toDomain(),
+    )
+}
+
+private fun PhoneSearchDetailPayload.toDomain(): PhoneSearchDetail {
+    return PhoneSearchDetail(
+        title = title.orEmpty(),
+        summary = summary.orEmpty(),
+        content = content.orEmpty(),
+    )
+}
+
+private fun PhoneSocialPostPayload.toDomain(): PhoneSocialPost {
+    return PhoneSocialPost(
+        id = id.orEmpty(),
+        authorName = authorName.orEmpty(),
+        authorLabel = authorLabel.orEmpty(),
+        content = content.orEmpty(),
+        timeLabel = timeLabel.orEmpty(),
+        likeCount = likeCount ?: 0,
+        likedByNames = likedByNames.orEmpty().mapNotNull { it },
+        comments = comments.orEmpty().mapNotNull { it?.toDomain() },
+    )
+}
+
+private fun PhoneSocialCommentPayload.toDomain(): PhoneSocialComment {
+    return PhoneSocialComment(
+        id = id.orEmpty(),
+        authorName = authorName.orEmpty(),
+        text = text.orEmpty(),
     )
 }
 

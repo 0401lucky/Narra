@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- 沉浸式扮演模块用户可见文案。从各 Roleplay UI 文件内联字符串搬家而来，便于统一编辑和后续国际化。 -->
+
+    <!-- 场景载入兜底 -->
+    <string name="roleplay_scenario_loading">正在载入场景…</string>
+    <string name="roleplay_scenario_missing">场景不存在或已被删除</string>
+    <string name="roleplay_scenario_title_fallback">沉浸扮演</string>
+    <string name="roleplay_character_fallback">角色</string>
+    <string name="roleplay_current_character_prefix">当前沉浸角色：%1$s</string>
+
+    <!-- 重开/清空剧情对话框（选择查看对象对话框复用 strings.xml 中的 roleplay_phone_owner_* 与 common_cancel） -->
+    <string name="roleplay_restart_dialog_title">重开剧情</string>
+    <string name="roleplay_restart_dialog_body">将创建一条新的剧情线，旧剧情历史不会继续沿用。是否继续？</string>
+    <string name="roleplay_restart_dialog_confirm">重开</string>
+    <string name="roleplay_reset_dialog_title">清空剧情</string>
+    <string name="roleplay_reset_dialog_body">会保留场景配置，只清空当前剧情消息。此操作不可撤销。</string>
+    <string name="roleplay_reset_dialog_confirm">确定清空</string>
+
+    <!-- 设置页开关组 -->
+    <string name="roleplay_settings_show_presence_strip">显示身份条</string>
+    <string name="roleplay_settings_show_status_strip">显示状态条</string>
+    <string name="roleplay_settings_show_ai_helper">显示 AI 帮写</string>
+    <string name="roleplay_settings_show_online_narration">显示心声与状态提示</string>
+    <string name="roleplay_settings_show_online_narration_hint">关闭后不会继续生成或显示线上心声星标，仍保留必要的系统状态提示。</string>
+    <string name="roleplay_settings_enable_net_meme">网络热梗</string>
+    <string name="roleplay_settings_enable_net_meme_hint">开启后角色会在闲聊时自然使用网络热梗和流行语，仅线上模式生效。</string>
+
+    <!-- 交互模式段落 -->
+    <string name="roleplay_settings_interaction_mode_title">剧情交互模式</string>
+    <string name="roleplay_settings_interaction_mode_hint">切换后当前场景会立即改成对应模式：长文、普通对白或线上手机聊天。</string>
+
+    <!-- 长剧情字数 -->
+    <string name="roleplay_settings_longform_default_title">长剧情默认字数</string>
+    <string name="roleplay_settings_longform_default_label">默认字数</string>
+
+    <!-- 可读性段落中的高对比度开关 -->
+    <string name="roleplay_settings_high_contrast_title">高对比度模式</string>
+
+    <!-- 记忆提议历史 -->
+    <string name="roleplay_settings_memory_history_title">最近记忆提议</string>
+
+    <!-- 工具入口 -->
+    <string name="roleplay_settings_action_reading_mode">阅读模式</string>
+    <string name="roleplay_settings_action_model_picker">切换模型</string>
+    <string name="roleplay_settings_action_model_empty">当前未选择模型</string>
+    <string name="roleplay_settings_action_context_governance">上下文治理</string>
+
+    <!-- 危险操作 -->
+    <string name="roleplay_settings_action_restart">重开剧情</string>
+    <string name="roleplay_settings_action_reset">清空剧情</string>
+</resources>
