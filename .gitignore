@@ -23,6 +23,7 @@ local.properties
 .playwright-mcp/
 tmp/
 tmp-*
+tmp_*
 %TEMP%/
 .codex_tmp*
 cloudflare-*.md
@@ -30,10 +31,20 @@ cloudflare-*.md
 *.log
 *.err.log
 *.out.log
+*.err.txt
 build_err.txt
 build_output*.txt
 phase*_*.log
-计划.md
-进度和日志进展.md
+
+# 本地调试产物：手工截图 / UI review 报告 / 临时导出 / 误产生的 nul
+manual_*.png
+ui_review_report.md
+/nul
+/参考.md
+/含日记提示词.json
+/导出已归档对话-*.json
+/计划.md
+/进度和日志进展.md
+
 rikkahub_ref/
 .wrangler/
