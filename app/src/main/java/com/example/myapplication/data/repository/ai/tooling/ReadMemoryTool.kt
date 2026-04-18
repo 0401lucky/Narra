@@ -4,13 +4,14 @@ import com.example.myapplication.context.MemoryScopeSupport
 import com.example.myapplication.context.MemorySelector
 import com.example.myapplication.model.MemoryEntry
 import com.example.myapplication.model.MemoryScopeType
+import com.example.myapplication.system.json.AppJson
 import com.google.gson.Gson
 import com.google.gson.JsonObject
 import com.google.gson.JsonParser
 
 class ReadMemoryTool(
     private val memorySelector: MemorySelector = MemorySelector(),
-    private val gson: Gson = Gson(),
+    private val gson: Gson = AppJson.gson,
 ) : AppTool {
     override val name: String = NAME
 

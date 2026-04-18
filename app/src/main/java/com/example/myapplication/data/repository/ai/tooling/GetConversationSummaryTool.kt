@@ -1,9 +1,10 @@
 package com.example.myapplication.data.repository.ai.tooling
 
+import com.example.myapplication.system.json.AppJson
 import com.google.gson.Gson
 
 class GetConversationSummaryTool(
-    private val gson: Gson = Gson(),
+    private val gson: Gson = AppJson.gson,
 ) : AppTool {
     override val name: String = NAME
 

@@ -1,10 +1,12 @@
 package com.example.myapplication.data.repository.context
 
 import com.example.myapplication.model.ContextDataBundle
+import com.example.myapplication.system.json.AppJson
+import com.example.myapplication.system.logging.logFailure
 import com.google.gson.Gson
 
 class ContextTransferCodec(
-    private val gson: Gson = Gson(),
+    private val gson: Gson = AppJson.gson,
 ) {
     fun encode(bundle: ContextDataBundle): String {
         return gson.toJson(bundle)
@@ -13,7 +15,8 @@ class ContextTransferCodec(
     fun decode(rawJson: String): ContextDataBundle {
         val bundle = runCatching {
             gson.fromJson(rawJson, ContextDataBundle::class.java)
-        }.getOrNull() ?: throw IllegalArgumentException("导入文件格式无效")
+        }.logFailure("CtxTransferCodec") { "decode fromJson failed, raw.len=${rawJson.length}" }
+            .getOrNull() ?: throw IllegalArgumentException("导入文件格式无效")
         return ContextDataBundle(
             version = bundle.version,
             exportedAt = bundle.exportedAt,

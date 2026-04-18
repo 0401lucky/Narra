@@ -2,11 +2,12 @@ package com.example.myapplication.data.repository.ai.tooling
 
 import com.example.myapplication.context.WorldBookScopeSupport
 import com.example.myapplication.model.WorldBookEntry
+import com.example.myapplication.system.json.AppJson
 import com.google.gson.Gson
 import com.google.gson.JsonParser
 
 class SearchWorldBookTool(
-    private val gson: Gson = Gson(),
+    private val gson: Gson = AppJson.gson,
 ) : AppTool {
     override val name: String = NAME
 

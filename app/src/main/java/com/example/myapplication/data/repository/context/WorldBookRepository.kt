@@ -5,6 +5,7 @@ import com.example.myapplication.data.local.worldbook.WorldBookEntryEntity
 import com.example.myapplication.model.WorldBookEntry
 import com.example.myapplication.model.WorldBookScopeType
 import com.example.myapplication.model.deriveWorldBookBookId
+import com.example.myapplication.system.json.AppJson
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
 import kotlinx.coroutines.flow.Flow
@@ -28,7 +29,7 @@ interface WorldBookRepository {
 class RoomWorldBookRepository(
     private val worldBookDao: WorldBookDao,
 ) : WorldBookRepository {
-    private val gson = Gson()
+    private val gson = AppJson.gson
     private val stringListType = object : TypeToken<List<String>>() {}.type
 
     override fun observeEntries(): Flow<List<WorldBookEntry>> {

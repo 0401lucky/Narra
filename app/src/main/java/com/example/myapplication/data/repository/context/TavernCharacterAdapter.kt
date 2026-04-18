@@ -6,6 +6,8 @@ import com.example.myapplication.model.DEFAULT_WORLD_BOOK_MAX_ENTRIES
 import com.example.myapplication.model.WorldBookEntry
 import com.example.myapplication.model.WorldBookScopeType
 import com.example.myapplication.model.deriveWorldBookBookId
+import com.example.myapplication.system.json.AppJson
+import com.example.myapplication.system.logging.logFailure
 import com.google.gson.Gson
 import com.google.gson.JsonElement
 import com.google.gson.JsonArray
@@ -14,12 +16,13 @@ import java.nio.charset.StandardCharsets
 import java.util.UUID
 
 class TavernCharacterAdapter(
-    private val gson: Gson = Gson(),
+    private val gson: Gson = AppJson.gson,
 ) {
     fun decodeAsBundle(rawJson: String): ContextDataBundle? {
         val root = runCatching {
             gson.fromJson(rawJson, JsonObject::class.java)
-        }.getOrNull() ?: return null
+        }.logFailure("TavernCharAdapter") { "import parse failed, raw.len=${rawJson.length}" }
+            .getOrNull() ?: return null
         val character = extractCharacterObject(root) ?: return null
         val assistant = buildAssistant(
             root = root,

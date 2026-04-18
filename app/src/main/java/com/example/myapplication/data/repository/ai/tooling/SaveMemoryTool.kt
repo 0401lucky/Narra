@@ -2,11 +2,12 @@ package com.example.myapplication.data.repository.ai.tooling
 
 import com.example.myapplication.model.MemoryScopeType
 import com.example.myapplication.model.PromptMode
+import com.example.myapplication.system.json.AppJson
 import com.google.gson.Gson
 import com.google.gson.JsonParser
 
 class SaveMemoryTool(
-    private val gson: Gson = Gson(),
+    private val gson: Gson = AppJson.gson,
 ) : AppTool {
     override val name: String = NAME
 

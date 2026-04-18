@@ -18,6 +18,8 @@ import com.example.myapplication.model.ProviderFunctionModelMode
 import com.example.myapplication.model.ProviderSettings
 import com.example.myapplication.model.ProviderType
 import com.example.myapplication.model.SearchSettings
+import com.example.myapplication.system.json.AppJson
+import com.example.myapplication.system.logging.logFailure
 import com.example.myapplication.model.SearchSourceConfig
 import com.example.myapplication.model.ScreenTranslationSettings
 import com.example.myapplication.model.ThemeMode
@@ -88,10 +90,12 @@ interface SettingsStore {
     suspend fun saveRoleplayAssistantMismatchDialogPreference(suppressed: Boolean)
 }
 
+private const val TAG = "AppSettingsStore"
+
 class AppSettingsStore(
     private val context: Context,
 ) : SettingsStore {
-    private val gson = Gson()
+    private val gson = AppJson.gson
     private val providerListType = object : TypeToken<List<ProviderSettings>>() {}.type
     private val assistantListType = object : TypeToken<List<Assistant>>() {}.type
     private val translationHistoryType = object : TypeToken<List<TranslationHistoryEntry>>() {}.type
@@ -468,7 +472,8 @@ class AppSettingsStore(
         }
         return runCatching {
             gson.fromJson<List<ProviderSettings>>(rawJson, providerListType).orEmpty()
-        }.getOrDefault(emptyList())
+        }.logFailure(TAG) { "decodeProviders fromJson failed, raw.len=${rawJson.length}" }
+            .getOrDefault(emptyList())
     }
 
     private fun buildLegacyProviders(
@@ -498,7 +503,8 @@ class AppSettingsStore(
             gson.fromJson<SearchSettings>(rawJson, searchSettingsType)
                 ?.normalized()
                 ?: SearchSettings()
-        }.getOrDefault(SearchSettings())
+        }.logFailure(TAG) { "decodeSearchSettings fromJson failed, raw.len=${rawJson.length}" }
+            .getOrDefault(SearchSettings())
     }
 
     /** Gson 反序列化旧 JSON 时新字段为 null，补充 type、apiProtocol、OpenAI text api mode 和 models。 */
@@ -709,7 +715,8 @@ class AppSettingsStore(
         return runCatching {
             gson.fromJson<List<Assistant>>(rawJson, assistantListType).orEmpty()
                 .map(::normalizeAssistant)
-        }.getOrDefault(emptyList())
+        }.logFailure(TAG) { "decodeAssistants fromJson failed, raw.len=${rawJson.length}" }
+            .getOrDefault(emptyList())
     }
 
     private fun normalizeAssistant(assistant: Assistant): Assistant {
@@ -758,7 +765,8 @@ class AppSettingsStore(
         }
         return runCatching {
             gson.fromJson<List<TranslationHistoryEntry>>(rawJson, translationHistoryType).orEmpty()
-        }.getOrDefault(emptyList())
+        }.logFailure(TAG) { "decodeTranslationHistory fromJson failed, raw.len=${rawJson.length}" }
+            .getOrDefault(emptyList())
     }
 
     private object PreferencesKeys {
@@ -824,7 +832,7 @@ internal data class SearchSettingsSensitiveMigrationResult(
 )
 
 internal object SearchSettingsSensitiveMigrationSupport {
-    private val gson = Gson()
+    private val gson = AppJson.gson
     private val searchSettingsType = object : TypeToken<SearchSettings>() {}.type
 
     fun migrate(
@@ -837,7 +845,8 @@ internal object SearchSettingsSensitiveMigrationSupport {
         val normalizedSettings = runCatching {
             gson.fromJson<SearchSettings>(rawJson, searchSettingsType)
                 ?.normalized()
-        }.getOrNull() ?: return null
+        }.logFailure("SearchSensMigrate") { "fromJson failed, raw.len=${rawJson.length}" }
+            .getOrNull() ?: return null
 
         var updated = false
         val mergedSecureApiKeys = existingSecureApiKeys

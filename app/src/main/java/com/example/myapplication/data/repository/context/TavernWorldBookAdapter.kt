@@ -4,6 +4,8 @@ import com.example.myapplication.model.ContextDataBundle
 import com.example.myapplication.model.WorldBookEntry
 import com.example.myapplication.model.WorldBookScopeType
 import com.example.myapplication.model.deriveWorldBookBookId
+import com.example.myapplication.system.json.AppJson
+import com.example.myapplication.system.logging.logFailure
 import com.google.gson.Gson
 import com.google.gson.JsonArray
 import com.google.gson.JsonElement
@@ -13,7 +15,7 @@ import java.nio.charset.StandardCharsets
 import java.util.UUID
 
 class TavernWorldBookAdapter(
-    private val gson: Gson = Gson(),
+    private val gson: Gson = AppJson.gson,
 ) {
     fun decodeAsBundle(
         rawJson: String,
@@ -21,7 +23,8 @@ class TavernWorldBookAdapter(
     ): ContextDataBundle? {
         val root = runCatching {
             gson.fromJson(rawJson, JsonObject::class.java)
-        }.getOrNull() ?: return null
+        }.logFailure("TavernWBAdapter") { "import parse failed, raw.len=${rawJson.length}" }
+            .getOrNull() ?: return null
         val entriesElement = root.get("entries") ?: return null
         val entries = buildEntries(
             bookName = resolveBookName(root, fileName),

@@ -24,6 +24,7 @@ import com.example.myapplication.model.ThinkingRequestConfig
 import com.example.myapplication.model.legacyReasoningStepsFromContent
 import com.example.myapplication.model.normalizeChatReasoningSteps
 import com.example.myapplication.model.reasoningStepsToContent
+import com.example.myapplication.system.json.AppJson
 import com.google.gson.Gson
 
 private const val MAX_TOOL_ROUNDS = 4
@@ -58,7 +59,7 @@ class ToolEngine(
     private val anthropicApiProvider: (String, String) -> AnthropicApi,
     private val openAiTextUrlBuilder: (String, ProviderSettings?) -> String,
     private val requestBuilder: (ToolLoopChatRequestSpec) -> ChatCompletionRequest,
-    private val gson: Gson = Gson(),
+    private val gson: Gson = AppJson.gson,
 ) {
     suspend fun runOpenAiChatCompletionToolLoop(
         baseUrl: String,

@@ -45,6 +45,7 @@ import com.example.myapplication.model.buildThinkingRequestConfig
 import com.example.myapplication.model.legacyReasoningStepsFromContent
 import com.example.myapplication.model.normalizeChatReasoningSteps
 import com.example.myapplication.model.reasoningStepsToContent
+import com.example.myapplication.system.json.AppJson
 import com.google.gson.Gson
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineDispatcher
@@ -145,7 +146,7 @@ class DefaultAiGateway(
     ),
     private val ioDispatcher: CoroutineDispatcher = Dispatchers.IO,
 ) : AiGateway {
-    private val gson = Gson()
+    private val gson = AppJson.gson
     private val toolEngine = ToolEngine(
         toolRegistry = toolRegistry,
         apiServiceProvider = apiServiceProvider,

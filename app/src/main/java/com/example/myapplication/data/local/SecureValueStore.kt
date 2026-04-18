@@ -5,6 +5,7 @@ import android.security.keystore.KeyGenParameterSpec
 import android.security.keystore.KeyProperties
 import android.util.Base64
 import androidx.core.content.edit
+import com.example.myapplication.system.json.AppJson
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
 import java.security.KeyStore
@@ -16,7 +17,7 @@ import javax.crypto.spec.GCMParameterSpec
 class SecureValueStore(
     context: Context,
 ) {
-    private val gson = Gson()
+    private val gson = AppJson.gson
     private val stringMapType = object : TypeToken<Map<String, String>>() {}.type
     private val sharedPreferences = context.getSharedPreferences(
         SECURE_PREFERENCES_NAME,

@@ -18,6 +18,7 @@ import com.example.myapplication.model.ScreenTextBlock
 import com.example.myapplication.model.ScreenTranslationRequest
 import com.example.myapplication.model.ScreenTranslationResult
 import com.example.myapplication.model.ScreenTranslationSegmentResult
+import com.example.myapplication.system.json.AppJson
 import com.google.gson.Gson
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineDispatcher
@@ -83,7 +84,7 @@ class DefaultAiTranslationService(
     },
     private val ioDispatcher: CoroutineDispatcher = Dispatchers.IO,
 ) : AiTranslationService {
-    private val gson = Gson()
+    private val gson = AppJson.gson
 
     override suspend fun translateText(
         text: String,

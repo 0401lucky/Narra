@@ -6,6 +6,7 @@ import com.example.myapplication.model.ProviderApiProtocol
 import com.example.myapplication.model.ProviderFunction
 import com.example.myapplication.model.ProviderSettings
 import com.example.myapplication.model.SearchSourceType
+import com.example.myapplication.system.json.AppJson
 import com.google.gson.Gson
 import com.google.gson.JsonArray
 import com.google.gson.JsonElement
@@ -461,6 +462,6 @@ class SearchModelExecutor(
     }
 
     private companion object {
-        val gson = Gson()
+        val gson = AppJson.gson
     }
 }

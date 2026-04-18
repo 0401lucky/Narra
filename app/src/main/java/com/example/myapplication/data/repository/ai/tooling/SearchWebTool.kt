@@ -2,11 +2,12 @@ package com.example.myapplication.data.repository.ai.tooling
 
 import com.example.myapplication.data.repository.search.toCitations
 import com.example.myapplication.model.MessageCitation
+import com.example.myapplication.system.json.AppJson
 import com.google.gson.Gson
 import com.google.gson.JsonParser
 
 class SearchWebTool(
-    private val gson: Gson = Gson(),
+    private val gson: Gson = AppJson.gson,
 ) : AppTool {
     override val name: String = NAME
 

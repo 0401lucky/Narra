@@ -17,6 +17,8 @@ import com.example.myapplication.model.PhoneShoppingEntry
 import com.example.myapplication.model.PhoneSocialComment
 import com.example.myapplication.model.PhoneSocialPost
 import com.example.myapplication.model.PhoneViewMode
+import com.example.myapplication.system.json.AppJson
+import com.example.myapplication.system.logging.logFailure
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
 import kotlinx.coroutines.flow.Flow
@@ -54,7 +56,7 @@ interface PhoneSnapshotRepository {
 
 class RoomPhoneSnapshotRepository(
     private val phoneSnapshotDao: PhoneSnapshotDao,
-    private val gson: Gson = Gson(),
+    private val gson: Gson = AppJson.gson,
 ) : PhoneSnapshotRepository {
     private val stringListType = object : TypeToken<List<String>>() {}.type
 
@@ -173,7 +175,7 @@ object EmptyPhoneSnapshotRepository : PhoneSnapshotRepository {
     override suspend fun deleteObservation(conversationId: String) = Unit
 }
 
-fun PhoneSnapshot.toEntity(gson: Gson = Gson()): PhoneSnapshotEntity {
+fun PhoneSnapshot.toEntity(gson: Gson = AppJson.gson): PhoneSnapshotEntity {
     return PhoneSnapshotEntity(
         conversationId = conversationId,
         ownerType = ownerType.storageValue,
@@ -184,7 +186,7 @@ fun PhoneSnapshot.toEntity(gson: Gson = Gson()): PhoneSnapshotEntity {
     )
 }
 
-fun PhoneSnapshotEntity.toDomain(gson: Gson = Gson()): PhoneSnapshot? {
+fun PhoneSnapshotEntity.toDomain(gson: Gson = AppJson.gson): PhoneSnapshot? {
     return runCatching {
         gson.fromJson(snapshotJson, PhoneSnapshotPayload::class.java)?.toDomain(
             conversationId = conversationId,
@@ -193,7 +195,8 @@ fun PhoneSnapshotEntity.toDomain(gson: Gson = Gson()): PhoneSnapshot? {
             assistantId = assistantId.trim(),
             updatedAt = updatedAt,
         )
-    }.getOrNull()
+    }.logFailure("PhoneSnapRepo") { "snapshot fromJson failed, json.len=${snapshotJson.length}" }
+        .getOrNull()
 }
 
 private data class PhoneSnapshotPayload(
@@ -427,7 +430,7 @@ private fun PhoneSocialCommentPayload.toDomain(): PhoneSocialComment {
     )
 }
 
-fun PhoneObservationState.toEntity(gson: Gson = Gson()): PhoneObservationEntity {
+fun PhoneObservationState.toEntity(gson: Gson = AppJson.gson): PhoneObservationEntity {
     return PhoneObservationEntity(
         conversationId = conversationId,
         scenarioId = scenarioId.trim(),
@@ -446,7 +449,7 @@ fun PhoneObservationState.toEntity(gson: Gson = Gson()): PhoneObservationEntity 
 }
 
 fun PhoneObservationEntity.toDomain(
-    gson: Gson = Gson(),
+    gson: Gson = AppJson.gson,
     stringListType: java.lang.reflect.Type = object : TypeToken<List<String>>() {}.type,
 ): PhoneObservationState {
     return PhoneObservationState(

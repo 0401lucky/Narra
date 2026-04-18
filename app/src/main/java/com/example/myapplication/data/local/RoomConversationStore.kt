@@ -20,6 +20,8 @@ import com.example.myapplication.model.RoleplayOutputFormat
 import com.example.myapplication.model.normalizeChatMessageParts
 import com.example.myapplication.model.normalizeChatReasoningSteps
 import com.example.myapplication.model.reasoningStepsToContent
+import com.example.myapplication.system.json.AppJson
+import com.example.myapplication.system.logging.logFailure
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
 import kotlinx.coroutines.flow.Flow
@@ -29,7 +31,7 @@ class RoomConversationStore(
     private val database: ChatDatabase,
 ) : ConversationStore {
     private val conversationDao: ConversationDao = database.conversationDao()
-    private val gson = Gson()
+    private val gson = AppJson.gson
     private val attachmentListType = object : TypeToken<List<MessageAttachment>>() {}.type
     private val partListType = object : TypeToken<List<ChatMessagePart>>() {}.type
     private val reasoningStepListType = object : TypeToken<List<ChatReasoningStep>>() {}.type
@@ -167,7 +169,8 @@ class RoomConversationStore(
         val reasoningSteps = normalizeChatReasoningSteps(
             runCatching {
                 gson.fromJson<List<ChatReasoningStep>>(reasoningStepsJson, reasoningStepListType).orEmpty()
-            }.getOrDefault(emptyList()).ifEmpty {
+            }.logFailure("RoomConvStore") { "reasoningSteps fromJson failed" }
+                .getOrDefault(emptyList()).ifEmpty {
                 legacyReasoningStepsFromContent(
                     reasoningContent = reasoningContent,
                     createdAt = createdAt,
@@ -186,11 +189,13 @@ class RoomConversationStore(
             reasoningSteps = reasoningSteps,
             attachments = runCatching {
                 gson.fromJson<List<MessageAttachment>>(attachmentsJson, attachmentListType).orEmpty()
-            }.getOrDefault(emptyList()),
+            }.logFailure("RoomConvStore") { "attachments fromJson failed" }
+                .getOrDefault(emptyList()),
             parts = normalizeChatMessageParts(
                 runCatching {
                     gson.fromJson<List<ChatMessagePart>>(partsJson, partListType).orEmpty()
-                }.getOrDefault(emptyList()),
+                }.logFailure("RoomConvStore") { "parts fromJson failed" }
+                    .getOrDefault(emptyList()),
             ),
             replyToMessageId = replyToMessageId,
             replyToPreview = replyToPreview,
@@ -199,7 +204,8 @@ class RoomConversationStore(
             systemEventKind = RoleplayOnlineEventKind.fromStorageValue(systemEventKind),
             citations = runCatching {
                 gson.fromJson<List<MessageCitation>>(citationsJson, citationListType).orEmpty()
-            }.getOrDefault(emptyList()),
+            }.logFailure("RoomConvStore") { "citations fromJson failed" }
+                .getOrDefault(emptyList()),
             roleplayOutputFormat = runCatching {
                 RoleplayOutputFormat.valueOf(roleplayOutputFormat)
             }.getOrDefault(RoleplayOutputFormat.UNSPECIFIED),
