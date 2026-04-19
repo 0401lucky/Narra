@@ -1,19 +1,17 @@
 {
   "app_id": "com.narra.app.dev",
   "channel": "dev",
-  "latest_version_name": "1.5.0-dev",
-  "latest_version_code": 10500,
+  "latest_version_name": "1.5.1-dev",
+  "latest_version_code": 10501,
   "minimum_supported_version_code": 0,
-  "apk_url": "https://download.lsa1230.dpdns.org/dev/Narra-v1.5.0-dev-10500-dev.apk",
-  "apk_sha256": "7498054e987d615d218e45017d73310536ea99dd135d455f5a008a9e8fabfbd7",
-  "published_at": "2026-04-19T09:06:57+08:00",
+  "apk_url": "https://download.lsa1230.dpdns.org/dev/Narra-v1.5.1-dev-10501-dev.apk",
+  "apk_sha256": "a795ae9c7a14a6faeea41f13f8de30e1dbd7debc6df4c6fb2b294be2e9dcd5c4",
+  "published_at": "2026-04-19T11:00:56+08:00",
   "release_notes": [
-    "修复：关闭「线上扮演内心戏」全局开关后，线上模式不再强制给模型下发 thought 提示词与样例",
-    "修复：长文 / 对话 / 线上三模式互相切换后，历史消息中的 <char> / <thought> 等标记会被清洗，避免污染新模式的输出",
-    "架构：统一 Gson 单例（AppJson.gson）与 AppLogger，日志不再静默吞异常；141 处 runCatching 向下游暴露失败原因",
-    "架构：ChatDatabase.kt 从 650 行瘦身到 53 行，26 条迁移迁移到独立注册表，并通过测试强制版本连续",
-    "架构：AiPromptExtrasService 从 1657 行拆为 1 个 Core + 6 个子服务，SettingsViewModel 从 1131 行降到 638 行",
-    "UI：消息气泡、抽屉、特殊玩法、Chat/Roleplay 屏幕等 5 个大 Compose 文件合计从 4867 行拆到 1709 行",
-    "系统：悬浮翻译服务与辅助功能服务 onDestroy 生命周期审计完成，CoroutineScope 统一走 AppGraph.scheduleStartup"
+    "修复：剧情日记生成在慢模型 / 长上下文下不再因 120s 客户端超时误报，API 已出结果但软件空白的问题消失（readTimeout 提升到 600s）",
+    "修复：助手『提示词』页浏览不改也会静默 trim 改写空格的自动保存——现改为脏检查 + 顶栏『保存』按钮 + Snackbar『已保存』反馈",
+    "修复：助手『记忆』页新增/编辑对话框旋转屏幕后不再串值；保存记忆设置后自动回退到助手详情",
+    "新增：线下剧情底部『更多操作』加三个快捷入口——语音、动态、视频",
+    "其它：SettingsTopBar action 支持 enabled 状态；所有 Prompt Extras（日记 / 摘要 / 标题 / 记忆提议 / 手机内容）统一走长超时客户端"
   ]
 }

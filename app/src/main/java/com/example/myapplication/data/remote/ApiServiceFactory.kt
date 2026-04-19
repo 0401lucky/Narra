@@ -9,6 +9,11 @@ import java.util.concurrent.TimeUnit
 class ApiServiceFactory {
     private companion object {
         const val ANTHROPIC_VERSION = "2023-06-01"
+        const val DEFAULT_READ_TIMEOUT_SECONDS = 120L
+        // 非流式 extras（日记 / 摘要 / 记忆 / 标题 / 手机等）使用的长超时：
+        // 思考模型 + 长上下文的首字节返回常常 >120s，120s 会触发 SocketTimeoutException
+        // 而服务端仍在完成生成，API 后台看得到完整输出但客户端拿不到。
+        const val LONG_READ_TIMEOUT_SECONDS = 600L
     }
     private var cachedApiBaseUrl: String? = null
     private var cachedApiKey: String? = null
@@ -17,6 +22,14 @@ class ApiServiceFactory {
     private var cachedAnthropicApiBaseUrl: String? = null
     private var cachedAnthropicApiKey: String? = null
     private var cachedAnthropicApi: AnthropicApi? = null
+
+    private var cachedLongRunningApiBaseUrl: String? = null
+    private var cachedLongRunningApiKey: String? = null
+    private var cachedLongRunningApi: OpenAiCompatibleApi? = null
+
+    private var cachedLongRunningAnthropicApiBaseUrl: String? = null
+    private var cachedLongRunningAnthropicApiKey: String? = null
+    private var cachedLongRunningAnthropicApi: AnthropicApi? = null
 
     private var cachedStreamBaseUrl: String? = null
     private var cachedStreamApiKey: String? = null
@@ -42,7 +55,7 @@ class ApiServiceFactory {
 
         val okHttpClient = OkHttpClient.Builder()
             .connectTimeout(30, TimeUnit.SECONDS)
-            .readTimeout(120, TimeUnit.SECONDS)
+            .readTimeout(DEFAULT_READ_TIMEOUT_SECONDS, TimeUnit.SECONDS)
             .writeTimeout(30, TimeUnit.SECONDS)
             .addInterceptor { chain ->
                 val request = chain.request().newBuilder()
@@ -82,7 +95,7 @@ class ApiServiceFactory {
 
         val okHttpClient = OkHttpClient.Builder()
             .connectTimeout(30, TimeUnit.SECONDS)
-            .readTimeout(120, TimeUnit.SECONDS)
+            .readTimeout(DEFAULT_READ_TIMEOUT_SECONDS, TimeUnit.SECONDS)
             .writeTimeout(30, TimeUnit.SECONDS)
             .addInterceptor { chain ->
                 val request = chain.request().newBuilder()
@@ -107,6 +120,97 @@ class ApiServiceFactory {
         return api
     }
 
+    /**
+     * 长超时版本的 OpenAI 兼容客户端。仅用于 PromptExtrasCore 等非流式长任务（日记 / 摘要 /
+     * 记忆提议 / 手机内容）。readTimeout = 600s，避免思考模型首字节返回 >120s 触发 timeout
+     * 而服务端实际已经生成完的误报。
+     */
+    @Synchronized
+    fun createLongRunning(
+        baseUrl: String,
+        apiKey: String,
+    ): OpenAiCompatibleApi {
+        val normalizedBaseUrl = normalizeBaseUrl(baseUrl, ProviderApiProtocol.OPENAI_COMPATIBLE)
+        val trimmedKey = apiKey.trim()
+
+        cachedLongRunningApi?.let { api ->
+            if (cachedLongRunningApiBaseUrl == normalizedBaseUrl &&
+                cachedLongRunningApiKey == trimmedKey
+            ) {
+                return api
+            }
+        }
+
+        val okHttpClient = OkHttpClient.Builder()
+            .connectTimeout(30, TimeUnit.SECONDS)
+            .readTimeout(LONG_READ_TIMEOUT_SECONDS, TimeUnit.SECONDS)
+            .writeTimeout(30, TimeUnit.SECONDS)
+            .addInterceptor { chain ->
+                val request = chain.request().newBuilder()
+                    .addHeader("Authorization", "Bearer $trimmedKey")
+                    .build()
+                chain.proceed(request)
+            }
+            .addInterceptor(RateLimitRetryInterceptor())
+            .build()
+
+        val api = Retrofit.Builder()
+            .baseUrl(normalizedBaseUrl)
+            .client(okHttpClient)
+            .addConverterFactory(GsonConverterFactory.create())
+            .build()
+            .create(OpenAiCompatibleApi::class.java)
+
+        cachedLongRunningApiBaseUrl = normalizedBaseUrl
+        cachedLongRunningApiKey = trimmedKey
+        cachedLongRunningApi = api
+        return api
+    }
+
+    /** 长超时版本的 Anthropic 客户端，语义同 [createLongRunning]。 */
+    @Synchronized
+    fun createLongRunningAnthropic(
+        baseUrl: String,
+        apiKey: String,
+    ): AnthropicApi {
+        val normalizedBaseUrl = normalizeBaseUrl(baseUrl, ProviderApiProtocol.ANTHROPIC)
+        val trimmedKey = apiKey.trim()
+
+        cachedLongRunningAnthropicApi?.let { api ->
+            if (cachedLongRunningAnthropicApiBaseUrl == normalizedBaseUrl &&
+                cachedLongRunningAnthropicApiKey == trimmedKey
+            ) {
+                return api
+            }
+        }
+
+        val okHttpClient = OkHttpClient.Builder()
+            .connectTimeout(30, TimeUnit.SECONDS)
+            .readTimeout(LONG_READ_TIMEOUT_SECONDS, TimeUnit.SECONDS)
+            .writeTimeout(30, TimeUnit.SECONDS)
+            .addInterceptor { chain ->
+                val request = chain.request().newBuilder()
+                    .addHeader("x-api-key", trimmedKey)
+                    .addHeader("anthropic-version", ANTHROPIC_VERSION)
+                    .build()
+                chain.proceed(request)
+            }
+            .addInterceptor(RateLimitRetryInterceptor())
+            .build()
+
+        val api = Retrofit.Builder()
+            .baseUrl(normalizedBaseUrl)
+            .client(okHttpClient)
+            .addConverterFactory(GsonConverterFactory.create())
+            .build()
+            .create(AnthropicApi::class.java)
+
+        cachedLongRunningAnthropicApiBaseUrl = normalizedBaseUrl
+        cachedLongRunningAnthropicApiKey = trimmedKey
+        cachedLongRunningAnthropicApi = api
+        return api
+    }
+
     @Synchronized
     fun createStreamingClient(
         baseUrl: String,
@@ -123,7 +227,7 @@ class ApiServiceFactory {
 
         val client = OkHttpClient.Builder()
             .connectTimeout(30, TimeUnit.SECONDS)
-            .readTimeout(120, TimeUnit.SECONDS)
+            .readTimeout(DEFAULT_READ_TIMEOUT_SECONDS, TimeUnit.SECONDS)
             .writeTimeout(30, TimeUnit.SECONDS)
             .addInterceptor { chain ->
                 val request = chain.request().newBuilder()
@@ -157,7 +261,7 @@ class ApiServiceFactory {
 
         val client = OkHttpClient.Builder()
             .connectTimeout(30, TimeUnit.SECONDS)
-            .readTimeout(120, TimeUnit.SECONDS)
+            .readTimeout(DEFAULT_READ_TIMEOUT_SECONDS, TimeUnit.SECONDS)
             .writeTimeout(30, TimeUnit.SECONDS)
             .addInterceptor { chain ->
                 val request = chain.request().newBuilder()

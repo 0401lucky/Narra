@@ -58,9 +58,23 @@ fun AssistantMemoryScreen(
     var memoryEnabled by rememberSaveable { mutableStateOf(assistant.memoryEnabled) }
     var useGlobalMemory by rememberSaveable { mutableStateOf(assistant.useGlobalMemory) }
     var memoryMaxItemsText by rememberSaveable { mutableStateOf(assistant.memoryMaxItems.toString()) }
-    var editingMemory by remember { mutableStateOf<MemoryEntry?>(null) }
-    var isCreatingMemory by remember { mutableStateOf(false) }
+    var editingMemoryId by rememberSaveable { mutableStateOf<String?>(null) }
+    var isCreatingMemory by rememberSaveable { mutableStateOf(false) }
     var memoryDraftContent by rememberSaveable { mutableStateOf("") }
+
+    // 编辑对话框展示的 MemoryEntry：新建时按当前作用域拼装一个临时实例，编辑时按 id 从列表解析。
+    // 旋转后由 id + isCreatingMemory 重新推导，确保与 memoryDraftContent 的 rememberSaveable 生命周期一致。
+    val editingMemory: MemoryEntry? = when {
+        isCreatingMemory -> MemoryEntry(
+            scopeType = if (useGlobalMemory) MemoryScopeType.GLOBAL else MemoryScopeType.ASSISTANT,
+            scopeId = if (useGlobalMemory) "" else assistant.id,
+            characterId = assistant.id,
+            pinned = true,
+            importance = 80,
+        )
+        editingMemoryId != null -> memories.firstOrNull { it.id == editingMemoryId }
+        else -> null
+    }
 
     Scaffold(
         topBar = {
@@ -130,13 +144,7 @@ fun AssistantMemoryScreen(
                             Surface(
                                 modifier = Modifier.clickable {
                                     isCreatingMemory = true
-                                    editingMemory = MemoryEntry(
-                                        scopeType = if (useGlobalMemory) MemoryScopeType.GLOBAL else MemoryScopeType.ASSISTANT,
-                                        scopeId = if (useGlobalMemory) "" else assistant.id,
-                                        characterId = assistant.id,
-                                        pinned = true,
-                                        importance = 80,
-                                    )
+                                    editingMemoryId = null
                                     memoryDraftContent = ""
                                 },
                                 shape = RoundedCornerShape(14.dp),
@@ -175,6 +183,7 @@ fun AssistantMemoryScreen(
                                         ),
                                     ),
                                 )
+                                onNavigateBack()
                             },
                             enabled = true,
                             isPrimary = true,
@@ -213,7 +222,7 @@ fun AssistantMemoryScreen(
                         memory = memory,
                         onEdit = {
                             isCreatingMemory = false
-                            editingMemory = memory
+                            editingMemoryId = memory.id
                             memoryDraftContent = memory.content
                         },
                         onTogglePinned = { onTogglePinned(memory.id) },
@@ -224,11 +233,10 @@ fun AssistantMemoryScreen(
         }
     }
 
-    if (editingMemory != null) {
-        val targetMemory = editingMemory ?: return
+    editingMemory?.let { targetMemory ->
         AlertDialog(
             onDismissRequest = {
-                editingMemory = null
+                editingMemoryId = null
                 isCreatingMemory = false
                 memoryDraftContent = ""
             },
@@ -269,7 +277,7 @@ fun AssistantMemoryScreen(
                                 ),
                             )
                             memoryDraftContent = ""
-                            editingMemory = null
+                            editingMemoryId = null
                             isCreatingMemory = false
                         }
                     },
@@ -281,7 +289,7 @@ fun AssistantMemoryScreen(
                 NarraTextButton(
                     onClick = {
                         memoryDraftContent = ""
-                        editingMemory = null
+                        editingMemoryId = null
                         isCreatingMemory = false
                     },
                 ) {

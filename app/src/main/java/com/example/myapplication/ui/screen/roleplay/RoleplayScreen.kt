@@ -5,8 +5,11 @@ import androidx.compose.material.icons.automirrored.filled.Assignment
 import androidx.compose.material.icons.filled.AutoStories
 import androidx.compose.material.icons.filled.CardGiftcard
 import androidx.compose.material.icons.filled.Event
+import androidx.compose.material.icons.filled.Forum
 import androidx.compose.material.icons.filled.Gavel
+import androidx.compose.material.icons.filled.KeyboardVoice
 import androidx.compose.material.icons.filled.Share
+import androidx.compose.material.icons.filled.Videocam
 import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.SnackbarHostState
@@ -219,8 +222,8 @@ fun RoleplayScreen(
 
     val offlineQuickActions = remember(
         onOpenDiary,
-        onOpenSettings,
-        onOpenPhoneCheck,
+        onOpenMoments,
+        onOpenVideoCall,
     ) {
         buildList {
             add(
@@ -229,6 +232,14 @@ fun RoleplayScreen(
                     icon = Icons.Default.AutoStories,
                     accentColor = Color(0xFFC78A38),
                     onClick = onOpenDiary,
+                ),
+            )
+            add(
+                RoleplayInputQuickAction(
+                    label = "语音",
+                    icon = Icons.Default.KeyboardVoice,
+                    accentColor = Color(0xFF5B91D7),
+                    onClick = { showVoiceMessageSheet = true },
                 ),
             )
             add(
@@ -292,6 +303,22 @@ fun RoleplayScreen(
                         primeSpecialPlayDraft(ChatSpecialType.PUNISH)
                         activeSpecialPlayTypeName = ChatSpecialType.PUNISH.name
                     },
+                ),
+            )
+            add(
+                RoleplayInputQuickAction(
+                    label = "动态",
+                    icon = Icons.Default.Forum,
+                    accentColor = Color(0xFF7C93F6),
+                    onClick = onOpenMoments,
+                ),
+            )
+            add(
+                RoleplayInputQuickAction(
+                    label = "视频",
+                    icon = Icons.Default.Videocam,
+                    accentColor = Color(0xFF6C84FF),
+                    onClick = onOpenVideoCall,
                 ),
             )
         }
@@ -489,21 +516,22 @@ fun RoleplayScreen(
                 }
             },
         )
-        if (showVoiceMessageSheet) {
-            VoiceMessageEditorSheet(
-                draft = voiceDraft,
-                isSending = isSending,
-                onDraftChange = { voiceDraft = it },
-                onDismissRequest = {
-                    showVoiceMessageSheet = false
-                    resetVoiceDraft()
-                },
-                onConfirm = {
-                    onSendVoiceMessage(voiceDraft)
-                    showVoiceMessageSheet = false
-                    resetVoiceDraft()
-                },
-            )
-        }
+    }
+
+    if (showVoiceMessageSheet) {
+        VoiceMessageEditorSheet(
+            draft = voiceDraft,
+            isSending = isSending,
+            onDraftChange = { voiceDraft = it },
+            onDismissRequest = {
+                showVoiceMessageSheet = false
+                resetVoiceDraft()
+            },
+            onConfirm = {
+                onSendVoiceMessage(voiceDraft)
+                showVoiceMessageSheet = false
+                resetVoiceDraft()
+            },
+        )
     }
 }

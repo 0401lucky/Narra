@@ -107,6 +107,7 @@ fun SettingsTopBar(
     onNavigateBack: () -> Unit,
     actionLabel: String? = null,
     onAction: (() -> Unit)? = null,
+    actionEnabled: Boolean = true,
 ) {
     val palette = rememberSettingsPalette()
 
@@ -156,6 +157,7 @@ fun SettingsTopBar(
             if (actionLabel != null && onAction != null) {
                 NarraFilledTonalButton(
                     onClick = onAction,
+                    enabled = actionEnabled,
                     shape = RoundedCornerShape(16.dp),
                 ) {
                     Text(

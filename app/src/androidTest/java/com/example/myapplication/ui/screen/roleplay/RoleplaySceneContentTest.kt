@@ -52,6 +52,7 @@ class RoleplaySceneContentTest {
                 onRetryTurn = {},
                 onEditUserMessage = {},
                 onOpenSpecialPlay = {},
+                quickActions = emptyList(),
                 onConfirmTransferReceipt = {},
                 onSend = {},
                 onCancelSending = {},

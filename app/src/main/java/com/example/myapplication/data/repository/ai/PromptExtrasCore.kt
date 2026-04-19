@@ -47,10 +47,11 @@ private data class PromptExtrasRoleplaySamplingConfig(
 internal class PromptExtrasCore(
     private val apiServiceFactory: ApiServiceFactory,
     private val apiServiceProvider: (String, String) -> OpenAiCompatibleApi = { baseUrl, apiKey ->
-        apiServiceFactory.create(baseUrl = baseUrl, apiKey = apiKey)
+        // Extras 走长超时客户端：非流式且一次性返回，思考模型 / 长上下文容易首字节 >120s。
+        apiServiceFactory.createLongRunning(baseUrl = baseUrl, apiKey = apiKey)
     },
     private val anthropicApiProvider: (String, String) -> AnthropicApi = { baseUrl, apiKey ->
-        apiServiceFactory.createAnthropic(baseUrl = baseUrl, apiKey = apiKey)
+        apiServiceFactory.createLongRunningAnthropic(baseUrl = baseUrl, apiKey = apiKey)
     },
 ) {
     private val roleplaySamplingDisabledBaseUrls =

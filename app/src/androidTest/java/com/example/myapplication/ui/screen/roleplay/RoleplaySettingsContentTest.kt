@@ -53,6 +53,10 @@ class RoleplaySettingsContentTest {
                 onUpdateShowRoleplayAiHelper = { enabled ->
                     settings = settings.copy(showRoleplayAiHelper = enabled)
                 },
+                onUpdateScenarioNarrationEnabled = {},
+                onUpdateScenarioDeepImmersionEnabled = {},
+                onUpdateScenarioTimeAwarenessEnabled = {},
+                onUpdateScenarioNetMemeEnabled = {},
                 systemHighContrastEnabled = false,
                 onUpdateRoleplayImmersiveMode = { mode ->
                     settings = settings.copy(roleplayImmersiveMode = mode)
@@ -65,9 +69,6 @@ class RoleplaySettingsContentTest {
                 },
                 onUpdateShowOnlineRoleplayNarration = { enabled ->
                     settings = settings.copy(showOnlineRoleplayNarration = enabled)
-                },
-                onUpdateEnableRoleplayNetMeme = { enabled ->
-                    settings = settings.copy(enableRoleplayNetMeme = enabled)
                 },
                 onUpdateScenarioInteractionMode = {},
                 onShowRestartDialog = {},

@@ -32,10 +32,16 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarDuration
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.Immutable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
@@ -54,6 +60,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.myapplication.model.Assistant
 import com.example.myapplication.ui.component.AssistantAvatar
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
@@ -86,21 +94,56 @@ fun AssistantPromptScreen(
         }
     }
 
-    // Auto-save on leave
+    // ── 脏检查支持 ──
+    var lastSavedDraft by remember(assistant.id) { mutableStateOf(assistant.toPromptDraft()) }
+    var savedFlashActive by remember { mutableStateOf(false) }
+    val snackbarHostState = remember { SnackbarHostState() }
+    val feedbackScope = rememberCoroutineScope()
+
+    val currentDraft by remember {
+        derivedStateOf {
+            AssistantPromptDraft(
+                systemPrompt = systemPrompt,
+                scenario = scenario,
+                greeting = greeting,
+                exampleDialogues = exampleDialogues.toList(),
+                creatorNotes = creatorNotes,
+                contextMessageSizeText = contextMessageSizeText,
+            )
+        }
+    }
+    val isDirty by remember {
+        derivedStateOf { currentDraft != lastSavedDraft }
+    }
+
+    LaunchedEffect(savedFlashActive) {
+        if (savedFlashActive) {
+            delay(1500L)
+            savedFlashActive = false
+        }
+    }
+
+    val saveNow: () -> Unit = saveNow@{
+        val snapshot = currentDraft
+        if (snapshot == lastSavedDraft) return@saveNow
+        onSave(snapshot.applyTo(assistant))
+        lastSavedDraft = snapshot
+        savedFlashActive = true
+        feedbackScope.launch {
+            snackbarHostState.showSnackbar(
+                message = "已保存",
+                duration = SnackbarDuration.Short,
+            )
+        }
+    }
+
+    // 兜底：离开页面若仍有未保存的真实改动，写回一次。
     DisposableEffect(Unit) {
         onDispose {
-            onSave(
-                assistant.copy(
-                    systemPrompt = systemPrompt.trim(),
-                    scenario = scenario.trim(),
-                    greeting = greeting.trim(),
-                    exampleDialogues = exampleDialogues.map { it.trim() }.filter { it.isNotBlank() },
-                    creatorNotes = creatorNotes.trim(),
-                    contextMessageSize = contextMessageSizeText.toIntOrNull()
-                        ?.coerceIn(0, 30)
-                        ?: 0,
-                ),
-            )
+            val pending = currentDraft
+            if (pending != lastSavedDraft) {
+                onSave(pending.applyTo(assistant))
+            }
         }
     }
 
@@ -110,8 +153,12 @@ fun AssistantPromptScreen(
                 title = "提示词",
                 subtitle = assistant.name.takeIf { it.isNotBlank() },
                 onNavigateBack = onNavigateBack,
+                actionLabel = if (savedFlashActive) "已保存 ✓" else "保存",
+                onAction = saveNow,
+                actionEnabled = isDirty || savedFlashActive,
             )
         },
+        snackbarHost = { SnackbarHost(snackbarHostState) },
         containerColor = palette.background,
     ) { innerPadding ->
         LazyColumn(
@@ -495,3 +542,34 @@ private fun ExampleDialogueItem(
         }
     }
 }
+
+/**
+ * 提示词页的表单快照：承载 6 个可编辑字段，用于脏检查避免没有真实改动时仍调用 onSave。
+ */
+@Immutable
+private data class AssistantPromptDraft(
+    val systemPrompt: String,
+    val scenario: String,
+    val greeting: String,
+    val exampleDialogues: List<String>,
+    val creatorNotes: String,
+    val contextMessageSizeText: String,
+)
+
+private fun Assistant.toPromptDraft(): AssistantPromptDraft = AssistantPromptDraft(
+    systemPrompt = systemPrompt,
+    scenario = scenario,
+    greeting = greeting,
+    exampleDialogues = exampleDialogues.toList(),
+    creatorNotes = creatorNotes,
+    contextMessageSizeText = contextMessageSize.takeIf { it > 0 }?.toString().orEmpty(),
+)
+
+private fun AssistantPromptDraft.applyTo(base: Assistant): Assistant = base.copy(
+    systemPrompt = systemPrompt.trim(),
+    scenario = scenario.trim(),
+    greeting = greeting.trim(),
+    exampleDialogues = exampleDialogues.map { it.trim() }.filter { it.isNotBlank() },
+    creatorNotes = creatorNotes.trim(),
+    contextMessageSize = contextMessageSizeText.toIntOrNull()?.coerceIn(0, 30) ?: 0,
+)
