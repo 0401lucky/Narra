@@ -19,6 +19,22 @@
 
 ---
 
+## [1.5.4-dev] - 2026-04-19
+
+### Added
+
+- 新增 `RoleplayScenarioEditScreenTest` androidTest，覆盖新建沉浸场景时切换交互模式后草稿内容保留与保存联动规则
+
+### Fixed
+
+- 修复新建沉浸场景页在切换 `普通对白 / 长文线下 / 线上模式` 时，因草稿 key 不稳定导致标题、描述、开场旁白、用户人设等已填写内容被整体清空的问题
+
+### Docs
+
+- `dev` 渠道构建版本推进到 `1.5.4-dev (10504)`，APK 已上传 Cloudflare R2，自定义下载域名与 `docs/updates/dev.json` 已同步
+
+---
+
 ## [1.5.2-dev] - 2026-04-19
 
 ### Changed

@@ -1,16 +1,14 @@
 {
   "app_id": "com.narra.app.dev",
   "channel": "dev",
-  "latest_version_name": "1.5.3-dev",
-  "latest_version_code": 10503,
+  "latest_version_name": "1.5.4-dev",
+  "latest_version_code": 10504,
   "minimum_supported_version_code": 0,
-  "apk_url": "https://download.lsa1230.dpdns.org/dev/Narra-v1.5.3-dev-10503-dev.apk",
-  "apk_sha256": "52fd9e11875ab1dfab89277173b3dacaa7702af19e2183080b59eb028faa94a9",
-  "published_at": "2026-04-19T18:05:00+08:00",
+  "apk_url": "https://download.lsa1230.dpdns.org/dev/Narra-v1.5.4-dev-10504-dev.apk",
+  "apk_sha256": "d7eaaa8a02d1c1ca05d7b3a2925e28ad166f32c5f5abcda5c6f88340cc0e89a4",
+  "published_at": "2026-04-19T22:45:12+08:00",
   "release_notes": [
-    "图片选择改用系统相册 Photo Picker：聊天插图、助手/用户头像、剧本立绘与背景、角色卡 PNG 导入全部直接打开相册，小米 MIUI 等机型不再默认弹出『文件管理』",
-    "存储稳定性：头像 / 立绘 / 背景在选图后立即复制到 app 私有目录，不再依赖 SAF 持久授权，避免进程重启后头像失效",
-    "资料导入：角色卡 / 世界书 / 全部资料导入入口新增『从相册 PNG / 从文件 JSON』二选一对话框，直接读取 Tavern PNG 角色卡",
-    "生命周期：删除助手或剧本时同步清理沙盒里的旧头像 / 立绘 / 背景文件，减少存储残留"
+    "修复沉浸式新建场景页：切换普通对白、长文线下、线上模式时，不再清空已填写的标题、描述、开场旁白和用户人设",
+    "补充场景创建页的模式切换回归测试，降低交互模式联动再次冲掉表单的风险"
   ]
 }

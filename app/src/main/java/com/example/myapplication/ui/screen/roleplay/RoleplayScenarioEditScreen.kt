@@ -49,6 +49,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
@@ -72,6 +73,7 @@ import com.example.myapplication.ui.screen.settings.SettingsTopBar
 import com.example.myapplication.ui.screen.settings.rememberSettingsOutlineColors
 import com.example.myapplication.ui.screen.settings.rememberSettingsPalette
 import kotlinx.coroutines.launch
+import java.util.UUID
 
 @Composable
 fun RoleplayScenarioEditScreen(
@@ -92,7 +94,11 @@ fun RoleplayScenarioEditScreen(
     val localImageStore = LocalImagePersister.current
     val coroutineScope = rememberCoroutineScope()
     val isNew = scenario == null
-    val baseScenario = scenario ?: RoleplayScenario()
+    // 新建场景在同一次创建流程内需要稳定草稿 key，避免模式切换触发表单整体重置。
+    val scenarioStateKey = scenario?.id ?: rememberSaveable { UUID.randomUUID().toString() }
+    val baseScenario = remember(scenario, scenarioStateKey) {
+        scenario ?: RoleplayScenario(id = scenarioStateKey)
+    }
 
     LaunchedEffect(noticeMessage) {
         noticeMessage?.let {
@@ -107,32 +113,32 @@ fun RoleplayScenarioEditScreen(
         }
     }
 
-    var title by rememberSaveable(baseScenario.id) { mutableStateOf(baseScenario.title) }
-    var description by rememberSaveable(baseScenario.id) { mutableStateOf(baseScenario.description) }
-    var assistantId by rememberSaveable(baseScenario.id) { mutableStateOf(baseScenario.assistantId) }
-    var backgroundUri by rememberSaveable(baseScenario.id) { mutableStateOf(baseScenario.backgroundUri) }
-    var userDisplayNameOverride by rememberSaveable(baseScenario.id) { mutableStateOf(baseScenario.userDisplayNameOverride) }
-    var userPersonaOverride by rememberSaveable(baseScenario.id) { mutableStateOf(baseScenario.userPersonaOverride) }
-    var userPortraitUri by rememberSaveable(baseScenario.id) { mutableStateOf(baseScenario.userPortraitUri) }
-    var userPortraitUrl by rememberSaveable(baseScenario.id) { mutableStateOf(baseScenario.userPortraitUrl) }
-    var characterDisplayNameOverride by rememberSaveable(baseScenario.id) { mutableStateOf(baseScenario.characterDisplayNameOverride) }
-    var characterPortraitUri by rememberSaveable(baseScenario.id) { mutableStateOf(baseScenario.characterPortraitUri) }
-    var characterPortraitUrl by rememberSaveable(baseScenario.id) { mutableStateOf(baseScenario.characterPortraitUrl) }
-    var openingNarration by rememberSaveable(baseScenario.id) { mutableStateOf(baseScenario.openingNarration) }
-    val normalizedSpec = remember(baseScenario.id) { baseScenario.toInteractionSpec().normalized() }
-    var interactionMode by rememberSaveable(baseScenario.id) {
+    var title by rememberSaveable(scenarioStateKey) { mutableStateOf(baseScenario.title) }
+    var description by rememberSaveable(scenarioStateKey) { mutableStateOf(baseScenario.description) }
+    var assistantId by rememberSaveable(scenarioStateKey) { mutableStateOf(baseScenario.assistantId) }
+    var backgroundUri by rememberSaveable(scenarioStateKey) { mutableStateOf(baseScenario.backgroundUri) }
+    var userDisplayNameOverride by rememberSaveable(scenarioStateKey) { mutableStateOf(baseScenario.userDisplayNameOverride) }
+    var userPersonaOverride by rememberSaveable(scenarioStateKey) { mutableStateOf(baseScenario.userPersonaOverride) }
+    var userPortraitUri by rememberSaveable(scenarioStateKey) { mutableStateOf(baseScenario.userPortraitUri) }
+    var userPortraitUrl by rememberSaveable(scenarioStateKey) { mutableStateOf(baseScenario.userPortraitUrl) }
+    var characterDisplayNameOverride by rememberSaveable(scenarioStateKey) { mutableStateOf(baseScenario.characterDisplayNameOverride) }
+    var characterPortraitUri by rememberSaveable(scenarioStateKey) { mutableStateOf(baseScenario.characterPortraitUri) }
+    var characterPortraitUrl by rememberSaveable(scenarioStateKey) { mutableStateOf(baseScenario.characterPortraitUrl) }
+    var openingNarration by rememberSaveable(scenarioStateKey) { mutableStateOf(baseScenario.openingNarration) }
+    val normalizedSpec = remember(scenarioStateKey) { baseScenario.toInteractionSpec().normalized() }
+    var interactionMode by rememberSaveable(scenarioStateKey) {
         mutableStateOf(normalizedSpec.interactionMode)
     }
     // enableNarration / enableDeepImmersion 仅在沉浸设置页"场景插件"区维护，
     // 这里直接透传基线值以免重复 state 与老版本覆盖。
     val enableNarration = baseScenario.enableNarration
-    var enableRoleplayProtocol by rememberSaveable(baseScenario.id) {
+    var enableRoleplayProtocol by rememberSaveable(scenarioStateKey) {
         mutableStateOf(normalizedSpec.enableRoleplayProtocol)
     }
-    var longformModeEnabled by rememberSaveable(baseScenario.id) {
+    var longformModeEnabled by rememberSaveable(scenarioStateKey) {
         mutableStateOf(normalizedSpec.longformModeEnabled)
     }
-    var autoHighlightSpeaker by rememberSaveable(baseScenario.id) { mutableStateOf(baseScenario.autoHighlightSpeaker) }
+    var autoHighlightSpeaker by rememberSaveable(scenarioStateKey) { mutableStateOf(baseScenario.autoHighlightSpeaker) }
     val enableDeepImmersion = baseScenario.enableDeepImmersion
     val isOnlinePhoneMode = interactionMode == RoleplayInteractionMode.ONLINE_PHONE
 
@@ -194,7 +200,8 @@ fun RoleplayScenarioEditScreen(
         LazyColumn(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(innerPadding),
+                .padding(innerPadding)
+                .testTag(TAG_SCENARIO_EDIT_LIST),
             contentPadding = PaddingValues(
                 start = SettingsScreenPadding,
                 top = 4.dp,
@@ -218,7 +225,9 @@ fun RoleplayScenarioEditScreen(
                         OutlinedTextField(
                             value = title,
                             onValueChange = { title = it },
-                            modifier = Modifier.fillMaxWidth(),
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .testTag(TAG_SCENARIO_TITLE_INPUT),
                             label = { Text("场景标题") },
                             singleLine = true,
                             shape = RoundedCornerShape(18.dp),
@@ -227,7 +236,9 @@ fun RoleplayScenarioEditScreen(
                         OutlinedTextField(
                             value = description,
                             onValueChange = { description = it },
-                            modifier = Modifier.fillMaxWidth(),
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .testTag(TAG_SCENARIO_DESCRIPTION_INPUT),
                             label = { Text("场景描述") },
                             minLines = 3,
                             maxLines = 5,
@@ -340,7 +351,9 @@ fun RoleplayScenarioEditScreen(
                         OutlinedTextField(
                             value = userDisplayNameOverride,
                             onValueChange = { userDisplayNameOverride = it },
-                            modifier = Modifier.fillMaxWidth(),
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .testTag(TAG_SCENARIO_USER_DISPLAY_NAME_INPUT),
                             label = { Text("用户显示名覆写") },
                             singleLine = true,
                             supportingText = {
@@ -361,7 +374,9 @@ fun RoleplayScenarioEditScreen(
                         OutlinedTextField(
                             value = userPersonaOverride,
                             onValueChange = { userPersonaOverride = it },
-                            modifier = Modifier.fillMaxWidth(),
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .testTag(TAG_SCENARIO_USER_PERSONA_INPUT),
                             label = { Text("用户人设覆写") },
                             minLines = 4,
                             maxLines = 8,
@@ -374,7 +389,9 @@ fun RoleplayScenarioEditScreen(
                         OutlinedTextField(
                             value = openingNarration,
                             onValueChange = { openingNarration = it },
-                            modifier = Modifier.fillMaxWidth(),
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .testTag(TAG_SCENARIO_OPENING_NARRATION_INPUT),
                             label = {
                                 Text(
                                     if (isOnlinePhoneMode) "开场旁白" else "开场旁白",
@@ -408,6 +425,7 @@ fun RoleplayScenarioEditScreen(
                                 onClick = {
                                     applyInteractionSpec { it.withInteractionMode(mode) }
                                 },
+                                modifier = Modifier.testTag(roleplayInteractionModeTag(mode)),
                                 shape = RoundedCornerShape(14.dp),
                                 label = { Text(mode.displayName) },
                                 colors = FilterChipDefaults.filterChipColors(
@@ -750,3 +768,13 @@ private fun SwitchRow(
 private const val SCENARIO_BACKGROUND_SCOPE = "scenarioBackground"
 private const val SCENARIO_USER_PORTRAIT_SCOPE = "scenarioUserPortrait"
 private const val SCENARIO_CHARACTER_PORTRAIT_SCOPE = "scenarioCharacterPortrait"
+internal const val TAG_SCENARIO_EDIT_LIST = "roleplay_scenario_edit_list"
+internal const val TAG_SCENARIO_TITLE_INPUT = "roleplay_scenario_title_input"
+internal const val TAG_SCENARIO_DESCRIPTION_INPUT = "roleplay_scenario_description_input"
+internal const val TAG_SCENARIO_USER_DISPLAY_NAME_INPUT = "roleplay_scenario_user_display_name_input"
+internal const val TAG_SCENARIO_USER_PERSONA_INPUT = "roleplay_scenario_user_persona_input"
+internal const val TAG_SCENARIO_OPENING_NARRATION_INPUT = "roleplay_scenario_opening_narration_input"
+
+internal fun roleplayInteractionModeTag(mode: RoleplayInteractionMode): String {
+    return "roleplay_scenario_mode_${mode.storageValue}"
+}
