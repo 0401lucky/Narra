@@ -19,6 +19,85 @@
 
 ---
 
+## [1.5.2-dev] - 2026-04-19
+
+### Changed
+
+- 助手设置 5 个子页（详情 / 基础 / 提示词 / 扩展 / 记忆）整体视觉重做为玻璃拟态风格：Hero 改为 accent → accentSoft → surface 渐变底色 + 半透明 accent 边光 + 圆角 26dp
+- `AssistantDetailScreen` 的 `AssistantHeroPanel` 升级为 32dp 大号玻璃卡，头像背后加 accent 径向柔光环；三个状态 pill 恢复 palette 原始 containerColor，避免与 `SettingsStatusPill` 内部 alpha 两次叠加过淡
+- `AssistantSubsectionTitle` 标题左侧新增 accent 色渐变装饰柱，`AssistantPromptScreen.PromptSection` 6 个章节（系统提示词 / 场景 / 预览 / 示例对话 / 作者备注 / 最近消息窗口）同步对齐
+
+### Refactored
+
+- `AssistantPageComponents.kt` 去掉对中文 `overline` 的 `.uppercase()` 调用；新增 `AssistantSectionDivider` 作为章节间渐变分隔线
+
+### Docs
+
+- `dev` 渠道构建版本推进到 `1.5.2-dev (10502)`，APK 与元数据已上传 Cloudflare R2 / `docs/updates/dev.json`
+
+---
+
+## [1.5.1-dev] - 2026-04-19
+
+### Added
+
+- `RoleplayScreen` 底部"更多操作"面板为线下剧情新增语音 / 动态 / 视频 3 个 offline quick action，对齐线上模式入口密度
+- 新增 `RoleplayScreenQuickActionsTest` androidTest，覆盖全部入口按钮与点击行为
+
+### Changed
+
+- `ApiServiceFactory` 抽 `DEFAULT_READ_TIMEOUT_SECONDS=120` / `LONG_READ_TIMEOUT_SECONDS=600` 两个常量，新增 `createLongRunning` / `createLongRunningAnthropic` 客户端（独立缓存）
+- `PromptExtrasCore` 默认 provider 切到长超时客户端；所有 extras（日记 / 摘要 / 标题 / 记忆提议 / 剧情建议 / 手机内容 / 礼物图 Prompt）统一受益
+- `RoleplaySettingsContent` 的 netmeme 开关改为 4 个场景级 onUpdate callback（Narration / DeepImmersion / TimeAwareness / NetMeme）
+- `SettingsTopBar` 新增 `actionEnabled` 参数，透传给 `NarraFilledTonalButton`
+
+### Fixed
+
+- `AssistantPromptScreen` 改为脏检查 + TopBar 显式「保存」按钮 + Snackbar「已保存」反馈；`DisposableEffect` 仅在真有改动时兜底写回，修复浏览也会 trim 改写空格的静默写入
+- `AssistantMemoryScreen` 的 `editingMemoryId` / `isCreatingMemory` 改走 `rememberSaveable`；`editingMemory` 按 id 重新推导，对话框旋转后与 draft 生命周期一致，不再串值
+- `AssistantMemoryScreen` 保存记忆设置成功后 `onNavigateBack()`，对齐 Basic / Extensions
+- 修复慢模型 / 长上下文下客户端 120s 抛 `SocketTimeoutException`，API 后台已有完整输出但软件空白的问题
+
+### Docs
+
+- `dev` 渠道构建版本推进到 `1.5.1-dev (10501)`，APK 与元数据已上传 Cloudflare R2 / `docs/updates/dev.json`
+
+---
+
+## [1.5.0-dev] - 2026-04-19
+
+### Added
+
+- 新增 `AppLogger`，8 处高风险反序列化站点接入（T2）
+- `AppGraph.scheduleStartup(block)` 封装 `startupScope`，两个 Service `onDestroy` 审计（T12）
+
+### Changed
+
+- `allowThought` 字段同时判断 `scenario.enableNarration` 与 `settings.showOnlineRoleplayNarration`，修复「全局关闭线上扮演内心戏」后线上模式仍强制下发 thought 提示词与样例的问题
+
+### Refactored
+
+- 统一 Gson 走 `AppJson.gson` 单例，替换 17 处 `Gson()` new（T3）
+- `ChatDatabase.kt` 650 → 53 行，26 条迁移移到 `ChatDbMigrations`（T5）
+- `AiPromptExtrasService` 1657 → 475 行，拆为 Core + 6 个子服务（T6）
+- `SettingsViewModel` 1131 → 638 行，setter 拆 4 个扩展文件（T7）
+- 消息气泡 3 个 UiModel 加 `@Immutable`，Compose unstable 参数 22 → 9（T8）
+- `RoleplayInteractionSpec` 下沉场景联动规则（T9）
+- 5 个大 Compose 文件 4867 → 1709 行，新增 12 个单一职责文件（T10）
+- `RoleplayDiaryCore` 接口，Draft↔Entry 扩展函数（T11）
+- 修正 `RoleplayViewModelTest` 历史格式校验：`sentContext` 仅过滤 `role=="assistant"`，避免被最新 user 消息里的 `<format_reminder>`（含 `<char>` 禁用说明）误判
+
+### Fixed
+
+- Room schema 18 README、连续性测试、`.gitignore` 补规则（T1）
+- `CLAUDE.md` 同步 AppGraph / AppJson / 34 路由 / 订阅规范（T4）
+
+### Docs
+
+- `dev` 渠道构建版本推进到 `1.5.0-dev (10500)`，APK 与元数据已上传 Cloudflare R2 / `docs/updates/dev.json`
+
+---
+
 ## [1.4.7-dev] - 2026-04-18
 
 ### Fixed
