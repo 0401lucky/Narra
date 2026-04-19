@@ -2,6 +2,7 @@ package com.example.myapplication.ui.screen.settings
 
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -119,27 +120,59 @@ private fun AssistantHeroPanel(
     linkedWorldBookCount: Int,
 ) {
     val palette = rememberSettingsPalette()
-    Surface(
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(28.dp),
-        color = palette.surface,
-        border = BorderStroke(1.dp, palette.border.copy(alpha = 0.45f)),
-        shadowElevation = 0.dp,
+    // 大 hero 的玻璃渐变：accent → accentSoft → surface 的斜向过渡，模拟毛玻璃高光。
+    val heroGradient = Brush.linearGradient(
+        colors = listOf(
+            palette.accent.copy(alpha = 0.22f),
+            palette.accentSoft.copy(alpha = 0.14f),
+            palette.surface.copy(alpha = 0.95f),
+        ),
+    )
+    // 头像背后的柔光环：径向渐变 + CircleShape 裁剪，营造"发光点"视觉焦点。
+    val haloGradient = Brush.radialGradient(
+        colors = listOf(
+            palette.accent.copy(alpha = 0.38f),
+            palette.accent.copy(alpha = 0.12f),
+            palette.accent.copy(alpha = 0.0f),
+        ),
+    )
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(32.dp))
+            .background(heroGradient)
+            .border(
+                border = BorderStroke(1.dp, palette.accent.copy(alpha = 0.24f)),
+                shape = RoundedCornerShape(32.dp),
+            ),
     ) {
         Column(
-            modifier = Modifier.padding(horizontal = 20.dp, vertical = 22.dp),
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 24.dp, vertical = 28.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
-            AssistantAvatar(
-                name = assistant.name,
-                iconName = assistant.iconName,
-                avatarUri = assistant.avatarUri,
-                size = 88.dp,
-                containerColor = palette.subtleChip,
-                contentColor = palette.subtleChipContent,
-                cornerRadius = 24.dp,
-            )
+            Box(
+                modifier = Modifier.size(124.dp),
+                contentAlignment = Alignment.Center,
+            ) {
+                Box(
+                    modifier = Modifier
+                        .size(124.dp)
+                        .clip(CircleShape)
+                        .background(haloGradient),
+                )
+                AssistantAvatar(
+                    name = assistant.name,
+                    iconName = assistant.iconName,
+                    avatarUri = assistant.avatarUri,
+                    size = 88.dp,
+                    containerColor = palette.accentSoft.copy(alpha = 0.55f),
+                    contentColor = palette.accent,
+                    cornerRadius = 28.dp,
+                )
+            }
 
             Column(
                 horizontalAlignment = Alignment.CenterHorizontally,

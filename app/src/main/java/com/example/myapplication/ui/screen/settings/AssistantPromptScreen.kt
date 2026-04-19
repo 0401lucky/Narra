@@ -19,6 +19,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
@@ -51,6 +52,8 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.platform.LocalClipboard
 import androidx.compose.ui.platform.LocalContext
@@ -386,6 +389,7 @@ fun AssistantPromptScreen(
 
 /**
  * 沿用 SettingsGroup 的壳，不再自绘 Surface + border。保留内联标题 + trailing 图标的编排习惯。
+ * 标题左侧增加 accent 色装饰柱，让章节边界与"基础 / 扩展 / 记忆"等子页的 AssistantSubsectionTitle 保持视觉一致。
  */
 @Composable
 private fun PromptSection(
@@ -403,12 +407,32 @@ private fun PromptSection(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.SpaceBetween,
             ) {
-                Text(
-                    text = title,
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold,
-                    color = palette.title,
-                )
+                Row(
+                    modifier = Modifier.weight(1f),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .width(3.dp)
+                            .height(20.dp)
+                            .clip(RoundedCornerShape(2.dp))
+                            .background(
+                                Brush.verticalGradient(
+                                    colors = listOf(
+                                        palette.accent,
+                                        palette.accent.copy(alpha = 0.55f),
+                                    ),
+                                ),
+                            ),
+                    )
+                    Spacer(Modifier.width(10.dp))
+                    Text(
+                        text = title,
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold,
+                        color = palette.title,
+                    )
+                }
                 if (trailingIcons != null) {
                     trailingIcons()
                 }
