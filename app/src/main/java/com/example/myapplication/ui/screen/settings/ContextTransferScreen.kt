@@ -3,6 +3,7 @@ package com.example.myapplication.ui.screen.settings
 import android.content.Context
 import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -16,9 +17,11 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Download
 import androidx.compose.material.icons.filled.Upload
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -53,6 +56,7 @@ fun ContextTransferScreen(
     val palette = rememberSettingsPalette()
     var pendingImportSection by rememberSaveable { mutableStateOf(ContextTransferSection.ALL) }
     var pendingExportSection by rememberSaveable { mutableStateOf(ContextTransferSection.ALL) }
+    var showImportSourceDialog by rememberSaveable { mutableStateOf(false) }
     val snackbarHostState = rememberSettingsSnackbarHostState(
         message = uiState.message,
         onConsumeMessage = onConsumeMessage,
@@ -77,6 +81,21 @@ fun ContextTransferScreen(
 
     val importLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.OpenDocument(),
+    ) { uri ->
+        if (uri == null) return@rememberLauncherForActivityResult
+        scope.launch {
+            runCatching {
+                readImportPayload(context, uri)
+            }.onSuccess { payload ->
+                onPreviewImportPayload(payload, pendingImportSection)
+            }.onFailure { throwable ->
+                snackbarHostState.showSnackbar(throwable.message ?: "导入失败")
+            }
+        }
+    }
+
+    val characterCardImageLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.PickVisualMedia(),
     ) { uri ->
         if (uri == null) return@rememberLauncherForActivityResult
         scope.launch {
@@ -169,7 +188,7 @@ fun ContextTransferScreen(
                         },
                         onImport = {
                             pendingImportSection = ContextTransferSection.ALL
-                            importLauncher.launch(arrayOf("application/json", "text/plain", "image/png"))
+                            showImportSourceDialog = true
                         },
                     )
                 }
@@ -184,7 +203,7 @@ fun ContextTransferScreen(
                         },
                         onImport = {
                             pendingImportSection = ContextTransferSection.ASSISTANTS
-                            importLauncher.launch(arrayOf("application/json", "text/plain", "image/png"))
+                            showImportSourceDialog = true
                         },
                     )
                 }
@@ -199,7 +218,7 @@ fun ContextTransferScreen(
                         },
                         onImport = {
                             pendingImportSection = ContextTransferSection.WORLD_BOOK
-                            importLauncher.launch(arrayOf("application/json", "text/plain", "image/png"))
+                            showImportSourceDialog = true
                         },
                     )
                 }
@@ -214,7 +233,7 @@ fun ContextTransferScreen(
                         },
                         onImport = {
                             pendingImportSection = ContextTransferSection.MEMORY
-                            importLauncher.launch(arrayOf("application/json", "text/plain"))
+                            importLauncher.launch(IMPORT_TEXT_MIME_TYPES)
                         },
                     )
                 }
@@ -239,6 +258,48 @@ fun ContextTransferScreen(
             )
         }
     }
+
+    if (showImportSourceDialog) {
+        ImportSourceChooserDialog(
+            onPickImage = {
+                showImportSourceDialog = false
+                characterCardImageLauncher.launch(
+                    PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly),
+                )
+            },
+            onPickFile = {
+                showImportSourceDialog = false
+                importLauncher.launch(IMPORT_TEXT_MIME_TYPES)
+            },
+            onDismiss = { showImportSourceDialog = false },
+        )
+    }
+}
+
+@Composable
+private fun ImportSourceChooserDialog(
+    onPickImage: () -> Unit,
+    onPickFile: () -> Unit,
+    onDismiss: () -> Unit,
+) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("选择导入来源") },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                Text("从相册选 Tavern PNG 角色卡，或从文件选 JSON / 文本。")
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = onPickImage) { Text("从相册（PNG）") }
+        },
+        dismissButton = {
+            Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                TextButton(onClick = onPickFile) { Text("从文件（JSON）") }
+                TextButton(onClick = onDismiss) { Text("取消") }
+            }
+        },
+    )
 }
 
 @Composable
@@ -417,3 +478,5 @@ private fun resolveImportFileName(
     }
     return uri.lastPathSegment.orEmpty()
 }
+
+private val IMPORT_TEXT_MIME_TYPES = arrayOf("application/json", "text/plain")

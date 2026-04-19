@@ -1,8 +1,8 @@
 package com.example.myapplication.ui.screen.roleplay
 
-import android.content.Intent
 import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
@@ -41,13 +41,13 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.IntSize
@@ -58,6 +58,7 @@ import com.example.myapplication.model.RoleplayInteractionMode
 import com.example.myapplication.model.RoleplayInteractionSpec
 import com.example.myapplication.model.RoleplayScenario
 import com.example.myapplication.model.toInteractionSpec
+import com.example.myapplication.ui.LocalImagePersister
 import com.example.myapplication.ui.component.AppSnackbarHost
 import com.example.myapplication.ui.component.AssistantAvatar
 import com.example.myapplication.ui.component.UserAvatarLoadState
@@ -70,6 +71,7 @@ import com.example.myapplication.ui.screen.settings.SettingsSectionHeader
 import com.example.myapplication.ui.screen.settings.SettingsTopBar
 import com.example.myapplication.ui.screen.settings.rememberSettingsOutlineColors
 import com.example.myapplication.ui.screen.settings.rememberSettingsPalette
+import kotlinx.coroutines.launch
 
 @Composable
 fun RoleplayScenarioEditScreen(
@@ -84,10 +86,11 @@ fun RoleplayScenarioEditScreen(
     onClearErrorMessage: () -> Unit,
     onNavigateBack: () -> Unit,
 ) {
-    val context = LocalContext.current
     val palette = rememberSettingsPalette()
     val outlineColors = rememberSettingsOutlineColors()
     val snackbarHostState = remember { SnackbarHostState() }
+    val localImageStore = LocalImagePersister.current
+    val coroutineScope = rememberCoroutineScope()
     val isNew = scenario == null
     val baseScenario = scenario ?: RoleplayScenario()
 
@@ -147,42 +150,34 @@ fun RoleplayScenarioEditScreen(
     }
 
     val backgroundLauncher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.OpenDocument(),
+        contract = ActivityResultContracts.PickVisualMedia(),
     ) { uri: Uri? ->
         if (uri == null) return@rememberLauncherForActivityResult
-        runCatching {
-            context.contentResolver.takePersistableUriPermission(
-                uri,
-                Intent.FLAG_GRANT_READ_URI_PERMISSION,
-            )
+        coroutineScope.launch {
+            localImageStore.copyToAppStorage(uri, SCENARIO_BACKGROUND_SCOPE)?.let { backgroundUri = it }
         }
-        backgroundUri = uri.toString()
     }
     val userPortraitLauncher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.OpenDocument(),
+        contract = ActivityResultContracts.PickVisualMedia(),
     ) { uri: Uri? ->
         if (uri == null) return@rememberLauncherForActivityResult
-        runCatching {
-            context.contentResolver.takePersistableUriPermission(
-                uri,
-                Intent.FLAG_GRANT_READ_URI_PERMISSION,
-            )
+        coroutineScope.launch {
+            localImageStore.copyToAppStorage(uri, SCENARIO_USER_PORTRAIT_SCOPE)?.let {
+                userPortraitUri = it
+                userPortraitUrl = ""
+            }
         }
-        userPortraitUri = uri.toString()
-        userPortraitUrl = ""
     }
     val characterPortraitLauncher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.OpenDocument(),
+        contract = ActivityResultContracts.PickVisualMedia(),
     ) { uri: Uri? ->
         if (uri == null) return@rememberLauncherForActivityResult
-        runCatching {
-            context.contentResolver.takePersistableUriPermission(
-                uri,
-                Intent.FLAG_GRANT_READ_URI_PERMISSION,
-            )
+        coroutineScope.launch {
+            localImageStore.copyToAppStorage(uri, SCENARIO_CHARACTER_PORTRAIT_SCOPE)?.let {
+                characterPortraitUri = it
+                characterPortraitUrl = ""
+            }
         }
-        characterPortraitUri = uri.toString()
-        characterPortraitUrl = ""
     }
 
     Scaffold(
@@ -285,14 +280,22 @@ fun RoleplayScenarioEditScreen(
                             title = "背景图",
                             subtitle = "用于列表卡片封面与剧情内场景背景。",
                             value = backgroundUri,
-                            onPick = { backgroundLauncher.launch(arrayOf("image/*")) },
+                            onPick = {
+                                backgroundLauncher.launch(
+                                    PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly),
+                                )
+                            },
                             onClear = { backgroundUri = "" },
                         )
                         ScenarioImagePickerCard(
                             title = "用户立绘",
                             subtitle = "本地图片优先；填写 http/https 链接时使用链接图片。",
                             value = userPortraitUri.ifBlank { userPortraitUrl },
-                            onPick = { userPortraitLauncher.launch(arrayOf("image/*")) },
+                            onPick = {
+                                userPortraitLauncher.launch(
+                                    PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly),
+                                )
+                            },
                             onClear = {
                                 userPortraitUri = ""
                                 userPortraitUrl = ""
@@ -305,7 +308,11 @@ fun RoleplayScenarioEditScreen(
                             title = "角色立绘",
                             subtitle = "本地图片优先；填写 http/https 链接时使用链接图片。",
                             value = characterPortraitUri.ifBlank { characterPortraitUrl },
-                            onPick = { characterPortraitLauncher.launch(arrayOf("image/*")) },
+                            onPick = {
+                                characterPortraitLauncher.launch(
+                                    PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly),
+                                )
+                            },
                             onClear = {
                                 characterPortraitUri = ""
                                 characterPortraitUrl = ""
@@ -739,3 +746,7 @@ private fun SwitchRow(
         )
     }
 }
+
+private const val SCENARIO_BACKGROUND_SCOPE = "scenarioBackground"
+private const val SCENARIO_USER_PORTRAIT_SCOPE = "scenarioUserPortrait"
+private const val SCENARIO_CHARACTER_PORTRAIT_SCOPE = "scenarioCharacterPortrait"

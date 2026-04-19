@@ -2,6 +2,7 @@ package com.example.myapplication.ui.screen.settings
 
 import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.animateDpAsState
@@ -31,19 +32,21 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.example.myapplication.model.Assistant
 import com.example.myapplication.model.DEFAULT_ASSISTANT_ICON
 import com.example.myapplication.model.PRESET_ASSISTANT_ICONS
+import com.example.myapplication.ui.LocalImagePersister
 import com.example.myapplication.ui.component.AssistantAvatar
 import com.example.myapplication.ui.component.resolveAssistantIcon
+import kotlinx.coroutines.launch
 
 @Composable
 fun AssistantBasicScreen(
@@ -53,9 +56,10 @@ fun AssistantBasicScreen(
     onDelete: (String) -> Unit,
     onNavigateBack: () -> Unit,
 ) {
-    val context = LocalContext.current
     val palette = rememberSettingsPalette()
     val outlineColors = rememberSettingsOutlineColors()
+    val localImageStore = LocalImagePersister.current
+    val coroutineScope = rememberCoroutineScope()
 
     var iconName by rememberSaveable { mutableStateOf(assistant?.iconName ?: DEFAULT_ASSISTANT_ICON) }
     var avatarUri by rememberSaveable { mutableStateOf(assistant?.avatarUri ?: "") }
@@ -67,17 +71,15 @@ fun AssistantBasicScreen(
     var showDeleteDialog by rememberSaveable { mutableStateOf(false) }
 
     val imagePickerLauncher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.OpenDocument(),
+        contract = ActivityResultContracts.PickVisualMedia(),
     ) { uri: Uri? ->
-        uri?.let {
-            runCatching {
-                context.contentResolver.takePersistableUriPermission(
-                    it,
-                    android.content.Intent.FLAG_GRANT_READ_URI_PERMISSION,
-                )
+        if (uri == null) return@rememberLauncherForActivityResult
+        coroutineScope.launch {
+            val localPath = localImageStore.copyToAppStorage(uri, ASSISTANT_AVATAR_SCOPE)
+            if (localPath != null) {
+                avatarUri = localPath
+                iconName = ""
             }
-            avatarUri = it.toString()
-            iconName = ""
         }
     }
 
@@ -139,7 +141,11 @@ fun AssistantBasicScreen(
                                 Surface(
                                     modifier = Modifier
                                         .clip(RoundedCornerShape(14.dp))
-                                        .clickable { imagePickerLauncher.launch(arrayOf("image/*")) },
+                                        .clickable {
+                                            imagePickerLauncher.launch(
+                                                PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly),
+                                            )
+                                        },
                                     shape = RoundedCornerShape(14.dp),
                                     color = palette.accentSoft,
                                     border = BorderStroke(1.dp, palette.border.copy(alpha = 0.5f)),
@@ -343,3 +349,5 @@ fun AssistantBasicScreen(
         )
     }
 }
+
+private const val ASSISTANT_AVATAR_SCOPE = "assistantAvatar"

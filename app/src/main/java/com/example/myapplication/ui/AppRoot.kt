@@ -4,6 +4,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.produceState
@@ -37,6 +38,7 @@ fun AppRoot(
             settingsRepository = appGraph.aiSettingsRepository,
             settingsEditor = appGraph.aiSettingsEditor,
             modelCatalogRepository = appGraph.aiModelCatalogRepository,
+            imageFileCleaner = appGraph.localImageStore::deleteIfLocalAsync,
         ),
     )
     val appUpdateViewModel: AppUpdateViewModel = viewModel(
@@ -73,19 +75,21 @@ fun AppRoot(
             color = MaterialTheme.colorScheme.background,
         ) {
             if (appSettings != null) {
-                AppNavHost(
-                    appGraph = appGraph,
-                    navController = navController,
-                    settingsViewModel = settingsViewModel,
-                    appUpdateViewModel = appUpdateViewModel,
-                    startDestination = com.example.myapplication.ui.navigation.AppRoutes.CHAT,
-                )
-                AppUpdateDialogHost(
-                    uiState = appUpdateState,
-                    onDismiss = appUpdateViewModel::dismissDialog,
-                    onDownload = appUpdateViewModel::startUpdateDownload,
-                    onInstall = appUpdateViewModel::installDownloadedUpdate,
-                )
+                CompositionLocalProvider(LocalImagePersister provides appGraph.localImageStore) {
+                    AppNavHost(
+                        appGraph = appGraph,
+                        navController = navController,
+                        settingsViewModel = settingsViewModel,
+                        appUpdateViewModel = appUpdateViewModel,
+                        startDestination = com.example.myapplication.ui.navigation.AppRoutes.CHAT,
+                    )
+                    AppUpdateDialogHost(
+                        uiState = appUpdateState,
+                        onDismiss = appUpdateViewModel::dismissDialog,
+                        onDownload = appUpdateViewModel::startUpdateDownload,
+                        onInstall = appUpdateViewModel::installDownloadedUpdate,
+                    )
+                }
             }
         }
     }

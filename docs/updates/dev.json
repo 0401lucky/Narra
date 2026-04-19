@@ -1,15 +1,16 @@
 {
   "app_id": "com.narra.app.dev",
   "channel": "dev",
-  "latest_version_name": "1.5.2-dev",
-  "latest_version_code": 10502,
+  "latest_version_name": "1.5.3-dev",
+  "latest_version_code": 10503,
   "minimum_supported_version_code": 0,
-  "apk_url": "https://download.lsa1230.dpdns.org/dev/Narra-v1.5.2-dev-10502-dev.apk",
-  "apk_sha256": "e600b8388baad0b82f08654ea79df44194002fb6c480a459df297868536e3a51",
-  "published_at": "2026-04-19T12:10:59+08:00",
+  "apk_url": "https://download.lsa1230.dpdns.org/dev/Narra-v1.5.3-dev-10503-dev.apk",
+  "apk_sha256": "52fd9e11875ab1dfab89277173b3dacaa7702af19e2183080b59eb028faa94a9",
+  "published_at": "2026-04-19T18:05:00+08:00",
   "release_notes": [
-    "视觉：助手设置 5 个子页（详情 / 基础 / 提示词 / 扩展 / 记忆）整体玻璃拟态重做——渐变底色 + 半透明边光 + 头像径向光晕，替换此前扁平的白底圆角卡",
-    "视觉：子页章节标题左侧新增 accent 色装饰柱，『提示词』页的 6 个章节（系统提示词 / 场景 / 预览 / 示例对话 / 作者备注 / 最近消息窗口）与其他子页的视觉层级对齐",
-    "视觉：助手详情页 Hero 升级为 32dp 大号玻璃卡，状态 pill 配色随主题色联动"
+    "图片选择改用系统相册 Photo Picker：聊天插图、助手/用户头像、剧本立绘与背景、角色卡 PNG 导入全部直接打开相册，小米 MIUI 等机型不再默认弹出『文件管理』",
+    "存储稳定性：头像 / 立绘 / 背景在选图后立即复制到 app 私有目录，不再依赖 SAF 持久授权，避免进程重启后头像失效",
+    "资料导入：角色卡 / 世界书 / 全部资料导入入口新增『从相册 PNG / 从文件 JSON』二选一对话框，直接读取 Tavern PNG 角色卡",
+    "生命周期：删除助手或剧本时同步清理沙盒里的旧头像 / 立绘 / 背景文件，减少存储残留"
   ]
 }

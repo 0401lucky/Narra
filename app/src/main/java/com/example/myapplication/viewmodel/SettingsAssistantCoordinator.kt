@@ -9,6 +9,7 @@ import java.util.UUID
 
 class SettingsAssistantCoordinator(
     private val settingsEditor: AiSettingsEditor,
+    private val imageFileCleaner: suspend (String?) -> Boolean = { false },
 ) {
     suspend fun addAssistant(
         settings: AppSettings,
@@ -41,6 +42,7 @@ class SettingsAssistantCoordinator(
         if (assistantId in builtinIds) {
             return
         }
+        val target = settings.assistants.firstOrNull { it.id == assistantId }
         val updatedAssistants = settings.assistants.filter { it.id != assistantId }
         val selectedId = if (settings.selectedAssistantId == assistantId) {
             DEFAULT_ASSISTANT_ID
@@ -48,6 +50,7 @@ class SettingsAssistantCoordinator(
             settings.selectedAssistantId
         }
         settingsEditor.saveAssistants(updatedAssistants, selectedId)
+        target?.let { imageFileCleaner(it.avatarUri) }
     }
 
     suspend fun duplicateAssistant(

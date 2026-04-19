@@ -5,6 +5,7 @@ import android.content.Intent
 import android.content.res.Resources
 import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.runtime.Composable
@@ -21,6 +22,7 @@ import com.example.myapplication.model.PunishPlayDraft
 import com.example.myapplication.model.TaskPlayDraft
 import com.example.myapplication.model.TransferPlayDraft
 import com.example.myapplication.model.toChatMessagePart
+import com.example.myapplication.ui.LocalImagePersister
 import com.example.myapplication.viewmodel.ChatUiState
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
@@ -53,11 +55,14 @@ internal fun rememberChatScreenLaunchers(
     onAddPendingParts: (List<ChatMessagePart>) -> Unit,
     onSaveUserProfile: (String, String, String, String) -> Unit,
 ): ChatScreenLaunchers {
+    val localImageStore = LocalImagePersister.current
     val imagePickerLauncher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.OpenMultipleDocuments(),
+        contract = ActivityResultContracts.PickMultipleVisualMedia(maxItems = IMAGE_PICKER_MAX_ITEMS),
     ) { uris ->
         if (uris.isEmpty()) return@rememberLauncherForActivityResult
         val attachments = uris.mapNotNull { uri ->
+            // Photo Picker 返回的 URI 调 take 会抛 SecurityException，被 runCatching 吞掉；
+            // 当设备无 Photo Picker 回退到 ACTION_OPEN_DOCUMENT 时，该调用能保住跨进程读权限。
             runCatching {
                 context.contentResolver.takePersistableUriPermission(
                     uri,
@@ -74,17 +79,20 @@ internal fun rememberChatScreenLaunchers(
     }
 
     val avatarPickerLauncher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.OpenDocument(),
+        contract = ActivityResultContracts.PickVisualMedia(),
     ) { uri ->
         if (uri == null) return@rememberLauncherForActivityResult
-        runCatching {
-            context.contentResolver.takePersistableUriPermission(
-                uri,
-                Intent.FLAG_GRANT_READ_URI_PERMISSION,
-            )
+        scope.launch {
+            val localPath = localImageStore.copyToAppStorage(uri, AVATAR_SCOPE_CHAT_USER)
+            if (localPath != null) {
+                localState.setDraftUserAvatarUri(localPath)
+                localState.setDraftUserAvatarUrl("")
+            } else {
+                snackbarHostState.showSnackbar(
+                    resources.getString(R.string.chat_error_read_attachment),
+                )
+            }
         }
-        localState.setDraftUserAvatarUri(uri.toString())
-        localState.setDraftUserAvatarUrl("")
     }
 
     val filePickerLauncher = rememberLauncherForActivityResult(
@@ -149,8 +157,16 @@ internal fun rememberChatScreenLaunchers(
     }
 
     return ChatScreenLaunchers(
-        pickImages = { imagePickerLauncher.launch(arrayOf("image/*")) },
-        pickAvatar = { avatarPickerLauncher.launch(arrayOf("image/*")) },
+        pickImages = {
+            imagePickerLauncher.launch(
+                PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly),
+            )
+        },
+        pickAvatar = {
+            avatarPickerLauncher.launch(
+                PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly),
+            )
+        },
         pickFile = { filePickerLauncher.launch(arrayOf("*/*")) },
         exportMarkdown = {
             exportMarkdownLauncher.launch(buildExportFileName(uiState.currentConversationTitle))
@@ -271,3 +287,6 @@ private fun resetSpecialPlayDraftInternal(
         ChatSpecialType.PUNISH -> localState.setPunishDraft(PunishPlayDraft())
     }
 }
+
+private const val IMAGE_PICKER_MAX_ITEMS = 9
+private const val AVATAR_SCOPE_CHAT_USER = "chatUserAvatar"

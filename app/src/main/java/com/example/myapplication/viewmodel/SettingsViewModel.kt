@@ -112,6 +112,7 @@ class SettingsViewModel(
     private val settingsRepository: AiSettingsRepository,
     private val settingsEditor: AiSettingsEditor,
     private val modelCatalogRepository: AiModelCatalogRepository,
+    private val imageFileCleaner: suspend (String?) -> Boolean = { false },
 ) : ViewModel() {
     val storedSettings: StateFlow<AppSettings> = settingsRepository.settingsFlow.stateIn(
         scope = viewModelScope,
@@ -126,7 +127,7 @@ class SettingsViewModel(
         modelCatalogRepository = modelCatalogRepository,
         settingsEditor = settingsEditor,
     )
-    private val assistantCoordinator = SettingsAssistantCoordinator(settingsEditor)
+    private val assistantCoordinator = SettingsAssistantCoordinator(settingsEditor, imageFileCleaner)
     private val healthCoordinator = SettingsHealthCoordinator(modelCatalogRepository)
 
     init {
@@ -622,6 +623,7 @@ class SettingsViewModel(
             settingsRepository: AiSettingsRepository,
             settingsEditor: AiSettingsEditor,
             modelCatalogRepository: AiModelCatalogRepository,
+            imageFileCleaner: suspend (String?) -> Boolean = { false },
         ): ViewModelProvider.Factory {
             return object : ViewModelProvider.Factory {
                 @Suppress("UNCHECKED_CAST")
@@ -630,6 +632,7 @@ class SettingsViewModel(
                         settingsRepository = settingsRepository,
                         settingsEditor = settingsEditor,
                         modelCatalogRepository = modelCatalogRepository,
+                        imageFileCleaner = imageFileCleaner,
                     ) as T
                 }
             }

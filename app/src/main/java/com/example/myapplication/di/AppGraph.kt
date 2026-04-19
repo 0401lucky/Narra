@@ -15,6 +15,7 @@ import com.example.myapplication.data.repository.AppUpdateRepository
 import com.example.myapplication.data.repository.ConversationRepository
 import com.example.myapplication.data.repository.FileAttachmentResolver
 import com.example.myapplication.data.repository.ImageAttachmentResolver
+import com.example.myapplication.data.repository.LocalImageStore
 import com.example.myapplication.data.repository.context.ConversationSummaryRepository
 import com.example.myapplication.data.repository.context.MemoryRepository
 import com.example.myapplication.data.repository.context.RoomMemoryRepository
@@ -87,6 +88,10 @@ class AppGraph(
 
     val apiServiceFactory: ApiServiceFactory by lazy {
         ApiServiceFactory()
+    }
+
+    val localImageStore: LocalImageStore by lazy {
+        LocalImageStore(application)
     }
 
     val phoneSnapshotRepository: PhoneSnapshotRepository by lazy {
@@ -242,6 +247,7 @@ class AppGraph(
         RoomRoleplayRepository(
             roleplayDao = database.roleplayDao(),
             conversationRepository = conversationRepository,
+            imageFileCleaner = localImageStore::deleteIfLocalAsync,
         )
     }
 
