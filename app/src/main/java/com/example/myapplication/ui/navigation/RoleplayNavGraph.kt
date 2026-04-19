@@ -13,6 +13,7 @@ import androidx.navigation.compose.navigation
 import com.example.myapplication.di.AppGraph
 import com.example.myapplication.model.PhoneSnapshotOwnerType
 import com.example.myapplication.ui.screen.roleplay.RoleplayReadingMode
+import com.example.myapplication.ui.screen.roleplay.RoleplayDiaryDetailScreen
 import com.example.myapplication.ui.screen.roleplay.RoleplayDiaryScreen
 import com.example.myapplication.ui.screen.roleplay.RoleplayScenarioEditScreen
 import com.example.myapplication.ui.screen.roleplay.RoleplayScenarioListScreen
@@ -26,6 +27,14 @@ import com.example.myapplication.ui.screen.roleplay.RoleplayUiCallbacks
 import com.example.myapplication.ui.screen.roleplay.RoleplaySettingsScreen
 import com.example.myapplication.ui.screen.roleplay.RoleplayVideoCallScreen
 import com.example.myapplication.viewmodel.SettingsViewModel
+import com.example.myapplication.viewmodel.updateRoleplayHighContrast
+import com.example.myapplication.viewmodel.updateRoleplayImmersiveMode
+import com.example.myapplication.viewmodel.updateRoleplayLineHeightScale
+import com.example.myapplication.viewmodel.updateRoleplayLongformTargetChars
+import com.example.myapplication.viewmodel.updateShowOnlineRoleplayNarration
+import com.example.myapplication.viewmodel.updateShowRoleplayAiHelper
+import com.example.myapplication.viewmodel.updateShowRoleplayPresenceStrip
+import com.example.myapplication.viewmodel.updateShowRoleplayStatusStrip
 
 internal fun NavGraphBuilder.registerRoleplayGraph(
     appGraph: AppGraph,
@@ -379,6 +388,38 @@ internal fun NavGraphBuilder.registerRoleplayGraph(
                 onClearNoticeMessage = roleplayViewModel::clearNoticeMessage,
                 onClearErrorMessage = roleplayViewModel::clearErrorMessage,
                 onGenerateDiary = roleplayViewModel::generateRoleplayDiaries,
+                onOpenEntry = { entryId ->
+                    navController.navigate(AppRoutes.roleplayDiaryDetail(scenarioId, entryId)) {
+                        launchSingleTop = true
+                    }
+                },
+                onNavigateBack = { navController.popBackStack() },
+            )
+        }
+
+        composable(AppRoutes.ROLEPLAY_DIARY_DETAIL) { backStackEntry ->
+            val roleplayViewModel = rememberRoleplayViewModel(
+                navController = navController,
+                appGraph = appGraph,
+                backStackEntry = backStackEntry,
+            )
+            val roleplayState by roleplayViewModel.uiState.collectAsStateWithLifecycle()
+            val rawScenarioId = backStackEntry.arguments?.getString("scenarioId").orEmpty()
+            val scenarioId = Uri.decode(rawScenarioId)
+            val rawEntryId = backStackEntry.arguments?.getString("entryId").orEmpty()
+            val entryId = Uri.decode(rawEntryId)
+            val routeScenario = roleplayState.currentScenario?.takeIf { it.id == scenarioId }
+                ?: roleplayState.scenarios.firstOrNull { it.id == scenarioId }
+            LaunchedEffect(scenarioId) {
+                if (roleplayState.currentScenario?.id != scenarioId && roleplayState.currentSession == null) {
+                    roleplayViewModel.enterScenario(scenarioId)
+                }
+            }
+            RoleplayDiaryDetailScreen(
+                scenario = routeScenario,
+                settings = roleplayState.settings,
+                diaryEntries = roleplayState.diaryEntries,
+                entryId = entryId,
                 onNavigateBack = { navController.popBackStack() },
             )
         }

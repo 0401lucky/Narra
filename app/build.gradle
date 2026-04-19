@@ -134,6 +134,15 @@ android {
     }
 }
 
+// Compose Compiler metrics / stability reports。
+// 生成路径：app/build/compose_reports/*-classes.txt 与 *-composables.txt。
+// 用法：跑一次 `./gradlew.bat :app:compileDebugKotlin`（或 assembleDebug），
+//      再用 grep/Read 定位 unstable 参数热点。
+composeCompiler {
+    reportsDestination = layout.buildDirectory.dir("compose_reports")
+    metricsDestination = layout.buildDirectory.dir("compose_reports")
+}
+
 ksp {
     arg("room.schemaLocation", "$projectDir/schemas")
 }

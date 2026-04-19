@@ -338,8 +338,7 @@ fun AssistantPromptScreen(
 }
 
 /**
- * A clean section container with a bold title header and optional trailing icons.
- * Inspired by RikkaHub's prompt field sections.
+ * 沿用 SettingsGroup 的壳，不再自绘 Surface + border。保留内联标题 + trailing 图标的编排习惯。
  */
 @Composable
 private fun PromptSection(
@@ -348,12 +347,7 @@ private fun PromptSection(
     trailingIcons: @Composable (() -> Unit)? = null,
     content: @Composable () -> Unit,
 ) {
-    Surface(
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(24.dp),
-        color = palette.surface,
-        border = BorderStroke(0.5.dp, palette.border.copy(alpha = 0.3f)),
-    ) {
+    SettingsGroup {
         Column(
             modifier = Modifier.padding(horizontal = 18.dp, vertical = 16.dp),
         ) {

@@ -3,6 +3,8 @@ package com.example.myapplication.ui.screen.settings
 import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -101,10 +103,9 @@ fun AssistantBasicScreen(
             verticalArrangement = Arrangement.spacedBy(20.dp),
         ) {
             item {
-                AssistantWorkspaceIntro(
+                AssistantSubPageHeader(
                     assistant = assistant ?: Assistant(name = name, description = description),
-                    overline = "Basic",
-                    title = "基础设定",
+                    overline = "基础设定",
                 )
             }
 
@@ -203,6 +204,18 @@ fun AssistantBasicScreen(
                             PRESET_ASSISTANT_ICONS.forEach { preset ->
                                 val isSelected = iconName == preset.name
                                 val icon = resolveAssistantIcon(preset.name)
+                                val borderWidth by animateDpAsState(
+                                    targetValue = if (isSelected) 2.dp else 1.dp,
+                                    label = "icon_border_width",
+                                )
+                                val borderColor by animateColorAsState(
+                                    targetValue = if (isSelected) palette.accent else palette.border.copy(alpha = 0.4f),
+                                    label = "icon_border_color",
+                                )
+                                val containerColor by animateColorAsState(
+                                    targetValue = if (isSelected) palette.accentSoft else palette.surfaceTint,
+                                    label = "icon_bg",
+                                )
                                 Surface(
                                     modifier = Modifier
                                         .size(52.dp)
@@ -212,11 +225,8 @@ fun AssistantBasicScreen(
                                             avatarUri = ""
                                         },
                                     shape = RoundedCornerShape(14.dp),
-                                    color = if (isSelected) palette.accentSoft else palette.surfaceTint,
-                                    border = BorderStroke(
-                                        width = if (isSelected) 2.dp else 1.dp,
-                                        color = if (isSelected) palette.accent else palette.border.copy(alpha = 0.4f),
-                                    ),
+                                    color = containerColor,
+                                    border = BorderStroke(borderWidth, borderColor),
                                 ) {
                                     Box(
                                         modifier = Modifier.fillMaxSize(),

@@ -1,90 +1,63 @@
 package com.example.myapplication.ui.screen.settings
 
-import androidx.compose.foundation.BorderStroke
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.example.myapplication.model.Assistant
+import com.example.myapplication.ui.component.AssistantAvatar
 
+/**
+ * 助手子页（基础 / 提示词 / 扩展 / 记忆）顶部的薄 header。
+ * 只保留小头像 + 助手名 + 小标签，避免与外层 SettingsTopBar 的标题重复。
+ * 顶栏已显示"基础设定"等页面名，这里只承担"我在谁的配置里"的上下文。
+ */
 @Composable
-internal fun AssistantWorkspaceIntro(
+internal fun AssistantSubPageHeader(
     assistant: Assistant,
     overline: String,
-    title: String,
-    summary: String = "",
 ) {
     val palette = rememberSettingsPalette()
-    Surface(
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(30.dp),
-        color = palette.surface,
-        border = BorderStroke(1.dp, palette.border.copy(alpha = 0.55f)),
-        shadowElevation = 4.dp,
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 4.dp, vertical = 4.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(12.dp),
     ) {
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .background(
-                    brush = Brush.linearGradient(
-                        colors = listOf(
-                            palette.accentSoft.copy(alpha = 0.82f),
-                            palette.surface.copy(alpha = 0.98f),
-                        ),
-                    ),
-                ),
+        AssistantAvatar(
+            name = assistant.name,
+            iconName = assistant.iconName,
+            avatarUri = assistant.avatarUri,
+            size = 40.dp,
+            containerColor = palette.subtleChip,
+            contentColor = palette.subtleChipContent,
+            cornerRadius = 12.dp,
+        )
+        Column(
+            verticalArrangement = Arrangement.spacedBy(2.dp),
+            modifier = Modifier.weight(1f),
         ) {
-            Column(
-                modifier = Modifier.padding(horizontal = 20.dp, vertical = 18.dp),
-                verticalArrangement = Arrangement.spacedBy(10.dp),
-            ) {
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                ) {
-                    SettingsStatusPill(
-                        text = overline,
-                        containerColor = palette.subtleChip,
-                        contentColor = palette.subtleChipContent,
-                    )
-                    assistant.name.takeIf { it.isNotBlank() }?.let {
-                        SettingsStatusPill(
-                            text = it,
-                            containerColor = palette.surfaceTint,
-                            contentColor = palette.body,
-                        )
-                    }
-                }
-                Text(
-                    text = title,
-                    style = MaterialTheme.typography.headlineMedium,
-                    color = palette.title,
-                    fontWeight = FontWeight.Black,
-                )
-                if (summary.isNotBlank()) {
-                    Text(
-                        text = summary,
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = palette.body,
-                        maxLines = 3,
-                        overflow = TextOverflow.Ellipsis,
-                    )
-                }
-            }
+            Text(
+                text = overline,
+                style = MaterialTheme.typography.labelMedium,
+                color = palette.accent,
+                fontWeight = FontWeight.SemiBold,
+            )
+            Text(
+                text = assistant.name.ifBlank { "未命名助手" },
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.Bold,
+                color = palette.title,
+            )
         }
     }
 }

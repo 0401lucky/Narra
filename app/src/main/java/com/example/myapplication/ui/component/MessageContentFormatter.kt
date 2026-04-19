@@ -1,5 +1,7 @@
 package com.example.myapplication.ui.component
 
+import androidx.compose.runtime.Immutable
+
 private val OrderedListLineRegex = Regex("""\d+\.\s+.+""")
 private val TaskListLineRegex = Regex("""[-*+]\s+\[(?: |x|X)]\s+.+""")
 private val HorizontalRuleRegex = Regex("""^\s{0,3}(?:-{3,}|\*{3,}|_{3,})\s*$""")
@@ -18,6 +20,7 @@ private val StandaloneImageUrlRegex = Regex(
 private val DataImageUrlRegex = Regex(
     """(?is)^data:image/[a-z0-9.+-]+;base64,[a-z0-9+/=\r\n]+$""",
 )
+@Immutable
 internal data class AssistantVisualContent(
     val text: String,
     val imageSources: List<String>,

@@ -8,13 +8,11 @@ import com.example.myapplication.data.repository.ai.AiSettingsEditor
 import com.example.myapplication.data.repository.ai.AiSettingsRepository
 import com.example.myapplication.model.AppSettings
 import com.example.myapplication.model.Assistant
-import com.example.myapplication.model.BUILTIN_ASSISTANTS
 import com.example.myapplication.model.ConnectionHealth
 import com.example.myapplication.model.DEFAULT_ROLEPLAY_LONGFORM_TARGET_CHARS
-import com.example.myapplication.model.DEFAULT_ASSISTANT_ID
 import com.example.myapplication.model.ModelInfo
 import com.example.myapplication.model.ModelAbility
-import com.example.myapplication.model.ProviderFunctionModelMode
+import com.example.myapplication.model.ProviderApiProtocol
 import com.example.myapplication.model.ProviderSettings
 import com.example.myapplication.model.ProviderTemplate
 import com.example.myapplication.model.ProviderType
@@ -146,88 +144,60 @@ class SettingsViewModel(
         }
     }
 
-    fun updateBaseUrl(value: String) {
-        updateCurrentProvider { it.copy(baseUrl = value) }
-    }
+    fun updateBaseUrl(value: String) = updateCurrentProvider { it.copy(baseUrl = value) }
 
-    fun updateApiKey(value: String) {
-        updateCurrentProvider { it.copy(apiKey = value) }
-    }
+    fun updateApiKey(value: String) = updateCurrentProvider { it.copy(apiKey = value) }
 
-    fun updateSelectedModel(value: String) {
-        updateCurrentProvider { provider ->
-            provider.copy(
+    fun updateSelectedModel(value: String) = updateCurrentProvider { provider ->
+        provider.copy(
+            selectedModel = value,
+            availableModels = SettingsProviderDraftSupport.mergeModels(
+                currentModels = provider.availableModels,
                 selectedModel = value,
-                availableModels = SettingsProviderDraftSupport.mergeModels(
-                    currentModels = provider.availableModels,
-                    selectedModel = value,
-                ),
-            )
-        }
+            ),
+        )
     }
 
-    fun updateProviderName(providerId: String, value: String) {
+    fun updateProviderName(providerId: String, value: String) =
         updateProvider(providerId) { it.copy(name = value) }
-    }
 
-    fun updateProviderBaseUrl(providerId: String, value: String) {
+    fun updateProviderBaseUrl(providerId: String, value: String) =
         updateProvider(providerId) { it.copy(baseUrl = value) }
-    }
 
-    fun updateProviderApiKey(providerId: String, value: String) {
+    fun updateProviderApiKey(providerId: String, value: String) =
         updateProvider(providerId) { it.copy(apiKey = value) }
-    }
 
     fun updateProviderApiProtocol(
         providerId: String,
-        apiProtocol: com.example.myapplication.model.ProviderApiProtocol,
-    ) {
-        updateProvider(providerId) { provider ->
-            val normalizedBaseUrl = when (apiProtocol) {
-                com.example.myapplication.model.ProviderApiProtocol.OPENAI_COMPATIBLE -> {
-                    when (provider.resolvedType()) {
-                        ProviderType.ANTHROPIC -> ""
-                        else -> provider.baseUrl
-                    }
-                }
-                com.example.myapplication.model.ProviderApiProtocol.ANTHROPIC -> {
-                    provider.baseUrl.ifBlank { ProviderType.ANTHROPIC.defaultBaseUrl }
-                }
+        apiProtocol: ProviderApiProtocol,
+    ) = updateProvider(providerId) { provider ->
+        val normalizedBaseUrl = when (apiProtocol) {
+            ProviderApiProtocol.OPENAI_COMPATIBLE -> when (provider.resolvedType()) {
+                ProviderType.ANTHROPIC -> ""
+                else -> provider.baseUrl
             }
-            provider.copy(
-                apiProtocol = apiProtocol,
-                baseUrl = normalizedBaseUrl,
-                openAiTextApiMode = if (apiProtocol == com.example.myapplication.model.ProviderApiProtocol.OPENAI_COMPATIBLE) {
-                    provider.resolvedOpenAiTextApiMode()
-                } else {
-                    provider.openAiTextApiMode
-                },
-            )
+            ProviderApiProtocol.ANTHROPIC -> provider.baseUrl.ifBlank { ProviderType.ANTHROPIC.defaultBaseUrl }
         }
+        provider.copy(
+            apiProtocol = apiProtocol,
+            baseUrl = normalizedBaseUrl,
+            openAiTextApiMode = if (apiProtocol == ProviderApiProtocol.OPENAI_COMPATIBLE) {
+                provider.resolvedOpenAiTextApiMode()
+            } else {
+                provider.openAiTextApiMode
+            },
+        )
     }
 
     fun updateProviderOpenAiTextApiMode(
         providerId: String,
         textApiMode: com.example.myapplication.model.OpenAiTextApiMode,
-    ) {
-        updateProvider(providerId) { provider ->
-            provider.copy(openAiTextApiMode = textApiMode)
-        }
-    }
+    ) = updateProvider(providerId) { it.copy(openAiTextApiMode = textApiMode) }
 
-    fun updateProviderChatCompletionsPath(
-        providerId: String,
-        path: String,
-    ) {
-        updateProvider(providerId) { provider ->
-            provider.copy(chatCompletionsPath = path)
-        }
-    }
+    fun updateProviderChatCompletionsPath(providerId: String, path: String) =
+        updateProvider(providerId) { it.copy(chatCompletionsPath = path) }
 
-    fun updateProviderSelectedModel(
-        providerId: String,
-        value: String,
-    ) {
+    fun updateProviderSelectedModel(providerId: String, value: String) =
         updateProvider(providerId) { provider ->
             provider.copy(
                 selectedModel = value,
@@ -237,29 +207,21 @@ class SettingsViewModel(
                 ),
             )
         }
-    }
 
     fun updateProviderModelAbilities(
         providerId: String,
         modelId: String,
         abilities: Set<ModelAbility>?,
-    ) {
-        updateProvider(providerId) { provider ->
-            SettingsProviderDraftSupport.updateProviderModelAbilities(
-                provider = provider,
-                modelId = modelId,
-                abilities = abilities,
-            )
-        }
+    ) = updateProvider(providerId) { provider ->
+        SettingsProviderDraftSupport.updateProviderModelAbilities(
+            provider = provider,
+            modelId = modelId,
+            abilities = abilities,
+        )
     }
 
-    fun selectProvider(providerId: String) {
-        _uiState.update { current ->
-            SettingsDraftStateSupport.selectProvider(
-                current = current,
-                providerId = providerId,
-            )
-        }
+    fun selectProvider(providerId: String) = updateUiState { current ->
+        SettingsDraftStateSupport.selectProvider(current = current, providerId = providerId)
     }
 
     fun addProvider() {
@@ -273,9 +235,7 @@ class SettingsViewModel(
 
     fun ensureProviderDrafts() {
         val updatedState = SettingsDraftStateSupport.ensureProviderDrafts(_uiState.value)
-        if (updatedState == _uiState.value) {
-            return
-        }
+        if (updatedState == _uiState.value) return
         _uiState.value = updatedState
         persistProviderDrafts(
             providers = updatedState.providers,
@@ -284,18 +244,10 @@ class SettingsViewModel(
     }
 
     /** 显示模板选择对话框。 */
-    fun showAddProviderDialog() {
-        _uiState.update { current ->
-            SettingsDraftStateSupport.showAddProviderDialog(current)
-        }
-    }
+    fun showAddProviderDialog() = updateUiState { SettingsDraftStateSupport.showAddProviderDialog(it) }
 
     /** 关闭模板选择对话框。 */
-    fun dismissAddProviderDialog() {
-        _uiState.update { current ->
-            SettingsDraftStateSupport.dismissAddProviderDialog(current)
-        }
-    }
+    fun dismissAddProviderDialog() = updateUiState { SettingsDraftStateSupport.dismissAddProviderDialog(it) }
 
     /** 根据模板创建新提供商，返回新提供商 ID。 */
     fun addProviderFromTemplate(template: ProviderTemplate): String {
@@ -316,24 +268,12 @@ class SettingsViewModel(
         val provider = _uiState.value.providers.firstOrNull { it.id == providerId } ?: return
         if (!provider.hasBaseCredentials()) return
         viewModelScope.launch {
-            _uiState.update { current ->
-                SettingsHealthStateSupport.markChecking(
-                    current = current,
-                    providerId = providerId,
-                )
-            }
+            updateUiState { SettingsHealthStateSupport.markChecking(it, providerId) }
             val result = healthCoordinator.checkProviderHealth(provider)
-            _uiState.update { current ->
-                val updated = SettingsHealthStateSupport.markResult(
-                    current = current,
-                    providerId = providerId,
-                    health = result.health,
-                )
-                if (result.message.isNullOrBlank()) {
-                    updated
-                } else {
-                    SettingsUiMutationSupport.applyMessageError(updated, result.message)
-                }
+            updateUiState { current ->
+                val updated = SettingsHealthStateSupport.markResult(current, providerId, result.health)
+                if (result.message.isNullOrBlank()) updated
+                else SettingsUiMutationSupport.applyMessageError(updated, result.message)
             }
         }
     }
@@ -341,379 +281,17 @@ class SettingsViewModel(
     /** 批量检测所有有凭据的提供商连接状态。 */
     fun checkAllProviderHealth() {
         _uiState.value.providers.forEach { provider ->
-            if (provider.hasBaseCredentials()) {
-                checkProviderHealth(provider.id)
-            }
+            if (provider.hasBaseCredentials()) checkProviderHealth(provider.id)
         }
     }
 
     /** 切换提供商启用/禁用。 */
-    fun toggleProviderEnabled(providerId: String) {
-        _uiState.update { current ->
-            SettingsUiMutationSupport.toggleProviderEnabled(current, providerId)
-        }
+    fun toggleProviderEnabled(providerId: String) = updateUiState { current ->
+        SettingsUiMutationSupport.toggleProviderEnabled(current, providerId)
     }
 
-    fun updateProviderTitleSummaryModel(providerId: String, modelId: String) {
-        updateProvider(providerId) {
-            it.copy(
-                titleSummaryModel = modelId,
-                titleSummaryModelMode = ProviderFunctionModelMode.CUSTOM,
-            )
-        }
-    }
-
-    fun updateProviderChatSuggestionModel(providerId: String, modelId: String) {
-        updateProvider(providerId) {
-            it.copy(
-                chatSuggestionModel = modelId,
-                chatSuggestionModelMode = ProviderFunctionModelMode.CUSTOM,
-            )
-        }
-    }
-
-    fun updateProviderMemoryModel(providerId: String, modelId: String) {
-        updateProvider(providerId) {
-            it.copy(
-                memoryModel = modelId,
-                memoryModelMode = ProviderFunctionModelMode.CUSTOM,
-            )
-        }
-    }
-
-    fun updateProviderTranslationModel(providerId: String, modelId: String) {
-        updateProvider(providerId) {
-            it.copy(
-                translationModel = modelId,
-                translationModelMode = ProviderFunctionModelMode.CUSTOM,
-            )
-        }
-    }
-
-    fun updateProviderPhoneSnapshotModel(providerId: String, modelId: String) {
-        updateProvider(providerId) {
-            it.copy(
-                phoneSnapshotModel = modelId,
-                phoneSnapshotModelMode = ProviderFunctionModelMode.CUSTOM,
-            )
-        }
-    }
-
-    fun updateProviderSearchModel(providerId: String, modelId: String) {
-        updateProvider(providerId) {
-            it.copy(
-                searchModel = modelId,
-                searchModelMode = ProviderFunctionModelMode.CUSTOM,
-            )
-        }
-    }
-
-    fun updateProviderGiftImageModel(providerId: String, modelId: String) {
-        updateProvider(providerId) {
-            it.copy(
-                giftImageModel = modelId,
-                giftImageModelMode = ProviderFunctionModelMode.CUSTOM,
-            )
-        }
-    }
-
-    fun updateProviderTitleSummaryModelMode(providerId: String, mode: ProviderFunctionModelMode) {
-        updateProvider(providerId) {
-            it.copy(
-                titleSummaryModelMode = mode,
-                titleSummaryModel = if (mode == ProviderFunctionModelMode.CUSTOM) it.titleSummaryModel else "",
-            )
-        }
-    }
-
-    fun updateProviderChatSuggestionModelMode(providerId: String, mode: ProviderFunctionModelMode) {
-        updateProvider(providerId) {
-            it.copy(
-                chatSuggestionModelMode = mode,
-                chatSuggestionModel = if (mode == ProviderFunctionModelMode.CUSTOM) it.chatSuggestionModel else "",
-            )
-        }
-    }
-
-    fun updateProviderMemoryModelMode(providerId: String, mode: ProviderFunctionModelMode) {
-        updateProvider(providerId) {
-            it.copy(
-                memoryModelMode = mode,
-                memoryModel = if (mode == ProviderFunctionModelMode.CUSTOM) it.memoryModel else "",
-            )
-        }
-    }
-
-    fun updateProviderTranslationModelMode(providerId: String, mode: ProviderFunctionModelMode) {
-        updateProvider(providerId) {
-            it.copy(
-                translationModelMode = mode,
-                translationModel = if (mode == ProviderFunctionModelMode.CUSTOM) it.translationModel else "",
-            )
-        }
-    }
-
-    fun updateProviderPhoneSnapshotModelMode(providerId: String, mode: ProviderFunctionModelMode) {
-        updateProvider(providerId) {
-            it.copy(
-                phoneSnapshotModelMode = mode,
-                phoneSnapshotModel = if (mode == ProviderFunctionModelMode.CUSTOM) it.phoneSnapshotModel else "",
-            )
-        }
-    }
-
-    fun updateProviderSearchModelMode(providerId: String, mode: ProviderFunctionModelMode) {
-        updateProvider(providerId) {
-            it.copy(
-                searchModelMode = mode,
-                searchModel = if (mode == ProviderFunctionModelMode.CUSTOM) it.searchModel else "",
-            )
-        }
-    }
-
-    fun updateProviderGiftImageModelMode(providerId: String, mode: ProviderFunctionModelMode) {
-        updateProvider(providerId) {
-            it.copy(
-                giftImageModelMode = mode,
-                giftImageModel = if (mode == ProviderFunctionModelMode.CUSTOM) it.giftImageModel else "",
-            )
-        }
-    }
-
-    fun updateThemeMode(themeMode: ThemeMode) {
-        _uiState.update { current ->
-            SettingsPreferenceDraftSupport.updateThemeMode(current, themeMode)
-        }
-    }
-
-    fun updateMessageTextScale(messageTextScale: Float) {
-        _uiState.update { current ->
-            SettingsPreferenceDraftSupport.updateMessageTextScale(current, messageTextScale)
-        }
-    }
-
-    fun updateReasoningExpandedByDefault(expanded: Boolean) {
-        _uiState.update { current ->
-            SettingsPreferenceDraftSupport.updateReasoningExpandedByDefault(current, expanded)
-        }
-    }
-
-    fun updateShowThinkingContent(enabled: Boolean) {
-        _uiState.update { current ->
-            SettingsPreferenceDraftSupport.updateShowThinkingContent(current, enabled)
-        }
-    }
-
-    fun updateAutoCollapseThinking(enabled: Boolean) {
-        _uiState.update { current ->
-            SettingsPreferenceDraftSupport.updateAutoCollapseThinking(current, enabled)
-        }
-    }
-
-    fun updateAutoPreviewImages(enabled: Boolean) {
-        _uiState.update { current ->
-            SettingsPreferenceDraftSupport.updateAutoPreviewImages(current, enabled)
-        }
-    }
-
-    fun updateCodeBlockAutoWrap(enabled: Boolean) {
-        _uiState.update { current ->
-            SettingsPreferenceDraftSupport.updateCodeBlockAutoWrap(current, enabled)
-        }
-    }
-
-    fun updateCodeBlockAutoCollapse(enabled: Boolean) {
-        _uiState.update { current ->
-            SettingsPreferenceDraftSupport.updateCodeBlockAutoCollapse(current, enabled)
-        }
-    }
-
-    fun updateShowRoleplayAiHelper(enabled: Boolean) {
-        _uiState.update { current ->
-            SettingsPreferenceDraftSupport.updateShowRoleplayAiHelper(current, enabled)
-        }
-    }
-
-    fun updateRoleplayLongformTargetChars(value: Int) {
-        _uiState.update { current ->
-            SettingsPreferenceDraftSupport.updateRoleplayLongformTargetChars(current, value)
-        }
-    }
-
-    fun updateShowRoleplayPresenceStrip(enabled: Boolean) {
-        _uiState.update { current ->
-            SettingsPreferenceDraftSupport.updateShowRoleplayPresenceStrip(current, enabled)
-        }
-    }
-
-    fun updateShowRoleplayStatusStrip(enabled: Boolean) {
-        _uiState.update { current ->
-            SettingsPreferenceDraftSupport.updateShowRoleplayStatusStrip(current, enabled)
-        }
-    }
-
-    fun updateShowOnlineRoleplayNarration(enabled: Boolean) {
-        _uiState.update { current ->
-            SettingsPreferenceDraftSupport.updateShowOnlineRoleplayNarration(current, enabled)
-        }
-    }
-
-    fun updateEnableRoleplayNetMeme(enabled: Boolean) {
-        _uiState.update { current ->
-            SettingsPreferenceDraftSupport.updateEnableRoleplayNetMeme(current, enabled)
-        }
-    }
-
-    fun updateRoleplayImmersiveMode(mode: com.example.myapplication.model.RoleplayImmersiveMode) {
-        _uiState.update { current ->
-            SettingsPreferenceDraftSupport.updateRoleplayImmersiveMode(current, mode)
-        }
-    }
-
-    fun updateRoleplayHighContrast(enabled: Boolean) {
-        _uiState.update { current ->
-            SettingsPreferenceDraftSupport.updateRoleplayHighContrast(current, enabled)
-        }
-    }
-
-    fun updateRoleplayLineHeightScale(scale: com.example.myapplication.model.RoleplayLineHeightScale) {
-        _uiState.update { current ->
-            SettingsPreferenceDraftSupport.updateRoleplayLineHeightScale(current, scale)
-        }
-    }
-
-    fun updateScreenTranslationServiceEnabled(enabled: Boolean) {
-        updateScreenTranslationSettings { it.copy(serviceEnabled = enabled) }
-    }
-
-    fun updateScreenTranslationOverlayEnabled(enabled: Boolean) {
-        updateScreenTranslationSettings { it.copy(overlayEnabled = enabled) }
-    }
-
-    fun updateScreenTranslationTargetLanguage(language: String) {
-        updateScreenTranslationSettings { it.copy(targetLanguage = language) }
-    }
-
-    fun updateScreenTranslationSelectedTextEnabled(enabled: Boolean) {
-        updateScreenTranslationSettings { it.copy(selectedTextEnabled = enabled) }
-    }
-
-    fun updateScreenTranslationShowSourceText(enabled: Boolean) {
-        updateScreenTranslationSettings { it.copy(showSourceText = enabled) }
-    }
-
-    fun updateScreenTranslationVendorGuideDismissed(dismissed: Boolean) {
-        updateScreenTranslationSettings { it.copy(vendorGuideDismissed = dismissed) }
-    }
-
-    fun updateScreenTranslationOverlayOffset(
-        x: Float,
-        y: Float,
-    ) {
-        updateScreenTranslationSettings {
-            it.copy(
-                overlayOffsetX = x.coerceIn(0f, 1f),
-                overlayOffsetY = y.coerceIn(0f, 1f),
-            )
-        }
-    }
-
-    fun selectSearchSource(sourceId: String) {
-        _uiState.update { current ->
-            SettingsSearchDraftSupport.updateSearchSettings(current) { settings ->
-                settings.copy(selectedSourceId = sourceId)
-            }
-        }
-    }
-
-    fun updateSearchResultCount(resultCount: Int) {
-        _uiState.update { current ->
-            SettingsSearchDraftSupport.updateSearchSettings(current) { settings ->
-                settings.copy(defaultResultCount = resultCount)
-            }
-        }
-    }
-
-    fun updateSearchSourceEnabled(
-        sourceId: String,
-        enabled: Boolean,
-    ) {
-        _uiState.update { current ->
-            SettingsSearchDraftSupport.updateSearchSettings(current) { settings ->
-                settings.copy(
-                    sources = settings.sources.map { source ->
-                        if (source.id == sourceId) {
-                            source.copy(enabled = enabled)
-                        } else {
-                            source
-                        }
-                    },
-                )
-            }
-        }
-    }
-
-    fun updateSearchSourceApiKey(
-        sourceId: String,
-        apiKey: String,
-    ) {
-        _uiState.update { current ->
-            SettingsSearchDraftSupport.updateSearchSettings(current) { settings ->
-                settings.copy(
-                    sources = settings.sources.map { source ->
-                        if (source.id == sourceId) {
-                            source.copy(apiKey = apiKey)
-                        } else {
-                            source
-                        }
-                    },
-                )
-            }
-        }
-    }
-
-    fun updateSearchSourceEngineId(
-        sourceId: String,
-        engineId: String,
-    ) {
-        _uiState.update { current ->
-            SettingsSearchDraftSupport.updateSearchSettings(current) { settings ->
-                settings.copy(
-                    sources = settings.sources.map { source ->
-                        if (source.id == sourceId) {
-                            source.copy(engineId = engineId)
-                        } else {
-                            source
-                        }
-                    },
-                )
-            }
-        }
-    }
-
-    fun updateSearchSourceProviderId(
-        sourceId: String,
-        providerId: String,
-    ) {
-        _uiState.update { current ->
-            SettingsSearchDraftSupport.updateSearchSettings(current) { settings ->
-                settings.copy(
-                    sources = settings.sources.map { source ->
-                        if (source.id == sourceId) {
-                            source.copy(providerId = providerId)
-                        } else {
-                            source
-                        }
-                    },
-                )
-            }
-        }
-    }
-
-    fun deleteProvider(providerId: String) {
-        _uiState.update { current ->
-            SettingsUiMutationSupport.deleteProvider(current, providerId)
-        }
+    fun deleteProvider(providerId: String) = updateUiState { current ->
+        SettingsUiMutationSupport.deleteProvider(current, providerId)
     }
 
     fun loadModels() {
@@ -745,15 +323,11 @@ class SettingsViewModel(
     fun saveSettings(onSaved: () -> Unit) {
         viewModelScope.launch {
             val currentState = _uiState.value
-            _uiState.update { current ->
-                SettingsUiMutationSupport.beginSaving(current)
-            }
+            updateUiState { SettingsUiMutationSupport.beginSaving(it) }
             runCatching {
-                persistenceCoordinator.saveSettings(
-                    currentState = currentState,
-                )
+                persistenceCoordinator.saveSettings(currentState = currentState)
             }.onSuccess { result ->
-                _uiState.update { current ->
+                updateUiState { current ->
                     SettingsUiMutationSupport.applySaveSuccess(
                         current = current,
                         result = result,
@@ -762,7 +336,7 @@ class SettingsViewModel(
                 }
                 onSaved()
             }.onFailure { throwable ->
-                _uiState.update { current ->
+                updateUiState { current ->
                     SettingsUiMutationSupport.applySaveFailure(
                         current = current,
                         errorMessage = throwable.message ?: "设置保存失败",
@@ -774,7 +348,7 @@ class SettingsViewModel(
 
     fun saveSelectedModel(selectedModel: String) {
         val currentState = _uiState.value
-        _uiState.update { current ->
+        updateUiState { current ->
             SettingsDraftStateSupport.updateCurrentProvider(current) { provider ->
                 provider.copy(
                     selectedModel = selectedModel,
@@ -805,15 +379,11 @@ class SettingsViewModel(
         )
         val targetProvider = candidateProviders.firstOrNull { it.id == providerId } ?: return
         if (!targetProvider.enabled) {
-            _uiState.update { current ->
-                SettingsUiMutationSupport.applyMessageError(current, "该提供商已停用，请先启用后再切换")
-            }
+            updateUiState { SettingsUiMutationSupport.applyMessageError(it, "该提供商已停用，请先启用后再切换") }
             return
         }
 
-        _uiState.update { current ->
-            SettingsDraftStateSupport.selectProvider(current, targetProvider.id)
-        }
+        updateUiState { SettingsDraftStateSupport.selectProvider(it, targetProvider.id) }
 
         launchPersistenceMutation(
             defaultErrorMessage = "提供商切换失败",
@@ -827,12 +397,9 @@ class SettingsViewModel(
         )
     }
 
-    fun saveSelectedModelForProvider(
-        providerId: String,
-        selectedModel: String,
-    ) {
+    fun saveSelectedModelForProvider(providerId: String, selectedModel: String) {
         val currentState = _uiState.value
-        _uiState.update { current ->
+        updateUiState { current ->
             val updated = SettingsDraftStateSupport.updateProvider(
                 current = current,
                 providerId = providerId,
@@ -860,18 +427,13 @@ class SettingsViewModel(
         )
     }
 
-    fun saveThinkingBudgetForProvider(
-        providerId: String,
-        thinkingBudget: Int?,
-    ) {
+    fun saveThinkingBudgetForProvider(providerId: String, thinkingBudget: Int?) {
         val currentState = _uiState.value
-        _uiState.update { current ->
+        updateUiState { current ->
             SettingsDraftStateSupport.updateProvider(
                 current = current,
                 providerId = providerId,
-            ) { provider ->
-                provider.copy(thinkingBudget = thinkingBudget)
-            }
+            ) { it.copy(thinkingBudget = thinkingBudget) }
         }
         launchPersistenceMutation(
             defaultErrorMessage = "思考预算保存失败",
@@ -891,97 +453,96 @@ class SettingsViewModel(
         personaPrompt: String,
         avatarUri: String,
         avatarUrl: String,
-    ) {
-        launchPersistenceMutation(
-            defaultErrorMessage = "个人资料保存失败",
-            action = {
-                persistenceCoordinator.saveUserProfile(
-                    displayName = displayName,
-                    personaPrompt = personaPrompt,
-                    avatarUri = avatarUri,
-                    avatarUrl = avatarUrl,
-                )
-            },
+    ) = launchPersistenceMutation(
+        defaultErrorMessage = "个人资料保存失败",
+        action = {
+            persistenceCoordinator.saveUserProfile(
+                displayName = displayName,
+                personaPrompt = personaPrompt,
+                avatarUri = avatarUri,
+                avatarUrl = avatarUrl,
+            )
+        },
+    )
+
+    fun consumeMessage() = updateUiState { SettingsUiMutationSupport.consumeMessage(it) }
+
+    fun confirmFetchedModels(providerId: String, selectedModelIds: Set<String>) = updateUiState { current ->
+        SettingsUiMutationSupport.confirmFetchedModels(
+            current = current,
+            providerId = providerId,
+            selectedModelIds = selectedModelIds,
         )
     }
 
-    fun consumeMessage() {
-        _uiState.update { current ->
-            SettingsUiMutationSupport.consumeMessage(current)
-        }
+    fun dismissFetchedModels() = updateUiState { SettingsUiMutationSupport.dismissFetchedModels(it) }
+
+    fun removeModelFromProvider(providerId: String, modelId: String) = updateUiState { current ->
+        SettingsUiMutationSupport.removeModelFromProvider(
+            current = current,
+            providerId = providerId,
+            modelId = modelId,
+        )
     }
 
-    fun confirmFetchedModels(providerId: String, selectedModelIds: Set<String>) {
-        val currentState = _uiState.value
-        val fetchedModels = currentState.pendingFetchedModels
+    // ── T7.1：5 个助手 op 统一走 launchAssistantOp helper。 ──
+    fun addAssistant(assistant: Assistant) =
+        launchAssistantOp { addAssistant(it, assistant) }
 
-        _uiState.update { current ->
-            SettingsUiMutationSupport.confirmFetchedModels(
+    fun updateAssistant(assistant: Assistant) =
+        launchAssistantOp { updateAssistant(it, assistant) }
+
+    fun removeAssistant(assistantId: String) =
+        launchAssistantOp { removeAssistant(it, assistantId) }
+
+    fun duplicateAssistant(assistantId: String) =
+        launchAssistantOp { duplicateAssistant(it, assistantId) }
+
+    fun selectAssistant(assistantId: String) =
+        launchAssistantOp { selectAssistant(it, assistantId) }
+
+    // ── 内部 helper（部分暴露为 internal，供同包 setter 扩展文件访问）。 ──
+
+    /** 供同包扩展函数更新 [SettingsUiState]。 */
+    internal fun updateUiState(transform: (SettingsUiState) -> SettingsUiState) {
+        _uiState.update(transform)
+    }
+
+    /** 供同包扩展函数更新单个提供商草稿。 */
+    internal fun updateProvider(
+        providerId: String,
+        transform: (ProviderSettings) -> ProviderSettings,
+    ) = updateUiState { current ->
+        SettingsDraftStateSupport.updateProvider(
+            current = current,
+            providerId = providerId,
+            transform = transform,
+        )
+    }
+
+    /** 供同包 SettingsScreenTranslationSetters 扩展访问。 */
+    internal fun updateScreenTranslationDraft(
+        transform: (ScreenTranslationSettings) -> ScreenTranslationSettings,
+    ) = updateUiState { current ->
+        SettingsPreferenceDraftSupport.updateScreenTranslationSettings(
+            current = current,
+            transform = transform,
+        )
+    }
+
+    private fun updateCurrentProvider(transform: (ProviderSettings) -> ProviderSettings) =
+        updateUiState { current ->
+            SettingsDraftStateSupport.updateCurrentProvider(
                 current = current,
-                providerId = providerId,
-                selectedModelIds = selectedModelIds,
+                transform = transform,
             )
         }
-    }
 
-    fun dismissFetchedModels() {
-        _uiState.update { current ->
-            SettingsUiMutationSupport.dismissFetchedModels(current)
-        }
-    }
-
-    fun removeModelFromProvider(providerId: String, modelId: String) {
-        _uiState.update { current ->
-            SettingsUiMutationSupport.removeModelFromProvider(
-                current = current,
-                providerId = providerId,
-                modelId = modelId,
-            )
-        }
-    }
-
-    fun addAssistant(assistant: Assistant) {
+    private fun launchAssistantOp(
+        block: suspend SettingsAssistantCoordinator.(AppSettings) -> Unit,
+    ) {
         viewModelScope.launch {
-            assistantCoordinator.addAssistant(
-                settings = storedSettings.value,
-                assistant = assistant,
-            )
-        }
-    }
-
-    fun updateAssistant(assistant: Assistant) {
-        viewModelScope.launch {
-            assistantCoordinator.updateAssistant(
-                settings = storedSettings.value,
-                assistant = assistant,
-            )
-        }
-    }
-
-    fun removeAssistant(assistantId: String) {
-        viewModelScope.launch {
-            assistantCoordinator.removeAssistant(
-                settings = storedSettings.value,
-                assistantId = assistantId,
-            )
-        }
-    }
-
-    fun duplicateAssistant(assistantId: String) {
-        viewModelScope.launch {
-            assistantCoordinator.duplicateAssistant(
-                settings = storedSettings.value,
-                assistantId = assistantId,
-            )
-        }
-    }
-
-    fun selectAssistant(assistantId: String) {
-        viewModelScope.launch {
-            assistantCoordinator.selectAssistant(
-                settings = storedSettings.value,
-                assistantId = assistantId,
-            )
+            assistantCoordinator.block(storedSettings.value)
         }
     }
 
@@ -993,9 +554,7 @@ class SettingsViewModel(
             defaultErrorMessage = defaultErrorMessage,
             action = action,
             onSuccess = { current, result ->
-                result?.let {
-                    SettingsUiMutationSupport.applyPersistenceSuccess(current, it)
-                } ?: current
+                result?.let { SettingsUiMutationSupport.applyPersistenceSuccess(current, it) } ?: current
             },
         )
     }
@@ -1009,11 +568,9 @@ class SettingsViewModel(
             runCatching {
                 action()
             }.onSuccess { result ->
-                _uiState.update { current ->
-                    onSuccess(current, result)
-                }
+                updateUiState { current -> onSuccess(current, result) }
             }.onFailure { throwable ->
-                _uiState.update { current ->
+                updateUiState { current ->
                     SettingsUiMutationSupport.applyMessageError(
                         current,
                         throwable.message ?: defaultErrorMessage,
@@ -1023,34 +580,24 @@ class SettingsViewModel(
         }
     }
 
+    // ── T7.2：persistProviderDrafts 复用 launchUiMutation，去掉独立 launch/runCatching。 ──
     private fun persistProviderDrafts(
         providers: List<ProviderSettings>,
         selectedProviderId: String,
-    ) {
-        viewModelScope.launch {
-            runCatching {
-                settingsEditor.saveProviderSettings(
-                    providers = providers,
-                    selectedProviderId = selectedProviderId,
-                )
-            }.onFailure { throwable ->
-                _uiState.update { current ->
-                    SettingsUiMutationSupport.applyMessageError(
-                        current,
-                        throwable.message ?: "提供商保存失败",
-                    )
-                }
-            }
-        }
-    }
+    ) = launchUiMutation(
+        defaultErrorMessage = "提供商保存失败",
+        action = {
+            settingsEditor.saveProviderSettings(
+                providers = providers,
+                selectedProviderId = selectedProviderId,
+            )
+        },
+        onSuccess = { current, _ -> current },
+    )
 
-    private fun loadModelsForProvider(
-        request: SettingsModelLoadRequest,
-    ) {
+    private fun loadModelsForProvider(request: SettingsModelLoadRequest) {
         viewModelScope.launch {
-            _uiState.update { current ->
-                SettingsUiMutationSupport.beginLoadingModels(current, request.providerId)
-            }
+            updateUiState { SettingsUiMutationSupport.beginLoadingModels(it, request.providerId) }
             runCatching {
                 modelLoadCoordinator.loadModelsForProvider(
                     providerId = request.providerId,
@@ -1063,50 +610,10 @@ class SettingsViewModel(
                     persistedSelectedProviderId = request.persistedSelectedProviderId,
                 )
             }.onSuccess { result ->
-                _uiState.update { current ->
-                    SettingsUiMutationSupport.applyLoadModelsSuccess(current, result)
-                }
+                updateUiState { SettingsUiMutationSupport.applyLoadModelsSuccess(it, result) }
             }.onFailure { throwable ->
-                _uiState.update { current ->
-                    SettingsUiMutationSupport.applyLoadModelsFailure(
-                        current,
-                        throwable.message ?: "模型拉取失败",
-                    )
-                }
+                updateUiState { SettingsUiMutationSupport.applyLoadModelsFailure(it, throwable.message ?: "模型拉取失败") }
             }
-        }
-    }
-
-    private fun updateCurrentProvider(transform: (ProviderSettings) -> ProviderSettings) {
-        _uiState.update { current ->
-            SettingsDraftStateSupport.updateCurrentProvider(
-                current = current,
-                transform = transform,
-            )
-        }
-    }
-
-    private fun updateProvider(
-        providerId: String,
-        transform: (ProviderSettings) -> ProviderSettings,
-    ) {
-        _uiState.update { current ->
-            SettingsDraftStateSupport.updateProvider(
-                current = current,
-                providerId = providerId,
-                transform = transform,
-            )
-        }
-    }
-
-    private fun updateScreenTranslationSettings(
-        transform: (ScreenTranslationSettings) -> ScreenTranslationSettings,
-    ) {
-        _uiState.update { current ->
-            SettingsPreferenceDraftSupport.updateScreenTranslationSettings(
-                current = current,
-                transform = transform,
-            )
         }
     }
 

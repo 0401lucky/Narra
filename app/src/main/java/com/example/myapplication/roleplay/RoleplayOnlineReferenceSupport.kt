@@ -132,7 +132,7 @@ internal object RoleplayOnlineReferenceSupport {
         outputParser: RoleplayOutputParser,
     ): List<ChatMessage> {
         val currentInteractionMode = RoleplayMessageFormatSupport.resolveScenarioInteractionMode(scenario)
-        val allowThought = scenario.enableNarration
+        val allowThought = scenario.enableNarration && settings.showOnlineRoleplayNarration
         val characterName = scenario.characterDisplayNameOverride.trim()
             .ifBlank { assistant?.name?.trim().orEmpty() }
             .ifBlank { "角色" }

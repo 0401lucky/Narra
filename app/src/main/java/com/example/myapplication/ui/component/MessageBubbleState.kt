@@ -1,6 +1,7 @@
 package com.example.myapplication.ui.component
 
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -55,6 +56,7 @@ internal fun resolveReasoningCardDisplayState(
     }
 }
 
+@Immutable
 internal data class MessageBubbleRenderState(
     val isUser: Boolean,
     val isError: Boolean,

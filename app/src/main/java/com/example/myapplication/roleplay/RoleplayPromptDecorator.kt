@@ -23,7 +23,7 @@ object RoleplayPromptDecorator {
         val characterName = scenario.characterDisplayNameOverride.trim()
             .ifBlank { assistant?.name?.trim().orEmpty() }
             .ifBlank { "角色" }
-        val allowOnlineThoughtHints = scenario.enableNarration
+        val allowOnlineThoughtHints = scenario.enableNarration && settings.showOnlineRoleplayNarration
         val resolvedBaseSystemPrompt = ContextPlaceholderResolver.resolve(
             text = baseSystemPrompt,
             userName = playerName,
@@ -261,7 +261,32 @@ object RoleplayPromptDecorator {
                     add(NetMemeProtocolPromptSupport.buildPromptSection(characterName))
                 }
 
-                add("【格式保持（必读）】\n你的输出必须是且只能是一个合法 JSON 数组，如 [\"...\",\"...\"]。\n常见掉格式错误：聊久了开始输出纯文本段落、Markdown 代码块、或者 XML 标签。这些都会导致解析失败。\n自检：输出前确认——最外层是 [ ] ？每个元素是字符串或允许的对象？没有其他包裹？")
+                add(
+                    buildString {
+                        append("【格式保持（必读）】\n")
+                        append("无论对话进行到第几轮，以下规则始终生效，不得遗忘或省略：\n")
+                        append("你的输出必须是且只能是一个合法 JSON 数组，如 [\"...\",\"...\"]。\n")
+                        append("常见掉格式错误：聊久了开始输出纯文本段落、Markdown 代码块、或者 XML 标签。这些都会导致解析失败。\n\n")
+                        append("【正例】\n")
+                        append("[\"嗯 在呢\",\"刚到家\"]\n")
+                        if (allowOnlineThoughtHints) {
+                            append("[{\"type\":\"thought\",\"content\":\"心跳好快\"},\"还没睡？\"]\n")
+                        }
+                        append("[{\"type\":\"voice_message\",\"content\":\"你等我一下\",\"duration_seconds\":3}]\n\n")
+                        append("【反例（任何一条都会让解析失败，绝对禁止）】\n")
+                        append("❌ 嗯 在呢 ← 裸文本，没有最外层 [ ]\n")
+                        append("❌ {\"type\":\"thought\",\"content\":\"...\"} ← 单个对象也必须用 [ ] 包起来\n")
+                        append("❌ ```json\\n[\"...\"]\\n``` ← 不要 Markdown 代码块\n")
+                        append("❌ <char>\u201c嗯\u201d</char> / <dialogue>\u201c嗯\u201d</dialogue> ← 这些是线下模式的标签，线上模式禁用\n")
+                        append("❌ [\"嗯\\n在呢\\n刚到家\"] ← 多条消息用换行塞进一个字符串，应该拆成 [\"嗯\",\"在呢\",\"刚到家\"]\n\n")
+                        append("【失败恢复】\n")
+                        append("如果你发现上几轮自己不小心输出了纯文本、Markdown 或 XML（已经错了），从这一轮开始立刻恢复 [ ] 数组格式，不要因为\u201c之前错过了\u201d就继续错下去。格式粘滞是最糟糕的情况，每一轮都是独立的 JSON 数组输出机会。\n\n")
+                        append("【输出前自检 3 步】\n")
+                        append("1. 最外层是不是 [ ]？\n")
+                        append("2. 每个元素是不是字符串（裸消息）或合法对象（允许的 type）？\n")
+                        append("3. 有没有多余的包裹，如 ```、<char>、<dialogue>、纯文本前后缀？有就删掉。")
+                    },
+                )
             } else if (scenario.longformModeEnabled || scenario.interactionMode == RoleplayInteractionMode.OFFLINE_LONGFORM) {
                 val targetChars = settings.roleplayLongformTargetChars
                     .takeIf { it > 0 }
@@ -295,7 +320,31 @@ object RoleplayPromptDecorator {
                         append("- 角色内心活动/心声：必须用 <thought>（……）</thought> 包裹\n")
                         append("- 普通叙述/环境/动作：不加任何标记\n")
                         append("常见错误：聊久了开始把台词直接写在叙述里不加 <char>，或者用 ⭐心声：/【心声】等文字前缀代替 <thought> 标签。这些都是格式错误。\n")
-                        append("自检方法：每次输出前扫一遍——有引号对白没 <char>？有括号心声没 <thought>？有就补上。")
+                        append("自检方法：每次输出前扫一遍——有引号对白没 <char>？有括号心声没 <thought>？有就补上。\n\n")
+                        append("【正例（完整段落，照此模仿）】\n")
+                        append("玄关的感应灯随着门锁开启亮起，他换鞋的动作微微一顿。\n\n")
+                        append("<char>\u201c回来了。\u201d</char>\n\n")
+                        append("<thought>（几个小时就等成这样，还嘴硬说没事。）</thought>\n\n")
+                        append("他揽住那截腰，把人牢牢按在怀里。\n")
+                        append("→ 说明：裸叙述不加标记；对白 <char> 包\u201c\u201d；心声 <thought> 包（）。三种 span 可在同一段内轮流出现。\n\n")
+                        append("【反例 1：裸对白，没有 <char>】\n")
+                        append("❌ 他低声说：\u201c回来了。\u201d\n")
+                        append("❌ \u201c回来了。\u201d 他说。\n")
+                        append("✅ 正确：<char>\u201c回来了。\u201d</char>（把整句台词连同中文引号一起包起来；\u201c他说\u201d不要写成对白的一部分）\n\n")
+                        append("【反例 2：用文字前缀代替 <thought>】\n")
+                        append("❌ ⭐ 心声：[几个小时就等成这样]\n")
+                        append("❌ 【心声】几个小时就等成这样\n")
+                        append("❌ （心声：几个小时就等成这样）\n")
+                        append("✅ 正确：<thought>（几个小时就等成这样。）</thought>\n\n")
+                        append("【反例 3：混入其它模式的标签或属性】\n")
+                        append("❌ <char speaker=\"character\" emotion=\"温柔\">\u201c……\u201d</char> ← 不要把 RP 协议的属性塞进 <char>\n")
+                        append("❌ <dialogue>……</dialogue> / <narration>……</narration> ← 这是 RP 协议模式的标签，长文模式禁用\n")
+                        append("❌ [\u201c回来了。\u201d] ← 这是线上模式的 JSON 数组，长文模式禁用\n")
+                        append("❌ ```……``` ← 不要用 Markdown 代码块包裹输出\n\n")
+                        append("【输出前自检 3 步】\n")
+                        append("1. 每句台词（中文引号\u201c\u201d包住的那几句）是否都被 <char>……</char> 完整包裹？\n")
+                        append("2. 每段心声（脑内活动、潜台词、括号里的自言自语）是否都被 <thought>……</thought> 完整包裹？\n")
+                        append("3. 有没有 ⭐心声、【心声】、<dialogue>、<narration>、JSON 数组、Markdown 代码块这些异味？有就删掉，换成 <char> 或 <thought>。")
                     },
                 )
                 add(RoleplayQualityScanSupport.buildPromptSection())
@@ -316,6 +365,35 @@ object RoleplayPromptDecorator {
                         append("6. 保持角色口吻稳定，不要跳出设定解释规则\n")
                         append("7. <dialogue> 中的对白文本使用中文引号\u201c\u201d包裹\n")
                         append("8. emotion 属性必须填写具体情绪词，不要留空或写\u201c无\u201d")
+                    },
+                )
+                add(
+                    buildString {
+                        append("【格式保持（必读）】\n")
+                        append("无论对话进行到第几轮，以下标签规则始终生效，不得遗忘或省略：\n")
+                        append("- 每段角色对白必须用 <dialogue speaker=\"character\" emotion=\"具体情绪词\">\u201c……\u201d</dialogue> 完整包裹\n")
+                        if (scenario.enableNarration) {
+                            append("- 每段叙述必须用 <narration>……</narration> 完整包裹\n")
+                        } else {
+                            append("- 本场景禁止输出 <narration>，只用 <dialogue>\n")
+                        }
+                        append("- 绝不允许：裸对白（没有任何标签）、Markdown 代码块包裹、只有开标签没有闭标签、把 emotion 写成空字符串或\u201c无\u201d/\u201c正常\u201d\n")
+                        append("- 绝不允许：混入其它模式的标签，如 <char>、<thought>、<|…|>、JSON 数组等\n")
+                        append("【正例】\n")
+                        if (scenario.enableNarration) {
+                            append("<narration>玄关感应灯亮起时，他已经松了领带。</narration>\n")
+                        }
+                        append("<dialogue speaker=\"character\" emotion=\"克制\">\u201c嗯，回来了。\u201d</dialogue>\n")
+                        append("<dialogue speaker=\"character\" emotion=\"纵容\">\u201c饿不饿？\u201d</dialogue>\n")
+                        append("【反例】\n")
+                        append("❌ \u201c嗯，回来了。\u201d ← 裸对白无标签\n")
+                        append("❌ <dialogue>\u201c嗯，回来了。\u201d</dialogue> ← 缺 speaker/emotion 属性\n")
+                        append("❌ <dialogue speaker=\"character\" emotion=\"\">\u201c……\u201d</dialogue> ← emotion 为空\n")
+                        append("❌ ```xml<dialogue …>``` ← 外层不要 Markdown 代码块\n")
+                        append("【输出前自检 3 步】\n")
+                        append("1. 每段对白是否都被完整的 <dialogue …></dialogue> 包裹？\n")
+                        append("2. 每个 <dialogue> 的 emotion 是否是具体情绪词（如\u201c克制\u201d\u201c烦躁\u201d\u201c纵容\u201d）？\n")
+                        append("3. 有没有混入 <char>、<thought>、JSON 数组或 Markdown？有就删掉改回标准协议。")
                     },
                 )
             } else {

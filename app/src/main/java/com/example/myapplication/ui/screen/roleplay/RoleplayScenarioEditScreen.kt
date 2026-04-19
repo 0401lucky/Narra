@@ -4,20 +4,31 @@ import android.content.Intent
 import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material3.FilterChip
+import androidx.compose.material3.FilterChipDefaults
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
@@ -34,6 +45,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
@@ -43,12 +55,16 @@ import androidx.compose.ui.unit.dp
 import com.example.myapplication.model.AppSettings
 import com.example.myapplication.model.Assistant
 import com.example.myapplication.model.RoleplayInteractionMode
+import com.example.myapplication.model.RoleplayInteractionSpec
 import com.example.myapplication.model.RoleplayScenario
+import com.example.myapplication.model.toInteractionSpec
 import com.example.myapplication.ui.component.AppSnackbarHost
+import com.example.myapplication.ui.component.AssistantAvatar
 import com.example.myapplication.ui.component.UserAvatarLoadState
 import com.example.myapplication.ui.component.rememberUserProfileAvatarState
 import com.example.myapplication.ui.screen.settings.AnimatedSettingButton
 import com.example.myapplication.ui.screen.settings.SettingsGroup
+import com.example.myapplication.ui.screen.settings.SettingsGroupDivider
 import com.example.myapplication.ui.screen.settings.SettingsScreenPadding
 import com.example.myapplication.ui.screen.settings.SettingsSectionHeader
 import com.example.myapplication.ui.screen.settings.SettingsTopBar
@@ -100,26 +116,35 @@ fun RoleplayScenarioEditScreen(
     var characterPortraitUri by rememberSaveable(baseScenario.id) { mutableStateOf(baseScenario.characterPortraitUri) }
     var characterPortraitUrl by rememberSaveable(baseScenario.id) { mutableStateOf(baseScenario.characterPortraitUrl) }
     var openingNarration by rememberSaveable(baseScenario.id) { mutableStateOf(baseScenario.openingNarration) }
+    val normalizedSpec = remember(baseScenario.id) { baseScenario.toInteractionSpec().normalized() }
     var interactionMode by rememberSaveable(baseScenario.id) {
-        mutableStateOf(
-            if (
-                baseScenario.longformModeEnabled &&
-                baseScenario.interactionMode == RoleplayInteractionMode.OFFLINE_DIALOGUE
-            ) {
-                RoleplayInteractionMode.OFFLINE_LONGFORM
-            } else {
-                baseScenario.interactionMode
-            },
-        )
+        mutableStateOf(normalizedSpec.interactionMode)
     }
-    // enableNarration / enableDeepImmersion 仅在沉浸设置页“场景插件”区维护，
+    // enableNarration / enableDeepImmersion 仅在沉浸设置页"场景插件"区维护，
     // 这里直接透传基线值以免重复 state 与老版本覆盖。
     val enableNarration = baseScenario.enableNarration
-    var enableRoleplayProtocol by rememberSaveable(baseScenario.id) { mutableStateOf(baseScenario.enableRoleplayProtocol) }
-    var longformModeEnabled by rememberSaveable(baseScenario.id) { mutableStateOf(baseScenario.longformModeEnabled) }
+    var enableRoleplayProtocol by rememberSaveable(baseScenario.id) {
+        mutableStateOf(normalizedSpec.enableRoleplayProtocol)
+    }
+    var longformModeEnabled by rememberSaveable(baseScenario.id) {
+        mutableStateOf(normalizedSpec.longformModeEnabled)
+    }
     var autoHighlightSpeaker by rememberSaveable(baseScenario.id) { mutableStateOf(baseScenario.autoHighlightSpeaker) }
     val enableDeepImmersion = baseScenario.enableDeepImmersion
     val isOnlinePhoneMode = interactionMode == RoleplayInteractionMode.ONLINE_PHONE
+
+    fun applyInteractionSpec(transform: (RoleplayInteractionSpec) -> RoleplayInteractionSpec) {
+        val next = transform(
+            RoleplayInteractionSpec(
+                interactionMode = interactionMode,
+                longformModeEnabled = longformModeEnabled,
+                enableRoleplayProtocol = enableRoleplayProtocol,
+            ),
+        )
+        interactionMode = next.interactionMode
+        longformModeEnabled = next.longformModeEnabled
+        enableRoleplayProtocol = next.enableRoleplayProtocol
+    }
 
     val backgroundLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.OpenDocument(),
@@ -164,7 +189,7 @@ fun RoleplayScenarioEditScreen(
         topBar = {
             SettingsTopBar(
                 title = if (isNew) "新建场景" else "编辑场景",
-                subtitle = "RP 剧情容器",
+                subtitle = "配置独立场景",
                 onNavigateBack = onNavigateBack,
             )
         },
@@ -211,6 +236,7 @@ fun RoleplayScenarioEditScreen(
                             label = { Text("场景描述") },
                             minLines = 3,
                             maxLines = 5,
+                            supportingText = { Text("这段文本会直接进入 system prompt。") },
                             shape = RoundedCornerShape(18.dp),
                             colors = outlineColors,
                         )
@@ -226,17 +252,18 @@ fun RoleplayScenarioEditScreen(
             }
             item {
                 SettingsGroup {
-                    FlowRow(
-                        modifier = Modifier.padding(horizontal = 18.dp, vertical = 16.dp),
-                        horizontalArrangement = Arrangement.spacedBy(10.dp),
-                        verticalArrangement = Arrangement.spacedBy(10.dp),
+                    Column(
+                        modifier = Modifier.padding(vertical = 4.dp),
                     ) {
-                        assistants.forEach { assistant ->
-                            FilterChip(
+                        assistants.forEachIndexed { index, assistant ->
+                            AssistantPickRow(
+                                assistant = assistant,
                                 selected = assistant.id == assistantId,
                                 onClick = { assistantId = assistant.id },
-                                label = { Text(assistant.name.ifBlank { "默认助手" }) },
                             )
+                            if (index != assistants.lastIndex) {
+                                SettingsGroupDivider()
+                            }
                         }
                     }
                 }
@@ -252,55 +279,40 @@ fun RoleplayScenarioEditScreen(
                 SettingsGroup {
                     Column(
                         modifier = Modifier.padding(horizontal = 18.dp, vertical = 16.dp),
-                        verticalArrangement = Arrangement.spacedBy(16.dp),
+                        verticalArrangement = Arrangement.spacedBy(18.dp),
                     ) {
-                        ImagePickerRow(
+                        ScenarioImagePickerCard(
                             title = "背景图",
+                            subtitle = "用于列表卡片封面与剧情内场景背景。",
                             value = backgroundUri,
                             onPick = { backgroundLauncher.launch(arrayOf("image/*")) },
                             onClear = { backgroundUri = "" },
                         )
-                        ImagePickerRow(
+                        ScenarioImagePickerCard(
                             title = "用户立绘",
+                            subtitle = "本地图片优先；填写 http/https 链接时使用链接图片。",
                             value = userPortraitUri.ifBlank { userPortraitUrl },
                             onPick = { userPortraitLauncher.launch(arrayOf("image/*")) },
                             onClear = {
                                 userPortraitUri = ""
                                 userPortraitUrl = ""
                             },
+                            urlValue = userPortraitUrl,
+                            onUrlChange = { userPortraitUrl = it },
+                            outlineColors = outlineColors,
                         )
-                        OutlinedTextField(
-                            value = userPortraitUrl,
-                            onValueChange = {
-                                userPortraitUrl = it
-                            },
-                            modifier = Modifier.fillMaxWidth(),
-                            label = { Text("用户立绘链接") },
-                            singleLine = true,
-                            supportingText = { Text("填写 http/https 链接时会优先使用链接图片") },
-                            shape = RoundedCornerShape(18.dp),
-                            colors = outlineColors,
-                        )
-                        ImagePickerRow(
+                        ScenarioImagePickerCard(
                             title = "角色立绘",
+                            subtitle = "本地图片优先；填写 http/https 链接时使用链接图片。",
                             value = characterPortraitUri.ifBlank { characterPortraitUrl },
                             onPick = { characterPortraitLauncher.launch(arrayOf("image/*")) },
                             onClear = {
                                 characterPortraitUri = ""
                                 characterPortraitUrl = ""
                             },
-                        )
-                        OutlinedTextField(
-                            value = characterPortraitUrl,
-                            onValueChange = {
-                                characterPortraitUrl = it
-                            },
-                            modifier = Modifier.fillMaxWidth(),
-                            label = { Text("角色立绘链接") },
-                            singleLine = true,
-                            supportingText = { Text("填写 http/https 链接时会优先使用链接图片") },
-                            shape = RoundedCornerShape(18.dp),
-                            colors = outlineColors,
+                            urlValue = characterPortraitUrl,
+                            onUrlChange = { characterPortraitUrl = it },
+                            outlineColors = outlineColors,
                         )
                     }
                 }
@@ -331,6 +343,15 @@ fun RoleplayScenarioEditScreen(
                             colors = outlineColors,
                         )
                         OutlinedTextField(
+                            value = characterDisplayNameOverride,
+                            onValueChange = { characterDisplayNameOverride = it },
+                            modifier = Modifier.fillMaxWidth(),
+                            label = { Text("角色显示名覆写") },
+                            singleLine = true,
+                            shape = RoundedCornerShape(18.dp),
+                            colors = outlineColors,
+                        )
+                        OutlinedTextField(
                             value = userPersonaOverride,
                             onValueChange = { userPersonaOverride = it },
                             modifier = Modifier.fillMaxWidth(),
@@ -344,25 +365,12 @@ fun RoleplayScenarioEditScreen(
                             colors = outlineColors,
                         )
                         OutlinedTextField(
-                            value = characterDisplayNameOverride,
-                            onValueChange = { characterDisplayNameOverride = it },
-                            modifier = Modifier.fillMaxWidth(),
-                            label = { Text("角色显示名覆写") },
-                            singleLine = true,
-                            shape = RoundedCornerShape(18.dp),
-                            colors = outlineColors,
-                        )
-                        OutlinedTextField(
                             value = openingNarration,
                             onValueChange = { openingNarration = it },
                             modifier = Modifier.fillMaxWidth(),
                             label = {
                                 Text(
-                                    if (isOnlinePhoneMode) {
-                                        "开场旁白"
-                                    } else {
-                                        "开场旁白"
-                                    },
+                                    if (isOnlinePhoneMode) "开场旁白" else "开场旁白",
                                 )
                             },
                             minLines = 3,
@@ -376,62 +384,55 @@ fun RoleplayScenarioEditScreen(
 
             item {
                 SettingsSectionHeader(
+                    title = "交互模式",
+                    description = "决定剧情的基础表达形态，三选一。",
+                )
+            }
+            item {
+                SettingsGroup {
+                    FlowRow(
+                        modifier = Modifier.padding(horizontal = 18.dp, vertical = 14.dp),
+                        horizontalArrangement = Arrangement.spacedBy(10.dp),
+                        verticalArrangement = Arrangement.spacedBy(10.dp),
+                    ) {
+                        RoleplayInteractionMode.entries.forEach { mode ->
+                            FilterChip(
+                                selected = interactionMode == mode,
+                                onClick = {
+                                    applyInteractionSpec { it.withInteractionMode(mode) }
+                                },
+                                shape = RoundedCornerShape(14.dp),
+                                label = { Text(mode.displayName) },
+                                colors = FilterChipDefaults.filterChipColors(
+                                    selectedContainerColor = palette.accentSoft,
+                                    selectedLabelColor = palette.accent,
+                                ),
+                            )
+                        }
+                    }
+                }
+            }
+
+            item {
+                SettingsSectionHeader(
                     title = "演出开关",
-                    description = "先选择剧情交互模式，再补充演出语义和输出协议行为。",
+                    description = "补充输出协议、长文与焦点高亮等行为。",
                 )
             }
             item {
                 SettingsGroup {
                     Column(
-                        modifier = Modifier.padding(horizontal = 18.dp, vertical = 12.dp),
-                        verticalArrangement = Arrangement.spacedBy(14.dp),
+                        modifier = Modifier.padding(horizontal = 18.dp, vertical = 4.dp),
                     ) {
-                        Text(
-                            text = "交互模式",
-                            style = MaterialTheme.typography.titleSmall,
-                            fontWeight = FontWeight.SemiBold,
-                        )
-                        FlowRow(
-                            horizontalArrangement = Arrangement.spacedBy(10.dp),
-                            verticalArrangement = Arrangement.spacedBy(10.dp),
-                        ) {
-                            RoleplayInteractionMode.entries.forEach { mode ->
-                                FilterChip(
-                                    selected = interactionMode == mode,
-                                    onClick = {
-                                        interactionMode = mode
-                                        when (mode) {
-                                            RoleplayInteractionMode.OFFLINE_LONGFORM -> {
-                                                longformModeEnabled = true
-                                                enableRoleplayProtocol = false
-                                            }
-                                            RoleplayInteractionMode.OFFLINE_DIALOGUE -> {
-                                                longformModeEnabled = false
-                                            }
-                                            RoleplayInteractionMode.ONLINE_PHONE -> {
-                                                longformModeEnabled = false
-                                                enableRoleplayProtocol = true
-                                            }
-                                        }
-                                    },
-                                    label = { Text(mode.displayName) },
-                                )
-                            }
-                        }
                         SwitchRow(
                             title = "长文小说模式",
                             subtitle = "开启后，助手会输出更接近长篇小说的纯长文段落，适合重剧情用户。",
                             value = longformModeEnabled,
-                            onValueChange = {
-                                longformModeEnabled = it
-                                if (it) {
-                                    interactionMode = RoleplayInteractionMode.OFFLINE_LONGFORM
-                                    enableRoleplayProtocol = false
-                                } else if (interactionMode == RoleplayInteractionMode.OFFLINE_LONGFORM) {
-                                    interactionMode = RoleplayInteractionMode.OFFLINE_DIALOGUE
-                                }
+                            onValueChange = { enabled ->
+                                applyInteractionSpec { it.withLongform(enabled) }
                             },
                         )
+                        SettingsGroupDivider()
                         SwitchRow(
                             title = "启用 RP 协议输出",
                             subtitle = if (longformModeEnabled) {
@@ -442,13 +443,11 @@ fun RoleplayScenarioEditScreen(
                                 "开启后要求模型输出 narration/dialogue 标签，结构更稳定。"
                             },
                             value = enableRoleplayProtocol,
-                            onValueChange = {
-                                enableRoleplayProtocol = it
-                                if (!longformModeEnabled && interactionMode != RoleplayInteractionMode.ONLINE_PHONE) {
-                                    interactionMode = RoleplayInteractionMode.OFFLINE_DIALOGUE
-                                }
+                            onValueChange = { enabled ->
+                                applyInteractionSpec { it.withRoleplayProtocol(enabled) }
                             },
                         )
+                        SettingsGroupDivider()
                         SwitchRow(
                             title = "自动高亮当前说话方",
                             subtitle = "根据最近一轮发言和回复状态，自动强调当前剧情焦点角色。",
@@ -495,6 +494,13 @@ fun RoleplayScenarioEditScreen(
                             isPrimary = true,
                         )
                         if (!isNew && onDelete != null) {
+                            Text(
+                                text = "谨慎操作",
+                                style = MaterialTheme.typography.labelMedium,
+                                fontWeight = FontWeight.SemiBold,
+                                color = MaterialTheme.colorScheme.error,
+                                modifier = Modifier.padding(top = 4.dp, start = 4.dp),
+                            )
                             AnimatedSettingButton(
                                 text = "删除场景",
                                 onClick = { onDelete(baseScenario.id) },
@@ -510,17 +516,90 @@ fun RoleplayScenarioEditScreen(
 }
 
 @Composable
-private fun ImagePickerRow(
+private fun AssistantPickRow(
+    assistant: Assistant,
+    selected: Boolean,
+    onClick: () -> Unit,
+) {
+    val palette = rememberSettingsPalette()
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onClick)
+            .padding(horizontal = 18.dp, vertical = 12.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(14.dp),
+    ) {
+        AssistantAvatar(
+            name = assistant.name.ifBlank { "助手" },
+            iconName = assistant.iconName.ifBlank { "auto_stories" },
+            avatarUri = assistant.avatarUri,
+            size = 40.dp,
+            containerColor = palette.subtleChip,
+            contentColor = palette.subtleChipContent,
+            cornerRadius = 12.dp,
+        )
+        Column(
+            modifier = Modifier.weight(1f),
+            verticalArrangement = Arrangement.spacedBy(2.dp),
+        ) {
+            Text(
+                text = assistant.name.ifBlank { "默认助手" },
+                style = MaterialTheme.typography.bodyLarge,
+                fontWeight = FontWeight.SemiBold,
+                color = palette.title,
+                maxLines = 1,
+            )
+            Text(
+                text = assistant.description.ifBlank { "未填写助手描述" },
+                style = MaterialTheme.typography.labelMedium,
+                color = palette.body,
+                maxLines = 2,
+            )
+        }
+        if (selected) {
+            Surface(
+                modifier = Modifier.size(24.dp),
+                shape = CircleShape,
+                color = palette.accent,
+            ) {
+                Box(contentAlignment = Alignment.Center) {
+                    Icon(
+                        imageVector = Icons.Default.Check,
+                        contentDescription = "已选中",
+                        tint = palette.accentOnStrong,
+                        modifier = Modifier.size(16.dp),
+                    )
+                }
+            }
+        } else {
+            Surface(
+                modifier = Modifier.size(24.dp),
+                shape = CircleShape,
+                color = Color.Transparent,
+                border = BorderStroke(1.5.dp, palette.border),
+            ) {}
+        }
+    }
+}
+
+@Composable
+private fun ScenarioImagePickerCard(
     title: String,
+    subtitle: String,
     value: String,
     onPick: () -> Unit,
     onClear: () -> Unit,
+    urlValue: String? = null,
+    onUrlChange: ((String) -> Unit)? = null,
+    outlineColors: androidx.compose.material3.TextFieldColors? = null,
 ) {
+    val palette = rememberSettingsPalette()
     val density = LocalDensity.current
     val previewRequestSize = with(density) {
         IntSize(
-            width = 88.dp.roundToPx().coerceAtLeast(1),
-            height = 88.dp.roundToPx().coerceAtLeast(1),
+            width = 96.dp.roundToPx().coerceAtLeast(1),
+            height = 96.dp.roundToPx().coerceAtLeast(1),
         )
     }
     val imageState = rememberUserProfileAvatarState(
@@ -528,61 +607,97 @@ private fun ImagePickerRow(
         avatarUrl = value.takeIf { it.startsWith("http://") || it.startsWith("https://") }.orEmpty(),
         requestSize = previewRequestSize,
     )
+    val hasValue = value.isNotBlank()
 
     Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
         Text(
             text = title,
             style = MaterialTheme.typography.titleSmall,
             fontWeight = FontWeight.SemiBold,
+            color = palette.title,
+        )
+        Text(
+            text = subtitle,
+            style = MaterialTheme.typography.labelMedium,
+            color = palette.body,
         )
         Row(
             horizontalArrangement = Arrangement.spacedBy(12.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            Surface(
-                modifier = Modifier.size(88.dp),
-                shape = RoundedCornerShape(20.dp),
-                color = MaterialTheme.colorScheme.surfaceTint,
-            ) {
-                if (imageState.loadState == UserAvatarLoadState.Success &&
-                    imageState.imageBitmap != null
+            Box(modifier = Modifier.size(96.dp)) {
+                Surface(
+                    modifier = Modifier.fillMaxSize(),
+                    shape = RoundedCornerShape(20.dp),
+                    color = palette.surfaceTint,
+                    border = BorderStroke(1.dp, palette.border.copy(alpha = 0.6f)),
                 ) {
-                    Image(
-                        bitmap = imageState.imageBitmap,
-                        contentDescription = title,
-                        modifier = Modifier.fillMaxSize(),
-                        contentScale = ContentScale.Crop,
-                    )
-                } else {
-                    Column(
-                        modifier = Modifier.fillMaxSize(),
-                        verticalArrangement = Arrangement.Center,
-                        horizontalAlignment = Alignment.CenterHorizontally,
+                    if (imageState.loadState == UserAvatarLoadState.Success &&
+                        imageState.imageBitmap != null
                     ) {
-                        Text(
-                            text = if (value.isBlank()) "未设置" else "已选择",
-                            style = MaterialTheme.typography.labelMedium,
+                        Image(
+                            bitmap = imageState.imageBitmap,
+                            contentDescription = title,
+                            modifier = Modifier.fillMaxSize(),
+                            contentScale = ContentScale.Crop,
                         )
+                    } else {
+                        Column(
+                            modifier = Modifier.fillMaxSize(),
+                            verticalArrangement = Arrangement.Center,
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                        ) {
+                            Text(
+                                text = if (hasValue) "已选择" else "未设置",
+                                style = MaterialTheme.typography.labelMedium,
+                                color = palette.body,
+                            )
+                        }
+                    }
+                }
+                if (hasValue) {
+                    Surface(
+                        modifier = Modifier
+                            .align(Alignment.TopEnd)
+                            .size(26.dp),
+                        shape = CircleShape,
+                        color = palette.surface,
+                        border = BorderStroke(1.dp, palette.border),
+                        onClick = onClear,
+                    ) {
+                        Box(contentAlignment = Alignment.Center) {
+                            Icon(
+                                imageVector = Icons.Default.Close,
+                                contentDescription = "清空$title",
+                                tint = palette.body,
+                                modifier = Modifier.size(14.dp),
+                            )
+                        }
                     }
                 }
             }
+            Spacer(modifier = Modifier.width(4.dp))
             Column(
                 modifier = Modifier.weight(1f),
-                verticalArrangement = Arrangement.spacedBy(8.dp),
             ) {
                 AnimatedSettingButton(
-                    text = "选择图片",
+                    text = if (hasValue) "更换图片" else "选择图片",
                     onClick = onPick,
                     enabled = true,
                     isPrimary = false,
                 )
-                AnimatedSettingButton(
-                    text = "清空",
-                    onClick = onClear,
-                    enabled = value.isNotBlank(),
-                    isPrimary = false,
-                )
             }
+        }
+        if (onUrlChange != null && outlineColors != null) {
+            OutlinedTextField(
+                value = urlValue.orEmpty(),
+                onValueChange = onUrlChange,
+                modifier = Modifier.fillMaxWidth(),
+                label = { Text("$title 链接") },
+                singleLine = true,
+                shape = RoundedCornerShape(18.dp),
+                colors = outlineColors,
+            )
         }
     }
 }
@@ -595,12 +710,16 @@ private fun SwitchRow(
     onValueChange: (Boolean) -> Unit,
 ) {
     Row(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 12.dp),
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Column(
-            modifier = Modifier.weight(1f).padding(end = 12.dp),
+            modifier = Modifier
+                .weight(1f)
+                .padding(end = 12.dp),
             verticalArrangement = Arrangement.spacedBy(4.dp),
         ) {
             Text(

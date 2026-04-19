@@ -126,10 +126,9 @@ fun AssistantExtensionsScreen(
             verticalArrangement = Arrangement.spacedBy(20.dp),
         ) {
             item {
-                AssistantWorkspaceIntro(
+                AssistantSubPageHeader(
                     assistant = assistant,
                     overline = "扩展",
-                    title = "扩展管理",
                 )
             }
 

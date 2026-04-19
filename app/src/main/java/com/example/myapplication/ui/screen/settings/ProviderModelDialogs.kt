@@ -99,17 +99,16 @@ internal fun PremiumModelCard(
                 }
 
                 FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                    val isDark = isSystemInDarkTheme()
-                    val chatBg = if (isDark) Color(0xFF1B2A45) else Color(0xFFE3F2FD)
-                    val chatColor = if (isDark) Color(0xFF8AB4F8) else Color(0xFF2196F3)
-                    Surface(shape = RoundedCornerShape(50), color = chatBg, contentColor = chatColor) {
+                    val tertiaryBg = MaterialTheme.colorScheme.tertiaryContainer
+                    val tertiaryFg = MaterialTheme.colorScheme.onTertiaryContainer
+                    Surface(shape = RoundedCornerShape(50), color = tertiaryBg, contentColor = tertiaryFg) {
                         Text("聊天", modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp), style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold)
                     }
 
-                    val ioBg = if (isDark) Color(0xFF1B3A2E) else Color(0xFFE8F5E9)
-                    val ioColor = if (isDark) Color(0xFF74D7A8) else Color(0xFF4CAF50)
+                    val secondaryBg = MaterialTheme.colorScheme.secondaryContainer
+                    val secondaryFg = MaterialTheme.colorScheme.onSecondaryContainer
                     val hasVision = modelInfo.abilities.contains(ModelAbility.VISION)
-                    Surface(shape = RoundedCornerShape(50), color = ioBg, contentColor = ioColor) {
+                    Surface(shape = RoundedCornerShape(50), color = secondaryBg, contentColor = secondaryFg) {
                         Row(modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
                             Text("T", style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold)
                             if (hasVision) {
@@ -151,44 +150,36 @@ internal fun ModelAbilityOverrideDialog(
         mutableStateOf(modelInfo.abilities)
     }
     val shouldResetToAuto = editedAbilities == autoAbilities
+    // 当前已手动覆盖时，次级按钮文案换成"恢复自动"，点击直接把 abilities 置空让后端走自动推断。
+    val dismissLabel = if (modelInfo.abilitiesCustomized) "恢复自动" else "取消"
+    val handleDismiss: () -> Unit = {
+        if (modelInfo.abilitiesCustomized) {
+            onSave(null)
+        } else {
+            onDismissRequest()
+        }
+    }
 
-    AlertDialog(
-        onDismissRequest = onDismissRequest,
-        shape = RoundedCornerShape(24.dp),
-        containerColor = MaterialTheme.colorScheme.surface,
-        titleContentColor = MaterialTheme.colorScheme.onSurface,
-        textContentColor = MaterialTheme.colorScheme.onSurfaceVariant,
-        title = { Text(text = "覆盖模型能力", fontWeight = FontWeight.Bold) },
-        text = {
-            Column(verticalArrangement = Arrangement.spacedBy(14.dp)) {
-                Text(
-                    text = if (modelInfo.abilitiesCustomized) "当前已手动覆盖。" else "手动勾选你希望覆盖的能力。",
-                    style = MaterialTheme.typography.bodyMedium,
-                )
-                FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    ModelAbility.entries.forEach { ability ->
-                        FilterChip(
-                            selected = ability in editedAbilities,
-                            onClick = {
-                                editedAbilities = if (ability in editedAbilities) editedAbilities - ability else editedAbilities + ability
-                            },
-                            label = { Text(ability.label) },
-                            leadingIcon = { Icon(abilityIcon(ability), contentDescription = null, modifier = Modifier.size(16.dp)) },
-                        )
-                    }
+    com.example.myapplication.ui.component.NarraAlertDialog(
+        title = "覆盖模型能力",
+        message = if (modelInfo.abilitiesCustomized) "当前已手动覆盖。" else "手动勾选你希望覆盖的能力。",
+        onDismiss = handleDismiss,
+        onConfirm = { onSave(if (shouldResetToAuto) null else editedAbilities) },
+        confirmLabel = "保存",
+        dismissLabel = dismissLabel,
+        content = {
+            FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                ModelAbility.entries.forEach { ability ->
+                    FilterChip(
+                        selected = ability in editedAbilities,
+                        onClick = {
+                            editedAbilities = if (ability in editedAbilities) editedAbilities - ability else editedAbilities + ability
+                        },
+                        label = { Text(ability.label) },
+                        leadingIcon = { Icon(abilityIcon(ability), contentDescription = null, modifier = Modifier.size(16.dp)) },
+                    )
                 }
             }
-        },
-        dismissButton = {
-            Row {
-                if (modelInfo.abilitiesCustomized) {
-                    NarraTextButton(onClick = { onSave(null) }) { Text("恢复自动") }
-                }
-                NarraTextButton(onClick = onDismissRequest) { Text("取消") }
-            }
-        },
-        confirmButton = {
-            NarraTextButton(onClick = { onSave(if (shouldResetToAuto) null else editedAbilities) }) { Text("保存") }
         },
     )
 }

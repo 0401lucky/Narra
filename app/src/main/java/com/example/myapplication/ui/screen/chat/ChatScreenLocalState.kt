@@ -1,6 +1,7 @@
 package com.example.myapplication.ui.screen.chat
 
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -14,6 +15,7 @@ import com.example.myapplication.model.PunishPlayDraft
 import com.example.myapplication.model.TaskPlayDraft
 import com.example.myapplication.model.TransferPlayDraft
 
+@Immutable
 internal data class ChatScreenLocalState(
     val showModelSheet: Boolean,
     val setShowModelSheet: (Boolean) -> Unit,

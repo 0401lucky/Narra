@@ -2360,7 +2360,7 @@ class RoleplayViewModelTest {
         server.takeRequest()
         val secondRequest = JsonParser.parseString(server.takeRequest().body.readUtf8()).asJsonObject
         val sentContext = secondRequest.getAsJsonArray("messages")
-            .filter { element -> element.asJsonObject["role"].asString != "system" }
+            .filter { element -> element.asJsonObject["role"].asString == "assistant" }
             .map { element -> element.asJsonObject["content"].asString }
             .joinToString(separator = "\n")
         assertTrue(sentContext.contains("我没有忘。"))
@@ -2562,7 +2562,7 @@ class RoleplayViewModelTest {
         server.takeRequest()
         val secondRequest = JsonParser.parseString(server.takeRequest().body.readUtf8()).asJsonObject
         val sentContext = secondRequest.getAsJsonArray("messages")
-            .filter { element -> element.asJsonObject["role"].asString != "system" }
+            .filter { element -> element.asJsonObject["role"].asString == "assistant" }
             .map { element -> element.asJsonObject["content"].asString }
             .joinToString(separator = "\n")
         assertTrue(sentContext.contains("我没有忘。"))

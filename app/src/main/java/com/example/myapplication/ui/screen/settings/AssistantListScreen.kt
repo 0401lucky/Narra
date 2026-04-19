@@ -74,14 +74,15 @@ fun AssistantListScreen(
         ) {
             // Search Bar
             item {
+                val searchColors = rememberSettingsOutlineColors()
                 OutlinedTextField(
                     value = searchQuery,
                     onValueChange = { searchQuery = it },
-                    placeholder = { 
+                    placeholder = {
                         Text(
-                            text = "搜索助手", 
+                            text = "搜索助手",
                             color = palette.body.copy(alpha = 0.5f),
-                        ) 
+                        )
                     },
                     leadingIcon = {
                         Icon(
@@ -94,15 +95,18 @@ fun AssistantListScreen(
                         .fillMaxWidth()
                         .padding(bottom = 8.dp),
                     shape = RoundedCornerShape(20.dp),
-                    colors = OutlinedTextFieldDefaults.colors(
-                        focusedContainerColor = palette.surface.copy(alpha = 0.5f),
-                        unfocusedContainerColor = palette.surface.copy(alpha = 0.5f),
-                        focusedBorderColor = palette.accent.copy(alpha = 0.5f),
-                        unfocusedBorderColor = palette.border.copy(alpha = 0.2f),
-                        cursorColor = palette.accent,
-                    ),
+                    colors = searchColors,
                     singleLine = true,
                 )
+            }
+
+            if (filteredAssistants.isEmpty() && searchQuery.isNotBlank()) {
+                item {
+                    SettingsPlaceholderRow(
+                        title = "没有匹配的助手",
+                        subtitle = "试试其他关键词，或者新增一个助手。",
+                    )
+                }
             }
 
             // Cards

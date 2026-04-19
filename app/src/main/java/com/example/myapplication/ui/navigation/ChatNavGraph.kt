@@ -24,6 +24,8 @@ import com.example.myapplication.ui.screen.translate.TranslationScreen
 import com.example.myapplication.viewmodel.ChatViewModel
 import com.example.myapplication.viewmodel.SettingsViewModel
 import com.example.myapplication.viewmodel.TranslationViewModel
+import com.example.myapplication.viewmodel.selectSearchSource
+import com.example.myapplication.viewmodel.updateSearchResultCount
 
 internal fun NavGraphBuilder.registerChatNavGraph(
     appGraph: AppGraph,

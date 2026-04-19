@@ -11,14 +11,13 @@ import androidx.compose.material.icons.outlined.Refresh
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.platform.Clipboard
 import androidx.compose.ui.platform.LocalClipboard
 import androidx.compose.ui.platform.LocalContext
 import com.example.myapplication.model.ChatMessage
-import kotlinx.coroutines.CoroutineScope
 
 @Composable
 internal fun MessageBubbleActionRows(
@@ -35,8 +34,6 @@ internal fun MessageBubbleActionRows(
     onOpenActionSheet: ((String) -> Unit)?,
     onToggleMemory: ((String) -> Unit)?,
     onTranslate: ((String) -> Unit)?,
-    clipboard: Clipboard,
-    clipboardScope: CoroutineScope,
 ) {
     val context = LocalContext.current
 
@@ -48,8 +45,6 @@ internal fun MessageBubbleActionRows(
             onTranslate = onTranslate,
             onToggleMemory = onToggleMemory,
             onOpenActionSheet = onOpenActionSheet,
-            clipboard = clipboard,
-            clipboardScope = clipboardScope,
             onShowToast = { Toast.makeText(context, it, Toast.LENGTH_SHORT).show() },
         )
     }
@@ -64,8 +59,6 @@ internal fun MessageBubbleActionRows(
             onRetry = onRetry,
             onToggleMemory = onToggleMemory,
             onOpenActionSheet = onOpenActionSheet,
-            clipboard = clipboard,
-            clipboardScope = clipboardScope,
             onShowToast = { Toast.makeText(context, it, Toast.LENGTH_SHORT).show() },
         )
     }
@@ -78,8 +71,6 @@ internal fun MessageBubbleActionRows(
             onRetry = onRetry,
             onTranslate = onTranslate,
             onOpenActionSheet = onOpenActionSheet,
-            clipboard = clipboard,
-            clipboardScope = clipboardScope,
             onShowToast = { Toast.makeText(context, it, Toast.LENGTH_SHORT).show() },
         )
     }
@@ -93,10 +84,10 @@ private fun MessageBubbleUserActions(
     onTranslate: ((String) -> Unit)?,
     onToggleMemory: ((String) -> Unit)?,
     onOpenActionSheet: ((String) -> Unit)?,
-    clipboard: Clipboard,
-    clipboardScope: CoroutineScope,
     onShowToast: (String) -> Unit,
 ) {
+    val clipboard = LocalClipboard.current
+    val clipboardScope = rememberCoroutineScope()
     Row(
         modifier = Modifier.padding(top = 8.dp),
         horizontalArrangement = Arrangement.spacedBy(6.dp),
@@ -148,10 +139,10 @@ private fun MessageBubbleAssistantActions(
     onRetry: ((String) -> Unit)?,
     onToggleMemory: ((String) -> Unit)?,
     onOpenActionSheet: ((String) -> Unit)?,
-    clipboard: Clipboard,
-    clipboardScope: CoroutineScope,
     onShowToast: (String) -> Unit,
 ) {
+    val clipboard = LocalClipboard.current
+    val clipboardScope = rememberCoroutineScope()
     Row(
         modifier = modifier.padding(top = 8.dp),
         horizontalArrangement = Arrangement.spacedBy(6.dp),
@@ -207,10 +198,10 @@ private fun MessageBubbleErrorActions(
     onRetry: ((String) -> Unit)?,
     onTranslate: ((String) -> Unit)?,
     onOpenActionSheet: ((String) -> Unit)?,
-    clipboard: Clipboard,
-    clipboardScope: CoroutineScope,
     onShowToast: (String) -> Unit,
 ) {
+    val clipboard = LocalClipboard.current
+    val clipboardScope = rememberCoroutineScope()
     Row(
         modifier = modifier.padding(top = 8.dp),
         horizontalArrangement = Arrangement.spacedBy(6.dp),

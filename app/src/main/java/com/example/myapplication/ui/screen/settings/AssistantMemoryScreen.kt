@@ -84,11 +84,9 @@ fun AssistantMemoryScreen(
             verticalArrangement = Arrangement.spacedBy(18.dp),
         ) {
             item {
-                AssistantWorkspaceIntro(
+                AssistantSubPageHeader(
                     assistant = assistant,
-                    overline = "Memory",
-                    title = "记忆",
-                    summary = "",
+                    overline = "记忆",
                 )
             }
 

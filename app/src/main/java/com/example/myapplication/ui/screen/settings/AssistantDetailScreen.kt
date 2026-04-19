@@ -121,80 +121,67 @@ private fun AssistantHeroPanel(
     val palette = rememberSettingsPalette()
     Surface(
         modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(32.dp),
+        shape = RoundedCornerShape(28.dp),
         color = palette.surface,
         border = BorderStroke(1.dp, palette.border.copy(alpha = 0.45f)),
-        shadowElevation = 5.dp,
+        shadowElevation = 0.dp,
     ) {
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .background(
-                    brush = Brush.linearGradient(
-                        colors = listOf(
-                            palette.accentSoft.copy(alpha = 0.85f),
-                            palette.surface.copy(alpha = 0.96f),
-                        ),
-                    ),
-                ),
+        Column(
+            modifier = Modifier.padding(horizontal = 20.dp, vertical = 22.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
         ) {
+            AssistantAvatar(
+                name = assistant.name,
+                iconName = assistant.iconName,
+                avatarUri = assistant.avatarUri,
+                size = 88.dp,
+                containerColor = palette.subtleChip,
+                contentColor = palette.subtleChipContent,
+                cornerRadius = 24.dp,
+            )
+
             Column(
-                modifier = Modifier.padding(horizontal = 20.dp, vertical = 22.dp),
-                verticalArrangement = Arrangement.spacedBy(16.dp),
                 horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.spacedBy(6.dp),
             ) {
-                AssistantAvatar(
-                    name = assistant.name,
-                    iconName = assistant.iconName,
-                    avatarUri = assistant.avatarUri,
-                    size = 92.dp,
+                Text(
+                    text = assistant.name.ifBlank { "未命名助手" },
+                    style = MaterialTheme.typography.headlineSmall,
+                    fontWeight = FontWeight.Bold,
+                    color = palette.title,
+                )
+                assistant.description
+                    .takeIf { it.isNotBlank() }
+                    ?.let { description ->
+                        Text(
+                            text = description,
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = palette.body,
+                            maxLines = 3,
+                            overflow = TextOverflow.Ellipsis,
+                        )
+                    }
+            }
+
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                SettingsStatusPill(
+                    text = if (assistant.memoryEnabled) "记忆开启" else "记忆关闭",
+                    containerColor = if (assistant.memoryEnabled) palette.accentSoft else palette.surfaceTint,
+                    contentColor = if (assistant.memoryEnabled) palette.accent else palette.body,
+                )
+                SettingsStatusPill(
+                    text = "$assistantMemoryCount 条记忆",
                     containerColor = palette.subtleChip,
                     contentColor = palette.subtleChipContent,
-                    cornerRadius = 26.dp,
                 )
-
-                Column(
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.spacedBy(6.dp),
-                ) {
-                    Text(
-                        text = assistant.name.ifBlank { "未命名助手" },
-                        style = MaterialTheme.typography.headlineSmall,
-                        fontWeight = FontWeight.Black,
-                        color = palette.title,
-                    )
-                    assistant.description
-                        .takeIf { it.isNotBlank() }
-                        ?.let { description ->
-                            Text(
-                                text = description,
-                                style = MaterialTheme.typography.bodyMedium,
-                                color = palette.body,
-                                maxLines = 3,
-                                overflow = TextOverflow.Ellipsis,
-                            )
-                        }
-                }
-
-                Row(
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                ) {
-                    SettingsStatusPill(
-                        text = if (assistant.memoryEnabled) "记忆开启" else "记忆关闭",
-                        containerColor = if (assistant.memoryEnabled) palette.accentSoft else palette.surfaceTint,
-                        contentColor = if (assistant.memoryEnabled) palette.accent else palette.body,
-                    )
-                    SettingsStatusPill(
-                        text = "$assistantMemoryCount 条记忆",
-                        containerColor = palette.subtleChip,
-                        contentColor = palette.subtleChipContent,
-                    )
-                    SettingsStatusPill(
-                        text = "$linkedWorldBookCount 本可用",
-                        containerColor = palette.surfaceTint,
-                        contentColor = palette.body,
-                    )
-                }
+                SettingsStatusPill(
+                    text = "$linkedWorldBookCount 本可用",
+                    containerColor = palette.surfaceTint,
+                    contentColor = palette.body,
+                )
             }
         }
     }
@@ -267,8 +254,8 @@ private fun EntryGlyph(
 ) {
     val palette = rememberSettingsPalette()
     Surface(
-        modifier = Modifier.size(48.dp),
-        shape = CircleShape,
+        modifier = Modifier.size(40.dp),
+        shape = RoundedCornerShape(14.dp),
         color = palette.accentSoft,
         contentColor = palette.accent,
     ) {

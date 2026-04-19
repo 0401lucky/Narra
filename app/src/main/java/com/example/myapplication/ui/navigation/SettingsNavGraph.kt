@@ -10,6 +10,14 @@ import com.example.myapplication.di.AppGraph
 import com.example.myapplication.ui.screen.settings.SettingsScreen
 import com.example.myapplication.viewmodel.AppUpdateViewModel
 import com.example.myapplication.viewmodel.SettingsViewModel
+import com.example.myapplication.viewmodel.updateAutoCollapseThinking
+import com.example.myapplication.viewmodel.updateAutoPreviewImages
+import com.example.myapplication.viewmodel.updateCodeBlockAutoCollapse
+import com.example.myapplication.viewmodel.updateCodeBlockAutoWrap
+import com.example.myapplication.viewmodel.updateMessageTextScale
+import com.example.myapplication.viewmodel.updateReasoningExpandedByDefault
+import com.example.myapplication.viewmodel.updateShowThinkingContent
+import com.example.myapplication.viewmodel.updateThemeMode
 
 internal fun NavGraphBuilder.registerSettingsNavGraph(
     appGraph: AppGraph,

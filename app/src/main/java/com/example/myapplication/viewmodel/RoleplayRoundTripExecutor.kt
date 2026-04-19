@@ -41,6 +41,7 @@ import com.example.myapplication.roleplay.OnlineActionDirective
 import com.example.myapplication.roleplay.OnlineActionProtocolParseResult
 import com.example.myapplication.roleplay.OnlineActionProtocolParser
 import com.example.myapplication.roleplay.RoleplayConversationSupport
+import com.example.myapplication.roleplay.RoleplayFormatReminderSupport
 import com.example.myapplication.roleplay.RoleplayLongformMarkupParser
 import com.example.myapplication.roleplay.RoleplayMessageFormatSupport
 import com.example.myapplication.roleplay.RoleplayOnlineReferenceSupport
@@ -124,12 +125,15 @@ internal class RoleplayRoundTripExecutor(
                 messages = effectiveRequestMessages,
                 outputParser = outputParser,
             )
-            val requestMessagesForModel = RoleplayOnlineReferenceSupport.sanitizeRequestMessages(
-                messages = effectiveRequestMessages,
+            val requestMessagesForModel = RoleplayFormatReminderSupport.injectIntoLatestUser(
+                messages = RoleplayOnlineReferenceSupport.sanitizeRequestMessages(
+                    messages = effectiveRequestMessages,
+                    scenario = scenario,
+                    assistant = assistant,
+                    settings = state.settings,
+                    outputParser = outputParser,
+                ),
                 scenario = scenario,
-                assistant = assistant,
-                settings = state.settings,
-                outputParser = outputParser,
             )
             val promptContext = promptContextAssembler.assemble(
                 settings = state.settings,

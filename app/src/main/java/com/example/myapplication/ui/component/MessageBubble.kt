@@ -50,7 +50,6 @@ import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -61,8 +60,6 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.platform.LocalClipboard
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.TextStyle
@@ -137,10 +134,7 @@ fun MessageBubble(
     performanceMode: ChatMessagePerformanceMode = ChatMessagePerformanceMode.FULL,
     reduceVisualEffects: Boolean = false,
 ) {
-    val clipboard = LocalClipboard.current
-    val context = LocalContext.current
     val uriHandler = LocalUriHandler.current
-    val clipboardScope = rememberCoroutineScope()
     val renderState = rememberMessageBubbleRenderState(
         message = message,
         streamingContent = streamingContent,
@@ -167,6 +161,13 @@ fun MessageBubble(
     val reasoningExpanded = renderState.reasoningExpanded
     val reasoningPreviewVisible = renderState.reasoningPreviewVisible
     val assistantVisualContent = renderState.assistantVisualContent
+    val renderedContent = remember(displayAttachments, displayParts, assistantVisualContent) {
+        MessageBubbleRenderedContent(
+            displayAttachments = displayAttachments,
+            displayParts = displayParts,
+            assistantImageSources = assistantVisualContent.imageSources,
+        )
+    }
     val shouldShowContentBubble = renderState.shouldShowContentBubble
     val shouldUseSplitUserLayout = renderState.shouldUseSplitUserLayout
     val contentColor = renderState.contentColor
@@ -250,8 +251,7 @@ fun MessageBubble(
         if (shouldShowContentBubble) {
             if (shouldUseSplitUserLayout) {
                 UserStructuredMessageContent(
-                    displayAttachments = displayAttachments,
-                    displayParts = displayParts,
+                    renderedContent = renderedContent,
                     displayContent = displayContent,
                     contentColor = contentColor,
                     messageTextScale = messageTextScale,
@@ -270,12 +270,10 @@ fun MessageBubble(
                 ) {
                     MessageBubbleContent(
                         message = message,
-                        displayAttachments = displayAttachments,
+                        renderedContent = renderedContent,
                         isUser = isUser,
                         useMarkdown = effectiveUseMarkdown,
                         displayContent = renderedDisplayContent,
-                        displayParts = displayParts,
-                        assistantImageSources = assistantVisualContent.imageSources,
                         contentColor = contentColor,
                         assistantMarkdownTypography = assistantMarkdownTypography,
                         assistantMarkdownPadding = assistantMarkdownPadding,
@@ -309,12 +307,10 @@ fun MessageBubble(
                 ) {
                     MessageBubbleContent(
                         message = message,
-                        displayAttachments = displayAttachments,
+                        renderedContent = renderedContent,
                         isUser = isUser,
                         useMarkdown = effectiveUseMarkdown,
                         displayContent = renderedDisplayContent,
-                        displayParts = displayParts,
-                        assistantImageSources = assistantVisualContent.imageSources,
                         contentColor = contentColor,
                         assistantMarkdownTypography = assistantMarkdownTypography,
                         assistantMarkdownPadding = assistantMarkdownPadding,
@@ -363,8 +359,6 @@ fun MessageBubble(
             onOpenActionSheet = onOpenMessageActions,
             onToggleMemory = onToggleMemory,
             onTranslate = onTranslate,
-            clipboard = clipboard,
-            clipboardScope = clipboardScope,
         )
     }
 }

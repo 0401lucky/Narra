@@ -17,6 +17,32 @@ import com.example.myapplication.ui.screen.settings.SettingsConnectionScreen
 import com.example.myapplication.ui.screen.settings.SettingsModelScreen
 import com.example.myapplication.viewmodel.AppUpdateViewModel
 import com.example.myapplication.viewmodel.SettingsViewModel
+import com.example.myapplication.viewmodel.selectSearchSource
+import com.example.myapplication.viewmodel.updateProviderChatSuggestionModel
+import com.example.myapplication.viewmodel.updateProviderChatSuggestionModelMode
+import com.example.myapplication.viewmodel.updateProviderGiftImageModel
+import com.example.myapplication.viewmodel.updateProviderGiftImageModelMode
+import com.example.myapplication.viewmodel.updateProviderMemoryModel
+import com.example.myapplication.viewmodel.updateProviderMemoryModelMode
+import com.example.myapplication.viewmodel.updateProviderPhoneSnapshotModel
+import com.example.myapplication.viewmodel.updateProviderPhoneSnapshotModelMode
+import com.example.myapplication.viewmodel.updateProviderSearchModel
+import com.example.myapplication.viewmodel.updateProviderSearchModelMode
+import com.example.myapplication.viewmodel.updateProviderTitleSummaryModel
+import com.example.myapplication.viewmodel.updateProviderTitleSummaryModelMode
+import com.example.myapplication.viewmodel.updateProviderTranslationModel
+import com.example.myapplication.viewmodel.updateProviderTranslationModelMode
+import com.example.myapplication.viewmodel.updateScreenTranslationOverlayEnabled
+import com.example.myapplication.viewmodel.updateScreenTranslationSelectedTextEnabled
+import com.example.myapplication.viewmodel.updateScreenTranslationServiceEnabled
+import com.example.myapplication.viewmodel.updateScreenTranslationShowSourceText
+import com.example.myapplication.viewmodel.updateScreenTranslationTargetLanguage
+import com.example.myapplication.viewmodel.updateScreenTranslationVendorGuideDismissed
+import com.example.myapplication.viewmodel.updateSearchResultCount
+import com.example.myapplication.viewmodel.updateSearchSourceApiKey
+import com.example.myapplication.viewmodel.updateSearchSourceEnabled
+import com.example.myapplication.viewmodel.updateSearchSourceEngineId
+import com.example.myapplication.viewmodel.updateSearchSourceProviderId
 
 // 提供商、模型、连接、搜索工具、屏幕翻译、应用更新
 

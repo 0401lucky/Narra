@@ -36,7 +36,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - `app/src/main/java/com/example/myapplication/di/AppGraph.kt`
   - 手写 DI 容器。所有 Repository / Store / Service / Tool 都在这里以 `by lazy` 的方式装配。
   - 新增依赖的入口：在 `AppGraph` 里加一个 `val xxx by lazy { ... }`。不要在 Activity / ViewModel 里 new Repository。
-  - 启动型任务统一走 `startupScope`（`SupervisorJob() + Dispatchers.IO`）。
+  - 启动型任务统一走 `appGraph.scheduleStartup { ... }`（私有 `startupScope` = `SupervisorJob() + Dispatchers.IO`），禁止在 ViewModel/Service 里直接拿 scope。
 - `app/src/main/java/com/example/myapplication/MainActivity.kt`
   - 仅 19 行：从 `application as ChatApplication` 取 `appGraph` 并 `setContent { AppRoot(appGraph = ...) }`。
 - 共享 Gson 实例：`app/src/main/java/com/example/myapplication/system/json/AppJson.kt`。

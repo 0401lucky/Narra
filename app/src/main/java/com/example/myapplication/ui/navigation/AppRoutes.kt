@@ -33,6 +33,7 @@ object AppRoutes {
     const val ROLEPLAY_SETTINGS = "roleplay/play/{scenarioId}/settings"
     const val ROLEPLAY_READING = "roleplay/play/{scenarioId}/reading"
     const val ROLEPLAY_DIARY = "roleplay/play/{scenarioId}/diary"
+    const val ROLEPLAY_DIARY_DETAIL = "roleplay/play/{scenarioId}/diary/{entryId}"
     const val ROLEPLAY_VIDEO_CALL = "roleplay/play/{scenarioId}/video-call"
     const val PHONE_CHECK = "phone-check/{conversationId}?scenarioId={scenarioId}&ownerType={ownerType}"
     const val MOMENTS = "moments/{conversationId}?scenarioId={scenarioId}&ownerType={ownerType}"
@@ -91,6 +92,10 @@ object AppRoutes {
 
     fun roleplayDiary(scenarioId: String): String {
         return "roleplay/play/${Uri.encode(scenarioId)}/diary"
+    }
+
+    fun roleplayDiaryDetail(scenarioId: String, entryId: String): String {
+        return "roleplay/play/${Uri.encode(scenarioId)}/diary/${Uri.encode(entryId)}"
     }
 
     fun roleplayVideoCall(scenarioId: String): String {

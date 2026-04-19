@@ -1,16 +1,15 @@
 package com.example.myapplication.ui.screen.settings
 
-import com.example.myapplication.ui.component.*
+import com.example.myapplication.ui.component.NarraButton
+import com.example.myapplication.ui.component.NarraFilledTonalButton
+import com.example.myapplication.ui.component.NarraIconButton
+import com.example.myapplication.ui.component.NarraOutlinedButton
+import com.example.myapplication.ui.component.narraButtonColors
+import com.example.myapplication.ui.component.narraOutlinedButtonColors
 
-import androidx.compose.animation.core.Spring
-import androidx.compose.animation.core.animateFloatAsState
-import androidx.compose.animation.core.spring
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.interaction.MutableInteractionSource
-import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -35,22 +34,17 @@ import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.scale
-import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
@@ -75,11 +69,14 @@ internal data class SettingsPalette(
     val body: Color,
     val accent: Color,
     val accentSoft: Color,
-    val accentStrong: Color,
     val accentOnStrong: Color,
     val subtleChip: Color,
     val subtleChipContent: Color,
-)
+) {
+    // 兼容历史字段：accent 与 accentStrong 在 GPT 装饰期曾是两个不同变量，但始终指向同一颜色。
+    // 收敛为 accent 后，保留一个只读别名，避免修改所有调用点。
+    val accentStrong: Color get() = accent
+}
 
 @Composable
 internal fun rememberSettingsPalette(): SettingsPalette {
@@ -88,14 +85,13 @@ internal fun rememberSettingsPalette(): SettingsPalette {
         SettingsPalette(
             background = colorScheme.background,
             surface = colorScheme.surface,
-            surfaceTint = colorScheme.background,
-            elevatedSurface = colorScheme.surface,
+            surfaceTint = colorScheme.surfaceVariant,
+            elevatedSurface = colorScheme.surfaceContainerHigh,
             border = colorScheme.outlineVariant.copy(alpha = 0.5f),
             title = colorScheme.onSurface,
             body = colorScheme.onSurfaceVariant,
             accent = colorScheme.primary,
             accentSoft = colorScheme.primaryContainer,
-            accentStrong = colorScheme.primary,
             accentOnStrong = colorScheme.onPrimary,
             subtleChip = colorScheme.secondaryContainer,
             subtleChipContent = colorScheme.onSecondaryContainer,
@@ -115,50 +111,38 @@ fun SettingsTopBar(
     val palette = rememberSettingsPalette()
 
     Surface(
-        color = Color.Transparent, // Let the background show through
+        color = Color.Transparent,
         contentColor = palette.title,
     ) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
                 .statusBarsPadding()
-                .padding(horizontal = SettingsScreenPadding, vertical = 16.dp),
+                .padding(start = 8.dp, end = SettingsScreenPadding, top = 8.dp, bottom = 4.dp),
             verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.SpaceBetween,
         ) {
-            Surface(
-                modifier = Modifier.size(40.dp),
-                shape = CircleShape,
-                color = palette.surface.copy(alpha = 0.8f),
-                border = BorderStroke(0.5.dp, palette.border.copy(alpha = 0.3f)),
-                shadowElevation = 2.dp,
-            ) {
-                NarraIconButton(onClick = onNavigateBack) {
-                    Icon(
-                        imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                        contentDescription = "返回",
-                        tint = palette.title,
-                        modifier = Modifier.size(20.dp),
-                    )
-                }
+            NarraIconButton(onClick = onNavigateBack) {
+                Icon(
+                    imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                    contentDescription = "返回",
+                    tint = palette.title,
+                )
             }
 
             Column(
-                horizontalAlignment = Alignment.CenterHorizontally,
+                modifier = Modifier
+                    .weight(1f)
+                    .padding(start = 4.dp),
                 verticalArrangement = Arrangement.spacedBy(2.dp),
-                modifier = Modifier.weight(1f).padding(horizontal = 12.dp)
             ) {
                 Text(
                     text = title,
-                    style = MaterialTheme.typography.titleLarge.copy(
-                        fontWeight = FontWeight.Bold,
-                        letterSpacing = 0.5.sp,
-                    ),
+                    style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold),
                     color = palette.title,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
                 )
-                if (subtitle != null) {
+                if (!subtitle.isNullOrBlank()) {
                     Text(
                         text = subtitle,
                         style = MaterialTheme.typography.labelMedium,
@@ -170,27 +154,16 @@ fun SettingsTopBar(
             }
 
             if (actionLabel != null && onAction != null) {
-                TextButton(
+                NarraFilledTonalButton(
                     onClick = onAction,
                     shape = RoundedCornerShape(16.dp),
-                    contentPadding = androidx.compose.foundation.layout.PaddingValues(
-                        horizontal = 14.dp,
-                        vertical = 8.dp,
-                    ),
-                    colors = androidx.compose.material3.ButtonDefaults.textButtonColors(
-                        containerColor = palette.accentSoft.copy(alpha = 0.65f),
-                        contentColor = palette.accentStrong,
-                    ),
-                    border = BorderStroke(1.dp, palette.accentStrong.copy(alpha = 0.1f)),
                 ) {
                     Text(
                         text = actionLabel,
                         style = MaterialTheme.typography.labelLarge,
-                        fontWeight = FontWeight.Bold,
+                        fontWeight = FontWeight.SemiBold,
                     )
                 }
-            } else {
-                Spacer(modifier = Modifier.size(40.dp))
             }
         }
     }
@@ -589,6 +562,10 @@ fun SettingsModelOptionRow(
     )
 }
 
+/**
+ * 设置页的主/次按钮包装。原 240 行 gradient 装饰器已废弃，
+ * 现在直接复用 NarraButton / NarraOutlinedButton，统一按钮行为与 bounceClick 动画。
+ */
 @Composable
 fun AnimatedSettingButton(
     text: String,
@@ -597,243 +574,52 @@ fun AnimatedSettingButton(
     isPrimary: Boolean,
     leadingIcon: @Composable (() -> Unit)? = null,
 ) {
-    val palette = rememberSettingsPalette()
-    val isDarkTheme = isSystemInDarkTheme()
-    val interactionSource = remember { MutableInteractionSource() }
-    val isPressed by interactionSource.collectIsPressedAsState()
-    val scale by animateFloatAsState(
-        targetValue = if (isPressed && enabled) 0.97f else 1f,
-        animationSpec = spring(
-            dampingRatio = Spring.DampingRatioMediumBouncy,
-            stiffness = Spring.StiffnessLow,
-        ),
-        label = "settings_button_scale",
-    )
     val shape = RoundedCornerShape(22.dp)
-    val primaryBackgroundBrush = when {
-        enabled && !isDarkTheme -> {
-            Brush.verticalGradient(
-                colors = listOf(
-                    Color(0xFF202634),
-                    Color(0xFF141923),
-                ),
-            )
-        }
-
-        enabled -> {
-            Brush.verticalGradient(
-                colors = listOf(
-                    palette.accent.copy(alpha = 0.92f),
-                    palette.accentStrong.copy(alpha = 0.82f),
-                ),
-            )
-        }
-
-        !isDarkTheme -> {
-            Brush.verticalGradient(
-                colors = listOf(
-                    Color(0xFFF3F5F8),
-                    Color(0xFFE7EAF0),
-                ),
-            )
-        }
-
-        else -> {
-            Brush.verticalGradient(
-                colors = listOf(
-                    palette.surface.copy(alpha = 0.96f),
-                    palette.elevatedSurface.copy(alpha = 0.98f),
-                ),
-            )
-        }
-    }
-    val primaryBorderColor = when {
-        enabled && !isDarkTheme -> Color.White.copy(alpha = 0.16f)
-        enabled -> Color.White.copy(alpha = 0.22f)
-        !isDarkTheme -> Color(0xFFD2D8E2)
-        else -> palette.border.copy(alpha = 0.64f)
-    }
-    val primaryAccentLineColor = when {
-        enabled && !isDarkTheme -> palette.accent.copy(alpha = 0.82f)
-        enabled -> Color.White.copy(alpha = 0.32f)
-        !isDarkTheme -> Color(0xFFC7D0DD)
-        else -> palette.border.copy(alpha = 0.48f)
-    }
-    val primaryTextColor = when {
-        enabled && !isDarkTheme -> Color.White
-        enabled -> palette.accentOnStrong
-        !isDarkTheme -> Color(0xFF677180)
-        else -> palette.body.copy(alpha = 0.84f)
-    }
-    val secondaryBackgroundBrush = when {
-        enabled && !isDarkTheme -> {
-            Brush.verticalGradient(
-                colors = listOf(
-                    Color.White.copy(alpha = 0.98f),
-                    Color(0xFFF5F7FA),
-                ),
-            )
-        }
-
-        enabled -> {
-            Brush.verticalGradient(
-                colors = listOf(
-                    palette.surface.copy(alpha = 0.98f),
-                    palette.surfaceTint.copy(alpha = 0.90f),
-                ),
-            )
-        }
-
-        !isDarkTheme -> {
-            Brush.verticalGradient(
-                colors = listOf(
-                    Color(0xFFF7F8FA),
-                    Color(0xFFF0F2F5),
-                ),
-            )
-        }
-
-        else -> {
-            Brush.verticalGradient(
-                colors = listOf(
-                    palette.surface.copy(alpha = 0.95f),
-                    palette.surfaceTint.copy(alpha = 0.92f),
-                ),
-            )
-        }
-    }
-    val secondaryBorderColor = when {
-        enabled && !isDarkTheme -> Color(0xFFD3D9E2)
-        enabled -> palette.border.copy(alpha = 0.72f)
-        !isDarkTheme -> Color(0xFFE0E5EC)
-        else -> palette.border.copy(alpha = 0.44f)
-    }
-    val secondaryTextColor = when {
-        enabled -> palette.title
-        !isDarkTheme -> Color(0xFF7A8492)
-        else -> palette.body.copy(alpha = 0.72f)
-    }
-    val buttonModifier = Modifier
-        .fillMaxWidth()
-        .height(58.dp)
-        .scale(scale)
-        .shadow(
-            elevation = if (isPrimary && enabled) {
-                if (isPressed) 6.dp else 14.dp
-            } else {
-                0.dp
-            },
-            shape = shape,
-            ambientColor = if (isPrimary && enabled && !isDarkTheme) Color(0xFF131722).copy(alpha = 0.18f) else Color.Transparent,
-            spotColor = if (isPrimary && enabled && !isDarkTheme) Color(0xFF131722).copy(alpha = 0.14f) else Color.Transparent,
-        )
-    val contentAlpha = if (enabled) 1f else 0.96f
-
+    val contentPadding = androidx.compose.foundation.layout.PaddingValues(
+        horizontal = 20.dp,
+        vertical = 14.dp,
+    )
     if (isPrimary) {
-        Surface(
+        NarraButton(
             onClick = onClick,
             enabled = enabled,
-            modifier = buttonModifier,
             shape = shape,
-            color = Color.Transparent,
-            shadowElevation = 0.dp,
-            interactionSource = interactionSource,
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(52.dp),
+            colors = narraButtonColors(),
+            contentPadding = contentPadding,
         ) {
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .clip(shape)
-                    .background(brush = primaryBackgroundBrush)
-                    .border(
-                        width = 1.dp,
-                        color = primaryBorderColor,
-                        shape = shape,
-                    ),
-            ) {
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(3.dp)
-                        .background(primaryAccentLineColor)
-                        .align(Alignment.TopCenter),
-                )
-                Row(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(horizontal = 18.dp),
-                    horizontalArrangement = Arrangement.Center,
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    Row(
-                        horizontalArrangement = Arrangement.spacedBy(8.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                    ) {
-                        leadingIcon?.invoke()
-                        Text(
-                            text = text,
-                            style = MaterialTheme.typography.titleSmall,
-                            fontWeight = FontWeight.SemiBold,
-                            color = primaryTextColor.copy(alpha = contentAlpha),
-                            letterSpacing = 0.4.sp,
-                        )
-                    }
-                }
+            if (leadingIcon != null) {
+                leadingIcon()
+                Spacer(modifier = Modifier.width(8.dp))
             }
+            Text(
+                text = text,
+                style = MaterialTheme.typography.titleSmall,
+                fontWeight = FontWeight.SemiBold,
+            )
         }
     } else {
-        Surface(
+        NarraOutlinedButton(
             onClick = onClick,
             enabled = enabled,
-            modifier = buttonModifier,
             shape = shape,
-            color = Color.Transparent,
-            border = BorderStroke(
-                1.dp,
-                secondaryBorderColor,
-            ),
-            shadowElevation = 0.dp,
-            interactionSource = interactionSource,
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(52.dp),
+            colors = narraOutlinedButtonColors(),
+            contentPadding = contentPadding,
         ) {
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .background(brush = secondaryBackgroundBrush),
-            ) {
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(2.dp)
-                        .background(
-                            if (enabled) {
-                                palette.accent.copy(alpha = 0.16f)
-                            } else {
-                                Color.White.copy(alpha = 0.42f)
-                            },
-                        )
-                        .align(Alignment.TopCenter),
-                )
-                Row(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(horizontal = 18.dp),
-                    horizontalArrangement = Arrangement.Center,
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    Row(
-                        horizontalArrangement = Arrangement.spacedBy(8.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                    ) {
-                        leadingIcon?.invoke()
-                        Text(
-                            text = text,
-                            style = MaterialTheme.typography.titleSmall,
-                            fontWeight = FontWeight.SemiBold,
-                            color = secondaryTextColor.copy(alpha = contentAlpha),
-                            letterSpacing = 0.3.sp,
-                        )
-                    }
-                }
+            if (leadingIcon != null) {
+                leadingIcon()
+                Spacer(modifier = Modifier.width(8.dp))
             }
+            Text(
+                text = text,
+                style = MaterialTheme.typography.titleSmall,
+                fontWeight = FontWeight.SemiBold,
+            )
         }
     }
 }
@@ -862,11 +648,11 @@ fun rememberSettingsOutlineColors() = run {
         unfocusedContainerColor = palette.surfaceTint,
         focusedContainerColor = palette.surfaceTint,
         unfocusedBorderColor = palette.border.copy(alpha = 0.55f),
-        focusedBorderColor = palette.accentStrong,
+        focusedBorderColor = palette.accent,
         unfocusedLabelColor = palette.body,
         focusedLabelColor = palette.accent,
         unfocusedTextColor = palette.title,
         focusedTextColor = palette.title,
-        cursorColor = palette.accentStrong,
+        cursorColor = palette.accent,
     )
 }

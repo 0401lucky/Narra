@@ -26,12 +26,19 @@ import com.example.myapplication.data.repository.ai.AiPromptExtrasService
 import com.example.myapplication.data.repository.ai.AiSettingsEditor
 import com.example.myapplication.data.repository.ai.AiSettingsRepository
 import com.example.myapplication.data.repository.ai.AiTranslationService
+import com.example.myapplication.data.repository.ai.ConversationSummaryPromptService
 import com.example.myapplication.data.repository.ai.DefaultAiGateway
 import com.example.myapplication.data.repository.ai.DefaultAiModelCatalogRepository
 import com.example.myapplication.data.repository.ai.DefaultAiPromptExtrasService
 import com.example.myapplication.data.repository.ai.DefaultAiSettingsEditor
 import com.example.myapplication.data.repository.ai.DefaultAiSettingsRepository
 import com.example.myapplication.data.repository.ai.DefaultAiTranslationService
+import com.example.myapplication.data.repository.ai.MemoryProposalPromptService
+import com.example.myapplication.data.repository.ai.PhoneContentPromptService
+import com.example.myapplication.data.repository.ai.PromptExtrasCore
+import com.example.myapplication.data.repository.ai.RoleplayDiaryPromptService
+import com.example.myapplication.data.repository.ai.RoleplaySuggestionPromptService
+import com.example.myapplication.data.repository.ai.TitleAndChatSuggestionPromptService
 import com.example.myapplication.data.repository.ai.tooling.GetConversationSummaryTool
 import com.example.myapplication.data.repository.ai.tooling.DefaultMemoryWriteService
 import com.example.myapplication.data.repository.ai.tooling.MemoryWriteService
@@ -168,9 +175,43 @@ class AppGraph(
         )
     }
 
+    // --- T6.8：Prompt Extras 拆分后，AppGraph 暴露 Core + 6 个子服务 + 兼容性 facade。
+    internal val promptExtrasCore: PromptExtrasCore by lazy {
+        PromptExtrasCore(apiServiceFactory = apiServiceFactory)
+    }
+
+    internal val titleAndChatSuggestionPromptService: TitleAndChatSuggestionPromptService by lazy {
+        TitleAndChatSuggestionPromptService(promptExtrasCore)
+    }
+
+    internal val conversationSummaryPromptService: ConversationSummaryPromptService by lazy {
+        ConversationSummaryPromptService(promptExtrasCore)
+    }
+
+    internal val memoryProposalPromptService: MemoryProposalPromptService by lazy {
+        MemoryProposalPromptService(promptExtrasCore)
+    }
+
+    internal val roleplaySuggestionPromptService: RoleplaySuggestionPromptService by lazy {
+        RoleplaySuggestionPromptService(promptExtrasCore)
+    }
+
+    internal val roleplayDiaryPromptService: RoleplayDiaryPromptService by lazy {
+        RoleplayDiaryPromptService(promptExtrasCore)
+    }
+
+    internal val phoneContentPromptService: PhoneContentPromptService by lazy {
+        PhoneContentPromptService(promptExtrasCore)
+    }
+
     val aiPromptExtrasService: AiPromptExtrasService by lazy {
         DefaultAiPromptExtrasService(
-            apiServiceFactory = apiServiceFactory,
+            titleService = titleAndChatSuggestionPromptService,
+            summaryService = conversationSummaryPromptService,
+            memoryService = memoryProposalPromptService,
+            suggestionService = roleplaySuggestionPromptService,
+            diaryService = roleplayDiaryPromptService,
+            phoneService = phoneContentPromptService,
         )
     }
 
@@ -225,8 +266,12 @@ class AppGraph(
         AndroidAppUpdateController(application)
     }
 
+    fun scheduleStartup(block: suspend CoroutineScope.() -> Unit) {
+        startupScope.launch(block = block)
+    }
+
     fun launchStartupTasks() {
-        startupScope.launch {
+        scheduleStartup {
             settingsStore.migrateSensitiveData()
         }
     }

@@ -21,4 +21,9 @@ data class RoleplayDiaryEntryEntity(
     val sortOrder: Int,
     val createdAt: Long,
     val updatedAt: Long,
+    // 元数据字段：模型生成时填入；旧数据默认空串。
+    val mood: String = "",
+    val weather: String = "",
+    val tagsCsv: String = "",
+    val dateLabel: String = "",
 )

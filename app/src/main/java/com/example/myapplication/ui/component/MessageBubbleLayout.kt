@@ -15,6 +15,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.Immutable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Shape
@@ -40,10 +41,16 @@ private val MessageBubbleActionButtonSize = 30.dp
 private val MessageBubbleActionIconSize = 16.dp
 private val MessageBubbleUserMessageMaxWidth = 300.dp
 
+@Immutable
+internal data class MessageBubbleRenderedContent(
+    val displayAttachments: List<MessageAttachment>,
+    val displayParts: List<ChatMessagePart>,
+    val assistantImageSources: List<String>,
+)
+
 @Composable
 internal fun UserStructuredMessageContent(
-    displayAttachments: List<MessageAttachment>,
-    displayParts: List<ChatMessagePart>,
+    renderedContent: MessageBubbleRenderedContent,
     displayContent: String,
     contentColor: androidx.compose.ui.graphics.Color,
     messageTextScale: Float,
@@ -51,6 +58,8 @@ internal fun UserStructuredMessageContent(
     performanceMode: ChatMessagePerformanceMode,
     onConfirmTransferReceipt: ((String) -> Unit)?,
 ) {
+    val displayAttachments = renderedContent.displayAttachments
+    val displayParts = renderedContent.displayParts
     val bubbleShape = RoundedCornerShape(
         topStart = 24.dp,
         topEnd = 24.dp,
@@ -290,12 +299,10 @@ internal fun buildMessageCopyPayload(
 @Composable
 internal fun MessageBubbleContent(
     message: ChatMessage,
-    displayAttachments: List<MessageAttachment>,
+    renderedContent: MessageBubbleRenderedContent,
     isUser: Boolean,
     useMarkdown: Boolean,
     displayContent: String,
-    displayParts: List<ChatMessagePart>,
-    assistantImageSources: List<String>,
     contentColor: androidx.compose.ui.graphics.Color,
     assistantMarkdownTypography: MarkdownTypography,
     assistantMarkdownPadding: MarkdownPadding,
@@ -308,6 +315,9 @@ internal fun MessageBubbleContent(
     onOpenCitation: ((MessageCitation) -> Unit)?,
     modifier: Modifier = Modifier,
 ) {
+    val displayAttachments = renderedContent.displayAttachments
+    val displayParts = renderedContent.displayParts
+    val assistantImageSources = renderedContent.assistantImageSources
     Column(
         modifier = modifier,
         verticalArrangement = Arrangement.spacedBy(12.dp),

@@ -292,6 +292,10 @@ class RoomRoleplayRepository(
                 sortOrder = index,
                 createdAt = timestamp,
                 updatedAt = timestamp,
+                mood = entry.mood.trim(),
+                weather = entry.weather.trim(),
+                tagsCsv = entry.tags.joinDiaryTags(),
+                dateLabel = entry.dateLabel.trim(),
             )
         }
         roleplayDao.replaceDiaryEntriesForConversation(conversationId, diaryEntities)
@@ -442,6 +446,10 @@ class RoomRoleplayRepository(
             sortOrder = entity.sortOrder,
             createdAt = entity.createdAt,
             updatedAt = entity.updatedAt,
+            mood = entity.mood,
+            weather = entity.weather,
+            tags = entity.tagsCsv.splitDiaryTags(),
+            dateLabel = entity.dateLabel,
         )
     }
 
@@ -502,4 +510,25 @@ class RoomRoleplayRepository(
             .replace(">", "&gt;")
             .replace("\"", "&quot;")
     }
+}
+
+// 日记标签存储约定：; 分隔，每个标签已 trim；空标签被过滤。
+private const val DIARY_TAG_DELIMITER = ";"
+
+private fun List<String>.joinDiaryTags(): String {
+    return asSequence()
+        .map { it.trim().replace(DIARY_TAG_DELIMITER, " ") }
+        .filter { it.isNotBlank() }
+        .distinct()
+        .take(6)
+        .joinToString(DIARY_TAG_DELIMITER)
+}
+
+private fun String.splitDiaryTags(): List<String> {
+    if (isBlank()) return emptyList()
+    return split(DIARY_TAG_DELIMITER)
+        .asSequence()
+        .map { it.trim() }
+        .filter { it.isNotBlank() }
+        .toList()
 }

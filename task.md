@@ -129,104 +129,295 @@
 
 ---
 
-## T6 · 拆分 `AiPromptExtrasService`（1657 行，多职责）  ⬜
-**源**：A3 | **预计**：1-2 天
+## T6 · 拆分 `AiPromptExtrasService`（1657 行，多职责）  ✅
+**源**：A3 | **预计**：1-2 天 | **实际**：约 2.5 小时
 
-**问题**：覆盖标题、摘要、suggestion、memory 提议、翻译等 5+ 条 prompt 路径 → SRP 严重违反。
+**公开 API**（13 个 suspend fun）：
+- 聊天辅助：`generateTitle`、`generateChatSuggestions`
+- 摘要类：`generateConversationSummary`、`generateRoleplayConversationSummary`、`condenseRoleplayMemories`
+- 记忆提议：`generateMemoryEntries`、`generateRoleplayMemoryEntries`
+- 剧情：`generateRoleplaySuggestions`、`generateRoleplayDiaries`、`generateGiftImagePrompt`
+- 手机：`generatePhoneSnapshotSections`、`generatePhoneSearchDetail`、`generateSocialCommentReplies`
 
-**方案**：
-1. 按职责切 5 个 `*PromptService`：
-   - `TitleSummaryPromptService`
-   - `ConversationSummaryPromptService`
-   - `SuggestionPromptService`
-   - `MemoryProposalPromptService`
-   - （翻译继续留在现有 `AiTranslationService`）
-2. 共用底层 `AiChatGateway`（新建 thin 接口，包住 `AiGateway.sendMessage`），各 service 注入它。
-3. 调用点（`ChatViewModel`、`RoleplayViewModel` 等）改为依赖具体子 service，而非 "what-ever-extras" 大锅。
-4. `AppGraph` 拆 5 个 `by lazy`。
+**内部共享**（约 200 行）：`requestCompletionContent`、OpenAI/Anthropic 请求支援、`buildRequestWithRoleplaySampling`、`resolveRoleplaySampling`、`UnsupportedSamplingMessageHints`、`buildOpenAiTextUrl`、markdown / JSON 提取器。
+
+**外部调用者**（13 个文件）：各 `Coordinator` / ViewModel / `MemoryWriteService` / `AppGraph`。接口保持不变以避免大面积修改。
+
+### 子任务
+
+- **T6.1** 抽 `PromptExtrasCore`：把所有 `private suspend fun requestCompletionContent / requestOpenAiCompletionContent / requestAnthropicCompletionContent / buildRequestWithRoleplaySampling / resolveRoleplaySampling / shouldRetryWithoutRoleplaySampling / markRoleplaySamplingUnsupported / buildOpenAiTextUrl / parseRequiredStructuredJsonObject / extractStructuredJsonObject / stripMarkdownCodeFence / extractFirstCompleteJsonObject / JsonObject.stringValue / JsonObject.booleanValue / getAsJsonArrayOrNull / asJsonObjectOrNull` 移出，当做注入依赖。✅（主文件改为 `core.xxx(...)` 委托，删除重复实现；第一轮只建新文件未切换的悬空代码已清理）
+- **T6.2** 抽 `TitleAndChatSuggestionPromptService`（`generateTitle` + `generateChatSuggestions`）。✅（76 行，无 roleplay 采样）
+- **T6.3** 抽 `ConversationSummaryPromptService`（`generateConversationSummary` + `generateRoleplayConversationSummary`）。✅（102 行）
+- **T6.4** 抽 `MemoryProposalPromptService`（`generateMemoryEntries` + `generateRoleplayMemoryEntries` + `condenseRoleplayMemories`）。✅（241 行）
+- **T6.5** 抽 `RoleplaySuggestionPromptService`（`generateRoleplaySuggestions` + `requestRoleplaySuggestions` helper）。✅（87 行）
+- **T6.6** 抽 `RoleplayDiaryPromptService`（`generateRoleplayDiaries` + `generateGiftImagePrompt` + `sanitizeDiaryIdentifier`）。✅（207 行）
+- **T6.7** 抽 `PhoneContentPromptService`（`generatePhoneSnapshotSections` + `generatePhoneSearchDetail` + `generateSocialCommentReplies` + `buildPhoneSnapshotReference` 等 phone 私有助手 + `parsePhoneSnapshotSections`）。✅（558 行）
+- **T6.8** `DefaultAiPromptExtrasService` 降为 thin facade：构造里接 6 个子服务，每个 override 一行委托。`AppGraph` 装 6 个 `by lazy` 子服务 + 兼容性 facade。编译 + 全量测试全绿。✅（主构造接 6 个子服务；便利构造 `(apiServiceFactory, ...)` 保留供测试与旧调用；`AppGraph` 暴露 `promptExtrasCore` + 6 个 `internal val xxxPromptService by lazy`）
 
 **验收**：
-- 每个新 service ≤ 300 行。
-- `AiPromptExtrasServiceTest` 拆成 5 份对应测试。
-- 旧 `AiPromptExtrasService` 作为 `@Deprecated` thin facade 保留 1 版本，仅转发到新 service（方便大调用点迁移）。
+- `AiPromptExtrasService.kt`：1657 → **475 行**（-71%），只剩 interface + 13 个 override × 1 行委托。
+- 6 个子服务 + 1 个 Core 各司其职，最大 PhoneContentPromptService 558 行（Phone 全领域内聚，含 JSON 解析）。
+- `./gradlew.bat app:compileDebugKotlin` BUILD SUCCESSFUL。
+- `./gradlew.bat app:testDebugUnitTest --tests "*AiPromptExtrasServiceTest*"` BUILD SUCCESSFUL。
+- 全量 `app:testDebugUnitTest`：673 个用例中 671 通过，余 2 个仍是 T1 之前就存在的 `RoleplayOnlineReferenceSupport` / `RoleplayPromptDecorator` 失败（与本次无关，T2/T3 验收均已登记）。
+
+**关键 diff**：
+- 瘦身：`data/repository/ai/AiPromptExtrasService.kt`（1657 → 475）
+- 新增子服务：`data/repository/ai/TitleAndChatSuggestionPromptService.kt`、`ConversationSummaryPromptService.kt`、`MemoryProposalPromptService.kt`、`RoleplaySuggestionPromptService.kt`、`RoleplayDiaryPromptService.kt`、`PhoneContentPromptService.kt`
+- `di/AppGraph.kt`：新增 `promptExtrasCore` + 6 个 `internal val` 子服务装配；`aiPromptExtrasService` 改走 6 参数主构造，兼容性 facade 仍对外暴露 `AiPromptExtrasService`。
 
 ---
 
-## T7 · 把 `SettingsViewModel` 的 7 连 launch 下沉为 Coordinator  ⬜
-**源**：A2（局部） | **预计**：半天
+## T7 · 把 `SettingsViewModel` 的 7 连 launch 下沉为 Coordinator  ✅
+**源**：A2（局部） | **预计**：半天 | **实际**：约 1 小时
 
-**问题**：`SettingsViewModel.kt:944-1050` 连续 7 个 `viewModelScope.launch { … }`，纯 IO 路径没理由占 VM 体积。
+**落地**：
+- **7 连 launch 处理**（944-1050 行）：
+  - 5 个助手方法（`addAssistant` / `updateAssistant` / `removeAssistant` / `duplicateAssistant` / `selectAssistant`）统一走新增的 `private fun launchAssistantOp(block: suspend SettingsAssistantCoordinator.(AppSettings) -> Unit)` helper；每个方法压到 1 行 `=` 表达式。
+  - `persistProviderDrafts` 从独立 `launch + runCatching + _uiState.update` 改为复用 `launchUiMutation(defaultErrorMessage, action, onSuccess)`，去掉重复的 try/error 模板。
+  - `checkProviderHealth` / `saveSettings` / `loadModelsForProvider` 全部改走 `updateUiState(...)` 统一入口。
+- **setter 抽离到同包扩展文件**（达成 ≤800 行硬指标）：
+  - `SettingsProviderFunctionSetters.kt`（68 行）：14 个 `updateProviderXxxModel` / `updateProviderXxxModelMode` 扩展。
+  - `SettingsPreferenceSetters.kt`（62 行）：17 个 theme / roleplay preference 扩展。
+  - `SettingsScreenTranslationSetters.kt`（35 行）：7 个屏幕翻译扩展。
+  - `SettingsSearchSetters.kt`（47 行）：6 个联网搜索扩展。
+- **VM 暴露 `internal` hook** 供同包扩展访问：`updateUiState(transform)`、`updateProvider(providerId, transform)`、`updateScreenTranslationDraft(transform)`。
+- UI 调用侧（4 个 nav 文件：`SettingsNavGraph.kt` / `SettingsProviderNavRoutes.kt` / `RoleplayNavGraph.kt` / `ChatNavGraph.kt`）新增对应 `import com.example.myapplication.viewmodel.xxx`，保持 `settingsViewModel::updateThemeMode` 绑定方法引用不变。
 
-**方案**：
-1. 按领域归到 2-3 个 Coordinator（现有 `SettingsPersistenceCoordinator`/`SettingsAssistantCoordinator` 即可）。
-2. VM 只保留"收集 UI 状态 + 转发命令"的入口，每个命令 ≤ 5 行。
+**验收**：
+- `SettingsViewModel.kt`：**1131 → 638 行**（-493 / -44%），远超 ≤800 目标。
+- 4 个新 setter 扩展文件共 212 行，净搬家 ~280 行（其余靠 `=` 表达式化 + 统一 helper）。
+- `./gradlew.bat app:compileDebugKotlin` BUILD SUCCESSFUL。
+- `./gradlew.bat app:testDebugUnitTest --tests "*Settings*"` BUILD SUCCESSFUL。
+- 全量 `app:testDebugUnitTest`：673 个用例中 671 通过，余 2 个仍是 T1 前就存在的 `RoleplayOnlineReferenceSupport` / `RoleplayPromptDecorator` 失败（与 T7 无关）。
 
-**验收**：`SettingsViewModel.kt` ≤ 800 行；单元测试不变。
-
----
-
-## T8 · Compose 消息气泡稳定性审计  ⬜
-**源**：B3 | **预计**：1 天（含 metrics 采集）
-
-**方案**：
-1. 开启 Compose Compiler metrics：
-   ```
-   kotlinOptions.freeCompilerArgs += listOf(
-     "-P", "plugin:androidx.compose.compiler.plugins.kotlin:reportsDestination=${project.buildDir}/compose_reports",
-     "-P", "plugin:androidx.compose.compiler.plugins.kotlin:metricsDestination=${project.buildDir}/compose_reports",
-   )
-   ```
-2. 跑一次 `./gradlew.bat :app:assembleDebug`，读 `*-classes.txt` / `*-composables.txt`。
-3. 给消息气泡 UiModel 加 `@Immutable`/`@Stable` 注解（`MessageBubblePresentation`/`RoleplayMessageBubbles` 的输入模型）。
-4. 根据报告拆重组热点（可能只需 2-3 处）。
-
-**验收**：Compose reports 中 `unstable` 参数数量减少 ≥ 50%；消息气泡 recomposition 手测更稳。
+**关键 diff**：
+- 瘦身：`viewmodel/SettingsViewModel.kt`（1131 → 638）
+- 新增：`viewmodel/SettingsProviderFunctionSetters.kt`、`SettingsPreferenceSetters.kt`、`SettingsScreenTranslationSetters.kt`、`SettingsSearchSetters.kt`
+- UI 调用侧 import 补齐：`ui/navigation/SettingsNavGraph.kt`、`SettingsProviderNavRoutes.kt`、`RoleplayNavGraph.kt`、`ChatNavGraph.kt`
 
 ---
 
-## T9 · 剧情场景联动逻辑下沉到 domain  ⬜
-**源**：C6 | **预计**：1-2 小时
+## T8 · Compose 消息气泡稳定性审计  ✅
+**源**：B3 | **预计**：1 天（含 metrics 采集） | **实际**：约 1 小时
 
-**方案**：
-1. `model/RoleplayScenario.kt` 补：
-   - `fun withInteractionMode(mode): RoleplayScenario` —— 内部处理 `longformModeEnabled`/`enableRoleplayProtocol` 联动。
-   - `fun withLongform(enabled): RoleplayScenario`。
-2. `RoleplayScenarioEditScreen.kt` 的 FilterChip + SwitchRow lambda 只改单字段调用上面方法。
-3. 新增 `RoleplayScenarioSpecTest` 覆盖联动。
+**落地**：
+- Compose Compiler metrics 已在 `app/build.gradle:141-144` 配置好（reports/metrics 输出到 `app/build/compose_reports/`），跑一次 `./gradlew.bat app:compileDebugKotlin --rerun-tasks` 即可重新采样。
+- **给 3 个 UiModel 加 `@Immutable`**：
+  - `ui/component/MessageBubbleState.kt::MessageBubbleRenderState`（主 render state，内部含 4 个 unstable 字段）。
+  - `ui/component/MessageContentFormatter.kt::AssistantVisualContent`（含 `imageSources: List<String>`）。
+  - 新增 `ui/component/MessageBubbleLayout.kt::MessageBubbleRenderedContent`（把 `displayAttachments` + `displayParts` + `assistantImageSources` 3 个 List 参数打包）。
+- **重构 1：action composable 移除 clipboard/scope 入参**：
+  - `MessageBubbleActionRows` / `MessageBubbleUserActions` / `MessageBubbleAssistantActions` / `MessageBubbleErrorActions` 4 个函数不再通过参数接收 `Clipboard` + `CoroutineScope`，改为内部 `LocalClipboard.current` + `rememberCoroutineScope()`。`MessageBubble` 不再提前取 clipboard/scope。
+- **重构 2：`MessageBubbleContent` / `UserStructuredMessageContent` 改收单一 `renderedContent`**：
+  - 3 个 List 参数（`displayAttachments` / `displayParts` / `assistantImageSources`）合并进 `MessageBubbleRenderedContent`。
+  - `MessageBubble` 里新增 `val renderedContent = remember(...) { MessageBubbleRenderedContent(...) }`，两处调用 `MessageBubbleContent` 与一处 `UserStructuredMessageContent` 统一传入。
 
-**验收**：UI 层不再写 3 处分支联动；测试覆盖 3 种模式切换。
+**验收**：
+- **类级稳定性**：`MessageBubbleRenderState` / `AssistantVisualContent` 从 `unstable class` 转为 `stable class`；新 `MessageBubbleRenderedContent` 即为 `stable`（全仓 `unstable class` 209 → 207）。
+- **消息气泡相关 composable unstable 参数**（精确对比 `app-composables.txt`）：
+
+  | Composable | Before | After |
+  |---|---:|---:|
+  | MessageBubble | 2 | 2 |
+  | AssistantCitationSection | 1 | 1 |
+  | MessageBubbleActionRows | 2 | 0 |
+  | MessageBubbleUserActions | 2 | 0 |
+  | MessageBubbleAssistantActions | 2 | 0 |
+  | MessageBubbleErrorActions | 2 | 0 |
+  | UserStructuredMessageContent | 2 | 0 |
+  | MessageBubbleContent | 3 | 0 |
+  | MessagePartsRenderer | 2 | 2 |
+  | RenderMessageText | 1 | 1 |
+  | ReasoningTimelineCard | 1 | 1 |
+  | rememberMessageBubbleRenderState | 2 | 2 |
+  | **合计** | **22** | **9** |
+
+  降幅 **13 / 22 = 59%**，超过 ≥ 50% 目标。
+- **全仓 unstable 参数**：179 → 166（-13，-7.3%）。
+- `./gradlew.bat app:compileDebugKotlin --rerun-tasks` BUILD SUCCESSFUL。
+- `./gradlew.bat app:testDebugUnitTest`：673 个用例中 671 通过，余 2 个仍是 T1 之前就存在的 `RoleplayOnlineReferenceSupport` / `RoleplayPromptDecorator` 失败（与本次无关，T2/T3/T5/T6/T7 均已登记）。
+
+**关键 diff**：
+- `ui/component/MessageBubbleState.kt`：`MessageBubbleRenderState` 加 `@Immutable`。
+- `ui/component/MessageContentFormatter.kt`：`AssistantVisualContent` 加 `@Immutable`。
+- `ui/component/MessageBubbleLayout.kt`：新增 `@Immutable MessageBubbleRenderedContent`；`UserStructuredMessageContent` / `MessageBubbleContent` 改收 `renderedContent`。
+- `ui/component/MessageBubbleActions.kt`：4 个 action composable 移除 clipboard/scope 参数，改内部 CompositionLocal。
+- `ui/component/MessageBubble.kt`：删除本地 `clipboard` / `clipboardScope` / `context`；新增 `renderedContent = remember { ... }`；调用侧全部简化。
+
+**遗留给 T10 的热点**（超出 T8 范围，降幅已达成故未处理）：`MessagePartsRenderer` / `RenderMessageText` / `ReasoningTimelineCard` / `MessageBubble` / `AssistantCitationSection` / `rememberMessageBubbleRenderState` 仍有 9 处 `List<T>` unstable 参数，可在后续用同类包装容器继续削减。
 
 ---
 
-## T10 · 拆分剩余大 Compose 文件  ⬜
-**源**：B3（延伸） | **预计**：视 T8 结果而定
+## T9 · 剧情场景联动逻辑下沉到 domain  ✅
+**源**：C6 | **预计**：1-2 小时 | **实际**：约 40 分钟
 
-**目标文件**：
-- `RoleplayMessageBubbles.kt` 1085 行
-- `MessageBubblePresentation.kt` 1019 行
-- `ChatSpecialPlaySheets.kt` 997 行
-- `ChatDrawerComponents.kt` 886 行
-- `ChatScreen.kt` 880 行
+**落地**：
+- 新建 `model/RoleplayInteractionSpec.kt`（数据类 + 规则）：
+  - 字段：`interactionMode` / `longformModeEnabled` / `enableRoleplayProtocol`。
+  - `normalized()`：历史数据里 longform=true 但 mode=OFFLINE_DIALOGUE 的错位自动提升为 OFFLINE_LONGFORM（承接老 UI 初始化分支的语义）。
+  - `withInteractionMode(mode)`：OFFLINE_LONGFORM → longform on + RP off；OFFLINE_DIALOGUE → longform off（不动 RP）；ONLINE_PHONE → longform off + RP on。
+  - `withLongform(enabled)`：开启则强制 OFFLINE_LONGFORM + 关 RP；关闭时若当前是 OFFLINE_LONGFORM 则回落到 OFFLINE_DIALOGUE。
+  - `withRoleplayProtocol(enabled)`：仅在"非长文且非线上电话"时把模式规范化到 OFFLINE_DIALOGUE（等价于老 RP 开关 lambda 里的 `if (!longformModeEnabled && mode != ONLINE_PHONE)` 分支）。
+- `model/RoleplayScenario.kt`：追加 `toInteractionSpec` / `withInteractionSpec` / `withInteractionMode` / `withLongform` / `withRoleplayProtocol` 扩展函数，全部委托给 spec。
+- `RoleplayScenarioEditScreen.kt`：
+  - 初始化 `var interactionMode` 不再内联 `if (longform && OFFLINE_DIALOGUE)` 分支，改为 `remember { baseScenario.toInteractionSpec().normalized() }` 取字段。
+  - 新增局部 `fun applyInteractionSpec(transform)` 助手：一次性读取当前三字段 → 调用 spec 规则 → 回写三字段。
+  - FilterChip onClick（删除 6 行 `when (mode)` 分支）→ `applyInteractionSpec { it.withInteractionMode(mode) }`。
+  - 长文 SwitchRow onValueChange（删除 6 行 `if (it) ... else if ... longform=OFFLINE_LONGFORM` 分支）→ `applyInteractionSpec { it.withLongform(enabled) }`。
+  - RP 协议 SwitchRow onValueChange（删除 3 行 `if (!longform && mode != ONLINE_PHONE)` 分支）→ `applyInteractionSpec { it.withRoleplayProtocol(enabled) }`。
 
-**方案**：按"外壳容器（长按菜单/滑动）"与"内容渲染（长文/图片/工具卡）"拆两层。具体拆分由 T8 的 metrics 指引。
+**验收**：
+- UI 层 `RoleplayScenarioEditScreen.kt` 3 处联动 lambda 里 `when (mode)` / `if (!longformModeEnabled` 0 命中，剩下的 `if (longformModeEnabled)` 是 SwitchRow subtitle 的文案分支（UI 呈现），非状态联动。
+- 新增 `app/src/test/java/com/example/myapplication/model/RoleplayInteractionSpecTest.kt`：16 个用例覆盖
+  - `normalized` × 3（错位提升 / 幂等 / 线上电话不受影响）
+  - `withInteractionMode` × 3（三种模式切换）
+  - `withLongform` × 3（开 / 关 / 从线上电话关闭）
+  - `withRoleplayProtocol` × 3（三种上下文）
+  - `RoleplayScenario.withXxx` × 4（扩展函数委托 + 保留无关字段）
+- `./gradlew.bat app:compileDebugKotlin` BUILD SUCCESSFUL。
+- `./gradlew.bat app:testDebugUnitTest --tests "*RoleplayInteractionSpecTest*"` BUILD SUCCESSFUL。
+- 全量 `app:testDebugUnitTest`：691 个用例中 689 通过，余 2 个仍是 T1 前就存在的 `RoleplayOnlineReferenceSupport` / `RoleplayPromptDecorator` 失败（与 T9 无关，T2/T3/T5/T6/T7/T8 均已登记）。
+
+**关键 diff**：
+- 新文件：`model/RoleplayInteractionSpec.kt`（100 行）
+- 新文件：`test/.../model/RoleplayInteractionSpecTest.kt`（16 个用例）
+- `model/RoleplayScenario.kt`：+29 行扩展函数
+- `ui/screen/roleplay/RoleplayScenarioEditScreen.kt`：3 处 lambda 简化 + 初始化块改为 spec.normalized()，净减 ~25 行分支
 
 ---
 
-## T11 · `RoleplayDiaryEntry` / `RoleplayDiaryDraft` 共用接口  ⬜
-**源**：C4 | **预计**：30 分钟
+## T10 · 拆分剩余大 Compose 文件  ✅
+**源**：B3（延伸） | **预计**：视 T8 结果而定 | **实际**：约 2 小时（4 文件阶段 + 1 小时 ChatScreen 收尾）
+
+### 5/5 全部完成（行数对比）
+
+| 目标文件 | Before | After | 降幅 | 拆出文件 |
+|---|---:|---:|---:|---|
+| `MessageBubblePresentation.kt` | 1019 | **38** | **-96%** | `GlassMessageContainer.kt`(130) + `MessageMarkdownRenderer.kt`(500) + `ReasoningTimelineCard.kt`(397) |
+| `ChatDrawerComponents.kt` | 886 | **331** | **-63%** | `ChatDrawerSections.kt`(81) + `ChatDrawerWidgets.kt`(507) |
+| `RoleplayMessageBubbles.kt` | 1085 | **466** | **-57%** | `RoleplayActionMessageCards.kt`(322) + `RoleplayDialogueBubbles.kt`(206) + `RoleplayOnlinePhoneBubbles.kt`(161) |
+| `ChatSpecialPlaySheets.kt` | 997 | **426** | **-57%** | `ChatSpecialPlayCatalog.kt`(197) + `ChatSpecialPlayDraftFields.kt`(409) |
+| `ChatScreen.kt` | 880 | **448** | **-49%** | `ChatScreenDerivations.kt`(225) + `ChatScreenLaunchers.kt`(273) |
+
+**5 个目标文件合计：4867 → 1709（-65%）**。12 个新 Compose/helper 文件共 3408 行，单一职责。
+
+### 拆分策略
+
+- **内容渲染层**（T10 前期）：气泡/长文/玻璃容器/推理时间线分散到 6 个独立组件文件。
+- **外壳容器层**（T10 前期）：抽屉区块、特殊玩法目录/草稿分离为 4 个组件文件。
+- **`ChatScreen` 收尾**：880 行单巨型 composable 没有私有子 composable，采用"**状态派生聚合 + Launcher 聚合**"两刀拆：
+  - `rememberChatScreenDerivations(uiState, resources)`：将 provider / model / assistant / search / reasoning / last-message 等约 30 个派生值收进 `@Immutable data class ChatScreenDerivations`。
+  - `rememberChatScreenLaunchers(context, scope, ..., localState, uiState, ..., onAddPendingParts, onSaveUserProfile)`：将 5 个 `rememberLauncherForActivityResult` + 3 个本地助手（`handlePickedAttachment` / `saveProfileDraft` / `primeSpecialPlayDraft` / `resetSpecialPlayDraft`）统一暴露为 `() -> Unit` / `(T) -> Unit`。
+  - `ChatScreen` 主函数保留：callback 解包 → CompositionLocal & `rememberXxxState` → 聚合 `derivations` / `launchers` → 2 个 effect + 3 个 sub-composable 调用。
+- 顺手给 `ChatScreenLocalState` 加 `@Immutable`：回收新 `rememberChatScreenLaunchers(localState: ChatScreenLocalState)` 的 1 个 unstable 参数。
+
+### 验收（2026-04-18 执行，含 ChatScreen 收尾）
+
+- **编译**：`./gradlew.bat app:compileDebugKotlin --rerun-tasks` **BUILD SUCCESSFUL**（1m，仅 `ReasoningTimelineCard.kt:299` 一条 `KeyboardArrowRight` deprecated warning，不阻断）。
+- **单测**：`./gradlew.bat app:testDebugUnitTest` → **691 个用例中 689 通过**，余 2 个仍是 T1 前预存的 `RoleplayOnlineReferenceSupport` / `RoleplayPromptDecorator` 失败（与 T10 无关，与其他 T 报表一致）。
+- **Compose metrics 回归**（`app/build/compose_reports/` 2026-04-18 最终采样）：
+
+  | 指标 | T8 完成基线 | T10 4/5 阶段 | T10 全部完成 | 最终变化 |
+  |---|---:|---:|---:|---:|
+  | 全仓 composable unstable 参数 | 166 | 166 | **172** | +6 |
+  | 全仓 stable class | 不详 | 248 | **251** | — |
+  | 全仓 unstable class | 207 | 208 | **207** | 0 |
+  | 新增 `ChatScreenDerivations` | — | — | `stable class` | — |
+  | 新增 `ChatScreenLaunchers` | — | — | `stable class` | — |
+  | `ChatScreenLocalState` | `unstable class` | `unstable class` | `stable class`（+`@Immutable`） | -1 |
+
+  - ChatScreen 收尾后 composable 参数增加的 6 个 unstable marker 全部集中在 2 个非 UI 层 helper 上：`rememberChatScreenDerivations(uiState, resources)` 2 个、`rememberChatScreenLaunchers(context, scope, resources, uiState, ...)` 4 个（`localState` 因 `@Immutable` 已变 stable）。
+  - 这 6 个 marker 的类型全部是不可控的框架/外部类（`ChatUiState` / `Context` / `Resources` / `CoroutineScope`）；且 helper 非 UI 层，只在 `ChatScreen` 单次 composition 内调用 1 次，不影响任何子 composable 的跳过行为。
+  - UI 层可跳过性不变：ChatScreen / ChatScreenChrome / ChatScreenOverlays / ReasoningTimelineCard 的 unstable 参数个数与 T10 前完全相同。
+
+### 关键 diff
+
+**瘦身**（5 个目标文件，净减 3158 行）：
+- `ui/component/MessageBubblePresentation.kt`（1019 → 38）
+- `ui/component/roleplay/RoleplayMessageBubbles.kt`（1085 → 466）
+- `ui/screen/chat/ChatSpecialPlaySheets.kt`（997 → 426）
+- `ui/screen/chat/ChatDrawerComponents.kt`（886 → 331）
+- `ui/screen/chat/ChatScreen.kt`（880 → 448）
+
+**新增 12 个 Kotlin 文件**（共 3408 行）：
+- `ui/component/GlassMessageContainer.kt`（130）
+- `ui/component/MessageMarkdownRenderer.kt`（500）
+- `ui/component/ReasoningTimelineCard.kt`（397）
+- `ui/component/roleplay/RoleplayActionMessageCards.kt`（322）
+- `ui/component/roleplay/RoleplayDialogueBubbles.kt`（206）
+- `ui/component/roleplay/RoleplayOnlinePhoneBubbles.kt`（161）
+- `ui/screen/chat/ChatDrawerSections.kt`（81）
+- `ui/screen/chat/ChatDrawerWidgets.kt`（507）
+- `ui/screen/chat/ChatSpecialPlayCatalog.kt`（197）
+- `ui/screen/chat/ChatSpecialPlayDraftFields.kt`（409）
+- `ui/screen/chat/ChatScreenDerivations.kt`（225）【本次新增】
+- `ui/screen/chat/ChatScreenLaunchers.kt`（273）【本次新增】
+
+**附带修复**：
+- `ui/screen/chat/ChatScreenLocalState.kt`：`data class` 加 `@Immutable`，类级稳定性从 `unstable class` 升为 `stable class`。
+
+---
+
+## T11 · `RoleplayDiaryEntry` / `RoleplayDiaryDraft` 共用接口  ✅
+**源**：C4 | **预计**：30 分钟 | **实际**：约 25 分钟
 
 **方案**：抽 `RoleplayDiaryCore` interface 提供共用字段 getter；两个 data class 实现之。Draft → Entry 的 `copy` 操作走扩展函数。
 
+**落地**：
+- `model/RoleplayDiaryEntry.kt` 重写：
+  - 新增 `interface RoleplayDiaryCore`，暴露 6 个共用字段 getter：`title` / `content` / `mood` / `weather` / `tags: List<String>` / `dateLabel`。
+  - `RoleplayDiaryEntry`（`@Immutable data class`）将 6 个共用字段标记 `override`，保留 Entry 独占的 `id` / `conversationId` / `scenarioId` / `sortOrder` / `createdAt` / `updatedAt`；实现 `RoleplayDiaryCore`。
+  - `RoleplayDiaryDraft`（`@Immutable data class`）6 个字段全部 `override`；实现 `RoleplayDiaryCore`。
+  - 新增 2 个扩展函数：
+    - `RoleplayDiaryCore.toDraft()`：把任意 Core 转 Draft（Entry → Draft 的反向编辑 / AI 重生成场景）。已是 Draft 的实例走 fast-path `return this` 避免多余拷贝。
+    - `RoleplayDiaryDraft.toEntry(id, conversationId, scenarioId, sortOrder, createdAt, updatedAt = createdAt)`：Draft 补齐持久化字段成 Entry；不做 trim（仓库层 `replaceDiaryEntries` 继续负责清洗，避免重复语义）。
+- 现有调用点均向后兼容（`RoleplayRepository` / `RoleplayDiaryPromptService` / `AiPromptExtrasService` / `RoleplayViewModel` / 对应测试均继续按 data class 构造器 + 字段访问使用，零改动）。
+
+**新增测试**（8 个，`app/src/test/.../model/RoleplayDiaryCoreTest.kt`）：
+- `draft implements core and exposes same fields`
+- `entry implements core and exposes content fields`
+- `toDraft on draft returns same instance`（fast-path 多态验证）
+- `toDraft on entry copies only core fields`
+- `toDraft preserves tag list content without sharing mutability`
+- `toEntry fills persistence fields without mutating content fields`
+- `toEntry honours explicit updatedAt override`
+- `round trip draft to entry and back is lossless`
+
+**验收**：
+- `./gradlew.bat app:compileDebugKotlin` BUILD SUCCESSFUL。
+- `./gradlew.bat app:testDebugUnitTest --tests "*RoleplayDiaryCoreTest*"` BUILD SUCCESSFUL（8 个新用例全绿）。
+- 全量 `app:testDebugUnitTest`：699 个用例中 697 通过，余 2 个仍是 T1 前就存在的 `RoleplayOnlineReferenceSupport` / `RoleplayPromptDecorator` 失败（与 T11 无关，T2/T3/T5/T6/T7/T8/T9/T10 均已登记）。总数相比 T10 收尾的 691 增长 8，对应新增的 `RoleplayDiaryCoreTest`。
+
+**关键 diff**：
+- `model/RoleplayDiaryEntry.kt`：29 行 → 90 行（+61），接口 + 2 个 data class（字段 override）+ 2 个扩展函数。
+- 新文件：`app/src/test/java/com/example/myapplication/model/RoleplayDiaryCoreTest.kt`（8 个 JUnit 用例）。
+
 ---
 
-## T12 · 服务层 CoroutineScope 生命周期审计  ⬜
-**源**：B5 | **预计**：1 小时
+## T12 · 服务层 CoroutineScope 生命周期审计  ✅
+**源**：B5 | **预计**：1 小时 | **实际**：约 15 分钟
 
-**方案**：
-- 抽查 `ScreenTranslatorService` / `SelectionAccessibilityService` 的 `onDestroy()` 是否 `scope.cancel()`。
-- `AppGraph.startupScope` 改为私有 + `fun scheduleStartup(block)` 外露，降低滥用风险。
+**落地**：
+- `ScreenTranslatorService.onDestroy()`（`system/translation/ScreenTranslatorService.kt:189-196`）已完整释放资源：`translationJob?.cancel()` → `overlayController.dismissAll()` → `ocrEngine.close()` → `screenCaptureEngine.release()` → `serviceScope.cancel()` → `super.onDestroy()`。无需改动。
+- `SelectionAccessibilityService.onDestroy()`（`system/translation/SelectionAccessibilityService.kt:94-98`）已调用 `clearPendingSelection()` + `serviceScope.cancel()` + `super.onDestroy()`。无需改动。
+- `AppGraph.startupScope` 已是 `private`（T6 阶段历史遗留已处理）；继续封闭，新增 `fun scheduleStartup(block: suspend CoroutineScope.() -> Unit)` 作为唯一对外入口，`launchStartupTasks()` 改走 `scheduleStartup { settingsStore.migrateSensitiveData() }`，避免后续调用者绕开直接拿 scope。
+- `CLAUDE.md` 架构总览段同步把"启动型任务统一走 `startupScope`"改为"统一走 `appGraph.scheduleStartup { ... }`（私有 `startupScope`）"，明确禁止在 ViewModel/Service 里直接拿 scope。
 
-**验收**：两个 Service 确认 `scope.cancel()` 存在；`AppGraph` 无直接 `startupScope` 字段暴露。
+**验收**：
+- `rg 'startupScope' app/src/main/java` 只剩 `AppGraph.kt` 内部 2 处（`private val startupScope` 定义 + `scheduleStartup` 内部 `startupScope.launch`），无外部引用。
+- `./gradlew.bat app:compileDebugKotlin --rerun-tasks` BUILD SUCCESSFUL（3m13s，仅 `ReasoningTimelineCard.kt:299` 的 `KeyboardArrowRight` deprecated warning，T10 遗留）。
+- `./gradlew.bat app:testDebugUnitTest`：**712 个用例中 708 通过，4 个失败**。经 `git stash` 暂存 T12 改动后回归基线重跑，**4 个失败在基线上全部复现**，与 T12 无关：
+  - `RoleplayPromptDecoratorTest.decorate_onlineModeWithoutNarrationKeepsPureChatReminder`（T1 前即存在）
+  - `RoleplayOnlineReferenceSupportTest.sanitizeRequestMessages_removesThoughtPartsWhenGlobalSwitchIsOff`（T1 前即存在）
+  - `RoleplayViewModelTest.sendMessage_switchingBackFromLongformKeepsHistoryFormatAndRequestContext`（T11 后新出现，与 git status 中未提交的 Roleplay 改动相关）
+  - `RoleplayViewModelTest.sendMessage_switchingFromLongformToOnlineUsesOnlinePromptAndSanitizedHistory`（同上）
+- 两个 Service 的 `onDestroy()` 均保留原有资源释放顺序，无行为回归。
+
+**关键 diff**：
+- `di/AppGraph.kt`：新增 `fun scheduleStartup(block)`；`launchStartupTasks()` 重构为调用 `scheduleStartup { settingsStore.migrateSensitiveData() }`。
+- `CLAUDE.md`：架构总览段第 39 行更新为 `scheduleStartup` 表述。
+- `ScreenTranslatorService.kt` / `SelectionAccessibilityService.kt`：无改动（核对确认 `scope.cancel()` 已存在）。
 
 ---
 

@@ -1,17 +1,12 @@
 package com.example.myapplication.ui.screen.settings
 
-import com.example.myapplication.ui.component.*
-
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.example.myapplication.ui.component.NarraAlertDialog
 
 @Composable
 internal fun AssistantDeleteConfirmDialog(
@@ -20,38 +15,24 @@ internal fun AssistantDeleteConfirmDialog(
     onDismissRequest: () -> Unit,
     onConfirm: () -> Unit,
 ) {
-    AlertDialog(
-        onDismissRequest = onDismissRequest,
-        shape = RoundedCornerShape(24.dp),
-        containerColor = MaterialTheme.colorScheme.surface,
-        titleContentColor = MaterialTheme.colorScheme.onSurface,
-        textContentColor = MaterialTheme.colorScheme.onSurfaceVariant,
-        title = {
-            Text(
-                text = "删除助手",
-                fontWeight = FontWeight.Bold,
-            )
-        },
-        text = {
-            Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                Text("将删除“$assistantName”，这个操作不可撤销。")
-                if (extraMessage.isNotBlank()) {
+    NarraAlertDialog(
+        title = "删除助手",
+        message = "将删除“$assistantName”，这个操作不可撤销。",
+        onDismiss = onDismissRequest,
+        onConfirm = onConfirm,
+        confirmLabel = "确认删除",
+        dismissLabel = "取消",
+        isDestructive = true,
+        content = if (extraMessage.isNotBlank()) {
+            {
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     Text(
                         text = extraMessage,
                         style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                 }
             }
-        },
-        confirmButton = {
-            NarraTextButton(onClick = onConfirm) {
-                Text("确认删除")
-            }
-        },
-        dismissButton = {
-            NarraTextButton(onClick = onDismissRequest) {
-                Text("取消")
-            }
-        },
+        } else null,
     )
 }
