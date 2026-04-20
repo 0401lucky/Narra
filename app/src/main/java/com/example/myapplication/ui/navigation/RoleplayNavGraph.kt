@@ -324,8 +324,8 @@ internal fun NavGraphBuilder.registerRoleplayGraph(
                     }
                 },
                 onRefreshConversationSummary = roleplayViewModel::refreshCurrentConversationSummary,
-                onRestartSession = roleplayViewModel::restartCurrentSession,
-                onResetSession = roleplayViewModel::resetCurrentSession,
+                onRestartSession = { onSuccess -> roleplayViewModel.restartCurrentSession(onSuccess) },
+                onResetSession = { onSuccess -> roleplayViewModel.resetCurrentSession(onSuccess) },
                 onNavigateBack = {
                     settingsViewModel.saveSettings {
                         navController.popBackStack()

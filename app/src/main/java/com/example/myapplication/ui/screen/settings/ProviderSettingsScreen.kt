@@ -135,7 +135,16 @@ fun ProviderSettingsScreen(
     }
 
     // 进入列表页自动检测所有提供商
-    LaunchedEffect(uiState.providers.map { it.id }) {
+    LaunchedEffect(
+        uiState.providers.map { provider ->
+            listOf(
+                provider.id,
+                provider.baseUrl,
+                provider.apiKey,
+                provider.resolvedApiProtocol().name,
+            )
+        },
+    ) {
         uiState.providers.forEach { provider ->
             if (provider.hasBaseCredentials() &&
                 uiState.connectionHealthMap[provider.id] == null

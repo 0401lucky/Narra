@@ -77,8 +77,8 @@ fun RoleplaySettingsScreen(
     onSelectModel: (String, String) -> Unit,
     onOpenProviderDetail: (String) -> Unit,
     onRefreshConversationSummary: () -> Unit,
-    onRestartSession: () -> Unit,
-    onResetSession: () -> Unit,
+    onRestartSession: (() -> Unit) -> Unit,
+    onResetSession: (() -> Unit) -> Unit,
     onNavigateBack: () -> Unit,
 ) {
     val systemHighContrastEnabled = rememberSystemHighTextContrastEnabled()
@@ -223,8 +223,7 @@ fun RoleplaySettingsScreen(
         onDismissRequest = { showConfirmRestartDialog = false },
         onConfirm = {
             showConfirmRestartDialog = false
-            onRestartSession()
-            onNavigateBack()
+            onRestartSession(onNavigateBack)
         },
     )
 
@@ -233,8 +232,7 @@ fun RoleplaySettingsScreen(
         onDismissRequest = { showConfirmResetDialog = false },
         onConfirm = {
             showConfirmResetDialog = false
-            onResetSession()
-            onNavigateBack()
+            onResetSession(onNavigateBack)
         },
     )
 }

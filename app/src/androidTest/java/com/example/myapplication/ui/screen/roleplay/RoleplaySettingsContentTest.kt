@@ -6,9 +6,11 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.test.assertIsOn
 import androidx.compose.ui.test.assertIsSelected
+import androidx.compose.ui.test.hasTestTag
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performScrollToNode
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.example.myapplication.model.AppSettings
 import com.example.myapplication.model.RoleplayContextStatus
@@ -76,6 +78,8 @@ class RoleplaySettingsContentTest {
             )
         }
 
+        composeRule.onNodeWithTag(TAG_ROLEPLAY_SETTINGS_LIST)
+            .performScrollToNode(hasTestTag("roleplay_immersive_hide_system_bars"))
         composeRule.onNodeWithTag("roleplay_immersive_hide_system_bars")
             .performClick()
         composeRule.onNodeWithTag("roleplay_immersive_hide_system_bars")
@@ -86,6 +90,8 @@ class RoleplaySettingsContentTest {
         composeRule.onNodeWithTag("roleplay_high_contrast_switch")
             .assertIsOn()
 
+        composeRule.onNodeWithTag(TAG_ROLEPLAY_SETTINGS_LIST)
+            .performScrollToNode(hasTestTag("roleplay_line_height_relaxed"))
         composeRule.onNodeWithTag("roleplay_line_height_relaxed")
             .performClick()
         composeRule.onNodeWithTag("roleplay_line_height_relaxed")

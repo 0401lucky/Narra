@@ -1,15 +1,24 @@
 package com.example.myapplication.viewmodel
 
-import com.example.myapplication.data.remote.ApiServiceFactory
+import com.example.myapplication.data.remote.OpenAiCompatibleApi
+import com.example.myapplication.data.repository.ai.AiSettingsEditor
 import com.example.myapplication.model.AppSettings
 import com.example.myapplication.model.Assistant
+import com.example.myapplication.model.ConnectionHealth
 import com.example.myapplication.model.DEFAULT_ASSISTANT_ID
+import com.example.myapplication.model.ModelDto
 import com.example.myapplication.model.ModelAbility
 import com.example.myapplication.model.ModelInfo
+import com.example.myapplication.model.ModelsResponse
 import com.example.myapplication.model.ProviderSettings
 import com.example.myapplication.model.ProviderTemplate
 import com.example.myapplication.model.ProviderType
 import com.example.myapplication.model.ScreenTranslationSettings
+import com.example.myapplication.model.ChatCompletionRequest
+import com.example.myapplication.model.ImageGenerationRequest
+import com.example.myapplication.model.ImageGenerationResponse
+import com.example.myapplication.model.ResponseApiRequest
+import com.example.myapplication.model.ResponseApiResponse
 import com.example.myapplication.model.ThemeMode
 import com.example.myapplication.testutil.createTestAiServices
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -20,6 +29,7 @@ import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
+import retrofit2.Response
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class SettingsViewModelTest {
@@ -600,14 +610,103 @@ class SettingsViewModelTest {
         assertTrue(stored.resolvedAssistants().any { it.id == DEFAULT_ASSISTANT_ID })
     }
 
-    private fun createViewModel(settings: AppSettings): SettingsViewModel {
+    @Test
+    fun updateProviderApiKey_clearsExistingConnectionHealthResult() = runTest(mainDispatcherRule.dispatcher.scheduler) {
+        val provider = ProviderSettings(
+            id = "provider-a",
+            name = "Provider A",
+            baseUrl = "https://a.example.com/v1/",
+            apiKey = "key-a",
+            selectedModel = "model-a",
+            availableModels = listOf("model-a"),
+        )
+        val viewModel = createViewModel(
+            settings = AppSettings(
+                providers = listOf(provider),
+                selectedProviderId = provider.id,
+            ),
+            apiServiceProvider = { _, _ ->
+                object : OpenAiCompatibleApi {
+                    override suspend fun listModels(): Response<ModelsResponse> {
+                        return Response.success(ModelsResponse(data = listOf(ModelDto(id = "model-a"))))
+                    }
+
+                    override suspend fun createChatCompletion(request: ChatCompletionRequest): Response<com.example.myapplication.model.ChatCompletionResponse> {
+                        error("不应调用 createChatCompletion")
+                    }
+
+                    override suspend fun createChatCompletionAt(
+                        url: String,
+                        request: ChatCompletionRequest,
+                    ): Response<com.example.myapplication.model.ChatCompletionResponse> {
+                        error("不应调用 createChatCompletionAt")
+                    }
+
+                    override suspend fun createResponseAt(
+                        url: String,
+                        request: ResponseApiRequest,
+                    ): Response<ResponseApiResponse> {
+                        error("不应调用 createResponseAt")
+                    }
+
+                    override suspend fun generateImage(request: ImageGenerationRequest): Response<ImageGenerationResponse> {
+                        error("不应调用 generateImage")
+                    }
+                }
+            },
+        )
+
+        advanceUntilIdle()
+        viewModel.checkProviderHealth(provider.id)
+        advanceUntilIdle()
+        assertEquals(ConnectionHealth.HEALTHY, viewModel.uiState.value.connectionHealthMap[provider.id])
+
+        viewModel.updateProviderApiKey(provider.id, "key-b")
+
+        assertEquals(null, viewModel.uiState.value.connectionHealthMap[provider.id])
+    }
+
+    @Test
+    fun addAssistant_whenPersistenceFails_setsErrorMessage() = runTest(mainDispatcherRule.dispatcher.scheduler) {
+        val services = createTestAiServices(
+            settings = AppSettings(),
+            dispatcher = mainDispatcherRule.dispatcher,
+        )
+        val failingEditor = object : AiSettingsEditor by services.settingsEditor {
+            override suspend fun saveAssistants(
+                assistants: List<Assistant>,
+                selectedAssistantId: String,
+            ) {
+                error("助手写入失败")
+            }
+        }
+        val viewModel = SettingsViewModel(
+            settingsRepository = services.settingsRepository,
+            settingsEditor = failingEditor,
+            modelCatalogRepository = services.modelCatalogRepository,
+        )
+
+        advanceUntilIdle()
+        viewModel.addAssistant(Assistant(id = "assistant-1", name = "新助手"))
+        advanceUntilIdle()
+
+        assertEquals("助手写入失败", viewModel.uiState.value.message)
+        assertTrue(viewModel.storedSettings.value.assistants.isEmpty())
+    }
+
+    private fun createViewModel(
+        settings: AppSettings,
+        settingsEditor: AiSettingsEditor? = null,
+        apiServiceProvider: ((String, String) -> OpenAiCompatibleApi)? = null,
+    ): SettingsViewModel {
         val services = createTestAiServices(
             settings = settings,
             dispatcher = mainDispatcherRule.dispatcher,
+            apiServiceProvider = apiServiceProvider,
         )
         return SettingsViewModel(
             settingsRepository = services.settingsRepository,
-            settingsEditor = services.settingsEditor,
+            settingsEditor = settingsEditor ?: services.settingsEditor,
             modelCatalogRepository = services.modelCatalogRepository,
         )
     }

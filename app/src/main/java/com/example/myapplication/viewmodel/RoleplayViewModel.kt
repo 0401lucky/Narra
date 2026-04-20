@@ -767,14 +767,14 @@ class RoleplayViewModel(
         sendingJob?.cancel()
     }
 
-    fun resetCurrentSession() {
+    fun resetCurrentSession(onSuccess: () -> Unit = {}) {
         suggestionActionSupport.cancelSuggestionGeneration(resetState = false)
-        scenarioActionSupport.resetCurrentSession()
+        scenarioActionSupport.resetCurrentSession(onSuccess)
     }
 
-    fun restartCurrentSession() {
+    fun restartCurrentSession(onSuccess: () -> Unit = {}) {
         suggestionActionSupport.cancelSuggestionGeneration(resetState = false)
-        scenarioActionSupport.restartCurrentSession()
+        scenarioActionSupport.restartCurrentSession(onSuccess)
     }
 
     fun refreshCurrentConversationSummary() {

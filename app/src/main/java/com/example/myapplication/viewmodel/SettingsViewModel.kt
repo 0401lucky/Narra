@@ -145,9 +145,9 @@ class SettingsViewModel(
         }
     }
 
-    fun updateBaseUrl(value: String) = updateCurrentProvider { it.copy(baseUrl = value) }
+    fun updateBaseUrl(value: String) = updateCurrentProviderAndClearHealth { it.copy(baseUrl = value) }
 
-    fun updateApiKey(value: String) = updateCurrentProvider { it.copy(apiKey = value) }
+    fun updateApiKey(value: String) = updateCurrentProviderAndClearHealth { it.copy(apiKey = value) }
 
     fun updateSelectedModel(value: String) = updateCurrentProvider { provider ->
         provider.copy(
@@ -163,15 +163,15 @@ class SettingsViewModel(
         updateProvider(providerId) { it.copy(name = value) }
 
     fun updateProviderBaseUrl(providerId: String, value: String) =
-        updateProvider(providerId) { it.copy(baseUrl = value) }
+        updateProviderAndClearHealth(providerId) { it.copy(baseUrl = value) }
 
     fun updateProviderApiKey(providerId: String, value: String) =
-        updateProvider(providerId) { it.copy(apiKey = value) }
+        updateProviderAndClearHealth(providerId) { it.copy(apiKey = value) }
 
     fun updateProviderApiProtocol(
         providerId: String,
         apiProtocol: ProviderApiProtocol,
-    ) = updateProvider(providerId) { provider ->
+    ) = updateProviderAndClearHealth(providerId) { provider ->
         val normalizedBaseUrl = when (apiProtocol) {
             ProviderApiProtocol.OPENAI_COMPATIBLE -> when (provider.resolvedType()) {
                 ProviderType.ANTHROPIC -> ""
@@ -539,11 +539,42 @@ class SettingsViewModel(
             )
         }
 
+    private fun updateCurrentProviderAndClearHealth(transform: (ProviderSettings) -> ProviderSettings) =
+        updateUiState { current ->
+            val providerId = current.currentProvider?.id ?: return@updateUiState current
+            val updated = SettingsDraftStateSupport.updateCurrentProvider(
+                current = current,
+                transform = transform,
+            )
+            SettingsHealthStateSupport.clearProviderHealth(updated, providerId)
+        }
+
+    private fun updateProviderAndClearHealth(
+        providerId: String,
+        transform: (ProviderSettings) -> ProviderSettings,
+    ) = updateUiState { current ->
+        val updated = SettingsDraftStateSupport.updateProvider(
+            current = current,
+            providerId = providerId,
+            transform = transform,
+        )
+        SettingsHealthStateSupport.clearProviderHealth(updated, providerId)
+    }
+
     private fun launchAssistantOp(
         block: suspend SettingsAssistantCoordinator.(AppSettings) -> Unit,
     ) {
         viewModelScope.launch {
-            assistantCoordinator.block(storedSettings.value)
+            runCatching {
+                assistantCoordinator.block(storedSettings.value)
+            }.onFailure { throwable ->
+                updateUiState {
+                    SettingsUiMutationSupport.applyMessageError(
+                        current = it,
+                        errorMessage = throwable.message ?: "助手操作失败",
+                    )
+                }
+            }
         }
     }
 

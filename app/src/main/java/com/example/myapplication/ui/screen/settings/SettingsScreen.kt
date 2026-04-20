@@ -115,8 +115,17 @@ fun SettingsScreen(
             SettingsTopBar(
                 title = stringResource(R.string.settings_title),
                 onNavigateBack = onNavigateBack,
-                actionLabel = if (savedHasRequiredConfig) stringResource(R.string.settings_chat_label) else stringResource(R.string.settings_welcome_label),
-                onAction = if (savedHasRequiredConfig) onOpenChat else onOpenHome,
+                actionLabel = when {
+                    canSave -> stringResource(R.string.common_save)
+                    savedHasRequiredConfig -> stringResource(R.string.settings_chat_label)
+                    else -> stringResource(R.string.settings_welcome_label)
+                },
+                onAction = when {
+                    canSave -> onSave
+                    savedHasRequiredConfig -> onOpenChat
+                    else -> onOpenHome
+                },
+                actionEnabled = !uiState.isSaving,
             )
         },
         containerColor = palette.background,

@@ -19,6 +19,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.semantics.selected
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Dp
@@ -87,6 +89,7 @@ internal fun <T> ImmersiveTabRow(
             val tabModifier = Modifier
                 .weight(1f)
                 .scale(selectionScale)
+                .semantics { this.selected = isSelected }
                 .let { base ->
                     if (testTagPrefix != null) {
                         base.testTag("${testTagPrefix}_$key")

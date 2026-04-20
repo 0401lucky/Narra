@@ -32,13 +32,26 @@ internal fun NavGraphBuilder.registerSettingsNavGraph(
         // ── 设置主页 ──
         composable(AppRoutes.SETTINGS) {
             val settingsUiState by settingsViewModel.uiState.collectAsStateWithLifecycle()
+            val draftHasRequiredConfig = if (settingsUiState.providers.isNotEmpty()) {
+                settingsUiState.currentProvider?.hasRequiredConfig() == true
+            } else {
+                settingsUiState.baseUrl.isNotBlank() &&
+                    settingsUiState.apiKey.isNotBlank() &&
+                    settingsUiState.selectedModel.isNotBlank()
+            }
             SettingsScreen(
                 uiState = settingsUiState,
                 onSave = {
                     settingsViewModel.saveSettings {
-                        navController.navigate(AppRoutes.CHAT) {
-                            popUpTo(AppRoutes.CHAT) { inclusive = true }
-                            launchSingleTop = true
+                        if (draftHasRequiredConfig) {
+                            navController.navigate(AppRoutes.CHAT) {
+                                popUpTo(AppRoutes.CHAT) { inclusive = true }
+                                launchSingleTop = true
+                            }
+                        } else {
+                            navController.navigate(AppRoutes.HOME) {
+                                launchSingleTop = true
+                            }
                         }
                     }
                 },

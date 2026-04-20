@@ -25,6 +25,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -46,6 +47,8 @@ import com.example.myapplication.ui.component.roleplay.ImmersiveGlassPalette
 import com.example.myapplication.ui.component.roleplay.ImmersiveGlassSurface
 import com.example.myapplication.ui.screen.chat.ModelPickerSheet
 import com.example.myapplication.ui.screen.settings.SettingsScreenPadding
+
+internal const val TAG_ROLEPLAY_SETTINGS_LIST = "roleplay_settings_list"
 
 @Composable
 internal fun RoleplaySettingsContent(
@@ -88,7 +91,9 @@ internal fun RoleplaySettingsContent(
         .ifBlank { stringResource(id = R.string.roleplay_character_fallback) }
 
     LazyColumn(
-        modifier = Modifier.fillMaxSize(),
+        modifier = Modifier
+            .fillMaxSize()
+            .testTag(TAG_ROLEPLAY_SETTINGS_LIST),
         contentPadding = PaddingValues(
             start = SettingsScreenPadding,
             top = 4.dp,

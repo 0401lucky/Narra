@@ -21,4 +21,14 @@ object SettingsHealthStateSupport {
             connectionHealthMap = current.connectionHealthMap + (providerId to health),
         )
     }
+
+    fun clearProviderHealth(
+        current: SettingsUiState,
+        providerId: String,
+    ): SettingsUiState {
+        if (providerId !in current.connectionHealthMap) return current
+        return current.copy(
+            connectionHealthMap = current.connectionHealthMap - providerId,
+        )
+    }
 }

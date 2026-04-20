@@ -170,7 +170,7 @@ internal class RoleplayScenarioActionSupport(
         }
     }
 
-    fun resetCurrentSession() {
+    fun resetCurrentSession(onSuccess: () -> Unit = {}) {
         val state = uiState()
         val session = state.currentSession ?: return
         if (state.isSending) {
@@ -190,6 +190,7 @@ internal class RoleplayScenarioActionSupport(
                 updateUiState { current ->
                     RoleplayStateSupport.applyResetSessionSuccess(current)
                 }
+                onSuccess()
             }.onFailure { throwable ->
                 updateUiState { current ->
                     RoleplayStateSupport.applyErrorMessage(current, throwable.message ?: "清空剧情失败")
@@ -198,7 +199,7 @@ internal class RoleplayScenarioActionSupport(
         }
     }
 
-    fun restartCurrentSession() {
+    fun restartCurrentSession(onSuccess: () -> Unit = {}) {
         val state = uiState()
         val session = state.currentSession
         val scenario = state.currentScenario
@@ -219,6 +220,7 @@ internal class RoleplayScenarioActionSupport(
                 updateUiState { current ->
                     RoleplayStateSupport.applyRestartSessionSuccess(current)
                 }
+                onSuccess()
             }.onFailure { throwable ->
                 updateUiState { current ->
                     RoleplayStateSupport.applyErrorMessage(current, throwable.message ?: "重开剧情失败")
