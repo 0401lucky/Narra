@@ -218,7 +218,7 @@ internal fun RoleplayDialoguePanel(
                     itemsIndexed(
                         items = storyMessages,
                         key = { index, item ->
-                            "${item.sourceMessageId}-${item.createdAt}-${item.contentType}-${item.copyText.hashCode()}-$index"
+                            "${item.sourceMessageId}-${item.contentType}-${item.createdAt}-$index"
                         },
                     ) { _, message ->
                         RoleplayMessageItem(

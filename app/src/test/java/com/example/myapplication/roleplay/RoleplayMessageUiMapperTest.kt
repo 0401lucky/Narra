@@ -709,6 +709,42 @@ class RoleplayMessageUiMapperTest {
     }
 
     @Test
+    fun mapMessages_streamingMessageReusesLoadingMessageCreatedAt() {
+        val scenario = RoleplayScenario(
+            id = "scene-1",
+            title = "线上模式",
+            characterDisplayNameOverride = "陆宴清",
+            interactionMode = RoleplayInteractionMode.ONLINE_PHONE,
+            enableNarration = true,
+        )
+
+        val mapped = RoleplayMessageUiMapper.mapMessages(
+            scenario = scenario,
+            assistant = Assistant(id = "assistant-1", name = "陆宴清"),
+            settings = AppSettings(showOnlineRoleplayNarration = true),
+            rawMessages = listOf(
+                ChatMessage(
+                    id = "assistant-loading",
+                    conversationId = "conv-1",
+                    role = MessageRole.ASSISTANT,
+                    content = "",
+                    createdAt = 1234L,
+                    status = MessageStatus.LOADING,
+                    roleplayOutputFormat = RoleplayOutputFormat.PROTOCOL,
+                    roleplayInteractionMode = RoleplayInteractionMode.ONLINE_PHONE,
+                ),
+            ),
+            streamingContent = "心声：其实已经想拨过去了。",
+            outputParser = RoleplayOutputParser(),
+            nowProvider = { 9999L },
+        )
+
+        assertEquals(1, mapped.size)
+        assertTrue(mapped.single().isStreaming)
+        assertEquals(1234L, mapped.single().createdAt)
+    }
+
+    @Test
     fun mapMessages_onlineModeErrorMessageFallsBackToPlainDialogue() {
         val scenario = RoleplayScenario(
             id = "scene-1",

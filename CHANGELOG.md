@@ -19,6 +19,23 @@
 
 ---
 
+## [1.5.5-dev] - 2026-04-20
+
+### Fixed
+
+- 修复沉浸式角色扮演消息列表在流式回复期间使用不稳定 key 的问题，避免 `LazyColumn.animateItem` 因流式内容持续重组而残留幽灵条目或错误动画
+- 流式角色消息改为复用对应 `LOADING` 消息的 `createdAt`，线上手机模式与线下对话面板的列表项 key 在增量输出期间保持稳定
+
+### Added
+
+- 新增 `RoleplayMessageUiMapperTest.mapMessages_streamingMessageReusesLoadingMessageCreatedAt` 回归测试，锁定流式消息时间戳复用约束，降低同类 UI 抖动问题回归概率
+
+### Docs
+
+- `dev` 渠道构建版本推进到 `1.5.5-dev (10505)`，APK、Cloudflare R2 下载地址与 `docs/updates/dev.json` 已同步本次发布
+
+---
+
 ## [1.5.4-dev] - 2026-04-19
 
 ### Added

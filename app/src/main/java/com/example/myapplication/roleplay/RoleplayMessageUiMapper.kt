@@ -97,7 +97,9 @@ object RoleplayMessageUiMapper {
                         speaker = RoleplaySpeaker.CHARACTER,
                         speakerName = characterName,
                         content = streamingThoughtContent ?: streamingContent,
-                        createdAt = nowProvider(),
+                        // 复用 loadingMessage 的 createdAt，保持流式期间 UI key 稳定，
+                        // 避免 LazyColumn.animateItem 在每次 ContentDelta 重组时产生残留幽灵条目。
+                        createdAt = loadingMessage?.createdAt ?: nowProvider(),
                         isStreaming = true,
                         messageStatus = MessageStatus.LOADING,
                         copyText = if (streamingInteractionMode == RoleplayInteractionMode.OFFLINE_LONGFORM) {

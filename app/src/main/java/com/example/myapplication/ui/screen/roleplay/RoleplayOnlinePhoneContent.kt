@@ -467,7 +467,7 @@ internal fun RoleplayOnlinePhoneContent(
                 itemsIndexed(
                     items = visibleMessages,
                     key = { index, item ->
-                        "${item.sourceMessageId}-${item.createdAt}-${item.contentType}-${item.copyText.hashCode()}-$index"
+                        "${item.sourceMessageId}-${item.contentType}-${item.createdAt}-$index"
                     },
                 ) { index, message ->
                     Column(
