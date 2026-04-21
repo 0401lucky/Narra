@@ -25,3 +25,25 @@ internal fun bookSpineColor(bookId: String): Color {
     val hue = (bookId.hashCode().absoluteValue % 360).toFloat()
     return Color.hsl(hue = hue, saturation = 0.52f, lightness = 0.62f)
 }
+
+/**
+ * 从 keywords + aliases + secondaryKeywords 中按顺序提取去重、非空的前 N 个真词。
+ *
+ * 正则字面量（形如 `/foo,bar/i`）作为整体保留，不被拆解。
+ */
+internal fun firstRealKeywords(entry: WorldBookEntry, limit: Int = 3): List<String> {
+    if (limit <= 0) return emptyList()
+    val seen = LinkedHashSet<String>()
+    val sources = sequence {
+        yieldAll(entry.keywords)
+        yieldAll(entry.aliases)
+        yieldAll(entry.secondaryKeywords)
+    }
+    for (raw in sources) {
+        val trimmed = raw.trim()
+        if (trimmed.isEmpty()) continue
+        seen.add(trimmed)
+        if (seen.size >= limit) break
+    }
+    return seen.toList()
+}
