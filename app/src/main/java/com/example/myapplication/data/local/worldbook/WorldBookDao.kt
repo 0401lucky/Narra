@@ -5,32 +5,19 @@ import androidx.room.Query
 import androidx.room.Upsert
 import kotlinx.coroutines.flow.Flow
 
+/**
+ * 默认列表排序（observeEntries / listEntries 共用）：
+ *   先按"是否归属到某本书"分组（无书的条目排在本书之后）；
+ *   再按书名（不区分大小写）升序；
+ *   同一本书内按 insertionOrder ASC、createdAt ASC；
+ *   最后保留 updatedAt DESC 作为稳定性辅助。
+ */
 @Dao
 interface WorldBookDao {
-    @Query(
-        """
-        SELECT * FROM worldbook_entries
-        ORDER BY
-            CASE WHEN sourceBookName = '' THEN 1 ELSE 0 END,
-            sourceBookName COLLATE NOCASE ASC,
-            insertionOrder ASC,
-            createdAt ASC,
-            updatedAt DESC
-        """,
-    )
+    @Query(DEFAULT_LIST_QUERY)
     fun observeEntries(): Flow<List<WorldBookEntryEntity>>
 
-    @Query(
-        """
-        SELECT * FROM worldbook_entries
-        ORDER BY
-            CASE WHEN sourceBookName = '' THEN 1 ELSE 0 END,
-            sourceBookName COLLATE NOCASE ASC,
-            insertionOrder ASC,
-            createdAt ASC,
-            updatedAt DESC
-        """,
-    )
+    @Query(DEFAULT_LIST_QUERY)
     suspend fun listEntries(): List<WorldBookEntryEntity>
 
     @Query(
@@ -63,3 +50,19 @@ interface WorldBookDao {
     @Query("DELETE FROM worldbook_entries WHERE bookId = :bookId")
     suspend fun deleteByBookId(bookId: String): Int
 }
+
+/**
+ * Room 的 @Query 只接字符串字面量，无法在 interface 内部直接引用 companion 常量；
+ * 把排序语句提到顶层 `const val`，KSP 在编译期会把它内联回注解里，
+ * 从而让 observeEntries / listEntries 共用同一份 SQL，避免将来漏改其一。
+ */
+private const val DEFAULT_LIST_QUERY = """
+    SELECT * FROM worldbook_entries
+    ORDER BY
+        CASE WHEN sourceBookName = '' THEN 1 ELSE 0 END,
+        sourceBookName COLLATE NOCASE ASC,
+        insertionOrder ASC,
+        createdAt ASC,
+        updatedAt DESC
+"""
+
