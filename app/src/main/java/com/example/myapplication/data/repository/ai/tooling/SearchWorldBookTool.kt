@@ -11,7 +11,8 @@ class SearchWorldBookTool(
 ) : AppTool {
     override val name: String = NAME
 
-    override val description: String = "搜索当前助手与会话可访问的世界书条目，返回相关设定内容。"
+    override val description: String =
+        "搜索当前助手与会话可访问的世界书条目，返回相关设定内容。此为全文搜索，不等同于自动注入时的关键词命中。"
 
     override val inputSchema: Map<String, Any> = mapOf(
         "type" to "object",
@@ -47,15 +48,18 @@ class SearchWorldBookTool(
             assistant = runtimeContext.assistant,
             conversation = conversation,
         )
-        val matchedEntries = WorldBookScopeSupport.sortByPriority(
-            entries.filter { entry -> entry.matchesSearch(arguments.query) },
-        ).take(arguments.limit)
+        val allMatched = entries.filter { entry -> entry.matchesSearch(arguments.query) }
+        val sorted = WorldBookScopeSupport.sortByPriority(allMatched)
+        val limited = sorted.take(arguments.limit)
+        val truncated = allMatched.size > limited.size
 
         return ToolExecutionResult(
             payload = gson.toJson(
                 mapOf(
                     "query" to arguments.query,
-                    "entries" to matchedEntries.map(::toPayloadItem),
+                    "total" to allMatched.size,
+                    "truncated" to truncated,
+                    "entries" to limited.map(::toPayloadItem),
                 ),
             ),
         )
@@ -85,10 +89,13 @@ class SearchWorldBookTool(
     private fun toPayloadItem(
         entry: WorldBookEntry,
     ): Map<String, Any> {
+        val trimmedContent = entry.content.trim()
+        val capped = trimmedContent.take(MAX_CONTENT_LENGTH)
         return mapOf(
             "id" to entry.id,
             "title" to entry.title,
-            "content" to entry.content.trim().take(MAX_CONTENT_LENGTH),
+            "content" to capped,
+            "content_truncated" to (trimmedContent.length > MAX_CONTENT_LENGTH),
             "scope_type" to entry.scopeType.storageValue,
             "source_book_name" to entry.sourceBookName,
             "keywords" to entry.keywords,
