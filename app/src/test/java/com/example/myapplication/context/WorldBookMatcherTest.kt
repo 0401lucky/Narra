@@ -397,4 +397,61 @@ class WorldBookMatcherTest {
         )
         assertTrue(result.entries.isEmpty())
     }
+
+    @Test
+    fun match_regexWithCaseSensitiveFalse_autoAddsIgnoreCase() {
+        val entry = WorldBookEntry(
+            id = "entry-1",
+            title = "匹配 Foo",
+            content = "A",
+            keywords = listOf("/Foo/"),
+            caseSensitive = false,
+        )
+        val result = matcher.match(
+            entries = listOf(entry),
+            assistant = Assistant(id = "assistant-1", worldBookScanDepth = 0),
+            conversation = Conversation(id = "c1", createdAt = 1L, updatedAt = 1L),
+            userInputText = "talking about foo bar",
+            recentMessages = emptyList(),
+        )
+        assertEquals(listOf("匹配 Foo"), result.entries.map { it.title })
+    }
+
+    @Test
+    fun match_regexWithCaseSensitiveTrue_staysCaseSensitive() {
+        val entry = WorldBookEntry(
+            id = "entry-1",
+            title = "匹配 Foo",
+            content = "A",
+            keywords = listOf("/Foo/"),
+            caseSensitive = true,
+        )
+        val result = matcher.match(
+            entries = listOf(entry),
+            assistant = Assistant(id = "assistant-1", worldBookScanDepth = 0),
+            conversation = Conversation(id = "c1", createdAt = 1L, updatedAt = 1L),
+            userInputText = "talking about foo bar",
+            recentMessages = emptyList(),
+        )
+        assertTrue(result.entries.isEmpty())
+    }
+
+    @Test
+    fun match_regexExplicitFlagIOverridesEntryCaseSensitivity() {
+        val entry = WorldBookEntry(
+            id = "entry-1",
+            title = "匹配 Bar",
+            content = "A",
+            keywords = listOf("/Bar/i"),
+            caseSensitive = true,
+        )
+        val result = matcher.match(
+            entries = listOf(entry),
+            assistant = Assistant(id = "assistant-1", worldBookScanDepth = 0),
+            conversation = Conversation(id = "c1", createdAt = 1L, updatedAt = 1L),
+            userInputText = "bar is here",
+            recentMessages = emptyList(),
+        )
+        assertEquals(listOf("匹配 Bar"), result.entries.map { it.title })
+    }
 }

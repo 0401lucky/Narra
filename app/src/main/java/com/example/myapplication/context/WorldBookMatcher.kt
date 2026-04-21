@@ -6,6 +6,7 @@ import com.example.myapplication.model.Conversation
 import com.example.myapplication.model.DEFAULT_WORLD_BOOK_MAX_ENTRIES
 import com.example.myapplication.model.DEFAULT_WORLD_BOOK_SCAN_DEPTH
 import com.example.myapplication.model.WorldBookEntry
+import com.example.myapplication.system.logging.logFailure
 
 data class WorldBookMatchResult(
     val entries: List<WorldBookEntry>,
@@ -103,13 +104,13 @@ class WorldBookMatcher {
         sourceText: String,
         caseSensitive: Boolean,
     ): Boolean {
-        parseRegexLiteral(pattern)?.let { regex ->
+        parseRegexLiteral(pattern, caseSensitive = caseSensitive)?.let { regex ->
             return regex.containsMatchIn(sourceText)
         }
         return sourceText.contains(pattern, ignoreCase = !caseSensitive)
     }
 
-    private fun parseRegexLiteral(pattern: String): Regex? {
+    private fun parseRegexLiteral(pattern: String, caseSensitive: Boolean = true): Regex? {
         if (pattern.length < 2 || !pattern.startsWith('/')) {
             return null
         }
@@ -141,9 +142,12 @@ class WorldBookMatcher {
                 else -> return null
             }
         }
-        return runCatching {
-            Regex(body, options)
-        }.getOrNull()
+        if (!caseSensitive && RegexOption.IGNORE_CASE !in options) {
+            options.add(RegexOption.IGNORE_CASE)
+        }
+        return runCatching { Regex(body, options) }
+            .logFailure("WorldBookMatcher") { "parseRegexLiteral failed for pattern=$pattern" }
+            .getOrNull()
     }
 
     private companion object {
