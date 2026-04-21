@@ -40,6 +40,7 @@ import com.example.myapplication.model.Conversation
 import com.example.myapplication.model.DEFAULT_CONVERSATION_TITLE
 import com.example.myapplication.model.WorldBookEntry
 import com.example.myapplication.model.WorldBookScopeType
+import com.example.myapplication.ui.component.NarraAlertDialog
 import com.example.myapplication.ui.component.worldbook.KeywordChipInput
 import com.example.myapplication.ui.screen.settings.AnimatedSettingButton
 import com.example.myapplication.ui.screen.settings.SettingsGroup
@@ -94,6 +95,10 @@ fun WorldBookEditScreen(
     var advancedExpanded by rememberSaveable { mutableStateOf(false) }
     var scopeType by rememberSaveable { mutableStateOf(entry?.scopeType ?: WorldBookScopeType.GLOBAL) }
     var scopeId by rememberSaveable { mutableStateOf(entry?.scopeId ?: "") }
+    var showDeleteDialog by rememberSaveable { mutableStateOf(false) }
+    val expandedStateHolder = rememberWorldBookEditExpandedState()
+    val expandedState by expandedStateHolder
+
     val canSave = title.isNotBlank() &&
         content.isNotBlank() &&
         when (scopeType) {
@@ -102,11 +107,42 @@ fun WorldBookEditScreen(
             else -> scopeId.isNotBlank()
         }
 
+    val onSaveClick: () -> Unit = {
+        if (canSave) {
+            val now = System.currentTimeMillis()
+            val result = (entry ?: WorldBookEntry(createdAt = now, updatedAt = now)).copy(
+                title = title,
+                content = content,
+                sourceBookName = sourceBookName.trim(),
+                keywords = keywords,
+                aliases = aliases,
+                secondaryKeywords = secondaryKeywords,
+                selective = selective,
+                caseSensitive = caseSensitive,
+                insertionOrder = insertionOrderText.trim().toIntOrNull() ?: 0,
+                enabled = enabled,
+                alwaysActive = alwaysActive,
+                priority = priorityText.trim().toIntOrNull() ?: 0,
+                scopeType = scopeType,
+                scopeId = when (scopeType) {
+                    WorldBookScopeType.GLOBAL,
+                    WorldBookScopeType.ATTACHABLE -> ""
+                    else -> scopeId.trim()
+                },
+                updatedAt = now,
+            )
+            onSave(result)
+            onNavigateBack()
+        }
+    }
+
     Scaffold(
         topBar = {
             SettingsTopBar(
                 title = if (isNew) "新建世界书" else "编辑世界书",
                 onNavigateBack = onNavigateBack,
+                actionLabel = if (canSave) "保存" else null,
+                onAction = if (canSave) onSaveClick else null,
             )
         },
         containerColor = palette.background,
@@ -121,11 +157,15 @@ fun WorldBookEditScreen(
                 end = SettingsScreenPadding,
                 bottom = 32.dp,
             ),
-            verticalArrangement = Arrangement.spacedBy(20.dp),
+            verticalArrangement = Arrangement.spacedBy(14.dp),
         ) {
-            item { SettingsSectionHeader("基本信息", "标题和正文会作为注入内容的主体") }
             item {
-                SettingsGroup {
+                WorldBookCollapsibleSection(
+                    title = "基本信息",
+                    description = "标题、正文、所属世界书",
+                    expanded = expandedState.basicInfo,
+                    onToggle = { expandedStateHolder.value = expandedState.toggleBasicInfo() },
+                ) {
                     Column(
                         modifier = Modifier.padding(horizontal = 18.dp, vertical = 16.dp),
                         verticalArrangement = Arrangement.spacedBy(16.dp),
@@ -164,9 +204,13 @@ fun WorldBookEditScreen(
                 }
             }
 
-            item { SettingsSectionHeader("命中规则", "关键词或别名命中后会把该条目注入 prompt") }
             item {
-                SettingsGroup {
+                WorldBookCollapsibleSection(
+                    title = "命中规则",
+                    description = "关键词命中后，该条目会注入到 prompt",
+                    expanded = expandedState.hitRule,
+                    onToggle = { expandedStateHolder.value = expandedState.toggleHitRule() },
+                ) {
                     Column(
                         modifier = Modifier.padding(horizontal = 18.dp, vertical = 16.dp),
                         verticalArrangement = Arrangement.spacedBy(16.dp),
@@ -194,17 +238,7 @@ fun WorldBookEditScreen(
                             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                             placeholder = { Text("默认 0，越大越优先") },
                         )
-                    }
-                }
-            }
-
-            item { SettingsSectionHeader("次级关键词", "selective 打开后，次级关键词也要命中才会注入") }
-            item {
-                SettingsGroup {
-                    Column(
-                        modifier = Modifier.padding(horizontal = 18.dp, vertical = 16.dp),
-                        verticalArrangement = Arrangement.spacedBy(16.dp),
-                    ) {
+                        SettingsSectionHeader("次级关键词", "selective 打开后，次级关键词也要命中才会注入")
                         ToggleField(
                             title = "启用次级匹配（selective）",
                             subtitle = "开启后需主关键词 + 次级关键词同时命中才注入",
@@ -228,9 +262,13 @@ fun WorldBookEditScreen(
                 }
             }
 
-            item { SettingsSectionHeader("作用域", "控制该条目在哪些会话环境中可被命中") }
             item {
-                SettingsGroup {
+                WorldBookCollapsibleSection(
+                    title = "作用域",
+                    description = "控制该条目在哪些会话环境中可被命中",
+                    expanded = expandedState.scope,
+                    onToggle = { expandedStateHolder.value = expandedState.toggleScope() },
+                ) {
                     Column(
                         modifier = Modifier.padding(horizontal = 18.dp, vertical = 16.dp),
                         verticalArrangement = Arrangement.spacedBy(16.dp),
@@ -309,9 +347,13 @@ fun WorldBookEditScreen(
                 }
             }
 
-            item { SettingsSectionHeader("状态", "控制条目是否启用，以及是否常驻注入") }
             item {
-                SettingsGroup {
+                WorldBookCollapsibleSection(
+                    title = "状态与高级",
+                    description = "启用 / 常驻注入 / 插入顺序",
+                    expanded = expandedState.status,
+                    onToggle = { expandedStateHolder.value = expandedState.toggleStatus() },
+                ) {
                     Column(
                         modifier = Modifier.padding(horizontal = 18.dp, vertical = 16.dp),
                         verticalArrangement = Arrangement.spacedBy(16.dp),
@@ -328,17 +370,6 @@ fun WorldBookEditScreen(
                             checked = alwaysActive,
                             onCheckedChange = { alwaysActive = it },
                         )
-                    }
-                }
-            }
-
-            item { SettingsSectionHeader("高级", "通常使用默认值即可，微调注入顺序时再展开") }
-            item {
-                SettingsGroup {
-                    Column(
-                        modifier = Modifier.padding(horizontal = 18.dp, vertical = 16.dp),
-                        verticalArrangement = Arrangement.spacedBy(16.dp),
-                    ) {
                         ToggleField(
                             title = "展开高级参数",
                             subtitle = "控制插入顺序等进阶字段",
@@ -362,51 +393,17 @@ fun WorldBookEditScreen(
                 }
             }
 
-            item {
-                SettingsGroup {
-                    Column(
-                        modifier = Modifier.padding(horizontal = 18.dp, vertical = 18.dp),
-                        verticalArrangement = Arrangement.spacedBy(10.dp),
-                    ) {
-                        AnimatedSettingButton(
-                            text = "保存",
-                            onClick = {
-                                val now = System.currentTimeMillis()
-                                val result = (entry ?: WorldBookEntry(createdAt = now, updatedAt = now)).copy(
-                                    title = title,
-                                    content = content,
-                                    sourceBookName = sourceBookName.trim(),
-                                    keywords = keywords,
-                                    aliases = aliases,
-                                    secondaryKeywords = secondaryKeywords,
-                                    selective = selective,
-                                    caseSensitive = caseSensitive,
-                                    insertionOrder = insertionOrderText.trim().toIntOrNull() ?: 0,
-                                    enabled = enabled,
-                                    alwaysActive = alwaysActive,
-                                    priority = priorityText.trim().toIntOrNull() ?: 0,
-                                    scopeType = scopeType,
-                                    scopeId = when (scopeType) {
-                                        WorldBookScopeType.GLOBAL,
-                                        WorldBookScopeType.ATTACHABLE -> ""
-                                        else -> scopeId.trim()
-                                    },
-                                    updatedAt = now,
-                                )
-                                onSave(result)
-                                onNavigateBack()
-                            },
-                            enabled = canSave,
-                            isPrimary = true,
-                        )
-
-                        if (!isNew && entry != null) {
+            if (!isNew && entry != null) {
+                item { SettingsSectionHeader("危险操作", "删除后无法恢复") }
+                item {
+                    SettingsGroup {
+                        Column(
+                            modifier = Modifier.padding(horizontal = 18.dp, vertical = 16.dp),
+                            verticalArrangement = Arrangement.spacedBy(10.dp),
+                        ) {
                             AnimatedSettingButton(
-                                text = "删除条目",
-                                onClick = {
-                                    onDelete(entry.id)
-                                    onNavigateBack()
-                                },
+                                text = "删除这条",
+                                onClick = { showDeleteDialog = true },
                                 enabled = true,
                                 isPrimary = false,
                             )
@@ -415,6 +412,22 @@ fun WorldBookEditScreen(
                 }
             }
         }
+    }
+
+    if (showDeleteDialog && entry != null) {
+        NarraAlertDialog(
+            title = "删除世界书条目",
+            message = "将删除《${entry.title.ifBlank { "未命名条目" }}》，这个操作不可撤销。",
+            confirmLabel = "确认删除",
+            dismissLabel = "取消",
+            isDestructive = true,
+            onDismiss = { showDeleteDialog = false },
+            onConfirm = {
+                showDeleteDialog = false
+                onDelete(entry.id)
+                onNavigateBack()
+            },
+        )
     }
 }
 
