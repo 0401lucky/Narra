@@ -22,6 +22,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.saveable.listSaver
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -31,6 +32,7 @@ import androidx.compose.ui.unit.dp
 import com.example.myapplication.model.Assistant
 import com.example.myapplication.model.WorldBookEntry
 import com.example.myapplication.model.WorldBookScopeType
+import com.example.myapplication.ui.component.worldbook.KeywordChipInput
 import com.example.myapplication.ui.screen.settings.AnimatedSettingButton
 import com.example.myapplication.ui.screen.settings.SettingsGroup
 import com.example.myapplication.ui.screen.settings.SettingsScreenPadding
@@ -38,6 +40,11 @@ import com.example.myapplication.ui.screen.settings.SettingsSectionHeader
 import com.example.myapplication.ui.screen.settings.SettingsTopBar
 import com.example.myapplication.ui.screen.settings.rememberSettingsOutlineColors
 import com.example.myapplication.ui.screen.settings.rememberSettingsPalette
+
+private val StringListSaver = listSaver<List<String>, String>(
+    save = { it.toList() },
+    restore = { it },
+)
 
 @Composable
 fun WorldBookEditScreen(
@@ -54,18 +61,27 @@ fun WorldBookEditScreen(
 
     var title by rememberSaveable { mutableStateOf(entry?.title ?: "") }
     var content by rememberSaveable { mutableStateOf(entry?.content ?: "") }
-    var keywordsText by rememberSaveable {
-        mutableStateOf(entry?.keywords?.joinToString(", ") ?: "")
+    var keywords by rememberSaveable(stateSaver = StringListSaver) {
+        mutableStateOf(entry?.keywords ?: emptyList())
     }
-    var aliasesText by rememberSaveable {
-        mutableStateOf(entry?.aliases?.joinToString(", ") ?: "")
+    var aliases by rememberSaveable(stateSaver = StringListSaver) {
+        mutableStateOf(entry?.aliases ?: emptyList())
+    }
+    var secondaryKeywords by rememberSaveable(stateSaver = StringListSaver) {
+        mutableStateOf(entry?.secondaryKeywords ?: emptyList())
     }
     var sourceBookName by rememberSaveable {
         mutableStateOf(entry?.sourceBookName ?: presetBookName)
     }
     var priorityText by rememberSaveable { mutableStateOf((entry?.priority ?: 0).toString()) }
+    var insertionOrderText by rememberSaveable {
+        mutableStateOf((entry?.insertionOrder ?: 0).toString())
+    }
     var enabled by rememberSaveable { mutableStateOf(entry?.enabled ?: true) }
     var alwaysActive by rememberSaveable { mutableStateOf(entry?.alwaysActive ?: false) }
+    var selective by rememberSaveable { mutableStateOf(entry?.selective ?: false) }
+    var caseSensitive by rememberSaveable { mutableStateOf(entry?.caseSensitive ?: false) }
+    var advancedExpanded by rememberSaveable { mutableStateOf(false) }
     var scopeType by rememberSaveable { mutableStateOf(entry?.scopeType ?: WorldBookScopeType.GLOBAL) }
     var scopeId by rememberSaveable { mutableStateOf(entry?.scopeId ?: "") }
     val canSave = title.isNotBlank() &&
@@ -145,25 +161,17 @@ fun WorldBookEditScreen(
                         modifier = Modifier.padding(horizontal = 18.dp, vertical = 16.dp),
                         verticalArrangement = Arrangement.spacedBy(16.dp),
                     ) {
-                        OutlinedTextField(
-                            value = keywordsText,
-                            onValueChange = { keywordsText = it },
-                            label = { Text("关键词") },
-                            modifier = Modifier.fillMaxWidth(),
-                            singleLine = true,
-                            shape = RoundedCornerShape(16.dp),
-                            colors = outlineColors,
-                            placeholder = { Text("多个关键词用逗号分隔") },
+                        KeywordChipInput(
+                            label = "主关键词",
+                            values = keywords,
+                            onValuesChange = { keywords = it },
+                            placeholder = "回车 / 逗号提交；支持 /pattern/flags 正则",
                         )
-                        OutlinedTextField(
-                            value = aliasesText,
-                            onValueChange = { aliasesText = it },
-                            label = { Text("别名") },
-                            modifier = Modifier.fillMaxWidth(),
-                            singleLine = true,
-                            shape = RoundedCornerShape(16.dp),
-                            colors = outlineColors,
-                            placeholder = { Text("用于补充人物简称、地名别称等") },
+                        KeywordChipInput(
+                            label = "别名",
+                            values = aliases,
+                            onValuesChange = { aliases = it },
+                            placeholder = "补充人物简称、地名别称等",
                         )
                         OutlinedTextField(
                             value = priorityText,
@@ -175,6 +183,36 @@ fun WorldBookEditScreen(
                             colors = outlineColors,
                             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                             placeholder = { Text("默认 0，越大越优先") },
+                        )
+                    }
+                }
+            }
+
+            item { SettingsSectionHeader("次级关键词", "selective 打开后，次级关键词也要命中才会注入") }
+            item {
+                SettingsGroup {
+                    Column(
+                        modifier = Modifier.padding(horizontal = 18.dp, vertical = 16.dp),
+                        verticalArrangement = Arrangement.spacedBy(16.dp),
+                    ) {
+                        ToggleField(
+                            title = "启用次级匹配（selective）",
+                            subtitle = "开启后需主关键词 + 次级关键词同时命中才注入",
+                            checked = selective,
+                            onCheckedChange = { selective = it },
+                        )
+                        KeywordChipInput(
+                            label = "次级关键词",
+                            values = secondaryKeywords,
+                            onValuesChange = { secondaryKeywords = it },
+                            placeholder = "留空则等同主关键词命中即注入",
+                            enabled = selective,
+                        )
+                        ToggleField(
+                            title = "区分大小写",
+                            subtitle = "对英文关键词生效；中文天然无大小写概念",
+                            checked = caseSensitive,
+                            onCheckedChange = { caseSensitive = it },
                         )
                     }
                 }
@@ -288,6 +326,36 @@ fun WorldBookEditScreen(
                 }
             }
 
+            item { SettingsSectionHeader("高级", "通常使用默认值即可，微调注入顺序时再展开") }
+            item {
+                SettingsGroup {
+                    Column(
+                        modifier = Modifier.padding(horizontal = 18.dp, vertical = 16.dp),
+                        verticalArrangement = Arrangement.spacedBy(16.dp),
+                    ) {
+                        ToggleField(
+                            title = "展开高级参数",
+                            subtitle = "控制插入顺序等进阶字段",
+                            checked = advancedExpanded,
+                            onCheckedChange = { advancedExpanded = it },
+                        )
+                        if (advancedExpanded) {
+                            OutlinedTextField(
+                                value = insertionOrderText,
+                                onValueChange = { insertionOrderText = filterIntegerInput(it) },
+                                label = { Text("插入顺序 (insertionOrder)") },
+                                modifier = Modifier.fillMaxWidth(),
+                                singleLine = true,
+                                shape = RoundedCornerShape(16.dp),
+                                colors = outlineColors,
+                                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                                placeholder = { Text("越小越靠前（默认 0）") },
+                            )
+                        }
+                    }
+                }
+            }
+
             item {
                 SettingsGroup {
                     Column(
@@ -299,11 +367,15 @@ fun WorldBookEditScreen(
                             onClick = {
                                 val now = System.currentTimeMillis()
                                 val result = (entry ?: WorldBookEntry(createdAt = now, updatedAt = now)).copy(
-                                    title = title.trim(),
-                                    content = content.trim(),
+                                    title = title,
+                                    content = content,
                                     sourceBookName = sourceBookName.trim(),
-                                    keywords = parseCommaSeparated(keywordsText),
-                                    aliases = parseCommaSeparated(aliasesText),
+                                    keywords = keywords,
+                                    aliases = aliases,
+                                    secondaryKeywords = secondaryKeywords,
+                                    selective = selective,
+                                    caseSensitive = caseSensitive,
+                                    insertionOrder = insertionOrderText.trim().toIntOrNull() ?: 0,
                                     enabled = enabled,
                                     alwaysActive = alwaysActive,
                                     priority = priorityText.trim().toIntOrNull() ?: 0,
@@ -372,12 +444,6 @@ private fun ToggleField(
             modifier = Modifier.align(Alignment.CenterEnd),
         )
     }
-}
-
-private fun parseCommaSeparated(rawValue: String): List<String> {
-    return rawValue.split(",", "，")
-        .map { it.trim() }
-        .filter { it.isNotEmpty() }
 }
 
 private fun filterIntegerInput(rawValue: String): String {
