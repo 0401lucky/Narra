@@ -326,7 +326,7 @@
 
 ---
 
-### T15 · 批次 B（P1 UI 重做 + 匹配体验）⬜
+### T15 · 批次 B（P1 UI 重做 + 匹配体验）✅
 
 **目标**：把列表页 / 书详情 / 编辑页的信息架构重做一次，治掉"gpt 审美"；匹配器补齐 scanDepth + 正则 caseSensitive + CJK 整词。
 
@@ -433,6 +433,145 @@
 - `./gradlew.bat app:compileDebugKotlin` BUILD SUCCESSFUL。
 - `./gradlew.bat app:testDebugUnitTest` BUILD SUCCESSFUL。
 - 手动待真机回归：输入新名 → 回车提交 → 停留详情页 + snackbar；点击删除 → NarraAlertDialog 红字按钮；确认删除 → 自动返回列表页 + snackbar。
+
+#### T15-B6 · Matcher 支持 scanDepth ✅
+
+**落地**：
+- Assistant 新增字段 `worldBookScanDepth: Int = 2`（`DEFAULT_WORLD_BOOK_SCAN_DEPTH = 2`），`AppSettingsStore.normalizeAssistant` 兜底负值。
+- 抽出纯函数 `buildWorldBookSourceText(userInputText, recentMessages, scanDepth, maxChars = 2000)`（`context/WorldBookSourceTextBuilder.kt`）：
+  - `scanDepth <= 0` → 只看 `userInputText`，空则回退到最近一条 USER；
+  - `scanDepth > 0` → 当前输入 + 最近 N 条消息（含 assistant）按时间顺序（旧→新）拼接；
+  - 总长度超 `maxChars` 从头截断，保证最新输入留在末尾。
+- `WorldBookMatcher.buildSourceText` 私有方法删除，直接调用上述纯函数；Matcher 内通过 `assistant?.worldBookScanDepth` 拼 scan 窗口。
+- `AssistantExtensionsScreen` 新增"世界书扫描深度（scanDepth）"数字输入框，保存路径写字段。
+- 调整 2 条既有 matcher 测试显式声明 `worldBookScanDepth = 0` 以保留老契约；新增 3 条 scanDepth 测试（0/1/2）+ 5 条 Builder 纯函数测试。
+
+**预计**：~90min | **实际**：~50min（纯函数 TDD + 老测试契约调整）。
+
+**关键 diff**：
+- `model/Assistant.kt`（ff5c033）
+- `data/local/AppSettingsStore.kt`（ff5c033）
+- `context/WorldBookSourceTextBuilder.kt` 新建 + 5 条 `Test`（76f2d7b，含顺手补 `PromptContextAssemblerTest` 的预存缺陷）
+- `context/WorldBookMatcher.kt` + `WorldBookMatcherTest.kt`（a1fac50）
+- `ui/screen/settings/AssistantExtensionsScreen.kt`（92b78d5）
+
+**回归**：
+- `./gradlew.bat app:compileDebugKotlin` BUILD SUCCESSFUL
+- `./gradlew.bat app:testDebugUnitTest` BUILD SUCCESSFUL（原 ~660 + 本项新增 8 条）
+- 待真机：scanDepth=0/2 切换后触发世界书注入差异；默认 2 的新助手进入扩展页能正确显示。
+
+#### T15-B7 · 正则尊重 caseSensitive ✅
+
+**落地**：
+- `parseRegexLiteral(pattern, caseSensitive)` 签名扩展；解析时若 entry.caseSensitive=false 自动补 `RegexOption.IGNORE_CASE`（已显式写 `/i` 的情况尊重原写法）。
+- `runCatching { Regex(body, options) }.logFailure("WorldBookMatcher") { ... }.getOrNull()` 解析失败落一行日志，便于排查。
+- 新增 3 条测试：默认小写命中、caseSensitive=true 保持严格、`/X/i` 显式 flag 覆盖。
+
+**预计**：~30min | **实际**：~15min。
+
+**关键 diff**：
+- `context/WorldBookMatcher.kt` + `WorldBookMatcherTest.kt`（f92603a）
+
+**回归**：
+- `./gradlew.bat app:testDebugUnitTest --tests "...WorldBookMatcherTest"` 全绿。
+- 待真机：`/Foo/` 条目 caseSensitive=off 时"foo bar"能命中；on 时不命中。
+
+#### T15-B8 · CJK 整词匹配（默认开）✅
+
+**落地**：
+- 新增枚举 `WorldBookMatchMode { CONTAINS, WORD_CJK, REGEX }`（`model/WorldBookMatchMode.kt`）+ `fromStorageValue`；
+- 新增 `matchesContainsCjkAware(pattern, source, caseSensitive)` 纯函数（`context/WorldBookMatcherTextUtils.kt`）：
+  - 边界判断用 ASCII-only（`isAsciiLetterOrDigit()`），让 CJK 字符天然成为英文关键词的词边界；
+  - 关键词两端都是 CJK 时退化为 contains（中文没有词边界概念）；
+  - 头/尾非 CJK 时要求该侧字符不是 ASCII 字母数字；
+  - 7 条独立纯函数单测。
+- `WorldBookEntry`/`WorldBookEntryEntity` 加 `matchMode: WorldBookMatchMode` / `matchMode: String`；`WorldBookRepository.toDomain/toEntity` 映射；Room v27→v28 迁移（`MIGRATION_27_28` 给 `worldbook_entries` ALTER ADD `matchMode TEXT NOT NULL DEFAULT 'word_cjk'`）；`ChatDatabaseMigrationRegistryTest` 同步更新。
+- `WorldBookMatcher.matchesPattern` 按 matchMode 分派；`/.../` 字面量语法跨 matchMode 保留 escape hatch；REGEX 模式下整条 keyword 不按逗号拆。
+- 编辑页"命中规则"段最前面新增"匹配模式：包含 / 整词 / 正则"FilterChip 三选一 + 动态说明文案；Saver 基于 `enum.name`。
+- 新增 matcher 测试 3 条（CONTAINS 保持子串、WORD_CJK 要求 latin 边界、REGEX 整条 keyword 当正则）。
+
+**预计**：~2h | **实际**：~75min（纯函数 + Room 迁移 + UI 三段并行推进）。
+
+**关键 diff**：
+- `model/WorldBookMatchMode.kt` + `context/WorldBookMatcherTextUtils.kt` + `TextUtilsTest.kt`（8e750dc）
+- `model/WorldBookEntry.kt` + `data/local/worldbook/WorldBookEntryEntity.kt` + `WorldBookRepository.kt` + `ChatDatabase.kt`（v28）+ `ChatDbMigrations.kt`（MIGRATION_27_28）+ `ChatDatabaseMigrationRegistryTest.kt`（5d35d20）
+- `context/WorldBookMatcher.kt` + `WorldBookMatcherTest.kt`（aaa6775）
+- `ui/screen/settings/worldbook/WorldBookEditScreen.kt` 加 matchMode FilterChip 组（b151765）
+
+**回归**：
+- `./gradlew.bat app:compileDebugKotlin` BUILD SUCCESSFUL
+- `./gradlew.bat app:testDebugUnitTest` BUILD SUCCESSFUL（migrations registry + matcher 18 + textutils 7 + souretext 5）
+- 待真机：新建条目默认 matchMode=整词；"foo" 关键词不命中 "football"；切回"包含"后命中；英文关键词紧邻中文命中（说foo呢 hits "foo"）。
+
+#### T15-B9 · SearchWorldBookTool 加 total / truncated 字段 ✅
+
+**落地**：
+- `SearchWorldBookTool.description` 追加"此为全文搜索，不等同于自动注入时的关键词命中"说明；
+- `execute(...)` payload 新增 `total`（全部匹配条数）、`truncated`（是否因 limit 被截）两字段；
+- `toPayloadItem(entry)` 返回的每条 entry 增加 `content_truncated` 布尔（content 超过 400 字时为 true）；
+- 新增 3 条测试覆盖 total/truncated/content_truncated 以及 description 契约。
+
+**预计**：~45min | **实际**：~20min。
+
+**关键 diff**：
+- `data/repository/ai/tooling/SearchWorldBookTool.kt` + `SearchWorldBookToolTest.kt`（aa77a13）
+
+**回归**：
+- `./gradlew.bat app:testDebugUnitTest --tests "...SearchWorldBookToolTest"` 全绿。
+- 待真机：触发工具、large 条目（>400 字）payload 中 `content_truncated: true`；超过 limit 时 `truncated: true` + `total` 反映全量。
+
+#### T15-B2 · 编辑页信息分层 + 顶栏保存 ✅
+
+**落地**：
+- 新建 `ui/screen/settings/worldbook/WorldBookEditSections.kt`：`WorldBookEditExpandedState`（rememberSaveable 支持的四段折叠态）+ `WorldBookCollapsibleSection` 组件（可点击 header + `AnimatedVisibility` body）。
+- 改写 `WorldBookEditScreen.kt`：
+  - 顶栏 `SettingsTopBar(actionLabel = if (canSave) "保存" else null, onAction = if (canSave) onSaveClick else null)`；
+  - 主体四段折叠："基本信息"、"命中规则"（并入次级关键词）、"作用域"、"状态与高级"（并入高级插入顺序）；前两段默认展开；
+  - 底部移除"保存"按钮；`!isNew` 时单独留一个"危险操作"卡片放"删除这条"，点击弹 `NarraAlertDialog(isDestructive = true)` 二次确认。
+- 新建 `WorldBookContentFullscreenSheet.kt`：`ModalBottomSheet(skipPartiallyExpanded = true)` + 全屏 OutlinedTextField + "保存并返回"，content 字段 trailingIcon（`Icons.Outlined.Edit`）触发。
+
+**预计**：~4h | **实际**：~75min（分两次 commit：骨架重构 + 全屏 sheet）。
+
+**关键 diff**：
+- `ui/screen/settings/worldbook/WorldBookEditSections.kt` + `WorldBookEditScreen.kt`（c5030fc 骨架，4a861fa 全屏 sheet）
+
+**回归**：
+- `./gradlew.bat app:compileDebugKotlin` BUILD SUCCESSFUL
+- 待真机：四段折叠切换；canSave=false 时顶栏无保存按钮；删除必须二次确认且文字红色；content 点击右上 Edit icon 进入全屏编辑，保存同步回主字段。
+
+#### T15-B3 · "所属世界书" 改下拉 ✅
+
+**落地**：
+- `WorldBookEditScreen` 签名新增 `existingBookNames: List<String> = emptyList()` 参数；
+- NavGraph 透传 `worldBookState.entries.mapNotNull { trim sourceBookName }.distinct().sorted()`；
+- 新增私有 `SourceBookNameDropdown` Composable：`ExposedDropdownMenuBox` 包一个可自由输入的 `OutlinedTextField`；有候选时才显示 trailing icon 和下拉菜单，点击候选项回填输入框；没有候选时退化为普通输入框。
+
+**预计**：~60min | **实际**：~25min。
+
+**关键 diff**：
+- `ui/screen/settings/worldbook/WorldBookEditScreen.kt` + `ui/navigation/SettingsDataNavRoutes.kt`（f84126c）
+
+**回归**：
+- `./gradlew.bat app:compileDebugKotlin` BUILD SUCCESSFUL
+- 待真机：书名下拉显示去重排序后的候选；点击候选回填；自由输入新书名也能保存。
+
+#### T15-B4 · ATTACHABLE scope 加"去助手挂载"入口 ✅
+
+**落地**：
+- `WorldBookEditScreen` 新增 `onOpenAssistantMount: () -> Unit = {}` 回调；
+- ATTACHABLE 分支 Text 提示后挂 `TextButton("去助手页挂载")`；
+- NavGraph 连接到 `AppRoutes.SETTINGS_ASSISTANTS`（助手列表）+ `launchSingleTop`。
+
+**范围降级说明**：
+- 本 PR 只做"入口跳转"。task.md 原要求的"带着 entryId/bookId 进去 + 到达后显示 TipCard 指向具体挂载位置"需要 AssistantExtensionsScreen 接受 query param + 渲染高亮，不在本 PR 范围；留到后续 PR 或批次 D。
+
+**预计**：~45min | **实际**：~10min。
+
+**关键 diff**：
+- `ui/screen/settings/worldbook/WorldBookEditScreen.kt` + `ui/navigation/SettingsDataNavRoutes.kt`（1232cac）
+
+**回归**：
+- 待真机：切到 ATTACHABLE scope 后提示下出现"去助手页挂载"，点击跳到助手列表。
 
 ---
 
