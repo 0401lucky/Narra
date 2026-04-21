@@ -41,6 +41,9 @@ fun AssistantExtensionsScreen(
     val outlineColors = rememberSettingsOutlineColors()
     val palette = rememberSettingsPalette()
     var worldBookMaxEntriesText by rememberSaveable { mutableStateOf(assistant.worldBookMaxEntries.toString()) }
+    var worldBookScanDepthText by rememberSaveable {
+        mutableStateOf(assistant.worldBookScanDepth.toString())
+    }
     var linkedWorldBookIds by rememberSaveable(
         assistant.id,
         assistant.linkedWorldBookIds.joinToString(separator = "|"),
@@ -153,6 +156,17 @@ fun AssistantExtensionsScreen(
                             shape = RoundedCornerShape(18.dp),
                             colors = outlineColors,
                             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                        )
+                        OutlinedTextField(
+                            value = worldBookScanDepthText,
+                            onValueChange = { worldBookScanDepthText = it.filter(Char::isDigit) },
+                            label = { Text("世界书扫描深度（scanDepth）") },
+                            modifier = Modifier.fillMaxWidth(),
+                            singleLine = true,
+                            shape = RoundedCornerShape(18.dp),
+                            colors = outlineColors,
+                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                            placeholder = { Text("默认 2，表示拼接最近 N 条消息参与关键词匹配") },
                         )
                     }
                 }
@@ -373,6 +387,9 @@ fun AssistantExtensionsScreen(
                                             rawValue = worldBookMaxEntriesText,
                                             defaultValue = assistant.worldBookMaxEntries,
                                         ),
+                                        worldBookScanDepth = worldBookScanDepthText.trim().toIntOrNull()
+                                            ?.coerceAtLeast(0)
+                                            ?: assistant.worldBookScanDepth,
                                     ),
                                 )
                                 onNavigateBack()
