@@ -35,6 +35,7 @@ import com.example.myapplication.ui.screen.settings.SettingsTopBar
 import com.example.myapplication.ui.screen.settings.rememberSettingsOutlineColors
 import com.example.myapplication.ui.screen.settings.rememberSettingsPalette
 import com.example.myapplication.ui.screen.settings.rememberSettingsSnackbarHostState
+import kotlinx.coroutines.delay
 
 @Composable
 fun WorldBookBookDetailScreen(
@@ -60,6 +61,14 @@ fun WorldBookBookDetailScreen(
         message = uiMessage?.takeIf { it.contains("重命名") },
         onConsumeMessage = onConsumeMessage,
     )
+    // 不会在本页显示的 message 3s 后兜底 consume（见 T15-C8）
+    LaunchedEffect(uiMessage) {
+        val message = uiMessage ?: return@LaunchedEffect
+        if (!message.contains("重命名")) {
+            delay(3_000)
+            onConsumeMessage()
+        }
+    }
 
     // 书名在上游（重命名成功后）变化时把输入框同步回退
     LaunchedEffect(bookName) {

@@ -41,6 +41,7 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -67,6 +68,7 @@ import com.example.myapplication.ui.screen.settings.SettingsTopBar
 import com.example.myapplication.ui.screen.settings.rememberSettingsOutlineColors
 import com.example.myapplication.ui.screen.settings.rememberSettingsPalette
 import com.example.myapplication.ui.screen.settings.rememberSettingsSnackbarHostState
+import kotlinx.coroutines.delay
 
 @Composable
 fun WorldBookListScreen(
@@ -85,6 +87,15 @@ fun WorldBookListScreen(
         message = uiMessage?.takeIf { it.contains("删除") },
         onConsumeMessage = onConsumeMessage,
     )
+    // 不会在本页显示的 message（如"世界书已保存"）3s 后兜底 consume，
+    // 避免 ViewModel 事件通道被卡死（见 T15-C8）
+    LaunchedEffect(uiMessage) {
+        val message = uiMessage ?: return@LaunchedEffect
+        if (!message.contains("删除")) {
+            delay(3_000)
+            onConsumeMessage()
+        }
+    }
     var searchQuery by rememberSaveable { mutableStateOf("") }
     var scopeFilter by rememberSaveable(stateSaver = WorldBookListScopeFilterSaver) {
         mutableStateOf(WorldBookListScopeFilter.ALL)
