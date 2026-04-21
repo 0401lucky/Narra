@@ -13,12 +13,16 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.Edit
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExposedDropdownMenuBox
 import androidx.compose.material3.ExposedDropdownMenuDefaults
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.FilterChipDefaults
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
@@ -96,6 +100,7 @@ fun WorldBookEditScreen(
     var scopeType by rememberSaveable { mutableStateOf(entry?.scopeType ?: WorldBookScopeType.GLOBAL) }
     var scopeId by rememberSaveable { mutableStateOf(entry?.scopeId ?: "") }
     var showDeleteDialog by rememberSaveable { mutableStateOf(false) }
+    var showContentSheet by rememberSaveable { mutableStateOf(false) }
     val expandedStateHolder = rememberWorldBookEditExpandedState()
     val expandedState by expandedStateHolder
 
@@ -189,6 +194,11 @@ fun WorldBookEditScreen(
                             maxLines = 12,
                             shape = RoundedCornerShape(16.dp),
                             colors = outlineColors,
+                            trailingIcon = {
+                                IconButton(onClick = { showContentSheet = true }) {
+                                    Icon(Icons.Outlined.Edit, contentDescription = "全屏编辑正文")
+                                }
+                            },
                         )
                         OutlinedTextField(
                             value = sourceBookName,
@@ -427,6 +437,14 @@ fun WorldBookEditScreen(
                 onDelete(entry.id)
                 onNavigateBack()
             },
+        )
+    }
+
+    if (showContentSheet) {
+        WorldBookContentFullscreenSheet(
+            initialContent = content,
+            onConfirm = { content = it },
+            onDismiss = { showContentSheet = false },
         )
     }
 }
