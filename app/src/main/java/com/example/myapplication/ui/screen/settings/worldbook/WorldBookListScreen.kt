@@ -106,7 +106,7 @@ fun WorldBookListScreen(
     val filteredBooks = remember(postFilterEntries) { buildWorldBookBooks(postFilterEntries) }
     val filteredStandaloneEntries = remember(postFilterEntries) {
         postFilterEntries
-            .filter { it.sourceBookName.isBlank() }
+            .filter { it.resolvedBookId().isBlank() }
             .sortedWith(
                 compareBy<WorldBookEntry>(
                     { it.insertionOrder },
@@ -542,7 +542,7 @@ internal fun buildWorldBookBooks(entries: List<WorldBookEntry>): List<WorldBookB
     return entries
         .mapNotNull { entry ->
             entry.resolvedBookId()
-                .takeIf { it.isNotBlank() && entry.sourceBookName.isNotBlank() }
+                .takeIf { it.isNotBlank() }
                 ?.let { bookId -> bookId to entry }
         }
         .groupBy(
