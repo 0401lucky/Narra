@@ -292,7 +292,7 @@ fun AssistantExtensionsScreen(
                             }
                         }
                         Text(
-                            text = "选择整本世界书后，这本书下的全部可挂载条目都会对当前助手生效。",
+                            text = "选择整本世界书后，这本世界书下的全部可挂载条目都会对当前助手生效。",
                             style = MaterialTheme.typography.bodySmall,
                             color = palette.body,
                         )

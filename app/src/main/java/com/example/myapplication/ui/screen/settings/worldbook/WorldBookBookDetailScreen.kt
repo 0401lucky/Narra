@@ -128,13 +128,13 @@ fun WorldBookBookDetailScreen(
                             colors = outlineColors,
                         )
                         AnimatedSettingButton(
-                            text = if (isSaving) "处理中…" else "重命名这本书",
+                            text = if (isSaving) "处理中…" else "重命名整本世界书",
                             onClick = { onRenameBook(bookId, trimmedRename) },
                             enabled = canRename,
                             isPrimary = true,
                         )
                         AnimatedSettingButton(
-                            text = "删除这本书",
+                            text = "删除整本世界书",
                             onClick = { showDeleteDialog = true },
                             enabled = !isSaving && entries.isNotEmpty(),
                             isPrimary = false,
