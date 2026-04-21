@@ -619,7 +619,7 @@ private fun WorldBookListEmptyState(
     ) {
         Icon(
             imageVector = spec.icon,
-            contentDescription = null,
+            contentDescription = spec.title,
             tint = palette.body,
             modifier = Modifier.size(48.dp),
         )
