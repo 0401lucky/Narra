@@ -158,7 +158,11 @@ class WorldBookMatcherTest {
                     scopeId = "assistant-1",
                 ),
             ),
-            assistant = Assistant(id = "assistant-1", worldBookMaxEntries = 8),
+            assistant = Assistant(
+                id = "assistant-1",
+                worldBookMaxEntries = 8,
+                worldBookScanDepth = 0,
+            ),
             conversation = Conversation(id = "c1", createdAt = 1L, updatedAt = 1L),
             userInputText = "你身上带武器了吗？",
             recentMessages = listOf(
@@ -173,7 +177,7 @@ class WorldBookMatcherTest {
         )
 
         assertEquals(listOf("余罪的配枪"), result.entries.map { it.title })
-        assertEquals("你身上带武器了吗？", result.sourceText)
+        assertTrue(result.sourceText.contains("你身上带武器了吗？"))
     }
 
     @Test
@@ -189,7 +193,11 @@ class WorldBookMatcherTest {
                     scopeId = "assistant-1",
                 ),
             ),
-            assistant = Assistant(id = "assistant-1", worldBookMaxEntries = 8),
+            assistant = Assistant(
+                id = "assistant-1",
+                worldBookMaxEntries = 8,
+                worldBookScanDepth = 0,
+            ),
             conversation = Conversation(id = "c1", createdAt = 1L, updatedAt = 1L),
             userInputText = "今天天气不错。",
             recentMessages = listOf(
@@ -204,7 +212,7 @@ class WorldBookMatcherTest {
         )
 
         assertTrue(result.entries.isEmpty())
-        assertEquals("今天天气不错。", result.sourceText)
+        assertTrue(result.sourceText.contains("今天天气不错"))
     }
 
     @Test
@@ -263,5 +271,130 @@ class WorldBookMatcherTest {
         )
 
         assertEquals(listOf("旧港夜路"), result.entries.map { it.title })
+    }
+
+    @Test
+    fun match_scanDepthZero_onlyConsidersCurrentInput() {
+        val entry = WorldBookEntry(
+            id = "entry-1",
+            title = "旧港夜路",
+            content = "A",
+            keywords = listOf("旧港"),
+        )
+        val result = matcher.match(
+            entries = listOf(entry),
+            assistant = Assistant(id = "assistant-1", worldBookScanDepth = 0),
+            conversation = Conversation(id = "c1", createdAt = 1L, updatedAt = 1L),
+            userInputText = "今晚看书",
+            recentMessages = listOf(
+                ChatMessage(
+                    id = "m1",
+                    conversationId = "c1",
+                    role = MessageRole.USER,
+                    content = "昨晚去了旧港",
+                    createdAt = 1L,
+                ),
+            ),
+        )
+        assertTrue(result.entries.isEmpty())
+    }
+
+    @Test
+    fun match_scanDepthTwo_includesPreviousAssistantMessage() {
+        val entry = WorldBookEntry(
+            id = "entry-1",
+            title = "旧港夜路",
+            content = "A",
+            keywords = listOf("旧港"),
+        )
+        val result = matcher.match(
+            entries = listOf(entry),
+            assistant = Assistant(id = "assistant-1", worldBookScanDepth = 2),
+            conversation = Conversation(id = "c1", createdAt = 1L, updatedAt = 1L),
+            userInputText = "继续讲故事",
+            recentMessages = listOf(
+                ChatMessage(
+                    id = "m1",
+                    conversationId = "c1",
+                    role = MessageRole.ASSISTANT,
+                    content = "在旧港夜巷你看到...",
+                    createdAt = 1L,
+                ),
+                ChatMessage(
+                    id = "m2",
+                    conversationId = "c1",
+                    role = MessageRole.USER,
+                    content = "然后呢",
+                    createdAt = 2L,
+                ),
+            ),
+        )
+        assertEquals(listOf("旧港夜路"), result.entries.map { it.title })
+    }
+
+    @Test
+    fun match_scanDepthOne_onlyIncludesLatestMessage() {
+        val entry = WorldBookEntry(
+            id = "entry-1",
+            title = "白塔城",
+            content = "A",
+            keywords = listOf("白塔城"),
+        )
+        val result = matcher.match(
+            entries = listOf(entry),
+            assistant = Assistant(id = "assistant-1", worldBookScanDepth = 1),
+            conversation = Conversation(id = "c1", createdAt = 1L, updatedAt = 1L),
+            userInputText = "",
+            recentMessages = listOf(
+                ChatMessage(
+                    id = "m1",
+                    conversationId = "c1",
+                    role = MessageRole.ASSISTANT,
+                    content = "晚上好",
+                    createdAt = 1L,
+                ),
+                ChatMessage(
+                    id = "m2",
+                    conversationId = "c1",
+                    role = MessageRole.USER,
+                    content = "我去白塔城",
+                    createdAt = 2L,
+                ),
+            ),
+        )
+        assertEquals(listOf("白塔城"), result.entries.map { it.title })
+    }
+
+    @Test
+    fun match_scanDepthOne_doesNotIncludeEarlierMessages() {
+        val entry = WorldBookEntry(
+            id = "entry-1",
+            title = "白塔城",
+            content = "A",
+            keywords = listOf("白塔城"),
+        )
+        val result = matcher.match(
+            entries = listOf(entry),
+            assistant = Assistant(id = "assistant-1", worldBookScanDepth = 1),
+            conversation = Conversation(id = "c1", createdAt = 1L, updatedAt = 1L),
+            userInputText = "",
+            recentMessages = listOf(
+                ChatMessage(
+                    id = "m1",
+                    conversationId = "c1",
+                    role = MessageRole.USER,
+                    content = "我去白塔城",
+                    createdAt = 1L,
+                ),
+                ChatMessage(
+                    id = "m2",
+                    conversationId = "c1",
+                    role = MessageRole.ASSISTANT,
+                    content = "晚上好",
+                    createdAt = 2L,
+                ),
+            ),
+        )
+        assertTrue(result.entries.isEmpty())
     }
 }

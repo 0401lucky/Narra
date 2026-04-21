@@ -4,10 +4,8 @@ import com.example.myapplication.model.Assistant
 import com.example.myapplication.model.ChatMessage
 import com.example.myapplication.model.Conversation
 import com.example.myapplication.model.DEFAULT_WORLD_BOOK_MAX_ENTRIES
-import com.example.myapplication.model.MessageRole
+import com.example.myapplication.model.DEFAULT_WORLD_BOOK_SCAN_DEPTH
 import com.example.myapplication.model.WorldBookEntry
-import com.example.myapplication.model.WorldBookScopeType
-import com.example.myapplication.model.toPlainText
 
 data class WorldBookMatchResult(
     val entries: List<WorldBookEntry>,
@@ -22,7 +20,14 @@ class WorldBookMatcher {
         userInputText: String,
         recentMessages: List<ChatMessage>,
     ): WorldBookMatchResult {
-        val sourceText = buildSourceText(userInputText, recentMessages)
+        val scanDepth = assistant?.worldBookScanDepth
+            ?.coerceAtLeast(0)
+            ?: DEFAULT_WORLD_BOOK_SCAN_DEPTH
+        val sourceText = buildWorldBookSourceText(
+            userInputText = userInputText,
+            recentMessages = recentMessages,
+            scanDepth = scanDepth,
+        )
         val maxEntries = assistant?.worldBookMaxEntries
             ?.takeIf { it > 0 }
             ?: DEFAULT_WORLD_BOOK_MAX_ENTRIES
@@ -45,30 +50,6 @@ class WorldBookMatcher {
             entries = matchedEntries,
             sourceText = sourceText,
         )
-    }
-
-    private fun buildSourceText(
-        userInputText: String,
-        recentMessages: List<ChatMessage>,
-    ): String {
-        val latestUserInput = userInputText.trim()
-        if (latestUserInput.isNotBlank()) {
-            return latestUserInput
-        }
-
-        return recentMessages
-            .asReversed()
-            .mapNotNull { message ->
-                if (message.role != MessageRole.USER) {
-                    return@mapNotNull null
-                }
-                message.parts.toPlainText()
-                    .ifBlank { message.content.trim() }
-                    .trim()
-                    .takeIf { it.isNotEmpty() }
-            }
-            .firstOrNull()
-            .orEmpty()
     }
 
     private fun hasKeywordHit(
