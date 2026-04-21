@@ -14,6 +14,7 @@ import com.example.myapplication.model.DEFAULT_MEMORY_MAX_ITEMS
 import com.example.myapplication.model.OpenAiTextApiMode
 import com.example.myapplication.model.DEFAULT_ROLEPLAY_LONGFORM_TARGET_CHARS
 import com.example.myapplication.model.DEFAULT_WORLD_BOOK_MAX_ENTRIES
+import com.example.myapplication.model.DEFAULT_WORLD_BOOK_SCAN_DEPTH
 import com.example.myapplication.model.ProviderFunctionModelMode
 import com.example.myapplication.model.ProviderSettings
 import com.example.myapplication.model.ProviderType
@@ -735,6 +736,8 @@ class AppSettingsStore(
             memoryMaxItems = assistant.memoryMaxItems.takeIf { it > 0 } ?: DEFAULT_MEMORY_MAX_ITEMS,
             worldBookMaxEntries = assistant.worldBookMaxEntries.takeIf { it > 0 }
                 ?: DEFAULT_WORLD_BOOK_MAX_ENTRIES,
+            worldBookScanDepth = assistant.worldBookScanDepth.takeIf { it >= 0 }
+                ?: DEFAULT_WORLD_BOOK_SCAN_DEPTH,
             tags = sanitizeStringList(assistant.tags as? List<*>),
         )
     }

@@ -19,6 +19,7 @@ data class Assistant(
     val useGlobalMemory: Boolean = false,
     val memoryMaxItems: Int = DEFAULT_MEMORY_MAX_ITEMS,
     val worldBookMaxEntries: Int = DEFAULT_WORLD_BOOK_MAX_ENTRIES,
+    val worldBookScanDepth: Int = DEFAULT_WORLD_BOOK_SCAN_DEPTH,
     val temperature: Float? = null,
     val topP: Float? = null,
     val contextMessageSize: Int = 0,
@@ -30,6 +31,7 @@ const val DEFAULT_ASSISTANT_ID = "default-assistant"
 const val DEFAULT_ASSISTANT_ICON = "smart_toy"
 const val DEFAULT_MEMORY_MAX_ITEMS = 6
 const val DEFAULT_WORLD_BOOK_MAX_ENTRIES = 8
+const val DEFAULT_WORLD_BOOK_SCAN_DEPTH = 2
 
 /** 预设图标集，供用户创建/编辑助手时选择。 */
 val PRESET_ASSISTANT_ICONS: List<PresetIcon> = listOf(
