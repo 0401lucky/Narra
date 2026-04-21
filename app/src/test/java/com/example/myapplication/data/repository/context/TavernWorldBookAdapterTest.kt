@@ -57,4 +57,39 @@ class TavernWorldBookAdapterTest {
         val bundle = adapter.decodeAsBundle(raw)!!
         assertEquals("{}", bundle.worldBookEntries.single().extrasJson)
     }
+
+    @Test
+    fun decodeAsBundle_sameUidProducesSameStableIdAcrossMinorEdits() {
+        val raw1 = """{"name":"书","entries":[{"uid":"42","comment":"t","content":"老正文","key":["k"]}]}"""
+        val raw2 = """{"name":"书","entries":[{"uid":"42","comment":"t","content":"改过的正文","key":["k"]}]}"""
+
+        val id1 = adapter.decodeAsBundle(raw1)!!.worldBookEntries.single().id
+        val id2 = adapter.decodeAsBundle(raw2)!!.worldBookEntries.single().id
+
+        assertEquals("uid 一致时 stableId 应保持不变", id1, id2)
+    }
+
+    @Test
+    fun decodeAsBundle_differentUidProducesDifferentStableId() {
+        val raw1 = """{"name":"书","entries":[{"uid":"42","comment":"t","content":"a","key":["k"]}]}"""
+        val raw2 = """{"name":"书","entries":[{"uid":"99","comment":"t","content":"a","key":["k"]}]}"""
+
+        val id1 = adapter.decodeAsBundle(raw1)!!.worldBookEntries.single().id
+        val id2 = adapter.decodeAsBundle(raw2)!!.worldBookEntries.single().id
+
+        if (id1 == id2) {
+            throw AssertionError("不同 uid 必须产生不同 stableId，但都是 $id1")
+        }
+    }
+
+    @Test
+    fun decodeAsBundle_missingUidFallsBackToHashAndStaysDeterministic() {
+        val raw1 = """{"name":"书","entries":[{"comment":"t","content":"a","key":["k"]}]}"""
+        val raw2 = """{"name":"书","entries":[{"comment":"t","content":"a","key":["k"]}]}"""
+
+        val id1 = adapter.decodeAsBundle(raw1)!!.worldBookEntries.single().id
+        val id2 = adapter.decodeAsBundle(raw2)!!.worldBookEntries.single().id
+
+        assertEquals("无 uid 时依赖 hash：相同内容的条目应产生相同 stableId", id1, id2)
+    }
 }

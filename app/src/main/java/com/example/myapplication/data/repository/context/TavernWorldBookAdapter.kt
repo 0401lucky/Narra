@@ -110,16 +110,21 @@ class TavernWorldBookAdapter(
         title: String,
         content: String,
     ): String {
-        val payload = buildString {
-            append(bookName)
-            append('|')
-            append(entry.getString("uid"))
-            append('|')
-            append(index)
-            append('|')
-            append(title)
-            append('|')
-            append(content.take(256))
+        val uidCandidate = entry.getString("uid").trim()
+        val payload = if (uidCandidate.isNotEmpty()) {
+            // uid 是 Tavern 条目的稳定身份：同 uid 的条目即便正文被微改也视为同一条，
+            // 避免二次导入同一本书时增生孪生条目。
+            "$bookName|$uidCandidate"
+        } else {
+            buildString {
+                append(bookName)
+                append('|')
+                append(index)
+                append('|')
+                append(title)
+                append('|')
+                append(content.take(256))
+            }
         }
         return UUID.nameUUIDFromBytes(payload.toByteArray(StandardCharsets.UTF_8)).toString()
     }
