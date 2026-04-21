@@ -575,41 +575,63 @@
 
 ---
 
-### T15 · 批次 C（P1 / P2 兼容性 + 细节）⬜
+### T15 · 批次 C（P1 / P2 兼容性 + 细节）✅
 
-- **C1 · TavernWorldBookAdapter 增加 extrasJson 兜底**（`TavernWorldBookAdapter.kt` + Entity，~3h）：
-  - Entity 加 `extrasJson: String = "{}"`；Room schema v28（单独一次 +1 提交）；
-  - Adapter 把未识别字段原样存进去；
-  - 导出回 Tavern 时可无损还原；
-  - 迁移：老数据 `extrasJson = "{}"`。
+- **C1 · TavernWorldBookAdapter 增加 extrasJson 兜底**（`TavernWorldBookAdapter.kt` + Entity，~3h）：✅
+  - 落地：commit `17a8b3e`（Room v29）+ `e8c41ae`（补提 v28.json）
+  - 预计：3h / 实际：约 1.2h
+  - 关键 diff：`WorldBookEntry.kt` / `WorldBookEntryEntity.kt` +`extrasJson: String = "{}"`；`ChatDbMigrations.kt` +MIGRATION_28_29 （ALTER ADD COLUMN NOT NULL DEFAULT '{}' + hasColumn 守护）；`TavernWorldBookAdapter.kt` 新增 `KNOWN_FIELD_KEYS` 白名单、`buildExtrasPayload()` 把 `probability` / `depth` / `role` / `logic` 等未识别键原样留存；`RoomWorldBookRepository` toDomain/toEntity 来回映射（空字符串回退 `"{}"`）。
+  - 回归：`./gradlew.bat app:testDebugUnitTest --tests "com.example.myapplication.data.repository.context.TavernWorldBookAdapterTest" --tests "com.example.myapplication.data.repository.context.WorldBookRepositoryTest" --tests "com.example.myapplication.data.local.chat.ChatDatabaseMigrationRegistryTest"` 全绿；`./gradlew.bat app:compileDebugKotlin` BUILD SUCCESSFUL（KSP 自动产出 `app/schemas/…/29.json`）。
+  - 待真机：导入带未知字段的 Tavern 角色卡 → 再导出 → 比对 extrasJson 无损。
 
-- **C2 · Tavern 导入稳定 ID 优先用 uid**（`TavernWorldBookAdapter.kt:78-90`，~30min）：
-  - uid 非空：`stableId = UUID.nameUUIDFromBytes("${bookName}|${uid}")`；
-  - uid 空时 fallback 到现有 hash；
-  - 二次导入同一本书微改内容不再增生孪生条目。
+- **C2 · Tavern 导入稳定 ID 优先用 uid**（`TavernWorldBookAdapter.kt:78-90`，~30min）：✅
+  - 落地：commit `119e7cd`
+  - 预计：30min / 实际：约 20min
+  - 关键 diff：新增 `deriveStableId()` helper；uid 非空时 `UUID.nameUUIDFromBytes("bookName|uid")`，uid 空时 fallback 到 `bookName|index|title|content[:256]` hash，保留老数据的确定性。
+  - 回归：`./gradlew.bat app:testDebugUnitTest --tests "com.example.myapplication.data.repository.context.TavernWorldBookAdapterTest"` 3 个新用例（同 uid 不同内容 → 同 ID；不同 uid → 不同 ID；无 uid 相同内容 → 同 ID）全绿。
+  - 待真机：同一本 Tavern 书二次导入、微改正文 → 不再增生孪生条目。
 
-- **C3 · Entity 默认时间戳修正**（`WorldBookEntryEntity.kt`，~20min）：
-  - `createdAt` / `updatedAt` 默认 `System.currentTimeMillis()`（通过 ColumnInfo defaultValue 或 DAO 层写入时兜底）；
-  - 排序规则 `createdAt ASC` 下，默认 0 的条目不再永远排最前。
+- **C3 · Entity 默认时间戳修正**（`WorldBookEntryEntity.kt`，~20min）：✅
+  - 落地：commit `2823bfe`
+  - 预计：20min / 实际：约 20min
+  - 决策：不改 ColumnInfo defaultValue（需再次 Room +1 且老数据已入库），改在 `RoomWorldBookRepository.toEntity` 入库路径里兜底。
+  - 关键 diff：`val now = System.currentTimeMillis(); val resolvedCreatedAt = entry.createdAt.takeIf { it > 0L } ?: now; val resolvedUpdatedAt = entry.updatedAt.takeIf { it > 0L } ?: resolvedCreatedAt`。
+  - 回归：`./gradlew.bat app:testDebugUnitTest --tests "com.example.myapplication.data.repository.context.WorldBookRepositoryTest"` 4 个时间戳用例（0 兜底、显式保留、updatedAt=0 沿用 createdAt）全绿。
 
-- **C4 · DAO 查询去重复**（`WorldBookDao.kt`，~20min）：
-  - `observeEntries()` / `listEntries()` SQL 完全相同，抽常量或合用；降低升级排序规则时的漏改风险。
+- **C4 · DAO 查询去重复**（`WorldBookDao.kt`，~20min）：✅
+  - 落地：commit `f3c7cdc`
+  - 预计：20min / 实际：约 15min
+  - 关键 diff：把 `observeEntries()` / `listEntries()` 共用的排序 SQL 抽为顶层 `private const val DEFAULT_LIST_QUERY`，KSP 编译期内联回 `@Query` 注解；未来调整默认排序只需改一处，降低漏改风险。
+  - 回归：`./gradlew.bat app:compileDebugKotlin` BUILD SUCCESSFUL（KSP 接受顶层常量）+ 单测全绿。
 
-- **C5 · 文案统一**（全模块，~30min）：
-  - snackbar 固定称呼"世界书" + 动作（保存 / 删除 / 重命名 / 整本删除），不再混用"这本书" / "整本世界书"；
-  - 列表 pill "常驻" 改为 "常驻注入"（或两处都改成"常驻"），与编辑页对齐；
-  - "次级键"/"附加键" 固定为"次级关键词"（selective 关闭时叫"附加关键词"的说法作废）。
+- **C5 · 文案统一**（全模块，~30min）：✅
+  - 落地：commit `9156887`
+  - 预计：30min / 实际：约 15min
+  - 关键 diff：`WorldBookBookDetailScreen.kt` "重命名/删除这本书" → "重命名/删除整本世界书"（与弹窗标题 "删除整本世界书" 对齐）；`AssistantExtensionsScreen.kt` "这本书下的" → "这本世界书下的"。ViewModel 现有 message 已满足 C5 要求，不改；"次级键 / 附加键" 经 grep 确认不存在（T15-A1 已统一为"次级关键词"）；pill "常驻注入" 已对齐。
+  - 回归：`./gradlew.bat app:compileDebugKotlin` BUILD SUCCESSFUL；相关单测不断言中文字符串，无回归风险。
 
-- **C6 · buildWorldBookBooks 分组 key 用 resolvedBookId()**（`WorldBookListScreen.kt:404-428`，~20min）：
-  - 避免"书名字段被清空但 bookId 还在"的条目变成独立条目；
-  - 同步更新 `WorldBookListScreenGroupingTest`。
+- **C6 · buildWorldBookBooks 分组 key 用 resolvedBookId()**（`WorldBookListScreen.kt:541-572`，~20min）：✅
+  - 落地：commit `119c8ec`
+  - 预计：20min / 实际：约 25min（修复时发现 `filteredStandaloneEntries` 判定不对偶，一并修）
+  - 关键 diff：`buildWorldBookBooks` 去掉 `entry.sourceBookName.isNotBlank()` 前置条件；`filteredStandaloneEntries` 改为 `it.resolvedBookId().isBlank()`，两者对偶，防止同一条目在"独立"与"书内"同时渲染。
+  - 回归：`./gradlew.bat app:testDebugUnitTest --tests "com.example.myapplication.ui.screen.settings.worldbook.WorldBookListScreenGroupingTest"` 3 个用例（原分组 + 空 sourceBookName 合并 + 都空跳过）全绿。
 
-- **C7 · 所有 `contentDescription = null` 补语义**（全 UI，~45min）：
-  - 导入 / 搜索 / 书图标 / 菜单项 / 删除按钮；
-  - 和 T13-D1 风格对齐。
+- **C7 · 所有 `contentDescription = null` 补语义**（全 UI，~45min）：✅
+  - 落地：commit `8a5fb29`
+  - 预计：45min / 实际：约 20min（审计后只需改 1 处）
+  - 决策：Upload/Search leadingIcon 位于带 text/label 的按钮/输入框内，属装饰性，保留 null 避免 TalkBack 重复朗读；IconButton（清空搜索 / 全屏编辑正文）、折叠箭头已具备语义 label。
+  - 关键 diff：`WorldBookListScreen.kt` 空态 Icon `contentDescription = spec.title`（对应"还没有世界书" / "当前筛选下没有条目" / "没有匹配结果"）。
+  - 回归：`./gradlew.bat app:compileDebugKotlin` BUILD SUCCESSFUL。
 
-- **C8 · 自动过期 snackbar**（复用 T15-A3 的事件通道，~10min）：
-  - `LaunchedEffect` 中 `delay(3_000); consumeMessage()`。
+- **C8 · 自动过期 snackbar**（复用 T15-A3 的事件通道，~10min）：✅
+  - 落地：commit `773ccc5`
+  - 预计：10min / 实际：约 20min（含对事件通道流水的推演）
+  - 场景：编辑页保存后 popBackStack，"世界书已保存" 因两屏都不含此关键字被过滤掉，`rememberSettingsSnackbarHostState` 的 `showSnackbar → onConsumeMessage` 路径不走，ViewModel.internal.message 被卡住直到下一个消息覆盖。
+  - 关键 diff：`WorldBookListScreen` / `WorldBookBookDetailScreen` 各加一个 `LaunchedEffect(uiMessage)`，属于本屏语义的消息（含"删除"/"重命名"）不干预，其余消息延迟 3s 兜底 consume。
+  - 回归：`./gradlew.bat app:compileDebugKotlin` BUILD SUCCESSFUL。
+  - 待真机：编辑页保存 → 返回列表页 → 不弹 snackbar，且 3s 后再次保存能触发新 snackbar。
+
+**批次 C 整体回归：** `./gradlew.bat app:testDebugUnitTest --rerun-tasks` BUILD SUCCESSFUL（全量重跑 660+ 原用例 + 10 个新增用例全绿）。
 
 ---
 
