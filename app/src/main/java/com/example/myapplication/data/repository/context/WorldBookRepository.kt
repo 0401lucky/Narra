@@ -3,6 +3,7 @@ package com.example.myapplication.data.repository.context
 import com.example.myapplication.data.local.worldbook.WorldBookDao
 import com.example.myapplication.data.local.worldbook.WorldBookEntryEntity
 import com.example.myapplication.model.WorldBookEntry
+import com.example.myapplication.model.WorldBookMatchMode
 import com.example.myapplication.model.WorldBookScopeType
 import com.example.myapplication.model.deriveWorldBookBookId
 import com.example.myapplication.system.json.AppJson
@@ -92,6 +93,7 @@ class RoomWorldBookRepository(
             alwaysActive = entity.alwaysActive,
             selective = entity.selective,
             caseSensitive = entity.caseSensitive,
+            matchMode = WorldBookMatchMode.fromStorageValue(entity.matchMode),
             priority = entity.priority,
             insertionOrder = entity.insertionOrder,
             sourceBookName = entity.sourceBookName,
@@ -122,6 +124,7 @@ class RoomWorldBookRepository(
             alwaysActive = entry.alwaysActive,
             selective = entry.selective,
             caseSensitive = entry.caseSensitive,
+            matchMode = entry.matchMode.storageValue,
             priority = entry.priority,
             insertionOrder = entry.insertionOrder,
             sourceBookName = normalizedSourceBookName,

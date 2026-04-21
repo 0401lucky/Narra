@@ -31,6 +31,7 @@ data class WorldBookEntry(
     val alwaysActive: Boolean = false,
     val selective: Boolean = false,
     val caseSensitive: Boolean = false,
+    val matchMode: WorldBookMatchMode = WorldBookMatchMode.WORD_CJK,
     val priority: Int = 0,
     val insertionOrder: Int = 0,
     val sourceBookName: String = "",

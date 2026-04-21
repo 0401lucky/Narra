@@ -570,6 +570,16 @@ internal object ChatDbMigrations {
         }
     }
 
+    val MIGRATION_27_28 = object : Migration(27, 28) {
+        override fun migrate(db: SupportSQLiteDatabase) {
+            if (!hasColumn(db, "worldbook_entries", "matchMode")) {
+                db.execSQL(
+                    "ALTER TABLE worldbook_entries ADD COLUMN matchMode TEXT NOT NULL DEFAULT 'word_cjk'",
+                )
+            }
+        }
+    }
+
     /** 版本连续性由 `ChatDatabaseMigrationRegistryTest` 保证：`size == CURRENT_VERSION - 1`。 */
     val ALL: Array<Migration> = arrayOf(
         MIGRATION_1_2,
@@ -598,6 +608,7 @@ internal object ChatDbMigrations {
         MIGRATION_24_25,
         MIGRATION_25_26,
         MIGRATION_26_27,
+        MIGRATION_27_28,
     )
 
     /** 幂等列检查。子迁移在 `ALTER TABLE ADD COLUMN` 之前先探测，允许中间版本重复升级。 */
