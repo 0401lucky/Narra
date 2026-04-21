@@ -25,17 +25,19 @@ import androidx.compose.ui.unit.dp
 import com.example.myapplication.ui.screen.settings.SettingsGroup
 import com.example.myapplication.ui.screen.settings.rememberSettingsPalette
 
-/** 编辑页四段折叠态，默认展开前两段（基本信息 / 命中规则）。 */
+/** 编辑页四段折叠态 + 可选的"试命中"预览段，默认展开前两段。 */
 internal data class WorldBookEditExpandedState(
     val basicInfo: Boolean,
     val hitRule: Boolean,
     val scope: Boolean,
     val status: Boolean,
+    val hitPreview: Boolean = false,
 ) {
     fun toggleBasicInfo() = copy(basicInfo = !basicInfo)
     fun toggleHitRule() = copy(hitRule = !hitRule)
     fun toggleScope() = copy(scope = !scope)
     fun toggleStatus() = copy(status = !status)
+    fun toggleHitPreview() = copy(hitPreview = !hitPreview)
 
     companion object {
         val DEFAULT = WorldBookEditExpandedState(
@@ -43,14 +45,21 @@ internal data class WorldBookEditExpandedState(
             hitRule = true,
             scope = false,
             status = false,
+            hitPreview = false,
         )
 
         val Saver: Saver<WorldBookEditExpandedState, *> = Saver(
-            save = { listOf(it.basicInfo, it.hitRule, it.scope, it.status) },
+            save = { listOf(it.basicInfo, it.hitRule, it.scope, it.status, it.hitPreview) },
             restore = { raw ->
                 @Suppress("UNCHECKED_CAST")
                 val bools = raw as List<Boolean>
-                WorldBookEditExpandedState(bools[0], bools[1], bools[2], bools[3])
+                WorldBookEditExpandedState(
+                    basicInfo = bools[0],
+                    hitRule = bools[1],
+                    scope = bools[2],
+                    status = bools[3],
+                    hitPreview = bools.getOrElse(4) { false },
+                )
             },
         )
     }

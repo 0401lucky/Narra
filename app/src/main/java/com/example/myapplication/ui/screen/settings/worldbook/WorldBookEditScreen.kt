@@ -39,6 +39,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
+import com.example.myapplication.context.WorldBookHitPreview
+import com.example.myapplication.context.WorldBookMatcher
 import com.example.myapplication.model.Assistant
 import com.example.myapplication.model.Conversation
 import com.example.myapplication.model.DEFAULT_CONVERSATION_TITLE
@@ -113,6 +115,9 @@ fun WorldBookEditScreen(
     var scopeId by rememberSaveable { mutableStateOf(entry?.scopeId ?: "") }
     var showDeleteDialog by rememberSaveable { mutableStateOf(false) }
     var showContentSheet by rememberSaveable { mutableStateOf(false) }
+    var previewSource by rememberSaveable { mutableStateOf("") }
+    var hitPreview by remember { mutableStateOf<WorldBookHitPreview?>(null) }
+    val previewMatcher = remember { WorldBookMatcher() }
     val expandedStateHolder = rememberWorldBookEditExpandedState()
     val expandedState by expandedStateHolder
 
@@ -447,6 +452,58 @@ fun WorldBookEditScreen(
                 }
             }
 
+            item {
+                WorldBookCollapsibleSection(
+                    title = "试命中（预览）",
+                    description = "输入一段待测文本，立刻看看这条会不会被自动注入",
+                    expanded = expandedState.hitPreview,
+                    onToggle = { expandedStateHolder.value = expandedState.toggleHitPreview() },
+                ) {
+                    Column(
+                        modifier = Modifier.padding(horizontal = 18.dp, vertical = 16.dp),
+                        verticalArrangement = Arrangement.spacedBy(12.dp),
+                    ) {
+                        OutlinedTextField(
+                            value = previewSource,
+                            onValueChange = {
+                                previewSource = it
+                                hitPreview = null
+                            },
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .heightIn(min = 96.dp),
+                            label = { Text("待测文本") },
+                            placeholder = { Text("例如：我准备去白塔城做生意") },
+                            shape = RoundedCornerShape(16.dp),
+                            colors = outlineColors,
+                        )
+                        AnimatedSettingButton(
+                            text = "试命中",
+                            onClick = {
+                                val draft = WorldBookEntry(
+                                    id = entry?.id ?: "preview",
+                                    title = title,
+                                    content = content,
+                                    keywords = keywords,
+                                    aliases = aliases,
+                                    secondaryKeywords = secondaryKeywords,
+                                    selective = selective,
+                                    caseSensitive = caseSensitive,
+                                    matchMode = matchMode,
+                                    alwaysActive = alwaysActive,
+                                )
+                                hitPreview = previewMatcher.previewHit(draft, previewSource)
+                            },
+                            enabled = previewSource.isNotBlank(),
+                            isPrimary = false,
+                        )
+                        hitPreview?.let { preview ->
+                            HitPreviewResultCard(preview = preview)
+                        }
+                    }
+                }
+            }
+
             if (!isNew && entry != null) {
                 item { SettingsSectionHeader("危险操作", "删除后无法恢复") }
                 item {
@@ -672,6 +729,47 @@ private fun ConversationScopePicker(
                     },
                 )
             }
+        }
+    }
+}
+
+@Composable
+private fun HitPreviewResultCard(preview: WorldBookHitPreview) {
+    val palette = rememberSettingsPalette()
+    val statusLabel = if (preview.overallMatched) "命中：会被自动注入" else "未命中：不会被自动注入"
+    val statusColor = if (preview.overallMatched) palette.title else palette.body
+
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 2.dp),
+        verticalArrangement = Arrangement.spacedBy(6.dp),
+    ) {
+        Text(
+            text = statusLabel,
+            style = MaterialTheme.typography.titleSmall,
+            color = statusColor,
+        )
+        if (preview.primaryHits.isNotEmpty()) {
+            Text(
+                text = "主关键词命中：${preview.primaryHits.joinToString("、")}",
+                style = MaterialTheme.typography.bodySmall,
+                color = palette.body,
+            )
+        }
+        if (preview.secondaryHits.isNotEmpty()) {
+            Text(
+                text = "次级关键词命中：${preview.secondaryHits.joinToString("、")}",
+                style = MaterialTheme.typography.bodySmall,
+                color = palette.body,
+            )
+        }
+        preview.reasonIfNotMatched?.let { reason ->
+            Text(
+                text = "原因：$reason",
+                style = MaterialTheme.typography.bodySmall,
+                color = palette.body,
+            )
         }
     }
 }

@@ -8,6 +8,7 @@ import com.example.myapplication.model.WorldBookEntry
 import com.example.myapplication.model.WorldBookMatchMode
 import com.example.myapplication.model.WorldBookScopeType
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
@@ -514,5 +515,113 @@ class WorldBookMatcherTest {
             recentMessages = emptyList(),
         )
         assertEquals(listOf("正则条目"), result.entries.map { it.title })
+    }
+
+    @Test
+    fun previewHit_withEmptySourceText_returnsNotMatchedWithReason() {
+        val preview = matcher.previewHit(
+            entry = WorldBookEntry(id = "e1", title = "t", content = "c", keywords = listOf("白塔城")),
+            sourceText = "   ",
+        )
+
+        assertFalse(preview.overallMatched)
+        assertTrue(preview.primaryHits.isEmpty())
+        assertTrue(preview.secondaryHits.isEmpty())
+        assertEquals("待测文本为空", preview.reasonIfNotMatched)
+    }
+
+    @Test
+    fun previewHit_primaryKeywordMatches_returnsMatched() {
+        val preview = matcher.previewHit(
+            entry = WorldBookEntry(
+                id = "e1",
+                title = "t",
+                content = "c",
+                keywords = listOf("白塔城", "北境"),
+                matchMode = WorldBookMatchMode.CONTAINS,
+            ),
+            sourceText = "我准备去白塔城做生意",
+        )
+
+        assertTrue(preview.overallMatched)
+        assertEquals(listOf("白塔城"), preview.primaryHits)
+        assertTrue(preview.secondaryHits.isEmpty())
+    }
+
+    @Test
+    fun previewHit_noPrimaryMatch_returnsMissReason() {
+        val preview = matcher.previewHit(
+            entry = WorldBookEntry(
+                id = "e1",
+                title = "t",
+                content = "c",
+                keywords = listOf("白塔城"),
+                matchMode = WorldBookMatchMode.CONTAINS,
+            ),
+            sourceText = "去了另一个城镇",
+        )
+
+        assertFalse(preview.overallMatched)
+        assertTrue(preview.primaryHits.isEmpty())
+        assertEquals("主关键词均未命中", preview.reasonIfNotMatched)
+    }
+
+    @Test
+    fun previewHit_selectiveWithoutSecondaryHit_returnsNotMatched() {
+        val preview = matcher.previewHit(
+            entry = WorldBookEntry(
+                id = "e1",
+                title = "t",
+                content = "c",
+                keywords = listOf("白塔城"),
+                secondaryKeywords = listOf("生意"),
+                selective = true,
+                matchMode = WorldBookMatchMode.CONTAINS,
+            ),
+            sourceText = "我准备去白塔城看看风景",
+        )
+
+        assertFalse(preview.overallMatched)
+        assertEquals(listOf("白塔城"), preview.primaryHits)
+        assertTrue(preview.secondaryHits.isEmpty())
+        assertTrue(preview.reasonIfNotMatched?.contains("次级") == true)
+    }
+
+    @Test
+    fun previewHit_selectiveWithSecondaryHit_returnsMatched() {
+        val preview = matcher.previewHit(
+            entry = WorldBookEntry(
+                id = "e1",
+                title = "t",
+                content = "c",
+                keywords = listOf("白塔城"),
+                secondaryKeywords = listOf("生意", "商会"),
+                selective = true,
+                matchMode = WorldBookMatchMode.CONTAINS,
+            ),
+            sourceText = "我准备去白塔城做生意",
+        )
+
+        assertTrue(preview.overallMatched)
+        assertEquals(listOf("白塔城"), preview.primaryHits)
+        assertEquals(listOf("生意"), preview.secondaryHits)
+    }
+
+    @Test
+    fun previewHit_alwaysActiveBypassesPrimaryKeywordMiss() {
+        val preview = matcher.previewHit(
+            entry = WorldBookEntry(
+                id = "e1",
+                title = "t",
+                content = "c",
+                keywords = listOf("白塔城"),
+                alwaysActive = true,
+                matchMode = WorldBookMatchMode.CONTAINS,
+            ),
+            sourceText = "完全不相关的内容",
+        )
+
+        assertTrue("alwaysActive 条目不应该因为主关键词未命中被判 miss", preview.overallMatched)
+        assertTrue(preview.primaryHits.isEmpty())
     }
 }
