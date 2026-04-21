@@ -149,6 +149,11 @@ internal fun NavGraphBuilder.registerSettingsDataRoutes(
             onNavigateBack = {
                 navController.popBackStack()
             },
+            onOpenAssistantMount = {
+                navController.navigate(AppRoutes.SETTINGS_ASSISTANTS) {
+                    launchSingleTop = true
+                }
+            },
         )
     }
 

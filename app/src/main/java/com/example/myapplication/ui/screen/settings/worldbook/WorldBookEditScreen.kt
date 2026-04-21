@@ -71,6 +71,7 @@ fun WorldBookEditScreen(
     onSave: (WorldBookEntry) -> Unit,
     onDelete: (String) -> Unit,
     onNavigateBack: () -> Unit,
+    onOpenAssistantMount: () -> Unit = {},
 ) {
     val palette = rememberSettingsPalette()
     val outlineColors = rememberSettingsOutlineColors()
@@ -318,6 +319,9 @@ fun WorldBookEditScreen(
                                     style = MaterialTheme.typography.bodySmall,
                                     color = palette.body,
                                 )
+                                androidx.compose.material3.TextButton(onClick = onOpenAssistantMount) {
+                                    Text("去助手页挂载")
+                                }
                             }
 
                             WorldBookScopeType.ASSISTANT -> {
