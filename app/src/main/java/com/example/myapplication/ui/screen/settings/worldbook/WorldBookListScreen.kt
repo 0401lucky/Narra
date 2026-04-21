@@ -1,21 +1,26 @@
 package com.example.myapplication.ui.screen.settings.worldbook
 
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
+import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.MenuBook
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Upload
 import androidx.compose.material3.Icon
@@ -29,7 +34,6 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontWeight
@@ -181,12 +185,18 @@ fun WorldBookListScreen(
     }
 }
 
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 internal fun WorldBookBookCard(
     book: WorldBookBook,
     onClick: () -> Unit,
 ) {
     val palette = rememberSettingsPalette()
+    val spine = bookSpineColor(book.id)
+    val enabledCount = book.enabledEntryCount
+    val hasRegex = book.regexEntryCount > 0
+    val latestUpdate = book.entries.maxOfOrNull { it.updatedAt } ?: 0L
+    val relative = formatRelativeTime(latestUpdate)
 
     Surface(
         modifier = Modifier
@@ -198,70 +208,73 @@ internal fun WorldBookBookCard(
         border = BorderStroke(0.5.dp, palette.border.copy(alpha = 0.4f)),
         shadowElevation = 0.dp,
     ) {
-        Column(
-            modifier = Modifier.padding(horizontal = 18.dp, vertical = 18.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp),
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(IntrinsicSize.Min),
         ) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(12.dp),
+            Box(
+                modifier = Modifier
+                    .padding(vertical = 14.dp)
+                    .padding(start = 14.dp)
+                    .width(6.dp)
+                    .fillMaxHeight()
+                    .clip(RoundedCornerShape(3.dp))
+                    .background(spine),
+            )
+            Column(
+                modifier = Modifier
+                    .padding(start = 12.dp, end = 18.dp, top = 16.dp, bottom = 14.dp)
+                    .fillMaxWidth(),
+                verticalArrangement = Arrangement.spacedBy(8.dp),
             ) {
-                Surface(
-                    shape = RoundedCornerShape(16.dp),
-                    color = palette.subtleChip,
-                    contentColor = palette.subtleChipContent,
-                ) {
-                    Icon(
-                        imageVector = Icons.AutoMirrored.Filled.MenuBook,
-                        contentDescription = null,
-                        modifier = Modifier.padding(12.dp),
-                    )
-                }
-                Column(
-                    modifier = Modifier.weight(1f),
-                    verticalArrangement = Arrangement.spacedBy(4.dp),
-                ) {
-                    Text(
-                        text = book.name,
-                        style = MaterialTheme.typography.titleMedium,
-                        color = palette.title,
-                        fontWeight = FontWeight.SemiBold,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
-                    )
+                Text(
+                    text = book.name,
+                    style = MaterialTheme.typography.titleMedium,
+                    color = palette.title,
+                    fontWeight = FontWeight.SemiBold,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
+                if (book.previewText.isNotBlank()) {
                     Text(
                         text = book.previewText,
-                        style = MaterialTheme.typography.bodyMedium,
+                        style = MaterialTheme.typography.bodySmall,
                         color = palette.body,
                         maxLines = 2,
                         overflow = TextOverflow.Ellipsis,
                     )
                 }
-            }
-
-            Row(
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                SettingsStatusPill(
-                    text = "${book.entryCount} 条条目",
-                    containerColor = palette.surfaceTint,
-                    contentColor = palette.body,
-                )
-                if (book.enabledEntryCount != book.entryCount) {
+                FlowRow(
+                    horizontalArrangement = Arrangement.spacedBy(6.dp),
+                    verticalArrangement = Arrangement.spacedBy(6.dp),
+                ) {
                     SettingsStatusPill(
-                        text = "启用 ${book.enabledEntryCount}",
+                        text = "${book.entryCount} 条条目",
                         containerColor = palette.surfaceTint,
                         contentColor = palette.body,
                     )
-                }
-                if (book.regexEntryCount > 0) {
-                    SettingsStatusPill(
-                        text = "正则 ${book.regexEntryCount}",
-                        containerColor = palette.accentSoft,
-                        contentColor = palette.accent,
-                    )
+                    if (enabledCount != book.entryCount) {
+                        SettingsStatusPill(
+                            text = "启用 $enabledCount",
+                            containerColor = palette.accentSoft,
+                            contentColor = palette.accent,
+                        )
+                    }
+                    if (relative.isNotEmpty()) {
+                        SettingsStatusPill(
+                            text = relative,
+                            containerColor = palette.surfaceTint,
+                            contentColor = palette.body,
+                        )
+                    }
+                    if (hasRegex) {
+                        SettingsStatusPill(
+                            text = "含正则",
+                            containerColor = palette.accentSoft,
+                            contentColor = palette.accent,
+                        )
+                    }
                 }
             }
         }
