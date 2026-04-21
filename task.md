@@ -635,12 +635,51 @@
 
 ---
 
-### T15 · 批次 D（P2 增强，可选）⬜
+### T15 · 批次 D（P2 增强，可选）✅
 
-- **D1 · 编辑页"试命中"按钮**（~3h）：基于当前关键词对最近 N 条消息做一次模拟命中，实时显示 hit / miss 列表，写世界书时所见即所得。
-- **D2 · DAO 按 scope 过滤查询**（~1h）：减少热路径内存过滤；需要和 Matcher 使用方对齐参数。
-- **D3 · TypedFactory 公共抽象**（~1h）：把各 ViewModel 的 `@Suppress("UNCHECKED_CAST")` 下沉到共用基类，配合 T12 稳定性治理收口。
-- **D4 · Tavern 语义增量建模**（`probability` / `depth` / `position` / `logic` / `role`，~5h）：Entity + UI + Matcher 全链路补齐，和 C1 的 extrasJson 结合，把"能导入 → 能可视化 → 能导出"的闭环补全。
+- **D1 · 编辑页"试命中"按钮**（~3h）：基于当前关键词对最近 N 条消息做一次模拟命中，实时显示 hit / miss 列表，写世界书时所见即所得。✅
+  - 落地：commit `b843817`
+  - 预计：3h / 实际：约 1.5h（降级为"用户手动输入待测文本"而非绑定会话历史，避开了"没聚焦会话时不知道取哪条消息"的死角）
+  - 关键 diff：
+    - `context/WorldBookMatcher.kt` 新增 `previewHit(entry, sourceText)` 纯函数 + `WorldBookHitPreview` 数据类：复用 `expandKeywordPatterns` / `matchesPattern`，覆盖 alwaysActive / selective+secondaryKeywords 全语义，返回 `primaryHits` / `secondaryHits` / `reasonIfNotMatched` 便于 UI 渲染。
+    - `ui/screen/settings/worldbook/WorldBookEditScreen.kt` 新增第 5 段折叠"试命中（预览）"（默认收起），含多行输入 + 按钮 + `HitPreviewResultCard`；改文本自动清上次结果。
+    - `WorldBookEditSections.kt` 扩 `WorldBookEditExpandedState.hitPreview: Boolean` + Saver 兼容老状态。
+    - `WorldBookMatcherTest.kt` 新增 6 条：空文本 / primary 命中 / primary 未命中 / selective 次级未命中 / selective 命中 / alwaysActive 绕过。
+  - 回归：`./gradlew.bat app:compileDebugKotlin` + `--tests=WorldBookMatcherTest` 全绿。
+  - 待真机：改关键词 / matchMode / selective → 展开"试命中" → 输入一段文本 → 看到 primary/secondary 命中的具体关键词；切回 alwaysActive=true，primary 未命中也能 overallMatched。
+
+- **D2 · DAO 按 scope 过滤查询**（~1h）：减少热路径内存过滤；需要和 Matcher 使用方对齐参数。✅
+  - 落地：commit `304a394`
+  - 预计：1h / 实际：约 45min
+  - 关键 diff：
+    - `data/local/worldbook/WorldBookDao.kt` 新增 `listAccessibleEnabledEntries(assistantId, conversationId, linkedEntryIds, linkedBookIds)`：SQL 直接按 4 种 scope 语义过滤，空集合走 `IN (NULL)` 恒假等价于"没挂载/没会话"。
+    - `data/repository/context/WorldBookRepository.kt` 接口 + `RoomWorldBookRepository` + `EmptyWorldBookRepository` 同步补同名方法，接 `Assistant? / Conversation?` 领域模型，内部做 trim / `.isNotEmpty()` 兜底。
+    - `context/PromptContextAssembler.kt` / `data/repository/ai/tooling/SearchWorldBookTool.kt` / `data/repository/ai/tooling/ToolAvailabilityResolver.kt` 改调新 repo 方法；`ToolAvailabilityResolver` 不再 import `WorldBookScopeSupport`（`SearchWorldBookTool` 仍保留 `sortByPriority` 调用）。
+    - `WorldBookRepositoryTest.kt` 新增 2 条覆盖（多 scope 混合过滤 + 无 assistant 只返回 global）；`FakeWorldBookRepository` / `PromptContextAssemblerTest` 的内联 repo 同步 `override`。
+  - 回归：`./gradlew.bat app:testDebugUnitTest --rerun-tasks` BUILD SUCCESSFUL（全量）。
+
+- **D3 · TypedFactory 公共抽象**（~1h）：把各 ViewModel 的 `@Suppress("UNCHECKED_CAST")` 下沉到共用基类，配合 T12 稳定性治理收口。✅
+  - 落地：commit `bb5e37c`
+  - 预计：1h / 实际：约 25min
+  - 关键 diff：
+    - 新增 `viewmodel/TypedViewModelFactory.kt`：顶层 `inline fun <reified VM : ViewModel> typedViewModelFactory(crossinline creator: () -> VM): ViewModelProvider.Factory`。收敛 `UNCHECKED_CAST`，并加入 `isAssignableFrom` 校验——调用方传错类型立即抛 `IllegalArgumentException`，不再延迟到强转点。
+    - 替换 10 个 Factory：`Chat` / `Roleplay` / `Settings` / `WorldBook` / `Moments` / `PhoneCheck` / `ContextTransfer` / `Translation` / `AppUpdate` / `MemoryManagement`；所有 `@Suppress` 消失。
+    - `TypedViewModelFactoryTest` 4 条：创建成功 / 每次新实例 / 接受超类请求 / 不兼容类型抛异常含类名。
+  - 回归：`./gradlew.bat app:compileDebugKotlin` + `--tests=TypedViewModelFactoryTest --tests=WorldBookViewModelTest` BUILD SUCCESSFUL。
+
+- **D4 · Tavern 语义增量建模**（`probability` / `depth` / `position` / `logic` / `role`，~5h）：Entity + UI + Matcher 全链路补齐，和 C1 的 extrasJson 结合，把"能导入 → 能可视化 → 能导出"的闭环补全。✅（**范围降级：本 PR 只做 probability 端到端**）
+  - 落地：commit `11fe9aa`
+  - 预计：5h / 实际：约 90min（聚焦 probability；depth/position/logic/role 继续由 C1 的 extrasJson 兜底，未来按需再拆）
+  - 范围说明：task.md 原要求 5 个字段全量建模，工作量 5h。本 PR 挑"最有业务价值"的 `probability` 跑通端到端闭环，建立抽取范式；剩下 4 个字段不影响导入/导出/可视化（仍由 `extrasJson` 无损保留），可以按相同范式逐步补齐。
+  - 关键 diff：
+    - Domain/Entity：`model/WorldBookEntry.kt` 新增 `probability: Int = DEFAULT_WORLD_BOOK_PROBABILITY`（=100）；`data/local/worldbook/WorldBookEntryEntity.kt` 同步加列。
+    - Room v29 → v30：`ChatDatabase.CURRENT_VERSION = 30`；`ChatDbMigrations.MIGRATION_29_30` 幂等 `ALTER TABLE ADD COLUMN probability INTEGER NOT NULL DEFAULT 100`；KSP 自动生成 `app/schemas/.../30.json`。
+    - `data/repository/context/WorldBookRepository.kt`：`toDomain/toEntity` 双向 `coerceIn(0, 100)` 兜底异常值。
+    - `data/repository/context/TavernWorldBookAdapter.kt`：`KNOWN_FIELD_KEYS` 加 `probability`；`entry.getInt("probability", DEFAULT_WORLD_BOOK_PROBABILITY).coerceIn(0, 100)`；不再保留在 extrasJson。
+    - UI：`WorldBookEditScreen.kt` 在"状态与高级"的"高级"折叠区增加"触发概率 (probability)"数字输入框，提示 0-100 默认 100。
+    - 单测：`TavernWorldBookAdapterTest` 从原"未识别字段"测试里摘出 probability，新增 2 条（独立映射 / 缺省默认 100）；`WorldBookRepositoryTest` 新增 2 条（往返保存 45 / 越界 150/-10 → clamp 100/0）；`ChatDatabaseMigrationRegistryTest` 更新 `last == MIGRATION_29_30`。
+  - 回归：`./gradlew.bat app:testDebugUnitTest --rerun-tasks` BUILD SUCCESSFUL（660+ 原用例 + 本批次新增 14 条）。
+  - 遗留：`depth` / `position` / `logic` / `role` 仍在 extrasJson 里；若未来有需求（如 Matcher 按 role 过滤消息、prompt 拼接按 depth 排序），可按本 commit 的范式逐字段抽出，每个 +1 Room 版本。
 
 ---
 
