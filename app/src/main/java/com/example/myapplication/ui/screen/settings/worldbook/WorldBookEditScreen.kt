@@ -43,6 +43,7 @@ import com.example.myapplication.model.Assistant
 import com.example.myapplication.model.Conversation
 import com.example.myapplication.model.DEFAULT_CONVERSATION_TITLE
 import com.example.myapplication.model.WorldBookEntry
+import com.example.myapplication.model.WorldBookMatchMode
 import com.example.myapplication.model.WorldBookScopeType
 import com.example.myapplication.ui.component.NarraAlertDialog
 import com.example.myapplication.ui.component.worldbook.KeywordChipInput
@@ -58,6 +59,12 @@ private val StringListSaver = listSaver<List<String>, String>(
     save = { it.toList() },
     restore = { it },
 )
+
+private val WorldBookMatchModeSaver: androidx.compose.runtime.saveable.Saver<WorldBookMatchMode, *> =
+    androidx.compose.runtime.saveable.Saver(
+        save = { it.name },
+        restore = { raw -> WorldBookMatchMode.valueOf(raw) },
+    )
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -98,6 +105,9 @@ fun WorldBookEditScreen(
     var alwaysActive by rememberSaveable { mutableStateOf(entry?.alwaysActive ?: false) }
     var selective by rememberSaveable { mutableStateOf(entry?.selective ?: false) }
     var caseSensitive by rememberSaveable { mutableStateOf(entry?.caseSensitive ?: false) }
+    var matchMode by rememberSaveable(stateSaver = WorldBookMatchModeSaver) {
+        mutableStateOf(entry?.matchMode ?: WorldBookMatchMode.WORD_CJK)
+    }
     var advancedExpanded by rememberSaveable { mutableStateOf(false) }
     var scopeType by rememberSaveable { mutableStateOf(entry?.scopeType ?: WorldBookScopeType.GLOBAL) }
     var scopeId by rememberSaveable { mutableStateOf(entry?.scopeId ?: "") }
@@ -126,6 +136,7 @@ fun WorldBookEditScreen(
                 secondaryKeywords = secondaryKeywords,
                 selective = selective,
                 caseSensitive = caseSensitive,
+                matchMode = matchMode,
                 insertionOrder = insertionOrderText.trim().toIntOrNull() ?: 0,
                 enabled = enabled,
                 alwaysActive = alwaysActive,
@@ -223,6 +234,38 @@ fun WorldBookEditScreen(
                         modifier = Modifier.padding(horizontal = 18.dp, vertical = 16.dp),
                         verticalArrangement = Arrangement.spacedBy(16.dp),
                     ) {
+                        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                            Text(
+                                text = "匹配模式",
+                                style = MaterialTheme.typography.titleSmall,
+                                color = palette.title,
+                            )
+                            FlowRow(
+                                horizontalArrangement = Arrangement.spacedBy(10.dp),
+                                verticalArrangement = Arrangement.spacedBy(10.dp),
+                            ) {
+                                WorldBookMatchMode.entries.forEach { mode ->
+                                    FilterChip(
+                                        selected = matchMode == mode,
+                                        onClick = { matchMode = mode },
+                                        label = { Text(mode.label) },
+                                        colors = FilterChipDefaults.filterChipColors(
+                                            selectedContainerColor = palette.accentSoft,
+                                            selectedLabelColor = palette.accent,
+                                        ),
+                                    )
+                                }
+                            }
+                            Text(
+                                text = when (matchMode) {
+                                    WorldBookMatchMode.CONTAINS -> "子串匹配，任何出现都算命中"
+                                    WorldBookMatchMode.WORD_CJK -> "CJK 感知整词：中文保持 contains，英文要求词边界"
+                                    WorldBookMatchMode.REGEX -> "关键词整条作为正则直接匹配"
+                                },
+                                style = MaterialTheme.typography.bodySmall,
+                                color = palette.body,
+                            )
+                        }
                         KeywordChipInput(
                             label = "主关键词",
                             values = keywords,
