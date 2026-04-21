@@ -64,5 +64,22 @@ class WorldBookRepositoryTest {
         override suspend fun deleteEntry(entryId: String) {
             stream.value = stream.value.filterNot { it.id == entryId }
         }
+        override suspend fun updateBookName(bookId: String, newName: String, updatedAt: Long): Int {
+            var changed = 0
+            stream.value = stream.value.map { entity ->
+                if (entity.bookId == bookId) {
+                    changed++
+                    entity.copy(sourceBookName = newName, updatedAt = updatedAt)
+                } else {
+                    entity
+                }
+            }
+            return changed
+        }
+        override suspend fun deleteByBookId(bookId: String): Int {
+            val before = stream.value.size
+            stream.value = stream.value.filterNot { it.bookId == bookId }
+            return before - stream.value.size
+        }
     }
 }

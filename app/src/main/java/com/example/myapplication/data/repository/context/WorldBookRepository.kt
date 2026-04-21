@@ -24,6 +24,10 @@ interface WorldBookRepository {
     suspend fun upsertEntry(entry: WorldBookEntry)
 
     suspend fun deleteEntry(entryId: String)
+
+    suspend fun renameBook(bookId: String, newBookName: String)
+
+    suspend fun deleteBook(bookId: String)
 }
 
 class RoomWorldBookRepository(
@@ -51,16 +55,28 @@ class RoomWorldBookRepository(
     }
 
     override suspend fun upsertEntry(entry: WorldBookEntry) {
-        worldBookDao.upsertEntry(
-            toEntity(
-                entry = entry,
-                existingEntries = worldBookDao.listEntries(),
-            ),
-        )
+        worldBookDao.upsertEntry(toEntity(entry))
     }
 
     override suspend fun deleteEntry(entryId: String) {
         worldBookDao.deleteEntry(entryId)
+    }
+
+    override suspend fun renameBook(bookId: String, newBookName: String) {
+        val normalizedBookId = bookId.trim()
+        val normalizedName = newBookName.trim()
+        if (normalizedBookId.isBlank() || normalizedName.isBlank()) return
+        worldBookDao.updateBookName(
+            bookId = normalizedBookId,
+            newName = normalizedName,
+            updatedAt = System.currentTimeMillis(),
+        )
+    }
+
+    override suspend fun deleteBook(bookId: String) {
+        val normalizedBookId = bookId.trim()
+        if (normalizedBookId.isBlank()) return
+        worldBookDao.deleteByBookId(normalizedBookId)
     }
 
     private fun toDomain(entity: WorldBookEntryEntity): WorldBookEntry {
@@ -86,19 +102,13 @@ class RoomWorldBookRepository(
         )
     }
 
-    private fun toEntity(
-        entry: WorldBookEntry,
-        existingEntries: List<WorldBookEntryEntity>,
-    ): WorldBookEntryEntity {
+    private fun toEntity(entry: WorldBookEntry): WorldBookEntryEntity {
         val normalizedSourceBookName = entry.sourceBookName.trim()
         val resolvedBookId = entry.bookId.trim().ifBlank {
-            existingEntries.firstOrNull { existing ->
-                existing.id != entry.id &&
-                    existing.sourceBookName.trim().equals(normalizedSourceBookName, ignoreCase = true) &&
-                    existing.bookId.isNotBlank()
-            }?.bookId.orEmpty().ifBlank {
-                normalizedSourceBookName.takeIf { it.isNotBlank() }?.let(::deriveWorldBookBookId).orEmpty()
-            }
+            normalizedSourceBookName
+                .takeIf { it.isNotBlank() }
+                ?.let(::deriveWorldBookBookId)
+                .orEmpty()
         }
         return WorldBookEntryEntity(
             id = entry.id,
@@ -150,4 +160,8 @@ object EmptyWorldBookRepository : WorldBookRepository {
     override suspend fun upsertEntry(entry: WorldBookEntry) = Unit
 
     override suspend fun deleteEntry(entryId: String) = Unit
+
+    override suspend fun renameBook(bookId: String, newBookName: String) = Unit
+
+    override suspend fun deleteBook(bookId: String) = Unit
 }

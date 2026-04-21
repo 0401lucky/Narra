@@ -9,6 +9,7 @@ class FakeWorldBookRepository(
     initialEntries: List<WorldBookEntry> = emptyList(),
 ) : WorldBookRepository {
     private val entriesState = MutableStateFlow(initialEntries)
+    var failNextBookMutation: Boolean = false
 
     override fun observeEntries(): Flow<List<WorldBookEntry>> = entriesState
 
@@ -29,5 +30,30 @@ class FakeWorldBookRepository(
 
     override suspend fun deleteEntry(entryId: String) {
         entriesState.value = entriesState.value.filterNot { it.id == entryId }
+    }
+
+    override suspend fun renameBook(bookId: String, newBookName: String) {
+        if (failNextBookMutation) {
+            failNextBookMutation = false
+            throw RuntimeException("模拟重命名失败")
+        }
+        val normalizedBookId = bookId.trim()
+        val normalizedName = newBookName.trim()
+        entriesState.value = entriesState.value.map { entry ->
+            if (entry.resolvedBookId() == normalizedBookId) {
+                entry.copy(sourceBookName = normalizedName, updatedAt = System.currentTimeMillis())
+            } else {
+                entry
+            }
+        }
+    }
+
+    override suspend fun deleteBook(bookId: String) {
+        if (failNextBookMutation) {
+            failNextBookMutation = false
+            throw RuntimeException("模拟删除失败")
+        }
+        val normalizedBookId = bookId.trim()
+        entriesState.value = entriesState.value.filterNot { it.resolvedBookId() == normalizedBookId }
     }
 }

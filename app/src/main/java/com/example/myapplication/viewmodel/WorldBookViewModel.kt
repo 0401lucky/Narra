@@ -77,21 +77,13 @@ class WorldBookViewModel(
         if (normalizedBookId.isBlank() || renamedBook.isBlank()) return
         viewModelScope.launch {
             _uiState.update { it.copy(isSaving = true, message = null) }
-            val now = System.currentTimeMillis()
-            repository.listEntries()
-                .filter { it.resolvedBookId() == normalizedBookId }
-                .forEach { entry ->
-                    repository.upsertEntry(
-                        entry.copy(
-                            sourceBookName = renamedBook,
-                            updatedAt = now,
-                        ),
-                    )
-                }
+            val outcome = runCatching {
+                repository.renameBook(normalizedBookId, renamedBook)
+            }
             _uiState.update {
                 it.copy(
                     isSaving = false,
-                    message = "世界书已重命名",
+                    message = if (outcome.isSuccess) "世界书已重命名" else "重命名失败，请重试",
                 )
             }
         }
@@ -102,15 +94,13 @@ class WorldBookViewModel(
         if (normalizedBookId.isBlank()) return
         viewModelScope.launch {
             _uiState.update { it.copy(isSaving = true, message = null) }
-            repository.listEntries()
-                .filter { it.resolvedBookId() == normalizedBookId }
-                .forEach { entry ->
-                    repository.deleteEntry(entry.id)
-                }
+            val outcome = runCatching {
+                repository.deleteBook(normalizedBookId)
+            }
             _uiState.update {
                 it.copy(
                     isSaving = false,
-                    message = "整本世界书已删除",
+                    message = if (outcome.isSuccess) "整本世界书已删除" else "删除失败，请重试",
                 )
             }
         }

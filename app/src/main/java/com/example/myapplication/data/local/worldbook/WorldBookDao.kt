@@ -50,4 +50,16 @@ interface WorldBookDao {
 
     @Query("DELETE FROM worldbook_entries WHERE id = :entryId")
     suspend fun deleteEntry(entryId: String)
+
+    @Query(
+        """
+        UPDATE worldbook_entries
+        SET sourceBookName = :newName, updatedAt = :updatedAt
+        WHERE bookId = :bookId
+        """,
+    )
+    suspend fun updateBookName(bookId: String, newName: String, updatedAt: Long): Int
+
+    @Query("DELETE FROM worldbook_entries WHERE bookId = :bookId")
+    suspend fun deleteByBookId(bookId: String): Int
 }

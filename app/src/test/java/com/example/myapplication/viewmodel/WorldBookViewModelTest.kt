@@ -93,4 +93,38 @@ class WorldBookViewModelTest {
         assertTrue(remainingEntries.all { it.sourceBookName == "保留书" })
         assertEquals("整本世界书已删除", viewModel.uiState.value.message)
     }
+
+    @Test
+    fun renameBook_failureEmitsRetryMessage() = runTest(mainDispatcherRule.dispatcher.scheduler) {
+        val repository = FakeWorldBookRepository(
+            initialEntries = listOf(
+                WorldBookEntry(id = "e1", bookId = "book-1", title = "t", content = "c", sourceBookName = "旧"),
+            ),
+        ).apply { failNextBookMutation = true }
+        val viewModel = WorldBookViewModel(repository)
+
+        advanceUntilIdle()
+        viewModel.renameBook("book-1", "新")
+        advanceUntilIdle()
+
+        assertEquals("重命名失败，请重试", viewModel.uiState.value.message)
+        assertEquals("旧", repository.listEntries().first().sourceBookName)
+    }
+
+    @Test
+    fun deleteBook_failureEmitsRetryMessage() = runTest(mainDispatcherRule.dispatcher.scheduler) {
+        val repository = FakeWorldBookRepository(
+            initialEntries = listOf(
+                WorldBookEntry(id = "e1", bookId = "book-1", title = "t", content = "c", sourceBookName = "目标"),
+            ),
+        ).apply { failNextBookMutation = true }
+        val viewModel = WorldBookViewModel(repository)
+
+        advanceUntilIdle()
+        viewModel.deleteBook("book-1")
+        advanceUntilIdle()
+
+        assertEquals("删除失败，请重试", viewModel.uiState.value.message)
+        assertEquals(1, repository.listEntries().size)
+    }
 }
