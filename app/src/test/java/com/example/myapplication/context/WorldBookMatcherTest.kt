@@ -5,6 +5,7 @@ import com.example.myapplication.model.ChatMessage
 import com.example.myapplication.model.Conversation
 import com.example.myapplication.model.MessageRole
 import com.example.myapplication.model.WorldBookEntry
+import com.example.myapplication.model.WorldBookMatchMode
 import com.example.myapplication.model.WorldBookScopeType
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
@@ -453,5 +454,65 @@ class WorldBookMatcherTest {
             recentMessages = emptyList(),
         )
         assertEquals(listOf("匹配 Bar"), result.entries.map { it.title })
+    }
+
+    @Test
+    fun match_matchModeContains_keepsSubstringBehavior() {
+        val entry = WorldBookEntry(
+            id = "entry-1",
+            title = "foo 条目",
+            content = "A",
+            keywords = listOf("foo"),
+            caseSensitive = false,
+            matchMode = WorldBookMatchMode.CONTAINS,
+        )
+        val result = matcher.match(
+            entries = listOf(entry),
+            assistant = Assistant(id = "assistant-1", worldBookScanDepth = 0),
+            conversation = Conversation(id = "c1", createdAt = 1L, updatedAt = 1L),
+            userInputText = "football league",
+            recentMessages = emptyList(),
+        )
+        assertEquals(listOf("foo 条目"), result.entries.map { it.title })
+    }
+
+    @Test
+    fun match_matchModeWordCjk_requiresBoundaryForLatin() {
+        val entry = WorldBookEntry(
+            id = "entry-1",
+            title = "foo 条目",
+            content = "A",
+            keywords = listOf("foo"),
+            caseSensitive = false,
+            matchMode = WorldBookMatchMode.WORD_CJK,
+        )
+        val result = matcher.match(
+            entries = listOf(entry),
+            assistant = Assistant(id = "assistant-1", worldBookScanDepth = 0),
+            conversation = Conversation(id = "c1", createdAt = 1L, updatedAt = 1L),
+            userInputText = "football league",
+            recentMessages = emptyList(),
+        )
+        assertTrue(result.entries.isEmpty())
+    }
+
+    @Test
+    fun match_matchModeRegex_treatsKeywordAsRegex() {
+        val entry = WorldBookEntry(
+            id = "entry-1",
+            title = "正则条目",
+            content = "A",
+            keywords = listOf("foo|bar"),
+            caseSensitive = false,
+            matchMode = WorldBookMatchMode.REGEX,
+        )
+        val result = matcher.match(
+            entries = listOf(entry),
+            assistant = Assistant(id = "assistant-1", worldBookScanDepth = 0),
+            conversation = Conversation(id = "c1", createdAt = 1L, updatedAt = 1L),
+            userInputText = "BAR at dusk",
+            recentMessages = emptyList(),
+        )
+        assertEquals(listOf("正则条目"), result.entries.map { it.title })
     }
 }
