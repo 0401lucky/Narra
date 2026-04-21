@@ -16,6 +16,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
@@ -25,7 +26,10 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Upload
+import androidx.compose.material.icons.outlined.AutoStories
 import androidx.compose.material.icons.outlined.Close
+import androidx.compose.material.icons.outlined.FilterAlt
+import androidx.compose.material.icons.outlined.SearchOff
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.Icon
@@ -35,6 +39,7 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -42,15 +47,16 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.Saver
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.example.myapplication.model.WorldBookEntry
 import com.example.myapplication.ui.component.worldbook.looksLikeWorldBookRegexLiteral
 import com.example.myapplication.ui.screen.settings.AnimatedSettingButton
-import com.example.myapplication.ui.screen.settings.SettingsHintCard
 import com.example.myapplication.ui.screen.settings.SettingsPageIntro
 import com.example.myapplication.ui.screen.settings.SettingsPalette
 import com.example.myapplication.ui.screen.settings.SettingsScreenPadding
@@ -201,16 +207,27 @@ fun WorldBookListScreen(
             }
 
             if (filteredBooks.isEmpty() && filteredStandaloneEntries.isEmpty()) {
-                item(key = "emptyHint") {
-                    SettingsHintCard(
-                        title = if (searchQuery.isBlank()) "还没有世界书" else "没有匹配结果",
-                        body = if (searchQuery.isBlank()) {
-                            "导入带世界书的角色卡后，这里会先显示整本世界书；也可以直接点右上角新增单条世界书。"
-                        } else {
-                            "换个关键词试试，或者清空搜索条件。"
+                val variant = when {
+                    entries.isEmpty() -> WorldBookEmptyVariant.GLOBAL_EMPTY
+                    searchQuery.isNotBlank() -> WorldBookEmptyVariant.SEARCH_EMPTY
+                    activeFilterCount(scopeFilter, statusFilter, bookIdFilter) > 0 ->
+                        WorldBookEmptyVariant.FILTERED_EMPTY
+                    else -> WorldBookEmptyVariant.GLOBAL_EMPTY
+                }
+                item(key = "emptyState") {
+                    WorldBookListEmptyState(
+                        variant = variant,
+                        onClear = when (variant) {
+                            WorldBookEmptyVariant.SEARCH_EMPTY -> { { searchQuery = "" } }
+                            WorldBookEmptyVariant.FILTERED_EMPTY -> {
+                                {
+                                    scopeFilter = WorldBookListScopeFilter.ALL
+                                    statusFilter = WorldBookListStatusFilter.ALL
+                                    bookIdFilter = ""
+                                }
+                            }
+                            WorldBookEmptyVariant.GLOBAL_EMPTY -> { {} }
                         },
-                        containerColor = palette.accentSoft,
-                        contentColor = palette.accent,
                     )
                 }
             } else {
@@ -548,3 +565,76 @@ private fun entryHasRegexKeyword(entry: WorldBookEntry): Boolean {
     return (entry.keywords + entry.aliases + entry.secondaryKeywords)
         .any(::looksLikeWorldBookRegexLiteral)
 }
+
+/**
+ * 列表页空态的三种来源。
+ * - GLOBAL_EMPTY：整个仓库无世界书
+ * - FILTERED_EMPTY：设了筛选但没数据
+ * - SEARCH_EMPTY：搜索无结果
+ */
+private enum class WorldBookEmptyVariant { GLOBAL_EMPTY, FILTERED_EMPTY, SEARCH_EMPTY }
+
+@Composable
+private fun WorldBookListEmptyState(
+    variant: WorldBookEmptyVariant,
+    onClear: () -> Unit,
+) {
+    val palette = rememberSettingsPalette()
+    val spec = when (variant) {
+        WorldBookEmptyVariant.GLOBAL_EMPTY -> EmptyStateSpec(
+            icon = Icons.Outlined.AutoStories,
+            title = "还没有世界书",
+            body = "导入一本角色卡或手动新增条目开始使用。",
+            actionLabel = null,
+        )
+        WorldBookEmptyVariant.FILTERED_EMPTY -> EmptyStateSpec(
+            icon = Icons.Outlined.FilterAlt,
+            title = "当前筛选下没有条目",
+            body = "试试换个筛选条件，或清掉筛选。",
+            actionLabel = "清筛选",
+        )
+        WorldBookEmptyVariant.SEARCH_EMPTY -> EmptyStateSpec(
+            icon = Icons.Outlined.SearchOff,
+            title = "没有匹配结果",
+            body = "换个关键词试试。",
+            actionLabel = "清空搜索",
+        )
+    }
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 48.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(10.dp),
+    ) {
+        Icon(
+            imageVector = spec.icon,
+            contentDescription = null,
+            tint = palette.body,
+            modifier = Modifier.size(48.dp),
+        )
+        Text(
+            text = spec.title,
+            style = MaterialTheme.typography.titleSmall,
+            color = palette.title,
+        )
+        Text(
+            text = spec.body,
+            style = MaterialTheme.typography.bodySmall,
+            color = palette.body,
+            textAlign = TextAlign.Center,
+        )
+        if (spec.actionLabel != null) {
+            TextButton(onClick = onClear) {
+                Text(text = spec.actionLabel, color = palette.accent)
+            }
+        }
+    }
+}
+
+private data class EmptyStateSpec(
+    val icon: androidx.compose.ui.graphics.vector.ImageVector,
+    val title: String,
+    val body: String,
+    val actionLabel: String?,
+)
