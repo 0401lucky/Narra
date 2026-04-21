@@ -18,12 +18,16 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Upload
 import androidx.compose.material.icons.outlined.Close
+import androidx.compose.material3.FilterChip
+import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -34,6 +38,8 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.Saver
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
@@ -65,21 +71,39 @@ fun WorldBookListScreen(
 ) {
     val palette = rememberSettingsPalette()
     var searchQuery by rememberSaveable { mutableStateOf("") }
-    val books = buildWorldBookBooks(entries)
-    val standaloneEntries = entries
-        .filter { it.sourceBookName.isBlank() }
-        .sortedWith(
-            compareBy<WorldBookEntry>(
-                { it.insertionOrder },
-                { it.createdAt },
-            ).thenByDescending { it.updatedAt },
-        )
-
-    val filteredBooks = books.filter { book ->
-        book.matchesSearch(searchQuery)
+    var scopeFilter by rememberSaveable(stateSaver = WorldBookListScopeFilterSaver) {
+        mutableStateOf(WorldBookListScopeFilter.ALL)
     }
-    val filteredStandaloneEntries = standaloneEntries.filter { entry ->
-        entry.matchesSearch(searchQuery)
+    var statusFilter by rememberSaveable(stateSaver = WorldBookListStatusFilterSaver) {
+        mutableStateOf(WorldBookListStatusFilter.ALL)
+    }
+    var bookIdFilter by rememberSaveable { mutableStateOf("") }
+
+    val postFilterEntries = remember(entries, searchQuery, scopeFilter, statusFilter, bookIdFilter) {
+        filterEntries(
+            entries = entries,
+            search = searchQuery,
+            scope = scopeFilter,
+            status = statusFilter,
+            bookIdFilter = bookIdFilter,
+        )
+    }
+    val filteredBooks = remember(postFilterEntries) { buildWorldBookBooks(postFilterEntries) }
+    val filteredStandaloneEntries = remember(postFilterEntries) {
+        postFilterEntries
+            .filter { it.sourceBookName.isBlank() }
+            .sortedWith(
+                compareBy<WorldBookEntry>(
+                    { it.insertionOrder },
+                    { it.createdAt },
+                ).thenByDescending { it.updatedAt },
+            )
+    }
+    val allBookOptions = remember(entries) {
+        buildList {
+            add("" to "全部")
+            buildWorldBookBooks(entries).forEach { book -> add(book.id to book.name) }
+        }
     }
 
     Scaffold(
@@ -149,6 +173,32 @@ fun WorldBookListScreen(
                 )
             }
 
+            item {
+                WorldBookFilterChipRow(
+                    label = "作用域",
+                    options = WorldBookListScopeFilter.values().map { it.label to (it == scopeFilter) },
+                    onSelect = { scopeFilter = WorldBookListScopeFilter.values()[it] },
+                )
+            }
+
+            item {
+                WorldBookFilterChipRow(
+                    label = "状态",
+                    options = WorldBookListStatusFilter.values().map { it.label to (it == statusFilter) },
+                    onSelect = { statusFilter = WorldBookListStatusFilter.values()[it] },
+                )
+            }
+
+            if (allBookOptions.size > 1) {
+                item {
+                    WorldBookFilterChipRow(
+                        label = "书",
+                        options = allBookOptions.map { (id, name) -> name to (id == bookIdFilter) },
+                        onSelect = { bookIdFilter = allBookOptions[it].first },
+                    )
+                }
+            }
+
             if (filteredBooks.isEmpty() && filteredStandaloneEntries.isEmpty()) {
                 item {
                     SettingsHintCard(
@@ -196,6 +246,49 @@ fun WorldBookListScreen(
         }
     }
 }
+
+/**
+ * 横向可滑动的一行筛选 chip：左侧 label + 右侧 LazyRow of FilterChip。
+ * 互斥单选，onSelect 传回选中索引。
+ */
+@Composable
+private fun WorldBookFilterChipRow(
+    label: String,
+    options: List<Pair<String, Boolean>>,
+    onSelect: (Int) -> Unit,
+) {
+    val palette = rememberSettingsPalette()
+    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+        Text(
+            text = label,
+            style = MaterialTheme.typography.labelMedium,
+            color = palette.body,
+        )
+        LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            itemsIndexed(options) { index, (optionLabel, selected) ->
+                FilterChip(
+                    selected = selected,
+                    onClick = { onSelect(index) },
+                    label = { Text(optionLabel) },
+                    colors = FilterChipDefaults.filterChipColors(
+                        selectedContainerColor = palette.accentSoft,
+                        selectedLabelColor = palette.accent,
+                    ),
+                )
+            }
+        }
+    }
+}
+
+private val WorldBookListScopeFilterSaver: Saver<WorldBookListScopeFilter, String> = Saver(
+    save = { it.name },
+    restore = { WorldBookListScopeFilter.valueOf(it) },
+)
+
+private val WorldBookListStatusFilterSaver: Saver<WorldBookListStatusFilter, String> = Saver(
+    save = { it.name },
+    restore = { WorldBookListStatusFilter.valueOf(it) },
+)
 
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
@@ -434,15 +527,6 @@ internal fun buildWorldBookBooks(entries: List<WorldBookEntry>): List<WorldBookB
                 { it.name.lowercase() },
             ),
         )
-}
-
-private fun WorldBookBook.matchesSearch(query: String): Boolean {
-    val normalizedQuery = query.trim()
-    if (normalizedQuery.isBlank()) {
-        return true
-    }
-    return name.contains(normalizedQuery, ignoreCase = true) ||
-        entries.any { it.matchesSearch(normalizedQuery) }
 }
 
 private fun entryHasRegexKeyword(entry: WorldBookEntry): Boolean {
