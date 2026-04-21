@@ -49,6 +49,43 @@ class WorldBookRepositoryTest {
         assertEquals("conv-1", saved?.scopeId)
     }
 
+    @Test
+    fun upsertEntry_persistsExtrasJsonAsIs() = runTest {
+        val dao = RecordingWorldBookDao()
+        val repository = RoomWorldBookRepository(dao)
+
+        repository.upsertEntry(
+            WorldBookEntry(
+                id = "entry-extras",
+                title = "t",
+                content = "c",
+                sourceBookName = "书",
+                extrasJson = """{"probability":80,"depth":3}""",
+            ),
+        )
+
+        assertEquals("""{"probability":80,"depth":3}""", dao.captured?.extrasJson)
+    }
+
+    @Test
+    fun toDomain_fallsBackToEmptyObjectWhenExtrasBlank() = runTest {
+        val dao = RecordingWorldBookDao()
+        val repository = RoomWorldBookRepository(dao)
+
+        repository.upsertEntry(
+            WorldBookEntry(
+                id = "entry-empty",
+                title = "t",
+                content = "c",
+                sourceBookName = "书",
+                extrasJson = "",
+            ),
+        )
+
+        val loaded = repository.getEntry("entry-empty")!!
+        assertEquals("{}", loaded.extrasJson)
+    }
+
     private class RecordingWorldBookDao : WorldBookDao {
         var captured: WorldBookEntryEntity? = null
         private val stream = MutableStateFlow<List<WorldBookEntryEntity>>(emptyList())

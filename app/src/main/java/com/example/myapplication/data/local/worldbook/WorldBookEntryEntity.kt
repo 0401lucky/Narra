@@ -33,4 +33,5 @@ data class WorldBookEntryEntity(
     val scopeId: String = "",
     val createdAt: Long = 0L,
     val updatedAt: Long = 0L,
+    val extrasJson: String = "{}",
 )

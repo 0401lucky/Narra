@@ -101,6 +101,7 @@ class RoomWorldBookRepository(
             scopeId = entity.scopeId,
             createdAt = entity.createdAt,
             updatedAt = entity.updatedAt,
+            extrasJson = entity.extrasJson.ifBlank { "{}" },
         )
     }
 
@@ -132,6 +133,7 @@ class RoomWorldBookRepository(
             scopeId = entry.resolvedScopeId(),
             createdAt = entry.createdAt,
             updatedAt = entry.updatedAt,
+            extrasJson = entry.extrasJson.ifBlank { "{}" },
         )
     }
 

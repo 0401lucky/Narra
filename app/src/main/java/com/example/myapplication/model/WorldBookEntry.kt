@@ -39,6 +39,7 @@ data class WorldBookEntry(
     val scopeId: String = "",
     val createdAt: Long = System.currentTimeMillis(),
     val updatedAt: Long = createdAt,
+    val extrasJson: String = "{}",
 ) {
     fun matchesSearch(query: String): Boolean {
         val normalizedQuery = query.trim().lowercase()

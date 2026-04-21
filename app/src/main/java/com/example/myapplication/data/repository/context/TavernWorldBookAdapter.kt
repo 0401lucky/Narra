@@ -75,19 +75,8 @@ class TavernWorldBookAdapter(
             if (title.isBlank() && content.isBlank() && keys.isEmpty() && secondaryKeys.isEmpty()) {
                 return@mapIndexedNotNull null
             }
-            val stableId = UUID.nameUUIDFromBytes(
-                buildString {
-                    append(bookName)
-                    append('|')
-                    append(entry.getString("uid"))
-                    append('|')
-                    append(index)
-                    append('|')
-                    append(title)
-                    append('|')
-                    append(content.take(256))
-                }.toByteArray(StandardCharsets.UTF_8),
-            ).toString()
+            val stableId = deriveStableId(bookName, entry, index, title, content)
+            val extrasPayload = buildExtrasPayload(entry)
             val timestamp = baseTimestamp + index
             WorldBookEntry(
                 id = stableId,
@@ -109,8 +98,40 @@ class TavernWorldBookAdapter(
                 scopeId = "",
                 createdAt = timestamp,
                 updatedAt = timestamp,
+                extrasJson = extrasPayload,
             )
         }
+    }
+
+    private fun deriveStableId(
+        bookName: String,
+        entry: JsonObject,
+        index: Int,
+        title: String,
+        content: String,
+    ): String {
+        val payload = buildString {
+            append(bookName)
+            append('|')
+            append(entry.getString("uid"))
+            append('|')
+            append(index)
+            append('|')
+            append(title)
+            append('|')
+            append(content.take(256))
+        }
+        return UUID.nameUUIDFromBytes(payload.toByteArray(StandardCharsets.UTF_8)).toString()
+    }
+
+    private fun buildExtrasPayload(entry: JsonObject): String {
+        val extras = JsonObject()
+        entry.entrySet().forEach { (key, value) ->
+            if (key !in KNOWN_FIELD_KEYS) {
+                extras.add(key, value)
+            }
+        }
+        return if (extras.size() > 0) gson.toJson(extras) else "{}"
     }
 
     private fun resolveBookName(
@@ -173,5 +194,33 @@ class TavernWorldBookAdapter(
 
     private fun JsonElement.asJsonObjectOrNull(): JsonObject? {
         return runCatching { asJsonObject }.getOrNull()
+    }
+
+    private companion object {
+        /**
+         * 本 Adapter 已识别并映射到 [WorldBookEntry] 的 Tavern 字段集合。
+         * 其余未识别的键会原样写入 [WorldBookEntry.extrasJson]，
+         * 以便未来导出回 Tavern 时无损还原（见 T15-C1）。
+         */
+        val KNOWN_FIELD_KEYS: Set<String> = setOf(
+            "key",
+            "keys",
+            "keysecondary",
+            "secondary_keys",
+            "comment",
+            "memo",
+            "name",
+            "content",
+            "entry",
+            "uid",
+            "disable",
+            "enabled",
+            "constant",
+            "alwaysActive",
+            "selective",
+            "caseSensitive",
+            "order",
+            "position",
+        )
     }
 }
