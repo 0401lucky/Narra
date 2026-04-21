@@ -113,6 +113,9 @@ internal fun NavGraphBuilder.registerSettingsDataRoutes(
             backStackEntry = backStackEntry,
         )
         val worldBookState by worldBookViewModel.uiState.collectAsStateWithLifecycle()
+        val conversations by appGraph.conversationRepository
+            .observeConversations()
+            .collectAsStateWithLifecycle(initialValue = emptyList())
         val entryId = backStackEntry.arguments?.getString("entryId").orEmpty()
         val presetBookName = Uri.decode(backStackEntry.arguments?.getString("bookName").orEmpty())
         val isNew = entryId == "new"
@@ -122,6 +125,7 @@ internal fun NavGraphBuilder.registerSettingsDataRoutes(
             entry = entry,
             isNew = isNew,
             assistants = storedSettings.resolvedAssistants(),
+            conversations = conversations,
             presetBookName = if (isNew) presetBookName else "",
             onSave = worldBookViewModel::saveEntry,
             onDelete = worldBookViewModel::deleteEntry,

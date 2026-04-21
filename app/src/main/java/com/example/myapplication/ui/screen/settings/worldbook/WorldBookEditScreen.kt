@@ -1,5 +1,6 @@
 package com.example.myapplication.ui.screen.settings.worldbook
 
+import android.text.format.DateUtils
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -12,6 +13,10 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.ExposedDropdownMenuBox
+import androidx.compose.material3.ExposedDropdownMenuDefaults
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.MaterialTheme
@@ -22,6 +27,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.listSaver
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
@@ -30,6 +36,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import com.example.myapplication.model.Assistant
+import com.example.myapplication.model.Conversation
+import com.example.myapplication.model.DEFAULT_CONVERSATION_TITLE
 import com.example.myapplication.model.WorldBookEntry
 import com.example.myapplication.model.WorldBookScopeType
 import com.example.myapplication.ui.component.worldbook.KeywordChipInput
@@ -46,11 +54,13 @@ private val StringListSaver = listSaver<List<String>, String>(
     restore = { it },
 )
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun WorldBookEditScreen(
     entry: WorldBookEntry?,
     isNew: Boolean,
     assistants: List<Assistant>,
+    conversations: List<Conversation> = emptyList(),
     presetBookName: String = "",
     onSave: (WorldBookEntry) -> Unit,
     onDelete: (String) -> Unit,
@@ -287,15 +297,11 @@ fun WorldBookEditScreen(
                             }
 
                             WorldBookScopeType.CONVERSATION -> {
-                                OutlinedTextField(
-                                    value = scopeId,
-                                    onValueChange = { scopeId = it },
-                                    label = { Text("会话 ID") },
-                                    modifier = Modifier.fillMaxWidth(),
-                                    singleLine = true,
-                                    shape = RoundedCornerShape(16.dp),
-                                    colors = outlineColors,
-                                    placeholder = { Text("填写 conversationId") },
+                                ConversationScopePicker(
+                                    conversations = conversations,
+                                    selectedId = scopeId,
+                                    onSelected = { scopeId = it },
+                                    outlineColors = outlineColors,
                                 )
                             }
                         }
@@ -451,6 +457,94 @@ private fun filterIntegerInput(rawValue: String): String {
         rawValue.forEachIndexed { index, char ->
             if (char.isDigit() || (char == '-' && index == 0)) {
                 append(char)
+            }
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun ConversationScopePicker(
+    conversations: List<Conversation>,
+    selectedId: String,
+    onSelected: (String) -> Unit,
+    outlineColors: androidx.compose.material3.TextFieldColors,
+) {
+    val palette = rememberSettingsPalette()
+    val sortedConversations = remember(conversations) {
+        conversations.sortedByDescending { it.updatedAt }
+    }
+    val selected = sortedConversations.firstOrNull { it.id == selectedId }
+    val now = remember(selected?.id, sortedConversations) { System.currentTimeMillis() }
+    var expanded by remember { mutableStateOf(false) }
+
+    if (sortedConversations.isEmpty()) {
+        OutlinedTextField(
+            value = "",
+            onValueChange = {},
+            label = { Text("所属会话") },
+            modifier = Modifier.fillMaxWidth(),
+            singleLine = true,
+            readOnly = true,
+            shape = RoundedCornerShape(16.dp),
+            colors = outlineColors,
+            placeholder = { Text("暂无会话，先到聊天页新建") },
+        )
+        return
+    }
+
+    val displayText = selected?.title?.ifBlank { DEFAULT_CONVERSATION_TITLE } ?: ""
+
+    ExposedDropdownMenuBox(
+        expanded = expanded,
+        onExpandedChange = { expanded = it },
+    ) {
+        @Suppress("DEPRECATION")
+        OutlinedTextField(
+            value = displayText,
+            onValueChange = {},
+            label = { Text("所属会话") },
+            modifier = Modifier
+                .fillMaxWidth()
+                .menuAnchor(),
+            singleLine = true,
+            readOnly = true,
+            shape = RoundedCornerShape(16.dp),
+            colors = outlineColors,
+            placeholder = { Text("请选择会话") },
+            trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
+        )
+        ExposedDropdownMenu(
+            expanded = expanded,
+            onDismissRequest = { expanded = false },
+        ) {
+            sortedConversations.forEach { conversation ->
+                val title = conversation.title.ifBlank { DEFAULT_CONVERSATION_TITLE }
+                val updatedLabel = DateUtils.getRelativeTimeSpanString(
+                    conversation.updatedAt,
+                    now,
+                    DateUtils.MINUTE_IN_MILLIS,
+                ).toString()
+                DropdownMenuItem(
+                    text = {
+                        Column {
+                            Text(
+                                text = title,
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = palette.title,
+                            )
+                            Text(
+                                text = updatedLabel,
+                                style = MaterialTheme.typography.bodySmall,
+                                color = palette.body,
+                            )
+                        }
+                    },
+                    onClick = {
+                        onSelected(conversation.id)
+                        expanded = false
+                    },
+                )
             }
         }
     }
