@@ -129,13 +129,13 @@ fun WorldBookListScreen(
             ),
             verticalArrangement = Arrangement.spacedBy(14.dp),
         ) {
-            item {
+            item(key = "intro") {
                 SettingsPageIntro(
                     title = "世界书",
                 )
             }
 
-            item {
+            item(key = "importButton") {
                 AnimatedSettingButton(
                     text = "导入世界书",
                     onClick = onOpenImport,
@@ -147,60 +147,61 @@ fun WorldBookListScreen(
                 )
             }
 
-            item {
-                OutlinedTextField(
-                    value = searchQuery,
-                    onValueChange = { searchQuery = it },
-                    modifier = Modifier.fillMaxWidth(),
-                    singleLine = true,
-                    shape = RoundedCornerShape(18.dp),
-                    label = { Text("搜索世界书") },
-                    placeholder = { Text("搜索书名、条目标题、内容或关键词") },
-                    leadingIcon = {
-                        Icon(Icons.Default.Search, contentDescription = null)
-                    },
-                    trailingIcon = {
-                        if (searchQuery.isNotEmpty()) {
-                            IconButton(onClick = { searchQuery = "" }) {
-                                Icon(
-                                    imageVector = Icons.Outlined.Close,
-                                    contentDescription = "清空搜索",
-                                )
+            stickyHeader(key = "searchAndFilter") {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .background(palette.background)
+                        .padding(vertical = 4.dp),
+                    verticalArrangement = Arrangement.spacedBy(6.dp),
+                ) {
+                    OutlinedTextField(
+                        value = searchQuery,
+                        onValueChange = { searchQuery = it },
+                        modifier = Modifier.fillMaxWidth(),
+                        singleLine = true,
+                        shape = RoundedCornerShape(18.dp),
+                        label = { Text("搜索世界书") },
+                        placeholder = { Text("搜索书名、条目标题、内容或关键词") },
+                        leadingIcon = {
+                            Icon(Icons.Default.Search, contentDescription = null)
+                        },
+                        trailingIcon = {
+                            if (searchQuery.isNotEmpty()) {
+                                IconButton(onClick = { searchQuery = "" }) {
+                                    Icon(
+                                        imageVector = Icons.Outlined.Close,
+                                        contentDescription = "清空搜索",
+                                    )
+                                }
                             }
-                        }
-                    },
-                    colors = rememberSettingsOutlineColors(),
-                )
-            }
-
-            item {
-                WorldBookFilterChipRow(
-                    label = "作用域",
-                    options = WorldBookListScopeFilter.values().map { it.label to (it == scopeFilter) },
-                    onSelect = { scopeFilter = WorldBookListScopeFilter.values()[it] },
-                )
-            }
-
-            item {
-                WorldBookFilterChipRow(
-                    label = "状态",
-                    options = WorldBookListStatusFilter.values().map { it.label to (it == statusFilter) },
-                    onSelect = { statusFilter = WorldBookListStatusFilter.values()[it] },
-                )
-            }
-
-            if (allBookOptions.size > 1) {
-                item {
-                    WorldBookFilterChipRow(
-                        label = "书",
-                        options = allBookOptions.map { (id, name) -> name to (id == bookIdFilter) },
-                        onSelect = { bookIdFilter = allBookOptions[it].first },
+                        },
+                        colors = rememberSettingsOutlineColors(),
                     )
+                    WorldBookFilterChipRow(
+                        label = "作用域",
+                        options = WorldBookListScopeFilter.values()
+                            .map { it.label to (it == scopeFilter) },
+                        onSelect = { scopeFilter = WorldBookListScopeFilter.values()[it] },
+                    )
+                    WorldBookFilterChipRow(
+                        label = "状态",
+                        options = WorldBookListStatusFilter.values()
+                            .map { it.label to (it == statusFilter) },
+                        onSelect = { statusFilter = WorldBookListStatusFilter.values()[it] },
+                    )
+                    if (allBookOptions.size > 1) {
+                        WorldBookFilterChipRow(
+                            label = "书",
+                            options = allBookOptions.map { (id, name) -> name to (id == bookIdFilter) },
+                            onSelect = { bookIdFilter = allBookOptions[it].first },
+                        )
+                    }
                 }
             }
 
             if (filteredBooks.isEmpty() && filteredStandaloneEntries.isEmpty()) {
-                item {
+                item(key = "emptyHint") {
                     SettingsHintCard(
                         title = if (searchQuery.isBlank()) "还没有世界书" else "没有匹配结果",
                         body = if (searchQuery.isBlank()) {
@@ -214,13 +215,20 @@ fun WorldBookListScreen(
                 }
             } else {
                 if (filteredBooks.isNotEmpty()) {
-                    item {
-                        SettingsSectionHeader(
-                            title = "导入的世界书",
-                            description = "",
-                        )
+                    stickyHeader(key = "booksHeader") {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .background(palette.background)
+                                .padding(vertical = 2.dp),
+                        ) {
+                            SettingsSectionHeader(
+                                title = "导入的世界书",
+                                description = "",
+                            )
+                        }
                     }
-                    items(filteredBooks, key = { it.id }) { book ->
+                    items(filteredBooks, key = { "book-${it.id}" }) { book ->
                         WorldBookBookCard(
                             book = book,
                             onClick = { onOpenBook(book.id) },
@@ -229,13 +237,20 @@ fun WorldBookListScreen(
                 }
 
                 if (filteredStandaloneEntries.isNotEmpty()) {
-                    item {
-                        SettingsSectionHeader(
-                            title = "独立条目",
-                            description = "",
-                        )
+                    stickyHeader(key = "standaloneHeader") {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .background(palette.background)
+                                .padding(vertical = 2.dp),
+                        ) {
+                            SettingsSectionHeader(
+                                title = "独立条目",
+                                description = "",
+                            )
+                        }
                     }
-                    items(filteredStandaloneEntries, key = { it.id }) { entry ->
+                    items(filteredStandaloneEntries, key = { "entry-${it.id}" }) { entry ->
                         WorldBookEntryCard(
                             entry = entry,
                             onClick = { onOpenEntryEdit(entry.id) },
