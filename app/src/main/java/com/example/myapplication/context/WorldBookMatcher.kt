@@ -26,6 +26,11 @@ data class WorldBookHitPreview(
 )
 
 class WorldBookMatcher {
+    // TODO(T15-D4 遗留)：entry.probability 字段已在 v30 入库、UI 可编辑，
+    //  但匹配流程仍按 100% 命中处理。待产品确认"命中后是否真的按概率掷骰子"
+    //  的语义后，再在此处引入 Random(seed=sourceText.hashCode()) 之类的可测
+    //  实现，避免非确定性测试。
+
     fun match(
         entries: List<WorldBookEntry>,
         assistant: Assistant?,
@@ -46,6 +51,11 @@ class WorldBookMatcher {
             ?: DEFAULT_WORLD_BOOK_MAX_ENTRIES
 
         val matchedEntries = WorldBookScopeSupport.filterAccessibleEntries(
+            // 热路径调用方（PromptContextAssembler / SearchWorldBookTool /
+            // ToolAvailabilityResolver）自 T15-D2 起已改走 DAO 的
+            // listAccessibleEnabledEntries，传进来的 entries 已按 scope 过滤；
+            // 这里保留防御式二次过滤，覆盖未走 DAO 的老调用方（以及单测直接
+            // 构造跨 scope 入参的场景）——对已过滤集合再跑一次是 O(n) 无副作用。
             entries = entries,
             assistant = assistant,
             conversation = conversation,
@@ -99,14 +109,18 @@ class WorldBookMatcher {
     }
 
     /**
-     * 给编辑页"试命中"即时反馈用：不走 scope / alwaysActive 上限过滤，
+     * 给编辑页"试命中"即时反馈用：不走 scope 过滤与 maxEntries 上限，
      * 只针对给定的待测文本计算 primary / secondary 的命中情况。
      *
-     * - 待测文本为空 → miss，给出提示语
-     * - primary 未命中且 alwaysActive=false → miss，reason 说明
-     * - alwaysActive=true → 视为 overallMatched=true（即使 primary 未命中），
-     *   primaryHits 仍按实际匹配列出
-     * - selective=true 但次级关键词未命中 → miss，解释 selective 的要求
+     * 语义必须和 [match] 内部一致：Matcher 实际判定是
+     * `entry.alwaysActive || hasKeywordHit(entry, sourceText)`，因此：
+     *
+     * - 待测文本为空 → miss（不跑任何匹配）
+     * - alwaysActive=true → 恒为 matched=true；primary/secondary 仍按实际匹配填入，
+     *   让用户看到"如果关掉 alwaysActive 会不会命中"；**不会**因为 selective
+     *   次级未命中而退回 miss。
+     * - alwaysActive=false：走关键词命中链路；primary 未命中则 miss；selective
+     *   开启且次级未命中则 miss。
      */
     fun previewHit(entry: WorldBookEntry, sourceText: String): WorldBookHitPreview {
         if (sourceText.isBlank()) {
@@ -127,8 +141,32 @@ class WorldBookMatcher {
                 )
             }
             .distinct()
+        val secondaryHits = if (entry.selective && entry.secondaryKeywords.isNotEmpty()) {
+            expandKeywordPatterns(entry.secondaryKeywords, entry.matchMode)
+                .filter { pattern ->
+                    matchesPattern(
+                        pattern = pattern,
+                        sourceText = sourceText,
+                        caseSensitive = entry.caseSensitive,
+                        matchMode = entry.matchMode,
+                    )
+                }
+                .distinct()
+        } else {
+            emptyList()
+        }
 
-        if (primaryHits.isEmpty() && !entry.alwaysActive) {
+        if (entry.alwaysActive) {
+            // Matcher 里 alwaysActive 与关键词命中是 OR 关系，alwaysActive=true
+            // 直接覆盖 selective / secondary 检查。
+            return WorldBookHitPreview(
+                overallMatched = true,
+                primaryHits = primaryHits,
+                secondaryHits = secondaryHits,
+            )
+        }
+
+        if (primaryHits.isEmpty()) {
             return WorldBookHitPreview(
                 overallMatched = false,
                 primaryHits = emptyList(),
@@ -144,17 +182,6 @@ class WorldBookMatcher {
                 secondaryHits = emptyList(),
             )
         }
-
-        val secondaryHits = expandKeywordPatterns(entry.secondaryKeywords, entry.matchMode)
-            .filter { pattern ->
-                matchesPattern(
-                    pattern = pattern,
-                    sourceText = sourceText,
-                    caseSensitive = entry.caseSensitive,
-                    matchMode = entry.matchMode,
-                )
-            }
-            .distinct()
 
         return if (secondaryHits.isEmpty()) {
             WorldBookHitPreview(

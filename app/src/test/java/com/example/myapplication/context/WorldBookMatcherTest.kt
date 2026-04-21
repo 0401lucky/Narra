@@ -624,4 +624,35 @@ class WorldBookMatcherTest {
         assertTrue("alwaysActive 条目不应该因为主关键词未命中被判 miss", preview.overallMatched)
         assertTrue(preview.primaryHits.isEmpty())
     }
+
+    @Test
+    fun previewHit_alwaysActiveOverridesSelectiveSecondaryMiss() {
+        // 回归 T15-D3 自审发现的语义 bug：Matcher.match 里 alwaysActive
+        // 与 hasKeywordHit 是 OR 关系，alwaysActive=true 即使 selective
+        // + 次级未命中也会被注入；previewHit 必须保持一致。
+        val preview = matcher.previewHit(
+            entry = WorldBookEntry(
+                id = "e1",
+                title = "t",
+                content = "c",
+                keywords = listOf("白塔城"),
+                secondaryKeywords = listOf("生意"),
+                selective = true,
+                alwaysActive = true,
+                matchMode = WorldBookMatchMode.CONTAINS,
+            ),
+            sourceText = "我准备去白塔城看看风景",
+        )
+
+        assertTrue(
+            "alwaysActive=true 必须覆盖 selective 次级未命中，" +
+                "和 Matcher.match 一致",
+            preview.overallMatched,
+        )
+        assertEquals(listOf("白塔城"), preview.primaryHits)
+        assertTrue(
+            "alwaysActive 短路时仍应按实际匹配填 secondaryHits，让用户看到\"关掉 alwaysActive 会不会命中\"",
+            preview.secondaryHits.isEmpty(),
+        )
+    }
 }
