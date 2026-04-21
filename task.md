@@ -378,6 +378,64 @@
 
 ---
 
+#### T15-B1 · 列表页信息架构重建 ✅
+
+**落地**：
+- 纯函数层（新建 `ui/screen/settings/worldbook/WorldBookListStyle.kt`，~170 行）：
+  - `bookSpineColor(bookId)` — HSL 色相轮转（saturation=0.52, lightness=0.62），同 bookId 稳定色相。
+  - `firstRealKeywords(entry, limit=3)` — 按 keywords → aliases → secondaryKeywords 顺序去重取前 N 真词；trim 空白，正则字面量（`/foo,bar/i`）作为整体保留。
+  - `formatRelativeTime(epochMillis, now)` — 刚刚 / N 分钟前 / N 小时前 / N 天前 / yyyy-MM-dd 兜底；允许注入 now 以便 JVM 测试；时钟偏移兜底为"刚刚"。
+  - `WorldBookListScopeFilter` / `WorldBookListStatusFilter` 枚举（单选互斥）+ `filterEntries(entries, search, scope, status, bookIdFilter)` AND 组合 + `activeFilterCount(...)` 统计。
+- ViewModel 文案契约（`WorldBookViewModelTest.kt`）：补 `renameBook_successMessageContainsRenameKeyword` / `deleteBook_successMessageContainsDeleteKeyword` 两条断言（既有文案"世界书已重命名"/"整本世界书已删除"已含关键字，不改实现）。
+- UI 层（`WorldBookListScreen.kt`，重写 ~200 行）：
+  - 条目卡 chip 精简为 3 枚：作用域 / 关键词预览（"关键词：主角 · 配角 · 路人"） / 状态（停用 > 常驻注入 > 含正则，最多 1 枚）。
+  - 书卡加左侧 6dp 彩色书脊 + 条目名 preview + FlowRow pill（`N 条条目` / `启用 K`（K ≠ N 时） / 相对时间 / `含正则`）。
+  - 搜索框加 × 清空按钮（仅非空时显示）。
+  - `rememberSaveable(stateSaver = ...)` 三个筛选 state（scope / status / bookId），走 `Saver.save/restore via enum.name`。
+  - 搜索 + 三行筛选 chip + 两处分组标题走 `LazyListScope.stickyHeader`（Compose BOM 2026.02.01 已稳定，无需 @OptIn）。
+  - 三套空态（`GLOBAL_EMPTY`：引导导入；`FILTERED_EMPTY`：清筛选按钮；`SEARCH_EMPTY`：清空搜索按钮）。
+  - 挂 `TopAppSnackbarHost`，仅消费含"删除"关键字的消息；"重命名"留给书详情页。
+  - 顺手把 `entryHasRegexKeyword` 的实现从 `startsWith('/')` 统一到 `looksLikeWorldBookRegexLiteral`（与筛选一致，避免 UI 和筛选 drift）。
+
+**预计**：~6h | **实际**：~5.5h（纯函数层 TDD 5 次 commit，UI 重构 7 次 commit，全程零回归）。
+
+**关键 diff**：
+- `ui/screen/settings/worldbook/WorldBookListStyle.kt`（新建）（commits: b6b6006 chore 骨架 → 6c1447b bookSpineColor → cb83fce firstRealKeywords → a3d5439 formatRelativeTime → 1d1a865 筛选枚举+filterEntries）
+- `ui/screen/settings/worldbook/WorldBookListStyleTest.kt`（新建，14 用例）
+- `ui/screen/settings/worldbook/WorldBookListScreen.kt`（重写：8dab707 条目 chip → f455e31 书卡书脊 → e2167a9 搜索清空 → 536a77c 筛选 chip → c5174a0 sticky → 08f665a 空态 → 166d6d5 snackbar）
+- `viewmodel/WorldBookViewModelTest.kt`（commit 3a78e7e，契约断言）
+
+**回归**：
+- `./gradlew.bat app:compileDebugKotlin` BUILD SUCCESSFUL。
+- `./gradlew.bat app:testDebugUnitTest` BUILD SUCCESSFUL（全量 ~660 个 + 本次新增 16 个，全绿）。
+- 手动待真机回归（13 项）：筛选 chip 切换、搜索 × 清空、sticky 粘顶、三套空态、书脊色稳定性、重命名 IME Done、删除对话框红字、删除后自动返回列表 + snackbar。
+
+#### T15-B5 · 书详情页重命名 / 删除流程打磨 ✅
+
+**落地**：
+- `WorldBookBookDetailScreen.kt`：
+  - 重命名输入框 `keyboardOptions = ImeAction.Done` + `keyboardActions.onDone` 在 `canRename` 时提交。
+  - `LaunchedEffect(bookName)` 在上游书名变化（重命名成功）时把 `renameText` 同步回退。
+  - 删除确认从裸 `material3.AlertDialog` 换成 `NarraAlertDialog(isDestructive = true)`，红字"确认删除"。
+  - 挂 `TopAppSnackbarHost`，仅消费含"重命名"关键字的消息。
+- `SettingsDataNavRoutes.kt`：
+  - List 路由透传 `uiMessage = worldBookState.message` + `onConsumeMessage = viewModel::consumeMessage`。
+  - BookDetail 路由同理；新增 `LaunchedEffect(bookEntries.isEmpty())`：在整本被删空后 `navController.popBackStack()`，snackbar 由列表页接管显示。
+  - `onRenameBook` / `onDeleteBook` 去掉立即 `popBackStack()` — 交给 LaunchedEffect，避免 snackbar 丢失。
+
+**预计**：~90min | **实际**：~50min（与 B1 的 snackbar 改动合成一次 commit）。
+
+**关键 diff**：
+- `ui/screen/settings/worldbook/WorldBookBookDetailScreen.kt`（commit 166d6d5）
+- `ui/navigation/SettingsDataNavRoutes.kt`（commit 166d6d5）
+
+**回归**：
+- `./gradlew.bat app:compileDebugKotlin` BUILD SUCCESSFUL。
+- `./gradlew.bat app:testDebugUnitTest` BUILD SUCCESSFUL。
+- 手动待真机回归：输入新名 → 回车提交 → 停留详情页 + snackbar；点击删除 → NarraAlertDialog 红字按钮；确认删除 → 自动返回列表页 + snackbar。
+
+---
+
 ### T15 · 批次 C（P1 / P2 兼容性 + 细节）⬜
 
 - **C1 · TavernWorldBookAdapter 增加 extrasJson 兜底**（`TavernWorldBookAdapter.kt` + Entity，~3h）：
