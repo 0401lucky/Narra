@@ -1,6 +1,7 @@
 package com.example.myapplication.ui.screen.settings.worldbook
 
 import com.example.myapplication.model.WorldBookEntry
+import com.example.myapplication.model.WorldBookScopeType
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotEquals
 import org.junit.Test
@@ -128,5 +129,177 @@ class WorldBookListStyleTest {
         val now = 1_700_000_000_000L
         // 服务器时钟跑前面了也不能崩，按"刚刚"兜底
         assertEquals("刚刚", formatRelativeTime(now + 10_000L, now = now))
+    }
+
+    private fun e(
+        id: String,
+        title: String = "",
+        content: String = "",
+        sourceBookName: String = "",
+        bookIdOverride: String? = null,
+        scopeType: WorldBookScopeType = WorldBookScopeType.GLOBAL,
+        enabled: Boolean = true,
+        alwaysActive: Boolean = false,
+        keywords: List<String> = emptyList(),
+        aliases: List<String> = emptyList(),
+        secondaryKeywords: List<String> = emptyList(),
+    ): WorldBookEntry = WorldBookEntry(
+        id = id,
+        title = title,
+        content = content,
+        sourceBookName = sourceBookName,
+        bookId = bookIdOverride.orEmpty(),
+        scopeType = scopeType,
+        enabled = enabled,
+        alwaysActive = alwaysActive,
+        keywords = keywords,
+        aliases = aliases,
+        secondaryKeywords = secondaryKeywords,
+    )
+
+    @Test
+    fun filterEntries_returnsAllWhenNoFilters() {
+        val list = listOf(e("a"), e("b"))
+        val result = filterEntries(
+            entries = list,
+            search = "",
+            scope = WorldBookListScopeFilter.ALL,
+            status = WorldBookListStatusFilter.ALL,
+            bookIdFilter = "",
+        )
+        assertEquals(list, result)
+    }
+
+    @Test
+    fun filterEntries_searchMatchesTitleContentOrKeywords() {
+        val target = e("x", title = "周宝敏", content = "药剂师")
+        val list = listOf(e("a", title = "赵六"), target, e("c", keywords = listOf("周宝敏")))
+        val result = filterEntries(
+            entries = list,
+            search = "周宝敏",
+            scope = WorldBookListScopeFilter.ALL,
+            status = WorldBookListStatusFilter.ALL,
+            bookIdFilter = "",
+        )
+        assertEquals(2, result.size)
+    }
+
+    @Test
+    fun filterEntries_scopeGlobalOnly() {
+        val list = listOf(
+            e("a", scopeType = WorldBookScopeType.GLOBAL),
+            e("b", scopeType = WorldBookScopeType.ASSISTANT),
+        )
+        val result = filterEntries(
+            entries = list,
+            search = "",
+            scope = WorldBookListScopeFilter.GLOBAL,
+            status = WorldBookListStatusFilter.ALL,
+            bookIdFilter = "",
+        )
+        assertEquals(listOf("a"), result.map { it.id })
+    }
+
+    @Test
+    fun filterEntries_statusEnabledAndAlwaysActive() {
+        val list = listOf(
+            e("a", enabled = true),
+            e("b", enabled = false),
+            e("c", enabled = true, alwaysActive = true),
+        )
+        val enabled = filterEntries(
+            entries = list,
+            search = "",
+            scope = WorldBookListScopeFilter.ALL,
+            status = WorldBookListStatusFilter.ENABLED,
+            bookIdFilter = "",
+        )
+        assertEquals(listOf("a", "c"), enabled.map { it.id })
+        val alwaysActive = filterEntries(
+            entries = list,
+            search = "",
+            scope = WorldBookListScopeFilter.ALL,
+            status = WorldBookListStatusFilter.ALWAYS_ACTIVE,
+            bookIdFilter = "",
+        )
+        assertEquals(listOf("c"), alwaysActive.map { it.id })
+    }
+
+    @Test
+    fun filterEntries_statusHasRegexScansAllKeywordLists() {
+        val list = listOf(
+            e("a", keywords = listOf("plain")),
+            e("b", aliases = listOf("/foo/i")),
+            e("c", secondaryKeywords = listOf("also plain")),
+        )
+        val result = filterEntries(
+            entries = list,
+            search = "",
+            scope = WorldBookListScopeFilter.ALL,
+            status = WorldBookListStatusFilter.HAS_REGEX,
+            bookIdFilter = "",
+        )
+        assertEquals(listOf("b"), result.map { it.id })
+    }
+
+    @Test
+    fun filterEntries_bookIdFilterMatchesResolvedBookId() {
+        val list = listOf(
+            e("a", sourceBookName = "Book One"),
+            e("b", sourceBookName = "Book Two"),
+        )
+        val target = list[0].resolvedBookId()
+        val result = filterEntries(
+            entries = list,
+            search = "",
+            scope = WorldBookListScopeFilter.ALL,
+            status = WorldBookListStatusFilter.ALL,
+            bookIdFilter = target,
+        )
+        assertEquals(listOf("a"), result.map { it.id })
+    }
+
+    @Test
+    fun filterEntries_combinesAllFiltersWithAndLogic() {
+        val target = e(
+            "x",
+            title = "周宝敏",
+            scopeType = WorldBookScopeType.GLOBAL,
+            enabled = true,
+            sourceBookName = "Book One",
+        )
+        val list = listOf(
+            target,
+            e("y", title = "周宝敏", scopeType = WorldBookScopeType.ASSISTANT),
+            e("z", title = "别人", scopeType = WorldBookScopeType.GLOBAL),
+        )
+        val result = filterEntries(
+            entries = list,
+            search = "周宝敏",
+            scope = WorldBookListScopeFilter.GLOBAL,
+            status = WorldBookListStatusFilter.ENABLED,
+            bookIdFilter = target.resolvedBookId(),
+        )
+        assertEquals(listOf("x"), result.map { it.id })
+    }
+
+    @Test
+    fun activeFilterCount_countsOnlyNonDefaults() {
+        assertEquals(
+            0,
+            activeFilterCount(
+                WorldBookListScopeFilter.ALL,
+                WorldBookListStatusFilter.ALL,
+                bookIdFilter = "",
+            ),
+        )
+        assertEquals(
+            3,
+            activeFilterCount(
+                WorldBookListScopeFilter.GLOBAL,
+                WorldBookListStatusFilter.DISABLED,
+                bookIdFilter = "bookX",
+            ),
+        )
     }
 }

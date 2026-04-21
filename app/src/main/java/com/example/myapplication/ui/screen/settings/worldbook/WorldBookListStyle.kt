@@ -3,6 +3,7 @@ package com.example.myapplication.ui.screen.settings.worldbook
 import androidx.compose.ui.graphics.Color
 import com.example.myapplication.model.WorldBookEntry
 import com.example.myapplication.model.WorldBookScopeType
+import com.example.myapplication.ui.component.worldbook.looksLikeWorldBookRegexLiteral
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -69,4 +70,80 @@ internal fun formatRelativeTime(
         diff < 7L * 86_400_000L -> "${diff / 86_400_000L} 天前"
         else -> SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(Date(epochMillis))
     }
+}
+
+/**
+ * 列表页作用域筛选项。每项互斥，AND 与其他筛选维度组合。
+ */
+internal enum class WorldBookListScopeFilter(val label: String, val scope: WorldBookScopeType?) {
+    ALL("全部", null),
+    GLOBAL("全局", WorldBookScopeType.GLOBAL),
+    ATTACHABLE("可挂载", WorldBookScopeType.ATTACHABLE),
+    ASSISTANT("助手", WorldBookScopeType.ASSISTANT),
+    CONVERSATION("会话", WorldBookScopeType.CONVERSATION),
+}
+
+/**
+ * 列表页状态筛选项。每项互斥，AND 与其他筛选维度组合。
+ */
+internal enum class WorldBookListStatusFilter(val label: String) {
+    ALL("全部"),
+    ENABLED("启用"),
+    DISABLED("停用"),
+    ALWAYS_ACTIVE("常驻注入"),
+    HAS_REGEX("含正则");
+
+    fun matches(entry: WorldBookEntry): Boolean = when (this) {
+        ALL -> true
+        ENABLED -> entry.enabled
+        DISABLED -> !entry.enabled
+        ALWAYS_ACTIVE -> entry.alwaysActive
+        HAS_REGEX -> (entry.keywords + entry.aliases + entry.secondaryKeywords)
+            .any(::looksLikeWorldBookRegexLiteral)
+    }
+}
+
+/**
+ * 三维筛选 + 全文搜索的 AND 组合。所有维度在默认值时视为"不筛"，
+ * 返回原列表顺序保留。
+ */
+internal fun filterEntries(
+    entries: List<WorldBookEntry>,
+    search: String,
+    scope: WorldBookListScopeFilter,
+    status: WorldBookListStatusFilter,
+    bookIdFilter: String,
+): List<WorldBookEntry> {
+    val normalizedSearch = search.trim().lowercase(Locale.getDefault())
+    return entries.filter { entry ->
+        val matchesScope = scope == WorldBookListScopeFilter.ALL || scope.scope == entry.scopeType
+        val matchesStatus = status.matches(entry)
+        val matchesBook = bookIdFilter.isBlank() || entry.resolvedBookId() == bookIdFilter
+        val matchesSearch = normalizedSearch.isBlank() || run {
+            val haystack = buildString {
+                append(entry.title).append(' ')
+                append(entry.content).append(' ')
+                append(entry.sourceBookName).append(' ')
+                (entry.keywords + entry.aliases + entry.secondaryKeywords)
+                    .forEach { append(it).append(' ') }
+            }.lowercase(Locale.getDefault())
+            haystack.contains(normalizedSearch)
+        }
+        matchesScope && matchesStatus && matchesBook && matchesSearch
+    }
+}
+
+/**
+ * 当前激活的筛选维度数量，用于"清筛选"按钮是否显示。
+ */
+internal fun activeFilterCount(
+    scope: WorldBookListScopeFilter,
+    status: WorldBookListStatusFilter,
+    bookIdFilter: String,
+): Int {
+    var n = 0
+    if (scope != WorldBookListScopeFilter.ALL) n++
+    if (status != WorldBookListStatusFilter.ALL) n++
+    if (bookIdFilter.isNotBlank()) n++
+    return n
 }
