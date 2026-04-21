@@ -3,6 +3,9 @@ package com.example.myapplication.ui.screen.settings.worldbook
 import androidx.compose.ui.graphics.Color
 import com.example.myapplication.model.WorldBookEntry
 import com.example.myapplication.model.WorldBookScopeType
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 import kotlin.math.absoluteValue
 
 /**
@@ -46,4 +49,24 @@ internal fun firstRealKeywords(entry: WorldBookEntry, limit: Int = 3): List<Stri
         if (seen.size >= limit) break
     }
     return seen.toList()
+}
+
+/**
+ * 相对时间文案：刚刚 / N 分钟前 / N 小时前 / N 天前 / yyyy-MM-dd。
+ *
+ * 为了可测试，允许注入 `now`；默认读取系统时钟。
+ */
+internal fun formatRelativeTime(
+    epochMillis: Long,
+    now: Long = System.currentTimeMillis(),
+): String {
+    if (epochMillis <= 0L) return ""
+    val diff = now - epochMillis
+    if (diff < 60_000L) return "刚刚"
+    return when {
+        diff < 3_600_000L -> "${diff / 60_000L} 分钟前"
+        diff < 86_400_000L -> "${diff / 3_600_000L} 小时前"
+        diff < 7L * 86_400_000L -> "${diff / 86_400_000L} 天前"
+        else -> SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(Date(epochMillis))
+    }
 }
