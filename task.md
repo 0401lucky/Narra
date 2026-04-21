@@ -171,6 +171,279 @@
 
 ---
 
+## T15 · 世界书（WorldBook）模块 UI / 功能治理 ⬜
+
+> 源：2026-04-21 世界书模块 UI/功能审查（详报告见 `.claude/worldbook-review-report-2026-04-21.md`）。
+> 状态标记：⬜ 未开始 / 🔄 进行中 / ✅ 完成 / ⏸️ 阻塞
+> 审查结论：综合评分 **64/100**，建议**退回**；问题不在配色，而在"信息堆砌 + 功能与 UI 脱节 + 数据层小坑"。
+> 动手节点：**2026-04-22 起**。
+
+### 涉及文件一览
+
+- 3 屏：`ui/screen/settings/worldbook/WorldBookListScreen.kt` / `WorldBookBookDetailScreen.kt` / `WorldBookEditScreen.kt`
+- ViewModel：`viewmodel/WorldBookViewModel.kt`
+- 数据层：`data/local/worldbook/WorldBookDao.kt` / `WorldBookEntryEntity.kt` / `data/repository/context/WorldBookRepository.kt` / `TavernWorldBookAdapter.kt`
+- 运行时：`context/WorldBookMatcher.kt` / `WorldBookScopeSupport.kt` / `data/repository/ai/tooling/SearchWorldBookTool.kt`
+- 路由：`ui/navigation/SettingsDataNavRoutes.kt` / `NavigationViewModelOwners.kt` / `AppRoutes.kt:22-24`
+- 模型：`model/WorldBookEntry.kt` / `model/Assistant.kt`（`linkedWorldBookIds` / `linkedWorldBookBookIds`）
+
+---
+
+### T15 · 批次 A（P0 功能缺失 + 数据安全）✅
+
+**目标**：补齐"代码写了但 UI 用不上"的字段，修掉全表扫 + 非事务 + 静默 trim，恢复正则在 UI 层的可用性。单个 PR，不跨批次。
+
+#### T15-A1 · 编辑页补齐 selective / secondaryKeywords / caseSensitive / insertionOrder 入口 ✅
+
+**问题**（`WorldBookEditScreen.kt:55-77`）：
+编辑页只暴露 title / content / keywords / aliases / sourceBookName / priority / enabled / alwaysActive / scopeType / scopeId。
+- `secondaryKeywords` 导入后落库但编辑页看不到，列表卡有"次级键 N" pill 却无法编辑。
+- `selective` 根本无 UI 开关，"次级键 / 附加键"命名切换也解释不清。
+- `caseSensitive` 列表能看到 pill，但编辑页无开关。
+- `insertionOrder` 无 UI 入口，用户没法调整同优先级的注入顺序。
+
+**落地**：
+- "命中规则"分两栏：主键（keywords + aliases + 正则提示） / 次级键（selective 开关 + secondaryKeywords 输入器 + caseSensitive 开关）；selective 关闭时次级键输入框置灰但保留原值。
+- insertionOrder 挪进"状态"区块的"高级"折叠块（默认收起），填入框 placeholder "越小越靠前（默认 0）"。
+- `parseCommaSeparated` 当前会把 `/foo,bar/i` 这类正则拆散；本次一起修（见 A2）。
+
+**预计**：90 分钟 | **实际**：~45 分钟（跟 A2 Chip 输入器串起来，去掉 parseCommaSeparated；StringListSaver 走 rememberSaveable 保证旋转/配置变更不丢）。
+
+**关键 diff**：
+- `ui/screen/settings/worldbook/WorldBookEditScreen.kt`：+98 / -32（commit 28b5358）
+
+**回归**：
+- `./gradlew.bat app:compileDebugKotlin` BUILD SUCCESSFUL。
+- `./gradlew.bat app:testDebugUnitTest --tests '*WorldBookViewModelTest'` + `*WorldBookRepositoryTest` + `*KeywordChipInputTest` BUILD SUCCESSFUL。
+- 手动待真机回归：导入带 `keysecondary` / `selective` 的 Tavern 世界书 → 编辑页应能看到并改动；关 selective 后次级关键词输入框置灰，保留原值。
+
+#### T15-A2 · 关键词输入改 Chip 输入器，正则不再被逗号切开 ✅
+
+**问题**（`WorldBookEditScreen.kt:377-381`）：
+`parseCommaSeparated(",", "，")` 对"包含逗号的正则字面量"会切散，`WorldBookMatcher.parseRegexLiteral` 全套能力在 UI 层白写。
+
+**落地**：
+- 封装 `KeywordChipInput` 组件（`ui/component/worldbook/KeywordChipInput.kt` 新建），回车 / `,`（正则字面量内不触发）/ 失焦提交为 chip。
+- chip 展示时对 `/.../flags` 形态用 `palette.accentSoft` + 「正则」角标；点击 chip 可再次编辑。
+- 复用到 aliases / secondaryKeywords。
+- 老数据仍用 `List<String>` 存储，不动 Entity。
+
+**预计**：2 小时 | **实际**：~75 分钟。
+
+**关键 diff**：
+- `ui/component/worldbook/KeywordChipInput.kt`：新建（~205 行）
+- `ui/screen/settings/worldbook/WorldBookEditScreen.kt` 用 KeywordChipInput 替代手写 OutlinedTextField + parseCommaSeparated（见 A1）
+- `test/.../ui/component/worldbook/KeywordChipInputTest.kt`：新建 7 个单元测试覆盖 split / looksLikeRegex
+- commit 622aa8d
+
+**回归**：
+- `./gradlew.bat app:testDebugUnitTest --tests 'com.example.myapplication.ui.component.worldbook.KeywordChipInputTest'` BUILD SUCCESSFUL（7 用例全绿）。
+
+#### T15-A3 · ViewModel 去掉双订阅（entries + uiState.entries）✅
+
+**问题**（`WorldBookViewModel.kt:25-42`）：
+`val entries: StateFlow<...>` 和 `init { entries.collect { _uiState.update { copy(entries=...) } } }` 两条路径并存；后者把 `stateIn(WhileSubscribed(5_000))` 的冷启动时机绕过去了，ViewModel 构造起就常开上游 Flow。
+
+**落地**：
+- 删除 `entries` 字段，`uiState` 直接从 `repository.observeEntries()` + `isSaving` / `message` 的 `combine` 产生。
+- message 改成一次性事件（`Channel<String>` 或 `SharedFlow<String>`，复用 T13-A3 的路径），UI 通过 `LaunchedEffect` 收到后 `snackbar.showSnackbar` 再自动失效。
+- 同步更新 `WorldBookViewModelTest`，新增"message 在 3 秒后自动清 / 不会被 entries 更新覆盖"两个用例。
+
+**预计**：90 分钟 | **实际**：~40 分钟。
+
+**关键 diff**：
+- `viewmodel/WorldBookViewModel.kt`：删除 `val entries` 独立字段和 init block 双订阅；引入 `WorldBookInternalState` + `combine(observeEntries(), internal)`；`saveEntry` / `deleteEntry` / `renameBook` / `deleteBook` 四处都走 `runCatching` + 成功/失败文案双路分发（消息仍靠现有 `consumeMessage` 清理，保留现有调用方不动）。
+- `test/.../viewmodel/WorldBookViewModelTest.kt`：新增 `uiState_entries_followsRepositoryUpdates` / `saveEntry_emitsSavedMessage` 两个用例；所有旧测试补 `launch { viewModel.uiState.collect { } }` 挂订阅，保证 `WhileSubscribed(5000)` 不提前收流。
+- commit d344448
+
+**回归**：
+- `./gradlew.bat app:testDebugUnitTest --tests 'com.example.myapplication.viewmodel.WorldBookViewModelTest'` 6 用例全绿。
+
+#### T15-A4 · renameBook / deleteBook 走事务 + 失败反馈 ✅
+
+**问题**（`WorldBookViewModel.kt:71-117` / `WorldBookRepository.kt:53-64`）：
+逐条 `upsertEntry` / `deleteEntry`，中间失败留下"一本书里部分改了、部分没改"的脏状态；且 `upsertEntry` 每次都 `listEntries()` 全表扫。
+
+**落地**：
+- DAO 补两个方法：`@Query("UPDATE worldbook_entries SET sourceBookName = :newName, updatedAt = :now WHERE bookId = :bookId")` / `@Query("DELETE FROM worldbook_entries WHERE bookId = :bookId")`。
+- Repository 增加 `renameBook(bookId, newName)` / `deleteBook(bookId)` 直接走 SQL，`upsertEntry` 不再 `listEntries()`（用 `entry.bookId.ifBlank { deriveWorldBookBookId(sourceBookName) }` 即可得到确定性 ID）。
+- ViewModel `runCatching { ... }`；失败通过 A3 的事件通道反馈 "重命名失败，请重试"。
+- Room schema 不变，不升版本。
+
+**预计**：90 分钟 | **实际**：~50 分钟。
+
+**关键 diff**：
+- `data/local/worldbook/WorldBookDao.kt`：`updateBookName` / `deleteByBookId`（返回 Int 行数）。
+- `data/repository/context/WorldBookRepository.kt`：接口加两个方法；默认实现直接走 SQL；`toEntity` 去掉 `existingEntries` 同胞查询（原 upsertEntry 会 `listEntries()` 全表扫）；`EmptyWorldBookRepository` 同步补实现。
+- `test/.../testutil/FakeWorldBookRepository.kt`：加 `failNextBookMutation` 注入失败；`RecordingWorldBookDao` 在 `WorldBookRepositoryTest` 补两个方法。
+- `viewmodel/WorldBookViewModel.kt`：`renameBook` / `deleteBook` 改调 repository 接口 + `runCatching` + 成功/失败双文案。
+- `test/.../viewmodel/WorldBookViewModelTest.kt`：新增两个失败回归用例。
+- commit 2b15a55
+
+**回归**：
+- `./gradlew.bat app:testDebugUnitTest --tests '*WorldBookViewModelTest' --tests '*WorldBookRepositoryTest'` BUILD SUCCESSFUL。
+
+#### T15-A5 · Repository 停止对 title / content 做 trim ✅
+
+**问题**（`WorldBookRepository.kt:106-107`）：
+保存时对 title / content 做 `trim()`，和助手 T13-A1 "自动保存擦空格" 同类问题。`WorldBookEditScreen.kt:302-303` 自己已经 trim 过，Repository 重复 trim 只会让边缘场景（用户故意保留末行）出错。
+
+**落地**：
+- 删除 Repository 的 `title.trim()` / `content.trim()`（保留 `sourceBookName.trim()` / `scopeId.trim()`，它们是 id 级别字段）。
+- `normalizeStringList` 保留（空关键词没意义）。
+- 补 `WorldBookRepositoryTest`（新建）：`entry 末尾带 3 个换行 → 保存再读 → 仍保留换行`。
+
+**预计**：45 分钟 | **实际**：~25 分钟（先写失败测试（ComparisonFailure 命中 trim 行为）再改 Repository，TDD 路径）。
+
+**关键 diff**：
+- `data/repository/context/WorldBookRepository.kt`：`title = entry.title` / `content = entry.content`（不再 `.trim()`）。
+- `test/.../data/repository/context/WorldBookRepositoryTest.kt`：新建 `upsertEntry_preservesTitleAndContentWhitespace` 回归用例；内置 `RecordingWorldBookDao` 简化依赖。
+- commit 2ee2d09
+
+**回归**：
+- `./gradlew.bat app:testDebugUnitTest --tests 'com.example.myapplication.data.repository.context.WorldBookRepositoryTest'` BUILD SUCCESSFUL。
+
+#### T15-A6 · CONVERSATION scope 改为"从会话中选择" ✅
+
+**问题**（`WorldBookEditScreen.kt:251-262`）：
+裸文本框让用户手填 conversationId，普通用户压根拿不到，熟手也容易打错 → 作用域匹配静默失败，排查成本极高。
+
+**落地**：
+- 编辑页传入 `conversations: List<ConversationSummary>`（NavGraph 从 `ConversationRepository.observeConversations()` 拿一次 snapshot 并过滤 archived）。
+- 作用域 = CONVERSATION 时用 `ExposedDropdownMenuBox`，选项展示 "会话标题（更新时间相对值）"；`scopeId` 存所选 conversation.id。
+- 用户新建会话后回来编辑，刷新列表靠 NavGraph 的 `collectAsStateWithLifecycle`。
+
+**预计**：2 小时 | **实际**：~55 分钟。`Conversation` 本身没有 archived 字段，简化为直接全量按 `updatedAt` 倒序展示。
+
+**关键 diff**：
+- `ui/screen/settings/worldbook/WorldBookEditScreen.kt`：签名加 `conversations: List<Conversation> = emptyList()`；抽 `ConversationScopePicker` 私有 Composable，走 `ExposedDropdownMenuBox` + `DateUtils.getRelativeTimeSpanString`；空会话时降级为只读占位。
+- `ui/navigation/SettingsDataNavRoutes.kt`：`SETTINGS_WORLD_BOOK_EDIT` 路由新增 `appGraph.conversationRepository.observeConversations().collectAsStateWithLifecycle(initialValue = emptyList())` 注入。
+- commit 66e4ee3
+
+**回归**：
+- `./gradlew.bat app:compileDebugKotlin` BUILD SUCCESSFUL。
+- `./gradlew.bat app:testDebugUnitTest` BUILD SUCCESSFUL（全量）。
+
+---
+
+### T15 · 批次 B（P1 UI 重做 + 匹配体验）⬜
+
+**目标**：把列表页 / 书详情 / 编辑页的信息架构重做一次，治掉"gpt 审美"；匹配器补齐 scanDepth + 正则 caseSensitive + CJK 整词。
+
+- **B1 · 列表页信息架构重建**（`WorldBookListScreen.kt` 全量改，~6h）：
+  - 去掉 `SettingsPageIntro("世界书")` 冗余标题；
+  - 顶栏 sticky 搜索 + 筛选 chip（作用域 / 状态 / 书）；
+  - 书卡重设计：左侧彩色书脊（`bookId.hashColor`）+ 右侧条目数 / 启用 / 最近更新相对时间；
+  - 条目卡重设计：title + 2 行 content + **只保留 3 个 chip**（作用域 / 关键词前三真词 / 状态）；
+  - 分组标题改 `stickyHeader`；
+  - 空态按 "整体空 / 筛选无结果 / 搜索无结果" 三套文案 + 插画/图标做差异化。
+
+- **B2 · 编辑页信息分层 + 顶栏保存**（`WorldBookEditScreen.kt`，~4h）：
+  - "基本信息 / 命中规则 / 状态 / 作用域" 四段折叠，默认展开前两段；
+  - `SettingsTopBar` 右上角加"保存" action（禁用态同 `!canSave`）；
+  - 删除按钮移到底部独立危险区块（红字 + 二次弹窗），与保存区完全隔离；
+  - content 区加"全屏编辑" icon button，`ModalBottomSheet` 展开大编辑区。
+
+- **B3 · "所属世界书" 改下拉**（`WorldBookEditScreen.kt:127-136`，~1h）：
+  - `ExposedDropdownMenuBox`，列表来自 `entries.map { it.sourceBookName }.filter { it.isNotBlank() }.distinct()`；
+  - 同时支持输入新的，不强制二选一。
+
+- **B4 · ATTACHABLE scope 加 "去助手挂载" 跳转**（`WorldBookEditScreen.kt:222-228`，~45min）：
+  - 提示行下挂一行 `TextButton("去助手页挂载")`，带着 `entryId` / `bookId` 跳到助手列表，到达后显示 `TipCard` 指向具体挂载位置。
+
+- **B5 · 书详情页重命名 / 删除流程打磨**（`WorldBookBookDetailScreen.kt` + `SettingsDataNavRoutes.kt`，~90min）：
+  - 重命名成功后**停在详情页**并显示 snackbar，再手动返回；
+  - 重命名按钮键盘回车可提交；
+  - 删除确认改用项目统一 `ConfirmDestructiveDialog`（新建或沿用已有），不再用裸 `material3.AlertDialog`。
+
+- **B6 · Matcher 支持 scanDepth**（`WorldBookMatcher.kt:50-72`，~90min）：
+  - `scanDepth` 作为 Assistant 级配置（默认 2）；
+  - `buildSourceText` 拼当前 + 最近 scanDepth 条消息（含 assistant）；
+  - 拼接长度做上限（如 2000 char）防止 token 预算被冲；
+  - `WorldBookMatcherTest` 新增用例：`scanDepth=1 命中上一条 user / scanDepth=2 命中倒数第二条 assistant / scanDepth=0 仅当前`。
+
+- **B7 · 正则尊重 caseSensitive**（`WorldBookMatcher.kt:120-129`，~30min）：
+  - 解析正则时如果 entry.caseSensitive == false，自动补 `IGNORE_CASE`；
+  - 正则解析失败 `logFailure("WorldBookMatcher")` 一行，便于排查；
+  - 测试：`/Foo/ + caseSensitive=false + "foo" → hit`。
+
+- **B8 · CJK 整词匹配（默认开）**（`WorldBookMatcher.hasKeywordHit`，~2h）：
+  - 新增 `matchesContainsCjkAware` 工具，把 CJK 字符前后非 CJK 视为词边界；
+  - 编辑页加"匹配模式：包含 / 整词 / 正则"三选一，默认"整词"对 CJK 条目；
+  - 向后兼容：老数据无字段，按"整词"处理；用户可主动切回"包含"。
+
+- **B9 · SearchWorldBookTool 加 total / truncated 字段 + 描述更新**（`SearchWorldBookTool.kt`，~45min）：
+  - payload 增加 `total`（总命中条数） / `truncated`（本次是否截断）/ `content_truncated`（content 是否超 400 字被砍）；
+  - description 里说明"此为全文搜索，不等同于自动注入时的关键词命中"。
+
+---
+
+### T15 · 批次 C（P1 / P2 兼容性 + 细节）⬜
+
+- **C1 · TavernWorldBookAdapter 增加 extrasJson 兜底**（`TavernWorldBookAdapter.kt` + Entity，~3h）：
+  - Entity 加 `extrasJson: String = "{}"`；Room schema v28（单独一次 +1 提交）；
+  - Adapter 把未识别字段原样存进去；
+  - 导出回 Tavern 时可无损还原；
+  - 迁移：老数据 `extrasJson = "{}"`。
+
+- **C2 · Tavern 导入稳定 ID 优先用 uid**（`TavernWorldBookAdapter.kt:78-90`，~30min）：
+  - uid 非空：`stableId = UUID.nameUUIDFromBytes("${bookName}|${uid}")`；
+  - uid 空时 fallback 到现有 hash；
+  - 二次导入同一本书微改内容不再增生孪生条目。
+
+- **C3 · Entity 默认时间戳修正**（`WorldBookEntryEntity.kt`，~20min）：
+  - `createdAt` / `updatedAt` 默认 `System.currentTimeMillis()`（通过 ColumnInfo defaultValue 或 DAO 层写入时兜底）；
+  - 排序规则 `createdAt ASC` 下，默认 0 的条目不再永远排最前。
+
+- **C4 · DAO 查询去重复**（`WorldBookDao.kt`，~20min）：
+  - `observeEntries()` / `listEntries()` SQL 完全相同，抽常量或合用；降低升级排序规则时的漏改风险。
+
+- **C5 · 文案统一**（全模块，~30min）：
+  - snackbar 固定称呼"世界书" + 动作（保存 / 删除 / 重命名 / 整本删除），不再混用"这本书" / "整本世界书"；
+  - 列表 pill "常驻" 改为 "常驻注入"（或两处都改成"常驻"），与编辑页对齐；
+  - "次级键"/"附加键" 固定为"次级关键词"（selective 关闭时叫"附加关键词"的说法作废）。
+
+- **C6 · buildWorldBookBooks 分组 key 用 resolvedBookId()**（`WorldBookListScreen.kt:404-428`，~20min）：
+  - 避免"书名字段被清空但 bookId 还在"的条目变成独立条目；
+  - 同步更新 `WorldBookListScreenGroupingTest`。
+
+- **C7 · 所有 `contentDescription = null` 补语义**（全 UI，~45min）：
+  - 导入 / 搜索 / 书图标 / 菜单项 / 删除按钮；
+  - 和 T13-D1 风格对齐。
+
+- **C8 · 自动过期 snackbar**（复用 T15-A3 的事件通道，~10min）：
+  - `LaunchedEffect` 中 `delay(3_000); consumeMessage()`。
+
+---
+
+### T15 · 批次 D（P2 增强，可选）⬜
+
+- **D1 · 编辑页"试命中"按钮**（~3h）：基于当前关键词对最近 N 条消息做一次模拟命中，实时显示 hit / miss 列表，写世界书时所见即所得。
+- **D2 · DAO 按 scope 过滤查询**（~1h）：减少热路径内存过滤；需要和 Matcher 使用方对齐参数。
+- **D3 · TypedFactory 公共抽象**（~1h）：把各 ViewModel 的 `@Suppress("UNCHECKED_CAST")` 下沉到共用基类，配合 T12 稳定性治理收口。
+- **D4 · Tavern 语义增量建模**（`probability` / `depth` / `position` / `logic` / `role`，~5h）：Entity + UI + Matcher 全链路补齐，和 C1 的 extrasJson 结合，把"能导入 → 能可视化 → 能导出"的闭环补全。
+
+---
+
+### 执行顺序建议
+
+| 阶段 | 任务 | 预计 |
+|---|---|---|
+| 功能缺失 + 数据安全 | T15-A1 → A6 | 1 天 |
+| UI 重做 + 匹配体验 | T15-B1 → B9 | 2 天 |
+| 兼容性 + 细节 | T15-C1 → C8 | 1 天 |
+| 可选增强 | T15-D1 → D4 | 1-1.5 天 |
+
+**落地原则**：批次 A 作为一个 PR 合入，批次 B 按"列表重做"+"编辑重做 + 匹配"拆成 2 个 PR 并行，批次 C 作为收尾 PR，批次 D 按需追加；每完成一条 ⬜ → ✅，并在条目下追加"实际耗时 / 关键 diff / 回归命令"。
+
+**回归命令**（每个 PR 至少跑完前三项）：
+- `./gradlew.bat app:compileDebugKotlin`
+- `./gradlew.bat app:testDebugUnitTest --tests "*WorldBook*"`
+- `./gradlew.bat app:testDebugUnitTest`（A / B 批次必须全量）
+- 手动：导入一本带 `keysecondary` + `selective` 的 Tavern 世界书 → 编辑页应能看到并改动次级关键词 / selective / caseSensitive → 保存 → 列表卡 pill 正确刷新。
+
+---
+
 ## 执行顺序建议
 
 | 阶段 | 任务 | 预计 |
@@ -179,5 +452,6 @@
 | 交互一致性 | T13-B1 → B9 | 1-1.5 天 |
 | 视觉规范 | T13-C1 → C8 | 半天 |
 | 扩展与 a11y | T13-D1 → D3 | 半天 |
+| 世界书模块治理 | T15-A / B / C / D | 5-5.5 天 |
 
 每完成一条，改状态为 ✅，并在该条下追加"实际耗时 / 关键 diff / 回归命令"。
