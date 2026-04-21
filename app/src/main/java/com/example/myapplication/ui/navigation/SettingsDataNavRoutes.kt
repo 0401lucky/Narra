@@ -1,6 +1,7 @@
 package com.example.myapplication.ui.navigation
 
 import android.net.Uri
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavGraphBuilder
@@ -53,6 +54,8 @@ internal fun NavGraphBuilder.registerSettingsDataRoutes(
             onNavigateBack = {
                 navController.popBackStack()
             },
+            uiMessage = worldBookState.message,
+            onConsumeMessage = worldBookViewModel::consumeMessage,
         )
     }
 
@@ -76,6 +79,14 @@ internal fun NavGraphBuilder.registerSettingsDataRoutes(
         val bookName = bookEntries.firstNotNullOfOrNull { entry ->
             entry.sourceBookName.trim().takeIf { it.isNotBlank() }
         }.orEmpty()
+
+        // 整本书被删干净后自动返回列表页（snackbar 由列表页显示）
+        LaunchedEffect(bookEntries.isEmpty()) {
+            if (bookEntries.isEmpty() && bookId.isNotBlank()) {
+                navController.popBackStack()
+            }
+        }
+
         WorldBookBookDetailScreen(
             bookId = bookId,
             bookName = bookName,
@@ -83,11 +94,11 @@ internal fun NavGraphBuilder.registerSettingsDataRoutes(
             isSaving = worldBookState.isSaving,
             onRenameBook = { targetBookId, newName ->
                 worldBookViewModel.renameBook(targetBookId, newName)
-                navController.popBackStack()
+                // 重命名保持在当前页，snackbar 由本页显示
             },
             onDeleteBook = { targetBookId ->
                 worldBookViewModel.deleteBook(targetBookId)
-                navController.popBackStack()
+                // pop 由 LaunchedEffect(bookEntries.isEmpty()) 触发
             },
             onAddEntry = {
                 navController.navigate(AppRoutes.settingsWorldBookEdit("new", bookName)) {
@@ -102,6 +113,8 @@ internal fun NavGraphBuilder.registerSettingsDataRoutes(
             onNavigateBack = {
                 navController.popBackStack()
             },
+            uiMessage = worldBookState.message,
+            onConsumeMessage = worldBookViewModel::consumeMessage,
         )
     }
 

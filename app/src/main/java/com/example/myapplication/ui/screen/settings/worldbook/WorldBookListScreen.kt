@@ -55,6 +55,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.example.myapplication.model.WorldBookEntry
+import com.example.myapplication.ui.component.TopAppSnackbarHost
 import com.example.myapplication.ui.component.worldbook.looksLikeWorldBookRegexLiteral
 import com.example.myapplication.ui.screen.settings.AnimatedSettingButton
 import com.example.myapplication.ui.screen.settings.SettingsPageIntro
@@ -65,6 +66,7 @@ import com.example.myapplication.ui.screen.settings.SettingsStatusPill
 import com.example.myapplication.ui.screen.settings.SettingsTopBar
 import com.example.myapplication.ui.screen.settings.rememberSettingsOutlineColors
 import com.example.myapplication.ui.screen.settings.rememberSettingsPalette
+import com.example.myapplication.ui.screen.settings.rememberSettingsSnackbarHostState
 
 @Composable
 fun WorldBookListScreen(
@@ -74,8 +76,15 @@ fun WorldBookListScreen(
     onAddEntry: () -> Unit,
     onOpenImport: () -> Unit,
     onNavigateBack: () -> Unit,
+    uiMessage: String? = null,
+    onConsumeMessage: () -> Unit = {},
 ) {
     val palette = rememberSettingsPalette()
+    // 列表页只处理"删除"关键字的消息；"重命名"由书详情页显示
+    val snackbarHostState = rememberSettingsSnackbarHostState(
+        message = uiMessage?.takeIf { it.contains("删除") },
+        onConsumeMessage = onConsumeMessage,
+    )
     var searchQuery by rememberSaveable { mutableStateOf("") }
     var scopeFilter by rememberSaveable(stateSaver = WorldBookListScopeFilterSaver) {
         mutableStateOf(WorldBookListScopeFilter.ALL)
@@ -121,6 +130,7 @@ fun WorldBookListScreen(
                 onAction = onAddEntry,
             )
         },
+        snackbarHost = { TopAppSnackbarHost(hostState = snackbarHostState) },
         containerColor = palette.background,
     ) { innerPadding ->
         LazyColumn(
