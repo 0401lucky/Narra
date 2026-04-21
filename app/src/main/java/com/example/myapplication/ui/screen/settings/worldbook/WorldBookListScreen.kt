@@ -4,6 +4,8 @@ import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
@@ -34,9 +36,11 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.example.myapplication.model.WorldBookEntry
+import com.example.myapplication.ui.component.worldbook.looksLikeWorldBookRegexLiteral
 import com.example.myapplication.ui.screen.settings.AnimatedSettingButton
 import com.example.myapplication.ui.screen.settings.SettingsHintCard
 import com.example.myapplication.ui.screen.settings.SettingsPageIntro
+import com.example.myapplication.ui.screen.settings.SettingsPalette
 import com.example.myapplication.ui.screen.settings.SettingsScreenPadding
 import com.example.myapplication.ui.screen.settings.SettingsSectionHeader
 import com.example.myapplication.ui.screen.settings.SettingsStatusPill
@@ -285,35 +289,14 @@ internal fun WorldBookEntryCard(
             modifier = Modifier.padding(horizontal = 18.dp, vertical = 18.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-            ) {
-                Text(
-                    text = entry.title.ifBlank { "未命名条目" },
-                    style = MaterialTheme.typography.titleMedium,
-                    color = palette.title,
-                    fontWeight = FontWeight.SemiBold,
-                    modifier = Modifier.weight(1f),
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                )
-                if (!entry.enabled) {
-                    SettingsStatusPill(
-                        text = "已停用",
-                        containerColor = palette.surfaceTint,
-                        contentColor = palette.body,
-                    )
-                }
-                if (entry.alwaysActive) {
-                    SettingsStatusPill(
-                        text = "常驻",
-                        containerColor = palette.accentSoft,
-                        contentColor = palette.accent,
-                    )
-                }
-            }
+            Text(
+                text = entry.title.ifBlank { "未命名条目" },
+                style = MaterialTheme.typography.titleMedium,
+                color = palette.title,
+                fontWeight = FontWeight.SemiBold,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
 
             Text(
                 text = entry.content.ifBlank { "暂无内容" },
@@ -323,65 +306,59 @@ internal fun WorldBookEntryCard(
                 overflow = TextOverflow.Ellipsis,
             )
 
-            Row(
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                SettingsStatusPill(
-                    text = entry.scopeType.label,
-                    containerColor = palette.subtleChip,
-                    contentColor = palette.subtleChipContent,
-                )
-                if (entry.sourceBookName.isNotBlank()) {
-                    SettingsStatusPill(
-                        text = entry.sourceBookName,
-                        containerColor = palette.surfaceTint,
-                        contentColor = palette.body,
-                    )
-                }
-                if (entry.priority != 0) {
-                    SettingsStatusPill(
-                        text = "优先级 ${entry.priority}",
-                        containerColor = palette.surfaceTint,
-                        contentColor = palette.body,
-                    )
-                }
-                if (entry.keywords.isNotEmpty()) {
-                    SettingsStatusPill(
-                        text = "关键词 ${entry.keywords.size}",
-                        containerColor = palette.surfaceTint,
-                        contentColor = palette.body,
-                    )
-                }
-                if (entry.aliases.isNotEmpty()) {
-                    SettingsStatusPill(
-                        text = "别名 ${entry.aliases.size}",
-                        containerColor = palette.surfaceTint,
-                        contentColor = palette.body,
-                    )
-                }
-                if (entry.secondaryKeywords.isNotEmpty()) {
-                    SettingsStatusPill(
-                        text = if (entry.selective) "附加键 ${entry.secondaryKeywords.size}" else "次级键 ${entry.secondaryKeywords.size}",
-                        containerColor = palette.surfaceTint,
-                        contentColor = palette.body,
-                    )
-                }
-                if (entry.caseSensitive) {
-                    SettingsStatusPill(
-                        text = "区分大小写",
-                        containerColor = palette.surfaceTint,
-                        contentColor = palette.body,
-                    )
-                }
-                if (entryHasRegexKeyword(entry)) {
-                    SettingsStatusPill(
-                        text = "正则",
-                        containerColor = palette.accentSoft,
-                        contentColor = palette.accent,
-                    )
-                }
-            }
+            EntryChipRow(entry = entry, palette = palette)
+        }
+    }
+}
+
+/**
+ * 条目卡底部 chip 行：最多 3 枚（作用域 / 关键词预览 / 状态）。
+ *
+ * - 作用域：永远显示，颜色固定为 subtleChip（弱强调）
+ * - 关键词预览：有真词时显示，合并为 "关键词：主角 · 配角 · 路人"
+ * - 状态：最多 1 枚，优先级 停用 > 常驻注入 > 含正则
+ */
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+private fun EntryChipRow(
+    entry: WorldBookEntry,
+    palette: SettingsPalette,
+) {
+    val preview = firstRealKeywords(entry).takeIf { it.isNotEmpty() }
+        ?.joinToString(separator = " · ")
+    FlowRow(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(6.dp),
+        verticalArrangement = Arrangement.spacedBy(6.dp),
+    ) {
+        SettingsStatusPill(
+            text = entry.scopeType.label,
+            containerColor = palette.subtleChip,
+            contentColor = palette.subtleChipContent,
+        )
+        if (preview != null) {
+            SettingsStatusPill(
+                text = "关键词：$preview",
+                containerColor = palette.surfaceTint,
+                contentColor = palette.body,
+            )
+        }
+        when {
+            !entry.enabled -> SettingsStatusPill(
+                text = "已停用",
+                containerColor = palette.surfaceTint,
+                contentColor = palette.body,
+            )
+            entry.alwaysActive -> SettingsStatusPill(
+                text = "常驻注入",
+                containerColor = palette.accentSoft,
+                contentColor = palette.accent,
+            )
+            entryHasRegexKeyword(entry) -> SettingsStatusPill(
+                text = "含正则",
+                containerColor = palette.surfaceTint,
+                contentColor = palette.body,
+            )
         }
     }
 }
@@ -444,7 +421,6 @@ private fun WorldBookBook.matchesSearch(query: String): Boolean {
 }
 
 private fun entryHasRegexKeyword(entry: WorldBookEntry): Boolean {
-    return (entry.keywords + entry.aliases + entry.secondaryKeywords).any { keyword ->
-        keyword.trim().startsWith('/') && keyword.trim().length >= 2
-    }
+    return (entry.keywords + entry.aliases + entry.secondaryKeywords)
+        .any(::looksLikeWorldBookRegexLiteral)
 }
