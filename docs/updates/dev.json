@@ -1,15 +1,16 @@
 {
   "app_id": "com.narra.app.dev",
   "channel": "dev",
-  "latest_version_name": "1.5.6-dev",
-  "latest_version_code": 10506,
+  "latest_version_name": "1.5.7-dev",
+  "latest_version_code": 10507,
   "minimum_supported_version_code": 0,
-  "apk_url": "https://download.lsa1230.dpdns.org/dev/Narra-v1.5.6-dev-10506-dev.apk",
-  "apk_sha256": "41dc37b82de5e683fd2f0888a61b4905992603815cda921ff3a702e14ca40c44",
-  "published_at": "2026-04-20T21:18:13+08:00",
+  "apk_url": "https://download.lsa1230.dpdns.org/dev/Narra-v1.5.7-dev-10507-dev.apk",
+  "apk_sha256": "46a24508b2205218307a3412b0326cfb2676e59ceab7a40ae31f6db6cbb47fdc",
+  "published_at": "2026-04-21T20:53:32+08:00",
   "release_notes": [
-    "修复设置主页存在未保存草稿时仍直接跳转，导致设置静默丢失的问题",
-    "修复提供商健康状态在修改连接信息后不刷新的问题，并补齐助手设置写入失败时的错误提示",
-    "修复沉浸设置页重开剧情和清空剧情过早返回的问题，补充相关 Android UI 回归测试"
+    "世界书编辑页新增\"试命中\"预览：输入一段待测文本就能看到条目会不会命中，以及具体哪些关键词命中",
+    "世界书匹配性能优化：DAO 直接按 scope 过滤，减少 AI 回复前的内存过滤开销",
+    "导入 Tavern 角色卡：probability（触发概率）升级为独立字段，在编辑页\"状态与高级\"下可见可改",
+    "内部重构：ViewModel 工厂收敛到公共 typedViewModelFactory，消除 10 处 UNCHECKED_CAST 并补类型校验"
   ]
 }
