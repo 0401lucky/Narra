@@ -171,4 +171,44 @@ class WorldBookViewModelTest {
         assertEquals("世界书已保存", viewModel.uiState.value.message)
         assertEquals(1, repository.listEntries().size)
     }
+
+    @Test
+    fun renameBook_successMessageContainsRenameKeyword() = runTest(mainDispatcherRule.dispatcher.scheduler) {
+        // 契约：成功 message 必须含"重命名"关键字，供 NavGraph 分派 snackbar
+        val repository = FakeWorldBookRepository(
+            initialEntries = listOf(
+                WorldBookEntry(id = "e1", bookId = "book-1", title = "t", content = "c", sourceBookName = "旧"),
+            ),
+        )
+        val viewModel = WorldBookViewModel(repository)
+        val job = launch { viewModel.uiState.collect { } }
+
+        advanceUntilIdle()
+        viewModel.renameBook("book-1", "新")
+        advanceUntilIdle()
+
+        val message = viewModel.uiState.value.message
+        assertTrue("message=$message 需包含\"重命名\"", message?.contains("重命名") == true)
+        job.cancel()
+    }
+
+    @Test
+    fun deleteBook_successMessageContainsDeleteKeyword() = runTest(mainDispatcherRule.dispatcher.scheduler) {
+        // 契约：成功 message 必须含"删除"关键字，供 NavGraph 分派 snackbar
+        val repository = FakeWorldBookRepository(
+            initialEntries = listOf(
+                WorldBookEntry(id = "e1", bookId = "book-1", title = "t", content = "c", sourceBookName = "目标"),
+            ),
+        )
+        val viewModel = WorldBookViewModel(repository)
+        val job = launch { viewModel.uiState.collect { } }
+
+        advanceUntilIdle()
+        viewModel.deleteBook("book-1")
+        advanceUntilIdle()
+
+        val message = viewModel.uiState.value.message
+        assertTrue("message=$message 需包含\"删除\"", message?.contains("删除") == true)
+        job.cancel()
+    }
 }
