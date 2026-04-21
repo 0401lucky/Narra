@@ -1226,25 +1226,22 @@ class RoleplayViewModel(
             memoryWriteService: MemoryWriteService,
             imageSaver: suspend (String) -> SavedImageFile = { throw IllegalStateException("图片保存未配置") },
         ): ViewModelProvider.Factory {
-            return object : ViewModelProvider.Factory {
-                @Suppress("UNCHECKED_CAST")
-                override fun <T : ViewModel> create(modelClass: Class<T>): T {
-                    return RoleplayViewModel(
-                        settingsRepository = settingsRepository,
-                        settingsEditor = settingsEditor,
-                        aiGateway = aiGateway,
-                        aiPromptExtrasService = aiPromptExtrasService,
-                        conversationRepository = conversationRepository,
-                        roleplayRepository = roleplayRepository,
-                        promptContextAssembler = promptContextAssembler,
-                        memoryRepository = memoryRepository,
-                        conversationSummaryRepository = conversationSummaryRepository,
-                        pendingMemoryProposalRepository = pendingMemoryProposalRepository,
-                        phoneSnapshotRepository = phoneSnapshotRepository,
-                        memoryWriteService = memoryWriteService,
-                        imageSaver = imageSaver,
-                    ) as T
-                }
+            return typedViewModelFactory {
+                RoleplayViewModel(
+                    settingsRepository = settingsRepository,
+                    settingsEditor = settingsEditor,
+                    aiGateway = aiGateway,
+                    aiPromptExtrasService = aiPromptExtrasService,
+                    conversationRepository = conversationRepository,
+                    roleplayRepository = roleplayRepository,
+                    promptContextAssembler = promptContextAssembler,
+                    memoryRepository = memoryRepository,
+                    conversationSummaryRepository = conversationSummaryRepository,
+                    pendingMemoryProposalRepository = pendingMemoryProposalRepository,
+                    phoneSnapshotRepository = phoneSnapshotRepository,
+                    memoryWriteService = memoryWriteService,
+                    imageSaver = imageSaver,
+                )
             }
         }
     }

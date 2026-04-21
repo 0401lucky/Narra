@@ -118,13 +118,8 @@ class WorldBookViewModel(
     companion object {
         fun factory(
             repository: WorldBookRepository,
-        ): ViewModelProvider.Factory {
-            return object : ViewModelProvider.Factory {
-                @Suppress("UNCHECKED_CAST")
-                override fun <T : ViewModel> create(modelClass: Class<T>): T {
-                    return WorldBookViewModel(repository) as T
-                }
-            }
+        ): ViewModelProvider.Factory = typedViewModelFactory {
+            WorldBookViewModel(repository)
         }
     }
 }

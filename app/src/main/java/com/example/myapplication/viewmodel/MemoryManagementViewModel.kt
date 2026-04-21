@@ -99,14 +99,11 @@ class MemoryManagementViewModel(
             memoryRepository: MemoryRepository,
             conversationSummaryRepository: ConversationSummaryRepository,
         ): ViewModelProvider.Factory {
-            return object : ViewModelProvider.Factory {
-                @Suppress("UNCHECKED_CAST")
-                override fun <T : ViewModel> create(modelClass: Class<T>): T {
-                    return MemoryManagementViewModel(
-                        memoryRepository = memoryRepository,
-                        conversationSummaryRepository = conversationSummaryRepository,
-                    ) as T
-                }
+            return typedViewModelFactory {
+                MemoryManagementViewModel(
+                    memoryRepository = memoryRepository,
+                    conversationSummaryRepository = conversationSummaryRepository,
+                )
             }
         }
     }

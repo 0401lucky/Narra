@@ -576,18 +576,15 @@ class ContextTransferViewModel(
             conversationSummaryRepository: ConversationSummaryRepository,
             importedAssistantAvatarSaver: suspend (AssistantAvatarImport) -> String? = { null },
         ): ViewModelProvider.Factory {
-            return object : ViewModelProvider.Factory {
-                @Suppress("UNCHECKED_CAST")
-                override fun <T : ViewModel> create(modelClass: Class<T>): T {
-                    return ContextTransferViewModel(
-                        settingsRepository = settingsRepository,
-                        settingsEditor = settingsEditor,
-                        worldBookRepository = worldBookRepository,
-                        memoryRepository = memoryRepository,
-                        conversationSummaryRepository = conversationSummaryRepository,
-                        importedAssistantAvatarSaver = importedAssistantAvatarSaver,
-                    ) as T
-                }
+            return typedViewModelFactory {
+                ContextTransferViewModel(
+                    settingsRepository = settingsRepository,
+                    settingsEditor = settingsEditor,
+                    worldBookRepository = worldBookRepository,
+                    memoryRepository = memoryRepository,
+                    conversationSummaryRepository = conversationSummaryRepository,
+                    importedAssistantAvatarSaver = importedAssistantAvatarSaver,
+                )
             }
         }
     }

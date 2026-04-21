@@ -656,16 +656,13 @@ class SettingsViewModel(
             modelCatalogRepository: AiModelCatalogRepository,
             imageFileCleaner: suspend (String?) -> Boolean = { false },
         ): ViewModelProvider.Factory {
-            return object : ViewModelProvider.Factory {
-                @Suppress("UNCHECKED_CAST")
-                override fun <T : ViewModel> create(modelClass: Class<T>): T {
-                    return SettingsViewModel(
-                        settingsRepository = settingsRepository,
-                        settingsEditor = settingsEditor,
-                        modelCatalogRepository = modelCatalogRepository,
-                        imageFileCleaner = imageFileCleaner,
-                    ) as T
-                }
+            return typedViewModelFactory {
+                SettingsViewModel(
+                    settingsRepository = settingsRepository,
+                    settingsEditor = settingsEditor,
+                    modelCatalogRepository = modelCatalogRepository,
+                    imageFileCleaner = imageFileCleaner,
+                )
             }
         }
     }

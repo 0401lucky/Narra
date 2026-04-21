@@ -778,21 +778,18 @@ class PhoneCheckViewModel(
             aiPromptExtrasService: AiPromptExtrasService,
             phoneContextBuilder: PhoneContextBuilder,
         ): ViewModelProvider.Factory {
-            return object : ViewModelProvider.Factory {
-                @Suppress("UNCHECKED_CAST")
-                override fun <T : ViewModel> create(modelClass: Class<T>): T {
-                    return PhoneCheckViewModel(
-                        initialConversationId = conversationId,
-                        initialScenarioId = scenarioId,
-                        initialOwnerType = ownerType,
-                        settingsRepository = settingsRepository,
-                        conversationRepository = conversationRepository,
-                        roleplayRepository = roleplayRepository,
-                        phoneSnapshotRepository = phoneSnapshotRepository,
-                        aiPromptExtrasService = aiPromptExtrasService,
-                        phoneContextBuilder = phoneContextBuilder,
-                    ) as T
-                }
+            return typedViewModelFactory {
+                PhoneCheckViewModel(
+                    initialConversationId = conversationId,
+                    initialScenarioId = scenarioId,
+                    initialOwnerType = ownerType,
+                    settingsRepository = settingsRepository,
+                    conversationRepository = conversationRepository,
+                    roleplayRepository = roleplayRepository,
+                    phoneSnapshotRepository = phoneSnapshotRepository,
+                    aiPromptExtrasService = aiPromptExtrasService,
+                    phoneContextBuilder = phoneContextBuilder,
+                )
             }
         }
     }

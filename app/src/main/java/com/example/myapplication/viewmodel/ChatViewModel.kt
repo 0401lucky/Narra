@@ -1661,21 +1661,18 @@ class ChatViewModel(
             promptContextAssembler: PromptContextAssembler,
             imageSaver: suspend (String) -> SavedImageFile = { throw IllegalStateException("图片保存未配置") },
         ): ViewModelProvider.Factory {
-            return object : ViewModelProvider.Factory {
-                @Suppress("UNCHECKED_CAST")
-                override fun <T : ViewModel> create(modelClass: Class<T>): T {
-                    return ChatViewModel(
-                        settingsRepository,
-                        aiGateway,
-                        aiPromptExtrasService,
-                        aiTranslationService,
-                        conversationRepository,
-                        memoryRepository,
-                        conversationSummaryRepository,
-                        promptContextAssembler,
-                        imageSaver = imageSaver,
-                    ) as T
-                }
+            return typedViewModelFactory {
+                ChatViewModel(
+                    settingsRepository,
+                    aiGateway,
+                    aiPromptExtrasService,
+                    aiTranslationService,
+                    conversationRepository,
+                    memoryRepository,
+                    conversationSummaryRepository,
+                    promptContextAssembler,
+                    imageSaver = imageSaver,
+                )
             }
         }
     }
