@@ -103,8 +103,8 @@ class RoomWorldBookRepository(
         return WorldBookEntryEntity(
             id = entry.id,
             bookId = resolvedBookId,
-            title = entry.title.trim(),
-            content = entry.content.trim(),
+            title = entry.title,
+            content = entry.content,
             keywordsJson = gson.toJson(normalizeStringList(entry.keywords)),
             aliasesJson = gson.toJson(normalizeStringList(entry.aliases)),
             secondaryKeywordsJson = gson.toJson(normalizeStringList(entry.secondaryKeywords)),
