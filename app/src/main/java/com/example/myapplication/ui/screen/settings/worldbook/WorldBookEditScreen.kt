@@ -67,6 +67,7 @@ fun WorldBookEditScreen(
     assistants: List<Assistant>,
     conversations: List<Conversation> = emptyList(),
     presetBookName: String = "",
+    existingBookNames: List<String> = emptyList(),
     onSave: (WorldBookEntry) -> Unit,
     onDelete: (String) -> Unit,
     onNavigateBack: () -> Unit,
@@ -200,15 +201,11 @@ fun WorldBookEditScreen(
                                 }
                             },
                         )
-                        OutlinedTextField(
+                        SourceBookNameDropdown(
                             value = sourceBookName,
                             onValueChange = { sourceBookName = it },
-                            label = { Text("所属世界书") },
-                            modifier = Modifier.fillMaxWidth(),
-                            singleLine = true,
-                            shape = RoundedCornerShape(16.dp),
-                            colors = outlineColors,
-                            placeholder = { Text("留空则作为独立条目显示") },
+                            existingBookNames = existingBookNames,
+                            outlineColors = outlineColors,
                         )
                     }
                 }
@@ -488,6 +485,57 @@ private fun filterIntegerInput(rawValue: String): String {
         rawValue.forEachIndexed { index, char ->
             if (char.isDigit() || (char == '-' && index == 0)) {
                 append(char)
+            }
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun SourceBookNameDropdown(
+    value: String,
+    onValueChange: (String) -> Unit,
+    existingBookNames: List<String>,
+    outlineColors: androidx.compose.material3.TextFieldColors,
+) {
+    var expanded by remember { mutableStateOf(false) }
+    val hasCandidates = existingBookNames.isNotEmpty()
+    ExposedDropdownMenuBox(
+        expanded = expanded && hasCandidates,
+        onExpandedChange = { next -> if (hasCandidates) expanded = next },
+    ) {
+        @Suppress("DEPRECATION")
+        OutlinedTextField(
+            value = value,
+            onValueChange = onValueChange,
+            label = { Text("所属世界书") },
+            modifier = Modifier
+                .fillMaxWidth()
+                .menuAnchor(),
+            singleLine = true,
+            shape = RoundedCornerShape(16.dp),
+            colors = outlineColors,
+            placeholder = { Text("留空则作为独立条目显示") },
+            trailingIcon = {
+                if (hasCandidates) {
+                    ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded)
+                }
+            },
+        )
+        if (hasCandidates) {
+            ExposedDropdownMenu(
+                expanded = expanded,
+                onDismissRequest = { expanded = false },
+            ) {
+                existingBookNames.forEach { name ->
+                    DropdownMenuItem(
+                        text = { Text(name) },
+                        onClick = {
+                            onValueChange(name)
+                            expanded = false
+                        },
+                    )
+                }
             }
         }
     }

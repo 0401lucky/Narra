@@ -140,6 +140,10 @@ internal fun NavGraphBuilder.registerSettingsDataRoutes(
             assistants = storedSettings.resolvedAssistants(),
             conversations = conversations,
             presetBookName = if (isNew) presetBookName else "",
+            existingBookNames = worldBookState.entries
+                .mapNotNull { it.sourceBookName.trim().takeIf { name -> name.isNotBlank() } }
+                .distinct()
+                .sorted(),
             onSave = worldBookViewModel::saveEntry,
             onDelete = worldBookViewModel::deleteEntry,
             onNavigateBack = {
