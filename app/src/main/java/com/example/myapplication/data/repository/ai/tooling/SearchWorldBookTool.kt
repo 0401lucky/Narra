@@ -43,8 +43,7 @@ class SearchWorldBookTool(
             return errorResult("搜索词不能为空")
         }
 
-        val entries = WorldBookScopeSupport.filterAccessibleEntries(
-            entries = context.worldBookRepository.listEnabledEntries(),
+        val entries = context.worldBookRepository.listAccessibleEnabledEntries(
             assistant = runtimeContext.assistant,
             conversation = conversation,
         )

@@ -1,7 +1,6 @@
 package com.example.myapplication.data.repository.ai.tooling
 
 import com.example.myapplication.context.MemoryScopeSupport
-import com.example.myapplication.context.WorldBookScopeSupport
 import com.example.myapplication.data.repository.context.ConversationSummaryRepository
 import com.example.myapplication.data.repository.context.MemoryRepository
 import com.example.myapplication.data.repository.context.WorldBookRepository
@@ -93,8 +92,7 @@ class ToolAvailabilityResolver(
         runtimeContext: GatewayToolRuntimeContext,
     ): Boolean {
         val conversation = runtimeContext.conversation ?: return false
-        return WorldBookScopeSupport.filterAccessibleEntries(
-            entries = worldBookRepository.listEnabledEntries(),
+        return worldBookRepository.listAccessibleEnabledEntries(
             assistant = runtimeContext.assistant,
             conversation = conversation,
         ).isNotEmpty()

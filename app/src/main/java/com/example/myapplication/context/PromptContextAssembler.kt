@@ -64,7 +64,10 @@ class DefaultPromptContextAssembler(
         val resolvedUserName = settings.resolvedUserDisplayName()
         val resolvedCharacterName = assistant?.name?.trim().orEmpty().ifBlank { "角色" }
         val matchedWorldBookEntries = worldBookMatcher.match(
-            entries = worldBookRepository.listEnabledEntries(),
+            entries = worldBookRepository.listAccessibleEnabledEntries(
+                assistant = assistant,
+                conversation = conversation,
+            ),
             assistant = assistant,
             conversation = conversation,
             userInputText = userInputText,

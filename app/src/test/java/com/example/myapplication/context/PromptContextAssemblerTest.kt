@@ -80,6 +80,11 @@ class PromptContextAssemblerTest {
                     )
                 }
 
+                override suspend fun listAccessibleEnabledEntries(
+                    assistant: Assistant?,
+                    conversation: Conversation?,
+                ): List<WorldBookEntry> = listEnabledEntries()
+
                 override suspend fun getEntry(entryId: String): WorldBookEntry? = null
 
                 override suspend fun upsertEntry(entry: WorldBookEntry) = Unit

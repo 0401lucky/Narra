@@ -1,6 +1,9 @@
 package com.example.myapplication.testutil
 
+import com.example.myapplication.context.WorldBookScopeSupport
 import com.example.myapplication.data.repository.context.WorldBookRepository
+import com.example.myapplication.model.Assistant
+import com.example.myapplication.model.Conversation
 import com.example.myapplication.model.WorldBookEntry
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -17,6 +20,17 @@ class FakeWorldBookRepository(
 
     override suspend fun listEnabledEntries(): List<WorldBookEntry> {
         return entriesState.value.filter { it.enabled }
+    }
+
+    override suspend fun listAccessibleEnabledEntries(
+        assistant: Assistant?,
+        conversation: Conversation?,
+    ): List<WorldBookEntry> {
+        return WorldBookScopeSupport.filterAccessibleEntries(
+            entries = entriesState.value.filter { it.enabled },
+            assistant = assistant,
+            conversation = conversation,
+        )
     }
 
     override suspend fun getEntry(entryId: String): WorldBookEntry? {

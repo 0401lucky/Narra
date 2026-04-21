@@ -29,6 +29,35 @@ interface WorldBookDao {
     )
     suspend fun listEnabledEntries(): List<WorldBookEntryEntity>
 
+    /**
+     * 按"可访问"语义直接过滤：替代调用方再跑一次 WorldBookScopeSupport.filterAccessibleEntries。
+     * - GLOBAL 全部返回
+     * - ATTACHABLE：id 在 linkedEntryIds 里，或 bookId 在 linkedBookIds 里
+     * - ASSISTANT：scopeId = assistantId 且 assistantId 非空
+     * - CONVERSATION：scopeId = conversationId 且 conversationId 非空
+     *
+     * 当集合为空时，Room 会把 `IN ()` 绑定为 `IN (NULL)`，条件自然恒假，
+     * 对应"没有挂载 / 没有会话"的自然语义。
+     */
+    @Query(
+        """
+        SELECT * FROM worldbook_entries
+        WHERE enabled = 1 AND (
+            scopeType = 'global'
+            OR (scopeType = 'attachable' AND (id IN (:linkedEntryIds) OR bookId IN (:linkedBookIds)))
+            OR (scopeType = 'assistant' AND :assistantId != '' AND scopeId = :assistantId)
+            OR (scopeType = 'conversation' AND :conversationId != '' AND scopeId = :conversationId)
+        )
+        ORDER BY alwaysActive DESC, priority DESC, insertionOrder ASC, createdAt ASC, updatedAt DESC
+        """,
+    )
+    suspend fun listAccessibleEnabledEntries(
+        assistantId: String,
+        conversationId: String,
+        linkedEntryIds: List<String>,
+        linkedBookIds: List<String>,
+    ): List<WorldBookEntryEntity>
+
     @Query("SELECT * FROM worldbook_entries WHERE id = :entryId LIMIT 1")
     suspend fun getEntry(entryId: String): WorldBookEntryEntity?
 

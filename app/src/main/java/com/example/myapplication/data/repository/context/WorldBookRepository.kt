@@ -2,6 +2,8 @@ package com.example.myapplication.data.repository.context
 
 import com.example.myapplication.data.local.worldbook.WorldBookDao
 import com.example.myapplication.data.local.worldbook.WorldBookEntryEntity
+import com.example.myapplication.model.Assistant
+import com.example.myapplication.model.Conversation
 import com.example.myapplication.model.WorldBookEntry
 import com.example.myapplication.model.WorldBookMatchMode
 import com.example.myapplication.model.WorldBookScopeType
@@ -19,6 +21,21 @@ interface WorldBookRepository {
     suspend fun listEntries(): List<WorldBookEntry>
 
     suspend fun listEnabledEntries(): List<WorldBookEntry>
+
+    /**
+     * 直接在 SQL 层按"对当前 assistant + conversation 可访问"过滤，
+     * 减少 Matcher / 工具热路径把全量条目拉到内存再过滤的开销。
+     *
+     * 与 `WorldBookScopeSupport.filterAccessibleEntries` 语义一致：
+     *   GLOBAL 全部返回；
+     *   ATTACHABLE 只返回 assistant.linkedWorldBookIds / linkedWorldBookBookIds 命中的条目；
+     *   ASSISTANT 只返回 scopeId == assistant.id 的条目；
+     *   CONVERSATION 只返回 scopeId == conversation.id 的条目。
+     */
+    suspend fun listAccessibleEnabledEntries(
+        assistant: Assistant?,
+        conversation: Conversation?,
+    ): List<WorldBookEntry>
 
     suspend fun getEntry(entryId: String): WorldBookEntry?
 
@@ -49,6 +66,26 @@ class RoomWorldBookRepository(
 
     override suspend fun listEnabledEntries(): List<WorldBookEntry> {
         return worldBookDao.listEnabledEntries().map(::toDomain)
+    }
+
+    override suspend fun listAccessibleEnabledEntries(
+        assistant: Assistant?,
+        conversation: Conversation?,
+    ): List<WorldBookEntry> {
+        val linkedEntryIds = assistant?.linkedWorldBookIds
+            ?.mapNotNull { value -> value.trim().takeIf { it.isNotEmpty() } }
+            .orEmpty()
+        val linkedBookIds = assistant?.linkedWorldBookBookIds
+            ?.mapNotNull { value -> value.trim().takeIf { it.isNotEmpty() } }
+            .orEmpty()
+        val assistantId = assistant?.id?.trim().orEmpty()
+        val conversationId = conversation?.id?.trim().orEmpty()
+        return worldBookDao.listAccessibleEnabledEntries(
+            assistantId = assistantId,
+            conversationId = conversationId,
+            linkedEntryIds = linkedEntryIds,
+            linkedBookIds = linkedBookIds,
+        ).map(::toDomain)
     }
 
     override suspend fun getEntry(entryId: String): WorldBookEntry? {
@@ -162,6 +199,11 @@ object EmptyWorldBookRepository : WorldBookRepository {
     override suspend fun listEntries(): List<WorldBookEntry> = emptyList()
 
     override suspend fun listEnabledEntries(): List<WorldBookEntry> = emptyList()
+
+    override suspend fun listAccessibleEnabledEntries(
+        assistant: Assistant?,
+        conversation: Conversation?,
+    ): List<WorldBookEntry> = emptyList()
 
     override suspend fun getEntry(entryId: String): WorldBookEntry? = null
 
