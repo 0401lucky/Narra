@@ -7,6 +7,7 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class WorldBookRepositoryTest {
@@ -84,6 +85,72 @@ class WorldBookRepositoryTest {
 
         val loaded = repository.getEntry("entry-empty")!!
         assertEquals("{}", loaded.extrasJson)
+    }
+
+    @Test
+    fun upsertEntry_fillsTimestampsWhenZero() = runTest {
+        val dao = RecordingWorldBookDao()
+        val repository = RoomWorldBookRepository(dao)
+        val before = System.currentTimeMillis()
+
+        repository.upsertEntry(
+            WorldBookEntry(
+                id = "entry-ts",
+                title = "t",
+                content = "c",
+                sourceBookName = "书",
+                createdAt = 0L,
+                updatedAt = 0L,
+            ),
+        )
+
+        val saved = dao.captured!!
+        assertTrue("createdAt 应被兜底为当前时间", saved.createdAt >= before)
+        assertEquals(saved.createdAt, saved.updatedAt)
+    }
+
+    @Test
+    fun upsertEntry_preservesExplicitTimestamps() = runTest {
+        val dao = RecordingWorldBookDao()
+        val repository = RoomWorldBookRepository(dao)
+
+        repository.upsertEntry(
+            WorldBookEntry(
+                id = "entry-ts-2",
+                title = "t",
+                content = "c",
+                sourceBookName = "书",
+                createdAt = 1_700_000_000_000L,
+                updatedAt = 1_700_000_001_000L,
+            ),
+        )
+
+        assertEquals(1_700_000_000_000L, dao.captured?.createdAt)
+        assertEquals(1_700_000_001_000L, dao.captured?.updatedAt)
+    }
+
+    @Test
+    fun upsertEntry_usesCreatedAtAsFallbackForUpdatedAt() = runTest {
+        val dao = RecordingWorldBookDao()
+        val repository = RoomWorldBookRepository(dao)
+
+        repository.upsertEntry(
+            WorldBookEntry(
+                id = "entry-ts-3",
+                title = "t",
+                content = "c",
+                sourceBookName = "书",
+                createdAt = 1_700_000_000_000L,
+                updatedAt = 0L,
+            ),
+        )
+
+        assertEquals(1_700_000_000_000L, dao.captured?.createdAt)
+        assertEquals(
+            "updatedAt 为 0 时应沿用 createdAt，而不是覆盖为当前时间",
+            1_700_000_000_000L,
+            dao.captured?.updatedAt,
+        )
     }
 
     private class RecordingWorldBookDao : WorldBookDao {

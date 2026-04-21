@@ -113,6 +113,9 @@ class RoomWorldBookRepository(
                 ?.let(::deriveWorldBookBookId)
                 .orEmpty()
         }
+        val now = System.currentTimeMillis()
+        val resolvedCreatedAt = entry.createdAt.takeIf { it > 0L } ?: now
+        val resolvedUpdatedAt = entry.updatedAt.takeIf { it > 0L } ?: resolvedCreatedAt
         return WorldBookEntryEntity(
             id = entry.id,
             bookId = resolvedBookId,
@@ -131,8 +134,8 @@ class RoomWorldBookRepository(
             sourceBookName = normalizedSourceBookName,
             scopeType = entry.scopeType.storageValue,
             scopeId = entry.resolvedScopeId(),
-            createdAt = entry.createdAt,
-            updatedAt = entry.updatedAt,
+            createdAt = resolvedCreatedAt,
+            updatedAt = resolvedUpdatedAt,
             extrasJson = entry.extrasJson.ifBlank { "{}" },
         )
     }
