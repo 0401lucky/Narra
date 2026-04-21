@@ -85,6 +85,10 @@ class PromptContextAssemblerTest {
                 override suspend fun upsertEntry(entry: WorldBookEntry) = Unit
 
                 override suspend fun deleteEntry(entryId: String) = Unit
+
+                override suspend fun renameBook(bookId: String, newBookName: String) = Unit
+
+                override suspend fun deleteBook(bookId: String) = Unit
             },
         )
 
