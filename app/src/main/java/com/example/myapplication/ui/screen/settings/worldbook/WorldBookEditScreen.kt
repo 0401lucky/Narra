@@ -103,6 +103,9 @@ fun WorldBookEditScreen(
     var insertionOrderText by rememberSaveable {
         mutableStateOf((entry?.insertionOrder ?: 0).toString())
     }
+    var probabilityText by rememberSaveable {
+        mutableStateOf((entry?.probability ?: 100).toString())
+    }
     var enabled by rememberSaveable { mutableStateOf(entry?.enabled ?: true) }
     var alwaysActive by rememberSaveable { mutableStateOf(entry?.alwaysActive ?: false) }
     var selective by rememberSaveable { mutableStateOf(entry?.selective ?: false) }
@@ -143,6 +146,7 @@ fun WorldBookEditScreen(
                 caseSensitive = caseSensitive,
                 matchMode = matchMode,
                 insertionOrder = insertionOrderText.trim().toIntOrNull() ?: 0,
+                probability = (probabilityText.trim().toIntOrNull() ?: 100).coerceIn(0, 100),
                 enabled = enabled,
                 alwaysActive = alwaysActive,
                 priority = priorityText.trim().toIntOrNull() ?: 0,
@@ -446,6 +450,17 @@ fun WorldBookEditScreen(
                                 colors = outlineColors,
                                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                                 placeholder = { Text("越小越靠前（默认 0）") },
+                            )
+                            OutlinedTextField(
+                                value = probabilityText,
+                                onValueChange = { probabilityText = filterIntegerInput(it) },
+                                label = { Text("触发概率 (probability)") },
+                                modifier = Modifier.fillMaxWidth(),
+                                singleLine = true,
+                                shape = RoundedCornerShape(16.dp),
+                                colors = outlineColors,
+                                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                                placeholder = { Text("0-100，默认 100 表示每次命中都注入") },
                             )
                         }
                     }

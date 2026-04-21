@@ -4,6 +4,7 @@ import androidx.room.Entity
 import androidx.room.Index
 import androidx.room.PrimaryKey
 import com.example.myapplication.model.DEFAULT_WORLD_BOOK_MATCH_MODE_STORAGE
+import com.example.myapplication.model.DEFAULT_WORLD_BOOK_PROBABILITY
 
 @Entity(
     tableName = "worldbook_entries",
@@ -28,6 +29,7 @@ data class WorldBookEntryEntity(
     val matchMode: String = DEFAULT_WORLD_BOOK_MATCH_MODE_STORAGE,
     val priority: Int = 0,
     val insertionOrder: Int = 0,
+    val probability: Int = DEFAULT_WORLD_BOOK_PROBABILITY,
     val sourceBookName: String = "",
     val scopeType: String = "global",
     val scopeId: String = "",

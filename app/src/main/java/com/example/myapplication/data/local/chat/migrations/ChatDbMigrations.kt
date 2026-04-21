@@ -590,6 +590,16 @@ internal object ChatDbMigrations {
         }
     }
 
+    val MIGRATION_29_30 = object : Migration(29, 30) {
+        override fun migrate(db: SupportSQLiteDatabase) {
+            if (!hasColumn(db, "worldbook_entries", "probability")) {
+                db.execSQL(
+                    "ALTER TABLE worldbook_entries ADD COLUMN probability INTEGER NOT NULL DEFAULT 100",
+                )
+            }
+        }
+    }
+
     /** 版本连续性由 `ChatDatabaseMigrationRegistryTest` 保证：`size == CURRENT_VERSION - 1`。 */
     val ALL: Array<Migration> = arrayOf(
         MIGRATION_1_2,
@@ -620,6 +630,7 @@ internal object ChatDbMigrations {
         MIGRATION_26_27,
         MIGRATION_27_28,
         MIGRATION_28_29,
+        MIGRATION_29_30,
     )
 
     /** 幂等列检查。子迁移在 `ALTER TABLE ADD COLUMN` 之前先探测，允许中间版本重复升级。 */

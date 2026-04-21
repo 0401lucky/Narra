@@ -157,6 +157,53 @@ class WorldBookRepositoryTest {
     }
 
     @Test
+    fun upsertEntry_persistsProbabilityWithinRange() = runTest {
+        val dao = RecordingWorldBookDao()
+        val repository = RoomWorldBookRepository(dao)
+
+        repository.upsertEntry(
+            WorldBookEntry(
+                id = "entry-prob",
+                title = "t",
+                content = "c",
+                sourceBookName = "书",
+                probability = 45,
+            ),
+        )
+
+        assertEquals(45, dao.captured?.probability)
+        assertEquals(45, repository.getEntry("entry-prob")?.probability)
+    }
+
+    @Test
+    fun upsertEntry_clampsProbabilityToValidRange() = runTest {
+        val dao = RecordingWorldBookDao()
+        val repository = RoomWorldBookRepository(dao)
+
+        repository.upsertEntry(
+            WorldBookEntry(
+                id = "entry-over",
+                title = "t",
+                content = "c",
+                sourceBookName = "书",
+                probability = 150,
+            ),
+        )
+        repository.upsertEntry(
+            WorldBookEntry(
+                id = "entry-neg",
+                title = "t",
+                content = "c",
+                sourceBookName = "书",
+                probability = -10,
+            ),
+        )
+
+        assertEquals(100, repository.getEntry("entry-over")?.probability)
+        assertEquals(0, repository.getEntry("entry-neg")?.probability)
+    }
+
+    @Test
     fun listAccessibleEnabledEntries_returnsGlobalAlwaysAndScopedEntries() = runTest {
         val dao = RecordingWorldBookDao()
         val repository = RoomWorldBookRepository(dao)

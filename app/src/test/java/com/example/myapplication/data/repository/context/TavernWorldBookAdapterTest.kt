@@ -21,7 +21,6 @@ class TavernWorldBookAdapterTest {
                   "comment": "标题",
                   "content": "正文",
                   "key": ["关键词"],
-                  "probability": 80,
                   "depth": 3,
                   "position_override": 1,
                   "role": "system",
@@ -34,13 +33,44 @@ class TavernWorldBookAdapterTest {
         val bundle = adapter.decodeAsBundle(raw)!!
         val entry = bundle.worldBookEntries.single()
         val extras = gson.fromJson(entry.extrasJson, JsonObject::class.java)
-        assertEquals(80, extras.get("probability").asInt)
         assertEquals(3, extras.get("depth").asInt)
         assertEquals(1, extras.get("position_override").asInt)
         assertEquals("system", extras.get("role").asString)
         assertEquals("AND", extras.get("logic").asString)
         assertFalse("extrasJson 不应包含已映射的 content", extras.has("content"))
         assertFalse("extrasJson 不应包含已映射的 uid", extras.has("uid"))
+    }
+
+    @Test
+    fun decodeAsBundle_mapsProbabilityToDedicatedField() {
+        val raw = """
+            {
+              "name": "测试书",
+              "entries": [
+                { "uid":"u-1", "comment":"t", "content":"c", "key":["k"], "probability": 80 }
+              ]
+            }
+        """.trimIndent()
+
+        val entry = adapter.decodeAsBundle(raw)!!.worldBookEntries.single()
+        assertEquals(80, entry.probability)
+        val extras = gson.fromJson(entry.extrasJson, JsonObject::class.java)
+        assertFalse("probability 应成为独立字段，不再保留在 extrasJson", extras.has("probability"))
+    }
+
+    @Test
+    fun decodeAsBundle_missingProbabilityDefaultsTo100() {
+        val raw = """
+            {
+              "name": "测试书",
+              "entries": [
+                { "uid":"u-1", "comment":"t", "content":"c", "key":["k"] }
+              ]
+            }
+        """.trimIndent()
+
+        val entry = adapter.decodeAsBundle(raw)!!.worldBookEntries.single()
+        assertEquals(100, entry.probability)
     }
 
     @Test

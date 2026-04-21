@@ -34,6 +34,7 @@ data class WorldBookEntry(
     val matchMode: WorldBookMatchMode = WorldBookMatchMode.WORD_CJK,
     val priority: Int = 0,
     val insertionOrder: Int = 0,
+    val probability: Int = DEFAULT_WORLD_BOOK_PROBABILITY,
     val sourceBookName: String = "",
     val scopeType: WorldBookScopeType = WorldBookScopeType.GLOBAL,
     val scopeId: String = "",
@@ -80,3 +81,6 @@ fun deriveWorldBookBookId(bookName: String): String {
         normalizedBookName.toByteArray(StandardCharsets.UTF_8),
     ).toString()
 }
+
+/** Tavern `probability` 的默认值：100 表示命中后 100% 生效。 */
+const val DEFAULT_WORLD_BOOK_PROBABILITY: Int = 100

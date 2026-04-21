@@ -1,6 +1,7 @@
 package com.example.myapplication.data.repository.context
 
 import com.example.myapplication.model.ContextDataBundle
+import com.example.myapplication.model.DEFAULT_WORLD_BOOK_PROBABILITY
 import com.example.myapplication.model.WorldBookEntry
 import com.example.myapplication.model.WorldBookScopeType
 import com.example.myapplication.model.deriveWorldBookBookId
@@ -93,6 +94,8 @@ class TavernWorldBookAdapter(
                 caseSensitive = entry.getBoolean("caseSensitive", defaultValue = false),
                 priority = entry.getInt("order"),
                 insertionOrder = entry.getInt("position", index),
+                probability = entry.getInt("probability", DEFAULT_WORLD_BOOK_PROBABILITY)
+                    .coerceIn(0, 100),
                 sourceBookName = bookName,
                 scopeType = WorldBookScopeType.ATTACHABLE,
                 scopeId = "",
@@ -226,6 +229,7 @@ class TavernWorldBookAdapter(
             "caseSensitive",
             "order",
             "position",
+            "probability",
         )
     }
 }
