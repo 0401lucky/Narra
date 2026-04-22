@@ -14,6 +14,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.outlined.Build
 import androidx.compose.material.icons.outlined.Close
+import androidx.compose.material.icons.outlined.Edit
 import androidx.compose.material.icons.outlined.Image
 import androidx.compose.material.icons.outlined.Psychology
 import androidx.compose.material.icons.outlined.Search
@@ -210,6 +211,7 @@ private fun abilityColors(ability: ModelAbility): Pair<Color, Color> {
     val isDark = isSystemInDarkTheme()
     return when (ability) {
         ModelAbility.VISION -> if (isDark) Color(0xFF1B3A2E) to Color(0xFF74D7A8) else Color(0xFFE8F5E9) to Color(0xFF4CAF50)
+        ModelAbility.IMAGE_EDITING -> if (isDark) Color(0xFF253245) to Color(0xFF90CAF9) else Color(0xFFE8F0FE) to Color(0xFF3F51B5)
         ModelAbility.REASONING -> if (isDark) Color(0xFF1B2A45) to Color(0xFF8AB4F8) else Color(0xFFE3F2FD) to Color(0xFF2196F3)
         ModelAbility.TOOL -> if (isDark) Color(0xFF3D2810) to Color(0xFFD4956A) else Color(0xFFFFF3E0) to Color(0xFFFF9800)
         ModelAbility.IMAGE_GENERATION -> if (isDark) Color(0xFF2D1B3D) to Color(0xFFCE93D8) else Color(0xFFF3E5F5) to Color(0xFF9C27B0)
@@ -219,6 +221,7 @@ private fun abilityColors(ability: ModelAbility): Pair<Color, Color> {
 private fun abilityIcon(ability: ModelAbility): ImageVector {
     return when (ability) {
         ModelAbility.VISION -> Icons.Outlined.Visibility
+        ModelAbility.IMAGE_EDITING -> Icons.Outlined.Edit
         ModelAbility.REASONING -> Icons.Outlined.Psychology
         ModelAbility.TOOL -> Icons.Outlined.Build
         ModelAbility.IMAGE_GENERATION -> Icons.Outlined.Image

@@ -2,6 +2,7 @@ package com.example.myapplication.data.remote
 
 import com.example.myapplication.model.ChatCompletionRequest
 import com.example.myapplication.model.ChatCompletionResponse
+import com.example.myapplication.model.ImageEditRequest
 import com.example.myapplication.model.ImageGenerationRequest
 import com.example.myapplication.model.ImageGenerationResponse
 import com.example.myapplication.model.ModelsResponse
@@ -37,5 +38,10 @@ interface OpenAiCompatibleApi {
     @POST("images/generations")
     suspend fun generateImage(
         @Body request: ImageGenerationRequest,
+    ): Response<ImageGenerationResponse>
+
+    @POST("images/edits")
+    suspend fun editImage(
+        @Body request: ImageEditRequest,
     ): Response<ImageGenerationResponse>
 }

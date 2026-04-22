@@ -65,7 +65,7 @@ class AiModelCatalogRepositoryTest {
         val repository = DefaultAiModelCatalogRepository(
             apiServiceFactory = ApiServiceFactory(),
             apiServiceProvider = { _, _ ->
-                object : OpenAiCompatibleApi {
+                object : com.example.myapplication.testutil.TestOpenAiCompatibleApi() {
                     override suspend fun listModels(): Response<ModelsResponse> {
                         throw UnknownHostException("www.lucky04.dpdns.org")
                     }

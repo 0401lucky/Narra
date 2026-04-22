@@ -214,6 +214,14 @@ class ModelInfoTest {
     }
 
     @Test
+    fun imageEditing_gptImage1() {
+        val abilities = inferModelAbilities("gpt-image-1")
+        val imageEditingAbility = ModelAbility.valueOf("IMAGE_EDITING")
+        assertTrue(abilities.contains(ModelAbility.IMAGE_GENERATION))
+        assertTrue(abilities.contains(imageEditingAbility))
+    }
+
+    @Test
     fun imageGeneration_gemini25FlashImagePreview() {
         assertTrue(
             inferModelAbilities("google/gemini-2.5-flash-image-preview:free")

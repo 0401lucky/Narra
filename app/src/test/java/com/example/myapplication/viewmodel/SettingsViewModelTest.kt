@@ -626,7 +626,7 @@ class SettingsViewModelTest {
                 selectedProviderId = provider.id,
             ),
             apiServiceProvider = { _, _ ->
-                object : OpenAiCompatibleApi {
+                object : com.example.myapplication.testutil.TestOpenAiCompatibleApi() {
                     override suspend fun listModels(): Response<ModelsResponse> {
                         return Response.success(ModelsResponse(data = listOf(ModelDto(id = "model-a"))))
                     }

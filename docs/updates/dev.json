@@ -1,15 +1,15 @@
 {
   "app_id": "com.narra.app.dev",
   "channel": "dev",
-  "latest_version_name": "1.5.7-dev",
-  "latest_version_code": 10507,
+  "latest_version_name": "1.5.8-dev",
+  "latest_version_code": 10508,
   "minimum_supported_version_code": 0,
-  "apk_url": "https://download.lsa1230.dpdns.org/dev/Narra-v1.5.7-dev-10507-dev.apk",
-  "apk_sha256": "b903cbf54d29ccee1f807526c81819afb2ef734d738d870274559acb4792ba33",
-  "published_at": "2026-04-22T18:58:28+08:00",
+  "apk_url": "https://download.lsa1230.dpdns.org/dev/Narra-v1.5.8-dev-10508-dev.apk",
+  "apk_sha256": "9d4c3af2b09f973d6da61d394d7c1add43b06a65cc8a2c5fb51af3103b9b7bdb",
+  "published_at": "2026-04-22T23:35:49+08:00",
   "release_notes": [
-    "普通聊天里的生图消息新增全屏图片预览，支持双击放大、双指缩放与拖动查看细节",
-    "纯图片消息的“更多操作”新增图片兜底入口，可直接查看图片；单图消息可直接保存到系统相册",
-    "图片保存链路统一支持本地文件、content://、data:image/... 与远程 URL，并兼容 Android 7-9 存储权限与 Android 10+ 系统相册写入"
+    "支持参考图编辑的生图模型现在可以直接上传图片，并以“文字 + 参考图”的方式发起改图",
+    "普通聊天生图链路补齐 images/edits 调用，兼容 OpenAI 风格图片编辑接口",
+    "生图失败后点击重试时会保留参考图，不会再退化成纯提示词重新生图"
   ]
 }

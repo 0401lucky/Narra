@@ -4,6 +4,8 @@ import com.example.myapplication.conversation.RoundTripInitialPersistence
 import com.example.myapplication.model.ChatMessage
 import com.example.myapplication.model.MessageRole
 import com.example.myapplication.model.MessageStatus
+import com.example.myapplication.model.imageMessagePart
+import com.example.myapplication.model.textMessagePart
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -113,5 +115,47 @@ class ChatRetrySupportTest {
         )
 
         assertTrue(result is ChatRetryResolution.NoOp)
+    }
+
+    @Test
+    fun resolveRetry_forImageEditingPreservesReferenceImages() {
+        val userMessage = ChatMessage(
+            id = "user-1",
+            conversationId = "c1",
+            role = MessageRole.USER,
+            content = "把它改成漫画风",
+            status = MessageStatus.COMPLETED,
+            createdAt = 1L,
+            parts = listOf(
+                textMessagePart("把它改成漫画风"),
+                imageMessagePart(
+                    uri = "content://image/1",
+                    mimeType = "image/png",
+                    fileName = "ref.png",
+                ),
+            ),
+        )
+        val failedAssistant = ChatMessage(
+            id = "assistant-1",
+            conversationId = "c1",
+            role = MessageRole.ASSISTANT,
+            content = "发送失败",
+            status = MessageStatus.ERROR,
+            createdAt = 2L,
+        )
+
+        val result = ChatRetrySupport.resolveRetry(
+            messageId = failedAssistant.id,
+            currentMessages = listOf(userMessage, failedAssistant),
+            imageGenerationEnabled = true,
+        )
+
+        val ready = result as ChatRetryResolution.Ready
+        val getter = ready.javaClass.getMethod("getRetryImageAttachments")
+        @Suppress("UNCHECKED_CAST")
+        val retryImages = getter.invoke(ready) as List<com.example.myapplication.model.MessageAttachment>
+        assertEquals(1, retryImages.size)
+        assertEquals("ref.png", retryImages.single().fileName)
+        assertEquals("把它改成漫画风", ready.retryPrompt)
     }
 }

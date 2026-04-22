@@ -51,7 +51,7 @@ class TranslationViewModelTest {
                 selectedProviderId = provider.id,
             ),
             apiServiceProvider = { _, _ ->
-                object : OpenAiCompatibleApi {
+                object : com.example.myapplication.testutil.TestOpenAiCompatibleApi() {
                     override suspend fun listModels(): Response<com.example.myapplication.model.ModelsResponse> {
                         error("不应调用模型接口")
                     }

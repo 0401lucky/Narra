@@ -101,6 +101,18 @@ object ChatConversationSupport {
         return ModelAbility.VISION in abilities
     }
 
+    fun supportsImageEditingInput(
+        settings: AppSettings,
+        modelId: String,
+    ): Boolean {
+        if (modelId.isBlank()) {
+            return false
+        }
+        val abilities = settings.activeProvider()?.resolveModelAbilities(modelId)
+            ?: inferModelAbilities(modelId)
+        return ModelAbility.IMAGE_EDITING in abilities
+    }
+
     fun validateOutgoingParts(
         settings: AppSettings,
         userParts: List<ChatMessagePart>,
@@ -115,8 +127,22 @@ object ChatConversationSupport {
         }
         val hasImageParts = normalizedParts.any { it.type == ChatMessagePartType.IMAGE }
         val hasFileParts = normalizedParts.any { it.type == ChatMessagePartType.FILE }
-        if (supportsImageGeneration(settings, selectedModel) && (hasImageParts || hasFileParts)) {
-            return "当前模型为生图模型，仅支持文本提示词。请切换到聊天模型后再发送附件"
+        val hasTextPrompt = normalizedParts.any {
+            it.type == ChatMessagePartType.TEXT && it.text.isNotBlank()
+        }
+        if (supportsImageGeneration(settings, selectedModel)) {
+            if (hasFileParts) {
+                return "当前模型为生图模型，仅支持图片参考图，不支持文件附件"
+            }
+            if (hasImageParts) {
+                if (!supportsImageEditingInput(settings, selectedModel)) {
+                    return "当前模型为生图模型，当前不支持参考图改图，请改用文本提示词或切换模型"
+                }
+                if (!hasTextPrompt) {
+                    return "当前模型支持参考图改图，请先输入修改要求后再发送图片"
+                }
+            }
+            return null
         }
         if (hasImageParts && !supportsVisionInput(settings, selectedModel)) {
             return "当前模型不支持图片理解，请切换到支持视觉的模型后再发送图片"

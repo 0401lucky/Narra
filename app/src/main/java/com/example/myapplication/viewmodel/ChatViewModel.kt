@@ -36,6 +36,7 @@ import com.example.myapplication.data.repository.context.ConversationSummaryRepo
 import com.example.myapplication.data.repository.context.MemoryRepository
 import com.example.myapplication.model.AppSettings
 import com.example.myapplication.model.Assistant
+import com.example.myapplication.model.AttachmentType
 import com.example.myapplication.model.ChatMessage
 import com.example.myapplication.model.ChatMessagePart
 import com.example.myapplication.model.ChatReasoningStep
@@ -47,6 +48,7 @@ import com.example.myapplication.model.DEFAULT_CONVERSATION_TITLE
 import com.example.myapplication.model.GatewayToolingOptions
 import com.example.myapplication.model.MemoryEntry
 import com.example.myapplication.model.MemoryScopeType
+import com.example.myapplication.model.MessageAttachment
 import com.example.myapplication.model.MessageStatus
 import com.example.myapplication.model.ProviderFunction
 import com.example.myapplication.model.PromptMode
@@ -55,6 +57,7 @@ import com.example.myapplication.model.isTransferPart
 import com.example.myapplication.model.normalizeChatMessageParts
 import com.example.myapplication.model.specialMetadataValue
 import com.example.myapplication.model.toContentMirror
+import com.example.myapplication.model.toMessageAttachmentOrNull
 import com.example.myapplication.model.transferResultText
 import com.example.myapplication.model.withGiftImageGenerating
 import kotlinx.coroutines.CancellationException
@@ -505,6 +508,7 @@ class ChatViewModel(
                         conversationId = conversationId,
                         loadingMessage = retryResolution.loadingMessage,
                         prompt = retryResolution.retryPrompt,
+                        referenceImages = retryResolution.retryImageAttachments,
                         selectedModel = selectedModel,
                         initialPersistence = retryResolution.initialPersistence,
                         buildFinalMessages = retryResolution::buildFinalMessages,
@@ -740,6 +744,7 @@ class ChatViewModel(
         conversationId: String,
         loadingMessage: ChatMessage,
         prompt: String,
+        referenceImages: List<MessageAttachment> = emptyList(),
         selectedModel: String,
         initialPersistence: RoundTripInitialPersistence,
         buildFinalMessages: (ChatMessage) -> List<ChatMessage>,
@@ -754,7 +759,18 @@ class ChatViewModel(
             try {
                 val completedAssistant = imageGenerationSupport.buildCompletedAssistant(
                     loadingMessage = loadingMessage,
-                    results = aiGateway.generateImage(prompt),
+                    results = if (referenceImages.isNotEmpty()) {
+                        aiGateway.editImage(
+                            prompt = prompt,
+                            images = referenceImages,
+                            modelId = selectedModel,
+                        )
+                    } else {
+                        aiGateway.generateImage(
+                            prompt = prompt,
+                            modelId = selectedModel,
+                        )
+                    },
                 )
                 conversationRepository.upsertMessages(
                     conversationId = conversationId,
@@ -1523,6 +1539,7 @@ class ChatViewModel(
         val shouldGenerateGiftImage = originalGiftPart != null &&
             activeProvider != null &&
             giftImageModelId.isNotBlank()
+        val imageReferenceAttachments = resolveImageReferenceAttachments(userParts)
         val resolvedUserParts = if (shouldGenerateGiftImage) {
             userParts.map { part ->
                 if (part.specialId == originalGiftPart?.specialId) {
@@ -1591,6 +1608,7 @@ class ChatViewModel(
                 conversationId = conversationId,
                 loadingMessage = preparedRoundTrip.loadingMessage,
                 prompt = imageGenerationPrompt,
+                referenceImages = imageReferenceAttachments,
                 selectedModel = selectedModel,
                 initialPersistence = RoundTripInitialPersistence.Append(
                     messages = listOf(preparedRoundTrip.userMessage, preparedRoundTrip.loadingMessage),
@@ -1640,6 +1658,16 @@ class ChatViewModel(
                 }
             }
         }
+    }
+
+    private fun resolveImageReferenceAttachments(
+        parts: List<ChatMessagePart>,
+    ): List<MessageAttachment> {
+        return normalizeChatMessageParts(parts)
+            .mapNotNull { part ->
+                part.toMessageAttachmentOrNull()
+                    ?.takeIf { attachment -> attachment.type == AttachmentType.IMAGE }
+            }
     }
 
     companion object {

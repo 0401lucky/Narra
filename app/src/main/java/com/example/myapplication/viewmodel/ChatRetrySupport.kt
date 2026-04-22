@@ -5,6 +5,7 @@ import com.example.myapplication.model.ChatMessage
 import com.example.myapplication.model.MessageRole
 import com.example.myapplication.model.MessageStatus
 import com.example.myapplication.model.hasSendableContent
+import com.example.myapplication.model.toMessageAttachments
 
 sealed interface ChatRetryResolution {
     data object NoOp : ChatRetryResolution
@@ -18,6 +19,7 @@ sealed interface ChatRetryResolution {
         val retryMessages: List<ChatMessage>,
         val requestMessages: List<ChatMessage>,
         val retryPrompt: String,
+        val retryImageAttachments: List<com.example.myapplication.model.MessageAttachment>,
         val initialPersistence: RoundTripInitialPersistence,
         private val finalMessagesBuilder: (ChatMessage) -> List<ChatMessage>,
     ) : ChatRetryResolution {
@@ -51,6 +53,10 @@ object ChatRetrySupport {
                 },
                 requestMessages = requestMessages,
                 retryPrompt = retryPrompt,
+                retryImageAttachments = resolveRetryImageAttachments(
+                    requestMessages = requestMessages,
+                    imageGenerationEnabled = imageGenerationEnabled,
+                ),
                 initialPersistence = RoundTripInitialPersistence.Upsert(
                     messages = listOf(loadingMessage),
                 ),
@@ -86,6 +92,10 @@ object ChatRetrySupport {
             retryMessages = retryMessages,
             requestMessages = requestMessages,
             retryPrompt = retryPrompt,
+            retryImageAttachments = resolveRetryImageAttachments(
+                requestMessages = requestMessages,
+                imageGenerationEnabled = imageGenerationEnabled,
+            ),
             initialPersistence = RoundTripInitialPersistence.ReplaceSnapshot(
                 messages = retryMessages,
             ),
@@ -115,6 +125,21 @@ object ChatRetrySupport {
             ?.content
             ?.trim()
             ?.takeIf { it.isNotBlank() }
+    }
+
+    private fun resolveRetryImageAttachments(
+        requestMessages: List<ChatMessage>,
+        imageGenerationEnabled: Boolean,
+    ): List<com.example.myapplication.model.MessageAttachment> {
+        if (!imageGenerationEnabled) {
+            return emptyList()
+        }
+        val lastUserMessage = requestMessages.lastOrNull { it.role == MessageRole.USER } ?: return emptyList()
+        return if (lastUserMessage.parts.isNotEmpty()) {
+            lastUserMessage.parts.toMessageAttachments()
+        } else {
+            lastUserMessage.attachments
+        }
     }
 
     private fun ChatMessage.toRetryLoadingMessage(): ChatMessage {

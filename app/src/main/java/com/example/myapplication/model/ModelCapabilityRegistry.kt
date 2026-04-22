@@ -2,6 +2,7 @@ package com.example.myapplication.model
 
 internal enum class ModelFeature {
     VISION,
+    IMAGE_EDITING,
     REASONING,
     TOOL,
     OPENAI_REASONING_EFFORT,
@@ -207,12 +208,18 @@ internal object ModelCapabilityRegistry {
             """\bflux\b""",
             """\bmidjourney\b""",
         ),
+        rule(
+            features = setOf(ModelFeature.IMAGE_EDITING),
+            """\bgpt[-_.]?image(?:$|[-_.]|\d)""",
+            """\bgpt(?:[-_.]?\d+(?:\.\d+)*)?[-_.]image(?:$|[-_.]|\d)""",
+        ),
     )
 
     fun inferAbilities(modelId: String): Set<ModelAbility> {
         val features = resolveFeatures(modelId)
         return buildSet {
             if (ModelFeature.VISION in features) add(ModelAbility.VISION)
+            if (ModelFeature.IMAGE_EDITING in features) add(ModelAbility.IMAGE_EDITING)
             if (ModelFeature.REASONING in features) add(ModelAbility.REASONING)
             if (ModelFeature.TOOL in features) add(ModelAbility.TOOL)
             if (ModelFeature.IMAGE_GENERATION in features) add(ModelAbility.IMAGE_GENERATION)

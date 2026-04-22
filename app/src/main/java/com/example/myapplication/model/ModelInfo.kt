@@ -5,6 +5,9 @@ enum class ModelAbility(val label: String) {
     /** 支持图片输入。 */
     VISION("视觉"),
 
+    /** 支持将参考图作为生图输入。 */
+    IMAGE_EDITING("改图"),
+
     /** 支持深度推理/思维链。 */
     REASONING("推理"),
 

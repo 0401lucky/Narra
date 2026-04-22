@@ -145,6 +145,23 @@ data class ImageGenerationRequest(
     val size: String = "1024x1024",
 )
 
+data class ImageEditRequest(
+    val model: String,
+    val prompt: String,
+    val images: List<ImageEditInputImageDto>,
+    val n: Int = 1,
+    @SerializedName("response_format")
+    val responseFormat: String = "b64_json",
+    val size: String = "1024x1024",
+)
+
+data class ImageEditInputImageDto(
+    @SerializedName("image_url")
+    val imageUrl: String? = null,
+    @SerializedName("file_id")
+    val fileId: String? = null,
+)
+
 data class ImageGenerationResponse(
     val created: Long? = null,
     val data: List<ImageGenerationDataDto> = emptyList(),

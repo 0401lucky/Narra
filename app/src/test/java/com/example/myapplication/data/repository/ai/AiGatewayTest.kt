@@ -1185,7 +1185,7 @@ class AiGatewayTest {
                 selectedModel = "deepseek-chat",
             ),
             apiServiceProvider = { _, _ ->
-                object : OpenAiCompatibleApi {
+                object : com.example.myapplication.testutil.TestOpenAiCompatibleApi() {
                     override suspend fun listModels(): Response<ModelsResponse> {
                         error("不应调用模型接口")
                     }
@@ -1535,6 +1535,68 @@ class AiGatewayTest {
         assertEquals("abc123", results.first().b64Data)
         assertEquals("https://cdn.example.com/out.png", results.first().url)
         assertEquals("修订后的提示词", results.first().revisedPrompt)
+    }
+
+    @Test
+    fun editImage_postsImagesEditsRequestAndReturnsImageGenerationResult() = runBlocking {
+        server.enqueue(
+            MockResponse().setResponseCode(200).setBody(
+                """
+                {
+                  "data": [
+                    {
+                      "b64_json": "edited123",
+                      "url": "https://cdn.example.com/edited.png",
+                      "revised_prompt": "修订后的改图提示词"
+                    }
+                  ]
+                }
+                """.trimIndent(),
+            ),
+        )
+        val provider = ProviderSettings(
+            id = "provider-image-edit",
+            name = "Provider",
+            baseUrl = server.url("/v1/").toString(),
+            apiKey = "img-key",
+            selectedModel = "gpt-image-1",
+        )
+        val gateway = createGateway(
+            settings = AppSettings(
+                providers = listOf(provider),
+                selectedProviderId = provider.id,
+            ),
+            imagePayloadResolver = { attachment ->
+                assertEquals("ref.png", attachment.fileName)
+                "data:image/png;base64,ref-image"
+            },
+        )
+
+        val results = gateway.editImage(
+            prompt = "把这张图改成复古海报",
+            images = listOf(
+                MessageAttachment(
+                    type = AttachmentType.IMAGE,
+                    uri = "content://image/1",
+                    mimeType = "image/png",
+                    fileName = "ref.png",
+                ),
+            ),
+        )
+
+        assertEquals(1, results.size)
+        assertEquals("edited123", results.first().b64Data)
+        assertEquals("https://cdn.example.com/edited.png", results.first().url)
+        assertEquals("修订后的改图提示词", results.first().revisedPrompt)
+
+        val request = server.takeRequest()
+        assertEquals("/v1/images/edits", request.path)
+        val requestBody = JsonParser.parseString(request.body.readUtf8()).asJsonObject
+        assertEquals("gpt-image-1", requestBody["model"].asString)
+        assertEquals("把这张图改成复古海报", requestBody["prompt"].asString)
+        val images = requestBody.getAsJsonArray("images")
+        assertEquals(1, images.size())
+        assertEquals("data:image/png;base64,ref-image", images[0].asJsonObject["image_url"].asString)
     }
 
     @Test

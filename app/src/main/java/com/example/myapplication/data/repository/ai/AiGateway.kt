@@ -32,6 +32,8 @@ import com.example.myapplication.model.ChatMessage
 import com.example.myapplication.model.ChatMessageDto
 import com.example.myapplication.model.ChatMessagePart
 import com.example.myapplication.model.ChatStreamEvent
+import com.example.myapplication.model.ImageEditInputImageDto
+import com.example.myapplication.model.ImageEditRequest
 import com.example.myapplication.model.ImageGenerationRequest
 import com.example.myapplication.model.MessageAttachment
 import com.example.myapplication.model.GatewayToolingOptions
@@ -71,6 +73,12 @@ interface AiGateway {
         prompt: String,
         modelId: String = "",
     ): List<ImageGenerationResult>
+
+    suspend fun editImage(
+        prompt: String,
+        images: List<MessageAttachment>,
+        modelId: String = "",
+    ): List<ImageGenerationResult> = error("当前环境不支持图片改图")
 
     suspend fun sendMessage(
         messages: List<ChatMessage>,
@@ -201,6 +209,60 @@ class DefaultAiGateway(
         val data = response.body()?.data.orEmpty()
         if (data.isEmpty()) {
             throw IllegalStateException("图片生成接口未返回数据")
+        }
+
+        return data.map { item ->
+            ImageGenerationResult(
+                b64Data = item.b64Json.orEmpty(),
+                url = item.url.orEmpty(),
+                revisedPrompt = item.revisedPrompt.orEmpty(),
+            )
+        }
+    }
+
+    override suspend fun editImage(
+        prompt: String,
+        images: List<MessageAttachment>,
+        modelId: String,
+    ): List<ImageGenerationResult> {
+        require(images.isNotEmpty()) { "请先选择参考图" }
+
+        val settings = settingsStore.settingsFlow.first()
+        require(settings.hasRequiredConfig()) { "请先完成设置并选择模型" }
+        val activeProvider = settings.activeProvider()
+        val baseUrl = activeProvider?.baseUrl ?: settings.baseUrl
+        val apiKey = activeProvider?.apiKey ?: settings.apiKey
+        val selectedModel = modelId.trim().ifBlank {
+            activeProvider?.selectedModel ?: settings.selectedModel
+        }
+        if (activeProvider?.resolvedApiProtocol() == ProviderApiProtocol.ANTHROPIC) {
+            throw IllegalStateException("Anthropic /messages 协议当前不支持图片编辑")
+        }
+
+        val encodedImages = buildList {
+            images.forEach { attachment ->
+                add(imagePayloadResolver(attachment))
+            }
+        }
+        val response = apiServiceProvider(baseUrl, apiKey).editImage(
+            ImageEditRequest(
+                model = selectedModel,
+                prompt = prompt,
+                images = encodedImages.map { imageUrl ->
+                    ImageEditInputImageDto(imageUrl = imageUrl)
+                },
+                n = 1,
+                responseFormat = "b64_json",
+            ),
+        )
+
+        if (!response.isSuccessful) {
+            throw IllegalStateException("图片编辑失败：${response.code()}")
+        }
+
+        val data = response.body()?.data.orEmpty()
+        if (data.isEmpty()) {
+            throw IllegalStateException("图片编辑接口未返回数据")
         }
 
         return data.map { item ->

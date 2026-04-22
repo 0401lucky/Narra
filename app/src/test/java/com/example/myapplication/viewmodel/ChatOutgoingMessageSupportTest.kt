@@ -84,7 +84,29 @@ class ChatOutgoingMessageSupportTest {
         )
 
         val error = result as ChatOutgoingMessageResolution.Error
-        assertEquals("当前模型为生图模型，仅支持文本提示词。请切换到聊天模型后再发送附件", error.message)
+        assertEquals("当前模型为生图模型，仅支持图片参考图，不支持文件附件", error.message)
+    }
+
+    @Test
+    fun resolveTextMessage_allowsImageForEditableImageGenerationModel() {
+        val result = ChatOutgoingMessageSupport.resolveTextMessage(
+            ChatUiState(
+                input = "把这张照片改成海报风格",
+                pendingParts = listOf(
+                    com.example.myapplication.model.imageMessagePart(
+                        uri = "content://image/3",
+                        mimeType = "image/png",
+                        fileName = "ref.png",
+                    ),
+                ),
+                settings = settingsWithSelectedModel("gpt-image-1"),
+            ),
+        )
+
+        val ready = result as ChatOutgoingMessageResolution.Ready
+        assertEquals("把这张照片改成海报风格", ready.plan.imageGenerationPrompt)
+        assertEquals(2, ready.plan.userParts.size)
+        assertTrue(!ready.plan.forceChatRoundTrip)
     }
 
     @Test

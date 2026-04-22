@@ -111,7 +111,11 @@ internal fun ChatConversationPane(
             if (currentModelIsImageGeneration) {
                 NoticeCard(
                     title = "当前处于生图模式",
-                    body = "发送文字会直接生成图片。附件和特殊玩法已临时禁用；如需普通对话，请切换到聊天模型。",
+                    body = if (canAttachImages) {
+                        "发送文字会直接生成图片，也可以上传参考图做修改。文件和特殊玩法仍不可用；如需普通对话，请切换到聊天模型。"
+                    } else {
+                        "发送文字会直接生成图片。附件和特殊玩法已临时禁用；如需普通对话，请切换到聊天模型。"
+                    },
                     containerColor = MaterialTheme.colorScheme.tertiaryContainer,
                     contentColor = MaterialTheme.colorScheme.onTertiaryContainer,
                 )

@@ -102,11 +102,21 @@ internal fun rememberChatScreenDerivations(
     val currentModelSupportsVision = remember(currentModelAbilities, currentModel) {
         currentModel.isNotBlank() && ModelAbility.VISION in currentModelAbilities
     }
+    val currentModelSupportsImageEditing = remember(currentModelAbilities, currentModel, uiState.settings) {
+        currentModel.isNotBlank() && ChatConversationSupport.supportsImageEditingInput(uiState.settings, currentModel)
+    }
     val currentModelIsImageGeneration = remember(uiState.settings, currentModel) {
         ChatConversationSupport.supportsImageGeneration(uiState.settings, currentModel)
     }
-    val canAttachImages = remember(currentModelSupportsVision, currentModelIsImageGeneration) {
-        currentModelSupportsVision && !currentModelIsImageGeneration
+    val canAttachImages = remember(
+        currentModelSupportsVision,
+        currentModelSupportsImageEditing,
+        currentModelIsImageGeneration,
+    ) {
+        when {
+            currentModelIsImageGeneration -> currentModelSupportsImageEditing
+            else -> currentModelSupportsVision
+        }
     }
     val canAttachFiles = remember(currentModelIsImageGeneration) { !currentModelIsImageGeneration }
     val canUseSpecialPlay = remember(currentModelIsImageGeneration) { !currentModelIsImageGeneration }

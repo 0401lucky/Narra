@@ -5,6 +5,7 @@ import com.example.myapplication.model.Assistant
 import com.example.myapplication.model.ChatMessage
 import com.example.myapplication.model.ChatMessagePartType
 import com.example.myapplication.model.Conversation
+import com.example.myapplication.model.ProviderSettings
 import com.example.myapplication.model.MessageRole
 import com.example.myapplication.model.MessageStatus
 import com.example.myapplication.model.imageMessagePart
@@ -110,7 +111,7 @@ class ChatConversationSupportTest {
     fun supportsImageGeneration_usesProviderAbilities() {
         val settings = AppSettings(
             providers = listOf(
-                com.example.myapplication.model.ProviderSettings(
+                ProviderSettings(
                     id = "provider-1",
                     name = "Provider",
                     baseUrl = "https://example.com/v1/",
@@ -129,6 +130,32 @@ class ChatConversationSupportTest {
         )
 
         assertTrue(ChatConversationSupport.supportsImageGeneration(settings, "image-model"))
+    }
+
+    @Test
+    fun validateOutgoingParts_allowsImageForEditableImageGenerationModel() {
+        val result = ChatConversationSupport.validateOutgoingParts(
+            settings = settingsWithSelectedModel("gpt-image-1"),
+            userParts = ChatConversationSupport.buildUserMessageParts(
+                text = "把这张图改成复古胶片风",
+                pendingParts = listOf(imageMessagePart(uri = "content://image-1")),
+            ),
+        )
+
+        assertEquals(null, result)
+    }
+
+    @Test
+    fun validateOutgoingParts_requiresPromptForEditableImageGenerationModel() {
+        val result = ChatConversationSupport.validateOutgoingParts(
+            settings = settingsWithSelectedModel("gpt-image-1"),
+            userParts = ChatConversationSupport.buildUserMessageParts(
+                text = "",
+                pendingParts = listOf(imageMessagePart(uri = "content://image-1")),
+            ),
+        )
+
+        assertEquals("当前模型支持参考图改图，请先输入修改要求后再发送图片", result)
     }
 
     @Test
@@ -200,5 +227,19 @@ class ChatConversationSupportTest {
         )
 
         assertFalse(prepared != null)
+    }
+
+    private fun settingsWithSelectedModel(modelId: String): AppSettings {
+        val provider = ProviderSettings(
+            id = "provider-1",
+            name = "Provider",
+            baseUrl = "https://example.com/v1/",
+            apiKey = "key",
+            selectedModel = modelId,
+        )
+        return AppSettings(
+            providers = listOf(provider),
+            selectedProviderId = provider.id,
+        )
     }
 }

@@ -19,6 +19,7 @@ import com.example.myapplication.model.Conversation
 import com.example.myapplication.model.DEFAULT_CONVERSATION_TITLE
 import com.example.myapplication.model.GiftImageStatus
 import com.example.myapplication.model.GiftPlayDraft
+import com.example.myapplication.model.ImageEditRequest
 import com.example.myapplication.model.ImageGenerationRequest
 import com.example.myapplication.model.ImageGenerationDataDto
 import com.example.myapplication.model.ImageGenerationResponse
@@ -721,7 +722,7 @@ class ChatViewModelTest {
             ),
             memoryRepository = memoryRepository,
             apiServiceProvider = { _, _ ->
-                object : OpenAiCompatibleApi {
+                object : com.example.myapplication.testutil.TestOpenAiCompatibleApi() {
                     override suspend fun listModels(): Response<ModelsResponse> {
                         error("不应调用模型接口")
                     }
@@ -833,7 +834,7 @@ class ChatViewModelTest {
             ),
             memoryRepository = memoryRepository,
             apiServiceProvider = { _, _ ->
-                object : OpenAiCompatibleApi {
+                object : com.example.myapplication.testutil.TestOpenAiCompatibleApi() {
                     override suspend fun listModels(): Response<ModelsResponse> {
                         error("不应调用模型接口")
                     }
@@ -949,7 +950,7 @@ class ChatViewModelTest {
             nowProvider = incrementingNowProvider(175L),
             messageIdProvider = idProviderOf("user-1", "assistant-1"),
             apiServiceProvider = { _, _ ->
-                object : OpenAiCompatibleApi {
+                object : com.example.myapplication.testutil.TestOpenAiCompatibleApi() {
                     override suspend fun listModels(): Response<ModelsResponse> {
                         error("不应调用模型接口")
                     }
@@ -1034,7 +1035,7 @@ class ChatViewModelTest {
             nowProvider = incrementingNowProvider(180L),
             messageIdProvider = idProviderOf("user-1", "assistant-1"),
             apiServiceProvider = { _, _ ->
-                object : OpenAiCompatibleApi {
+                object : com.example.myapplication.testutil.TestOpenAiCompatibleApi() {
                     override suspend fun listModels(): Response<ModelsResponse> {
                         error("不应调用模型接口")
                     }
@@ -1076,6 +1077,98 @@ class ChatViewModelTest {
         assertEquals("覆盖后的生图提示词", assistantMessage.content)
         assertEquals("custom-image-model", assistantMessage.modelName)
         assertTrue(generateImageCalled)
+    }
+
+    @Test
+    fun sendMessage_withReferenceImageAndImageGenerationModelCallsEditImage() = runTest(mainDispatcherRule.dispatcher.scheduler) {
+        val store = FakeConversationStore(
+            conversations = listOf(
+                Conversation(
+                    id = "c1",
+                    title = DEFAULT_CONVERSATION_TITLE,
+                    model = "",
+                    createdAt = 1L,
+                    updatedAt = 1L,
+                ),
+            ),
+        )
+        var generateImageCalled = false
+        var editImageCalled = false
+        val viewModel = createViewModel(
+            store = store,
+            settings = AppSettings(
+                baseUrl = "https://example.com/v1/",
+                apiKey = "key",
+                selectedModel = "gpt-image-1",
+            ),
+            nowProvider = incrementingNowProvider(185L),
+            messageIdProvider = idProviderOf("user-1", "assistant-1"),
+            imagePayloadResolver = { attachment ->
+                assertEquals("ref.png", attachment.fileName)
+                "data:image/png;base64,ref-image"
+            },
+            apiServiceProvider = { _, _ ->
+                object : com.example.myapplication.testutil.TestOpenAiCompatibleApi() {
+                    override suspend fun generateImage(request: ImageGenerationRequest): Response<ImageGenerationResponse> {
+                        generateImageCalled = true
+                        return Response.success(
+                            ImageGenerationResponse(
+                                data = listOf(
+                                    ImageGenerationDataDto(
+                                        url = "https://cdn.example.com/generated/unexpected",
+                                        revisedPrompt = "不应走纯生图",
+                                    ),
+                                ),
+                            ),
+                        )
+                    }
+
+                    override suspend fun editImage(request: ImageEditRequest): Response<ImageGenerationResponse> {
+                        editImageCalled = true
+                        assertEquals("gpt-image-1", request.model)
+                        assertEquals("把这张图改成海报风", request.prompt)
+                        assertEquals(
+                            listOf("data:image/png;base64,ref-image"),
+                            request.images.map { it.imageUrl },
+                        )
+                        return Response.success(
+                            ImageGenerationResponse(
+                                data = listOf(
+                                    ImageGenerationDataDto(
+                                        url = "https://cdn.example.com/generated/edited",
+                                        revisedPrompt = "改图后的提示词",
+                                    ),
+                                ),
+                            ),
+                        )
+                    }
+                }
+            },
+        )
+
+        advanceUntilIdle()
+        viewModel.addPendingParts(
+            listOf(
+                imageMessagePart(
+                    uri = "content://image/1",
+                    mimeType = "image/png",
+                    fileName = "ref.png",
+                ),
+            ),
+        )
+        viewModel.updateInput("把这张图改成海报风")
+        viewModel.sendMessage()
+        advanceUntilIdle()
+
+        val assistantMessage = viewModel.uiState.value.messages.last()
+        assertTrue(editImageCalled)
+        assertFalse(generateImageCalled)
+        assertEquals(MessageStatus.COMPLETED, assistantMessage.status)
+        assertEquals("改图后的提示词", assistantMessage.content)
+        assertEquals(
+            listOf("https://cdn.example.com/generated/edited"),
+            assistantMessage.attachments.map { it.uri },
+        )
     }
 
     @Test
@@ -1400,7 +1493,7 @@ class ChatViewModelTest {
                 selectedProviderId = provider.id,
             ),
             apiServiceProvider = { _, _ ->
-                object : OpenAiCompatibleApi {
+                object : com.example.myapplication.testutil.TestOpenAiCompatibleApi() {
                     override suspend fun listModels(): Response<ModelsResponse> {
                         error("不应调用模型接口")
                     }
@@ -1701,7 +1794,7 @@ class ChatViewModelTest {
                 conversationSummaryRepository = summaryRepository,
             ),
             apiServiceProvider = { _, _ ->
-                object : OpenAiCompatibleApi {
+                object : com.example.myapplication.testutil.TestOpenAiCompatibleApi() {
                     override suspend fun listModels(): Response<ModelsResponse> = error("不应调用")
 
                     override suspend fun createChatCompletion(request: ChatCompletionRequest): Response<ChatCompletionResponse> {
@@ -1788,7 +1881,7 @@ class ChatViewModelTest {
                 )
             },
             apiServiceProvider = { _, _ ->
-                object : OpenAiCompatibleApi {
+                object : com.example.myapplication.testutil.TestOpenAiCompatibleApi() {
                     override suspend fun listModels(): Response<ModelsResponse> = error("不应调用")
 
                     override suspend fun createChatCompletion(
@@ -1974,10 +2067,11 @@ class ChatViewModelTest {
         nowProvider: () -> Long = incrementingNowProvider(1L),
         messageIdProvider: () -> String = idProviderOf("m1", "m2", "m3", "m4"),
         imageSaver: suspend (String) -> SavedImageFile = { error("测试不应保存图片") },
+        imagePayloadResolver: suspend (com.example.myapplication.model.MessageAttachment) -> String = { error("测试不应解析图片") },
         apiServiceProvider: ((String, String) -> OpenAiCompatibleApi)? = null,
     ): ChatViewModel {
         val resolvedApiServiceProvider = apiServiceProvider ?: { _, _ ->
-            object : OpenAiCompatibleApi {
+            object : com.example.myapplication.testutil.TestOpenAiCompatibleApi() {
                 override suspend fun listModels(): Response<ModelsResponse> {
                     error("默认测试桩不应调用模型接口")
                 }
@@ -2008,6 +2102,7 @@ class ChatViewModelTest {
             streamClientProvider = { _, _ ->
                 OkHttpClient.Builder().build()
             },
+            imagePayloadResolver = imagePayloadResolver,
         )
         val conversationRepository = ConversationRepository(
             conversationStore = store,

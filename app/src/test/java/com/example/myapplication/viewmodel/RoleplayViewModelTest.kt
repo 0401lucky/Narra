@@ -192,7 +192,7 @@ class RoleplayViewModelTest {
             ),
             promptContextAssembler = fixedPromptAssembler("【对话摘要】两人正处于互相试探阶段。"),
             apiServiceProvider = { _, _ ->
-                object : OpenAiCompatibleApi {
+                object : com.example.myapplication.testutil.TestOpenAiCompatibleApi() {
                     override suspend fun listModels(): Response<ModelsResponse> {
                         error("不应调用模型列表")
                     }
@@ -308,7 +308,7 @@ class RoleplayViewModelTest {
             chatSuggestionModel = "rp-suggestion-model",
         )
         val delayedApiProvider: (String, String) -> OpenAiCompatibleApi = { _, _ ->
-            object : OpenAiCompatibleApi {
+            object : com.example.myapplication.testutil.TestOpenAiCompatibleApi() {
                 override suspend fun listModels(): Response<ModelsResponse> {
                     error("不应调用模型列表")
                 }
@@ -513,7 +513,7 @@ class RoleplayViewModelTest {
             ),
             promptContextAssembler = fixedPromptAssembler("【对话摘要】两人正处于互相试探阶段。"),
             apiServiceProvider = { _, _ ->
-                object : OpenAiCompatibleApi {
+                object : com.example.myapplication.testutil.TestOpenAiCompatibleApi() {
                     override suspend fun listModels(): Response<ModelsResponse> {
                         error("不应调用模型列表")
                     }
@@ -636,7 +636,7 @@ class RoleplayViewModelTest {
             ),
             promptContextAssembler = fixedPromptAssembler("【对话摘要】两人正处于互相试探阶段。"),
             apiServiceProvider = { _, _ ->
-                object : OpenAiCompatibleApi {
+                object : com.example.myapplication.testutil.TestOpenAiCompatibleApi() {
                     override suspend fun listModels(): Response<ModelsResponse> {
                         error("不应调用模型列表")
                     }
@@ -762,7 +762,7 @@ class RoleplayViewModelTest {
             promptContextAssembler = fixedPromptAssembler("提示词上下文"),
             messageIdProvider = idProviderOf("m-user", "m-assistant"),
             apiServiceProvider = { _, _ ->
-                object : OpenAiCompatibleApi {
+                object : com.example.myapplication.testutil.TestOpenAiCompatibleApi() {
                     override suspend fun listModels(): Response<ModelsResponse> {
                         error("不应调用模型列表")
                     }
@@ -1705,7 +1705,7 @@ class RoleplayViewModelTest {
             memoryRepository = memoryRepository,
             messageIdProvider = idProviderOf("m-user", "m-assistant"),
             apiServiceProvider = { _, _ ->
-                object : OpenAiCompatibleApi {
+                object : com.example.myapplication.testutil.TestOpenAiCompatibleApi() {
                     override suspend fun listModels(): Response<ModelsResponse> {
                         error("不应调用模型列表")
                     }
@@ -3134,7 +3134,7 @@ class RoleplayViewModelTest {
             ),
             promptContextAssembler = fixedPromptAssembler("【对话摘要】两人仍在互相试探。"),
             apiServiceProvider = { _, _ ->
-                object : OpenAiCompatibleApi {
+                object : com.example.myapplication.testutil.TestOpenAiCompatibleApi() {
                     override suspend fun listModels(): Response<ModelsResponse> {
                         error("不应调用模型列表")
                     }
@@ -3397,7 +3397,7 @@ class RoleplayViewModelTest {
             ),
             conversationSummaryRepository = summaryRepository,
             apiServiceProvider = { _, _ ->
-                object : OpenAiCompatibleApi {
+                object : com.example.myapplication.testutil.TestOpenAiCompatibleApi() {
                     override suspend fun listModels(): Response<ModelsResponse> = error("不应调用")
 
                     override suspend fun createChatCompletion(request: ChatCompletionRequest): Response<ChatCompletionResponse> {
@@ -3507,7 +3507,7 @@ class RoleplayViewModelTest {
                 )
             },
             apiServiceProvider = { _, _ ->
-                object : OpenAiCompatibleApi {
+                object : com.example.myapplication.testutil.TestOpenAiCompatibleApi() {
                     override suspend fun listModels(): Response<ModelsResponse> = error("不应调用")
 
                     override suspend fun createChatCompletion(
