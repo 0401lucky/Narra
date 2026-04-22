@@ -5,12 +5,11 @@
   "latest_version_code": 10507,
   "minimum_supported_version_code": 0,
   "apk_url": "https://download.lsa1230.dpdns.org/dev/Narra-v1.5.7-dev-10507-dev.apk",
-  "apk_sha256": "46a24508b2205218307a3412b0326cfb2676e59ceab7a40ae31f6db6cbb47fdc",
-  "published_at": "2026-04-21T20:53:32+08:00",
+  "apk_sha256": "b903cbf54d29ccee1f807526c81819afb2ef734d738d870274559acb4792ba33",
+  "published_at": "2026-04-22T18:58:28+08:00",
   "release_notes": [
-    "世界书编辑页新增\"试命中\"预览：输入一段待测文本就能看到条目会不会命中，以及具体哪些关键词命中",
-    "世界书匹配性能优化：DAO 直接按 scope 过滤，减少 AI 回复前的内存过滤开销",
-    "导入 Tavern 角色卡：probability（触发概率）升级为独立字段，在编辑页\"状态与高级\"下可见可改",
-    "内部重构：ViewModel 工厂收敛到公共 typedViewModelFactory，消除 10 处 UNCHECKED_CAST 并补类型校验"
+    "普通聊天里的生图消息新增全屏图片预览，支持双击放大、双指缩放与拖动查看细节",
+    "纯图片消息的“更多操作”新增图片兜底入口，可直接查看图片；单图消息可直接保存到系统相册",
+    "图片保存链路统一支持本地文件、content://、data:image/... 与远程 URL，并兼容 Android 7-9 存储权限与 Android 10+ 系统相册写入"
   ]
 }

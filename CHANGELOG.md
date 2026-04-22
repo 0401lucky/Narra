@@ -19,6 +19,29 @@
 
 ---
 
+## [1.5.7-dev] - 2026-04-22
+
+### Added
+
+- 普通聊天里的生图消息新增全屏图片预览，可从消息图片直接点开查看，支持双击放大、双指缩放与拖动查看细节
+- 聊天消息“更多操作”新增图片兜底入口：纯图片消息现在可直接“查看图片”；单图消息还可直接“保存到相册”
+- 新增 `ChatImageGallerySaver` 与 `ChatImagePreviewDialog`，统一处理本地文件、`content://`、`data:image/...`、远程 URL 四类图片来源的预览与落盘
+
+### Fixed
+
+- 修复普通聊天使用生图模型后，生成图片只能在气泡里缩略展示、无法放大查看的问题
+- 修复普通聊天生图结果无法下载到本地的问题；Android 10+ 现在直接写入系统相册，Android 7-9 会先申请存储权限再保存
+
+### Refactored
+
+- `ChatScreen` / `MessageBubble` / `ChatUtilitySheets` 的图片消息链路补齐预览 payload、消息动作能力判断和图片点击回调，普通聊天的图片行为收口到统一状态与弹层
+
+### Docs
+
+- `dev` 渠道构建版本推进到 `1.5.7-dev (10507)`，APK、Cloudflare R2 下载地址与 `docs/updates/dev.json` 已同步本次发布
+
+---
+
 ## [1.5.6-dev] - 2026-04-20
 
 ### Fixed

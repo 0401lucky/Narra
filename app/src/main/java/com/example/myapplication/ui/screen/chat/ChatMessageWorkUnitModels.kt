@@ -20,6 +20,18 @@ data class ChatMessageSelectionPayload(
     val content: String,
 )
 
+data class ChatPreviewImageItem(
+    val source: String,
+    val fileName: String,
+    val mimeType: String = "",
+)
+
+data class ChatImagePreviewPayload(
+    val title: String,
+    val images: List<ChatPreviewImageItem>,
+    val initialIndex: Int = 0,
+)
+
 data class ChatMessageExportPayload(
     val fileName: String,
     val markdown: String,

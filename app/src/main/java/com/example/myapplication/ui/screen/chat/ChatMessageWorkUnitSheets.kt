@@ -79,6 +79,8 @@ internal fun ChatMessageActionSheet(
     onDismissRequest: () -> Unit,
     onSelectAndCopy: () -> Unit,
     onOpenPreview: (() -> Unit)?,
+    onOpenImagePreview: (() -> Unit)?,
+    onSaveImageToGallery: (() -> Unit)?,
     onOpenSearchResults: (() -> Unit)?,
     onExportMarkdown: () -> Unit,
     onShareMessage: () -> Unit,
@@ -116,6 +118,28 @@ internal fun ChatMessageActionSheet(
                     onClick = {
                         onDismissRequest()
                         onOpenPreview()
+                    },
+                )
+            }
+
+            if (onOpenImagePreview != null) {
+                MessageActionCard(
+                    title = "查看图片",
+                    icon = Icons.Default.Visibility,
+                    onClick = {
+                        onDismissRequest()
+                        onOpenImagePreview()
+                    },
+                )
+            }
+
+            if (onSaveImageToGallery != null) {
+                MessageActionCard(
+                    title = "保存到相册",
+                    icon = Icons.Default.Share,
+                    onClick = {
+                        onDismissRequest()
+                        onSaveImageToGallery()
                     },
                 )
             }

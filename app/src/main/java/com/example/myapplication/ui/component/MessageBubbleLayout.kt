@@ -57,6 +57,7 @@ internal fun UserStructuredMessageContent(
     autoPreviewImages: Boolean,
     performanceMode: ChatMessagePerformanceMode,
     onConfirmTransferReceipt: ((String) -> Unit)?,
+    onOpenImagePreview: ((Int) -> Unit)? = null,
 ) {
     val displayAttachments = renderedContent.displayAttachments
     val displayParts = renderedContent.displayParts
@@ -97,10 +98,14 @@ internal fun UserStructuredMessageContent(
                     }
 
                     ChatMessagePartType.IMAGE -> {
+                        val imageIndex = displayParts.take(index + 1).count { it.type == ChatMessagePartType.IMAGE } - 1
                         UserUploadedImageThumbnail(
                             uri = part.uri,
                             fileName = part.fileName.ifBlank { "uploaded-image-${index + 1}" },
                             autoPreviewImages = autoPreviewImages,
+                            onOpenPreview = {
+                                onOpenImagePreview?.invoke(imageIndex.coerceAtLeast(0))
+                            },
                         )
                     }
 
@@ -160,6 +165,9 @@ internal fun UserStructuredMessageContent(
                             uri = attachment.uri,
                             fileName = attachment.fileName.ifBlank { "uploaded-image-${index + 1}" },
                             autoPreviewImages = autoPreviewImages,
+                            onOpenPreview = {
+                                onOpenImagePreview?.invoke(index)
+                            },
                         )
                     }
 
@@ -312,6 +320,7 @@ internal fun MessageBubbleContent(
     codeBlockAutoCollapse: Boolean,
     performanceMode: ChatMessagePerformanceMode,
     onConfirmTransferReceipt: ((String) -> Unit)?,
+    onOpenImagePreview: ((Int) -> Unit)? = null,
     onOpenCitation: ((MessageCitation) -> Unit)?,
     modifier: Modifier = Modifier,
 ) {
@@ -323,12 +332,17 @@ internal fun MessageBubbleContent(
         verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
         if (displayAttachments.isNotEmpty()) {
-            displayAttachments.forEach { attachment ->
+            displayAttachments.forEachIndexed { index, attachment ->
                 LegacyAttachmentCard(
                     attachment = attachment,
                     isUser = isUser,
                     contentColor = contentColor,
                     autoPreviewImages = autoPreviewImages,
+                    onOpenPreview = if (attachment.type == AttachmentType.IMAGE) {
+                        { onOpenImagePreview?.invoke(index) }
+                    } else {
+                        null
+                    },
                 )
             }
         }
@@ -347,6 +361,7 @@ internal fun MessageBubbleContent(
                 codeBlockAutoCollapse = codeBlockAutoCollapse,
                 performanceMode = performanceMode,
                 onConfirmTransferReceipt = onConfirmTransferReceipt,
+                onOpenImagePreviewAtIndex = onOpenImagePreview,
                 citations = message.citations,
                 onOpenCitation = onOpenCitation,
             )
@@ -357,6 +372,9 @@ internal fun MessageBubbleContent(
                         uri = imageSource,
                         fileName = "assistant-image-${index + 1}",
                         autoPreviewImages = autoPreviewImages,
+                        onOpenPreview = {
+                            onOpenImagePreview?.invoke(index)
+                        },
                     )
                 }
             }

@@ -78,9 +78,11 @@ internal fun MessagePartsRenderer(
     codeBlockAutoCollapse: Boolean,
     performanceMode: ChatMessagePerformanceMode,
     onConfirmTransferReceipt: ((String) -> Unit)?,
+    onOpenImagePreviewAtIndex: ((Int) -> Unit)? = null,
     citations: List<MessageCitation> = emptyList(),
     onOpenCitation: ((MessageCitation) -> Unit)? = null,
 ) {
+    var imageIndex = 0
     parts.forEachIndexed { index, part ->
         when (part.type) {
             ChatMessagePartType.TEXT -> {
@@ -100,12 +102,17 @@ internal fun MessagePartsRenderer(
             }
 
             ChatMessagePartType.IMAGE -> {
+                val currentImageIndex = imageIndex
+                imageIndex += 1
                 GeneratedImageAttachment(
                     uri = part.uri,
                     fileName = part.fileName.ifBlank {
                         if (isUser) "uploaded-image-${index + 1}" else "assistant-image-${index + 1}"
                     },
                     autoPreviewImages = autoPreviewImages,
+                    onOpenPreview = {
+                        onOpenImagePreviewAtIndex?.invoke(currentImageIndex)
+                    },
                 )
             }
 

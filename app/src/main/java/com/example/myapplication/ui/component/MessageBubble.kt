@@ -119,6 +119,7 @@ fun MessageBubble(
     streamingParts: List<ChatMessagePart>? = null,
     onRetry: ((String) -> Unit)? = null,
     onOpenMessageActions: ((String) -> Unit)? = null,
+    onOpenImagePreview: ((ChatMessage, Int) -> Unit)? = null,
     onToggleMemory: ((String) -> Unit)? = null,
     isRemembered: Boolean = false,
     onTranslate: ((String) -> Unit)? = null,
@@ -258,6 +259,9 @@ fun MessageBubble(
                     autoPreviewImages = autoPreviewImages,
                     performanceMode = performanceMode,
                     onConfirmTransferReceipt = onConfirmTransferReceipt,
+                    onOpenImagePreview = { imageIndex ->
+                        onOpenImagePreview?.invoke(message, imageIndex)
+                    },
                 )
             } else if (!isUser && !isError) {
                 GlassMessageContainer(
@@ -283,6 +287,9 @@ fun MessageBubble(
                         codeBlockAutoCollapse = codeBlockAutoCollapse,
                         performanceMode = performanceMode,
                         onConfirmTransferReceipt = onConfirmTransferReceipt,
+                        onOpenImagePreview = { imageIndex ->
+                            onOpenImagePreview?.invoke(message, imageIndex)
+                        },
                         onOpenCitation = { citation ->
                             if (onOpenUrlPreview != null) {
                                 onOpenUrlPreview(
@@ -320,6 +327,9 @@ fun MessageBubble(
                         codeBlockAutoCollapse = codeBlockAutoCollapse,
                         performanceMode = performanceMode,
                         onConfirmTransferReceipt = onConfirmTransferReceipt,
+                        onOpenImagePreview = { imageIndex ->
+                            onOpenImagePreview?.invoke(message, imageIndex)
+                        },
                         onOpenCitation = { citation ->
                             if (onOpenUrlPreview != null) {
                                 onOpenUrlPreview(

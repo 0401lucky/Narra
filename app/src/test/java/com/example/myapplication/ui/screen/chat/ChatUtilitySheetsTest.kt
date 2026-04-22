@@ -4,6 +4,7 @@ import com.example.myapplication.model.ChatMessage
 import com.example.myapplication.model.ChatReasoningStep
 import com.example.myapplication.model.MessageCitation
 import com.example.myapplication.model.MessageRole
+import com.example.myapplication.model.imageMessagePart
 import com.example.myapplication.model.textMessagePart
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertEquals
@@ -179,5 +180,58 @@ class ChatUtilitySheetsTest {
         assertFalse(assistantAvailability.canEditUserMessage)
         assertTrue(assistantAvailability.canRegenerate)
         assertEquals(true, assistantAvailability.canPreview)
+    }
+
+    @Test
+    fun resolveMessageActionAvailability_marksPureImageAssistantMessageAsPreviewableImage() {
+        val availability = resolveMessageActionAvailability(
+            ChatMessage(
+                id = "a1",
+                role = MessageRole.ASSISTANT,
+                content = "图片已生成",
+                parts = listOf(
+                    imageMessagePart(
+                        uri = "file:///generated/1.png",
+                        fileName = "generated-1.png",
+                    ),
+                ),
+            ),
+        )
+
+        assertFalse(availability.canPreview)
+        assertTrue(availability.canPreviewImages)
+        assertTrue(availability.canSaveImages)
+        assertTrue(availability.canRegenerate)
+    }
+
+    @Test
+    fun buildImagePreviewPayload_returnsOrderedImagesAndInitialIndex() {
+        val payload = buildImagePreviewPayload(
+            message = ChatMessage(
+                id = "a1",
+                role = MessageRole.ASSISTANT,
+                content = "图片已生成",
+                parts = listOf(
+                    textMessagePart("提示词"),
+                    imageMessagePart(
+                        uri = "file:///generated/1.png",
+                        fileName = "generated-1.png",
+                    ),
+                    imageMessagePart(
+                        uri = "https://cdn.example.com/generated/2.png",
+                        fileName = "generated-2.png",
+                    ),
+                ),
+            ),
+            initialImageIndex = 1,
+        )
+
+        assertNotNull(payload)
+        assertEquals("助手", payload?.title)
+        assertEquals(1, payload?.initialIndex)
+        assertEquals(
+            listOf("file:///generated/1.png", "https://cdn.example.com/generated/2.png"),
+            payload?.images?.map { it.source },
+        )
     }
 }

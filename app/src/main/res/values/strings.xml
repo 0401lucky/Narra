@@ -261,6 +261,18 @@
     <string name="chat_copy_plain_text_done">会话纯文本已复制</string>
     <string name="chat_share_conversation">分享会话</string>
     <string name="chat_share_message">分享消息</string>
+    <string name="chat_open_image_preview">查看图片</string>
+    <string name="chat_save_image_to_gallery">保存到相册</string>
+    <string name="chat_image_saved_to_gallery">已保存到相册</string>
+    <string name="chat_image_permission_denied">没有存储权限，无法保存到相册</string>
+    <string name="chat_image_preview_title">图片预览</string>
+    <string name="chat_image_preview_index">%1$d / %2$d</string>
+    <string name="chat_image_preview_previous">上一张</string>
+    <string name="chat_image_preview_next">下一张</string>
+    <string name="chat_image_preview_close">关闭</string>
+    <string name="chat_image_preview_save">保存</string>
+    <string name="chat_image_preview_load_failed">图片加载失败</string>
+    <string name="chat_image_preview_zoom_hint">双击可切换放大，双指可缩放拖动</string>
 
     <!-- ── ChatDrawer ── -->
     <string name="drawer_chat_history">聊天历史</string>

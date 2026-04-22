@@ -18,6 +18,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.unit.dp
 import com.example.myapplication.R
+import com.example.myapplication.model.ChatMessage
 import com.example.myapplication.ui.component.ChatMessagePerformanceMode
 import com.example.myapplication.viewmodel.ChatUiState
 import kotlinx.coroutines.launch
@@ -216,6 +217,10 @@ fun ChatScreen(
                 onOpenMessageActions = { messageId ->
                     localState.setActiveMessageActionId(messageId)
                 },
+                onOpenImagePreview = { message, imageIndex ->
+                    buildImagePreviewPayload(message, imageIndex)
+                        ?.let(localState.setImagePreviewPayload)
+                },
                 onOpenUrlPreview = { url, title ->
                     localState.setMessagePreviewPayload(
                         ChatMessagePreviewPayload.ExternalUrlPreview(
@@ -398,6 +403,17 @@ fun ChatScreen(
             }
             localState.setActiveMessageActionId(null)
         },
+        onOpenImagePreviewPayload = { message ->
+            buildImagePreviewPayload(message)
+                ?.let(localState.setImagePreviewPayload)
+            localState.setActiveMessageActionId(null)
+        },
+        onSaveMessageImageToGallery = { message ->
+            resolvePreviewImages(message)
+                .firstOrNull()
+                ?.let(launchers.saveImageToGallery)
+            localState.setActiveMessageActionId(null)
+        },
         onExportMessageMarkdown = { message ->
             localState.setPendingMessageExport(
                 ChatMessageExportPayload(
@@ -429,6 +445,9 @@ fun ChatScreen(
         onDismissMessageSelection = { localState.setMessageSelectionPayload(null) },
         messagePreviewPayload = localState.messagePreviewPayload,
         onDismissMessagePreview = { localState.setMessagePreviewPayload(null) },
+        imagePreviewPayload = localState.imagePreviewPayload,
+        onDismissImagePreview = { localState.setImagePreviewPayload(null) },
+        onSavePreviewImageToGallery = launchers.saveImageToGallery,
         searchResultPreviewPayload = localState.searchResultPreviewPayload,
         onDismissSearchResultPreview = { localState.setSearchResultPreviewPayload(null) },
         onOpenUrlPreview = { url, title ->

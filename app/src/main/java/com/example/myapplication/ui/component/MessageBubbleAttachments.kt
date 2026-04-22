@@ -49,12 +49,14 @@ internal fun LegacyAttachmentCard(
     isUser: Boolean,
     contentColor: androidx.compose.ui.graphics.Color,
     autoPreviewImages: Boolean,
+    onOpenPreview: (() -> Unit)? = null,
 ) {
     if (!isUser && attachment.type == AttachmentType.IMAGE) {
         GeneratedImageAttachment(
             uri = attachment.uri,
             fileName = attachment.fileName,
             autoPreviewImages = autoPreviewImages,
+            onOpenPreview = onOpenPreview,
         )
         return
     }
@@ -118,12 +120,14 @@ internal fun GeneratedImageAttachment(
     uri: String,
     fileName: String,
     autoPreviewImages: Boolean,
+    onOpenPreview: (() -> Unit)? = null,
 ) {
     if (!autoPreviewImages) {
         PartAttachmentPreviewCard(
             fileName = fileName.ifBlank { "图片预览已关闭" },
             supportingText = "已关闭自动图片预览，可通过复制、导出或系统分享查看原始链接。",
             modifier = Modifier.fillMaxWidth(),
+            onClick = onOpenPreview,
         )
         return
     }
@@ -140,55 +144,68 @@ internal fun GeneratedImageAttachment(
             .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.24f)),
         contentAlignment = Alignment.Center,
     ) {
-        AsyncImage(
-            model = model,
-            contentDescription = fileName.ifBlank { "生成的图片" },
+        Box(
             modifier = Modifier
-                .fillMaxWidth()
-                .heightIn(min = 140.dp, max = 320.dp)
-                .clip(RoundedCornerShape(16.dp)),
-            contentScale = ContentScale.FillWidth,
-            onLoading = {
-                loadFailed = false
-            },
-            onSuccess = {
-                loadFailed = false
-            },
-            onError = { state ->
-                loadFailed = true
-                Log.w(MessageBubbleAttachmentTag, "图片加载失败：$uri", state.result.throwable)
-            },
-        )
-
-        if (loadFailed) {
-            Surface(
+                .fillMaxSize()
+                .then(
+                    if (onOpenPreview != null) {
+                        Modifier.clickable(onClick = onOpenPreview)
+                    } else {
+                        Modifier
+                    },
+                ),
+            contentAlignment = Alignment.Center,
+        ) {
+            AsyncImage(
+                model = model,
+                contentDescription = fileName.ifBlank { "生成的图片" },
                 modifier = Modifier
                     .fillMaxWidth()
-                    .heightIn(min = 140.dp, max = 320.dp),
-                shape = RoundedCornerShape(18.dp),
-                color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.78f),
-            ) {
-                Column(
+                    .heightIn(min = 140.dp, max = 320.dp)
+                    .clip(RoundedCornerShape(16.dp)),
+                contentScale = ContentScale.FillWidth,
+                onLoading = {
+                    loadFailed = false
+                },
+                onSuccess = {
+                    loadFailed = false
+                },
+                onError = { state ->
+                    loadFailed = true
+                    Log.w(MessageBubbleAttachmentTag, "图片加载失败：$uri", state.result.throwable)
+                },
+            )
+
+            if (loadFailed) {
+                Surface(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(horizontal = 14.dp, vertical = 12.dp),
-                    verticalArrangement = Arrangement.spacedBy(6.dp),
+                        .heightIn(min = 140.dp, max = 320.dp),
+                    shape = RoundedCornerShape(18.dp),
+                    color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.78f),
                 ) {
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(10.dp),
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 14.dp, vertical = 12.dp),
+                        verticalArrangement = Arrangement.spacedBy(6.dp),
                     ) {
-                        Icon(Icons.Default.Image, contentDescription = null)
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(10.dp),
+                        ) {
+                            Icon(Icons.Default.Image, contentDescription = null)
+                            Text(
+                                text = fileName.ifBlank { "图片加载失败" },
+                                style = MaterialTheme.typography.bodyMedium,
+                            )
+                        }
                         Text(
-                            text = fileName.ifBlank { "图片加载失败" },
-                            style = MaterialTheme.typography.bodyMedium,
+                            text = imageLoadFailureHint(uri),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
                     }
-                    Text(
-                        text = imageLoadFailureHint(uri),
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
                 }
             }
         }
@@ -236,12 +253,14 @@ internal fun UserUploadedImageThumbnail(
     uri: String,
     fileName: String,
     autoPreviewImages: Boolean,
+    onOpenPreview: (() -> Unit)? = null,
 ) {
     if (!autoPreviewImages) {
         PartAttachmentPreviewCard(
             fileName = fileName.ifBlank { "已选择图片" },
             supportingText = "已关闭自动图片预览",
             modifier = Modifier.size(UserUploadedImageThumbnailSize),
+            onClick = onOpenPreview,
         )
         return
     }
@@ -258,7 +277,15 @@ internal fun UserUploadedImageThumbnail(
         shadowElevation = 0.dp,
     ) {
         Box(
-            modifier = Modifier.fillMaxSize(),
+            modifier = Modifier
+                .fillMaxSize()
+                .then(
+                    if (onOpenPreview != null) {
+                        Modifier.clickable(onClick = onOpenPreview)
+                    } else {
+                        Modifier
+                    },
+                ),
             contentAlignment = Alignment.Center,
         ) {
             AsyncImage(
@@ -309,10 +336,18 @@ internal fun PartAttachmentPreviewCard(
     fileName: String,
     supportingText: String,
     modifier: Modifier = Modifier,
+    onClick: (() -> Unit)? = null,
 ) {
     Surface(
         modifier = modifier
-            .heightIn(min = 72.dp),
+            .heightIn(min = 72.dp)
+            .then(
+                if (onClick != null) {
+                    Modifier.clickable(onClick = onClick)
+                } else {
+                    Modifier
+                },
+            ),
         shape = RoundedCornerShape(18.dp),
         color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.62f),
     ) {

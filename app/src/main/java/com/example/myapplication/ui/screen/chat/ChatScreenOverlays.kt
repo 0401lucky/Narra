@@ -76,6 +76,8 @@ internal fun ChatScreenOverlays(
     onDismissMessageAction: () -> Unit,
     onSelectMessageCopy: (ChatMessage) -> Unit,
     onOpenMessagePreviewPayload: (ChatMessage) -> Unit,
+    onOpenImagePreviewPayload: (ChatMessage) -> Unit,
+    onSaveMessageImageToGallery: (ChatMessage) -> Unit,
     onExportMessageMarkdown: (ChatMessage) -> Unit,
     onShareMessage: (ChatMessage) -> Unit,
     onEditUserMessage: (ChatMessage) -> Unit,
@@ -84,6 +86,9 @@ internal fun ChatScreenOverlays(
     onDismissMessageSelection: () -> Unit,
     messagePreviewPayload: ChatMessagePreviewPayload?,
     onDismissMessagePreview: () -> Unit,
+    imagePreviewPayload: ChatImagePreviewPayload?,
+    onDismissImagePreview: () -> Unit,
+    onSavePreviewImageToGallery: (ChatPreviewImageItem) -> Unit,
     searchResultPreviewPayload: ChatSearchResultPreviewPayload?,
     onDismissSearchResultPreview: () -> Unit,
     onOpenUrlPreview: (String, String) -> Unit,
@@ -205,12 +210,23 @@ internal fun ChatScreenOverlays(
 
     activeMessageAction?.let { message ->
         val availability = resolveMessageActionAvailability(message)
+        val previewImages = resolvePreviewImages(message)
         ChatMessageActionSheet(
             message = message,
             onDismissRequest = onDismissMessageAction,
             onSelectAndCopy = { onSelectMessageCopy(message) },
             onOpenPreview = if (availability.canPreview) {
                 { onOpenMessagePreviewPayload(message) }
+            } else {
+                null
+            },
+            onOpenImagePreview = if (availability.canPreviewImages) {
+                { onOpenImagePreviewPayload(message) }
+            } else {
+                null
+            },
+            onSaveImageToGallery = if (availability.canSaveImages && previewImages.size == 1) {
+                { onSaveMessageImageToGallery(message) }
             } else {
                 null
             },
@@ -243,6 +259,14 @@ internal fun ChatScreenOverlays(
         ChatMessagePreviewDialog(
             payload = payload,
             onDismissRequest = onDismissMessagePreview,
+        )
+    }
+
+    imagePreviewPayload?.let { payload ->
+        ChatImagePreviewDialog(
+            payload = payload,
+            onDismissRequest = onDismissImagePreview,
+            onSaveImage = onSavePreviewImageToGallery,
         )
     }
 

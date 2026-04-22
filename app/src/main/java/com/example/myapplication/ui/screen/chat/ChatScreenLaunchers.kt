@@ -1,15 +1,22 @@
 package com.example.myapplication.ui.screen.chat
 
+import android.Manifest
 import android.content.Context
 import android.content.Intent
 import android.content.res.Resources
 import android.net.Uri
+import android.os.Build
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.runtime.getValue
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Immutable
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.core.content.ContextCompat
 import com.example.myapplication.R
 import com.example.myapplication.model.AttachmentType
 import com.example.myapplication.model.ChatMessagePart
@@ -23,6 +30,9 @@ import com.example.myapplication.model.TaskPlayDraft
 import com.example.myapplication.model.TransferPlayDraft
 import com.example.myapplication.model.toChatMessagePart
 import com.example.myapplication.ui.LocalImagePersister
+import com.example.myapplication.data.repository.AndroidChatImageGalleryWriter
+import com.example.myapplication.data.repository.AndroidChatImageSourceReader
+import com.example.myapplication.data.repository.ChatImageGallerySaver
 import com.example.myapplication.viewmodel.ChatUiState
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
@@ -38,6 +48,7 @@ internal data class ChatScreenLaunchers(
     val pickFile: () -> Unit,
     val exportMarkdown: () -> Unit,
     val exportMessageMarkdown: (String) -> Unit,
+    val saveImageToGallery: (ChatPreviewImageItem) -> Unit,
     val saveProfileDraft: () -> Unit,
     val primeSpecialPlayDraft: (ChatSpecialType) -> Unit,
     val resetSpecialPlayDraft: (ChatSpecialType) -> Unit,
@@ -56,6 +67,13 @@ internal fun rememberChatScreenLaunchers(
     onSaveUserProfile: (String, String, String, String) -> Unit,
 ): ChatScreenLaunchers {
     val localImageStore = LocalImagePersister.current
+    val imageGallerySaver = remember(context) {
+        ChatImageGallerySaver(
+            sourceReader = AndroidChatImageSourceReader(context),
+            galleryWriter = AndroidChatImageGalleryWriter(context),
+        )
+    }
+    var pendingGalleryImage by remember { mutableStateOf<ChatPreviewImageItem?>(null) }
     val imagePickerLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.PickMultipleVisualMedia(maxItems = IMAGE_PICKER_MAX_ITEMS),
     ) { uris ->
@@ -155,6 +173,31 @@ internal fun rememberChatScreenLaunchers(
         }
         localState.setPendingMessageExport(null)
     }
+    val legacyGalleryPermissionLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.RequestPermission(),
+    ) { granted ->
+        val pendingImage = pendingGalleryImage
+        pendingGalleryImage = null
+        if (pendingImage == null) {
+            return@rememberLauncherForActivityResult
+        }
+        if (!granted) {
+            scope.launch {
+                snackbarHostState.showSnackbar(
+                    resources.getString(R.string.chat_image_permission_denied),
+                )
+            }
+            return@rememberLauncherForActivityResult
+        }
+        scope.launch {
+            saveImageToGalleryInternal(
+                image = pendingImage,
+                imageGallerySaver = imageGallerySaver,
+                snackbarHostState = snackbarHostState,
+                resources = resources,
+            )
+        }
+    }
 
     return ChatScreenLaunchers(
         pickImages = {
@@ -172,6 +215,26 @@ internal fun rememberChatScreenLaunchers(
             exportMarkdownLauncher.launch(buildExportFileName(uiState.currentConversationTitle))
         },
         exportMessageMarkdown = { fileName -> messageMarkdownExportLauncher.launch(fileName) },
+        saveImageToGallery = { image ->
+            val needsLegacyPermission = Build.VERSION.SDK_INT < Build.VERSION_CODES.Q
+            val hasLegacyPermission = !needsLegacyPermission || ContextCompat.checkSelfPermission(
+                context,
+                Manifest.permission.WRITE_EXTERNAL_STORAGE,
+            ) == android.content.pm.PackageManager.PERMISSION_GRANTED
+            if (!hasLegacyPermission) {
+                pendingGalleryImage = image
+                legacyGalleryPermissionLauncher.launch(Manifest.permission.WRITE_EXTERNAL_STORAGE)
+            } else {
+                scope.launch {
+                    saveImageToGalleryInternal(
+                        image = image,
+                        imageGallerySaver = imageGallerySaver,
+                        snackbarHostState = snackbarHostState,
+                        resources = resources,
+                    )
+                }
+            }
+        },
         saveProfileDraft = {
             runSaveProfileDraft(
                 scope = scope,
@@ -290,3 +353,22 @@ private fun resetSpecialPlayDraftInternal(
 
 private const val IMAGE_PICKER_MAX_ITEMS = 9
 private const val AVATAR_SCOPE_CHAT_USER = "chatUserAvatar"
+
+private suspend fun saveImageToGalleryInternal(
+    image: ChatPreviewImageItem,
+    imageGallerySaver: ChatImageGallerySaver,
+    snackbarHostState: SnackbarHostState,
+    resources: Resources,
+) {
+    when (val result = imageGallerySaver.save(image.source, image.fileName)) {
+        is com.example.myapplication.data.repository.SaveImageResult.Success -> {
+            snackbarHostState.showSnackbar(resources.getString(R.string.chat_image_saved_to_gallery))
+        }
+
+        is com.example.myapplication.data.repository.SaveImageResult.Failure -> {
+            snackbarHostState.showSnackbar(
+                result.message.ifBlank { resources.getString(R.string.chat_image_permission_denied) },
+            )
+        }
+    }
+}

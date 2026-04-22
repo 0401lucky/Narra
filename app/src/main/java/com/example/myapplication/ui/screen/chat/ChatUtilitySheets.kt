@@ -70,6 +70,8 @@ internal data class ChatMessageActionAvailability(
     val canEditUserMessage: Boolean,
     val canPreview: Boolean,
     val canRegenerate: Boolean,
+    val canPreviewImages: Boolean,
+    val canSaveImages: Boolean,
 )
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -478,10 +480,29 @@ fun messageHasPreviewableText(
 internal fun resolveMessageActionAvailability(
     message: ChatMessage,
 ): ChatMessageActionAvailability {
+    val previewImages = resolvePreviewImages(message)
     return ChatMessageActionAvailability(
         canEditUserMessage = message.role == MessageRole.USER,
         canPreview = messageHasPreviewableText(message),
         canRegenerate = message.role == MessageRole.ASSISTANT,
+        canPreviewImages = previewImages.isNotEmpty(),
+        canSaveImages = previewImages.isNotEmpty(),
+    )
+}
+
+fun buildImagePreviewPayload(
+    message: ChatMessage,
+    initialImageIndex: Int = 0,
+): ChatImagePreviewPayload? {
+    val images = resolvePreviewImages(message)
+    if (images.isEmpty()) {
+        return null
+    }
+    val normalizedIndex = initialImageIndex.coerceIn(0, images.lastIndex)
+    return ChatImagePreviewPayload(
+        title = buildMessageHeading(message, includeModelName = false),
+        images = images,
+        initialIndex = normalizedIndex,
     )
 }
 
@@ -614,6 +635,32 @@ private fun resolveImageUris(message: ChatMessage): List<String> {
     return message.attachments
         .filter { it.type == AttachmentType.IMAGE && it.uri.isNotBlank() }
         .map { it.uri }
+}
+
+internal fun resolvePreviewImages(
+    message: ChatMessage,
+): List<ChatPreviewImageItem> {
+    val partImages = normalizeChatMessageParts(message.parts)
+        .filter { it.type == ChatMessagePartType.IMAGE && it.uri.isNotBlank() }
+        .mapIndexed { index, part ->
+            ChatPreviewImageItem(
+                source = part.uri,
+                fileName = part.fileName.ifBlank { "assistant-image-${index + 1}" },
+                mimeType = part.mimeType,
+            )
+        }
+    if (partImages.isNotEmpty()) {
+        return partImages
+    }
+    return message.attachments
+        .filter { it.type == AttachmentType.IMAGE && it.uri.isNotBlank() }
+        .mapIndexed { index, attachment ->
+            ChatPreviewImageItem(
+                source = attachment.uri,
+                fileName = attachment.fileName.ifBlank { "assistant-image-${index + 1}" },
+                mimeType = attachment.mimeType,
+            )
+        }
 }
 
 private fun StringBuilder.appendMessageReasoningMarkdown(

@@ -59,6 +59,8 @@ internal data class ChatScreenLocalState(
     val setMessageSelectionPayload: (ChatMessageSelectionPayload?) -> Unit,
     val messagePreviewPayload: ChatMessagePreviewPayload?,
     val setMessagePreviewPayload: (ChatMessagePreviewPayload?) -> Unit,
+    val imagePreviewPayload: ChatImagePreviewPayload?,
+    val setImagePreviewPayload: (ChatImagePreviewPayload?) -> Unit,
     val searchResultPreviewPayload: ChatSearchResultPreviewPayload?,
     val setSearchResultPreviewPayload: (ChatSearchResultPreviewPayload?) -> Unit,
     val pendingMessageExport: ChatMessageExportPayload?,
@@ -124,6 +126,7 @@ internal fun rememberChatScreenLocalState(
     var activeMessageActionId by remember { mutableStateOf<String?>(null) }
     var messageSelectionPayload by remember { mutableStateOf<ChatMessageSelectionPayload?>(null) }
     var messagePreviewPayload by remember { mutableStateOf<ChatMessagePreviewPayload?>(null) }
+    var imagePreviewPayload by remember { mutableStateOf<ChatImagePreviewPayload?>(null) }
     var searchResultPreviewPayload by remember { mutableStateOf<ChatSearchResultPreviewPayload?>(null) }
     var pendingMessageExport by remember { mutableStateOf<ChatMessageExportPayload?>(null) }
 
@@ -170,6 +173,8 @@ internal fun rememberChatScreenLocalState(
         setMessageSelectionPayload = { messageSelectionPayload = it },
         messagePreviewPayload = messagePreviewPayload,
         setMessagePreviewPayload = { messagePreviewPayload = it },
+        imagePreviewPayload = imagePreviewPayload,
+        setImagePreviewPayload = { imagePreviewPayload = it },
         searchResultPreviewPayload = searchResultPreviewPayload,
         setSearchResultPreviewPayload = { searchResultPreviewPayload = it },
         pendingMessageExport = pendingMessageExport,

@@ -13,6 +13,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import com.example.myapplication.model.ChatMessage
 import com.example.myapplication.model.ChatMessagePart
 import com.example.myapplication.model.ContextSummaryState
 import com.example.myapplication.model.ModelInfo
@@ -56,6 +57,7 @@ internal fun ChatConversationPane(
     onOpenConversationDrawer: () -> Unit,
     onRetryMessage: (String) -> Unit,
     onOpenMessageActions: (String) -> Unit,
+    onOpenImagePreview: (ChatMessage, Int) -> Unit,
     onOpenUrlPreview: (String, String) -> Unit,
     onToggleMemoryMessage: (String) -> Unit,
     onTranslateMessage: (String) -> Unit,
@@ -150,6 +152,7 @@ internal fun ChatConversationPane(
                         performanceMode = performanceMode,
                         onRetryMessage = onRetryMessage,
                         onOpenMessageActions = onOpenMessageActions,
+                        onOpenImagePreview = onOpenImagePreview,
                         onOpenUrlPreview = onOpenUrlPreview,
                         onToggleMemoryMessage = onToggleMemoryMessage,
                         onTranslateMessage = onTranslateMessage,
@@ -235,6 +238,7 @@ private fun ColumnScope.ChatMessageListPane(
     performanceMode: ChatMessagePerformanceMode,
     onRetryMessage: (String) -> Unit,
     onOpenMessageActions: (String) -> Unit,
+    onOpenImagePreview: (ChatMessage, Int) -> Unit,
     onOpenUrlPreview: (String, String) -> Unit,
     onToggleMemoryMessage: (String) -> Unit,
     onTranslateMessage: (String) -> Unit,
@@ -281,6 +285,7 @@ private fun ColumnScope.ChatMessageListPane(
                     },
                     onRetry = onRetryMessage,
                     onOpenMessageActions = onOpenMessageActions,
+                    onOpenImagePreview = onOpenImagePreview,
                     onToggleMemory = onToggleMemoryMessage,
                     isRemembered = message.id in uiState.rememberedMessageIds,
                     onTranslate = onTranslateMessage,
