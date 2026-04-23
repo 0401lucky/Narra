@@ -21,6 +21,10 @@ import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
+import dev.chrisbanes.haze.HazeState
+import dev.chrisbanes.haze.haze
+import com.example.myapplication.ui.component.roleplay.LocalImmersiveHazeState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -141,13 +145,15 @@ internal fun RoleplaySceneContent(
     }
     var chromeVisible by rememberSaveable(scenario.id) { mutableStateOf(true) }
     val immersiveMode = settings.roleplayImmersiveMode
+    val hazeState = remember { HazeState() }
 
-    ApplyRoleplaySystemBars(
-        backdropState = backdropState,
-        immersiveMode = immersiveMode,
-    )
+    CompositionLocalProvider(LocalImmersiveHazeState provides hazeState) {
+        ApplyRoleplaySystemBars(
+            backdropState = backdropState,
+            immersiveMode = immersiveMode,
+        )
 
-    Box(modifier = Modifier.fillMaxSize()) {
+        Box(modifier = Modifier.fillMaxSize().haze(state = hazeState)) {
         RoleplaySceneBackground(
             backdropState = backdropState,
             modifier = Modifier.fillMaxSize(),
@@ -281,6 +287,7 @@ internal fun RoleplaySceneContent(
         onSpecialPlayDraftChange = onSpecialPlayDraftChange,
         onSpecialPlayConfirm = onSpecialPlayConfirm,
     )
+    }
 }
 
 @Composable
@@ -367,6 +374,7 @@ private fun RoleplaySceneTopBar(
         Row(
             modifier = Modifier
                 .fillMaxWidth()
+                .testTag("roleplay_scene_title")
                 .clickable(onClick = onToggleChrome)
                 .padding(horizontal = 10.dp, vertical = 10.dp),
             verticalAlignment = Alignment.CenterVertically,

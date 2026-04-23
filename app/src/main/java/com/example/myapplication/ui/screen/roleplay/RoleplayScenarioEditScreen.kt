@@ -36,6 +36,11 @@ import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.ModalBottomSheet
+import androidx.compose.material3.rememberModalBottomSheetState
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -72,9 +77,11 @@ import com.example.myapplication.ui.screen.settings.SettingsSectionHeader
 import com.example.myapplication.ui.screen.settings.SettingsTopBar
 import com.example.myapplication.ui.screen.settings.rememberSettingsOutlineColors
 import com.example.myapplication.ui.screen.settings.rememberSettingsPalette
+import com.example.myapplication.ui.screen.settings.SettingsListRow
 import kotlinx.coroutines.launch
 import java.util.UUID
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun RoleplayScenarioEditScreen(
     scenario: RoleplayScenario?,
@@ -141,6 +148,11 @@ fun RoleplayScenarioEditScreen(
     var autoHighlightSpeaker by rememberSaveable(scenarioStateKey) { mutableStateOf(baseScenario.autoHighlightSpeaker) }
     val enableDeepImmersion = baseScenario.enableDeepImmersion
     val isOnlinePhoneMode = interactionMode == RoleplayInteractionMode.ONLINE_PHONE
+
+    var showAssistantPicker by remember { mutableStateOf(false) }
+    var showDeleteConfirm by remember { mutableStateOf(false) }
+    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+    val selectedAssistant = assistants.find { it.id == assistantId }
 
     fun applyInteractionSpec(transform: (RoleplayInteractionSpec) -> RoleplayInteractionSpec) {
         val next = transform(
@@ -258,20 +270,24 @@ fun RoleplayScenarioEditScreen(
             }
             item {
                 SettingsGroup {
-                    Column(
-                        modifier = Modifier.padding(vertical = 4.dp),
-                    ) {
-                        assistants.forEachIndexed { index, assistant ->
-                            AssistantPickRow(
-                                assistant = assistant,
-                                selected = assistant.id == assistantId,
-                                onClick = { assistantId = assistant.id },
-                            )
-                            if (index != assistants.lastIndex) {
-                                SettingsGroupDivider()
+                    SettingsListRow(
+                        title = selectedAssistant?.name?.ifBlank { "默认助手" } ?: "请选择要绑定的角色",
+                        supportingText = selectedAssistant?.description?.ifBlank { "未填写描述" } ?: "点击选择",
+                        leadingContent = {
+                            if (selectedAssistant != null) {
+                                AssistantAvatar(
+                                    name = selectedAssistant.name.ifBlank { "助手" },
+                                    iconName = selectedAssistant.iconName.ifBlank { "auto_stories" },
+                                    avatarUri = selectedAssistant.avatarUri,
+                                    size = 40.dp,
+                                    containerColor = palette.subtleChip,
+                                    contentColor = palette.subtleChipContent,
+                                    cornerRadius = 12.dp,
+                                )
                             }
-                        }
-                    }
+                        },
+                        onClick = { showAssistantPicker = true },
+                    )
                 }
             }
 
@@ -519,16 +535,9 @@ fun RoleplayScenarioEditScreen(
                             isPrimary = true,
                         )
                         if (!isNew && onDelete != null) {
-                            Text(
-                                text = "谨慎操作",
-                                style = MaterialTheme.typography.labelMedium,
-                                fontWeight = FontWeight.SemiBold,
-                                color = MaterialTheme.colorScheme.error,
-                                modifier = Modifier.padding(top = 4.dp, start = 4.dp),
-                            )
                             AnimatedSettingButton(
                                 text = "删除场景",
-                                onClick = { onDelete(baseScenario.id) },
+                                onClick = { showDeleteConfirm = true },
                                 enabled = true,
                                 isPrimary = false,
                             )
@@ -537,6 +546,76 @@ fun RoleplayScenarioEditScreen(
                 }
             }
         }
+    }
+
+    if (showAssistantPicker) {
+        ModalBottomSheet(
+            onDismissRequest = { showAssistantPicker = false },
+            sheetState = sheetState,
+        ) {
+            Column(
+                modifier = Modifier.padding(bottom = 24.dp),
+                verticalArrangement = Arrangement.spacedBy(4.dp),
+            ) {
+                Text(
+                    text = "选择要绑定的角色",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = palette.title,
+                    modifier = Modifier.padding(horizontal = 24.dp, vertical = 8.dp),
+                )
+                assistants.forEachIndexed { index, assistant ->
+                    AssistantPickRow(
+                        assistant = assistant,
+                        selected = assistant.id == assistantId,
+                        onClick = {
+                            assistantId = assistant.id
+                            showAssistantPicker = false
+                        },
+                    )
+                    if (index != assistants.lastIndex) {
+                        SettingsGroupDivider()
+                    }
+                }
+            }
+        }
+    }
+
+    if (showDeleteConfirm && !isNew && onDelete != null) {
+        AlertDialog(
+            onDismissRequest = { showDeleteConfirm = false },
+            title = {
+                Text(
+                    text = "确认删除场景",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                )
+            },
+            text = {
+                Text(
+                    text = "删除后无法恢复，相关场景配置会一起移除。",
+                    style = MaterialTheme.typography.bodyMedium,
+                )
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        showDeleteConfirm = false
+                        onDelete(baseScenario.id)
+                    },
+                ) {
+                    Text("删除场景")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showDeleteConfirm = false }) {
+                    Text("取消")
+                }
+            },
+            containerColor = palette.surface,
+            titleContentColor = palette.title,
+            textContentColor = palette.body,
+        )
     }
 }
 

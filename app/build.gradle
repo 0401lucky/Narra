@@ -236,6 +236,8 @@ dependencies {
     implementation libs.commonmark
     implementation libs.commonmark.ext.gfm.tables
     implementation libs.commonmark.ext.autolink
+    implementation libs.haze
+    implementation libs.haze.materials
 
     ksp libs.androidx.room.compiler
 

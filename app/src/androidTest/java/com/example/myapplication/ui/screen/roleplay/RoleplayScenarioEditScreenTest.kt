@@ -7,6 +7,7 @@ import androidx.compose.ui.test.assertTextContains
 import androidx.compose.ui.test.hasTestTag
 import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
+import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
@@ -130,6 +131,114 @@ class RoleplayScenarioEditScreenTest {
             assertEquals(description, saved?.description)
             assertEquals(openingNarration, saved?.openingNarration)
             assertEquals(userPersona, saved?.userPersonaOverride)
+        }
+    }
+
+    @Test
+    fun editingScenario_canPickAssistantFromSheet() {
+        val savedScenarios = mutableListOf<RoleplayScenario>()
+        val assistants = listOf(
+            com.example.myapplication.model.Assistant(
+                id = "assistant-default",
+                name = "默认助手",
+                description = "默认描述",
+            ),
+            com.example.myapplication.model.Assistant(
+                id = "assistant-night",
+                name = "夜巡者",
+                description = "负责深夜巡逻的搭档",
+            ),
+        )
+
+        composeRule.setContent {
+            ChatAppTheme {
+                CompositionLocalProvider(
+                    LocalImagePersister provides LocalImageStore(composeRule.activity),
+                ) {
+                    RoleplayScenarioEditScreen(
+                        scenario = RoleplayScenario(id = "scenario-1", title = "夜色站台"),
+                        settings = AppSettings(),
+                        assistants = assistants,
+                        onSave = { scenario -> savedScenarios += scenario },
+                        onDelete = {},
+                        noticeMessage = null,
+                        errorMessage = null,
+                        onClearNoticeMessage = {},
+                        onClearErrorMessage = {},
+                        onNavigateBack = {},
+                    )
+                }
+            }
+        }
+
+        composeRule.onNodeWithTag(TAG_SCENARIO_EDIT_LIST)
+            .performScrollToNode(hasText("绑定角色"))
+        composeRule.onNodeWithText("点击选择")
+            .performClick()
+        composeRule.onNodeWithText("选择要绑定的角色")
+            .assertExists()
+        composeRule.onNodeWithText("夜巡者")
+            .performClick()
+        composeRule.onNodeWithText("夜巡者")
+            .assertExists()
+
+        composeRule.onNodeWithTag(TAG_SCENARIO_EDIT_LIST)
+            .performScrollToNode(hasText("保存场景"))
+        composeRule.onNodeWithText("保存场景")
+            .performClick()
+
+        composeRule.runOnIdle {
+            val saved = savedScenarios.lastOrNull()
+            assertNotNull(saved)
+            assertEquals("assistant-night", saved?.assistantId)
+        }
+    }
+
+    @Test
+    fun editingScenario_deleteActionRequiresConfirmation() {
+        val deletedScenarioIds = mutableListOf<String>()
+
+        composeRule.setContent {
+            ChatAppTheme {
+                CompositionLocalProvider(
+                    LocalImagePersister provides LocalImageStore(composeRule.activity),
+                ) {
+                    RoleplayScenarioEditScreen(
+                        scenario = RoleplayScenario(id = "scenario-delete", title = "待删除场景"),
+                        settings = AppSettings(),
+                        assistants = emptyList(),
+                        onSave = {},
+                        onDelete = { scenarioId -> deletedScenarioIds += scenarioId },
+                        noticeMessage = null,
+                        errorMessage = null,
+                        onClearNoticeMessage = {},
+                        onClearErrorMessage = {},
+                        onNavigateBack = {},
+                    )
+                }
+            }
+        }
+
+        composeRule.onNodeWithTag(TAG_SCENARIO_EDIT_LIST)
+            .performScrollToNode(hasText("删除场景"))
+        composeRule.onNodeWithText("删除场景")
+            .performClick()
+        composeRule.onNodeWithText("确认删除场景")
+            .assertExists()
+        composeRule.onNodeWithText("取消")
+            .performClick()
+
+        composeRule.runOnIdle {
+            assertEquals(emptyList<String>(), deletedScenarioIds)
+        }
+
+        composeRule.onNodeWithText("删除场景")
+            .performClick()
+        composeRule.onAllNodesWithText("删除场景")[1]
+            .performClick()
+
+        composeRule.runOnIdle {
+            assertEquals(listOf("scenario-delete"), deletedScenarioIds)
         }
     }
 

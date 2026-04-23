@@ -22,6 +22,8 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.produceState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Immutable
+import androidx.compose.runtime.staticCompositionLocalOf
+import dev.chrisbanes.haze.HazeState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -684,3 +686,6 @@ fun calculateBottomRegionLuminance(imageBitmap: ImageBitmap?, regionHeightFracti
 
     return if (count > 0) (luminanceSum / count).toFloat() else 0.0f
 }
+
+
+val LocalImmersiveHazeState = staticCompositionLocalOf<HazeState?> { null }

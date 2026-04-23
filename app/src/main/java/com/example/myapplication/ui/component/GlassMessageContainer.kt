@@ -21,6 +21,9 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.unit.dp
+import dev.chrisbanes.haze.hazeChild
+import com.example.myapplication.ui.component.roleplay.LocalImmersiveHazeState
+import dev.chrisbanes.haze.HazeStyle
 
 @Composable
 internal fun GlassMessageContainer(
@@ -33,21 +36,30 @@ internal fun GlassMessageContainer(
     content: @Composable ColumnScope.() -> Unit,
 ) {
     val palette = glassPalette(tint = tint)
+    val hazeState = LocalImmersiveHazeState.current
     val containerModifier = if (reduceVisualEffects) {
         modifier
             .clip(shape)
             .background(brush = palette.containerBrush, shape = shape)
             .border(width = 1.dp, brush = palette.borderBrush, shape = shape)
     } else {
-        modifier
+        val baseMod = modifier
             .shadow(
-                elevation = 10.dp,
+                elevation = 1.dp,
                 shape = shape,
                 clip = false,
-                ambientColor = palette.shadowColor,
-                spotColor = palette.shadowColor,
+                ambientColor = palette.shadowColor.copy(alpha=0.02f),
+                spotColor = palette.shadowColor.copy(alpha=0.02f),
             )
             .clip(shape)
+
+        val hazeMod = if (hazeState != null) {
+            baseMod.hazeChild(state = hazeState, shape = shape, style = HazeStyle(blurRadius = 32.dp, backgroundColor = androidx.compose.ui.graphics.Color.Transparent, tint = dev.chrisbanes.haze.HazeTint(androidx.compose.ui.graphics.Color.Transparent)))
+        } else {
+            baseMod
+        }
+
+        hazeMod
             .background(brush = palette.containerBrush, shape = shape)
             .border(width = 1.dp, brush = palette.borderBrush, shape = shape)
     }
@@ -63,7 +75,10 @@ internal fun GlassMessageContainer(
             )
         }
 
-        CompositionLocalProvider(LocalContentColor provides contentColor) {
+        // Use an alpha shadow for the text to improve contrast against bright background areas
+        val isDark = MaterialTheme.colorScheme.surface.luminance() < 0.5f
+        val effectiveContentColor = if (!reduceVisualEffects && !isDark) contentColor.copy(alpha = 0.98f) else contentColor
+        CompositionLocalProvider(LocalContentColor provides effectiveContentColor) {
             Column(
                 modifier = Modifier.padding(contentPadding),
                 verticalArrangement = Arrangement.spacedBy(12.dp),
@@ -85,12 +100,12 @@ private fun glassPalette(
             containerBrush = Brush.verticalGradient(
                 colors = listOf(
                     if (isDark) {
-                        surface.copy(alpha = 0.94f)
+                        surface.copy(alpha = 0.15f)
                     } else {
-                        androidx.compose.ui.graphics.Color.White.copy(alpha = 0.96f)
+                        androidx.compose.ui.graphics.Color.White.copy(alpha = 0.20f)
                     },
-                    tint.copy(alpha = if (isDark) 0.10f else 0.08f),
-                    surface.copy(alpha = if (isDark) 0.86f else 0.92f),
+                    tint.copy(alpha = if (isDark) 0.05f else 0.04f),
+                    surface.copy(alpha = if (isDark) 0.12f else 0.18f),
                 ),
             ),
             sheenBrush = Brush.linearGradient(
@@ -104,9 +119,9 @@ private fun glassPalette(
             ),
             borderBrush = Brush.verticalGradient(
                 colors = listOf(
-                    androidx.compose.ui.graphics.Color.White.copy(alpha = if (isDark) 0.14f else 0.30f),
-                    tint.copy(alpha = if (isDark) 0.10f else 0.08f),
-                    androidx.compose.ui.graphics.Color.White.copy(alpha = if (isDark) 0.05f else 0.10f),
+                    androidx.compose.ui.graphics.Color.White.copy(alpha = if (isDark) 0.35f else 0.50f),
+                    tint.copy(alpha = if (isDark) 0.15f else 0.25f),
+                    androidx.compose.ui.graphics.Color.White.copy(alpha = if (isDark) 0.10f else 0.20f),
                 ),
             ),
             shadowColor = tint.copy(alpha = if (isDark) 0.10f else 0.06f),

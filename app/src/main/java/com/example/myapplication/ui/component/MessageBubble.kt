@@ -263,11 +263,11 @@ fun MessageBubble(
                         onOpenImagePreview?.invoke(message, imageIndex)
                     },
                 )
-            } else if (!isUser && !isError) {
+            } else if (!isError) {
                 GlassMessageContainer(
-                    modifier = assistantWidthModifier,
+                    modifier = if (isUser) Modifier else assistantWidthModifier,
                     shape = bubbleShape,
-                    tint = MaterialTheme.colorScheme.primary,
+                    tint = if (isUser) backgroundColor else MaterialTheme.colorScheme.primary,
                     contentColor = contentColor,
                     contentPadding = PaddingValues(horizontal = 16.dp, vertical = 14.dp),
                     reduceVisualEffects = effectiveReduceVisualEffects,
