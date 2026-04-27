@@ -109,7 +109,7 @@ class PromptContextAssemblerTest {
             recentMessages = emptyList(),
         )
 
-        assertTrue(result.systemPrompt.contains("【背景设定（世界书）】"))
+        assertTrue(result.systemPrompt.contains("【世界书 · 白塔城】"))
         assertTrue(result.systemPrompt.contains("白塔城"))
         assertTrue(result.debugDump.contains("世界书命中数：1"))
         assertTrue(result.debugDump.contains("白塔城：白塔城是北境最大的贸易都会。"))
@@ -143,6 +143,8 @@ class PromptContextAssemblerTest {
                 override suspend fun upsertEntry(entry: MemoryEntry) = Unit
 
                 override suspend fun deleteEntry(entryId: String) = Unit
+
+                override suspend fun pruneToCapacity(capacity: Int) = Unit
 
                 override suspend fun markEntriesUsed(entryIds: List<String>, timestamp: Long) = Unit
             },
@@ -201,6 +203,8 @@ class PromptContextAssemblerTest {
                 override suspend fun upsertEntry(entry: MemoryEntry) = Unit
 
                 override suspend fun deleteEntry(entryId: String) = Unit
+
+                override suspend fun pruneToCapacity(capacity: Int) = Unit
 
                 override suspend fun markEntriesUsed(entryIds: List<String>, timestamp: Long) = Unit
             },
@@ -349,5 +353,290 @@ class PromptContextAssemblerTest {
         assertTrue(result.systemPrompt.contains("lucky 站在门边，金乘 正在整理警服领口"))
         assertTrue(result.systemPrompt.contains("晚上好，lucky"))
         assertTrue(result.systemPrompt.contains("金乘：别再试探我了，lucky"))
+    }
+
+    @Test
+    fun assemble_usesUserInjectionPromptWhenProvided() = runBlocking {
+        val assembler = DefaultPromptContextAssembler(
+            memoryRepository = singleMemoryRepository(
+                MemoryEntry(
+                    id = "memory-1",
+                    scopeType = MemoryScopeType.ASSISTANT,
+                    scopeId = "assistant-1",
+                    content = "用户喜欢深夜聊天。",
+                    importance = 80,
+                ),
+            ),
+        )
+
+        val result = assembler.assemble(
+            settings = AppSettings(
+                userDisplayName = "小明",
+                memoryInjectionPrompt = "请 {{char}} 在与 {{user}} 互动时遵守以下记忆约束：\n{{memories}}",
+            ),
+            assistant = Assistant(
+                id = "assistant-1",
+                name = "白月",
+                systemPrompt = "保持上下文一致。",
+                memoryEnabled = true,
+            ),
+            conversation = Conversation(id = "c1", createdAt = 1L, updatedAt = 1L),
+            userInputText = "继续",
+            recentMessages = emptyList(),
+        )
+
+        assertTrue(
+            "应应用用户自定义记忆注入模板",
+            result.systemPrompt.contains("请 白月 在与 小明 互动时遵守以下记忆约束："),
+        )
+        assertTrue(result.systemPrompt.contains("- 用户喜欢深夜聊天。"))
+        assertTrue(
+            "用户自定义模板生效后不应保留默认开头",
+            !result.systemPrompt.contains("【已知信息（记忆）】"),
+        )
+    }
+
+    @Test
+    fun assemble_appendsMemoriesWhenInjectionPromptHasNoPlaceholder() = runBlocking {
+        val assembler = DefaultPromptContextAssembler(
+            memoryRepository = singleMemoryRepository(
+                MemoryEntry(
+                    id = "memory-1",
+                    scopeType = MemoryScopeType.ASSISTANT,
+                    scopeId = "assistant-1",
+                    content = "用户偏好简短回复。",
+                    importance = 70,
+                ),
+            ),
+        )
+
+        val result = assembler.assemble(
+            settings = AppSettings(
+                memoryInjectionPrompt = "记忆注入说明：请严格遵守以下记忆。",
+            ),
+            assistant = Assistant(
+                id = "assistant-1",
+                name = "助手",
+                systemPrompt = "保持一致。",
+                memoryEnabled = true,
+            ),
+            conversation = Conversation(id = "c1", createdAt = 1L, updatedAt = 1L),
+            userInputText = "继续",
+            recentMessages = emptyList(),
+        )
+
+        assertTrue(result.systemPrompt.contains("记忆注入说明：请严格遵守以下记忆。"))
+        assertTrue("缺少 {{memories}} 占位符时应自动追加记忆条目", result.systemPrompt.contains("- 用户偏好简短回复。"))
+    }
+
+    @Test
+    fun assemble_blankInjectionPromptFallsBackToDefaultTemplate() = runBlocking {
+        val assembler = DefaultPromptContextAssembler(
+            memoryRepository = singleMemoryRepository(
+                MemoryEntry(
+                    id = "memory-1",
+                    scopeType = MemoryScopeType.ASSISTANT,
+                    scopeId = "assistant-1",
+                    content = "用户在调研白塔城。",
+                    importance = 60,
+                ),
+            ),
+        )
+
+        val result = assembler.assemble(
+            settings = AppSettings(memoryInjectionPrompt = "   "),
+            assistant = Assistant(
+                id = "assistant-1",
+                name = "助手",
+                systemPrompt = "保持一致。",
+                memoryEnabled = true,
+            ),
+            conversation = Conversation(id = "c1", createdAt = 1L, updatedAt = 1L),
+            userInputText = "继续",
+            recentMessages = emptyList(),
+        )
+
+        assertTrue("纯空白模板应走默认", result.systemPrompt.contains("【已知信息（记忆）】"))
+        assertTrue(result.systemPrompt.contains("用户在调研白塔城。"))
+    }
+
+    @Test
+    fun assemble_roleplayUnaffectedByInjectionPromptOverride() = runBlocking {
+        val assembler = DefaultPromptContextAssembler(
+            memoryRepository = singleMemoryRepository(
+                MemoryEntry(
+                    id = "memory-1",
+                    scopeType = MemoryScopeType.ASSISTANT,
+                    scopeId = "assistant-1",
+                    content = "角色一贯先试探。",
+                    importance = 75,
+                ),
+                MemoryEntry(
+                    id = "memory-2",
+                    scopeType = MemoryScopeType.CONVERSATION,
+                    scopeId = "c1",
+                    content = "角色已承认知道密门位置。",
+                    importance = 80,
+                ),
+            ),
+        )
+
+        val result = assembler.assemble(
+            settings = AppSettings(
+                memoryInjectionPrompt = "请遵守：{{memories}}",
+            ),
+            assistant = Assistant(
+                id = "assistant-1",
+                name = "霜岚",
+                systemPrompt = "维持角色。",
+                memoryEnabled = true,
+            ),
+            conversation = Conversation(id = "c1", createdAt = 1L, updatedAt = 1L),
+            userInputText = "继续逼问",
+            recentMessages = emptyList(),
+            promptMode = PromptMode.ROLEPLAY,
+        )
+
+        assertTrue("ROLEPLAY 模式应保持系统三段模板", result.systemPrompt.contains("【角色长期记忆】"))
+        assertTrue(result.systemPrompt.contains("【当前剧情约束】"))
+        assertTrue(
+            "ROLEPLAY 模式不应应用用户注入 prompt",
+            !result.systemPrompt.contains("请遵守："),
+        )
+    }
+
+    @Test
+    fun assemble_memoryInjectionPosition_afterWorldBookKeepsLegacyOrder() = runBlocking {
+        val assembler = DefaultPromptContextAssembler(
+            memoryRepository = singleMemoryRepository(
+                MemoryEntry(
+                    id = "memory-pos-1",
+                    scopeType = MemoryScopeType.ASSISTANT,
+                    scopeId = "assistant-pos",
+                    content = "用户偏好直接给结论。",
+                    importance = 70,
+                ),
+            ),
+        )
+
+        val result = assembler.assemble(
+            settings = AppSettings(),
+            assistant = Assistant(
+                id = "assistant-pos",
+                name = "记忆助手",
+                systemPrompt = "你要保持上下文一致。",
+                memoryEnabled = true,
+            ),
+            conversation = Conversation(id = "c-pos", createdAt = 1L, updatedAt = 1L),
+            userInputText = "继续聊",
+            recentMessages = emptyList(),
+        )
+
+        val systemPromptIndex = result.systemPrompt.indexOf("你要保持上下文一致。")
+        val memoryIndex = result.systemPrompt.indexOf("用户偏好直接给结论。")
+        assertTrue("默认应在系统提示词之后插入记忆", memoryIndex > systemPromptIndex)
+        assertTrue(memoryIndex > 0)
+    }
+
+    @Test
+    fun assemble_memoryInjectionPosition_beforePromptMovesMemoryEarly() = runBlocking {
+        val assembler = DefaultPromptContextAssembler(
+            memoryRepository = singleMemoryRepository(
+                MemoryEntry(
+                    id = "memory-pos-2",
+                    scopeType = MemoryScopeType.ASSISTANT,
+                    scopeId = "assistant-pos",
+                    content = "用户喜欢列表式回答。",
+                    importance = 70,
+                ),
+            ),
+        )
+
+        val result = assembler.assemble(
+            settings = AppSettings(
+                memoryInjectionPosition = com.example.myapplication.model.MemoryInjectionPosition.BEFORE_PROMPT,
+            ),
+            assistant = Assistant(
+                id = "assistant-pos",
+                name = "记忆助手",
+                systemPrompt = "你是设定整理专家。",
+                description = "你需要保持中立。",
+                memoryEnabled = true,
+            ),
+            conversation = Conversation(id = "c-pos", createdAt = 1L, updatedAt = 1L),
+            userInputText = "继续聊",
+            recentMessages = emptyList(),
+        )
+
+        val systemPromptIndex = result.systemPrompt.indexOf("你是设定整理专家。")
+        val memoryIndex = result.systemPrompt.indexOf("用户喜欢列表式回答。")
+        val roleCardIndex = result.systemPrompt.indexOf("【助手简介】")
+
+        assertTrue("BEFORE_PROMPT 时记忆应在系统提示词之后", memoryIndex > systemPromptIndex)
+        assertTrue("BEFORE_PROMPT 时记忆应在角色卡之前", memoryIndex < roleCardIndex)
+    }
+
+    @Test
+    fun assemble_memoryInjectionPosition_atEndMovesMemoryLast() = runBlocking {
+        val assembler = DefaultPromptContextAssembler(
+            memoryRepository = singleMemoryRepository(
+                MemoryEntry(
+                    id = "memory-pos-3",
+                    scopeType = MemoryScopeType.ASSISTANT,
+                    scopeId = "assistant-pos",
+                    content = "用户讨厌啰嗦的引子。",
+                    importance = 70,
+                ),
+            ),
+        )
+
+        val result = assembler.assemble(
+            settings = AppSettings(
+                memoryInjectionPosition = com.example.myapplication.model.MemoryInjectionPosition.AT_END,
+            ),
+            assistant = Assistant(
+                id = "assistant-pos",
+                name = "记忆助手",
+                systemPrompt = "你要保持上下文一致。",
+                description = "你必须避免冗长开场白。",
+                memoryEnabled = true,
+            ),
+            conversation = Conversation(id = "c-pos", createdAt = 1L, updatedAt = 1L),
+            userInputText = "继续聊",
+            recentMessages = emptyList(),
+        )
+
+        val roleCardIndex = result.systemPrompt.indexOf("【助手简介】")
+        val memoryIndex = result.systemPrompt.indexOf("用户讨厌啰嗦的引子。")
+
+        assertTrue("AT_END 时记忆应位于角色卡之后", memoryIndex > roleCardIndex)
+        // 末尾位置：截断最后一行就是记忆。
+        val tail = result.systemPrompt.trimEnd().lines().last()
+        assertTrue("AT_END 时 systemPrompt 末尾应当属于记忆段", tail.contains("用户讨厌啰嗦的引子。"))
+    }
+
+    private fun singleMemoryRepository(
+        vararg entries: MemoryEntry,
+    ): com.example.myapplication.data.repository.context.MemoryRepository {
+        val list = entries.toList()
+        return object : com.example.myapplication.data.repository.context.MemoryRepository {
+            override fun observeEntries() = kotlinx.coroutines.flow.flowOf(emptyList<MemoryEntry>())
+
+            override suspend fun listEntries(): List<MemoryEntry> = list
+
+            override suspend fun findEntryBySourceMessage(
+                scopeType: MemoryScopeType,
+                scopeId: String,
+                sourceMessageId: String,
+            ): MemoryEntry? = null
+
+            override suspend fun upsertEntry(entry: MemoryEntry) = Unit
+
+            override suspend fun deleteEntry(entryId: String) = Unit
+
+            override suspend fun pruneToCapacity(capacity: Int) = Unit
+
+            override suspend fun markEntriesUsed(entryIds: List<String>, timestamp: Long) = Unit
+        }
     }
 }

@@ -31,7 +31,6 @@ import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -46,8 +45,8 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
@@ -65,10 +64,16 @@ import com.example.myapplication.ui.component.AppSnackbarHost
 import com.example.myapplication.ui.component.NarraIconButton
 import com.example.myapplication.ui.component.NarraTextButton
 import com.example.myapplication.ui.component.rememberSystemHighTextContrastEnabled
+import com.example.myapplication.ui.component.roleplay.GlassTextShadow
+import com.example.myapplication.ui.component.roleplay.GlassTextShadowStrong
 import com.example.myapplication.ui.component.roleplay.ImmersiveBackdropState
 import com.example.myapplication.ui.component.roleplay.ImmersiveGlassPalette
-import com.example.myapplication.ui.component.roleplay.ImmersiveGlassSurface
+import com.example.myapplication.ui.component.roleplay.ImmersiveReadingGlassSurface
+import com.example.myapplication.ui.component.roleplay.ImmersiveReadingGlassVariant
+import com.example.myapplication.ui.component.roleplay.ImmersiveReadingScrimVariant
 import com.example.myapplication.ui.component.roleplay.RoleplaySceneBackground
+import com.example.myapplication.ui.component.roleplay.calculateImmersiveBackdropAmbientLuminance
+import com.example.myapplication.ui.component.roleplay.resolveImmersiveReadingScrimAlpha
 import com.example.myapplication.ui.component.roleplay.rememberImmersiveBackdropState
 import com.example.myapplication.ui.component.roleplay.rememberRoleplayDiaryAnnotatedString
 import com.example.myapplication.ui.component.roleplay.stripRoleplayDiaryMarkers
@@ -121,11 +126,28 @@ fun RoleplayDiaryScreen(
         highContrast = effectiveHighContrast,
     )
     val palette = backdropState.palette
+    val backgroundLuminance = remember(backdropState.imageBitmap, palette.panelTint) {
+        calculateImmersiveBackdropAmbientLuminance(backdropState)
+    }
+    val scrimAlpha = remember(backgroundLuminance) {
+        resolveImmersiveReadingScrimAlpha(
+            backgroundLuminance = backgroundLuminance,
+            variant = ImmersiveReadingScrimVariant.DIARY_LIST,
+        )
+    }
+    val scrimBrush = remember(palette, scrimAlpha) {
+        Brush.verticalGradient(
+            colorStops = arrayOf(
+                0.0f to palette.scrimTop.copy(alpha = scrimAlpha * 0.22f),
+                0.22f to Color.Transparent,
+                0.68f to palette.scrimBottom.copy(alpha = scrimAlpha * 0.58f),
+                1.0f to palette.scrimBottom.copy(alpha = scrimAlpha * 0.90f),
+            ),
+        )
+    }
     val characterName = scenario.characterDisplayNameOverride.trim()
         .ifBlank { assistant?.name?.trim().orEmpty() }
         .ifBlank { stringResource(R.string.roleplay_character_fallback) }
-
-    val scrimAlpha = if (palette.onGlass.luminance() > 0.5f) 0.36f else 0.18f
     val hasDiary = diaryEntries.isNotEmpty()
 
     var searchQuery by rememberSaveable { mutableStateOf("") }
@@ -171,184 +193,189 @@ fun RoleplayDiaryScreen(
         Box(
             modifier = Modifier
                 .fillMaxSize()
-                .background(MaterialTheme.colorScheme.scrim.copy(alpha = scrimAlpha)),
+                .background(scrimBrush),
         )
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(horizontal = 12.dp, vertical = 8.dp),
+                .padding(horizontal = 14.dp, vertical = 10.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
-            // 顶部标题栏
-            ImmersiveGlassSurface(
-                backdropState = backdropState,
-                modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(28.dp),
-                blurRadius = 22.dp,
-                overlayColor = palette.panelTintStrong.copy(alpha = 0.76f),
-            ) {
-                Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 12.dp, vertical = 12.dp),
-                    verticalArrangement = Arrangement.spacedBy(8.dp),
+                // 顶部标题栏
+                ImmersiveReadingGlassSurface(
+                    backdropState = backdropState,
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(30.dp),
+                    variant = ImmersiveReadingGlassVariant.CHROME,
                 ) {
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(10.dp),
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 14.dp, vertical = 14.dp),
+                        verticalArrangement = Arrangement.spacedBy(10.dp),
                     ) {
-                        NarraIconButton(onClick = onNavigateBack) {
-                            Icon(
-                                imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                                contentDescription = stringResource(id = R.string.common_back),
-                                tint = palette.onGlass,
-                            )
-                        }
-                        Column(
-                            modifier = Modifier.weight(1f),
-                            verticalArrangement = Arrangement.spacedBy(4.dp),
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(10.dp),
                         ) {
-                            Row(
-                                verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                            ) {
-                                Text(
-                                    text = "角色日记",
-                                    style = MaterialTheme.typography.titleMedium,
-                                    fontWeight = FontWeight.Bold,
-                                    color = palette.onGlass,
-                                )
-                                if (hasDiary) {
-                                    Text(
-                                        text = "· 共 ${diaryEntries.size} 篇",
-                                        style = MaterialTheme.typography.labelMedium,
-                                        color = palette.onGlassMuted,
-                                    )
-                                }
-                            }
-                            Text(
-                                text = characterName,
-                                style = MaterialTheme.typography.bodySmall,
-                                color = palette.onGlassMuted,
-                                maxLines = 1,
-                                overflow = TextOverflow.Ellipsis,
-                            )
-                        }
-                        if (hasDiary) {
-                            NarraIconButton(
-                                onClick = { searchVisible = !searchVisible; if (!searchVisible) searchQuery = "" },
-                            ) {
+                            NarraIconButton(onClick = onNavigateBack) {
                                 Icon(
-                                    imageVector = if (searchVisible) Icons.Default.Close else Icons.Default.Search,
-                                    contentDescription = if (searchVisible) "关闭搜索" else "搜索",
+                                    imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                                    contentDescription = stringResource(id = R.string.common_back),
                                     tint = palette.onGlass,
                                 )
                             }
-                        }
-                        if (hasDiary || isGeneratingDiary) {
-                            NarraTextButton(
-                                onClick = onGenerateDiary,
-                                enabled = !isGeneratingDiary,
+                            Column(
+                                modifier = Modifier.weight(1f),
+                                verticalArrangement = Arrangement.spacedBy(4.dp),
                             ) {
-                                if (isGeneratingDiary) {
-                                    CircularProgressIndicator(
-                                        modifier = Modifier
-                                            .padding(end = 8.dp)
-                                            .size(14.dp),
-                                        strokeWidth = 2.dp,
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                ) {
+                                    Text(
+                                        text = "角色日记",
+                                        style = MaterialTheme.typography.titleMedium.copy(
+                                            shadow = GlassTextShadowStrong,
+                                        ),
+                                        fontWeight = FontWeight.Bold,
                                         color = palette.onGlass,
                                     )
+                                    if (hasDiary) {
+                                        Text(
+                                            text = "· 共 ${diaryEntries.size} 篇",
+                                            style = MaterialTheme.typography.labelMedium.copy(
+                                                shadow = GlassTextShadow,
+                                            ),
+                                            color = palette.onGlassMuted,
+                                        )
+                                    }
+                                }
+                                Text(
+                                    text = characterName,
+                                    style = MaterialTheme.typography.bodySmall.copy(
+                                        shadow = GlassTextShadow,
+                                    ),
+                                    color = palette.onGlassMuted,
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis,
+                                )
+                            }
+                            if (hasDiary) {
+                                NarraIconButton(
+                                    onClick = {
+                                        searchVisible = !searchVisible
+                                        if (!searchVisible) searchQuery = ""
+                                    },
+                                ) {
+                                    Icon(
+                                        imageVector = if (searchVisible) Icons.Default.Close else Icons.Default.Search,
+                                        contentDescription = if (searchVisible) "关闭搜索" else "搜索",
+                                        tint = palette.onGlass,
+                                    )
+                                }
+                            }
+                            if (hasDiary || isGeneratingDiary) {
+                                NarraTextButton(
+                                    onClick = onGenerateDiary,
+                                    enabled = !isGeneratingDiary,
+                                ) {
+                                    if (isGeneratingDiary) {
+                                        CircularProgressIndicator(
+                                            modifier = Modifier
+                                                .padding(end = 8.dp)
+                                                .size(14.dp),
+                                            strokeWidth = 2.dp,
+                                            color = palette.onGlass,
+                                        )
+                                        Text(
+                                            text = "生成中…",
+                                            style = MaterialTheme.typography.labelMedium.copy(
+                                                shadow = GlassTextShadow,
+                                            ),
+                                            color = palette.onGlassMuted,
+                                        )
+                                    } else {
+                                        Text("重新生成")
+                                    }
+                                }
+                            }
+                        }
+                        // 搜索框：动画展开
+                        AnimatedVisibility(
+                            visible = searchVisible && hasDiary,
+                            enter = expandVertically() + fadeIn(),
+                            exit = shrinkVertically() + fadeOut(),
+                        ) {
+                            TextField(
+                                value = searchQuery,
+                                onValueChange = { searchQuery = it },
+                                placeholder = {
                                     Text(
-                                        text = "生成中…",
-                                        style = MaterialTheme.typography.labelMedium,
+                                        "搜索标题 / 内容 / 心情 / 标签",
                                         color = palette.onGlassMuted,
                                     )
-                                } else {
-                                    Text("重新生成")
+                                },
+                                singleLine = true,
+                                modifier = Modifier.fillMaxWidth(),
+                                shape = RoundedCornerShape(18.dp),
+                                colors = TextFieldDefaults.colors(
+                                    focusedContainerColor = palette.panelTint.copy(alpha = 0.24f),
+                                    unfocusedContainerColor = palette.panelTint.copy(alpha = 0.16f),
+                                    focusedTextColor = palette.onGlass,
+                                    unfocusedTextColor = palette.onGlass,
+                                    cursorColor = palette.characterAccent,
+                                    focusedIndicatorColor = Color.Transparent,
+                                    unfocusedIndicatorColor = Color.Transparent,
+                                ),
+                            )
+                        }
+                    }
+                }
+
+                if (!hasDiary) {
+                    EmptyDiaryPanel(
+                        backdropState = backdropState,
+                        isGeneratingDiary = isGeneratingDiary,
+                        onGenerateDiary = onGenerateDiary,
+                    )
+                } else {
+                    LazyColumn(
+                        modifier = Modifier.fillMaxSize(),
+                        contentPadding = PaddingValues(bottom = 24.dp),
+                        verticalArrangement = Arrangement.spacedBy(16.dp),
+                    ) {
+                        if (normalizedQuery.isNotBlank()) {
+                            if (filteredEntries.isEmpty()) {
+                                item {
+                                    SearchEmptyDiaryPanel(backdropState = backdropState)
+                                }
+                            } else {
+                                items(filteredEntries, key = { it.id }) { entry ->
+                                    RoleplayDiaryEntryCard(
+                                        entry = entry,
+                                        backdropState = backdropState,
+                                        onClick = { onOpenEntry(entry.id) },
+                                    )
+                                }
+                            }
+                        } else {
+                            grouped.forEach { (month, entries) ->
+                                stickyHeader(key = "month-$month") {
+                                    MonthHeader(label = month, backdropState = backdropState)
+                                }
+                                items(entries, key = { it.id }) { entry ->
+                                    RoleplayDiaryEntryCard(
+                                        entry = entry,
+                                        backdropState = backdropState,
+                                        onClick = { onOpenEntry(entry.id) },
+                                    )
                                 }
                             }
                         }
                     }
-                    // 搜索框：动画展开
-                    AnimatedVisibility(
-                        visible = searchVisible && hasDiary,
-                        enter = expandVertically() + fadeIn(),
-                        exit = shrinkVertically() + fadeOut(),
-                    ) {
-                        TextField(
-                            value = searchQuery,
-                            onValueChange = { searchQuery = it },
-                            placeholder = {
-                                Text(
-                                    "搜索标题 / 内容 / 心情 / 标签",
-                                    color = palette.onGlassMuted,
-                                )
-                            },
-                            singleLine = true,
-                            modifier = Modifier.fillMaxWidth(),
-                            shape = RoundedCornerShape(18.dp),
-                            colors = TextFieldDefaults.colors(
-                                focusedContainerColor = palette.panelTintStrong.copy(alpha = 0.6f),
-                                unfocusedContainerColor = palette.panelTintStrong.copy(alpha = 0.4f),
-                                focusedTextColor = palette.onGlass,
-                                unfocusedTextColor = palette.onGlass,
-                                cursorColor = palette.characterAccent,
-                                focusedIndicatorColor = Color.Transparent,
-                                unfocusedIndicatorColor = Color.Transparent,
-                            ),
-                        )
-                    }
                 }
             }
-
-            if (!hasDiary) {
-                EmptyDiaryPanel(
-                    backdropState = backdropState,
-                    isGeneratingDiary = isGeneratingDiary,
-                    onGenerateDiary = onGenerateDiary,
-                )
-            } else {
-                LazyColumn(
-                    modifier = Modifier.fillMaxSize(),
-                    contentPadding = PaddingValues(bottom = 24.dp),
-                    verticalArrangement = Arrangement.spacedBy(16.dp),
-                ) {
-                    if (normalizedQuery.isNotBlank()) {
-                        if (filteredEntries.isEmpty()) {
-                            item {
-                                Text(
-                                    text = "没有命中的日记。换个关键词试试？",
-                                    style = MaterialTheme.typography.bodyMedium,
-                                    color = palette.onGlassMuted,
-                                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 24.dp),
-                                )
-                            }
-                        } else {
-                            items(filteredEntries) { entry ->
-                                RoleplayDiaryEntryCard(
-                                    entry = entry,
-                                    backdropState = backdropState,
-                                    onClick = { onOpenEntry(entry.id) },
-                                )
-                            }
-                        }
-                    } else {
-                        grouped.forEach { (month, entries) ->
-                            stickyHeader(key = "month-$month") {
-                                MonthHeader(label = month, backdropState = backdropState)
-                            }
-                            items(entries, key = { it.id }) { entry ->
-                                RoleplayDiaryEntryCard(
-                                    entry = entry,
-                                    backdropState = backdropState,
-                                    onClick = { onOpenEntry(entry.id) },
-                                )
-                            }
-                        }
-                    }
-                }
-            }
-        }
 
         AppSnackbarHost(
             hostState = snackbarHostState,
@@ -368,12 +395,11 @@ private fun EmptyDiaryPanel(
     onGenerateDiary: () -> Unit,
 ) {
     val palette = backdropState.palette
-    ImmersiveGlassSurface(
+    ImmersiveReadingGlassSurface(
         backdropState = backdropState,
         modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(30.dp),
-        blurRadius = 24.dp,
-        overlayColor = palette.readingSurface,
+        shape = RoundedCornerShape(32.dp),
+        variant = ImmersiveReadingGlassVariant.PANEL,
     ) {
         Column(
             modifier = Modifier
@@ -390,13 +416,18 @@ private fun EmptyDiaryPanel(
             )
             Text(
                 text = "还没有生成过日记",
-                style = MaterialTheme.typography.titleMedium,
+                style = MaterialTheme.typography.titleMedium.copy(
+                    shadow = GlassTextShadowStrong,
+                ),
                 fontWeight = FontWeight.SemiBold,
                 color = palette.onGlass,
             )
             Text(
                 text = "会结合当前角色设定、长期上下文和最近剧情，生成一组更私密的角色日记。",
-                style = MaterialTheme.typography.bodyMedium.copy(lineHeight = 24.sp),
+                style = MaterialTheme.typography.bodyMedium.copy(
+                    lineHeight = 24.sp,
+                    shadow = GlassTextShadow,
+                ),
                 color = palette.onGlassMuted,
                 textAlign = TextAlign.Center,
             )
@@ -428,15 +459,20 @@ private fun MonthHeader(
     backdropState: ImmersiveBackdropState,
 ) {
     val palette = backdropState.palette
-    Surface(
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(14.dp),
-        color = palette.panelTintStrong.copy(alpha = 0.88f),
+    ImmersiveReadingGlassSurface(
+        backdropState = backdropState,
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(bottom = 4.dp),
+        shape = RoundedCornerShape(18.dp),
+        variant = ImmersiveReadingGlassVariant.PILL,
     ) {
         Text(
             text = label,
             modifier = Modifier.padding(horizontal = 14.dp, vertical = 8.dp),
-            style = MaterialTheme.typography.labelLarge,
+            style = MaterialTheme.typography.labelLarge.copy(
+                shadow = GlassTextShadow,
+            ),
             fontWeight = FontWeight.SemiBold,
             color = palette.onGlass,
         )
@@ -465,12 +501,11 @@ private fun RoleplayDiaryEntryCard(
     val hasMetadata = entry.mood.isNotBlank() || entry.weather.isNotBlank() || entry.tags.isNotEmpty()
     val effectiveDateLabel = entry.dateLabel.ifBlank { formatFallbackDate(entry.createdAt) }
 
-    ImmersiveGlassSurface(
+    ImmersiveReadingGlassSurface(
         backdropState = backdropState,
         modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(28.dp),
-        blurRadius = 24.dp,
-        overlayColor = palette.readingSurface,
+        shape = RoundedCornerShape(30.dp),
+        variant = ImmersiveReadingGlassVariant.CARD,
     ) {
         Column(
             modifier = Modifier
@@ -482,14 +517,18 @@ private fun RoleplayDiaryEntryCard(
             Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
                 Text(
                     text = entry.title,
-                    style = MaterialTheme.typography.titleLarge,
+                    style = MaterialTheme.typography.titleLarge.copy(
+                        shadow = GlassTextShadowStrong,
+                    ),
                     fontWeight = FontWeight.Bold,
                     color = palette.onGlass,
                 )
                 if (effectiveDateLabel.isNotBlank()) {
                     Text(
                         text = effectiveDateLabel,
-                        style = MaterialTheme.typography.labelMedium,
+                        style = MaterialTheme.typography.labelMedium.copy(
+                            shadow = GlassTextShadow,
+                        ),
                         color = palette.onGlassMuted,
                     )
                 }
@@ -518,6 +557,7 @@ private fun RoleplayDiaryEntryCard(
                 style = MaterialTheme.typography.bodyLarge.copy(
                     lineHeight = 28.sp,
                     letterSpacing = 0.2.sp,
+                    shadow = GlassTextShadow,
                 ),
                 color = palette.onGlass,
                 maxLines = 6,
@@ -551,9 +591,9 @@ private fun DiaryChip(
     accented: Boolean,
 ) {
     val bg = if (accented) {
-        palette.characterAccent.copy(alpha = 0.22f)
+        palette.characterAccent.copy(alpha = 0.16f)
     } else {
-        palette.chipTint.copy(alpha = 0.55f)
+        palette.chipTint.copy(alpha = 0.28f)
     }
     Surface(
         shape = RoundedCornerShape(999.dp),
@@ -565,6 +605,29 @@ private fun DiaryChip(
             style = MaterialTheme.typography.labelSmall,
             color = palette.onGlass,
             fontWeight = FontWeight.Medium,
+        )
+    }
+}
+
+@Composable
+private fun SearchEmptyDiaryPanel(
+    backdropState: ImmersiveBackdropState,
+) {
+    val palette = backdropState.palette
+    ImmersiveReadingGlassSurface(
+        backdropState = backdropState,
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(24.dp),
+        variant = ImmersiveReadingGlassVariant.CARD,
+    ) {
+        Text(
+            text = "没有命中的日记。换个关键词试试？",
+            modifier = Modifier.padding(horizontal = 18.dp, vertical = 18.dp),
+            style = MaterialTheme.typography.bodyMedium.copy(
+                shadow = GlassTextShadow,
+            ),
+            color = palette.onGlassMuted,
+            textAlign = TextAlign.Center,
         )
     }
 }

@@ -6,6 +6,7 @@ import com.example.myapplication.model.Assistant
 import com.example.myapplication.model.DEFAULT_ROLEPLAY_LONGFORM_TARGET_CHARS
 import com.example.myapplication.model.RoleplayInteractionMode
 import com.example.myapplication.model.RoleplayScenario
+import com.example.myapplication.model.shouldInjectDescriptionPrompt
 
 object RoleplayPromptDecorator {
     fun decorate(
@@ -52,8 +53,8 @@ object RoleplayPromptDecorator {
                             ),
                         )
                     }
-                    if (scenario.description.isNotBlank()) {
-                        append("\n场景描述：")
+                    if (scenario.shouldInjectDescriptionPrompt()) {
+                        append("\n聊天背景补充：")
                         append(
                             ContextPlaceholderResolver.resolve(
                                 text = scenario.description.trim(),

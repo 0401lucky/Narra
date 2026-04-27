@@ -13,6 +13,7 @@ import com.example.myapplication.model.PhoneViewMode
 import com.example.myapplication.model.PromptMode
 import com.example.myapplication.model.RoleplayScenario
 import com.example.myapplication.model.hasSendableContent
+import com.example.myapplication.model.shouldInjectDescriptionPrompt
 import com.example.myapplication.model.toPlainText
 import com.example.myapplication.roleplay.RoleplayTranscriptFormatter
 
@@ -109,8 +110,8 @@ class PhoneContextBuilder(
                         append(scenario.title.trim())
                         append('\n')
                     }
-                    if (scenario.description.isNotBlank()) {
-                        append("场景描述：")
+                    if (scenario.shouldInjectDescriptionPrompt()) {
+                        append("聊天背景补充：")
                         append(scenario.description.trim())
                         append('\n')
                     }

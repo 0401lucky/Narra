@@ -121,7 +121,8 @@ internal fun RoleplayInputBar(
     ImmersiveGlassSurface(
         backdropState = backdropState,
         modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(24.dp),
+        shape = RoundedCornerShape(28.dp),
+        blurRadius = 20.dp,
         overlayColor = colors.panelBackgroundStrong,
     ) {
         Column(

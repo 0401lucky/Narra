@@ -2,6 +2,7 @@ package com.example.myapplication.data.repository.roleplay
 
 import com.example.myapplication.data.local.roleplay.RoleplayDao
 import com.example.myapplication.data.local.roleplay.RoleplayDiaryEntryEntity
+import com.example.myapplication.data.local.roleplay.RoleplayChatSummaryRow
 import com.example.myapplication.data.local.roleplay.RoleplayOnlineMetaEntity
 import com.example.myapplication.data.local.roleplay.RoleplayScenarioEntity
 import com.example.myapplication.data.local.roleplay.RoleplaySessionEntity
@@ -343,6 +344,49 @@ private class FakeRoleplayDao(
 
     override fun observeScenarios(): Flow<List<RoleplayScenarioEntity>> {
         return scenariosState
+    }
+
+    override fun observeChatSummaryRows(): Flow<List<RoleplayChatSummaryRow>> {
+        return scenariosState.map { scenarios ->
+            scenarios.map { scenario ->
+                val session = sessionsState.value.firstOrNull { it.scenarioId == scenario.id }
+                RoleplayChatSummaryRow(
+                    id = scenario.id,
+                    title = scenario.title,
+                    description = scenario.description,
+                    descriptionPromptEnabled = scenario.descriptionPromptEnabled,
+                    assistantId = scenario.assistantId,
+                    backgroundUri = scenario.backgroundUri,
+                    userDisplayNameOverride = scenario.userDisplayNameOverride,
+                    userPersonaOverride = scenario.userPersonaOverride,
+                    userPortraitUri = scenario.userPortraitUri,
+                    userPortraitUrl = scenario.userPortraitUrl,
+                    characterDisplayNameOverride = scenario.characterDisplayNameOverride,
+                    characterPortraitUri = scenario.characterPortraitUri,
+                    characterPortraitUrl = scenario.characterPortraitUrl,
+                    openingNarration = scenario.openingNarration,
+                    interactionMode = scenario.interactionMode,
+                    enableNarration = scenario.enableNarration,
+                    enableRoleplayProtocol = scenario.enableRoleplayProtocol,
+                    longformModeEnabled = scenario.longformModeEnabled,
+                    autoHighlightSpeaker = scenario.autoHighlightSpeaker,
+                    enableDeepImmersion = scenario.enableDeepImmersion,
+                    enableTimeAwareness = scenario.enableTimeAwareness,
+                    enableNetMeme = scenario.enableNetMeme,
+                    isPinned = scenario.isPinned,
+                    isMuted = scenario.isMuted,
+                    createdAt = scenario.createdAt,
+                    updatedAt = scenario.updatedAt,
+                    sessionId = session?.id,
+                    sessionConversationId = session?.conversationId,
+                    sessionCreatedAt = session?.createdAt,
+                    sessionUpdatedAt = session?.updatedAt,
+                    lastMessageContent = null,
+                    lastMessageCreatedAt = null,
+                    lastMessageRole = null,
+                )
+            }
+        }
     }
 
     override fun observeScenario(scenarioId: String): Flow<RoleplayScenarioEntity?> {

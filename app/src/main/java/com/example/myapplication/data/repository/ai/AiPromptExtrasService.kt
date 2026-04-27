@@ -59,6 +59,10 @@ interface AiPromptExtrasService {
         modelId: String,
         apiProtocol: ProviderApiProtocol = ProviderApiProtocol.OPENAI_COMPATIBLE,
         provider: ProviderSettings? = null,
+        existingMemories: List<String> = emptyList(),
+        userName: String = "用户",
+        characterName: String = "角色",
+        extractionPromptOverride: String = "",
     ): List<String>
 
     suspend fun generateRoleplayMemoryEntries(
@@ -68,6 +72,7 @@ interface AiPromptExtrasService {
         modelId: String,
         apiProtocol: ProviderApiProtocol = ProviderApiProtocol.OPENAI_COMPATIBLE,
         provider: ProviderSettings? = null,
+        existingMemories: List<String> = emptyList(),
     ): StructuredMemoryExtractionResult
 
     suspend fun generateRoleplaySuggestions(
@@ -290,6 +295,10 @@ class DefaultAiPromptExtrasService internal constructor(
         modelId: String,
         apiProtocol: ProviderApiProtocol,
         provider: ProviderSettings?,
+        existingMemories: List<String>,
+        userName: String,
+        characterName: String,
+        extractionPromptOverride: String,
     ): List<String> = memoryService.generateMemoryEntries(
         conversationExcerpt = conversationExcerpt,
         baseUrl = baseUrl,
@@ -297,6 +306,10 @@ class DefaultAiPromptExtrasService internal constructor(
         modelId = modelId,
         apiProtocol = apiProtocol,
         provider = provider,
+        existingMemories = existingMemories,
+        userName = userName,
+        characterName = characterName,
+        extractionPromptOverride = extractionPromptOverride,
     )
 
     override suspend fun generateRoleplayMemoryEntries(
@@ -306,6 +319,7 @@ class DefaultAiPromptExtrasService internal constructor(
         modelId: String,
         apiProtocol: ProviderApiProtocol,
         provider: ProviderSettings?,
+        existingMemories: List<String>,
     ): StructuredMemoryExtractionResult = memoryService.generateRoleplayMemoryEntries(
         conversationExcerpt = conversationExcerpt,
         baseUrl = baseUrl,
@@ -313,6 +327,7 @@ class DefaultAiPromptExtrasService internal constructor(
         modelId = modelId,
         apiProtocol = apiProtocol,
         provider = provider,
+        existingMemories = existingMemories,
     )
 
     override suspend fun generateRoleplaySuggestions(

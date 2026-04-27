@@ -4,6 +4,7 @@ import com.example.myapplication.data.local.SettingsStore
 import com.example.myapplication.model.AppSettings
 import com.example.myapplication.model.Assistant
 import com.example.myapplication.model.DEFAULT_ROLEPLAY_LONGFORM_TARGET_CHARS
+import com.example.myapplication.model.MemoryInjectionPosition
 import com.example.myapplication.model.ProviderSettings
 import com.example.myapplication.model.RoleplayImmersiveMode
 import com.example.myapplication.model.RoleplayLineHeightScale
@@ -166,6 +167,33 @@ class FakeSettingsStore(
     override suspend fun saveRoleplayAssistantMismatchDialogPreference(suppressed: Boolean) {
         state.value = state.value.copy(
             suppressRoleplayAssistantMismatchDialog = suppressed,
+        )
+    }
+
+    override suspend fun saveMemorySettings(autoSummaryEvery: Int, capacity: Int) {
+        state.value = state.value.copy(
+            memoryAutoSummaryEvery = autoSummaryEvery,
+            memoryCapacity = capacity,
+        )
+    }
+
+    override suspend fun saveMemoryPromptSettings(extractionPrompt: String, injectionPrompt: String) {
+        state.value = state.value.copy(
+            memoryExtractionPrompt = extractionPrompt,
+            memoryInjectionPrompt = injectionPrompt,
+        )
+    }
+
+    override suspend fun saveMemoryInjectionPosition(position: MemoryInjectionPosition) {
+        state.value = state.value.copy(
+            memoryInjectionPosition = position,
+        )
+    }
+
+    override suspend fun saveContextLogSettings(enabled: Boolean, capacity: Int) {
+        state.value = state.value.copy(
+            contextLogEnabled = enabled,
+            contextLogCapacity = capacity,
         )
     }
 }

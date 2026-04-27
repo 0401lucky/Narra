@@ -502,6 +502,88 @@ class SettingsViewModel(
     fun selectAssistant(assistantId: String) =
         launchAssistantOp { selectAssistant(it, assistantId) }
 
+    // ── 记忆与上下文日志：直接落库（子页面无"保存"按钮，操作即时反馈） ──
+
+    fun updateMemoryAutoSummaryEvery(value: Int) {
+        val capacity = storedSettings.value.memoryCapacity
+        viewModelScope.launch {
+            runCatching {
+                settingsEditor.saveMemorySettings(
+                    autoSummaryEvery = value,
+                    capacity = capacity,
+                )
+            }
+        }
+    }
+
+    fun updateMemoryCapacity(value: Int) {
+        val autoEvery = storedSettings.value.memoryAutoSummaryEvery
+        viewModelScope.launch {
+            runCatching {
+                settingsEditor.saveMemorySettings(
+                    autoSummaryEvery = autoEvery,
+                    capacity = value,
+                )
+            }
+        }
+    }
+
+    fun updateMemoryExtractionPrompt(value: String) {
+        val injection = storedSettings.value.memoryInjectionPrompt
+        viewModelScope.launch {
+            runCatching {
+                settingsEditor.saveMemoryPromptSettings(
+                    extractionPrompt = value,
+                    injectionPrompt = injection,
+                )
+            }
+        }
+    }
+
+    fun updateMemoryInjectionPrompt(value: String) {
+        val extraction = storedSettings.value.memoryExtractionPrompt
+        viewModelScope.launch {
+            runCatching {
+                settingsEditor.saveMemoryPromptSettings(
+                    extractionPrompt = extraction,
+                    injectionPrompt = value,
+                )
+            }
+        }
+    }
+
+    fun updateMemoryInjectionPosition(position: com.example.myapplication.model.MemoryInjectionPosition) {
+        viewModelScope.launch {
+            runCatching {
+                settingsEditor.saveMemoryInjectionPosition(position)
+            }
+        }
+    }
+
+    fun updateContextLogEnabled(value: Boolean) {
+        val capacity = storedSettings.value.contextLogCapacity
+        viewModelScope.launch {
+            runCatching {
+                settingsEditor.saveContextLogSettings(
+                    enabled = value,
+                    capacity = capacity,
+                )
+            }
+        }
+    }
+
+    fun updateContextLogCapacity(value: Int) {
+        val enabled = storedSettings.value.contextLogEnabled
+        viewModelScope.launch {
+            runCatching {
+                settingsEditor.saveContextLogSettings(
+                    enabled = enabled,
+                    capacity = value,
+                )
+            }
+        }
+    }
+
     // ── 内部 helper（部分暴露为 internal，供同包 setter 扩展文件访问）。 ──
 
     /** 供同包扩展函数更新 [SettingsUiState]。 */

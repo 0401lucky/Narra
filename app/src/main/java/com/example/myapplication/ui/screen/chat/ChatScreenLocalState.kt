@@ -27,8 +27,6 @@ internal data class ChatScreenLocalState(
     val setShowProfileSheet: (Boolean) -> Unit,
     val showExportSheet: Boolean,
     val setShowExportSheet: (Boolean) -> Unit,
-    val showPromptDebugSheet: Boolean,
-    val setShowPromptDebugSheet: (Boolean) -> Unit,
     val showSpecialPlaySheet: Boolean,
     val setShowSpecialPlaySheet: (Boolean) -> Unit,
     val activeSpecialPlayType: ChatSpecialType?,
@@ -100,7 +98,6 @@ internal fun rememberChatScreenLocalState(
     var showSearchPickerSheet by rememberSaveable { mutableStateOf(false) }
     var showProfileSheet by rememberSaveable { mutableStateOf(false) }
     var showExportSheet by rememberSaveable { mutableStateOf(false) }
-    var showPromptDebugSheet by rememberSaveable { mutableStateOf(false) }
     var showSpecialPlaySheet by rememberSaveable { mutableStateOf(false) }
     var activeSpecialPlayTypeName by rememberSaveable { mutableStateOf<String?>(null) }
     var transferDraft by rememberSaveable(stateSaver = TransferPlayDraftSaver) {
@@ -141,8 +138,6 @@ internal fun rememberChatScreenLocalState(
         setShowProfileSheet = { showProfileSheet = it },
         showExportSheet = showExportSheet,
         setShowExportSheet = { showExportSheet = it },
-        showPromptDebugSheet = showPromptDebugSheet,
-        setShowPromptDebugSheet = { showPromptDebugSheet = it },
         showSpecialPlaySheet = showSpecialPlaySheet,
         setShowSpecialPlaySheet = { showSpecialPlaySheet = it },
         activeSpecialPlayType = activeSpecialPlayTypeName?.let(ChatSpecialType::valueOf),

@@ -43,6 +43,7 @@ internal fun rememberRoleplayViewModel(
             pendingMemoryProposalRepository = appGraph.pendingMemoryProposalRepository,
             phoneSnapshotRepository = appGraph.phoneSnapshotRepository,
             memoryWriteService = appGraph.memoryWriteService,
+            contextLogStore = appGraph.contextLogStore,
             imageSaver = { b64Data ->
                 ImageFileStorage.saveBase64Image(context, b64Data)
             },

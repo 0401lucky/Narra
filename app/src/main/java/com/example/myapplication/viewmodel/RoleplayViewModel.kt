@@ -63,6 +63,7 @@ import com.example.myapplication.model.transferMessagePart
 import com.example.myapplication.model.toContentMirror
 import com.example.myapplication.model.toPlainText
 import com.example.myapplication.model.hasSendableContent
+import com.example.myapplication.model.shouldInjectDescriptionPrompt
 import com.example.myapplication.roleplay.RoleplayMessageUiMapper
 import com.example.myapplication.roleplay.RoleplayConversationSupport
 import com.example.myapplication.roleplay.RoleplayOutputParser
@@ -105,6 +106,7 @@ class RoleplayViewModel(
     private val pendingMemoryProposalRepository: PendingMemoryProposalRepository,
     private val phoneSnapshotRepository: PhoneSnapshotRepository,
     private val memoryWriteService: MemoryWriteService,
+    private val contextLogStore: com.example.myapplication.data.repository.context.ContextLogStore,
     private val outputParser: RoleplayOutputParser = RoleplayOutputParser(),
     private val nowProvider: () -> Long = { System.currentTimeMillis() },
     private val messageIdProvider: () -> String = { UUID.randomUUID().toString() },
@@ -234,11 +236,12 @@ class RoleplayViewModel(
                 settings = settings,
                 assistant = assistant,
                 scenario = scenario,
-                autoMemoryMessageWindow = AUTO_MEMORY_MESSAGE_WINDOW,
+                autoMemoryMessageWindow = settings.memoryAutoSummaryEvery,
                 roleplaySceneMemoryMaxItems = ROLEPLAY_SCENE_MEMORY_MAX_ITEMS,
                 maxMemoryInputLength = MAX_MEMORY_INPUT_LENGTH,
             )
         },
+        contextLogStore = contextLogStore,
     )
     private val sendActionSupport = RoleplaySendActionSupport(
         scope = viewModelScope,
@@ -266,6 +269,11 @@ class RoleplayViewModel(
             roleplayRepository = roleplayRepository,
             uiState = _uiState,
             currentScenarioId = currentScenarioId,
+        )
+        RoleplayObservationSupport.observeChatSummaries(
+            scope = viewModelScope,
+            roleplayRepository = roleplayRepository,
+            uiState = _uiState,
         )
         RoleplayObservationSupport.observeSessions(
             scope = viewModelScope,
@@ -357,6 +365,95 @@ class RoleplayViewModel(
         onSuccess: (() -> Unit)? = null,
     ) {
         scenarioActionSupport.upsertScenario(scenario, onSuccess)
+    }
+
+    fun createChatForAssistant(
+        assistantId: String,
+        interactionMode: RoleplayInteractionMode,
+        enableNarration: Boolean,
+        onCreated: (String) -> Unit,
+    ) {
+        val scenarioId = UUID.randomUUID().toString()
+        val normalizedAssistantId = assistantId.trim().ifBlank { com.example.myapplication.model.DEFAULT_ASSISTANT_ID }
+        upsertScenario(
+            RoleplayScenario(
+                id = scenarioId,
+                assistantId = normalizedAssistantId,
+                interactionMode = interactionMode,
+                enableNarration = enableNarration,
+                longformModeEnabled = interactionMode == RoleplayInteractionMode.OFFLINE_LONGFORM,
+                enableRoleplayProtocol = interactionMode != RoleplayInteractionMode.OFFLINE_LONGFORM,
+                descriptionPromptEnabled = false,
+            ),
+        ) {
+            onCreated(scenarioId)
+        }
+    }
+
+    fun updateScenarioPinned(scenarioId: String, pinned: Boolean) {
+        viewModelScope.launch {
+            val scenario = roleplayRepository.getScenario(scenarioId) ?: return@launch
+            roleplayRepository.upsertScenario(scenario.copy(isPinned = pinned))
+        }
+    }
+
+    fun updateScenarioMuted(scenarioId: String, muted: Boolean) {
+        viewModelScope.launch {
+            val scenario = roleplayRepository.getScenario(scenarioId) ?: return@launch
+            roleplayRepository.upsertScenario(scenario.copy(isMuted = muted))
+        }
+    }
+
+    fun clearScenarioConversation(
+        scenarioId: String,
+        onSuccess: (() -> Unit)? = null,
+    ) {
+        val selectedModel = RoleplayConversationSupport.resolveSelectedModelId(_uiState.value.settings)
+        viewModelScope.launch {
+            runCatching {
+                val session = roleplayRepository.getSessionByScenario(scenarioId) ?: return@runCatching
+                conversationRepository.clearConversation(session.conversationId, selectedModel)
+                roleplayRepository.deleteOnlineMeta(session.conversationId)
+                roleplayRepository.deleteDiaryEntriesForConversation(session.conversationId)
+                conversationSummaryRepository.deleteSummary(session.conversationId)
+                contextUpdateSupport.clearConversationScopedContext(session.conversationId)
+                if (_uiState.value.currentSession?.conversationId == session.conversationId) {
+                    currentRawMessages.value = emptyList()
+                    contextUpdateSupport.refreshContextStatus(
+                        conversationId = session.conversationId,
+                        isContinuingSession = false,
+                    )
+                }
+            }.onSuccess {
+                _uiState.update { current ->
+                    RoleplayStateSupport.applyNoticeMessage(current, "聊天记录已清空")
+                }
+                onSuccess?.invoke()
+            }.onFailure { throwable ->
+                _uiState.update { current ->
+                    RoleplayStateSupport.applyErrorMessage(current, throwable.message ?: "清空聊天失败")
+                }
+            }
+        }
+    }
+
+    fun ensureScenarioSession(
+        scenarioId: String,
+        onReady: (String) -> Unit,
+    ) {
+        viewModelScope.launch {
+            runCatching {
+                roleplayRepository.startScenario(scenarioId).session.conversationId
+            }.onSuccess { conversationId ->
+                if (conversationId.isNotBlank()) {
+                    onReady(conversationId)
+                }
+            }.onFailure { throwable ->
+                _uiState.update { current ->
+                    RoleplayStateSupport.applyErrorMessage(current, throwable.message ?: "进入功能失败")
+                }
+            }
+        }
     }
 
     fun deleteScenario(
@@ -1008,6 +1105,22 @@ class RoleplayViewModel(
                 append(decoratedPrompt)
             }
         }
+        val contextSnapshot = ContextGovernanceSupport.buildSnapshot(
+            settings = settings,
+            assistant = assistant,
+            promptMode = PromptMode.ROLEPLAY,
+            selectedModel = RoleplayConversationSupport.resolveSelectedModelId(settings),
+            requestMessages = requestMessages,
+            effectiveRequestMessages = effectiveRequestMessages,
+            promptContext = promptContext,
+            completedMessageCount = completedMessageCount,
+            triggerMessageCount = SUMMARY_TRIGGER_MESSAGE_COUNT,
+            recentWindow = resolveSummaryRecentWindow(assistant),
+            minCoveredMessageCount = SUMMARY_MIN_COVERED_MESSAGE_COUNT,
+            toolingOptions = toolingOptions,
+            rawDebugDump = debugDump,
+        )
+        contextLogStore.push(contextSnapshot)
         _uiState.update { currentState ->
             RoleplayStateSupport.applyPromptContext(
                 current = currentState,
@@ -1015,21 +1128,7 @@ class RoleplayViewModel(
                 worldBookHitCount = promptContext.worldBookHitCount,
                 memoryInjectionCount = promptContext.memoryInjectionCount,
                 debugDump = debugDump,
-                contextGovernance = ContextGovernanceSupport.buildSnapshot(
-                    settings = settings,
-                    assistant = assistant,
-                    promptMode = PromptMode.ROLEPLAY,
-                    selectedModel = RoleplayConversationSupport.resolveSelectedModelId(settings),
-                    requestMessages = requestMessages,
-                    effectiveRequestMessages = effectiveRequestMessages,
-                    promptContext = promptContext,
-                    completedMessageCount = completedMessageCount,
-                    triggerMessageCount = SUMMARY_TRIGGER_MESSAGE_COUNT,
-                    recentWindow = resolveSummaryRecentWindow(assistant),
-                    minCoveredMessageCount = SUMMARY_MIN_COVERED_MESSAGE_COUNT,
-                    toolingOptions = toolingOptions,
-                    rawDebugDump = debugDump,
-                ),
+                contextGovernance = contextSnapshot,
             )
         }
     }
@@ -1118,10 +1217,10 @@ class RoleplayViewModel(
             appendLine("角色：$characterName")
             appendLine("对话对象：$userName")
             if (scenario.title.isNotBlank()) {
-                appendLine("场景标题：${scenario.title.trim()}")
+                appendLine("聊天标题：${scenario.title.trim()}")
             }
-            if (scenario.description.isNotBlank()) {
-                appendLine("场景描述：${scenario.description.trim()}")
+            if (scenario.shouldInjectDescriptionPrompt()) {
+                appendLine("聊天背景补充：${scenario.description.trim()}")
             }
             if (scenario.openingNarration.isNotBlank()) {
                 appendLine("开场旁白参考：${scenario.openingNarration.trim()}")
@@ -1207,7 +1306,6 @@ class RoleplayViewModel(
         private const val SUMMARY_RECENT_MESSAGE_WINDOW_MIN = 4
         private const val SUGGESTION_RECENT_MESSAGE_WINDOW = 10
         private const val MAX_SUMMARY_INPUT_LENGTH = 4_000
-        private const val AUTO_MEMORY_MESSAGE_WINDOW = 12
         private const val MAX_MEMORY_INPUT_LENGTH = 3_200
         private const val ROLEPLAY_SCENE_MEMORY_MAX_ITEMS = 12
 
@@ -1224,6 +1322,7 @@ class RoleplayViewModel(
             pendingMemoryProposalRepository: PendingMemoryProposalRepository,
             phoneSnapshotRepository: PhoneSnapshotRepository,
             memoryWriteService: MemoryWriteService,
+            contextLogStore: com.example.myapplication.data.repository.context.ContextLogStore,
             imageSaver: suspend (String) -> SavedImageFile = { throw IllegalStateException("图片保存未配置") },
         ): ViewModelProvider.Factory {
             return typedViewModelFactory {
@@ -1240,6 +1339,7 @@ class RoleplayViewModel(
                     pendingMemoryProposalRepository = pendingMemoryProposalRepository,
                     phoneSnapshotRepository = phoneSnapshotRepository,
                     memoryWriteService = memoryWriteService,
+                    contextLogStore = contextLogStore,
                     imageSaver = imageSaver,
                 )
             }

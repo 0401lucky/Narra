@@ -7,12 +7,15 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavGraphBuilder
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.composable
+import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.myapplication.di.AppGraph
 import com.example.myapplication.ui.screen.settings.ContextTransferScreen
+import com.example.myapplication.ui.screen.settings.contextlog.ContextLogScreen
 import com.example.myapplication.ui.screen.settings.memory.MemoryManagementScreen
 import com.example.myapplication.ui.screen.settings.worldbook.WorldBookBookDetailScreen
 import com.example.myapplication.ui.screen.settings.worldbook.WorldBookEditScreen
 import com.example.myapplication.ui.screen.settings.worldbook.WorldBookListScreen
+import com.example.myapplication.viewmodel.ContextLogViewModel
 import com.example.myapplication.viewmodel.SettingsViewModel
 
 // 世界书列表、书目详情、词条编辑 + 上下文导入导出 + 记忆管理
@@ -188,12 +191,42 @@ internal fun NavGraphBuilder.registerSettingsDataRoutes(
         MemoryManagementScreen(
             uiState = memoryManagementState,
             assistants = storedSettings.resolvedAssistants(),
+            memoryAutoSummaryEvery = storedSettings.memoryAutoSummaryEvery,
+            memoryCapacity = storedSettings.memoryCapacity,
+            memoryExtractionPrompt = storedSettings.memoryExtractionPrompt,
+            memoryInjectionPrompt = storedSettings.memoryInjectionPrompt,
+            memoryInjectionPosition = storedSettings.memoryInjectionPosition,
+            onUpdateMemoryAutoSummaryEvery = settingsViewModel::updateMemoryAutoSummaryEvery,
+            onUpdateMemoryCapacity = settingsViewModel::updateMemoryCapacity,
+            onUpdateMemoryExtractionPrompt = settingsViewModel::updateMemoryExtractionPrompt,
+            onUpdateMemoryInjectionPrompt = settingsViewModel::updateMemoryInjectionPrompt,
+            onUpdateMemoryInjectionPosition = settingsViewModel::updateMemoryInjectionPosition,
             onTogglePinned = memoryManagementViewModel::togglePinned,
             onDeleteMemory = memoryManagementViewModel::deleteMemory,
             onDeleteSummary = memoryManagementViewModel::deleteSummary,
             onConsumeMessage = memoryManagementViewModel::consumeMessage,
             onNavigateBack = {
                 navController.popBackStack()
+            },
+        )
+    }
+
+    composable(AppRoutes.SETTINGS_CONTEXT_LOG) {
+        val storedSettings by settingsViewModel.storedSettings.collectAsStateWithLifecycle()
+        val contextLogViewModel: ContextLogViewModel = viewModel(
+            factory = ContextLogViewModel.factory(appGraph.contextLogStore),
+        )
+        ContextLogScreen(
+            viewModel = contextLogViewModel,
+            contextLogEnabled = storedSettings.contextLogEnabled,
+            contextLogCapacity = storedSettings.contextLogCapacity,
+            onUpdateContextLogEnabled = settingsViewModel::updateContextLogEnabled,
+            onUpdateContextLogCapacity = settingsViewModel::updateContextLogCapacity,
+            onNavigateBack = { navController.popBackStack() },
+            onOpenMemoryManagement = {
+                navController.navigate(AppRoutes.SETTINGS_MEMORY) {
+                    launchSingleTop = true
+                }
             },
         )
     }

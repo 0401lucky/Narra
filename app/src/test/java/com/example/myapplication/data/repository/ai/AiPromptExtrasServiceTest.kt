@@ -279,6 +279,121 @@ class AiPromptExtrasServiceTest {
     }
 
     @Test
+    fun generateMemoryEntries_usesDefaultPromptWhenOverrideBlank() = runBlocking {
+        server.enqueue(
+            MockResponse().setResponseCode(200).setBody(
+                """
+                {
+                  "choices": [
+                    {
+                      "index": 0,
+                      "message": {
+                        "role": "assistant",
+                        "content": "[]"
+                      }
+                    }
+                  ]
+                }
+                """.trimIndent(),
+            ),
+        )
+        val service = createService()
+
+        service.generateMemoryEntries(
+            conversationExcerpt = "用户：今天天气不错。",
+            baseUrl = server.url("/v1/").toString(),
+            apiKey = "test-key",
+            modelId = "gpt-4o-mini",
+            existingMemories = listOf("用户偏爱晴天"),
+            extractionPromptOverride = "   ",
+        )
+
+        val requestBody = JsonParser.parseString(server.takeRequest().body.readUtf8()).asJsonObject
+        val prompt = requestBody.getAsJsonArray("messages")[0].asJsonObject["content"].asString
+        assertTrue("默认模板应有信息提取专家开场白", prompt.contains("你是信息提取专家"))
+        assertTrue("默认模板应包含输出示例", prompt.contains("# 输出示例"))
+        assertTrue("应包含原始对话片段", prompt.contains("用户：今天天气不错。"))
+        assertTrue("应自动追加已知信息块", prompt.contains("<已知信息>"))
+        assertTrue("已知记忆条目应被注入", prompt.contains("- 用户偏爱晴天"))
+    }
+
+    @Test
+    fun generateMemoryEntries_rendersUserOverridePlaceholders() = runBlocking {
+        server.enqueue(
+            MockResponse().setResponseCode(200).setBody(
+                """
+                {
+                  "choices": [
+                    {
+                      "index": 0,
+                      "message": {
+                        "role": "assistant",
+                        "content": "[]"
+                      }
+                    }
+                  ]
+                }
+                """.trimIndent(),
+            ),
+        )
+        val service = createService()
+
+        service.generateMemoryEntries(
+            conversationExcerpt = "用户：晚安。",
+            baseUrl = server.url("/v1/").toString(),
+            apiKey = "test-key",
+            modelId = "gpt-4o-mini",
+            existingMemories = listOf("用户喜欢深夜聊天"),
+            userName = "小明",
+            characterName = "白月",
+            extractionPromptOverride = "请为 {{user}} 与 {{char}} 抽取记忆。\n已知：{{known_memories}}\n对话：{{conversation}}",
+        )
+
+        val requestBody = JsonParser.parseString(server.takeRequest().body.readUtf8()).asJsonObject
+        val prompt = requestBody.getAsJsonArray("messages")[0].asJsonObject["content"].asString
+        assertTrue("用户名应替换 {{user}}", prompt.contains("请为 小明 与 白月 抽取记忆。"))
+        assertTrue("known_memories 占位符应替换为 已知信息块", prompt.contains("<已知信息>"))
+        assertTrue("conversation 占位符应替换", prompt.contains("对话：用户：晚安。"))
+        assertTrue("已知信息条目应注入", prompt.contains("- 用户喜欢深夜聊天"))
+        assertTrue("不应保留模板占位符", !prompt.contains("{{conversation}}") && !prompt.contains("{{user}}"))
+    }
+
+    @Test
+    fun generateMemoryEntries_appendsConversationWhenOverrideMissesPlaceholder() = runBlocking {
+        server.enqueue(
+            MockResponse().setResponseCode(200).setBody(
+                """
+                {
+                  "choices": [
+                    {
+                      "index": 0,
+                      "message": {
+                        "role": "assistant",
+                        "content": "[]"
+                      }
+                    }
+                  ]
+                }
+                """.trimIndent(),
+            ),
+        )
+        val service = createService()
+
+        service.generateMemoryEntries(
+            conversationExcerpt = "用户：早安。",
+            baseUrl = server.url("/v1/").toString(),
+            apiKey = "test-key",
+            modelId = "gpt-4o-mini",
+            extractionPromptOverride = "我的提取规则：只输出 JSON 数组。",
+        )
+
+        val requestBody = JsonParser.parseString(server.takeRequest().body.readUtf8()).asJsonObject
+        val prompt = requestBody.getAsJsonArray("messages")[0].asJsonObject["content"].asString
+        assertTrue("仍发送用户自定义说明", prompt.contains("我的提取规则：只输出 JSON 数组。"))
+        assertTrue("缺少 conversation 占位符时应自动追加对话", prompt.contains("用户：早安。"))
+    }
+
+    @Test
     fun generateRoleplayMemoryEntries_parsesStructuredJson() = runBlocking {
         server.enqueue(
             MockResponse().setResponseCode(200).setBody(

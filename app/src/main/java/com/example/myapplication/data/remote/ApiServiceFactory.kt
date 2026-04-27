@@ -35,6 +35,10 @@ class ApiServiceFactory {
     private var cachedStreamApiKey: String? = null
     private var cachedStreamClient: OkHttpClient? = null
 
+    private var cachedRequestBaseUrl: String? = null
+    private var cachedRequestApiKey: String? = null
+    private var cachedRequestClient: OkHttpClient? = null
+
     private var cachedAnthropicStreamBaseUrl: String? = null
     private var cachedAnthropicStreamApiKey: String? = null
     private var cachedAnthropicStreamClient: OkHttpClient? = null
@@ -242,6 +246,39 @@ class ApiServiceFactory {
         cachedStreamBaseUrl = normalizedBaseUrl
         cachedStreamApiKey = trimmedKey
         cachedStreamClient = client
+        return client
+    }
+
+    @Synchronized
+    fun createRequestClient(
+        baseUrl: String,
+        apiKey: String,
+    ): OkHttpClient {
+        val normalizedBaseUrl = normalizeBaseUrl(baseUrl, ProviderApiProtocol.OPENAI_COMPATIBLE)
+        val trimmedKey = apiKey.trim()
+
+        cachedRequestClient?.let { client ->
+            if (cachedRequestBaseUrl == normalizedBaseUrl && cachedRequestApiKey == trimmedKey) {
+                return client
+            }
+        }
+
+        val client = OkHttpClient.Builder()
+            .connectTimeout(30, TimeUnit.SECONDS)
+            .readTimeout(DEFAULT_READ_TIMEOUT_SECONDS, TimeUnit.SECONDS)
+            .writeTimeout(30, TimeUnit.SECONDS)
+            .addInterceptor { chain ->
+                val request = chain.request().newBuilder()
+                    .addHeader("Authorization", "Bearer $trimmedKey")
+                    .build()
+                chain.proceed(request)
+            }
+            .addInterceptor(RateLimitRetryInterceptor())
+            .build()
+
+        cachedRequestBaseUrl = normalizedBaseUrl
+        cachedRequestApiKey = trimmedKey
+        cachedRequestClient = client
         return client
     }
 

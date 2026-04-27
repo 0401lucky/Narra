@@ -24,13 +24,15 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.luminance
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
@@ -42,10 +44,16 @@ import com.example.myapplication.model.RoleplayScenario
 import com.example.myapplication.ui.component.NarraIconButton
 import com.example.myapplication.ui.component.NarraTextButton
 import com.example.myapplication.ui.component.rememberSystemHighTextContrastEnabled
-import com.example.myapplication.ui.component.roleplay.ImmersiveGlassSurface
+import com.example.myapplication.ui.component.roleplay.GlassTextShadow
+import com.example.myapplication.ui.component.roleplay.GlassTextShadowStrong
+import com.example.myapplication.ui.component.roleplay.ImmersiveReadingGlassSurface
+import com.example.myapplication.ui.component.roleplay.ImmersiveReadingGlassVariant
+import com.example.myapplication.ui.component.roleplay.ImmersiveReadingScrimVariant
 import com.example.myapplication.ui.component.roleplay.RoleplaySceneBackground
+import com.example.myapplication.ui.component.roleplay.calculateImmersiveBackdropAmbientLuminance
 import com.example.myapplication.ui.component.roleplay.rememberImmersiveBackdropState
 import com.example.myapplication.ui.component.roleplay.rememberRoleplayDiaryAnnotatedString
+import com.example.myapplication.ui.component.roleplay.resolveImmersiveReadingScrimAlpha
 import com.example.myapplication.ui.component.roleplay.stripRoleplayDiaryMarkers
 
 /**
@@ -81,7 +89,7 @@ fun RoleplayDiaryDetailScreen(
     val initialIndex = remember(entryId, diaryEntries) {
         diaryEntries.indexOfFirst { it.id == entryId }.coerceAtLeast(0)
     }
-    var currentIndex by rememberSaveable(entryId) { mutableStateOf(initialIndex) }
+    var currentIndex by rememberSaveable(entryId) { mutableIntStateOf(initialIndex) }
     val entry = diaryEntries.getOrNull(currentIndex) ?: diaryEntries.first()
 
     val effectiveHighContrast = settings.roleplayHighContrast || rememberSystemHighTextContrastEnabled()
@@ -90,7 +98,24 @@ fun RoleplayDiaryDetailScreen(
         highContrast = effectiveHighContrast,
     )
     val palette = backdropState.palette
-    val scrimAlpha = if (palette.onGlass.luminance() > 0.5f) 0.42f else 0.22f
+    val ambientLuminance = remember(backdropState.imageBitmap, palette) {
+        calculateImmersiveBackdropAmbientLuminance(backdropState)
+    }
+    val scrimAlpha = remember(ambientLuminance) {
+        resolveImmersiveReadingScrimAlpha(
+            backgroundLuminance = ambientLuminance,
+            variant = ImmersiveReadingScrimVariant.DIARY_DETAIL,
+        )
+    }
+    val scrimBrush = remember(scrimAlpha) {
+        Brush.verticalGradient(
+            colorStops = arrayOf(
+                0.0f to Color.Black.copy(alpha = scrimAlpha * 0.20f),
+                0.38f to Color.Black.copy(alpha = scrimAlpha * 0.54f),
+                1.0f to Color.Black.copy(alpha = scrimAlpha),
+            ),
+        )
+    }
 
     var revealMasked by rememberSaveable(entry.id) { mutableStateOf(false) }
     val annotated = rememberRoleplayDiaryAnnotatedString(
@@ -118,133 +143,156 @@ fun RoleplayDiaryDetailScreen(
         Box(
             modifier = Modifier
                 .fillMaxSize()
-                .background(MaterialTheme.colorScheme.scrim.copy(alpha = scrimAlpha)),
+                .background(scrimBrush),
         )
 
-        Column(modifier = Modifier.fillMaxSize()) {
-            // 顶栏
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 8.dp, vertical = 6.dp),
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                NarraIconButton(onClick = onNavigateBack) {
-                    Icon(
-                        imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                        contentDescription = "返回",
-                        tint = palette.onGlass,
-                    )
-                }
-                Column(
-                    modifier = Modifier
-                        .weight(1f)
-                        .padding(horizontal = 4.dp),
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(horizontal = 12.dp, vertical = 8.dp),
+            verticalArrangement = Arrangement.spacedBy(10.dp),
+        ) {
+                ImmersiveReadingGlassSurface(
+                    backdropState = backdropState,
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(26.dp),
+                    variant = ImmersiveReadingGlassVariant.CHROME,
                 ) {
-                    if (effectiveDateLabel.isNotBlank()) {
-                        Text(
-                            text = effectiveDateLabel,
-                            style = MaterialTheme.typography.labelMedium,
-                            color = palette.onGlassMuted,
-                        )
-                    }
-                    Text(
-                        text = "${currentIndex + 1} / ${diaryEntries.size}",
-                        style = MaterialTheme.typography.labelSmall,
-                        color = palette.onGlassMuted.copy(alpha = 0.8f),
-                    )
-                }
-                if (entry.mood.isNotBlank()) {
-                    Surface(
-                        shape = RoundedCornerShape(999.dp),
-                        color = palette.characterAccent.copy(alpha = 0.22f),
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 12.dp, vertical = 12.dp),
+                        verticalAlignment = Alignment.CenterVertically,
                     ) {
-                        Text(
-                            text = "· ${entry.mood}",
-                            modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp),
-                            style = MaterialTheme.typography.labelMedium,
-                            color = palette.onGlass,
-                            fontWeight = FontWeight.Medium,
-                        )
-                    }
-                }
-            }
-
-            // 正文滚动区
-            LazyColumn(
-                modifier = Modifier
-                    .weight(1f)
-                    .fillMaxWidth(),
-                contentPadding = PaddingValues(horizontal = 20.dp, vertical = 12.dp),
-                verticalArrangement = Arrangement.spacedBy(18.dp),
-            ) {
-                item {
-                    ImmersiveGlassSurface(
-                        backdropState = backdropState,
-                        modifier = Modifier.fillMaxWidth(),
-                        shape = RoundedCornerShape(28.dp),
-                        blurRadius = 26.dp,
-                        overlayColor = palette.readingSurface,
-                    ) {
+                        NarraIconButton(onClick = onNavigateBack) {
+                            Icon(
+                                imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                                contentDescription = "返回",
+                                tint = palette.onGlass,
+                            )
+                        }
                         Column(
                             modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(horizontal = 24.dp, vertical = 32.dp),
-                            verticalArrangement = Arrangement.spacedBy(20.dp),
+                                .weight(1f)
+                                .padding(horizontal = 4.dp),
                         ) {
-                            Text(
-                                text = entry.title,
-                                style = MaterialTheme.typography.headlineSmall,
-                                fontWeight = FontWeight.Bold,
-                                color = palette.onGlass,
-                            )
-                            if (entry.weather.isNotBlank() || entry.tags.isNotEmpty()) {
-                                Row(
-                                    horizontalArrangement = Arrangement.spacedBy(6.dp),
-                                    verticalAlignment = Alignment.CenterVertically,
-                                ) {
-                                    if (entry.weather.isNotBlank()) {
-                                        Text(
-                                            text = entry.weather,
-                                            style = MaterialTheme.typography.labelMedium,
-                                            color = palette.onGlassMuted,
-                                        )
-                                    }
-                                    entry.tags.take(5).forEach { tag ->
-                                        Text(
-                                            text = "#$tag",
-                                            style = MaterialTheme.typography.labelMedium,
-                                            color = palette.characterAccent,
-                                        )
-                                    }
-                                }
+                            if (effectiveDateLabel.isNotBlank()) {
+                                Text(
+                                    text = effectiveDateLabel,
+                                    style = MaterialTheme.typography.labelMedium.copy(
+                                        shadow = GlassTextShadow,
+                                    ),
+                                    color = palette.onGlassMuted,
+                                )
                             }
                             Text(
-                                text = annotated,
-                                style = MaterialTheme.typography.bodyLarge.copy(
-                                    fontSize = 17.sp,
-                                    lineHeight = 32.sp,
-                                    letterSpacing = 0.3.sp,
+                                text = "${currentIndex + 1} / ${diaryEntries.size}",
+                                style = MaterialTheme.typography.labelSmall.copy(
+                                    shadow = GlassTextShadow,
                                 ),
-                                color = palette.onGlass,
-                                modifier = Modifier.semantics {
-                                    contentDescription = screenReaderContent
-                                },
+                                color = palette.onGlassMuted.copy(alpha = 0.84f),
                             )
-                            if (hasMaskedContent) {
-                                NarraTextButton(onClick = { revealMasked = !revealMasked }) {
-                                    Text(if (revealMasked) "隐藏涂黑" else "显示涂黑")
+                        }
+                        if (entry.mood.isNotBlank()) {
+                            Surface(
+                                shape = RoundedCornerShape(999.dp),
+                                color = palette.characterAccent.copy(alpha = 0.18f),
+                            ) {
+                                Text(
+                                    text = "· ${entry.mood}",
+                                    modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp),
+                                    style = MaterialTheme.typography.labelMedium.copy(
+                                        shadow = GlassTextShadow,
+                                    ),
+                                    color = palette.onGlass,
+                                    fontWeight = FontWeight.Medium,
+                                )
+                            }
+                        }
+                    }
+                }
+
+                LazyColumn(
+                    modifier = Modifier
+                        .weight(1f)
+                        .fillMaxWidth(),
+                    contentPadding = PaddingValues(horizontal = 10.dp, vertical = 10.dp),
+                    verticalArrangement = Arrangement.spacedBy(18.dp),
+                ) {
+                    item {
+                        ImmersiveReadingGlassSurface(
+                            backdropState = backdropState,
+                            modifier = Modifier.fillMaxWidth(0.965f),
+                            shape = RoundedCornerShape(30.dp),
+                            variant = ImmersiveReadingGlassVariant.PANEL,
+                        ) {
+                            Column(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(horizontal = 24.dp, vertical = 32.dp),
+                                verticalArrangement = Arrangement.spacedBy(20.dp),
+                            ) {
+                                Text(
+                                    text = entry.title,
+                                    style = MaterialTheme.typography.headlineSmall.copy(
+                                        shadow = GlassTextShadowStrong,
+                                    ),
+                                    fontWeight = FontWeight.Bold,
+                                    color = palette.onGlass,
+                                )
+                                if (entry.weather.isNotBlank() || entry.tags.isNotEmpty()) {
+                                    Row(
+                                        horizontalArrangement = Arrangement.spacedBy(6.dp),
+                                        verticalAlignment = Alignment.CenterVertically,
+                                    ) {
+                                        if (entry.weather.isNotBlank()) {
+                                            Text(
+                                                text = entry.weather,
+                                                style = MaterialTheme.typography.labelMedium.copy(
+                                                    shadow = GlassTextShadow,
+                                                ),
+                                                color = palette.onGlassMuted,
+                                            )
+                                        }
+                                        entry.tags.take(5).forEach { tag ->
+                                            Text(
+                                                text = "#$tag",
+                                                style = MaterialTheme.typography.labelMedium.copy(
+                                                    shadow = GlassTextShadow,
+                                                ),
+                                                color = palette.characterAccent,
+                                            )
+                                        }
+                                    }
+                                }
+                                Text(
+                                    text = annotated,
+                                    style = MaterialTheme.typography.bodyLarge.copy(
+                                        fontSize = 17.sp,
+                                        lineHeight = 32.sp,
+                                        letterSpacing = 0.3.sp,
+                                        shadow = GlassTextShadow,
+                                    ),
+                                    color = palette.onGlass,
+                                    modifier = Modifier.semantics {
+                                        contentDescription = screenReaderContent
+                                    },
+                                )
+                                if (hasMaskedContent) {
+                                    NarraTextButton(onClick = { revealMasked = !revealMasked }) {
+                                        Text(if (revealMasked) "隐藏涂黑" else "显示涂黑")
+                                    }
                                 }
                             }
                         }
                     }
                 }
-            }
 
-            // 底栏：上一篇 / 下一篇
-            Surface(
+            ImmersiveReadingGlassSurface(
+                backdropState = backdropState,
                 modifier = Modifier.fillMaxWidth(),
-                color = palette.panelTintStrong.copy(alpha = 0.84f),
+                shape = RoundedCornerShape(24.dp),
+                variant = ImmersiveReadingGlassVariant.CHROME,
             ) {
                 Row(
                     modifier = Modifier

@@ -11,6 +11,11 @@ class FakeMemoryRepository(
 ) : MemoryRepository {
     private val entriesState = MutableStateFlow(initialEntries)
 
+    var pruneCallCount: Int = 0
+        private set
+    var lastPruneCapacity: Int? = null
+        private set
+
     override fun observeEntries(): Flow<List<MemoryEntry>> = entriesState
 
     override suspend fun listEntries(): List<MemoryEntry> = entriesState.value
@@ -34,6 +39,20 @@ class FakeMemoryRepository(
 
     override suspend fun deleteEntry(entryId: String) {
         entriesState.value = entriesState.value.filterNot { it.id == entryId }
+    }
+
+    override suspend fun pruneToCapacity(capacity: Int) {
+        pruneCallCount += 1
+        lastPruneCapacity = capacity
+        val safeCapacity = capacity.coerceAtLeast(1)
+        val sorted = entriesState.value.sortedWith(
+            compareByDescending<MemoryEntry> { it.pinned }
+                .thenByDescending { it.importance }
+                .thenByDescending { it.updatedAt },
+        )
+        if (sorted.size > safeCapacity) {
+            entriesState.value = sorted.take(safeCapacity)
+        }
     }
 
     override suspend fun markEntriesUsed(entryIds: List<String>, timestamp: Long) {

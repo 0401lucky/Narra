@@ -6,6 +6,7 @@ data class RoleplayScenario(
     val id: String = UUID.randomUUID().toString(),
     val title: String = "",
     val description: String = "",
+    val descriptionPromptEnabled: Boolean = false,
     val assistantId: String = DEFAULT_ASSISTANT_ID,
     val backgroundUri: String = "",
     val userDisplayNameOverride: String = "",
@@ -24,9 +25,14 @@ data class RoleplayScenario(
     val enableDeepImmersion: Boolean = false,
     val enableTimeAwareness: Boolean = true,
     val enableNetMeme: Boolean = false,
+    val isPinned: Boolean = false,
+    val isMuted: Boolean = false,
     val createdAt: Long = 0L,
     val updatedAt: Long = 0L,
 )
+
+fun RoleplayScenario.shouldInjectDescriptionPrompt(): Boolean =
+    descriptionPromptEnabled && description.isNotBlank()
 
 /**
  * 抽出 [RoleplayScenario] 中三项联动开关，用于在 UI / 测试里单独编排规则。

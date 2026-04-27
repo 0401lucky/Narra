@@ -25,12 +25,16 @@ import com.example.myapplication.roleplay.RoleplayLongformMarkupParser
 import com.example.myapplication.roleplay.RoleplayLongformParagraph
 import com.example.myapplication.roleplay.RoleplayLongformSpanType
 
+import androidx.compose.foundation.border
+
 @Composable
 fun RoleplayLongformCard(
     speakerName: String,
     content: String,
     modifier: Modifier = Modifier,
     richTextSource: String = content,
+    backdropState: ImmersiveBackdropState? = null,
+    useReadingGlassStyle: Boolean = false,
     containerColor: Color = MaterialTheme.colorScheme.surface.copy(alpha = 0.78f),
     titleColor: Color = MaterialTheme.colorScheme.primary,
     bodyColor: Color = MaterialTheme.colorScheme.onSurface,
@@ -42,21 +46,20 @@ fun RoleplayLongformCard(
         RoleplayLongformMarkupParser.parseParagraphs(richTextSource)
             .ifEmpty { RoleplayLongformMarkupParser.parseParagraphs(content) }
     }
-    Surface(
-        modifier = modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(24.dp),
-        color = containerColor,
-        border = BorderStroke(1.dp, titleColor.copy(alpha = 0.08f)),
-        tonalElevation = 0.dp,
-        shadowElevation = 0.dp,
-    ) {
+    val shape = RoundedCornerShape(22.dp)
+    val border = BorderStroke(0.dp, Color.Transparent)
+
+    val innerContent = @Composable {
         Column(
-            modifier = Modifier.padding(horizontal = 6.dp, vertical = 10.dp),
+            modifier = Modifier
+                .padding(horizontal = 20.dp, vertical = 18.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp),
         ) {
             Text(
                 text = speakerName,
-                style = MaterialTheme.typography.labelLarge,
+                style = MaterialTheme.typography.labelLarge.copy(
+                    shadow = GlassTextShadowStrong,
+                ),
                 color = titleColor,
                 fontWeight = FontWeight.Bold,
             )
@@ -69,6 +72,38 @@ fun RoleplayLongformCard(
                     lineHeightScale = lineHeightScale,
                 )
             }
+        }
+    }
+
+    if (backdropState != null && useReadingGlassStyle) {
+        ImmersiveReadingGlassSurface(
+            backdropState = backdropState,
+            modifier = modifier.fillMaxWidth(),
+            shape = shape,
+            variant = ImmersiveReadingGlassVariant.CARD,
+        ) {
+            innerContent()
+        }
+    } else if (backdropState != null) {
+        ImmersiveReadingGlassSurface(
+            backdropState = backdropState,
+            modifier = modifier.fillMaxWidth(),
+            shape = shape,
+            variant = ImmersiveReadingGlassVariant.CARD,
+            overlayColor = containerColor,
+        ) {
+            innerContent()
+        }
+    } else {
+        Surface(
+            modifier = modifier.fillMaxWidth(),
+            shape = shape,
+            color = containerColor,
+            border = border,
+            tonalElevation = 0.dp,
+            shadowElevation = 0.dp,
+        ) {
+            innerContent()
         }
     }
 }
@@ -102,6 +137,7 @@ private fun LongformParagraphText(
             fontSize = 17.sp,
             lineHeight = baseLineHeight * lineHeightScale,
             letterSpacing = 0.3.sp,
+            shadow = GlassTextShadow,
         ),
         color = bodyColor,
     )

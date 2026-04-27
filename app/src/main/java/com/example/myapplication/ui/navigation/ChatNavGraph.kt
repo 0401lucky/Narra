@@ -45,6 +45,7 @@ internal fun NavGraphBuilder.registerChatNavGraph(
                 memoryRepository = appGraph.memoryRepository,
                 conversationSummaryRepository = appGraph.conversationSummaryRepository,
                 promptContextAssembler = appGraph.promptContextAssembler,
+                contextLogStore = appGraph.contextLogStore,
                 imageSaver = { b64Data ->
                     ImageFileStorage.saveBase64Image(context, b64Data)
                 },
@@ -134,6 +135,11 @@ internal fun NavGraphBuilder.registerChatNavGraph(
                     },
                     onOpenProviderDetail = { providerId ->
                         navController.navigate(AppRoutes.settingsProviderDetail(providerId)) {
+                            launchSingleTop = true
+                        }
+                    },
+                    onOpenContextLog = {
+                        navController.navigate(AppRoutes.SETTINGS_CONTEXT_LOG) {
                             launchSingleTop = true
                         }
                     },

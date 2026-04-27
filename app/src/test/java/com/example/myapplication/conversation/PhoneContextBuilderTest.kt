@@ -72,6 +72,7 @@ class PhoneContextBuilderTest {
             id = "scene-1",
             title = "深夜书房",
             description = "灯光很暗，空气里有纸张和木头味。",
+            descriptionPromptEnabled = true,
             assistantId = "assistant-1",
             userDisplayNameOverride = "lucky",
             characterDisplayNameOverride = "沈砚清",
@@ -89,8 +90,49 @@ class PhoneContextBuilderTest {
 
         assertEquals("沈砚清", result.ownerName)
         assertTrue(result.scenarioContext.contains("深夜书房"))
+        assertTrue(result.scenarioContext.contains("灯光很暗"))
         assertTrue(result.scenarioContext.contains("你推门进去时"))
         assertEquals(PromptMode.ROLEPLAY, result.promptMode)
+    }
+
+    @Test
+    fun build_roleplayContextSkipsDescriptionWhenPromptToggleOff() = runBlocking {
+        val builder = PhoneContextBuilder(
+            promptContextAssembler = object : PromptContextAssembler {
+                override suspend fun assemble(
+                    settings: AppSettings,
+                    assistant: Assistant?,
+                    conversation: Conversation,
+                    userInputText: String,
+                    recentMessages: List<ChatMessage>,
+                    promptMode: PromptMode,
+                    includePhoneSnapshot: Boolean,
+                ): PromptContextResult {
+                    return PromptContextResult(systemPrompt = "【角色长期记忆】他对细节很敏锐。")
+                }
+            },
+        )
+
+        val scenario = RoleplayScenario(
+            id = "scene-1",
+            title = "深夜书房",
+            description = "这段补充不应进入手机生成上下文。",
+            descriptionPromptEnabled = false,
+            assistantId = "assistant-1",
+            openingNarration = "你推门进去时，他还没抬头。",
+        )
+
+        val result = builder.build(
+            settings = AppSettings(),
+            assistant = Assistant(id = "assistant-1", name = "沈砚清"),
+            conversation = Conversation(id = "conversation-1", createdAt = 1L, updatedAt = 1L),
+            recentMessages = emptyList(),
+            scenario = scenario,
+        )
+
+        assertTrue(result.scenarioContext.contains("深夜书房"))
+        assertTrue(result.scenarioContext.contains("你推门进去时"))
+        assertTrue(!result.scenarioContext.contains("这段补充不应进入手机生成上下文"))
     }
 
     @Test

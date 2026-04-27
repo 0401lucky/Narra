@@ -153,10 +153,10 @@ internal fun RoleplaySceneContent(
             immersiveMode = immersiveMode,
         )
 
-        Box(modifier = Modifier.fillMaxSize().haze(state = hazeState)) {
+        Box(modifier = Modifier.fillMaxSize()) {
         RoleplaySceneBackground(
             backdropState = backdropState,
-            modifier = Modifier.fillMaxSize(),
+            modifier = Modifier.fillMaxSize().haze(state = hazeState),
         )
 
         val scrimBase = lerp(backdropState.palette.panelTintStrong, sceneMoodColor, 0.18f)
@@ -167,11 +167,11 @@ internal fun RoleplaySceneContent(
                     Brush.verticalGradient(
                         colorStops = arrayOf(
                             0.0f to Color.Transparent,
-                            0.25f to scrimBase.copy(alpha = 0.05f),
-                            0.45f to scrimBase.copy(alpha = 0.28f),
-                            0.62f to scrimBase.copy(alpha = 0.50f),
-                            0.80f to scrimBase.copy(alpha = 0.68f),
-                            1.0f to scrimBase.copy(alpha = 0.80f),
+                            0.30f to scrimBase.copy(alpha = 0.02f),
+                            0.50f to scrimBase.copy(alpha = 0.06f),
+                            0.65f to scrimBase.copy(alpha = 0.14f),
+                            0.80f to scrimBase.copy(alpha = 0.24f),
+                            1.0f to scrimBase.copy(alpha = 0.35f),
                         ),
                     ),
                 ),

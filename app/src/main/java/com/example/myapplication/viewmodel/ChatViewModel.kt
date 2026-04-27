@@ -127,6 +127,7 @@ class ChatViewModel(
     private val memoryRepository: MemoryRepository,
     private val conversationSummaryRepository: ConversationSummaryRepository,
     private val promptContextAssembler: PromptContextAssembler,
+    private val contextLogStore: com.example.myapplication.data.repository.context.ContextLogStore,
     private val nowProvider: () -> Long = { System.currentTimeMillis() },
     private val messageIdProvider: () -> String = { UUID.randomUUID().toString() },
     private val imageSaver: suspend (String) -> SavedImageFile = { throw IllegalStateException("图片保存未配置") },
@@ -857,25 +858,27 @@ class ChatViewModel(
                     completedMessageCount = completedMessageCount,
                     triggerMessageCount = SUMMARY_TRIGGER_MESSAGE_COUNT,
                 )
+                val contextSnapshot = ContextGovernanceSupport.buildSnapshot(
+                    settings = promptAssemblyInput.settings,
+                    assistant = promptAssemblyInput.assistant,
+                    promptMode = PromptMode.CHAT,
+                    selectedModel = selectedModel,
+                    requestMessages = requestMessages,
+                    effectiveRequestMessages = effectiveRequestMessages,
+                    promptContext = promptContext,
+                    completedMessageCount = completedMessageCount,
+                    triggerMessageCount = SUMMARY_TRIGGER_MESSAGE_COUNT,
+                    recentWindow = resolveSummaryRecentWindow(promptAssemblyInput.assistant),
+                    minCoveredMessageCount = SUMMARY_MIN_COVERED_MESSAGE_COUNT,
+                    toolingOptions = toolingOptions,
+                    rawDebugDump = debugDump,
+                )
+                contextLogStore.push(contextSnapshot)
                 _uiState.update { current ->
                     ChatStateSupport.applyContextGovernance(
                         current = current,
                         conversationId = conversationId,
-                        snapshot = ContextGovernanceSupport.buildSnapshot(
-                            settings = promptAssemblyInput.settings,
-                            assistant = promptAssemblyInput.assistant,
-                            promptMode = PromptMode.CHAT,
-                            selectedModel = selectedModel,
-                            requestMessages = requestMessages,
-                            effectiveRequestMessages = effectiveRequestMessages,
-                            promptContext = promptContext,
-                            completedMessageCount = completedMessageCount,
-                            triggerMessageCount = SUMMARY_TRIGGER_MESSAGE_COUNT,
-                            recentWindow = resolveSummaryRecentWindow(promptAssemblyInput.assistant),
-                            minCoveredMessageCount = SUMMARY_MIN_COVERED_MESSAGE_COUNT,
-                            toolingOptions = toolingOptions,
-                            rawDebugDump = debugDump,
-                        ),
+                        snapshot = contextSnapshot,
                         debugDump = debugDump,
                     )
                 }
@@ -1311,6 +1314,11 @@ class ChatViewModel(
         val completedMessages = messages.filter { it.status == MessageStatus.COMPLETED }
         val state = _uiState.value
         val assistant = state.currentAssistant ?: state.settings.activeAssistant() ?: return
+        val window = state.settings.memoryAutoSummaryEvery
+        // Tavo 语义：每 N 条 completed 消息触发一次记忆提取，而不是每条都触发
+        if (window <= 0 || completedMessages.isEmpty() || completedMessages.size % window != 0) {
+            return
+        }
         viewModelScope.launch {
             backgroundApiMutex.withLock {
                 runCatching {
@@ -1318,7 +1326,7 @@ class ChatViewModel(
                         assistant = assistant,
                         completedMessages = completedMessages,
                         settings = state.settings,
-                        recentMessageWindow = AUTO_MEMORY_MESSAGE_WINDOW,
+                        recentMessageWindow = window,
                         buildMemoryInput = { messages ->
                             ChatConversationSupport.buildConversationExcerpt(
                                 messages = messages,
@@ -1445,25 +1453,27 @@ class ChatViewModel(
             completedMessageCount = completedMessageCount,
             triggerMessageCount = SUMMARY_TRIGGER_MESSAGE_COUNT,
         )
+        val contextSnapshot = ContextGovernanceSupport.buildSnapshot(
+            settings = settings,
+            assistant = assistant,
+            promptMode = PromptMode.CHAT,
+            selectedModel = selectedModel,
+            requestMessages = requestMessages,
+            effectiveRequestMessages = effectiveRequestMessages,
+            promptContext = promptContext,
+            completedMessageCount = completedMessageCount,
+            triggerMessageCount = SUMMARY_TRIGGER_MESSAGE_COUNT,
+            recentWindow = resolveSummaryRecentWindow(assistant),
+            minCoveredMessageCount = SUMMARY_MIN_COVERED_MESSAGE_COUNT,
+            toolingOptions = toolingOptions,
+            rawDebugDump = debugDump,
+        )
+        contextLogStore.push(contextSnapshot)
         _uiState.update { currentState ->
             ChatStateSupport.applyContextGovernance(
                 current = currentState,
                 conversationId = conversationId,
-                snapshot = ContextGovernanceSupport.buildSnapshot(
-                    settings = settings,
-                    assistant = assistant,
-                    promptMode = PromptMode.CHAT,
-                    selectedModel = selectedModel,
-                    requestMessages = requestMessages,
-                    effectiveRequestMessages = effectiveRequestMessages,
-                    promptContext = promptContext,
-                    completedMessageCount = completedMessageCount,
-                    triggerMessageCount = SUMMARY_TRIGGER_MESSAGE_COUNT,
-                    recentWindow = resolveSummaryRecentWindow(assistant),
-                    minCoveredMessageCount = SUMMARY_MIN_COVERED_MESSAGE_COUNT,
-                    toolingOptions = toolingOptions,
-                    rawDebugDump = debugDump,
-                ),
+                snapshot = contextSnapshot,
                 debugDump = debugDump,
             )
         }
@@ -1675,7 +1685,6 @@ class ChatViewModel(
         private const val SUMMARY_MIN_COVERED_MESSAGE_COUNT = 8
         private const val SUMMARY_RECENT_MESSAGE_WINDOW = 12
         private const val MAX_SUMMARY_INPUT_LENGTH = 4_000
-        private const val AUTO_MEMORY_MESSAGE_WINDOW = 6
         private const val MAX_MEMORY_INPUT_LENGTH = 2_400
 
         fun factory(
@@ -1687,6 +1696,7 @@ class ChatViewModel(
             memoryRepository: MemoryRepository,
             conversationSummaryRepository: ConversationSummaryRepository,
             promptContextAssembler: PromptContextAssembler,
+            contextLogStore: com.example.myapplication.data.repository.context.ContextLogStore,
             imageSaver: suspend (String) -> SavedImageFile = { throw IllegalStateException("图片保存未配置") },
         ): ViewModelProvider.Factory {
             return typedViewModelFactory {
@@ -1699,6 +1709,7 @@ class ChatViewModel(
                     memoryRepository,
                     conversationSummaryRepository,
                     promptContextAssembler,
+                    contextLogStore,
                     imageSaver = imageSaver,
                 )
             }

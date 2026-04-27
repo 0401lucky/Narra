@@ -30,11 +30,13 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Slider
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -49,7 +51,13 @@ import androidx.compose.ui.res.stringResource
 import com.example.myapplication.R
 import com.example.myapplication.model.Assistant
 import com.example.myapplication.model.ConversationSummary
+import com.example.myapplication.model.MEMORY_AUTO_SUMMARY_EVERY_MAX
+import com.example.myapplication.model.MEMORY_AUTO_SUMMARY_EVERY_MIN
+import com.example.myapplication.model.MEMORY_CAPACITY_MAX
+import com.example.myapplication.model.MEMORY_CAPACITY_MIN
 import com.example.myapplication.model.MemoryEntry
+import com.example.myapplication.model.MemoryInjectionPosition
+import com.example.myapplication.model.MemoryPromptDefaults
 import com.example.myapplication.model.MemoryScopeType
 import com.example.myapplication.ui.component.AppSnackbarHost
 import com.example.myapplication.ui.component.NarraIconButton
@@ -106,6 +114,16 @@ private sealed interface MemoryViewerTimelineItem {
 fun MemoryManagementScreen(
     uiState: MemoryManagementUiState,
     assistants: List<Assistant>,
+    memoryAutoSummaryEvery: Int,
+    memoryCapacity: Int,
+    memoryExtractionPrompt: String,
+    memoryInjectionPrompt: String,
+    memoryInjectionPosition: MemoryInjectionPosition,
+    onUpdateMemoryAutoSummaryEvery: (Int) -> Unit,
+    onUpdateMemoryCapacity: (Int) -> Unit,
+    onUpdateMemoryExtractionPrompt: (String) -> Unit,
+    onUpdateMemoryInjectionPrompt: (String) -> Unit,
+    onUpdateMemoryInjectionPosition: (MemoryInjectionPosition) -> Unit,
     onTogglePinned: (String) -> Unit,
     onDeleteMemory: (String) -> Unit,
     onDeleteSummary: (String) -> Unit,
@@ -227,6 +245,31 @@ fun MemoryManagementScreen(
                         body = stringResource(R.string.memory_summary_refresh_body),
                         containerColor = palette.surfaceTint,
                         contentColor = palette.title,
+                    )
+                }
+
+                item {
+                    MemoryGlobalConfigCard(
+                        autoSummaryEvery = memoryAutoSummaryEvery,
+                        memoryCapacity = memoryCapacity,
+                        onAutoSummaryEveryChange = onUpdateMemoryAutoSummaryEvery,
+                        onMemoryCapacityChange = onUpdateMemoryCapacity,
+                    )
+                }
+
+                item {
+                    MemoryPromptConfigCard(
+                        extractionPrompt = memoryExtractionPrompt,
+                        injectionPrompt = memoryInjectionPrompt,
+                        onExtractionPromptChange = onUpdateMemoryExtractionPrompt,
+                        onInjectionPromptChange = onUpdateMemoryInjectionPrompt,
+                    )
+                }
+
+                item {
+                    MemoryInjectionPositionCard(
+                        position = memoryInjectionPosition,
+                        onPositionChange = onUpdateMemoryInjectionPosition,
                     )
                 }
 
@@ -940,4 +983,297 @@ private fun formatMemoryViewerTime(timestamp: Long): String {
         return "未知时间"
     }
     return SimpleDateFormat("yyyy/MM/dd HH:mm", Locale.getDefault()).format(Date(timestamp))
+}
+
+private const val MEMORY_CAPACITY_STEP = 50
+
+@Composable
+private fun MemoryGlobalConfigCard(
+    autoSummaryEvery: Int,
+    memoryCapacity: Int,
+    onAutoSummaryEveryChange: (Int) -> Unit,
+    onMemoryCapacityChange: (Int) -> Unit,
+) {
+    val palette = rememberSettingsPalette()
+    var autoEveryDraft by rememberSaveable(autoSummaryEvery) { mutableIntStateOf(autoSummaryEvery) }
+    var capacityDraft by rememberSaveable(memoryCapacity) { mutableIntStateOf(memoryCapacity) }
+
+    Surface(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(26.dp),
+        color = palette.surface,
+        border = BorderStroke(0.5.dp, palette.border.copy(alpha = 0.36f)),
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 18.dp, vertical = 18.dp),
+            verticalArrangement = Arrangement.spacedBy(22.dp),
+        ) {
+            Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Text(
+                        text = "自动总结频率",
+                        style = MaterialTheme.typography.titleSmall,
+                        fontWeight = FontWeight.SemiBold,
+                        color = palette.title,
+                    )
+                    Text(
+                        text = if (autoEveryDraft == 0) "已禁用" else "$autoEveryDraft 条",
+                        style = MaterialTheme.typography.titleSmall,
+                        color = palette.accent,
+                    )
+                }
+                Text(
+                    text = "每 N 条已完成消息触发一次记忆提取；调到 0 关闭自动总结。",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = palette.body.copy(alpha = 0.7f),
+                )
+                Slider(
+                    value = autoEveryDraft.toFloat(),
+                    onValueChange = { autoEveryDraft = it.toInt().coerceIn(MEMORY_AUTO_SUMMARY_EVERY_MIN, MEMORY_AUTO_SUMMARY_EVERY_MAX) },
+                    onValueChangeFinished = { onAutoSummaryEveryChange(autoEveryDraft) },
+                    valueRange = MEMORY_AUTO_SUMMARY_EVERY_MIN.toFloat()..MEMORY_AUTO_SUMMARY_EVERY_MAX.toFloat(),
+                    steps = MEMORY_AUTO_SUMMARY_EVERY_MAX - MEMORY_AUTO_SUMMARY_EVERY_MIN - 1,
+                )
+            }
+
+            Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Text(
+                        text = "记忆上限",
+                        style = MaterialTheme.typography.titleSmall,
+                        fontWeight = FontWeight.SemiBold,
+                        color = palette.title,
+                    )
+                    Text(
+                        text = "$capacityDraft 条",
+                        style = MaterialTheme.typography.titleSmall,
+                        color = palette.accent,
+                    )
+                }
+                Text(
+                    text = "全 store 最多保留 N 条记忆，超出时按 pinned 优先 / 重要性 / 时间倒序剔除尾部。",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = palette.body.copy(alpha = 0.7f),
+                )
+                Slider(
+                    value = capacityDraft.toFloat(),
+                    onValueChange = { raw ->
+                        capacityDraft = ((raw / MEMORY_CAPACITY_STEP).toInt() * MEMORY_CAPACITY_STEP)
+                            .coerceIn(MEMORY_CAPACITY_MIN, MEMORY_CAPACITY_MAX)
+                    },
+                    onValueChangeFinished = { onMemoryCapacityChange(capacityDraft) },
+                    valueRange = MEMORY_CAPACITY_MIN.toFloat()..MEMORY_CAPACITY_MAX.toFloat(),
+                    steps = (MEMORY_CAPACITY_MAX - MEMORY_CAPACITY_MIN) / MEMORY_CAPACITY_STEP - 1,
+                )
+            }
+        }
+    }
+}
+
+
+@Composable
+private fun MemoryPromptConfigCard(
+    extractionPrompt: String,
+    injectionPrompt: String,
+    onExtractionPromptChange: (String) -> Unit,
+    onInjectionPromptChange: (String) -> Unit,
+) {
+    val palette = rememberSettingsPalette()
+    var extractionDraft by rememberSaveable(extractionPrompt) { mutableStateOf(extractionPrompt) }
+    var injectionDraft by rememberSaveable(injectionPrompt) { mutableStateOf(injectionPrompt) }
+
+    Surface(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(26.dp),
+        color = palette.surface,
+        border = BorderStroke(0.5.dp, palette.border.copy(alpha = 0.36f)),
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 18.dp, vertical = 18.dp),
+            verticalArrangement = Arrangement.spacedBy(22.dp),
+        ) {
+            Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                Text(
+                    text = "记忆总结提示词",
+                    style = MaterialTheme.typography.titleSmall,
+                    fontWeight = FontWeight.SemiBold,
+                    color = palette.title,
+                )
+                Text(
+                    text = "用于从对话中提取长期记忆。占位符：{{conversation}} 当前对话片段、{{known_memories}} 已知记忆列表、{{user}} 用户名、{{char}} 角色名。留空使用默认。",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = palette.body.copy(alpha = 0.7f),
+                )
+                OutlinedTextField(
+                    value = extractionDraft,
+                    onValueChange = { extractionDraft = it },
+                    modifier = Modifier
+                        .fillMaxWidth(),
+                    placeholder = {
+                        Text(
+                            text = "留空使用默认提示词",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = palette.body.copy(alpha = 0.45f),
+                        )
+                    },
+                    minLines = 4,
+                    maxLines = 12,
+                )
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.End,
+                ) {
+                    if (extractionDraft != extractionPrompt) {
+                        TextButton(onClick = { extractionDraft = extractionPrompt }) {
+                            Text(text = "撤销")
+                        }
+                    }
+                    TextButton(onClick = {
+                        extractionDraft = MemoryPromptDefaults.EXTRACTION_PROMPT_TEMPLATE
+                    }) {
+                        Text(text = "载入默认")
+                    }
+                    if (extractionDraft.isNotBlank()) {
+                        TextButton(onClick = {
+                            extractionDraft = ""
+                            onExtractionPromptChange("")
+                        }) {
+                            Text(text = "重置默认")
+                        }
+                    }
+                    TextButton(
+                        onClick = { onExtractionPromptChange(extractionDraft) },
+                        enabled = extractionDraft != extractionPrompt,
+                    ) {
+                        Text(text = "保存")
+                    }
+                }
+            }
+
+            Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                Text(
+                    text = "记忆注入提示词",
+                    style = MaterialTheme.typography.titleSmall,
+                    fontWeight = FontWeight.SemiBold,
+                    color = palette.title,
+                )
+                Text(
+                    text = "用于把已选记忆注入到上下文。占位符：{{memories}} 记忆条目列表、{{user}} 用户名、{{char}} 角色名。留空使用默认。仅作用于普通对话模式，沉浸剧情模式保持系统模板。",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = palette.body.copy(alpha = 0.7f),
+                )
+                OutlinedTextField(
+                    value = injectionDraft,
+                    onValueChange = { injectionDraft = it },
+                    modifier = Modifier
+                        .fillMaxWidth(),
+                    placeholder = {
+                        Text(
+                            text = "留空使用默认提示词",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = palette.body.copy(alpha = 0.45f),
+                        )
+                    },
+                    minLines = 4,
+                    maxLines = 12,
+                )
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.End,
+                ) {
+                    if (injectionDraft != injectionPrompt) {
+                        TextButton(onClick = { injectionDraft = injectionPrompt }) {
+                            Text(text = "撤销")
+                        }
+                    }
+                    TextButton(onClick = {
+                        injectionDraft = MemoryPromptDefaults.INJECTION_PROMPT_TEMPLATE
+                    }) {
+                        Text(text = "载入默认")
+                    }
+                    if (injectionDraft.isNotBlank()) {
+                        TextButton(onClick = {
+                            injectionDraft = ""
+                            onInjectionPromptChange("")
+                        }) {
+                            Text(text = "重置默认")
+                        }
+                    }
+                    TextButton(
+                        onClick = { onInjectionPromptChange(injectionDraft) },
+                        enabled = injectionDraft != injectionPrompt,
+                    ) {
+                        Text(text = "保存")
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun MemoryInjectionPositionCard(
+    position: MemoryInjectionPosition,
+    onPositionChange: (MemoryInjectionPosition) -> Unit,
+) {
+    val palette = rememberSettingsPalette()
+
+    Surface(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(26.dp),
+        color = palette.surface,
+        border = BorderStroke(0.5.dp, palette.border.copy(alpha = 0.36f)),
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 18.dp, vertical = 18.dp),
+            verticalArrangement = Arrangement.spacedBy(10.dp),
+        ) {
+            Text(
+                text = "注入位置",
+                style = MaterialTheme.typography.titleSmall,
+                fontWeight = FontWeight.SemiBold,
+                color = palette.title,
+            )
+            Text(
+                text = "控制长记忆在系统提示词中插入的位置；上下文日志面板会同步反映新顺序。",
+                style = MaterialTheme.typography.bodySmall,
+                color = palette.body.copy(alpha = 0.7f),
+            )
+            FlowRow(
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                MemoryInjectionPosition.entries.forEach { option ->
+                    FilterChip(
+                        selected = position == option,
+                        onClick = { onPositionChange(option) },
+                        label = {
+                            Text(
+                                text = option.label,
+                                fontWeight = if (position == option) FontWeight.Bold else FontWeight.Normal,
+                            )
+                        },
+                        colors = FilterChipDefaults.filterChipColors(
+                            selectedContainerColor = palette.accentSoft,
+                            selectedLabelColor = palette.accent,
+                        ),
+                    )
+                }
+            }
+        }
+    }
 }

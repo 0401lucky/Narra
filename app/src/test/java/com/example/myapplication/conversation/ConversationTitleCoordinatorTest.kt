@@ -92,7 +92,7 @@ class ConversationTitleCoordinatorTest {
             override suspend fun generateChatSuggestions(conversationSummary: String, baseUrl: String, apiKey: String, modelId: String, apiProtocol: com.example.myapplication.model.ProviderApiProtocol, provider: com.example.myapplication.model.ProviderSettings?): List<String> = error("不应调用")
             override suspend fun generateConversationSummary(conversationText: String, baseUrl: String, apiKey: String, modelId: String, apiProtocol: com.example.myapplication.model.ProviderApiProtocol, provider: com.example.myapplication.model.ProviderSettings?): String = error("不应调用")
             override suspend fun generateRoleplayConversationSummary(conversationText: String, baseUrl: String, apiKey: String, modelId: String, apiProtocol: com.example.myapplication.model.ProviderApiProtocol, provider: com.example.myapplication.model.ProviderSettings?): String = error("不应调用")
-            override suspend fun generateMemoryEntries(conversationExcerpt: String, baseUrl: String, apiKey: String, modelId: String, apiProtocol: com.example.myapplication.model.ProviderApiProtocol, provider: com.example.myapplication.model.ProviderSettings?): List<String> = error("不应调用")
+            override suspend fun generateMemoryEntries(conversationExcerpt: String, baseUrl: String, apiKey: String, modelId: String, apiProtocol: com.example.myapplication.model.ProviderApiProtocol, provider: com.example.myapplication.model.ProviderSettings?, existingMemories: List<String>, userName: String, characterName: String, extractionPromptOverride: String): List<String> = error("不应调用")
             override suspend fun generateRoleplayMemoryEntries(
                 conversationExcerpt: String,
                 baseUrl: String,
@@ -100,6 +100,7 @@ class ConversationTitleCoordinatorTest {
                 modelId: String,
                 apiProtocol: com.example.myapplication.model.ProviderApiProtocol,
                 provider: com.example.myapplication.model.ProviderSettings?,
+                existingMemories: List<String>,
             ): StructuredMemoryExtractionResult = error("不应调用")
 
             override suspend fun generateRoleplaySuggestions(

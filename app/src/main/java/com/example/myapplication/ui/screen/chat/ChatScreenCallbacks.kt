@@ -69,6 +69,7 @@ data class ChatNavigationCallbacks(
     val onOpenRoleplay: () -> Unit,
     val onOpenPhoneCheck: (String) -> Unit,
     val onOpenProviderDetail: (String) -> Unit,
+    val onOpenContextLog: () -> Unit,
 )
 
 data class ChatUiCallbacks(

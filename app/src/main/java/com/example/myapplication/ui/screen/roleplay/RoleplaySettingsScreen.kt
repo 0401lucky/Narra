@@ -1,10 +1,16 @@
 package com.example.myapplication.ui.screen.roleplay
 
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -37,7 +43,6 @@ import com.example.myapplication.model.RoleplayInteractionMode
 import com.example.myapplication.model.RoleplayScenario
 import com.example.myapplication.ui.component.NarraIconButton
 import com.example.myapplication.ui.component.rememberSystemHighTextContrastEnabled
-import com.example.myapplication.ui.component.ContextGovernanceSheet
 import com.example.myapplication.ui.component.roleplay.ImmersiveGlassSurface
 import com.example.myapplication.ui.component.roleplay.RoleplaySceneBackground
 import com.example.myapplication.ui.component.roleplay.rememberImmersiveBackdropState
@@ -76,7 +81,13 @@ fun RoleplaySettingsScreen(
     onSelectProvider: (String) -> Unit,
     onSelectModel: (String, String) -> Unit,
     onOpenProviderDetail: (String) -> Unit,
+    onOpenConnectionSettings: () -> Unit,
+    onOpenAssistantPrompt: () -> Unit,
+    onOpenWorldBookSettings: () -> Unit,
+    onOpenLongMemorySettings: () -> Unit,
+    onUpdateAssistantMemoryEnabled: (Boolean) -> Unit,
     onRefreshConversationSummary: () -> Unit,
+    onOpenContextLog: () -> Unit,
     onRestartSession: (() -> Unit) -> Unit,
     onResetSession: (() -> Unit) -> Unit,
     onNavigateBack: () -> Unit,
@@ -88,9 +99,9 @@ fun RoleplaySettingsScreen(
         highContrast = effectiveHighContrast,
     )
     var showModelSheet by rememberSaveable { mutableStateOf(false) }
-    var showPromptDebugSheet by rememberSaveable { mutableStateOf(false) }
     var showConfirmResetDialog by rememberSaveable { mutableStateOf(false) }
     var showConfirmRestartDialog by rememberSaveable { mutableStateOf(false) }
+    var activePage by rememberSaveable { mutableStateOf(RoleplaySettingsPanelPage.MAIN) }
     var longformCharsText by rememberSaveable(settings.roleplayLongformTargetChars) {
         mutableStateOf(settings.roleplayLongformTargetChars.toString())
     }
@@ -101,96 +112,148 @@ fun RoleplaySettingsScreen(
             backdropState = backdropState,
             modifier = Modifier.fillMaxSize(),
         )
-        Box(modifier = Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.3f)))
-        Column(modifier = Modifier.fillMaxSize()) {
-            // 自定义沉浸式顶栏
+        Box(modifier = Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.22f)))
+        BoxWithConstraints(
+            modifier = Modifier
+                .fillMaxSize()
+                .statusBarsPadding()
+                .padding(horizontal = 12.dp, vertical = 10.dp),
+            contentAlignment = Alignment.CenterEnd,
+        ) {
+            val panelWidthFraction = if (maxWidth > 560.dp) 0.66f else 0.84f
             ImmersiveGlassSurface(
                 backdropState = backdropState,
                 modifier = Modifier
-                    .fillMaxWidth()
-                    .statusBarsPadding()
-                    .padding(horizontal = SettingsScreenPadding, vertical = 8.dp),
-                shape = RoundedCornerShape(24.dp),
-                blurRadius = 20.dp,
-                overlayColor = palette.panelTintStrong.copy(alpha = 0.72f),
+                    .fillMaxHeight()
+                    .fillMaxWidth(panelWidthFraction),
+                shape = RoundedCornerShape(34.dp),
+                blurRadius = 22.dp,
+                overlayColor = Color(0xFFF6F2EC).copy(alpha = 0.92f),
             ) {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 10.dp, vertical = 10.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    NarraIconButton(onClick = onNavigateBack) {
-                        Icon(
-                            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = "返回",
-                            tint = palette.onGlass,
-                        )
-                    }
-                    Column(
+                Column(modifier = Modifier.fillMaxSize()) {
+                    ImmersiveGlassSurface(
+                        backdropState = backdropState,
                         modifier = Modifier
-                            .weight(1f)
-                            .padding(horizontal = 10.dp),
-                        verticalArrangement = Arrangement.spacedBy(2.dp),
+                            .fillMaxWidth()
+                            .padding(horizontal = 10.dp, vertical = 8.dp),
+                        shape = RoundedCornerShape(26.dp),
+                        blurRadius = 16.dp,
+                        overlayColor = Color(0xFFF0ECE6).copy(alpha = 0.85f),
                     ) {
-                        Text(
-                            text = "沉浸设置",
-                            style = MaterialTheme.typography.titleMedium,
-                            fontWeight = FontWeight.Bold,
-                            color = palette.onGlass,
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis,
-                        )
-                        Text(
-                            text = scenarioTitle,
-                            style = MaterialTheme.typography.bodySmall,
-                            color = palette.onGlassMuted,
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis,
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = 8.dp, vertical = 10.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                        ) {
+                            NarraIconButton(
+                                onClick = {
+                                    if (activePage == RoleplaySettingsPanelPage.MAIN) {
+                                        onNavigateBack()
+                                    } else {
+                                        activePage = RoleplaySettingsPanelPage.MAIN
+                                    }
+                                },
+                            ) {
+                                Icon(
+                                    imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                                    contentDescription = "返回",
+                                    tint = RoleplaySettingsPanelTitleColor,
+                                )
+                            }
+                            Column(
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .padding(horizontal = 10.dp),
+                                verticalArrangement = Arrangement.spacedBy(2.dp),
+                            ) {
+                                AnimatedContent(
+                                    targetState = activePage,
+                                    transitionSpec = {
+                                        fadeIn(androidx.compose.animation.core.tween(220))
+                                            .togetherWith(fadeOut(androidx.compose.animation.core.tween(180)))
+                                    },
+                                    label = "settings_title",
+                                ) { page ->
+                                    Text(
+                                        text = when (page) {
+                                            RoleplaySettingsPanelPage.MAIN -> "聊天设定"
+                                            RoleplaySettingsPanelPage.SCENE -> "情景设定"
+                                            RoleplaySettingsPanelPage.IDENTITY -> "用户身份"
+                                            RoleplaySettingsPanelPage.THEME -> "主题"
+                                            RoleplaySettingsPanelPage.QUICK -> "快捷切换"
+                                            RoleplaySettingsPanelPage.REGEX -> "正则"
+                                        },
+                                        style = MaterialTheme.typography.titleLarge,
+                                        fontWeight = FontWeight.SemiBold,
+                                        color = RoleplaySettingsPanelTitleColor,
+                                        maxLines = 1,
+                                        overflow = TextOverflow.Ellipsis,
+                                    )
+                                }
+                                Text(
+                                    text = scenarioTitle,
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = RoleplaySettingsPanelBodyColor,
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis,
+                                )
+                            }
+                        }
+                    }
+
+                    Box(modifier = Modifier.fillMaxSize()) {
+                        RoleplaySettingsContent(
+                            activePage = activePage,
+                            scenario = scenario,
+                            assistant = assistant,
+                            settings = settings,
+                            contextStatus = contextStatus,
+                            currentModel = currentModel,
+                            currentProviderId = currentProviderId,
+                            providerOptions = providerOptions,
+                            backdropState = backdropState,
+                            latestPromptDebugDump = latestPromptDebugDump,
+                            contextGovernance = contextGovernance,
+                            recentMemoryProposalHistory = recentMemoryProposalHistory,
+                            longformCharsText = longformCharsText,
+                            onLongformCharsTextChange = { raw ->
+                                val digits = raw.filter(Char::isDigit).take(4)
+                                longformCharsText = digits
+                                digits.toIntOrNull()?.let { value ->
+                                    onUpdateRoleplayLongformTargetChars(value)
+                                }
+                            },
+                            onNavigateToPage = { activePage = it },
+                            onOpenReadingMode = onOpenReadingMode,
+                            onOpenModelPicker = { showModelSheet = true },
+                            onOpenContextLog = onOpenContextLog,
+                            onUpdateShowRoleplayPresenceStrip = onUpdateShowRoleplayPresenceStrip,
+                            onUpdateShowRoleplayStatusStrip = onUpdateShowRoleplayStatusStrip,
+                            onUpdateShowOnlineRoleplayNarration = onUpdateShowOnlineRoleplayNarration,
+                            onUpdateShowRoleplayAiHelper = onUpdateShowRoleplayAiHelper,
+                            onUpdateScenarioNarrationEnabled = onUpdateScenarioNarrationEnabled,
+                            onUpdateScenarioDeepImmersionEnabled = onUpdateScenarioDeepImmersionEnabled,
+                            onUpdateScenarioTimeAwarenessEnabled = onUpdateScenarioTimeAwarenessEnabled,
+                            onUpdateScenarioNetMemeEnabled = onUpdateScenarioNetMemeEnabled,
+                            onUpdateRoleplayLongformTargetChars = onUpdateRoleplayLongformTargetChars,
+                            onUpdateScenarioInteractionMode = onUpdateScenarioInteractionMode,
+                            systemHighContrastEnabled = systemHighContrastEnabled,
+                            onUpdateRoleplayImmersiveMode = onUpdateRoleplayImmersiveMode,
+                            onUpdateRoleplayHighContrast = onUpdateRoleplayHighContrast,
+                            onUpdateRoleplayLineHeightScale = onUpdateRoleplayLineHeightScale,
+                            onOpenProviderDetail = onOpenProviderDetail,
+                            onOpenConnectionSettings = onOpenConnectionSettings,
+                            onOpenAssistantPrompt = onOpenAssistantPrompt,
+                            onOpenWorldBookSettings = onOpenWorldBookSettings,
+                            onOpenLongMemorySettings = onOpenLongMemorySettings,
+                            onUpdateAssistantMemoryEnabled = onUpdateAssistantMemoryEnabled,
+                            onRefreshConversationSummary = onRefreshConversationSummary,
+                            onShowRestartDialog = { showConfirmRestartDialog = true },
+                            onShowResetDialog = { showConfirmResetDialog = true },
                         )
                     }
                 }
-            }
-
-            // 设置内容
-            Box(modifier = Modifier.fillMaxSize()) {
-                RoleplaySettingsContent(
-                    scenario = scenario,
-                    assistant = assistant,
-                    settings = settings,
-                    contextStatus = contextStatus,
-                    currentModel = currentModel,
-                    backdropState = backdropState,
-                    latestPromptDebugDump = latestPromptDebugDump,
-                    contextGovernance = contextGovernance,
-                    recentMemoryProposalHistory = recentMemoryProposalHistory,
-                    longformCharsText = longformCharsText,
-                    onLongformCharsTextChange = { raw ->
-                        val digits = raw.filter(Char::isDigit).take(4)
-                        longformCharsText = digits
-                        digits.toIntOrNull()?.let { value ->
-                            onUpdateRoleplayLongformTargetChars(value)
-                        }
-                    },
-                    onOpenReadingMode = onOpenReadingMode,
-                    onOpenModelPicker = { showModelSheet = true },
-                    onOpenPromptDebugSheet = { showPromptDebugSheet = true },
-                    onUpdateShowRoleplayPresenceStrip = onUpdateShowRoleplayPresenceStrip,
-                    onUpdateShowRoleplayStatusStrip = onUpdateShowRoleplayStatusStrip,
-                    onUpdateShowOnlineRoleplayNarration = onUpdateShowOnlineRoleplayNarration,
-                    onUpdateShowRoleplayAiHelper = onUpdateShowRoleplayAiHelper,
-                    onUpdateScenarioNarrationEnabled = onUpdateScenarioNarrationEnabled,
-                    onUpdateScenarioDeepImmersionEnabled = onUpdateScenarioDeepImmersionEnabled,
-                    onUpdateScenarioTimeAwarenessEnabled = onUpdateScenarioTimeAwarenessEnabled,
-                    onUpdateScenarioNetMemeEnabled = onUpdateScenarioNetMemeEnabled,
-                    onUpdateScenarioInteractionMode = onUpdateScenarioInteractionMode,
-                    systemHighContrastEnabled = systemHighContrastEnabled,
-                    onUpdateRoleplayImmersiveMode = onUpdateRoleplayImmersiveMode,
-                    onUpdateRoleplayHighContrast = onUpdateRoleplayHighContrast,
-                    onUpdateRoleplayLineHeightScale = onUpdateRoleplayLineHeightScale,
-                    onShowRestartDialog = { showConfirmRestartDialog = true },
-                    onShowResetDialog = { showConfirmResetDialog = true },
-                )
             }
         }
     }
@@ -208,15 +271,6 @@ fun RoleplaySettingsScreen(
         onOpenProviderDetail = onOpenProviderDetail,
         onSelectModel = onSelectModel,
     )
-
-    if (showPromptDebugSheet) {
-        ContextGovernanceSheet(
-            snapshot = contextGovernance,
-            rawDebugDump = latestPromptDebugDump,
-            onRefreshSummary = onRefreshConversationSummary,
-            onDismissRequest = { showPromptDebugSheet = false },
-        )
-    }
 
     RoleplayRestartConfirmDialog(
         showConfirmRestartDialog = showConfirmRestartDialog,

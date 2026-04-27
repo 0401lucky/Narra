@@ -60,9 +60,13 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOn
 import okhttp3.MediaType.Companion.toMediaType
+import okhttp3.MediaType.Companion.toMediaTypeOrNull
+import okhttp3.MultipartBody
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.RequestBody.Companion.toRequestBody
+import okhttp3.ResponseBody.Companion.toResponseBody
+import okio.ByteString.Companion.decodeBase64
 import java.io.IOException
 import java.util.Collections
 
@@ -120,6 +124,12 @@ class DefaultAiGateway(
             apiKey = apiKey,
         )
     },
+    private val requestClientProvider: (String, String) -> OkHttpClient = { baseUrl, apiKey ->
+        apiServiceFactory.createRequestClient(
+            baseUrl = baseUrl,
+            apiKey = apiKey,
+        )
+    },
     private val anthropicStreamClientProvider: (String, String) -> OkHttpClient = { baseUrl, apiKey ->
         apiServiceFactory.createAnthropicStreamingClient(
             baseUrl = baseUrl,
@@ -154,6 +164,11 @@ class DefaultAiGateway(
     ),
     private val ioDispatcher: CoroutineDispatcher = Dispatchers.IO,
 ) : AiGateway {
+    private companion object {
+        val DEFAULT_BINARY_MEDIA_TYPE = "application/octet-stream".toMediaType()
+        val IMAGE_EDIT_MULTIPART_FALLBACK_CODES = setOf(400, 415, 422, 500)
+    }
+
     private val gson = AppJson.gson
     private val toolEngine = ToolEngine(
         toolRegistry = toolRegistry,
@@ -244,7 +259,8 @@ class DefaultAiGateway(
                 add(imagePayloadResolver(attachment))
             }
         }
-        val response = apiServiceProvider(baseUrl, apiKey).editImage(
+        val api = apiServiceProvider(baseUrl, apiKey)
+        val response = api.editImage(
             ImageEditRequest(
                 model = selectedModel,
                 prompt = prompt,
@@ -256,11 +272,27 @@ class DefaultAiGateway(
             ),
         )
 
-        if (!response.isSuccessful) {
-            throw IllegalStateException("图片编辑失败：${response.code()}")
+        val finalResponse = if (!response.isSuccessful &&
+            shouldFallbackToMultipartImageEdit(response.code())
+        ) {
+            buildMultipartImageEditParts(images, encodedImages)?.let { multipartImages ->
+                executeMultipartImageEdit(
+                    baseUrl = baseUrl,
+                    apiKey = apiKey,
+                    model = selectedModel,
+                    prompt = prompt,
+                    images = multipartImages,
+                )
+            } ?: response
+        } else {
+            response
         }
 
-        val data = response.body()?.data.orEmpty()
+        if (!finalResponse.isSuccessful) {
+            throw IllegalStateException("图片编辑失败：${finalResponse.code()}")
+        }
+
+        val data = finalResponse.body()?.data.orEmpty()
         if (data.isEmpty()) {
             throw IllegalStateException("图片编辑接口未返回数据")
         }
@@ -273,6 +305,108 @@ class DefaultAiGateway(
             )
         }
     }
+
+    private fun shouldFallbackToMultipartImageEdit(code: Int): Boolean {
+        return code in IMAGE_EDIT_MULTIPART_FALLBACK_CODES
+    }
+
+    private fun buildMultipartImageEditParts(
+        attachments: List<MessageAttachment>,
+        encodedImages: List<String>,
+    ): List<MultipartBody.Part>? {
+        if (attachments.size != encodedImages.size) {
+            return null
+        }
+        return buildList {
+            attachments.zip(encodedImages).forEachIndexed { index, (attachment, imageUrl) ->
+                val parsedImage = parseDataUrlImage(imageUrl) ?: return null
+                val fileName = attachment.fileName.takeUnless { it.isNullOrBlank() }
+                    ?: "image-${index + 1}${parsedImage.defaultExtension}"
+                add(
+                    MultipartBody.Part.createFormData(
+                        "image",
+                        fileName,
+                        parsedImage.bytes.toRequestBody(parsedImage.mediaType),
+                    ),
+                )
+            }
+        }
+    }
+
+    private fun executeMultipartImageEdit(
+        baseUrl: String,
+        apiKey: String,
+        model: String,
+        prompt: String,
+        images: List<MultipartBody.Part>,
+    ): retrofit2.Response<com.example.myapplication.model.ImageGenerationResponse> {
+        val requestBody = MultipartBody.Builder()
+            .setType(MultipartBody.FORM)
+            .addFormDataPart("model", model)
+            .addFormDataPart("prompt", prompt)
+            .addFormDataPart("n", "1")
+            .addFormDataPart("response_format", "b64_json")
+            .apply {
+                images.forEach(::addPart)
+            }
+            .build()
+        val request = Request.Builder()
+            .url(apiServiceFactory.normalizeBaseUrl(baseUrl, ProviderApiProtocol.OPENAI_COMPATIBLE) + "images/edits")
+            .post(requestBody)
+            .build()
+        requestClientProvider(baseUrl, apiKey).newCall(request).execute().use { response ->
+            val responseBody = response.body?.string().orEmpty()
+            return if (response.isSuccessful) {
+                retrofit2.Response.success(
+                    gson.fromJson(
+                        responseBody,
+                        com.example.myapplication.model.ImageGenerationResponse::class.java,
+                    ),
+                )
+            } else {
+                retrofit2.Response.error(
+                    response.code,
+                    responseBody.toResponseBody(response.body?.contentType()),
+                )
+            }
+        }
+    }
+
+    private fun parseDataUrlImage(dataUrl: String): MultipartImagePart? {
+        val separatorIndex = dataUrl.indexOf(',')
+        if (separatorIndex <= 0) {
+            return null
+        }
+        val header = dataUrl.substring(0, separatorIndex)
+        if (!header.startsWith("data:", ignoreCase = true) || !header.contains(";base64", ignoreCase = true)) {
+            return null
+        }
+        val mimeType = header.substringAfter("data:", "").substringBefore(';').trim()
+        if (mimeType.isBlank()) {
+            return null
+        }
+        val bytes = dataUrl.substring(separatorIndex + 1)
+            .decodeBase64()
+            ?.toByteArray()
+            ?: return null
+        val mediaType = mimeType.toMediaTypeOrNull() ?: DEFAULT_BINARY_MEDIA_TYPE
+        return MultipartImagePart(
+            bytes = bytes,
+            mediaType = mediaType,
+            defaultExtension = when (mimeType.lowercase()) {
+                "image/jpeg" -> ".jpg"
+                "image/webp" -> ".webp"
+                "image/gif" -> ".gif"
+                else -> ".png"
+            },
+        )
+    }
+
+    private data class MultipartImagePart(
+        val bytes: ByteArray,
+        val mediaType: okhttp3.MediaType,
+        val defaultExtension: String,
+    )
 
     override suspend fun sendMessage(
         messages: List<ChatMessage>,

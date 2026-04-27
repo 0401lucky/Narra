@@ -10,11 +10,21 @@ import androidx.datastore.preferences.preferencesDataStore
 import com.example.myapplication.model.AppSettings
 import com.example.myapplication.model.Assistant
 import com.example.myapplication.model.DEFAULT_ASSISTANT_ICON
+import com.example.myapplication.model.DEFAULT_CONTEXT_LOG_CAPACITY
+import com.example.myapplication.model.DEFAULT_MEMORY_AUTO_SUMMARY_EVERY
+import com.example.myapplication.model.DEFAULT_MEMORY_CAPACITY
 import com.example.myapplication.model.DEFAULT_MEMORY_MAX_ITEMS
 import com.example.myapplication.model.OpenAiTextApiMode
 import com.example.myapplication.model.DEFAULT_ROLEPLAY_LONGFORM_TARGET_CHARS
 import com.example.myapplication.model.DEFAULT_WORLD_BOOK_MAX_ENTRIES
 import com.example.myapplication.model.DEFAULT_WORLD_BOOK_SCAN_DEPTH
+import com.example.myapplication.model.CONTEXT_LOG_CAPACITY_MAX
+import com.example.myapplication.model.CONTEXT_LOG_CAPACITY_MIN
+import com.example.myapplication.model.MEMORY_AUTO_SUMMARY_EVERY_MAX
+import com.example.myapplication.model.MEMORY_AUTO_SUMMARY_EVERY_MIN
+import com.example.myapplication.model.MEMORY_CAPACITY_MAX
+import com.example.myapplication.model.MEMORY_CAPACITY_MIN
+import com.example.myapplication.model.MemoryInjectionPosition
 import com.example.myapplication.model.ProviderFunctionModelMode
 import com.example.myapplication.model.ProviderSettings
 import com.example.myapplication.model.ProviderType
@@ -89,6 +99,14 @@ interface SettingsStore {
     suspend fun saveTranslationHistory(history: List<TranslationHistoryEntry>)
 
     suspend fun saveRoleplayAssistantMismatchDialogPreference(suppressed: Boolean)
+
+    suspend fun saveMemorySettings(autoSummaryEvery: Int, capacity: Int)
+
+    suspend fun saveMemoryPromptSettings(extractionPrompt: String, injectionPrompt: String)
+
+    suspend fun saveMemoryInjectionPosition(position: MemoryInjectionPosition)
+
+    suspend fun saveContextLogSettings(enabled: Boolean, capacity: Int)
 }
 
 private const val TAG = "AppSettingsStore"
@@ -204,6 +222,20 @@ class AppSettingsStore(
                 vendorGuideDismissed = preferences[PreferencesKeys.screenTranslationVendorGuideDismissed] ?: false,
             ),
             searchSettings = searchSettings,
+            memoryAutoSummaryEvery = (preferences[PreferencesKeys.memoryAutoSummaryEvery]
+                ?: DEFAULT_MEMORY_AUTO_SUMMARY_EVERY)
+                .coerceIn(MEMORY_AUTO_SUMMARY_EVERY_MIN, MEMORY_AUTO_SUMMARY_EVERY_MAX),
+            memoryCapacity = (preferences[PreferencesKeys.memoryCapacity] ?: DEFAULT_MEMORY_CAPACITY)
+                .coerceIn(MEMORY_CAPACITY_MIN, MEMORY_CAPACITY_MAX),
+            memoryExtractionPrompt = preferences[PreferencesKeys.memoryExtractionPrompt].orEmpty(),
+            memoryInjectionPrompt = preferences[PreferencesKeys.memoryInjectionPrompt].orEmpty(),
+            memoryInjectionPosition = MemoryInjectionPosition.fromStorageValue(
+                preferences[PreferencesKeys.memoryInjectionPosition].orEmpty(),
+            ),
+            contextLogEnabled = preferences[PreferencesKeys.contextLogEnabled] ?: true,
+            contextLogCapacity = (preferences[PreferencesKeys.contextLogCapacity]
+                ?: DEFAULT_CONTEXT_LOG_CAPACITY)
+                .coerceIn(CONTEXT_LOG_CAPACITY_MIN, CONTEXT_LOG_CAPACITY_MAX),
         )
     }
 
@@ -410,6 +442,36 @@ class AppSettingsStore(
     override suspend fun saveRoleplayAssistantMismatchDialogPreference(suppressed: Boolean) {
         context.dataStore.edit { preferences ->
             preferences[PreferencesKeys.suppressRoleplayAssistantMismatchDialog] = suppressed
+        }
+    }
+
+    override suspend fun saveMemorySettings(autoSummaryEvery: Int, capacity: Int) {
+        context.dataStore.edit { preferences ->
+            preferences[PreferencesKeys.memoryAutoSummaryEvery] =
+                autoSummaryEvery.coerceIn(MEMORY_AUTO_SUMMARY_EVERY_MIN, MEMORY_AUTO_SUMMARY_EVERY_MAX)
+            preferences[PreferencesKeys.memoryCapacity] =
+                capacity.coerceIn(MEMORY_CAPACITY_MIN, MEMORY_CAPACITY_MAX)
+        }
+    }
+
+    override suspend fun saveMemoryPromptSettings(extractionPrompt: String, injectionPrompt: String) {
+        context.dataStore.edit { preferences ->
+            preferences[PreferencesKeys.memoryExtractionPrompt] = extractionPrompt
+            preferences[PreferencesKeys.memoryInjectionPrompt] = injectionPrompt
+        }
+    }
+
+    override suspend fun saveMemoryInjectionPosition(position: MemoryInjectionPosition) {
+        context.dataStore.edit { preferences ->
+            preferences[PreferencesKeys.memoryInjectionPosition] = position.storageValue
+        }
+    }
+
+    override suspend fun saveContextLogSettings(enabled: Boolean, capacity: Int) {
+        context.dataStore.edit { preferences ->
+            preferences[PreferencesKeys.contextLogEnabled] = enabled
+            preferences[PreferencesKeys.contextLogCapacity] =
+                capacity.coerceIn(CONTEXT_LOG_CAPACITY_MIN, CONTEXT_LOG_CAPACITY_MAX)
         }
     }
 
@@ -812,6 +874,13 @@ class AppSettingsStore(
         val screenTranslationShowSourceText = booleanPreferencesKey("screen_translation_show_source_text")
         val screenTranslationVendorGuideDismissed = booleanPreferencesKey("screen_translation_vendor_guide_dismissed")
         val searchSettingsJson = stringPreferencesKey("search_settings_json")
+        val memoryAutoSummaryEvery = PreferencesKeysCompat.intPreferencesKey("memory_auto_summary_every")
+        val memoryCapacity = PreferencesKeysCompat.intPreferencesKey("memory_capacity")
+        val memoryExtractionPrompt = stringPreferencesKey("memory_extraction_prompt")
+        val memoryInjectionPrompt = stringPreferencesKey("memory_injection_prompt")
+        val memoryInjectionPosition = stringPreferencesKey("memory_injection_position")
+        val contextLogEnabled = booleanPreferencesKey("context_log_enabled")
+        val contextLogCapacity = PreferencesKeysCompat.intPreferencesKey("context_log_capacity")
     }
 
     private object SecureKeys {

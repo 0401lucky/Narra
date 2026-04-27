@@ -122,6 +122,9 @@ fun RoleplayScenarioEditScreen(
 
     var title by rememberSaveable(scenarioStateKey) { mutableStateOf(baseScenario.title) }
     var description by rememberSaveable(scenarioStateKey) { mutableStateOf(baseScenario.description) }
+    var descriptionPromptEnabled by rememberSaveable(scenarioStateKey) {
+        mutableStateOf(baseScenario.descriptionPromptEnabled)
+    }
     var assistantId by rememberSaveable(scenarioStateKey) { mutableStateOf(baseScenario.assistantId) }
     var backgroundUri by rememberSaveable(scenarioStateKey) { mutableStateOf(baseScenario.backgroundUri) }
     var userDisplayNameOverride by rememberSaveable(scenarioStateKey) { mutableStateOf(baseScenario.userDisplayNameOverride) }
@@ -201,8 +204,8 @@ fun RoleplayScenarioEditScreen(
     Scaffold(
         topBar = {
             SettingsTopBar(
-                title = if (isNew) "新建场景" else "编辑场景",
-                subtitle = "配置独立场景",
+                title = if (isNew) "新建聊天资料" else "编辑聊天资料",
+                subtitle = "配置角色、模式与背景补充",
                 onNavigateBack = onNavigateBack,
             )
         },
@@ -224,8 +227,8 @@ fun RoleplayScenarioEditScreen(
         ) {
             item {
                 SettingsSectionHeader(
-                    title = "场景基础",
-                    description = "把角色人格交给 Assistant，把具体故事现场放在这里。",
+                    title = "聊天资料",
+                    description = "角色人格仍由角色卡负责，这里只记录这段聊天自己的补充信息。",
                 )
             }
             item {
@@ -240,7 +243,7 @@ fun RoleplayScenarioEditScreen(
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .testTag(TAG_SCENARIO_TITLE_INPUT),
-                            label = { Text("场景标题") },
+                            label = { Text("聊天备注") },
                             singleLine = true,
                             shape = RoundedCornerShape(18.dp),
                             colors = outlineColors,
@@ -251,12 +254,26 @@ fun RoleplayScenarioEditScreen(
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .testTag(TAG_SCENARIO_DESCRIPTION_INPUT),
-                            label = { Text("场景描述") },
+                            label = { Text("聊天背景补充") },
                             minLines = 3,
                             maxLines = 5,
-                            supportingText = { Text("这段文本会直接进入 system prompt。") },
+                            supportingText = {
+                                Text(
+                                    if (descriptionPromptEnabled) {
+                                        "已允许写入提示词，适合补充当前聊天背景。"
+                                    } else {
+                                        "默认只作为资料保存，不写入提示词。"
+                                    },
+                                )
+                            },
                             shape = RoundedCornerShape(18.dp),
                             colors = outlineColors,
+                        )
+                        SwitchRow(
+                            title = "写入提示词",
+                            subtitle = "关闭后，普通聊天、手机内容生成和日记上下文都不会注入这段补充。",
+                            value = descriptionPromptEnabled,
+                            onValueChange = { descriptionPromptEnabled = it },
                         )
                     }
                 }
@@ -265,7 +282,7 @@ fun RoleplayScenarioEditScreen(
             item {
                 SettingsSectionHeader(
                     title = "绑定角色",
-                    description = "场景复用现有助手设定，Assistant 决定人格和长期记忆。",
+                    description = "聊天复用现有角色设定，角色卡决定人格和长期记忆。",
                 )
             }
             item {
@@ -294,7 +311,7 @@ fun RoleplayScenarioEditScreen(
             item {
                 SettingsSectionHeader(
                     title = "视觉资源",
-                    description = "背景用于烘托场景，用户与角色立绘可以覆盖默认头像。",
+                    description = "背景用于烘托聊天氛围，用户与角色立绘可以覆盖默认头像。",
                 )
             }
             item {
@@ -506,12 +523,13 @@ fun RoleplayScenarioEditScreen(
                         verticalArrangement = Arrangement.spacedBy(12.dp),
                     ) {
                         AnimatedSettingButton(
-                            text = if (isNew) "创建场景" else "保存场景",
+                            text = if (isNew) "创建聊天资料" else "保存聊天资料",
                             onClick = {
                                 onSave(
                                     baseScenario.copy(
                                         title = title.trim(),
                                         description = description.trim(),
+                                        descriptionPromptEnabled = descriptionPromptEnabled,
                                         assistantId = assistantId,
                                         backgroundUri = backgroundUri.trim(),
                                         userDisplayNameOverride = userDisplayNameOverride.trim(),
@@ -536,7 +554,7 @@ fun RoleplayScenarioEditScreen(
                         )
                         if (!isNew && onDelete != null) {
                             AnimatedSettingButton(
-                                text = "删除场景",
+                                text = "删除聊天",
                                 onClick = { showDeleteConfirm = true },
                                 enabled = true,
                                 isPrimary = false,
@@ -586,14 +604,14 @@ fun RoleplayScenarioEditScreen(
             onDismissRequest = { showDeleteConfirm = false },
             title = {
                 Text(
-                    text = "确认删除场景",
+                    text = "确认删除聊天",
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold,
                 )
             },
             text = {
                 Text(
-                    text = "删除后无法恢复，相关场景配置会一起移除。",
+                    text = "删除后无法恢复，相关聊天资料和会话数据会一起移除。",
                     style = MaterialTheme.typography.bodyMedium,
                 )
             },
@@ -604,7 +622,7 @@ fun RoleplayScenarioEditScreen(
                         onDelete(baseScenario.id)
                     },
                 ) {
-                    Text("删除场景")
+                    Text("删除聊天")
                 }
             },
             dismissButton = {

@@ -52,7 +52,6 @@ fun ChatScreen(
     val onClearConversation = callbacks.conversation.onClearConversation
     val onDeleteConversation = callbacks.conversation.onDeleteConversation
     val onClearCurrentConversation = callbacks.conversation.onClearCurrentConversation
-    val onRefreshConversationSummary = callbacks.conversation.onRefreshConversationSummary
     val onToggleSearch = callbacks.search.onToggleSearch
     val onSelectSearchSource = callbacks.search.onSelectSearchSource
     val onUpdateSearchResultCount = callbacks.search.onUpdateSearchResultCount
@@ -73,6 +72,7 @@ fun ChatScreen(
     val onOpenRoleplay = callbacks.navigation.onOpenRoleplay
     val onOpenPhoneCheck = callbacks.navigation.onOpenPhoneCheck
     val onOpenProviderDetail = callbacks.navigation.onOpenProviderDetail
+    val onOpenContextLog = callbacks.navigation.onOpenContextLog
     val onClearErrorMessage = callbacks.ui.onClearErrorMessage
     val onClearNoticeMessage = callbacks.ui.onClearNoticeMessage
 
@@ -181,7 +181,7 @@ fun ChatScreen(
         onOpenConversationDrawer = {
             scope.launch { drawerState.open() }
         },
-        onOpenPromptDebugSheet = { localState.setShowPromptDebugSheet(true) },
+        onOpenContextLog = onOpenContextLog,
         onOpenExportSheet = { localState.setShowExportSheet(true) },
     ) { contentModifier ->
         Column(modifier = contentModifier) {
@@ -344,9 +344,6 @@ fun ChatScreen(
             localState.setShowSearchPickerSheet(false)
             onOpenSettings()
         },
-        showPromptDebugSheet = localState.showPromptDebugSheet,
-        onDismissPromptDebugSheet = { localState.setShowPromptDebugSheet(false) },
-        onRefreshConversationSummary = onRefreshConversationSummary,
         onDismissTranslationSheet = onDismissTranslationSheet,
         onApplyTranslationToInput = onApplyTranslationToInput,
         onSendTranslationAsMessage = onSendTranslationAsMessage,

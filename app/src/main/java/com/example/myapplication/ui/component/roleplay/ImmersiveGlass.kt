@@ -24,6 +24,9 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.staticCompositionLocalOf
 import dev.chrisbanes.haze.HazeState
+import dev.chrisbanes.haze.hazeChild
+import dev.chrisbanes.haze.HazeStyle
+import dev.chrisbanes.haze.HazeTint
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -41,6 +44,7 @@ import androidx.compose.ui.graphics.asAndroidBitmap
 import androidx.compose.ui.graphics.asComposeRenderEffect
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.lerp
+import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.layout.onGloballyPositioned
@@ -92,6 +96,30 @@ data class ImmersiveBackdropState(
 ) {
     val hasImage: Boolean
         get() = imageBitmap != null
+}
+
+@Immutable
+internal data class ImmersiveReadingGlassSpec(
+    val blurRadius: Dp,
+    val overlayAlpha: Float,
+    val borderAlpha: Float,
+    val highlightAlpha: Float,
+    val contentDarkenAlpha: Float,
+)
+
+internal enum class ImmersiveReadingGlassVariant {
+    PANEL,
+    CHROME,
+    CARD,
+    DIALOGUE,
+    THOUGHT,
+    PILL,
+}
+
+internal enum class ImmersiveReadingScrimVariant {
+    READING,
+    DIARY_LIST,
+    DIARY_DETAIL,
 }
 
 @Composable
@@ -259,15 +287,12 @@ fun ImmersiveGlassSurface(
     backdropState: ImmersiveBackdropState,
     modifier: Modifier = Modifier,
     shape: Shape = RoundedCornerShape(28.dp),
-    blurRadius: Dp = 28.dp,
+    blurRadius: Dp = 0.dp,
     overlayColor: Color = Color.Black.copy(alpha = 0.15f),
     shadowElevation: Dp = 0.dp,
     content: @Composable BoxScope.() -> Unit,
 ) {
-    val density = LocalDensity.current
-    val blurRadiusPx = with(density) { blurRadius.toPx() }
-    var origin by remember { mutableStateOf(IntOffset.Zero) }
-    var size by remember { mutableStateOf(IntSize.Zero) }
+    val hazeState = LocalImmersiveHazeState.current
 
     Surface(
         modifier = modifier,
@@ -275,40 +300,35 @@ fun ImmersiveGlassSurface(
         shape = shape,
         shadowElevation = shadowElevation,
     ) {
+        var baseMod = Modifier.clip(shape)
+
+        if (hazeState != null && blurRadius > 0.dp) {
+            baseMod = baseMod.hazeChild(
+                state = hazeState,
+                shape = shape,
+                style = HazeStyle(
+                    blurRadius = blurRadius,
+                    backgroundColor = Color.Transparent,
+                    tint = HazeTint(Color.Transparent)
+                )
+            )
+        }
+
         Box(
-            modifier = Modifier
-                .clip(shape)
-                .onGloballyPositioned { coordinates ->
-                    origin = coordinates.positionInRoot().let { offset ->
-                        IntOffset(offset.x.roundToInt(), offset.y.roundToInt())
-                    }
-                    size = coordinates.size
-                }
+            modifier = baseMod
                 .drawWithContent {
                     drawRect(
                         brush = Brush.verticalGradient(
                             colors = listOf(
-                                backdropState.palette.panelHighlight.copy(alpha = 0.14f),
+                                backdropState.palette.panelHighlight.copy(alpha = 0.06f),
                                 Color.Transparent,
-                                backdropState.palette.shadowColor.copy(alpha = 0.06f),
+                                backdropState.palette.shadowColor.copy(alpha = 0.02f),
                             ),
                         ),
                     )
                     drawContent()
                 },
         ) {
-            if (size.width > 0 && size.height > 0) {
-                if (backdropState.imageBitmap != null) {
-                    AlignedBlurredBackdropSlice(
-                        backdropState = backdropState,
-                        origin = origin,
-                        size = size,
-                        blurRadiusPx = blurRadiusPx,
-                        modifier = Modifier.matchParentSize(),
-                    )
-                }
-            }
-
             Box(
                 modifier = Modifier
                     .matchParentSize()
@@ -318,6 +338,289 @@ fun ImmersiveGlassSurface(
             content()
         }
     }
+}
+
+internal fun resolveImmersiveReadingGlassSpec(
+    variant: ImmersiveReadingGlassVariant,
+): ImmersiveReadingGlassSpec {
+    return when (variant) {
+        ImmersiveReadingGlassVariant.PANEL -> ImmersiveReadingGlassSpec(
+            blurRadius = 0.dp,
+            overlayAlpha = 0.24f,
+            borderAlpha = 0.07f,
+            highlightAlpha = 0.035f,
+            contentDarkenAlpha = 0.035f,
+        )
+
+        ImmersiveReadingGlassVariant.CHROME -> ImmersiveReadingGlassSpec(
+            blurRadius = 0.dp,
+            overlayAlpha = 0.26f,
+            borderAlpha = 0.09f,
+            highlightAlpha = 0.04f,
+            contentDarkenAlpha = 0.045f,
+        )
+
+        ImmersiveReadingGlassVariant.CARD -> ImmersiveReadingGlassSpec(
+            blurRadius = 0.dp,
+            overlayAlpha = 0.18f,
+            borderAlpha = 0.06f,
+            highlightAlpha = 0.025f,
+            contentDarkenAlpha = 0.03f,
+        )
+
+        ImmersiveReadingGlassVariant.DIALOGUE -> ImmersiveReadingGlassSpec(
+            blurRadius = 0.dp,
+            overlayAlpha = 0.15f,
+            borderAlpha = 0.05f,
+            highlightAlpha = 0.02f,
+            contentDarkenAlpha = 0.026f,
+        )
+
+        ImmersiveReadingGlassVariant.THOUGHT -> ImmersiveReadingGlassSpec(
+            blurRadius = 0.dp,
+            overlayAlpha = 0.12f,
+            borderAlpha = 0.04f,
+            highlightAlpha = 0.018f,
+            contentDarkenAlpha = 0.02f,
+        )
+
+        ImmersiveReadingGlassVariant.PILL -> ImmersiveReadingGlassSpec(
+            blurRadius = 0.dp,
+            overlayAlpha = 0.22f,
+            borderAlpha = 0.07f,
+            highlightAlpha = 0.03f,
+            contentDarkenAlpha = 0.025f,
+        )
+    }
+}
+
+internal fun resolveImmersiveReadingScrimAlpha(
+    backgroundLuminance: Float,
+    variant: ImmersiveReadingScrimVariant,
+): Float {
+    val normalizedLuminance = backgroundLuminance.coerceIn(0f, 1f)
+    return when (variant) {
+        ImmersiveReadingScrimVariant.READING -> lerp(0.025f, 0.075f, normalizedLuminance)
+        ImmersiveReadingScrimVariant.DIARY_LIST -> lerp(0.03f, 0.085f, normalizedLuminance)
+        ImmersiveReadingScrimVariant.DIARY_DETAIL -> lerp(0.04f, 0.10f, normalizedLuminance)
+    }
+}
+
+internal fun calculateImmersiveBackdropAmbientLuminance(
+    backdropState: ImmersiveBackdropState,
+): Float {
+    val imageBitmap = backdropState.imageBitmap
+    if (imageBitmap == null) {
+        return backdropState.palette.panelTint.luminance()
+    }
+    val topLuminance = calculateTopRegionLuminance(
+        imageBitmap = imageBitmap,
+        regionHeightFraction = 0.16f,
+    )
+    val bottomLuminance = calculateBottomRegionLuminance(
+        imageBitmap = imageBitmap,
+        regionHeightFraction = 0.24f,
+    )
+    return ((topLuminance * 0.45f) + (bottomLuminance * 0.55f)).coerceIn(0f, 1f)
+}
+
+@Composable
+internal fun ImmersiveReadingGlassSurface(
+    backdropState: ImmersiveBackdropState,
+    modifier: Modifier = Modifier,
+    shape: Shape = RoundedCornerShape(28.dp),
+    variant: ImmersiveReadingGlassVariant = ImmersiveReadingGlassVariant.CARD,
+    overlayColor: Color? = null,
+    contentDarkenAlpha: Float? = null,
+    blurRadius: Dp? = null,
+    content: @Composable BoxScope.() -> Unit,
+) {
+    val palette = backdropState.palette
+    val spec = remember(variant) { resolveImmersiveReadingGlassSpec(variant) }
+    val backgroundLuminance = remember(backdropState.imageBitmap, palette) {
+        calculateImmersiveBackdropAmbientLuminance(backdropState)
+    }
+    val baseOverlayColor = overlayColor ?: defaultReadingOverlayColor(
+        palette = palette,
+        variant = variant,
+        alpha = spec.overlayAlpha,
+    )
+    val effectiveOverlayColor = remember(baseOverlayColor, backgroundLuminance, variant) {
+        adjustImmersiveReadingOverlayColor(
+            baseColor = baseOverlayColor,
+            backgroundLuminance = backgroundLuminance,
+            variant = variant,
+        )
+    }
+    val effectiveBorderAlpha = remember(backgroundLuminance, spec.borderAlpha, variant) {
+        adjustImmersiveReadingBorderAlpha(
+            baseAlpha = spec.borderAlpha,
+            backgroundLuminance = backgroundLuminance,
+            variant = variant,
+        )
+    }
+    val borderColor = defaultReadingBorderColor(
+        palette = palette,
+        variant = variant,
+        alpha = effectiveBorderAlpha,
+    )
+    val effectiveContentDarkenAlpha = remember(backgroundLuminance, variant, spec.contentDarkenAlpha, contentDarkenAlpha) {
+        contentDarkenAlpha ?: adjustImmersiveReadingContentDarkenAlpha(
+            baseAlpha = spec.contentDarkenAlpha,
+            backgroundLuminance = backgroundLuminance,
+            variant = variant,
+        )
+    }
+    val sheenBrush = remember(palette, variant, spec.highlightAlpha) {
+        Brush.verticalGradient(
+            colorStops = arrayOf(
+                0.0f to palette.panelHighlight.copy(alpha = spec.highlightAlpha),
+                0.45f to Color.Transparent,
+                1.0f to palette.shadowColor.copy(alpha = spec.highlightAlpha * 0.35f),
+            ),
+        )
+    }
+
+    ImmersiveGlassSurface(
+        backdropState = backdropState,
+        modifier = modifier,
+        shape = shape,
+        blurRadius = blurRadius ?: spec.blurRadius,
+        overlayColor = effectiveOverlayColor,
+    ) {
+        Box(
+            modifier = Modifier
+                .matchParentSize()
+                .background(sheenBrush)
+                .border(width = 1.dp, color = borderColor, shape = shape),
+        )
+        Box(
+            modifier = Modifier
+                .glassTextContrast(effectiveContentDarkenAlpha),
+        ) {
+            content()
+        }
+    }
+}
+
+internal fun adjustImmersiveReadingOverlayColor(
+    baseColor: Color,
+    backgroundLuminance: Float,
+    variant: ImmersiveReadingGlassVariant,
+): Color {
+    val factor = readingContrastFactor(backgroundLuminance)
+    if (factor <= 0f) return baseColor
+    val alphaBoost = when (variant) {
+        ImmersiveReadingGlassVariant.PANEL -> 0.12f
+        ImmersiveReadingGlassVariant.CHROME -> 0.10f
+        ImmersiveReadingGlassVariant.CARD -> 0.11f
+        ImmersiveReadingGlassVariant.DIALOGUE -> 0.14f
+        ImmersiveReadingGlassVariant.THOUGHT -> 0.10f
+        ImmersiveReadingGlassVariant.PILL -> 0.08f
+    } * factor
+    val blackMix = when (variant) {
+        ImmersiveReadingGlassVariant.PANEL -> 0.34f
+        ImmersiveReadingGlassVariant.CHROME -> 0.28f
+        ImmersiveReadingGlassVariant.CARD -> 0.40f
+        ImmersiveReadingGlassVariant.DIALOGUE -> 0.46f
+        ImmersiveReadingGlassVariant.THOUGHT -> 0.38f
+        ImmersiveReadingGlassVariant.PILL -> 0.24f
+    } * factor
+    val mixed = lerp(baseColor.copy(alpha = 1f), Color.Black, blackMix)
+    return mixed.copy(alpha = (baseColor.alpha + alphaBoost).coerceAtMost(0.42f))
+}
+
+internal fun adjustImmersiveReadingContentDarkenAlpha(
+    baseAlpha: Float,
+    backgroundLuminance: Float,
+    variant: ImmersiveReadingGlassVariant,
+): Float {
+    val factor = readingContrastFactor(backgroundLuminance)
+    val boost = when (variant) {
+        ImmersiveReadingGlassVariant.PANEL -> 0.05f
+        ImmersiveReadingGlassVariant.CHROME -> 0.04f
+        ImmersiveReadingGlassVariant.CARD -> 0.055f
+        ImmersiveReadingGlassVariant.DIALOGUE -> 0.065f
+        ImmersiveReadingGlassVariant.THOUGHT -> 0.05f
+        ImmersiveReadingGlassVariant.PILL -> 0.025f
+    } * factor
+    return (baseAlpha + boost).coerceAtMost(0.12f)
+}
+
+internal fun adjustImmersiveReadingBorderAlpha(
+    baseAlpha: Float,
+    backgroundLuminance: Float,
+    variant: ImmersiveReadingGlassVariant,
+): Float {
+    val factor = readingContrastFactor(backgroundLuminance)
+    val boost = when (variant) {
+        ImmersiveReadingGlassVariant.PANEL -> 0.05f
+        ImmersiveReadingGlassVariant.CHROME -> 0.04f
+        ImmersiveReadingGlassVariant.CARD -> 0.05f
+        ImmersiveReadingGlassVariant.DIALOGUE -> 0.04f
+        ImmersiveReadingGlassVariant.THOUGHT -> 0.03f
+        ImmersiveReadingGlassVariant.PILL -> 0.02f
+    } * factor
+    return (baseAlpha + boost).coerceAtMost(0.24f)
+}
+
+private fun defaultReadingOverlayColor(
+    palette: ImmersiveGlassPalette,
+    variant: ImmersiveReadingGlassVariant,
+    alpha: Float,
+): Color {
+    return when (variant) {
+        ImmersiveReadingGlassVariant.PANEL -> lerp(
+            palette.panelTintStrong,
+            palette.panelTint,
+            0.58f,
+        ).copy(alpha = alpha)
+
+        ImmersiveReadingGlassVariant.CHROME -> lerp(
+            palette.panelTintStrong,
+            palette.panelTint,
+            0.34f,
+        ).copy(alpha = alpha)
+
+        ImmersiveReadingGlassVariant.PILL -> lerp(
+            palette.panelTintStrong,
+            palette.panelTint,
+            0.46f,
+        ).copy(alpha = alpha)
+
+        ImmersiveReadingGlassVariant.CARD,
+        ImmersiveReadingGlassVariant.DIALOGUE,
+        ImmersiveReadingGlassVariant.THOUGHT,
+        -> palette.panelTint.copy(alpha = alpha)
+    }
+}
+
+private fun defaultReadingBorderColor(
+    palette: ImmersiveGlassPalette,
+    variant: ImmersiveReadingGlassVariant,
+    alpha: Float,
+): Color {
+    val baseAlpha = when (variant) {
+        ImmersiveReadingGlassVariant.THOUGHT -> alpha * 0.9f
+        ImmersiveReadingGlassVariant.PILL -> alpha * 0.82f
+        else -> alpha
+    }
+    return palette.panelBorder.copy(alpha = baseAlpha)
+}
+
+private fun readingContrastFactor(
+    backgroundLuminance: Float,
+): Float {
+    val normalizedLuminance = backgroundLuminance.coerceIn(0f, 1f)
+    return ((normalizedLuminance - 0.42f) / 0.58f).coerceIn(0f, 1f)
+}
+
+private fun lerp(
+    start: Float,
+    stop: Float,
+    fraction: Float,
+): Float {
+    return start + (stop - start) * fraction.coerceIn(0f, 1f)
 }
 
 @Composable
@@ -688,4 +991,15 @@ fun calculateBottomRegionLuminance(imageBitmap: ImageBitmap?, regionHeightFracti
 }
 
 
+/**
+ * 轻量文字对比度增强 — 在内容区域底下先画一层非常淡的暗色矩形，
+ * 提高白色文字与通透玻璃面板之间的对比度。
+ * Tavo 等应用用类似方式实现低 alpha 面板下文字仍清晰的效果。
+ */
+fun Modifier.glassTextContrast(
+    darkenAlpha: Float = 0.06f,
+): Modifier = this.drawWithContent {
+    drawRect(color = Color.Black.copy(alpha = darkenAlpha))
+    drawContent()
+}
 val LocalImmersiveHazeState = staticCompositionLocalOf<HazeState?> { null }

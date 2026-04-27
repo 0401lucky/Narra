@@ -70,7 +70,7 @@ internal fun RoleplaySettingsToggleSection(
                 Icon(
                     imageVector = Icons.Default.Visibility,
                     contentDescription = null,
-                    tint = palette.onGlass,
+                    tint = RoleplaySettingsPanelAccentColor,
                 )
             },
             title = stringResource(id = R.string.roleplay_settings_show_presence_strip),
@@ -84,7 +84,7 @@ internal fun RoleplaySettingsToggleSection(
                 Icon(
                     imageVector = Icons.Default.ViewAgenda,
                     contentDescription = null,
-                    tint = palette.onGlass,
+                    tint = RoleplaySettingsPanelAccentColor,
                 )
             },
             title = stringResource(id = R.string.roleplay_settings_show_status_strip),
@@ -98,7 +98,7 @@ internal fun RoleplaySettingsToggleSection(
                 Icon(
                     imageVector = Icons.Default.Psychology,
                     contentDescription = null,
-                    tint = palette.onGlass,
+                    tint = RoleplaySettingsPanelAccentColor,
                 )
             },
             title = stringResource(id = R.string.roleplay_settings_show_ai_helper),
@@ -113,7 +113,7 @@ internal fun RoleplaySettingsToggleSection(
                     Icon(
                         imageVector = Icons.Default.AutoStories,
                         contentDescription = null,
-                        tint = palette.onGlass,
+                        tint = RoleplaySettingsPanelAccentColor,
                     )
                 },
                 title = stringResource(id = R.string.roleplay_settings_show_online_narration),
@@ -144,12 +144,12 @@ internal fun RoleplaySettingsPluginSection(
                 text = "场景插件",
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.Bold,
-                color = palette.onGlass,
+                color = RoleplaySettingsPanelTitleColor,
             )
             Text(
                 text = "这些开关只影响当前场景的提示词注入，不会改动其他场景。",
                 style = MaterialTheme.typography.bodySmall,
-                color = palette.onGlassMuted,
+                color = RoleplaySettingsPanelBodyColor,
             )
         }
         SectionDivider(palette = palette)
@@ -159,7 +159,7 @@ internal fun RoleplaySettingsPluginSection(
                 Icon(
                     imageVector = Icons.Default.AutoStories,
                     contentDescription = null,
-                    tint = palette.onGlass,
+                    tint = RoleplaySettingsPanelAccentColor,
                 )
             },
             title = if (scenario?.interactionMode == RoleplayInteractionMode.ONLINE_PHONE) {
@@ -182,7 +182,7 @@ internal fun RoleplaySettingsPluginSection(
                 Icon(
                     imageVector = Icons.Default.Psychology,
                     contentDescription = null,
-                    tint = palette.onGlass,
+                    tint = RoleplaySettingsPanelAccentColor,
                 )
             },
             title = "深度沉浸",
@@ -197,7 +197,7 @@ internal fun RoleplaySettingsPluginSection(
                 Icon(
                     imageVector = Icons.Default.Tune,
                     contentDescription = null,
-                    tint = palette.onGlass,
+                    tint = RoleplaySettingsPanelAccentColor,
                 )
             },
             title = "时间感知",
@@ -213,7 +213,7 @@ internal fun RoleplaySettingsPluginSection(
                     Icon(
                         imageVector = Icons.Default.SettingsSuggest,
                         contentDescription = null,
-                        tint = palette.onGlass,
+                        tint = RoleplaySettingsPanelAccentColor,
                     )
                 },
                 title = "网络热梗",
@@ -246,12 +246,12 @@ internal fun RoleplaySettingsInteractionSection(
                 text = stringResource(id = R.string.roleplay_settings_interaction_mode_title),
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.Bold,
-                color = palette.onGlass,
+                color = RoleplaySettingsPanelTitleColor,
             )
             Text(
                 text = stringResource(id = R.string.roleplay_settings_interaction_mode_hint),
                 style = MaterialTheme.typography.bodySmall,
-                color = palette.onGlassMuted,
+                color = RoleplaySettingsPanelBodyColor,
             )
             ImmersiveTabRow(
                 entries = RoleplayInteractionMode.entries,
@@ -279,13 +279,13 @@ internal fun RoleplaySettingsInteractionSection(
                 Icon(
                     imageVector = Icons.Default.TextFields,
                     contentDescription = null,
-                    tint = palette.onGlass,
+                    tint = RoleplaySettingsPanelAccentColor,
                     modifier = Modifier.size(22.dp),
                 )
                 Text(
                     text = stringResource(id = R.string.roleplay_settings_longform_default_title),
                     style = MaterialTheme.typography.bodyLarge,
-                    color = palette.onGlass,
+                    color = RoleplaySettingsPanelTitleColor,
                     fontWeight = FontWeight.SemiBold,
                 )
             }
@@ -299,14 +299,14 @@ internal fun RoleplaySettingsInteractionSection(
                 colors = OutlinedTextFieldDefaults.colors(
                     unfocusedContainerColor = Color.Transparent,
                     focusedContainerColor = Color.Transparent,
-                    unfocusedBorderColor = palette.panelBorder.copy(alpha = 0.3f),
-                    focusedBorderColor = palette.panelBorder.copy(alpha = 0.5f),
-                    unfocusedTextColor = palette.onGlass,
-                    focusedTextColor = palette.onGlass,
-                    unfocusedLabelColor = palette.onGlassMuted,
-                    focusedLabelColor = palette.onGlassMuted,
-                    unfocusedSupportingTextColor = palette.onGlassMuted,
-                    focusedSupportingTextColor = palette.onGlassMuted,
+                    unfocusedBorderColor = RoleplaySettingsPanelBodyColor.copy(alpha = 0.3f),
+                    focusedBorderColor = RoleplaySettingsPanelAccentColor.copy(alpha = 0.5f),
+                    unfocusedTextColor = RoleplaySettingsPanelTitleColor,
+                    focusedTextColor = RoleplaySettingsPanelTitleColor,
+                    unfocusedLabelColor = RoleplaySettingsPanelBodyColor,
+                    focusedLabelColor = RoleplaySettingsPanelBodyColor,
+                    unfocusedSupportingTextColor = RoleplaySettingsPanelBodyColor,
+                    focusedSupportingTextColor = RoleplaySettingsPanelBodyColor,
                 ),
                 singleLine = true,
             )
@@ -336,19 +336,19 @@ internal fun RoleplaySettingsReadabilitySection(
                 text = stringResource(id = R.string.roleplay_readability_section_title),
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.Bold,
-                color = palette.onGlass,
+                color = RoleplaySettingsPanelTitleColor,
             )
             Text(
                 text = stringResource(id = R.string.roleplay_readability_section_subtitle),
                 style = MaterialTheme.typography.bodyMedium,
-                color = palette.onGlassMuted,
+                color = RoleplaySettingsPanelBodyColor,
             )
             Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
                 Text(
                     text = stringResource(id = R.string.roleplay_immersive_mode_title),
                     style = MaterialTheme.typography.titleSmall,
                     fontWeight = FontWeight.SemiBold,
-                    color = palette.onGlass,
+                    color = RoleplaySettingsPanelTitleColor,
                 )
                 ImmersiveTabRow(
                     entries = RoleplayImmersiveMode.entries,
@@ -362,17 +362,17 @@ internal fun RoleplaySettingsReadabilitySection(
                 Text(
                     text = roleplayImmersiveModeDescription(settings.roleplayImmersiveMode),
                     style = MaterialTheme.typography.bodySmall,
-                    color = palette.onGlassMuted,
+                    color = RoleplaySettingsPanelBodyColor,
                 )
             }
-            HorizontalDivider(color = palette.panelBorder.copy(alpha = 0.44f))
+            HorizontalDivider(color = RoleplaySettingsPanelBodyColor.copy(alpha = 0.18f))
             RoleplaySettingSwitchRow(
                 palette = palette,
                 icon = {
                     Icon(
                         imageVector = Icons.Default.Visibility,
                         contentDescription = null,
-                        tint = palette.onGlass,
+                        tint = RoleplaySettingsPanelAccentColor,
                     )
                 },
                 title = stringResource(id = R.string.roleplay_settings_high_contrast_title),
@@ -385,13 +385,13 @@ internal fun RoleplaySettingsReadabilitySection(
                 switchModifier = Modifier.testTag("roleplay_high_contrast_switch"),
                 onCheckedChange = onUpdateRoleplayHighContrast,
             )
-            HorizontalDivider(color = palette.panelBorder.copy(alpha = 0.44f))
+            HorizontalDivider(color = RoleplaySettingsPanelBodyColor.copy(alpha = 0.18f))
             Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
                 Text(
                     text = stringResource(id = R.string.roleplay_line_height_title),
                     style = MaterialTheme.typography.titleSmall,
                     fontWeight = FontWeight.SemiBold,
-                    color = palette.onGlass,
+                    color = RoleplaySettingsPanelTitleColor,
                 )
                 ImmersiveTabRow(
                     entries = RoleplayLineHeightScale.entries,
@@ -405,7 +405,7 @@ internal fun RoleplaySettingsReadabilitySection(
                 Text(
                     text = roleplayLineHeightScaleDescription(settings.roleplayLineHeightScale),
                     style = MaterialTheme.typography.bodySmall,
-                    color = palette.onGlassMuted,
+                    color = RoleplaySettingsPanelBodyColor,
                 )
             }
         }
@@ -431,11 +431,11 @@ internal fun RoleplaySettingsMemoryHistorySection(
                 text = stringResource(id = R.string.roleplay_settings_memory_history_title),
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.Bold,
-                color = palette.onGlass,
+                color = RoleplaySettingsPanelTitleColor,
             )
             history.take(5).forEachIndexed { index, item ->
                 if (index > 0) {
-                    HorizontalDivider(color = palette.panelBorder.copy(alpha = 0.44f))
+                    HorizontalDivider(color = RoleplaySettingsPanelBodyColor.copy(alpha = 0.18f))
                 }
                 Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
                     Row(
@@ -445,28 +445,28 @@ internal fun RoleplaySettingsMemoryHistorySection(
                         SettingsStatusPill(
                             text = item.status.label,
                             containerColor = when (item.status) {
-                                MemoryProposalStatus.PENDING -> palette.panelTintStrong
-                                MemoryProposalStatus.APPROVED -> palette.chipTint
-                                MemoryProposalStatus.REJECTED -> palette.panelTint
+                                MemoryProposalStatus.PENDING -> RoleplaySettingsPanelAccentColor.copy(alpha = 0.24f)
+                                MemoryProposalStatus.APPROVED -> Color(0xFF4CAF50).copy(alpha = 0.24f)
+                                MemoryProposalStatus.REJECTED -> Color(0xFFFF5252).copy(alpha = 0.24f)
                             },
-                            contentColor = palette.onGlass,
+                            contentColor = RoleplaySettingsPanelTitleColor,
                         )
                         SettingsStatusPill(
                             text = item.scopeType.label,
-                            containerColor = palette.panelTint,
-                            contentColor = palette.onGlassMuted,
+                            containerColor = RoleplaySettingsPanelBodyColor.copy(alpha = 0.12f),
+                            contentColor = RoleplaySettingsPanelBodyColor,
                         )
                     }
                     Text(
                         text = item.content,
                         style = MaterialTheme.typography.bodyMedium,
-                        color = palette.onGlass,
+                        color = RoleplaySettingsPanelTitleColor,
                     )
                     item.reason.takeIf { it.isNotBlank() }?.let { reason ->
                         Text(
                             text = reason,
                             style = MaterialTheme.typography.bodySmall,
-                            color = palette.onGlassMuted,
+                            color = RoleplaySettingsPanelBodyColor,
                         )
                     }
                 }
@@ -486,7 +486,7 @@ internal fun RoleplaySettingsActionsSection(
     latestPromptDebugDump: String,
     onOpenReadingMode: () -> Unit,
     onOpenModelPicker: () -> Unit,
-    onOpenPromptDebugSheet: () -> Unit,
+    onOpenContextLog: () -> Unit,
 ) {
     val palette = backdropState.palette
     ImmersiveSettingsCard(backdropState) {
@@ -495,7 +495,7 @@ internal fun RoleplaySettingsActionsSection(
                 Icon(
                     imageVector = Icons.Default.AutoStories,
                     contentDescription = null,
-                    tint = palette.onGlass,
+                    tint = RoleplaySettingsPanelAccentColor,
                 )
             },
             title = stringResource(id = R.string.roleplay_settings_action_reading_mode),
@@ -507,7 +507,7 @@ internal fun RoleplaySettingsActionsSection(
                 Icon(
                     imageVector = Icons.Default.Tune,
                     contentDescription = null,
-                    tint = palette.onGlass,
+                    tint = RoleplaySettingsPanelAccentColor,
                 )
             },
             title = stringResource(id = R.string.roleplay_settings_action_model_picker),
@@ -520,13 +520,12 @@ internal fun RoleplaySettingsActionsSection(
                 Icon(
                     imageVector = Icons.Default.SettingsSuggest,
                     contentDescription = null,
-                    tint = palette.onGlass,
+                    tint = RoleplaySettingsPanelAccentColor,
                 )
             },
             title = stringResource(id = R.string.roleplay_settings_action_context_governance),
             supportingText = contextGovernance?.summarySupportingText.orEmpty(),
-            onClick = onOpenPromptDebugSheet,
-            enabled = latestPromptDebugDump.isNotBlank() || contextGovernance != null,
+            onClick = onOpenContextLog,
         )
     }
 }
@@ -556,7 +555,7 @@ internal fun RoleplaySettingsDangerousSection(
                     Icon(Icons.Default.Refresh, contentDescription = null)
                 },
             )
-            HorizontalDivider(color = palette.panelBorder.copy(alpha = 0.30f))
+            HorizontalDivider(color = RoleplaySettingsPanelBodyColor.copy(alpha = 0.18f))
             AnimatedSettingButton(
                 text = stringResource(id = R.string.roleplay_settings_action_reset),
                 onClick = onShowResetDialog,
@@ -579,7 +578,7 @@ internal fun RoleplaySettingsDangerousSection(
 private fun SectionDivider(palette: ImmersiveGlassPalette) {
     HorizontalDivider(
         modifier = Modifier.padding(start = 56.dp, end = 18.dp),
-        color = palette.panelBorder.copy(alpha = 0.44f),
+        color = RoleplaySettingsPanelBodyColor.copy(alpha = 0.18f),
     )
 }
 

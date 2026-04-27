@@ -25,6 +25,15 @@ interface MemoryRepository {
 
     suspend fun deleteEntry(entryId: String)
 
+    /**
+     * 全局兜底裁剪：当 memory_entries 总条数超过 [capacity] 时，按 listEntries 默认排序
+     * （pinned DESC → importance DESC → updatedAt DESC）保留头部，超出部分整体删除。
+     *
+     * 注意：与 [com.example.myapplication.conversation.ConversationMemoryExtractionCoordinator]
+     * 内基于 `Assistant.memoryMaxItems` 的 per-scope 裁剪并行存在；本方法是跨 scope 的兜底。
+     */
+    suspend fun pruneToCapacity(capacity: Int)
+
     suspend fun markEntriesUsed(entryIds: List<String>, timestamp: Long)
 }
 
@@ -73,6 +82,11 @@ class RoomMemoryRepository(
 
     override suspend fun deleteEntry(entryId: String) {
         memoryDao.deleteMemoryEntry(entryId)
+    }
+
+    override suspend fun pruneToCapacity(capacity: Int) {
+        val safeCapacity = capacity.coerceAtLeast(1)
+        memoryDao.pruneMemoriesToCapacity(safeCapacity)
     }
 
     override suspend fun markEntriesUsed(entryIds: List<String>, timestamp: Long) {
@@ -177,6 +191,8 @@ object EmptyMemoryRepository : MemoryRepository {
     override suspend fun upsertEntry(entry: MemoryEntry) = Unit
 
     override suspend fun deleteEntry(entryId: String) = Unit
+
+    override suspend fun pruneToCapacity(capacity: Int) = Unit
 
     override suspend fun markEntriesUsed(entryIds: List<String>, timestamp: Long) = Unit
 }

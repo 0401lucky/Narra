@@ -76,6 +76,20 @@ internal object RoleplayObservationSupport {
         }
     }
 
+    fun observeChatSummaries(
+        scope: CoroutineScope,
+        roleplayRepository: RoleplayRepository,
+        uiState: MutableStateFlow<RoleplayUiState>,
+    ) {
+        scope.launch {
+            roleplayRepository.observeChatSummaries().collect { summaries ->
+                uiState.update { current ->
+                    current.copy(chatSummaries = summaries)
+                }
+            }
+        }
+    }
+
     fun observeSessions(
         scope: CoroutineScope,
         roleplayRepository: RoleplayRepository,

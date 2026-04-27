@@ -75,6 +75,15 @@ object ContextGovernanceSupport {
             memoryItems = promptContext.memoryItems,
             worldBookItems = promptContext.worldBookItems,
             rawDebugDump = rawDebugDump,
+            providerLabel = resolveProviderLabel(settings),
+            modelLabel = selectedModel,
+            promptModeLabel = when (promptMode) {
+                PromptMode.CHAT -> "聊天"
+                PromptMode.ROLEPLAY -> "沉浸"
+            },
+            generatedAt = System.currentTimeMillis(),
+            estimatedContextTokens = promptContext.contextSections.sumOf { it.tokenEstimate },
+            contextSections = promptContext.contextSections,
         )
     }
 
@@ -115,14 +124,9 @@ object ContextGovernanceSupport {
         recentWindow: Int,
         minCoveredMessageCount: Int,
     ): Boolean {
-        if (!summaryConfigured) {
-            return false
-        }
-        if (completedMessageCount <= triggerMessageCount) {
-            return false
-        }
-        val olderCompletedCount = (completedMessageCount - recentWindow).coerceAtLeast(0)
-        return olderCompletedCount >= minCoveredMessageCount
+        // Tavo 语义：手动总结随时可点；只要模型配置好且当前对话有至少一条已完成消息就允许触发，
+        // 真正的"是否值得总结"由后续摘要服务自身判断
+        return summaryConfigured && completedMessageCount > 0
     }
 
     private fun resolvePressureLevel(
@@ -193,5 +197,19 @@ object ContextGovernanceSupport {
                 add("写入记忆")
             }
         }.distinct()
+    }
+
+    private fun resolveProviderLabel(settings: AppSettings): String {
+        val provider = settings.activeProvider() ?: return ""
+        val trimmedBaseUrl = provider.baseUrl.trim()
+        if (trimmedBaseUrl.isBlank()) {
+            return provider.name
+        }
+        return try {
+            val normalized = if ("://" in trimmedBaseUrl) trimmedBaseUrl else "https://$trimmedBaseUrl"
+            java.net.URI(normalized).host?.ifBlank { provider.name } ?: provider.name
+        } catch (_: Exception) {
+            trimmedBaseUrl
+        }
     }
 }

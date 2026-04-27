@@ -47,6 +47,18 @@ interface MemoryDao {
     @Query("DELETE FROM memory_entries WHERE id = :entryId")
     suspend fun deleteMemoryEntry(entryId: String)
 
+    @Query(
+        """
+        DELETE FROM memory_entries
+        WHERE id NOT IN (
+            SELECT id FROM memory_entries
+            ORDER BY pinned DESC, importance DESC, updatedAt DESC
+            LIMIT :capacity
+        )
+        """,
+    )
+    suspend fun pruneMemoriesToCapacity(capacity: Int)
+
     @Query("UPDATE memory_entries SET lastUsedAt = :lastUsedAt, updatedAt = :updatedAt WHERE id IN (:entryIds)")
     suspend fun updateMemoryLastUsed(
         entryIds: List<String>,

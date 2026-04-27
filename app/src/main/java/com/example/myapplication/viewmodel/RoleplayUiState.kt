@@ -5,6 +5,7 @@ import com.example.myapplication.model.Assistant
 import com.example.myapplication.model.ContextGovernanceSnapshot
 import com.example.myapplication.model.MemoryProposalHistoryItem
 import com.example.myapplication.model.PendingMemoryProposal
+import com.example.myapplication.model.RoleplayChatSummary
 import com.example.myapplication.model.RoleplayContextStatus
 import com.example.myapplication.model.RoleplayDiaryEntry
 import com.example.myapplication.model.RoleplayMessageUiModel
@@ -15,6 +16,7 @@ import com.example.myapplication.model.RoleplaySuggestionUiModel
 data class RoleplayUiState(
     val settings: AppSettings = AppSettings(),
     val scenarios: List<RoleplayScenario> = emptyList(),
+    val chatSummaries: List<RoleplayChatSummary> = emptyList(),
     val currentScenario: RoleplayScenario? = null,
     val currentSession: RoleplaySession? = null,
     val currentAssistant: Assistant? = null,

@@ -58,6 +58,9 @@ internal data class ImmersiveRoleplayColors(
     val errorText: Color,
     val errorBackground: Color,
     val errorBackgroundStrong: Color,
+    val userBubbleBackground: Color,
+    val characterBubbleBackground: Color,
+    val narrationBubbleBackground: Color,
 )
 
 internal enum class RoleplayMessageBubbleMode {
@@ -85,12 +88,15 @@ internal fun rememberImmersiveRoleplayColors(
             characterAccent = palette.characterAccent,
             userAccent = palette.userAccent,
             thoughtText = palette.thoughtText,
-            panelBackground = palette.panelTint.copy(alpha = 0.24f),
-            panelBackgroundStrong = palette.panelTintStrong.copy(alpha = 0.34f),
-            panelBorder = palette.panelBorder.copy(alpha = 0.28f),
+            panelBackground = Color(0xFFF2EEE8).copy(alpha = if (backdropState.hasImage) 0.22f else 0.92f),
+            panelBackgroundStrong = Color(0xFFF5F1EB).copy(alpha = if (backdropState.hasImage) 0.28f else 0.96f),
+            panelBorder = palette.panelBorder.copy(alpha = 0.22f),
             errorText = errorText,
-            errorBackground = errorText.copy(alpha = 0.12f),
-            errorBackgroundStrong = errorText.copy(alpha = 0.18f),
+            errorBackground = errorText.copy(alpha = 0.18f),
+            errorBackgroundStrong = errorText.copy(alpha = 0.26f),
+            userBubbleBackground = Color(0xFFE6DDD0).copy(alpha = if (backdropState.hasImage) 0.26f else 0.96f),
+            characterBubbleBackground = Color(0xFFF1ECE5).copy(alpha = if (backdropState.hasImage) 0.24f else 0.96f),
+            narrationBubbleBackground = Color(0xFFF4F0EA).copy(alpha = if (backdropState.hasImage) 0.2f else 0.94f),
         )
     }
 }
@@ -114,6 +120,7 @@ internal fun RoleplaySuggestionSection(
             backdropState = backdropState,
             modifier = Modifier.fillMaxWidth(),
             shape = RoundedCornerShape(16.dp),
+            blurRadius = 18.dp,
             overlayColor = colors.panelBackground,
         ) {
             Row(
@@ -152,6 +159,7 @@ internal fun RoleplaySuggestionSection(
         backdropState = backdropState,
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(18.dp),
+        blurRadius = 18.dp,
         overlayColor = colors.panelBackgroundStrong,
     ) {
     Column(

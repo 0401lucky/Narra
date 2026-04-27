@@ -17,6 +17,7 @@ import com.example.myapplication.data.repository.FileAttachmentResolver
 import com.example.myapplication.data.repository.ImageAttachmentResolver
 import com.example.myapplication.data.repository.LocalImageStore
 import com.example.myapplication.data.repository.context.ConversationSummaryRepository
+import com.example.myapplication.data.repository.context.ContextLogStore
 import com.example.myapplication.data.repository.context.MemoryRepository
 import com.example.myapplication.data.repository.context.RoomMemoryRepository
 import com.example.myapplication.data.repository.context.RoomWorldBookRepository
@@ -63,6 +64,8 @@ import com.example.myapplication.system.update.AppUpdateDownloadController
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 
 class AppGraph(
@@ -194,7 +197,7 @@ class AppGraph(
     }
 
     internal val memoryProposalPromptService: MemoryProposalPromptService by lazy {
-        MemoryProposalPromptService(promptExtrasCore)
+        MemoryProposalPromptService(promptExtrasCore, contextLogStore)
     }
 
     internal val roleplaySuggestionPromptService: RoleplaySuggestionPromptService by lazy {
@@ -262,6 +265,10 @@ class AppGraph(
         )
     }
 
+    val contextLogStore: ContextLogStore by lazy {
+        ContextLogStore()
+    }
+
     val appUpdateRepository: AppUpdateRepository by lazy {
         AppUpdateRepository(
             stateStore = appUpdateStore,
@@ -279,6 +286,15 @@ class AppGraph(
     fun launchStartupTasks() {
         scheduleStartup {
             settingsStore.migrateSensitiveData()
+        }
+        scheduleStartup {
+            settingsStore.settingsFlow
+                .map { it.contextLogEnabled to it.contextLogCapacity }
+                .distinctUntilChanged()
+                .collect { (enabled, capacity) ->
+                    contextLogStore.setEnabled(enabled)
+                    contextLogStore.setCapacity(capacity)
+                }
         }
     }
 

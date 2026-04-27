@@ -47,6 +47,7 @@ import com.example.myapplication.model.PendingMemoryProposal
 import com.example.myapplication.model.ProviderSettings
 import com.example.myapplication.model.ProviderFunctionModelMode
 import com.example.myapplication.model.RoleplayContentType
+import com.example.myapplication.model.RoleplayChatSummary
 import com.example.myapplication.model.RoleplayInteractionMode
 import com.example.myapplication.model.RoleplayOnlineEventKind
 import com.example.myapplication.model.RoleplayOutputFormat
@@ -1339,6 +1340,7 @@ class RoleplayViewModelTest {
             launchGiftImageGeneration = { _, _ -> },
             launchConversationSummaryGeneration = { _, _, _, _, _ -> },
             launchAutomaticMemoryExtraction = { _, _, _, _, _ -> },
+            contextLogStore = com.example.myapplication.data.repository.context.ContextLogStore(),
         )
 
         val executeJob = launch {
@@ -1700,6 +1702,7 @@ class RoleplayViewModelTest {
                 selectedProviderId = provider.id,
                 assistants = listOf(assistant),
                 selectedAssistantId = assistant.id,
+                memoryAutoSummaryEvery = 1,
             ),
             promptContextAssembler = fixedPromptAssembler("提示词上下文"),
             memoryRepository = memoryRepository,
@@ -3790,6 +3793,7 @@ class RoleplayViewModelTest {
                 pendingMemoryProposalRepository = pendingMemoryProposalRepository,
                 aiPromptExtrasService = services.aiPromptExtrasService,
             ),
+            contextLogStore = com.example.myapplication.data.repository.context.ContextLogStore(),
             nowProvider = nowProvider,
             messageIdProvider = messageIdProvider,
             imageSaver = imageSaver,
@@ -3824,6 +3828,19 @@ private class FakeRoleplayRepository(
     private val onlineMetaState = MutableStateFlow(onlineMetaByConversation)
 
     override fun observeScenarios(): Flow<List<RoleplayScenario>> = scenariosState
+
+    override fun observeChatSummaries(): Flow<List<RoleplayChatSummary>> {
+        return scenariosState.map { scenarios ->
+            scenarios.map { scenario ->
+                val session = sessionsState.value.firstOrNull { it.scenarioId == scenario.id }
+                RoleplayChatSummary(
+                    scenario = scenario,
+                    session = session,
+                    lastActiveAt = maxOf(session?.updatedAt ?: 0L, scenario.updatedAt, scenario.createdAt),
+                )
+            }
+        }
+    }
 
     override fun observeScenario(scenarioId: String): Flow<RoleplayScenario?> {
         return scenariosState.map { scenarios ->
@@ -3939,6 +3956,19 @@ private class DelayedStartRoleplayRepository(
     private val onlineMetaState = MutableStateFlow(onlineMetaByConversation)
 
     override fun observeScenarios(): Flow<List<RoleplayScenario>> = scenariosState
+
+    override fun observeChatSummaries(): Flow<List<RoleplayChatSummary>> {
+        return scenariosState.map { scenarios ->
+            scenarios.map { scenario ->
+                val session = sessionsState.value.firstOrNull { it.scenarioId == scenario.id }
+                RoleplayChatSummary(
+                    scenario = scenario,
+                    session = session,
+                    lastActiveAt = maxOf(session?.updatedAt ?: 0L, scenario.updatedAt, scenario.createdAt),
+                )
+            }
+        }
+    }
 
     override fun observeScenario(scenarioId: String): Flow<RoleplayScenario?> {
         return scenariosState.map { scenarios ->

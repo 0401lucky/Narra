@@ -37,7 +37,7 @@ internal fun ChatScreenChrome(
     onOpenSettings: () -> Unit,
     onEditProfile: () -> Unit,
     onOpenConversationDrawer: () -> Unit,
-    onOpenPromptDebugSheet: () -> Unit,
+    onOpenContextLog: () -> Unit,
     onOpenExportSheet: () -> Unit,
     content: @Composable (Modifier) -> Unit,
 ) {
@@ -73,7 +73,7 @@ internal fun ChatScreenChrome(
                 ChatTopBar(
                     title = uiState.currentConversationTitle,
                     onOpenConversationDrawer = onOpenConversationDrawer,
-                    onOpenPromptDebugSheet = onOpenPromptDebugSheet,
+                    onOpenContextLog = onOpenContextLog,
                     onOpenExportSheet = onOpenExportSheet,
                     onCreateConversation = onCreateConversation,
                 )

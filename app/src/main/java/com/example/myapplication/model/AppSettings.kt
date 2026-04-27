@@ -33,6 +33,13 @@ data class AppSettings(
     val selectedAssistantId: String = DEFAULT_ASSISTANT_ID,
     val screenTranslationSettings: ScreenTranslationSettings = ScreenTranslationSettings(),
     val searchSettings: SearchSettings = SearchSettings(),
+    val memoryAutoSummaryEvery: Int = DEFAULT_MEMORY_AUTO_SUMMARY_EVERY,
+    val memoryCapacity: Int = DEFAULT_MEMORY_CAPACITY,
+    val memoryExtractionPrompt: String = "",
+    val memoryInjectionPrompt: String = "",
+    val memoryInjectionPosition: MemoryInjectionPosition = MemoryInjectionPosition.AFTER_WORLD_BOOK,
+    val contextLogEnabled: Boolean = true,
+    val contextLogCapacity: Int = DEFAULT_CONTEXT_LOG_CAPACITY,
 ) {
     fun resolvedAssistants(): List<Assistant> {
         val customAssistantsById = assistants.associateBy { it.id }
@@ -155,6 +162,15 @@ data class AppSettings(
 
 const val DEFAULT_USER_DISPLAY_NAME = "用户"
 const val DEFAULT_ROLEPLAY_LONGFORM_TARGET_CHARS = 900
+const val DEFAULT_MEMORY_AUTO_SUMMARY_EVERY = 10
+const val DEFAULT_MEMORY_CAPACITY = 1000
+const val DEFAULT_CONTEXT_LOG_CAPACITY = 15
+const val MEMORY_AUTO_SUMMARY_EVERY_MIN = 0
+const val MEMORY_AUTO_SUMMARY_EVERY_MAX = 50
+const val MEMORY_CAPACITY_MIN = 50
+const val MEMORY_CAPACITY_MAX = 5000
+const val CONTEXT_LOG_CAPACITY_MIN = 5
+const val CONTEXT_LOG_CAPACITY_MAX = 50
 
 enum class RoleplayImmersiveMode(val storageValue: String) {
     EDGE_TO_EDGE("edge_to_edge"),
@@ -176,6 +192,18 @@ enum class RoleplayLineHeightScale(val storageValue: String, val scaleFactor: Fl
     companion object {
         fun fromStorageValue(value: String): RoleplayLineHeightScale {
             return entries.find { it.storageValue == value } ?: NORMAL
+        }
+    }
+}
+
+enum class MemoryInjectionPosition(val storageValue: String, val label: String) {
+    BEFORE_PROMPT("before_prompt", "靠前 · 系统提示词后"),
+    AFTER_WORLD_BOOK("after_world_book", "默认 · 世界书后"),
+    AT_END("at_end", "末尾 · 所有内容后");
+
+    companion object {
+        fun fromStorageValue(value: String): MemoryInjectionPosition {
+            return entries.find { it.storageValue == value } ?: AFTER_WORLD_BOOK
         }
     }
 }

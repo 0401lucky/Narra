@@ -265,7 +265,7 @@ fun MessageBubble(
                 )
             } else if (!isError) {
                 GlassMessageContainer(
-                    modifier = if (isUser) Modifier else assistantWidthModifier,
+                    modifier = if (isUser) Modifier.widthIn(max = UserMessageMaxWidth) else assistantWidthModifier,
                     shape = bubbleShape,
                     tint = if (isUser) backgroundColor else MaterialTheme.colorScheme.primary,
                     contentColor = contentColor,
@@ -304,7 +304,7 @@ fun MessageBubble(
                 }
             } else {
                 Surface(
-                    modifier = if (isUser) Modifier else assistantWidthModifier,
+                    modifier = if (isUser) Modifier.widthIn(max = UserMessageMaxWidth) else assistantWidthModifier,
                     shape = bubbleShape,
                     color = backgroundColor,
                     contentColor = contentColor,

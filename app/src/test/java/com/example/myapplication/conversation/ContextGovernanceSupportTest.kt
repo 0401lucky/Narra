@@ -15,7 +15,7 @@ import org.junit.Test
 
 class ContextGovernanceSupportTest {
     @Test
-    fun buildSnapshot_disablesRefreshWhenThresholdNotReached() {
+    fun buildSnapshot_allowsManualRefreshWhenMessagesExist() {
         val provider = ProviderSettings(
             id = "provider-1",
             baseUrl = "https://example.com/v1/",
@@ -42,7 +42,7 @@ class ContextGovernanceSupportTest {
             rawDebugDump = "debug",
         )
 
-        assertFalse(snapshot.hasActionableSummaryRefresh)
+        assertTrue(snapshot.hasActionableSummaryRefresh)
         assertTrue(snapshot.summaryState == ContextSummaryState.READY_IDLE)
     }
 

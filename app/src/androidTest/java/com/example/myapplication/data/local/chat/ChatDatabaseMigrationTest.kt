@@ -58,6 +58,9 @@ class ChatDatabaseMigrationTest {
             )
             assertEquals(0L, queryLong(db, "SELECT searchEnabled FROM conversations WHERE id = 'c1'"))
             assertTrue(hasColumn(db, "roleplay_scenarios", "longformModeEnabled"))
+            assertTrue(hasColumn(db, "roleplay_scenarios", "descriptionPromptEnabled"))
+            assertTrue(hasColumn(db, "roleplay_scenarios", "isPinned"))
+            assertTrue(hasColumn(db, "roleplay_scenarios", "isMuted"))
             assertTrue(hasColumn(db, "messages", "roleplayInteractionMode"))
             assertTrue(hasIndex(db, "conversations", "index_conversations_updatedAt"))
         }
@@ -73,6 +76,9 @@ class ChatDatabaseMigrationTest {
 
         openReadableDatabase().use { db ->
             assertTrue(hasColumn(db, "roleplay_scenarios", "longformModeEnabled"))
+            assertTrue(hasColumn(db, "roleplay_scenarios", "descriptionPromptEnabled"))
+            assertTrue(hasColumn(db, "roleplay_scenarios", "isPinned"))
+            assertTrue(hasColumn(db, "roleplay_scenarios", "isMuted"))
             assertTrue(hasIndex(db, "roleplay_scenarios", "index_roleplay_scenarios_updatedAt"))
             assertTrue(hasIndex(db, "roleplay_sessions", "index_roleplay_sessions_conversationId"))
         }
@@ -101,6 +107,12 @@ class ChatDatabaseMigrationTest {
 
         openReadableDatabase().use { db ->
             assertEquals(1L, queryLong(db, "SELECT longformModeEnabled FROM roleplay_scenarios WHERE id = 'scene-1'"))
+            assertEquals(
+                1L,
+                queryLong(db, "SELECT descriptionPromptEnabled FROM roleplay_scenarios WHERE id = 'scene-1'"),
+            )
+            assertEquals(0L, queryLong(db, "SELECT isPinned FROM roleplay_scenarios WHERE id = 'scene-1'"))
+            assertEquals(0L, queryLong(db, "SELECT isMuted FROM roleplay_scenarios WHERE id = 'scene-1'"))
             assertTrue(hasColumn(db, "roleplay_scenarios", "longformModeEnabled"))
         }
     }
@@ -128,6 +140,12 @@ class ChatDatabaseMigrationTest {
 
         openReadableDatabase().use { db ->
             assertEquals(0L, queryLong(db, "SELECT longformModeEnabled FROM roleplay_scenarios WHERE id = 'scene-2'"))
+            assertEquals(
+                1L,
+                queryLong(db, "SELECT descriptionPromptEnabled FROM roleplay_scenarios WHERE id = 'scene-2'"),
+            )
+            assertEquals(0L, queryLong(db, "SELECT isPinned FROM roleplay_scenarios WHERE id = 'scene-2'"))
+            assertEquals(0L, queryLong(db, "SELECT isMuted FROM roleplay_scenarios WHERE id = 'scene-2'"))
             assertTrue(hasColumn(db, "roleplay_scenarios", "longformModeEnabled"))
         }
     }

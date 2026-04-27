@@ -1,5 +1,6 @@
 package com.example.myapplication.ui.component.roleplay
 
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.BoxWithConstraints
@@ -36,7 +37,7 @@ internal fun OnlinePhoneNarrationBubble(
     backdropState: ImmersiveBackdropState,
     lineHeightScale: Float,
 ) {
-    val shape = RoundedCornerShape(20.dp)
+    val shape = RoundedCornerShape(22.dp)
     Row(
         modifier = Modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.Center,
@@ -45,12 +46,11 @@ internal fun OnlinePhoneNarrationBubble(
         backdropState = backdropState,
         modifier = Modifier.fillMaxWidth(0.96f),
         shape = shape,
-        blurRadius = 18.dp,
-        overlayColor = colors.panelBackground.copy(alpha = 0.42f),
+        overlayColor = colors.narrationBubbleBackground,
     ) {
             Column(
-                modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp),
-                verticalArrangement = Arrangement.spacedBy(8.dp),
+                modifier = Modifier.padding(horizontal = 18.dp, vertical = 14.dp),
+                verticalArrangement = Arrangement.spacedBy(10.dp),
             ) {
                 val paragraphs = remember(message.content) { message.content.toLongformParagraphs() }
                 paragraphs.forEach { paragraph ->
@@ -65,6 +65,7 @@ internal fun OnlinePhoneNarrationBubble(
                             fontStyle = FontStyle.Italic,
                             lineHeight = 24.sp * lineHeightScale,
                             letterSpacing = 0.5.sp,
+                            shadow = GlassTextShadow,
                         ),
                         color = colors.textMuted.copy(alpha = 0.92f),
                     )
@@ -99,8 +100,7 @@ internal fun OnlinePhoneThoughtBubble(
                 .wrapContentWidth()
                 .clickable { expanded = !expanded },
             shape = RoundedCornerShape(999.dp),
-            blurRadius = 14.dp,
-            overlayColor = colors.panelBackground.copy(alpha = if (expanded) 0.34f else 0.24f),
+            overlayColor = colors.narrationBubbleBackground,
         ) {
             Row(
                 modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
@@ -128,13 +128,12 @@ internal fun OnlinePhoneThoughtBubble(
                 ImmersiveGlassSurface(
                     backdropState = backdropState,
                     modifier = Modifier.widthIn(max = maxWidth * 0.76f),
-                    shape = RoundedCornerShape(18.dp),
-                    blurRadius = 16.dp,
-                    overlayColor = colors.panelBackground.copy(alpha = 0.24f),
+                    shape = RoundedCornerShape(22.dp),
+                    overlayColor = colors.narrationBubbleBackground,
                 ) {
                     Column(
-                        modifier = Modifier.padding(horizontal = 14.dp, vertical = 10.dp),
-                        verticalArrangement = Arrangement.spacedBy(8.dp),
+                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp),
+                        verticalArrangement = Arrangement.spacedBy(10.dp),
                     ) {
                         val paragraphs = remember(message.content) { message.content.toLongformParagraphs() }
                         paragraphs.forEach { paragraph ->
@@ -149,6 +148,7 @@ internal fun OnlinePhoneThoughtBubble(
                                     fontStyle = FontStyle.Italic,
                                     lineHeight = 22.sp * lineHeightScale,
                                     letterSpacing = 0.4.sp,
+                                    shadow = GlassTextShadow,
                                 ),
                                 color = colors.thoughtText,
                             )

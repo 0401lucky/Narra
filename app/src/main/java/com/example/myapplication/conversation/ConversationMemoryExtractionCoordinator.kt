@@ -26,6 +26,9 @@ class ConversationMemoryExtractionCoordinator(
         if (!assistant.memoryEnabled) {
             return false
         }
+        if (recentMessageWindow <= 0) {
+            return false
+        }
         val activeProvider = settings.activeProvider() ?: return false
         val memoryModel = activeProvider.resolveFunctionModel(ProviderFunction.MEMORY)
         if (memoryModel.isBlank()) {
@@ -37,6 +40,7 @@ class ConversationMemoryExtractionCoordinator(
             return false
         }
         val latestMessageId = recentMessages.lastOrNull()?.id.orEmpty()
+        val existingMemoriesForPrompt = collectExistingChatMemories(assistant)
         val memoryItems = aiPromptExtrasService.generateMemoryEntries(
             conversationExcerpt = memoryInput,
             baseUrl = activeProvider.baseUrl,
@@ -44,6 +48,10 @@ class ConversationMemoryExtractionCoordinator(
             modelId = memoryModel,
             apiProtocol = activeProvider.resolvedApiProtocol(),
             provider = activeProvider,
+            existingMemories = existingMemoriesForPrompt,
+            userName = settings.resolvedUserDisplayName(),
+            characterName = assistant.name.trim().ifBlank { "角色" },
+            extractionPromptOverride = settings.memoryExtractionPrompt,
         )
         if (memoryItems.isEmpty()) {
             return false
@@ -57,6 +65,7 @@ class ConversationMemoryExtractionCoordinator(
             modelId = memoryModel,
             apiProtocol = activeProvider.resolvedApiProtocol(),
         )
+        memoryRepository.pruneToCapacity(settings.memoryCapacity)
         return true
     }
 
@@ -72,6 +81,9 @@ class ConversationMemoryExtractionCoordinator(
         if (!assistant.memoryEnabled) {
             return false
         }
+        if (recentMessageWindow <= 0) {
+            return false
+        }
         val activeProvider = settings.activeProvider() ?: return false
         val memoryModel = activeProvider.resolveFunctionModel(ProviderFunction.MEMORY)
         if (memoryModel.isBlank()) {
@@ -83,6 +95,10 @@ class ConversationMemoryExtractionCoordinator(
             return false
         }
         val latestMessageId = recentMessages.lastOrNull()?.id.orEmpty()
+        val existingMemoriesForPrompt = collectExistingRoleplayMemories(
+            conversationId = conversationId,
+            assistant = assistant,
+        )
         val memoryResult = aiPromptExtrasService.generateRoleplayMemoryEntries(
             conversationExcerpt = memoryInput,
             baseUrl = activeProvider.baseUrl,
@@ -90,6 +106,7 @@ class ConversationMemoryExtractionCoordinator(
             modelId = memoryModel,
             apiProtocol = activeProvider.resolvedApiProtocol(),
             provider = activeProvider,
+            existingMemories = existingMemoriesForPrompt,
         )
         if (memoryResult.persistentMemories.isEmpty() && memoryResult.sceneStateMemories.isEmpty() && memoryResult.mentalStateSnapshot.isBlank()) {
             return false
@@ -114,6 +131,7 @@ class ConversationMemoryExtractionCoordinator(
                 latestMessageId = latestMessageId,
             )
         }
+        memoryRepository.pruneToCapacity(settings.memoryCapacity)
         return true
     }
 
@@ -357,6 +375,53 @@ class ConversationMemoryExtractionCoordinator(
             .removePrefix("-")
             .removePrefix("•")
             .trim()
+    }
+
+    /**
+     * 提取当前 assistant 已存的长期记忆作为"已知信息"——用于让记忆提取 prompt 做去重，
+     * 对齐 Tavo 提取行为。
+     */
+    private suspend fun collectExistingChatMemories(assistant: Assistant): List<String> {
+        val scopeType = if (assistant.useGlobalMemory) {
+            MemoryScopeType.GLOBAL
+        } else {
+            MemoryScopeType.ASSISTANT
+        }
+        val scopeId = if (assistant.useGlobalMemory) "" else assistant.id.trim()
+        return memoryRepository.listEntries()
+            .asSequence()
+            .filter { entry -> entry.scopeType == scopeType && entry.resolvedScopeId() == scopeId }
+            .map { it.content }
+            .map(::normalizeMemoryContent)
+            .filter { it.isNotBlank() }
+            .distinct()
+            .toList()
+    }
+
+    /**
+     * 同上，针对沉浸剧情：覆盖 ASSISTANT/GLOBAL（人物记忆）+ CONVERSATION（场景记忆）+ 心境快照。
+     */
+    private suspend fun collectExistingRoleplayMemories(
+        conversationId: String,
+        assistant: Assistant,
+    ): List<String> {
+        val longScopeType = if (assistant.useGlobalMemory) {
+            MemoryScopeType.GLOBAL
+        } else {
+            MemoryScopeType.ASSISTANT
+        }
+        val longScopeId = if (assistant.useGlobalMemory) "" else assistant.id.trim()
+        return memoryRepository.listEntries()
+            .asSequence()
+            .filter { entry ->
+                (entry.scopeType == longScopeType && entry.resolvedScopeId() == longScopeId) ||
+                    (entry.scopeType == MemoryScopeType.CONVERSATION && entry.resolvedScopeId() == conversationId)
+            }
+            .map { it.content }
+            .map(::normalizeMemoryContent)
+            .filter { it.isNotBlank() }
+            .distinct()
+            .toList()
     }
 
     /**

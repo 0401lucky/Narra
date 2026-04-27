@@ -14,7 +14,11 @@ import com.example.myapplication.model.ChatMessage
 import com.example.myapplication.model.ConversationSummary
 import com.example.myapplication.model.Conversation
 import com.example.myapplication.model.ContextGovernanceItem
+import com.example.myapplication.model.ContextLogSection
+import com.example.myapplication.model.ContextLogSourceType
 import com.example.myapplication.model.MemoryEntry
+import com.example.myapplication.model.MemoryInjectionPosition
+import com.example.myapplication.model.MemoryPromptDefaults
 import com.example.myapplication.model.PhoneSnapshotOwnerType
 import com.example.myapplication.model.PromptMode
 import com.example.myapplication.model.WorldBookEntry
@@ -29,6 +33,7 @@ data class PromptContextResult(
     val summaryPreview: String = "",
     val worldBookItems: List<ContextGovernanceItem> = emptyList(),
     val memoryItems: List<ContextGovernanceItem> = emptyList(),
+    val contextSections: List<ContextLogSection> = emptyList(),
 )
 
 interface PromptContextAssembler {
@@ -110,6 +115,13 @@ class DefaultPromptContextAssembler(
             entryIds = selectedMemories.map { it.id },
             timestamp = System.currentTimeMillis(),
         )
+        val memorySection = formatMemorySection(
+            entries = selectedMemories,
+            promptMode = promptMode,
+            injectionPromptOverride = settings.memoryInjectionPrompt,
+            userName = resolvedUserName,
+            characterName = resolvedCharacterName,
+        )
         val sections = buildList {
             assistant?.systemPrompt
                 ?.trim()
@@ -123,6 +135,9 @@ class DefaultPromptContextAssembler(
                         ),
                     )
                 }
+            if (settings.memoryInjectionPosition == MemoryInjectionPosition.BEFORE_PROMPT) {
+                memorySection?.let(::add)
+            }
 
             formatAssistantRoleSection(
                 assistant = assistant,
@@ -176,23 +191,35 @@ class DefaultPromptContextAssembler(
             )
                 ?.let(::add)
 
-            formatWorldBookSection(matchedWorldBookEntries)
-                ?.let(::add)
+            addAll(formatWorldBookSections(matchedWorldBookEntries))
 
-            formatMemorySection(
-                entries = selectedMemories,
-                promptMode = promptMode,
-            )
-                ?.let(::add)
+            if (settings.memoryInjectionPosition == MemoryInjectionPosition.AFTER_WORLD_BOOK) {
+                memorySection?.let(::add)
+            }
 
             formatPhoneSnapshotSection(phoneSnapshotItems)
                 ?.let(::add)
 
             formatPhoneObservationSection(phoneObservation.takeIf { shouldIncludePhoneObservation })
                 ?.let(::add)
+
+            if (settings.memoryInjectionPosition == MemoryInjectionPosition.AT_END) {
+                memorySection?.let(::add)
+            }
         }
 
         val systemPrompt = sections.joinToString(separator = "\n\n").trim()
+        val contextSections = buildContextLogSections(
+            settings = settings,
+            assistant = assistant,
+            promptMode = promptMode,
+            recentMessages = recentMessages,
+            matchedWorldBookEntries = matchedWorldBookEntries,
+            selectedMemories = selectedMemories,
+            conversationSummary = conversationSummary,
+            phoneSnapshotItems = phoneSnapshotItems,
+            phoneObservation = phoneObservation.takeIf { shouldIncludePhoneObservation },
+        )
         return PromptContextResult(
             systemPrompt = systemPrompt,
             debugDump = buildDebugDump(
@@ -225,6 +252,7 @@ class DefaultPromptContextAssembler(
                     content = limitEntryContent(entry.content).ifBlank { "（无内容）" },
                 )
             },
+            contextSections = contextSections,
         )
     }
 
@@ -242,7 +270,7 @@ class DefaultPromptContextAssembler(
         return buildString {
             append("【开场白参考】\n")
             append(
-                limitEntryContent(
+                normalizePromptContent(
                     ContextPlaceholderResolver.resolve(
                         text = greetingText,
                         userName = userName,
@@ -278,7 +306,7 @@ class DefaultPromptContextAssembler(
                     },
                 )
                 append(
-                    limitEntryContent(
+                    normalizePromptContent(
                         ContextPlaceholderResolver.resolve(
                             text = roleDescription,
                             userName = userName,
@@ -294,7 +322,7 @@ class DefaultPromptContextAssembler(
                 append("【创作者导演说明】\n")
                 append("以下内容仅供你在内部把握角色与剧情节奏时遵循，不要直接复述给用户。\n")
                 append(
-                    limitEntryContent(
+                    normalizePromptContent(
                         ContextPlaceholderResolver.resolve(
                             text = creatorNotes,
                             userName = userName,
@@ -329,7 +357,7 @@ class DefaultPromptContextAssembler(
                 append("\n示例 ")
                 append(index + 1)
                 append("：\n")
-                append(limitEntryContent(dialogue))
+                append(normalizePromptContent(dialogue))
             }
         }
     }
@@ -349,7 +377,7 @@ class DefaultPromptContextAssembler(
         return buildString {
             append("【对话者设定】\n")
             append(
-                limitEntryContent(
+                normalizePromptContent(
                     ContextPlaceholderResolver.resolve(
                         text = normalizedPrompt,
                         userName = userName,
@@ -360,19 +388,18 @@ class DefaultPromptContextAssembler(
         }
     }
 
-    private fun formatWorldBookSection(
+    private fun formatWorldBookSections(
         entries: List<WorldBookEntry>,
-    ): String? {
+    ): List<String> {
         if (entries.isEmpty()) {
-            return null
+            return emptyList()
         }
-        return buildString {
-            append("【背景设定（世界书）】")
-            entries.forEach { entry ->
-                append("\n- ")
+        return entries.map { entry ->
+            buildString {
+                append("【世界书 · ")
                 append(entry.title.ifBlank { "未命名条目" })
-                append("：")
-                append(limitEntryContent(entry.content))
+                append("】\n")
+                append(normalizePromptContent(entry.content))
             }
         }
     }
@@ -457,6 +484,9 @@ class DefaultPromptContextAssembler(
     private fun formatMemorySection(
         entries: List<MemoryEntry>,
         promptMode: PromptMode,
+        injectionPromptOverride: String = "",
+        userName: String = "用户",
+        characterName: String = "角色",
     ): String? {
         if (entries.isEmpty()) {
             return null
@@ -482,7 +512,7 @@ class DefaultPromptContextAssembler(
                     append("回复时必须保持一致，不要与其冲突。\n")
                     longTermEntries.forEach { entry ->
                         append("- ")
-                        append(limitEntryContent(entry.content))
+                        append(normalizePromptContent(entry.content))
                         append('\n')
                     }
                 }
@@ -495,7 +525,7 @@ class DefaultPromptContextAssembler(
                     append("本轮回复必须延续这些信息，不要忽略或自相矛盾。\n")
                     sceneEntries.forEach { entry ->
                         append("- ")
-                        append(limitEntryContent(entry.content))
+                        append(normalizePromptContent(entry.content))
                         append('\n')
                     }
                 }
@@ -507,21 +537,40 @@ class DefaultPromptContextAssembler(
                     append("以下是角色此刻的内在状态，用于指导回复的情绪基调和态度方向，而不是直接说出来。\n")
                     mentalStateEntries.forEach { entry ->
                         append("- ")
-                        append(limitEntryContent(entry.content.removePrefix("【心境】").trim()))
+                        append(normalizePromptContent(entry.content.removePrefix("【心境】").trim()))
                         append('\n')
                     }
                 }
             }.trim()
                 .takeIf { it.isNotBlank() }
         }
-        return buildString {
-            append("【已知信息（记忆）】\n")
-            append("以下信息是当前对话已经确认的稳定事实、偏好或约束，回答时不要与之冲突。")
-            entries.forEach { entry ->
-                append("\n- ")
-                append(limitEntryContent(entry.content))
+        val templateRaw = injectionPromptOverride.trim()
+        val template = templateRaw.ifEmpty { MemoryPromptDefaults.INJECTION_PROMPT_TEMPLATE }
+        val memoriesBlock = buildString {
+            entries.forEachIndexed { index, entry ->
+                append("- ")
+                append(normalizePromptContent(entry.content))
+                if (index != entries.lastIndex) {
+                    append('\n')
+                }
             }
         }
+        val containsMemoriesToken = MEMORIES_PLACEHOLDER_REGEX.containsMatchIn(template)
+        var rendered = template.replace(MEMORIES_PLACEHOLDER_REGEX, memoriesBlock)
+        rendered = ContextPlaceholderResolver.resolve(
+            text = rendered,
+            userName = userName,
+            characterName = characterName,
+        )
+        // 用户模板未声明 memories 占位符时尾部自动追加，避免没把记忆条目喂给模型。
+        if (!containsMemoriesToken) {
+            rendered = buildString {
+                append(rendered.trimEnd())
+                append('\n')
+                append(memoriesBlock)
+            }
+        }
+        return rendered.trim().takeIf { it.isNotBlank() }
     }
 
     private fun formatPhoneSnapshotSection(
@@ -535,7 +584,7 @@ class DefaultPromptContextAssembler(
             append("以下内容来自当前会话里已经固定下来的手机快照，仅在与本轮话题相关时参考，不要与其冲突。\n")
             items.forEach { item ->
                 append("- ")
-                append(limitEntryContent(item))
+                append(normalizePromptContent(item))
                 append('\n')
             }
         }.trim()
@@ -554,7 +603,7 @@ class DefaultPromptContextAssembler(
                 append("\n关键发现：\n")
                 observation.keyFindings.forEach { finding ->
                     append("- ")
-                    append(limitEntryContent(finding))
+                    append(normalizePromptContent(finding))
                     append('\n')
                 }
             }
@@ -602,6 +651,198 @@ class DefaultPromptContextAssembler(
         return "记忆 · ${entry.scopeType.label}"
     }
 
+    private fun buildContextLogSections(
+        settings: AppSettings,
+        assistant: Assistant?,
+        promptMode: PromptMode,
+        recentMessages: List<ChatMessage>,
+        matchedWorldBookEntries: List<WorldBookEntry>,
+        selectedMemories: List<MemoryEntry>,
+        conversationSummary: ConversationSummary?,
+        phoneSnapshotItems: List<String>,
+        phoneObservation: com.example.myapplication.model.PhoneObservationState?,
+    ): List<ContextLogSection> {
+        val userName = settings.resolvedUserDisplayName()
+        val characterName = assistant?.name?.trim().orEmpty().ifBlank { "角色" }
+        val sections = mutableListOf<ContextLogSection>()
+
+        val memoryLogSection = formatMemorySection(
+            entries = selectedMemories,
+            promptMode = promptMode,
+            injectionPromptOverride = settings.memoryInjectionPrompt,
+            userName = userName,
+            characterName = characterName,
+        )?.let { memoryPrompt ->
+            ContextLogSection(
+                sourceType = ContextLogSourceType.LONG_MEMORY,
+                title = if (promptMode == PromptMode.ROLEPLAY) "长记忆提示词" else "记忆提示词",
+                content = memoryPrompt,
+            )
+        }
+
+        assistant?.systemPrompt
+            ?.trim()
+            ?.takeIf { it.isNotEmpty() }
+            ?.let { prompt ->
+                sections += ContextLogSection(
+                    sourceType = ContextLogSourceType.SYSTEM_RULE,
+                    title = "系统规则",
+                    content = normalizePromptContent(
+                        ContextPlaceholderResolver.resolve(
+                            text = prompt,
+                            userName = userName,
+                            characterName = characterName,
+                        ),
+                    ),
+                )
+            }
+
+        if (settings.memoryInjectionPosition == MemoryInjectionPosition.BEFORE_PROMPT) {
+            memoryLogSection?.let(sections::add)
+        }
+
+        formatAssistantRoleSection(
+            assistant = assistant,
+            promptMode = promptMode,
+            userName = userName,
+            characterName = characterName,
+        )?.let { roleCard ->
+            sections += ContextLogSection(
+                sourceType = ContextLogSourceType.ROLE_CARD,
+                title = if (promptMode == PromptMode.ROLEPLAY) "角色卡" else "助手设定",
+                content = roleCard,
+            )
+        }
+
+        formatUserPersonaSection(
+            userPersonaPrompt = settings.userPersonaPrompt,
+            promptMode = promptMode,
+            userName = userName,
+            characterName = characterName,
+        )?.let { userPersona ->
+            sections += ContextLogSection(
+                sourceType = ContextLogSourceType.USER_PERSONA,
+                title = "用户身份",
+                content = userPersona,
+            )
+        }
+
+        assistant?.scenario
+            ?.trim()
+            ?.takeIf { it.isNotEmpty() }
+            ?.let { scenario ->
+                sections += ContextLogSection(
+                    sourceType = ContextLogSourceType.ROLE_EXTRAS,
+                    title = "场景设定",
+                    content = buildString {
+                        append("【场景设定】\n")
+                        append(
+                            ContextPlaceholderResolver.resolve(
+                                text = scenario,
+                                userName = userName,
+                                characterName = characterName,
+                            ),
+                        )
+                    },
+                )
+            }
+
+        formatGreetingSection(
+            greeting = assistant?.greeting,
+            userName = userName,
+            characterName = characterName,
+        )?.let { greeting ->
+            sections += ContextLogSection(
+                sourceType = ContextLogSourceType.ROLE_EXTRAS,
+                title = "开场白参考",
+                content = greeting,
+            )
+        }
+
+        formatExampleDialoguesSection(
+            dialogues = assistant?.exampleDialogues.orEmpty(),
+            userName = userName,
+            characterName = characterName,
+        )?.let { exampleDialogues ->
+            sections += ContextLogSection(
+                sourceType = ContextLogSourceType.ROLE_EXTRAS,
+                title = "示例对话",
+                content = exampleDialogues,
+            )
+        }
+
+        formatSummarySection(
+            conversationSummary = conversationSummary,
+            promptMode = promptMode,
+        )?.let { summary ->
+            sections += ContextLogSection(
+                sourceType = ContextLogSourceType.SUMMARY,
+                title = if (promptMode == PromptMode.ROLEPLAY) "剧情摘要" else "对话摘要",
+                content = summary,
+            )
+        }
+
+        matchedWorldBookEntries.forEach { entry ->
+            sections += ContextLogSection(
+                sourceType = ContextLogSourceType.WORLD_BOOK,
+                title = entry.title.ifBlank { "未命名世界书条目" },
+                content = normalizePromptContent(entry.content),
+            )
+        }
+
+        if (settings.memoryInjectionPosition == MemoryInjectionPosition.AFTER_WORLD_BOOK) {
+            memoryLogSection?.let(sections::add)
+        }
+
+        formatPhoneSnapshotSection(phoneSnapshotItems)?.let { phoneSnapshot ->
+            sections += ContextLogSection(
+                sourceType = ContextLogSourceType.PHONE_CONTEXT,
+                title = "手机快照",
+                content = phoneSnapshot,
+            )
+        }
+
+        formatPhoneObservationSection(phoneObservation)?.let { observationSection ->
+            sections += ContextLogSection(
+                sourceType = ContextLogSourceType.PHONE_CONTEXT,
+                title = "最近手机查看事件",
+                content = observationSection,
+            )
+        }
+
+        if (settings.memoryInjectionPosition == MemoryInjectionPosition.AT_END) {
+            memoryLogSection?.let(sections::add)
+        }
+
+        sections += buildChatHistorySections(recentMessages)
+        return sections.filter { it.content.isNotBlank() }
+    }
+
+    private fun buildChatHistorySections(
+        recentMessages: List<ChatMessage>,
+    ): List<ContextLogSection> {
+        return recentMessages.mapNotNull { message ->
+            val messageText = message.parts.toPlainText()
+                .ifBlank { message.content }
+                .trim()
+            if (messageText.isBlank()) {
+                return@mapNotNull null
+            }
+            ContextLogSection(
+                sourceType = ContextLogSourceType.CHAT_HISTORY,
+                title = when (message.role) {
+                    com.example.myapplication.model.MessageRole.USER -> "聊天历史 · 用户"
+                    com.example.myapplication.model.MessageRole.ASSISTANT -> "聊天历史 · 角色"
+                },
+                content = messageText,
+            )
+        }
+    }
+
+    private fun normalizePromptContent(content: String): String {
+        return content.trim()
+    }
+
     private fun limitEntryContent(content: String): String {
         val normalizedContent = content.trim()
         return if (normalizedContent.length <= 600) {
@@ -609,5 +850,10 @@ class DefaultPromptContextAssembler(
         } else {
             normalizedContent.take(600) + "…"
         }
+    }
+
+    companion object {
+        private val MEMORIES_PLACEHOLDER_REGEX =
+            Regex("""\{\{\s*memories\s*\}\}""", RegexOption.IGNORE_CASE)
     }
 }

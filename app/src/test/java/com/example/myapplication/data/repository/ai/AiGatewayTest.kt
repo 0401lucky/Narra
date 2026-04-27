@@ -1600,6 +1600,73 @@ class AiGatewayTest {
     }
 
     @Test
+    fun editImage_fallsBackToMultipartForCustomProviderAfterJsonFailure() = runBlocking {
+        server.enqueue(MockResponse().setResponseCode(500).setBody("""{"error":"json edits unsupported"}"""))
+        server.enqueue(
+            MockResponse().setResponseCode(200).setBody(
+                """
+                {
+                  "data": [
+                    {
+                      "b64_json": "edited456",
+                      "url": "https://cdn.example.com/edited-multipart.png",
+                      "revised_prompt": "multipart 改图成功"
+                    }
+                  ]
+                }
+                """.trimIndent(),
+            ),
+        )
+        val provider = ProviderSettings(
+            id = "provider-newapi-edit",
+            name = "newapi",
+            baseUrl = server.url("/v1/").toString(),
+            apiKey = "img-key",
+            selectedModel = "gpt-image-1",
+        )
+        val gateway = createGateway(
+            settings = AppSettings(
+                providers = listOf(provider),
+                selectedProviderId = provider.id,
+            ),
+            imagePayloadResolver = {
+                "data:image/png;base64,ZmFrZQ=="
+            },
+        )
+
+        val results = gateway.editImage(
+            prompt = "把这张图改成复古海报",
+            images = listOf(
+                MessageAttachment(
+                    type = AttachmentType.IMAGE,
+                    uri = "content://image/1",
+                    mimeType = "image/png",
+                    fileName = "ref.png",
+                ),
+            ),
+        )
+
+        assertEquals(1, results.size)
+        assertEquals("edited456", results.first().b64Data)
+        assertEquals("https://cdn.example.com/edited-multipart.png", results.first().url)
+        assertEquals("multipart 改图成功", results.first().revisedPrompt)
+
+        val jsonRequest = server.takeRequest()
+        assertEquals("/v1/images/edits", jsonRequest.path)
+        assertEquals("application/json; charset=UTF-8", jsonRequest.getHeader("Content-Type"))
+
+        val multipartRequest = server.takeRequest()
+        assertEquals("/v1/images/edits", multipartRequest.path)
+        assertTrue(multipartRequest.getHeader("Content-Type").orEmpty().startsWith("multipart/form-data; boundary="))
+        val multipartBody = multipartRequest.body.readUtf8()
+        assertTrue(multipartBody.contains("name=\"model\""))
+        assertTrue(multipartBody.contains("gpt-image-1"))
+        assertTrue(multipartBody.contains("name=\"prompt\""))
+        assertTrue(multipartBody.contains("把这张图改成复古海报"))
+        assertTrue(multipartBody.contains("name=\"image\"; filename=\"ref.png\""))
+    }
+
+    @Test
     fun parseAssistantSpecialOutput_extractsPlayAndUpdateTags() {
         val gateway = createGateway(settings = AppSettings())
 

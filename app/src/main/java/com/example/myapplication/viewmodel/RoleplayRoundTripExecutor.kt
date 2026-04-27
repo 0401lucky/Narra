@@ -66,6 +66,7 @@ internal class RoleplayRoundTripExecutor(
     private val launchGiftImageGeneration: (GiftImageGenerationRequest, (List<ChatMessage>) -> Unit) -> Unit,
     private val launchConversationSummaryGeneration: (String, List<ChatMessage>, com.example.myapplication.model.AppSettings, Assistant?, com.example.myapplication.model.RoleplayScenario) -> Unit,
     private val launchAutomaticMemoryExtraction: (String, List<ChatMessage>, com.example.myapplication.model.AppSettings, Assistant?, com.example.myapplication.model.RoleplayScenario) -> Unit,
+    private val contextLogStore: com.example.myapplication.data.repository.context.ContextLogStore,
 ) {
     suspend fun execute(
         state: RoleplayUiState,
@@ -204,27 +205,29 @@ internal class RoleplayRoundTripExecutor(
                 }
             }
             updateUiState { current ->
+                val contextSnapshot = ContextGovernanceSupport.buildSnapshot(
+                    settings = state.settings,
+                    assistant = assistant,
+                    promptMode = PromptMode.ROLEPLAY,
+                    selectedModel = selectedModel,
+                    requestMessages = requestMessages,
+                    effectiveRequestMessages = requestMessagesForModel,
+                    promptContext = promptContext,
+                    completedMessageCount = requestMessages.count { it.status == MessageStatus.COMPLETED },
+                    triggerMessageCount = SUMMARY_TRIGGER_MESSAGE_COUNT,
+                    recentWindow = resolveSummaryRecentWindow(assistant),
+                    minCoveredMessageCount = SUMMARY_MIN_COVERED_MESSAGE_COUNT,
+                    toolingOptions = toolingOptions,
+                    rawDebugDump = debugDump,
+                )
+                contextLogStore.push(contextSnapshot)
                 RoleplayStateSupport.applyPromptContext(
                     current = current,
                     summaryCoveredMessageCount = promptContext.summaryCoveredMessageCount,
                     worldBookHitCount = promptContext.worldBookHitCount,
                     memoryInjectionCount = promptContext.memoryInjectionCount,
                     debugDump = debugDump,
-                    contextGovernance = ContextGovernanceSupport.buildSnapshot(
-                        settings = state.settings,
-                        assistant = assistant,
-                        promptMode = PromptMode.ROLEPLAY,
-                        selectedModel = selectedModel,
-                        requestMessages = requestMessages,
-                        effectiveRequestMessages = requestMessagesForModel,
-                        promptContext = promptContext,
-                        completedMessageCount = requestMessages.count { it.status == MessageStatus.COMPLETED },
-                        triggerMessageCount = SUMMARY_TRIGGER_MESSAGE_COUNT,
-                        recentWindow = resolveSummaryRecentWindow(assistant),
-                        minCoveredMessageCount = SUMMARY_MIN_COVERED_MESSAGE_COUNT,
-                        toolingOptions = toolingOptions,
-                        rawDebugDump = debugDump,
-                    ),
+                    contextGovernance = contextSnapshot,
                 )
             }
             val fullContent = StringBuilder()
@@ -353,13 +356,18 @@ internal class RoleplayRoundTripExecutor(
                         assistant,
                         scenario,
                     )
-                    launchAutomaticMemoryExtraction(
-                        session.conversationId,
-                        postDirectiveMessages,
-                        state.settings,
-                        assistant,
-                        scenario,
-                    )
+                    val completedCount = postDirectiveMessages.count { it.status == MessageStatus.COMPLETED }
+                    val memoryWindow = state.settings.memoryAutoSummaryEvery
+                    // Tavo 语义：每 N 条 completed 消息触发一次记忆提取，而不是每条都触发
+                    if (memoryWindow > 0 && completedCount > 0 && completedCount % memoryWindow == 0) {
+                        launchAutomaticMemoryExtraction(
+                            session.conversationId,
+                            postDirectiveMessages,
+                            state.settings,
+                            assistant,
+                            scenario,
+                        )
+                    }
                 }
 
                 is AssistantRoundTripResult.Cancelled -> {

@@ -3,6 +3,7 @@ package com.example.myapplication.data.repository.ai
 import com.example.myapplication.data.local.SettingsStore
 import com.example.myapplication.data.remote.ApiServiceFactory
 import com.example.myapplication.model.Assistant
+import com.example.myapplication.model.MemoryInjectionPosition
 import com.example.myapplication.model.ScreenTranslationSettings
 import com.example.myapplication.model.SearchSettings
 import com.example.myapplication.model.ThemeMode
@@ -54,6 +55,14 @@ interface AiSettingsEditor {
     )
 
     suspend fun saveRoleplayAssistantMismatchDialogPreference(suppressed: Boolean)
+
+    suspend fun saveMemorySettings(autoSummaryEvery: Int, capacity: Int)
+
+    suspend fun saveMemoryPromptSettings(extractionPrompt: String, injectionPrompt: String)
+
+    suspend fun saveMemoryInjectionPosition(position: MemoryInjectionPosition)
+
+    suspend fun saveContextLogSettings(enabled: Boolean, capacity: Int)
 }
 
 class DefaultAiSettingsEditor(
@@ -160,5 +169,21 @@ class DefaultAiSettingsEditor(
 
     override suspend fun saveRoleplayAssistantMismatchDialogPreference(suppressed: Boolean) {
         settingsStore.saveRoleplayAssistantMismatchDialogPreference(suppressed)
+    }
+
+    override suspend fun saveMemorySettings(autoSummaryEvery: Int, capacity: Int) {
+        settingsStore.saveMemorySettings(autoSummaryEvery, capacity)
+    }
+
+    override suspend fun saveMemoryPromptSettings(extractionPrompt: String, injectionPrompt: String) {
+        settingsStore.saveMemoryPromptSettings(extractionPrompt, injectionPrompt)
+    }
+
+    override suspend fun saveMemoryInjectionPosition(position: MemoryInjectionPosition) {
+        settingsStore.saveMemoryInjectionPosition(position)
+    }
+
+    override suspend fun saveContextLogSettings(enabled: Boolean, capacity: Int) {
+        settingsStore.saveContextLogSettings(enabled, capacity)
     }
 }

@@ -12,6 +12,7 @@ data class RoleplayScenarioEntity(
     @PrimaryKey val id: String,
     val title: String,
     val description: String,
+    val descriptionPromptEnabled: Boolean = false,
     val assistantId: String,
     val backgroundUri: String,
     val userDisplayNameOverride: String,
@@ -30,6 +31,8 @@ data class RoleplayScenarioEntity(
     val enableDeepImmersion: Boolean = false,
     val enableTimeAwareness: Boolean = true,
     val enableNetMeme: Boolean = false,
+    val isPinned: Boolean = false,
+    val isMuted: Boolean = false,
     val createdAt: Long,
     val updatedAt: Long,
 )

@@ -1,7 +1,9 @@
 package com.example.myapplication.ui.navigation
 
+import android.net.Uri
 import androidx.compose.runtime.getValue
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavGraphBuilder
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.composable
@@ -12,8 +14,10 @@ import com.example.myapplication.ui.screen.settings.AssistantExtensionsScreen
 import com.example.myapplication.ui.screen.settings.AssistantListScreen
 import com.example.myapplication.ui.screen.settings.AssistantMemoryScreen
 import com.example.myapplication.ui.screen.settings.AssistantPromptScreen
+import com.example.myapplication.ui.screen.settings.memory.SimpleMemoryEditorScreen
 import com.example.myapplication.ui.screen.settings.worldbook.buildWorldBookBooks
 import com.example.myapplication.viewmodel.SettingsViewModel
+import com.example.myapplication.viewmodel.SimpleMemoryEditorViewModel
 
 // 助手列表、详情、基本信息、提示词、扩展、记忆
 
@@ -188,6 +192,35 @@ internal fun NavGraphBuilder.registerSettingsAssistantRoutes(
             onTogglePinned = memoryManagementViewModel::togglePinned,
             onOpenGlobalMemorySettings = {
                 navController.navigate(AppRoutes.SETTINGS_MEMORY) {
+                    launchSingleTop = true
+                }
+            },
+            onNavigateBack = { navController.popBackStack() },
+        )
+    }
+
+    composable(AppRoutes.SETTINGS_ASSISTANT_MEMORY_SIMPLE) { backStackEntry ->
+        val storedSettings by settingsViewModel.storedSettings.collectAsStateWithLifecycle()
+        val assistantId = backStackEntry.arguments?.getString("assistantId").orEmpty()
+        val assistant = storedSettings.resolvedAssistants().firstOrNull { it.id == assistantId } ?: return@composable
+        val conversationId = backStackEntry.arguments
+            ?.getString("conversationId")
+            ?.let(Uri::decode)
+            ?.takeIf { it.isNotBlank() }
+        val simpleViewModel: SimpleMemoryEditorViewModel = viewModel(
+            key = "simple-memory-$assistantId-${conversationId.orEmpty()}",
+            factory = SimpleMemoryEditorViewModel.factory(
+                assistantId = assistantId,
+                conversationId = conversationId,
+                memoryRepository = appGraph.memoryRepository,
+                assistantsProvider = { settingsViewModel.storedSettings.value.resolvedAssistants() },
+            ),
+        )
+        SimpleMemoryEditorScreen(
+            viewModel = simpleViewModel,
+            assistantName = assistant.name,
+            onOpenAdvancedManagement = {
+                navController.navigate(AppRoutes.settingsAssistantMemory(assistantId)) {
                     launchSingleTop = true
                 }
             },

@@ -11,6 +11,67 @@ interface RoleplayDao {
     @Query("SELECT * FROM roleplay_scenarios ORDER BY updatedAt DESC, createdAt DESC")
     fun observeScenarios(): Flow<List<RoleplayScenarioEntity>>
 
+    @Query(
+        """
+        SELECT
+            s.id AS id,
+            s.title AS title,
+            s.description AS description,
+            s.descriptionPromptEnabled AS descriptionPromptEnabled,
+            s.assistantId AS assistantId,
+            s.backgroundUri AS backgroundUri,
+            s.userDisplayNameOverride AS userDisplayNameOverride,
+            s.userPersonaOverride AS userPersonaOverride,
+            s.userPortraitUri AS userPortraitUri,
+            s.userPortraitUrl AS userPortraitUrl,
+            s.characterDisplayNameOverride AS characterDisplayNameOverride,
+            s.characterPortraitUri AS characterPortraitUri,
+            s.characterPortraitUrl AS characterPortraitUrl,
+            s.openingNarration AS openingNarration,
+            s.interactionMode AS interactionMode,
+            s.enableNarration AS enableNarration,
+            s.enableRoleplayProtocol AS enableRoleplayProtocol,
+            s.longformModeEnabled AS longformModeEnabled,
+            s.autoHighlightSpeaker AS autoHighlightSpeaker,
+            s.enableDeepImmersion AS enableDeepImmersion,
+            s.enableTimeAwareness AS enableTimeAwareness,
+            s.enableNetMeme AS enableNetMeme,
+            s.isPinned AS isPinned,
+            s.isMuted AS isMuted,
+            s.createdAt AS createdAt,
+            s.updatedAt AS updatedAt,
+            rs.id AS sessionId,
+            rs.conversationId AS sessionConversationId,
+            rs.createdAt AS sessionCreatedAt,
+            rs.updatedAt AS sessionUpdatedAt,
+            lm.content AS lastMessageContent,
+            lm.createdAt AS lastMessageCreatedAt,
+            lm.role AS lastMessageRole
+        FROM roleplay_scenarios s
+        LEFT JOIN roleplay_sessions rs ON rs.scenarioId = s.id
+        LEFT JOIN messages lm ON lm.id = (
+            SELECT m.id
+            FROM messages m
+            WHERE m.conversationId = rs.conversationId
+                AND m.status = 'COMPLETED'
+                AND m.systemEventKind = 'none'
+                AND m.id NOT LIKE 'rp-opening-' || s.id || '-%'
+                AND (
+                    TRIM(m.content) != ''
+                    OR m.partsJson != '[]'
+                    OR m.attachmentsJson != '[]'
+                )
+            ORDER BY m.createdAt DESC
+            LIMIT 1
+        )
+        ORDER BY
+            s.isPinned DESC,
+            COALESCE(lm.createdAt, rs.updatedAt, s.updatedAt, s.createdAt) DESC,
+            s.createdAt DESC
+        """,
+    )
+    fun observeChatSummaryRows(): Flow<List<RoleplayChatSummaryRow>>
+
     @Query("SELECT * FROM roleplay_scenarios WHERE id = :scenarioId LIMIT 1")
     fun observeScenario(scenarioId: String): Flow<RoleplayScenarioEntity?>
 

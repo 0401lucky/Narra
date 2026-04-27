@@ -2,6 +2,7 @@ package com.example.myapplication.data.repository.roleplay
 
 import com.example.myapplication.data.local.roleplay.RoleplayDao
 import com.example.myapplication.data.local.roleplay.RoleplayDiaryEntryEntity
+import com.example.myapplication.data.local.roleplay.RoleplayChatSummaryRow
 import com.example.myapplication.data.local.roleplay.RoleplayScenarioEntity
 import com.example.myapplication.data.local.roleplay.RoleplaySessionEntity
 import com.example.myapplication.data.repository.ConversationRepository
@@ -9,6 +10,7 @@ import com.example.myapplication.model.ChatMessage
 import com.example.myapplication.model.DEFAULT_ASSISTANT_ID
 import com.example.myapplication.model.MessageRole
 import com.example.myapplication.model.MessageStatus
+import com.example.myapplication.model.RoleplayChatSummary
 import com.example.myapplication.model.RoleplayDiaryDraft
 import com.example.myapplication.model.RoleplayDiaryEntry
 import com.example.myapplication.model.RoleplayInteractionMode
@@ -37,6 +39,8 @@ data class RoleplaySessionStartResult(
 
 interface RoleplayRepository {
     fun observeScenarios(): Flow<List<RoleplayScenario>>
+
+    fun observeChatSummaries(): Flow<List<RoleplayChatSummary>>
 
     fun observeScenario(scenarioId: String): Flow<RoleplayScenario?>
 
@@ -91,6 +95,12 @@ class RoomRoleplayRepository(
     override fun observeScenarios(): Flow<List<RoleplayScenario>> {
         return roleplayDao.observeScenarios().map { scenarios ->
             scenarios.map(::toScenarioDomain)
+        }
+    }
+
+    override fun observeChatSummaries(): Flow<List<RoleplayChatSummary>> {
+        return roleplayDao.observeChatSummaryRows().map { rows ->
+            rows.map(::toChatSummaryDomain)
         }
     }
 
@@ -368,6 +378,7 @@ class RoomRoleplayRepository(
             id = entity.id,
             title = entity.title,
             description = entity.description,
+            descriptionPromptEnabled = entity.descriptionPromptEnabled,
             assistantId = entity.assistantId,
             backgroundUri = entity.backgroundUri,
             userDisplayNameOverride = entity.userDisplayNameOverride,
@@ -386,8 +397,70 @@ class RoomRoleplayRepository(
             enableDeepImmersion = entity.enableDeepImmersion,
             enableTimeAwareness = entity.enableTimeAwareness,
             enableNetMeme = entity.enableNetMeme,
+            isPinned = entity.isPinned,
+            isMuted = entity.isMuted,
             createdAt = entity.createdAt,
             updatedAt = entity.updatedAt,
+        )
+    }
+
+    private fun toChatSummaryDomain(row: RoleplayChatSummaryRow): RoleplayChatSummary {
+        val scenario = toScenarioDomain(row.toScenarioEntity())
+        val session = row.sessionId?.let { sessionId ->
+            RoleplaySession(
+                id = sessionId,
+                scenarioId = row.id,
+                conversationId = row.sessionConversationId.orEmpty(),
+                createdAt = row.sessionCreatedAt ?: 0L,
+                updatedAt = row.sessionUpdatedAt ?: 0L,
+            )
+        }
+        val lastMessageAt = row.lastMessageCreatedAt ?: 0L
+        val lastActiveAt = maxOf(
+            lastMessageAt,
+            row.sessionUpdatedAt ?: 0L,
+            row.updatedAt,
+            row.createdAt,
+        )
+        return RoleplayChatSummary(
+            scenario = scenario,
+            session = session,
+            lastMessageText = row.lastMessageContent.orEmpty().trim(),
+            lastMessageAt = lastMessageAt,
+            lastActiveAt = lastActiveAt,
+            lastMessageRole = row.lastMessageRole
+                ?.let { runCatching { MessageRole.valueOf(it) }.getOrNull() },
+        )
+    }
+
+    private fun RoleplayChatSummaryRow.toScenarioEntity(): RoleplayScenarioEntity {
+        return RoleplayScenarioEntity(
+            id = id,
+            title = title,
+            description = description,
+            descriptionPromptEnabled = descriptionPromptEnabled,
+            assistantId = assistantId,
+            backgroundUri = backgroundUri,
+            userDisplayNameOverride = userDisplayNameOverride,
+            userPersonaOverride = userPersonaOverride,
+            userPortraitUri = userPortraitUri,
+            userPortraitUrl = userPortraitUrl,
+            characterDisplayNameOverride = characterDisplayNameOverride,
+            characterPortraitUri = characterPortraitUri,
+            characterPortraitUrl = characterPortraitUrl,
+            openingNarration = openingNarration,
+            interactionMode = interactionMode,
+            enableNarration = enableNarration,
+            enableRoleplayProtocol = enableRoleplayProtocol,
+            longformModeEnabled = longformModeEnabled,
+            autoHighlightSpeaker = autoHighlightSpeaker,
+            enableDeepImmersion = enableDeepImmersion,
+            enableTimeAwareness = enableTimeAwareness,
+            enableNetMeme = enableNetMeme,
+            isPinned = isPinned,
+            isMuted = isMuted,
+            createdAt = createdAt,
+            updatedAt = updatedAt,
         )
     }
 
@@ -396,6 +469,7 @@ class RoomRoleplayRepository(
             id = scenario.id,
             title = scenario.title.trim(),
             description = scenario.description.trim(),
+            descriptionPromptEnabled = scenario.descriptionPromptEnabled,
             assistantId = scenario.assistantId.trim().ifBlank { com.example.myapplication.model.DEFAULT_ASSISTANT_ID },
             backgroundUri = scenario.backgroundUri.trim(),
             userDisplayNameOverride = scenario.userDisplayNameOverride.trim(),
@@ -414,6 +488,8 @@ class RoomRoleplayRepository(
             enableDeepImmersion = scenario.enableDeepImmersion,
             enableTimeAwareness = scenario.enableTimeAwareness,
             enableNetMeme = scenario.enableNetMeme,
+            isPinned = scenario.isPinned,
+            isMuted = scenario.isMuted,
             createdAt = scenario.createdAt,
             updatedAt = scenario.updatedAt,
         )

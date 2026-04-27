@@ -1,15 +1,15 @@
 {
   "app_id": "com.narra.app.dev",
   "channel": "dev",
-  "latest_version_name": "1.5.9-dev",
-  "latest_version_code": 10509,
+  "latest_version_name": "1.6.0-dev",
+  "latest_version_code": 10600,
   "minimum_supported_version_code": 0,
-  "apk_url": "https://download.lsa1230.dpdns.org/dev/Narra-v1.5.9-dev-10509-dev.apk",
-  "apk_sha256": "f130a696187c0adf0f953229b1b10d9deb51e1d1a484b8c304cdde072ed72976",
-  "published_at": "2026-04-23T16:35:48+08:00",
+  "apk_url": "https://download.lsa1230.dpdns.org/dev/Narra-v1.6.0-dev-10600-dev.apk",
+  "apk_sha256": "63378dd79988a683612881144e37ea3eac44ec1dcff414bd213f93a48757b886",
+  "published_at": "2026-04-27T22:52:24+08:00",
   "release_notes": [
-    "普通聊天和沉浸式页面补了一轮玻璃拟态与背景雾化优化，界面层次更统一",
-    "场景编辑页的角色选择改成底部弹层，删除场景新增确认弹窗，误触风险更低",
-    "修复本轮 UI 调整带出的交互回归，场景编辑与 RP 顶栏相关测试已恢复通过"
+    "沉浸式入口升级为消息、通讯录、广场、我四页结构，聊天详情继续沿用原对话页",
+    "新增聊天摘要、置顶/免打扰、通讯录角色名片和广场入口先选聊天流程",
+    "修复沉浸式页面状态栏遮挡、角色卡内容外露、广场入口和消息左滑交互问题"
   ]
 }

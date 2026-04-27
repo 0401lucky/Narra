@@ -1,7 +1,6 @@
 package com.example.myapplication.ui.screen.chat
 
 import androidx.compose.runtime.Composable
-import com.example.myapplication.ui.component.ContextGovernanceSheet
 import com.example.myapplication.model.ChatSpecialPlayDraft
 import com.example.myapplication.model.ChatSpecialType
 import com.example.myapplication.model.ChatMessage
@@ -59,9 +58,6 @@ internal fun ChatScreenOverlays(
     onSelectSearchSource: (String) -> Unit,
     onUpdateSearchResultCount: (Int) -> Unit,
     onOpenSearchSettings: () -> Unit,
-    showPromptDebugSheet: Boolean,
-    onDismissPromptDebugSheet: () -> Unit,
-    onRefreshConversationSummary: () -> Unit,
     onDismissTranslationSheet: () -> Unit,
     onApplyTranslationToInput: (Boolean) -> Unit,
     onSendTranslationAsMessage: () -> Unit,
@@ -174,15 +170,6 @@ internal fun ChatScreenOverlays(
             onSelectSearchSource = onSelectSearchSource,
             onUpdateSearchResultCount = onUpdateSearchResultCount,
             onOpenSearchSettings = onOpenSearchSettings,
-        )
-    }
-
-    if (showPromptDebugSheet) {
-        ContextGovernanceSheet(
-            snapshot = uiState.contextGovernance,
-            rawDebugDump = uiState.latestPromptDebugDump,
-            onRefreshSummary = onRefreshConversationSummary,
-            onDismissRequest = onDismissPromptDebugSheet,
         )
     }
 

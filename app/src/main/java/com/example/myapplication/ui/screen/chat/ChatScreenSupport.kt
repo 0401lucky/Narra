@@ -36,7 +36,7 @@ private const val ChatBottomFollowTolerancePx = 48
 internal fun ChatTopBar(
     title: String,
     onOpenConversationDrawer: () -> Unit,
-    onOpenPromptDebugSheet: () -> Unit,
+    onOpenContextLog: () -> Unit,
     onOpenExportSheet: () -> Unit,
     onCreateConversation: () -> Unit,
 ) {
@@ -58,10 +58,10 @@ internal fun ChatTopBar(
             )
         },
         actions = {
-            NarraIconButton(onClick = onOpenPromptDebugSheet) {
+            NarraIconButton(onClick = onOpenContextLog) {
                 Icon(
                     imageVector = Icons.Default.Description,
-                    contentDescription = "查看上下文调试信息",
+                    contentDescription = "查看上下文日志",
                 )
             }
             NarraIconButton(onClick = onOpenExportSheet) {

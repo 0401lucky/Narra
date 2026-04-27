@@ -1,11 +1,18 @@
 package com.example.myapplication.data.repository.ai
 
+import com.example.myapplication.context.ContextPlaceholderResolver
 import com.example.myapplication.data.repository.RoleplayMemoryCondenseMode
 import com.example.myapplication.data.repository.StructuredMemoryExtractionResult
+import com.example.myapplication.data.repository.context.ContextLogStore
 import com.example.myapplication.model.ChatCompletionRequest
 import com.example.myapplication.model.ChatMessageDto
+import com.example.myapplication.model.ContextGovernanceSnapshot
+import com.example.myapplication.model.ContextLogSection
+import com.example.myapplication.model.ContextLogSourceType
+import com.example.myapplication.model.MemoryPromptDefaults
 import com.example.myapplication.model.ProviderApiProtocol
 import com.example.myapplication.model.ProviderSettings
+import com.example.myapplication.model.estimateContextTokenCount
 import com.google.gson.JsonParser
 
 /**
@@ -15,9 +22,13 @@ import com.google.gson.JsonParser
  * - [condenseRoleplayMemories]：将零散的角色/场景记忆精炼为 maxItems 条以内。
  *
  * T6.4 从 DefaultAiPromptExtrasService 抽离。不使用 roleplay 采样（保留原语义）。
+ *
+ * tavo 对标 A4：每次提取记忆的请求都会把完整 prompt 推入 [ContextLogStore]，
+ * 与聊天日志混排同列展示，详情页根据 promptModeLabel="长记忆" 渲染单 system 段精简布局。
  */
 internal class MemoryProposalPromptService(
     private val core: PromptExtrasCore,
+    private val contextLogStore: ContextLogStore? = null,
 ) {
     suspend fun generateMemoryEntries(
         conversationExcerpt: String,
@@ -26,15 +37,24 @@ internal class MemoryProposalPromptService(
         modelId: String,
         apiProtocol: ProviderApiProtocol,
         provider: ProviderSettings?,
+        existingMemories: List<String> = emptyList(),
+        userName: String = "用户",
+        characterName: String = "角色",
+        extractionPromptOverride: String = "",
     ): List<String> {
-        val prompt = buildString {
-            append("你是对话长期记忆提取器。")
-            append("请从下面的最近对话中提取适合长期保存的内容，例如：用户偏好、稳定设定、人物关系、长期目标、持续约束。")
-            append("忽略寒暄、一次性任务、临时情绪和重复信息。")
-            append("如果没有值得记忆的内容，返回 []。")
-            append("只输出 JSON 数组，每项都是一条简体中文短句，不要输出额外解释：\n")
-            append(conversationExcerpt)
-        }
+        val prompt = buildExtractionPrompt(
+            conversationExcerpt = conversationExcerpt,
+            existingMemories = existingMemories,
+            userName = userName,
+            characterName = characterName,
+            override = extractionPromptOverride,
+        )
+        pushContextLog(
+            prompt = prompt,
+            modelId = modelId,
+            provider = provider,
+            sectionTitle = "通用记忆提取",
+        )
         val content = core.requestCompletionContent(
             baseUrl = baseUrl,
             apiKey = apiKey,
@@ -82,6 +102,7 @@ internal class MemoryProposalPromptService(
         modelId: String,
         apiProtocol: ProviderApiProtocol,
         provider: ProviderSettings?,
+        existingMemories: List<String> = emptyList(),
     ): StructuredMemoryExtractionResult {
         val prompt = buildString {
             append("你是沉浸式剧情记忆提取器。")
@@ -94,13 +115,20 @@ internal class MemoryProposalPromptService(
             append("记忆质量约束：\n")
             append("1. 严禁编造对话中不存在的内容，只提取实际发生的事实。\n")
             append("2. 记忆条目应包含近似时间标记（如果对话中有提及）。\n")
-            append("3. 关系类记忆必须保留变化方向和强度（如\u201c关系升温\u201d\u201c产生芥蒂\u201d等）。\n")
+            append("3. 关系类记忆必须保留变化方向和强度（如“关系升温”“产生芥蒂”等）。\n")
             append("4. mental_state 应该是一句话概括角色当下心境，如\"表面冷淡但内心在意，因为昨天的吵架还在别扭\"。\n")
             append("只输出 JSON 对象：")
             append("{\"persistent_memories\":[...],\"scene_state_memories\":[...],\"mental_state\":\"...\"}。")
             append("每项都必须是简体中文短句，不要输出额外解释：\n")
+            appendKnownMemoriesSection(existingMemories)
             append(conversationExcerpt)
         }
+        pushContextLog(
+            prompt = prompt,
+            modelId = modelId,
+            provider = provider,
+            sectionTitle = "沉浸剧情记忆提取",
+        )
         val content = core.requestCompletionContent(
             baseUrl = baseUrl,
             apiKey = apiKey,
@@ -202,6 +230,15 @@ internal class MemoryProposalPromptService(
                 append('\n')
             }
         }
+        pushContextLog(
+            prompt = prompt,
+            modelId = modelId,
+            provider = provider,
+            sectionTitle = when (mode) {
+                RoleplayMemoryCondenseMode.CHARACTER -> "角色记忆精炼"
+                RoleplayMemoryCondenseMode.SCENE -> "场景记忆精炼"
+            },
+        )
         val content = core.requestCompletionContent(
             baseUrl = baseUrl,
             apiKey = apiKey,
@@ -237,5 +274,132 @@ internal class MemoryProposalPromptService(
             .filter { it.isNotEmpty() })
             .distinct()
             .take(maxItems.coerceAtLeast(1))
+    }
+
+    private fun buildExtractionPrompt(
+        conversationExcerpt: String,
+        existingMemories: List<String>,
+        userName: String,
+        characterName: String,
+        override: String,
+    ): String {
+        val knownMemoriesBlock = buildKnownMemoriesBlock(existingMemories)
+        val template = override.trim().ifEmpty { MemoryPromptDefaults.EXTRACTION_PROMPT_TEMPLATE }
+        return renderExtractionTemplate(
+            template = template,
+            conversationExcerpt = conversationExcerpt,
+            knownMemoriesBlock = knownMemoriesBlock,
+            userName = userName,
+            characterName = characterName,
+        )
+    }
+
+    private fun renderExtractionTemplate(
+        template: String,
+        conversationExcerpt: String,
+        knownMemoriesBlock: String,
+        userName: String,
+        characterName: String,
+    ): String {
+        val containsConversationToken = CONVERSATION_PLACEHOLDER_REGEX.containsMatchIn(template)
+        val containsKnownMemoriesToken = KNOWN_MEMORIES_PLACEHOLDER_REGEX.containsMatchIn(template)
+        var rendered = template
+            .replace(CONVERSATION_PLACEHOLDER_REGEX, conversationExcerpt)
+            .replace(KNOWN_MEMORIES_PLACEHOLDER_REGEX, knownMemoriesBlock)
+        rendered = ContextPlaceholderResolver.resolve(
+            text = rendered,
+            userName = userName,
+            characterName = characterName,
+        )
+        // 用户模板未声明 conversation 占位符时尾部自动追加，避免没把对话喂给模型。
+        if (!containsConversationToken && conversationExcerpt.isNotBlank()) {
+            rendered = buildString {
+                append(rendered.trimEnd())
+                append('\n')
+                append(conversationExcerpt)
+            }
+        }
+        // 用户模板未声明 known_memories 占位符且确有已知记忆时尾部追加，避免重复输出。
+        if (!containsKnownMemoriesToken && knownMemoriesBlock.isNotEmpty()) {
+            rendered = buildString {
+                append(rendered.trimEnd())
+                append('\n')
+                append(knownMemoriesBlock)
+            }
+        }
+        return rendered
+    }
+
+    private fun buildKnownMemoriesBlock(existingMemories: List<String>): String {
+        val cleaned = existingMemories
+            .map { it.trim() }
+            .filter { it.isNotBlank() }
+            .distinct()
+        if (cleaned.isEmpty()) return ""
+        return buildString {
+            append("# 已知信息处理 [重要]\n")
+            append("以下 <已知信息> 是当前已经存在的长期记忆，请把新信息与已知信息逐条比对，")
+            append("如果信息相同或冲突，必须忽略，不要重复输出。\n")
+            append("<已知信息>\n")
+            cleaned.forEach { item ->
+                append("- ")
+                append(item)
+                append('\n')
+            }
+            append("</已知信息>\n")
+        }
+    }
+
+    private fun StringBuilder.appendKnownMemoriesSection(existingMemories: List<String>) {
+        val cleaned = existingMemories
+            .map { it.trim() }
+            .filter { it.isNotBlank() }
+            .distinct()
+        if (cleaned.isEmpty()) return
+        append("# 已知信息处理 [重要]\n")
+        append("以下 <已知信息> 是当前已经存在的长期记忆，请把新信息与已知信息逐条比对，")
+        append("如果信息相同或冲突，必须忽略，不要重复输出。\n")
+        append("<已知信息>\n")
+        cleaned.forEach { item ->
+            append("- ")
+            append(item)
+            append('\n')
+        }
+        append("</已知信息>\n")
+    }
+
+    private fun pushContextLog(
+        prompt: String,
+        modelId: String,
+        provider: ProviderSettings?,
+        sectionTitle: String,
+    ) {
+        val store = contextLogStore ?: return
+        val tokens = estimateContextTokenCount(prompt)
+        store.push(
+            ContextGovernanceSnapshot(
+                providerLabel = provider?.name.orEmpty(),
+                modelLabel = modelId,
+                promptModeLabel = "长记忆",
+                generatedAt = System.currentTimeMillis(),
+                rawDebugDump = prompt,
+                estimatedContextTokens = tokens,
+                contextSections = listOf(
+                    ContextLogSection(
+                        sourceType = ContextLogSourceType.SYSTEM_RULE,
+                        title = sectionTitle,
+                        content = prompt,
+                        tokenEstimate = tokens,
+                    ),
+                ),
+            ),
+        )
+    }
+
+    companion object {
+        private val CONVERSATION_PLACEHOLDER_REGEX =
+            Regex("""\{\{\s*conversation\s*\}\}""", RegexOption.IGNORE_CASE)
+        private val KNOWN_MEMORIES_PLACEHOLDER_REGEX =
+            Regex("""\{\{\s*known_memories\s*\}\}""", RegexOption.IGNORE_CASE)
     }
 }

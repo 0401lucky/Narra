@@ -72,6 +72,7 @@ class RoleplayPromptDecoratorTest {
                 id = "scene-1",
                 title = "{{char}}的夜班",
                 description = "{{User}} 走进值班室时，{{char}} 正低头扣上颈间的金属扣。",
+                descriptionPromptEnabled = true,
                 openingNarration = "{{user}} 听见那声轻响时，心口跟着一缩。",
                 userDisplayNameOverride = "lucky",
                 characterDisplayNameOverride = "金乘",
@@ -85,6 +86,27 @@ class RoleplayPromptDecoratorTest {
         assertTrue(prompt.contains("场景标题：金乘的夜班"))
         assertTrue(prompt.contains("lucky 走进值班室时，金乘 正低头扣上颈间的金属扣"))
         assertTrue(prompt.contains("lucky 听见那声轻响时"))
+    }
+
+    @Test
+    fun decorate_skipsScenarioDescriptionWhenPromptToggleOff() {
+        val prompt = RoleplayPromptDecorator.decorate(
+            baseSystemPrompt = "",
+            scenario = RoleplayScenario(
+                id = "scene-1",
+                title = "雨夜",
+                description = "这段补充只保存在聊天资料里。",
+                descriptionPromptEnabled = false,
+                openingNarration = "雨声压住了脚步声。",
+            ),
+            assistant = Assistant(id = "assistant-1", name = "余罪"),
+            settings = AppSettings(),
+        )
+
+        assertTrue(prompt.contains("场景标题：雨夜"))
+        assertTrue(prompt.contains("雨声压住了脚步声"))
+        assertFalse(prompt.contains("这段补充只保存在聊天资料里"))
+        assertFalse(prompt.contains("聊天背景补充："))
     }
 
     @Test

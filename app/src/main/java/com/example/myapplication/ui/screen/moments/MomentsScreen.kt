@@ -25,6 +25,7 @@ import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.FavoriteBorder
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -70,6 +71,7 @@ fun MomentsScreen(
     onToggleLikePost: (String) -> Unit,
     onAddComment: (String, String) -> Unit,
     onClearErrorMessage: () -> Unit,
+    onOpenPhoneCheck: (() -> Unit)? = null,
 ) {
     val snackbarHostState = remember { SnackbarHostState() }
     var selectedPostId by remember { mutableStateOf<String?>(null) }
@@ -138,6 +140,12 @@ fun MomentsScreen(
                             style = MaterialTheme.typography.bodyMedium,
                             color = MomentsMutedText(),
                         )
+                        if (onOpenPhoneCheck != null) {
+                            Spacer(modifier = Modifier.height(16.dp))
+                            Button(onClick = onOpenPhoneCheck) {
+                                Text("去查手机")
+                            }
+                        }
                     }
                 }
 

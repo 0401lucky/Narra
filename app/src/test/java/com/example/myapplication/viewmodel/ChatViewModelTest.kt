@@ -719,6 +719,7 @@ class ChatViewModelTest {
                     ),
                 ),
                 selectedAssistantId = "assistant-1",
+                memoryAutoSummaryEvery = 1,
             ),
             memoryRepository = memoryRepository,
             apiServiceProvider = { _, _ ->
@@ -730,7 +731,7 @@ class ChatViewModelTest {
                     override suspend fun createChatCompletion(request: ChatCompletionRequest): Response<ChatCompletionResponse> {
                         val prompt = request.messages.firstOrNull()?.content?.toString().orEmpty()
                         val content = when {
-                            prompt.contains("长期记忆提取器") -> "[\"用户喜欢短句回复\"]"
+                            prompt.contains("信息提取专家") -> "[\"用户喜欢短句回复\"]"
                             prompt.contains("总结以下对话的主题") -> "短句偏好"
                             prompt.contains("生成3个简短的后续问题建议") -> "继续聊\n换个话题\n总结一下"
                             prompt.contains("压缩成一段简洁摘要") -> "用户希望后续回复尽量简洁。"
@@ -831,6 +832,7 @@ class ChatViewModelTest {
                     ),
                 ),
                 selectedAssistantId = "assistant-1",
+                memoryAutoSummaryEvery = 1,
             ),
             memoryRepository = memoryRepository,
             apiServiceProvider = { _, _ ->
@@ -842,7 +844,7 @@ class ChatViewModelTest {
                     override suspend fun createChatCompletion(request: ChatCompletionRequest): Response<ChatCompletionResponse> {
                         val prompt = request.messages.firstOrNull()?.content?.toString().orEmpty()
                         val content = when {
-                            prompt.contains("长期记忆提取器") -> "[\"用户喜欢中文和短句回复\", \"用户更希望我别写太长\"]"
+                            prompt.contains("信息提取专家") -> "[\"用户喜欢中文和短句回复\", \"用户更希望我别写太长\"]"
                             prompt.contains("角色长期记忆整理器") -> "[\"用户长期偏好中文和短句回复。\", \"用户不喜欢过长输出。\"]"
                             prompt.contains("总结以下对话的主题") -> "偏好总结"
                             prompt.contains("生成3个简短的后续问题建议") -> "继续聊\n换个话题\n总结一下"
@@ -2117,6 +2119,7 @@ class ChatViewModelTest {
             memoryRepository = memoryRepository,
             conversationSummaryRepository = conversationSummaryRepository,
             promptContextAssembler = promptContextAssembler,
+            contextLogStore = com.example.myapplication.data.repository.context.ContextLogStore(),
             nowProvider = nowProvider,
             messageIdProvider = messageIdProvider,
             imageSaver = imageSaver,

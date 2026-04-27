@@ -172,8 +172,8 @@ internal fun RoleplayOnlinePhoneContent(
     val onlineBackdropScrim = remember(backdropState.hasImage, palette) {
         Brush.verticalGradient(
             colors = listOf(
-                palette.scrimTop.copy(alpha = if (backdropState.hasImage) 0.30f else 0.14f),
-                palette.scrimBottom.copy(alpha = if (backdropState.hasImage) 0.54f else 0.24f),
+                palette.scrimTop.copy(alpha = if (backdropState.hasImage) 0.14f else 0.08f),
+                palette.scrimBottom.copy(alpha = if (backdropState.hasImage) 0.28f else 0.14f),
             ),
         )
     }
@@ -883,12 +883,12 @@ private fun rememberOnlinePhoneColors(
             userAccent = if (hasImage) palette.userAccent else OnlineUserAccent,
             thoughtText = if (hasImage) palette.thoughtText else OnlineMuted,
             panelBackground = if (hasImage) {
-                palette.panelTintStrong.copy(alpha = 0.56f)
+                palette.panelTintStrong.copy(alpha = 0.22f)
             } else {
                 OnlineFallbackCard.copy(alpha = 0.86f)
             },
             panelBackgroundStrong = if (hasImage) {
-                palette.readingSurface.copy(alpha = 0.74f)
+                palette.readingSurface.copy(alpha = 0.30f)
             } else {
                 OnlineFallbackCard.copy(alpha = 0.94f)
             },
@@ -900,6 +900,9 @@ private fun rememberOnlinePhoneColors(
             errorText = Color(0xFFB3261E),
             errorBackground = Color(0xFFFFE9E8).copy(alpha = if (hasImage) 0.74f else 1f),
             errorBackgroundStrong = Color(0xFFFFDAD6).copy(alpha = if (hasImage) 0.86f else 1f),
+            userBubbleBackground = if (hasImage) palette.userAccent.copy(alpha = 0.12f) else OnlineUserAccent.copy(alpha = 0.22f),
+            characterBubbleBackground = if (hasImage) palette.readingSurface.copy(alpha = 0.16f) else OnlineFallbackCard.copy(alpha = 0.94f),
+            narrationBubbleBackground = if (hasImage) palette.readingSurface.copy(alpha = 0.10f) else OnlineFallbackCard.copy(alpha = 0.72f),
         )
     }
 }

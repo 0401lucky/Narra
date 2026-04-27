@@ -19,15 +19,18 @@ object AppRoutes {
     const val SETTINGS_ASSISTANT_PROMPT = "settings/assistants/{assistantId}/prompt"
     const val SETTINGS_ASSISTANT_EXTENSIONS = "settings/assistants/{assistantId}/extensions"
     const val SETTINGS_ASSISTANT_MEMORY = "settings/assistants/{assistantId}/memory"
+    const val SETTINGS_ASSISTANT_MEMORY_SIMPLE = "settings/assistants/{assistantId}/memory/simple?conversationId={conversationId}"
     const val SETTINGS_WORLD_BOOKS = "settings/worldbook"
     const val SETTINGS_WORLD_BOOK_BOOK = "settings/worldbook/book/{bookId}"
     const val SETTINGS_WORLD_BOOK_EDIT = "settings/worldbook/{entryId}?bookName={bookName}"
     const val SETTINGS_MEMORY = "settings/memory"
     const val SETTINGS_CONTEXT_TRANSFER = "settings/context-transfer"
+    const val SETTINGS_CONTEXT_LOG = "settings/context-log"
     const val CHAT = "chat"
     const val TRANSLATOR = "translator"
     const val ROLEPLAY_GRAPH = "roleplay_graph"
     const val ROLEPLAY = "roleplay"
+    const val ROLEPLAY_MANAGE = "roleplay/manage"
     const val ROLEPLAY_EDIT = "roleplay/edit/{scenarioId}"
     const val ROLEPLAY_PLAY = "roleplay/play/{scenarioId}"
     const val ROLEPLAY_SETTINGS = "roleplay/play/{scenarioId}/settings"
@@ -60,6 +63,12 @@ object AppRoutes {
 
     fun settingsAssistantMemory(assistantId: String): String {
         return "settings/assistants/$assistantId/memory"
+    }
+
+    fun settingsAssistantMemorySimple(assistantId: String, conversationId: String? = null): String {
+        val base = "settings/assistants/$assistantId/memory/simple"
+        val trimmed = conversationId?.trim().orEmpty()
+        return if (trimmed.isEmpty()) base else "$base?conversationId=${Uri.encode(trimmed)}"
     }
 
     fun settingsWorldBookEdit(

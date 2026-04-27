@@ -28,6 +28,7 @@ import com.example.myapplication.model.PhoneSnapshotSections
 import com.example.myapplication.model.PhoneShoppingEntry
 import com.example.myapplication.model.PromptMode
 import com.example.myapplication.model.ProviderSettings
+import com.example.myapplication.model.RoleplayChatSummary
 import com.example.myapplication.model.RoleplayOnlineMeta
 import com.example.myapplication.model.RoleplayScenario
 import com.example.myapplication.model.RoleplaySession
@@ -436,6 +437,12 @@ private class FakePhoneCheckRoleplayRepository(
 ) : RoleplayRepository {
     override fun observeScenarios(): Flow<List<RoleplayScenario>> = flowOf(scenario?.let(::listOf).orEmpty())
 
+    override fun observeChatSummaries(): Flow<List<RoleplayChatSummary>> {
+        return flowOf(
+            scenario?.let { RoleplayChatSummary(scenario = it) }?.let(::listOf).orEmpty(),
+        )
+    }
+
     override fun observeScenario(scenarioId: String): Flow<RoleplayScenario?> {
         return flowOf(scenario?.takeIf { it.id == scenarioId })
     }
@@ -529,6 +536,10 @@ private object NoOpAiPromptExtrasService : AiPromptExtrasService {
         modelId: String,
         apiProtocol: com.example.myapplication.model.ProviderApiProtocol,
         provider: com.example.myapplication.model.ProviderSettings?,
+        existingMemories: List<String>,
+        userName: String,
+        characterName: String,
+        extractionPromptOverride: String,
     ): List<String> = emptyList()
 
     override suspend fun generateRoleplayMemoryEntries(
@@ -538,6 +549,7 @@ private object NoOpAiPromptExtrasService : AiPromptExtrasService {
         modelId: String,
         apiProtocol: com.example.myapplication.model.ProviderApiProtocol,
         provider: com.example.myapplication.model.ProviderSettings?,
+        existingMemories: List<String>,
     ): com.example.myapplication.data.repository.StructuredMemoryExtractionResult {
         return com.example.myapplication.data.repository.StructuredMemoryExtractionResult()
     }

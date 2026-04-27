@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.border
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.ContentCopy
@@ -105,12 +106,14 @@ private fun RoleplayMessageItemContent(
                     ImmersiveGlassSurface(
                         backdropState = backdropState,
                         modifier = Modifier.fillMaxWidth(0.92f),
-                        shape = RoundedCornerShape(18.dp),
-                        overlayColor = colors.panelBackground,
+                        shape = RoundedCornerShape(22.dp),
+                        blurRadius = 18.dp,
+                        overlayColor = colors.narrationBubbleBackground,
                     ) {
                         Column(
-                            modifier = Modifier.padding(horizontal = 14.dp, vertical = 12.dp),
-                            verticalArrangement = Arrangement.spacedBy(10.dp),
+                            modifier = Modifier
+                                .padding(horizontal = 18.dp, vertical = 16.dp),
+                            verticalArrangement = Arrangement.spacedBy(12.dp),
                         ) {
                             val paragraphs = remember(message.content) { message.content.toLongformParagraphs() }
                             paragraphs.forEach { paragraph ->
@@ -125,6 +128,7 @@ private fun RoleplayMessageItemContent(
                                         fontStyle = FontStyle.Italic,
                                         lineHeight = 25.sp * lineHeightScale,
                                         letterSpacing = 0.6.sp,
+                                        shadow = GlassTextShadow,
                                     ),
                                     color = colors.textMuted,
                                 )
@@ -148,12 +152,14 @@ private fun RoleplayMessageItemContent(
                     ImmersiveGlassSurface(
                         backdropState = backdropState,
                         modifier = Modifier.fillMaxWidth(0.82f),
-                        shape = RoundedCornerShape(18.dp),
-                        overlayColor = colors.panelBackground.copy(alpha = 0.18f),
+                        shape = RoundedCornerShape(22.dp),
+                        blurRadius = 18.dp,
+                        overlayColor = colors.narrationBubbleBackground,
                     ) {
                         Column(
-                            modifier = Modifier.padding(horizontal = 14.dp, vertical = 12.dp),
-                            verticalArrangement = Arrangement.spacedBy(10.dp),
+                            modifier = Modifier
+                                .padding(horizontal = 18.dp, vertical = 16.dp),
+                            verticalArrangement = Arrangement.spacedBy(12.dp),
                         ) {
                             val paragraphs = remember(message.content) { message.content.toLongformParagraphs() }
                             paragraphs.forEach { paragraph ->
@@ -168,6 +174,7 @@ private fun RoleplayMessageItemContent(
                                         fontStyle = FontStyle.Italic,
                                         lineHeight = 24.sp * lineHeightScale,
                                         letterSpacing = 0.5.sp,
+                                        shadow = GlassTextShadow,
                                     ),
                                     color = colors.thoughtText,
                                 )
@@ -287,7 +294,8 @@ private fun RoleplayMessageItemContent(
                         speakerName = message.speakerName,
                         content = message.content,
                         richTextSource = message.richTextSource,
-                        containerColor = if (isError) colors.errorBackground else Color.Transparent,
+                        backdropState = backdropState,
+                        containerColor = if (isError) colors.errorBackground else colors.panelBackground,
                         titleColor = if (isError) colors.errorText else colors.characterAccent,
                         bodyColor = if (isError) colors.errorText.copy(alpha = 0.88f) else colors.textPrimary.copy(alpha = 0.82f),
                         accentColor = if (isError) colors.errorText else RoleplayQuotedDialogueHighlightColor,

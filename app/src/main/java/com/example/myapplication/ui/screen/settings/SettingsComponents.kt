@@ -53,6 +53,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -87,21 +88,39 @@ internal data class SettingsPalette(
 @Composable
 internal fun rememberSettingsPalette(): SettingsPalette {
     val colorScheme = MaterialTheme.colorScheme
-    return remember(colorScheme) {
-        SettingsPalette(
-            background = colorScheme.background,
-            surface = colorScheme.surface,
-            surfaceTint = colorScheme.surfaceVariant,
-            elevatedSurface = colorScheme.surfaceContainerHigh,
-            border = colorScheme.outlineVariant.copy(alpha = 0.5f),
-            title = colorScheme.onSurface,
-            body = colorScheme.onSurfaceVariant,
-            accent = colorScheme.primary,
-            accentSoft = colorScheme.primaryContainer,
-            accentOnStrong = colorScheme.onPrimary,
-            subtleChip = colorScheme.secondaryContainer,
-            subtleChipContent = colorScheme.onSecondaryContainer,
-        )
+    val darkTheme = isSystemInDarkTheme()
+    return remember(colorScheme, darkTheme) {
+        if (darkTheme) {
+            SettingsPalette(
+                background = colorScheme.background,
+                surface = colorScheme.surface,
+                surfaceTint = colorScheme.surfaceVariant,
+                elevatedSurface = colorScheme.surfaceContainerHigh,
+                border = colorScheme.outlineVariant.copy(alpha = 0.5f),
+                title = colorScheme.onSurface,
+                body = colorScheme.onSurfaceVariant,
+                accent = colorScheme.primary,
+                accentSoft = colorScheme.primaryContainer,
+                accentOnStrong = colorScheme.onPrimary,
+                subtleChip = colorScheme.secondaryContainer,
+                subtleChipContent = colorScheme.onSecondaryContainer,
+            )
+        } else {
+            SettingsPalette(
+                background = Color(0xFFF7F3EE),
+                surface = Color(0xFFF0ECE7),
+                surfaceTint = Color(0xFFE8E2DA),
+                elevatedSurface = Color(0xFFF9F6F1),
+                border = Color(0xFFD7D0C8),
+                title = Color(0xFF2F2A24),
+                body = Color(0xFF6F675E),
+                accent = Color(0xFF7A6B5D),
+                accentSoft = Color(0xFFE7DED3),
+                accentOnStrong = Color(0xFF2F2A24),
+                subtleChip = Color(0xFFEAE3D9),
+                subtleChipContent = Color(0xFF5F554A),
+            )
+        }
     }
 }
 
@@ -144,7 +163,11 @@ fun SettingsTopBar(
             ) {
                 Text(
                     text = title,
-                    style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold),
+                    style = MaterialTheme.typography.titleLarge.copy(
+                        fontWeight = FontWeight.SemiBold,
+                        fontFamily = FontFamily.Cursive,
+                        fontSize = 28.sp,
+                    ),
                     color = palette.title,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
@@ -241,7 +264,10 @@ fun SettingsSectionHeader(
     ) {
         Text(
             text = title,
-            style = MaterialTheme.typography.titleSmall,
+            style = MaterialTheme.typography.titleMedium.copy(
+                fontFamily = FontFamily.Cursive,
+                fontSize = 22.sp,
+            ),
             fontWeight = FontWeight.Bold,
             color = palette.accent,
         )
@@ -306,18 +332,18 @@ fun SettingsGroup(
 
     Surface(
         modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(SettingsGroupRadius),
-        color = palette.surface,
+        shape = RoundedCornerShape(24.dp),
+        color = palette.surface.copy(alpha = 0.96f),
         border = BorderStroke(
-            width = 1.dp,
-            color = palette.border,
+            width = 0.75.dp,
+            color = palette.border.copy(alpha = 0.72f),
         ),
         shadowElevation = 0.dp,
     ) {
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(vertical = 6.dp),
+                .padding(vertical = 8.dp),
             content = content,
         )
     }
@@ -363,7 +389,7 @@ fun SettingsListRow(
     Surface(
         modifier = modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(22.dp))
+            .clip(RoundedCornerShape(24.dp))
             .then(
                 if (enabled && onClick != null) {
                     Modifier.clickable(onClick = onClick)
@@ -375,7 +401,7 @@ fun SettingsListRow(
         contentColor = headlineColor,
     ) {
         Row(
-            modifier = Modifier.padding(horizontal = 18.dp, vertical = 16.dp),
+            modifier = Modifier.padding(horizontal = 20.dp, vertical = 18.dp),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(14.dp),
         ) {
@@ -408,7 +434,7 @@ fun SettingsListRow(
                 showArrow -> Icon(
                     imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
                     contentDescription = null,
-                    tint = palette.accent.copy(alpha = 0.82f),
+                    tint = palette.body.copy(alpha = 0.72f),
                 )
             }
         }

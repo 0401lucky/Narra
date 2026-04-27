@@ -149,5 +149,9 @@ class SettingsAssistantCoordinatorTest {
 
         override suspend fun saveUserProfile(displayName: String, personaPrompt: String, avatarUri: String, avatarUrl: String) = Unit
         override suspend fun saveRoleplayAssistantMismatchDialogPreference(suppressed: Boolean) = Unit
+        override suspend fun saveMemorySettings(autoSummaryEvery: Int, capacity: Int) = Unit
+        override suspend fun saveMemoryPromptSettings(extractionPrompt: String, injectionPrompt: String) = Unit
+        override suspend fun saveMemoryInjectionPosition(position: com.example.myapplication.model.MemoryInjectionPosition) = Unit
+        override suspend fun saveContextLogSettings(enabled: Boolean, capacity: Int) = Unit
     }
 }

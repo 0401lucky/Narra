@@ -30,20 +30,21 @@ internal fun UserDialogueBubbleContent(
     fillWidth: Boolean,
 ) {
     val shape = RoundedCornerShape(
-        topStart = 20.dp,
-        topEnd = 6.dp,
-        bottomStart = 20.dp,
-        bottomEnd = 20.dp,
+        topStart = 22.dp,
+        topEnd = 8.dp,
+        bottomStart = 22.dp,
+        bottomEnd = 22.dp,
     )
-    ImmersiveGlassSurface(
+    ImmersiveReadingGlassSurface(
         backdropState = backdropState,
         modifier = if (fillWidth) Modifier.fillMaxWidth() else Modifier,
         shape = shape,
-        overlayColor = colors.panelBackgroundStrong,
+        variant = ImmersiveReadingGlassVariant.DIALOGUE,
+        overlayColor = colors.userBubbleBackground,
     ) {
     Column(
-        modifier = Modifier.padding(horizontal = 14.dp, vertical = 10.dp),
-        verticalArrangement = Arrangement.spacedBy(4.dp),
+        modifier = Modifier.padding(horizontal = 18.dp, vertical = 16.dp),
+        verticalArrangement = Arrangement.spacedBy(8.dp),
     ) {
         if (message.replyToPreview.isNotBlank()) {
             RoleplayReplyPreview(
@@ -54,7 +55,9 @@ internal fun UserDialogueBubbleContent(
         }
         Text(
             message.speakerName,
-            style = MaterialTheme.typography.labelMedium,
+            style = MaterialTheme.typography.labelMedium.copy(
+                shadow = GlassTextShadowStrong,
+            ),
             fontWeight = FontWeight.SemiBold,
             color = colors.userAccent,
         )
@@ -67,7 +70,7 @@ internal fun UserDialogueBubbleContent(
             )
         } else {
             val paragraphs = remember(message.content) { message.content.toLongformParagraphs() }
-            Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                 paragraphs.forEach { paragraph ->
                     Text(
                         paragraph,
@@ -75,6 +78,7 @@ internal fun UserDialogueBubbleContent(
                             fontSize = 16.sp,
                             lineHeight = 26.sp * lineHeightScale,
                             letterSpacing = 0.6.sp,
+                            shadow = GlassTextShadow,
                         ),
                         color = colors.textPrimary,
                     )
@@ -95,16 +99,17 @@ internal fun CharacterDialogueBubbleContent(
     isError: Boolean,
     fillWidth: Boolean,
 ) {
-    val shape = RoundedCornerShape(topStart = 6.dp, topEnd = 20.dp, bottomStart = 20.dp, bottomEnd = 20.dp)
-    ImmersiveGlassSurface(
+    val shape = RoundedCornerShape(topStart = 8.dp, topEnd = 22.dp, bottomStart = 22.dp, bottomEnd = 22.dp)
+    ImmersiveReadingGlassSurface(
         backdropState = backdropState,
         modifier = if (fillWidth) Modifier.fillMaxWidth() else Modifier,
         shape = shape,
-        overlayColor = if (isError) colors.errorBackground else colors.panelBackgroundStrong,
+        variant = ImmersiveReadingGlassVariant.DIALOGUE,
+        overlayColor = if (isError) colors.errorBackground else colors.characterBubbleBackground,
     ) {
         Column(
-            modifier = Modifier.padding(horizontal = 14.dp, vertical = 12.dp),
-            verticalArrangement = Arrangement.spacedBy(6.dp),
+            modifier = Modifier.padding(horizontal = 18.dp, vertical = 16.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp),
         ) {
             if (message.replyToPreview.isNotBlank()) {
                 RoleplayReplyPreview(
@@ -119,7 +124,9 @@ internal fun CharacterDialogueBubbleContent(
             ) {
                 Text(
                     message.speakerName,
-                    style = MaterialTheme.typography.labelLarge,
+                    style = MaterialTheme.typography.labelLarge.copy(
+                        shadow = GlassTextShadowStrong,
+                    ),
                     fontWeight = FontWeight.Bold,
                     color = if (isError) colors.errorText else colors.characterAccent,
                 )
@@ -143,7 +150,7 @@ internal fun CharacterDialogueBubbleContent(
                 )
             } else {
                 val paragraphs = remember(message.content) { message.content.toLongformParagraphs() }
-                Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                     paragraphs.forEach { paragraph ->
                         val rendered = remember(paragraph, colors, isError) {
                             buildCharacterDialogueAnnotatedString(
@@ -158,6 +165,7 @@ internal fun CharacterDialogueBubbleContent(
                                 fontSize = 16.sp,
                                 lineHeight = 26.sp * lineHeightScale,
                                 letterSpacing = 0.6.sp,
+                                shadow = GlassTextShadow,
                             ),
                         )
                     }

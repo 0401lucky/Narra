@@ -155,6 +155,7 @@
     <string name="settings_memory_summary">记忆与摘要</string>
     <string name="settings_data_transfer">资料导入导出</string>
     <string name="settings_floating_translate">悬浮翻译</string>
+    <string name="settings_context_log">上下文日志</string>
     <string name="settings_default_model_prompt">默认模型和提示词</string>
     <string name="settings_provider">提供商</string>
     <string name="settings_connection_credentials">连接与凭据</string>
@@ -364,9 +365,9 @@
     <string name="model_current_label">当前</string>
 
     <!-- ── MomentsScreen ── -->
-    <string name="moments_title">动态</string>
-    <string name="moments_empty_title">还没有动态</string>
-    <string name="moments_empty_body">在「查手机」中生成手机内容后即可浏览</string>
+    <string name="moments_title">朋友圈</string>
+    <string name="moments_empty_title">还没有朋友圈动态</string>
+    <string name="moments_empty_body">先去「查手机」生成这个聊天的手机内容</string>
     <string name="moments_preview_comment">%1$s：%2$s</string>
     <string name="moments_view_all_comments">查看全部 %1$d 条评论</string>
     <string name="moments_comments_count">%1$d 条评论</string>
