@@ -1,15 +1,17 @@
 {
   "app_id": "com.narra.app.dev",
   "channel": "dev",
-  "latest_version_name": "1.6.0-dev",
-  "latest_version_code": 10600,
+  "latest_version_name": "1.6.1-dev",
+  "latest_version_code": 10601,
   "minimum_supported_version_code": 0,
-  "apk_url": "https://download.lsa1230.dpdns.org/dev/Narra-v1.6.0-dev-10600-dev.apk",
-  "apk_sha256": "63378dd79988a683612881144e37ea3eac44ec1dcff414bd213f93a48757b886",
-  "published_at": "2026-04-27T22:52:24+08:00",
+  "apk_url": "https://download.lsa1230.dpdns.org/dev/Narra-v1.6.1-dev-10601-dev.apk",
+  "apk_sha256": "e62b48309845b94b20db62cf87199be1e171f42e7401cdcb76e5bf2ee173c973",
+  "published_at": "2026-04-28T14:26:24+08:00",
   "release_notes": [
-    "沉浸式入口升级为消息、通讯录、广场、我四页结构，聊天详情继续沿用原对话页",
-    "新增聊天摘要、置顶/免打扰、通讯录角色名片和广场入口先选聊天流程",
-    "修复沉浸式页面状态栏遮挡、角色卡内容外露、广场入口和消息左滑交互问题"
+    "新增我的面具，支持多套用户身份、头像和人设，并接入沉浸式聊天与场景绑定",
+    "修复同一角色不同会话共用日记的问题，日记现在按会话隔离",
+    "优化长文线下气泡和无背景沉浸聊天页观感，降低长文阅读疲劳",
+    "模型列表按同系列归组展示，新增 DeepSeek 等模型不会再落到列表末尾",
+    "默认模型页的各功能模型可独立绑定提供商，不再切一个功能就带着其他默认模型一起变化"
   ]
 }
