@@ -10,6 +10,7 @@ import com.example.myapplication.model.ModelDto
 import com.example.myapplication.model.ModelAbility
 import com.example.myapplication.model.ModelInfo
 import com.example.myapplication.model.ModelsResponse
+import com.example.myapplication.model.ProviderFunction
 import com.example.myapplication.model.ProviderSettings
 import com.example.myapplication.model.ProviderTemplate
 import com.example.myapplication.model.ProviderType
@@ -371,6 +372,47 @@ class SettingsViewModelTest {
         assertEquals(provider.id, stored.selectedProviderId)
         assertEquals("new-model", stored.selectedModel)
         assertEquals("new-model", stored.resolvedProviders().first().selectedModel)
+    }
+
+    @Test
+    fun updateProviderFunctionModel_doesNotSwitchActiveChatProvider() = runTest(mainDispatcherRule.dispatcher.scheduler) {
+        val providerA = ProviderSettings(
+            id = "provider-a",
+            name = "Provider A",
+            baseUrl = "https://a.example.com/v1/",
+            apiKey = "key-a",
+            selectedModel = "chat-a",
+            availableModels = listOf("chat-a"),
+        )
+        val providerB = ProviderSettings(
+            id = "provider-b",
+            name = "Provider B",
+            baseUrl = "https://b.example.com/v1/",
+            apiKey = "key-b",
+            selectedModel = "chat-b",
+            availableModels = listOf("chat-b", "title-b"),
+        )
+        val viewModel = createViewModel(
+            settings = AppSettings(
+                providers = listOf(providerA, providerB),
+                selectedProviderId = providerA.id,
+            ),
+        )
+
+        advanceUntilIdle()
+        viewModel.updateProviderTitleSummaryModel(providerB.id, "title-b")
+        viewModel.saveSettings {}
+        advanceUntilIdle()
+
+        val stored = viewModel.storedSettings.value
+        val updatedProviderB = stored.resolvedProviders().first { it.id == providerB.id }
+
+        assertEquals(providerA.id, stored.selectedProviderId)
+        assertEquals(providerA.id, viewModel.uiState.value.selectedProviderId)
+        assertEquals(providerB.id, stored.functionModelProviderIds.providerIdFor(ProviderFunction.TITLE_SUMMARY))
+        assertEquals(providerB.id, stored.resolveFunctionProvider(ProviderFunction.TITLE_SUMMARY)?.id)
+        assertEquals("title-b", updatedProviderB.titleSummaryModel)
+        assertEquals("title-b", stored.resolveFunctionModel(ProviderFunction.TITLE_SUMMARY))
     }
 
     @Test

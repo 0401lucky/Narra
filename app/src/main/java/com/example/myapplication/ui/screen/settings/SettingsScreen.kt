@@ -69,6 +69,7 @@ fun SettingsScreen(
     onOpenConnectionSettings: () -> Unit,
     onOpenSearchToolSettings: () -> Unit,
     onOpenUpdateSettings: () -> Unit,
+    onOpenUserMasks: () -> Unit,
     onOpenModelSettings: () -> Unit,
     onOpenAssistantSettings: () -> Unit,
     onOpenWorldBookSettings: () -> Unit,
@@ -187,6 +188,13 @@ fun SettingsScreen(
                         leadingContent = { Icon(Icons.Default.Face, contentDescription = null, tint = palette.title) },
                         title = stringResource(R.string.settings_assistant_label),
                         onClick = onOpenAssistantSettings,
+                    )
+                    SettingsGroupDivider()
+                    SettingsListRow(
+                        leadingContent = { Icon(Icons.Default.Mood, contentDescription = null, tint = palette.title) },
+                        title = "我的面具",
+                        supportingText = "${uiState.savedSettings.normalizedUserPersonaMasks().size} 个身份",
+                        onClick = onOpenUserMasks,
                     )
                     SettingsGroupDivider()
                     SettingsListRow(

@@ -61,6 +61,7 @@ import com.example.myapplication.model.RoleplayImmersiveMode
 import com.example.myapplication.model.RoleplayMessageUiModel
 import com.example.myapplication.model.RoleplayScenario
 import com.example.myapplication.model.RoleplaySpeaker
+import com.example.myapplication.roleplay.RoleplayConversationSupport
 import com.example.myapplication.ui.component.AppSnackbarHost
 import com.example.myapplication.ui.component.NarraIconButton
 import com.example.myapplication.ui.component.UserAvatarLoadState
@@ -141,11 +142,10 @@ internal fun RoleplayVideoCallScreen(
             .ifBlank { assistant?.name?.trim().orEmpty() }
             .ifBlank { "角色" }
     }
-    val userName = remember(scenario.userDisplayNameOverride, settings.userDisplayName) {
-        scenario.userDisplayNameOverride.trim()
-            .ifBlank { settings.resolvedUserDisplayName() }
-            .ifBlank { "你" }
+    val userPersona = remember(scenario, settings) {
+        RoleplayConversationSupport.resolveUserPersona(scenario, settings)
     }
+    val userName = userPersona.displayName.ifBlank { "你" }
     val presentationState = remember(messages, activeVideoCallStartedAt) {
         buildVideoCallPresentationState(
             messages = messages,
@@ -246,8 +246,8 @@ internal fun RoleplayVideoCallScreen(
                 }
                 VideoCallFloatingPreview(
                     name = userName,
-                    avatarUri = scenario.userPortraitUri.ifBlank { settings.userAvatarUri },
-                    avatarUrl = scenario.userPortraitUrl.ifBlank { settings.userAvatarUrl },
+                    avatarUri = userPersona.avatarUri,
+                    avatarUrl = userPersona.avatarUrl,
                     modifier = Modifier
                         .padding(start = 12.dp)
                         .size(width = 96.dp, height = 136.dp),

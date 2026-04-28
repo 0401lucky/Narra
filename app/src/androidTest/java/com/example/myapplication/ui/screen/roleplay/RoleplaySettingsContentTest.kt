@@ -32,20 +32,24 @@ class RoleplaySettingsContentTest {
 
         composeRule.setContent {
             RoleplaySettingsContent(
+                activePage = RoleplaySettingsPanelPage.MAIN,
                 scenario = null,
                 assistant = null,
                 settings = settings,
                 contextStatus = RoleplayContextStatus(),
                 currentModel = "",
+                currentProviderId = "",
+                providerOptions = emptyList(),
                 backdropState = roleplayTestBackdropState(),
                 latestPromptDebugDump = "",
                 contextGovernance = null,
                 recentMemoryProposalHistory = emptyList(),
                 longformCharsText = settings.roleplayLongformTargetChars.toString(),
                 onLongformCharsTextChange = {},
+                onNavigateToPage = {},
                 onOpenReadingMode = {},
                 onOpenModelPicker = {},
-                onOpenPromptDebugSheet = {},
+                onOpenContextLog = {},
                 onUpdateShowRoleplayPresenceStrip = { enabled ->
                     settings = settings.copy(showRoleplayPresenceStrip = enabled)
                 },
@@ -72,7 +76,16 @@ class RoleplaySettingsContentTest {
                 onUpdateShowOnlineRoleplayNarration = { enabled ->
                     settings = settings.copy(showOnlineRoleplayNarration = enabled)
                 },
+                onUpdateRoleplayLongformTargetChars = {},
                 onUpdateScenarioInteractionMode = {},
+                onOpenProviderDetail = {},
+                onOpenConnectionSettings = {},
+                onOpenAssistantPrompt = {},
+                onOpenUserMasks = {},
+                onOpenWorldBookSettings = {},
+                onOpenLongMemorySettings = {},
+                onUpdateAssistantMemoryEnabled = {},
+                onRefreshConversationSummary = {},
                 onShowRestartDialog = {},
                 onShowResetDialog = {},
             )

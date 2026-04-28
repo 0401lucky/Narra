@@ -19,8 +19,10 @@ object RoleplayPromptDecorator {
         directorNote: String = "",
         modelId: String = "",
     ): String {
-        val playerName = scenario.userDisplayNameOverride.trim()
-            .ifBlank { settings.resolvedUserDisplayName() }
+        val playerName = RoleplayConversationSupport.resolveUserPersona(
+            scenario = scenario,
+            settings = settings,
+        ).displayName
         val characterName = scenario.characterDisplayNameOverride.trim()
             .ifBlank { assistant?.name?.trim().orEmpty() }
             .ifBlank { "角色" }

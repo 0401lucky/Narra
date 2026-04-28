@@ -18,8 +18,8 @@ class ChatSuggestionCoordinator(
         messages: List<ChatMessage>,
         settings: AppSettings,
     ): ChatSuggestionResult? {
-        val activeProvider = settings.activeProvider() ?: return null
-        val suggestionModel = activeProvider.resolveFunctionModel(ProviderFunction.CHAT_SUGGESTION)
+        val suggestionProvider = settings.resolveFunctionProvider(ProviderFunction.CHAT_SUGGESTION) ?: return null
+        val suggestionModel = settings.resolveFunctionModel(ProviderFunction.CHAT_SUGGESTION)
         if (suggestionModel.isBlank()) {
             return null
         }
@@ -30,11 +30,11 @@ class ChatSuggestionCoordinator(
         }
         val suggestions = aiPromptExtrasService.generateChatSuggestions(
             conversationSummary = summary,
-            baseUrl = activeProvider.baseUrl,
-            apiKey = activeProvider.apiKey,
+            baseUrl = suggestionProvider.baseUrl,
+            apiKey = suggestionProvider.apiKey,
             modelId = suggestionModel,
-            apiProtocol = activeProvider.resolvedApiProtocol(),
-            provider = activeProvider,
+            apiProtocol = suggestionProvider.resolvedApiProtocol(),
+            provider = suggestionProvider,
         )
         return ChatSuggestionResult(
             suggestions = suggestions,

@@ -25,8 +25,6 @@ import com.example.myapplication.roleplay.RoleplayLongformMarkupParser
 import com.example.myapplication.roleplay.RoleplayLongformParagraph
 import com.example.myapplication.roleplay.RoleplayLongformSpanType
 
-import androidx.compose.foundation.border
-
 @Composable
 fun RoleplayLongformCard(
     speakerName: String,
@@ -49,10 +47,9 @@ fun RoleplayLongformCard(
     val shape = RoundedCornerShape(22.dp)
     val border = BorderStroke(0.dp, Color.Transparent)
 
-    val innerContent = @Composable {
+    val innerContent = @Composable { contentModifier: Modifier ->
         Column(
-            modifier = Modifier
-                .padding(horizontal = 20.dp, vertical = 18.dp),
+            modifier = contentModifier,
             verticalArrangement = Arrangement.spacedBy(16.dp),
         ) {
             Text(
@@ -82,8 +79,14 @@ fun RoleplayLongformCard(
             shape = shape,
             variant = ImmersiveReadingGlassVariant.CARD,
         ) {
-            innerContent()
+            innerContent(Modifier.padding(horizontal = 20.dp, vertical = 18.dp))
         }
+    } else if (backdropState != null && backdropState.hasImage) {
+        innerContent(
+            modifier
+                .fillMaxWidth()
+                .padding(horizontal = 18.dp, vertical = 10.dp),
+        )
     } else if (backdropState != null) {
         ImmersiveReadingGlassSurface(
             backdropState = backdropState,
@@ -92,7 +95,7 @@ fun RoleplayLongformCard(
             variant = ImmersiveReadingGlassVariant.CARD,
             overlayColor = containerColor,
         ) {
-            innerContent()
+            innerContent(Modifier.padding(horizontal = 20.dp, vertical = 18.dp))
         }
     } else {
         Surface(
@@ -103,7 +106,7 @@ fun RoleplayLongformCard(
             tonalElevation = 0.dp,
             shadowElevation = 0.dp,
         ) {
-            innerContent()
+            innerContent(Modifier.padding(horizontal = 20.dp, vertical = 18.dp))
         }
     }
 }
@@ -136,7 +139,7 @@ private fun LongformParagraphText(
         style = MaterialTheme.typography.bodyLarge.copy(
             fontSize = 17.sp,
             lineHeight = baseLineHeight * lineHeightScale,
-            letterSpacing = 0.3.sp,
+            letterSpacing = 0.sp,
             shadow = GlassTextShadow,
         ),
         color = bodyColor,
@@ -183,7 +186,7 @@ private fun buildLongformAnnotatedString(
                             fontStyle = FontStyle.Italic,
                             fontWeight = FontWeight.Normal,
                             fontSize = 15.sp,
-                            letterSpacing = 0.5.sp,
+                            letterSpacing = 0.sp,
                         ),
                     ) {
                         if (!alreadyWrapped) append("（")

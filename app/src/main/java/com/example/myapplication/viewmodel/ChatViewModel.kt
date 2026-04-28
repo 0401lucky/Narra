@@ -688,9 +688,7 @@ class ChatViewModel(
         sourceLabel: String,
     ) {
         val state = _uiState.value
-        val activeProvider = state.settings.activeProvider()
-        val translationModel = activeProvider?.resolveFunctionModel(ProviderFunction.TRANSLATION)
-            .orEmpty()
+        val translationModel = state.settings.resolveFunctionModel(ProviderFunction.TRANSLATION)
         if (translationModel.isBlank()) {
             _uiState.update { current ->
                 ChatStateSupport.applyErrorMessage(current, "请先在模型页开启翻译模型")
@@ -1540,14 +1538,12 @@ class ChatViewModel(
         val conversationId = validateAndGetConversationId(state) ?: return
         val selectedModel = ChatConversationSupport.resolveSelectedModelId(state.settings)
         val baseMessages = ChatConversationSupport.currentConversationMessages(state.messages, conversationId)
-        val activeProvider = state.settings.activeProvider()
+        val giftProvider = state.settings.resolveFunctionProvider(ProviderFunction.GIFT_IMAGE)
         val originalGiftPart = normalizeChatMessageParts(userParts).firstOrNull { it.isGiftPart() }
-        val giftImageModelId = activeProvider
-            ?.resolveFunctionModel(ProviderFunction.GIFT_IMAGE)
-            .orEmpty()
+        val giftImageModelId = state.settings.resolveFunctionModel(ProviderFunction.GIFT_IMAGE)
             .trim()
         val shouldGenerateGiftImage = originalGiftPart != null &&
-            activeProvider != null &&
+            giftProvider != null &&
             giftImageModelId.isNotBlank()
         val imageReferenceAttachments = resolveImageReferenceAttachments(userParts)
         val resolvedUserParts = if (shouldGenerateGiftImage) {
@@ -1574,10 +1570,10 @@ class ChatViewModel(
             if (giftPart == null) {
                 null
             } else {
-                GiftImageGenerationRequest(
-                    conversationId = conversationId,
-                    selectedModel = selectedModel,
-                    provider = activeProvider,
+                    GiftImageGenerationRequest(
+                        conversationId = conversationId,
+                        selectedModel = selectedModel,
+                        provider = giftProvider,
                     specialId = giftPart.specialId,
                     giftName = giftPart.specialMetadataValue("item"),
                     recipientName = giftPart.specialMetadataValue("target"),

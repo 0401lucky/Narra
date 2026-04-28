@@ -40,8 +40,7 @@ object RoleplayMessageUiMapper {
         if (scenario == null) {
             return emptyList()
         }
-        val userName = scenario.userDisplayNameOverride.trim()
-            .ifBlank { settings.resolvedUserDisplayName() }
+        val userName = RoleplayConversationSupport.resolveUserPersona(scenario, settings).displayName
         val characterName = scenario.characterDisplayNameOverride.trim()
             .ifBlank { assistant?.name?.trim().orEmpty() }
             .ifBlank { "角色" }

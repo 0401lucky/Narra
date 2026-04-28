@@ -20,8 +20,7 @@ data class SummaryUpdateResult(
 )
 
 internal fun resolveConversationSummaryModel(settings: AppSettings): String {
-    val activeProvider = settings.activeProvider() ?: return ""
-    return activeProvider.resolveFunctionModel(ProviderFunction.TITLE_SUMMARY)
+    return settings.resolveFunctionModel(ProviderFunction.TITLE_SUMMARY)
 }
 
 class ConversationSummaryCoordinator(
@@ -42,7 +41,8 @@ class ConversationSummaryCoordinator(
         if (completedMessages.size <= config.triggerMessageCount) {
             return SummaryUpdateResult()
         }
-        val activeProvider = settings.activeProvider() ?: return SummaryUpdateResult()
+        val summaryProvider = settings.resolveFunctionProvider(ProviderFunction.TITLE_SUMMARY)
+            ?: return SummaryUpdateResult()
         val summaryModel = resolveConversationSummaryModel(settings)
         if (summaryModel.isBlank()) {
             return SummaryUpdateResult()
@@ -68,10 +68,10 @@ class ConversationSummaryCoordinator(
         }
         val summaryText = generateSummary(
             summaryInput,
-            activeProvider.baseUrl,
-            activeProvider.apiKey,
+            summaryProvider.baseUrl,
+            summaryProvider.apiKey,
             summaryModel,
-            activeProvider.resolvedApiProtocol(),
+            summaryProvider.resolvedApiProtocol(),
         )
         conversationSummaryRepository.upsertSummary(
             ConversationSummary(

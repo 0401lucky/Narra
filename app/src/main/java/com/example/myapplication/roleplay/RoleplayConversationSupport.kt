@@ -6,6 +6,7 @@ import com.example.myapplication.model.Assistant
 import com.example.myapplication.model.ChatMessage
 import com.example.myapplication.model.MessageRole
 import com.example.myapplication.model.ProviderFunction
+import com.example.myapplication.model.ResolvedUserPersona
 import com.example.myapplication.model.RoleplayInteractionMode
 import com.example.myapplication.model.RoleplayOnlineEventKind
 import com.example.myapplication.model.RoleplayScenario
@@ -19,12 +20,57 @@ object RoleplayConversationSupport {
         assistant: Assistant?,
         settings: AppSettings,
     ): Pair<String, String> {
-        val userName = scenario.userDisplayNameOverride.trim()
-            .ifBlank { settings.resolvedUserDisplayName() }
+        val userName = resolveUserPersona(scenario, settings).displayName
         val characterName = scenario.characterDisplayNameOverride.trim()
             .ifBlank { assistant?.name?.trim().orEmpty() }
             .ifBlank { "角色" }
         return userName to characterName
+    }
+
+    fun resolveUserPersona(
+        scenario: RoleplayScenario?,
+        settings: AppSettings,
+    ): ResolvedUserPersona {
+        return if (scenario == null) {
+            settings.resolveUserPersona()
+        } else {
+            settings.resolveUserPersona(
+                maskId = scenario.userPersonaMaskId,
+                displayNameOverride = scenario.userDisplayNameOverride,
+                personaPromptOverride = scenario.userPersonaOverride,
+                avatarUriOverride = scenario.userPortraitUri,
+                avatarUrlOverride = scenario.userPortraitUrl,
+            )
+        }
+    }
+
+    fun resolvePromptSettings(
+        scenario: RoleplayScenario,
+        settings: AppSettings,
+    ): AppSettings {
+        val persona = resolveUserPersona(scenario, settings)
+        return settings.copy(
+            userDisplayName = persona.displayName,
+            userPersonaPrompt = if (scenario.userPersonaOverride.isBlank()) {
+                persona.personaPrompt
+            } else {
+                ""
+            },
+            userAvatarUri = persona.avatarUri,
+            userAvatarUrl = persona.avatarUrl,
+        )
+    }
+
+    fun resolvePromptAssistant(
+        scenario: RoleplayScenario,
+        assistant: Assistant?,
+    ): Assistant? {
+        val characterNameOverride = scenario.characterDisplayNameOverride.trim()
+        return if (characterNameOverride.isBlank()) {
+            assistant
+        } else {
+            assistant?.copy(name = characterNameOverride)
+        }
     }
 
     fun resolveAssistant(settings: AppSettings, assistantId: String): Assistant? {
@@ -39,9 +85,7 @@ object RoleplayConversationSupport {
     }
 
     fun resolveSuggestionModelId(settings: AppSettings): String {
-        return settings.activeProvider()
-            ?.resolveFunctionModel(ProviderFunction.CHAT_SUGGESTION)
-            .orEmpty()
+        return settings.resolveFunctionModel(ProviderFunction.CHAT_SUGGESTION)
     }
 
     fun buildTranscriptInput(

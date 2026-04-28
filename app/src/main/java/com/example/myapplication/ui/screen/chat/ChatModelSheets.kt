@@ -59,6 +59,7 @@ import com.example.myapplication.model.ProviderSettings
 import com.example.myapplication.model.ReasoningBudgetPreset
 import com.example.myapplication.model.inferModelAbilities
 import com.example.myapplication.model.resolveReasoningBudgetLabel
+import com.example.myapplication.model.sortedForModelListDisplay
 import com.example.myapplication.model.supportsThinkingBudgetControl
 import com.example.myapplication.ui.component.ModelIcon
 
@@ -265,7 +266,7 @@ internal fun ModelPickerSheet(
                     ),
                 )
             }
-        }
+        }.sortedForModelListDisplay()
     }
     val filteredModelInfos = remember(modelInfos, normalizedQuery, selectedProviderMatchesSearch, matchedProviderOptions) {
         filterModelInfosForQuery(

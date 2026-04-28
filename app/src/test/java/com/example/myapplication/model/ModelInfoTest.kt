@@ -381,4 +381,52 @@ class ModelInfoTest {
         assertEquals(setOf(ModelAbility.REASONING, ModelAbility.TOOL), merged.first().resolvedAbilities())
         assertTrue(merged.first().abilitiesCustomized)
     }
+
+    @Test
+    fun sortedForModelListDisplay_groupsAppendedDeepSeekModelsWithDeepSeekFamily() {
+        val models = listOf(
+            ModelInfo(modelId = "deepseek-chat"),
+            ModelInfo(modelId = "deepseek-reasoner"),
+            ModelInfo(modelId = "qwen3-max"),
+            ModelInfo(modelId = "gpt-5"),
+            ModelInfo(modelId = "deepseek-ai/DeepSeek-V3.2"),
+            ModelInfo(modelId = "deepseek-v3.1-terminus"),
+        )
+
+        val sortedIds = models.sortedForModelListDisplay().map(ModelInfo::modelId)
+
+        assertEquals(
+            listOf(
+                "deepseek-chat",
+                "deepseek-reasoner",
+                "deepseek-v3.1-terminus",
+                "deepseek-ai/DeepSeek-V3.2",
+                "qwen3-max",
+                "gpt-5",
+            ),
+            sortedIds,
+        )
+    }
+
+    @Test
+    fun sortedForModelListDisplay_keepsUnknownFamiliesNearTheirOriginalSection() {
+        val models = listOf(
+            ModelInfo(modelId = "foo-2"),
+            ModelInfo(modelId = "deepseek-chat"),
+            ModelInfo(modelId = "foo-10"),
+            ModelInfo(modelId = "bar-1"),
+        )
+
+        val sortedIds = models.sortedForModelListDisplay().map(ModelInfo::modelId)
+
+        assertEquals(
+            listOf(
+                "foo-2",
+                "foo-10",
+                "deepseek-chat",
+                "bar-1",
+            ),
+            sortedIds,
+        )
+    }
 }

@@ -62,6 +62,7 @@ import com.example.myapplication.ui.component.roleplay.RoleplayInputQuickAction
 import com.example.myapplication.ui.component.roleplay.RoleplayPortraitLayer
 import com.example.myapplication.ui.component.roleplay.RoleplayPortraitSpec
 import com.example.myapplication.ui.component.roleplay.RoleplaySceneBackground
+import com.example.myapplication.roleplay.RoleplayConversationSupport
 import com.example.myapplication.roleplay.RoleplaySceneMood
 import com.example.myapplication.roleplay.RoleplaySceneMoodState
 import com.example.myapplication.roleplay.resolveRoleplaySceneMood
@@ -111,8 +112,10 @@ internal fun RoleplaySceneContent(
     val characterName = scenario.characterDisplayNameOverride.trim()
         .ifBlank { assistant?.name?.trim().orEmpty() }
         .ifBlank { "角色" }
-    val userName = scenario.userDisplayNameOverride.trim()
-        .ifBlank { settings.resolvedUserDisplayName() }
+    val userPersona = remember(scenario, settings) {
+        RoleplayConversationSupport.resolveUserPersona(scenario, settings)
+    }
+    val userName = userPersona.displayName
     val highlightedSpeaker = remember(messages, isSending) {
         when {
             isSending -> RoleplaySpeaker.CHARACTER
@@ -130,8 +133,8 @@ internal fun RoleplaySceneContent(
     val userPortrait = remember(scenario, settings, userName) {
         RoleplayPortraitSpec(
             name = userName,
-            avatarUri = scenario.userPortraitUri.trim().ifBlank { settings.userAvatarUri.trim() },
-            avatarUrl = scenario.userPortraitUrl.trim().ifBlank { settings.userAvatarUrl.trim() },
+            avatarUri = userPersona.avatarUri,
+            avatarUrl = userPersona.avatarUrl,
             fallbackLabel = "玩家",
         )
     }

@@ -1,5 +1,7 @@
 package com.example.myapplication.model
 
+import java.util.Locale
+
 /** 模型能力标签，只标注有区分度的特殊能力。 */
 enum class ModelAbility(val label: String) {
     /** 支持图片输入。 */
@@ -96,3 +98,102 @@ fun mergeModelInfosPreservingOverrides(
         }
     }
 }
+
+fun List<ModelInfo>.sortedForModelListDisplay(): List<ModelInfo> {
+    if (size <= 1) {
+        return this
+    }
+    val familyFirstIndex = linkedMapOf<String, Int>()
+    forEachIndexed { index, model ->
+        familyFirstIndex.putIfAbsent(model.modelFamilySortKey(), index)
+    }
+    return withIndex()
+        .sortedWith { left, right ->
+            val leftFamily = left.value.modelFamilySortKey()
+            val rightFamily = right.value.modelFamilySortKey()
+            val familyCompare = familyFirstIndex.getValue(leftFamily)
+                .compareTo(familyFirstIndex.getValue(rightFamily))
+            if (familyCompare != 0) {
+                familyCompare
+            } else {
+                val naturalCompare = compareModelNamesNaturally(
+                    left.value.modelSortName(),
+                    right.value.modelSortName(),
+                )
+                if (naturalCompare != 0) {
+                    naturalCompare
+                } else {
+                    left.index.compareTo(right.index)
+                }
+            }
+        }
+        .map { it.value }
+}
+
+private fun ModelInfo.modelSortName(): String {
+    return modelId.trim()
+        .substringAfterLast('/')
+        .lowercase(Locale.ROOT)
+}
+
+private fun ModelInfo.modelFamilySortKey(): String {
+    val normalized = modelId.trim().lowercase(Locale.ROOT)
+    return when {
+        "deepseek" in normalized -> "deepseek"
+        "qwen" in normalized || QWQ_MODEL_PATTERN.containsMatchIn(normalized) -> "qwen"
+        "claude" in normalized -> "claude"
+        "gemini" in normalized -> "gemini"
+        "gpt" in normalized || OPENAI_REASONING_MODEL_PATTERN.containsMatchIn(normalized) -> "openai"
+        "grok" in normalized -> "grok"
+        "glm" in normalized -> "glm"
+        "kimi" in normalized || "moonshot" in normalized -> "kimi"
+        "llama" in normalized -> "llama"
+        "mistral" in normalized -> "mistral"
+        else -> normalized
+            .substringAfterLast('/')
+            .substringBefore(':')
+            .substringBefore('-')
+            .substringBefore('_')
+            .substringBefore('.')
+            .ifBlank { normalized }
+    }
+}
+
+private fun compareModelNamesNaturally(left: String, right: String): Int {
+    val leftTokens = MODEL_SORT_TOKEN.findAll(left).map { it.value }.toList()
+    val rightTokens = MODEL_SORT_TOKEN.findAll(right).map { it.value }.toList()
+    val maxSize = minOf(leftTokens.size, rightTokens.size)
+    for (index in 0 until maxSize) {
+        val leftToken = leftTokens[index]
+        val rightToken = rightTokens[index]
+        val compare = if (leftToken.firstOrNull()?.isDigit() == true &&
+            rightToken.firstOrNull()?.isDigit() == true
+        ) {
+            compareNumericText(leftToken, rightToken)
+        } else {
+            leftToken.compareTo(rightToken)
+        }
+        if (compare != 0) {
+            return compare
+        }
+    }
+    return leftTokens.size.compareTo(rightTokens.size)
+}
+
+private fun compareNumericText(left: String, right: String): Int {
+    val normalizedLeft = left.trimStart('0').ifBlank { "0" }
+    val normalizedRight = right.trimStart('0').ifBlank { "0" }
+    val lengthCompare = normalizedLeft.length.compareTo(normalizedRight.length)
+    if (lengthCompare != 0) {
+        return lengthCompare
+    }
+    val valueCompare = normalizedLeft.compareTo(normalizedRight)
+    if (valueCompare != 0) {
+        return valueCompare
+    }
+    return left.length.compareTo(right.length)
+}
+
+private val MODEL_SORT_TOKEN = Regex("\\d+|\\D+")
+private val QWQ_MODEL_PATTERN = Regex("(^|[/_.:-])qwq($|[/_.:-])")
+private val OPENAI_REASONING_MODEL_PATTERN = Regex("(^|[/_.:-])o[1-9]($|[/_.:-])")

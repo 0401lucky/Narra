@@ -3,6 +3,8 @@ package com.example.myapplication.viewmodel
 import com.example.myapplication.data.repository.ai.AiSettingsEditor
 import com.example.myapplication.model.AppSettings
 import com.example.myapplication.model.Assistant
+import com.example.myapplication.model.FunctionModelProviderIds
+import com.example.myapplication.model.ProviderFunction
 import com.example.myapplication.model.ProviderSettings
 import com.example.myapplication.model.RoleplayImmersiveMode
 import com.example.myapplication.model.RoleplayLineHeightScale
@@ -13,6 +15,7 @@ import com.example.myapplication.model.SearchSourceIds
 import com.example.myapplication.model.SearchSourceType
 import com.example.myapplication.model.ThemeMode
 import com.example.myapplication.model.TranslationHistoryEntry
+import com.example.myapplication.model.UserPersonaMask
 import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -34,6 +37,9 @@ class SettingsPersistenceCoordinatorTest {
         val state = SettingsUiState(
             providers = listOf(provider),
             selectedProviderId = provider.id,
+            functionModelProviderIds = FunctionModelProviderIds(
+                titleSummaryProviderId = provider.id,
+            ),
             themeMode = ThemeMode.DARK,
             messageTextScale = 1.1f,
             reasoningExpandedByDefault = false,
@@ -76,6 +82,8 @@ class SettingsPersistenceCoordinatorTest {
         assertEquals("https://example.com/v1/", editor.savedProviders.single().baseUrl)
         assertEquals("model-a", editor.savedProviders.single().selectedModel)
         assertEquals(provider.id, editor.savedSelectedProviderId)
+        assertEquals(provider.id, editor.savedFunctionModelProviderIds.providerIdFor(ProviderFunction.TITLE_SUMMARY))
+        assertEquals(provider.id, result.functionModelProviderIds?.providerIdFor(ProviderFunction.TITLE_SUMMARY))
         assertEquals(ThemeMode.DARK, editor.savedThemeMode)
         assertFalse(editor.savedReasoningExpandedByDefault)
         assertTrue(editor.savedCodeBlockAutoWrap)
@@ -209,6 +217,26 @@ class SettingsPersistenceCoordinatorTest {
         assertEquals("https://cdn.example.com/avatar.png", editor.savedAvatarUrl)
     }
 
+    @Test
+    fun saveUserPersonaMasks_delegatesToEditor() = runBlocking {
+        val editor = RecordingSettingsEditor()
+        val coordinator = SettingsPersistenceCoordinator(editor)
+        val mask = UserPersonaMask(
+            id = "mask-1",
+            name = "测试面具",
+            personaPrompt = "测试面具人设",
+        )
+
+        val result = coordinator.saveUserPersonaMasks(
+            masks = listOf(mask),
+            defaultMaskId = mask.id,
+        )
+
+        assertEquals("面具已更新", result.message)
+        assertEquals(listOf(mask), editor.savedUserPersonaMasks)
+        assertEquals("mask-1", editor.savedDefaultUserPersonaMaskId)
+    }
+
     private class RecordingSettingsEditor : AiSettingsEditor {
         var savedProviders: List<ProviderSettings> = emptyList()
         var savedSelectedProviderId: String = ""
@@ -234,10 +262,20 @@ class SettingsPersistenceCoordinatorTest {
         var savedPersonaPrompt: String = ""
         var savedAvatarUri: String = ""
         var savedAvatarUrl: String = ""
+        var savedUserPersonaMasks: List<UserPersonaMask> = emptyList()
+        var savedDefaultUserPersonaMaskId: String = ""
+        var savedFunctionModelProviderIds: com.example.myapplication.model.FunctionModelProviderIds =
+            com.example.myapplication.model.FunctionModelProviderIds()
 
         override suspend fun saveProviderSettings(providers: List<ProviderSettings>, selectedProviderId: String) {
             savedProviders = providers
             savedSelectedProviderId = selectedProviderId
+        }
+
+        override suspend fun saveFunctionModelProviderIds(
+            functionModelProviderIds: com.example.myapplication.model.FunctionModelProviderIds,
+        ) {
+            savedFunctionModelProviderIds = functionModelProviderIds
         }
 
         override suspend fun saveTranslationHistory(history: List<TranslationHistoryEntry>) = Unit
@@ -294,6 +332,11 @@ class SettingsPersistenceCoordinatorTest {
             savedPersonaPrompt = personaPrompt
             savedAvatarUri = avatarUri
             savedAvatarUrl = avatarUrl
+        }
+
+        override suspend fun saveUserPersonaMasks(masks: List<UserPersonaMask>, defaultMaskId: String) {
+            savedUserPersonaMasks = masks
+            savedDefaultUserPersonaMaskId = defaultMaskId
         }
 
         override suspend fun saveRoleplayAssistantMismatchDialogPreference(suppressed: Boolean) = Unit

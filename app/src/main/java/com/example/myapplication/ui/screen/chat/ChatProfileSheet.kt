@@ -2,10 +2,12 @@ package com.example.myapplication.ui.screen.chat
 
 import com.example.myapplication.ui.component.*
 
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -21,7 +23,11 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Image
+import androidx.compose.material.icons.filled.KeyboardArrowDown
+import androidx.compose.material.icons.filled.KeyboardArrowUp
 import androidx.compose.material.icons.filled.Link
+import androidx.compose.material.icons.filled.ManageAccounts
+import androidx.compose.material.icons.filled.Check
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.Icon
@@ -33,6 +39,10 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -42,6 +52,7 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
 import com.example.myapplication.model.DEFAULT_USER_DISPLAY_NAME
+import com.example.myapplication.model.UserPersonaMask
 import com.example.myapplication.ui.component.UserAvatarLoadState
 import com.example.myapplication.ui.component.UserAvatarSource
 import com.example.myapplication.ui.component.UserProfileAvatar
@@ -59,6 +70,12 @@ internal fun ProfileEditorSheet(
     onAvatarUrlChange: (String) -> Unit,
     onPickLocalAvatar: () -> Unit,
     onClearAvatar: () -> Unit,
+    maskCount: Int,
+    defaultMaskName: String,
+    masks: List<UserPersonaMask>,
+    defaultMaskId: String,
+    onOpenUserMasks: () -> Unit,
+    onSetDefaultMask: (String) -> Unit,
     onDismissRequest: () -> Unit,
     onSave: () -> Unit,
 ) {
@@ -95,6 +112,12 @@ internal fun ProfileEditorSheet(
         avatarUri.isNotBlank() -> "当前使用本地图片头像。"
         else -> "未设置头像时，会显示昵称首字。"
     }
+    val maskSummary = when {
+        maskCount <= 0 -> "还没有面具，可以从这里创建不同对话里的“我”。"
+        defaultMaskName.isNotBlank() -> "默认：$defaultMaskName · 共 $maskCount 个身份"
+        else -> "$maskCount 个身份，未设置默认面具"
+    }
+    var masksExpanded by rememberSaveable { mutableStateOf(false) }
 
     ModalBottomSheet(
         onDismissRequest = onDismissRequest,
@@ -117,7 +140,7 @@ internal fun ProfileEditorSheet(
                     style = MaterialTheme.typography.titleLarge,
                 )
                 Text(
-                    text = "这里会同步更新侧边栏顶部的用户名、头像和线上模式里的用户人设。",
+                    text = "这里只保存基础用户名和头像；对话里的身份、人设和关系感交给面具管理。",
                     style = MaterialTheme.typography.bodyMedium,
                     color = colorScheme.onSurfaceVariant,
                 )
@@ -253,18 +276,87 @@ internal fun ProfileEditorSheet(
                 },
             )
 
-            OutlinedTextField(
-                value = personaPrompt,
-                onValueChange = onPersonaPromptChange,
-                modifier = Modifier.fillMaxWidth(),
-                minLines = 4,
-                maxLines = 8,
-                label = { Text("用户人设") },
-                placeholder = { Text("填写你在角色扮演中的全局身份、性格和关系设定") },
-                supportingText = {
-                    Text("线上模式会优先读取这里的内容，场景页可再做局部覆写。")
-                },
-            )
+            Surface(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(22.dp)),
+                shape = RoundedCornerShape(22.dp),
+                color = colorScheme.secondaryContainer.copy(alpha = 0.55f),
+            ) {
+                Column(modifier = Modifier.fillMaxWidth()) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable { masksExpanded = !masksExpanded }
+                            .padding(horizontal = 16.dp, vertical = 14.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(14.dp),
+                    ) {
+                        Surface(
+                            modifier = Modifier.size(44.dp),
+                            shape = RoundedCornerShape(14.dp),
+                            color = colorScheme.surface.copy(alpha = 0.72f),
+                            contentColor = colorScheme.primary,
+                        ) {
+                            Box(contentAlignment = Alignment.Center) {
+                                Icon(Icons.Default.ManageAccounts, contentDescription = null)
+                            }
+                        }
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(
+                                text = "我的面具",
+                                style = MaterialTheme.typography.titleSmall,
+                                color = colorScheme.onSecondaryContainer,
+                            )
+                            Text(
+                                text = maskSummary,
+                                style = MaterialTheme.typography.bodySmall,
+                                color = colorScheme.onSecondaryContainer.copy(alpha = 0.72f),
+                            )
+                        }
+                        Icon(
+                            imageVector = if (masksExpanded) {
+                                Icons.Default.KeyboardArrowUp
+                            } else {
+                                Icons.Default.KeyboardArrowDown
+                            },
+                            contentDescription = null,
+                            tint = colorScheme.onSecondaryContainer,
+                        )
+                    }
+                    AnimatedVisibility(visible = masksExpanded) {
+                        Column(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(start = 14.dp, end = 14.dp, bottom = 14.dp),
+                            verticalArrangement = Arrangement.spacedBy(8.dp),
+                        ) {
+                            if (masks.isEmpty()) {
+                                Text(
+                                    text = "暂无面具，点管理创建第一张身份。",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = colorScheme.onSecondaryContainer.copy(alpha = 0.72f),
+                                    modifier = Modifier.padding(horizontal = 4.dp),
+                                )
+                            } else {
+                                masks.forEach { mask ->
+                                    ProfileMaskOptionRow(
+                                        mask = mask,
+                                        selected = mask.id == defaultMaskId,
+                                        onClick = { onSetDefaultMask(mask.id) },
+                                    )
+                                }
+                            }
+                            NarraOutlinedButton(
+                                onClick = onOpenUserMasks,
+                                modifier = Modifier.fillMaxWidth(),
+                            ) {
+                                Text("管理面具")
+                            }
+                        }
+                    }
+                }
+            }
 
             Row(
                 modifier = Modifier.fillMaxWidth(),
@@ -296,6 +388,62 @@ internal fun ProfileEditorSheet(
                 modifier = Modifier.fillMaxWidth(),
             ) {
                 Text("保存资料")
+            }
+        }
+    }
+}
+
+@Composable
+private fun ProfileMaskOptionRow(
+    mask: UserPersonaMask,
+    selected: Boolean,
+    onClick: () -> Unit,
+) {
+    val colorScheme = MaterialTheme.colorScheme
+    Surface(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(16.dp))
+            .clickable(onClick = onClick),
+        shape = RoundedCornerShape(16.dp),
+        color = if (selected) {
+            colorScheme.surface.copy(alpha = 0.78f)
+        } else {
+            colorScheme.surface.copy(alpha = 0.42f)
+        },
+    ) {
+        Row(
+            modifier = Modifier.padding(horizontal = 12.dp, vertical = 10.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(10.dp),
+        ) {
+            UserProfileAvatar(
+                displayName = mask.name,
+                avatarUri = mask.avatarUri,
+                avatarUrl = mask.avatarUrl,
+                modifier = Modifier.size(34.dp),
+                containerColor = colorScheme.primaryContainer,
+                contentColor = colorScheme.onPrimaryContainer,
+            )
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = mask.name,
+                    style = MaterialTheme.typography.titleSmall,
+                    color = colorScheme.onSurface,
+                )
+                Text(
+                    text = mask.personaPrompt.ifBlank { mask.note }.ifBlank { "未填写人设" },
+                    style = MaterialTheme.typography.bodySmall,
+                    color = colorScheme.onSurfaceVariant,
+                    maxLines = 1,
+                )
+            }
+            if (selected) {
+                Icon(
+                    imageVector = Icons.Default.Check,
+                    contentDescription = "当前默认面具",
+                    tint = colorScheme.primary,
+                )
             }
         }
     }

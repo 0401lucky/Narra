@@ -108,6 +108,32 @@ class AppSettingsTest {
     }
 
     @Test
+    fun resolveFunctionProvider_usesAssignedProviderWithoutChangingChatProvider() {
+        val chatProvider = ProviderSettings(
+            id = "provider-chat",
+            name = "Chat",
+            selectedModel = "chat-model",
+        )
+        val titleProvider = ProviderSettings(
+            id = "provider-title",
+            name = "Title",
+            selectedModel = "title-default",
+            titleSummaryModel = "title-model",
+        )
+        val settings = AppSettings(
+            providers = listOf(chatProvider, titleProvider),
+            selectedProviderId = chatProvider.id,
+            functionModelProviderIds = FunctionModelProviderIds(
+                titleSummaryProviderId = titleProvider.id,
+            ),
+        )
+
+        assertEquals(chatProvider.id, settings.activeProvider()?.id)
+        assertEquals(titleProvider.id, settings.resolveFunctionProvider(ProviderFunction.TITLE_SUMMARY)?.id)
+        assertEquals("title-model", settings.resolveFunctionModel(ProviderFunction.TITLE_SUMMARY))
+    }
+
+    @Test
     fun hasConfiguredSearchSource_acceptsLlmSearchWhenProviderHasSearchModelAndResponsesMode() {
         val provider = ProviderSettings(
             id = "provider-search",
@@ -219,5 +245,39 @@ class AppSettingsTest {
         assertEquals("新的系统提示词", resolved.systemPrompt)
         assertEquals("新的备注", resolved.creatorNotes)
         assertTrue(resolved.isBuiltin)
+    }
+
+    @Test
+    fun normalizedUserPersonaMasks_wrapsExistingProfileAsBaseMask() {
+        val settings = AppSettings(
+            userDisplayName = "lucky",
+            userPersonaPrompt = "【lucky的人设】\n姓名：lucky",
+            userAvatarUri = "content://avatar/lucky",
+        )
+
+        val mask = settings.normalizedUserPersonaMasks().single()
+
+        assertEquals(USER_PROFILE_PERSONA_MASK_ID, mask.id)
+        assertEquals("lucky", mask.name)
+        assertEquals("【lucky的人设】\n姓名：lucky", mask.personaPrompt)
+        assertEquals("content://avatar/lucky", mask.avatarUri)
+        assertEquals(USER_PROFILE_PERSONA_MASK_ID, settings.resolvedDefaultUserPersonaMask()?.id)
+    }
+
+    @Test
+    fun normalizedUserPersonaMasks_keepsProfileMaskBeforeCustomMasks() {
+        val customMask = UserPersonaMask(
+            id = "mask-custom",
+            name = "自定义面具",
+        )
+        val settings = AppSettings(
+            userDisplayName = "lucky",
+            userPersonaPrompt = "现有用户人设",
+            userPersonaMasks = listOf(customMask),
+        )
+
+        val masks = settings.normalizedUserPersonaMasks()
+
+        assertEquals(listOf(USER_PROFILE_PERSONA_MASK_ID, "mask-custom"), masks.map { it.id })
     }
 }

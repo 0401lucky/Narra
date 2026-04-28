@@ -1,5 +1,6 @@
 package com.example.myapplication.ui.screen.immersive
 
+import androidx.compose.animation.AnimatedVisibility
 import android.icu.text.Transliterator
 import android.os.Build
 import androidx.annotation.RequiresApi
@@ -34,11 +35,15 @@ import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.AutoStories
 import androidx.compose.material.icons.filled.Book
 import androidx.compose.material.icons.filled.Chat
+import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Forum
 import androidx.compose.material.icons.filled.Group
 import androidx.compose.material.icons.filled.Info
+import androidx.compose.material.icons.filled.KeyboardArrowDown
+import androidx.compose.material.icons.filled.KeyboardArrowUp
+import androidx.compose.material.icons.filled.ManageAccounts
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.NotificationsOff
 import androidx.compose.material.icons.filled.Person
@@ -95,8 +100,10 @@ import com.example.myapplication.model.MessageRole
 import com.example.myapplication.model.RoleplayChatSummary
 import com.example.myapplication.model.RoleplayInteractionMode
 import com.example.myapplication.model.RoleplayScenario
+import com.example.myapplication.model.UserPersonaMask
 import com.example.myapplication.ui.component.AppSnackbarHost
 import com.example.myapplication.ui.component.AssistantAvatar
+import com.example.myapplication.ui.component.UserProfileAvatar
 import java.text.Collator
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -109,6 +116,8 @@ data class ImmersivePhoneCallbacks(
     val onOpenChatManage: () -> Unit,
     val onOpenChatEdit: (String) -> Unit,
     val onOpenSettings: () -> Unit,
+    val onOpenUserMasks: () -> Unit,
+    val onSetDefaultUserPersonaMask: (String) -> Unit,
     val onOpenAssistantCreate: () -> Unit,
     val onCreateChat: (String, RoleplayInteractionMode, Boolean) -> Unit,
     val onUpdatePinned: (String, Boolean) -> Unit,
@@ -280,6 +289,8 @@ fun ImmersivePhoneShell(
                     chatCount = sortedSummaries.size,
                     assistantCount = assistants.size,
                     onOpenChatManage = callbacks.onOpenChatManage,
+                    onOpenUserMasks = callbacks.onOpenUserMasks,
+                    onSetDefaultUserPersonaMask = callbacks.onSetDefaultUserPersonaMask,
                     onOpenSettings = callbacks.onOpenSettings,
                 )
             }
@@ -819,8 +830,18 @@ private fun ImmersiveProfilePage(
     chatCount: Int,
     assistantCount: Int,
     onOpenChatManage: () -> Unit,
+    onOpenUserMasks: () -> Unit,
+    onSetDefaultUserPersonaMask: (String) -> Unit,
     onOpenSettings: () -> Unit,
 ) {
+    val masks = settings.normalizedUserPersonaMasks()
+    val defaultMask = settings.resolvedDefaultUserPersonaMask()
+    val maskSummary = when {
+        masks.isEmpty() -> "还没有面具，先用全局个人资料"
+        defaultMask != null -> "默认：${defaultMask.name} · 共 ${masks.size} 个身份"
+        else -> "${masks.size} 个身份，未设置默认"
+    }
+    var masksExpanded by rememberSaveable { mutableStateOf(false) }
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
         contentPadding = PaddingValues(vertical = 18.dp),
@@ -838,14 +859,18 @@ private fun ImmersiveProfilePage(
                     modifier = Modifier.padding(18.dp),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
-                    Surface(
+                    Box(
                         modifier = Modifier.size(60.dp),
-                        shape = RoundedCornerShape(16.dp),
-                        color = MaterialTheme.colorScheme.primaryContainer,
+                        contentAlignment = Alignment.Center,
                     ) {
-                        Box(contentAlignment = Alignment.Center) {
-                            Icon(Icons.Default.Person, contentDescription = null)
-                        }
+                        UserProfileAvatar(
+                            displayName = settings.resolvedUserDisplayName(),
+                            avatarUri = settings.userAvatarUri,
+                            avatarUrl = settings.userAvatarUrl,
+                            modifier = Modifier.fillMaxSize(),
+                            containerColor = MaterialTheme.colorScheme.primaryContainer,
+                            contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
+                        )
                     }
                     Spacer(modifier = Modifier.width(14.dp))
                     Column(modifier = Modifier.weight(1f)) {
@@ -854,13 +879,175 @@ private fun ImmersiveProfilePage(
                             text = "$chatCount 个聊天 · $assistantCount 位角色",
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
+                        Text(
+                            text = maskSummary,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.primary,
+                        )
                     }
                 }
             }
         }
+        item {
+            ImmersiveMaskSwitcher(
+                masks = masks,
+                defaultMask = defaultMask,
+                expanded = masksExpanded,
+                onToggleExpanded = { masksExpanded = !masksExpanded },
+                onSetDefaultMask = onSetDefaultUserPersonaMask,
+                onOpenUserMasks = onOpenUserMasks,
+            )
+        }
         item { FeatureRow("聊天管理", "查看、编辑和删除聊天资料", Icons.Default.Chat, onOpenChatManage) }
         item { FeatureRow("设置", "模型、显示、世界书与记忆", Icons.Default.Settings, onOpenSettings) }
         item { FeatureRow("关于", "Narra 沉浸世界", Icons.Default.Info) {} }
+    }
+}
+
+@Composable
+private fun ImmersiveMaskSwitcher(
+    masks: List<UserPersonaMask>,
+    defaultMask: UserPersonaMask?,
+    expanded: Boolean,
+    onToggleExpanded: () -> Unit,
+    onSetDefaultMask: (String) -> Unit,
+    onOpenUserMasks: () -> Unit,
+) {
+    val colorScheme = MaterialTheme.colorScheme
+    val summary = when {
+        masks.isEmpty() -> "还没有面具，先创建不同对话里的“我”"
+        defaultMask != null -> "默认：${defaultMask.name} · 共 ${masks.size} 个身份"
+        else -> "${masks.size} 个身份，未设置默认"
+    }
+    Surface(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp, vertical = 6.dp),
+        shape = RoundedCornerShape(18.dp),
+        color = colorScheme.surface,
+        tonalElevation = 2.dp,
+    ) {
+        Column(modifier = Modifier.fillMaxWidth()) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable(onClick = onToggleExpanded)
+                    .padding(horizontal = 16.dp, vertical = 14.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
+            ) {
+                Surface(
+                    modifier = Modifier.size(44.dp),
+                    shape = RoundedCornerShape(12.dp),
+                    color = colorScheme.secondaryContainer,
+                    contentColor = colorScheme.onSecondaryContainer,
+                ) {
+                    Box(contentAlignment = Alignment.Center) {
+                        Icon(Icons.Default.ManageAccounts, contentDescription = null)
+                    }
+                }
+                Column(modifier = Modifier.weight(1f)) {
+                    Text("我的面具", fontWeight = FontWeight.SemiBold)
+                    Text(
+                        text = summary,
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = colorScheme.onSurfaceVariant,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                }
+                Icon(
+                    imageVector = if (expanded) {
+                        Icons.Default.KeyboardArrowUp
+                    } else {
+                        Icons.Default.KeyboardArrowDown
+                    },
+                    contentDescription = null,
+                    tint = colorScheme.onSurfaceVariant,
+                )
+            }
+            AnimatedVisibility(visible = expanded) {
+                Column(
+                    modifier = Modifier.padding(start = 14.dp, end = 14.dp, bottom = 14.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp),
+                ) {
+                    if (masks.isEmpty()) {
+                        Text(
+                            text = "暂无面具。",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = colorScheme.onSurfaceVariant,
+                            modifier = Modifier.padding(horizontal = 4.dp),
+                        )
+                    } else {
+                        masks.forEach { mask ->
+                            ImmersiveMaskOptionRow(
+                                mask = mask,
+                                selected = mask.id == defaultMask?.id,
+                                onClick = { onSetDefaultMask(mask.id) },
+                            )
+                        }
+                    }
+                    TextButton(onClick = onOpenUserMasks, modifier = Modifier.fillMaxWidth()) {
+                        Text("管理面具")
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun ImmersiveMaskOptionRow(
+    mask: UserPersonaMask,
+    selected: Boolean,
+    onClick: () -> Unit,
+) {
+    val colorScheme = MaterialTheme.colorScheme
+    Surface(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(14.dp))
+            .clickable(onClick = onClick),
+        shape = RoundedCornerShape(14.dp),
+        color = if (selected) {
+            colorScheme.secondaryContainer.copy(alpha = 0.72f)
+        } else {
+            colorScheme.surfaceVariant.copy(alpha = 0.45f)
+        },
+    ) {
+        Row(
+            modifier = Modifier.padding(horizontal = 12.dp, vertical = 10.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(10.dp),
+        ) {
+            UserProfileAvatar(
+                displayName = mask.name,
+                avatarUri = mask.avatarUri,
+                avatarUrl = mask.avatarUrl,
+                modifier = Modifier.size(34.dp),
+                containerColor = colorScheme.primaryContainer,
+                contentColor = colorScheme.onPrimaryContainer,
+            )
+            Column(modifier = Modifier.weight(1f)) {
+                Text(mask.name, style = MaterialTheme.typography.titleSmall)
+                Text(
+                    text = mask.personaPrompt.ifBlank { mask.note }.ifBlank { "未填写人设" },
+                    style = MaterialTheme.typography.bodySmall,
+                    color = colorScheme.onSurfaceVariant,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
+            }
+            if (selected) {
+                Icon(
+                    imageVector = Icons.Default.Check,
+                    contentDescription = "当前默认面具",
+                    tint = colorScheme.primary,
+                )
+            }
+        }
     }
 }
 

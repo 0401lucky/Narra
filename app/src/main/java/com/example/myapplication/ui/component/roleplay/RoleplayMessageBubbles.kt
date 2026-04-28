@@ -297,7 +297,7 @@ private fun RoleplayMessageItemContent(
                         backdropState = backdropState,
                         containerColor = if (isError) colors.errorBackground else colors.panelBackground,
                         titleColor = if (isError) colors.errorText else colors.characterAccent,
-                        bodyColor = if (isError) colors.errorText.copy(alpha = 0.88f) else colors.textPrimary.copy(alpha = 0.82f),
+                        bodyColor = if (isError) colors.errorText.copy(alpha = 0.88f) else colors.textPrimary.copy(alpha = 0.94f),
                         accentColor = if (isError) colors.errorText else RoleplayQuotedDialogueHighlightColor,
                         thoughtColor = if (isError) colors.errorText.copy(alpha = 0.76f) else colors.thoughtText,
                         lineHeightScale = lineHeightScale,

@@ -92,9 +92,9 @@ class DefaultAiTranslationService(
         sourceLanguage: String,
     ): String {
         val settings = requireConfiguredSettings()
-        val activeProvider = settings.activeProvider()
-        val baseUrl = activeProvider?.baseUrl ?: settings.baseUrl
-        val apiKey = activeProvider?.apiKey ?: settings.apiKey
+        val translationProvider = settings.resolveFunctionProvider(ProviderFunction.TRANSLATION)
+        val baseUrl = translationProvider?.baseUrl ?: settings.baseUrl
+        val apiKey = translationProvider?.apiKey ?: settings.apiKey
         val modelId = resolveTranslationModelId(settings)
 
         val content = runNetworkCall {
@@ -107,7 +107,8 @@ class DefaultAiTranslationService(
                     targetLanguage = targetLanguage,
                     sourceLanguage = sourceLanguage,
                 ),
-                apiProtocol = activeProvider?.resolvedApiProtocol() ?: ProviderApiProtocol.OPENAI_COMPATIBLE,
+                apiProtocol = translationProvider?.resolvedApiProtocol() ?: ProviderApiProtocol.OPENAI_COMPATIBLE,
+                provider = translationProvider,
                 operation = "翻译失败",
             )
         }.trim()
@@ -123,12 +124,12 @@ class DefaultAiTranslationService(
         sourceLanguage: String,
     ): Flow<String> = flow {
         val settings = requireConfiguredSettings()
-        val activeProvider = settings.activeProvider()
-        val baseUrl = activeProvider?.baseUrl ?: settings.baseUrl
-        val apiKey = activeProvider?.apiKey ?: settings.apiKey
+        val translationProvider = settings.resolveFunctionProvider(ProviderFunction.TRANSLATION)
+        val baseUrl = translationProvider?.baseUrl ?: settings.baseUrl
+        val apiKey = translationProvider?.apiKey ?: settings.apiKey
         val modelId = resolveTranslationModelId(settings)
 
-        val apiProtocol = activeProvider?.resolvedApiProtocol() ?: ProviderApiProtocol.OPENAI_COMPATIBLE
+        val apiProtocol = translationProvider?.resolvedApiProtocol() ?: ProviderApiProtocol.OPENAI_COMPATIBLE
         val requestBody = ChatCompletionRequest(
             model = modelId,
             messages = buildTranslationRequestMessages(
@@ -144,6 +145,7 @@ class DefaultAiTranslationService(
             apiKey = apiKey,
             request = requestBody,
             apiProtocol = apiProtocol,
+            provider = translationProvider,
             operation = "翻译失败",
         ).collect { delta ->
             builder.append(delta)
@@ -172,9 +174,9 @@ class DefaultAiTranslationService(
         }
 
         val settings = requireConfiguredSettings()
-        val activeProvider = settings.activeProvider()
-        val baseUrl = activeProvider?.baseUrl ?: settings.baseUrl
-        val apiKey = activeProvider?.apiKey ?: settings.apiKey
+        val translationProvider = settings.resolveFunctionProvider(ProviderFunction.TRANSLATION)
+        val baseUrl = translationProvider?.baseUrl ?: settings.baseUrl
+        val apiKey = translationProvider?.apiKey ?: settings.apiKey
         val modelId = resolveTranslationModelId(settings)
 
         val rawContent = runNetworkCall {
@@ -186,7 +188,8 @@ class DefaultAiTranslationService(
                     targetLanguage = request.targetLanguage,
                     segments = normalizedSegments,
                 ),
-                apiProtocol = activeProvider?.resolvedApiProtocol() ?: ProviderApiProtocol.OPENAI_COMPATIBLE,
+                apiProtocol = translationProvider?.resolvedApiProtocol() ?: ProviderApiProtocol.OPENAI_COMPATIBLE,
+                provider = translationProvider,
                 operation = "翻译失败",
             )
         }.trim()
@@ -235,9 +238,7 @@ class DefaultAiTranslationService(
     }
 
     private fun resolveTranslationModelId(settings: AppSettings): String {
-        val modelId = settings.activeProvider()
-            ?.resolveFunctionModel(ProviderFunction.TRANSLATION)
-            .orEmpty()
+        val modelId = settings.resolveFunctionModel(ProviderFunction.TRANSLATION)
         if (modelId.isBlank()) {
             throw IllegalStateException("请先在模型页开启翻译模型")
         }
@@ -258,11 +259,11 @@ class DefaultAiTranslationService(
         modelId: String,
         requestMessages: List<ChatMessageDto>,
         apiProtocol: ProviderApiProtocol,
+        provider: ProviderSettings?,
         operation: String,
     ): String {
         return when (apiProtocol) {
             ProviderApiProtocol.OPENAI_COMPATIBLE -> {
-                val provider = settingsStore.settingsFlow.first().activeProvider()
                 val mode = provider?.resolvedOpenAiTextApiMode() ?: OpenAiTextApiMode.CHAT_COMPLETIONS
                 if (mode == OpenAiTextApiMode.RESPONSES) {
                     val response = apiServiceProvider(baseUrl, apiKey.trim()).createResponseAt(
@@ -328,11 +329,11 @@ class DefaultAiTranslationService(
         apiKey: String,
         request: ChatCompletionRequest,
         apiProtocol: ProviderApiProtocol,
+        provider: ProviderSettings?,
         operation: String,
     ): Flow<String> = flow {
         when (apiProtocol) {
             ProviderApiProtocol.OPENAI_COMPATIBLE -> {
-                val provider = settingsStore.settingsFlow.first().activeProvider()
                 val mode = provider?.resolvedOpenAiTextApiMode() ?: OpenAiTextApiMode.CHAT_COMPLETIONS
                 val httpRequest = Request.Builder()
                     .url(buildOpenAiTextUrl(baseUrl, provider))

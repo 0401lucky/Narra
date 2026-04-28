@@ -362,14 +362,12 @@ internal class RoleplaySendActionSupport(
         userParts: List<ChatMessagePart>,
         nextInput: String,
     ): Job {
-        val activeProvider = state.settings.activeProvider()
+        val giftProvider = state.settings.resolveFunctionProvider(ProviderFunction.GIFT_IMAGE)
         val originalGiftPart = normalizeChatMessageParts(userParts).firstOrNull { it.isGiftPart() }
-        val giftImageModelId = activeProvider
-            ?.resolveFunctionModel(ProviderFunction.GIFT_IMAGE)
-            .orEmpty()
+        val giftImageModelId = state.settings.resolveFunctionModel(ProviderFunction.GIFT_IMAGE)
             .trim()
         val shouldGenerateGiftImage = originalGiftPart != null &&
-            activeProvider != null &&
+            giftProvider != null &&
             giftImageModelId.isNotBlank()
         val resolvedUserParts = if (shouldGenerateGiftImage) {
             userParts.map { part ->
@@ -448,7 +446,7 @@ internal class RoleplaySendActionSupport(
                         GiftImageGenerationRequest(
                             conversationId = session.conversationId,
                             selectedModel = selectedModel,
-                            provider = activeProvider,
+                            provider = giftProvider,
                             specialId = giftPart.specialId,
                             giftName = giftPart.specialMetadataValue("item"),
                             recipientName = giftPart.specialMetadataValue("target"),

@@ -67,6 +67,7 @@ import com.example.myapplication.model.toInteractionSpec
 import com.example.myapplication.ui.LocalImagePersister
 import com.example.myapplication.ui.component.AppSnackbarHost
 import com.example.myapplication.ui.component.AssistantAvatar
+import com.example.myapplication.ui.component.UserProfileAvatar
 import com.example.myapplication.ui.component.UserAvatarLoadState
 import com.example.myapplication.ui.component.rememberUserProfileAvatarState
 import com.example.myapplication.ui.screen.settings.AnimatedSettingButton
@@ -128,6 +129,7 @@ fun RoleplayScenarioEditScreen(
     var assistantId by rememberSaveable(scenarioStateKey) { mutableStateOf(baseScenario.assistantId) }
     var backgroundUri by rememberSaveable(scenarioStateKey) { mutableStateOf(baseScenario.backgroundUri) }
     var userDisplayNameOverride by rememberSaveable(scenarioStateKey) { mutableStateOf(baseScenario.userDisplayNameOverride) }
+    var userPersonaMaskId by rememberSaveable(scenarioStateKey) { mutableStateOf(baseScenario.userPersonaMaskId) }
     var userPersonaOverride by rememberSaveable(scenarioStateKey) { mutableStateOf(baseScenario.userPersonaOverride) }
     var userPortraitUri by rememberSaveable(scenarioStateKey) { mutableStateOf(baseScenario.userPortraitUri) }
     var userPortraitUrl by rememberSaveable(scenarioStateKey) { mutableStateOf(baseScenario.userPortraitUrl) }
@@ -153,9 +155,12 @@ fun RoleplayScenarioEditScreen(
     val isOnlinePhoneMode = interactionMode == RoleplayInteractionMode.ONLINE_PHONE
 
     var showAssistantPicker by remember { mutableStateOf(false) }
+    var showMaskPicker by remember { mutableStateOf(false) }
     var showDeleteConfirm by remember { mutableStateOf(false) }
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     val selectedAssistant = assistants.find { it.id == assistantId }
+    val personaMasks = settings.normalizedUserPersonaMasks()
+    val selectedMask = personaMasks.firstOrNull { it.id == userPersonaMaskId }
 
     fun applyInteractionSpec(transform: (RoleplayInteractionSpec) -> RoleplayInteractionSpec) {
         val next = transform(
@@ -304,6 +309,36 @@ fun RoleplayScenarioEditScreen(
                             }
                         },
                         onClick = { showAssistantPicker = true },
+                    )
+                }
+            }
+
+            item {
+                SettingsSectionHeader(
+                    title = "用户面具",
+                    description = "选择这段聊天里“我是谁”。场景手动填写的昵称、人设和立绘仍会优先生效。",
+                )
+            }
+            item {
+                SettingsGroup {
+                    SettingsListRow(
+                        title = selectedMask?.name ?: "跟随默认面具",
+                        supportingText = selectedMask?.personaPrompt?.take(42)
+                            ?: settings.resolvedDefaultUserPersonaMask()?.let { "默认：${it.name}" }
+                            ?: "还没有面具时，会继续使用全局个人资料。",
+                        leadingContent = {
+                            val avatar = selectedMask
+                                ?: settings.resolvedDefaultUserPersonaMask()
+                            UserProfileAvatar(
+                                displayName = avatar?.name ?: settings.resolvedUserDisplayName(),
+                                avatarUri = avatar?.avatarUri ?: settings.userAvatarUri,
+                                avatarUrl = avatar?.avatarUrl ?: settings.userAvatarUrl,
+                                modifier = Modifier.size(40.dp),
+                                containerColor = palette.subtleChip,
+                                contentColor = palette.subtleChipContent,
+                            )
+                        },
+                        onClick = { showMaskPicker = true },
                     )
                 }
             }
@@ -533,6 +568,7 @@ fun RoleplayScenarioEditScreen(
                                         assistantId = assistantId,
                                         backgroundUri = backgroundUri.trim(),
                                         userDisplayNameOverride = userDisplayNameOverride.trim(),
+                                        userPersonaMaskId = userPersonaMaskId.trim(),
                                         userPersonaOverride = userPersonaOverride.replace("\r\n", "\n").trim(),
                                         userPortraitUri = userPortraitUri.trim(),
                                         userPortraitUrl = userPortraitUrl.trim(),
@@ -599,6 +635,62 @@ fun RoleplayScenarioEditScreen(
         }
     }
 
+    if (showMaskPicker) {
+        ModalBottomSheet(
+            onDismissRequest = { showMaskPicker = false },
+            sheetState = sheetState,
+        ) {
+            Column(
+                modifier = Modifier.padding(bottom = 24.dp),
+                verticalArrangement = Arrangement.spacedBy(4.dp),
+            ) {
+                Text(
+                    text = "选择用户面具",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = palette.title,
+                    modifier = Modifier.padding(horizontal = 24.dp, vertical = 8.dp),
+                )
+                PersonaMaskPickRow(
+                    title = "跟随默认面具",
+                    summary = settings.resolvedDefaultUserPersonaMask()?.let { "默认：${it.name}" }
+                        ?: "使用全局个人资料",
+                    selected = userPersonaMaskId.isBlank(),
+                    avatarName = settings.resolvedDefaultUserPersonaMask()?.name
+                        ?: settings.resolvedUserDisplayName(),
+                    avatarUri = settings.resolvedDefaultUserPersonaMask()?.avatarUri
+                        ?: settings.userAvatarUri,
+                    avatarUrl = settings.resolvedDefaultUserPersonaMask()?.avatarUrl
+                        ?: settings.userAvatarUrl,
+                    onClick = {
+                        userPersonaMaskId = ""
+                        showMaskPicker = false
+                    },
+                )
+                if (personaMasks.isNotEmpty()) {
+                    SettingsGroupDivider()
+                }
+                personaMasks.forEachIndexed { index, mask ->
+                    PersonaMaskPickRow(
+                        title = mask.name,
+                        summary = mask.personaPrompt.ifBlank { mask.note }.ifBlank { "未填写人设" },
+                        selected = mask.id == userPersonaMaskId,
+                        avatarName = mask.name,
+                        avatarUri = mask.avatarUri,
+                        avatarUrl = mask.avatarUrl,
+                        onClick = {
+                            userPersonaMaskId = mask.id
+                            showMaskPicker = false
+                        },
+                    )
+                    if (index != personaMasks.lastIndex) {
+                        SettingsGroupDivider()
+                    }
+                }
+            }
+        }
+    }
+
     if (showDeleteConfirm && !isNew && onDelete != null) {
         AlertDialog(
             onDismissRequest = { showDeleteConfirm = false },
@@ -634,6 +726,70 @@ fun RoleplayScenarioEditScreen(
             titleContentColor = palette.title,
             textContentColor = palette.body,
         )
+    }
+}
+
+@Composable
+private fun PersonaMaskPickRow(
+    title: String,
+    summary: String,
+    selected: Boolean,
+    avatarName: String,
+    avatarUri: String,
+    avatarUrl: String,
+    onClick: () -> Unit,
+) {
+    val palette = rememberSettingsPalette()
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onClick)
+            .padding(horizontal = 18.dp, vertical = 12.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(14.dp),
+    ) {
+        UserProfileAvatar(
+            displayName = avatarName,
+            avatarUri = avatarUri,
+            avatarUrl = avatarUrl,
+            modifier = Modifier.size(40.dp),
+            containerColor = palette.subtleChip,
+            contentColor = palette.subtleChipContent,
+        )
+        Column(
+            modifier = Modifier.weight(1f),
+            verticalArrangement = Arrangement.spacedBy(2.dp),
+        ) {
+            Text(
+                text = title,
+                style = MaterialTheme.typography.bodyLarge,
+                fontWeight = FontWeight.SemiBold,
+                color = palette.title,
+                maxLines = 1,
+            )
+            Text(
+                text = summary,
+                style = MaterialTheme.typography.labelMedium,
+                color = palette.body,
+                maxLines = 2,
+            )
+        }
+        if (selected) {
+            Surface(
+                modifier = Modifier.size(24.dp),
+                shape = CircleShape,
+                color = palette.accent,
+            ) {
+                Box(contentAlignment = Alignment.Center) {
+                    Icon(
+                        imageVector = Icons.Default.Check,
+                        contentDescription = "已选中",
+                        tint = palette.accentOnStrong,
+                        modifier = Modifier.size(16.dp),
+                    )
+                }
+            }
+        }
     }
 }
 

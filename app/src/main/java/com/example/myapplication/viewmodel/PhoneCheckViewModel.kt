@@ -498,9 +498,9 @@ class PhoneCheckViewModel(
         val baseContext = resolveBaseContext() ?: return null
         val currentSettings = settingsRepository.settingsFlow.first()
         val messages = conversationRepository.listMessages(initialConversationId)
-        val activeProvider = currentSettings.activeProvider()
+        val activeProvider = currentSettings.resolveFunctionProvider(ProviderFunction.PHONE_SNAPSHOT)
             ?: error("当前未配置可用提供商")
-        val modelId = activeProvider.resolveFunctionModel(ProviderFunction.PHONE_SNAPSHOT)
+        val modelId = currentSettings.resolveFunctionModel(ProviderFunction.PHONE_SNAPSHOT)
             .ifBlank { activeProvider.selectedModel.trim() }
         if (modelId.isBlank()) {
             error("当前未配置可用模型")

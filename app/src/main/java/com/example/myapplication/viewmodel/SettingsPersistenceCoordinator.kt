@@ -2,7 +2,9 @@ package com.example.myapplication.viewmodel
 
 import com.example.myapplication.data.repository.ai.AiSettingsEditor
 import com.example.myapplication.model.AppSettings
+import com.example.myapplication.model.FunctionModelProviderIds
 import com.example.myapplication.model.ProviderSettings
+import com.example.myapplication.model.UserPersonaMask
 
 data class SettingsDraftResult(
     val providers: List<ProviderSettings>,
@@ -13,6 +15,7 @@ data class SettingsPersistenceResult(
     val message: String,
     val providers: List<ProviderSettings> = emptyList(),
     val selectedProviderId: String = "",
+    val functionModelProviderIds: FunctionModelProviderIds? = null,
 )
 
 class SettingsPersistenceCoordinator(
@@ -30,6 +33,10 @@ class SettingsPersistenceCoordinator(
             providers = normalizedProviders,
             selectedProviderId = resolvedSelectedProviderId,
         )
+        val normalizedFunctionModelProviderIds = currentState.functionModelProviderIds.normalized(
+            normalizedProviders.map(ProviderSettings::id).toSet(),
+        )
+        settingsEditor.saveFunctionModelProviderIds(normalizedFunctionModelProviderIds)
         settingsEditor.saveDisplaySettings(
             themeMode = currentState.themeMode,
             messageTextScale = currentState.messageTextScale,
@@ -58,6 +65,7 @@ class SettingsPersistenceCoordinator(
         return SettingsPersistenceResult(
             providers = normalizedProviders,
             selectedProviderId = resolvedSelectedProviderId,
+            functionModelProviderIds = normalizedFunctionModelProviderIds,
             message = "设置已保存",
         )
     }
@@ -187,6 +195,19 @@ class SettingsPersistenceCoordinator(
         )
         return SettingsPersistenceResult(
             message = "个人资料已更新",
+        )
+    }
+
+    suspend fun saveUserPersonaMasks(
+        masks: List<UserPersonaMask>,
+        defaultMaskId: String,
+    ): SettingsPersistenceResult {
+        settingsEditor.saveUserPersonaMasks(
+            masks = masks,
+            defaultMaskId = defaultMaskId,
+        )
+        return SettingsPersistenceResult(
+            message = "面具已更新",
         )
     }
 

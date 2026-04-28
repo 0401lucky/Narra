@@ -61,11 +61,11 @@ class TranslationViewModel(
                 _uiState.update { current ->
                     current.copy(
                         settings = appSettings,
-                        activeModelName = appSettings.activeProvider()
-                            ?.resolveFunctionModel(ProviderFunction.TRANSLATION)
-                            .orEmpty()
+                        activeModelName = appSettings.resolveFunctionModel(ProviderFunction.TRANSLATION)
                             .ifBlank { "未启用" },
-                        availableModels = appSettings.activeProvider()?.resolvedModelIds().orEmpty(),
+                        availableModels = appSettings.resolveFunctionProvider(ProviderFunction.TRANSLATION)
+                            ?.resolvedModelIds()
+                            .orEmpty(),
                         history = appSettings.translationHistory.sortedByDescending(TranslationHistoryEntry::createdAt),
                         detectedSourceLanguageLabel = detectLanguageLabel(current.inputText),
                     )
@@ -119,7 +119,7 @@ class TranslationViewModel(
     fun updateTranslationModel(modelId: String) {
         val state = _uiState.value
         val providers = state.settings.resolvedProviders()
-        val selectedProviderId = state.settings.activeProvider()?.id
+        val selectedProviderId = state.settings.resolveFunctionProvider(ProviderFunction.TRANSLATION)?.id
             ?: state.settings.selectedProviderId
         if (providers.isEmpty() || selectedProviderId.isBlank()) {
             return
@@ -183,11 +183,7 @@ class TranslationViewModel(
             _uiState.update { it.copy(errorMessage = "请先输入要翻译的内容") }
             return
         }
-        if (_uiState.value.settings.activeProvider()
-                ?.resolveFunctionModel(ProviderFunction.TRANSLATION)
-                .orEmpty()
-                .isBlank()
-        ) {
+        if (_uiState.value.settings.resolveFunctionModel(ProviderFunction.TRANSLATION).isBlank()) {
             _uiState.update { it.copy(errorMessage = "请先在模型页开启翻译模型") }
             return
         }

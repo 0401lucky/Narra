@@ -45,6 +45,7 @@ object SettingsUiMutationSupport {
         return current.copy(
             providers = result.providers,
             selectedProviderId = result.selectedProviderId,
+            functionModelProviderIds = result.functionModelProviderIds ?: sourceState.functionModelProviderIds,
             themeMode = sourceState.themeMode,
             messageTextScale = sourceState.messageTextScale,
             reasoningExpandedByDefault = sourceState.reasoningExpandedByDefault,
@@ -93,6 +94,7 @@ object SettingsUiMutationSupport {
         return current.copy(
             providers = result.providers.ifEmpty { current.providers },
             selectedProviderId = result.selectedProviderId.ifBlank { current.selectedProviderId },
+            functionModelProviderIds = result.functionModelProviderIds ?: current.functionModelProviderIds,
             message = result.message,
         )
     }

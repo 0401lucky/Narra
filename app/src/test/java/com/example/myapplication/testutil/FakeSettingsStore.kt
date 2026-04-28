@@ -4,6 +4,7 @@ import com.example.myapplication.data.local.SettingsStore
 import com.example.myapplication.model.AppSettings
 import com.example.myapplication.model.Assistant
 import com.example.myapplication.model.DEFAULT_ROLEPLAY_LONGFORM_TARGET_CHARS
+import com.example.myapplication.model.FunctionModelProviderIds
 import com.example.myapplication.model.MemoryInjectionPosition
 import com.example.myapplication.model.ProviderSettings
 import com.example.myapplication.model.RoleplayImmersiveMode
@@ -12,6 +13,7 @@ import com.example.myapplication.model.ScreenTranslationSettings
 import com.example.myapplication.model.SearchSettings
 import com.example.myapplication.model.ThemeMode
 import com.example.myapplication.model.TranslationHistoryEntry
+import com.example.myapplication.model.UserPersonaMask
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 
@@ -49,6 +51,7 @@ class FakeSettingsStore(
             selectedModel = activeProvider?.selectedModel.orEmpty(),
             providers = providers,
             selectedProviderId = selectedProvider?.id.orEmpty(),
+            functionModelProviderIds = state.value.functionModelProviderIds,
             themeMode = state.value.themeMode,
             messageTextScale = state.value.messageTextScale,
             reasoningExpandedByDefault = state.value.reasoningExpandedByDefault,
@@ -71,6 +74,8 @@ class FakeSettingsStore(
             userPersonaPrompt = state.value.userPersonaPrompt,
             userAvatarUri = state.value.userAvatarUri,
             userAvatarUrl = state.value.userAvatarUrl,
+            userPersonaMasks = state.value.userPersonaMasks,
+            defaultUserPersonaMaskId = state.value.defaultUserPersonaMaskId,
             translationHistory = state.value.translationHistory,
             assistants = state.value.assistants,
             selectedAssistantId = state.value.selectedAssistantId,
@@ -145,6 +150,26 @@ class FakeSettingsStore(
             userPersonaPrompt = personaPrompt,
             userAvatarUri = avatarUri,
             userAvatarUrl = avatarUrl,
+        )
+    }
+
+    override suspend fun saveFunctionModelProviderIds(
+        functionModelProviderIds: FunctionModelProviderIds,
+    ) {
+        state.value = state.value.copy(
+            functionModelProviderIds = functionModelProviderIds.normalized(
+                state.value.resolvedProviders().map(ProviderSettings::id).toSet(),
+            ),
+        )
+    }
+
+    override suspend fun saveUserPersonaMasks(
+        masks: List<UserPersonaMask>,
+        defaultMaskId: String,
+    ) {
+        state.value = state.value.copy(
+            userPersonaMasks = masks,
+            defaultUserPersonaMaskId = defaultMaskId,
         )
     }
 

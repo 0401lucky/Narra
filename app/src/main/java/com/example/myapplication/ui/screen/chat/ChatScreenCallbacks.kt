@@ -58,6 +58,8 @@ data class ChatModelCallbacks(
 
 data class ChatProfileCallbacks(
     val onSaveUserProfile: (String, String, String, String) -> Unit,
+    val onOpenUserMasks: () -> Unit,
+    val onSetDefaultUserPersonaMask: (String) -> Unit,
     val onSelectAssistant: (String) -> Unit,
     val onOpenAssistantDetail: (String) -> Unit,
 )

@@ -66,6 +66,7 @@ import com.example.myapplication.model.ModelAbility
 import com.example.myapplication.model.ModelInfo
 import com.example.myapplication.model.ProviderSettings
 import com.example.myapplication.model.brandColor
+import com.example.myapplication.model.sortedForModelListDisplay
 import com.example.myapplication.ui.component.ModelIcon
 import com.example.myapplication.ui.component.NarraButton
 import com.example.myapplication.ui.component.NarraIconButton
@@ -84,7 +85,7 @@ internal fun ModelTabContent(
     onDismissFetchedModels: () -> Unit,
 ) {
     val palette = rememberSettingsPalette()
-    val modelInfos = provider.resolvedModels()
+    val modelInfos = provider.resolvedModels().sortedForModelListDisplay()
     var editingModelInfo by remember(provider.id) { mutableStateOf<ModelInfo?>(null) }
     val showFetchedDialog = uiState.pendingFetchedModels.isNotEmpty() &&
         uiState.pendingFetchProviderId == provider.id

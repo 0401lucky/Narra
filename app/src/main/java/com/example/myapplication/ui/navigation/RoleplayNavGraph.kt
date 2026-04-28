@@ -116,6 +116,12 @@ internal fun NavGraphBuilder.registerRoleplayGraph(
                             launchSingleTop = true
                         }
                     },
+                    onOpenUserMasks = {
+                        navController.navigate(AppRoutes.SETTINGS_USER_MASKS) {
+                            launchSingleTop = true
+                        }
+                    },
+                    onSetDefaultUserPersonaMask = settingsViewModel::setDefaultUserPersonaMask,
                     onOpenAssistantCreate = {
                         navController.navigate(AppRoutes.settingsAssistantBasic("new")) {
                             launchSingleTop = true
@@ -402,9 +408,8 @@ internal fun NavGraphBuilder.registerRoleplayGraph(
                 roleplayState.settings.providers.filter { it.enabled }
             }
             LaunchedEffect(scenarioId) {
-                // Settings 页依托已有的共享 ViewModel，不需要重新 enter 场景。
-                // 如果因为深链或重建丢失了场景，仅在当前 session 也为 null 时才补 enter。
-                if (roleplayState.currentScenario?.id != scenarioId && roleplayState.currentSession == null) {
+                // 子页面也要跟随路由场景切换，避免沿用上一个场景的会话数据。
+                if (roleplayState.currentScenario?.id != scenarioId || roleplayState.currentSession == null) {
                     roleplayViewModel.enterScenario(scenarioId)
                 }
             }
@@ -468,6 +473,11 @@ internal fun NavGraphBuilder.registerRoleplayGraph(
                         navController.navigate(AppRoutes.settingsAssistantPrompt(assistantId)) {
                             launchSingleTop = true
                         }
+                    }
+                },
+                onOpenUserMasks = {
+                    navController.navigate(AppRoutes.SETTINGS_USER_MASKS) {
+                        launchSingleTop = true
                     }
                 },
                 onOpenWorldBookSettings = {
@@ -542,7 +552,7 @@ internal fun NavGraphBuilder.registerRoleplayGraph(
             val rawScenarioId = backStackEntry.arguments?.getString("scenarioId").orEmpty()
             val scenarioId = Uri.decode(rawScenarioId)
             LaunchedEffect(scenarioId) {
-                if (roleplayState.currentScenario?.id != scenarioId && roleplayState.currentSession == null) {
+                if (roleplayState.currentScenario?.id != scenarioId || roleplayState.currentSession == null) {
                     roleplayViewModel.enterScenario(scenarioId)
                 }
             }
@@ -571,7 +581,7 @@ internal fun NavGraphBuilder.registerRoleplayGraph(
                 roleplayState.settings.resolvedAssistants().firstOrNull { it.id == scenario.assistantId }
             } ?: roleplayState.currentAssistant
             LaunchedEffect(scenarioId) {
-                if (roleplayState.currentScenario?.id != scenarioId && roleplayState.currentSession == null) {
+                if (roleplayState.currentScenario?.id != scenarioId || roleplayState.currentSession == null) {
                     roleplayViewModel.enterScenario(scenarioId)
                 }
             }
@@ -609,7 +619,7 @@ internal fun NavGraphBuilder.registerRoleplayGraph(
             val routeScenario = roleplayState.currentScenario?.takeIf { it.id == scenarioId }
                 ?: roleplayState.scenarios.firstOrNull { it.id == scenarioId }
             LaunchedEffect(scenarioId) {
-                if (roleplayState.currentScenario?.id != scenarioId && roleplayState.currentSession == null) {
+                if (roleplayState.currentScenario?.id != scenarioId || roleplayState.currentSession == null) {
                     roleplayViewModel.enterScenario(scenarioId)
                 }
             }
@@ -637,7 +647,7 @@ internal fun NavGraphBuilder.registerRoleplayGraph(
                 roleplayState.settings.resolvedAssistants().firstOrNull { it.id == scenario.assistantId }
             } ?: roleplayState.currentAssistant
             LaunchedEffect(scenarioId) {
-                if (roleplayState.currentScenario?.id != scenarioId && roleplayState.currentSession == null) {
+                if (roleplayState.currentScenario?.id != scenarioId || roleplayState.currentSession == null) {
                     roleplayViewModel.enterScenario(scenarioId)
                 }
                 roleplayViewModel.startVideoCall()

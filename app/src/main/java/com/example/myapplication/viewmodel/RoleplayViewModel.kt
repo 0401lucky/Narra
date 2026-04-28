@@ -764,8 +764,8 @@ class RoleplayViewModel(
                     )
                 val requestMessages = currentRawMessages.value.filter { it.status == MessageStatus.COMPLETED }
                 val promptContext = promptContextAssembler.assemble(
-                    settings = state.settings,
-                    assistant = assistant,
+                    settings = RoleplayConversationSupport.resolvePromptSettings(scenario, state.settings),
+                    assistant = RoleplayConversationSupport.resolvePromptAssistant(scenario, assistant),
                     conversation = conversation,
                     userInputText = RoleplayConversationSupport.resolveLatestUserInputText(requestMessages),
                     recentMessages = requestMessages,
@@ -1050,8 +1050,8 @@ class RoleplayViewModel(
                 assistantId = scenario.assistantId,
             )
         val promptContext = promptContextAssembler.assemble(
-            settings = settings,
-            assistant = assistant,
+            settings = RoleplayConversationSupport.resolvePromptSettings(scenario, settings),
+            assistant = RoleplayConversationSupport.resolvePromptAssistant(scenario, assistant),
             conversation = conversation,
             userInputText = RoleplayConversationSupport.resolveLatestUserInputText(requestMessages),
             recentMessages = requestMessages,
@@ -1237,8 +1237,7 @@ class RoleplayViewModel(
         scenario: RoleplayScenario,
         settings: AppSettings,
     ): String {
-        return scenario.userDisplayNameOverride.trim()
-            .ifBlank { settings.resolvedUserDisplayName() }
+        return RoleplayConversationSupport.resolveUserPersona(scenario, settings).displayName
     }
 
     private fun resolveCharacterName(

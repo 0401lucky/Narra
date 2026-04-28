@@ -163,9 +163,9 @@ class MomentsViewModel(
             runCatching {
                 val deps = resolveContextDependencies()
 
-                val activeProvider = deps.settings.activeProvider()
+                val activeProvider = deps.settings.resolveFunctionProvider(ProviderFunction.PHONE_SNAPSHOT)
                     ?: error("当前未配置可用提供商")
-                val modelId = activeProvider.resolveFunctionModel(ProviderFunction.PHONE_SNAPSHOT)
+                val modelId = deps.settings.resolveFunctionModel(ProviderFunction.PHONE_SNAPSHOT)
                     .ifBlank { activeProvider.selectedModel.trim() }
                 if (modelId.isBlank()) error("当前未配置可用模型")
 

@@ -47,9 +47,9 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import com.example.myapplication.model.AppSettings
 import com.example.myapplication.model.ProviderFunction
 import com.example.myapplication.model.ProviderFunctionModelMode
-import com.example.myapplication.model.ProviderSettings
 import com.example.myapplication.ui.component.ModelIcon
 import com.example.myapplication.ui.screen.chat.ModelPickerQuickAction
 import com.example.myapplication.ui.screen.chat.ModelPickerSheet
@@ -74,6 +74,7 @@ fun SettingsModelScreen(
         onConsumeMessage = onConsumeMessage,
     )
     val provider = uiState.currentProvider
+    val draftSettings = uiState.toDraftAppSettings()
     val providerOptions = remember(uiState.providers) {
         uiState.providers.filter { it.enabled }
     }
@@ -151,93 +152,101 @@ fun SettingsModelScreen(
                         title = "聊天模型",
                         statusLabel = "默认模型",
                         currentModelId = uiState.selectedModel,
+                        providerName = provider?.name.orEmpty(),
                         emptyStateText = "还没选择默认聊天模型",
                         onClick = { selectingRole = "chat" },
                     )
                 }
 
                 item {
-                    val cardState = provider.toRoleModelCardState(ProviderFunction.TITLE_SUMMARY)
+                    val cardState = draftSettings.toRoleModelCardState(ProviderFunction.TITLE_SUMMARY)
                     RoleModelCard(
                         icon = Icons.Outlined.Subtitles,
                         title = "标题/摘要模型",
                         statusLabel = cardState.statusLabel,
                         currentModelId = cardState.displayModelId,
+                        providerName = cardState.providerName,
                         emptyStateText = cardState.emptyStateText,
                         onClick = { selectingRole = "title" },
                     )
                 }
 
                 item {
-                    val cardState = provider.toRoleModelCardState(ProviderFunction.CHAT_SUGGESTION)
+                    val cardState = draftSettings.toRoleModelCardState(ProviderFunction.CHAT_SUGGESTION)
                     RoleModelCard(
                         icon = Icons.Outlined.QuestionAnswer,
                         title = "聊天建议模型",
                         statusLabel = cardState.statusLabel,
                         currentModelId = cardState.displayModelId,
+                        providerName = cardState.providerName,
                         emptyStateText = cardState.emptyStateText,
                         onClick = { selectingRole = "suggestion" },
                     )
                 }
 
                 item {
-                    val cardState = provider.toRoleModelCardState(ProviderFunction.MEMORY)
+                    val cardState = draftSettings.toRoleModelCardState(ProviderFunction.MEMORY)
                     RoleModelCard(
                         icon = Icons.Outlined.Psychology,
                         title = "记忆模型",
                         statusLabel = cardState.statusLabel,
                         currentModelId = cardState.displayModelId,
+                        providerName = cardState.providerName,
                         emptyStateText = cardState.emptyStateText,
                         onClick = { selectingRole = "memory" },
                     )
                 }
 
                 item {
-                    val cardState = provider.toRoleModelCardState(ProviderFunction.TRANSLATION)
+                    val cardState = draftSettings.toRoleModelCardState(ProviderFunction.TRANSLATION)
                     RoleModelCard(
                         icon = Icons.Outlined.Translate,
                         title = "翻译模型",
                         statusLabel = cardState.statusLabel,
                         currentModelId = cardState.displayModelId,
+                        providerName = cardState.providerName,
                         emptyStateText = cardState.emptyStateText,
                         onClick = { selectingRole = "translation" },
                     )
                 }
 
                 item {
-                    val cardState = provider.toRoleModelCardState(ProviderFunction.PHONE_SNAPSHOT)
+                    val cardState = draftSettings.toRoleModelCardState(ProviderFunction.PHONE_SNAPSHOT)
                     RoleModelCard(
                         icon = Icons.Outlined.Build,
                         title = "查手机模型",
                         subtitle = "用于手机快照与搜索详情",
                         statusLabel = cardState.statusLabel,
                         currentModelId = cardState.displayModelId,
+                        providerName = cardState.providerName,
                         emptyStateText = cardState.emptyStateText,
                         onClick = { selectingRole = "phone_snapshot" },
                     )
                 }
 
                 item {
-                    val cardState = provider.toRoleModelCardState(ProviderFunction.SEARCH)
+                    val cardState = draftSettings.toRoleModelCardState(ProviderFunction.SEARCH)
                     RoleModelCard(
                         icon = Icons.Outlined.Search,
                         title = "搜索模型",
                         subtitle = "仅 LLM 搜索",
                         statusLabel = cardState.statusLabel,
                         currentModelId = cardState.displayModelId,
+                        providerName = cardState.providerName,
                         emptyStateText = cardState.emptyStateText,
                         onClick = { selectingRole = "search" },
                     )
                 }
 
                 item {
-                    val cardState = provider.toRoleModelCardState(ProviderFunction.GIFT_IMAGE)
+                    val cardState = draftSettings.toRoleModelCardState(ProviderFunction.GIFT_IMAGE)
                     RoleModelCard(
                         icon = Icons.Outlined.Image,
                         title = "礼物生图模型",
                         subtitle = "用于礼物卡自动生成图片",
                         statusLabel = cardState.statusLabel,
                         currentModelId = cardState.displayModelId,
+                        providerName = cardState.providerName,
                         emptyStateText = cardState.emptyStateText,
                         onClick = { selectingRole = "gift_image" },
                     )
@@ -253,22 +262,28 @@ fun SettingsModelScreen(
 
     if (selectingRole.isNotBlank() && providerOptions.isNotEmpty()) {
         val selectedFunction = selectingRole.toProviderFunctionOrNull()
-        val providerRoleState = provider.toRoleModelCardState(selectedFunction)
+        val providerRoleState = draftSettings.toRoleModelCardState(selectedFunction)
+        val pickerProvider = if (selectedFunction == null || selectedFunction == ProviderFunction.CHAT) {
+            provider
+        } else {
+            draftSettings.resolveFunctionProvider(selectedFunction)
+        }
+        val pickerProviderId = pickerProvider?.id.orEmpty().ifBlank { currentProviderId }
         val roleTitle = when (selectingRole) {
             "chat" -> "选择聊天模型 · ${provider?.name.orEmpty().ifBlank { "当前提供商" }}"
-            "title" -> "选择标题总结模型 · ${provider?.name.orEmpty().ifBlank { "当前提供商" }}"
-            "suggestion" -> "选择聊天建议模型 · ${provider?.name.orEmpty().ifBlank { "当前提供商" }}"
-            "memory" -> "选择记忆模型 · ${provider?.name.orEmpty().ifBlank { "当前提供商" }}"
-            "translation" -> "选择翻译模型 · ${provider?.name.orEmpty().ifBlank { "当前提供商" }}"
-            "phone_snapshot" -> "选择查手机模型 · ${provider?.name.orEmpty().ifBlank { "当前提供商" }}"
-            "search" -> "选择搜索模型 · ${provider?.name.orEmpty().ifBlank { "当前提供商" }}"
-            "gift_image" -> "选择礼物生图模型 · ${provider?.name.orEmpty().ifBlank { "当前提供商" }}"
+            "title" -> "选择标题总结模型"
+            "suggestion" -> "选择聊天建议模型"
+            "memory" -> "选择记忆模型"
+            "translation" -> "选择翻译模型"
+            "phone_snapshot" -> "选择查手机模型"
+            "search" -> "选择搜索模型"
+            "gift_image" -> "选择礼物生图模型"
             else -> "选择模型"
         }
 
         ModelPickerSheet(
             providerOptions = providerOptions,
-            currentProviderId = currentProviderId,
+            currentProviderId = pickerProviderId,
             currentModel = if (selectedFunction == ProviderFunction.CHAT) {
                 uiState.selectedModel
             } else {
@@ -279,13 +294,22 @@ fun SettingsModelScreen(
             loadingProviderId = uiState.loadingProviderId,
             isSavingModel = uiState.isSaving,
             onDismissRequest = { selectingRole = "" },
-            onSelectProvider = onSelectProvider,
+            onSelectProvider = { selectedProviderId ->
+                if (selectedFunction == null || selectedFunction == ProviderFunction.CHAT) {
+                    onSelectProvider(selectedProviderId)
+                }
+            },
             onOpenProviderDetail = {},
             quickActions = { selectedProvider ->
                 if (selectedFunction == null || selectedFunction == ProviderFunction.CHAT) {
                     emptyList()
                 } else {
-                    val mode = selectedProvider.resolveFunctionModeSafely(selectedFunction)
+                    val mode = selectedProvider?.resolveFunctionModelMode(selectedFunction)
+                        ?: if (selectedFunction == ProviderFunction.GIFT_IMAGE) {
+                            ProviderFunctionModelMode.DISABLED
+                        } else {
+                            ProviderFunctionModelMode.FOLLOW_DEFAULT
+                        }
                     listOf(
                         ModelPickerQuickAction(
                             id = QuickActionFollowDefault,
@@ -330,6 +354,7 @@ private fun RoleModelCard(
     subtitle: String = "",
     statusLabel: String,
     currentModelId: String,
+    providerName: String,
     emptyStateText: String,
     onClick: () -> Unit,
 ) {
@@ -405,7 +430,13 @@ private fun RoleModelCard(
                         ModelIcon(modelName = currentModelId, size = 20.dp)
                     }
                     Text(
-                        text = currentModelId.ifBlank { emptyStateText },
+                        text = currentModelId.ifBlank { emptyStateText }.let { modelText ->
+                            if (currentModelId.isBlank() || providerName.isBlank()) {
+                                modelText
+                            } else {
+                                "$providerName · $modelText"
+                            }
+                        },
                         style = MaterialTheme.typography.bodyMedium,
                         fontWeight = FontWeight.Medium,
                         color = if (currentModelId.isNotBlank()) palette.title else palette.body,
@@ -457,56 +488,72 @@ private data class RoleModelCardState(
     val displayModelId: String,
     val pickerSelectedModelId: String,
     val emptyStateText: String,
+    val providerName: String,
 )
 
-private fun ProviderSettings?.toRoleModelCardState(
+private fun AppSettings.toRoleModelCardState(
     function: ProviderFunction?,
 ): RoleModelCardState {
     if (function == null || function == ProviderFunction.CHAT) {
+        val provider = activeProvider()
         return RoleModelCardState(
             statusLabel = "默认模型",
-            displayModelId = this?.selectedModel.orEmpty(),
-            pickerSelectedModelId = this?.selectedModel.orEmpty(),
+            displayModelId = provider?.selectedModel.orEmpty(),
+            pickerSelectedModelId = provider?.selectedModel.orEmpty(),
             emptyStateText = "还没选择默认聊天模型",
+            providerName = provider?.name.orEmpty(),
         )
     }
 
+    val provider = resolveFunctionProvider(function)
     val mode = resolveFunctionModeSafely(function)
-    val explicitModel = this?.resolveExplicitFunctionModel(function).orEmpty()
-    val resolvedModel = this?.resolveFunctionModel(function).orEmpty()
+    val explicitModel = provider?.resolveExplicitFunctionModel(function).orEmpty()
+    val resolvedModel = resolveFunctionModel(function)
     return when (mode) {
         ProviderFunctionModelMode.FOLLOW_DEFAULT -> RoleModelCardState(
             statusLabel = "跟随默认",
             displayModelId = resolvedModel,
             pickerSelectedModelId = "",
             emptyStateText = "将跟随默认聊天模型",
+            providerName = provider?.name.orEmpty(),
         )
         ProviderFunctionModelMode.CUSTOM -> RoleModelCardState(
             statusLabel = "单独指定",
             displayModelId = explicitModel,
             pickerSelectedModelId = explicitModel,
             emptyStateText = "请选择模型",
+            providerName = provider?.name.orEmpty(),
         )
         ProviderFunctionModelMode.DISABLED -> RoleModelCardState(
             statusLabel = "已关闭",
             displayModelId = "",
             pickerSelectedModelId = "",
             emptyStateText = "当前已关闭",
+            providerName = provider?.name.orEmpty(),
         )
     }
 }
 
-private fun ProviderSettings?.resolveFunctionModeSafely(
+private fun AppSettings.resolveFunctionModeSafely(
     function: ProviderFunction,
 ): ProviderFunctionModelMode {
-    if (this == null) {
+    val provider = resolveFunctionProvider(function)
+    if (provider == null) {
         return if (function == ProviderFunction.GIFT_IMAGE) {
             ProviderFunctionModelMode.DISABLED
         } else {
             ProviderFunctionModelMode.FOLLOW_DEFAULT
         }
     }
-    return resolveFunctionModelMode(function)
+    return provider.resolveFunctionModelMode(function)
+}
+
+private fun SettingsUiState.toDraftAppSettings(): AppSettings {
+    return savedSettings.copy(
+        providers = providers,
+        selectedProviderId = selectedProviderId,
+        functionModelProviderIds = functionModelProviderIds,
+    )
 }
 
 private fun String.toProviderFunctionOrNull(): ProviderFunction? {

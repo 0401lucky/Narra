@@ -3,17 +3,23 @@ package com.example.myapplication.data.repository.ai
 import com.example.myapplication.data.local.SettingsStore
 import com.example.myapplication.data.remote.ApiServiceFactory
 import com.example.myapplication.model.Assistant
+import com.example.myapplication.model.FunctionModelProviderIds
 import com.example.myapplication.model.MemoryInjectionPosition
 import com.example.myapplication.model.ScreenTranslationSettings
 import com.example.myapplication.model.SearchSettings
 import com.example.myapplication.model.ThemeMode
 import com.example.myapplication.model.ProviderSettings
 import com.example.myapplication.model.TranslationHistoryEntry
+import com.example.myapplication.model.UserPersonaMask
 
 interface AiSettingsEditor {
     suspend fun saveProviderSettings(
         providers: List<ProviderSettings>,
         selectedProviderId: String,
+    )
+
+    suspend fun saveFunctionModelProviderIds(
+        functionModelProviderIds: FunctionModelProviderIds,
     )
 
     suspend fun saveTranslationHistory(history: List<TranslationHistoryEntry>)
@@ -54,6 +60,11 @@ interface AiSettingsEditor {
         avatarUrl: String,
     )
 
+    suspend fun saveUserPersonaMasks(
+        masks: List<UserPersonaMask>,
+        defaultMaskId: String,
+    )
+
     suspend fun saveRoleplayAssistantMismatchDialogPreference(suppressed: Boolean)
 
     suspend fun saveMemorySettings(autoSummaryEvery: Int, capacity: Int)
@@ -89,6 +100,12 @@ class DefaultAiSettingsEditor(
             providers = normalizedProviders,
             selectedProviderId = selectedProviderId,
         )
+    }
+
+    override suspend fun saveFunctionModelProviderIds(
+        functionModelProviderIds: FunctionModelProviderIds,
+    ) {
+        settingsStore.saveFunctionModelProviderIds(functionModelProviderIds)
     }
 
     override suspend fun saveTranslationHistory(history: List<TranslationHistoryEntry>) {
@@ -164,6 +181,16 @@ class DefaultAiSettingsEditor(
             personaPrompt = personaPrompt,
             avatarUri = avatarUri.trim(),
             avatarUrl = avatarUrl.trim(),
+        )
+    }
+
+    override suspend fun saveUserPersonaMasks(
+        masks: List<UserPersonaMask>,
+        defaultMaskId: String,
+    ) {
+        settingsStore.saveUserPersonaMasks(
+            masks = masks,
+            defaultMaskId = defaultMaskId,
         )
     }
 

@@ -620,6 +620,16 @@ internal object ChatDbMigrations {
         }
     }
 
+    val MIGRATION_31_32 = object : Migration(31, 32) {
+        override fun migrate(db: SupportSQLiteDatabase) {
+            if (!hasColumn(db, "roleplay_scenarios", "userPersonaMaskId")) {
+                db.execSQL(
+                    "ALTER TABLE roleplay_scenarios ADD COLUMN userPersonaMaskId TEXT NOT NULL DEFAULT ''",
+                )
+            }
+        }
+    }
+
     /** 版本连续性由 `ChatDatabaseMigrationRegistryTest` 保证：`size == CURRENT_VERSION - 1`。 */
     val ALL: Array<Migration> = arrayOf(
         MIGRATION_1_2,
@@ -652,6 +662,7 @@ internal object ChatDbMigrations {
         MIGRATION_28_29,
         MIGRATION_29_30,
         MIGRATION_30_31,
+        MIGRATION_31_32,
     )
 
     /** 幂等列检查。子迁移在 `ALTER TABLE ADD COLUMN` 之前先探测，允许中间版本重复升级。 */

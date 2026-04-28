@@ -137,8 +137,8 @@ internal class RoleplayRoundTripExecutor(
                 scenario = scenario,
             )
             val promptContext = promptContextAssembler.assemble(
-                settings = state.settings,
-                assistant = assistant,
+                settings = RoleplayConversationSupport.resolvePromptSettings(scenario, state.settings),
+                assistant = RoleplayConversationSupport.resolvePromptAssistant(scenario, assistant),
                 conversation = conversation,
                 userInputText = RoleplayConversationSupport.resolveLatestUserInputText(requestMessagesForModel),
                 recentMessages = requestMessagesForModel,

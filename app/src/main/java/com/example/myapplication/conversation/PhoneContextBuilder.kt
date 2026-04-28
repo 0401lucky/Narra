@@ -15,6 +15,7 @@ import com.example.myapplication.model.RoleplayScenario
 import com.example.myapplication.model.hasSendableContent
 import com.example.myapplication.model.shouldInjectDescriptionPrompt
 import com.example.myapplication.model.toPlainText
+import com.example.myapplication.roleplay.RoleplayConversationSupport
 import com.example.myapplication.roleplay.RoleplayTranscriptFormatter
 
 data class PhoneGenerationContext(
@@ -56,9 +57,14 @@ class PhoneContextBuilder(
             memoryMaxItems = assistant.memoryMaxItems.coerceAtMost(PHONE_PROMPT_MEMORY_MAX_ITEMS),
             worldBookMaxEntries = assistant.worldBookMaxEntries.coerceAtMost(PHONE_PROMPT_WORLD_BOOK_MAX_ITEMS),
         )
+        val promptSettings = scenario?.let { RoleplayConversationSupport.resolvePromptSettings(it, settings) }
+            ?: settings
+        val promptAssistant = scenario?.let {
+            RoleplayConversationSupport.resolvePromptAssistant(it, compactAssistant)
+        } ?: compactAssistant
         val assembledContext = promptContextAssembler.assemble(
-            settings = settings,
-            assistant = compactAssistant,
+            settings = promptSettings,
+            assistant = promptAssistant,
             conversation = conversation,
             userInputText = "",
             recentMessages = promptMessages,
@@ -66,8 +72,7 @@ class PhoneContextBuilder(
             includePhoneSnapshot = false,
         )
         return if (scenario != null) {
-            val userName = scenario.userDisplayNameOverride.trim()
-                .ifBlank { settings.resolvedUserDisplayName() }
+            val userName = RoleplayConversationSupport.resolveUserPersona(scenario, settings).displayName
             val assistantName = scenario.characterDisplayNameOverride.trim()
                 .ifBlank { assistant?.name?.trim().orEmpty() }
                 .ifBlank { "角色" }

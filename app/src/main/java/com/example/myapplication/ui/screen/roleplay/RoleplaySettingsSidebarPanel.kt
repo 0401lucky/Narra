@@ -66,6 +66,7 @@ import com.example.myapplication.model.RoleplayImmersiveMode
 import com.example.myapplication.model.RoleplayInteractionMode
 import com.example.myapplication.model.RoleplayLineHeightScale
 import com.example.myapplication.model.RoleplayScenario
+import com.example.myapplication.roleplay.RoleplayConversationSupport
 import com.example.myapplication.ui.component.AssistantAvatar
 import com.example.myapplication.ui.component.roleplay.ImmersiveBackdropState
 import com.example.myapplication.ui.component.roleplay.ImmersiveGlassSurface
@@ -122,6 +123,7 @@ internal fun RoleplaySettingsSidebarContent(
     onOpenProviderDetail: (String) -> Unit,
     onOpenConnectionSettings: () -> Unit,
     onOpenAssistantPrompt: () -> Unit,
+    onOpenUserMasks: () -> Unit,
     onOpenWorldBookSettings: () -> Unit,
     onOpenLongMemorySettings: () -> Unit,
     onUpdateAssistantMemoryEnabled: (Boolean) -> Unit,
@@ -241,8 +243,19 @@ internal fun RoleplaySettingsSidebarContent(
             item {
                 RoleplayIdentitySummaryCard(
                     backdropState = backdropState,
+                    scenario = scenario,
                     assistant = assistant,
                     settings = settings,
+                )
+            }
+            item {
+                RoleplayShortcutCard(
+                    backdropState = backdropState,
+                    title = "我的面具",
+                    summary = roleplayMaskSummary(settings),
+                    icon = Icons.Default.ManageAccounts,
+                    onClick = onOpenUserMasks,
+                    enabled = true,
                 )
             }
             item {
@@ -392,6 +405,9 @@ private fun RoleplaySettingsMainPanel(
     } else {
         "暂不需要"
     }
+    val effectiveUserName = RoleplayConversationSupport
+        .resolveUserPersona(scenario, settings)
+        .displayName
     var advancedExpanded by rememberSaveable { mutableStateOf(true) }
 
     LazyColumn(
@@ -434,7 +450,7 @@ private fun RoleplaySettingsMainPanel(
                 SummaryDivider()
                 SummaryLinkRow(
                     title = "用户身份",
-                    summary = settings.resolvedUserDisplayName(),
+                    summary = effectiveUserName,
                     icon = Icons.Default.ManageAccounts,
                     onClick = { onNavigateToPage(RoleplaySettingsPanelPage.IDENTITY) },
                 )
@@ -658,9 +674,21 @@ private fun RoleplaySettingsOverviewCard(
 @Composable
 private fun RoleplayIdentitySummaryCard(
     backdropState: ImmersiveBackdropState,
+    scenario: RoleplayScenario?,
     assistant: Assistant?,
     settings: AppSettings,
 ) {
+    val effectiveUserPersona = RoleplayConversationSupport.resolveUserPersona(scenario, settings)
+    val effectiveUserName = effectiveUserPersona.displayName
+    val effectiveMaskName = settings.normalizedUserPersonaMasks()
+        .firstOrNull { it.id == effectiveUserPersona.sourceMaskId }
+        ?.name
+        .orEmpty()
+    val effectiveCharacterName = scenario?.characterDisplayNameOverride?.trim()
+        .orEmpty()
+        .ifBlank { assistant?.name?.trim().orEmpty() }
+        .ifBlank { "未绑定" }
+    val effectiveUserPersonaPrompt = effectiveUserPersona.personaPrompt
     ImmersiveSettingsCard(backdropState) {
         Column(
             modifier = Modifier.padding(horizontal = 18.dp, vertical = 16.dp),
@@ -674,19 +702,25 @@ private fun RoleplayIdentitySummaryCard(
             )
             IdentityMetric(
                 "用户昵称",
-                settings.resolvedUserDisplayName(),
+                effectiveUserName,
                 RoleplaySettingsPanelTitleColor,
                 RoleplaySettingsPanelBodyColor,
             )
             IdentityMetric(
                 "当前角色",
-                assistant?.name?.ifBlank { "未绑定" } ?: "未绑定",
+                effectiveCharacterName,
+                RoleplaySettingsPanelTitleColor,
+                RoleplaySettingsPanelBodyColor,
+            )
+            IdentityMetric(
+                "当前面具",
+                effectiveMaskName.ifBlank { "未绑定，使用全局个人资料。" },
                 RoleplaySettingsPanelTitleColor,
                 RoleplaySettingsPanelBodyColor,
             )
             IdentityMetric(
                 "用户身份提示词",
-                settings.userPersonaPrompt.trim().ifBlank { "未填写，当前只使用昵称。" },
+                effectiveUserPersonaPrompt.ifBlank { "未填写，当前只使用昵称。" },
                 RoleplaySettingsPanelTitleColor,
                 RoleplaySettingsPanelBodyColor,
             )
@@ -714,6 +748,16 @@ private fun IdentityMetric(
             style = MaterialTheme.typography.bodyMedium,
             color = titleColor,
         )
+    }
+}
+
+private fun roleplayMaskSummary(settings: AppSettings): String {
+    val masks = settings.normalizedUserPersonaMasks()
+    val defaultMask = settings.resolvedDefaultUserPersonaMask()
+    return when {
+        masks.isEmpty() -> "还没有面具，点击创建不同对话里的“我”"
+        defaultMask != null -> "默认：${defaultMask.name} · 共 ${masks.size} 个身份"
+        else -> "${masks.size} 个身份，未设置默认"
     }
 }
 

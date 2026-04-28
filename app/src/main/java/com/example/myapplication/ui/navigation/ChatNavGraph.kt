@@ -97,6 +97,12 @@ internal fun NavGraphBuilder.registerChatNavGraph(
                 ),
                 profile = ChatProfileCallbacks(
                     onSaveUserProfile = settingsViewModel::saveUserProfile,
+                    onOpenUserMasks = {
+                        navController.navigate(AppRoutes.SETTINGS_USER_MASKS) {
+                            launchSingleTop = true
+                        }
+                    },
+                    onSetDefaultUserPersonaMask = settingsViewModel::setDefaultUserPersonaMask,
                     onSelectAssistant = { assistantId ->
                         settingsViewModel.selectAssistant(assistantId)
                         chatViewModel.selectAssistant(assistantId)

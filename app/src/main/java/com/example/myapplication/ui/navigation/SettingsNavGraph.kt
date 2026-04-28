@@ -8,6 +8,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.navigation
 import com.example.myapplication.di.AppGraph
 import com.example.myapplication.ui.screen.settings.SettingsScreen
+import com.example.myapplication.ui.screen.settings.UserPersonaMasksScreen
 import com.example.myapplication.viewmodel.AppUpdateViewModel
 import com.example.myapplication.viewmodel.SettingsViewModel
 import com.example.myapplication.viewmodel.updateAutoCollapseThinking
@@ -81,6 +82,11 @@ internal fun NavGraphBuilder.registerSettingsNavGraph(
                         launchSingleTop = true
                     }
                 },
+                onOpenUserMasks = {
+                    navController.navigate(AppRoutes.SETTINGS_USER_MASKS) {
+                        launchSingleTop = true
+                    }
+                },
                 onOpenModelSettings = {
                     navController.navigate(AppRoutes.SETTINGS_MODEL) {
                         launchSingleTop = true
@@ -128,6 +134,17 @@ internal fun NavGraphBuilder.registerSettingsNavGraph(
                     settingsViewModel.saveSettings {}
                     navController.popBackStack()
                 },
+            )
+        }
+
+        composable(AppRoutes.SETTINGS_USER_MASKS) {
+            val storedSettings by settingsViewModel.storedSettings.collectAsStateWithLifecycle()
+            UserPersonaMasksScreen(
+                settings = storedSettings,
+                onUpsertMask = settingsViewModel::upsertUserPersonaMask,
+                onDeleteMask = settingsViewModel::deleteUserPersonaMask,
+                onSetDefaultMask = settingsViewModel::setDefaultUserPersonaMask,
+                onNavigateBack = { navController.popBackStack() },
             )
         }
 

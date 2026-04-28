@@ -18,6 +18,7 @@ import com.example.myapplication.model.OpenAiTextApiMode
 import com.example.myapplication.model.DEFAULT_ROLEPLAY_LONGFORM_TARGET_CHARS
 import com.example.myapplication.model.DEFAULT_WORLD_BOOK_MAX_ENTRIES
 import com.example.myapplication.model.DEFAULT_WORLD_BOOK_SCAN_DEPTH
+import com.example.myapplication.model.FunctionModelProviderIds
 import com.example.myapplication.model.CONTEXT_LOG_CAPACITY_MAX
 import com.example.myapplication.model.CONTEXT_LOG_CAPACITY_MIN
 import com.example.myapplication.model.MEMORY_AUTO_SUMMARY_EVERY_MAX
@@ -35,8 +36,10 @@ import com.example.myapplication.model.SearchSourceConfig
 import com.example.myapplication.model.ScreenTranslationSettings
 import com.example.myapplication.model.ThemeMode
 import com.example.myapplication.model.TranslationHistoryEntry
+import com.example.myapplication.model.UserPersonaMask
 import com.example.myapplication.model.createDefaultProvider
 import com.example.myapplication.model.inferredModelInfo
+import com.example.myapplication.model.normalized
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
 import kotlinx.coroutines.flow.Flow
@@ -56,6 +59,10 @@ interface SettingsStore {
     suspend fun saveProviderSettings(
         providers: List<ProviderSettings>,
         selectedProviderId: String,
+    )
+
+    suspend fun saveFunctionModelProviderIds(
+        functionModelProviderIds: FunctionModelProviderIds,
     )
 
     suspend fun saveDisplaySettings(
@@ -91,6 +98,11 @@ interface SettingsStore {
         avatarUrl: String,
     )
 
+    suspend fun saveUserPersonaMasks(
+        masks: List<UserPersonaMask>,
+        defaultMaskId: String,
+    )
+
     suspend fun saveAssistants(
         assistants: List<Assistant>,
         selectedAssistantId: String,
@@ -117,6 +129,7 @@ class AppSettingsStore(
     private val gson = AppJson.gson
     private val providerListType = object : TypeToken<List<ProviderSettings>>() {}.type
     private val assistantListType = object : TypeToken<List<Assistant>>() {}.type
+    private val userPersonaMaskListType = object : TypeToken<List<UserPersonaMask>>() {}.type
     private val translationHistoryType = object : TypeToken<List<TranslationHistoryEntry>>() {}.type
     private val searchSettingsType = object : TypeToken<SearchSettings>() {}.type
     private val secureValueStore = SecureValueStore(context)
@@ -148,6 +161,9 @@ class AppSettingsStore(
         val resolvedSelectedProviderId = preferences[PreferencesKeys.selectedProviderId]
             .orEmpty()
             .ifBlank { resolvedProviders.firstOrNull()?.id.orEmpty() }
+        val functionModelProviderIds = decodeFunctionModelProviderIds(
+            preferences[PreferencesKeys.functionModelProviderIdsJson].orEmpty(),
+        ).normalized(resolvedProviders.map(ProviderSettings::id).toSet())
         val effectiveActiveProvider = resolveEffectiveProvider(
             providers = resolvedProviders,
             selectedProviderId = resolvedSelectedProviderId,
@@ -171,6 +187,7 @@ class AppSettingsStore(
             selectedModel = effectiveActiveProvider?.selectedModel ?: legacySelectedModel,
             providers = resolvedProviders,
             selectedProviderId = resolvedSelectedProviderId,
+            functionModelProviderIds = functionModelProviderIds,
             themeMode = ThemeMode.fromStorageValue(
                 preferences[PreferencesKeys.themeMode].orEmpty(),
             ),
@@ -202,6 +219,10 @@ class AppSettingsStore(
             userPersonaPrompt = preferences[PreferencesKeys.userPersonaPrompt].orEmpty(),
             userAvatarUri = preferences[PreferencesKeys.userAvatarUri].orEmpty(),
             userAvatarUrl = preferences[PreferencesKeys.userAvatarUrl].orEmpty(),
+            userPersonaMasks = decodeUserPersonaMasks(
+                preferences[PreferencesKeys.userPersonaMasksJson].orEmpty(),
+            ),
+            defaultUserPersonaMaskId = preferences[PreferencesKeys.defaultUserPersonaMaskId].orEmpty(),
             translationHistory = decodeTranslationHistory(
                 preferences[PreferencesKeys.translationHistoryJson].orEmpty(),
             ),
@@ -333,6 +354,18 @@ class AppSettingsStore(
         }
     }
 
+    override suspend fun saveFunctionModelProviderIds(
+        functionModelProviderIds: FunctionModelProviderIds,
+    ) {
+        context.dataStore.edit { preferences ->
+            val currentProviders = decodeProviders(preferences[PreferencesKeys.providersJson].orEmpty())
+            preferences[PreferencesKeys.functionModelProviderIdsJson] = gson.toJson(
+                functionModelProviderIds.normalized(currentProviders.map(ProviderSettings::id).toSet()),
+                FunctionModelProviderIds::class.java,
+            )
+        }
+    }
+
     override suspend fun saveDisplaySettings(
         themeMode: ThemeMode,
         messageTextScale: Float,
@@ -417,6 +450,25 @@ class AppSettingsStore(
                 .trim()
             preferences[PreferencesKeys.userAvatarUri] = avatarUri.trim()
             preferences[PreferencesKeys.userAvatarUrl] = avatarUrl.trim()
+        }
+    }
+
+    override suspend fun saveUserPersonaMasks(
+        masks: List<UserPersonaMask>,
+        defaultMaskId: String,
+    ) {
+        val normalizedMasks = masks
+            .map(UserPersonaMask::normalized)
+            .distinctBy(UserPersonaMask::id)
+        val resolvedDefaultMaskId = defaultMaskId.trim()
+            .takeIf { id -> normalizedMasks.any { it.id == id } }
+            ?: normalizedMasks.firstOrNull()?.id.orEmpty()
+        context.dataStore.edit { preferences ->
+            preferences[PreferencesKeys.userPersonaMasksJson] = gson.toJson(
+                normalizedMasks,
+                userPersonaMaskListType,
+            )
+            preferences[PreferencesKeys.defaultUserPersonaMaskId] = resolvedDefaultMaskId
         }
     }
 
@@ -568,6 +620,18 @@ class AppSettingsStore(
                 ?: SearchSettings()
         }.logFailure(TAG) { "decodeSearchSettings fromJson failed, raw.len=${rawJson.length}" }
             .getOrDefault(SearchSettings())
+    }
+
+    private fun decodeFunctionModelProviderIds(rawJson: String): FunctionModelProviderIds {
+        if (rawJson.isBlank()) {
+            return FunctionModelProviderIds()
+        }
+        return runCatching {
+            gson.fromJson(rawJson, FunctionModelProviderIds::class.java)
+                ?.normalized()
+                ?: FunctionModelProviderIds()
+        }.logFailure(TAG) { "decodeFunctionModelProviderIds fromJson failed, raw.len=${rawJson.length}" }
+            .getOrDefault(FunctionModelProviderIds())
     }
 
     /** Gson 反序列化旧 JSON 时新字段为 null，补充 type、apiProtocol、OpenAI text api mode 和 models。 */
@@ -782,6 +846,30 @@ class AppSettingsStore(
             .getOrDefault(emptyList())
     }
 
+    private fun decodeUserPersonaMasks(rawJson: String): List<UserPersonaMask> {
+        if (rawJson.isBlank()) {
+            return emptyList()
+        }
+        return runCatching {
+            gson.fromJson<List<UserPersonaMask>>(rawJson, userPersonaMaskListType).orEmpty()
+                .map { mask ->
+                    UserPersonaMask(
+                        id = sanitizeText(mask.id as String?),
+                        name = sanitizeText(mask.name as String?),
+                        avatarUri = sanitizeText(mask.avatarUri as String?),
+                        avatarUrl = sanitizeText(mask.avatarUrl as String?),
+                        personaPrompt = sanitizeMultilineText(mask.personaPrompt as String?),
+                        note = sanitizeMultilineText(mask.note as String?),
+                        tags = sanitizeStringList(mask.tags as? List<*>),
+                        createdAt = mask.createdAt,
+                        updatedAt = mask.updatedAt,
+                    ).normalized()
+                }
+                .distinctBy(UserPersonaMask::id)
+        }.logFailure(TAG) { "decodeUserPersonaMasks fromJson failed, raw.len=${rawJson.length}" }
+            .getOrDefault(emptyList())
+    }
+
     private fun normalizeAssistant(assistant: Assistant): Assistant {
         return assistant.copy(
             iconName = sanitizeText(assistant.iconName as String?).ifBlank { DEFAULT_ASSISTANT_ICON },
@@ -840,6 +928,7 @@ class AppSettingsStore(
         val selectedModel = stringPreferencesKey("selected_model")
         val providersJson = stringPreferencesKey("providers_json")
         val selectedProviderId = stringPreferencesKey("selected_provider_id")
+        val functionModelProviderIdsJson = stringPreferencesKey("function_model_provider_ids_json")
         val themeMode = stringPreferencesKey("theme_mode")
         val messageTextScale = floatPreferencesKey("message_text_scale")
         val reasoningExpandedByDefault = booleanPreferencesKey("reasoning_expanded_by_default")
@@ -862,6 +951,8 @@ class AppSettingsStore(
         val userPersonaPrompt = stringPreferencesKey("user_persona_prompt")
         val userAvatarUri = stringPreferencesKey("user_avatar_uri")
         val userAvatarUrl = stringPreferencesKey("user_avatar_url")
+        val userPersonaMasksJson = stringPreferencesKey("user_persona_masks_json")
+        val defaultUserPersonaMaskId = stringPreferencesKey("default_user_persona_mask_id")
         val translationHistoryJson = stringPreferencesKey("translation_history_json")
         val assistantsJson = stringPreferencesKey("assistants_json")
         val selectedAssistantId = stringPreferencesKey("selected_assistant_id")

@@ -39,6 +39,7 @@ class SettingsScreenTest {
                     onOpenConnectionSettings = {},
                     onOpenSearchToolSettings = {},
                     onOpenUpdateSettings = {},
+                    onOpenUserMasks = {},
                     onOpenModelSettings = {},
                     onOpenAssistantSettings = {},
                     onOpenWorldBookSettings = {},

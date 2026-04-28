@@ -21,6 +21,7 @@ interface RoleplayDao {
             s.assistantId AS assistantId,
             s.backgroundUri AS backgroundUri,
             s.userDisplayNameOverride AS userDisplayNameOverride,
+            s.userPersonaMaskId AS userPersonaMaskId,
             s.userPersonaOverride AS userPersonaOverride,
             s.userPortraitUri AS userPortraitUri,
             s.userPortraitUrl AS userPortraitUrl,

@@ -34,7 +34,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawWithContent
-import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ImageBitmap
@@ -229,52 +228,40 @@ fun ImmersiveBackdrop(
                     modifier = Modifier
                         .fillMaxSize()
                         .background(
-                            Brush.verticalGradient(
+                            Brush.linearGradient(
                                 colors = listOf(
-                                    Color(0xFF1A2744),
-                                    Color(0xFF12203A),
-                                )
-                            )
-                        )
+                                    Color(0xFFEAF2F8),
+                                    Color(0xFFF7F2E8),
+                                    Color(0xFFE8F0EA),
+                                ),
+                            ),
+                        ),
                 ) {
-                    // 左上角蓝色光晕
                     Box(
                         modifier = Modifier
                             .fillMaxSize()
                             .background(
-                                Brush.radialGradient(
-                                    colors = listOf(Color(0xFF3B6B9F).copy(alpha = 0.35f), Color.Transparent),
-                                    radius = backdropState.screenSize.width * 1.5f,
-                                    center = Offset(0f, 0f)
-                                )
-                            )
+                                Brush.verticalGradient(
+                                    colors = listOf(
+                                        Color.White.copy(alpha = 0.42f),
+                                        Color.Transparent,
+                                        Color(0xFF9FAFC3).copy(alpha = 0.16f),
+                                    ),
+                                ),
+                            ),
                     )
-                    // 右下角紫色光晕
                     Box(
                         modifier = Modifier
                             .fillMaxSize()
                             .background(
-                                Brush.radialGradient(
-                                    colors = listOf(Color(0xFF6D4AAE).copy(alpha = 0.18f), Color.Transparent),
-                                    radius = backdropState.screenSize.width * 1.2f,
-                                    center = Offset(backdropState.screenSize.width.toFloat(), backdropState.screenSize.height.toFloat())
-                                )
-                            )
-                    )
-                    // 中心暖色点缀
-                    Box(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .background(
-                                Brush.radialGradient(
-                                    colors = listOf(Color(0xFF5C7EA3).copy(alpha = 0.12f), Color.Transparent),
-                                    radius = backdropState.screenSize.width * 0.8f,
-                                    center = Offset(
-                                        backdropState.screenSize.width * 0.5f,
-                                        backdropState.screenSize.height * 0.3f,
-                                    )
-                                )
-                            )
+                                Brush.linearGradient(
+                                    colors = listOf(
+                                        Color(0xFFB8C8D8).copy(alpha = 0.18f),
+                                        Color.Transparent,
+                                        Color(0xFFD9CDBA).copy(alpha = 0.14f),
+                                    ),
+                                ),
+                            ),
                     )
                 }
             }
@@ -720,8 +707,11 @@ private fun deriveImmersiveGlassPalette(
     colorScheme: ColorScheme,
     highContrast: Boolean = false,
 ): ImmersiveGlassPalette {
-    val fallbackBase = lerp(colorScheme.primary, colorScheme.secondary, 0.28f)
-    val sampled = imageBitmap?.let(::sampleAverageColor) ?: fallbackBase
+    if (imageBitmap == null) {
+        return fallbackImmersiveGlassPalette(colorScheme, highContrast)
+    }
+
+    val sampled = sampleAverageColor(imageBitmap)
 
     val baseHsl = FloatArray(3)
     ColorUtils.colorToHSL(sampled.toArgb(), baseHsl)
@@ -782,6 +772,36 @@ private fun deriveImmersiveGlassPalette(
         thoughtText = thoughtText,
         readingSurface = panelTintStrong.copy(alpha = profile.readingSurfaceAlpha),
         readingBorder = characterAccent.copy(alpha = profile.readingBorderAlpha),
+    )
+}
+
+private fun fallbackImmersiveGlassPalette(
+    colorScheme: ColorScheme,
+    highContrast: Boolean,
+): ImmersiveGlassPalette {
+    val panelAlpha = if (highContrast) 0.98f else 0.9f
+    val strongPanelAlpha = if (highContrast) 0.99f else 0.96f
+    val primaryText = Color(0xFF243044)
+    val mutedText = Color(0xFF627086)
+    val characterAccent = lerp(Color(0xFF426F96), colorScheme.primary, 0.04f)
+    val userAccent = lerp(Color(0xFF6E7C63), colorScheme.secondary, 0.04f)
+    return ImmersiveGlassPalette(
+        panelTint = Color(0xFFF7FAFC).copy(alpha = panelAlpha),
+        panelTintStrong = Color.White.copy(alpha = strongPanelAlpha),
+        panelHighlight = Color.White.copy(alpha = 0.5f),
+        panelBorder = Color(0xFF5D7286).copy(alpha = 0.18f),
+        shadowColor = Color(0xFF465568).copy(alpha = 0.16f),
+        scrimTop = Color.White.copy(alpha = 0.08f),
+        scrimBottom = Color(0xFF6F7D8C).copy(alpha = 0.12f),
+        onGlass = primaryText,
+        onGlassMuted = mutedText.copy(alpha = 0.88f),
+        chipTint = Color(0xFFE3EDF5).copy(alpha = 0.92f),
+        chipText = Color(0xFF33465A).copy(alpha = 0.96f),
+        characterAccent = characterAccent,
+        userAccent = userAccent,
+        thoughtText = Color(0xFF586A79).copy(alpha = 0.9f),
+        readingSurface = Color.White.copy(alpha = strongPanelAlpha),
+        readingBorder = characterAccent.copy(alpha = 0.24f),
     )
 }
 

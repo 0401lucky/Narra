@@ -417,8 +417,9 @@ internal object RoleplayOnlineReferenceSupport {
         settings: AppSettings,
     ): String {
         return when (message.speaker) {
-            com.example.myapplication.model.RoleplaySpeaker.USER -> scenario.userDisplayNameOverride.trim()
-                .ifBlank { settings.resolvedUserDisplayName() }
+            com.example.myapplication.model.RoleplaySpeaker.USER -> RoleplayConversationSupport
+                .resolveUserPersona(scenario, settings)
+                .displayName
                 .ifBlank { "你" }
             com.example.myapplication.model.RoleplaySpeaker.CHARACTER -> scenario.characterDisplayNameOverride.trim()
                 .ifBlank { assistant?.name?.trim().orEmpty() }

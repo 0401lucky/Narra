@@ -15,6 +15,7 @@ import com.example.myapplication.model.RoleplaySession
 import com.example.myapplication.model.RoleplaySuggestionUiModel
 import com.example.myapplication.model.hasSendableContent
 import com.example.myapplication.model.toPlainText
+import com.example.myapplication.roleplay.RoleplayConversationSupport
 import com.example.myapplication.roleplay.RoleplayPromptDecorator
 import com.example.myapplication.roleplay.RoleplayTranscriptFormatter
 
@@ -64,8 +65,8 @@ class RoleplaySuggestionCoordinator(
             ?: request.recentMessageWindow
         val recentMessages = allMessages.takeLast(recentWindow)
         val promptContext = promptContextAssembler.assemble(
-            settings = request.settings,
-            assistant = assistant,
+            settings = RoleplayConversationSupport.resolvePromptSettings(request.scenario, request.settings),
+            assistant = RoleplayConversationSupport.resolvePromptAssistant(request.scenario, assistant),
             conversation = conversation,
             userInputText = request.currentInput.trim(),
             recentMessages = recentMessages,

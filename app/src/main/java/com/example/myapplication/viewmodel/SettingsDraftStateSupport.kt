@@ -21,6 +21,9 @@ object SettingsDraftStateSupport {
             providers = resolvedProviders,
             selectedProviderId = settings.selectedProviderId,
         )
+        val resolvedFunctionModelProviderIds = settings.functionModelProviderIds.normalized(
+            resolvedProviders.map(ProviderSettings::id).toSet(),
+        )
         return if (current.hasDraftChanges()) {
             val hydratedProviders = if (current.providers.isEmpty()) {
                 resolvedProviders
@@ -40,6 +43,7 @@ object SettingsDraftStateSupport {
             current.copy(
                 providers = resolvedProviders,
                 selectedProviderId = resolvedSelectedProviderId,
+                functionModelProviderIds = resolvedFunctionModelProviderIds,
                 savedSettings = settings,
                 themeMode = settings.themeMode,
                 messageTextScale = settings.messageTextScale,

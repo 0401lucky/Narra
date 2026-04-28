@@ -63,7 +63,14 @@ class RoleplaySettingsScreenTest {
                 onSelectProvider = {},
                 onSelectModel = { _, _ -> },
                 onOpenProviderDetail = {},
+                onOpenConnectionSettings = {},
+                onOpenAssistantPrompt = {},
+                onOpenUserMasks = {},
+                onOpenWorldBookSettings = {},
+                onOpenLongMemorySettings = {},
+                onUpdateAssistantMemoryEnabled = {},
                 onRefreshConversationSummary = {},
+                onOpenContextLog = {},
                 onRestartSession = { onSuccess ->
                     restartCalls++
                     pendingSuccess = onSuccess

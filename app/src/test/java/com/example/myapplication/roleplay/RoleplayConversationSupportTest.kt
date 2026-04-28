@@ -6,12 +6,151 @@ import com.example.myapplication.model.ChatMessage
 import com.example.myapplication.model.MessageRole
 import com.example.myapplication.model.RoleplayInteractionMode
 import com.example.myapplication.model.RoleplayScenario
+import com.example.myapplication.model.UserPersonaMask
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class RoleplayConversationSupportTest {
+    @Test
+    fun resolveUserPersona_usesScenarioMaskWhenNoManualOverride() {
+        val settings = AppSettings(
+            userDisplayName = "全局我",
+            userPersonaPrompt = "全局人设",
+            userPersonaMasks = listOf(
+                UserPersonaMask(
+                    id = "mask-1",
+                    name = "林晚",
+                    avatarUri = "content://mask",
+                    personaPrompt = "林晚是嘴硬但心软的人。",
+                ),
+            ),
+            defaultUserPersonaMaskId = "mask-1",
+        )
+
+        val persona = RoleplayConversationSupport.resolveUserPersona(
+            scenario = RoleplayScenario(id = "scene-1", userPersonaMaskId = "mask-1"),
+            settings = settings,
+        )
+
+        assertEquals("林晚", persona.displayName)
+        assertEquals("林晚是嘴硬但心软的人。", persona.personaPrompt)
+        assertEquals("content://mask", persona.avatarUri)
+        assertEquals("mask-1", persona.sourceMaskId)
+    }
+
+    @Test
+    fun resolveUserPersona_usesDefaultMaskWhenScenarioDoesNotBindMask() {
+        val settings = AppSettings(
+            userDisplayName = "全局我",
+            userPersonaPrompt = "全局人设",
+            userPersonaMasks = listOf(
+                UserPersonaMask(
+                    id = "mask-1",
+                    name = "默认面具",
+                    avatarUrl = "https://example.com/default.png",
+                    personaPrompt = "默认面具人设",
+                ),
+            ),
+            defaultUserPersonaMaskId = "mask-1",
+        )
+
+        val persona = RoleplayConversationSupport.resolveUserPersona(
+            scenario = RoleplayScenario(id = "scene-1"),
+            settings = settings,
+        )
+
+        assertEquals("默认面具", persona.displayName)
+        assertEquals("默认面具人设", persona.personaPrompt)
+        assertEquals("https://example.com/default.png", persona.avatarUrl)
+        assertEquals("mask-1", persona.sourceMaskId)
+    }
+
+    @Test
+    fun resolveUserPersona_manualScenarioNameOverridesMaskName() {
+        val settings = AppSettings(
+            userDisplayName = "全局我",
+            userPersonaMasks = listOf(
+                UserPersonaMask(
+                    id = "mask-1",
+                    name = "面具昵称",
+                    personaPrompt = "面具人设",
+                ),
+            ),
+            defaultUserPersonaMaskId = "mask-1",
+        )
+
+        val persona = RoleplayConversationSupport.resolveUserPersona(
+            scenario = RoleplayScenario(
+                id = "scene-1",
+                userPersonaMaskId = "mask-1",
+                userDisplayNameOverride = "场景昵称",
+            ),
+            settings = settings,
+        )
+
+        assertEquals("场景昵称", persona.displayName)
+        assertEquals("面具人设", persona.personaPrompt)
+        assertEquals("mask-1", persona.sourceMaskId)
+    }
+
+    @Test
+    fun resolvePromptSettings_injectsMaskPersonaWhenSceneHasNoPersonaOverride() {
+        val settings = AppSettings(
+            userDisplayName = "全局我",
+            userPersonaPrompt = "全局人设",
+            userPersonaMasks = listOf(
+                UserPersonaMask(
+                    id = "mask-1",
+                    name = "林晚",
+                    personaPrompt = "面具人设",
+                ),
+            ),
+            defaultUserPersonaMaskId = "mask-1",
+        )
+
+        val promptSettings = RoleplayConversationSupport.resolvePromptSettings(
+            scenario = RoleplayScenario(
+                id = "scene-1",
+                userPersonaMaskId = "mask-1",
+            ),
+            settings = settings,
+        )
+
+        assertEquals("林晚", promptSettings.userDisplayName)
+        assertEquals("面具人设", promptSettings.userPersonaPrompt)
+    }
+
+    @Test
+    fun resolvePromptSettings_scenePersonaOverrideDoesNotDuplicateMaskPersona() {
+        val settings = AppSettings(
+            userDisplayName = "全局我",
+            userPersonaPrompt = "全局人设",
+            userPersonaMasks = listOf(
+                UserPersonaMask(
+                    id = "mask-1",
+                    name = "林晚",
+                    personaPrompt = "面具人设",
+                ),
+            ),
+            defaultUserPersonaMaskId = "mask-1",
+        )
+
+        val promptSettings = RoleplayConversationSupport.resolvePromptSettings(
+            scenario = RoleplayScenario(
+                id = "scene-1",
+                userPersonaMaskId = "mask-1",
+                userDisplayNameOverride = "小鹿",
+                userPersonaOverride = "场景专属人设",
+            ),
+            settings = settings,
+        )
+
+        assertEquals("小鹿", promptSettings.userDisplayName)
+        assertEquals("", promptSettings.userPersonaPrompt)
+    }
+
     @Test
     fun buildTranscriptInput_keepsLatestLinesWithinLimit() {
         val scenario = RoleplayScenario(

@@ -6,6 +6,7 @@ data class AppSettings(
     val selectedModel: String = "",
     val providers: List<ProviderSettings> = emptyList(),
     val selectedProviderId: String = "",
+    val functionModelProviderIds: FunctionModelProviderIds = FunctionModelProviderIds(),
     val themeMode: ThemeMode = ThemeMode.SYSTEM,
     val messageTextScale: Float = 1f,
     val reasoningExpandedByDefault: Boolean = true,
@@ -28,6 +29,8 @@ data class AppSettings(
     val userPersonaPrompt: String = "",
     val userAvatarUri: String = "",
     val userAvatarUrl: String = "",
+    val userPersonaMasks: List<UserPersonaMask> = emptyList(),
+    val defaultUserPersonaMaskId: String = "",
     val translationHistory: List<TranslationHistoryEntry> = emptyList(),
     val assistants: List<Assistant> = emptyList(),
     val selectedAssistantId: String = DEFAULT_ASSISTANT_ID,
@@ -79,6 +82,34 @@ data class AppSettings(
             ?: enabledProviders.firstOrNull()
     }
 
+    fun resolveFunctionProvider(function: ProviderFunction): ProviderSettings? {
+        if (function == ProviderFunction.CHAT) {
+            return activeProvider()
+        }
+        val enabledProviders = enabledProviders()
+        val assignedProviderId = functionModelProviderIds
+            .normalized(resolvedProviders().map(ProviderSettings::id).toSet())
+            .providerIdFor(function)
+        return enabledProviders.firstOrNull { it.id == assignedProviderId }
+            ?: activeProvider()
+    }
+
+    fun resolveFunctionModel(function: ProviderFunction): String {
+        return resolveFunctionProvider(function)
+            ?.resolveFunctionModel(function)
+            .orEmpty()
+    }
+
+    fun resolveFunctionModelMode(function: ProviderFunction): ProviderFunctionModelMode {
+        return resolveFunctionProvider(function)
+            ?.resolveFunctionModelMode(function)
+            ?: if (function == ProviderFunction.GIFT_IMAGE) {
+                ProviderFunctionModelMode.DISABLED
+            } else {
+                ProviderFunctionModelMode.FOLLOW_DEFAULT
+            }
+    }
+
     fun providerCount(): Int = resolvedProviders().size
 
     fun hasBaseCredentials(): Boolean {
@@ -105,6 +136,75 @@ data class AppSettings(
 
     fun resolvedUserAvatar(): String {
         return userAvatarUrl.trim().ifBlank { userAvatarUri.trim() }
+    }
+
+    fun normalizedUserPersonaMasks(): List<UserPersonaMask> {
+        val masks = userPersonaMasks
+            .map(UserPersonaMask::normalized)
+            .distinctBy(UserPersonaMask::id)
+        val profileMask = profileBackedPersonaMask()
+            ?.takeIf { profile -> masks.none { it.id == profile.id } }
+        return listOfNotNull(profileMask) + masks
+    }
+
+    fun resolvedDefaultUserPersonaMask(): UserPersonaMask? {
+        val masks = normalizedUserPersonaMasks()
+        if (masks.isEmpty()) {
+            return null
+        }
+        return masks.firstOrNull { it.id == defaultUserPersonaMaskId.trim() }
+            ?: masks.first()
+    }
+
+    fun resolveUserPersona(
+        maskId: String = "",
+        displayNameOverride: String = "",
+        personaPromptOverride: String = "",
+        avatarUriOverride: String = "",
+        avatarUrlOverride: String = "",
+    ): ResolvedUserPersona {
+        val masks = normalizedUserPersonaMasks()
+        val selectedMask = masks.firstOrNull { it.id == maskId.trim() }
+            ?: resolvedDefaultUserPersonaMask()
+        return ResolvedUserPersona(
+            displayName = displayNameOverride.trim()
+                .ifBlank { selectedMask?.name.orEmpty() }
+                .ifBlank { resolvedUserDisplayName() },
+            personaPrompt = personaPromptOverride.replace("\r\n", "\n").trim()
+                .ifBlank { selectedMask?.personaPrompt.orEmpty() }
+                .ifBlank { userPersonaPrompt.replace("\r\n", "\n").trim() },
+            avatarUri = avatarUriOverride.trim()
+                .ifBlank { selectedMask?.avatarUri.orEmpty() }
+                .ifBlank { userAvatarUri.trim() },
+            avatarUrl = avatarUrlOverride.trim()
+                .ifBlank { selectedMask?.avatarUrl.orEmpty() }
+                .ifBlank { userAvatarUrl.trim() },
+            sourceMaskId = selectedMask?.id.orEmpty(),
+        )
+    }
+
+    private fun profileBackedPersonaMask(): UserPersonaMask? {
+        val displayName = resolvedUserDisplayName()
+        val persona = userPersonaPrompt.replace("\r\n", "\n").trim()
+        val avatarUri = userAvatarUri.trim()
+        val avatarUrl = userAvatarUrl.trim()
+        val hasProfileContent = displayName != DEFAULT_USER_DISPLAY_NAME ||
+            persona.isNotBlank() ||
+            avatarUri.isNotBlank() ||
+            avatarUrl.isNotBlank()
+        if (!hasProfileContent) {
+            return null
+        }
+        return UserPersonaMask(
+            id = USER_PROFILE_PERSONA_MASK_ID,
+            name = displayName,
+            avatarUri = avatarUri,
+            avatarUrl = avatarUrl,
+            personaPrompt = persona,
+            note = "由现有个人资料自动打包",
+            createdAt = 1L,
+            updatedAt = 1L,
+        )
     }
 
     fun resolvedSearchSettings(): SearchSettings {

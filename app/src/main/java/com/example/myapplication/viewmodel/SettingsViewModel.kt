@@ -10,6 +10,7 @@ import com.example.myapplication.model.AppSettings
 import com.example.myapplication.model.Assistant
 import com.example.myapplication.model.ConnectionHealth
 import com.example.myapplication.model.DEFAULT_ROLEPLAY_LONGFORM_TARGET_CHARS
+import com.example.myapplication.model.FunctionModelProviderIds
 import com.example.myapplication.model.ModelInfo
 import com.example.myapplication.model.ModelAbility
 import com.example.myapplication.model.ProviderApiProtocol
@@ -19,6 +20,8 @@ import com.example.myapplication.model.ProviderType
 import com.example.myapplication.model.ScreenTranslationSettings
 import com.example.myapplication.model.SearchSettings
 import com.example.myapplication.model.ThemeMode
+import com.example.myapplication.model.UserPersonaMask
+import com.example.myapplication.model.normalized
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -30,6 +33,7 @@ import kotlinx.coroutines.launch
 data class SettingsUiState(
     val providers: List<ProviderSettings> = emptyList(),
     val selectedProviderId: String = "",
+    val functionModelProviderIds: FunctionModelProviderIds = FunctionModelProviderIds(),
     val isLoadingModels: Boolean = false,
     val loadingProviderId: String = "",
     val isSaving: Boolean = false,
@@ -86,6 +90,7 @@ data class SettingsUiState(
             .ifBlank { savedProviders.firstOrNull()?.id.orEmpty() }
         return providers != savedProviders ||
             selectedProviderId != resolvedSavedProviderId ||
+            functionModelProviderIds != savedSettings.functionModelProviderIds.normalized(savedProviders.map(ProviderSettings::id).toSet()) ||
             themeMode != savedSettings.themeMode ||
             messageTextScale != savedSettings.messageTextScale ||
             reasoningExpandedByDefault != savedSettings.reasoningExpandedByDefault ||
@@ -466,6 +471,65 @@ class SettingsViewModel(
         },
     )
 
+    fun upsertUserPersonaMask(mask: UserPersonaMask) = launchPersistenceMutation(
+        defaultErrorMessage = "面具保存失败",
+        action = {
+            val settings = storedSettings.value
+            val now = System.currentTimeMillis()
+            val normalizedMask = mask.normalized(now).copy(updatedAt = now)
+            val currentMasks = settings.normalizedUserPersonaMasks()
+            val updatedMasks = if (currentMasks.any { it.id == normalizedMask.id }) {
+                currentMasks.map { current ->
+                    if (current.id == normalizedMask.id) {
+                        normalizedMask.copy(
+                            createdAt = current.createdAt.takeIf { it > 0L } ?: normalizedMask.createdAt,
+                        )
+                    } else {
+                        current
+                    }
+                }
+            } else {
+                currentMasks + normalizedMask.copy(createdAt = now, updatedAt = now)
+            }
+            persistenceCoordinator.saveUserPersonaMasks(
+                masks = updatedMasks,
+                defaultMaskId = settings.defaultUserPersonaMaskId
+                    .takeIf { id -> updatedMasks.any { it.id == id } }
+                    ?: settings.resolvedDefaultUserPersonaMask()
+                        ?.id
+                        ?.takeIf { id -> updatedMasks.any { it.id == id } }
+                    ?: normalizedMask.id,
+            )
+        },
+    )
+
+    fun deleteUserPersonaMask(maskId: String) = launchPersistenceMutation(
+        defaultErrorMessage = "面具删除失败",
+        action = {
+            val settings = storedSettings.value
+            val updatedMasks = settings.normalizedUserPersonaMasks()
+                .filterNot { it.id == maskId }
+            val nextDefaultId = settings.defaultUserPersonaMaskId
+                .takeIf { id -> updatedMasks.any { it.id == id } }
+                ?: updatedMasks.firstOrNull()?.id.orEmpty()
+            persistenceCoordinator.saveUserPersonaMasks(
+                masks = updatedMasks,
+                defaultMaskId = nextDefaultId,
+            )
+        },
+    )
+
+    fun setDefaultUserPersonaMask(maskId: String) = launchPersistenceMutation(
+        defaultErrorMessage = "默认面具设置失败",
+        action = {
+            val settings = storedSettings.value
+            persistenceCoordinator.saveUserPersonaMasks(
+                masks = settings.normalizedUserPersonaMasks(),
+                defaultMaskId = maskId,
+            )
+        },
+    )
+
     fun consumeMessage() = updateUiState { SettingsUiMutationSupport.consumeMessage(it) }
 
     fun confirmFetchedModels(providerId: String, selectedModelIds: Set<String>) = updateUiState { current ->
@@ -600,6 +664,16 @@ class SettingsViewModel(
             current = current,
             providerId = providerId,
             transform = transform,
+        )
+    }
+
+    internal fun updateFunctionModelProviderIds(
+        transform: (FunctionModelProviderIds) -> FunctionModelProviderIds,
+    ) = updateUiState { current ->
+        current.copy(
+            functionModelProviderIds = transform(current.functionModelProviderIds)
+                .normalized(current.providers.map(ProviderSettings::id).toSet()),
+            message = null,
         )
     }
 

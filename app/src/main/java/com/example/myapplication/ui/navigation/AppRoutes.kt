@@ -11,6 +11,7 @@ object AppRoutes {
     const val SETTINGS_SEARCH_TOOLS = "settings/search-tools"
     const val SETTINGS_PROVIDERS = "settings/providers"
     const val SETTINGS_UPDATES = "settings/updates"
+    const val SETTINGS_USER_MASKS = "settings/user-masks"
     const val SETTINGS_SCREEN_TRANSLATION = "settings/screen-translation"
     const val SETTINGS_PROVIDER_DETAIL = "settings/providers/{providerId}"
     const val SETTINGS_ASSISTANTS = "settings/assistants"

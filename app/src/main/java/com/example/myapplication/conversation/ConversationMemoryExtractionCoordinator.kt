@@ -29,8 +29,8 @@ class ConversationMemoryExtractionCoordinator(
         if (recentMessageWindow <= 0) {
             return false
         }
-        val activeProvider = settings.activeProvider() ?: return false
-        val memoryModel = activeProvider.resolveFunctionModel(ProviderFunction.MEMORY)
+        val memoryProvider = settings.resolveFunctionProvider(ProviderFunction.MEMORY) ?: return false
+        val memoryModel = settings.resolveFunctionModel(ProviderFunction.MEMORY)
         if (memoryModel.isBlank()) {
             return false
         }
@@ -43,11 +43,11 @@ class ConversationMemoryExtractionCoordinator(
         val existingMemoriesForPrompt = collectExistingChatMemories(assistant)
         val memoryItems = aiPromptExtrasService.generateMemoryEntries(
             conversationExcerpt = memoryInput,
-            baseUrl = activeProvider.baseUrl,
-            apiKey = activeProvider.apiKey,
+            baseUrl = memoryProvider.baseUrl,
+            apiKey = memoryProvider.apiKey,
             modelId = memoryModel,
-            apiProtocol = activeProvider.resolvedApiProtocol(),
-            provider = activeProvider,
+            apiProtocol = memoryProvider.resolvedApiProtocol(),
+            provider = memoryProvider,
             existingMemories = existingMemoriesForPrompt,
             userName = settings.resolvedUserDisplayName(),
             characterName = assistant.name.trim().ifBlank { "角色" },
@@ -60,10 +60,10 @@ class ConversationMemoryExtractionCoordinator(
             assistant = assistant,
             latestMessageId = latestMessageId,
             memoryItems = memoryItems,
-            baseUrl = activeProvider.baseUrl,
-            apiKey = activeProvider.apiKey,
+            baseUrl = memoryProvider.baseUrl,
+            apiKey = memoryProvider.apiKey,
             modelId = memoryModel,
-            apiProtocol = activeProvider.resolvedApiProtocol(),
+            apiProtocol = memoryProvider.resolvedApiProtocol(),
         )
         memoryRepository.pruneToCapacity(settings.memoryCapacity)
         return true
@@ -84,8 +84,8 @@ class ConversationMemoryExtractionCoordinator(
         if (recentMessageWindow <= 0) {
             return false
         }
-        val activeProvider = settings.activeProvider() ?: return false
-        val memoryModel = activeProvider.resolveFunctionModel(ProviderFunction.MEMORY)
+        val memoryProvider = settings.resolveFunctionProvider(ProviderFunction.MEMORY) ?: return false
+        val memoryModel = settings.resolveFunctionModel(ProviderFunction.MEMORY)
         if (memoryModel.isBlank()) {
             return false
         }
@@ -101,11 +101,11 @@ class ConversationMemoryExtractionCoordinator(
         )
         val memoryResult = aiPromptExtrasService.generateRoleplayMemoryEntries(
             conversationExcerpt = memoryInput,
-            baseUrl = activeProvider.baseUrl,
-            apiKey = activeProvider.apiKey,
+            baseUrl = memoryProvider.baseUrl,
+            apiKey = memoryProvider.apiKey,
             modelId = memoryModel,
-            apiProtocol = activeProvider.resolvedApiProtocol(),
-            provider = activeProvider,
+            apiProtocol = memoryProvider.resolvedApiProtocol(),
+            provider = memoryProvider,
             existingMemories = existingMemoriesForPrompt,
         )
         if (memoryResult.persistentMemories.isEmpty() && memoryResult.sceneStateMemories.isEmpty() && memoryResult.mentalStateSnapshot.isBlank()) {
@@ -117,10 +117,10 @@ class ConversationMemoryExtractionCoordinator(
             latestMessageId = latestMessageId,
             memoryResult = memoryResult,
             sceneMemoryMaxItems = sceneMemoryMaxItems,
-            baseUrl = activeProvider.baseUrl,
-            apiKey = activeProvider.apiKey,
+            baseUrl = memoryProvider.baseUrl,
+            apiKey = memoryProvider.apiKey,
             modelId = memoryModel,
-            apiProtocol = activeProvider.resolvedApiProtocol(),
+            apiProtocol = memoryProvider.resolvedApiProtocol(),
         )
         // 心境快照作为独立条目保存
         if (memoryResult.mentalStateSnapshot.isNotBlank()) {

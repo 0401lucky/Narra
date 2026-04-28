@@ -16,8 +16,8 @@ class ConversationTitleCoordinator(
         messages: List<ChatMessage>,
         settings: AppSettings,
     ): String? {
-        val activeProvider = settings.activeProvider() ?: return null
-        val titleModel = activeProvider.resolveFunctionModel(ProviderFunction.TITLE_SUMMARY)
+        val titleProvider = settings.resolveFunctionProvider(ProviderFunction.TITLE_SUMMARY) ?: return null
+        val titleModel = settings.resolveFunctionModel(ProviderFunction.TITLE_SUMMARY)
         if (titleModel.isBlank()) {
             return null
         }
@@ -30,11 +30,11 @@ class ConversationTitleCoordinator(
         }
         val aiTitle = aiPromptExtrasService.generateTitle(
             firstUserMessage = firstUserMessage,
-            baseUrl = activeProvider.baseUrl,
-            apiKey = activeProvider.apiKey,
+            baseUrl = titleProvider.baseUrl,
+            apiKey = titleProvider.apiKey,
             modelId = titleModel,
-            apiProtocol = activeProvider.resolvedApiProtocol(),
-            provider = activeProvider,
+            apiProtocol = titleProvider.resolvedApiProtocol(),
+            provider = titleProvider,
         )
         conversationRepository.updateConversationTitle(conversationId, aiTitle)
         return titleModel

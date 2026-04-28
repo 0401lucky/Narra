@@ -81,7 +81,25 @@ internal fun rememberImmersiveRoleplayColors(
 ): ImmersiveRoleplayColors {
     val palette = backdropState.palette
     val errorText = Color(0xFFFFB4AB)
-    return remember(palette, errorText) {
+    return remember(palette, errorText, backdropState.hasImage) {
+        if (!backdropState.hasImage) {
+            return@remember ImmersiveRoleplayColors(
+                textPrimary = Color(0xFF243044),
+                textMuted = Color(0xFF627086),
+                characterAccent = Color(0xFF426F96),
+                userAccent = Color(0xFF6E7C63),
+                thoughtText = Color(0xFF586A79).copy(alpha = 0.9f),
+                panelBackground = Color(0xFFF7FAFC).copy(alpha = 0.92f),
+                panelBackgroundStrong = Color.White.copy(alpha = 0.97f),
+                panelBorder = Color(0xFF5D7286).copy(alpha = 0.18f),
+                errorText = Color(0xFFB3261E),
+                errorBackground = Color(0xFFFFEDEA).copy(alpha = 0.94f),
+                errorBackgroundStrong = Color(0xFFFFDAD6).copy(alpha = 0.96f),
+                userBubbleBackground = Color(0xFFE4EEF7).copy(alpha = 0.98f),
+                characterBubbleBackground = Color(0xFFFFF7E8).copy(alpha = 0.98f),
+                narrationBubbleBackground = Color.White.copy(alpha = 0.94f),
+            )
+        }
         ImmersiveRoleplayColors(
             textPrimary = palette.onGlass,
             textMuted = palette.onGlassMuted,

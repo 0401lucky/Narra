@@ -64,6 +64,8 @@ fun ChatScreen(
     val onSelectModel = callbacks.model.onSelectModel
     val onUpdateThinkingBudget = callbacks.model.onUpdateThinkingBudget
     val onSaveUserProfile = callbacks.profile.onSaveUserProfile
+    val onOpenUserMasks = callbacks.profile.onOpenUserMasks
+    val onSetDefaultUserPersonaMask = callbacks.profile.onSetDefaultUserPersonaMask
     val onSelectAssistant = callbacks.profile.onSelectAssistant
     val onOpenAssistantDetail = callbacks.profile.onOpenAssistantDetail
     val onOpenSettings = callbacks.navigation.onOpenSettings
@@ -287,6 +289,11 @@ fun ChatScreen(
             localState.setDraftUserAvatarUrl("")
         },
         onDismissProfileSheet = { localState.setShowProfileSheet(false) },
+        onOpenUserMasks = {
+            localState.setShowProfileSheet(false)
+            onOpenUserMasks()
+        },
+        onSetDefaultUserPersonaMask = onSetDefaultUserPersonaMask,
         onSaveProfile = launchers.saveProfileDraft,
         showSpecialPlaySheet = localState.showSpecialPlaySheet,
         onDismissSpecialPlaySheet = { localState.setShowSpecialPlaySheet(false) },
