@@ -16,6 +16,7 @@ import com.example.myapplication.model.AppSettings
 import com.example.myapplication.model.RoleplayContextStatus
 import com.example.myapplication.model.RoleplayImmersiveMode
 import com.example.myapplication.model.RoleplayLineHeightScale
+import com.example.myapplication.model.RoleplayNoBackgroundSkinPreset
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -73,6 +74,9 @@ class RoleplaySettingsContentTest {
                 onUpdateRoleplayLineHeightScale = { scale ->
                     settings = settings.copy(roleplayLineHeightScale = scale)
                 },
+                onUpdateRoleplayNoBackgroundSkin = { skin ->
+                    settings = settings.copy(roleplayNoBackgroundSkin = skin)
+                },
                 onUpdateShowOnlineRoleplayNarration = { enabled ->
                     settings = settings.copy(showOnlineRoleplayNarration = enabled)
                 },
@@ -114,6 +118,68 @@ class RoleplaySettingsContentTest {
             check(settings.roleplayImmersiveMode == RoleplayImmersiveMode.HIDE_SYSTEM_BARS)
             check(settings.roleplayHighContrast)
             check(settings.roleplayLineHeightScale == RoleplayLineHeightScale.RELAXED)
+        }
+    }
+
+    @Test
+    fun selectingNoBackgroundSkinPreset_updatesPreviewState() {
+        var settings by mutableStateOf(AppSettings())
+
+        composeRule.setContent {
+            RoleplaySettingsContent(
+                activePage = RoleplaySettingsPanelPage.THEME,
+                scenario = null,
+                assistant = null,
+                settings = settings,
+                contextStatus = RoleplayContextStatus(),
+                currentModel = "",
+                currentProviderId = "",
+                providerOptions = emptyList(),
+                backdropState = roleplayTestBackdropState(),
+                latestPromptDebugDump = "",
+                contextGovernance = null,
+                recentMemoryProposalHistory = emptyList(),
+                longformCharsText = settings.roleplayLongformTargetChars.toString(),
+                onLongformCharsTextChange = {},
+                onNavigateToPage = {},
+                onOpenReadingMode = {},
+                onOpenModelPicker = {},
+                onOpenContextLog = {},
+                onUpdateShowRoleplayPresenceStrip = {},
+                onUpdateShowRoleplayStatusStrip = {},
+                onUpdateShowRoleplayAiHelper = {},
+                onUpdateScenarioNarrationEnabled = {},
+                onUpdateScenarioDeepImmersionEnabled = {},
+                onUpdateScenarioTimeAwarenessEnabled = {},
+                onUpdateScenarioNetMemeEnabled = {},
+                systemHighContrastEnabled = false,
+                onUpdateRoleplayImmersiveMode = {},
+                onUpdateRoleplayHighContrast = {},
+                onUpdateRoleplayLineHeightScale = {},
+                onUpdateRoleplayNoBackgroundSkin = { skin ->
+                    settings = settings.copy(roleplayNoBackgroundSkin = skin)
+                },
+                onUpdateShowOnlineRoleplayNarration = {},
+                onUpdateRoleplayLongformTargetChars = {},
+                onUpdateScenarioInteractionMode = {},
+                onOpenProviderDetail = {},
+                onOpenConnectionSettings = {},
+                onOpenAssistantPrompt = {},
+                onOpenUserMasks = {},
+                onOpenWorldBookSettings = {},
+                onOpenLongMemorySettings = {},
+                onUpdateAssistantMemoryEnabled = {},
+                onRefreshConversationSummary = {},
+                onShowRestartDialog = {},
+                onShowResetDialog = {},
+            )
+        }
+
+        composeRule.onNodeWithTag("roleplay_skin_preview").assertExists()
+        composeRule.onNodeWithTag("roleplay_skin_preset_imessage").performClick()
+
+        composeRule.runOnIdle {
+            check(settings.roleplayNoBackgroundSkin.preset == RoleplayNoBackgroundSkinPreset.IMESSAGE)
         }
     }
 }

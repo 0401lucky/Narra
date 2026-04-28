@@ -6,6 +6,8 @@ import com.example.myapplication.model.Assistant
 import com.example.myapplication.model.ProviderSettings
 import com.example.myapplication.model.RoleplayImmersiveMode
 import com.example.myapplication.model.RoleplayLineHeightScale
+import com.example.myapplication.model.RoleplayNoBackgroundSkinPreset
+import com.example.myapplication.model.RoleplayNoBackgroundSkinSettings
 import com.example.myapplication.model.ScreenTranslationSettings
 import com.example.myapplication.model.ThemeMode
 import com.example.myapplication.model.TranslationHistoryEntry
@@ -83,6 +85,10 @@ class AiSettingsServicesTest {
             roleplayImmersiveMode = RoleplayImmersiveMode.HIDE_SYSTEM_BARS,
             roleplayHighContrast = true,
             roleplayLineHeightScale = RoleplayLineHeightScale.RELAXED,
+            roleplayNoBackgroundSkin = RoleplayNoBackgroundSkinSettings(
+                preset = RoleplayNoBackgroundSkinPreset.IMESSAGE,
+                maxWidthPercent = 76,
+            ),
         )
         editor.saveScreenTranslationSettings(
             ScreenTranslationSettings(
@@ -126,6 +132,8 @@ class AiSettingsServicesTest {
         assertTrue(saved.roleplayHighContrast)
         assertTrue(!saved.showOnlineRoleplayNarration)
         assertEquals(RoleplayLineHeightScale.RELAXED, saved.roleplayLineHeightScale)
+        assertEquals(RoleplayNoBackgroundSkinPreset.IMESSAGE, saved.roleplayNoBackgroundSkin.preset)
+        assertEquals(76, saved.roleplayNoBackgroundSkin.maxWidthPercent)
         assertTrue(saved.screenTranslationSettings.serviceEnabled)
         assertEquals("英语", saved.screenTranslationSettings.targetLanguage)
         assertEquals("Hello", saved.translationHistory.first().translatedText)

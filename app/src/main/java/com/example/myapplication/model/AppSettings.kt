@@ -25,6 +25,7 @@ data class AppSettings(
     val roleplayImmersiveMode: RoleplayImmersiveMode = RoleplayImmersiveMode.EDGE_TO_EDGE,
     val roleplayHighContrast: Boolean = false,
     val roleplayLineHeightScale: RoleplayLineHeightScale = RoleplayLineHeightScale.NORMAL,
+    val roleplayNoBackgroundSkin: RoleplayNoBackgroundSkinSettings = RoleplayNoBackgroundSkinSettings(),
     val userDisplayName: String = DEFAULT_USER_DISPLAY_NAME,
     val userPersonaPrompt: String = "",
     val userAvatarUri: String = "",

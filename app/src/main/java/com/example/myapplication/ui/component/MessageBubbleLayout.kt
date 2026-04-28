@@ -364,6 +364,7 @@ internal fun MessageBubbleContent(
                 onOpenImagePreviewAtIndex = onOpenImagePreview,
                 citations = message.citations,
                 onOpenCitation = onOpenCitation,
+                fillTextWidth = !isUser,
             )
         } else {
             if (!isUser && assistantImageSources.isNotEmpty()) {
@@ -392,6 +393,7 @@ internal fun MessageBubbleContent(
                     performanceMode = performanceMode,
                     citations = message.citations,
                     onOpenCitation = onOpenCitation,
+                    fillWidth = !isUser,
                 )
             }
         }

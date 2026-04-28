@@ -81,6 +81,7 @@ internal fun MessagePartsRenderer(
     onOpenImagePreviewAtIndex: ((Int) -> Unit)? = null,
     citations: List<MessageCitation> = emptyList(),
     onOpenCitation: ((MessageCitation) -> Unit)? = null,
+    fillTextWidth: Boolean = true,
 ) {
     var imageIndex = 0
     parts.forEachIndexed { index, part ->
@@ -98,6 +99,7 @@ internal fun MessagePartsRenderer(
                     performanceMode = performanceMode,
                     citations = citations,
                     onOpenCitation = onOpenCitation,
+                    fillWidth = fillTextWidth,
                 )
             }
 
@@ -137,6 +139,7 @@ internal fun MessagePartsRenderer(
                     codeBlockAutoWrap = codeBlockAutoWrap,
                     codeBlockAutoCollapse = codeBlockAutoCollapse,
                     performanceMode = performanceMode,
+                    fillWidth = fillTextWidth,
                 )
             }
 
@@ -168,6 +171,7 @@ internal fun RenderMessageText(
     performanceMode: ChatMessagePerformanceMode,
     citations: List<MessageCitation> = emptyList(),
     onOpenCitation: ((MessageCitation) -> Unit)? = null,
+    fillWidth: Boolean = true,
 ) {
     if (text.isBlank()) {
         return
@@ -214,7 +218,7 @@ internal fun RenderMessageText(
                 content = renderedText,
                 colors = markdownColor(text = contentColor),
                 typography = assistantMarkdownTypography,
-                modifier = Modifier.fillMaxWidth(),
+                modifier = if (fillWidth) Modifier.fillMaxWidth() else Modifier,
                 padding = assistantMarkdownPadding,
                 components = markdownComponents,
             )
@@ -222,7 +226,7 @@ internal fun RenderMessageText(
     } else {
         Text(
             text = text,
-            modifier = Modifier.fillMaxWidth(),
+            modifier = if (fillWidth) Modifier.fillMaxWidth() else Modifier,
             color = contentColor,
             style = plainTextStyle,
         )

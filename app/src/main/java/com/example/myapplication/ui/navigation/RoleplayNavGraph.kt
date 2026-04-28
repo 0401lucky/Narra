@@ -40,6 +40,7 @@ import com.example.myapplication.viewmodel.updateRoleplayHighContrast
 import com.example.myapplication.viewmodel.updateRoleplayImmersiveMode
 import com.example.myapplication.viewmodel.updateRoleplayLineHeightScale
 import com.example.myapplication.viewmodel.updateRoleplayLongformTargetChars
+import com.example.myapplication.viewmodel.updateRoleplayNoBackgroundSkin
 import com.example.myapplication.viewmodel.updateShowOnlineRoleplayNarration
 import com.example.myapplication.viewmodel.updateShowRoleplayAiHelper
 import com.example.myapplication.viewmodel.updateShowRoleplayPresenceStrip
@@ -425,6 +426,7 @@ internal fun NavGraphBuilder.registerRoleplayGraph(
                     roleplayImmersiveMode = settingsUiState.roleplayImmersiveMode,
                     roleplayHighContrast = settingsUiState.roleplayHighContrast,
                     roleplayLineHeightScale = settingsUiState.roleplayLineHeightScale,
+                    roleplayNoBackgroundSkin = settingsUiState.roleplayNoBackgroundSkin,
                 ),
                 contextStatus = roleplayState.contextStatus,
                 currentModel = roleplayState.currentModel,
@@ -456,6 +458,7 @@ internal fun NavGraphBuilder.registerRoleplayGraph(
                 onUpdateRoleplayImmersiveMode = settingsViewModel::updateRoleplayImmersiveMode,
                 onUpdateRoleplayHighContrast = settingsViewModel::updateRoleplayHighContrast,
                 onUpdateRoleplayLineHeightScale = settingsViewModel::updateRoleplayLineHeightScale,
+                onUpdateRoleplayNoBackgroundSkin = settingsViewModel::updateRoleplayNoBackgroundSkin,
                 onSelectProvider = settingsViewModel::saveSelectedProvider,
                 onSelectModel = settingsViewModel::saveSelectedModelForProvider,
                 onOpenProviderDetail = { providerId ->

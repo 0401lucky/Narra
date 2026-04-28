@@ -65,7 +65,6 @@ internal fun OnlinePhoneNarrationBubble(
                             fontStyle = FontStyle.Italic,
                             lineHeight = 24.sp * lineHeightScale,
                             letterSpacing = 0.5.sp,
-                            shadow = GlassTextShadow,
                         ),
                         color = colors.textMuted.copy(alpha = 0.92f),
                     )
@@ -148,7 +147,6 @@ internal fun OnlinePhoneThoughtBubble(
                                     fontStyle = FontStyle.Italic,
                                     lineHeight = 22.sp * lineHeightScale,
                                     letterSpacing = 0.4.sp,
-                                    shadow = GlassTextShadow,
                                 ),
                                 color = colors.thoughtText,
                             )

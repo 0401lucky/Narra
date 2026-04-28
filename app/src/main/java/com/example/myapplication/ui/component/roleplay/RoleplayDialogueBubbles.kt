@@ -1,11 +1,13 @@
 package com.example.myapplication.ui.component.roleplay
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
@@ -28,64 +30,79 @@ internal fun UserDialogueBubbleContent(
     lineHeightScale: Float,
     onOpenQuotedMessage: ((String) -> Unit)?,
     fillWidth: Boolean,
+    bubbleStyle: RoleplayDialogueBubbleStyle = DefaultRoleplayDialogueBubbleStyle,
 ) {
-    val shape = RoundedCornerShape(
-        topStart = 22.dp,
-        topEnd = 8.dp,
-        bottomStart = 22.dp,
-        bottomEnd = 22.dp,
-    )
-    ImmersiveReadingGlassSurface(
-        backdropState = backdropState,
-        modifier = if (fillWidth) Modifier.fillMaxWidth() else Modifier,
-        shape = shape,
-        variant = ImmersiveReadingGlassVariant.DIALOGUE,
-        overlayColor = colors.userBubbleBackground,
-    ) {
-    Column(
-        modifier = Modifier.padding(horizontal = 18.dp, vertical = 16.dp),
-        verticalArrangement = Arrangement.spacedBy(8.dp),
-    ) {
-        if (message.replyToPreview.isNotBlank()) {
-            RoleplayReplyPreview(
-                message = message,
-                colors = colors,
-                onOpenQuotedMessage = onOpenQuotedMessage,
+    val shape = bubbleStyle.shape(isUser = true)
+    val bubbleModifier = if (fillWidth) Modifier.fillMaxWidth() else Modifier
+    val content: @Composable () -> Unit = {
+        Column(
+            modifier = Modifier
+                .widthIn(min = 96.dp)
+                .padding(
+                    horizontal = bubbleStyle.paddingHorizontal,
+                    vertical = bubbleStyle.paddingVertical,
+                ),
+            verticalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+            if (message.replyToPreview.isNotBlank()) {
+                RoleplayReplyPreview(
+                    message = message,
+                    colors = colors,
+                    onOpenQuotedMessage = onOpenQuotedMessage,
+                )
+            }
+            Text(
+                message.speakerName,
+                modifier = Modifier.align(Alignment.End),
+                style = MaterialTheme.typography.labelMedium,
+                fontWeight = FontWeight.SemiBold,
+                color = colors.userAccent,
             )
-        }
-        Text(
-            message.speakerName,
-            style = MaterialTheme.typography.labelMedium.copy(
-                shadow = GlassTextShadowStrong,
-            ),
-            fontWeight = FontWeight.SemiBold,
-            color = colors.userAccent,
-        )
-        if (message.isStreaming) {
-            StreamingLogText(
-                content = message.content,
-                textColor = colors.textPrimary,
-                accentColor = colors.userAccent,
-                lineHeightScale = lineHeightScale,
-            )
-        } else {
-            val paragraphs = remember(message.content) { message.content.toLongformParagraphs() }
-            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                paragraphs.forEach { paragraph ->
-                    Text(
-                        paragraph,
-                        style = MaterialTheme.typography.bodyLarge.copy(
-                            fontSize = 16.sp,
-                            lineHeight = 26.sp * lineHeightScale,
-                            letterSpacing = 0.6.sp,
-                            shadow = GlassTextShadow,
-                        ),
-                        color = colors.textPrimary,
-                    )
+            if (message.isStreaming) {
+                StreamingLogText(
+                    content = message.content,
+                    textColor = colors.userText,
+                    accentColor = colors.userAccent,
+                    lineHeightScale = lineHeightScale,
+                )
+            } else {
+                val paragraphs = remember(message.content) { message.content.toLongformParagraphs() }
+                Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                    paragraphs.forEach { paragraph ->
+                        Text(
+                            paragraph,
+                            style = MaterialTheme.typography.bodyLarge.copy(
+                                fontSize = 16.sp,
+                                lineHeight = 26.sp * lineHeightScale,
+                                letterSpacing = 0.6.sp,
+                            ),
+                            color = colors.userText,
+                        )
+                    }
                 }
             }
         }
     }
+    if (!backdropState.hasImage) {
+        Surface(
+            modifier = bubbleModifier,
+            shape = shape,
+            color = colors.userBubbleBackground,
+            border = BorderStroke(1.dp, colors.panelBorder.copy(alpha = 0.18f)),
+            shadowElevation = 0.dp,
+        ) {
+            content()
+        }
+    } else {
+        ImmersiveReadingGlassSurface(
+            backdropState = backdropState,
+            modifier = bubbleModifier,
+            shape = shape,
+            variant = ImmersiveReadingGlassVariant.DIALOGUE,
+            overlayColor = colors.userBubbleBackground,
+        ) {
+            content()
+        }
     }
 }
 
@@ -98,17 +115,17 @@ internal fun CharacterDialogueBubbleContent(
     onOpenQuotedMessage: ((String) -> Unit)?,
     isError: Boolean,
     fillWidth: Boolean,
+    bubbleStyle: RoleplayDialogueBubbleStyle = DefaultRoleplayDialogueBubbleStyle,
 ) {
-    val shape = RoundedCornerShape(topStart = 8.dp, topEnd = 22.dp, bottomStart = 22.dp, bottomEnd = 22.dp)
-    ImmersiveReadingGlassSurface(
-        backdropState = backdropState,
-        modifier = if (fillWidth) Modifier.fillMaxWidth() else Modifier,
-        shape = shape,
-        variant = ImmersiveReadingGlassVariant.DIALOGUE,
-        overlayColor = if (isError) colors.errorBackground else colors.characterBubbleBackground,
-    ) {
+    val shape = bubbleStyle.shape(isUser = false)
+    val bubbleModifier = if (fillWidth) Modifier.fillMaxWidth() else Modifier
+    val bubbleColor = if (isError) colors.errorBackground else colors.characterBubbleBackground
+    val content: @Composable () -> Unit = {
         Column(
-            modifier = Modifier.padding(horizontal = 18.dp, vertical = 16.dp),
+            modifier = Modifier.padding(
+                horizontal = bubbleStyle.paddingHorizontal,
+                vertical = bubbleStyle.paddingVertical,
+            ),
             verticalArrangement = Arrangement.spacedBy(8.dp),
         ) {
             if (message.replyToPreview.isNotBlank()) {
@@ -124,9 +141,7 @@ internal fun CharacterDialogueBubbleContent(
             ) {
                 Text(
                     message.speakerName,
-                    style = MaterialTheme.typography.labelLarge.copy(
-                        shadow = GlassTextShadowStrong,
-                    ),
+                    style = MaterialTheme.typography.labelLarge,
                     fontWeight = FontWeight.Bold,
                     color = if (isError) colors.errorText else colors.characterAccent,
                 )
@@ -165,12 +180,32 @@ internal fun CharacterDialogueBubbleContent(
                                 fontSize = 16.sp,
                                 lineHeight = 26.sp * lineHeightScale,
                                 letterSpacing = 0.6.sp,
-                                shadow = GlassTextShadow,
                             ),
                         )
                     }
                 }
             }
+        }
+    }
+    if (!backdropState.hasImage) {
+        Surface(
+            modifier = bubbleModifier,
+            shape = shape,
+            color = bubbleColor,
+            border = BorderStroke(1.dp, colors.panelBorder.copy(alpha = 0.18f)),
+            shadowElevation = 0.dp,
+        ) {
+            content()
+        }
+    } else {
+        ImmersiveReadingGlassSurface(
+            backdropState = backdropState,
+            modifier = bubbleModifier,
+            shape = shape,
+            variant = ImmersiveReadingGlassVariant.DIALOGUE,
+            overlayColor = bubbleColor,
+        ) {
+            content()
         }
     }
 }

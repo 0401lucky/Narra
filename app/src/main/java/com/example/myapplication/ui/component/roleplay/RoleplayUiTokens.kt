@@ -1,26 +1,6 @@
 package com.example.myapplication.ui.component.roleplay
 
-import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.Shadow
 import androidx.compose.ui.unit.dp
-
-/**
- * 通透玻璃面板上的文字阴影，用于在低 alpha 面板下保证白色文字可读性。
- * 类似 Tavo 的做法：文字自带微弱暗色光晕，不依赖面板不透明度来"托字"。
- */
-val GlassTextShadow = Shadow(
-    color = Color.Black.copy(alpha = 0.85f),
-    offset = Offset(0f, 1f),
-    blurRadius = 12f,
-)
-
-/** 标题等较大文字的阴影，稍强一些 */
-val GlassTextShadowStrong = Shadow(
-    color = Color.Black.copy(alpha = 0.90f),
-    offset = Offset(0f, 1.5f),
-    blurRadius = 16f,
-)
 
 // 人像卡片尺寸与动效
 internal val RoleplayPortraitCardWidth = 172.dp

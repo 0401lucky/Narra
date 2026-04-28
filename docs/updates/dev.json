@@ -1,17 +1,17 @@
 {
   "app_id": "com.narra.app.dev",
   "channel": "dev",
-  "latest_version_name": "1.6.1-dev",
-  "latest_version_code": 10601,
+  "latest_version_name": "1.6.2-dev",
+  "latest_version_code": 10602,
   "minimum_supported_version_code": 0,
-  "apk_url": "https://download.lsa1230.dpdns.org/dev/Narra-v1.6.1-dev-10601-dev.apk",
-  "apk_sha256": "e62b48309845b94b20db62cf87199be1e171f42e7401cdcb76e5bf2ee173c973",
-  "published_at": "2026-04-28T14:26:24+08:00",
+  "apk_url": "https://download.lsa1230.dpdns.org/dev/Narra-v1.6.2-dev-10602-dev.apk",
+  "apk_sha256": "6f0f49481b8adacb6848d050f470598cc7b8ebc703034a081815766527128157",
+  "published_at": "2026-04-28T20:17:08+08:00",
   "release_notes": [
-    "新增我的面具，支持多套用户身份、头像和人设，并接入沉浸式聊天与场景绑定",
-    "修复同一角色不同会话共用日记的问题，日记现在按会话隔离",
-    "优化长文线下气泡和无背景沉浸聊天页观感，降低长文阅读疲劳",
-    "模型列表按同系列归组展示，新增 DeepSeek 等模型不会再落到列表末尾",
-    "默认模型页的各功能模型可独立绑定提供商，不再切一个功能就带着其他默认模型一起变化"
+    "新增无背景沉浸式聊天皮肤，内置 12 套预设并支持实时预览和气泡参数调整",
+    "修复无背景沉浸式短句用户气泡被拉成长条的问题，并让用户名靠右显示",
+    "移除沉浸式聊天文字阴影，降低字体发糊和发脏感",
+    "修复普通聊天用户短句气泡过宽的问题",
+    "修复日记模型返回说明、代码块或中文字段时解析失败的问题"
   ]
 }

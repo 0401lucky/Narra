@@ -55,6 +55,7 @@ class SettingsPersistenceCoordinator(
             roleplayImmersiveMode = currentState.roleplayImmersiveMode,
             roleplayHighContrast = currentState.roleplayHighContrast,
             roleplayLineHeightScale = currentState.roleplayLineHeightScale,
+            roleplayNoBackgroundSkin = currentState.roleplayNoBackgroundSkin.normalized(),
         )
         settingsEditor.saveScreenTranslationSettings(
             currentState.screenTranslationSettings,

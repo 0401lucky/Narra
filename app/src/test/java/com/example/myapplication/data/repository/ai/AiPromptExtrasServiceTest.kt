@@ -10,6 +10,7 @@ import com.example.myapplication.model.PhoneViewMode
 import com.example.myapplication.model.PromptMode
 import com.example.myapplication.model.ProviderSettings
 import com.example.myapplication.model.RoleplaySuggestionAxis
+import com.google.gson.Gson
 import com.google.gson.JsonParser
 import kotlinx.coroutines.runBlocking
 import okhttp3.mockwebserver.MockResponse
@@ -473,6 +474,113 @@ class AiPromptExtrasServiceTest {
         val requestBody = JsonParser.parseString(server.takeRequest().body.readUtf8()).asJsonObject
         assertEquals("memory-model", requestBody["model"].asString)
         assertTrue(requestBody.getAsJsonArray("messages")[0].asJsonObject["content"].asString.contains("剧情状态记忆整理器"))
+    }
+
+    @Test
+    fun generateRoleplayDiaries_extractsJsonArrayFromSurroundingTextAndCodeFence() = runBlocking {
+        enqueueChatContent(
+            """
+            下面是整理好的日记：
+            ```json
+            [
+              {
+                "title": "4 月 27 日 夜",
+                "content": "我今天又想起 lucky 说话时停顿的样子。",
+                "mood": "心虚",
+                "weather": "夜雨",
+                "tags": ["旧巷", "对话"],
+                "dateLabel": "4 月 27 日"
+              }
+            ]
+            ```
+            可以直接使用。
+            """.trimIndent(),
+        )
+        val service = createService()
+
+        val diaries = service.generateRoleplayDiaries(
+            characterContext = "【角色】沈砚清，克制。",
+            scenarioContext = "雨夜旧巷。",
+            conversationExcerpt = "lucky：你刚才为什么沉默？",
+            characterName = "沈砚清",
+            userName = "lucky",
+            todayLabel = "4 月 28 日",
+            baseUrl = server.url("/v1/").toString(),
+            apiKey = "test-key",
+            modelId = "deepseek-chat",
+        )
+
+        assertEquals(1, diaries.size)
+        assertEquals("4 月 27 日 夜", diaries[0].title)
+        assertTrue(diaries[0].content.contains("lucky"))
+        assertEquals("心虚", diaries[0].mood)
+        assertEquals("夜雨", diaries[0].weather)
+        assertEquals(listOf("旧巷", "对话"), diaries[0].tags)
+        assertEquals("4 月 27 日", diaries[0].dateLabel)
+    }
+
+    @Test
+    fun generateRoleplayDiaries_acceptsWrappedObjectAndChineseFields() = runBlocking {
+        enqueueChatContent(
+            """
+            {
+              "日记列表": [
+                {
+                  "标题": "雨后的咖啡店",
+                  "正文": "雨停以后，我坐在靠窗的位置，反复想着刚才那句话。",
+                  "心情": "平静",
+                  "天气": "阴",
+                  "标签": "雨后、咖啡店、独处",
+                  "日期": "4 月 26 日"
+                }
+              ]
+            }
+            """.trimIndent(),
+        )
+        val service = createService()
+
+        val diaries = service.generateRoleplayDiaries(
+            characterContext = "【角色】沈砚清，克制。",
+            scenarioContext = "咖啡店。",
+            conversationExcerpt = "lucky：你其实还在意吧。",
+            characterName = "沈砚清",
+            userName = "lucky",
+            todayLabel = "4 月 28 日",
+            baseUrl = server.url("/v1/").toString(),
+            apiKey = "test-key",
+            modelId = "deepseek-chat",
+        )
+
+        assertEquals(1, diaries.size)
+        assertEquals("雨后的咖啡店", diaries[0].title)
+        assertTrue(diaries[0].content.contains("靠窗"))
+        assertEquals("平静", diaries[0].mood)
+        assertEquals("阴", diaries[0].weather)
+        assertEquals(listOf("雨后", "咖啡店", "独处"), diaries[0].tags)
+        assertEquals("4 月 26 日", diaries[0].dateLabel)
+    }
+
+    @Test
+    fun generateRoleplayDiaries_throwsWhenNoJsonArrayCanBeExtracted() = runBlocking {
+        enqueueChatContent("我暂时想不出日记。")
+        val service = createService()
+
+        try {
+            service.generateRoleplayDiaries(
+                characterContext = "【角色】沈砚清，克制。",
+                scenarioContext = "咖啡店。",
+                conversationExcerpt = "lucky：你其实还在意吧。",
+                characterName = "沈砚清",
+                userName = "lucky",
+                todayLabel = "4 月 28 日",
+                baseUrl = server.url("/v1/").toString(),
+                apiKey = "test-key",
+                modelId = "deepseek-chat",
+            )
+            fail("预期应抛出非法日记 JSON 异常")
+        } catch (error: IllegalStateException) {
+            assertTrue(error.message.orEmpty().contains("未提取到合法 JSON 数组"))
+        }
     }
 
     @Test
@@ -1216,6 +1324,26 @@ class AiPromptExtrasServiceTest {
             assertTrue(error.message.orEmpty().contains("格式不符合要求"))
             assertTrue(error.message.orEmpty().contains("JSON 对象"))
         }
+    }
+
+    private fun enqueueChatContent(content: String) {
+        server.enqueue(
+            MockResponse().setResponseCode(200).setBody(
+                """
+                {
+                  "choices": [
+                    {
+                      "index": 0,
+                      "message": {
+                        "role": "assistant",
+                        "content": ${Gson().toJson(content)}
+                      }
+                    }
+                  ]
+                }
+                """.trimIndent(),
+            ),
+        )
     }
 
     private fun createService(): DefaultAiPromptExtrasService {

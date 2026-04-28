@@ -9,6 +9,7 @@ import com.example.myapplication.model.MemoryInjectionPosition
 import com.example.myapplication.model.ProviderSettings
 import com.example.myapplication.model.RoleplayImmersiveMode
 import com.example.myapplication.model.RoleplayLineHeightScale
+import com.example.myapplication.model.RoleplayNoBackgroundSkinSettings
 import com.example.myapplication.model.ScreenTranslationSettings
 import com.example.myapplication.model.SearchSettings
 import com.example.myapplication.model.ThemeMode
@@ -69,6 +70,7 @@ class FakeSettingsStore(
             roleplayImmersiveMode = state.value.roleplayImmersiveMode,
             roleplayHighContrast = state.value.roleplayHighContrast,
             roleplayLineHeightScale = state.value.roleplayLineHeightScale,
+            roleplayNoBackgroundSkin = state.value.roleplayNoBackgroundSkin,
             suppressRoleplayAssistantMismatchDialog = state.value.suppressRoleplayAssistantMismatchDialog,
             userDisplayName = state.value.userDisplayName,
             userPersonaPrompt = state.value.userPersonaPrompt,
@@ -102,6 +104,7 @@ class FakeSettingsStore(
         roleplayImmersiveMode: RoleplayImmersiveMode,
         roleplayHighContrast: Boolean,
         roleplayLineHeightScale: RoleplayLineHeightScale,
+        roleplayNoBackgroundSkin: RoleplayNoBackgroundSkinSettings,
     ) {
         state.value = state.value.copy(
             themeMode = themeMode,
@@ -124,6 +127,7 @@ class FakeSettingsStore(
             roleplayImmersiveMode = roleplayImmersiveMode,
             roleplayHighContrast = roleplayHighContrast,
             roleplayLineHeightScale = roleplayLineHeightScale,
+            roleplayNoBackgroundSkin = roleplayNoBackgroundSkin.normalized(),
         )
     }
 

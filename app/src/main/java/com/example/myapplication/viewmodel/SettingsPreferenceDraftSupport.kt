@@ -2,6 +2,7 @@ package com.example.myapplication.viewmodel
 
 import com.example.myapplication.model.ScreenTranslationSettings
 import com.example.myapplication.model.ThemeMode
+import com.example.myapplication.model.RoleplayNoBackgroundSkinSettings
 
 object SettingsPreferenceDraftSupport {
     fun updateThemeMode(current: SettingsUiState, themeMode: ThemeMode): SettingsUiState {
@@ -85,6 +86,16 @@ object SettingsPreferenceDraftSupport {
         scale: com.example.myapplication.model.RoleplayLineHeightScale,
     ): SettingsUiState {
         return current.copy(roleplayLineHeightScale = scale, message = null)
+    }
+
+    fun updateRoleplayNoBackgroundSkin(
+        current: SettingsUiState,
+        skin: RoleplayNoBackgroundSkinSettings,
+    ): SettingsUiState {
+        return current.copy(
+            roleplayNoBackgroundSkin = skin.normalized(),
+            message = null,
+        )
     }
 
     fun updateScreenTranslationSettings(

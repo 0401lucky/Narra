@@ -2,6 +2,7 @@ package com.example.myapplication.viewmodel
 
 import com.example.myapplication.model.RoleplayImmersiveMode
 import com.example.myapplication.model.RoleplayLineHeightScale
+import com.example.myapplication.model.RoleplayNoBackgroundSkinSettings
 import com.example.myapplication.model.ThemeMode
 
 /**
@@ -60,3 +61,6 @@ fun SettingsViewModel.updateRoleplayHighContrast(enabled: Boolean) =
 
 fun SettingsViewModel.updateRoleplayLineHeightScale(scale: RoleplayLineHeightScale) =
     updateUiState { SettingsPreferenceDraftSupport.updateRoleplayLineHeightScale(it, scale) }
+
+fun SettingsViewModel.updateRoleplayNoBackgroundSkin(skin: RoleplayNoBackgroundSkinSettings) =
+    updateUiState { SettingsPreferenceDraftSupport.updateRoleplayNoBackgroundSkin(it, skin) }

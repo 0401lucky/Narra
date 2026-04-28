@@ -207,6 +207,7 @@ private fun writePaletteCache(
 fun ImmersiveBackdrop(
     backdropState: ImmersiveBackdropState,
     modifier: Modifier = Modifier,
+    fallbackBackgroundColor: Color? = null,
 ) {
     Box(modifier = modifier.fillMaxSize()) {
         // 背景图切换时使用 Crossfade 过渡，避免场景切换/首次加载时的突兀替换。
@@ -222,6 +223,12 @@ fun ImmersiveBackdrop(
                     contentDescription = null,
                     modifier = Modifier.fillMaxSize(),
                     contentScale = ContentScale.Crop,
+                )
+            } else if (fallbackBackgroundColor != null) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .background(fallbackBackgroundColor),
                 )
             } else {
                 Box(

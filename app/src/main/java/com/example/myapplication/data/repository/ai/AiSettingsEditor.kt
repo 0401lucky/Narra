@@ -9,6 +9,7 @@ import com.example.myapplication.model.ScreenTranslationSettings
 import com.example.myapplication.model.SearchSettings
 import com.example.myapplication.model.ThemeMode
 import com.example.myapplication.model.ProviderSettings
+import com.example.myapplication.model.RoleplayNoBackgroundSkinSettings
 import com.example.myapplication.model.TranslationHistoryEntry
 import com.example.myapplication.model.UserPersonaMask
 
@@ -47,6 +48,7 @@ interface AiSettingsEditor {
         roleplayImmersiveMode: com.example.myapplication.model.RoleplayImmersiveMode,
         roleplayHighContrast: Boolean,
         roleplayLineHeightScale: com.example.myapplication.model.RoleplayLineHeightScale,
+        roleplayNoBackgroundSkin: RoleplayNoBackgroundSkinSettings,
     )
 
     suspend fun saveScreenTranslationSettings(settings: ScreenTranslationSettings)
@@ -140,6 +142,7 @@ class DefaultAiSettingsEditor(
         roleplayImmersiveMode: com.example.myapplication.model.RoleplayImmersiveMode,
         roleplayHighContrast: Boolean,
         roleplayLineHeightScale: com.example.myapplication.model.RoleplayLineHeightScale,
+        roleplayNoBackgroundSkin: RoleplayNoBackgroundSkinSettings,
     ) {
         settingsStore.saveDisplaySettings(
             themeMode = themeMode,
@@ -159,6 +162,7 @@ class DefaultAiSettingsEditor(
             roleplayImmersiveMode = roleplayImmersiveMode,
             roleplayHighContrast = roleplayHighContrast,
             roleplayLineHeightScale = roleplayLineHeightScale,
+            roleplayNoBackgroundSkin = roleplayNoBackgroundSkin.normalized(),
         )
     }
 

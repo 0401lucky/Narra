@@ -64,8 +64,6 @@ import com.example.myapplication.ui.component.AppSnackbarHost
 import com.example.myapplication.ui.component.NarraIconButton
 import com.example.myapplication.ui.component.NarraTextButton
 import com.example.myapplication.ui.component.rememberSystemHighTextContrastEnabled
-import com.example.myapplication.ui.component.roleplay.GlassTextShadow
-import com.example.myapplication.ui.component.roleplay.GlassTextShadowStrong
 import com.example.myapplication.ui.component.roleplay.ImmersiveBackdropState
 import com.example.myapplication.ui.component.roleplay.ImmersiveGlassPalette
 import com.example.myapplication.ui.component.roleplay.ImmersiveReadingGlassSurface
@@ -236,7 +234,6 @@ fun RoleplayDiaryScreen(
                                     Text(
                                         text = "角色日记",
                                         style = MaterialTheme.typography.titleMedium.copy(
-                                            shadow = GlassTextShadowStrong,
                                         ),
                                         fontWeight = FontWeight.Bold,
                                         color = palette.onGlass,
@@ -245,7 +242,6 @@ fun RoleplayDiaryScreen(
                                         Text(
                                             text = "· 共 ${diaryEntries.size} 篇",
                                             style = MaterialTheme.typography.labelMedium.copy(
-                                                shadow = GlassTextShadow,
                                             ),
                                             color = palette.onGlassMuted,
                                         )
@@ -254,7 +250,6 @@ fun RoleplayDiaryScreen(
                                 Text(
                                     text = characterName,
                                     style = MaterialTheme.typography.bodySmall.copy(
-                                        shadow = GlassTextShadow,
                                     ),
                                     color = palette.onGlassMuted,
                                     maxLines = 1,
@@ -291,7 +286,6 @@ fun RoleplayDiaryScreen(
                                         Text(
                                             text = "生成中…",
                                             style = MaterialTheme.typography.labelMedium.copy(
-                                                shadow = GlassTextShadow,
                                             ),
                                             color = palette.onGlassMuted,
                                         )
@@ -417,7 +411,6 @@ private fun EmptyDiaryPanel(
             Text(
                 text = "还没有生成过日记",
                 style = MaterialTheme.typography.titleMedium.copy(
-                    shadow = GlassTextShadowStrong,
                 ),
                 fontWeight = FontWeight.SemiBold,
                 color = palette.onGlass,
@@ -426,7 +419,6 @@ private fun EmptyDiaryPanel(
                 text = "会结合当前角色设定、长期上下文和最近剧情，生成一组更私密的角色日记。",
                 style = MaterialTheme.typography.bodyMedium.copy(
                     lineHeight = 24.sp,
-                    shadow = GlassTextShadow,
                 ),
                 color = palette.onGlassMuted,
                 textAlign = TextAlign.Center,
@@ -471,7 +463,6 @@ private fun MonthHeader(
             text = label,
             modifier = Modifier.padding(horizontal = 14.dp, vertical = 8.dp),
             style = MaterialTheme.typography.labelLarge.copy(
-                shadow = GlassTextShadow,
             ),
             fontWeight = FontWeight.SemiBold,
             color = palette.onGlass,
@@ -518,7 +509,6 @@ private fun RoleplayDiaryEntryCard(
                 Text(
                     text = entry.title,
                     style = MaterialTheme.typography.titleLarge.copy(
-                        shadow = GlassTextShadowStrong,
                     ),
                     fontWeight = FontWeight.Bold,
                     color = palette.onGlass,
@@ -527,7 +517,6 @@ private fun RoleplayDiaryEntryCard(
                     Text(
                         text = effectiveDateLabel,
                         style = MaterialTheme.typography.labelMedium.copy(
-                            shadow = GlassTextShadow,
                         ),
                         color = palette.onGlassMuted,
                     )
@@ -557,7 +546,6 @@ private fun RoleplayDiaryEntryCard(
                 style = MaterialTheme.typography.bodyLarge.copy(
                     lineHeight = 28.sp,
                     letterSpacing = 0.2.sp,
-                    shadow = GlassTextShadow,
                 ),
                 color = palette.onGlass,
                 maxLines = 6,
@@ -624,7 +612,6 @@ private fun SearchEmptyDiaryPanel(
             text = "没有命中的日记。换个关键词试试？",
             modifier = Modifier.padding(horizontal = 18.dp, vertical = 18.dp),
             style = MaterialTheme.typography.bodyMedium.copy(
-                shadow = GlassTextShadow,
             ),
             color = palette.onGlassMuted,
             textAlign = TextAlign.Center,

@@ -1,11 +1,18 @@
 package com.example.myapplication.ui.screen.roleplay
 
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
@@ -23,6 +30,8 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
+import androidx.compose.material3.Slider
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -41,13 +50,19 @@ import com.example.myapplication.model.MemoryProposalStatus
 import com.example.myapplication.model.RoleplayImmersiveMode
 import com.example.myapplication.model.RoleplayInteractionMode
 import com.example.myapplication.model.RoleplayLineHeightScale
+import com.example.myapplication.model.RoleplayNoBackgroundSkinPreset
+import com.example.myapplication.model.RoleplayNoBackgroundSkinSettings
 import com.example.myapplication.model.RoleplayScenario
 import com.example.myapplication.ui.component.roleplay.ImmersiveBackdropState
 import com.example.myapplication.ui.component.roleplay.ImmersiveGlassPalette
 import com.example.myapplication.ui.component.roleplay.ImmersiveTabRow
+import com.example.myapplication.ui.component.roleplay.RoleplayDialogueBubbleStyle
+import com.example.myapplication.ui.component.roleplay.rememberRoleplayNoBackgroundSkinSpec
+import com.example.myapplication.ui.component.roleplay.shape
 import com.example.myapplication.ui.screen.settings.AnimatedSettingButton
 import com.example.myapplication.ui.screen.settings.SettingsListRow
 import com.example.myapplication.ui.screen.settings.SettingsStatusPill
+import kotlin.math.roundToInt
 
 /**
  * 可视性开关组：身份条 / 状态条 / AI 帮写，以及线上模式特有的心声和网络热梗。
@@ -314,9 +329,340 @@ internal fun RoleplaySettingsInteractionSection(
     }
 }
 
-/**
- * 可读性组：沉浸模式 Tab + 高对比度开关 + 行高 Tab。
- */
+@Composable
+internal fun RoleplayNoBackgroundThemeSection(
+    backdropState: ImmersiveBackdropState,
+    settings: AppSettings,
+    systemHighContrastEnabled: Boolean,
+    onUpdateRoleplayNoBackgroundSkin: (RoleplayNoBackgroundSkinSettings) -> Unit,
+    onUpdateRoleplayImmersiveMode: (RoleplayImmersiveMode) -> Unit,
+    onUpdateRoleplayHighContrast: (Boolean) -> Unit,
+    onUpdateRoleplayLineHeightScale: (RoleplayLineHeightScale) -> Unit,
+) {
+    val skin = settings.roleplayNoBackgroundSkin.normalized()
+    Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
+        RoleplaySkinPreviewCard(
+            backdropState = backdropState,
+            skin = skin,
+        )
+        RoleplaySkinPresetSection(
+            backdropState = backdropState,
+            selected = skin.preset,
+            onSelect = { preset ->
+                onUpdateRoleplayNoBackgroundSkin(skin.copy(preset = preset).normalized())
+            },
+        )
+        RoleplaySkinBubbleSection(
+            backdropState = backdropState,
+            skin = skin,
+            onUpdate = { next -> onUpdateRoleplayNoBackgroundSkin(next.normalized()) },
+        )
+        RoleplaySettingsReadabilitySection(
+            backdropState = backdropState,
+            settings = settings,
+            systemHighContrastEnabled = systemHighContrastEnabled,
+            onUpdateRoleplayImmersiveMode = onUpdateRoleplayImmersiveMode,
+            onUpdateRoleplayHighContrast = onUpdateRoleplayHighContrast,
+            onUpdateRoleplayLineHeightScale = onUpdateRoleplayLineHeightScale,
+        )
+    }
+}
+
+@Composable
+private fun RoleplaySkinPreviewCard(
+    backdropState: ImmersiveBackdropState,
+    skin: RoleplayNoBackgroundSkinSettings,
+) {
+    val spec = rememberRoleplayNoBackgroundSkinSpec(skin)
+    val bubbleStyle = RoleplayDialogueBubbleStyle(
+        maxWidthFraction = spec.maxWidthFraction,
+        radius = spec.radius,
+        paddingHorizontal = spec.paddingHorizontal,
+        paddingVertical = spec.paddingVertical,
+        showTail = spec.showTail,
+    )
+    ImmersiveSettingsCard(backdropState) {
+        Column(
+            modifier = Modifier
+                .testTag("roleplay_skin_preview")
+                .background(spec.background.copy(alpha = spec.background.alpha.coerceAtLeast(0.78f)))
+                .padding(horizontal = 16.dp, vertical = 14.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp),
+        ) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Text(
+                    text = "实时预览 · 无背景",
+                    style = MaterialTheme.typography.titleSmall,
+                    fontWeight = FontWeight.Bold,
+                    color = spec.characterText,
+                )
+                Text(
+                    text = "${spec.displayName} · ${(spec.maxWidthFraction * 100).roundToInt()}%",
+                    style = MaterialTheme.typography.labelMedium,
+                    color = spec.mutedText,
+                )
+            }
+            BoxWithConstraints(modifier = Modifier.fillMaxWidth()) {
+                val previewMaxWidth = maxWidth * spec.maxWidthFraction
+                Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                    Box(
+                        modifier = Modifier.fillMaxWidth(),
+                        contentAlignment = Alignment.CenterStart,
+                    ) {
+                        Surface(
+                            modifier = Modifier.widthIn(max = previewMaxWidth),
+                            shape = bubbleStyle.shape(isUser = false),
+                            color = spec.characterBubble,
+                            border = BorderStroke(1.dp, spec.border.copy(alpha = 0.26f)),
+                        ) {
+                            Text(
+                                text = "你好呀，这是预览消息",
+                                modifier = Modifier.padding(
+                                    horizontal = spec.paddingHorizontal,
+                                    vertical = spec.paddingVertical,
+                                ),
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = spec.characterText,
+                            )
+                        }
+                    }
+                    Box(
+                        modifier = Modifier.fillMaxWidth(),
+                        contentAlignment = Alignment.CenterEnd,
+                    ) {
+                        Surface(
+                            modifier = Modifier.widthIn(max = previewMaxWidth),
+                            shape = bubbleStyle.shape(isUser = true),
+                            color = spec.userBubble,
+                            border = BorderStroke(1.dp, spec.border.copy(alpha = 0.22f)),
+                        ) {
+                            Text(
+                                text = "短句会按内容收缩",
+                                modifier = Modifier.padding(
+                                    horizontal = spec.paddingHorizontal,
+                                    vertical = spec.paddingVertical,
+                                ),
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = spec.userText,
+                            )
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun RoleplaySkinPresetSection(
+    backdropState: ImmersiveBackdropState,
+    selected: RoleplayNoBackgroundSkinPreset,
+    onSelect: (RoleplayNoBackgroundSkinPreset) -> Unit,
+) {
+    ImmersiveSettingsCard(backdropState) {
+        Column(
+            modifier = Modifier.padding(horizontal = 18.dp, vertical = 16.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp),
+        ) {
+            Text(
+                text = "预设皮肤",
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.Bold,
+                color = RoleplaySettingsPanelTitleColor,
+            )
+            RoleplayNoBackgroundSkinPreset.entries.chunked(2).forEach { rowPresets ->
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(10.dp),
+                ) {
+                    rowPresets.forEach { preset ->
+                        RoleplaySkinPresetTile(
+                            preset = preset,
+                            selected = preset == selected,
+                            modifier = Modifier.weight(1f),
+                            onClick = { onSelect(preset) },
+                        )
+                    }
+                    if (rowPresets.size == 1) {
+                        Box(modifier = Modifier.weight(1f))
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun RoleplaySkinPresetTile(
+    preset: RoleplayNoBackgroundSkinPreset,
+    selected: Boolean,
+    modifier: Modifier = Modifier,
+    onClick: () -> Unit,
+) {
+    val spec = rememberRoleplayNoBackgroundSkinSpec(
+        RoleplayNoBackgroundSkinSettings(preset = preset),
+    )
+    Surface(
+        modifier = modifier
+            .testTag("roleplay_skin_preset_${preset.storageValue}")
+            .clickable(onClick = onClick),
+        shape = RoundedCornerShape(16.dp),
+        color = if (selected) spec.panelStrong.copy(alpha = 0.98f) else Color.White.copy(alpha = 0.58f),
+        border = BorderStroke(
+            width = if (selected) 1.5.dp else 1.dp,
+            color = if (selected) spec.accent.copy(alpha = 0.62f) else RoleplaySettingsPanelBodyColor.copy(alpha = 0.16f),
+        ),
+    ) {
+        Column(
+            modifier = Modifier.padding(horizontal = 12.dp, vertical = 10.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+            Text(
+                text = preset.displayName,
+                style = MaterialTheme.typography.labelLarge,
+                fontWeight = FontWeight.SemiBold,
+                color = RoleplaySettingsPanelTitleColor,
+            )
+            Row(horizontalArrangement = Arrangement.spacedBy(5.dp)) {
+                listOf(spec.userBubble, spec.characterBubble, spec.accent).forEach { color ->
+                    Box(
+                        modifier = Modifier
+                            .size(8.dp)
+                            .background(color, CircleShape),
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun RoleplaySkinBubbleSection(
+    backdropState: ImmersiveBackdropState,
+    skin: RoleplayNoBackgroundSkinSettings,
+    onUpdate: (RoleplayNoBackgroundSkinSettings) -> Unit,
+) {
+    ImmersiveSettingsCard(backdropState) {
+        Column(
+            modifier = Modifier.padding(horizontal = 18.dp, vertical = 16.dp),
+            verticalArrangement = Arrangement.spacedBy(14.dp),
+        ) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Text(
+                    text = "气泡样式",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = RoleplaySettingsPanelTitleColor,
+                )
+                Surface(
+                    modifier = Modifier.clickable { onUpdate(RoleplayNoBackgroundSkinSettings()) },
+                    shape = RoundedCornerShape(999.dp),
+                    color = Color.White.copy(alpha = 0.62f),
+                    border = BorderStroke(1.dp, RoleplaySettingsPanelBodyColor.copy(alpha = 0.16f)),
+                ) {
+                    Text(
+                        text = "重置",
+                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
+                        style = MaterialTheme.typography.labelMedium,
+                        color = RoleplaySettingsPanelAccentColor,
+                        fontWeight = FontWeight.SemiBold,
+                    )
+                }
+            }
+            RoleplaySkinSliderRow(
+                label = "最大宽度",
+                value = skin.maxWidthPercent,
+                suffix = "%",
+                range = 64f..92f,
+                testTag = "roleplay_skin_width_slider",
+                onValueChange = { onUpdate(skin.copy(maxWidthPercent = it)) },
+            )
+            RoleplaySkinSliderRow(
+                label = "圆角",
+                value = skin.bubbleRadiusDp,
+                suffix = "dp",
+                range = 4f..28f,
+                testTag = "roleplay_skin_radius_slider",
+                onValueChange = { onUpdate(skin.copy(bubbleRadiusDp = it)) },
+            )
+            RoleplaySkinSliderRow(
+                label = "横向内边距",
+                value = skin.bubblePaddingHorizontalDp,
+                suffix = "dp",
+                range = 8f..20f,
+                testTag = "roleplay_skin_padding_x_slider",
+                onValueChange = { onUpdate(skin.copy(bubblePaddingHorizontalDp = it)) },
+            )
+            RoleplaySkinSliderRow(
+                label = "纵向内边距",
+                value = skin.bubblePaddingVerticalDp,
+                suffix = "dp",
+                range = 6f..18f,
+                testTag = "roleplay_skin_padding_y_slider",
+                onValueChange = { onUpdate(skin.copy(bubblePaddingVerticalDp = it)) },
+            )
+            RoleplaySettingSwitchRow(
+                palette = backdropState.palette,
+                icon = {
+                    Box(
+                        modifier = Modifier
+                            .size(22.dp)
+                            .background(RoleplaySettingsPanelAccentColor.copy(alpha = 0.22f), CircleShape),
+                    )
+                },
+                title = "显示气泡尾巴",
+                checked = skin.showBubbleTail,
+                switchModifier = Modifier.testTag("roleplay_skin_tail_switch"),
+                onCheckedChange = { enabled -> onUpdate(skin.copy(showBubbleTail = enabled)) },
+            )
+        }
+    }
+}
+
+@Composable
+private fun RoleplaySkinSliderRow(
+    label: String,
+    value: Int,
+    suffix: String,
+    range: ClosedFloatingPointRange<Float>,
+    testTag: String,
+    onValueChange: (Int) -> Unit,
+) {
+    Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Text(
+                text = label,
+                style = MaterialTheme.typography.bodyMedium,
+                fontWeight = FontWeight.SemiBold,
+                color = RoleplaySettingsPanelTitleColor,
+            )
+            Text(
+                text = "$value$suffix",
+                style = MaterialTheme.typography.labelMedium,
+                color = RoleplaySettingsPanelBodyColor,
+            )
+        }
+        Slider(
+            modifier = Modifier.testTag(testTag),
+            value = value.toFloat(),
+            onValueChange = { onValueChange(it.roundToInt()) },
+            valueRange = range,
+        )
+    }
+}
+
 @Composable
 internal fun RoleplaySettingsReadabilitySection(
     backdropState: ImmersiveBackdropState,
@@ -338,11 +684,6 @@ internal fun RoleplaySettingsReadabilitySection(
                 fontWeight = FontWeight.Bold,
                 color = RoleplaySettingsPanelTitleColor,
             )
-            Text(
-                text = stringResource(id = R.string.roleplay_readability_section_subtitle),
-                style = MaterialTheme.typography.bodyMedium,
-                color = RoleplaySettingsPanelBodyColor,
-            )
             Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
                 Text(
                     text = stringResource(id = R.string.roleplay_immersive_mode_title),
@@ -359,11 +700,6 @@ internal fun RoleplaySettingsReadabilitySection(
                     onSelect = onUpdateRoleplayImmersiveMode,
                     testTagPrefix = "roleplay_immersive",
                 )
-                Text(
-                    text = roleplayImmersiveModeDescription(settings.roleplayImmersiveMode),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = RoleplaySettingsPanelBodyColor,
-                )
             }
             HorizontalDivider(color = RoleplaySettingsPanelBodyColor.copy(alpha = 0.18f))
             RoleplaySettingSwitchRow(
@@ -379,7 +715,7 @@ internal fun RoleplaySettingsReadabilitySection(
                 supportingText = if (systemHighContrastEnabled && !settings.roleplayHighContrast) {
                     stringResource(id = R.string.roleplay_high_contrast_system_enabled)
                 } else {
-                    stringResource(id = R.string.roleplay_high_contrast_supporting)
+                    ""
                 },
                 checked = settings.roleplayHighContrast,
                 switchModifier = Modifier.testTag("roleplay_high_contrast_switch"),
@@ -401,11 +737,6 @@ internal fun RoleplaySettingsReadabilitySection(
                     palette = palette,
                     onSelect = onUpdateRoleplayLineHeightScale,
                     testTagPrefix = "roleplay_line_height",
-                )
-                Text(
-                    text = roleplayLineHeightScaleDescription(settings.roleplayLineHeightScale),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = RoleplaySettingsPanelBodyColor,
                 )
             }
         }

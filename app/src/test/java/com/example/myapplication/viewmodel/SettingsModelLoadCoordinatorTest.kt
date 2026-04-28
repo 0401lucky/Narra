@@ -7,6 +7,7 @@ import com.example.myapplication.model.ModelInfo
 import com.example.myapplication.model.ProviderSettings
 import com.example.myapplication.model.RoleplayImmersiveMode
 import com.example.myapplication.model.RoleplayLineHeightScale
+import com.example.myapplication.model.RoleplayNoBackgroundSkinSettings
 import com.example.myapplication.model.ScreenTranslationSettings
 import com.example.myapplication.model.SearchSettings
 import com.example.myapplication.model.ThemeMode
@@ -127,6 +128,7 @@ class SettingsModelLoadCoordinatorTest {
             roleplayImmersiveMode: RoleplayImmersiveMode,
             roleplayHighContrast: Boolean,
             roleplayLineHeightScale: RoleplayLineHeightScale,
+            roleplayNoBackgroundSkin: RoleplayNoBackgroundSkinSettings,
         ) = Unit
 
         override suspend fun saveScreenTranslationSettings(settings: ScreenTranslationSettings) = Unit

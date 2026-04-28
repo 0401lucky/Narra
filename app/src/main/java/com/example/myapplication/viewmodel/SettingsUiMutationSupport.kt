@@ -63,6 +63,7 @@ object SettingsUiMutationSupport {
             roleplayImmersiveMode = sourceState.roleplayImmersiveMode,
             roleplayHighContrast = sourceState.roleplayHighContrast,
             roleplayLineHeightScale = sourceState.roleplayLineHeightScale,
+            roleplayNoBackgroundSkin = sourceState.roleplayNoBackgroundSkin.normalized(),
             screenTranslationSettings = sourceState.screenTranslationSettings,
             searchSettings = sourceState.searchSettings,
             isSaving = false,

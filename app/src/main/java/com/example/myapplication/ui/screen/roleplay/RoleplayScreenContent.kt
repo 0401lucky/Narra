@@ -149,6 +149,9 @@ internal fun RoleplaySceneContent(
     var chromeVisible by rememberSaveable(scenario.id) { mutableStateOf(true) }
     val immersiveMode = settings.roleplayImmersiveMode
     val hazeState = remember { HazeState() }
+    val noBackgroundSkinSpec = com.example.myapplication.ui.component.roleplay.rememberRoleplayNoBackgroundSkinSpec(
+        settings.roleplayNoBackgroundSkin,
+    )
 
     CompositionLocalProvider(LocalImmersiveHazeState provides hazeState) {
         ApplyRoleplaySystemBars(
@@ -160,22 +163,31 @@ internal fun RoleplaySceneContent(
         RoleplaySceneBackground(
             backdropState = backdropState,
             modifier = Modifier.fillMaxSize().haze(state = hazeState),
+            fallbackBackgroundColor = noBackgroundSkinSpec.background.takeIf { !backdropState.hasImage },
         )
 
         val scrimBase = lerp(backdropState.palette.panelTintStrong, sceneMoodColor, 0.18f)
+        val scrimStops = if (backdropState.hasImage) {
+            arrayOf(
+                0.0f to Color.Transparent,
+                0.30f to scrimBase.copy(alpha = 0.02f),
+                0.50f to scrimBase.copy(alpha = 0.06f),
+                0.65f to scrimBase.copy(alpha = 0.14f),
+                0.80f to scrimBase.copy(alpha = 0.24f),
+                1.0f to scrimBase.copy(alpha = 0.35f),
+            )
+        } else {
+            arrayOf(
+                0.0f to Color.Transparent,
+                1.0f to Color.Transparent,
+            )
+        }
         Box(
             modifier = Modifier
                 .fillMaxSize()
                 .background(
                     Brush.verticalGradient(
-                        colorStops = arrayOf(
-                            0.0f to Color.Transparent,
-                            0.30f to scrimBase.copy(alpha = 0.02f),
-                            0.50f to scrimBase.copy(alpha = 0.06f),
-                            0.65f to scrimBase.copy(alpha = 0.14f),
-                            0.80f to scrimBase.copy(alpha = 0.24f),
-                            1.0f to scrimBase.copy(alpha = 0.35f),
-                        ),
+                        colorStops = scrimStops,
                     ),
                 ),
         )
@@ -265,6 +277,7 @@ internal fun RoleplaySceneContent(
                 onSend = onSend,
                 onCancel = onCancelSending,
                 lineHeightScale = settings.roleplayLineHeightScale.scaleFactor,
+                noBackgroundSkin = settings.roleplayNoBackgroundSkin,
                 onToggleTopBar = { chromeVisible = !chromeVisible },
                 modifier = Modifier
                     .fillMaxWidth()

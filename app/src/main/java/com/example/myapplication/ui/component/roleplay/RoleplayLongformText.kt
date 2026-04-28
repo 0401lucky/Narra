@@ -54,9 +54,7 @@ fun RoleplayLongformCard(
         ) {
             Text(
                 text = speakerName,
-                style = MaterialTheme.typography.labelLarge.copy(
-                    shadow = GlassTextShadowStrong,
-                ),
+                style = MaterialTheme.typography.labelLarge,
                 color = titleColor,
                 fontWeight = FontWeight.Bold,
             )
@@ -88,12 +86,13 @@ fun RoleplayLongformCard(
                 .padding(horizontal = 18.dp, vertical = 10.dp),
         )
     } else if (backdropState != null) {
-        ImmersiveReadingGlassSurface(
-            backdropState = backdropState,
+        Surface(
             modifier = modifier.fillMaxWidth(),
             shape = shape,
-            variant = ImmersiveReadingGlassVariant.CARD,
-            overlayColor = containerColor,
+            color = containerColor,
+            border = BorderStroke(1.dp, backdropState.palette.readingBorder.copy(alpha = 0.18f)),
+            tonalElevation = 0.dp,
+            shadowElevation = 0.dp,
         ) {
             innerContent(Modifier.padding(horizontal = 20.dp, vertical = 18.dp))
         }
@@ -140,7 +139,6 @@ private fun LongformParagraphText(
             fontSize = 17.sp,
             lineHeight = baseLineHeight * lineHeightScale,
             letterSpacing = 0.sp,
-            shadow = GlassTextShadow,
         ),
         color = bodyColor,
     )

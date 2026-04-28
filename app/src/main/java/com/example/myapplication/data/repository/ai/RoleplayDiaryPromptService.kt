@@ -5,6 +5,9 @@ import com.example.myapplication.model.ChatMessageDto
 import com.example.myapplication.model.ProviderApiProtocol
 import com.example.myapplication.model.ProviderSettings
 import com.example.myapplication.model.RoleplayDiaryDraft
+import com.google.gson.JsonArray
+import com.google.gson.JsonElement
+import com.google.gson.JsonObject
 import com.google.gson.JsonParser
 
 /**
@@ -109,43 +112,15 @@ internal class RoleplayDiaryPromptService(
         if (content.isBlank()) {
             return emptyList()
         }
-        val cleaned = core.stripMarkdownCodeFence(content)
-        val parsedArray = runCatching { JsonParser.parseString(cleaned).asJsonArray }.getOrNull()
-            ?: runCatching {
-                val obj = JsonParser.parseString(cleaned).asJsonObject
-                obj.get("entries")?.takeIf { it.isJsonArray }?.asJsonArray
-                    ?: obj.get("diaries")?.takeIf { it.isJsonArray }?.asJsonArray
-                    ?: obj.get("data")?.takeIf { it.isJsonArray }?.asJsonArray
-                    ?: obj.entrySet().map { it.value }
-                        .singleOrNull { it.isJsonArray }
-                        ?.asJsonArray
-            }.getOrNull()
-            ?: return emptyList()
-        return parsedArray.mapNotNull { element ->
-            val item = element.asJsonObjectOrNull() ?: return@mapNotNull null
-            val title = item.stringValue("title")
-            val body = item.stringValue("content")
-            if (title.isBlank() || body.isBlank()) {
-                null
-            } else {
-                RoleplayDiaryDraft(
-                    title = title,
-                    content = body,
-                    mood = item.stringValue("mood"),
-                    weather = item.stringValue("weather"),
-                    tags = item.getAsJsonArrayOrNull("tags")
-                        ?.mapNotNull { tag ->
-                            tag.takeIf { !it.isJsonNull }
-                                ?.runCatching { asString }?.getOrNull()
-                                ?.trim()
-                                ?.takeIf { it.isNotBlank() }
-                        }
-                        .orEmpty(),
-                    dateLabel = item.stringValue("dateLabel")
-                        .ifBlank { item.stringValue("date") },
-                )
-            }
+        val parsedArray = extractDiaryArray(content)
+            ?: error("角色日记生成失败：模型返回格式不符合要求，未提取到合法 JSON 数组")
+        val drafts = parsedArray.mapIndexedNotNull { index, element ->
+            parseDiaryDraft(element, index)
         }
+        if (parsedArray.size() > 0 && drafts.isEmpty()) {
+            error("角色日记生成失败：模型返回了 JSON，但未包含可保存的日记标题和正文")
+        }
+        return drafts
     }
 
     suspend fun generateGiftImagePrompt(
@@ -203,5 +178,168 @@ internal class RoleplayDiaryPromptService(
             .replace("{", "〈")
             .replace("}", "〉")
             .trim()
+    }
+
+    private fun extractDiaryArray(rawContent: String): JsonArray? {
+        val cleaned = core.stripMarkdownCodeFence(rawContent)
+        parseDiaryArrayFromJson(cleaned)?.let { return it }
+        findFirstCompleteJsonArray(cleaned)?.let { candidate ->
+            parseDiaryArrayFromJson(candidate)?.let { return it }
+        }
+        core.extractStructuredJsonObject(cleaned)
+            ?.let(::findDiaryArrayInObject)
+            ?.let { return it }
+        return null
+    }
+
+    private fun parseDiaryArrayFromJson(candidate: String): JsonArray? {
+        val element = runCatching { JsonParser.parseString(candidate) }.getOrNull()
+            ?: return null
+        return when {
+            element.isJsonArray -> element.asJsonArray
+            element.isJsonObject -> findDiaryArrayInObject(element.asJsonObject)
+            else -> null
+        }
+    }
+
+    private fun findDiaryArrayInObject(obj: JsonObject): JsonArray? {
+        DiaryArrayKeys.forEach { key ->
+            val value = obj.get(key) ?: return@forEach
+            when {
+                value.isJsonArray -> return value.asJsonArray
+                value.isJsonObject -> findDiaryArrayInObject(value.asJsonObject)?.let { return it }
+            }
+        }
+        return obj.entrySet()
+            .map { it.value }
+            .filter { it.isJsonArray }
+            .singleOrNull()
+            ?.asJsonArray
+    }
+
+    private fun parseDiaryDraft(element: JsonElement, index: Int): RoleplayDiaryDraft? {
+        val item = element.asJsonObjectOrNull() ?: return null
+        val normalizedItem = findNestedDiaryObject(item) ?: item
+        val content = normalizedItem.firstStringValue(DiaryContentKeys)
+        if (content.isBlank()) {
+            return null
+        }
+        val dateLabel = normalizedItem.firstStringValue(DiaryDateKeys)
+        val title = normalizedItem.firstStringValue(DiaryTitleKeys)
+            .ifBlank { dateLabel }
+            .ifBlank { "日记 ${index + 1}" }
+        return RoleplayDiaryDraft(
+            title = title,
+            content = content,
+            mood = normalizedItem.firstStringValue(DiaryMoodKeys),
+            weather = normalizedItem.firstStringValue(DiaryWeatherKeys),
+            tags = normalizedItem.diaryTags(),
+            dateLabel = dateLabel,
+        )
+    }
+
+    private fun findNestedDiaryObject(item: JsonObject): JsonObject? {
+        return DiaryNestedObjectKeys
+            .asSequence()
+            .mapNotNull { key -> item.get(key) }
+            .firstOrNull { it.isJsonObject }
+            ?.asJsonObject
+    }
+
+    private fun JsonObject.firstStringValue(keys: List<String>): String {
+        return keys
+            .asSequence()
+            .mapNotNull { key -> get(key) }
+            .mapNotNull(::jsonElementStringValue)
+            .map { it.trim() }
+            .firstOrNull { it.isNotBlank() }
+            .orEmpty()
+    }
+
+    private fun JsonObject.diaryTags(): List<String> {
+        val value = DiaryTagKeys
+            .asSequence()
+            .mapNotNull { key -> get(key) }
+            .firstOrNull { !it.isJsonNull }
+            ?: return emptyList()
+        return when {
+            value.isJsonArray -> value.asJsonArray
+                .mapNotNull(::jsonElementStringValue)
+                .flatMap(::splitDiaryTags)
+            value.isJsonPrimitive -> splitDiaryTags(value.asString)
+            else -> emptyList()
+        }
+            .map { it.trim() }
+            .filter { it.isNotBlank() }
+            .distinct()
+            .take(6)
+    }
+
+    private fun jsonElementStringValue(element: JsonElement): String? {
+        if (element.isJsonNull || !element.isJsonPrimitive) {
+            return null
+        }
+        return runCatching { element.asString }.getOrNull()
+    }
+
+    private fun splitDiaryTags(value: String): List<String> {
+        return value.split(',', '，', '、', ';', '；', '\n')
+    }
+
+    private fun findFirstCompleteJsonArray(rawContent: String): String? {
+        var searchStart = 0
+        while (searchStart < rawContent.length) {
+            val startIndex = rawContent.indexOf('[', startIndex = searchStart)
+            if (startIndex == -1) {
+                return null
+            }
+            var inString = false
+            var escaped = false
+            var depth = 0
+            for (index in startIndex until rawContent.length) {
+                val char = rawContent[index]
+                if (inString) {
+                    when {
+                        escaped -> escaped = false
+                        char == '\\' -> escaped = true
+                        char == '"' -> inString = false
+                    }
+                    continue
+                }
+                when (char) {
+                    '"' -> inString = true
+                    '[' -> depth += 1
+                    ']' -> {
+                        depth -= 1
+                        if (depth == 0) {
+                            return rawContent.substring(startIndex, index + 1)
+                        }
+                    }
+                }
+            }
+            searchStart = startIndex + 1
+        }
+        return null
+    }
+
+    private companion object {
+        val DiaryArrayKeys = listOf(
+            "entries",
+            "diaries",
+            "items",
+            "data",
+            "diaryEntries",
+            "journals",
+            "日记",
+            "日记列表",
+            "条目",
+        )
+        val DiaryNestedObjectKeys = listOf("diary", "entry", "item", "journal", "日记", "条目")
+        val DiaryTitleKeys = listOf("title", "name", "heading", "标题", "日记标题")
+        val DiaryContentKeys = listOf("content", "body", "text", "diary", "entry", "正文", "内容", "日记内容")
+        val DiaryMoodKeys = listOf("mood", "emotion", "feeling", "心情", "情绪")
+        val DiaryWeatherKeys = listOf("weather", "atmosphere", "environment", "天气", "氛围", "环境")
+        val DiaryDateKeys = listOf("dateLabel", "date_label", "date", "time", "日期", "时间")
+        val DiaryTagKeys = listOf("tags", "tag", "labels", "keywords", "标签", "关键词")
     }
 }

@@ -62,6 +62,7 @@ object SettingsDraftStateSupport {
                 roleplayImmersiveMode = settings.roleplayImmersiveMode,
                 roleplayHighContrast = settings.roleplayHighContrast,
                 roleplayLineHeightScale = settings.roleplayLineHeightScale,
+                roleplayNoBackgroundSkin = settings.roleplayNoBackgroundSkin.normalized(),
                 screenTranslationSettings = settings.screenTranslationSettings,
                 searchSettings = settings.resolvedSearchSettings(),
             )

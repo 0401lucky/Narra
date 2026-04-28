@@ -44,8 +44,6 @@ import com.example.myapplication.model.RoleplayScenario
 import com.example.myapplication.ui.component.NarraIconButton
 import com.example.myapplication.ui.component.NarraTextButton
 import com.example.myapplication.ui.component.rememberSystemHighTextContrastEnabled
-import com.example.myapplication.ui.component.roleplay.GlassTextShadow
-import com.example.myapplication.ui.component.roleplay.GlassTextShadowStrong
 import com.example.myapplication.ui.component.roleplay.ImmersiveReadingGlassSurface
 import com.example.myapplication.ui.component.roleplay.ImmersiveReadingGlassVariant
 import com.example.myapplication.ui.component.roleplay.ImmersiveReadingScrimVariant
@@ -180,7 +178,6 @@ fun RoleplayDiaryDetailScreen(
                                 Text(
                                     text = effectiveDateLabel,
                                     style = MaterialTheme.typography.labelMedium.copy(
-                                        shadow = GlassTextShadow,
                                     ),
                                     color = palette.onGlassMuted,
                                 )
@@ -188,7 +185,6 @@ fun RoleplayDiaryDetailScreen(
                             Text(
                                 text = "${currentIndex + 1} / ${diaryEntries.size}",
                                 style = MaterialTheme.typography.labelSmall.copy(
-                                    shadow = GlassTextShadow,
                                 ),
                                 color = palette.onGlassMuted.copy(alpha = 0.84f),
                             )
@@ -202,7 +198,6 @@ fun RoleplayDiaryDetailScreen(
                                     text = "· ${entry.mood}",
                                     modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp),
                                     style = MaterialTheme.typography.labelMedium.copy(
-                                        shadow = GlassTextShadow,
                                     ),
                                     color = palette.onGlass,
                                     fontWeight = FontWeight.Medium,
@@ -235,7 +230,6 @@ fun RoleplayDiaryDetailScreen(
                                 Text(
                                     text = entry.title,
                                     style = MaterialTheme.typography.headlineSmall.copy(
-                                        shadow = GlassTextShadowStrong,
                                     ),
                                     fontWeight = FontWeight.Bold,
                                     color = palette.onGlass,
@@ -249,7 +243,6 @@ fun RoleplayDiaryDetailScreen(
                                             Text(
                                                 text = entry.weather,
                                                 style = MaterialTheme.typography.labelMedium.copy(
-                                                    shadow = GlassTextShadow,
                                                 ),
                                                 color = palette.onGlassMuted,
                                             )
@@ -258,7 +251,6 @@ fun RoleplayDiaryDetailScreen(
                                             Text(
                                                 text = "#$tag",
                                                 style = MaterialTheme.typography.labelMedium.copy(
-                                                    shadow = GlassTextShadow,
                                                 ),
                                                 color = palette.characterAccent,
                                             )
@@ -271,7 +263,6 @@ fun RoleplayDiaryDetailScreen(
                                         fontSize = 17.sp,
                                         lineHeight = 32.sp,
                                         letterSpacing = 0.3.sp,
-                                        shadow = GlassTextShadow,
                                     ),
                                     color = palette.onGlass,
                                     modifier = Modifier.semantics {

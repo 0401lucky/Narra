@@ -39,6 +39,7 @@ import com.example.myapplication.model.ChatActionType
 import com.example.myapplication.model.MessageStatus
 import com.example.myapplication.model.RoleplayContentType
 import com.example.myapplication.model.RoleplayMessageUiModel
+import com.example.myapplication.model.RoleplayNoBackgroundSkinSettings
 import com.example.myapplication.model.RoleplaySpeaker
 import com.example.myapplication.ui.component.SpecialPlayCard
 import com.example.myapplication.ui.component.copyPlainTextToClipboard
@@ -57,6 +58,7 @@ internal fun RoleplayMessageItem(
     onOpenVideoCall: (() -> Unit)? = null,
     lineHeightScale: Float = 1.0f,
     bubbleMode: RoleplayMessageBubbleMode = RoleplayMessageBubbleMode.DEFAULT,
+    noBackgroundSkin: RoleplayNoBackgroundSkinSettings = RoleplayNoBackgroundSkinSettings(),
     modifier: Modifier = Modifier,
 ) {
     Box(modifier = modifier) {
@@ -73,6 +75,7 @@ internal fun RoleplayMessageItem(
             onOpenVideoCall = onOpenVideoCall,
             lineHeightScale = lineHeightScale,
             bubbleMode = bubbleMode,
+            noBackgroundSkin = noBackgroundSkin,
         )
     }
 }
@@ -91,7 +94,13 @@ private fun RoleplayMessageItemContent(
     onOpenVideoCall: (() -> Unit)? = null,
     lineHeightScale: Float = 1.0f,
     bubbleMode: RoleplayMessageBubbleMode = RoleplayMessageBubbleMode.DEFAULT,
+    noBackgroundSkin: RoleplayNoBackgroundSkinSettings = RoleplayNoBackgroundSkinSettings(),
 ) {
+    val bubbleStyle = rememberRoleplayDialogueBubbleStyle(
+        backdropState = backdropState,
+        settings = noBackgroundSkin,
+        bubbleMode = bubbleMode,
+    )
     when (message.contentType) {
         RoleplayContentType.NARRATION -> RoleplayMessageMenuWrapper(message, onRetryTurn, onEditUserMessage, onQuoteMessage = onQuoteMessage, onRecallMessage = onRecallMessage) {
             if (bubbleMode == RoleplayMessageBubbleMode.ONLINE_PHONE) {
@@ -128,7 +137,6 @@ private fun RoleplayMessageItemContent(
                                         fontStyle = FontStyle.Italic,
                                         lineHeight = 25.sp * lineHeightScale,
                                         letterSpacing = 0.6.sp,
-                                        shadow = GlassTextShadow,
                                     ),
                                     color = colors.textMuted,
                                 )
@@ -174,7 +182,6 @@ private fun RoleplayMessageItemContent(
                                         fontStyle = FontStyle.Italic,
                                         lineHeight = 24.sp * lineHeightScale,
                                         letterSpacing = 0.5.sp,
-                                        shadow = GlassTextShadow,
                                     ),
                                     color = colors.thoughtText,
                                 )
@@ -187,97 +194,65 @@ private fun RoleplayMessageItemContent(
 
         RoleplayContentType.DIALOGUE -> {
             if (message.speaker == RoleplaySpeaker.USER) {
-                val isOnlinePhoneBubble = bubbleMode == RoleplayMessageBubbleMode.ONLINE_PHONE
-                if (isOnlinePhoneBubble) {
-                    BoxWithConstraints(
-                        modifier = Modifier.fillMaxWidth(),
-                        contentAlignment = Alignment.CenterEnd,
+                val maxWidthFraction = resolveDialogueMaxWidthFraction(
+                    hasImage = backdropState.hasImage,
+                    bubbleMode = bubbleMode,
+                    isUser = true,
+                    noBackgroundFraction = bubbleStyle.maxWidthFraction,
+                )
+                BoxWithConstraints(
+                    modifier = Modifier.fillMaxWidth(),
+                    contentAlignment = Alignment.CenterEnd,
+                ) {
+                    RoleplayMessageMenuWrapper(
+                        message = message,
+                        onRetryTurn = onRetryTurn,
+                        onEditUserMessage = onEditUserMessage,
+                        modifier = Modifier.widthIn(max = maxWidth * maxWidthFraction),
+                        onQuoteMessage = onQuoteMessage,
+                        onRecallMessage = onRecallMessage,
                     ) {
-                        RoleplayMessageMenuWrapper(
+                        UserDialogueBubbleContent(
                             message = message,
-                            onRetryTurn = onRetryTurn,
-                            onEditUserMessage = onEditUserMessage,
-                            modifier = Modifier.widthIn(max = maxWidth * 0.82f),
-                            onQuoteMessage = onQuoteMessage,
-                            onRecallMessage = onRecallMessage,
-                        ) {
-                            UserDialogueBubbleContent(
-                                message = message,
-                                colors = colors,
-                                backdropState = backdropState,
-                                lineHeightScale = lineHeightScale,
-                                onOpenQuotedMessage = onOpenQuotedMessage,
-                                fillWidth = false,
-                            )
-                        }
-                    }
-                } else {
-                    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
-                        RoleplayMessageMenuWrapper(
-                            message,
-                            onRetryTurn,
-                            onEditUserMessage,
-                            Modifier.fillMaxWidth(0.82f),
-                            onQuoteMessage = onQuoteMessage,
-                            onRecallMessage = onRecallMessage,
-                        ) {
-                            UserDialogueBubbleContent(
-                                message = message,
-                                colors = colors,
-                                backdropState = backdropState,
-                                lineHeightScale = lineHeightScale,
-                                onOpenQuotedMessage = onOpenQuotedMessage,
-                                fillWidth = true,
-                            )
-                        }
+                            colors = colors,
+                            backdropState = backdropState,
+                            lineHeightScale = lineHeightScale,
+                            onOpenQuotedMessage = onOpenQuotedMessage,
+                            fillWidth = false,
+                            bubbleStyle = bubbleStyle,
+                        )
                     }
                 }
             } else {
                 val isError = message.messageStatus == MessageStatus.ERROR
-                if (bubbleMode == RoleplayMessageBubbleMode.ONLINE_PHONE) {
-                    BoxWithConstraints(
-                        modifier = Modifier.fillMaxWidth(),
-                        contentAlignment = Alignment.CenterStart,
+                val maxWidthFraction = resolveDialogueMaxWidthFraction(
+                    hasImage = backdropState.hasImage,
+                    bubbleMode = bubbleMode,
+                    isUser = false,
+                    noBackgroundFraction = bubbleStyle.maxWidthFraction,
+                )
+                BoxWithConstraints(
+                    modifier = Modifier.fillMaxWidth(),
+                    contentAlignment = Alignment.CenterStart,
+                ) {
+                    RoleplayMessageMenuWrapper(
+                        message = message,
+                        onRetryTurn = onRetryTurn,
+                        onEditUserMessage = onEditUserMessage,
+                        modifier = Modifier.widthIn(max = maxWidth * maxWidthFraction),
+                        onQuoteMessage = onQuoteMessage,
+                        onRecallMessage = onRecallMessage,
                     ) {
-                        RoleplayMessageMenuWrapper(
+                        CharacterDialogueBubbleContent(
                             message = message,
-                            onRetryTurn = onRetryTurn,
-                            onEditUserMessage = onEditUserMessage,
-                            modifier = Modifier.widthIn(max = maxWidth * 0.84f),
-                            onQuoteMessage = onQuoteMessage,
-                            onRecallMessage = onRecallMessage,
-                        ) {
-                            CharacterDialogueBubbleContent(
-                                message = message,
-                                colors = colors,
-                                backdropState = backdropState,
-                                lineHeightScale = lineHeightScale,
-                                onOpenQuotedMessage = onOpenQuotedMessage,
-                                isError = isError,
-                                fillWidth = false,
-                            )
-                        }
-                    }
-                } else {
-                    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.Start) {
-                        RoleplayMessageMenuWrapper(
-                            message = message,
-                            onRetryTurn = onRetryTurn,
-                            onEditUserMessage = onEditUserMessage,
-                            modifier = Modifier.fillMaxWidth(0.88f),
-                            onQuoteMessage = onQuoteMessage,
-                            onRecallMessage = onRecallMessage
-                        ) {
-                            CharacterDialogueBubbleContent(
-                                message = message,
-                                colors = colors,
-                                backdropState = backdropState,
-                                lineHeightScale = lineHeightScale,
-                                onOpenQuotedMessage = onOpenQuotedMessage,
-                                isError = isError,
-                                fillWidth = true,
-                            )
-                        }
+                            colors = colors,
+                            backdropState = backdropState,
+                            lineHeightScale = lineHeightScale,
+                            onOpenQuotedMessage = onOpenQuotedMessage,
+                            isError = isError,
+                            fillWidth = false,
+                            bubbleStyle = bubbleStyle,
+                        )
                     }
                 }
             }
@@ -368,6 +343,21 @@ private fun RoleplayMessageItemContent(
         }
 
         RoleplayContentType.SYSTEM -> Unit
+    }
+}
+
+private fun resolveDialogueMaxWidthFraction(
+    hasImage: Boolean,
+    bubbleMode: RoleplayMessageBubbleMode,
+    isUser: Boolean,
+    noBackgroundFraction: Float,
+): Float {
+    if (!hasImage) {
+        return noBackgroundFraction
+    }
+    return when (bubbleMode) {
+        RoleplayMessageBubbleMode.ONLINE_PHONE -> if (isUser) 0.82f else 0.84f
+        RoleplayMessageBubbleMode.DEFAULT -> if (isUser) 0.82f else 0.88f
     }
 }
 

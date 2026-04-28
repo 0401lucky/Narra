@@ -29,6 +29,8 @@ import com.example.myapplication.model.MemoryInjectionPosition
 import com.example.myapplication.model.ProviderFunctionModelMode
 import com.example.myapplication.model.ProviderSettings
 import com.example.myapplication.model.ProviderType
+import com.example.myapplication.model.RoleplayNoBackgroundSkinPreset
+import com.example.myapplication.model.RoleplayNoBackgroundSkinSettings
 import com.example.myapplication.model.SearchSettings
 import com.example.myapplication.system.json.AppJson
 import com.example.myapplication.system.logging.logFailure
@@ -83,6 +85,7 @@ interface SettingsStore {
         roleplayImmersiveMode: com.example.myapplication.model.RoleplayImmersiveMode,
         roleplayHighContrast: Boolean,
         roleplayLineHeightScale: com.example.myapplication.model.RoleplayLineHeightScale,
+        roleplayNoBackgroundSkin: RoleplayNoBackgroundSkinSettings,
     )
 
     suspend fun saveScreenTranslationSettings(
@@ -211,6 +214,9 @@ class AppSettingsStore(
             roleplayHighContrast = preferences[PreferencesKeys.roleplayHighContrast] ?: false,
             roleplayLineHeightScale = com.example.myapplication.model.RoleplayLineHeightScale.fromStorageValue(
                 preferences[PreferencesKeys.roleplayLineHeightScale].orEmpty(),
+            ),
+            roleplayNoBackgroundSkin = decodeRoleplayNoBackgroundSkin(
+                preferences[PreferencesKeys.roleplayNoBackgroundSkinJson].orEmpty(),
             ),
             suppressRoleplayAssistantMismatchDialog = preferences[PreferencesKeys.suppressRoleplayAssistantMismatchDialog] ?: false,
             userDisplayName = preferences[PreferencesKeys.userDisplayName]
@@ -384,6 +390,7 @@ class AppSettingsStore(
         roleplayImmersiveMode: com.example.myapplication.model.RoleplayImmersiveMode,
         roleplayHighContrast: Boolean,
         roleplayLineHeightScale: com.example.myapplication.model.RoleplayLineHeightScale,
+        roleplayNoBackgroundSkin: RoleplayNoBackgroundSkinSettings,
     ) {
         context.dataStore.edit { preferences ->
             preferences[PreferencesKeys.themeMode] = themeMode.storageValue
@@ -404,6 +411,8 @@ class AppSettingsStore(
             preferences[PreferencesKeys.roleplayImmersiveMode] = roleplayImmersiveMode.storageValue
             preferences[PreferencesKeys.roleplayHighContrast] = roleplayHighContrast
             preferences[PreferencesKeys.roleplayLineHeightScale] = roleplayLineHeightScale.storageValue
+            preferences[PreferencesKeys.roleplayNoBackgroundSkinJson] =
+                gson.toJson(roleplayNoBackgroundSkin.normalized(), RoleplayNoBackgroundSkinSettings::class.java)
         }
     }
 
@@ -632,6 +641,30 @@ class AppSettingsStore(
                 ?: FunctionModelProviderIds()
         }.logFailure(TAG) { "decodeFunctionModelProviderIds fromJson failed, raw.len=${rawJson.length}" }
             .getOrDefault(FunctionModelProviderIds())
+    }
+
+    private fun decodeRoleplayNoBackgroundSkin(rawJson: String): RoleplayNoBackgroundSkinSettings {
+        if (rawJson.isBlank()) {
+            return RoleplayNoBackgroundSkinSettings()
+        }
+        return runCatching {
+            val jsonObject = com.google.gson.JsonParser.parseString(rawJson).asJsonObject
+            RoleplayNoBackgroundSkinSettings(
+                preset = RoleplayNoBackgroundSkinPreset.fromStorageValue(
+                    jsonObject.get("preset")?.asString.orEmpty(),
+                ),
+                maxWidthPercent = jsonObject.get("maxWidthPercent")?.asInt
+                    ?: com.example.myapplication.model.ROLEPLAY_SKIN_DEFAULT_MAX_WIDTH_PERCENT,
+                bubbleRadiusDp = jsonObject.get("bubbleRadiusDp")?.asInt
+                    ?: com.example.myapplication.model.ROLEPLAY_SKIN_DEFAULT_RADIUS_DP,
+                bubblePaddingHorizontalDp = jsonObject.get("bubblePaddingHorizontalDp")?.asInt
+                    ?: com.example.myapplication.model.ROLEPLAY_SKIN_DEFAULT_PADDING_HORIZONTAL_DP,
+                bubblePaddingVerticalDp = jsonObject.get("bubblePaddingVerticalDp")?.asInt
+                    ?: com.example.myapplication.model.ROLEPLAY_SKIN_DEFAULT_PADDING_VERTICAL_DP,
+                showBubbleTail = jsonObject.get("showBubbleTail")?.asBoolean ?: true,
+            ).normalized()
+        }.logFailure(TAG) { "decodeRoleplayNoBackgroundSkin fromJson failed, raw.len=${rawJson.length}" }
+            .getOrDefault(RoleplayNoBackgroundSkinSettings())
     }
 
     /** Gson 反序列化旧 JSON 时新字段为 null，补充 type、apiProtocol、OpenAI text api mode 和 models。 */
@@ -946,6 +979,7 @@ class AppSettingsStore(
         val roleplayImmersiveMode = stringPreferencesKey("roleplay_immersive_mode")
         val roleplayHighContrast = booleanPreferencesKey("roleplay_high_contrast")
         val roleplayLineHeightScale = stringPreferencesKey("roleplay_line_height_scale")
+        val roleplayNoBackgroundSkinJson = stringPreferencesKey("roleplay_no_background_skin_json")
         val suppressRoleplayAssistantMismatchDialog = booleanPreferencesKey("suppress_roleplay_assistant_mismatch_dialog")
         val userDisplayName = stringPreferencesKey("user_display_name")
         val userPersonaPrompt = stringPreferencesKey("user_persona_prompt")

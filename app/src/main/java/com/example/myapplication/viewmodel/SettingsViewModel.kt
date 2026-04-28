@@ -17,6 +17,7 @@ import com.example.myapplication.model.ProviderApiProtocol
 import com.example.myapplication.model.ProviderSettings
 import com.example.myapplication.model.ProviderTemplate
 import com.example.myapplication.model.ProviderType
+import com.example.myapplication.model.RoleplayNoBackgroundSkinSettings
 import com.example.myapplication.model.ScreenTranslationSettings
 import com.example.myapplication.model.SearchSettings
 import com.example.myapplication.model.ThemeMode
@@ -60,6 +61,7 @@ data class SettingsUiState(
     val roleplayImmersiveMode: com.example.myapplication.model.RoleplayImmersiveMode = com.example.myapplication.model.RoleplayImmersiveMode.EDGE_TO_EDGE,
     val roleplayHighContrast: Boolean = false,
     val roleplayLineHeightScale: com.example.myapplication.model.RoleplayLineHeightScale = com.example.myapplication.model.RoleplayLineHeightScale.NORMAL,
+    val roleplayNoBackgroundSkin: RoleplayNoBackgroundSkinSettings = RoleplayNoBackgroundSkinSettings(),
     val screenTranslationSettings: ScreenTranslationSettings = ScreenTranslationSettings(),
     val searchSettings: SearchSettings = SearchSettings(),
 ) {
@@ -108,6 +110,7 @@ data class SettingsUiState(
             roleplayImmersiveMode != savedSettings.roleplayImmersiveMode ||
             roleplayHighContrast != savedSettings.roleplayHighContrast ||
             roleplayLineHeightScale != savedSettings.roleplayLineHeightScale ||
+            roleplayNoBackgroundSkin != savedSettings.roleplayNoBackgroundSkin ||
             screenTranslationSettings != savedSettings.screenTranslationSettings ||
             searchSettings != savedSettings.resolvedSearchSettings()
     }

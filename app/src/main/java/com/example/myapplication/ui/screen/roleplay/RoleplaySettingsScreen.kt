@@ -40,11 +40,13 @@ import com.example.myapplication.model.MemoryProposalHistoryItem
 import com.example.myapplication.model.ProviderSettings
 import com.example.myapplication.model.RoleplayContextStatus
 import com.example.myapplication.model.RoleplayInteractionMode
+import com.example.myapplication.model.RoleplayNoBackgroundSkinSettings
 import com.example.myapplication.model.RoleplayScenario
 import com.example.myapplication.ui.component.NarraIconButton
 import com.example.myapplication.ui.component.rememberSystemHighTextContrastEnabled
 import com.example.myapplication.ui.component.roleplay.ImmersiveGlassSurface
 import com.example.myapplication.ui.component.roleplay.RoleplaySceneBackground
+import com.example.myapplication.ui.component.roleplay.rememberRoleplayNoBackgroundSkinSpec
 import com.example.myapplication.ui.component.roleplay.rememberImmersiveBackdropState
 import com.example.myapplication.ui.screen.settings.SettingsScreenPadding
 
@@ -78,6 +80,7 @@ fun RoleplaySettingsScreen(
     onUpdateRoleplayImmersiveMode: (com.example.myapplication.model.RoleplayImmersiveMode) -> Unit,
     onUpdateRoleplayHighContrast: (Boolean) -> Unit,
     onUpdateRoleplayLineHeightScale: (com.example.myapplication.model.RoleplayLineHeightScale) -> Unit,
+    onUpdateRoleplayNoBackgroundSkin: (RoleplayNoBackgroundSkinSettings) -> Unit,
     onSelectProvider: (String) -> Unit,
     onSelectModel: (String, String) -> Unit,
     onOpenProviderDetail: (String) -> Unit,
@@ -108,10 +111,12 @@ fun RoleplaySettingsScreen(
     }
     val scenarioTitle = scenario?.title?.trim().orEmpty().ifBlank { "沉浸扮演" }
     val palette = backdropState.palette
+    val noBackgroundSkinSpec = rememberRoleplayNoBackgroundSkinSpec(settings.roleplayNoBackgroundSkin)
     Box(modifier = Modifier.fillMaxSize()) {
         RoleplaySceneBackground(
             backdropState = backdropState,
             modifier = Modifier.fillMaxSize(),
+            fallbackBackgroundColor = noBackgroundSkinSpec.background.takeIf { !backdropState.hasImage },
         )
         Box(modifier = Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.22f)))
         BoxWithConstraints(
@@ -243,6 +248,7 @@ fun RoleplaySettingsScreen(
                             onUpdateRoleplayImmersiveMode = onUpdateRoleplayImmersiveMode,
                             onUpdateRoleplayHighContrast = onUpdateRoleplayHighContrast,
                             onUpdateRoleplayLineHeightScale = onUpdateRoleplayLineHeightScale,
+                            onUpdateRoleplayNoBackgroundSkin = onUpdateRoleplayNoBackgroundSkin,
                             onOpenProviderDetail = onOpenProviderDetail,
                             onOpenConnectionSettings = onOpenConnectionSettings,
                             onOpenAssistantPrompt = onOpenAssistantPrompt,

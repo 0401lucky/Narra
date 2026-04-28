@@ -44,10 +44,12 @@ import androidx.compose.ui.unit.sp
 import androidx.core.view.HapticFeedbackConstantsCompat
 import com.example.myapplication.R
 import com.example.myapplication.model.RoleplaySuggestionUiModel
+import com.example.myapplication.model.RoleplayNoBackgroundSkinSettings
 import com.example.myapplication.ui.component.NarraTextButton
 
 internal data class ImmersiveRoleplayColors(
     val textPrimary: Color,
+    val userText: Color,
     val textMuted: Color,
     val characterAccent: Color,
     val userAccent: Color,
@@ -78,30 +80,34 @@ internal data class RoleplayInputQuickAction(
 @Composable
 internal fun rememberImmersiveRoleplayColors(
     backdropState: ImmersiveBackdropState,
+    noBackgroundSkin: RoleplayNoBackgroundSkinSettings = RoleplayNoBackgroundSkinSettings(),
 ): ImmersiveRoleplayColors {
     val palette = backdropState.palette
     val errorText = Color(0xFFFFB4AB)
-    return remember(palette, errorText, backdropState.hasImage) {
+    val skinSpec = rememberRoleplayNoBackgroundSkinSpec(noBackgroundSkin)
+    return remember(palette, errorText, backdropState.hasImage, skinSpec) {
         if (!backdropState.hasImage) {
             return@remember ImmersiveRoleplayColors(
-                textPrimary = Color(0xFF243044),
-                textMuted = Color(0xFF627086),
-                characterAccent = Color(0xFF426F96),
-                userAccent = Color(0xFF6E7C63),
-                thoughtText = Color(0xFF586A79).copy(alpha = 0.9f),
-                panelBackground = Color(0xFFF7FAFC).copy(alpha = 0.92f),
-                panelBackgroundStrong = Color.White.copy(alpha = 0.97f),
-                panelBorder = Color(0xFF5D7286).copy(alpha = 0.18f),
+                textPrimary = skinSpec.characterText,
+                userText = skinSpec.userText,
+                textMuted = skinSpec.mutedText,
+                characterAccent = skinSpec.accent,
+                userAccent = skinSpec.userAccent,
+                thoughtText = skinSpec.mutedText.copy(alpha = 0.92f),
+                panelBackground = skinSpec.panel.copy(alpha = skinSpec.panel.alpha.coerceAtLeast(0.86f)),
+                panelBackgroundStrong = skinSpec.panelStrong.copy(alpha = skinSpec.panelStrong.alpha.coerceAtLeast(0.92f)),
+                panelBorder = skinSpec.border.copy(alpha = skinSpec.border.alpha.coerceAtLeast(0.18f)),
                 errorText = Color(0xFFB3261E),
                 errorBackground = Color(0xFFFFEDEA).copy(alpha = 0.94f),
                 errorBackgroundStrong = Color(0xFFFFDAD6).copy(alpha = 0.96f),
-                userBubbleBackground = Color(0xFFE4EEF7).copy(alpha = 0.98f),
-                characterBubbleBackground = Color(0xFFFFF7E8).copy(alpha = 0.98f),
-                narrationBubbleBackground = Color.White.copy(alpha = 0.94f),
+                userBubbleBackground = skinSpec.userBubble,
+                characterBubbleBackground = skinSpec.characterBubble,
+                narrationBubbleBackground = skinSpec.narrationBubble.copy(alpha = skinSpec.narrationBubble.alpha.coerceAtLeast(0.82f)),
             )
         }
         ImmersiveRoleplayColors(
             textPrimary = palette.onGlass,
+            userText = palette.onGlass,
             textMuted = palette.onGlassMuted,
             characterAccent = palette.characterAccent,
             userAccent = palette.userAccent,

@@ -85,16 +85,13 @@ import com.example.myapplication.ui.component.roleplay.RoleplayEmotionChip
 import com.example.myapplication.ui.component.roleplay.RoleplayInputBar
 import com.example.myapplication.ui.component.roleplay.RoleplayMessageItem
 import com.example.myapplication.ui.component.roleplay.RoleplayMessageBubbleMode
+import com.example.myapplication.ui.component.roleplay.rememberRoleplayNoBackgroundSkinSpec
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 import kotlinx.coroutines.launch
 
-private val OnlineFallbackCard = Color(0xFFF5F7FA)
-private val OnlineTextPrimary = Color(0xFF1F2430)
-private val OnlineMuted = Color(0xFF7F8A9A)
 private val OnlineAccent = Color(0xFF5B91D7)
-private val OnlineUserAccent = Color(0xFF8BC0FF)
 private val OnlineGiftAccent = Color(0xFFE77F93)
 private val OnlineTaskAccent = Color(0xFFD78B31)
 private val OnlinePunishAccent = Color(0xFFD55C73)
@@ -152,7 +149,11 @@ internal fun RoleplayOnlinePhoneContent(
         backdropState = backdropState,
         immersiveMode = immersiveMode,
     )
-    val colors = rememberOnlinePhoneColors(backdropState)
+    val colors = rememberOnlinePhoneColors(
+        backdropState = backdropState,
+        noBackgroundSkin = settings.roleplayNoBackgroundSkin,
+    )
+    val noBackgroundSkinSpec = rememberRoleplayNoBackgroundSkinSpec(settings.roleplayNoBackgroundSkin)
     val palette = backdropState.palette
     val statusBarTopPadding = if (immersiveMode == RoleplayImmersiveMode.HIDE_SYSTEM_BARS) {
         0.dp
@@ -324,6 +325,7 @@ internal fun RoleplayOnlinePhoneContent(
         RoleplaySceneBackground(
             backdropState = backdropState,
             modifier = Modifier.fillMaxSize(),
+            fallbackBackgroundColor = noBackgroundSkinSpec.background.takeIf { !backdropState.hasImage },
         )
         Box(
             modifier = Modifier
@@ -519,6 +521,7 @@ internal fun RoleplayOnlinePhoneContent(
                         onConfirmTransferReceipt = onConfirmTransferReceipt,
                         onOpenVideoCall = onOpenVideoCall,
                         bubbleMode = RoleplayMessageBubbleMode.ONLINE_PHONE,
+                        noBackgroundSkin = settings.roleplayNoBackgroundSkin,
                     )
                     }
                 }
@@ -872,37 +875,40 @@ private fun formatOnlineTime(timestamp: Long): String {
 @Composable
 private fun rememberOnlinePhoneColors(
     backdropState: ImmersiveBackdropState,
+    noBackgroundSkin: com.example.myapplication.model.RoleplayNoBackgroundSkinSettings,
 ): ImmersiveRoleplayColors {
     val palette = backdropState.palette
     val hasImage = backdropState.hasImage
-    return remember(palette, hasImage) {
+    val skinSpec = rememberRoleplayNoBackgroundSkinSpec(noBackgroundSkin)
+    return remember(palette, hasImage, skinSpec) {
         ImmersiveRoleplayColors(
-            textPrimary = if (hasImage) palette.onGlass else OnlineTextPrimary,
-            textMuted = if (hasImage) palette.onGlassMuted else OnlineMuted,
-            characterAccent = if (hasImage) palette.characterAccent else OnlineAccent,
-            userAccent = if (hasImage) palette.userAccent else OnlineUserAccent,
-            thoughtText = if (hasImage) palette.thoughtText else OnlineMuted,
+            textPrimary = if (hasImage) palette.onGlass else skinSpec.characterText,
+            userText = if (hasImage) palette.onGlass else skinSpec.userText,
+            textMuted = if (hasImage) palette.onGlassMuted else skinSpec.mutedText,
+            characterAccent = if (hasImage) palette.characterAccent else skinSpec.accent,
+            userAccent = if (hasImage) palette.userAccent else skinSpec.userAccent,
+            thoughtText = if (hasImage) palette.thoughtText else skinSpec.mutedText,
             panelBackground = if (hasImage) {
                 palette.panelTintStrong.copy(alpha = 0.22f)
             } else {
-                OnlineFallbackCard.copy(alpha = 0.86f)
+                skinSpec.panel.copy(alpha = skinSpec.panel.alpha.coerceAtLeast(0.86f))
             },
             panelBackgroundStrong = if (hasImage) {
                 palette.readingSurface.copy(alpha = 0.30f)
             } else {
-                OnlineFallbackCard.copy(alpha = 0.94f)
+                skinSpec.panelStrong.copy(alpha = skinSpec.panelStrong.alpha.coerceAtLeast(0.94f))
             },
             panelBorder = if (hasImage) {
                 palette.panelBorder.copy(alpha = 0.28f)
             } else {
-                OnlineMuted.copy(alpha = 0.22f)
+                skinSpec.border.copy(alpha = skinSpec.border.alpha.coerceAtLeast(0.22f))
             },
             errorText = Color(0xFFB3261E),
             errorBackground = Color(0xFFFFE9E8).copy(alpha = if (hasImage) 0.74f else 1f),
             errorBackgroundStrong = Color(0xFFFFDAD6).copy(alpha = if (hasImage) 0.86f else 1f),
-            userBubbleBackground = if (hasImage) palette.userAccent.copy(alpha = 0.12f) else OnlineUserAccent.copy(alpha = 0.22f),
-            characterBubbleBackground = if (hasImage) palette.readingSurface.copy(alpha = 0.16f) else OnlineFallbackCard.copy(alpha = 0.94f),
-            narrationBubbleBackground = if (hasImage) palette.readingSurface.copy(alpha = 0.10f) else OnlineFallbackCard.copy(alpha = 0.72f),
+            userBubbleBackground = if (hasImage) palette.userAccent.copy(alpha = 0.12f) else skinSpec.userBubble,
+            characterBubbleBackground = if (hasImage) palette.readingSurface.copy(alpha = 0.16f) else skinSpec.characterBubble,
+            narrationBubbleBackground = if (hasImage) palette.readingSurface.copy(alpha = 0.10f) else skinSpec.narrationBubble.copy(alpha = skinSpec.narrationBubble.alpha.coerceAtLeast(0.72f)),
         )
     }
 }

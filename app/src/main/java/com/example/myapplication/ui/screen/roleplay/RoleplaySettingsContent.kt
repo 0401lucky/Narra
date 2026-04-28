@@ -41,6 +41,7 @@ import com.example.myapplication.model.RoleplayContextStatus
 import com.example.myapplication.model.RoleplayImmersiveMode
 import com.example.myapplication.model.RoleplayInteractionMode
 import com.example.myapplication.model.RoleplayLineHeightScale
+import com.example.myapplication.model.RoleplayNoBackgroundSkinSettings
 import com.example.myapplication.model.RoleplayScenario
 import com.example.myapplication.ui.component.NarraTextButton
 import com.example.myapplication.ui.component.roleplay.ImmersiveBackdropState
@@ -85,6 +86,7 @@ internal fun RoleplaySettingsContent(
     onUpdateRoleplayImmersiveMode: (RoleplayImmersiveMode) -> Unit,
     onUpdateRoleplayHighContrast: (Boolean) -> Unit,
     onUpdateRoleplayLineHeightScale: (RoleplayLineHeightScale) -> Unit,
+    onUpdateRoleplayNoBackgroundSkin: (RoleplayNoBackgroundSkinSettings) -> Unit,
     onOpenProviderDetail: (String) -> Unit,
     onOpenConnectionSettings: () -> Unit,
     onOpenAssistantPrompt: () -> Unit,
@@ -129,6 +131,7 @@ internal fun RoleplaySettingsContent(
         onUpdateRoleplayImmersiveMode = onUpdateRoleplayImmersiveMode,
         onUpdateRoleplayHighContrast = onUpdateRoleplayHighContrast,
         onUpdateRoleplayLineHeightScale = onUpdateRoleplayLineHeightScale,
+        onUpdateRoleplayNoBackgroundSkin = onUpdateRoleplayNoBackgroundSkin,
         onOpenProviderDetail = onOpenProviderDetail,
         onOpenConnectionSettings = onOpenConnectionSettings,
         onOpenAssistantPrompt = onOpenAssistantPrompt,

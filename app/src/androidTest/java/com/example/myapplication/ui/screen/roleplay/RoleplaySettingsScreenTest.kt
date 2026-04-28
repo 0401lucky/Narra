@@ -60,6 +60,7 @@ class RoleplaySettingsScreenTest {
                 onUpdateRoleplayImmersiveMode = {},
                 onUpdateRoleplayHighContrast = {},
                 onUpdateRoleplayLineHeightScale = {},
+                onUpdateRoleplayNoBackgroundSkin = {},
                 onSelectProvider = {},
                 onSelectModel = { _, _ -> },
                 onOpenProviderDetail = {},

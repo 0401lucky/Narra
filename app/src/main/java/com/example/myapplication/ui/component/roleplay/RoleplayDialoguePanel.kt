@@ -71,6 +71,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import com.example.myapplication.model.RoleplayContentType
 import com.example.myapplication.model.RoleplayMessageUiModel
+import com.example.myapplication.model.RoleplayNoBackgroundSkinSettings
 import com.example.myapplication.model.RoleplaySpeaker
 import com.example.myapplication.model.RoleplaySuggestionUiModel
 import com.example.myapplication.R
@@ -105,9 +106,10 @@ internal fun RoleplayDialoguePanel(
     modifier: Modifier = Modifier,
     onCancel: (() -> Unit)? = null,
     lineHeightScale: Float = 1.0f,
+    noBackgroundSkin: RoleplayNoBackgroundSkinSettings = RoleplayNoBackgroundSkinSettings(),
     onToggleTopBar: () -> Unit = {},
 ) {
-    val colors = rememberImmersiveRoleplayColors(backdropState)
+    val colors = rememberImmersiveRoleplayColors(backdropState, noBackgroundSkin)
     val storyMessages = messages.filter { it.contentType != RoleplayContentType.SYSTEM }
     val listState = rememberLazyListState()
     LaunchedEffect(
@@ -229,6 +231,7 @@ internal fun RoleplayDialoguePanel(
                             onEditUserMessage = onEditUserMessage,
                             onConfirmTransferReceipt = onConfirmTransferReceipt,
                             lineHeightScale = lineHeightScale,
+                            noBackgroundSkin = noBackgroundSkin,
                             modifier = Modifier.animateItem(
                                 fadeInSpec = androidx.compose.animation.core.tween(durationMillis = 240),
                                 fadeOutSpec = androidx.compose.animation.core.tween(durationMillis = 160),

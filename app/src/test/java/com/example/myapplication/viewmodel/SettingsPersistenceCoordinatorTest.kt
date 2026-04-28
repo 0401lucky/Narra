@@ -8,6 +8,8 @@ import com.example.myapplication.model.ProviderFunction
 import com.example.myapplication.model.ProviderSettings
 import com.example.myapplication.model.RoleplayImmersiveMode
 import com.example.myapplication.model.RoleplayLineHeightScale
+import com.example.myapplication.model.RoleplayNoBackgroundSkinPreset
+import com.example.myapplication.model.RoleplayNoBackgroundSkinSettings
 import com.example.myapplication.model.ScreenTranslationSettings
 import com.example.myapplication.model.SearchSettings
 import com.example.myapplication.model.SearchSourceConfig
@@ -56,6 +58,10 @@ class SettingsPersistenceCoordinatorTest {
             roleplayImmersiveMode = RoleplayImmersiveMode.HIDE_SYSTEM_BARS,
             roleplayHighContrast = true,
             roleplayLineHeightScale = RoleplayLineHeightScale.RELAXED,
+            roleplayNoBackgroundSkin = RoleplayNoBackgroundSkinSettings(
+                preset = RoleplayNoBackgroundSkinPreset.IMESSAGE,
+                maxWidthPercent = 76,
+            ),
             screenTranslationSettings = ScreenTranslationSettings(
                 serviceEnabled = true,
                 targetLanguage = "日语",
@@ -92,6 +98,8 @@ class SettingsPersistenceCoordinatorTest {
         assertTrue(editor.savedRoleplayHighContrast)
         assertFalse(editor.savedShowOnlineRoleplayNarration)
         assertEquals(RoleplayLineHeightScale.RELAXED, editor.savedRoleplayLineHeightScale)
+        assertEquals(RoleplayNoBackgroundSkinPreset.IMESSAGE, editor.savedRoleplayNoBackgroundSkin.preset)
+        assertEquals(76, editor.savedRoleplayNoBackgroundSkin.maxWidthPercent)
         assertEquals("日语", editor.savedScreenTranslationSettings.targetLanguage)
         assertTrue(editor.savedScreenTranslationSettings.serviceEnabled)
         assertEquals(6, editor.savedSearchSettings.defaultResultCount)
@@ -256,6 +264,7 @@ class SettingsPersistenceCoordinatorTest {
         var savedRoleplayImmersiveMode: RoleplayImmersiveMode = RoleplayImmersiveMode.EDGE_TO_EDGE
         var savedRoleplayHighContrast: Boolean = false
         var savedRoleplayLineHeightScale: RoleplayLineHeightScale = RoleplayLineHeightScale.NORMAL
+        var savedRoleplayNoBackgroundSkin: RoleplayNoBackgroundSkinSettings = RoleplayNoBackgroundSkinSettings()
         var savedScreenTranslationSettings: ScreenTranslationSettings = ScreenTranslationSettings()
         var savedSearchSettings: SearchSettings = SearchSettings()
         var savedDisplayName: String = ""
@@ -300,6 +309,7 @@ class SettingsPersistenceCoordinatorTest {
             roleplayImmersiveMode: RoleplayImmersiveMode,
             roleplayHighContrast: Boolean,
             roleplayLineHeightScale: RoleplayLineHeightScale,
+            roleplayNoBackgroundSkin: RoleplayNoBackgroundSkinSettings,
         ) {
             savedThemeMode = themeMode
             savedMessageTextScale = messageTextScale
@@ -317,6 +327,7 @@ class SettingsPersistenceCoordinatorTest {
             savedRoleplayImmersiveMode = roleplayImmersiveMode
             savedRoleplayHighContrast = roleplayHighContrast
             savedRoleplayLineHeightScale = roleplayLineHeightScale
+            savedRoleplayNoBackgroundSkin = roleplayNoBackgroundSkin
         }
 
         override suspend fun saveScreenTranslationSettings(settings: ScreenTranslationSettings) {

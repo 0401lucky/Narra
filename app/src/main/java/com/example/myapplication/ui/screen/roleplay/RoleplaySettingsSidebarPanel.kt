@@ -65,6 +65,7 @@ import com.example.myapplication.model.RoleplayContextStatus
 import com.example.myapplication.model.RoleplayImmersiveMode
 import com.example.myapplication.model.RoleplayInteractionMode
 import com.example.myapplication.model.RoleplayLineHeightScale
+import com.example.myapplication.model.RoleplayNoBackgroundSkinSettings
 import com.example.myapplication.model.RoleplayScenario
 import com.example.myapplication.roleplay.RoleplayConversationSupport
 import com.example.myapplication.ui.component.AssistantAvatar
@@ -120,6 +121,7 @@ internal fun RoleplaySettingsSidebarContent(
     onUpdateRoleplayImmersiveMode: (RoleplayImmersiveMode) -> Unit,
     onUpdateRoleplayHighContrast: (Boolean) -> Unit,
     onUpdateRoleplayLineHeightScale: (RoleplayLineHeightScale) -> Unit,
+    onUpdateRoleplayNoBackgroundSkin: (RoleplayNoBackgroundSkinSettings) -> Unit,
     onOpenProviderDetail: (String) -> Unit,
     onOpenConnectionSettings: () -> Unit,
     onOpenAssistantPrompt: () -> Unit,
@@ -281,17 +283,11 @@ internal fun RoleplaySettingsSidebarContent(
             verticalArrangement = Arrangement.spacedBy(16.dp),
         ) {
             item {
-                DetailIntroCard(
-                    backdropState = backdropState,
-                    title = "主题",
-                    summary = "这里整理沉浸模式、对比度和长文阅读节奏，风格上更接近你给我看的那种浅色大卡片分组。",
-                )
-            }
-            item {
-                RoleplaySettingsReadabilitySection(
+                RoleplayNoBackgroundThemeSection(
                     backdropState = backdropState,
                     settings = settings,
                     systemHighContrastEnabled = systemHighContrastEnabled,
+                    onUpdateRoleplayNoBackgroundSkin = onUpdateRoleplayNoBackgroundSkin,
                     onUpdateRoleplayImmersiveMode = onUpdateRoleplayImmersiveMode,
                     onUpdateRoleplayHighContrast = onUpdateRoleplayHighContrast,
                     onUpdateRoleplayLineHeightScale = onUpdateRoleplayLineHeightScale,
@@ -462,7 +458,7 @@ private fun RoleplaySettingsMainPanel(
             ImmersiveSettingsCard(backdropState) {
                 SummaryLinkRow(
                     title = "主题",
-                    summary = roleplayImmersiveModeLabel(settings.roleplayImmersiveMode),
+                    summary = "${settings.roleplayNoBackgroundSkin.preset.displayName} · ${roleplayImmersiveModeLabel(settings.roleplayImmersiveMode)}",
                     icon = Icons.Default.Style,
                     onClick = { onNavigateToPage(RoleplaySettingsPanelPage.THEME) },
                 )

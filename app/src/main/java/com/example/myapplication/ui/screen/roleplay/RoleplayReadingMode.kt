@@ -14,6 +14,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -37,8 +38,6 @@ import com.example.myapplication.model.RoleplayContentType
 import com.example.myapplication.model.RoleplayMessageUiModel
 import com.example.myapplication.model.RoleplaySpeaker
 import com.example.myapplication.ui.component.SpecialPlayCard
-import com.example.myapplication.ui.component.roleplay.GlassTextShadow
-import com.example.myapplication.ui.component.roleplay.GlassTextShadowStrong
 import com.example.myapplication.ui.component.roleplay.ImmersiveBackdropState
 import com.example.myapplication.ui.component.roleplay.ImmersiveReadingGlassSurface
 import com.example.myapplication.ui.component.roleplay.ImmersiveReadingGlassVariant
@@ -143,9 +142,7 @@ fun RoleplayReadingMode(
                             ) {
                                 Text(
                                     text = stringResource(id = R.string.roleplay_reading_mode_title),
-                                    style = MaterialTheme.typography.titleLarge.copy(
-                                        shadow = GlassTextShadowStrong,
-                                    ),
+                                    style = MaterialTheme.typography.titleLarge,
                                     fontWeight = FontWeight.ExtraBold,
                                     color = palette.onGlass,
                                 )
@@ -153,9 +150,7 @@ fun RoleplayReadingMode(
                                     text = scenarioTitle.ifBlank {
                                         stringResource(id = R.string.roleplay_story_recap)
                                     },
-                                    style = MaterialTheme.typography.bodyMedium.copy(
-                                        shadow = GlassTextShadow,
-                                    ),
+                                    style = MaterialTheme.typography.bodyMedium,
                                     color = palette.onGlassMuted,
                                 )
                                 ReadingModeMetaChip(
@@ -186,9 +181,7 @@ fun RoleplayReadingMode(
                             ) {
                                 Text(
                                     text = stringResource(id = R.string.roleplay_no_story_content),
-                                    style = MaterialTheme.typography.bodyLarge.copy(
-                                        shadow = GlassTextShadow,
-                                    ),
+                                    style = MaterialTheme.typography.bodyLarge,
                                     color = palette.onGlassMuted.copy(alpha = 0.78f),
                                 )
                             }
@@ -277,7 +270,6 @@ private fun ThoughtReadingBlock(
                             fontSize = 15.sp,
                             lineHeight = 26.sp * lineHeightScale,
                             letterSpacing = 0.3.sp,
-                            shadow = GlassTextShadow,
                         ),
                         color = backdropState.palette.thoughtText,
                     )
@@ -313,7 +305,6 @@ private fun NarrationReadingBlock(
                     fontSize = 16.sp,
                     lineHeight = 30.sp * lineHeightScale,
                     letterSpacing = 0.3.sp,
-                    shadow = GlassTextShadow,
                 ),
                 color = backdropState.palette.onGlassMuted,
             )
@@ -330,17 +321,13 @@ private fun DialogueReadingBlock(
     val isUser = message.speaker == RoleplaySpeaker.USER
     val palette = backdropState.palette
     val nameColor = if (isUser) palette.userAccent else palette.characterAccent
-    Box(
+    androidx.compose.foundation.layout.BoxWithConstraints(
         modifier = Modifier.fillMaxWidth(),
         contentAlignment = if (isUser) Alignment.CenterEnd else Alignment.CenterStart,
     ) {
         ImmersiveReadingGlassSurface(
             backdropState = backdropState,
-            modifier = if (isUser) {
-                Modifier.fillMaxWidth(0.82f)
-            } else {
-                Modifier.fillMaxWidth(0.9f)
-            },
+            modifier = Modifier.widthIn(max = maxWidth * if (isUser) 0.82f else 0.9f),
             shape = RoundedCornerShape(22.dp),
             variant = ImmersiveReadingGlassVariant.DIALOGUE,
             overlayColor = if (isUser) {
@@ -359,9 +346,7 @@ private fun DialogueReadingBlock(
                 ) {
                     Text(
                         text = message.speakerName,
-                        style = MaterialTheme.typography.labelLarge.copy(
-                            shadow = GlassTextShadowStrong,
-                        ),
+                        style = MaterialTheme.typography.labelLarge,
                         fontWeight = FontWeight.Bold,
                         color = nameColor,
                     )
@@ -394,7 +379,6 @@ private fun DialogueReadingBlock(
                                 fontSize = 16.sp,
                                 lineHeight = 30.sp * lineHeightScale,
                                 letterSpacing = 0.3.sp,
-                                shadow = GlassTextShadow,
                             ),
                             color = palette.onGlass,
                         )
@@ -486,9 +470,7 @@ private fun ReadingModeMetaChip(
         Text(
             text = text,
             modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
-            style = MaterialTheme.typography.labelMedium.copy(
-                shadow = GlassTextShadow,
-            ),
+            style = MaterialTheme.typography.labelMedium,
             color = backdropState.palette.onGlass,
         )
     }
