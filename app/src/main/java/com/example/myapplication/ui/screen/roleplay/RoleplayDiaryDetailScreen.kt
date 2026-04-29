@@ -18,6 +18,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowLeft
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
+import androidx.compose.material.icons.filled.Mail
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
@@ -63,6 +64,7 @@ fun RoleplayDiaryDetailScreen(
     settings: AppSettings,
     diaryEntries: List<RoleplayDiaryEntry>,
     entryId: String,
+    onOpenMailbox: () -> Unit,
     onNavigateBack: () -> Unit,
 ) {
     if (scenario == null) {
@@ -203,6 +205,13 @@ fun RoleplayDiaryDetailScreen(
                                     fontWeight = FontWeight.Medium,
                                 )
                             }
+                        }
+                        NarraIconButton(onClick = onOpenMailbox) {
+                            Icon(
+                                imageVector = Icons.Default.Mail,
+                                contentDescription = "信箱",
+                                tint = palette.onGlass,
+                            )
                         }
                     }
                 }

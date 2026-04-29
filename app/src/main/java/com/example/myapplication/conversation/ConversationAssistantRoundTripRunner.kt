@@ -45,6 +45,8 @@ data class AssistantRoundTripRequest(
     val loadingMessage: ChatMessage,
     val buildFinalMessages: (ChatMessage) -> List<ChatMessage>,
     val systemPrompt: String,
+    val statusCardsEnabled: Boolean = true,
+    val hideStatusBlocksInBubble: Boolean = true,
     val streamReply: suspend (requestMessages: List<ChatMessage>, systemPrompt: String) -> Unit,
     val currentPayload: () -> StreamedAssistantPayload,
     val onCompleted: (
@@ -74,6 +76,8 @@ class ConversationAssistantRoundTripRunner(
             val parsedOutput = aiGateway.parseAssistantSpecialOutput(
                 content = payload.content,
                 existingParts = payload.parts,
+                statusCardsEnabled = request.statusCardsEnabled,
+                hideStatusBlocksInBubble = request.hideStatusBlocksInBubble,
             )
             val completedAssistant = request.onCompleted(
                 payload,

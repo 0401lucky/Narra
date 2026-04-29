@@ -1,14 +1,19 @@
 package com.example.myapplication.ui.navigation
 
+import android.net.Uri
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavGraphBuilder
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.navigation
 import com.example.myapplication.di.AppGraph
+import com.example.myapplication.ui.screen.settings.PresetEditScreen
+import com.example.myapplication.ui.screen.settings.PresetListScreen
 import com.example.myapplication.ui.screen.settings.SettingsScreen
 import com.example.myapplication.ui.screen.settings.UserPersonaMasksScreen
+import com.example.myapplication.ui.screen.settings.copyPresetForUser
 import com.example.myapplication.viewmodel.AppUpdateViewModel
 import com.example.myapplication.viewmodel.SettingsViewModel
 import com.example.myapplication.viewmodel.updateAutoCollapseThinking
@@ -19,6 +24,7 @@ import com.example.myapplication.viewmodel.updateMessageTextScale
 import com.example.myapplication.viewmodel.updateReasoningExpandedByDefault
 import com.example.myapplication.viewmodel.updateShowThinkingContent
 import com.example.myapplication.viewmodel.updateThemeMode
+import kotlinx.coroutines.launch
 
 internal fun NavGraphBuilder.registerSettingsNavGraph(
     appGraph: AppGraph,
@@ -67,8 +73,8 @@ internal fun NavGraphBuilder.registerSettingsNavGraph(
                         launchSingleTop = true
                     }
                 },
-                onOpenConnectionSettings = {
-                    navController.navigate(AppRoutes.SETTINGS_CONNECTION) {
+                onOpenPresetSettings = {
+                    navController.navigate(AppRoutes.SETTINGS_PRESETS) {
                         launchSingleTop = true
                     }
                 },
@@ -137,6 +143,75 @@ internal fun NavGraphBuilder.registerSettingsNavGraph(
             )
         }
 
+        composable(AppRoutes.SETTINGS_PRESETS) {
+            val storedSettings by settingsViewModel.storedSettings.collectAsStateWithLifecycle()
+            val presets by appGraph.presetRepository.observePresets().collectAsStateWithLifecycle(emptyList())
+            val coroutineScope = rememberCoroutineScope()
+            PresetListScreen(
+                presets = presets,
+                defaultPresetId = storedSettings.defaultPresetId,
+                onOpenPreset = { presetId ->
+                    navController.navigate(AppRoutes.settingsPresetEdit(presetId)) {
+                        launchSingleTop = true
+                    }
+                },
+                onSetDefault = settingsViewModel::saveDefaultPresetId,
+                onCopyPreset = { preset ->
+                    coroutineScope.launch {
+                        val copied = copyPresetForUser(preset)
+                        appGraph.presetRepository.upsertPreset(copied)
+                        navController.navigate(AppRoutes.settingsPresetEdit(copied.id)) {
+                            launchSingleTop = true
+                        }
+                    }
+                },
+                onDeletePreset = { presetId ->
+                    coroutineScope.launch {
+                        appGraph.presetRepository.deleteCustomPreset(presetId)
+                    }
+                },
+                onNavigateBack = { navController.popBackStack() },
+            )
+        }
+
+        composable(AppRoutes.SETTINGS_PRESET_EDIT) { backStackEntry ->
+            val storedSettings by settingsViewModel.storedSettings.collectAsStateWithLifecycle()
+            val presets by appGraph.presetRepository.observePresets().collectAsStateWithLifecycle(emptyList())
+            val coroutineScope = rememberCoroutineScope()
+            val presetId = backStackEntry.arguments
+                ?.getString("presetId")
+                ?.let(Uri::decode)
+                .orEmpty()
+            val preset = presets.firstOrNull { it.id == presetId } ?: return@composable
+            PresetEditScreen(
+                preset = preset,
+                isGlobalDefault = storedSettings.defaultPresetId == preset.id,
+                onSavePreset = { updated ->
+                    coroutineScope.launch {
+                        appGraph.presetRepository.upsertPreset(updated)
+                        navController.popBackStack()
+                    }
+                },
+                onCopyPreset = { source ->
+                    coroutineScope.launch {
+                        val copied = copyPresetForUser(source)
+                        appGraph.presetRepository.upsertPreset(copied)
+                        navController.navigate(AppRoutes.settingsPresetEdit(copied.id)) {
+                            launchSingleTop = true
+                        }
+                    }
+                },
+                onDeletePreset = { deletingPresetId ->
+                    coroutineScope.launch {
+                        appGraph.presetRepository.deleteCustomPreset(deletingPresetId)
+                        navController.popBackStack(AppRoutes.SETTINGS_PRESETS, false)
+                    }
+                },
+                onSetDefault = settingsViewModel::saveDefaultPresetId,
+                onNavigateBack = { navController.popBackStack() },
+            )
+        }
+
         composable(AppRoutes.SETTINGS_USER_MASKS) {
             val storedSettings by settingsViewModel.storedSettings.collectAsStateWithLifecycle()
             UserPersonaMasksScreen(
@@ -148,7 +223,7 @@ internal fun NavGraphBuilder.registerSettingsNavGraph(
             )
         }
 
-        // ── 提供商、模型、连接、搜索工具、翻译、更新 ──
+        // ── 提供商、模型、搜索工具、翻译、更新 ──
         registerSettingsProviderRoutes(
             navController = navController,
             settingsViewModel = settingsViewModel,

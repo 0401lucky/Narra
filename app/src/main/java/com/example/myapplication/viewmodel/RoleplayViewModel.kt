@@ -44,10 +44,12 @@ import com.example.myapplication.model.ChatSpecialPlayDraft
 import com.example.myapplication.model.ChatStreamEvent
 import com.example.myapplication.model.Conversation
 import com.example.myapplication.model.GatewayToolingOptions
+import com.example.myapplication.model.MemoryEntry
 import com.example.myapplication.model.MemoryScopeType
 import com.example.myapplication.model.MessageRole
 import com.example.myapplication.model.MessageStatus
 import com.example.myapplication.model.PromptMode
+import com.example.myapplication.model.ProviderFunction
 import com.example.myapplication.model.RoleplayDiaryDraft
 import com.example.myapplication.model.RoleplayOnlineEventKind
 import com.example.myapplication.model.RoleplayOutputFormat
@@ -75,6 +77,7 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOf
@@ -303,6 +306,7 @@ class RoleplayViewModel(
         )
         observePendingMemoryProposal()
         observeMemoryProposalHistory()
+        observeMemoryOverview()
         RoleplayObservationSupport.observeDiaryEntries(
             scope = viewModelScope,
             roleplayRepository = roleplayRepository,
@@ -876,30 +880,109 @@ class RoleplayViewModel(
 
     fun refreshCurrentConversationSummary() {
         val state = _uiState.value
-        val session = state.currentSession ?: return
-        val scenario = state.currentScenario ?: return
+        if (state.isRefreshingConversationSummary) {
+            return
+        }
+        val session = state.currentSession
+        val scenario = state.currentScenario
+        if (session == null || scenario == null) {
+            _uiState.update { current ->
+                RoleplayStateSupport.applyErrorMessage(current, "当前聊天不存在，无法总结记忆")
+            }
+            return
+        }
         val assistant = state.currentAssistant ?: RoleplayConversationSupport.resolveAssistant(
             settings = state.settings,
             assistantId = scenario.assistantId,
         )
+        val summaryReady = state.settings.resolveFunctionProvider(ProviderFunction.TITLE_SUMMARY)
+            ?.hasBaseCredentials() == true &&
+            state.settings.resolveFunctionModel(ProviderFunction.TITLE_SUMMARY).isNotBlank()
+        val memoryReady = assistant?.memoryEnabled == true &&
+            state.settings.resolveFunctionProvider(ProviderFunction.MEMORY)?.hasBaseCredentials() == true &&
+            state.settings.resolveFunctionModel(ProviderFunction.MEMORY).isNotBlank()
+        if (!summaryReady && !memoryReady) {
+            _uiState.update { current ->
+                RoleplayStateSupport.applyErrorMessage(current, "请先配置摘要或记忆模型")
+            }
+            return
+        }
+        val completedMessages = currentRawMessages.value.filter { it.status == MessageStatus.COMPLETED }
+        if (completedMessages.isEmpty()) {
+            _uiState.update { current ->
+                RoleplayStateSupport.applyErrorMessage(current, "暂无可总结的已完成消息")
+            }
+            return
+        }
         viewModelScope.launch {
-            val result = runCatching {
-                contextUpdateSupport.updateConversationSummary(
-                    conversationId = session.conversationId,
-                    completedMessages = currentRawMessages.value.filter { it.status == MessageStatus.COMPLETED },
-                    settings = state.settings,
-                    assistant = assistant,
-                    scenario = scenario,
-                    summaryTriggerMessageCount = SUMMARY_TRIGGER_MESSAGE_COUNT,
-                    summaryRecentMessageWindow = resolveSummaryRecentWindow(assistant),
-                    summaryMinCoveredMessageCount = SUMMARY_MIN_COVERED_MESSAGE_COUNT,
-                    maxSummaryInputLength = MAX_SUMMARY_INPUT_LENGTH,
-                    forceRefresh = true,
+            _uiState.update { current ->
+                current.copy(
+                    isRefreshingConversationSummary = true,
+                    errorMessage = null,
+                    noticeMessage = "正在总结并提炼记忆…",
                 )
-            }.getOrDefault(SummaryUpdateResult())
-            if (result.updated && _uiState.value.currentSession?.conversationId == session.conversationId) {
+            }
+            runCatching {
+                val summaryResult = if (summaryReady) {
+                    contextUpdateSupport.updateConversationSummary(
+                        conversationId = session.conversationId,
+                        completedMessages = completedMessages,
+                        settings = state.settings,
+                        assistant = assistant,
+                        scenario = scenario,
+                        summaryTriggerMessageCount = SUMMARY_TRIGGER_MESSAGE_COUNT,
+                        summaryRecentMessageWindow = resolveSummaryRecentWindow(assistant),
+                        summaryMinCoveredMessageCount = SUMMARY_MIN_COVERED_MESSAGE_COUNT,
+                        maxSummaryInputLength = MAX_SUMMARY_INPUT_LENGTH,
+                        forceRefresh = true,
+                    )
+                } else {
+                    SummaryUpdateResult()
+                }
+                val memoryUpdated = if (memoryReady) {
+                    contextUpdateSupport.updateRoleplayMemories(
+                        conversationId = session.conversationId,
+                        completedMessages = completedMessages,
+                        settings = state.settings,
+                        assistant = assistant,
+                        scenario = scenario,
+                        recentMessageWindow = state.settings.memoryAutoSummaryEvery
+                            .takeIf { it > 0 }
+                            ?: MANUAL_MEMORY_MESSAGE_WINDOW,
+                        sceneMemoryMaxItems = ROLEPLAY_SCENE_MEMORY_MAX_ITEMS,
+                        maxMemoryInputLength = MAX_MEMORY_INPUT_LENGTH,
+                    )
+                } else {
+                    false
+                }
+                summaryResult to memoryUpdated
+            }.onSuccess { (summaryResult, memoryUpdated) ->
+                if (_uiState.value.currentSession?.conversationId != session.conversationId) {
+                    _uiState.update { current -> current.copy(isRefreshingConversationSummary = false) }
+                    return@onSuccess
+                }
+                val notice = when {
+                    summaryResult.updated && memoryUpdated -> "摘要已刷新，记忆已提炼"
+                    summaryResult.updated -> "摘要已刷新，覆盖 ${summaryResult.coveredMessageCount} 条消息"
+                    memoryUpdated -> "记忆已提炼"
+                    else -> "暂时没有可更新的摘要或记忆"
+                }
                 _uiState.update { current ->
-                    RoleplayStateSupport.applyNoticeMessage(current, "上下文摘要已刷新")
+                    RoleplayStateSupport.applyNoticeMessage(
+                        current.copy(isRefreshingConversationSummary = false),
+                        notice,
+                    )
+                }
+            }.onFailure { throwable ->
+                if (_uiState.value.currentSession?.conversationId != session.conversationId) {
+                    _uiState.update { current -> current.copy(isRefreshingConversationSummary = false) }
+                    return@onFailure
+                }
+                _uiState.update { current ->
+                    RoleplayStateSupport.applyErrorMessage(
+                        current.copy(isRefreshingConversationSummary = false),
+                        throwable.message ?: "总结记忆失败",
+                    )
                 }
             }
         }
@@ -1297,6 +1380,74 @@ class RoleplayViewModel(
         }
     }
 
+    private fun observeMemoryOverview() {
+        viewModelScope.launch {
+            combine(
+                memoryRepository.observeEntries(),
+                _uiState
+                    .map { state ->
+                        MemoryOverviewContext(
+                            assistantId = state.currentAssistant?.id.orEmpty(),
+                            useGlobalMemory = state.currentAssistant?.useGlobalMemory == true,
+                            conversationId = state.currentSession?.conversationId.orEmpty(),
+                        )
+                    }
+                    .distinctUntilChanged(),
+            ) { entries, context ->
+                MemoryOverview(
+                    longMemoryCount = entries.countLongMemoriesFor(context),
+                    sceneMemoryCount = entries.countSceneMemoriesFor(context.conversationId),
+                )
+            }
+                .distinctUntilChanged()
+                .collect { overview ->
+                    _uiState.update { current ->
+                        current.copy(
+                            longMemoryCount = overview.longMemoryCount,
+                            sceneMemoryCount = overview.sceneMemoryCount,
+                        )
+                    }
+                }
+        }
+    }
+
+    private data class MemoryOverviewContext(
+        val assistantId: String,
+        val useGlobalMemory: Boolean,
+        val conversationId: String,
+    )
+
+    private data class MemoryOverview(
+        val longMemoryCount: Int,
+        val sceneMemoryCount: Int,
+    )
+
+    private fun List<MemoryEntry>.countLongMemoriesFor(context: MemoryOverviewContext): Int {
+        if (context.assistantId.isBlank()) {
+            return 0
+        }
+        return count { entry ->
+            when (entry.scopeType) {
+                MemoryScopeType.CONVERSATION -> false
+                MemoryScopeType.GLOBAL -> context.useGlobalMemory &&
+                    (entry.characterId.isBlank() || entry.characterId == context.assistantId)
+                MemoryScopeType.ASSISTANT -> !context.useGlobalMemory &&
+                    (entry.resolvedScopeId() == context.assistantId ||
+                        (entry.scopeId.isBlank() && entry.characterId == context.assistantId))
+            }
+        }
+    }
+
+    private fun List<MemoryEntry>.countSceneMemoriesFor(conversationId: String): Int {
+        if (conversationId.isBlank()) {
+            return 0
+        }
+        return count { entry ->
+            entry.scopeType == MemoryScopeType.CONVERSATION &&
+                entry.resolvedScopeId() == conversationId
+        }
+    }
+
 
     companion object {
         private const val SUMMARY_TRIGGER_MESSAGE_COUNT = 12
@@ -1304,6 +1455,7 @@ class RoleplayViewModel(
         private const val SUMMARY_RECENT_MESSAGE_WINDOW = 8
         private const val SUMMARY_RECENT_MESSAGE_WINDOW_MIN = 4
         private const val SUGGESTION_RECENT_MESSAGE_WINDOW = 10
+        private const val MANUAL_MEMORY_MESSAGE_WINDOW = 24
         private const val MAX_SUMMARY_INPUT_LENGTH = 4_000
         private const val MAX_MEMORY_INPUT_LENGTH = 3_200
         private const val ROLEPLAY_SCENE_MEMORY_MAX_ITEMS = 12

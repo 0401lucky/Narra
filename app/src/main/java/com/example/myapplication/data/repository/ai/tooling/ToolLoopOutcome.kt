@@ -21,5 +21,6 @@ sealed interface ToolContinuation {
         val previousResponseId: String?,
         val temperature: Float? = null,
         val topP: Float? = null,
+        val maxOutputTokens: Int? = null,
     ) : ToolContinuation
 }

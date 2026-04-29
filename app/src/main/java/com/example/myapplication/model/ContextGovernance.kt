@@ -28,6 +28,7 @@ enum class ContextLogSourceType(
     SUMMARY("摘要"),
     USER_PERSONA("用户身份"),
     PHONE_CONTEXT("手机线索"),
+    PROMPT_PRESET("预设条目"),
     SYSTEM_RULE("系统规则"),
 }
 

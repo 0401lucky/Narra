@@ -30,6 +30,8 @@ interface AiSettingsEditor {
         selectedAssistantId: String,
     )
 
+    suspend fun saveDefaultPresetId(presetId: String)
+
     suspend fun saveDisplaySettings(
         themeMode: ThemeMode,
         messageTextScale: Float,
@@ -164,6 +166,10 @@ class DefaultAiSettingsEditor(
             roleplayLineHeightScale = roleplayLineHeightScale,
             roleplayNoBackgroundSkin = roleplayNoBackgroundSkin.normalized(),
         )
+    }
+
+    override suspend fun saveDefaultPresetId(presetId: String) {
+        settingsStore.saveDefaultPresetId(presetId)
     }
 
     override suspend fun saveScreenTranslationSettings(settings: ScreenTranslationSettings) {

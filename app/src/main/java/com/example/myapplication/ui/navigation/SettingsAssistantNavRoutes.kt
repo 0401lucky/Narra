@@ -49,6 +49,7 @@ internal fun NavGraphBuilder.registerSettingsAssistantRoutes(
 
     composable(AppRoutes.SETTINGS_ASSISTANT_DETAIL) { backStackEntry ->
         val storedSettings by settingsViewModel.storedSettings.collectAsStateWithLifecycle()
+        val presets by appGraph.presetRepository.observePresets().collectAsStateWithLifecycle(emptyList())
         val worldBookViewModel = rememberWorldBookViewModel(
             navController = navController,
             appGraph = appGraph,
@@ -67,6 +68,8 @@ internal fun NavGraphBuilder.registerSettingsAssistantRoutes(
 
         AssistantDetailScreen(
             assistant = assistant,
+            presets = presets,
+            globalDefaultPresetId = storedSettings.defaultPresetId,
             linkedWorldBookCount = buildWorldBookBooks(
                 worldBookState.entries.filter { entry ->
                     entry.scopeType == com.example.myapplication.model.WorldBookScopeType.ATTACHABLE &&
@@ -94,6 +97,14 @@ internal fun NavGraphBuilder.registerSettingsAssistantRoutes(
             },
             onOpenMemory = {
                 navController.navigate(AppRoutes.settingsAssistantMemory(assistant.id)) {
+                    launchSingleTop = true
+                }
+            },
+            onSelectPreset = { presetId ->
+                settingsViewModel.updateAssistant(assistant.copy(defaultPresetId = presetId))
+            },
+            onOpenPresetManager = {
+                navController.navigate(AppRoutes.SETTINGS_PRESETS) {
                     launchSingleTop = true
                 }
             },
@@ -176,16 +187,24 @@ internal fun NavGraphBuilder.registerSettingsAssistantRoutes(
         val assistant = storedSettings.resolvedAssistants().firstOrNull { it.id == assistantId } ?: return@composable
         val assistantMemories = memoryManagementState.memories.filter { entry ->
             when (entry.scopeType) {
-                com.example.myapplication.model.MemoryScopeType.GLOBAL -> assistant.useGlobalMemory
+                com.example.myapplication.model.MemoryScopeType.GLOBAL -> assistant.useGlobalMemory &&
+                    (entry.characterId.isBlank() || entry.characterId == assistant.id)
                 com.example.myapplication.model.MemoryScopeType.ASSISTANT -> {
-                    !assistant.useGlobalMemory && entry.scopeId == assistant.id
+                    !assistant.useGlobalMemory && (
+                        entry.scopeId == assistant.id ||
+                            (entry.scopeId.isBlank() && entry.characterId == assistant.id)
+                    )
                 }
-                com.example.myapplication.model.MemoryScopeType.CONVERSATION -> false
+                com.example.myapplication.model.MemoryScopeType.CONVERSATION -> entry.characterId == assistant.id
             }
+        }
+        val assistantSummaries = memoryManagementState.summaries.filter { summary ->
+            summary.assistantId == assistant.id
         }
         AssistantMemoryScreen(
             assistant = assistant,
             memories = assistantMemories,
+            summaries = assistantSummaries,
             onSaveAssistant = settingsViewModel::updateAssistant,
             onUpsertMemory = memoryManagementViewModel::upsertMemory,
             onDeleteMemory = memoryManagementViewModel::deleteMemory,

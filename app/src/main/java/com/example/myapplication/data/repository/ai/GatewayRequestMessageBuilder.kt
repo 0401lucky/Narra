@@ -9,6 +9,9 @@ import com.example.myapplication.model.ImageUrlDto
 import com.example.myapplication.model.MessageAttachment
 import com.example.myapplication.model.MessageRole
 import com.example.myapplication.model.MessageStatus
+import com.example.myapplication.model.PresetPromptRole
+import com.example.myapplication.model.PromptEnvelope
+import com.example.myapplication.model.PromptEnvelopeMessage
 import com.example.myapplication.model.PromptMode
 import com.example.myapplication.model.TextContentPartDto
 import com.example.myapplication.model.decodeOnlineThoughtText
@@ -36,6 +39,7 @@ internal object GatewayRequestMessageBuilder {
         messages: List<ChatMessage>,
         systemPrompt: String,
         promptMode: PromptMode,
+        promptEnvelope: PromptEnvelope = PromptEnvelope(),
         imagePayloadResolver: suspend (MessageAttachment) -> String,
         filePromptResolver: suspend (MessageAttachment) -> String,
     ): List<ChatMessageDto> {
@@ -50,6 +54,16 @@ internal object GatewayRequestMessageBuilder {
             if (effectiveSystemPrompt.isNotBlank()) {
                 add(ChatMessageDto(role = "system", content = effectiveSystemPrompt))
             }
+            promptEnvelope.preHistoryMessages
+                .mapNotNull(PromptEnvelopeMessage::normalized)
+                .forEach { promptMessage ->
+                    add(
+                        ChatMessageDto(
+                            role = promptMessage.role.toRequestRole(),
+                            content = promptMessage.content,
+                        ),
+                    )
+                }
             completedMessages.forEach { message ->
                 val requestContent = buildRequestContent(
                     message = message,
@@ -63,6 +77,24 @@ internal object GatewayRequestMessageBuilder {
                     ),
                 )
             }
+            promptEnvelope.postHistoryMessages
+                .mapNotNull(PromptEnvelopeMessage::normalized)
+                .forEach { promptMessage ->
+                    add(
+                        ChatMessageDto(
+                            role = promptMessage.role.toRequestRole(),
+                            content = promptMessage.content,
+                        ),
+                    )
+                }
+        }
+    }
+
+    private fun PresetPromptRole.toRequestRole(): String {
+        return when (this) {
+            PresetPromptRole.SYSTEM -> "system"
+            PresetPromptRole.USER -> "user"
+            PresetPromptRole.ASSISTANT -> "assistant"
         }
     }
 
@@ -112,6 +144,9 @@ internal object GatewayRequestMessageBuilder {
                         }
                         ChatMessagePartType.ACTION -> null
                         ChatMessagePartType.SPECIAL -> GatewaySpecialPlaySupport.buildSpecialPlayPrompt(part)
+                        ChatMessagePartType.STATUS -> part.text
+                            .takeIf { it.isNotBlank() }
+                            ?.let { status -> "【状态卡】\n$status" }
                         ChatMessagePartType.IMAGE,
                         ChatMessagePartType.FILE,
                         -> null
@@ -184,6 +219,12 @@ internal object GatewayRequestMessageBuilder {
                     ChatMessagePartType.SPECIAL -> {
                         GatewaySpecialPlaySupport.buildSpecialPlayPrompt(part)?.let { prompt ->
                             add(TextContentPartDto(text = prompt))
+                        }
+                    }
+
+                    ChatMessagePartType.STATUS -> {
+                        if (part.text.isNotBlank()) {
+                            add(TextContentPartDto(text = "【状态卡】\n${part.text}"))
                         }
                     }
                 }

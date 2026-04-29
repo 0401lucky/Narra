@@ -153,6 +153,52 @@ internal class RoleplayContextUpdateSupport(
         }
     }
 
+    suspend fun updateRoleplayMemories(
+        conversationId: String,
+        completedMessages: List<ChatMessage>,
+        settings: AppSettings,
+        assistant: Assistant?,
+        scenario: RoleplayScenario,
+        recentMessageWindow: Int,
+        sceneMemoryMaxItems: Int,
+        maxMemoryInputLength: Int,
+    ): Boolean {
+        val targetAssistant = assistant ?: return false
+        return backgroundApiMutex.withLock {
+            val updated = memoryExtractionCoordinator.updateRoleplayMemories(
+                conversationId = conversationId,
+                assistant = targetAssistant,
+                completedMessages = completedMessages,
+                settings = settings,
+                recentMessageWindow = recentMessageWindow,
+                sceneMemoryMaxItems = sceneMemoryMaxItems,
+                buildMemoryInput = { messages ->
+                    RoleplayConversationSupport.buildTranscriptInput(
+                        messages = messages,
+                        scenario = scenario,
+                        assistant = assistant,
+                        settings = settings,
+                        maxLength = maxMemoryInputLength,
+                    )
+                },
+            )
+            if (updated) {
+                refreshContextStatus(
+                    conversationId = conversationId,
+                    isContinuingSession = uiState().contextStatus.isContinuingSession,
+                )
+                refreshContextGovernance(
+                    conversationId,
+                    completedMessages,
+                    settings,
+                    assistant,
+                    scenario,
+                )
+            }
+            updated
+        }
+    }
+
     suspend fun clearConversationScopedContext(conversationId: String) {
         contextStatusCoordinator.clearConversationScopedContext(conversationId)
         pendingMemoryProposalRepository.clearConversation(conversationId)

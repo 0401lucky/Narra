@@ -9,8 +9,10 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
@@ -22,12 +24,20 @@ import androidx.compose.material.icons.automirrored.filled.MenuBook
 import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material.icons.filled.Face
 import androidx.compose.material.icons.filled.Psychology
+import androidx.compose.material.icons.filled.Tune
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -36,20 +46,30 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.example.myapplication.model.Assistant
+import com.example.myapplication.model.Preset
 import com.example.myapplication.ui.component.AssistantAvatar
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AssistantDetailScreen(
     assistant: Assistant,
+    presets: List<Preset>,
+    globalDefaultPresetId: String,
     linkedWorldBookCount: Int,
     assistantMemoryCount: Int,
     onOpenBasic: () -> Unit,
     onOpenPrompt: () -> Unit,
     onOpenExtensions: () -> Unit,
     onOpenMemory: () -> Unit,
+    onSelectPreset: (String) -> Unit,
+    onOpenPresetManager: () -> Unit,
     onNavigateBack: () -> Unit,
 ) {
     val palette = rememberSettingsPalette()
+    var showPresetSheet by rememberSaveable { mutableStateOf(false) }
+    val normalizedPresets = presets.map(Preset::normalized)
+    val activePreset = normalizedPresets.firstOrNull { it.id == assistant.defaultPresetId }
+        ?: normalizedPresets.firstOrNull { it.id == globalDefaultPresetId }
 
     Scaffold(
         topBar = {
@@ -95,6 +115,14 @@ fun AssistantDetailScreen(
                     )
                     SettingsGroupDivider()
                     AssistantEntryRow(
+                        icon = { EntryGlyph(icon = { Icon(Icons.Default.Tune, null) }) },
+                        title = "默认预设",
+                        supporting = activePreset?.name ?: "跟随全局默认",
+                        badge = if (assistant.defaultPresetId == globalDefaultPresetId) "全局" else "角色",
+                        onClick = { showPresetSheet = true },
+                    )
+                    SettingsGroupDivider()
+                    AssistantEntryRow(
                         icon = { EntryGlyph(icon = { Icon(Icons.AutoMirrored.Filled.MenuBook, null) }) },
                         title = "扩展管理",
                         badge = if (linkedWorldBookCount > 0) "$linkedWorldBookCount 项可用" else "无可用",
@@ -108,6 +136,56 @@ fun AssistantDetailScreen(
                         onClick = onOpenMemory,
                     )
                 }
+            }
+        }
+    }
+
+    if (showPresetSheet) {
+        ModalBottomSheet(
+            onDismissRequest = { showPresetSheet = false },
+            containerColor = palette.elevatedSurface,
+        ) {
+            Column(
+                modifier = Modifier.padding(horizontal = SettingsScreenPadding, vertical = 8.dp),
+                verticalArrangement = Arrangement.spacedBy(10.dp),
+            ) {
+                Text(
+                    text = "选择角色预设",
+                    style = MaterialTheme.typography.titleLarge,
+                    fontWeight = FontWeight.Bold,
+                    color = palette.title,
+                )
+                SettingsGroup {
+                    normalizedPresets.forEachIndexed { index, preset ->
+                        SettingsListRow(
+                            title = preset.name.ifBlank { "未命名预设" },
+                            supportingText = if (preset.builtIn) "内置只读" else "我的预设",
+                            highlighted = preset.id == assistant.defaultPresetId,
+                            onClick = {
+                                onSelectPreset(preset.id)
+                                showPresetSheet = false
+                            },
+                            trailingContent = {
+                                if (preset.id == assistant.defaultPresetId) {
+                                    SettingsStatusPill("当前", palette.accentSoft, palette.accent)
+                                }
+                            },
+                        )
+                        if (index != normalizedPresets.lastIndex) {
+                            SettingsGroupDivider()
+                        }
+                    }
+                }
+                TextButton(
+                    onClick = {
+                        showPresetSheet = false
+                        onOpenPresetManager()
+                    },
+                    modifier = Modifier.align(Alignment.End),
+                ) {
+                    Text("打开预设管理")
+                }
+                Spacer(modifier = Modifier.height(16.dp))
             }
         }
     }

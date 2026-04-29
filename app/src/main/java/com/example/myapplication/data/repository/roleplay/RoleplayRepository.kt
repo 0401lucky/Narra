@@ -91,6 +91,7 @@ class RoomRoleplayRepository(
     private val conversationRepository: ConversationRepository,
     private val nowProvider: () -> Long = { System.currentTimeMillis() },
     private val imageFileCleaner: suspend (String?) -> Boolean = { false },
+    private val mailboxCleanup: suspend (String) -> Unit = {},
 ) : RoleplayRepository {
     override fun observeScenarios(): Flow<List<RoleplayScenario>> {
         return roleplayDao.observeScenarios().map { scenarios ->
@@ -170,6 +171,7 @@ class RoomRoleplayRepository(
             conversationRepository.deleteConversationById(session.conversationId)
             roleplayDao.deleteOnlineMeta(session.conversationId)
             roleplayDao.deleteDiaryEntriesForConversation(session.conversationId)
+            mailboxCleanup(session.conversationId)
         }
         roleplayDao.deleteScenario(scenarioId)
         scenarioEntity?.let {
@@ -244,6 +246,7 @@ class RoomRoleplayRepository(
             conversationRepository.deleteConversationById(session.conversationId)
             roleplayDao.deleteOnlineMeta(session.conversationId)
             roleplayDao.deleteDiaryEntriesForConversation(session.conversationId)
+            mailboxCleanup(session.conversationId)
         }
         val conversation = conversationRepository.createConversation(
             assistantId = scenario.assistantId.ifBlank { DEFAULT_ASSISTANT_ID },

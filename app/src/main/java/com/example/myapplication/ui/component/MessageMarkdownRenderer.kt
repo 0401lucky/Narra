@@ -42,11 +42,13 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.isSpecified
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.myapplication.model.ChatMessagePart
 import com.example.myapplication.model.ChatMessagePartType
 import com.example.myapplication.model.MessageCitation
+import com.example.myapplication.model.specialMetadataValue
 import com.example.myapplication.model.toActionCopyText
 import com.example.myapplication.model.toMessageAttachmentOrNull
 import com.mikepenz.markdown.compose.components.MarkdownComponents
@@ -154,8 +156,165 @@ internal fun MessagePartsRenderer(
                     )
                 }
             }
+
+            ChatMessagePartType.STATUS -> {
+                StatusCardPart(
+                    part = part,
+                    contentColor = contentColor,
+                )
+            }
         }
     }
+}
+
+@Composable
+internal fun StatusCardPart(
+    part: ChatMessagePart,
+    contentColor: androidx.compose.ui.graphics.Color,
+) {
+    val rawText = part.specialMetadataValue("raw").ifBlank { part.text }.trim()
+    if (rawText.isBlank()) {
+        return
+    }
+    val title = part.specialMetadataValue("title").ifBlank { "状态" }
+    val clipboard = LocalClipboard.current
+    val context = LocalContext.current
+    val clipboardScope = rememberCoroutineScope()
+    val parsedRows = remember(rawText) { parseStatusRows(rawText) }
+    val preview = remember(rawText, parsedRows) {
+        parsedRows.firstOrNull()?.let { "${it.first}：${it.second}" }
+            ?: rawText.lineSequence().firstOrNull()?.trim().orEmpty()
+    }
+    var expanded by remember(rawText) { mutableStateOf(false) }
+    val cardColor = MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.42f)
+    val borderColor = MaterialTheme.colorScheme.secondary.copy(alpha = 0.18f)
+
+    Surface(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(top = 4.dp, bottom = 6.dp),
+        shape = RoundedCornerShape(18.dp),
+        color = cardColor,
+        border = BorderStroke(1.dp, borderColor),
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .animateContentSize()
+                .padding(horizontal = 14.dp, vertical = 12.dp),
+            verticalArrangement = Arrangement.spacedBy(10.dp),
+        ) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Column(
+                    modifier = Modifier.weight(1f),
+                    verticalArrangement = Arrangement.spacedBy(2.dp),
+                ) {
+                    Text(
+                        text = title,
+                        style = MaterialTheme.typography.labelLarge,
+                        color = MaterialTheme.colorScheme.onSecondaryContainer,
+                        fontWeight = FontWeight.SemiBold,
+                    )
+                    Text(
+                        text = preview,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = contentColor.copy(alpha = 0.74f),
+                        maxLines = if (expanded) Int.MAX_VALUE else 1,
+                    )
+                }
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(4.dp),
+                ) {
+                    NarraIconButton(
+                        onClick = {
+                            clipboardScope.copyPlainTextToClipboard(clipboard, "status-card", rawText)
+                            Toast.makeText(context, "已复制状态原文", Toast.LENGTH_SHORT).show()
+                        },
+                        modifier = Modifier.size(30.dp),
+                        colors = IconButtonDefaults.iconButtonColors(
+                            containerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.66f),
+                            contentColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                        ),
+                    ) {
+                        Icon(
+                            imageVector = Icons.Outlined.ContentCopy,
+                            contentDescription = "复制状态",
+                            modifier = Modifier.size(15.dp),
+                        )
+                    }
+                    Text(
+                        text = if (expanded) "收起" else "展开",
+                        modifier = Modifier
+                            .clickable { expanded = !expanded }
+                            .padding(horizontal = 6.dp, vertical = 5.dp),
+                        style = MaterialTheme.typography.labelMedium,
+                        color = MaterialTheme.colorScheme.primary,
+                    )
+                }
+            }
+
+            if (expanded) {
+                HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.42f))
+                if (parsedRows.isNotEmpty()) {
+                    Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                        parsedRows.forEach { (key, value) ->
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.spacedBy(10.dp),
+                            ) {
+                                Text(
+                                    text = key,
+                                    modifier = Modifier.widthIn(min = 64.dp, max = 112.dp),
+                                    style = MaterialTheme.typography.labelMedium,
+                                    color = MaterialTheme.colorScheme.onSecondaryContainer.copy(alpha = 0.82f),
+                                )
+                                Text(
+                                    text = value,
+                                    modifier = Modifier.weight(1f),
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    color = contentColor,
+                                )
+                            }
+                        }
+                    }
+                } else {
+                    Text(
+                        text = rawText,
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = contentColor,
+                    )
+                }
+            }
+        }
+    }
+}
+
+private fun parseStatusRows(rawText: String): List<Pair<String, String>> {
+    return rawText
+        .lines()
+        .mapNotNull { line ->
+            val trimmed = line.trim().trim('-', '•', '*', ' ')
+            val delimiterIndex = listOf(
+                trimmed.indexOf('：'),
+                trimmed.indexOf(':'),
+                trimmed.indexOf('='),
+            )
+                .filter { it > 0 }
+                .minOrNull()
+                ?: return@mapNotNull null
+            val key = trimmed.take(delimiterIndex).trim()
+            val value = trimmed.drop(delimiterIndex + 1).trim()
+            if (key.isBlank() || value.isBlank()) {
+                null
+            } else {
+                key to value
+            }
+        }
 }
 
 @Composable
@@ -179,6 +338,18 @@ internal fun RenderMessageText(
 
     val renderedText = remember(text) {
         normalizeCitationMarkdownForDisplay(text)
+    }
+    val safeHtmlBlocks = remember(renderedText) {
+        parseSafeHtmlTextBlocks(renderedText)
+    }
+    if (safeHtmlBlocks != null) {
+        SafeHtmlRichText(
+            blocks = safeHtmlBlocks,
+            contentColor = contentColor,
+            plainTextStyle = plainTextStyle,
+            fillWidth = fillWidth,
+        )
+        return
     }
     val shouldUseMarkdown = remember(renderedText, useMarkdown) {
         useMarkdown && shouldRenderWithMarkdown(renderedText)
@@ -230,6 +401,43 @@ internal fun RenderMessageText(
             color = contentColor,
             style = plainTextStyle,
         )
+    }
+}
+
+@Composable
+private fun SafeHtmlRichText(
+    blocks: List<SafeHtmlTextBlock>,
+    contentColor: androidx.compose.ui.graphics.Color,
+    plainTextStyle: TextStyle,
+    fillWidth: Boolean,
+) {
+    Column(
+        modifier = if (fillWidth) Modifier.fillMaxWidth() else Modifier,
+        verticalArrangement = Arrangement.spacedBy(8.dp),
+    ) {
+        blocks.forEach { block ->
+            if (block.divider) {
+                HorizontalDivider(
+                    color = contentColor.copy(alpha = 0.22f),
+                    thickness = 1.dp,
+                )
+            } else {
+                val fontSize = if (plainTextStyle.fontSize.isSpecified) {
+                    plainTextStyle.fontSize * block.fontScale
+                } else {
+                    plainTextStyle.fontSize
+                }
+                Text(
+                    text = block.text,
+                    modifier = if (fillWidth) Modifier.fillMaxWidth() else Modifier,
+                    color = block.color ?: contentColor,
+                    style = plainTextStyle.copy(
+                        fontSize = fontSize,
+                        textAlign = block.textAlign ?: plainTextStyle.textAlign,
+                    ),
+                )
+            }
+        }
     }
 }
 

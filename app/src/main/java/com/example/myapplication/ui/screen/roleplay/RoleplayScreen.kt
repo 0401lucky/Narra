@@ -8,6 +8,7 @@ import androidx.compose.material.icons.filled.Event
 import androidx.compose.material.icons.filled.Forum
 import androidx.compose.material.icons.filled.Gavel
 import androidx.compose.material.icons.filled.KeyboardVoice
+import androidx.compose.material.icons.filled.Mail
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material.icons.filled.Videocam
 import androidx.compose.material.icons.filled.Visibility
@@ -103,6 +104,7 @@ fun RoleplayScreen(
     val onOpenPhoneCheck = callbacks.navigation.onOpenPhoneCheck
     val onOpenMoments = callbacks.navigation.onOpenMoments
     val onOpenVideoCall = callbacks.navigation.onOpenVideoCall
+    val onOpenMailbox = callbacks.navigation.onOpenMailbox
     val onOpenSettings = callbacks.navigation.onOpenSettings
     val onNavigateBack = callbacks.navigation.onNavigateBack
     val onRestartSession = callbacks.session.onRestartSession
@@ -224,6 +226,7 @@ fun RoleplayScreen(
         onOpenDiary,
         onOpenMoments,
         onOpenVideoCall,
+        onOpenMailbox,
     ) {
         buildList {
             add(
@@ -315,6 +318,14 @@ fun RoleplayScreen(
             )
             add(
                 RoleplayInputQuickAction(
+                    label = "信箱",
+                    icon = Icons.Default.Mail,
+                    accentColor = Color(0xFF2E8068),
+                    onClick = onOpenMailbox,
+                ),
+            )
+            add(
+                RoleplayInputQuickAction(
                     label = "视频",
                     icon = Icons.Default.Videocam,
                     accentColor = Color(0xFF6C84FF),
@@ -383,6 +394,7 @@ fun RoleplayScreen(
             onOpenPhoneCheck = { showPhoneOwnerPicker = true },
             onOpenMoments = onOpenMoments,
             onOpenVideoCall = onOpenVideoCall,
+            onOpenMailbox = onOpenMailbox,
             onOpenSettings = onOpenSettings,
             onNavigateBack = onNavigateBack,
         )

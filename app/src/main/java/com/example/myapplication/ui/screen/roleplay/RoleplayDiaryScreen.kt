@@ -27,6 +27,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.AutoStories
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Mail
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
@@ -94,6 +95,7 @@ fun RoleplayDiaryScreen(
     onClearErrorMessage: () -> Unit,
     onGenerateDiary: () -> Unit,
     onOpenEntry: (entryId: String) -> Unit,
+    onOpenMailbox: () -> Unit,
     onNavigateBack: () -> Unit,
 ) {
     if (scenario == null) {
@@ -254,6 +256,13 @@ fun RoleplayDiaryScreen(
                                     color = palette.onGlassMuted,
                                     maxLines = 1,
                                     overflow = TextOverflow.Ellipsis,
+                                )
+                            }
+                            NarraIconButton(onClick = onOpenMailbox) {
+                                Icon(
+                                    imageVector = Icons.Default.Mail,
+                                    contentDescription = "信箱",
+                                    tint = palette.onGlass,
                                 )
                             }
                             if (hasDiary) {

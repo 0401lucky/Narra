@@ -24,6 +24,7 @@ class ContextTransferCodec(
             worldBookEntries = bundle.worldBookEntries.orEmpty(),
             memoryEntries = bundle.memoryEntries.orEmpty(),
             conversationSummaries = bundle.conversationSummaries.orEmpty(),
+            presets = bundle.presets.orEmpty(),
         )
     }
 }

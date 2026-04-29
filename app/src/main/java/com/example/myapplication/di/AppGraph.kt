@@ -19,6 +19,8 @@ import com.example.myapplication.data.repository.LocalImageStore
 import com.example.myapplication.data.repository.context.ConversationSummaryRepository
 import com.example.myapplication.data.repository.context.ContextLogStore
 import com.example.myapplication.data.repository.context.MemoryRepository
+import com.example.myapplication.data.repository.context.PresetRepository
+import com.example.myapplication.data.repository.context.RoomPresetRepository
 import com.example.myapplication.data.repository.context.RoomMemoryRepository
 import com.example.myapplication.data.repository.context.RoomWorldBookRepository
 import com.example.myapplication.data.repository.context.WorldBookRepository
@@ -36,6 +38,7 @@ import com.example.myapplication.data.repository.ai.DefaultAiSettingsEditor
 import com.example.myapplication.data.repository.ai.DefaultAiSettingsRepository
 import com.example.myapplication.data.repository.ai.DefaultAiTranslationService
 import com.example.myapplication.data.repository.ai.MemoryProposalPromptService
+import com.example.myapplication.data.repository.ai.MailboxPromptService
 import com.example.myapplication.data.repository.ai.PhoneContentPromptService
 import com.example.myapplication.data.repository.ai.PromptExtrasCore
 import com.example.myapplication.data.repository.ai.RoleplayDiaryPromptService
@@ -57,6 +60,8 @@ import com.example.myapplication.data.repository.search.SearchModelExecutor
 import com.example.myapplication.data.repository.search.SearchRepository
 import com.example.myapplication.data.repository.phone.PhoneSnapshotRepository
 import com.example.myapplication.data.repository.phone.RoomPhoneSnapshotRepository
+import com.example.myapplication.data.repository.mailbox.MailboxRepository
+import com.example.myapplication.data.repository.mailbox.RoomMailboxRepository
 import com.example.myapplication.data.repository.roleplay.RoleplayRepository
 import com.example.myapplication.data.repository.roleplay.RoomRoleplayRepository
 import com.example.myapplication.system.update.AndroidAppUpdateController
@@ -99,6 +104,10 @@ class AppGraph(
 
     val phoneSnapshotRepository: PhoneSnapshotRepository by lazy {
         RoomPhoneSnapshotRepository(database.phoneSnapshotDao())
+    }
+
+    val mailboxRepository: MailboxRepository by lazy {
+        RoomMailboxRepository(database.mailboxDao())
     }
 
     val conversationRepository: ConversationRepository by lazy {
@@ -212,6 +221,10 @@ class AppGraph(
         PhoneContentPromptService(promptExtrasCore)
     }
 
+    internal val mailboxPromptService: MailboxPromptService by lazy {
+        MailboxPromptService(promptExtrasCore)
+    }
+
     val aiPromptExtrasService: AiPromptExtrasService by lazy {
         DefaultAiPromptExtrasService(
             titleService = titleAndChatSuggestionPromptService,
@@ -246,11 +259,16 @@ class AppGraph(
         roomMemoryRepository
     }
 
+    val presetRepository: PresetRepository by lazy {
+        RoomPresetRepository(database.presetDao())
+    }
+
     val roleplayRepository: RoleplayRepository by lazy {
         RoomRoleplayRepository(
             roleplayDao = database.roleplayDao(),
             conversationRepository = conversationRepository,
             imageFileCleaner = localImageStore::deleteIfLocalAsync,
+            mailboxCleanup = mailboxRepository::deleteLettersForConversation,
         )
     }
 
@@ -262,6 +280,7 @@ class AppGraph(
             memorySelector = MemorySelector(),
             conversationSummaryRepository = conversationSummaryRepository,
             phoneSnapshotRepository = phoneSnapshotRepository,
+            presetRepository = presetRepository,
         )
     }
 
@@ -286,6 +305,9 @@ class AppGraph(
     fun launchStartupTasks() {
         scheduleStartup {
             settingsStore.migrateSensitiveData()
+        }
+        scheduleStartup {
+            presetRepository.ensureBuiltInPresets()
         }
         scheduleStartup {
             settingsStore.settingsFlow

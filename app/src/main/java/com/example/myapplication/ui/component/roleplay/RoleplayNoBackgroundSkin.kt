@@ -114,6 +114,25 @@ private fun resolveRoleplayNoBackgroundPresetSpec(
     preset: RoleplayNoBackgroundSkinPreset,
 ): RoleplayNoBackgroundSkinSpec {
     return when (preset) {
+        RoleplayNoBackgroundSkinPreset.NARRA -> skin(
+            preset = preset,
+            background = Color(0xFFF2F5F0),
+            panel = Color(0xFFFFFFFF).copy(alpha = 0.86f),
+            panelStrong = Color(0xFFFFFFFF).copy(alpha = 0.96f),
+            border = Color(0xFFC8D7D0),
+            accent = Color(0xFF4F8F7B),
+            userBubble = Color(0xFFDDEBE5),
+            characterBubble = Color(0xFFFFFFFF),
+            userText = Color(0xFF17352C),
+            characterText = Color(0xFF1D2D28),
+            mutedText = Color(0xFF6B7D76),
+            maxWidth = 78,
+            radius = 18,
+            paddingX = 14,
+            paddingY = 10,
+            showTail = false,
+        )
+
         RoleplayNoBackgroundSkinPreset.WECHAT -> skin(
             preset = preset,
             background = Color(0xFFEDEDED),

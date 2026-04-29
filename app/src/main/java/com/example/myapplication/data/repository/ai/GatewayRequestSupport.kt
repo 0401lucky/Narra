@@ -5,6 +5,7 @@ import com.example.myapplication.model.ChatCompletionRequest
 import com.example.myapplication.model.ChatMessageDto
 import com.example.myapplication.model.DEFAULT_CHAT_COMPLETIONS_PATH
 import com.example.myapplication.model.OpenAiTextApiMode
+import com.example.myapplication.model.PresetSamplerConfig
 import com.example.myapplication.model.PromptMode
 import com.example.myapplication.model.ProviderApiProtocol
 import com.example.myapplication.model.ProviderSettings
@@ -20,6 +21,15 @@ private val UnsupportedSamplingMessageHints = listOf(
     "temperature",
     "top_p",
     "top p",
+    "top_k",
+    "min_p",
+    "repetition_penalty",
+    "frequency_penalty",
+    "presence_penalty",
+    "max_tokens",
+    "max_output_tokens",
+    "stop",
+    "stop_sequences",
     "unknown parameter",
     "unknown field",
     "unrecognized field",
@@ -28,8 +38,15 @@ private val UnsupportedSamplingMessageHints = listOf(
 )
 
 internal data class GatewayRoleplaySamplingConfig(
-    val temperature: Float,
-    val topP: Float,
+    val temperature: Float? = null,
+    val topP: Float? = null,
+    val topK: Int? = null,
+    val minP: Float? = null,
+    val repetitionPenalty: Float? = null,
+    val frequencyPenalty: Float? = null,
+    val presencePenalty: Float? = null,
+    val maxOutputTokens: Int? = null,
+    val stopSequences: List<String> = emptyList(),
 )
 
 /**
@@ -71,16 +88,33 @@ internal object GatewayRequestSupport {
         reasoningEffort: String? = null,
         thinking: ThinkingConfigDto? = null,
         promptMode: PromptMode = PromptMode.ROLEPLAY,
+        samplerOverride: PresetSamplerConfig = PresetSamplerConfig(),
+        stopSequences: List<String> = emptyList(),
         tools: List<com.example.myapplication.model.ChatToolDto> = emptyList(),
         toolChoice: String? = null,
     ): ChatCompletionRequest {
-        val sampling = resolveRoleplaySampling(baseUrl, apiProtocol, apiServiceFactory, disabledBaseUrls, promptMode)
+        val sampling = resolveRoleplaySampling(
+            baseUrl = baseUrl,
+            apiProtocol = apiProtocol,
+            apiServiceFactory = apiServiceFactory,
+            disabledBaseUrls = disabledBaseUrls,
+            promptMode = promptMode,
+            samplerOverride = samplerOverride,
+            stopSequences = stopSequences,
+        )
         return ChatCompletionRequest(
             model = model,
             messages = messages,
             stream = stream,
             temperature = sampling?.temperature,
             topP = sampling?.topP,
+            topK = sampling?.topK,
+            minP = sampling?.minP,
+            repetitionPenalty = sampling?.repetitionPenalty,
+            frequencyPenalty = sampling?.frequencyPenalty,
+            presencePenalty = sampling?.presencePenalty,
+            maxTokens = sampling?.maxOutputTokens,
+            stop = sampling?.stopSequences.orEmpty(),
             reasoningEffort = reasoningEffort,
             thinking = thinking,
             tools = tools,
@@ -94,17 +128,35 @@ internal object GatewayRequestSupport {
         apiServiceFactory: ApiServiceFactory,
         disabledBaseUrls: Set<String>,
         promptMode: PromptMode,
+        samplerOverride: PresetSamplerConfig = PresetSamplerConfig(),
+        stopSequences: List<String> = emptyList(),
     ): GatewayRoleplaySamplingConfig? {
-        if (promptMode != PromptMode.ROLEPLAY) {
-            return null
-        }
         val normalizedBaseUrl = apiServiceFactory.normalizeBaseUrl(baseUrl, apiProtocol)
         if (disabledBaseUrls.contains(normalizedBaseUrl)) {
             return null
         }
+        val hasPresetSampler = samplerOverride.temperature != null ||
+            samplerOverride.topP != null ||
+            samplerOverride.topK != null ||
+            samplerOverride.minP != null ||
+            samplerOverride.repetitionPenalty != null ||
+            samplerOverride.frequencyPenalty != null ||
+            samplerOverride.presencePenalty != null ||
+            samplerOverride.maxOutputTokens != null ||
+            stopSequences.isNotEmpty()
+        if (promptMode != PromptMode.ROLEPLAY && !hasPresetSampler) {
+            return null
+        }
         return GatewayRoleplaySamplingConfig(
-            temperature = ROLEPLAY_TEMPERATURE,
-            topP = ROLEPLAY_TOP_P,
+            temperature = samplerOverride.temperature ?: if (promptMode == PromptMode.ROLEPLAY) ROLEPLAY_TEMPERATURE else null,
+            topP = samplerOverride.topP ?: if (promptMode == PromptMode.ROLEPLAY) ROLEPLAY_TOP_P else null,
+            topK = samplerOverride.topK,
+            minP = samplerOverride.minP,
+            repetitionPenalty = samplerOverride.repetitionPenalty,
+            frequencyPenalty = samplerOverride.frequencyPenalty,
+            presencePenalty = samplerOverride.presencePenalty,
+            maxOutputTokens = samplerOverride.maxOutputTokens,
+            stopSequences = stopSequences.map(String::trim).filter(String::isNotBlank).distinct(),
         )
     }
 
@@ -112,7 +164,17 @@ internal object GatewayRequestSupport {
         request: ChatCompletionRequest,
         errorDetail: String,
     ): Boolean {
-        if (request.temperature == null && request.topP == null) {
+        if (
+            request.temperature == null &&
+            request.topP == null &&
+            request.topK == null &&
+            request.minP == null &&
+            request.repetitionPenalty == null &&
+            request.frequencyPenalty == null &&
+            request.presencePenalty == null &&
+            request.maxTokens == null &&
+            request.stop.isEmpty()
+        ) {
             return false
         }
         val normalizedError = errorDetail.trim().lowercase()

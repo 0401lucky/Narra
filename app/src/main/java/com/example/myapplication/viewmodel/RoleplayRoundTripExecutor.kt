@@ -28,6 +28,7 @@ import com.example.myapplication.model.GatewayToolingOptions
 import com.example.myapplication.model.MessageRole
 import com.example.myapplication.model.MessageStatus
 import com.example.myapplication.model.PhoneSnapshotOwnerType
+import com.example.myapplication.model.PromptEnvelope
 import com.example.myapplication.model.PromptMode
 import com.example.myapplication.model.RoleplayOutputFormat
 import com.example.myapplication.model.TransferDirection
@@ -244,10 +245,13 @@ internal class RoleplayRoundTripExecutor(
                         loadingMessage = loadingMessage,
                         buildFinalMessages = buildFinalMessages,
                         systemPrompt = decoratedPrompt,
+                        statusCardsEnabled = promptContext.promptEnvelope.statusCardsEnabled,
+                        hideStatusBlocksInBubble = promptContext.promptEnvelope.hideStatusBlocksInBubble,
                         streamReply = { messages, systemPrompt ->
                             streamRoleplayAssistantReply(
                                 requestMessages = messages,
                                 systemPrompt = systemPrompt,
+                                promptEnvelope = promptContext.promptEnvelope,
                                 fullContent = fullContent,
                                 fullReasoningSteps = fullReasoningSteps,
                                 fullParts = fullParts,
@@ -456,6 +460,7 @@ internal class RoleplayRoundTripExecutor(
     private suspend fun streamRoleplayAssistantReply(
         requestMessages: List<ChatMessage>,
         systemPrompt: String,
+        promptEnvelope: PromptEnvelope,
         fullContent: StringBuilder,
         fullReasoningSteps: MutableList<ChatReasoningStep>,
         fullParts: MutableList<ChatMessagePart>,
@@ -466,6 +471,7 @@ internal class RoleplayRoundTripExecutor(
             messages = requestMessages,
             systemPrompt = systemPrompt,
             promptMode = PromptMode.ROLEPLAY,
+            promptEnvelope = promptEnvelope,
             toolingOptions = toolingOptions,
         ).collect { event ->
             when (event) {

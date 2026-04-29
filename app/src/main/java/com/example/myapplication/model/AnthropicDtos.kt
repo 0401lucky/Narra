@@ -22,6 +22,10 @@ data class AnthropicMessageRequest(
     val temperature: Float? = null,
     @SerializedName("top_p")
     val topP: Float? = null,
+    @SerializedName("top_k")
+    val topK: Int? = null,
+    @SerializedName("stop_sequences")
+    val stopSequences: List<String> = emptyList(),
     val thinking: AnthropicThinkingDto? = null,
     val tools: List<AnthropicToolDto> = emptyList(),
 )

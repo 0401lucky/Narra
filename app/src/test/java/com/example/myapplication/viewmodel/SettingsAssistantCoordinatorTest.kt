@@ -4,6 +4,7 @@ import com.example.myapplication.data.repository.ai.AiSettingsEditor
 import com.example.myapplication.model.AppSettings
 import com.example.myapplication.model.Assistant
 import com.example.myapplication.model.DEFAULT_ASSISTANT_ID
+import com.example.myapplication.model.DEFAULT_PRESET_ID
 import com.example.myapplication.model.ProviderSettings
 import com.example.myapplication.model.RoleplayImmersiveMode
 import com.example.myapplication.model.RoleplayLineHeightScale
@@ -36,6 +37,19 @@ class SettingsAssistantCoordinatorTest {
 
         assertEquals(listOf("assistant-1", "assistant-2"), editor.savedAssistants.map { it.id })
         assertEquals("assistant-1", editor.savedSelectedAssistantId)
+    }
+
+    @Test
+    fun addAssistant_inheritsGlobalDefaultPreset() = runBlocking {
+        val editor = RecordingSettingsEditor()
+        val coordinator = SettingsAssistantCoordinator(editor)
+
+        coordinator.addAssistant(
+            settings = AppSettings(defaultPresetId = "custom-preset"),
+            assistant = Assistant(id = "assistant-2", name = "新助手", defaultPresetId = DEFAULT_PRESET_ID),
+        )
+
+        assertEquals("custom-preset", editor.savedAssistants.single().defaultPresetId)
     }
 
     @Test
@@ -92,6 +106,24 @@ class SettingsAssistantCoordinatorTest {
         assertEquals(2, editor.savedAssistants.size)
         assertTrue(editor.savedAssistants.last().name.contains("(副本)"))
         assertEquals(false, editor.savedAssistants.last().isBuiltin)
+    }
+
+    @Test
+    fun duplicateAssistant_preservesSourcePreset() = runBlocking {
+        val editor = RecordingSettingsEditor()
+        val coordinator = SettingsAssistantCoordinator(editor)
+
+        coordinator.duplicateAssistant(
+            settings = AppSettings(
+                defaultPresetId = "global-preset",
+                assistants = listOf(
+                    Assistant(id = "assistant-1", name = "原助手", defaultPresetId = "source-preset"),
+                ),
+            ),
+            assistantId = "assistant-1",
+        )
+
+        assertEquals("source-preset", editor.savedAssistants.last().defaultPresetId)
     }
 
     @Test
@@ -156,6 +188,7 @@ class SettingsAssistantCoordinatorTest {
 
         override suspend fun saveUserProfile(displayName: String, personaPrompt: String, avatarUri: String, avatarUrl: String) = Unit
         override suspend fun saveUserPersonaMasks(masks: List<UserPersonaMask>, defaultMaskId: String) = Unit
+        override suspend fun saveDefaultPresetId(presetId: String) = Unit
         override suspend fun saveRoleplayAssistantMismatchDialogPreference(suppressed: Boolean) = Unit
         override suspend fun saveMemorySettings(autoSummaryEvery: Int, capacity: Int) = Unit
         override suspend fun saveMemoryPromptSettings(extractionPrompt: String, injectionPrompt: String) = Unit

@@ -20,6 +20,19 @@ data class ChatCompletionRequest(
     val temperature: Float? = null,
     @SerializedName("top_p")
     val topP: Float? = null,
+    @SerializedName("top_k")
+    val topK: Int? = null,
+    @SerializedName("min_p")
+    val minP: Float? = null,
+    @SerializedName("repetition_penalty")
+    val repetitionPenalty: Float? = null,
+    @SerializedName("frequency_penalty")
+    val frequencyPenalty: Float? = null,
+    @SerializedName("presence_penalty")
+    val presencePenalty: Float? = null,
+    @SerializedName("max_tokens")
+    val maxTokens: Int? = null,
+    val stop: List<String> = emptyList(),
     @SerializedName("reasoning_effort")
     val reasoningEffort: String? = null,
     val thinking: ThinkingConfigDto? = null,

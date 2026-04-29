@@ -30,6 +30,27 @@ object ContextPlaceholderResolver {
         return resolved
     }
 
+    fun resolveTemplate(
+        text: String,
+        values: Map<String, String>,
+        userName: String,
+        characterName: String,
+    ): String {
+        if (text.isBlank()) {
+            return text
+        }
+        var resolved = resolve(
+            text = text,
+            userName = userName,
+            characterName = characterName,
+        )
+        values.forEach { (key, value) ->
+            val pattern = Regex("""\{\{\s*${Regex.escape(key)}\s*\}\}""", RegexOption.IGNORE_CASE)
+            resolved = resolved.replace(pattern, value)
+        }
+        return resolved
+    }
+
     fun resolveAll(
         values: List<String>,
         userName: String,

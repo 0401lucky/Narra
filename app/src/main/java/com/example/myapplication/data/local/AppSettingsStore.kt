@@ -14,6 +14,7 @@ import com.example.myapplication.model.DEFAULT_CONTEXT_LOG_CAPACITY
 import com.example.myapplication.model.DEFAULT_MEMORY_AUTO_SUMMARY_EVERY
 import com.example.myapplication.model.DEFAULT_MEMORY_CAPACITY
 import com.example.myapplication.model.DEFAULT_MEMORY_MAX_ITEMS
+import com.example.myapplication.model.DEFAULT_PRESET_ID
 import com.example.myapplication.model.OpenAiTextApiMode
 import com.example.myapplication.model.DEFAULT_ROLEPLAY_LONGFORM_TARGET_CHARS
 import com.example.myapplication.model.DEFAULT_WORLD_BOOK_MAX_ENTRIES
@@ -110,6 +111,8 @@ interface SettingsStore {
         assistants: List<Assistant>,
         selectedAssistantId: String,
     )
+
+    suspend fun saveDefaultPresetId(presetId: String)
 
     suspend fun saveTranslationHistory(history: List<TranslationHistoryEntry>)
 
@@ -236,6 +239,9 @@ class AppSettingsStore(
             selectedAssistantId = preferences[PreferencesKeys.selectedAssistantId]
                 .orEmpty()
                 .ifBlank { com.example.myapplication.model.DEFAULT_ASSISTANT_ID },
+            defaultPresetId = preferences[PreferencesKeys.defaultPresetId]
+                .orEmpty()
+                .ifBlank { DEFAULT_PRESET_ID },
             screenTranslationSettings = ScreenTranslationSettings(
                 serviceEnabled = preferences[PreferencesKeys.screenTranslationServiceEnabled] ?: false,
                 overlayEnabled = preferences[PreferencesKeys.screenTranslationOverlayEnabled] ?: true,
@@ -491,6 +497,12 @@ class AppSettingsStore(
         }
     }
 
+    override suspend fun saveDefaultPresetId(presetId: String) {
+        context.dataStore.edit { preferences ->
+            preferences[PreferencesKeys.defaultPresetId] = presetId.trim().ifBlank { DEFAULT_PRESET_ID }
+        }
+    }
+
     override suspend fun saveTranslationHistory(history: List<TranslationHistoryEntry>) {
         context.dataStore.edit { preferences ->
             preferences[PreferencesKeys.translationHistoryJson] = gson.toJson(
@@ -661,7 +673,8 @@ class AppSettingsStore(
                     ?: com.example.myapplication.model.ROLEPLAY_SKIN_DEFAULT_PADDING_HORIZONTAL_DP,
                 bubblePaddingVerticalDp = jsonObject.get("bubblePaddingVerticalDp")?.asInt
                     ?: com.example.myapplication.model.ROLEPLAY_SKIN_DEFAULT_PADDING_VERTICAL_DP,
-                showBubbleTail = jsonObject.get("showBubbleTail")?.asBoolean ?: true,
+                showBubbleTail = jsonObject.get("showBubbleTail")?.asBoolean
+                    ?: RoleplayNoBackgroundSkinSettings().showBubbleTail,
             ).normalized()
         }.logFailure(TAG) { "decodeRoleplayNoBackgroundSkin fromJson failed, raw.len=${rawJson.length}" }
             .getOrDefault(RoleplayNoBackgroundSkinSettings())
@@ -921,6 +934,7 @@ class AppSettingsStore(
                 ?: DEFAULT_WORLD_BOOK_MAX_ENTRIES,
             worldBookScanDepth = assistant.worldBookScanDepth.takeIf { it >= 0 }
                 ?: DEFAULT_WORLD_BOOK_SCAN_DEPTH,
+            defaultPresetId = sanitizeText(assistant.defaultPresetId as String?).ifBlank { DEFAULT_PRESET_ID },
             tags = sanitizeStringList(assistant.tags as? List<*>),
         )
     }
@@ -990,6 +1004,7 @@ class AppSettingsStore(
         val translationHistoryJson = stringPreferencesKey("translation_history_json")
         val assistantsJson = stringPreferencesKey("assistants_json")
         val selectedAssistantId = stringPreferencesKey("selected_assistant_id")
+        val defaultPresetId = stringPreferencesKey("default_preset_id")
         val screenTranslationServiceEnabled = booleanPreferencesKey("screen_translation_service_enabled")
         val screenTranslationOverlayEnabled = booleanPreferencesKey("screen_translation_overlay_enabled")
         val screenTranslationOverlayOffsetX = floatPreferencesKey("screen_translation_overlay_offset_x")

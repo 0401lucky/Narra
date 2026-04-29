@@ -3,8 +3,10 @@ package com.example.myapplication.context
 import com.example.myapplication.data.repository.context.EmptyWorldBookRepository
 import com.example.myapplication.data.repository.context.EmptyMemoryRepository
 import com.example.myapplication.data.repository.context.EmptyConversationSummaryRepository
+import com.example.myapplication.data.repository.context.EmptyPresetRepository
 import com.example.myapplication.data.repository.context.ConversationSummaryRepository
 import com.example.myapplication.data.repository.context.MemoryRepository
+import com.example.myapplication.data.repository.context.PresetRepository
 import com.example.myapplication.data.repository.context.WorldBookRepository
 import com.example.myapplication.data.repository.phone.EmptyPhoneSnapshotRepository
 import com.example.myapplication.data.repository.phone.PhoneSnapshotRepository
@@ -16,16 +18,21 @@ import com.example.myapplication.model.Conversation
 import com.example.myapplication.model.ContextGovernanceItem
 import com.example.myapplication.model.ContextLogSection
 import com.example.myapplication.model.ContextLogSourceType
+import com.example.myapplication.model.DEFAULT_PRESET_ID
 import com.example.myapplication.model.MemoryEntry
 import com.example.myapplication.model.MemoryInjectionPosition
 import com.example.myapplication.model.MemoryPromptDefaults
 import com.example.myapplication.model.PhoneSnapshotOwnerType
+import com.example.myapplication.model.PromptEnvelope
 import com.example.myapplication.model.PromptMode
 import com.example.myapplication.model.WorldBookEntry
 import com.example.myapplication.model.toPlainText
 
 data class PromptContextResult(
     val systemPrompt: String,
+    val promptEnvelope: PromptEnvelope = PromptEnvelope(),
+    val activePresetId: String = "",
+    val activePresetName: String = "",
     val debugDump: String = "",
     val summaryCoveredMessageCount: Int = 0,
     val worldBookHitCount: Int = 0,
@@ -56,6 +63,8 @@ class DefaultPromptContextAssembler(
     private val conversationSummaryRepository: ConversationSummaryRepository = EmptyConversationSummaryRepository,
     private val phoneSnapshotRepository: PhoneSnapshotRepository = EmptyPhoneSnapshotRepository,
     private val phoneSnapshotPromptInjector: PhoneSnapshotPromptInjector = PhoneSnapshotPromptInjector(),
+    private val presetRepository: PresetRepository = EmptyPresetRepository,
+    private val presetPromptRenderer: PresetPromptRenderer = PresetPromptRenderer(),
 ) : PromptContextAssembler {
     override suspend fun assemble(
         settings: AppSettings,
@@ -122,94 +131,92 @@ class DefaultPromptContextAssembler(
             userName = resolvedUserName,
             characterName = resolvedCharacterName,
         )
-        val sections = buildList {
-            assistant?.systemPrompt
-                ?.trim()
-                ?.takeIf { it.isNotEmpty() }
-                ?.let { prompt ->
-                    add(
+        val assistantSystemPromptSection = assistant?.systemPrompt
+            ?.trim()
+            ?.takeIf { it.isNotEmpty() }
+            ?.let { prompt ->
+                ContextPlaceholderResolver.resolve(
+                    text = prompt,
+                    userName = resolvedUserName,
+                    characterName = resolvedCharacterName,
+                )
+            }
+        val roleSection = formatAssistantRoleSection(
+            assistant = assistant,
+            promptMode = promptMode,
+            userName = resolvedUserName,
+            characterName = resolvedCharacterName,
+        )
+        val userPersonaSection = formatUserPersonaSection(
+            userPersonaPrompt = settings.userPersonaPrompt,
+            promptMode = promptMode,
+            userName = resolvedUserName,
+            characterName = resolvedCharacterName,
+        )
+        val scenarioSection = assistant?.scenario
+            ?.trim()
+            ?.takeIf { it.isNotEmpty() }
+            ?.let { scenario ->
+                buildString {
+                    append("【场景设定】\n")
+                    append(
                         ContextPlaceholderResolver.resolve(
-                            text = prompt,
+                            text = scenario,
                             userName = resolvedUserName,
                             characterName = resolvedCharacterName,
                         ),
                     )
                 }
+            }
+        val greetingSection = formatGreetingSection(
+            greeting = assistant?.greeting,
+            userName = resolvedUserName,
+            characterName = resolvedCharacterName,
+        )
+        val exampleDialoguesSection = formatExampleDialoguesSection(
+            dialogues = assistant?.exampleDialogues.orEmpty(),
+            userName = resolvedUserName,
+            characterName = resolvedCharacterName,
+        )
+        val summarySection = formatSummarySection(
+            conversationSummary = conversationSummary,
+            promptMode = promptMode,
+        )
+        val worldBookSections = formatWorldBookSections(matchedWorldBookEntries)
+        val phoneSnapshotSection = formatPhoneSnapshotSection(phoneSnapshotItems)
+        val phoneObservationSection = formatPhoneObservationSection(phoneObservation.takeIf { shouldIncludePhoneObservation })
+        val phoneContextSection = listOfNotNull(phoneSnapshotSection, phoneObservationSection)
+            .joinToString(separator = "\n\n")
+            .takeIf { it.isNotBlank() }
+        val sections = buildList {
+            assistantSystemPromptSection?.let(::add)
             if (settings.memoryInjectionPosition == MemoryInjectionPosition.BEFORE_PROMPT) {
                 memorySection?.let(::add)
             }
 
-            formatAssistantRoleSection(
-                assistant = assistant,
-                promptMode = promptMode,
-                userName = resolvedUserName,
-                characterName = resolvedCharacterName,
-            )?.let(::add)
+            roleSection?.let(::add)
+            userPersonaSection?.let(::add)
+            scenarioSection?.let(::add)
+            greetingSection?.let(::add)
+            exampleDialoguesSection?.let(::add)
+            summarySection?.let(::add)
 
-            formatUserPersonaSection(
-                userPersonaPrompt = settings.userPersonaPrompt,
-                promptMode = promptMode,
-                userName = resolvedUserName,
-                characterName = resolvedCharacterName,
-            )?.let(::add)
-
-            assistant?.scenario
-                ?.trim()
-                ?.takeIf { it.isNotEmpty() }
-                ?.let { scenario ->
-                    add(
-                        buildString {
-                            append("【场景设定】\n")
-                            append(
-                                ContextPlaceholderResolver.resolve(
-                                    text = scenario,
-                                    userName = resolvedUserName,
-                                    characterName = resolvedCharacterName,
-                                ),
-                            )
-                        },
-                    )
-                }
-
-            formatGreetingSection(
-                greeting = assistant?.greeting,
-                userName = resolvedUserName,
-                characterName = resolvedCharacterName,
-            )
-                ?.let(::add)
-
-            formatExampleDialoguesSection(
-                dialogues = assistant?.exampleDialogues.orEmpty(),
-                userName = resolvedUserName,
-                characterName = resolvedCharacterName,
-            )
-                ?.let(::add)
-
-            formatSummarySection(
-                conversationSummary = conversationSummary,
-                promptMode = promptMode,
-            )
-                ?.let(::add)
-
-            addAll(formatWorldBookSections(matchedWorldBookEntries))
+            addAll(worldBookSections)
 
             if (settings.memoryInjectionPosition == MemoryInjectionPosition.AFTER_WORLD_BOOK) {
                 memorySection?.let(::add)
             }
 
-            formatPhoneSnapshotSection(phoneSnapshotItems)
-                ?.let(::add)
-
-            formatPhoneObservationSection(phoneObservation.takeIf { shouldIncludePhoneObservation })
-                ?.let(::add)
+            phoneSnapshotSection?.let(::add)
+            phoneObservationSection?.let(::add)
 
             if (settings.memoryInjectionPosition == MemoryInjectionPosition.AT_END) {
                 memorySection?.let(::add)
             }
         }
 
-        val systemPrompt = sections.joinToString(separator = "\n\n").trim()
-        val contextSections = buildContextLogSections(
+        val legacySystemPrompt = sections.joinToString(separator = "\n\n").trim()
+        val baseContextSections = buildContextLogSections(
             settings = settings,
             assistant = assistant,
             promptMode = promptMode,
@@ -220,8 +227,50 @@ class DefaultPromptContextAssembler(
             phoneSnapshotItems = phoneSnapshotItems,
             phoneObservation = phoneObservation.takeIf { shouldIncludePhoneObservation },
         )
+        val activePresetId = assistant?.defaultPresetId
+            ?.trim()
+            ?.takeIf { it.isNotBlank() }
+            ?: settings.defaultPresetId.trim().ifBlank { DEFAULT_PRESET_ID }
+        val activePreset = presetRepository.getPreset(activePresetId)
+            ?: DEFAULT_PRESET_ID
+                .takeIf { activePresetId != it }
+                ?.let { presetRepository.getPreset(it) }
+        val renderedPreset = activePreset?.let { preset ->
+            presetPromptRenderer.render(
+                PresetPromptRenderInput(
+                    preset = preset,
+                    userName = resolvedUserName,
+                    characterName = resolvedCharacterName,
+                    slotValues = mapOf(
+                        "main_prompt" to assistantSystemPromptSection.orEmpty(),
+                        "description" to roleSection.orEmpty(),
+                        "char_prompt" to assistantSystemPromptSection.orEmpty(),
+                        "persona" to userPersonaSection.orEmpty(),
+                        "scenario" to scenarioSection.orEmpty(),
+                        "example_dialogue" to exampleDialoguesSection.orEmpty(),
+                        "summary" to summarySection.orEmpty(),
+                        "world_info" to worldBookSections.joinToString(separator = "\n\n"),
+                        "long_memory" to memorySection.orEmpty(),
+                        "phone_context" to phoneContextSection.orEmpty(),
+                        "context" to legacySystemPrompt,
+                        "post_history" to "",
+                        "status_rules" to "",
+                    ),
+                ),
+            )
+        }
+        val systemPrompt = renderedPreset?.systemPrompt ?: legacySystemPrompt
+        val promptEnvelope = renderedPreset?.promptEnvelope ?: PromptEnvelope()
+        val contextSections = if (renderedPreset == null) {
+            baseContextSections
+        } else {
+            baseContextSections + renderedPreset.contextSections
+        }
         return PromptContextResult(
             systemPrompt = systemPrompt,
+            promptEnvelope = promptEnvelope,
+            activePresetId = activePreset?.id.orEmpty(),
+            activePresetName = activePreset?.name.orEmpty(),
             debugDump = buildDebugDump(
                 assistant = assistant,
                 matchedWorldBookEntries = matchedWorldBookEntries,

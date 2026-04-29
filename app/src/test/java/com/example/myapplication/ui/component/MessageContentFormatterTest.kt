@@ -188,6 +188,38 @@ class MessageContentFormatterTest {
     }
 
     @Test
+    fun parseSafeHtmlTextBlocks_rendersParagraphStyleAndContentWrapperSafely() {
+        val input = """
+            <p style="text-align:center; color:gray; font-size:0.9em;">—— 卷页翻开 · 正文起 ——</p>
+
+            <content>
+            他的手指收紧了。
+        """.trimIndent()
+
+        val actual = parseSafeHtmlTextBlocks(input)
+
+        assertEquals(2, actual?.size)
+        assertEquals("—— 卷页翻开 · 正文起 ——", actual?.first()?.text)
+        assertEquals(androidx.compose.ui.text.style.TextAlign.Center, actual?.first()?.textAlign)
+        assertEquals(0.9f, actual?.first()?.fontScale)
+        assertEquals("他的手指收紧了。", actual?.last()?.text)
+    }
+
+    @Test
+    fun parseSafeHtmlTextBlocks_removesDangerousBlocksAndKeepsPlainText() {
+        val input = """
+            正文
+            <script>alert('x')</script>
+            <br>
+            继续
+        """.trimIndent()
+
+        val actual = parseSafeHtmlTextBlocks(input)
+
+        assertEquals("正文\n\n继续", actual?.single()?.text)
+    }
+
+    @Test
     fun extractAssistantVisualContent_extractsSingleSignedUrlWithoutSuffix() {
         val input = "https://cdn.example.com/generated/no-extension-signed?token=abc123"
 

@@ -8,11 +8,8 @@ import com.example.myapplication.model.Assistant
 import com.example.myapplication.model.MemoryEntry
 import com.example.myapplication.model.MemoryScopeType
 import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
@@ -38,54 +35,51 @@ class SimpleMemoryEditorViewModel(
     private val assistantsProvider: () -> List<Assistant>,
 ) : ViewModel() {
 
-    private val memoriesFlow = memoryRepository.observeEntries().stateIn(
-        scope = viewModelScope,
-        started = SharingStarted.WhileSubscribed(5_000),
-        initialValue = emptyList(),
-    )
-
     private val _state = MutableStateFlow(
         SimpleMemoryEditorUiState(showSceneSection = !conversationId.isNullOrBlank()),
     )
     val uiState: StateFlow<SimpleMemoryEditorUiState> = _state.asStateFlow()
 
+    private var coreDraftTouched = false
+    private var sceneDraftTouched = false
+
     init {
-        // 1) 首批 memory 数据进来时拼接初始 draft 并标记 initialized；之后用户编辑由 updateDraft 负责
+        // 首次真实仓库快照用于填充草稿；之后若用户尚未手动编辑，也跟随外部记忆写入刷新。
         viewModelScope.launch {
-            val firstSnapshot = memoriesFlow.first()
-            val core = firstSnapshot.filterAssistantCore(assistantId)
-            val scene = firstSnapshot.filterConversationScene(conversationId)
-            _state.update { current ->
-                if (current.initialized) current
-                else current.copy(
-                    coreDraft = composeDraft(core),
-                    coreOriginalEntries = core,
-                    sceneDraft = composeDraft(scene),
-                    sceneOriginalEntries = scene,
-                    initialized = true,
-                )
-            }
-        }
-        // 2) 持续监听仓库变化，更新 originalEntries 但不覆盖 draft
-        viewModelScope.launch {
-            memoriesFlow.collect { snapshot ->
-                val core = snapshot.filterAssistantCore(assistantId)
+            memoryRepository.observeEntries().collect { snapshot ->
+                val assistant = assistantsProvider().firstOrNull { it.id == assistantId }
+                val useGlobalScope = assistant?.useGlobalMemory == true
+                val core = snapshot.filterAssistantCore(assistantId, useGlobalScope)
                 val scene = snapshot.filterConversationScene(conversationId)
                 _state.update { current ->
-                    current.copy(
-                        coreOriginalEntries = core,
-                        sceneOriginalEntries = scene,
-                    )
+                    if (!current.initialized) {
+                        current.copy(
+                            coreDraft = composeDraft(core),
+                            coreOriginalEntries = core,
+                            sceneDraft = composeDraft(scene),
+                            sceneOriginalEntries = scene,
+                            initialized = true,
+                        )
+                    } else {
+                        current.copy(
+                            coreDraft = if (coreDraftTouched) current.coreDraft else composeDraft(core),
+                            coreOriginalEntries = core,
+                            sceneDraft = if (sceneDraftTouched) current.sceneDraft else composeDraft(scene),
+                            sceneOriginalEntries = scene,
+                        )
+                    }
                 }
             }
         }
     }
 
     fun updateCoreDraft(text: String) {
+        coreDraftTouched = true
         _state.update { it.copy(coreDraft = text) }
     }
 
     fun updateSceneDraft(text: String) {
+        sceneDraftTouched = true
         _state.update { it.copy(sceneDraft = text) }
     }
 
@@ -127,6 +121,8 @@ class SimpleMemoryEditorViewModel(
                 val totalInsert = coreDelta.inserted + sceneDelta.inserted
                 val totalDelete = coreDelta.deleted + sceneDelta.deleted
 
+                coreDraftTouched = false
+                sceneDraftTouched = false
                 _state.update { state ->
                     state.copy(
                         isBusy = false,
@@ -230,14 +226,20 @@ class SimpleMemoryEditorViewModel(
             return seen.toList()
         }
 
-        internal fun List<MemoryEntry>.filterAssistantCore(assistantId: String): List<MemoryEntry> {
+        internal fun List<MemoryEntry>.filterAssistantCore(
+            assistantId: String,
+            useGlobalScope: Boolean,
+        ): List<MemoryEntry> {
             if (assistantId.isBlank()) return emptyList()
             return filter { entry ->
                 when (entry.scopeType) {
                     MemoryScopeType.CONVERSATION -> false
-                    MemoryScopeType.ASSISTANT -> entry.scopeId == assistantId ||
+                    MemoryScopeType.ASSISTANT -> !useGlobalScope && (
+                        entry.scopeId == assistantId ||
                         (entry.scopeId.isBlank() && entry.characterId == assistantId)
-                    MemoryScopeType.GLOBAL -> entry.characterId.isBlank() || entry.characterId == assistantId
+                    )
+                    MemoryScopeType.GLOBAL -> useGlobalScope &&
+                        (entry.characterId.isBlank() || entry.characterId == assistantId)
                 }
             }
         }

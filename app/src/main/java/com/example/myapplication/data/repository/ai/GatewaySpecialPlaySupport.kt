@@ -117,6 +117,8 @@ internal object GatewaySpecialPlaySupport {
     fun parseAssistantSpecialOutput(
         content: String,
         existingParts: List<ChatMessagePart>,
+        statusCardsEnabled: Boolean = true,
+        hideStatusBlocksInBubble: Boolean = true,
     ): ParsedAssistantSpecialOutput {
         val preservedNonTextParts = normalizeChatMessageParts(existingParts)
             .filter { part -> part.type != ChatMessagePartType.TEXT }
@@ -177,7 +179,16 @@ internal object GatewaySpecialPlaySupport {
             }
         }
 
-        val normalizedVisibleParts = normalizeChatMessageParts(renderedParts)
+        val normalizedVisibleParts = if (statusCardsEnabled) {
+            normalizeChatMessageParts(
+                ChatStatusBlockParser.extractFromParts(
+                    parts = renderedParts,
+                    hideStatusBlocksInBubble = hideStatusBlocksInBubble,
+                ),
+            )
+        } else {
+            normalizeChatMessageParts(renderedParts)
+        }
         return ParsedAssistantSpecialOutput(
             content = normalizedVisibleParts.toPlainText(),
             parts = normalizeChatMessageParts(normalizedVisibleParts + preservedNonTextParts),

@@ -5,15 +5,15 @@ import org.junit.Test
 
 class RoleplayNoBackgroundSkinSettingsTest {
     @Test
-    fun defaultSkin_usesWechatPresetAndExpectedBubbleValues() {
+    fun defaultSkin_usesNarraPresetAndExpectedBubbleValues() {
         val skin = RoleplayNoBackgroundSkinSettings()
 
-        assertEquals(RoleplayNoBackgroundSkinPreset.WECHAT, skin.preset)
-        assertEquals(82, skin.maxWidthPercent)
-        assertEquals(8, skin.bubbleRadiusDp)
-        assertEquals(12, skin.bubblePaddingHorizontalDp)
-        assertEquals(9, skin.bubblePaddingVerticalDp)
-        assertEquals(true, skin.showBubbleTail)
+        assertEquals(RoleplayNoBackgroundSkinPreset.NARRA, skin.preset)
+        assertEquals(78, skin.maxWidthPercent)
+        assertEquals(18, skin.bubbleRadiusDp)
+        assertEquals(14, skin.bubblePaddingHorizontalDp)
+        assertEquals(10, skin.bubblePaddingVerticalDp)
+        assertEquals(false, skin.showBubbleTail)
     }
 
     @Test

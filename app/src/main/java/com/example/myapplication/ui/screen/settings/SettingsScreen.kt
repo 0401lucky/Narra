@@ -17,12 +17,10 @@ import androidx.compose.material.icons.automirrored.filled.MenuBook
 import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material.icons.filled.Backup
 import androidx.compose.material.icons.filled.DarkMode
-import androidx.compose.material.icons.filled.Dns
 import androidx.compose.material.icons.filled.Extension
 import androidx.compose.material.icons.filled.Face
 import androidx.compose.material.icons.filled.Handshake
 import androidx.compose.material.icons.filled.Image
-import androidx.compose.material.icons.filled.Key
 import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.Language
 import androidx.compose.material.icons.filled.LibraryBooks
@@ -66,7 +64,7 @@ fun SettingsScreen(
     onConsumeMessage: () -> Unit,
     onOpenChat: () -> Unit,
     onOpenProviderSettings: () -> Unit,
-    onOpenConnectionSettings: () -> Unit,
+    onOpenPresetSettings: () -> Unit,
     onOpenSearchToolSettings: () -> Unit,
     onOpenUpdateSettings: () -> Unit,
     onOpenUserMasks: () -> Unit,
@@ -97,9 +95,15 @@ fun SettingsScreen(
     var showThemeModeSheet by rememberSaveable { mutableStateOf(false) }
     var showDisplaySettingsSheet by rememberSaveable { mutableStateOf(false) }
 
-    val connectionSummary = uiState.baseUrl
-        .ifBlank { uiState.savedSettings.baseUrl }
-        .ifBlank { "未配置 Base URL" }
+    val providerSummary = uiState.currentProvider?.let { provider ->
+        buildString {
+            append(provider.name.ifBlank { "未命名提供商" })
+            provider.selectedModel.takeIf { it.isNotBlank() }?.let { model ->
+                append(" · ")
+                append(model)
+            }
+        }
+    } ?: "未配置提供商"
     val searchSummary = uiState.searchSettings.selectedSourceOrNull()?.let { source ->
         stringResource(R.string.settings_search_default_count, source.name, uiState.searchSettings.defaultResultCount)
     } ?: stringResource(R.string.settings_search_not_configured)
@@ -235,14 +239,15 @@ fun SettingsScreen(
                     SettingsListRow(
                         leadingContent = { Icon(Icons.Default.Psychology, contentDescription = null, tint = palette.title) },
                         title = stringResource(R.string.settings_provider),
+                        supportingText = providerSummary,
                         onClick = onOpenProviderSettings,
                     )
                     SettingsGroupDivider()
                     SettingsListRow(
-                        leadingContent = { Icon(Icons.Default.Key, contentDescription = null, tint = palette.title) },
-                        title = stringResource(R.string.settings_connection_credentials),
-                        supportingText = connectionSummary,
-                        onClick = onOpenConnectionSettings,
+                        leadingContent = { Icon(Icons.Default.LibraryBooks, contentDescription = null, tint = palette.title) },
+                        title = "预设管理",
+                        supportingText = "Prompt Manager、状态卡与默认预设",
+                        onClick = onOpenPresetSettings,
                     )
                     SettingsGroupDivider()
                     SettingsListRow(

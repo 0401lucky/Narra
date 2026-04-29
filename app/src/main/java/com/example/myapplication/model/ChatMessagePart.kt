@@ -9,6 +9,7 @@ enum class ChatMessagePartType {
     FILE,
     ACTION,
     SPECIAL,
+    STATUS,
 }
 
 enum class ChatActionType {
@@ -124,6 +125,22 @@ fun textMessagePart(
         replyToMessageId = replyToMessageId.trim(),
         replyToPreview = replyToPreview.trim(),
         replyToSpeakerName = replyToSpeakerName.trim(),
+    )
+}
+
+fun statusMessagePart(
+    rawText: String,
+    title: String = "状态",
+): ChatMessagePart {
+    return ChatMessagePart(
+        type = ChatMessagePartType.STATUS,
+        text = rawText.trim(),
+        specialMetadata = normalizeSpecialMetadata(
+            mapOf(
+                "title" to title.trim().ifBlank { "状态" },
+                "raw" to rawText.trim(),
+            ),
+        ),
     )
 }
 
@@ -411,6 +428,7 @@ fun ChatMessagePart.toMessageAttachmentOrNull(): MessageAttachment? {
 
         ChatMessagePartType.ACTION -> null
         ChatMessagePartType.SPECIAL -> null
+        ChatMessagePartType.STATUS -> null
     }
 }
 
@@ -524,6 +542,32 @@ fun normalizeChatMessageParts(parts: List<ChatMessagePart>): List<ChatMessagePar
                     replyToSpeakerName = "",
                 )
             }
+
+            ChatMessagePartType.STATUS -> {
+                if (part.text.isBlank()) {
+                    return@forEach
+                }
+                normalized += part.copy(
+                    text = part.text.trim(),
+                    uri = "",
+                    mimeType = "",
+                    fileName = "",
+                    actionType = null,
+                    actionId = "",
+                    actionMetadata = emptyMap(),
+                    specialType = null,
+                    specialId = "",
+                    specialDirection = null,
+                    specialStatus = null,
+                    specialCounterparty = "",
+                    specialAmount = "",
+                    specialNote = "",
+                    specialMetadata = normalizeSpecialMetadata(part.specialMetadata),
+                    replyToMessageId = "",
+                    replyToPreview = "",
+                    replyToSpeakerName = "",
+                )
+            }
         }
     }
 
@@ -563,6 +607,7 @@ fun List<ChatMessagePart>.toContentMirror(
         normalized.any { it.type == ChatMessagePartType.SPECIAL } -> normalized.firstOrNull {
             it.type == ChatMessagePartType.SPECIAL
         }?.specialPlayFallbackText().orEmpty().ifBlank { specialFallback }
+        normalized.any { it.type == ChatMessagePartType.STATUS } -> "状态卡"
         else -> ""
     }
 }

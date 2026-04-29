@@ -137,6 +137,7 @@ class SettingsModelLoadCoordinatorTest {
 
         override suspend fun saveUserProfile(displayName: String, personaPrompt: String, avatarUri: String, avatarUrl: String) = Unit
         override suspend fun saveUserPersonaMasks(masks: List<UserPersonaMask>, defaultMaskId: String) = Unit
+        override suspend fun saveDefaultPresetId(presetId: String) = Unit
         override suspend fun saveRoleplayAssistantMismatchDialogPreference(suppressed: Boolean) = Unit
         override suspend fun saveMemorySettings(autoSummaryEvery: Int, capacity: Int) = Unit
         override suspend fun saveMemoryPromptSettings(extractionPrompt: String, injectionPrompt: String) = Unit

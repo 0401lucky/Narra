@@ -14,6 +14,7 @@ import com.example.myapplication.model.ChatCompletionRequest
 import com.example.myapplication.model.ChatMessageDto
 import com.example.myapplication.model.MessageCitation
 import com.example.myapplication.model.OpenAiTextApiMode
+import com.example.myapplication.model.PromptEnvelope
 import com.example.myapplication.model.PromptMode
 import com.example.myapplication.model.ProviderApiProtocol
 import com.example.myapplication.model.ProviderSettings
@@ -49,6 +50,7 @@ data class ToolLoopChatRequestSpec(
     val reasoningEffort: String? = null,
     val thinking: ThinkingConfigDto? = null,
     val promptMode: PromptMode = PromptMode.CHAT,
+    val promptEnvelope: PromptEnvelope = PromptEnvelope(),
     val tools: List<com.example.myapplication.model.ChatToolDto> = emptyList(),
     val toolChoice: String? = null,
 )
@@ -71,6 +73,7 @@ class ToolEngine(
         enabledToolNames: Set<String>,
         toolContext: ToolContext,
         promptMode: PromptMode,
+        promptEnvelope: PromptEnvelope,
     ): ToolLoopOutcome {
         val enabledTools = toolRegistry.resolve(enabledToolNames)
         var state = TranscriptToolState(transcript = requestMessages)
@@ -84,6 +87,7 @@ class ToolEngine(
                     reasoningEffort = thinkingRequestConfig.reasoningEffort,
                     thinking = thinkingRequestConfig.thinking,
                     promptMode = promptMode,
+                    promptEnvelope = promptEnvelope,
                     tools = GatewayToolSupport.toOpenAiTools(enabledTools),
                     toolChoice = "auto",
                 ),
@@ -154,6 +158,7 @@ class ToolEngine(
         enabledToolNames: Set<String>,
         toolContext: ToolContext,
         promptMode: PromptMode,
+        promptEnvelope: PromptEnvelope,
     ): ToolLoopOutcome {
         val enabledTools = toolRegistry.resolve(enabledToolNames)
         var state = TranscriptToolState(transcript = requestMessages)
@@ -166,6 +171,7 @@ class ToolEngine(
                     apiProtocol = ProviderApiProtocol.ANTHROPIC,
                     thinking = thinkingRequestConfig.thinking,
                     promptMode = promptMode,
+                    promptEnvelope = promptEnvelope,
                     tools = GatewayToolSupport.toOpenAiTools(enabledTools),
                 ),
             )
@@ -260,6 +266,7 @@ class ToolEngine(
         enabledToolNames: Set<String>,
         toolContext: ToolContext,
         promptMode: PromptMode,
+        promptEnvelope: PromptEnvelope,
     ): ToolLoopOutcome {
         val enabledTools = toolRegistry.resolve(enabledToolNames)
         val requestTemplate = requestBuilder(
@@ -271,6 +278,7 @@ class ToolEngine(
                 reasoningEffort = thinkingRequestConfig.reasoningEffort,
                 thinking = thinkingRequestConfig.thinking,
                 promptMode = promptMode,
+                promptEnvelope = promptEnvelope,
                 tools = GatewayToolSupport.toOpenAiTools(enabledTools),
             ),
         )
@@ -285,6 +293,7 @@ class ToolEngine(
                 stream = false,
                 temperature = requestTemplate.temperature,
                 topP = requestTemplate.topP,
+                maxOutputTokens = requestTemplate.maxTokens,
                 reasoning = thinkingRequestConfig.reasoningEffort?.let { effort ->
                     ResponseApiReasoningDto(
                         effort = effort,
@@ -337,6 +346,7 @@ class ToolEngine(
                         previousResponseId = previousResponseId,
                         temperature = requestTemplate.temperature,
                         topP = requestTemplate.topP,
+                        maxOutputTokens = requestTemplate.maxTokens,
                     ),
                 )
             }

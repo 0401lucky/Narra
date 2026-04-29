@@ -66,6 +66,7 @@ private fun sourceTypeTint(sourceType: ContextLogSourceType): Color {
         ContextLogSourceType.SUMMARY -> Color(0xFF58A8B4)
         ContextLogSourceType.USER_PERSONA -> Color(0xFFDD8C4B)
         ContextLogSourceType.PHONE_CONTEXT -> Color(0xFF43A6A3)
+        ContextLogSourceType.PROMPT_PRESET -> Color(0xFF8D62D9)
         ContextLogSourceType.SYSTEM_RULE -> Color(0xFF7A86A8)
     }
 }
@@ -558,6 +559,7 @@ private fun sourceTypeIcon(sourceType: ContextLogSourceType): String {
         ContextLogSourceType.SUMMARY -> "📋"
         ContextLogSourceType.USER_PERSONA -> "🪪"
         ContextLogSourceType.PHONE_CONTEXT -> "📱"
+        ContextLogSourceType.PROMPT_PRESET -> "▦"
         ContextLogSourceType.SYSTEM_RULE -> "⚙"
     }
 }

@@ -10,6 +10,8 @@ data class ResponseApiRequest(
     val temperature: Float? = null,
     @SerializedName("top_p")
     val topP: Float? = null,
+    @SerializedName("max_output_tokens")
+    val maxOutputTokens: Int? = null,
     val reasoning: ResponseApiReasoningDto? = null,
     val tools: List<ResponseApiToolDto> = emptyList(),
     @SerializedName("previous_response_id")

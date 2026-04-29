@@ -40,6 +40,7 @@ import com.example.myapplication.model.GatewayToolingOptions
 import com.example.myapplication.model.MessageCitation
 import com.example.myapplication.model.OpenAiTextApiMode
 import com.example.myapplication.model.PromptMode
+import com.example.myapplication.model.PromptEnvelope
 import com.example.myapplication.model.ProviderApiProtocol
 import com.example.myapplication.model.ProviderSettings
 import com.example.myapplication.model.ResponseApiRequest
@@ -87,6 +88,7 @@ interface AiGateway {
     suspend fun sendMessage(
         messages: List<ChatMessage>,
         systemPrompt: String = "",
+        promptEnvelope: PromptEnvelope = PromptEnvelope(),
         toolingOptions: GatewayToolingOptions = GatewayToolingOptions(),
     ): AssistantReply
 
@@ -94,12 +96,15 @@ interface AiGateway {
         messages: List<ChatMessage>,
         systemPrompt: String = "",
         promptMode: PromptMode = PromptMode.CHAT,
+        promptEnvelope: PromptEnvelope = PromptEnvelope(),
         toolingOptions: GatewayToolingOptions = GatewayToolingOptions(),
     ): Flow<ChatStreamEvent>
 
     fun parseAssistantSpecialOutput(
         content: String,
         existingParts: List<ChatMessagePart>,
+        statusCardsEnabled: Boolean = true,
+        hideStatusBlocksInBubble: Boolean = true,
     ): ParsedAssistantSpecialOutput
 }
 
@@ -187,6 +192,7 @@ class DefaultAiGateway(
                 promptMode = spec.promptMode,
                 tools = spec.tools,
                 toolChoice = spec.toolChoice,
+                promptEnvelope = spec.promptEnvelope,
             )
         },
     )
@@ -411,6 +417,7 @@ class DefaultAiGateway(
     override suspend fun sendMessage(
         messages: List<ChatMessage>,
         systemPrompt: String,
+        promptEnvelope: PromptEnvelope,
         toolingOptions: GatewayToolingOptions,
     ): AssistantReply {
         val settings = settingsStore.settingsFlow.first()
@@ -422,7 +429,7 @@ class DefaultAiGateway(
         val thinkingRequestConfig = buildThinkingRequestConfig(activeProvider, selectedModel)
         val apiProtocol = activeProvider?.resolvedApiProtocol() ?: ProviderApiProtocol.OPENAI_COMPATIBLE
 
-        val requestMessages = toRequestMessages(messages, systemPrompt)
+        val requestMessages = toRequestMessages(messages, systemPrompt, PromptMode.CHAT, promptEnvelope)
         require(requestMessages.isNotEmpty()) { "消息不能为空" }
         val gatewayTooling = toolAvailabilityResolver.resolve(
             settings = settings,
@@ -442,6 +449,7 @@ class DefaultAiGateway(
                     thinkingRequestConfig = thinkingRequestConfig,
                     activeProvider = activeProvider,
                     gatewayTooling = gatewayTooling,
+                    promptEnvelope = promptEnvelope,
                 )
 
                 ProviderApiProtocol.ANTHROPIC -> sendAnthropicMessage(
@@ -451,6 +459,7 @@ class DefaultAiGateway(
                     requestMessages = requestMessages,
                     thinkingRequestConfig = thinkingRequestConfig,
                     gatewayTooling = gatewayTooling,
+                    promptEnvelope = promptEnvelope,
                 )
             }
         } catch (exception: Exception) {
@@ -462,6 +471,7 @@ class DefaultAiGateway(
         messages: List<ChatMessage>,
         systemPrompt: String,
         promptMode: PromptMode,
+        promptEnvelope: PromptEnvelope,
         toolingOptions: GatewayToolingOptions,
     ): Flow<ChatStreamEvent> = flow {
         val settings = settingsStore.settingsFlow.first()
@@ -473,15 +483,15 @@ class DefaultAiGateway(
         val thinkingRequestConfig = buildThinkingRequestConfig(activeProvider, selectedModel)
         val apiProtocol = activeProvider?.resolvedApiProtocol() ?: ProviderApiProtocol.OPENAI_COMPATIBLE
 
-        val requestMessages = toRequestMessages(messages, systemPrompt, promptMode)
+        val requestMessages = toRequestMessages(messages, systemPrompt, promptMode, promptEnvelope)
         require(requestMessages.isNotEmpty()) { "消息不能为空" }
         val gatewayTooling = toolAvailabilityResolver.resolve(
             settings = settings,
             activeProvider = activeProvider,
             selectedModel = selectedModel,
-                        promptMode = promptMode,
-                        toolingOptions = toolingOptions,
-                    )
+            promptMode = promptMode,
+            toolingOptions = toolingOptions,
+        )
 
         val rawEvents = when (apiProtocol) {
             ProviderApiProtocol.OPENAI_COMPATIBLE -> {
@@ -493,6 +503,7 @@ class DefaultAiGateway(
                         requestMessages = requestMessages,
                         thinkingRequestConfig = thinkingRequestConfig,
                         promptMode = promptMode,
+                        promptEnvelope = promptEnvelope,
                         activeProvider = activeProvider,
                     )
                 } else {
@@ -505,6 +516,7 @@ class DefaultAiGateway(
                         activeProvider = activeProvider,
                         gatewayTooling = gatewayTooling,
                         promptMode = promptMode,
+                        promptEnvelope = promptEnvelope,
                     )
                 }
             }
@@ -518,6 +530,7 @@ class DefaultAiGateway(
                         requestMessages = requestMessages,
                         thinkingRequestConfig = thinkingRequestConfig,
                         promptMode = promptMode,
+                        promptEnvelope = promptEnvelope,
                     )
                 } else {
                     streamAnthropicMessageWithTools(
@@ -528,6 +541,7 @@ class DefaultAiGateway(
                         thinkingRequestConfig = thinkingRequestConfig,
                         gatewayTooling = gatewayTooling,
                         promptMode = promptMode,
+                        promptEnvelope = promptEnvelope,
                     )
                 }
             }
@@ -539,10 +553,14 @@ class DefaultAiGateway(
     override fun parseAssistantSpecialOutput(
         content: String,
         existingParts: List<ChatMessagePart>,
+        statusCardsEnabled: Boolean,
+        hideStatusBlocksInBubble: Boolean,
     ): ParsedAssistantSpecialOutput {
         return GatewaySpecialPlaySupport.parseAssistantSpecialOutput(
             content = content,
             existingParts = existingParts,
+            statusCardsEnabled = statusCardsEnabled,
+            hideStatusBlocksInBubble = hideStatusBlocksInBubble,
         )
     }
 
@@ -709,15 +727,20 @@ class DefaultAiGateway(
         thinkingRequestConfig: com.example.myapplication.model.ThinkingRequestConfig,
         activeProvider: ProviderSettings?,
         gatewayTooling: ResolvedGatewayTooling,
+        promptEnvelope: PromptEnvelope,
     ): AssistantReply {
         return when (activeProvider?.resolvedOpenAiTextApiMode() ?: OpenAiTextApiMode.CHAT_COMPLETIONS) {
             OpenAiTextApiMode.CHAT_COMPLETIONS -> {
                 if (gatewayTooling.enabledToolNames.isEmpty()) {
-                    val request = ChatCompletionRequest(
+                    val request = buildRequestWithRoleplaySampling(
                         model = selectedModel,
                         messages = requestMessages,
+                        baseUrl = baseUrl,
+                        apiProtocol = ProviderApiProtocol.OPENAI_COMPATIBLE,
+                        promptMode = PromptMode.CHAT,
                         reasoningEffort = thinkingRequestConfig.reasoningEffort,
                         thinking = thinkingRequestConfig.thinking,
+                        promptEnvelope = promptEnvelope,
                     )
                     val response = apiServiceProvider(
                         baseUrl,
@@ -743,19 +766,24 @@ class DefaultAiGateway(
                         activeProvider = activeProvider,
                         thinkingRequestConfig = thinkingRequestConfig,
                         enabledToolNames = gatewayTooling.enabledToolNames,
-                    toolContext = gatewayTooling.toolContext,
-                    promptMode = PromptMode.CHAT,
-                ).finalReply ?: throw IllegalStateException("模型未返回有效内容")
+                        toolContext = gatewayTooling.toolContext,
+                        promptMode = PromptMode.CHAT,
+                        promptEnvelope = promptEnvelope,
+                    ).finalReply ?: throw IllegalStateException("模型未返回有效内容")
                 }
             }
 
             OpenAiTextApiMode.RESPONSES -> {
                 if (gatewayTooling.enabledToolNames.isEmpty()) {
-                    val request = ChatCompletionRequest(
+                    val request = buildRequestWithRoleplaySampling(
                         model = selectedModel,
                         messages = requestMessages,
+                        baseUrl = baseUrl,
+                        apiProtocol = ProviderApiProtocol.OPENAI_COMPATIBLE,
+                        promptMode = PromptMode.CHAT,
                         reasoningEffort = thinkingRequestConfig.reasoningEffort,
                         thinking = thinkingRequestConfig.thinking,
+                        promptEnvelope = promptEnvelope,
                     )
                     val response = apiServiceProvider(
                         baseUrl,
@@ -789,9 +817,10 @@ class DefaultAiGateway(
                         activeProvider = activeProvider,
                         thinkingRequestConfig = thinkingRequestConfig,
                         enabledToolNames = gatewayTooling.enabledToolNames,
-                    toolContext = gatewayTooling.toolContext,
-                    promptMode = PromptMode.CHAT,
-                ).finalReply ?: throw IllegalStateException("模型未返回有效内容")
+                        toolContext = gatewayTooling.toolContext,
+                        promptMode = PromptMode.CHAT,
+                        promptEnvelope = promptEnvelope,
+                    ).finalReply ?: throw IllegalStateException("模型未返回有效内容")
                 }
             }
         }
@@ -804,17 +833,21 @@ class DefaultAiGateway(
         requestMessages: List<ChatMessageDto>,
         thinkingRequestConfig: com.example.myapplication.model.ThinkingRequestConfig,
         gatewayTooling: ResolvedGatewayTooling,
+        promptEnvelope: PromptEnvelope,
     ): AssistantReply {
         if (gatewayTooling.enabledToolNames.isEmpty()) {
+            val request = buildRequestWithRoleplaySampling(
+                model = selectedModel,
+                messages = requestMessages,
+                baseUrl = baseUrl,
+                apiProtocol = ProviderApiProtocol.ANTHROPIC,
+                promptMode = PromptMode.CHAT,
+                thinking = thinkingRequestConfig.thinking,
+                promptEnvelope = promptEnvelope,
+            )
             val response = anthropicApiProvider(baseUrl, apiKey).createMessage(
                 AnthropicProtocolSupport.buildMessageRequest(
-                    ChatCompletionRequest(
-                        model = selectedModel,
-                        messages = requestMessages,
-                        temperature = null,
-                        topP = null,
-                        thinking = thinkingRequestConfig.thinking,
-                    ),
+                    request,
                 ),
             )
             if (!response.isSuccessful) {
@@ -838,6 +871,7 @@ class DefaultAiGateway(
             enabledToolNames = gatewayTooling.enabledToolNames,
             toolContext = gatewayTooling.toolContext,
             promptMode = PromptMode.CHAT,
+            promptEnvelope = promptEnvelope,
         ).finalReply ?: throw IllegalStateException("模型未返回有效内容")
     }
 
@@ -850,6 +884,7 @@ class DefaultAiGateway(
         activeProvider: ProviderSettings?,
         gatewayTooling: ResolvedGatewayTooling,
         promptMode: PromptMode,
+        promptEnvelope: PromptEnvelope,
     ): Flow<ChatStreamEvent> = flow {
         when (activeProvider?.resolvedOpenAiTextApiMode() ?: OpenAiTextApiMode.CHAT_COMPLETIONS) {
             OpenAiTextApiMode.CHAT_COMPLETIONS -> {
@@ -863,6 +898,7 @@ class DefaultAiGateway(
                     enabledToolNames = gatewayTooling.enabledToolNames,
                     toolContext = gatewayTooling.toolContext,
                     promptMode = promptMode,
+                    promptEnvelope = promptEnvelope,
                 )
                 if (toolLoopOutcome.toolRoundCount == 0) {
                     emitAssistantReply(toolLoopOutcome.finalReply).collect { emit(it) }
@@ -877,6 +913,7 @@ class DefaultAiGateway(
                         thinkingRequestConfig = thinkingRequestConfig,
                         promptMode = promptMode,
                         activeProvider = activeProvider?.copy(openAiTextApiMode = OpenAiTextApiMode.CHAT_COMPLETIONS),
+                        promptEnvelope = promptEnvelope,
                     ).collect { event ->
                         if (event is ChatStreamEvent.Completed && toolLoopOutcome.citations.isNotEmpty()) {
                             emit(ChatStreamEvent.Citations(toolLoopOutcome.citations))
@@ -897,6 +934,7 @@ class DefaultAiGateway(
                     enabledToolNames = gatewayTooling.enabledToolNames,
                     toolContext = gatewayTooling.toolContext,
                     promptMode = promptMode,
+                    promptEnvelope = promptEnvelope,
                 )
                 if (toolLoopOutcome.toolRoundCount == 0) {
                     emitAssistantReply(toolLoopOutcome.finalReply).collect { emit(it) }
@@ -913,6 +951,7 @@ class DefaultAiGateway(
                             stream = true,
                             temperature = continuation.temperature,
                             topP = continuation.topP,
+                            maxOutputTokens = continuation.maxOutputTokens,
                             reasoning = thinkingRequestConfig.reasoningEffort?.let { effort ->
                                 com.example.myapplication.model.ResponseApiReasoningDto(
                                     effort = effort,
@@ -940,6 +979,7 @@ class DefaultAiGateway(
         thinkingRequestConfig: com.example.myapplication.model.ThinkingRequestConfig,
         gatewayTooling: ResolvedGatewayTooling,
         promptMode: PromptMode,
+        promptEnvelope: PromptEnvelope,
     ): Flow<ChatStreamEvent> = flow {
         val toolLoopOutcome = toolEngine.runAnthropicToolLoop(
             baseUrl = baseUrl,
@@ -950,6 +990,7 @@ class DefaultAiGateway(
             enabledToolNames = gatewayTooling.enabledToolNames,
             toolContext = gatewayTooling.toolContext,
             promptMode = promptMode,
+            promptEnvelope = promptEnvelope,
         )
         if (toolLoopOutcome.toolRoundCount == 0) {
             emitAssistantReply(toolLoopOutcome.finalReply).collect { emit(it) }
@@ -963,6 +1004,7 @@ class DefaultAiGateway(
                 requestMessages = continuation.messages,
                 thinkingRequestConfig = thinkingRequestConfig,
                 promptMode = promptMode,
+                promptEnvelope = promptEnvelope,
             ).collect { event ->
                 if (event is ChatStreamEvent.Completed && toolLoopOutcome.citations.isNotEmpty()) {
                     emit(ChatStreamEvent.Citations(toolLoopOutcome.citations))
@@ -1033,6 +1075,7 @@ class DefaultAiGateway(
         thinkingRequestConfig: com.example.myapplication.model.ThinkingRequestConfig,
         promptMode: PromptMode,
         activeProvider: ProviderSettings? = null,
+        promptEnvelope: PromptEnvelope = PromptEnvelope(),
     ): Flow<ChatStreamEvent> = flow {
         val apiMode = activeProvider?.resolvedOpenAiTextApiMode() ?: OpenAiTextApiMode.CHAT_COMPLETIONS
         val client = runCatching {
@@ -1046,6 +1089,7 @@ class DefaultAiGateway(
                     requestMessages = requestMessages,
                     thinkingRequestConfig = thinkingRequestConfig,
                     activeProvider = activeProvider,
+                    promptEnvelope = promptEnvelope,
                 ),
             ).collect { emit(it) }
             return@flow
@@ -1059,6 +1103,7 @@ class DefaultAiGateway(
             reasoningEffort = thinkingRequestConfig.reasoningEffort,
             thinking = thinkingRequestConfig.thinking,
             promptMode = promptMode,
+            promptEnvelope = promptEnvelope,
         )
         var call = client.newCall(
             buildStreamingRequest(
@@ -1096,6 +1141,13 @@ class DefaultAiGateway(
                 requestBody = requestBody.copy(
                     temperature = null,
                     topP = null,
+                    topK = null,
+                    minP = null,
+                    repetitionPenalty = null,
+                    frequencyPenalty = null,
+                    presencePenalty = null,
+                    maxTokens = null,
+                    stop = emptyList(),
                 )
                 call = client.newCall(
                     buildStreamingRequest(
@@ -1190,14 +1242,19 @@ class DefaultAiGateway(
         requestMessages: List<ChatMessageDto>,
         thinkingRequestConfig: com.example.myapplication.model.ThinkingRequestConfig,
         activeProvider: ProviderSettings?,
+        promptEnvelope: PromptEnvelope = PromptEnvelope(),
     ): AssistantReply {
         return when (activeProvider?.resolvedOpenAiTextApiMode() ?: OpenAiTextApiMode.CHAT_COMPLETIONS) {
             OpenAiTextApiMode.CHAT_COMPLETIONS -> {
-                val request = ChatCompletionRequest(
+                val request = buildRequestWithRoleplaySampling(
                     model = selectedModel,
                     messages = requestMessages,
+                    baseUrl = baseUrl,
+                    apiProtocol = ProviderApiProtocol.OPENAI_COMPATIBLE,
+                    promptMode = PromptMode.CHAT,
                     reasoningEffort = thinkingRequestConfig.reasoningEffort,
                     thinking = thinkingRequestConfig.thinking,
+                    promptEnvelope = promptEnvelope,
                 )
                 val response = apiServiceProvider(baseUrl, apiKey).createChatCompletionAt(
                     buildOpenAiTextUrl(baseUrl, activeProvider),
@@ -1212,11 +1269,15 @@ class DefaultAiGateway(
             }
 
             OpenAiTextApiMode.RESPONSES -> {
-                val request = ChatCompletionRequest(
+                val request = buildRequestWithRoleplaySampling(
                     model = selectedModel,
                     messages = requestMessages,
+                    baseUrl = baseUrl,
+                    apiProtocol = ProviderApiProtocol.OPENAI_COMPATIBLE,
+                    promptMode = PromptMode.CHAT,
                     reasoningEffort = thinkingRequestConfig.reasoningEffort,
                     thinking = thinkingRequestConfig.thinking,
+                    promptEnvelope = promptEnvelope,
                 )
                 val response = apiServiceProvider(baseUrl, apiKey).createResponseAt(
                     buildOpenAiTextUrl(baseUrl, activeProvider),
@@ -1249,6 +1310,7 @@ class DefaultAiGateway(
         requestMessages: List<ChatMessageDto>,
         thinkingRequestConfig: com.example.myapplication.model.ThinkingRequestConfig,
         promptMode: PromptMode,
+        promptEnvelope: PromptEnvelope = PromptEnvelope(),
     ): Flow<ChatStreamEvent> = flow {
         val requestBody = buildRequestWithRoleplaySampling(
             model = selectedModel,
@@ -1258,6 +1320,7 @@ class DefaultAiGateway(
             stream = true,
             thinking = thinkingRequestConfig.thinking,
             promptMode = promptMode,
+            promptEnvelope = promptEnvelope,
         )
         val normalizedBaseUrl = apiServiceFactory.normalizeBaseUrl(baseUrl, ProviderApiProtocol.ANTHROPIC)
         val httpRequest = Request.Builder()
@@ -1336,6 +1399,7 @@ class DefaultAiGateway(
         promptMode: PromptMode = PromptMode.ROLEPLAY,
         tools: List<com.example.myapplication.model.ChatToolDto> = emptyList(),
         toolChoice: String? = null,
+        promptEnvelope: PromptEnvelope = PromptEnvelope(),
     ): ChatCompletionRequest = GatewayRequestSupport.buildRequestWithRoleplaySampling(
         model = model,
         messages = messages,
@@ -1347,6 +1411,8 @@ class DefaultAiGateway(
         reasoningEffort = reasoningEffort,
         thinking = thinking,
         promptMode = promptMode,
+        samplerOverride = promptEnvelope.sampler,
+        stopSequences = promptEnvelope.stopSequences,
         tools = tools,
         toolChoice = toolChoice,
     )
@@ -1367,11 +1433,13 @@ class DefaultAiGateway(
         messages: List<ChatMessage>,
         systemPrompt: String = "",
         promptMode: PromptMode = PromptMode.CHAT,
+        promptEnvelope: PromptEnvelope = PromptEnvelope(),
     ): List<ChatMessageDto> {
         return GatewayRequestMessageBuilder.build(
             messages = messages,
             systemPrompt = systemPrompt,
             promptMode = promptMode,
+            promptEnvelope = promptEnvelope,
             imagePayloadResolver = imagePayloadResolver,
             filePromptResolver = filePromptResolver,
         )

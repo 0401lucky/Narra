@@ -13,6 +13,7 @@ import com.example.myapplication.di.AppGraph
 import com.example.myapplication.model.PhoneSnapshotOwnerType
 import com.example.myapplication.viewmodel.ContextTransferViewModel
 import com.example.myapplication.viewmodel.MemoryManagementViewModel
+import com.example.myapplication.viewmodel.MailboxViewModel
 import com.example.myapplication.viewmodel.MomentsViewModel
 import com.example.myapplication.viewmodel.PhoneCheckViewModel
 import com.example.myapplication.viewmodel.RoleplayViewModel
@@ -102,6 +103,7 @@ internal fun rememberContextTransferViewModel(
             worldBookRepository = appGraph.worldBookRepository,
             memoryRepository = appGraph.memoryRepository,
             conversationSummaryRepository = appGraph.conversationSummaryRepository,
+            presetRepository = appGraph.presetRepository,
             importedAssistantAvatarSaver = { importedAvatar ->
                 ImageFileStorage.saveImageBytes(
                     context = context,
@@ -165,6 +167,29 @@ internal fun rememberMomentsViewModel(
             phoneContextBuilder = PhoneContextBuilder(
                 promptContextAssembler = appGraph.promptContextAssembler,
             ),
+        ),
+    )
+}
+
+@Composable
+internal fun rememberMailboxViewModel(
+    appGraph: AppGraph,
+    backStackEntry: NavBackStackEntry,
+): MailboxViewModel {
+    val rawScenarioId = backStackEntry.arguments?.getString("scenarioId").orEmpty()
+    val scenarioId = Uri.decode(rawScenarioId)
+    return viewModel(
+        key = "mailbox-$scenarioId",
+        factory = MailboxViewModel.factory(
+            scenarioId = scenarioId,
+            settingsRepository = appGraph.aiSettingsRepository,
+            conversationRepository = appGraph.conversationRepository,
+            roleplayRepository = appGraph.roleplayRepository,
+            phoneSnapshotRepository = appGraph.phoneSnapshotRepository,
+            mailboxRepository = appGraph.mailboxRepository,
+            mailboxPromptService = appGraph.mailboxPromptService,
+            pendingMemoryProposalRepository = appGraph.pendingMemoryProposalRepository,
+            memoryWriteService = appGraph.memoryWriteService,
         ),
     )
 }

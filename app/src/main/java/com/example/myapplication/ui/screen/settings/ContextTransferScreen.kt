@@ -112,7 +112,7 @@ fun ContextTransferScreen(
     Scaffold(
         topBar = {
             SettingsTopBar(
-                title = "资料导入导出",
+                title = "资料库",
                 onNavigateBack = onNavigateBack,
             )
         },
@@ -135,17 +135,17 @@ fun ContextTransferScreen(
             ) {
                 item {
                     SettingsPageIntro(
-                        title = "统一迁移角色卡、世界书、记忆与摘要",
-                        summary = "采用合并导入，不会删除现有数据。相同 ID 的条目会被导入内容覆盖。",
+                        title = "管理 Narra 本地资源包",
+                        summary = "角色包、世界书包、记忆档案包和预设包都在这里导入导出。只处理本地资料，不包含 API Key。",
                     )
                 }
 
                 // Current Data Overview
-                item { SettingsSectionHeader("当前数据概览", "") }
+                item { SettingsSectionHeader("资料库概览", "") }
                 item {
                     SettingsGroup {
                         SettingsListRow(
-                            title = "自定义角色卡",
+                            title = "角色包",
                             supportingText = "当前共有 ${uiState.customAssistantCount} 条",
                             enabled = false,
                             showArrow = false,
@@ -159,7 +159,7 @@ fun ContextTransferScreen(
                         )
                         SettingsGroupDivider()
                         SettingsListRow(
-                            title = "记忆条目",
+                            title = "记忆档案",
                             supportingText = "当前共有 ${uiState.memoryCount} 条",
                             enabled = false,
                             showArrow = false,
@@ -171,16 +171,23 @@ fun ContextTransferScreen(
                             enabled = false,
                             showArrow = false,
                         )
+                        SettingsGroupDivider()
+                        SettingsListRow(
+                            title = "自定义预设",
+                            supportingText = "当前共有 ${uiState.presetCount} 条",
+                            enabled = false,
+                            showArrow = false,
+                        )
                     }
                 }
 
                 // Transfer Actions — each section is its own clean group
-                item { SettingsSectionHeader("导入导出操作", "") }
+                item { SettingsSectionHeader("资源包", "") }
 
                 item {
                     TransferSectionGroup(
-                        title = "全部资料",
-                        description = "统一迁移角色卡、世界书、记忆和摘要",
+                        title = "资料库备份",
+                        description = "统一迁移角色包、世界书、记忆档案、剧情摘要和自定义预设",
                         isBusy = uiState.isBusy,
                         onExport = {
                             pendingExportSection = ContextTransferSection.ALL
@@ -194,7 +201,7 @@ fun ContextTransferScreen(
                 }
                 item {
                     TransferSectionGroup(
-                        title = "角色卡",
+                        title = "角色包",
                         description = "支持本应用角色卡 JSON 和 Tavern PNG 角色卡",
                         isBusy = uiState.isBusy,
                         onExport = {
@@ -224,7 +231,7 @@ fun ContextTransferScreen(
                 }
                 item {
                     TransferSectionGroup(
-                        title = "记忆与摘要",
+                        title = "记忆档案包",
                         description = "单独迁移记忆条目和对话摘要",
                         isBusy = uiState.isBusy,
                         onExport = {
@@ -233,6 +240,21 @@ fun ContextTransferScreen(
                         },
                         onImport = {
                             pendingImportSection = ContextTransferSection.MEMORY
+                            importLauncher.launch(IMPORT_TEXT_MIME_TYPES)
+                        },
+                    )
+                }
+                item {
+                    TransferSectionGroup(
+                        title = "预设包",
+                        description = "迁移自定义提示词工程预设；内置预设不会被打包覆盖",
+                        isBusy = uiState.isBusy,
+                        onExport = {
+                            pendingExportSection = ContextTransferSection.PRESETS
+                            exportLauncher.launch(ContextTransferSection.PRESETS.exportFileName)
+                        },
+                        onImport = {
+                            pendingImportSection = ContextTransferSection.PRESETS
                             importLauncher.launch(IMPORT_TEXT_MIME_TYPES)
                         },
                     )
@@ -395,6 +417,14 @@ private fun ImportPreviewCard(
                 SettingsListRow(
                     title = "摘要",
                     supportingText = "${preview.summaryCount} 条",
+                    enabled = false,
+                    showArrow = false,
+                )
+            }
+            if (preview.presetCount > 0) {
+                SettingsListRow(
+                    title = "预设",
+                    supportingText = "${preview.presetCount} 条",
                     enabled = false,
                     showArrow = false,
                 )

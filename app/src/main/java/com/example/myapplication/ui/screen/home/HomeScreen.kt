@@ -5,7 +5,6 @@ import com.example.myapplication.ui.component.*
 import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
-import androidx.compose.foundation.background
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.Arrangement
@@ -18,7 +17,15 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.Chat
+import androidx.compose.material.icons.filled.PhoneAndroid
+import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
@@ -33,13 +40,14 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.scale
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import com.example.myapplication.R
@@ -54,6 +62,13 @@ fun HomeScreen(
     onOpenRoleplay: () -> Unit,
 ) {
     val hasRequiredConfig = storedSettings.hasRequiredConfig()
+    val activeProvider = storedSettings.activeProvider()
+    val assistantCount = storedSettings.resolvedAssistants().size
+    val providerLabel = activeProvider?.name?.ifBlank { "未命名提供商" }
+        ?: if (storedSettings.hasBaseCredentials()) "旧版连接兜底" else "还没有提供商"
+    val modelLabel = activeProvider?.selectedModel?.takeIf { it.isNotBlank() }
+        ?: storedSettings.selectedModel.ifBlank { "未选择模型" }
+    val connectionLabel = if (hasRequiredConfig) "已就绪" else "需要配置"
 
     // Animation state for entry
     var isVisible by remember { mutableStateOf(false) }
@@ -95,13 +110,17 @@ fun HomeScreen(
                 verticalArrangement = Arrangement.Center,
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
-            Text(
-                text = stringResource(id = R.string.home_welcome_title),
-                style = MaterialTheme.typography.displaySmall,
-                color = MaterialTheme.colorScheme.onBackground,
+            HomePhoneEntryCard(
+                assistantCount = assistantCount,
+                hasRequiredConfig = hasRequiredConfig,
+                providerLabel = providerLabel,
+                modelLabel = modelLabel,
+                connectionLabel = connectionLabel,
+                onOpenRoleplay = onOpenRoleplay,
+                onOpenSettings = onOpenSettings,
             )
 
-            Spacer(modifier = Modifier.height(8.dp))
+            Spacer(modifier = Modifier.height(22.dp))
 
             Text(
                 text = if (hasRequiredConfig) {
@@ -115,82 +134,23 @@ fun HomeScreen(
                 modifier = Modifier.padding(horizontal = 16.dp)
             )
 
-            Spacer(modifier = Modifier.height(48.dp))
-
-            // Material 3 Premium Glass Card
-            Surface(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .shadow(
-                        HomePrimaryButtonShadowElevation,
-                        androidx.compose.foundation.shape.RoundedCornerShape(HomePrimaryCardCornerRadius),
-                        ambientColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.1f),
-                    ),
-                shape = androidx.compose.foundation.shape.RoundedCornerShape(HomePrimaryCardCornerRadius),
-                color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.72f),
-                tonalElevation = 0.dp
-            ) {
-                Column(
-                    modifier = Modifier.padding(24.dp),
-                    verticalArrangement = Arrangement.spacedBy(16.dp)
-                ) {
-                    Text(
-                        text = stringResource(id = R.string.home_config_card_title),
-                        style = MaterialTheme.typography.titleLarge,
-                        color = MaterialTheme.colorScheme.primary,
-                        fontWeight = FontWeight.SemiBold
-                    )
-                    ConfigRow(
-                        label = stringResource(id = R.string.home_config_base_url),
-                        value = if (storedSettings.baseUrl.isBlank()) {
-                            stringResource(id = R.string.status_not_configured)
-                        } else {
-                            stringResource(id = R.string.status_configured)
-                        },
-                    )
-                    ConfigRow(
-                        label = stringResource(id = R.string.home_config_api_key),
-                        value = if (storedSettings.apiKey.isBlank()) {
-                            stringResource(id = R.string.status_not_configured)
-                        } else {
-                            stringResource(id = R.string.status_configured)
-                        },
-                    )
-                    ConfigRow(
-                        label = stringResource(id = R.string.home_config_model),
-                        value = if (storedSettings.selectedModel.isBlank()) {
-                            stringResource(id = R.string.status_not_selected)
-                        } else {
-                            storedSettings.selectedModel
-                        },
-                    )
-                }
-            }
-
-            Spacer(modifier = Modifier.height(56.dp))
-
-            AnimatedHoverButton(
-                text = stringResource(id = R.string.home_open_chat),
-                onClick = onOpenChat,
-                enabled = hasRequiredConfig,
-                isPrimary = true
-            )
-
-            Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.height(28.dp))
 
                 AnimatedHoverButton(
-                    text = stringResource(id = R.string.home_open_settings),
-                    onClick = onOpenSettings,
-                    enabled = true,
+                    text = stringResource(id = R.string.home_open_chat),
+                    icon = Icons.AutoMirrored.Filled.Chat,
+                    onClick = onOpenChat,
+                    enabled = hasRequiredConfig,
                     isPrimary = false
                 )
 
                 Spacer(modifier = Modifier.height(16.dp))
 
                 AnimatedHoverButton(
-                    text = stringResource(id = R.string.home_open_roleplay),
-                    onClick = onOpenRoleplay,
-                    enabled = hasRequiredConfig,
+                    text = stringResource(id = R.string.home_open_settings),
+                    icon = Icons.Default.Settings,
+                    onClick = onOpenSettings,
+                    enabled = true,
                     isPrimary = false,
                 )
 
@@ -207,28 +167,114 @@ fun HomeScreen(
 }
 
 @Composable
-fun ConfigRow(label: String, value: String) {
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.SpaceBetween,
-        verticalAlignment = Alignment.CenterVertically
+private fun HomePhoneEntryCard(
+    assistantCount: Int,
+    hasRequiredConfig: Boolean,
+    providerLabel: String,
+    modelLabel: String,
+    connectionLabel: String,
+    onOpenRoleplay: () -> Unit,
+    onOpenSettings: () -> Unit,
+) {
+    Surface(
+        modifier = Modifier
+            .fillMaxWidth()
+            .shadow(
+                HomePrimaryButtonShadowElevation,
+                androidx.compose.foundation.shape.RoundedCornerShape(HomePrimaryCardCornerRadius),
+                ambientColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.14f),
+            ),
+        shape = androidx.compose.foundation.shape.RoundedCornerShape(HomePrimaryCardCornerRadius),
+        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.78f),
+        tonalElevation = 0.dp,
     ) {
-        Text(
-            text = label,
-            style = MaterialTheme.typography.bodyLarge,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
-        )
-        Text(
-            text = value,
-            style = MaterialTheme.typography.bodyLarge,
-            fontWeight = FontWeight.Medium
-        )
+        Column(
+            modifier = Modifier.padding(22.dp),
+            verticalArrangement = Arrangement.spacedBy(18.dp),
+        ) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(14.dp),
+            ) {
+                Surface(
+                    modifier = Modifier.size(58.dp),
+                    shape = androidx.compose.foundation.shape.RoundedCornerShape(18.dp),
+                    color = MaterialTheme.colorScheme.primary,
+                    contentColor = MaterialTheme.colorScheme.onPrimary,
+                ) {
+                    Box(contentAlignment = Alignment.Center) {
+                        Icon(Icons.Default.PhoneAndroid, contentDescription = null, modifier = Modifier.size(30.dp))
+                    }
+                }
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = stringResource(id = R.string.home_private_phone_title),
+                        style = MaterialTheme.typography.headlineSmall,
+                        color = MaterialTheme.colorScheme.onSurface,
+                        fontWeight = FontWeight.SemiBold,
+                    )
+                    Text(
+                        text = "$assistantCount 位角色 · $connectionLabel",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                }
+            }
+
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                HomeStatusPill("提供商", providerLabel)
+                HomeStatusPill("模型", modelLabel)
+            }
+
+            AnimatedHoverButton(
+                text = if (hasRequiredConfig) stringResource(id = R.string.home_open_roleplay) else "配置提供商",
+                icon = if (hasRequiredConfig) Icons.Default.PhoneAndroid else Icons.Default.Settings,
+                onClick = if (hasRequiredConfig) onOpenRoleplay else onOpenSettings,
+                enabled = true,
+                isPrimary = true,
+            )
+        }
+    }
+}
+
+@Composable
+private fun HomeStatusPill(label: String, value: String) {
+    Surface(
+        modifier = Modifier
+            .fillMaxWidth(),
+        shape = androidx.compose.foundation.shape.RoundedCornerShape(14.dp),
+        color = MaterialTheme.colorScheme.surface.copy(alpha = 0.62f),
+    ) {
+        Row(
+            modifier = Modifier.padding(horizontal = 12.dp, vertical = 9.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(10.dp),
+        ) {
+            Text(
+                text = label,
+                style = MaterialTheme.typography.labelMedium,
+                color = MaterialTheme.colorScheme.primary,
+                modifier = Modifier.width(48.dp),
+            )
+            Text(
+                text = value,
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurface,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+                modifier = Modifier.weight(1f),
+            )
+        }
     }
 }
 
 @Composable
 fun AnimatedHoverButton(
     text: String,
+    icon: ImageVector,
     onClick: () -> Unit,
     enabled: Boolean,
     isPrimary: Boolean
@@ -260,12 +306,14 @@ fun AnimatedHoverButton(
                     spotColor = MaterialTheme.colorScheme.primary,
                 ),
             shape = androidx.compose.foundation.shape.RoundedCornerShape(HomePrimaryButtonCornerRadius),
-            colors = androidx.compose.material3.ButtonDefaults.buttonColors(
+            colors = ButtonDefaults.buttonColors(
                 containerColor = MaterialTheme.colorScheme.primary,
                 contentColor = MaterialTheme.colorScheme.onPrimary
             ),
             interactionSource = interactionSource
         ) {
+            Icon(icon, contentDescription = null, modifier = Modifier.size(20.dp))
+            Spacer(modifier = Modifier.width(8.dp))
             Text(text, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
         }
     } else {
@@ -278,6 +326,8 @@ fun AnimatedHoverButton(
             shape = androidx.compose.foundation.shape.RoundedCornerShape(HomePrimaryButtonCornerRadius),
             interactionSource = interactionSource
         ) {
+            Icon(icon, contentDescription = null, modifier = Modifier.size(20.dp))
+            Spacer(modifier = Modifier.width(8.dp))
             Text(text, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
         }
     }

@@ -1,12 +1,12 @@
 package com.example.myapplication.model
 
 data class RoleplayNoBackgroundSkinSettings(
-    val preset: RoleplayNoBackgroundSkinPreset = RoleplayNoBackgroundSkinPreset.WECHAT,
+    val preset: RoleplayNoBackgroundSkinPreset = RoleplayNoBackgroundSkinPreset.NARRA,
     val maxWidthPercent: Int = ROLEPLAY_SKIN_DEFAULT_MAX_WIDTH_PERCENT,
     val bubbleRadiusDp: Int = ROLEPLAY_SKIN_DEFAULT_RADIUS_DP,
     val bubblePaddingHorizontalDp: Int = ROLEPLAY_SKIN_DEFAULT_PADDING_HORIZONTAL_DP,
     val bubblePaddingVerticalDp: Int = ROLEPLAY_SKIN_DEFAULT_PADDING_VERTICAL_DP,
-    val showBubbleTail: Boolean = true,
+    val showBubbleTail: Boolean = false,
 ) {
     fun normalized(): RoleplayNoBackgroundSkinSettings {
         return copy(
@@ -34,6 +34,7 @@ enum class RoleplayNoBackgroundSkinPreset(
     val storageValue: String,
     val displayName: String,
 ) {
+    NARRA("narra", "Narra"),
     WECHAT("wechat", "微信"),
     QQ("qq", "QQ"),
     TELEGRAM("telegram", "Telegram"),
@@ -53,23 +54,23 @@ enum class RoleplayNoBackgroundSkinPreset(
             return entries.firstOrNull {
                 it.storageValue.equals(normalized, ignoreCase = true) ||
                     it.name.equals(normalized, ignoreCase = true)
-            } ?: WECHAT
+            } ?: NARRA
         }
     }
 }
 
 const val ROLEPLAY_SKIN_MIN_MAX_WIDTH_PERCENT = 64
 const val ROLEPLAY_SKIN_MAX_MAX_WIDTH_PERCENT = 92
-const val ROLEPLAY_SKIN_DEFAULT_MAX_WIDTH_PERCENT = 82
+const val ROLEPLAY_SKIN_DEFAULT_MAX_WIDTH_PERCENT = 78
 
 const val ROLEPLAY_SKIN_MIN_RADIUS_DP = 4
 const val ROLEPLAY_SKIN_MAX_RADIUS_DP = 28
-const val ROLEPLAY_SKIN_DEFAULT_RADIUS_DP = 8
+const val ROLEPLAY_SKIN_DEFAULT_RADIUS_DP = 18
 
 const val ROLEPLAY_SKIN_MIN_PADDING_HORIZONTAL_DP = 8
 const val ROLEPLAY_SKIN_MAX_PADDING_HORIZONTAL_DP = 20
-const val ROLEPLAY_SKIN_DEFAULT_PADDING_HORIZONTAL_DP = 12
+const val ROLEPLAY_SKIN_DEFAULT_PADDING_HORIZONTAL_DP = 14
 
 const val ROLEPLAY_SKIN_MIN_PADDING_VERTICAL_DP = 6
 const val ROLEPLAY_SKIN_MAX_PADDING_VERTICAL_DP = 18
-const val ROLEPLAY_SKIN_DEFAULT_PADDING_VERTICAL_DP = 9
+const val ROLEPLAY_SKIN_DEFAULT_PADDING_VERTICAL_DP = 10

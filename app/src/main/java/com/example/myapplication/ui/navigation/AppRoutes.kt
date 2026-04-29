@@ -6,9 +6,10 @@ object AppRoutes {
     const val HOME = "home"
     const val SETTINGS_GRAPH = "settings_graph"
     const val SETTINGS = "settings"
-    const val SETTINGS_CONNECTION = "settings/connection"
     const val SETTINGS_MODEL = "settings/model"
     const val SETTINGS_SEARCH_TOOLS = "settings/search-tools"
+    const val SETTINGS_PRESETS = "settings/presets"
+    const val SETTINGS_PRESET_EDIT = "settings/presets/{presetId}"
     const val SETTINGS_PROVIDERS = "settings/providers"
     const val SETTINGS_UPDATES = "settings/updates"
     const val SETTINGS_USER_MASKS = "settings/user-masks"
@@ -39,11 +40,16 @@ object AppRoutes {
     const val ROLEPLAY_DIARY = "roleplay/play/{scenarioId}/diary"
     const val ROLEPLAY_DIARY_DETAIL = "roleplay/play/{scenarioId}/diary/{entryId}"
     const val ROLEPLAY_VIDEO_CALL = "roleplay/play/{scenarioId}/video-call"
+    const val ROLEPLAY_MAILBOX = "roleplay/play/{scenarioId}/mailbox"
     const val PHONE_CHECK = "phone-check/{conversationId}?scenarioId={scenarioId}&ownerType={ownerType}"
     const val MOMENTS = "moments/{conversationId}?scenarioId={scenarioId}&ownerType={ownerType}"
 
     fun settingsProviderDetail(providerId: String): String {
         return "settings/providers/$providerId"
+    }
+
+    fun settingsPresetEdit(presetId: String): String {
+        return "settings/presets/${Uri.encode(presetId)}"
     }
 
     fun settingsAssistantDetail(assistantId: String): String {
@@ -110,6 +116,10 @@ object AppRoutes {
 
     fun roleplayVideoCall(scenarioId: String): String {
         return "roleplay/play/${Uri.encode(scenarioId)}/video-call"
+    }
+
+    fun roleplayMailbox(scenarioId: String): String {
+        return "roleplay/play/${Uri.encode(scenarioId)}/mailbox"
     }
 
     fun phoneCheck(

@@ -32,6 +32,7 @@ import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Forum
 import androidx.compose.material.icons.filled.Gavel
 import androidx.compose.material.icons.filled.KeyboardVoice
+import androidx.compose.material.icons.filled.Mail
 import androidx.compose.material.icons.filled.PhoneAndroid
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material.icons.filled.Videocam
@@ -141,6 +142,7 @@ internal fun RoleplayOnlinePhoneContent(
     onOpenPhoneCheck: () -> Unit,
     onOpenMoments: () -> Unit,
     onOpenVideoCall: () -> Unit,
+    onOpenMailbox: () -> Unit,
     onOpenSettings: () -> Unit,
     onNavigateBack: () -> Unit,
 ) {
@@ -192,6 +194,7 @@ internal fun RoleplayOnlinePhoneContent(
         onOpenPunishPlay,
         onOpenMoments,
         onOpenVideoCall,
+        onOpenMailbox,
     ) {
         buildList {
             add(
@@ -264,6 +267,14 @@ internal fun RoleplayOnlinePhoneContent(
                     icon = Icons.Default.Forum,
                     accentColor = Color(0xFF7C93F6),
                     onClick = onOpenMoments,
+                ),
+            )
+            add(
+                RoleplayInputQuickAction(
+                    label = "信箱",
+                    icon = Icons.Default.Mail,
+                    accentColor = Color(0xFF2E8068),
+                    onClick = onOpenMailbox,
                 ),
             )
             add(

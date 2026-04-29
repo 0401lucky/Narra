@@ -7,7 +7,9 @@ import com.example.myapplication.data.repository.ai.AiSettingsEditor
 import com.example.myapplication.data.repository.ai.AiSettingsRepository
 import com.example.myapplication.data.repository.context.ContextTransferCodec
 import com.example.myapplication.data.repository.context.ConversationSummaryRepository
+import com.example.myapplication.data.repository.context.EmptyPresetRepository
 import com.example.myapplication.data.repository.context.MemoryRepository
+import com.example.myapplication.data.repository.context.PresetRepository
 import com.example.myapplication.data.repository.context.TavernCharacterAdapter
 import com.example.myapplication.data.repository.context.TavernCharacterImageAdapter
 import com.example.myapplication.data.repository.context.TavernWorldBookAdapter
@@ -16,6 +18,7 @@ import com.example.myapplication.model.Assistant
 import com.example.myapplication.model.BUILTIN_ASSISTANTS
 import com.example.myapplication.model.ContextDataBundle
 import com.example.myapplication.model.DEFAULT_ASSISTANT_ID
+import com.example.myapplication.model.Preset
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -28,10 +31,11 @@ enum class ContextTransferSection(
     val label: String,
     val exportFileName: String,
 ) {
-    ALL("全部资料", "chat-context-export.json"),
-    ASSISTANTS("角色卡", "assistants-export.json"),
-    WORLD_BOOK("世界书", "worldbook-export.json"),
-    MEMORY("记忆", "memory-export.json"),
+    ALL("资料库备份", "narra-library-export.json"),
+    ASSISTANTS("角色包", "narra-character-pack.json"),
+    WORLD_BOOK("世界书包", "narra-worldbook-pack.json"),
+    MEMORY("记忆档案包", "narra-memory-pack.json"),
+    PRESETS("预设包", "narra-preset-pack.json"),
 }
 
 data class ContextImportConflict(
@@ -47,6 +51,7 @@ data class ContextImportPreview(
     val worldBookCount: Int,
     val memoryCount: Int,
     val summaryCount: Int,
+    val presetCount: Int,
     val conflicts: List<ContextImportConflict>,
 )
 
@@ -69,6 +74,7 @@ data class ContextTransferUiState(
     val worldBookCount: Int = 0,
     val memoryCount: Int = 0,
     val summaryCount: Int = 0,
+    val presetCount: Int = 0,
     val isBusy: Boolean = false,
     val importPreview: ContextImportPreview? = null,
     val message: String? = null,
@@ -80,6 +86,7 @@ class ContextTransferViewModel(
     private val worldBookRepository: WorldBookRepository,
     private val memoryRepository: MemoryRepository,
     private val conversationSummaryRepository: ConversationSummaryRepository,
+    private val presetRepository: PresetRepository = EmptyPresetRepository,
     private val codec: ContextTransferCodec = ContextTransferCodec(),
     private val tavernCharacterAdapter: TavernCharacterAdapter = TavernCharacterAdapter(),
     private val tavernCharacterImageAdapter: TavernCharacterImageAdapter = TavernCharacterImageAdapter(),
@@ -233,6 +240,7 @@ class ContextTransferViewModel(
             worldBookEntries = worldBookRepository.listEntries(),
             memoryEntries = memoryRepository.listEntries(),
             conversationSummaries = conversationSummaryRepository.listSummaries(),
+            presets = presetRepository.listPresets().filterNot { preset -> preset.builtIn },
         )
     }
 
@@ -259,6 +267,9 @@ class ContextTransferViewModel(
         bundle.conversationSummaries.forEach { summary ->
             conversationSummaryRepository.upsertSummary(summary)
         }
+        bundle.presets.forEach { preset ->
+            presetRepository.upsertPreset(preset.asImportedCustomPreset())
+        }
     }
 
     private suspend fun refreshCounts() {
@@ -266,12 +277,14 @@ class ContextTransferViewModel(
         val worldBookCount = worldBookRepository.listEntries().size
         val memoryCount = memoryRepository.listEntries().size
         val summaryCount = conversationSummaryRepository.listSummaries().size
+        val presetCount = presetRepository.listPresets().count { preset -> !preset.builtIn }
         _uiState.update {
             it.copy(
                 customAssistantCount = customAssistantCount,
                 worldBookCount = worldBookCount,
                 memoryCount = memoryCount,
                 summaryCount = summaryCount,
+                presetCount = presetCount,
             )
         }
     }
@@ -332,6 +345,7 @@ class ContextTransferViewModel(
         val currentWorldBookIds = worldBookRepository.listEntries().map { it.id }.toSet()
         val currentMemoryIds = memoryRepository.listEntries().map { it.id }.toSet()
         val currentSummaryIds = conversationSummaryRepository.listSummaries().map { it.conversationId }.toSet()
+        val currentPresetIds = presetRepository.listPresets().map { it.id }.toSet()
 
         val conflicts = buildList {
             bundle.assistants
@@ -354,6 +368,11 @@ class ContextTransferViewModel(
                 .forEach { summary ->
                     add(ContextImportConflict("摘要", summary.conversationId, summary.conversationId))
                 }
+            bundle.presets
+                .filter { it.id in currentPresetIds }
+                .forEach { preset ->
+                    add(ContextImportConflict("预设", preset.name.ifBlank { preset.id }, preset.id))
+                }
         }
 
         return ContextImportPreview(
@@ -363,6 +382,7 @@ class ContextTransferViewModel(
             worldBookCount = bundle.worldBookEntries.size,
             memoryCount = bundle.memoryEntries.size,
             summaryCount = bundle.conversationSummaries.size,
+            presetCount = bundle.presets.size,
             conflicts = conflicts,
         )
     }
@@ -485,17 +505,27 @@ class ContextTransferViewModel(
                 },
                 memoryEntries = emptyList(),
                 conversationSummaries = emptyList(),
+                presets = emptyList(),
             )
 
             ContextTransferSection.WORLD_BOOK -> bundle.copy(
                 assistants = emptyList(),
                 memoryEntries = emptyList(),
                 conversationSummaries = emptyList(),
+                presets = emptyList(),
             )
 
             ContextTransferSection.MEMORY -> bundle.copy(
                 assistants = emptyList(),
                 worldBookEntries = emptyList(),
+                presets = emptyList(),
+            )
+
+            ContextTransferSection.PRESETS -> bundle.copy(
+                assistants = emptyList(),
+                worldBookEntries = emptyList(),
+                memoryEntries = emptyList(),
+                conversationSummaries = emptyList(),
             )
         }
     }
@@ -504,7 +534,15 @@ class ContextTransferViewModel(
         return bundle.assistants.isEmpty() &&
             bundle.worldBookEntries.isEmpty() &&
             bundle.memoryEntries.isEmpty() &&
-            bundle.conversationSummaries.isEmpty()
+            bundle.conversationSummaries.isEmpty() &&
+            bundle.presets.isEmpty()
+    }
+
+    private fun Preset.asImportedCustomPreset(): Preset {
+        return normalized().copy(
+            builtIn = false,
+            userModified = true,
+        )
     }
 
     private fun attachAssistantScopedWorldBookLinks(bundle: ContextDataBundle): ContextDataBundle {
@@ -574,6 +612,7 @@ class ContextTransferViewModel(
             worldBookRepository: WorldBookRepository,
             memoryRepository: MemoryRepository,
             conversationSummaryRepository: ConversationSummaryRepository,
+            presetRepository: PresetRepository = EmptyPresetRepository,
             importedAssistantAvatarSaver: suspend (AssistantAvatarImport) -> String? = { null },
         ): ViewModelProvider.Factory {
             return typedViewModelFactory {
@@ -583,6 +622,7 @@ class ContextTransferViewModel(
                     worldBookRepository = worldBookRepository,
                     memoryRepository = memoryRepository,
                     conversationSummaryRepository = conversationSummaryRepository,
+                    presetRepository = presetRepository,
                     importedAssistantAvatarSaver = importedAssistantAvatarSaver,
                 )
             }

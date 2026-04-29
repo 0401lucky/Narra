@@ -46,6 +46,7 @@ internal object ResponseApiSupport {
             stream = request.stream,
             temperature = request.temperature,
             topP = request.topP,
+            maxOutputTokens = request.maxTokens,
             reasoning = request.reasoningEffort?.let { effort ->
                 ResponseApiReasoningDto(
                     effort = effort,

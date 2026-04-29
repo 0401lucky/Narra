@@ -1270,6 +1270,7 @@ class RoleplayViewModelTest {
             override suspend fun sendMessage(
                 messages: List<ChatMessage>,
                 systemPrompt: String,
+                promptEnvelope: com.example.myapplication.model.PromptEnvelope,
                 toolingOptions: GatewayToolingOptions,
             ): AssistantReply {
                 error("不应调用非流式发送")
@@ -1279,6 +1280,7 @@ class RoleplayViewModelTest {
                 messages: List<ChatMessage>,
                 systemPrompt: String,
                 promptMode: com.example.myapplication.model.PromptMode,
+                promptEnvelope: com.example.myapplication.model.PromptEnvelope,
                 toolingOptions: GatewayToolingOptions,
             ) = kotlinx.coroutines.flow.flow<com.example.myapplication.model.ChatStreamEvent> {
                 delay(Long.MAX_VALUE)
@@ -1287,6 +1289,8 @@ class RoleplayViewModelTest {
             override fun parseAssistantSpecialOutput(
                 content: String,
                 existingParts: List<ChatMessagePart>,
+                statusCardsEnabled: Boolean,
+                hideStatusBlocksInBubble: Boolean,
             ): ParsedAssistantSpecialOutput {
                 return ParsedAssistantSpecialOutput(
                     content = content,
@@ -1775,6 +1779,152 @@ class RoleplayViewModelTest {
         assertTrue(assistantMemories.any { it.content.contains("密门位置") })
         assertTrue(sceneMemories.any { it.content.contains("钟楼响过") })
         assertTrue(sceneMemories.any { it.content.contains("双方还在相互试探") })
+    }
+
+    @Test
+    fun refreshCurrentConversationSummary_manuallyExtractsRoleplayMemories() = runTest(mainDispatcherRule.dispatcher.scheduler) {
+        val assistant = Assistant(
+            id = "assistant-1",
+            name = "陆宴清",
+            memoryEnabled = true,
+            memoryMaxItems = 6,
+        )
+        val scenario = RoleplayScenario(
+            id = "scene-1",
+            assistantId = assistant.id,
+            userDisplayNameOverride = "林晚",
+            characterDisplayNameOverride = "陆宴清",
+        )
+        val session = RoleplaySession(
+            id = "session-1",
+            scenarioId = scenario.id,
+            conversationId = "conv-1",
+            createdAt = 1L,
+            updatedAt = 2L,
+        )
+        val store = FakeConversationStore(
+            conversations = listOf(
+                Conversation(
+                    id = session.conversationId,
+                    title = "剧情",
+                    model = "chat-model",
+                    createdAt = 1L,
+                    updatedAt = 2L,
+                    assistantId = assistant.id,
+                ),
+            ),
+            messagesByConversation = mapOf(
+                session.conversationId to listOf(
+                    ChatMessage(
+                        id = "m1",
+                        conversationId = session.conversationId,
+                        role = MessageRole.USER,
+                        content = "旧车站那晚，你其实一直在等我吧？",
+                        createdAt = 10L,
+                    ),
+                    ChatMessage(
+                        id = "m2",
+                        conversationId = session.conversationId,
+                        role = MessageRole.ASSISTANT,
+                        content = "我记得雨停之前你没有走。",
+                        createdAt = 20L,
+                    ),
+                ),
+            ),
+        )
+        val provider = ProviderSettings(
+            id = "provider-1",
+            name = "测试 Provider",
+            baseUrl = server.url("/v1/").toString(),
+            apiKey = "test-key",
+            selectedModel = "chat-model",
+            titleSummaryModelMode = ProviderFunctionModelMode.DISABLED,
+            memoryModel = "memory-model",
+        )
+        val memoryRepository = FakeMemoryRepository()
+        val viewModel = createViewModel(
+            store = store,
+            roleplayRepository = FakeRoleplayRepository(
+                conversationStore = store,
+                scenarios = listOf(scenario),
+                sessions = listOf(session),
+            ),
+            settings = AppSettings(
+                baseUrl = provider.baseUrl,
+                apiKey = provider.apiKey,
+                selectedModel = provider.selectedModel,
+                providers = listOf(provider),
+                selectedProviderId = provider.id,
+                assistants = listOf(assistant),
+                selectedAssistantId = assistant.id,
+                memoryAutoSummaryEvery = 0,
+            ),
+            promptContextAssembler = fixedPromptAssembler("提示词上下文"),
+            memoryRepository = memoryRepository,
+            apiServiceProvider = { _, _ ->
+                object : com.example.myapplication.testutil.TestOpenAiCompatibleApi() {
+                    override suspend fun listModels(): Response<ModelsResponse> = error("不应调用模型列表")
+
+                    override suspend fun createChatCompletion(request: ChatCompletionRequest): Response<ChatCompletionResponse> {
+                        val prompt = request.messages.firstOrNull()?.content.toString()
+                        val content = when {
+                            prompt.contains("沉浸式剧情记忆提取器") -> """
+                                {"persistent_memories":["角色记得旧车站雨夜没有离开。"],"scene_state_memories":["当前会话正在回到旧车站雨夜。"]}
+                            """.trimIndent()
+                            else -> "[]"
+                        }
+                        return Response.success(
+                            ChatCompletionResponse(
+                                choices = listOf(
+                                    ChatChoiceDto(
+                                        index = 0,
+                                        message = AssistantMessageDto(
+                                            role = "assistant",
+                                            content = content,
+                                        ),
+                                    ),
+                                ),
+                            ),
+                        )
+                    }
+
+                    override suspend fun createChatCompletionAt(
+                        url: String,
+                        request: ChatCompletionRequest,
+                    ): Response<ChatCompletionResponse> = createChatCompletion(request)
+
+                    override suspend fun createResponseAt(
+                        url: String,
+                        request: com.example.myapplication.model.ResponseApiRequest,
+                    ): Response<com.example.myapplication.model.ResponseApiResponse> = error("不应调用 responses 接口")
+
+                    override suspend fun generateImage(request: ImageGenerationRequest): Response<ImageGenerationResponse> {
+                        error("不应调用生图接口")
+                    }
+                }
+            },
+        )
+
+        viewModel.enterScenario(scenario.id)
+        advanceUntilIdle()
+        viewModel.refreshCurrentConversationSummary()
+        advanceUntilIdle()
+
+        val entries = memoryRepository.currentEntries()
+        assertTrue(entries.any {
+            it.scopeType == com.example.myapplication.model.MemoryScopeType.ASSISTANT &&
+                it.scopeId == assistant.id &&
+                it.content.contains("旧车站雨夜")
+        })
+        assertTrue(entries.any {
+            it.scopeType == com.example.myapplication.model.MemoryScopeType.CONVERSATION &&
+                it.scopeId == session.conversationId &&
+                it.content.contains("当前会话")
+        })
+        assertEquals(1, viewModel.uiState.value.longMemoryCount)
+        assertEquals(1, viewModel.uiState.value.sceneMemoryCount)
+        assertEquals(false, viewModel.uiState.value.isRefreshingConversationSummary)
+        assertEquals("记忆已提炼", viewModel.uiState.value.noticeMessage)
     }
 
     @Test

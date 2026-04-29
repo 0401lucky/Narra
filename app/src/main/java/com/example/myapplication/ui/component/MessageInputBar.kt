@@ -556,6 +556,7 @@ private fun PendingAttachmentBanner(
                     ChatMessagePartType.FILE -> Icons.Default.Description
                     ChatMessagePartType.ACTION -> Icons.Default.Share
                     ChatMessagePartType.SPECIAL -> Icons.Default.Share
+                    ChatMessagePartType.STATUS -> Icons.Default.Description
                     ChatMessagePartType.TEXT -> Icons.Default.Description
                 },
                 contentDescription = null,
@@ -571,6 +572,7 @@ private fun PendingAttachmentBanner(
                         ChatMessagePartType.FILE -> attachment?.fileName?.ifBlank { stringResource(R.string.input_selected_file) } ?: stringResource(R.string.input_selected_file)
                         ChatMessagePartType.ACTION -> part.toActionCopyText().ifBlank { stringResource(R.string.input_attached_action) }
                         ChatMessagePartType.SPECIAL -> part.specialType?.displayName?.let { stringResource(R.string.input_attached_special_card, it) } ?: stringResource(R.string.input_attached_special)
+                        ChatMessagePartType.STATUS -> "状态卡"
                         ChatMessagePartType.TEXT -> stringResource(R.string.input_content_text)
                     },
                     maxLines = 1,
@@ -583,6 +585,7 @@ private fun PendingAttachmentBanner(
                         ChatMessagePartType.FILE -> stringResource(R.string.input_hint_file_extract)
                         ChatMessagePartType.ACTION -> stringResource(R.string.input_hint_action_resend)
                         ChatMessagePartType.SPECIAL -> stringResource(R.string.input_hint_special_resend)
+                        ChatMessagePartType.STATUS -> "状态卡会随消息发送"
                         ChatMessagePartType.TEXT -> stringResource(R.string.input_hint_text_send)
                     },
                     style = MaterialTheme.typography.labelMedium,

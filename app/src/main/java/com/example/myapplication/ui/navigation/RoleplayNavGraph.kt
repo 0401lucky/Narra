@@ -35,6 +35,8 @@ import com.example.myapplication.ui.screen.roleplay.RoleplaySessionCallbacks
 import com.example.myapplication.ui.screen.roleplay.RoleplayUiCallbacks
 import com.example.myapplication.ui.screen.roleplay.RoleplaySettingsScreen
 import com.example.myapplication.ui.screen.roleplay.RoleplayVideoCallScreen
+import com.example.myapplication.ui.screen.roleplay.mailbox.MailboxCallbacks
+import com.example.myapplication.ui.screen.roleplay.mailbox.MailboxScreen
 import com.example.myapplication.viewmodel.SettingsViewModel
 import com.example.myapplication.viewmodel.updateRoleplayHighContrast
 import com.example.myapplication.viewmodel.updateRoleplayImmersiveMode
@@ -122,6 +124,46 @@ internal fun NavGraphBuilder.registerRoleplayGraph(
                             launchSingleTop = true
                         }
                     },
+                    onOpenAssistantSettings = {
+                        navController.navigate(AppRoutes.SETTINGS_ASSISTANTS) {
+                            launchSingleTop = true
+                        }
+                    },
+                    onOpenAssistantDetail = { assistantId ->
+                        navController.navigate(AppRoutes.settingsAssistantDetail(assistantId)) {
+                            launchSingleTop = true
+                        }
+                    },
+                    onOpenAssistantPrompt = { assistantId ->
+                        navController.navigate(AppRoutes.settingsAssistantPrompt(assistantId)) {
+                            launchSingleTop = true
+                        }
+                    },
+                    onOpenAssistantMemory = { assistantId ->
+                        navController.navigate(AppRoutes.settingsAssistantMemory(assistantId)) {
+                            launchSingleTop = true
+                        }
+                    },
+                    onOpenAssistantWorldBook = { assistantId ->
+                        navController.navigate(AppRoutes.settingsAssistantExtensions(assistantId)) {
+                            launchSingleTop = true
+                        }
+                    },
+                    onOpenWorldBookSettings = {
+                        navController.navigate(AppRoutes.SETTINGS_WORLD_BOOKS) {
+                            launchSingleTop = true
+                        }
+                    },
+                    onOpenMemorySettings = {
+                        navController.navigate(AppRoutes.SETTINGS_MEMORY) {
+                            launchSingleTop = true
+                        }
+                    },
+                    onOpenContextTransferSettings = {
+                        navController.navigate(AppRoutes.SETTINGS_CONTEXT_TRANSFER) {
+                            launchSingleTop = true
+                        }
+                    },
                     onSetDefaultUserPersonaMask = settingsViewModel::setDefaultUserPersonaMask,
                     onOpenAssistantCreate = {
                         navController.navigate(AppRoutes.settingsAssistantBasic("new")) {
@@ -166,6 +208,11 @@ internal fun NavGraphBuilder.registerRoleplayGraph(
                     },
                     onOpenVideoCall = { scenarioId ->
                         navController.navigate(AppRoutes.roleplayVideoCall(scenarioId)) {
+                            launchSingleTop = true
+                        }
+                    },
+                    onOpenMailbox = { scenarioId ->
+                        navController.navigate(AppRoutes.roleplayMailbox(scenarioId)) {
                             launchSingleTop = true
                         }
                     },
@@ -347,6 +394,11 @@ internal fun NavGraphBuilder.registerRoleplayGraph(
                                 launchSingleTop = true
                             }
                         },
+                        onOpenMailbox = {
+                            navController.navigate(AppRoutes.roleplayMailbox(scenarioId)) {
+                                launchSingleTop = true
+                            }
+                        },
                         onOpenReadingMode = {
                             navController.navigate(AppRoutes.roleplayReading(scenarioId)) {
                                 launchSingleTop = true
@@ -438,6 +490,9 @@ internal fun NavGraphBuilder.registerRoleplayGraph(
                 latestPromptDebugDump = roleplayState.latestPromptDebugDump,
                 contextGovernance = roleplayState.contextGovernance,
                 recentMemoryProposalHistory = roleplayState.recentMemoryProposalHistory,
+                longMemoryCount = roleplayState.longMemoryCount,
+                sceneMemoryCount = roleplayState.sceneMemoryCount,
+                isRefreshingConversationSummary = roleplayState.isRefreshingConversationSummary,
                 onOpenReadingMode = {
                     settingsViewModel.saveSettings {
                         navController.navigate(AppRoutes.roleplayReading(scenarioId)) {
@@ -466,8 +521,8 @@ internal fun NavGraphBuilder.registerRoleplayGraph(
                         launchSingleTop = true
                     }
                 },
-                onOpenConnectionSettings = {
-                    navController.navigate(AppRoutes.SETTINGS_CONNECTION) {
+                onOpenProviderSettings = {
+                    navController.navigate(AppRoutes.SETTINGS_PROVIDERS) {
                         launchSingleTop = true
                     }
                 },
@@ -604,6 +659,11 @@ internal fun NavGraphBuilder.registerRoleplayGraph(
                         launchSingleTop = true
                     }
                 },
+                onOpenMailbox = {
+                    navController.navigate(AppRoutes.roleplayMailbox(scenarioId)) {
+                        launchSingleTop = true
+                    }
+                },
                 onNavigateBack = { navController.popBackStack() },
             )
         }
@@ -631,6 +691,11 @@ internal fun NavGraphBuilder.registerRoleplayGraph(
                 settings = roleplayState.settings,
                 diaryEntries = roleplayState.diaryEntries,
                 entryId = entryId,
+                onOpenMailbox = {
+                    navController.navigate(AppRoutes.roleplayMailbox(scenarioId)) {
+                        launchSingleTop = true
+                    }
+                },
                 onNavigateBack = { navController.popBackStack() },
             )
         }
@@ -676,6 +741,75 @@ internal fun NavGraphBuilder.registerRoleplayGraph(
                     roleplayViewModel.hangupVideoCall()
                     navController.popBackStack()
                 },
+            )
+        }
+
+        composable(AppRoutes.ROLEPLAY_MAILBOX) { backStackEntry ->
+            val rawScenarioId = backStackEntry.arguments?.getString("scenarioId").orEmpty()
+            val scenarioId = Uri.decode(rawScenarioId)
+            val mailboxViewModel = rememberMailboxViewModel(
+                appGraph = appGraph,
+                backStackEntry = backStackEntry,
+            )
+            val mailboxState by mailboxViewModel.uiState.collectAsStateWithLifecycle()
+            MailboxScreen(
+                uiState = mailboxState,
+                callbacks = MailboxCallbacks(
+                    onSelectBox = mailboxViewModel::selectBox,
+                    onSelectLetter = mailboxViewModel::selectLetter,
+                    onSearchQueryChange = mailboxViewModel::updateSearchQuery,
+                    onSelectTag = mailboxViewModel::selectTag,
+                    onUnreadOnlyChange = mailboxViewModel::updateUnreadOnly,
+                    onClearFilters = mailboxViewModel::clearFilters,
+                    onBackToList = mailboxViewModel::backToList,
+                    onStartCompose = mailboxViewModel::startCompose,
+                    onEditDraft = mailboxViewModel::editDraft,
+                    onSubjectChange = mailboxViewModel::updateDraftSubject,
+                    onContentChange = mailboxViewModel::updateDraftContent,
+                    onIncludeRecentChatChange = mailboxViewModel::updateIncludeRecentChat,
+                    onIncludePhoneCluesChange = mailboxViewModel::updateIncludePhoneClues,
+                    onAllowMemoryChange = mailboxViewModel::updateAllowMemory,
+                    onGenerateReplyAfterSendChange = mailboxViewModel::updateGenerateReplyAfterSend,
+                    onOpenSettings = mailboxViewModel::openSettings,
+                    onCloseSettings = mailboxViewModel::closeSettings,
+                    onAutoReplySettingChange = mailboxViewModel::updateAutoReplySetting,
+                    onDefaultIncludeRecentChatSettingChange = mailboxViewModel::updateDefaultIncludeRecentChatSetting,
+                    onDefaultIncludePhoneCluesSettingChange = mailboxViewModel::updateDefaultIncludePhoneCluesSetting,
+                    onDefaultAllowMemorySettingChange = mailboxViewModel::updateDefaultAllowMemorySetting,
+                    onProactiveFrequencyChange = mailboxViewModel::updateProactiveFrequency,
+                    onRequestProactiveLetterNow = mailboxViewModel::requestProactiveLetterNow,
+                    onSaveDraft = mailboxViewModel::saveDraft,
+                    onSend = mailboxViewModel::sendLetter,
+                    onArchive = mailboxViewModel::archive,
+                    onDelete = mailboxViewModel::delete,
+                    onGenerateReply = mailboxViewModel::generateReplyFor,
+                    onCreateMemoryCandidate = mailboxViewModel::createMemoryCandidate,
+                    onApproveMemory = mailboxViewModel::approvePendingMemoryProposal,
+                    onRejectMemory = mailboxViewModel::rejectPendingMemoryProposal,
+                    onQuoteLetter = mailboxViewModel::quoteLetter,
+                    onOpenDiary = {
+                        navController.navigate(AppRoutes.roleplayDiary(mailboxState.scenarioId.ifBlank { scenarioId })) {
+                            launchSingleTop = true
+                        }
+                    },
+                    onOpenPhoneCheck = {
+                        val conversationId = mailboxState.conversationId
+                        if (conversationId.isNotBlank()) {
+                            navController.navigate(
+                                AppRoutes.phoneCheck(
+                                    conversationId = conversationId,
+                                    scenarioId = mailboxState.scenarioId.ifBlank { scenarioId },
+                                    ownerType = PhoneSnapshotOwnerType.CHARACTER,
+                                ),
+                            ) {
+                                launchSingleTop = true
+                            }
+                        }
+                    },
+                    onClearNotice = mailboxViewModel::clearNoticeMessage,
+                    onClearError = mailboxViewModel::clearErrorMessage,
+                ),
+                onNavigateBack = { navController.popBackStack() },
             )
         }
     }

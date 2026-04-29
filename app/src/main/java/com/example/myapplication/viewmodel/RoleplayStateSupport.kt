@@ -80,6 +80,9 @@ object RoleplayStateSupport {
             activeVideoCallStartedAt = 0L,
             pendingMemoryProposal = null,
             recentMemoryProposalHistory = emptyList(),
+            longMemoryCount = 0,
+            sceneMemoryCount = 0,
+            isRefreshingConversationSummary = false,
             diaryEntries = emptyList(),
             isGeneratingDiary = false,
             contextStatus = RoleplayContextStatus(),
@@ -114,6 +117,9 @@ object RoleplayStateSupport {
             activeVideoCallStartedAt = 0L,
             pendingMemoryProposal = null,
             recentMemoryProposalHistory = emptyList(),
+            longMemoryCount = 0,
+            sceneMemoryCount = 0,
+            isRefreshingConversationSummary = false,
             diaryEntries = emptyList(),
             isGeneratingDiary = false,
         )
@@ -277,6 +283,9 @@ object RoleplayStateSupport {
             activeVideoCallStartedAt = 0L,
             pendingMemoryProposal = null,
             recentMemoryProposalHistory = emptyList(),
+            longMemoryCount = 0,
+            sceneMemoryCount = 0,
+            isRefreshingConversationSummary = false,
             diaryEntries = emptyList(),
             isGeneratingDiary = false,
         )
@@ -302,6 +311,8 @@ object RoleplayStateSupport {
             activeVideoCallStartedAt = 0L,
             pendingMemoryProposal = null,
             recentMemoryProposalHistory = emptyList(),
+            sceneMemoryCount = 0,
+            isRefreshingConversationSummary = false,
             diaryEntries = emptyList(),
             isGeneratingDiary = false,
         )
@@ -511,6 +522,8 @@ object RoleplayStateSupport {
             currentSession = session,
             pendingMemoryProposal = null,
             recentMemoryProposalHistory = emptyList(),
+            sceneMemoryCount = if (session == null) 0 else current.sceneMemoryCount,
+            isRefreshingConversationSummary = if (session == null) false else current.isRefreshingConversationSummary,
             activeVideoCallSessionId = if (session == null) "" else current.activeVideoCallSessionId,
             activeVideoCallStartedAt = if (session == null) 0L else current.activeVideoCallStartedAt,
             contextStatus = if (session == null) {

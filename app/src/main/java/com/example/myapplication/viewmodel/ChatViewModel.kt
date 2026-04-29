@@ -51,6 +51,7 @@ import com.example.myapplication.model.MemoryScopeType
 import com.example.myapplication.model.MessageAttachment
 import com.example.myapplication.model.MessageStatus
 import com.example.myapplication.model.ProviderFunction
+import com.example.myapplication.model.PromptEnvelope
 import com.example.myapplication.model.PromptMode
 import com.example.myapplication.model.isGiftPart
 import com.example.myapplication.model.isTransferPart
@@ -889,6 +890,8 @@ class ChatViewModel(
                             loadingMessage = loadingMessage,
                             buildFinalMessages = buildFinalMessages,
                             systemPrompt = promptContext.systemPrompt,
+                            statusCardsEnabled = promptContext.promptEnvelope.statusCardsEnabled,
+                            hideStatusBlocksInBubble = promptContext.promptEnvelope.hideStatusBlocksInBubble,
                             streamReply = { messages, systemPrompt ->
                                 streamAssistantReply(
                                     conversationId = conversationId,
@@ -896,6 +899,7 @@ class ChatViewModel(
                                     requestMessages = messages,
                                     streamBuffer = streamBuffer,
                                     systemPrompt = systemPrompt,
+                                    promptEnvelope = promptContext.promptEnvelope,
                                     toolingOptions = toolingOptions,
                                 )
                             },
@@ -1483,6 +1487,7 @@ class ChatViewModel(
         requestMessages: List<ChatMessage>,
         streamBuffer: StreamingReplyBuffer,
         systemPrompt: String = "",
+        promptEnvelope: PromptEnvelope = PromptEnvelope(),
         toolingOptions: GatewayToolingOptions = GatewayToolingOptions(),
     ) {
         ChatStreamingSupport.collectStreamingReply(
@@ -1491,6 +1496,7 @@ class ChatViewModel(
                 messages = requestMessages,
                 systemPrompt = systemPrompt,
                 promptMode = PromptMode.CHAT,
+                promptEnvelope = promptEnvelope,
                 toolingOptions = toolingOptions,
             ),
             publishFrame = { content, reasoning, reasoningSteps, parts ->

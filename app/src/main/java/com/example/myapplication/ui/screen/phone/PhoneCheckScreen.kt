@@ -22,6 +22,7 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Description
 import androidx.compose.material.icons.filled.Forum
 import androidx.compose.material.icons.filled.Image
+import androidx.compose.material.icons.filled.Mail
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.ShoppingCart
@@ -94,6 +95,7 @@ fun PhoneCheckScreen(
     onLoadSearchDetail: (String) -> Unit,
     onClearErrorMessage: () -> Unit,
     onClearNoticeMessage: () -> Unit,
+    onOpenMailbox: (() -> Unit)? = null,
 ) {
     val snackbarHostState = remember { SnackbarHostState() }
     var selectedTab by remember { mutableStateOf(PhoneSnapshotSection.MESSAGES) }
@@ -154,6 +156,7 @@ fun PhoneCheckScreen(
                     selectedRefreshSections = PhoneSnapshotSection.entries.toSet()
                     showRefreshDialog = true
                 },
+                onOpenMailbox = onOpenMailbox,
             )
         },
         bottomBar = {
@@ -297,6 +300,7 @@ private fun PhoneTopBar(
     showingDetail: Boolean,
     onNavigateBack: () -> Unit,
     onRefresh: () -> Unit,
+    onOpenMailbox: (() -> Unit)?,
 ) {
     Row(
         modifier = Modifier
@@ -333,6 +337,17 @@ private fun PhoneTopBar(
                     overflow = TextOverflow.Ellipsis,
                     textAlign = TextAlign.Center,
                 )
+            }
+        }
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            if (onOpenMailbox != null && !showingDetail) {
+                NarraIconButton(onClick = onOpenMailbox) {
+                    Icon(
+                        imageVector = Icons.Default.Mail,
+                        contentDescription = "信箱",
+                        tint = PhoneAccent(),
+                    )
+                }
             }
         }
         if (showRefresh) {

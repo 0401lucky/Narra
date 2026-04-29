@@ -153,10 +153,6 @@ class SettingsViewModel(
         }
     }
 
-    fun updateBaseUrl(value: String) = updateCurrentProviderAndClearHealth { it.copy(baseUrl = value) }
-
-    fun updateApiKey(value: String) = updateCurrentProviderAndClearHealth { it.copy(apiKey = value) }
-
     fun updateSelectedModel(value: String) = updateCurrentProvider { provider ->
         provider.copy(
             selectedModel = value,
@@ -569,6 +565,16 @@ class SettingsViewModel(
     fun selectAssistant(assistantId: String) =
         launchAssistantOp { selectAssistant(it, assistantId) }
 
+    fun saveDefaultPresetId(presetId: String) = launchPersistenceMutation(
+        defaultErrorMessage = "默认预设设置失败",
+        action = {
+            settingsEditor.saveDefaultPresetId(presetId)
+            SettingsPersistenceResult(
+                message = "默认预设已更新",
+            )
+        },
+    )
+
     // ── 记忆与上下文日志：直接落库（子页面无"保存"按钮，操作即时反馈） ──
 
     fun updateMemoryAutoSummaryEvery(value: Int) {
@@ -696,16 +702,6 @@ class SettingsViewModel(
                 current = current,
                 transform = transform,
             )
-        }
-
-    private fun updateCurrentProviderAndClearHealth(transform: (ProviderSettings) -> ProviderSettings) =
-        updateUiState { current ->
-            val providerId = current.currentProvider?.id ?: return@updateUiState current
-            val updated = SettingsDraftStateSupport.updateCurrentProvider(
-                current = current,
-                transform = transform,
-            )
-            SettingsHealthStateSupport.clearProviderHealth(updated, providerId)
         }
 
     private fun updateProviderAndClearHealth(

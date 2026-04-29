@@ -13,7 +13,6 @@ import com.example.myapplication.ui.screen.settings.ProviderDetailScreen
 import com.example.myapplication.ui.screen.settings.ProviderSettingsScreen
 import com.example.myapplication.ui.screen.settings.ScreenTranslationSettingsScreen
 import com.example.myapplication.ui.screen.settings.SearchToolSettingsScreen
-import com.example.myapplication.ui.screen.settings.SettingsConnectionScreen
 import com.example.myapplication.ui.screen.settings.SettingsModelScreen
 import com.example.myapplication.viewmodel.AppUpdateViewModel
 import com.example.myapplication.viewmodel.SettingsViewModel
@@ -44,7 +43,7 @@ import com.example.myapplication.viewmodel.updateSearchSourceEnabled
 import com.example.myapplication.viewmodel.updateSearchSourceEngineId
 import com.example.myapplication.viewmodel.updateSearchSourceProviderId
 
-// 提供商、模型、连接、搜索工具、屏幕翻译、应用更新
+// 提供商、模型、搜索工具、屏幕翻译、应用更新
 
 internal fun NavGraphBuilder.registerSettingsProviderRoutes(
     navController: NavHostController,
@@ -142,19 +141,6 @@ internal fun NavGraphBuilder.registerSettingsProviderRoutes(
             onRemoveModel = settingsViewModel::removeModelFromProvider,
             onNavigateBack = {
                 settingsViewModel.saveSettings {}
-                navController.popBackStack()
-            },
-        )
-    }
-
-    composable(AppRoutes.SETTINGS_CONNECTION) {
-        val providerSettingsState by settingsViewModel.uiState.collectAsStateWithLifecycle()
-        SettingsConnectionScreen(
-            uiState = providerSettingsState,
-            onBaseUrlChange = settingsViewModel::updateBaseUrl,
-            onApiKeyChange = settingsViewModel::updateApiKey,
-            onConsumeMessage = settingsViewModel::consumeMessage,
-            onNavigateBack = {
                 navController.popBackStack()
             },
         )

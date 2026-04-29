@@ -8,10 +8,13 @@ import com.example.myapplication.model.Assistant
 import com.example.myapplication.model.ConversationSummary
 import com.example.myapplication.model.MemoryEntry
 import com.example.myapplication.model.MemoryScopeType
+import com.example.myapplication.model.Preset
+import com.example.myapplication.model.PresetSamplerConfig
 import com.example.myapplication.model.WorldBookEntry
 import com.example.myapplication.model.WorldBookScopeType
 import com.example.myapplication.testutil.FakeConversationSummaryRepository
 import com.example.myapplication.testutil.FakeMemoryRepository
+import com.example.myapplication.testutil.FakePresetRepository
 import com.example.myapplication.testutil.FakeSettingsStore
 import com.example.myapplication.testutil.FakeWorldBookRepository
 import com.example.myapplication.testutil.TestAiServices
@@ -194,6 +197,68 @@ class ContextTransferViewModelTest {
         assertEquals(1, decoded.worldBookEntries.size)
         assertEquals(0, decoded.memoryEntries.size)
         assertEquals(0, decoded.conversationSummaries.size)
+    }
+
+    @Test
+    fun exportAndImportPresetPack_roundTripsCustomPresetsOnly() = runTest(mainDispatcherRule.dispatcher.scheduler) {
+        val services = createTestAiServices(
+            settings = AppSettings(),
+            dispatcher = mainDispatcherRule.dispatcher,
+        )
+        val presetRepository = FakePresetRepository(
+            initialPresets = listOf(
+                Preset(
+                    id = "builtin-preset",
+                    name = "内置预设",
+                    builtIn = true,
+                ),
+                Preset(
+                    id = "custom-preset",
+                    name = "自定义预设",
+                    sampler = PresetSamplerConfig(temperature = 0.66f),
+                ),
+            ),
+        )
+        val viewModel = createContextTransferViewModel(
+            services = services,
+            worldBookRepository = FakeWorldBookRepository(),
+            memoryRepository = FakeMemoryRepository(),
+            conversationSummaryRepository = FakeConversationSummaryRepository(),
+            presetRepository = presetRepository,
+        )
+
+        advanceUntilIdle()
+
+        var exportedJson = ""
+        viewModel.exportBundleJson(ContextTransferSection.PRESETS) { json, _ ->
+            exportedJson = json
+        }
+        advanceUntilIdle()
+
+        val decoded = ContextTransferCodec().decode(exportedJson)
+        assertEquals(listOf("custom-preset"), decoded.presets.map { it.id })
+        assertEquals(0.66f, decoded.presets.single().sampler.temperature ?: 0f, 0.0001f)
+
+        val targetRepository = FakePresetRepository()
+        val importViewModel = createContextTransferViewModel(
+            services = services,
+            worldBookRepository = FakeWorldBookRepository(),
+            memoryRepository = FakeMemoryRepository(),
+            conversationSummaryRepository = FakeConversationSummaryRepository(),
+            presetRepository = targetRepository,
+        )
+
+        importViewModel.previewImportJson(exportedJson, ContextTransferSection.PRESETS)
+        advanceUntilIdle()
+        assertEquals(1, importViewModel.uiState.value.importPreview?.presetCount)
+
+        importViewModel.confirmImport()
+        advanceUntilIdle()
+
+        val imported = targetRepository.currentPresets().single()
+        assertEquals("custom-preset", imported.id)
+        assertTrue(imported.userModified)
+        assertEquals(false, imported.builtIn)
     }
 
     @Test
@@ -608,6 +673,7 @@ class ContextTransferViewModelTest {
         worldBookRepository: FakeWorldBookRepository,
         memoryRepository: FakeMemoryRepository,
         conversationSummaryRepository: FakeConversationSummaryRepository,
+        presetRepository: FakePresetRepository = FakePresetRepository(),
         importedAssistantAvatarSaver: suspend (AssistantAvatarImport) -> String? = { null },
     ): ContextTransferViewModel {
         return ContextTransferViewModel(
@@ -616,6 +682,7 @@ class ContextTransferViewModelTest {
             worldBookRepository = worldBookRepository,
             memoryRepository = memoryRepository,
             conversationSummaryRepository = conversationSummaryRepository,
+            presetRepository = presetRepository,
             importedAssistantAvatarSaver = importedAssistantAvatarSaver,
         )
     }

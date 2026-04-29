@@ -6,9 +6,11 @@ import android.os.Build
 import androidx.annotation.RequiresApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.gestures.Orientation
 import androidx.compose.foundation.gestures.draggable
 import androidx.compose.foundation.gestures.rememberDraggableState
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -31,11 +33,13 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.Chat
+import androidx.compose.material.icons.automirrored.filled.LibraryBooks
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.AutoStories
 import androidx.compose.material.icons.filled.Book
-import androidx.compose.material.icons.filled.Chat
 import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.CloudSync
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Forum
@@ -43,6 +47,7 @@ import androidx.compose.material.icons.filled.Group
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.KeyboardArrowUp
+import androidx.compose.material.icons.filled.Mail
 import androidx.compose.material.icons.filled.ManageAccounts
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.NotificationsOff
@@ -117,6 +122,14 @@ data class ImmersivePhoneCallbacks(
     val onOpenChatEdit: (String) -> Unit,
     val onOpenSettings: () -> Unit,
     val onOpenUserMasks: () -> Unit,
+    val onOpenAssistantSettings: () -> Unit,
+    val onOpenAssistantDetail: (String) -> Unit,
+    val onOpenAssistantPrompt: (String) -> Unit,
+    val onOpenAssistantMemory: (String) -> Unit,
+    val onOpenAssistantWorldBook: (String) -> Unit,
+    val onOpenWorldBookSettings: () -> Unit,
+    val onOpenMemorySettings: () -> Unit,
+    val onOpenContextTransferSettings: () -> Unit,
     val onSetDefaultUserPersonaMask: (String) -> Unit,
     val onOpenAssistantCreate: () -> Unit,
     val onCreateChat: (String, RoleplayInteractionMode, Boolean) -> Unit,
@@ -128,15 +141,16 @@ data class ImmersivePhoneCallbacks(
     val onOpenMoments: (String) -> Unit,
     val onOpenDiary: (String) -> Unit,
     val onOpenVideoCall: (String) -> Unit,
+    val onOpenMailbox: (String) -> Unit,
 )
 
 private enum class ImmersiveTab(
     val label: String,
     val icon: ImageVector,
 ) {
-    Messages("消息", Icons.Default.Chat),
+    Messages("消息", Icons.AutoMirrored.Filled.Chat),
     Contacts("通讯录", Icons.Default.Person),
-    Discover("广场", Icons.Default.Forum),
+    Discover("手机", Icons.Default.PhoneAndroid),
     Profile("我", Icons.Default.Person),
 }
 
@@ -145,10 +159,11 @@ private enum class DiscoverTarget(
     val subtitle: String,
     val icon: ImageVector,
 ) {
-    Moments("朋友圈", "按聊天查看动态；无内容先查手机", Icons.Default.Forum),
-    PhoneCheck("查手机", "选择聊天后生成或查看手机内容", Icons.Default.PhoneAndroid),
-    Diary("日记本", "按聊天生成或查看日记", Icons.Default.Book),
-    VideoCall("视频通话", "选择聊天后进入对应角色通话", Icons.Default.Videocam),
+    Moments("朋友圈", "角色动态、评论和关系里的日常痕迹", Icons.Default.Forum),
+    PhoneCheck("查手机", "查看角色手机内容与可触发的生活线索", Icons.Default.PhoneAndroid),
+    Diary("日记本", "按聊天回看角色日记和剧情章节", Icons.Default.Book),
+    Mailbox("信箱", "查看来信、草稿与已寄信件", Icons.Default.Mail),
+    VideoCall("视频通话", "进入当前角色关系里的通话场景", Icons.Default.Videocam),
 }
 
 private data class ModeOption(
@@ -290,6 +305,10 @@ fun ImmersivePhoneShell(
                     assistantCount = assistants.size,
                     onOpenChatManage = callbacks.onOpenChatManage,
                     onOpenUserMasks = callbacks.onOpenUserMasks,
+                    onOpenAssistantSettings = callbacks.onOpenAssistantSettings,
+                    onOpenWorldBookSettings = callbacks.onOpenWorldBookSettings,
+                    onOpenMemorySettings = callbacks.onOpenMemorySettings,
+                    onOpenContextTransferSettings = callbacks.onOpenContextTransferSettings,
                     onSetDefaultUserPersonaMask = callbacks.onSetDefaultUserPersonaMask,
                     onOpenSettings = callbacks.onOpenSettings,
                 )
@@ -322,6 +341,42 @@ fun ImmersivePhoneShell(
                 selectedContact = null
                 callbacks.onCreateChat(assistantId, mode, narration)
             },
+            onOpenAssistantDetail = { assistantId ->
+                selectedContact = null
+                callbacks.onOpenAssistantDetail(assistantId)
+            },
+            onOpenAssistantPrompt = { assistantId ->
+                selectedContact = null
+                callbacks.onOpenAssistantPrompt(assistantId)
+            },
+            onOpenAssistantMemory = { assistantId ->
+                selectedContact = null
+                callbacks.onOpenAssistantMemory(assistantId)
+            },
+            onOpenAssistantWorldBook = { assistantId ->
+                selectedContact = null
+                callbacks.onOpenAssistantWorldBook(assistantId)
+            },
+            onOpenPhoneCheck = { scenarioId ->
+                selectedContact = null
+                callbacks.onOpenPhoneCheck(scenarioId)
+            },
+            onOpenMoments = { scenarioId ->
+                selectedContact = null
+                callbacks.onOpenMoments(scenarioId)
+            },
+            onOpenDiary = { scenarioId ->
+                selectedContact = null
+                callbacks.onOpenDiary(scenarioId)
+            },
+            onOpenMailbox = { scenarioId ->
+                selectedContact = null
+                callbacks.onOpenMailbox(scenarioId)
+            },
+            onOpenVideoCall = { scenarioId ->
+                selectedContact = null
+                callbacks.onOpenVideoCall(scenarioId)
+            },
         )
     }
 
@@ -337,6 +392,7 @@ fun ImmersivePhoneShell(
                     DiscoverTarget.Moments -> callbacks.onOpenMoments(scenarioId)
                     DiscoverTarget.PhoneCheck -> callbacks.onOpenPhoneCheck(scenarioId)
                     DiscoverTarget.Diary -> callbacks.onOpenDiary(scenarioId)
+                    DiscoverTarget.Mailbox -> callbacks.onOpenMailbox(scenarioId)
                     DiscoverTarget.VideoCall -> callbacks.onOpenVideoCall(scenarioId)
                 }
             },
@@ -395,7 +451,7 @@ private fun ImmersivePhoneTopBar(
                 ) {
                     DropdownMenuItem(
                         text = { Text("新建聊天") },
-                        leadingIcon = { Icon(Icons.Default.Chat, contentDescription = null) },
+                        leadingIcon = { Icon(Icons.AutoMirrored.Filled.Chat, contentDescription = null) },
                         onClick = onOpenNewChat,
                     )
                     DropdownMenuItem(
@@ -831,6 +887,10 @@ private fun ImmersiveProfilePage(
     assistantCount: Int,
     onOpenChatManage: () -> Unit,
     onOpenUserMasks: () -> Unit,
+    onOpenAssistantSettings: () -> Unit,
+    onOpenWorldBookSettings: () -> Unit,
+    onOpenMemorySettings: () -> Unit,
+    onOpenContextTransferSettings: () -> Unit,
     onSetDefaultUserPersonaMask: (String) -> Unit,
     onOpenSettings: () -> Unit,
 ) {
@@ -900,9 +960,13 @@ private fun ImmersiveProfilePage(
                 onOpenUserMasks = onOpenUserMasks,
             )
         }
-        item { FeatureRow("聊天管理", "查看、编辑和删除聊天资料", Icons.Default.Chat, onOpenChatManage) }
-        item { FeatureRow("设置", "模型、显示、世界书与记忆", Icons.Default.Settings, onOpenSettings) }
-        item { FeatureRow("关于", "Narra 沉浸世界", Icons.Default.Info) {} }
+        item { FeatureRow("聊天管理", "查看、编辑和删除聊天资料", Icons.AutoMirrored.Filled.Chat, onOpenChatManage) }
+        item { FeatureRow("角色资料", "管理角色卡、提示词和扩展能力", Icons.Default.Person, onOpenAssistantSettings) }
+        item { FeatureRow("世界书", "维护角色关系会用到的设定资料", Icons.AutoMirrored.Filled.LibraryBooks, onOpenWorldBookSettings) }
+        item { FeatureRow("记忆档案", "查看长期记忆、摘要和关系线索", Icons.Default.AutoStories, onOpenMemorySettings) }
+        item { FeatureRow("资料导入导出", "备份和迁移聊天、角色与上下文资料", Icons.Default.CloudSync, onOpenContextTransferSettings) }
+        item { FeatureRow("设置", "模型、显示、工具和应用更新", Icons.Default.Settings, onOpenSettings) }
+        item { FeatureRow("关于", "Narra 角色手机", Icons.Default.Info) {} }
     }
 }
 
@@ -1115,51 +1179,161 @@ private fun ContactCardSheet(
     onDismiss: () -> Unit,
     onOpenChat: (String) -> Unit,
     onCreateChat: (String, RoleplayInteractionMode, Boolean) -> Unit,
+    onOpenAssistantDetail: (String) -> Unit,
+    onOpenAssistantPrompt: (String) -> Unit,
+    onOpenAssistantMemory: (String) -> Unit,
+    onOpenAssistantWorldBook: (String) -> Unit,
+    onOpenPhoneCheck: (String) -> Unit,
+    onOpenMoments: (String) -> Unit,
+    onOpenDiary: (String) -> Unit,
+    onOpenMailbox: (String) -> Unit,
+    onOpenVideoCall: (String) -> Unit,
 ) {
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     var showModePicker by remember { mutableStateOf(false) }
+    val primarySummary = summaries.firstOrNull()
+    val worldBookCount = assistant.linkedWorldBookIds.size + assistant.linkedWorldBookBookIds.size
     ModalBottomSheet(onDismissRequest = onDismiss, sheetState = sheetState) {
-        Column(
+        LazyColumn(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(20.dp),
+                .heightIn(max = 680.dp),
+            contentPadding = PaddingValues(start = 20.dp, end = 20.dp, bottom = 28.dp),
             verticalArrangement = Arrangement.spacedBy(14.dp),
         ) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                AssistantAvatar(
-                    name = assistant.name,
-                    iconName = assistant.iconName,
-                    avatarUri = assistant.avatarUri,
-                    size = 64.dp,
-                    cornerRadius = 16.dp,
-                )
-                Spacer(modifier = Modifier.width(14.dp))
-                Column(modifier = Modifier.weight(1f)) {
-                    Text(assistant.name.ifBlank { "未命名角色" }, style = MaterialTheme.typography.titleLarge)
+            item {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    AssistantAvatar(
+                        name = assistant.name,
+                        iconName = assistant.iconName,
+                        avatarUri = assistant.avatarUri,
+                        size = 68.dp,
+                        cornerRadius = 18.dp,
+                    )
+                    Spacer(modifier = Modifier.width(14.dp))
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(assistant.name.ifBlank { "未命名角色" }, style = MaterialTheme.typography.titleLarge)
+                        Text(
+                            primarySummary?.let { "最近互动 ${formatMessageTime(it.lastActiveAt)}" }
+                                ?: "还没有聊天",
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+                }
+            }
+
+            item {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .horizontalScroll(rememberScrollState()),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                ) {
+                    ContactMetricPill("${summaries.size}", "聊天")
+                    ContactMetricPill(if (assistant.memoryEnabled) "开" else "关", "长记忆")
+                    ContactMetricPill("$worldBookCount", "世界书")
+                    ContactMetricPill("${assistant.tags.size}", "标签")
+                }
+            }
+
+            assistant.description.trim().takeIf { it.isNotBlank() }?.let { description ->
+                item {
                     Text(
-                        if (summaries.isEmpty()) "还没有聊天" else "${summaries.size} 个聊天",
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
+                        text = description,
+                        style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        maxLines = 4,
+                        overflow = TextOverflow.Ellipsis,
                     )
                 }
             }
-            Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                Button(
-                    onClick = {
-                        summaries.firstOrNull()?.let { onOpenChat(it.scenario.id) } ?: run {
-                            showModePicker = true
+
+            if (assistant.tags.isNotEmpty()) {
+                item {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .horizontalScroll(rememberScrollState()),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    ) {
+                        assistant.tags.forEach { tag ->
+                            AssistChip(
+                                onClick = {},
+                                label = { Text(tag, maxLines = 1, overflow = TextOverflow.Ellipsis) },
+                            )
                         }
-                    },
-                ) {
-                    Text("发消息")
-                }
-                TextButton(onClick = { showModePicker = !showModePicker }) {
-                    Text("新建聊天")
+                    }
                 }
             }
+
+            item {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .horizontalScroll(rememberScrollState()),
+                    horizontalArrangement = Arrangement.spacedBy(10.dp),
+                ) {
+                    Button(
+                        onClick = {
+                            primarySummary?.let { onOpenChat(it.scenario.id) } ?: run {
+                                showModePicker = true
+                            }
+                        },
+                    ) {
+                        Text("发消息")
+                    }
+                    TextButton(onClick = { showModePicker = !showModePicker }) {
+                        Text("新建聊天")
+                    }
+                    TextButton(onClick = { onOpenAssistantDetail(assistant.id) }) {
+                        Text("编辑资料")
+                    }
+                }
+            }
+
+            item {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .horizontalScroll(rememberScrollState()),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                ) {
+                    ContactActionChip("人设提示词", Icons.Default.AutoStories) {
+                        onOpenAssistantPrompt(assistant.id)
+                    }
+                    ContactActionChip("记忆", Icons.Default.ManageAccounts) {
+                        onOpenAssistantMemory(assistant.id)
+                    }
+                    ContactActionChip("世界书", Icons.AutoMirrored.Filled.LibraryBooks) {
+                        onOpenAssistantWorldBook(assistant.id)
+                    }
+                }
+            }
+
+            primarySummary?.let { summary ->
+                item {
+                    Text("关系玩法", fontWeight = FontWeight.SemiBold)
+                }
+                item {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .horizontalScroll(rememberScrollState()),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    ) {
+                        ContactActionChip("写信", Icons.Default.Mail) { onOpenMailbox(summary.scenario.id) }
+                        ContactActionChip("查手机", Icons.Default.PhoneAndroid) { onOpenPhoneCheck(summary.scenario.id) }
+                        ContactActionChip("朋友圈", Icons.Default.Forum) { onOpenMoments(summary.scenario.id) }
+                        ContactActionChip("日记", Icons.Default.Book) { onOpenDiary(summary.scenario.id) }
+                        ContactActionChip("视频通话", Icons.Default.Videocam) { onOpenVideoCall(summary.scenario.id) }
+                    }
+                }
+            }
+
             if (showModePicker) {
-                ModeOptions.forEach { option ->
+                items(ModeOptions, key = { it.title }) { option ->
                     ModeOptionCard(
                         option = option,
                         onClick = { onCreateChat(assistant.id, option.interactionMode, option.enableNarration) },
@@ -1167,8 +1341,10 @@ private fun ContactCardSheet(
                 }
             }
             if (summaries.isNotEmpty()) {
-                Text("这个角色的聊天", fontWeight = FontWeight.SemiBold)
-                summaries.forEach { summary ->
+                item {
+                    Text("最近互动", fontWeight = FontWeight.SemiBold)
+                }
+                items(summaries, key = { it.scenario.id }) { summary ->
                     ListItem(
                         modifier = Modifier
                             .clip(RoundedCornerShape(12.dp))
@@ -1181,12 +1357,52 @@ private fun ContactCardSheet(
                             )
                         },
                         supportingContent = { Text(formatMessageTime(summary.lastActiveAt)) },
+                        trailingContent = {
+                            Text(
+                                text = summary.scenario.interactionMode.displayName,
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.primary,
+                            )
+                        },
                     )
                 }
             }
-            Spacer(modifier = Modifier.height(12.dp))
         }
     }
+}
+
+@Composable
+private fun ContactMetricPill(
+    value: String,
+    label: String,
+) {
+    Surface(
+        shape = RoundedCornerShape(14.dp),
+        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.74f),
+    ) {
+        Column(
+            modifier = Modifier.padding(horizontal = 14.dp, vertical = 9.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+        ) {
+            Text(value, style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.SemiBold)
+            Text(label, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        }
+    }
+}
+
+@Composable
+private fun ContactActionChip(
+    label: String,
+    icon: ImageVector,
+    onClick: () -> Unit,
+) {
+    AssistChip(
+        onClick = onClick,
+        leadingIcon = {
+            Icon(icon, contentDescription = null, modifier = Modifier.size(18.dp))
+        },
+        label = { Text(label, maxLines = 1, overflow = TextOverflow.Ellipsis) },
+    )
 }
 
 @Composable

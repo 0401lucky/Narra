@@ -469,7 +469,8 @@ fun messageHasPreviewableText(
     val normalizedParts = normalizeChatMessageParts(message.parts)
     val hasTextualParts = normalizedParts.any { part ->
         (part.type == ChatMessagePartType.TEXT && part.text.isNotBlank()) ||
-            part.type == ChatMessagePartType.SPECIAL
+            part.type == ChatMessagePartType.SPECIAL ||
+            part.type == ChatMessagePartType.STATUS
     }
     return hasTextualParts ||
         (normalizedParts.isEmpty() && message.content.isNotBlank()) ||
@@ -611,6 +612,7 @@ private fun resolveAttachmentSummaries(message: ChatMessage): List<String> {
 
             ChatMessagePartType.ACTION -> part.toActionCopyText().trim().takeIf { it.isNotBlank() }
             ChatMessagePartType.SPECIAL -> part.toSpecialPlayCopyText().trim().takeIf { it.isNotBlank() }
+            ChatMessagePartType.STATUS -> part.text.trim().takeIf { it.isNotBlank() }?.let { "状态卡：$it" }
             ChatMessagePartType.TEXT -> null
         }
     }

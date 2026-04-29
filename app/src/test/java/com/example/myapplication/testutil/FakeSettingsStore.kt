@@ -81,6 +81,7 @@ class FakeSettingsStore(
             translationHistory = state.value.translationHistory,
             assistants = state.value.assistants,
             selectedAssistantId = state.value.selectedAssistantId,
+            defaultPresetId = state.value.defaultPresetId,
             screenTranslationSettings = state.value.screenTranslationSettings,
             searchSettings = state.value.searchSettings,
         )
@@ -185,6 +186,10 @@ class FakeSettingsStore(
             assistants = assistants,
             selectedAssistantId = selectedAssistantId,
         )
+    }
+
+    override suspend fun saveDefaultPresetId(presetId: String) {
+        state.value = state.value.copy(defaultPresetId = presetId.trim())
     }
 
     override suspend fun saveTranslationHistory(history: List<TranslationHistoryEntry>) {

@@ -42,6 +42,7 @@ data class RoleplayNavigationCallbacks(
     val onOpenPhoneCheck: (PhoneSnapshotOwnerType) -> Unit,
     val onOpenMoments: () -> Unit,
     val onOpenVideoCall: () -> Unit,
+    val onOpenMailbox: () -> Unit,
     val onOpenReadingMode: () -> Unit,
     val onOpenSettings: () -> Unit,
     val onNavigateBack: () -> Unit,

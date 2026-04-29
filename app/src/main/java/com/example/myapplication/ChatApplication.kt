@@ -9,6 +9,7 @@ import com.example.myapplication.data.repository.ai.AiSettingsRepository
 import com.example.myapplication.data.repository.ai.AiTranslationService
 import com.example.myapplication.data.repository.context.ConversationSummaryRepository
 import com.example.myapplication.data.repository.context.MemoryRepository
+import com.example.myapplication.data.repository.context.PresetRepository
 import com.example.myapplication.data.repository.context.WorldBookRepository
 import com.example.myapplication.data.repository.roleplay.RoleplayRepository
 import com.example.myapplication.di.AppGraph
@@ -30,6 +31,8 @@ class ChatApplication : Application() {
         get() = appGraph.memoryRepository
     val conversationSummaryRepository: ConversationSummaryRepository
         get() = appGraph.conversationSummaryRepository
+    val presetRepository: PresetRepository
+        get() = appGraph.presetRepository
     val promptContextAssembler: PromptContextAssembler
         get() = appGraph.promptContextAssembler
     val roleplayRepository: RoleplayRepository

@@ -35,6 +35,7 @@ data class AppSettings(
     val translationHistory: List<TranslationHistoryEntry> = emptyList(),
     val assistants: List<Assistant> = emptyList(),
     val selectedAssistantId: String = DEFAULT_ASSISTANT_ID,
+    val defaultPresetId: String = DEFAULT_PRESET_ID,
     val screenTranslationSettings: ScreenTranslationSettings = ScreenTranslationSettings(),
     val searchSettings: SearchSettings = SearchSettings(),
     val memoryAutoSummaryEvery: Int = DEFAULT_MEMORY_AUTO_SUMMARY_EVERY,

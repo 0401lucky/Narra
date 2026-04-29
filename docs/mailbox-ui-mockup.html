@@ -1,0 +1,738 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Narra 信箱模块 UI Mockup</title>
+  <style>
+    :root {
+      --ink: #17201d;
+      --muted: #66716c;
+      --line: rgba(31, 45, 40, .12);
+      --paper: #fbfaf6;
+      --paper-deep: #f1eee7;
+      --surface: rgba(255, 255, 255, .84);
+      --jade: #2f7864;
+      --jade-soft: #d8eee6;
+      --coral: #d45f4b;
+      --coral-soft: #ffe1da;
+      --gold: #ba8b39;
+      --blue: #567da4;
+      --shadow: 0 24px 60px rgba(30, 44, 39, .16);
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      background:
+        radial-gradient(circle at 14% 9%, rgba(216, 238, 230, .86), transparent 34%),
+        radial-gradient(circle at 82% 20%, rgba(255, 225, 218, .78), transparent 30%),
+        linear-gradient(135deg, #f7f4ee 0%, #eef4f1 46%, #f8f0ea 100%);
+      color: var(--ink);
+      font-family: "Noto Sans SC", "Microsoft YaHei", system-ui, sans-serif;
+    }
+
+    .canvas {
+      width: 1440px;
+      min-height: 980px;
+      margin: 0 auto;
+      padding: 54px 58px;
+    }
+
+    .titlebar {
+      display: flex;
+      justify-content: space-between;
+      align-items: end;
+      margin-bottom: 34px;
+    }
+
+    .titlebar h1 {
+      margin: 0;
+      font-size: 34px;
+      letter-spacing: 0;
+      line-height: 1.12;
+    }
+
+    .titlebar p {
+      margin: 8px 0 0;
+      color: var(--muted);
+      font-size: 16px;
+    }
+
+    .legend {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+      color: var(--muted);
+      font-size: 14px;
+    }
+
+    .dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      display: inline-block;
+    }
+
+    .dot.jade { background: var(--jade); }
+    .dot.coral { background: var(--coral); }
+    .dot.gold { background: var(--gold); }
+
+    .phones {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 34px;
+      align-items: start;
+    }
+
+    .phone {
+      position: relative;
+      width: 404px;
+      height: 790px;
+      padding: 14px;
+      border-radius: 38px;
+      background: linear-gradient(160deg, #252f2b, #101614);
+      box-shadow: var(--shadow);
+    }
+
+    .screen {
+      position: relative;
+      overflow: hidden;
+      height: 100%;
+      border-radius: 28px;
+      background:
+        linear-gradient(180deg, rgba(255,255,255,.78), rgba(255,255,255,.44)),
+        radial-gradient(circle at 18% 10%, rgba(216,238,230,.95), transparent 42%),
+        radial-gradient(circle at 84% 18%, rgba(255,225,218,.72), transparent 38%),
+        linear-gradient(180deg, #f9f6ef, #edf3ef);
+    }
+
+    .status {
+      display: flex;
+      justify-content: space-between;
+      padding: 14px 22px 8px;
+      font-size: 12px;
+      color: rgba(23, 32, 29, .72);
+    }
+
+    .top {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 8px 22px 12px;
+    }
+
+    .back,
+    .iconbtn {
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      display: grid;
+      place-items: center;
+      background: rgba(255,255,255,.72);
+      border: 1px solid rgba(255,255,255,.82);
+      color: var(--ink);
+      font-weight: 700;
+    }
+
+    .top-title {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .top-title strong {
+      display: block;
+      font-size: 20px;
+      line-height: 1.1;
+    }
+
+    .top-title span {
+      display: block;
+      margin-top: 4px;
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    .hero {
+      margin: 0 18px 14px;
+      padding: 16px;
+      border-radius: 20px;
+      background:
+        linear-gradient(135deg, rgba(47,120,100,.14), rgba(212,95,75,.10)),
+        rgba(255,255,255,.68);
+      border: 1px solid rgba(255,255,255,.92);
+      box-shadow: 0 10px 28px rgba(47, 76, 68, .10);
+    }
+
+    .hero-row {
+      display: flex;
+      gap: 12px;
+      align-items: center;
+    }
+
+    .avatar {
+      width: 46px;
+      height: 46px;
+      border-radius: 16px;
+      display: grid;
+      place-items: center;
+      background: linear-gradient(135deg, var(--jade), #87b9a8);
+      color: white;
+      font-weight: 800;
+      font-size: 18px;
+      box-shadow: inset 0 0 0 1px rgba(255,255,255,.42);
+    }
+
+    .hero-copy {
+      min-width: 0;
+      flex: 1;
+    }
+
+    .hero-copy strong {
+      display: block;
+      font-size: 16px;
+      line-height: 1.2;
+    }
+
+    .hero-copy span {
+      display: block;
+      margin-top: 3px;
+      color: var(--muted);
+      font-size: 12px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .tabs {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 6px;
+      margin: 0 18px 12px;
+      padding: 5px;
+      border-radius: 18px;
+      background: rgba(255,255,255,.58);
+      border: 1px solid rgba(255,255,255,.84);
+    }
+
+    .tab {
+      height: 34px;
+      border-radius: 14px;
+      display: grid;
+      place-items: center;
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 700;
+    }
+
+    .tab.active {
+      background: var(--ink);
+      color: white;
+      box-shadow: 0 6px 16px rgba(23,32,29,.18);
+    }
+
+    .list {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      padding: 0 18px 18px;
+    }
+
+    .letter-card {
+      padding: 14px;
+      border-radius: 18px;
+      background: rgba(255,255,255,.76);
+      border: 1px solid rgba(255,255,255,.92);
+      box-shadow: 0 8px 18px rgba(35, 50, 45, .08);
+    }
+
+    .letter-card.unread {
+      background: linear-gradient(135deg, rgba(216,238,230,.74), rgba(255,255,255,.82));
+      border-color: rgba(47,120,100,.24);
+    }
+
+    .letter-head {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .stamp {
+      width: 42px;
+      height: 42px;
+      border-radius: 12px;
+      display: grid;
+      place-items: center;
+      color: white;
+      font-size: 18px;
+      font-weight: 800;
+      background: var(--coral);
+      box-shadow: inset 0 0 0 2px rgba(255,255,255,.3);
+    }
+
+    .stamp.green { background: var(--jade); }
+    .stamp.gold { background: var(--gold); }
+    .stamp.blue { background: var(--blue); }
+
+    .letter-main {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .letter-main strong {
+      display: block;
+      font-size: 15px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .letter-main span {
+      display: block;
+      margin-top: 3px;
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    .time {
+      color: var(--muted);
+      font-size: 11px;
+      align-self: start;
+    }
+
+    .excerpt {
+      margin: 10px 0 0;
+      color: #3d4945;
+      font-size: 13px;
+      line-height: 1.45;
+    }
+
+    .chips {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-top: 10px;
+    }
+
+    .chip {
+      padding: 5px 8px;
+      border-radius: 999px;
+      font-size: 11px;
+      font-weight: 700;
+      color: #365249;
+      background: var(--jade-soft);
+    }
+
+    .chip.coral {
+      color: #8c3327;
+      background: var(--coral-soft);
+    }
+
+    .chip.gold {
+      color: #71511b;
+      background: #fff0c8;
+    }
+
+    .bottom-action {
+      position: absolute;
+      right: 22px;
+      bottom: 22px;
+      width: 58px;
+      height: 58px;
+      border-radius: 22px;
+      display: grid;
+      place-items: center;
+      color: white;
+      background: linear-gradient(135deg, var(--jade), #234e44);
+      font-size: 28px;
+      font-weight: 300;
+      box-shadow: 0 16px 34px rgba(47,120,100,.32);
+    }
+
+    .paper {
+      margin: 4px 18px 0;
+      padding: 22px 20px;
+      border-radius: 22px;
+      background:
+        linear-gradient(90deg, rgba(47,120,100,.08) 0 1px, transparent 1px 100%),
+        linear-gradient(180deg, var(--paper), #fffdf8);
+      background-size: 18px 100%, 100% 100%;
+      border: 1px solid rgba(144, 128, 91, .18);
+      box-shadow: 0 18px 32px rgba(55, 46, 31, .10);
+    }
+
+    .paper-meta {
+      display: flex;
+      justify-content: space-between;
+      gap: 10px;
+      align-items: start;
+      color: var(--muted);
+      font-size: 12px;
+      padding-bottom: 14px;
+      border-bottom: 1px dashed rgba(38, 54, 49, .18);
+    }
+
+    .paper h2 {
+      margin: 18px 0 12px;
+      font-size: 23px;
+      line-height: 1.2;
+      letter-spacing: 0;
+    }
+
+    .paper p {
+      margin: 0 0 13px;
+      color: #2d3834;
+      font-size: 15px;
+      line-height: 1.8;
+    }
+
+    .detail-actions {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 9px;
+      margin: 16px 18px 0;
+    }
+
+    .action {
+      height: 42px;
+      border-radius: 16px;
+      display: grid;
+      place-items: center;
+      background: rgba(255,255,255,.74);
+      color: var(--ink);
+      font-size: 13px;
+      font-weight: 800;
+      border: 1px solid rgba(255,255,255,.84);
+    }
+
+    .action.primary {
+      color: white;
+      background: var(--jade);
+    }
+
+    .composer {
+      margin: 0 18px 0;
+      padding: 16px;
+      border-radius: 22px;
+      background: rgba(255,255,255,.74);
+      border: 1px solid rgba(255,255,255,.88);
+      box-shadow: 0 16px 34px rgba(47, 76, 68, .10);
+    }
+
+    .field-label {
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 800;
+      margin-bottom: 7px;
+    }
+
+    .to-row {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      margin-bottom: 14px;
+    }
+
+    .recipient {
+      flex: 1;
+      padding: 10px 12px;
+      border-radius: 14px;
+      background: var(--jade-soft);
+      color: #254b41;
+      font-size: 13px;
+      font-weight: 800;
+    }
+
+    .input {
+      padding: 12px;
+      border-radius: 14px;
+      background: rgba(255,255,255,.82);
+      border: 1px solid var(--line);
+      color: var(--ink);
+      font-size: 14px;
+      line-height: 1.55;
+    }
+
+    .input.title {
+      margin-bottom: 10px;
+      font-weight: 800;
+    }
+
+    .textarea {
+      min-height: 238px;
+    }
+
+    .switches {
+      display: grid;
+      gap: 8px;
+      margin-top: 14px;
+    }
+
+    .switch {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 10px 12px;
+      border-radius: 14px;
+      background: rgba(255,255,255,.62);
+      font-size: 13px;
+      color: #34413d;
+    }
+
+    .toggle {
+      width: 42px;
+      height: 24px;
+      padding: 3px;
+      border-radius: 999px;
+      background: var(--jade);
+    }
+
+    .toggle::after {
+      content: "";
+      display: block;
+      margin-left: auto;
+      width: 18px;
+      height: 18px;
+      border-radius: 50%;
+      background: white;
+    }
+
+    .compose-actions {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      margin: 14px 18px 0;
+    }
+
+    .compose-actions .action {
+      height: 46px;
+    }
+
+    .nav {
+      position: absolute;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      height: 72px;
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      padding: 8px 20px 14px;
+      background: rgba(255,255,255,.78);
+      border-top: 1px solid rgba(255,255,255,.88);
+      backdrop-filter: blur(14px);
+    }
+
+    .nav-item {
+      display: grid;
+      gap: 4px;
+      place-items: center;
+      color: var(--muted);
+      font-size: 11px;
+      font-weight: 700;
+    }
+
+    .nav-item.active {
+      color: var(--jade);
+    }
+
+    .nav-icon {
+      font-size: 19px;
+      line-height: 1;
+    }
+
+    .screen.pad-bottom {
+      padding-bottom: 74px;
+    }
+  </style>
+</head>
+<body>
+  <main class="canvas">
+    <section class="titlebar">
+      <div>
+        <h1>Narra 信箱模块 UI 概念稿</h1>
+        <p>定位：角色关系里的来信、回信、草稿与记忆沉淀，不做普通站内信。</p>
+      </div>
+      <div class="legend">
+        <span class="dot jade"></span> 关系线索
+        <span class="dot coral"></span> 未读来信
+        <span class="dot gold"></span> 可沉淀记忆
+      </div>
+    </section>
+
+    <section class="phones">
+      <article class="phone">
+        <div class="screen pad-bottom">
+          <div class="status"><span>9:41</span><span>●●● 85%</span></div>
+          <div class="top">
+            <div class="back">‹</div>
+            <div class="top-title">
+              <strong>信箱</strong>
+              <span>与林屿的书信往来</span>
+            </div>
+            <div class="iconbtn">⌕</div>
+          </div>
+
+          <section class="hero">
+            <div class="hero-row">
+              <div class="avatar">林</div>
+              <div class="hero-copy">
+                <strong>2 封未读来信</strong>
+                <span>最近一封来自昨夜 23:48，提到旧车站和雨声</span>
+              </div>
+            </div>
+          </section>
+
+          <nav class="tabs">
+            <div class="tab active">收件</div>
+            <div class="tab">草稿</div>
+            <div class="tab">已寄</div>
+            <div class="tab">归档</div>
+          </nav>
+
+          <div class="list">
+            <div class="letter-card unread">
+              <div class="letter-head">
+                <div class="stamp">未</div>
+                <div class="letter-main">
+                  <strong>关于昨晚没说完的话</strong>
+                  <span>林屿 · 来信</span>
+                </div>
+                <div class="time">23:48</div>
+              </div>
+              <p class="excerpt">我后来又回到那条路口，雨停了，可长椅还是湿的...</p>
+              <div class="chips">
+                <span class="chip coral">未读</span>
+                <span class="chip">关系推进</span>
+                <span class="chip gold">可记忆</span>
+              </div>
+            </div>
+
+            <div class="letter-card unread">
+              <div class="letter-head">
+                <div class="stamp green">约</div>
+                <div class="letter-main">
+                  <strong>周末要不要去看展</strong>
+                  <span>林屿 · 邀约</span>
+                </div>
+                <div class="time">周一</div>
+              </div>
+              <p class="excerpt">不是很正式的邀请，只是看到票的时候突然想到你。</p>
+              <div class="chips">
+                <span class="chip coral">未读</span>
+                <span class="chip">邀约</span>
+              </div>
+            </div>
+
+            <div class="letter-card">
+              <div class="letter-head">
+                <div class="stamp blue">回</div>
+                <div class="letter-main">
+                  <strong>你上次问我的答案</strong>
+                  <span>你 · 已寄出</span>
+                </div>
+                <div class="time">上周</div>
+              </div>
+              <p class="excerpt">我不确定这是不是最好的回答，但它至少是真的。</p>
+              <div class="chips">
+                <span class="chip">真心话</span>
+                <span class="chip gold">已写入时间线</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="bottom-action">＋</div>
+          <div class="nav">
+            <div class="nav-item"><span class="nav-icon">☰</span><span>消息</span></div>
+            <div class="nav-item"><span class="nav-icon">◎</span><span>角色</span></div>
+            <div class="nav-item active"><span class="nav-icon">✉</span><span>信箱</span></div>
+            <div class="nav-item"><span class="nav-icon">◌</span><span>我</span></div>
+          </div>
+        </div>
+      </article>
+
+      <article class="phone">
+        <div class="screen">
+          <div class="status"><span>9:41</span><span>●●● 85%</span></div>
+          <div class="top">
+            <div class="back">‹</div>
+            <div class="top-title">
+              <strong>来信详情</strong>
+              <span>林屿 · 昨夜 23:48</span>
+            </div>
+            <div class="iconbtn">⋯</div>
+          </div>
+
+          <section class="paper">
+            <div class="paper-meta">
+              <span>From 林屿</span>
+              <span>可沉淀为记忆</span>
+            </div>
+            <h2>关于昨晚没说完的话</h2>
+            <p>我后来又回到那条路口，雨停了，可长椅还是湿的。</p>
+            <p>你问我是不是一直都记得那个旧车站。我当时没有回答，是因为我不知道怎么说才不显得太认真。</p>
+            <p>但现在写下来好像容易一点：我记得。也记得你那天把伞往我这边偏了一点。</p>
+            <p>如果你愿意，我们可以把这件事当作还没有结束。</p>
+            <div class="chips">
+              <span class="chip">旧车站</span>
+              <span class="chip coral">情绪波动</span>
+              <span class="chip gold">长期记忆候选</span>
+            </div>
+          </section>
+
+          <div class="detail-actions">
+            <div class="action primary">回信</div>
+            <div class="action">记住</div>
+            <div class="action">引用</div>
+          </div>
+        </div>
+      </article>
+
+      <article class="phone">
+        <div class="screen">
+          <div class="status"><span>9:41</span><span>●●● 85%</span></div>
+          <div class="top">
+            <div class="back">‹</div>
+            <div class="top-title">
+              <strong>写信</strong>
+              <span>草稿会自动保存</span>
+            </div>
+            <div class="iconbtn">✓</div>
+          </div>
+
+          <section class="composer">
+            <div class="field-label">收信人</div>
+            <div class="to-row">
+              <div class="avatar">林</div>
+              <div class="recipient">林屿 · 当前聊天</div>
+            </div>
+
+            <div class="field-label">主题</div>
+            <div class="input title">我想认真回答你那封信</div>
+
+            <div class="field-label">正文</div>
+            <div class="input textarea">
+              我刚刚把你的信又读了一遍。<br><br>
+              如果那件事还没有结束，那我想从这里继续。不是因为我擅长解释，而是因为我也还记得那个车站...
+            </div>
+
+            <div class="switches">
+              <div class="switch"><span>带入最近聊天</span><span class="toggle"></span></div>
+              <div class="switch"><span>允许沉淀为记忆</span><span class="toggle"></span></div>
+              <div class="switch"><span>生成角色回信</span><span class="toggle"></span></div>
+            </div>
+          </section>
+
+          <div class="compose-actions">
+            <div class="action">存草稿</div>
+            <div class="action primary">寄出</div>
+          </div>
+        </div>
+      </article>
+    </section>
+  </main>
+</body>
+</html>

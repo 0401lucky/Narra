@@ -40,6 +40,7 @@ import androidx.compose.material.icons.filled.ViewAgenda
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
@@ -61,6 +62,7 @@ import com.example.myapplication.model.Assistant
 import com.example.myapplication.model.ContextGovernanceSnapshot
 import com.example.myapplication.model.MemoryProposalHistoryItem
 import com.example.myapplication.model.ProviderSettings
+import com.example.myapplication.model.ProviderFunction
 import com.example.myapplication.model.RoleplayContextStatus
 import com.example.myapplication.model.RoleplayImmersiveMode
 import com.example.myapplication.model.RoleplayInteractionMode
@@ -101,6 +103,9 @@ internal fun RoleplaySettingsSidebarContent(
     latestPromptDebugDump: String,
     contextGovernance: ContextGovernanceSnapshot?,
     recentMemoryProposalHistory: List<MemoryProposalHistoryItem>,
+    longMemoryCount: Int,
+    sceneMemoryCount: Int,
+    isRefreshingConversationSummary: Boolean,
     longformCharsText: String,
     onLongformCharsTextChange: (String) -> Unit,
     onNavigateToPage: (RoleplaySettingsPanelPage) -> Unit,
@@ -123,7 +128,7 @@ internal fun RoleplaySettingsSidebarContent(
     onUpdateRoleplayLineHeightScale: (RoleplayLineHeightScale) -> Unit,
     onUpdateRoleplayNoBackgroundSkin: (RoleplayNoBackgroundSkinSettings) -> Unit,
     onOpenProviderDetail: (String) -> Unit,
-    onOpenConnectionSettings: () -> Unit,
+    onOpenProviderSettings: () -> Unit,
     onOpenAssistantPrompt: () -> Unit,
     onOpenUserMasks: () -> Unit,
     onOpenWorldBookSettings: () -> Unit,
@@ -160,9 +165,12 @@ internal fun RoleplaySettingsSidebarContent(
             backdropState = backdropState,
             contextGovernance = contextGovernance,
             latestPromptDebugDump = latestPromptDebugDump,
+            longMemoryCount = longMemoryCount,
+            sceneMemoryCount = sceneMemoryCount,
+            isRefreshingConversationSummary = isRefreshingConversationSummary,
             onNavigateToPage = onNavigateToPage,
             onOpenProviderDetail = onOpenProviderDetail,
-            onOpenConnectionSettings = onOpenConnectionSettings,
+            onOpenProviderSettings = onOpenProviderSettings,
             onOpenAssistantPrompt = onOpenAssistantPrompt,
             onOpenWorldBookSettings = onOpenWorldBookSettings,
             onOpenLongMemorySettings = onOpenLongMemorySettings,
@@ -374,9 +382,12 @@ private fun RoleplaySettingsMainPanel(
     backdropState: ImmersiveBackdropState,
     contextGovernance: ContextGovernanceSnapshot?,
     latestPromptDebugDump: String,
+    longMemoryCount: Int,
+    sceneMemoryCount: Int,
+    isRefreshingConversationSummary: Boolean,
     onNavigateToPage: (RoleplaySettingsPanelPage) -> Unit,
     onOpenProviderDetail: (String) -> Unit,
-    onOpenConnectionSettings: () -> Unit,
+    onOpenProviderSettings: () -> Unit,
     onOpenAssistantPrompt: () -> Unit,
     onOpenWorldBookSettings: () -> Unit,
     onOpenLongMemorySettings: () -> Unit,
@@ -396,10 +407,30 @@ private fun RoleplaySettingsMainPanel(
         ?.takeIf { it > 0 }
         ?: assistant?.linkedWorldBookIds?.size
         ?: 0
-    val summaryRefreshText = if (contextGovernance?.hasActionableSummaryRefresh == true) {
-        "现在可刷新"
-    } else {
-        "暂不需要"
+    val summaryReady = settings.resolveFunctionProvider(ProviderFunction.TITLE_SUMMARY)
+        ?.hasBaseCredentials() == true &&
+        settings.resolveFunctionModel(ProviderFunction.TITLE_SUMMARY).isNotBlank()
+    val memoryReady = assistant?.memoryEnabled == true &&
+        settings.resolveFunctionProvider(ProviderFunction.MEMORY)?.hasBaseCredentials() == true &&
+        settings.resolveFunctionModel(ProviderFunction.MEMORY).isNotBlank()
+    val summaryRefreshText = when {
+        isRefreshingConversationSummary -> "处理中…"
+        !summaryReady && !memoryReady -> "未配置模型"
+        contextGovernance?.hasActionableSummaryRefresh == true -> "现在可刷新"
+        contextStatus.hasSummary -> "摘要 ${contextStatus.summaryCoveredMessageCount} 条"
+        longMemoryCount + sceneMemoryCount > 0 -> "已有记忆 ${longMemoryCount + sceneMemoryCount} 条"
+        else -> "可手动触发"
+    }
+    val longMemorySummary = when {
+        assistant == null -> "未绑定角色"
+        assistant.memoryEnabled != true -> "先启用长记忆"
+        longMemoryCount > 0 || sceneMemoryCount > 0 -> buildString {
+            append("核心 $longMemoryCount")
+            if (sceneMemoryCount > 0) {
+                append(" · 本场 $sceneMemoryCount")
+            }
+        }
+        else -> "暂无已写入记忆"
     }
     val effectiveUserName = RoleplayConversationSupport
         .resolveUserPersona(scenario, settings)
@@ -493,7 +524,7 @@ private fun RoleplaySettingsMainPanel(
                 ) {
                     ImmersiveSettingsCard(backdropState) {
                         SummaryLinkRow(
-                            title = "API连接",
+                            title = "提供商连接",
                             summary = connectionSummary,
                             icon = Icons.Default.Link,
                             onClick = {
@@ -501,7 +532,7 @@ private fun RoleplaySettingsMainPanel(
                                 if (providerId.isNotBlank()) {
                                     onOpenProviderDetail(providerId)
                                 } else {
-                                    onOpenConnectionSettings()
+                                    onOpenProviderSettings()
                                 }
                             },
                         )
@@ -545,7 +576,7 @@ private fun RoleplaySettingsMainPanel(
                         SummaryDivider()
                         SummaryLinkRow(
                             title = "长记忆管理",
-                            summary = if (assistant?.memoryEnabled == true) "管理角色长期记忆" else "先启用长记忆",
+                            summary = longMemorySummary,
                             icon = Icons.Default.ViewAgenda,
                             onClick = onOpenLongMemorySettings,
                             enabled = assistant != null,
@@ -556,7 +587,8 @@ private fun RoleplaySettingsMainPanel(
                             summary = summaryRefreshText,
                             icon = Icons.Default.SettingsSuggest,
                             onClick = onRefreshConversationSummary,
-                            enabled = contextGovernance?.hasActionableSummaryRefresh == true,
+                            enabled = (summaryReady || memoryReady) && !isRefreshingConversationSummary,
+                            loading = isRefreshingConversationSummary,
                         )
                     }
                 }
@@ -881,6 +913,7 @@ private fun SummaryLinkRow(
     icon: androidx.compose.ui.graphics.vector.ImageVector,
     onClick: () -> Unit,
     enabled: Boolean = true,
+    loading: Boolean = false,
     contentColor: Color = MaterialTheme.colorScheme.onSurface,
     supportingColor: Color = MaterialTheme.colorScheme.onSurfaceVariant,
 ) {
@@ -892,12 +925,20 @@ private fun SummaryLinkRow(
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(12.dp),
     ) {
-        Icon(
-            imageVector = icon,
-            contentDescription = null,
-            tint = if (enabled) contentColor else supportingColor.copy(alpha = 0.6f),
-            modifier = Modifier.size(22.dp),
-        )
+        if (loading) {
+            CircularProgressIndicator(
+                modifier = Modifier.size(22.dp),
+                color = contentColor,
+                strokeWidth = 2.dp,
+            )
+        } else {
+            Icon(
+                imageVector = icon,
+                contentDescription = null,
+                tint = if (enabled) contentColor else supportingColor.copy(alpha = 0.6f),
+                modifier = Modifier.size(22.dp),
+            )
+        }
         Text(
             text = title,
             style = MaterialTheme.typography.bodyLarge,

@@ -5,6 +5,7 @@ import com.example.myapplication.model.AppSettings
 import com.example.myapplication.model.Assistant
 import com.example.myapplication.model.BUILTIN_ASSISTANTS
 import com.example.myapplication.model.DEFAULT_ASSISTANT_ID
+import com.example.myapplication.model.DEFAULT_PRESET_ID
 import java.util.UUID
 
 class SettingsAssistantCoordinator(
@@ -16,7 +17,14 @@ class SettingsAssistantCoordinator(
         assistant: Assistant,
     ) {
         val currentAssistants = settings.assistants.toMutableList()
-        currentAssistants.add(assistant)
+        val presetAwareAssistant = assistant.copy(
+            defaultPresetId = when {
+                assistant.defaultPresetId.isBlank() -> settings.defaultPresetId
+                assistant.defaultPresetId == DEFAULT_PRESET_ID -> settings.defaultPresetId
+                else -> assistant.defaultPresetId
+            },
+        )
+        currentAssistants.add(presetAwareAssistant)
         settingsEditor.saveAssistants(currentAssistants, settings.selectedAssistantId)
     }
 
@@ -62,8 +70,9 @@ class SettingsAssistantCoordinator(
             id = UUID.randomUUID().toString(),
             name = "${source.name} (副本)",
             isBuiltin = false,
+            defaultPresetId = source.defaultPresetId.ifBlank { settings.defaultPresetId },
         )
-        addAssistant(settings, copy)
+        settingsEditor.saveAssistants(settings.assistants + copy, settings.selectedAssistantId)
     }
 
     suspend fun selectAssistant(

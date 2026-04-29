@@ -3,12 +3,17 @@ package com.example.myapplication.viewmodel
 import com.example.myapplication.model.Assistant
 import com.example.myapplication.model.MemoryEntry
 import com.example.myapplication.model.MemoryScopeType
+import com.example.myapplication.data.repository.context.MemoryRepository
 import com.example.myapplication.testutil.FakeMemoryRepository
 import com.example.myapplication.viewmodel.SimpleMemoryEditorViewModel.Companion.composeDraft
 import com.example.myapplication.viewmodel.SimpleMemoryEditorViewModel.Companion.parseDraft
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
+import kotlinx.coroutines.test.advanceUntilIdle
+import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
@@ -65,6 +70,42 @@ class SimpleMemoryEditorViewModelTest {
             "- A 置顶\n- C 普通新\n- B 普通",
             composed,
         )
+    }
+
+    @Test
+    fun initializesDraftFromFirstRepositoryEmission() = runTest {
+        val repo = ManualMemoryRepository()
+        val assistant = Assistant(id = "assistant-1", name = "陆宴清", useGlobalMemory = false)
+        val viewModel = SimpleMemoryEditorViewModel(
+            assistantId = "assistant-1",
+            conversationId = "conv-1",
+            memoryRepository = repo,
+            assistantsProvider = { listOf(assistant) },
+        )
+        runCurrent()
+
+        repo.emit(
+            listOf(
+                MemoryEntry(
+                    id = "core-1",
+                    scopeType = MemoryScopeType.ASSISTANT,
+                    scopeId = "assistant-1",
+                    characterId = "assistant-1",
+                    content = "用户记得旧车站那晚",
+                ),
+                MemoryEntry(
+                    id = "scene-1",
+                    scopeType = MemoryScopeType.CONVERSATION,
+                    scopeId = "conv-1",
+                    characterId = "assistant-1",
+                    content = "当前会话停在雨夜车站",
+                ),
+            ),
+        )
+        advanceUntilIdle()
+
+        assertEquals("- 用户记得旧车站那晚", viewModel.uiState.value.coreDraft)
+        assertEquals("- 当前会话停在雨夜车站", viewModel.uiState.value.sceneDraft)
     }
 
     @Test
@@ -181,5 +222,43 @@ class SimpleMemoryEditorViewModelTest {
         assertTrue(sceneEntries.all { it.scopeId == "conv-7" })
         // 原 scene-1 的 id 因内容保留而沿用
         assertTrue(sceneEntries.any { it.id == "scene-1" })
+    }
+
+    private class ManualMemoryRepository : MemoryRepository {
+        private val flow = MutableSharedFlow<List<MemoryEntry>>()
+        private var entries: List<MemoryEntry> = emptyList()
+
+        override fun observeEntries(): Flow<List<MemoryEntry>> = flow
+
+        override suspend fun listEntries(): List<MemoryEntry> = entries
+
+        override suspend fun findEntryBySourceMessage(
+            scopeType: MemoryScopeType,
+            scopeId: String,
+            sourceMessageId: String,
+        ): MemoryEntry? {
+            return entries.firstOrNull { entry ->
+                entry.scopeType == scopeType &&
+                    entry.resolvedScopeId() == scopeId.trim() &&
+                    entry.sourceMessageId == sourceMessageId
+            }
+        }
+
+        override suspend fun upsertEntry(entry: MemoryEntry) {
+            entries = entries.filterNot { it.id == entry.id } + entry
+        }
+
+        override suspend fun deleteEntry(entryId: String) {
+            entries = entries.filterNot { it.id == entryId }
+        }
+
+        override suspend fun pruneToCapacity(capacity: Int) = Unit
+
+        override suspend fun markEntriesUsed(entryIds: List<String>, timestamp: Long) = Unit
+
+        suspend fun emit(nextEntries: List<MemoryEntry>) {
+            entries = nextEntries
+            flow.emit(nextEntries)
+        }
     }
 }

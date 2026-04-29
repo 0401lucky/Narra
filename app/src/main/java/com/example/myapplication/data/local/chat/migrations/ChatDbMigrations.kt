@@ -630,6 +630,121 @@ internal object ChatDbMigrations {
         }
     }
 
+    val MIGRATION_32_33 = object : Migration(32, 33) {
+        override fun migrate(db: SupportSQLiteDatabase) {
+            db.execSQL(
+                """
+                CREATE TABLE IF NOT EXISTS mailbox_letters (
+                    id TEXT NOT NULL PRIMARY KEY,
+                    scenarioId TEXT NOT NULL,
+                    conversationId TEXT NOT NULL,
+                    assistantId TEXT NOT NULL,
+                    senderType TEXT NOT NULL,
+                    box TEXT NOT NULL,
+                    subject TEXT NOT NULL,
+                    content TEXT NOT NULL,
+                    excerpt TEXT NOT NULL,
+                    tagsCsv TEXT NOT NULL,
+                    mood TEXT NOT NULL,
+                    replyToLetterId TEXT NOT NULL,
+                    isRead INTEGER NOT NULL,
+                    isStarred INTEGER NOT NULL,
+                    allowMemory INTEGER NOT NULL,
+                    memoryCandidate TEXT NOT NULL,
+                    linkedMemoryId TEXT NOT NULL,
+                    source TEXT NOT NULL,
+                    createdAt INTEGER NOT NULL,
+                    updatedAt INTEGER NOT NULL,
+                    sentAt INTEGER NOT NULL,
+                    readAt INTEGER NOT NULL
+                )
+                """.trimIndent(),
+            )
+            db.execSQL(
+                """
+                CREATE INDEX IF NOT EXISTS index_mailbox_letters_scenarioId_box_updatedAt
+                ON mailbox_letters(scenarioId, box, updatedAt)
+                """.trimIndent(),
+            )
+            db.execSQL(
+                """
+                CREATE INDEX IF NOT EXISTS index_mailbox_letters_conversationId
+                ON mailbox_letters(conversationId)
+                """.trimIndent(),
+            )
+            db.execSQL(
+                """
+                CREATE INDEX IF NOT EXISTS index_mailbox_letters_assistantId
+                ON mailbox_letters(assistantId)
+                """.trimIndent(),
+            )
+            db.execSQL(
+                """
+                CREATE INDEX IF NOT EXISTS index_mailbox_letters_replyToLetterId
+                ON mailbox_letters(replyToLetterId)
+                """.trimIndent(),
+            )
+        }
+    }
+
+    val MIGRATION_33_34 = object : Migration(33, 34) {
+        override fun migrate(db: SupportSQLiteDatabase) {
+            db.execSQL(
+                """
+                CREATE TABLE IF NOT EXISTS mailbox_settings (
+                    scenarioId TEXT NOT NULL PRIMARY KEY,
+                    autoReplyToUserLetters INTEGER NOT NULL,
+                    includeRecentChatByDefault INTEGER NOT NULL,
+                    includePhoneCluesByDefault INTEGER NOT NULL,
+                    allowMemoryByDefault INTEGER NOT NULL,
+                    proactiveFrequency TEXT NOT NULL,
+                    lastProactiveLetterAt INTEGER NOT NULL,
+                    updatedAt INTEGER NOT NULL
+                )
+                """.trimIndent(),
+            )
+        }
+    }
+
+    val MIGRATION_34_35 = object : Migration(34, 35) {
+        override fun migrate(db: SupportSQLiteDatabase) {
+            db.execSQL(
+                """
+                CREATE TABLE IF NOT EXISTS presets (
+                    id TEXT NOT NULL PRIMARY KEY,
+                    name TEXT NOT NULL,
+                    description TEXT NOT NULL,
+                    systemPrompt TEXT NOT NULL,
+                    contextTemplate TEXT NOT NULL,
+                    samplerJson TEXT NOT NULL,
+                    instructJson TEXT NOT NULL,
+                    stopSequencesJson TEXT NOT NULL,
+                    entriesJson TEXT NOT NULL DEFAULT '[]',
+                    renderConfigJson TEXT NOT NULL DEFAULT '{}',
+                    version INTEGER NOT NULL,
+                    builtIn INTEGER NOT NULL,
+                    userModified INTEGER NOT NULL,
+                    createdAt INTEGER NOT NULL,
+                    updatedAt INTEGER NOT NULL
+                )
+                """.trimIndent(),
+            )
+            db.execSQL("CREATE INDEX IF NOT EXISTS index_presets_builtIn ON presets (builtIn)")
+            db.execSQL("CREATE INDEX IF NOT EXISTS index_presets_updatedAt ON presets (updatedAt)")
+        }
+    }
+
+    val MIGRATION_35_36 = object : Migration(35, 36) {
+        override fun migrate(db: SupportSQLiteDatabase) {
+            if (!hasColumn(db, "presets", "entriesJson")) {
+                db.execSQL("ALTER TABLE presets ADD COLUMN entriesJson TEXT NOT NULL DEFAULT '[]'")
+            }
+            if (!hasColumn(db, "presets", "renderConfigJson")) {
+                db.execSQL("ALTER TABLE presets ADD COLUMN renderConfigJson TEXT NOT NULL DEFAULT '{}'")
+            }
+        }
+    }
+
     /** 版本连续性由 `ChatDatabaseMigrationRegistryTest` 保证：`size == CURRENT_VERSION - 1`。 */
     val ALL: Array<Migration> = arrayOf(
         MIGRATION_1_2,
@@ -663,6 +778,10 @@ internal object ChatDbMigrations {
         MIGRATION_29_30,
         MIGRATION_30_31,
         MIGRATION_31_32,
+        MIGRATION_32_33,
+        MIGRATION_33_34,
+        MIGRATION_34_35,
+        MIGRATION_35_36,
     )
 
     /** 幂等列检查。子迁移在 `ALTER TABLE ADD COLUMN` 之前先探测，允许中间版本重复升级。 */

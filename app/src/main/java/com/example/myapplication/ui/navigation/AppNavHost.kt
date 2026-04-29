@@ -71,6 +71,7 @@ fun AppNavHost(
         )
 
         composable(AppRoutes.PHONE_CHECK) { backStackEntry ->
+            val scenarioId = Uri.decode(backStackEntry.arguments?.getString("scenarioId").orEmpty())
             val phoneCheckViewModel = rememberPhoneCheckViewModel(
                 appGraph = appGraph,
                 backStackEntry = backStackEntry,
@@ -84,6 +85,15 @@ fun AppNavHost(
                 onLoadSearchDetail = phoneCheckViewModel::loadSearchDetail,
                 onClearErrorMessage = phoneCheckViewModel::clearErrorMessage,
                 onClearNoticeMessage = phoneCheckViewModel::clearNoticeMessage,
+                onOpenMailbox = if (scenarioId.isNotBlank()) {
+                    {
+                        navController.navigate(AppRoutes.roleplayMailbox(scenarioId)) {
+                            launchSingleTop = true
+                        }
+                    }
+                } else {
+                    null
+                },
             )
         }
 

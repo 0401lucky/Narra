@@ -40,11 +40,13 @@ internal object AnthropicProtocolSupport {
         return AnthropicMessageRequest(
             model = request.model,
             messages = messages,
-            maxTokens = DefaultMaxTokens,
+            maxTokens = request.maxTokens ?: DefaultMaxTokens,
             system = systemPrompt,
             stream = request.stream,
             temperature = request.temperature,
             topP = request.topP,
+            topK = request.topK,
+            stopSequences = request.stop,
             thinking = request.thinking?.let { thinking ->
                 AnthropicThinkingDto(
                     budgetTokens = thinking.budgetTokens,
