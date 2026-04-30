@@ -126,6 +126,135 @@ class RoleplayMessageUiMapperTest {
     }
 
     @Test
+    fun mapMessages_inLongformModeExtractsLeadingStatusBlock() {
+        val scenario = RoleplayScenario(
+            id = "scene-1",
+            title = "长文模式",
+            characterDisplayNameOverride = "陆承渊",
+            longformModeEnabled = true,
+        )
+        val mapped = RoleplayMessageUiMapper.mapMessages(
+            scenario = scenario,
+            assistant = Assistant(id = "assistant-1", name = "陆承渊"),
+            settings = AppSettings(),
+            rawMessages = listOf(
+                ChatMessage(
+                    id = "assistant-1",
+                    conversationId = "conv-1",
+                    role = MessageRole.ASSISTANT,
+                    content = """
+                        > 时间：23:03 | 日期：2026年4月29日
+                        地点：静安区公寓卧室 | 天气：雨停后的深夜
+                        陆承渊·状态 | 阶段：破线 | 外在：仰躺
+
+                        <p style="text-align:center; color:gray; font-size:0.9em;">—— 外滩夜色 ——</p>
+                        拇指停在后腰窝的位置。
+                    """.trimIndent(),
+                    createdAt = 2L,
+                    status = MessageStatus.COMPLETED,
+                    roleplayOutputFormat = RoleplayOutputFormat.LONGFORM,
+                ),
+            ),
+            streamingContent = null,
+            outputParser = RoleplayOutputParser(),
+            nowProvider = { 20L },
+        )
+
+        assertEquals(2, mapped.size)
+        assertEquals(RoleplayContentType.STATUS, mapped[0].contentType)
+        assertTrue(mapped[0].content.contains("时间：23:03"))
+        assertEquals(RoleplayContentType.LONGFORM, mapped[1].contentType)
+        assertTrue(mapped[1].content.contains("—— 外滩夜色 ——"))
+        assertTrue(mapped[1].content.contains("拇指停在后腰窝的位置。"))
+        assertTrue(!mapped[1].content.contains("时间：23:03"))
+    }
+
+    @Test
+    fun mapMessages_extractsLeadingStatusBlockFromDialogueContent() {
+        val scenario = RoleplayScenario(
+            id = "scene-1",
+            title = "普通模式",
+            characterDisplayNameOverride = "君泽",
+        )
+        val mapped = RoleplayMessageUiMapper.mapMessages(
+            scenario = scenario,
+            assistant = Assistant(id = "assistant-1", name = "君泽"),
+            settings = AppSettings(),
+            rawMessages = listOf(
+                ChatMessage(
+                    id = "assistant-1",
+                    conversationId = "conv-1",
+                    role = MessageRole.ASSISTANT,
+                    content = """
+                        『时间：10:07 | 日期：2026年4月21日星期二 | 地点：申江新区管委会主任办公室 | 天气：百叶窗的缝隙切碎了日光
+
+                        他把录音笔轻轻放在桌面上。
+                    """.trimIndent(),
+                    createdAt = 2L,
+                    status = MessageStatus.COMPLETED,
+                ),
+            ),
+            streamingContent = null,
+            outputParser = RoleplayOutputParser(),
+            nowProvider = { 20L },
+        )
+
+        assertEquals(2, mapped.size)
+        assertEquals(RoleplayContentType.STATUS, mapped[0].contentType)
+        assertTrue(mapped[0].content.contains("时间：10:07"))
+        assertTrue(!mapped[0].content.contains("『时间"))
+        assertTrue(mapped[1].content.contains("录音笔轻轻放在桌面上"))
+        assertTrue(!mapped[1].content.contains("时间：10:07"))
+    }
+
+    @Test
+    fun mapMessages_extractsLeadingStatusBlockBeforeOnlineProtocolFallback() {
+        val scenario = RoleplayScenario(
+            id = "scene-1",
+            title = "线上模式",
+            characterDisplayNameOverride = "君泽",
+            interactionMode = RoleplayInteractionMode.ONLINE_PHONE,
+        )
+        val content = """
+            『时间：10:07 ｜ 日期：2026年4月21日星期二 ｜ 地点：申江新区管委会主任办公室 ｜ 天气：百叶窗的缝隙切碎了日光』
+
+            —— 卷页翻开 · 正文起 ——
+
+            君泽垂下眼睑，视线在那支录音笔上停留了极短的一瞬。
+        """.trimIndent()
+        val mapped = RoleplayMessageUiMapper.mapMessages(
+            scenario = scenario,
+            assistant = Assistant(id = "assistant-1", name = "君泽"),
+            settings = AppSettings(),
+            rawMessages = listOf(
+                ChatMessage(
+                    id = "assistant-1",
+                    conversationId = "conv-1",
+                    role = MessageRole.ASSISTANT,
+                    content = content,
+                    createdAt = 2L,
+                    status = MessageStatus.COMPLETED,
+                    parts = listOf(textMessagePart(content)),
+                    roleplayInteractionMode = RoleplayInteractionMode.ONLINE_PHONE,
+                    roleplayOutputFormat = RoleplayOutputFormat.PLAIN,
+                ),
+            ),
+            streamingContent = null,
+            outputParser = RoleplayOutputParser(),
+            nowProvider = { 20L },
+        )
+
+        assertTrue(mapped.size >= 2)
+        assertEquals(RoleplayContentType.STATUS, mapped[0].contentType)
+        assertTrue(mapped[0].content.contains("时间：10:07"))
+        assertTrue(!mapped[0].content.contains("『时间"))
+        val visibleBody = mapped.drop(1).joinToString(separator = "\n") { it.content }
+        assertTrue(visibleBody.contains("卷页翻开"))
+        assertTrue(visibleBody.contains("录音笔"))
+        assertTrue(!visibleBody.contains("时间：10:07"))
+    }
+
+    @Test
     fun mapMessages_keepsStoredLongformHistoryAfterSwitchingBackToDialogueMode() {
         val scenario = RoleplayScenario(
             id = "scene-1",

@@ -3,7 +3,6 @@ package com.example.myapplication.viewmodel
 import com.example.myapplication.conversation.AssistantRoundTripOutcome
 import com.example.myapplication.conversation.AssistantRoundTripRequest
 import com.example.myapplication.conversation.AssistantRoundTripResult
-import com.example.myapplication.conversation.ConversationSummaryDebugSupport
 import com.example.myapplication.conversation.ConversationAssistantRoundTripRunner
 import com.example.myapplication.conversation.ContextGovernanceSupport
 import com.example.myapplication.conversation.ConversationMessageTransforms
@@ -190,21 +189,15 @@ internal class RoleplayRoundTripExecutor(
                     recentMessages = requestMessagesForModel,
                 ),
             )
-            val debugDump = buildString {
-                append(
-                    ConversationSummaryDebugSupport.appendStatusLine(
-                        debugDump = promptContext.debugDump,
-                        hasSummary = promptContext.summaryCoveredMessageCount > 0,
-                        coveredMessageCount = promptContext.summaryCoveredMessageCount,
-                        completedMessageCount = requestMessages.count { it.status == MessageStatus.COMPLETED },
-                        triggerMessageCount = SUMMARY_TRIGGER_MESSAGE_COUNT,
-                    ),
-                )
-                if (decoratedPrompt.isNotBlank()) {
-                    append("\n\n【RP 装饰后提示词】\n")
-                    append(decoratedPrompt)
-                }
-            }
+            val completedMessageCount = requestMessages.count { it.status == MessageStatus.COMPLETED }
+            val debugDump = ContextGovernanceSupport.buildActualPromptDebugDump(
+                promptContextDebugDump = promptContext.debugDump,
+                actualSystemPrompt = decoratedPrompt,
+                hasSummary = promptContext.summaryCoveredMessageCount > 0,
+                coveredMessageCount = promptContext.summaryCoveredMessageCount,
+                completedMessageCount = completedMessageCount,
+                triggerMessageCount = SUMMARY_TRIGGER_MESSAGE_COUNT,
+            )
             updateUiState { current ->
                 val contextSnapshot = ContextGovernanceSupport.buildSnapshot(
                     settings = state.settings,
@@ -214,7 +207,7 @@ internal class RoleplayRoundTripExecutor(
                     requestMessages = requestMessages,
                     effectiveRequestMessages = requestMessagesForModel,
                     promptContext = promptContext,
-                    completedMessageCount = requestMessages.count { it.status == MessageStatus.COMPLETED },
+                    completedMessageCount = completedMessageCount,
                     triggerMessageCount = SUMMARY_TRIGGER_MESSAGE_COUNT,
                     recentWindow = resolveSummaryRecentWindow(assistant),
                     minCoveredMessageCount = SUMMARY_MIN_COVERED_MESSAGE_COUNT,

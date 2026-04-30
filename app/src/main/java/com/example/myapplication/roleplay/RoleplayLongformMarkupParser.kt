@@ -10,6 +10,27 @@ enum class RoleplayLongformSpanType {
 }
 
 @Immutable
+enum class RoleplayLongformParagraphAlignment {
+    START,
+    CENTER,
+    END,
+}
+
+@Immutable
+enum class RoleplayLongformParagraphTone {
+    DEFAULT,
+    MUTED,
+    ACCENT,
+}
+
+@Immutable
+data class RoleplayLongformParagraphStyle(
+    val alignment: RoleplayLongformParagraphAlignment = RoleplayLongformParagraphAlignment.START,
+    val tone: RoleplayLongformParagraphTone = RoleplayLongformParagraphTone.DEFAULT,
+    val fontScale: Float = 1.0f,
+)
+
+@Immutable
 data class RoleplayLongformSpan(
     val text: String,
     val type: RoleplayLongformSpanType,
@@ -18,6 +39,7 @@ data class RoleplayLongformSpan(
 @Immutable
 data class RoleplayLongformParagraph(
     val spans: List<RoleplayLongformSpan>,
+    val style: RoleplayLongformParagraphStyle = RoleplayLongformParagraphStyle(),
 ) {
     val plainText: String
         get() = spans.joinToString(separator = "") { it.text }
@@ -27,6 +49,12 @@ object RoleplayLongformMarkupParser {
     private val supportedTagRegex = Regex("""(?is)</?(char|thought)>""")
     private val parserTagRegex = Regex("""(?is)<(/?)(char|thought)>""")
     private val danglingTagRegex = Regex("""(?is)<[^>\n]*$""")
+    private val htmlParagraphRegex = Regex("""(?is)<p\b([^>]*)>(.*?)</p>""")
+    private val htmlBreakRegex = Regex("""(?is)<br\s*/?>""")
+    private val remainingHtmlTagRegex = Regex("""(?is)</?(?:p|span|div|section|center|font|small|b|strong|i|em)\b[^>]*>""")
+    private val htmlStyleAttributeRegex = Regex("""(?is)\bstyle\s*=\s*("[^"]*"|'[^']*'|[^\s>]+)""")
+    private val htmlAlignAttributeRegex = Regex("""(?is)\balign\s*=\s*("[^"]*"|'[^']*'|[^\s>]+)""")
+    private val htmlFontSizeRegex = Regex("""(?is)font-size\s*:\s*([0-9.]+)\s*(em|rem|%)?""")
     private val unsupportedProtocolTagRegex = Regex("""(?is)</?(dialogue|narration)\b[^>]*>""")
     private val protocolAttributeNoisePattern = Regex(
         """(?is)\b(speaker|emotion|reply_to|reply_preview|reply_speaker)\s*=\s*("[^"]*"|'[^']*'|[^\s<>]+)?""",
@@ -47,6 +75,11 @@ object RoleplayLongformMarkupParser {
     private const val SmartParagraphSoftMax = 92
     private const val SmartParagraphHardMax = 144
 
+    private data class NormalizedBlock(
+        val text: String,
+        val style: RoleplayLongformParagraphStyle = RoleplayLongformParagraphStyle(),
+    )
+
     fun parseParagraphs(rawContent: String): List<RoleplayLongformParagraph> {
         val normalizedBlocks = normalizeParagraphBlocks(
             rawContent = rawContent,
@@ -66,9 +99,10 @@ object RoleplayLongformMarkupParser {
     }
 
     fun stripMarkupForDisplay(rawContent: String): String {
-        return sanitizeLongformArtifacts(rawContent)
-            .replace(danglingTagRegex, "")
-            .replace(supportedTagRegex, "")
+        return normalizeParagraphBlocks(
+            rawContent = rawContent,
+            stripSupportedTags = true,
+        ).joinToString(separator = "\n\n") { block -> block.text }
             .trim()
     }
 
@@ -81,17 +115,17 @@ object RoleplayLongformMarkupParser {
         return normalizedBlocks
             .flatMap { block ->
                 if (shouldApplySmartFallback) {
-                    splitNarrationText(block)
+                    splitNarrationText(block.text)
                 } else {
-                    listOf(block)
+                    listOf(block.text)
                 }
             }
             .map { it.trim() }
             .filter { it.isNotEmpty() }
     }
 
-    private fun parseParagraph(paragraph: String): RoleplayLongformParagraph {
-        if (paragraph.isBlank()) {
+    private fun parseParagraph(block: NormalizedBlock): RoleplayLongformParagraph {
+        if (block.text.isBlank()) {
             return RoleplayLongformParagraph(emptyList())
         }
 
@@ -100,11 +134,11 @@ object RoleplayLongformMarkupParser {
         var cursor = 0
         val stack = ArrayDeque<RoleplayLongformSpanType>()
 
-        parserTagRegex.findAll(paragraph).forEach { match ->
+        parserTagRegex.findAll(block.text).forEach { match ->
             if (match.range.first > cursor) {
                 appendSpan(
                     target = spans,
-                    text = paragraph.substring(cursor, match.range.first),
+                    text = block.text.substring(cursor, match.range.first),
                     type = activeType,
                 )
             }
@@ -129,15 +163,18 @@ object RoleplayLongformMarkupParser {
             cursor = match.range.last + 1
         }
 
-        if (cursor < paragraph.length) {
+        if (cursor < block.text.length) {
             appendSpan(
                 target = spans,
-                text = paragraph.substring(cursor),
+                text = block.text.substring(cursor),
                 type = activeType,
             )
         }
 
-        return RoleplayLongformParagraph(spans)
+        return RoleplayLongformParagraph(
+            spans = spans,
+            style = block.style,
+        )
     }
 
     private fun splitParagraphIfNeeded(
@@ -183,7 +220,10 @@ object RoleplayLongformMarkupParser {
             if (currentSpans.isEmpty()) {
                 return
             }
-            paragraphs += RoleplayLongformParagraph(currentSpans.toList())
+            paragraphs += RoleplayLongformParagraph(
+                spans = currentSpans.toList(),
+                style = paragraph.style,
+            )
             currentSpans.clear()
             currentLength = 0
         }
@@ -242,7 +282,7 @@ object RoleplayLongformMarkupParser {
     private fun normalizeParagraphBlocks(
         rawContent: String,
         stripSupportedTags: Boolean,
-    ): List<String> {
+    ): List<NormalizedBlock> {
         var normalized = sanitizeLongformArtifacts(rawContent)
             .replace(danglingTagRegex, "")
             .trim()
@@ -253,11 +293,24 @@ object RoleplayLongformMarkupParser {
             return emptyList()
         }
 
+        val htmlBlocks = splitHtmlParagraphBlocks(normalized, stripSupportedTags)
+        if (htmlBlocks != null) {
+            return htmlBlocks
+        }
+
+        return normalizePlainParagraphBlocks(normalized)
+    }
+
+    private fun normalizePlainParagraphBlocks(
+        normalized: String,
+        style: RoleplayLongformParagraphStyle = RoleplayLongformParagraphStyle(),
+    ): List<NormalizedBlock> {
         val explicitBlocks = normalized
             .split(paragraphBreakRegex)
             .mapNotNull { block ->
                 normalizeInlineLineBreaks(block)
                     .takeIf { it.isNotBlank() }
+                    ?.let { NormalizedBlock(it, style) }
             }
         if (explicitBlocks.size > 1) {
             return explicitBlocks
@@ -267,10 +320,120 @@ object RoleplayLongformMarkupParser {
             .map { it.trim() }
             .filter { it.isNotEmpty() }
         if (looksLikeIntentionalSingleLineParagraphs(nonBlankLines)) {
-            return nonBlankLines
+            return nonBlankLines.map { NormalizedBlock(it, style) }
         }
 
-        return listOf(normalizeInlineLineBreaks(normalized))
+        return listOf(NormalizedBlock(normalizeInlineLineBreaks(normalized), style))
+    }
+
+    private fun splitHtmlParagraphBlocks(
+        rawContent: String,
+        stripSupportedTags: Boolean,
+    ): List<NormalizedBlock>? {
+        val matches = htmlParagraphRegex.findAll(rawContent).toList()
+        if (matches.isEmpty()) {
+            return null
+        }
+
+        val blocks = mutableListOf<NormalizedBlock>()
+        var cursor = 0
+        matches.forEach { match ->
+            if (match.range.first > cursor) {
+                val leadingText = rawContent.substring(cursor, match.range.first)
+                blocks += normalizeHtmlFreeTextBlocks(
+                    text = leadingText,
+                    stripSupportedTags = stripSupportedTags,
+                )
+            }
+
+            val attributes = match.groupValues[1]
+            val innerText = match.groupValues[2]
+            val style = parseHtmlParagraphStyle(attributes)
+            val cleanedInnerText = normalizeHtmlText(innerText)
+            blocks += normalizePlainParagraphBlocks(cleanedInnerText, style)
+            cursor = match.range.last + 1
+        }
+        if (cursor < rawContent.length) {
+            blocks += normalizeHtmlFreeTextBlocks(
+                text = rawContent.substring(cursor),
+                stripSupportedTags = stripSupportedTags,
+            )
+        }
+
+        return blocks.filter { it.text.isNotBlank() }
+    }
+
+    private fun normalizeHtmlFreeTextBlocks(
+        text: String,
+        stripSupportedTags: Boolean,
+    ): List<NormalizedBlock> {
+        var cleaned = normalizeHtmlText(text).trim()
+        if (stripSupportedTags) {
+            cleaned = cleaned.replace(supportedTagRegex, "")
+        }
+        if (cleaned.isBlank()) {
+            return emptyList()
+        }
+        return normalizePlainParagraphBlocks(cleaned)
+    }
+
+    private fun normalizeHtmlText(
+        text: String,
+    ): String {
+        return decodeBasicHtmlEntities(text)
+            .replace(htmlBreakRegex, "\n")
+            .replace(remainingHtmlTagRegex, " ")
+    }
+
+    private fun parseHtmlParagraphStyle(
+        attributes: String,
+    ): RoleplayLongformParagraphStyle {
+        val styleText = htmlStyleAttributeRegex.find(attributes)
+            ?.groupValues
+            ?.getOrNull(1)
+            ?.trimAttributeQuotes()
+            .orEmpty()
+            .lowercase()
+        val alignText = htmlAlignAttributeRegex.find(attributes)
+            ?.groupValues
+            ?.getOrNull(1)
+            ?.trimAttributeQuotes()
+            .orEmpty()
+            .lowercase()
+        val alignment = when {
+            "text-align:center" in styleText || "text-align: center" in styleText || alignText == "center" ->
+                RoleplayLongformParagraphAlignment.CENTER
+            "text-align:right" in styleText || "text-align: right" in styleText || alignText == "right" ->
+                RoleplayLongformParagraphAlignment.END
+            else -> RoleplayLongformParagraphAlignment.START
+        }
+        val tone = when {
+            "color:gray" in styleText ||
+                "color: grey" in styleText ||
+                "color:gray" in styleText ||
+                "color: #808080" in styleText ||
+                "color:#808080" in styleText ||
+                "color: #888" in styleText ||
+                "color:#888" in styleText -> RoleplayLongformParagraphTone.MUTED
+            "color:primary" in styleText || "color: accent" in styleText -> RoleplayLongformParagraphTone.ACCENT
+            else -> RoleplayLongformParagraphTone.DEFAULT
+        }
+        val fontScale = htmlFontSizeRegex.find(styleText)
+            ?.let { match ->
+                val value = match.groupValues[1].toFloatOrNull() ?: return@let null
+                when (match.groupValues.getOrNull(2).orEmpty().lowercase()) {
+                    "%" -> value / 100f
+                    else -> value
+                }
+            }
+            ?.coerceIn(0.72f, 1.32f)
+            ?: 1.0f
+
+        return RoleplayLongformParagraphStyle(
+            alignment = alignment,
+            tone = tone,
+            fontScale = fontScale,
+        )
     }
 
     private fun normalizeInlineLineBreaks(
@@ -418,9 +581,33 @@ object RoleplayLongformMarkupParser {
         while (merged.size >= 2 && merged.last().plainText.length < 20) {
             val tail = merged.removeAt(merged.lastIndex)
             val previous = merged.removeAt(merged.lastIndex)
-            merged += RoleplayLongformParagraph(previous.spans + tail.spans)
+            if (previous.style != tail.style) {
+                merged += previous
+                merged += tail
+                break
+            }
+            merged += RoleplayLongformParagraph(
+                spans = previous.spans + tail.spans,
+                style = previous.style,
+            )
         }
         return merged
+    }
+
+    private fun String.trimAttributeQuotes(): String {
+        return trim().trim('"', '\'')
+    }
+
+    private fun decodeBasicHtmlEntities(
+        text: String,
+    ): String {
+        return text
+            .replace("&nbsp;", " ")
+            .replace("&lt;", "<")
+            .replace("&gt;", ">")
+            .replace("&amp;", "&")
+            .replace("&quot;", "\"")
+            .replace("&#39;", "'")
     }
 
     private fun sanitizeLongformArtifacts(

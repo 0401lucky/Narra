@@ -77,6 +77,17 @@ internal data class RoleplayInputQuickAction(
     val onClick: () -> Unit,
 )
 
+internal fun resolveRoleplayDialogueHighlightColor(
+    hasImage: Boolean,
+    colors: ImmersiveRoleplayColors,
+): Color {
+    return if (hasImage) {
+        RoleplayQuotedDialogueHighlightColor
+    } else {
+        colors.textPrimary
+    }
+}
+
 @Composable
 internal fun rememberImmersiveRoleplayColors(
     backdropState: ImmersiveBackdropState,

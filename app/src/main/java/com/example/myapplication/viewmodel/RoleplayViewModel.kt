@@ -12,7 +12,6 @@ import com.example.myapplication.conversation.ConversationMemoryExtractionCoordi
 import com.example.myapplication.conversation.ConversationTransferCoordinator
 import com.example.myapplication.conversation.ConversationMessageTransforms
 import com.example.myapplication.conversation.ConversationSummaryCoordinator
-import com.example.myapplication.conversation.ConversationSummaryDebugSupport
 import com.example.myapplication.conversation.ContextGovernanceSupport
 import com.example.myapplication.conversation.GiftImageGenerationCoordinator
 import com.example.myapplication.conversation.RoundTripInitialPersistence
@@ -1173,21 +1172,14 @@ class RoleplayViewModel(
             ),
         )
         val completedMessageCount = requestMessages.size
-        val debugDump = buildString {
-            append(
-                ConversationSummaryDebugSupport.appendStatusLine(
-                    debugDump = promptContext.debugDump,
-                    hasSummary = promptContext.summaryCoveredMessageCount > 0,
-                    coveredMessageCount = promptContext.summaryCoveredMessageCount,
-                    completedMessageCount = completedMessageCount,
-                    triggerMessageCount = SUMMARY_TRIGGER_MESSAGE_COUNT,
-                ),
-            )
-            if (decoratedPrompt.isNotBlank()) {
-                append("\n\n【RP 装饰后提示词】\n")
-                append(decoratedPrompt)
-            }
-        }
+        val debugDump = ContextGovernanceSupport.buildActualPromptDebugDump(
+            promptContextDebugDump = promptContext.debugDump,
+            actualSystemPrompt = decoratedPrompt,
+            hasSummary = promptContext.summaryCoveredMessageCount > 0,
+            coveredMessageCount = promptContext.summaryCoveredMessageCount,
+            completedMessageCount = completedMessageCount,
+            triggerMessageCount = SUMMARY_TRIGGER_MESSAGE_COUNT,
+        )
         val contextSnapshot = ContextGovernanceSupport.buildSnapshot(
             settings = settings,
             assistant = assistant,

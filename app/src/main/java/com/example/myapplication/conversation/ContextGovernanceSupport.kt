@@ -15,6 +15,37 @@ import com.example.myapplication.model.inferModelAbilities
 import com.example.myapplication.model.toPlainText
 
 object ContextGovernanceSupport {
+    fun buildActualPromptDebugDump(
+        promptContextDebugDump: String,
+        actualSystemPrompt: String,
+        hasSummary: Boolean,
+        coveredMessageCount: Int,
+        completedMessageCount: Int,
+        triggerMessageCount: Int,
+    ): String {
+        val metadata = promptContextDebugDump
+            .substringBefore("\n\n")
+            .trim()
+            .ifBlank { "【上下文调试】" }
+        val metadataWithStatus = ConversationSummaryDebugSupport.appendStatusLine(
+            debugDump = metadata,
+            hasSummary = hasSummary,
+            coveredMessageCount = coveredMessageCount,
+            completedMessageCount = completedMessageCount,
+            triggerMessageCount = triggerMessageCount,
+        )
+        return buildString {
+            append(metadataWithStatus)
+            actualSystemPrompt
+                .trim()
+                .takeIf { it.isNotBlank() }
+                ?.let { prompt ->
+                    append("\n\n【实际发送系统提示词】\n")
+                    append(prompt)
+                }
+        }
+    }
+
     fun buildSnapshot(
         settings: AppSettings,
         assistant: Assistant?,
@@ -81,6 +112,8 @@ object ContextGovernanceSupport {
                 PromptMode.CHAT -> "聊天"
                 PromptMode.ROLEPLAY -> "沉浸"
             },
+            activePresetId = promptContext.activePresetId,
+            activePresetName = promptContext.activePresetName,
             generatedAt = System.currentTimeMillis(),
             estimatedContextTokens = promptContext.contextSections.sumOf { it.tokenEstimate },
             contextSections = promptContext.contextSections,

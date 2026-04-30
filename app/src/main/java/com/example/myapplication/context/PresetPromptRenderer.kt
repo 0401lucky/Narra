@@ -41,6 +41,7 @@ class PresetPromptRenderer {
                         sourceType = ContextLogSourceType.PROMPT_PRESET,
                         title = "${entry.title} · 插入点",
                         content = "聊天历史会从这里插入。",
+                        tokenEstimate = 0,
                     )
                     return@forEach
                 }
@@ -50,7 +51,7 @@ class PresetPromptRenderer {
                     return@forEach
                 }
                 contextSections += ContextLogSection(
-                    sourceType = ContextLogSourceType.PROMPT_PRESET,
+                    sourceType = entry.sourceType(),
                     title = entry.title,
                     content = renderedContent,
                 )
@@ -112,6 +113,29 @@ class PresetPromptRenderer {
             PresetPromptEntryKind.CHAT_HISTORY,
             PresetPromptEntryKind.CUSTOM,
             -> "custom"
+        }
+    }
+
+    private fun PresetPromptEntry.sourceType(): ContextLogSourceType {
+        return when (kind) {
+            PresetPromptEntryKind.CHARACTER_DESCRIPTION,
+            PresetPromptEntryKind.CHARACTER_PROMPT,
+            -> ContextLogSourceType.ROLE_CARD
+            PresetPromptEntryKind.USER_PERSONA -> ContextLogSourceType.USER_PERSONA
+            PresetPromptEntryKind.SCENARIO,
+            PresetPromptEntryKind.EXAMPLE_DIALOGUE,
+            -> ContextLogSourceType.ROLE_EXTRAS
+            PresetPromptEntryKind.WORLD_INFO_BEFORE -> ContextLogSourceType.WORLD_BOOK
+            PresetPromptEntryKind.LONG_MEMORY -> ContextLogSourceType.LONG_MEMORY
+            PresetPromptEntryKind.SUMMARY -> ContextLogSourceType.SUMMARY
+            PresetPromptEntryKind.PHONE_CONTEXT -> ContextLogSourceType.PHONE_CONTEXT
+            PresetPromptEntryKind.MAIN_PROMPT,
+            PresetPromptEntryKind.CONTEXT_TEMPLATE,
+            PresetPromptEntryKind.POST_HISTORY,
+            PresetPromptEntryKind.STATUS_RULES,
+            PresetPromptEntryKind.CHAT_HISTORY,
+            PresetPromptEntryKind.CUSTOM,
+            -> ContextLogSourceType.PROMPT_PRESET
         }
     }
 }

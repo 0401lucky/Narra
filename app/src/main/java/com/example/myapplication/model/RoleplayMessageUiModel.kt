@@ -9,6 +9,7 @@ enum class RoleplayContentType {
     LONGFORM,
     ACTION,
     SPECIAL_PLAY,
+    STATUS,
     SYSTEM,
 }
 

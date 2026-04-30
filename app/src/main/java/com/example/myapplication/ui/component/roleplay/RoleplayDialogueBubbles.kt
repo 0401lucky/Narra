@@ -120,6 +120,14 @@ internal fun CharacterDialogueBubbleContent(
     val shape = bubbleStyle.shape(isUser = false)
     val bubbleModifier = if (fillWidth) Modifier.fillMaxWidth() else Modifier
     val bubbleColor = if (isError) colors.errorBackground else colors.characterBubbleBackground
+    val dialogueHighlightColor = if (isError) {
+        colors.errorText
+    } else {
+        resolveRoleplayDialogueHighlightColor(
+            hasImage = backdropState.hasImage,
+            colors = colors,
+        )
+    }
     val content: @Composable () -> Unit = {
         Column(
             modifier = Modifier.padding(
@@ -160,7 +168,7 @@ internal fun CharacterDialogueBubbleContent(
                 StreamingLogText(
                     content = message.content,
                     textColor = colors.textPrimary,
-                    accentColor = colors.characterAccent,
+                    accentColor = dialogueHighlightColor,
                     lineHeightScale = lineHeightScale,
                 )
             } else {
@@ -171,7 +179,7 @@ internal fun CharacterDialogueBubbleContent(
                             buildCharacterDialogueAnnotatedString(
                                 text = paragraph,
                                 narrationColor = if (isError) colors.errorText.copy(alpha = 0.84f) else colors.textPrimary.copy(alpha = 0.78f),
-                                dialogueColor = if (isError) colors.errorText else RoleplayQuotedDialogueHighlightColor,
+                                dialogueColor = dialogueHighlightColor,
                             )
                         }
                         Text(

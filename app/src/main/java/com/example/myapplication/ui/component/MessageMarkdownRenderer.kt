@@ -298,7 +298,7 @@ private fun parseStatusRows(rawText: String): List<Pair<String, String>> {
     return rawText
         .lines()
         .mapNotNull { line ->
-            val trimmed = line.trim().trim('-', '•', '*', ' ')
+            val trimmed = line.trim().trim('-', '•', '*', '├', '└', '│', '─', ' ')
             val delimiterIndex = listOf(
                 trimmed.indexOf('：'),
                 trimmed.indexOf(':'),

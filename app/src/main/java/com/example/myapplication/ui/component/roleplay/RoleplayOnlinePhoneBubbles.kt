@@ -58,7 +58,10 @@ internal fun OnlinePhoneNarrationBubble(
                         text = buildQuotedDialogueAnnotatedString(
                             text = paragraph,
                             narrationColor = colors.textMuted.copy(alpha = 0.92f),
-                            dialogueColor = RoleplayQuotedDialogueHighlightColor,
+                            dialogueColor = resolveRoleplayDialogueHighlightColor(
+                                hasImage = backdropState.hasImage,
+                                colors = colors,
+                            ),
                         ),
                         style = MaterialTheme.typography.bodyMedium.copy(
                             fontSize = 14.sp,
@@ -140,7 +143,10 @@ internal fun OnlinePhoneThoughtBubble(
                                 text = buildQuotedDialogueAnnotatedString(
                                     text = paragraph,
                                     narrationColor = colors.thoughtText,
-                                    dialogueColor = RoleplayQuotedDialogueHighlightColor,
+                                    dialogueColor = resolveRoleplayDialogueHighlightColor(
+                                        hasImage = backdropState.hasImage,
+                                        colors = colors,
+                                    ),
                                 ),
                                 style = MaterialTheme.typography.bodyMedium.copy(
                                     fontSize = 13.sp,

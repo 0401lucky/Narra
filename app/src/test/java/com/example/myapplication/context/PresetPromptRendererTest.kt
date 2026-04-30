@@ -1,5 +1,6 @@
 package com.example.myapplication.context
 
+import com.example.myapplication.model.ContextLogSourceType
 import com.example.myapplication.model.Preset
 import com.example.myapplication.model.PresetPromptEntry
 import com.example.myapplication.model.PresetPromptEntryKind
@@ -96,5 +97,95 @@ class PresetPromptRendererTest {
 
         assertTrue(rendered.systemPrompt.contains("沉稳、敏锐"))
         assertFalse(rendered.systemPrompt.contains("不应出现"))
+    }
+
+    @Test
+    fun render_mapsDynamicPresetSlotsBackToOriginalContextSources() {
+        val preset = Preset(
+            id = "preset-3",
+            name = "测试预设",
+            entries = listOf(
+                PresetPromptEntry(
+                    id = "main",
+                    title = "核心任务",
+                    role = PresetPromptRole.SYSTEM,
+                    kind = PresetPromptEntryKind.MAIN_PROMPT,
+                    content = "规则正文",
+                    order = 0,
+                ),
+                PresetPromptEntry(
+                    id = "description",
+                    title = "角色卡",
+                    kind = PresetPromptEntryKind.CHARACTER_DESCRIPTION,
+                    content = "{{description}}",
+                    order = 10,
+                ),
+                PresetPromptEntry(
+                    id = "world",
+                    title = "世界书",
+                    kind = PresetPromptEntryKind.WORLD_INFO_BEFORE,
+                    content = "{{world_info}}",
+                    order = 20,
+                ),
+                PresetPromptEntry(
+                    id = "memory",
+                    title = "长记忆",
+                    kind = PresetPromptEntryKind.LONG_MEMORY,
+                    content = "{{long_memory}}",
+                    order = 30,
+                ),
+                PresetPromptEntry(
+                    id = "history",
+                    title = "Chat History",
+                    kind = PresetPromptEntryKind.CHAT_HISTORY,
+                    order = 40,
+                ),
+                PresetPromptEntry(
+                    id = "post",
+                    title = "续写规则",
+                    kind = PresetPromptEntryKind.POST_HISTORY,
+                    content = "不要重复上一条回复。",
+                    order = 50,
+                ),
+            ),
+        )
+
+        val rendered = renderer.render(
+            PresetPromptRenderInput(
+                preset = preset,
+                userName = "用户",
+                characterName = "角色",
+                slotValues = mapOf(
+                    "description" to "角色设定正文",
+                    "world_info" to "世界书正文",
+                    "long_memory" to "长记忆正文",
+                ),
+            ),
+        )
+
+        assertEquals(
+            ContextLogSourceType.PROMPT_PRESET,
+            rendered.contextSections.first { it.title == "核心任务" }.sourceType,
+        )
+        assertEquals(
+            ContextLogSourceType.ROLE_CARD,
+            rendered.contextSections.first { it.title == "角色卡" }.sourceType,
+        )
+        assertEquals(
+            ContextLogSourceType.WORLD_BOOK,
+            rendered.contextSections.first { it.title == "世界书" }.sourceType,
+        )
+        assertEquals(
+            ContextLogSourceType.LONG_MEMORY,
+            rendered.contextSections.first { it.title == "长记忆" }.sourceType,
+        )
+        assertEquals(
+            ContextLogSourceType.PROMPT_PRESET,
+            rendered.contextSections.first { it.title == "续写规则" }.sourceType,
+        )
+
+        val insertionPoint = rendered.contextSections.first { it.title.contains("插入点") }
+        assertEquals(ContextLogSourceType.PROMPT_PRESET, insertionPoint.sourceType)
+        assertEquals(0, insertionPoint.tokenEstimate)
     }
 }

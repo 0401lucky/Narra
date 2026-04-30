@@ -15,6 +15,29 @@ import org.junit.Test
 
 class ContextGovernanceSupportTest {
     @Test
+    fun buildActualPromptDebugDump_keepsOnlyActualPromptBody() {
+        val debugDump = ContextGovernanceSupport.buildActualPromptDebugDump(
+            promptContextDebugDump = """
+                【上下文调试】
+                - 记忆注入数：1
+
+                旧系统提示词不应出现在复制原文里。
+            """.trimIndent(),
+            actualSystemPrompt = "最终系统提示词",
+            hasSummary = true,
+            coveredMessageCount = 8,
+            completedMessageCount = 10,
+            triggerMessageCount = 4,
+        )
+
+        assertTrue(debugDump.contains("【上下文调试】"))
+        assertTrue(debugDump.contains("【实际发送系统提示词】"))
+        assertTrue(debugDump.contains("最终系统提示词"))
+        assertTrue(debugDump.contains("覆盖 8 条"))
+        assertFalse(debugDump.contains("旧系统提示词不应出现在复制原文里。"))
+    }
+
+    @Test
     fun buildSnapshot_allowsManualRefreshWhenMessagesExist() {
         val provider = ProviderSettings(
             id = "provider-1",

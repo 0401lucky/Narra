@@ -13,6 +13,7 @@ import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.myapplication.data.repository.ai.ChatStatusBlockParser
 import com.example.myapplication.model.AttachmentType
 import com.example.myapplication.model.ChatMessage
 import com.example.myapplication.model.ChatMessagePart
@@ -112,9 +113,31 @@ internal fun rememberMessageBubbleRenderState(
     val rawMessageParts = remember(message.parts, streamingParts) {
         normalizeChatMessageParts(streamingParts ?: message.parts)
     }
-    val displayParts = remember(rawMessageParts, isUser, isStreaming) {
-        if (rawMessageParts.isNotEmpty()) {
-            rawMessageParts.map { part ->
+    val statusAwareMessageParts = remember(rawMessageParts, resolvedContent, isUser, isStreaming) {
+        when {
+            isUser || isStreaming -> rawMessageParts
+            rawMessageParts.isNotEmpty() -> {
+                ChatStatusBlockParser.extractFromParts(
+                    parts = rawMessageParts,
+                    hideStatusBlocksInBubble = true,
+                ).takeIf { parts -> parts.any { it.type == ChatMessagePartType.STATUS } }
+                    ?: rawMessageParts
+            }
+
+            resolvedContent.isNotBlank() -> {
+                ChatStatusBlockParser.extract(
+                    text = resolvedContent,
+                    hideStatusBlocksInBubble = true,
+                ).takeIf { parts -> parts.any { it.type == ChatMessagePartType.STATUS } }
+                    ?: emptyList()
+            }
+
+            else -> emptyList()
+        }
+    }
+    val displayParts = remember(statusAwareMessageParts, isUser, isStreaming) {
+        if (statusAwareMessageParts.isNotEmpty()) {
+            statusAwareMessageParts.map { part ->
                 if (part.type == ChatMessagePartType.TEXT && !isUser && !isStreaming) {
                     part.copy(text = cachedNormalizeAssistantMarkdown(part.text))
                 } else {

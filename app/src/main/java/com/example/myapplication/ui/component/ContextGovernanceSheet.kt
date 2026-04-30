@@ -342,7 +342,11 @@ private fun ContextLogApiCard(
                 buildList {
                     val sectionsByType = snapshot.contextSections.groupBy { it.sourceType }
                     for ((sourceType, typeSections) in sectionsByType) {
-                        val displayValue = typeSections.firstOrNull()?.title?.takeIf { it.isNotBlank() }
+                        val displayValue = if (sourceType == ContextLogSourceType.PROMPT_PRESET) {
+                            snapshot.activePresetName.takeIf { it.isNotBlank() }
+                        } else {
+                            null
+                        } ?: typeSections.firstOrNull()?.title?.takeIf { it.isNotBlank() }
                             ?: sourceType.label
                         add(sourceType to displayValue)
                     }

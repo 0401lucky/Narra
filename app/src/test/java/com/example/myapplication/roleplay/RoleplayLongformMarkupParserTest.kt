@@ -39,6 +39,30 @@ class RoleplayLongformMarkupParserTest {
     }
 
     @Test
+    fun parseParagraphs_rendersSupportedHtmlParagraphStyle() {
+        val paragraphs = RoleplayLongformMarkupParser.parseParagraphs(
+            """风声低下去。<p style="text-align:center; color:gray; font-size:0.9em;">—— 外滩夜色 ——</p>他终于抬眼。""",
+        )
+
+        assertEquals(3, paragraphs.size)
+        assertEquals("风声低下去。", paragraphs[0].plainText)
+        assertEquals("—— 外滩夜色 ——", paragraphs[1].plainText)
+        assertEquals(RoleplayLongformParagraphAlignment.CENTER, paragraphs[1].style.alignment)
+        assertEquals(RoleplayLongformParagraphTone.MUTED, paragraphs[1].style.tone)
+        assertEquals(0.9f, paragraphs[1].style.fontScale, 0.001f)
+        assertEquals("他终于抬眼。", paragraphs[2].plainText)
+    }
+
+    @Test
+    fun stripMarkupForDisplay_removesSupportedHtmlParagraphTags() {
+        val display = RoleplayLongformMarkupParser.stripMarkupForDisplay(
+            """<p style="text-align:center; color:gray;">—— 外滩夜色 ——</p>""",
+        )
+
+        assertEquals("—— 外滩夜色 ——", display)
+    }
+
+    @Test
     fun stripMarkupForDisplay_removesDanglingTagTail() {
         val display = RoleplayLongformMarkupParser.stripMarkupForDisplay("她张了张口，最后只剩下<char")
 

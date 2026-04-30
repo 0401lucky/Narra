@@ -42,6 +42,7 @@ import com.example.myapplication.model.RoleplayMessageUiModel
 import com.example.myapplication.model.RoleplayNoBackgroundSkinSettings
 import com.example.myapplication.model.RoleplaySpeaker
 import com.example.myapplication.ui.component.SpecialPlayCard
+import com.example.myapplication.ui.component.StatusCardPart
 import com.example.myapplication.ui.component.copyPlainTextToClipboard
 
 @Composable
@@ -130,7 +131,10 @@ private fun RoleplayMessageItemContent(
                                     text = buildQuotedDialogueAnnotatedString(
                                         text = paragraph,
                                         narrationColor = colors.textMuted,
-                                        dialogueColor = RoleplayQuotedDialogueHighlightColor,
+                                        dialogueColor = resolveRoleplayDialogueHighlightColor(
+                                            hasImage = backdropState.hasImage,
+                                            colors = colors,
+                                        ),
                                     ),
                                     style = MaterialTheme.typography.bodyMedium.copy(
                                         fontSize = 15.sp,
@@ -175,7 +179,10 @@ private fun RoleplayMessageItemContent(
                                     text = buildQuotedDialogueAnnotatedString(
                                         text = paragraph,
                                         narrationColor = colors.thoughtText,
-                                        dialogueColor = RoleplayQuotedDialogueHighlightColor,
+                                        dialogueColor = resolveRoleplayDialogueHighlightColor(
+                                            hasImage = backdropState.hasImage,
+                                            colors = colors,
+                                        ),
                                     ),
                                     style = MaterialTheme.typography.bodyMedium.copy(
                                         fontSize = 15.sp,
@@ -273,7 +280,14 @@ private fun RoleplayMessageItemContent(
                         containerColor = if (isError) colors.errorBackground else colors.panelBackground,
                         titleColor = if (isError) colors.errorText else colors.characterAccent,
                         bodyColor = if (isError) colors.errorText.copy(alpha = 0.88f) else colors.textPrimary.copy(alpha = 0.94f),
-                        accentColor = if (isError) colors.errorText else RoleplayQuotedDialogueHighlightColor,
+                        accentColor = if (isError) {
+                            colors.errorText
+                        } else {
+                            resolveRoleplayDialogueHighlightColor(
+                                hasImage = backdropState.hasImage,
+                                colors = colors,
+                            )
+                        },
                         thoughtColor = if (isError) colors.errorText.copy(alpha = 0.76f) else colors.thoughtText,
                         lineHeightScale = lineHeightScale,
                     )
@@ -337,6 +351,28 @@ private fun RoleplayMessageItemContent(
                         part = specialPart,
                         isUserMessage = isUserMessage,
                         onConfirmTransferReceipt = onConfirmTransferReceipt,
+                    )
+                }
+            }
+        }
+
+        RoleplayContentType.STATUS -> {
+            val statusPart = message.specialPart ?: return
+            Box(
+                modifier = Modifier.fillMaxWidth(),
+                contentAlignment = Alignment.Center,
+            ) {
+                RoleplayMessageMenuWrapper(
+                    message = message,
+                    onRetryTurn = onRetryTurn,
+                    onEditUserMessage = onEditUserMessage,
+                    modifier = Modifier.fillMaxWidth(0.92f),
+                    onQuoteMessage = onQuoteMessage,
+                    onRecallMessage = onRecallMessage,
+                ) {
+                    StatusCardPart(
+                        part = statusPart,
+                        contentColor = colors.textPrimary,
                     )
                 }
             }

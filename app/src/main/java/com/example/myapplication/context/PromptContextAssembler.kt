@@ -264,7 +264,12 @@ class DefaultPromptContextAssembler(
         val contextSections = if (renderedPreset == null) {
             baseContextSections
         } else {
-            baseContextSections + renderedPreset.contextSections
+            mergePresetContextSections(
+                presetSections = renderedPreset.contextSections,
+                chatHistorySections = baseContextSections.filter { section ->
+                    section.sourceType == ContextLogSourceType.CHAT_HISTORY
+                },
+            )
         }
         return PromptContextResult(
             systemPrompt = systemPrompt,
@@ -885,6 +890,30 @@ class DefaultPromptContextAssembler(
                 },
                 content = messageText,
             )
+        }
+    }
+
+    private fun mergePresetContextSections(
+        presetSections: List<ContextLogSection>,
+        chatHistorySections: List<ContextLogSection>,
+    ): List<ContextLogSection> {
+        if (chatHistorySections.isEmpty()) {
+            return presetSections
+        }
+        var inserted = false
+        return buildList {
+            presetSections.forEach { section ->
+                add(section)
+                if (!inserted && section.sourceType == ContextLogSourceType.PROMPT_PRESET &&
+                    section.title.contains("插入点")
+                ) {
+                    addAll(chatHistorySections)
+                    inserted = true
+                }
+            }
+            if (!inserted) {
+                addAll(chatHistorySections)
+            }
         }
     }
 

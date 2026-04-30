@@ -21,10 +21,6 @@ import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.CompositionLocalProvider
-import dev.chrisbanes.haze.HazeState
-import dev.chrisbanes.haze.haze
-import com.example.myapplication.ui.component.roleplay.LocalImmersiveHazeState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -148,21 +144,19 @@ internal fun RoleplaySceneContent(
     }
     var chromeVisible by rememberSaveable(scenario.id) { mutableStateOf(true) }
     val immersiveMode = settings.roleplayImmersiveMode
-    val hazeState = remember { HazeState() }
     val noBackgroundSkinSpec = com.example.myapplication.ui.component.roleplay.rememberRoleplayNoBackgroundSkinSpec(
         settings.roleplayNoBackgroundSkin,
     )
 
-    CompositionLocalProvider(LocalImmersiveHazeState provides hazeState) {
-        ApplyRoleplaySystemBars(
-            backdropState = backdropState,
-            immersiveMode = immersiveMode,
-        )
+    ApplyRoleplaySystemBars(
+        backdropState = backdropState,
+        immersiveMode = immersiveMode,
+    )
 
-        Box(modifier = Modifier.fillMaxSize()) {
+    Box(modifier = Modifier.fillMaxSize()) {
         RoleplaySceneBackground(
             backdropState = backdropState,
-            modifier = Modifier.fillMaxSize().haze(state = hazeState),
+            modifier = Modifier.fillMaxSize(),
             fallbackBackgroundColor = noBackgroundSkinSpec.background.takeIf { !backdropState.hasImage },
         )
 
@@ -303,7 +297,6 @@ internal fun RoleplaySceneContent(
         onSpecialPlayDraftChange = onSpecialPlayDraftChange,
         onSpecialPlayConfirm = onSpecialPlayConfirm,
     )
-    }
 }
 
 @Composable

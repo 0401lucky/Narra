@@ -1,17 +1,15 @@
 {
   "app_id": "com.narra.app.dev",
   "channel": "dev",
-  "latest_version_name": "1.6.3-dev",
-  "latest_version_code": 10603,
+  "latest_version_name": "1.6.4-dev",
+  "latest_version_code": 10604,
   "minimum_supported_version_code": 0,
-  "apk_url": "https://download.lsa1230.dpdns.org/dev/Narra-v1.6.3-dev-10603-dev.apk",
-  "apk_sha256": "40a866d4377b5cea9546fdc883eeaa1e5a352059be2081680ba296041593cb3e",
-  "published_at": "2026-04-29T19:41:56+08:00",
+  "apk_url": "https://download.lsa1230.dpdns.org/dev/Narra-v1.6.4-dev-10604-dev.apk",
+  "apk_sha256": "b7277ad7e0142a823dad291a6d34b1bea757fffbd6c4417ff9f09e973390de48",
+  "published_at": "2026-04-30T15:05:47+08:00",
   "release_notes": [
-    "新增真预设 Prompt Manager，支持条目顺序、开关、复制、编辑和最终渲染",
-    "内置 Narra 默认预设改为只读，复制或导入后才能作为我的预设修改",
-    "普通聊天和沉浸主回复接入预设渲染，支持 Chat History 插入点和后置指令",
-    "新增安全状态卡识别与折叠展示，支持常见 status / 状态栏格式并禁止执行 HTML 或 JS",
-    "首页、设置、沉浸主壳、信箱和资料入口完成 1.6.3-dev 收口优化"
+    "修复沉浸式页面频繁切换时可能因玻璃模糊层嵌套而白屏或闪退的问题",
+    "修复沉浸式无背景主题下角色对白固定偏蓝，正文现在跟随当前主题文字色",
+    "保留有背景图模式的玻璃高亮表现，减少无背景主题与预览不一致的问题"
   ]
 }

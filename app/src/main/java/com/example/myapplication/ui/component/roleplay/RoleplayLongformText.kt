@@ -18,11 +18,14 @@ import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.myapplication.roleplay.RoleplayLongformMarkupParser
 import com.example.myapplication.roleplay.RoleplayLongformParagraph
+import com.example.myapplication.roleplay.RoleplayLongformParagraphAlignment
+import com.example.myapplication.roleplay.RoleplayLongformParagraphTone
 import com.example.myapplication.roleplay.RoleplayLongformSpanType
 
 @Composable
@@ -127,20 +130,23 @@ private fun LongformParagraphText(
     val rendered = remember(paragraph, bodyColor, dialogueColor, thoughtColor) {
         buildLongformAnnotatedString(
             paragraph = paragraph,
-            narrationColor = bodyColor,
+            narrationColor = resolveParagraphBodyColor(paragraph, bodyColor, dialogueColor),
             dialogueColor = dialogueColor,
             thoughtColor = thoughtColor,
         )
     }
     val baseLineHeight = 32.sp
+    val paragraphFontScale = paragraph.style.fontScale
     Text(
         text = rendered,
+        modifier = Modifier.fillMaxWidth(),
         style = MaterialTheme.typography.bodyLarge.copy(
-            fontSize = 17.sp,
-            lineHeight = baseLineHeight * lineHeightScale,
+            fontSize = 17.sp * paragraphFontScale,
+            lineHeight = baseLineHeight * lineHeightScale * paragraphFontScale,
             letterSpacing = 0.sp,
+            textAlign = paragraph.style.alignment.toComposeTextAlign(),
         ),
-        color = bodyColor,
+        color = resolveParagraphBodyColor(paragraph, bodyColor, dialogueColor),
     )
 }
 
@@ -200,6 +206,26 @@ private fun buildLongformAnnotatedString(
                 }
             }
         }
+    }
+}
+
+private fun resolveParagraphBodyColor(
+    paragraph: RoleplayLongformParagraph,
+    bodyColor: Color,
+    dialogueColor: Color,
+): Color {
+    return when (paragraph.style.tone) {
+        RoleplayLongformParagraphTone.DEFAULT -> bodyColor
+        RoleplayLongformParagraphTone.MUTED -> bodyColor.copy(alpha = 0.68f)
+        RoleplayLongformParagraphTone.ACCENT -> dialogueColor
+    }
+}
+
+private fun RoleplayLongformParagraphAlignment.toComposeTextAlign(): TextAlign {
+    return when (this) {
+        RoleplayLongformParagraphAlignment.START -> TextAlign.Start
+        RoleplayLongformParagraphAlignment.CENTER -> TextAlign.Center
+        RoleplayLongformParagraphAlignment.END -> TextAlign.End
     }
 }
 

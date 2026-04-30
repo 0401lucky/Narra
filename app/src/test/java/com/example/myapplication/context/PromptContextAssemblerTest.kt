@@ -3,14 +3,21 @@ package com.example.myapplication.context
 import com.example.myapplication.data.repository.context.WorldBookRepository
 import com.example.myapplication.model.AppSettings
 import com.example.myapplication.model.Assistant
+import com.example.myapplication.model.BUILTIN_PRESETS
+import com.example.myapplication.model.ChatMessage
 import com.example.myapplication.model.Conversation
 import com.example.myapplication.model.ConversationSummary
+import com.example.myapplication.model.ContextLogSourceType
+import com.example.myapplication.model.DEFAULT_PRESET_ID
 import com.example.myapplication.model.MemoryEntry
 import com.example.myapplication.model.MemoryScopeType
+import com.example.myapplication.model.MessageRole
 import com.example.myapplication.model.PromptMode
 import com.example.myapplication.model.WorldBookEntry
+import com.example.myapplication.testutil.FakePresetRepository
 import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
@@ -311,6 +318,71 @@ class PromptContextAssemblerTest {
         assertTrue(result.systemPrompt.contains("嘴硬、警惕、反应快"))
         assertTrue(result.systemPrompt.contains("【创作者导演说明】"))
         assertTrue(result.systemPrompt.contains("边试探边推进局势"))
+    }
+
+    @Test
+    fun assemble_withPresetShowsDynamicContentOnlyUnderOriginalSources() = runBlocking {
+        val assembler = DefaultPromptContextAssembler(
+            presetRepository = FakePresetRepository(BUILTIN_PRESETS),
+        )
+
+        val result = assembler.assemble(
+            settings = AppSettings(
+                defaultPresetId = DEFAULT_PRESET_ID,
+                userDisplayName = "lucky",
+            ),
+            assistant = Assistant(
+                id = "assistant-1",
+                name = "陆承渊",
+                systemPrompt = "系统规则正文",
+                description = "角色设定正文",
+            ),
+            conversation = Conversation(id = "c1", createdAt = 1L, updatedAt = 1L),
+            userInputText = "今晚为什么来这里？",
+            recentMessages = listOf(
+                ChatMessage(
+                    id = "m1",
+                    conversationId = "c1",
+                    role = MessageRole.USER,
+                    content = "今晚为什么来这里？",
+                ),
+            ),
+            promptMode = PromptMode.ROLEPLAY,
+        )
+
+        val presetContent = result.contextSections
+            .filter { it.sourceType == ContextLogSourceType.PROMPT_PRESET }
+            .joinToString(separator = "\n") { it.content }
+        val allContextContent = result.contextSections.joinToString(separator = "\n") { it.content }
+
+        assertEquals(DEFAULT_PRESET_ID, result.activePresetId)
+        assertEquals("Narra 默认预设", result.activePresetName)
+        assertTrue(result.systemPrompt.contains("角色设定正文"))
+        assertTrue(result.systemPrompt.contains("系统规则正文"))
+        assertTrue(
+            result.contextSections.any {
+                it.sourceType == ContextLogSourceType.ROLE_CARD && it.content.contains("角色设定正文")
+            },
+        )
+        assertTrue(
+            result.contextSections.any {
+                it.sourceType == ContextLogSourceType.ROLE_CARD && it.content.contains("系统规则正文")
+            },
+        )
+        assertTrue(
+            result.contextSections.any {
+                it.sourceType == ContextLogSourceType.CHAT_HISTORY && it.content.contains("今晚为什么来这里？")
+            },
+        )
+        assertTrue(
+            result.contextSections.any {
+                it.sourceType == ContextLogSourceType.PROMPT_PRESET && it.title.contains("插入点")
+            },
+        )
+        assertFalse(presetContent.contains("角色设定正文"))
+        assertFalse(presetContent.contains("系统规则正文"))
+        assertEquals(1, countOccurrences(allContextContent, "角色设定正文"))
+        assertEquals(1, countOccurrences(allContextContent, "系统规则正文"))
     }
 
     @Test
@@ -638,5 +710,9 @@ class PromptContextAssemblerTest {
 
             override suspend fun markEntriesUsed(entryIds: List<String>, timestamp: Long) = Unit
         }
+    }
+
+    private fun countOccurrences(text: String, needle: String): Int {
+        return Regex(Regex.escape(needle)).findAll(text).count()
     }
 }
