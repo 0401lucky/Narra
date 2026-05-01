@@ -38,6 +38,8 @@ import com.example.myapplication.model.ContextGovernanceSnapshot
 import com.example.myapplication.model.MemoryProposalHistoryItem
 import com.example.myapplication.model.ProviderSettings
 import com.example.myapplication.model.RoleplayContextStatus
+import com.example.myapplication.model.RoleplayGroupParticipant
+import com.example.myapplication.model.RoleplayGroupReplyMode
 import com.example.myapplication.model.RoleplayImmersiveMode
 import com.example.myapplication.model.RoleplayInteractionMode
 import com.example.myapplication.model.RoleplayLineHeightScale
@@ -59,6 +61,7 @@ internal fun RoleplaySettingsContent(
     assistant: Assistant?,
     settings: AppSettings,
     contextStatus: RoleplayContextStatus,
+    groupParticipants: List<RoleplayGroupParticipant>,
     currentModel: String,
     currentProviderId: String,
     providerOptions: List<ProviderSettings>,
@@ -85,6 +88,9 @@ internal fun RoleplaySettingsContent(
     onUpdateScenarioNetMemeEnabled: (Boolean) -> Unit,
     onUpdateRoleplayLongformTargetChars: (Int) -> Unit,
     onUpdateScenarioInteractionMode: (RoleplayInteractionMode) -> Unit,
+    onToggleGroupParticipantMuted: (String) -> Unit,
+    onRemoveGroupParticipant: (String) -> Unit,
+    onUpdateGroupReplyMode: (RoleplayGroupReplyMode) -> Unit,
     systemHighContrastEnabled: Boolean,
     onUpdateRoleplayImmersiveMode: (RoleplayImmersiveMode) -> Unit,
     onUpdateRoleplayHighContrast: (Boolean) -> Unit,
@@ -107,6 +113,7 @@ internal fun RoleplaySettingsContent(
         assistant = assistant,
         settings = settings,
         contextStatus = contextStatus,
+        groupParticipants = groupParticipants,
         currentModel = currentModel,
         currentProviderId = currentProviderId,
         providerOptions = providerOptions,
@@ -133,6 +140,9 @@ internal fun RoleplaySettingsContent(
         onUpdateScenarioNetMemeEnabled = onUpdateScenarioNetMemeEnabled,
         onUpdateRoleplayLongformTargetChars = onUpdateRoleplayLongformTargetChars,
         onUpdateScenarioInteractionMode = onUpdateScenarioInteractionMode,
+        onToggleGroupParticipantMuted = onToggleGroupParticipantMuted,
+        onRemoveGroupParticipant = onRemoveGroupParticipant,
+        onUpdateGroupReplyMode = onUpdateGroupReplyMode,
         systemHighContrastEnabled = systemHighContrastEnabled,
         onUpdateRoleplayImmersiveMode = onUpdateRoleplayImmersiveMode,
         onUpdateRoleplayHighContrast = onUpdateRoleplayHighContrast,

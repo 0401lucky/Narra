@@ -1,15 +1,17 @@
 {
   "app_id": "com.narra.app.dev",
   "channel": "dev",
-  "latest_version_name": "1.6.4-dev",
-  "latest_version_code": 10604,
+  "latest_version_name": "1.6.5-dev",
+  "latest_version_code": 10605,
   "minimum_supported_version_code": 0,
-  "apk_url": "https://download.lsa1230.dpdns.org/dev/Narra-v1.6.4-dev-10604-dev.apk",
-  "apk_sha256": "b7277ad7e0142a823dad291a6d34b1bea757fffbd6c4417ff9f09e973390de48",
-  "published_at": "2026-04-30T15:05:47+08:00",
+  "apk_url": "https://download.lsa1230.dpdns.org/dev/Narra-v1.6.5-dev-10605-dev.apk",
+  "apk_sha256": "06d4da40634211bf1f97f0e55a3c479120f73b40cd795368a19361b8ca0942c0",
+  "published_at": "2026-05-01T11:03:07+08:00",
   "release_notes": [
-    "修复沉浸式页面频繁切换时可能因玻璃模糊层嵌套而白屏或闪退的问题",
-    "修复沉浸式无背景主题下角色对白固定偏蓝，正文现在跟随当前主题文字色",
-    "保留有背景图模式的玻璃高亮表现，减少无背景主题与预览不一致的问题"
+    "新增线上手机群聊：支持从沉浸式手机入口创建群聊、选择多个角色并管理成员",
+    "新增群聊导演调度：自然聊天会根据角色内容、上下文和 @ 提及决定谁发言以及发言顺序",
+    "新增群聊 @ 候选面板、禁言、三种回复模式和群聊侧栏设置",
+    "线上手机单聊与群聊消息新增头像展示，用户和角色每条消息都有头像或图标回退",
+    "群聊提示词强化模式识别和群成员感知，首版限制为文字气泡，减少复读、状态栏和特殊动作跑格式"
   ]
 }

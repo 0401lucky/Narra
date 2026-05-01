@@ -18,6 +18,7 @@ import com.example.myapplication.model.RoleplayOutputFormat
 import com.example.myapplication.model.RoleplayScenario
 import com.example.myapplication.model.RoleplaySpeaker
 import com.example.myapplication.model.hasSendableContent
+import com.example.myapplication.model.isGroupChat
 import com.example.myapplication.model.isActionPart
 import com.example.myapplication.model.isOnlineThoughtPart
 import com.example.myapplication.model.isSpecialPlayPart
@@ -44,11 +45,13 @@ object RoleplayMessageUiMapper {
         if (scenario == null) {
             return emptyList()
         }
-        val userName = RoleplayConversationSupport.resolveUserPersona(scenario, settings).displayName
+        val userPersona = RoleplayConversationSupport.resolveUserPersona(scenario, settings)
+        val userName = userPersona.displayName
         val characterName = scenario.characterDisplayNameOverride.trim()
             .ifBlank { assistant?.name?.trim().orEmpty() }
             .ifBlank { "角色" }
         val currentScenarioInteractionMode = RoleplayMessageFormatSupport.resolveScenarioInteractionMode(scenario)
+        val assistantsById = settings.resolvedAssistants().associateBy { it.id }
 
         return buildList {
             rawMessages.forEach { message ->
@@ -58,16 +61,30 @@ object RoleplayMessageUiMapper {
                             target = this,
                             message = message,
                             userName = userName,
+                            userAvatarUri = userPersona.avatarUri,
+                            userAvatarUrl = userPersona.avatarUrl,
                         )
                     }
 
                     MessageRole.ASSISTANT -> {
+                        val speakerAssistant = assistantsById[message.speakerId.trim()] ?: assistant
+                        val messageCharacterName = message.speakerName.trim()
+                            .ifBlank { speakerAssistant?.name?.trim().orEmpty() }
+                            .ifBlank { characterName }
+                        val avatarSpec = resolveAssistantAvatarSpec(
+                            scenario = scenario,
+                            message = message,
+                            assistant = speakerAssistant,
+                        )
                         appendRoleplayAssistantMessages(
                             target = this,
                             message = message,
                             scenario = scenario,
                             userName = userName,
-                            characterName = characterName,
+                            characterName = messageCharacterName,
+                            speakerAvatarUri = avatarSpec.avatarUri,
+                            speakerAvatarUrl = avatarSpec.avatarUrl,
+                            speakerIconName = avatarSpec.iconName,
                             outputParser = outputParser,
                         )
                     }
@@ -83,6 +100,15 @@ object RoleplayMessageUiMapper {
                         fallbackInteractionMode = currentScenarioInteractionMode,
                     )
                 } ?: currentScenarioInteractionMode
+                val streamingCharacterName = loadingMessage?.speakerName?.trim()
+                    ?.ifBlank { null }
+                    ?: characterName
+                val streamingAssistant = assistantsById[loadingMessage?.speakerId?.trim().orEmpty()] ?: assistant
+                val streamingAvatarSpec = resolveAssistantAvatarSpec(
+                    scenario = scenario,
+                    message = loadingMessage,
+                    assistant = streamingAssistant,
+                )
                 val streamingThoughtContent = streamingThoughtPreviewContent(
                     interactionMode = streamingInteractionMode,
                     rawContent = streamingContent,
@@ -98,7 +124,10 @@ object RoleplayMessageUiMapper {
                             else -> RoleplayContentType.DIALOGUE
                         },
                         speaker = RoleplaySpeaker.CHARACTER,
-                        speakerName = characterName,
+                        speakerName = streamingCharacterName,
+                        speakerAvatarUri = streamingAvatarSpec.avatarUri,
+                        speakerAvatarUrl = streamingAvatarSpec.avatarUrl,
+                        speakerIconName = streamingAvatarSpec.iconName,
                         content = streamingThoughtContent ?: streamingContent,
                         // 复用 loadingMessage 的 createdAt，保持流式期间 UI key 稳定，
                         // 避免 LazyColumn.animateItem 在每次 ContentDelta 重组时产生残留幽灵条目。
@@ -118,10 +147,47 @@ object RoleplayMessageUiMapper {
         }
     }
 
+    private data class SpeakerAvatarSpec(
+        val avatarUri: String,
+        val avatarUrl: String,
+        val iconName: String,
+    )
+
+    private fun resolveAssistantAvatarSpec(
+        scenario: RoleplayScenario,
+        message: ChatMessage?,
+        assistant: Assistant?,
+    ): SpeakerAvatarSpec {
+        val snapshotAvatarUri = message?.speakerAvatarUri.orEmpty().trim()
+        val scenarioAvatarUri = scenario.characterPortraitUri.trim()
+        val scenarioAvatarUrl = scenario.characterPortraitUrl.trim()
+        val assistantAvatarUri = assistant?.avatarUri.orEmpty().trim()
+        val avatarUri = snapshotAvatarUri.ifBlank {
+            if (scenario.isGroupChat) {
+                assistantAvatarUri
+            } else {
+                scenarioAvatarUri.ifBlank { assistantAvatarUri }
+            }
+        }
+        val avatarUrl = when {
+            snapshotAvatarUri.isNotBlank() -> ""
+            scenario.isGroupChat -> ""
+            scenarioAvatarUri.isNotBlank() || scenarioAvatarUrl.isNotBlank() -> scenarioAvatarUrl
+            else -> ""
+        }
+        return SpeakerAvatarSpec(
+            avatarUri = avatarUri,
+            avatarUrl = avatarUrl,
+            iconName = assistant?.iconName.orEmpty(),
+        )
+    }
+
     private fun appendRoleplayUserMessages(
         target: MutableList<RoleplayMessageUiModel>,
         message: ChatMessage,
         userName: String,
+        userAvatarUri: String,
+        userAvatarUrl: String,
     ) {
         val normalizedParts = normalizeChatMessageParts(message.parts)
         val initialSize = target.size
@@ -147,6 +213,8 @@ object RoleplayMessageUiMapper {
                 contentType = RoleplayContentType.DIALOGUE,
                 speaker = RoleplaySpeaker.USER,
                 speakerName = userName,
+                speakerAvatarUri = userAvatarUri,
+                speakerAvatarUrl = userAvatarUrl,
                 content = content,
                 replyToMessageId = message.replyToMessageId,
                 replyToPreview = message.replyToPreview,
@@ -167,6 +235,8 @@ object RoleplayMessageUiMapper {
                         sourceMessageId = message.id,
                         speaker = RoleplaySpeaker.USER,
                         speakerName = userName,
+                        speakerAvatarUri = userAvatarUri,
+                        speakerAvatarUrl = userAvatarUrl,
                         createdAt = message.createdAt,
                         messageStatus = message.status,
                     )
@@ -178,6 +248,8 @@ object RoleplayMessageUiMapper {
                         contentType = RoleplayContentType.SPECIAL_PLAY,
                         speaker = RoleplaySpeaker.USER,
                         speakerName = userName,
+                        speakerAvatarUri = userAvatarUri,
+                        speakerAvatarUrl = userAvatarUrl,
                         content = "",
                         createdAt = message.createdAt,
                         messageStatus = message.status,
@@ -193,6 +265,8 @@ object RoleplayMessageUiMapper {
                         contentType = RoleplayContentType.DIALOGUE,
                         speaker = RoleplaySpeaker.USER,
                         speakerName = userName,
+                        speakerAvatarUri = userAvatarUri,
+                        speakerAvatarUrl = userAvatarUrl,
                         content = content,
                         replyToMessageId = part.replyToMessageId.ifBlank { message.replyToMessageId },
                         replyToPreview = part.replyToPreview.ifBlank { message.replyToPreview },
@@ -213,6 +287,8 @@ object RoleplayMessageUiMapper {
                 contentType = RoleplayContentType.DIALOGUE,
                 speaker = RoleplaySpeaker.USER,
                 speakerName = userName,
+                speakerAvatarUri = userAvatarUri,
+                speakerAvatarUrl = userAvatarUrl,
                 content = content,
                 replyToMessageId = message.replyToMessageId,
                 replyToPreview = message.replyToPreview,
@@ -232,6 +308,9 @@ object RoleplayMessageUiMapper {
         scenario: RoleplayScenario,
         userName: String,
         characterName: String,
+        speakerAvatarUri: String,
+        speakerAvatarUrl: String,
+        speakerIconName: String,
         outputParser: RoleplayOutputParser,
     ) {
         val currentScenarioInteractionMode = RoleplayMessageFormatSupport.resolveScenarioInteractionMode(scenario)
@@ -253,6 +332,9 @@ object RoleplayMessageUiMapper {
                 target = target,
                 message = message,
                 characterName = characterName,
+                speakerAvatarUri = speakerAvatarUri,
+                speakerAvatarUrl = speakerAvatarUrl,
+                speakerIconName = speakerIconName,
                 canRetry = canRetry,
                 outputParser = outputParser,
             )
@@ -266,6 +348,9 @@ object RoleplayMessageUiMapper {
                     sourceMessageId = message.id,
                     speaker = RoleplaySpeaker.CHARACTER,
                     speakerName = characterName,
+                    speakerAvatarUri = speakerAvatarUri,
+                    speakerAvatarUrl = speakerAvatarUrl,
+                    speakerIconName = speakerIconName,
                     createdAt = message.createdAt,
                     messageStatus = message.status,
                     canRetry = canRetry,
@@ -278,6 +363,9 @@ object RoleplayMessageUiMapper {
                     contentType = RoleplayContentType.SPECIAL_PLAY,
                     speaker = RoleplaySpeaker.CHARACTER,
                     speakerName = characterName,
+                    speakerAvatarUri = speakerAvatarUri,
+                    speakerAvatarUrl = speakerAvatarUrl,
+                    speakerIconName = speakerIconName,
                     content = "",
                     createdAt = message.createdAt,
                     messageStatus = message.status,
@@ -305,6 +393,9 @@ object RoleplayMessageUiMapper {
                                 target = target,
                                 sourceMessageId = message.id,
                                 characterName = characterName,
+                                speakerAvatarUri = speakerAvatarUri,
+                                speakerAvatarUrl = speakerAvatarUrl,
+                                speakerIconName = speakerIconName,
                                 longformSource = part.text,
                                 createdAt = message.createdAt,
                                 messageStatus = message.status,
@@ -320,6 +411,9 @@ object RoleplayMessageUiMapper {
                     target = target,
                     sourceMessageId = message.id,
                     characterName = characterName,
+                    speakerAvatarUri = speakerAvatarUri,
+                    speakerAvatarUrl = speakerAvatarUrl,
+                    speakerIconName = speakerIconName,
                     longformSource = longformSource,
                     createdAt = message.createdAt,
                     messageStatus = message.status,
@@ -341,6 +435,9 @@ object RoleplayMessageUiMapper {
                     sourceMessageId = message.id,
                     rawContent = content,
                     characterName = characterName,
+                    speakerAvatarUri = speakerAvatarUri,
+                    speakerAvatarUrl = speakerAvatarUrl,
+                    speakerIconName = speakerIconName,
                     createdAt = message.createdAt,
                     messageStatus = message.status,
                     canRetry = canRetry,
@@ -355,6 +452,9 @@ object RoleplayMessageUiMapper {
                 rawContent = content,
                 userName = userName,
                 characterName = characterName,
+                speakerAvatarUri = speakerAvatarUri,
+                speakerAvatarUrl = speakerAvatarUrl,
+                speakerIconName = speakerIconName,
                 interactionMode = messageInteractionMode,
                 allowNarration = scenario.enableNarration,
                 isRecalled = message.isRecalled,
@@ -383,6 +483,9 @@ object RoleplayMessageUiMapper {
                         sourceMessageId = message.id,
                         speaker = RoleplaySpeaker.CHARACTER,
                         speakerName = characterName,
+                        speakerAvatarUri = speakerAvatarUri,
+                        speakerAvatarUrl = speakerAvatarUrl,
+                        speakerIconName = speakerIconName,
                         createdAt = message.createdAt,
                         messageStatus = message.status,
                         canRetry = canRetry,
@@ -395,6 +498,9 @@ object RoleplayMessageUiMapper {
                         contentType = RoleplayContentType.SPECIAL_PLAY,
                         speaker = RoleplaySpeaker.CHARACTER,
                         speakerName = characterName,
+                        speakerAvatarUri = speakerAvatarUri,
+                        speakerAvatarUrl = speakerAvatarUrl,
+                        speakerIconName = speakerIconName,
                         content = "",
                         createdAt = message.createdAt,
                         messageStatus = message.status,
@@ -411,6 +517,9 @@ object RoleplayMessageUiMapper {
                             contentType = RoleplayContentType.THOUGHT,
                             speaker = RoleplaySpeaker.CHARACTER,
                             speakerName = characterName,
+                            speakerAvatarUri = speakerAvatarUri,
+                            speakerAvatarUrl = speakerAvatarUrl,
+                            speakerIconName = speakerIconName,
                             content = part.onlineThoughtContent(),
                             createdAt = message.createdAt,
                             messageStatus = message.status,
@@ -427,6 +536,9 @@ object RoleplayMessageUiMapper {
                             sourceMessageId = message.id,
                             rawContent = part.text,
                             characterName = characterName,
+                            speakerAvatarUri = speakerAvatarUri,
+                            speakerAvatarUrl = speakerAvatarUrl,
+                            speakerIconName = speakerIconName,
                             createdAt = message.createdAt,
                             messageStatus = message.status,
                             canRetry = canRetry,
@@ -441,6 +553,9 @@ object RoleplayMessageUiMapper {
                         rawContent = part.text,
                         userName = userName,
                         characterName = characterName,
+                        speakerAvatarUri = speakerAvatarUri,
+                        speakerAvatarUrl = speakerAvatarUrl,
+                        speakerIconName = speakerIconName,
                         interactionMode = messageInteractionMode,
                         allowNarration = scenario.enableNarration,
                         isRecalled = message.isRecalled,
@@ -462,6 +577,9 @@ object RoleplayMessageUiMapper {
                     sourceMessageId = message.id,
                     rawContent = message.content,
                     characterName = characterName,
+                    speakerAvatarUri = speakerAvatarUri,
+                    speakerAvatarUrl = speakerAvatarUrl,
+                    speakerIconName = speakerIconName,
                     createdAt = message.createdAt,
                     messageStatus = message.status,
                     canRetry = canRetry,
@@ -476,6 +594,9 @@ object RoleplayMessageUiMapper {
                 rawContent = message.content,
                 userName = userName,
                 characterName = characterName,
+                speakerAvatarUri = speakerAvatarUri,
+                speakerAvatarUrl = speakerAvatarUrl,
+                speakerIconName = speakerIconName,
                 interactionMode = messageInteractionMode,
                 allowNarration = scenario.enableNarration,
                 isRecalled = message.isRecalled,
@@ -493,6 +614,9 @@ object RoleplayMessageUiMapper {
         sourceMessageId: String,
         rawContent: String,
         characterName: String,
+        speakerAvatarUri: String,
+        speakerAvatarUrl: String,
+        speakerIconName: String,
         createdAt: Long,
         messageStatus: MessageStatus,
         canRetry: Boolean,
@@ -520,6 +644,9 @@ object RoleplayMessageUiMapper {
                                 sourceMessageId = sourceMessageId,
                                 rawContent = part.text,
                                 characterName = characterName,
+                                speakerAvatarUri = speakerAvatarUri,
+                                speakerAvatarUrl = speakerAvatarUrl,
+                                speakerIconName = speakerIconName,
                                 createdAt = createdAt,
                                 messageStatus = messageStatus,
                                 canRetry = canRetry,
@@ -530,6 +657,9 @@ object RoleplayMessageUiMapper {
                                 sourceMessageId = sourceMessageId,
                                 part = part,
                                 characterName = characterName,
+                                speakerAvatarUri = speakerAvatarUri,
+                                speakerAvatarUrl = speakerAvatarUrl,
+                                speakerIconName = speakerIconName,
                                 createdAt = createdAt,
                                 messageStatus = messageStatus,
                                 canRetry = canRetry,
@@ -553,6 +683,9 @@ object RoleplayMessageUiMapper {
                         sourceMessageId = sourceMessageId,
                         speaker = RoleplaySpeaker.CHARACTER,
                         speakerName = characterName,
+                        speakerAvatarUri = speakerAvatarUri,
+                        speakerAvatarUrl = speakerAvatarUrl,
+                        speakerIconName = speakerIconName,
                         createdAt = createdAt,
                         messageStatus = messageStatus,
                         canRetry = canRetry,
@@ -565,6 +698,9 @@ object RoleplayMessageUiMapper {
                         contentType = RoleplayContentType.SPECIAL_PLAY,
                         speaker = RoleplaySpeaker.CHARACTER,
                         speakerName = characterName,
+                        speakerAvatarUri = speakerAvatarUri,
+                        speakerAvatarUrl = speakerAvatarUrl,
+                        speakerIconName = speakerIconName,
                         content = "",
                         createdAt = createdAt,
                         messageStatus = messageStatus,
@@ -580,6 +716,9 @@ object RoleplayMessageUiMapper {
                         sourceMessageId = sourceMessageId,
                         part = part,
                         characterName = characterName,
+                        speakerAvatarUri = speakerAvatarUri,
+                        speakerAvatarUrl = speakerAvatarUrl,
+                        speakerIconName = speakerIconName,
                         createdAt = createdAt,
                         messageStatus = messageStatus,
                         canRetry = canRetry,
@@ -595,6 +734,9 @@ object RoleplayMessageUiMapper {
         sourceMessageId: String,
         part: ChatMessagePart,
         characterName: String,
+        speakerAvatarUri: String,
+        speakerAvatarUrl: String,
+        speakerIconName: String,
         createdAt: Long,
         messageStatus: MessageStatus,
         canRetry: Boolean,
@@ -606,6 +748,9 @@ object RoleplayMessageUiMapper {
                 contentType = RoleplayContentType.THOUGHT,
                 speaker = RoleplaySpeaker.CHARACTER,
                 speakerName = characterName,
+                speakerAvatarUri = speakerAvatarUri,
+                speakerAvatarUrl = speakerAvatarUrl,
+                speakerIconName = speakerIconName,
                 content = thoughtContent,
                 createdAt = createdAt,
                 messageStatus = messageStatus,
@@ -637,6 +782,9 @@ object RoleplayMessageUiMapper {
                 contentType = RoleplayContentType.DIALOGUE,
                 speaker = RoleplaySpeaker.CHARACTER,
                 speakerName = characterName,
+                speakerAvatarUri = speakerAvatarUri,
+                speakerAvatarUrl = speakerAvatarUrl,
+                speakerIconName = speakerIconName,
                 content = content,
                 replyToMessageId = part.replyToMessageId,
                 replyToPreview = part.replyToPreview,
@@ -653,6 +801,9 @@ object RoleplayMessageUiMapper {
         target: MutableList<RoleplayMessageUiModel>,
         message: ChatMessage,
         characterName: String,
+        speakerAvatarUri: String,
+        speakerAvatarUrl: String,
+        speakerIconName: String,
         canRetry: Boolean,
         outputParser: RoleplayOutputParser,
     ) {
@@ -676,6 +827,9 @@ object RoleplayMessageUiMapper {
             contentType = RoleplayContentType.DIALOGUE,
             speaker = RoleplaySpeaker.CHARACTER,
             speakerName = characterName,
+            speakerAvatarUri = speakerAvatarUri,
+            speakerAvatarUrl = speakerAvatarUrl,
+            speakerIconName = speakerIconName,
             content = content,
             createdAt = message.createdAt,
             messageStatus = message.status,
@@ -739,6 +893,9 @@ object RoleplayMessageUiMapper {
         rawContent: String,
         userName: String,
         characterName: String,
+        speakerAvatarUri: String,
+        speakerAvatarUrl: String,
+        speakerIconName: String,
         interactionMode: RoleplayInteractionMode,
         allowNarration: Boolean,
         isRecalled: Boolean,
@@ -776,6 +933,9 @@ object RoleplayMessageUiMapper {
                             rawContent = part.text,
                             userName = userName,
                             characterName = characterName,
+                            speakerAvatarUri = speakerAvatarUri,
+                            speakerAvatarUrl = speakerAvatarUrl,
+                            speakerIconName = speakerIconName,
                             interactionMode = interactionMode,
                             allowNarration = allowNarration,
                             isRecalled = isRecalled,
@@ -815,6 +975,9 @@ object RoleplayMessageUiMapper {
                     RoleplaySpeaker.NARRATOR -> "旁白"
                     RoleplaySpeaker.SYSTEM -> segment.speakerName
                 },
+                speakerAvatarUri = if (segment.speaker == RoleplaySpeaker.CHARACTER) speakerAvatarUri else "",
+                speakerAvatarUrl = if (segment.speaker == RoleplaySpeaker.CHARACTER) speakerAvatarUrl else "",
+                speakerIconName = if (segment.speaker == RoleplaySpeaker.CHARACTER) speakerIconName else "",
                 content = segment.content,
                 replyToMessageId = segment.replyToMessageId,
                 replyToPreview = segment.replyToPreview,
@@ -869,6 +1032,9 @@ object RoleplayMessageUiMapper {
         target: MutableList<RoleplayMessageUiModel>,
         sourceMessageId: String,
         characterName: String,
+        speakerAvatarUri: String,
+        speakerAvatarUrl: String,
+        speakerIconName: String,
         longformSource: String,
         createdAt: Long,
         messageStatus: MessageStatus,
@@ -886,6 +1052,9 @@ object RoleplayMessageUiMapper {
             contentType = RoleplayContentType.LONGFORM,
             speaker = RoleplaySpeaker.CHARACTER,
             speakerName = characterName,
+            speakerAvatarUri = speakerAvatarUri,
+            speakerAvatarUrl = speakerAvatarUrl,
+            speakerIconName = speakerIconName,
             content = displayLongformContent,
             createdAt = createdAt,
             messageStatus = messageStatus,
@@ -921,6 +1090,9 @@ object RoleplayMessageUiMapper {
         sourceMessageId: String,
         speaker: RoleplaySpeaker,
         speakerName: String,
+        speakerAvatarUri: String = "",
+        speakerAvatarUrl: String = "",
+        speakerIconName: String = "",
         createdAt: Long,
         messageStatus: MessageStatus,
         canRetry: Boolean = false,
@@ -930,6 +1102,9 @@ object RoleplayMessageUiMapper {
             contentType = RoleplayContentType.ACTION,
             speaker = speaker,
             speakerName = speakerName,
+            speakerAvatarUri = speakerAvatarUri,
+            speakerAvatarUrl = speakerAvatarUrl,
+            speakerIconName = speakerIconName,
             content = when (actionType) {
                 ChatActionType.EMOJI -> actionMetadataValue("description")
                 ChatActionType.VOICE_MESSAGE -> voiceMessageContent()

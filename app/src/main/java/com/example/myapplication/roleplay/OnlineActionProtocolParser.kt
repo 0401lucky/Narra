@@ -1,6 +1,7 @@
 package com.example.myapplication.roleplay
 
 import com.example.myapplication.model.ChatMessagePart
+import com.example.myapplication.model.ChatMessagePartType
 import com.example.myapplication.model.PunishIntensity
 import com.example.myapplication.model.aiPhotoMessagePart
 import com.example.myapplication.model.decodeOnlineThoughtText
@@ -76,6 +77,49 @@ internal object OnlineActionProtocolParser {
     }
 
     /**
+     * 群聊首版只保留真实文字气泡。
+     * 角色卡或预设如果偷输出照片、语音、状态栏、转账等单聊动作，这里直接丢弃，
+     * 避免手机群聊里出现“照片/语音/状态栏”这类沉浸式残留。
+     */
+    fun parseGroupTextOnlyWithFallback(
+        rawContent: String,
+        characterName: String,
+    ): OnlineActionProtocolParseResult? {
+        val parsed = parse(rawContent, characterName)
+        if (parsed != null) {
+            return parsed.toGroupTextOnly()
+        }
+        return fallbackGroupPlainText(rawContent)
+    }
+
+    fun extractGroupTextStreamingPreview(rawContent: String): String {
+        val candidate = extractCompleteArrayPrefix(stripMarkdownCodeFence(rawContent)) ?: return ""
+        val parsedRoot = runCatching { JsonParser.parseString(candidate) }.getOrNull() ?: return ""
+        if (!parsedRoot.isJsonArray) {
+            return ""
+        }
+        return parsedRoot.asJsonArray.mapNotNull { element ->
+            when {
+                element.isJsonPrimitive && element.asJsonPrimitive.isString -> {
+                    sanitizeOnlineDialogueText(element.asString).takeIf { it.isNotBlank() }
+                }
+
+                element.isJsonObject -> {
+                    val item = element.asJsonObject
+                    if (item.stringValue("type").lowercase() == "reply_to") {
+                        sanitizeOnlineDialogueText(item.stringValue("content")).takeIf { it.isNotBlank() }
+                    } else {
+                        null
+                    }
+                }
+
+                else -> null
+            }
+        }.joinToString(separator = "\n")
+            .trim()
+    }
+
+    /**
      * 模型有时输出单个 JSON 对象而非数组，如 {"type":"thought","content":"..."} 。
      * 尝试解析为单对象，成功则包装为数组处理。
      */
@@ -141,6 +185,24 @@ internal object OnlineActionProtocolParser {
         return OnlineActionProtocolParseResult(
             parts = normalizeChatMessageParts(parts),
         )
+    }
+
+    private fun fallbackGroupPlainText(rawContent: String): OnlineActionProtocolParseResult? {
+        if (looksLikeGroupForbiddenOutput(rawContent)) {
+            return null
+        }
+        val fallback = fallbackPlainText(rawContent) ?: return null
+        val textParts = fallback.parts
+            .filter { part -> part.type == ChatMessagePartType.TEXT }
+            .mapNotNull { part ->
+                val text = part.text.trim()
+                text.takeIf { it.isNotBlank() && !looksLikeNarrationForGroup(it) }
+                    ?.let { part.copy(text = it.take(MAX_GROUP_TEXT_FALLBACK_CHARS)) }
+            }
+        if (textParts.isEmpty()) {
+            return null
+        }
+        return OnlineActionProtocolParseResult(parts = normalizeChatMessageParts(textParts))
     }
 
     fun extractStreamingPreview(rawContent: String): String {
@@ -585,6 +647,57 @@ internal object OnlineActionProtocolParser {
     private fun sanitizeOnlineDialogueText(text: String): String {
         return referenceIdPrefixRegex.replace(text.trim(), "").trim()
     }
+
+    private fun OnlineActionProtocolParseResult.toGroupTextOnly(): OnlineActionProtocolParseResult? {
+        val textParts = parts.filter { part -> part.type == ChatMessagePartType.TEXT }
+        if (textParts.isEmpty()) {
+            return null
+        }
+        return OnlineActionProtocolParseResult(
+            parts = normalizeChatMessageParts(textParts),
+            directives = emptyList(),
+        )
+    }
+
+    private fun looksLikeGroupForbiddenOutput(text: String): Boolean {
+        val normalized = text.trim()
+        if (normalized.isBlank()) {
+            return false
+        }
+        return groupForbiddenMarkers.any { marker -> normalized.contains(marker, ignoreCase = true) }
+    }
+
+    private fun looksLikeNarrationForGroup(text: String): Boolean {
+        val normalized = text.trim()
+        if (normalized.length <= MAX_GROUP_TEXT_FALLBACK_CHARS) {
+            return false
+        }
+        return groupNarrationMarkers.any { marker -> normalized.contains(marker) }
+    }
+
+    private const val MAX_GROUP_TEXT_FALLBACK_CHARS = 120
+    private val groupForbiddenMarkers = listOf(
+        "状态栏",
+        "【状态】",
+        "【状态栏】",
+        "\"type\":\"ai_photo\"",
+        "\"type\": \"ai_photo\"",
+        "\"type\":\"voice_message\"",
+        "\"type\": \"voice_message\"",
+        "<status",
+    )
+    private val groupNarrationMarkers = listOf(
+        "灯光",
+        "屏幕",
+        "画面",
+        "背景",
+        "镜头",
+        "坐在",
+        "靠在",
+        "映出",
+        "隐约",
+        "指尖",
+    )
 
     private fun JsonObject.stringValue(key: String): String {
         return runCatching { get(key)?.takeIf(JsonElement::isJsonPrimitive)?.asString.orEmpty() }

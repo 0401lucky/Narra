@@ -164,6 +164,31 @@ internal object RoleplayObservationSupport {
         }
     }
 
+    fun observeCurrentGroupParticipants(
+        scope: CoroutineScope,
+        roleplayRepository: RoleplayRepository,
+        uiState: MutableStateFlow<RoleplayUiState>,
+        currentScenarioId: StateFlow<String?>,
+    ) {
+        scope.launch {
+            currentScenarioId
+                .map { it.orEmpty() }
+                .distinctUntilChanged()
+                .flatMapLatest { scenarioId ->
+                    if (scenarioId.isBlank()) {
+                        flowOf(emptyList())
+                    } else {
+                        roleplayRepository.observeGroupParticipants(scenarioId)
+                    }
+                }
+                .collect { participants ->
+                    uiState.update { current ->
+                        RoleplayStateSupport.applyCurrentGroupParticipants(current, participants)
+                    }
+                }
+        }
+    }
+
     fun observeCurrentMessages(
         scope: CoroutineScope,
         roleplayRepository: RoleplayRepository,

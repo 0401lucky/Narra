@@ -2,6 +2,7 @@ package com.example.myapplication.ui.screen.roleplay
 
 import com.example.myapplication.model.ChatSpecialPlayDraft
 import com.example.myapplication.model.PhoneSnapshotOwnerType
+import com.example.myapplication.model.RoleplayGroupReplyMode
 import com.example.myapplication.model.VoiceMessageDraft
 
 /**
@@ -13,6 +14,7 @@ data class RoleplayScreenCallbacks(
     val suggestion: RoleplaySuggestionCallbacks,
     val navigation: RoleplayNavigationCallbacks,
     val session: RoleplaySessionCallbacks,
+    val group: RoleplayGroupCallbacks,
     val ui: RoleplayUiCallbacks,
 )
 
@@ -53,6 +55,12 @@ data class RoleplaySessionCallbacks(
     val onDismissAssistantMismatch: (keepCurrent: Boolean) -> Unit,
     val onApprovePendingMemoryProposal: () -> Unit,
     val onRejectPendingMemoryProposal: () -> Unit,
+)
+
+data class RoleplayGroupCallbacks(
+    val onToggleParticipantMuted: (String) -> Unit,
+    val onRemoveParticipant: (String) -> Unit,
+    val onUpdateReplyMode: (RoleplayGroupReplyMode) -> Unit,
 )
 
 data class RoleplayUiCallbacks(

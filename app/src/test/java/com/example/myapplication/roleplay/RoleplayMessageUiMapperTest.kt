@@ -5,6 +5,7 @@ import com.example.myapplication.model.Assistant
 import com.example.myapplication.model.ChatMessage
 import com.example.myapplication.model.MessageRole
 import com.example.myapplication.model.MessageStatus
+import com.example.myapplication.model.RoleplayChatType
 import com.example.myapplication.model.RoleplayContentType
 import com.example.myapplication.model.RoleplayInteractionMode
 import com.example.myapplication.model.RoleplayOnlineEventKind
@@ -22,6 +23,195 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class RoleplayMessageUiMapperTest {
+    @Test
+    fun mapMessages_userDialogueUsesResolvedPersonaAvatar() {
+        val mapped = RoleplayMessageUiMapper.mapMessages(
+            scenario = RoleplayScenario(
+                id = "scene-avatar",
+                userDisplayNameOverride = "lucky",
+                userPortraitUri = "file://scene-user.png",
+                userPortraitUrl = "https://cdn.example.com/scene-user.png",
+                interactionMode = RoleplayInteractionMode.ONLINE_PHONE,
+            ),
+            assistant = Assistant(id = "assistant-1", name = "陆宴清"),
+            settings = AppSettings(
+                userAvatarUri = "file://global-user.png",
+                userAvatarUrl = "https://cdn.example.com/global-user.png",
+            ),
+            rawMessages = listOf(
+                ChatMessage(
+                    id = "user-1",
+                    conversationId = "conv-1",
+                    role = MessageRole.USER,
+                    content = "晚上好",
+                    createdAt = 1L,
+                    parts = listOf(textMessagePart("晚上好")),
+                ),
+            ),
+            streamingContent = null,
+            outputParser = RoleplayOutputParser(),
+            nowProvider = { 10L },
+        )
+
+        assertEquals("file://scene-user.png", mapped.single().speakerAvatarUri)
+        assertEquals("https://cdn.example.com/scene-user.png", mapped.single().speakerAvatarUrl)
+    }
+
+    @Test
+    fun mapMessages_singleChatCharacterAvatarPrefersSnapshotThenScenarioThenAssistant() {
+        val assistant = Assistant(
+            id = "assistant-1",
+            name = "陆宴清",
+            iconName = "psychology",
+            avatarUri = "file://assistant-avatar.png",
+        )
+        val scenario = RoleplayScenario(
+            id = "scene-avatar",
+            characterDisplayNameOverride = "陆宴清",
+            characterPortraitUri = "file://scenario-avatar.png",
+            characterPortraitUrl = "https://cdn.example.com/scenario-avatar.png",
+            interactionMode = RoleplayInteractionMode.ONLINE_PHONE,
+        )
+
+        val withSnapshot = RoleplayMessageUiMapper.mapMessages(
+            scenario = scenario,
+            assistant = assistant,
+            settings = AppSettings(),
+            rawMessages = listOf(
+                ChatMessage(
+                    id = "assistant-1",
+                    conversationId = "conv-1",
+                    role = MessageRole.ASSISTANT,
+                    content = "在",
+                    createdAt = 1L,
+                    speakerAvatarUri = "file://snapshot-avatar.png",
+                    roleplayInteractionMode = RoleplayInteractionMode.ONLINE_PHONE,
+                ),
+            ),
+            streamingContent = null,
+            outputParser = RoleplayOutputParser(),
+            nowProvider = { 10L },
+        ).single()
+
+        val withScenario = RoleplayMessageUiMapper.mapMessages(
+            scenario = scenario,
+            assistant = assistant,
+            settings = AppSettings(),
+            rawMessages = listOf(
+                ChatMessage(
+                    id = "assistant-2",
+                    conversationId = "conv-1",
+                    role = MessageRole.ASSISTANT,
+                    content = "刚看到",
+                    createdAt = 2L,
+                    roleplayInteractionMode = RoleplayInteractionMode.ONLINE_PHONE,
+                ),
+            ),
+            streamingContent = null,
+            outputParser = RoleplayOutputParser(),
+            nowProvider = { 10L },
+        ).single()
+
+        val withAssistant = RoleplayMessageUiMapper.mapMessages(
+            scenario = scenario.copy(characterPortraitUri = "", characterPortraitUrl = ""),
+            assistant = assistant,
+            settings = AppSettings(),
+            rawMessages = listOf(
+                ChatMessage(
+                    id = "assistant-3",
+                    conversationId = "conv-1",
+                    role = MessageRole.ASSISTANT,
+                    content = "嗯",
+                    createdAt = 3L,
+                    roleplayInteractionMode = RoleplayInteractionMode.ONLINE_PHONE,
+                ),
+            ),
+            streamingContent = null,
+            outputParser = RoleplayOutputParser(),
+            nowProvider = { 10L },
+        ).single()
+
+        assertEquals("file://snapshot-avatar.png", withSnapshot.speakerAvatarUri)
+        assertEquals("", withSnapshot.speakerAvatarUrl)
+        assertEquals("file://scenario-avatar.png", withScenario.speakerAvatarUri)
+        assertEquals("https://cdn.example.com/scenario-avatar.png", withScenario.speakerAvatarUrl)
+        assertEquals("file://assistant-avatar.png", withAssistant.speakerAvatarUri)
+        assertEquals("psychology", withAssistant.speakerIconName)
+    }
+
+    @Test
+    fun mapMessages_groupCharacterAvatarUsesSpeakerIdAssistantFallback() {
+        val mapped = RoleplayMessageUiMapper.mapMessages(
+            scenario = RoleplayScenario(
+                id = "group-avatar",
+                chatType = RoleplayChatType.GROUP,
+                interactionMode = RoleplayInteractionMode.ONLINE_PHONE,
+            ),
+            assistant = null,
+            settings = AppSettings(
+                assistants = listOf(
+                    Assistant(
+                        id = "role-a",
+                        name = "沈宴清",
+                        iconName = "auto_stories",
+                        avatarUri = "file://shen.png",
+                    ),
+                ),
+            ),
+            rawMessages = listOf(
+                ChatMessage(
+                    id = "assistant-1",
+                    conversationId = "conv-1",
+                    role = MessageRole.ASSISTANT,
+                    content = "刚看到",
+                    createdAt = 1L,
+                    speakerId = "role-a",
+                    speakerName = "沈宴清",
+                    roleplayInteractionMode = RoleplayInteractionMode.ONLINE_PHONE,
+                ),
+            ),
+            streamingContent = null,
+            outputParser = RoleplayOutputParser(),
+            nowProvider = { 10L },
+        )
+
+        assertEquals("file://shen.png", mapped.single().speakerAvatarUri)
+        assertEquals("auto_stories", mapped.single().speakerIconName)
+    }
+
+    @Test
+    fun mapMessages_streamingMessageInheritsLoadingAvatarSnapshot() {
+        val mapped = RoleplayMessageUiMapper.mapMessages(
+            scenario = RoleplayScenario(
+                id = "scene-streaming-avatar",
+                characterDisplayNameOverride = "陆宴清",
+                characterPortraitUri = "file://scenario-avatar.png",
+                interactionMode = RoleplayInteractionMode.ONLINE_PHONE,
+            ),
+            assistant = Assistant(id = "assistant-1", name = "陆宴清"),
+            settings = AppSettings(),
+            rawMessages = listOf(
+                ChatMessage(
+                    id = "assistant-loading",
+                    conversationId = "conv-1",
+                    role = MessageRole.ASSISTANT,
+                    content = "",
+                    status = MessageStatus.LOADING,
+                    createdAt = 1L,
+                    speakerName = "陆宴清",
+                    speakerAvatarUri = "file://loading-avatar.png",
+                    roleplayInteractionMode = RoleplayInteractionMode.ONLINE_PHONE,
+                ),
+            ),
+            streamingContent = "刚到",
+            outputParser = RoleplayOutputParser(),
+            nowProvider = { 10L },
+        )
+
+        val streaming = mapped.single { it.isStreaming }
+        assertEquals("file://loading-avatar.png", streaming.speakerAvatarUri)
+    }
+
     @Test
     fun mapMessages_mapsDialogueTransferAndStreamingContent() {
         val scenario = RoleplayScenario(

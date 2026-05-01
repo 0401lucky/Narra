@@ -3,13 +3,17 @@ package com.example.myapplication.viewmodel
 import com.example.myapplication.conversation.GiftImageGenerationRequest
 import com.example.myapplication.conversation.ConversationTransferCoordinator
 import com.example.myapplication.conversation.RoundTripInitialPersistence
+import com.example.myapplication.data.repository.ConversationRepository
 import com.example.myapplication.model.ChatSpecialPlayDraft
 import com.example.myapplication.model.ChatMessage
 import com.example.myapplication.model.ChatMessagePart
+import com.example.myapplication.model.Assistant
 import com.example.myapplication.model.GiftPlayDraft
 import com.example.myapplication.model.InvitePlayDraft
+import com.example.myapplication.model.MAX_GROUP_AUTO_REPLIES
 import com.example.myapplication.model.PunishPlayDraft
 import com.example.myapplication.model.RoleplayInteractionMode
+import com.example.myapplication.model.RoleplayGroupReplyMode
 import com.example.myapplication.model.TaskPlayDraft
 import com.example.myapplication.model.TransferPlayDraft
 import com.example.myapplication.model.TransferDirection
@@ -17,6 +21,9 @@ import com.example.myapplication.model.TransferStatus
 import com.example.myapplication.model.VoiceMessageDraft
 import com.example.myapplication.model.giftMessagePart
 import com.example.myapplication.model.inviteMessagePart
+import com.example.myapplication.model.isGroupChat
+import com.example.myapplication.model.MessageRole
+import com.example.myapplication.model.MessageStatus
 import com.example.myapplication.model.isGiftPart
 import com.example.myapplication.model.normalizeChatMessageParts
 import com.example.myapplication.model.ProviderFunction
@@ -29,7 +36,13 @@ import com.example.myapplication.model.textMessagePart
 import com.example.myapplication.model.toPlainText
 import com.example.myapplication.model.voiceMessageActionPart
 import com.example.myapplication.model.withGiftImageGenerating
+import com.example.myapplication.model.hasSendableContent
 import com.example.myapplication.roleplay.RoleplayConversationSupport
+import com.example.myapplication.roleplay.RoleplayGroupDirector
+import com.example.myapplication.roleplay.RoleplayGroupDirectorRequest
+import com.example.myapplication.roleplay.RoleplayGroupMemberContext
+import com.example.myapplication.roleplay.RoleplayGroupReplyPlanner
+import com.example.myapplication.roleplay.buildRoleplayGroupSpeakerDirectorNote
 import com.example.myapplication.roleplay.RoleplayMessageFormatSupport
 import com.example.myapplication.roleplay.RoleplayRoundTripSupport
 import kotlinx.coroutines.CoroutineScope
@@ -43,8 +56,10 @@ internal class RoleplaySendActionSupport(
     private val updateUiState: ((RoleplayUiState) -> RoleplayUiState) -> Unit,
     private val currentRawMessages: MutableStateFlow<List<ChatMessage>>,
     private val roleplayRepository: com.example.myapplication.data.repository.roleplay.RoleplayRepository,
+    private val conversationRepository: ConversationRepository,
     private val transferCoordinator: ConversationTransferCoordinator,
     private val roundTripExecutor: RoleplayRoundTripExecutor,
+    private val groupDirector: RoleplayGroupDirector,
     private val scenarioActionSupport: RoleplayScenarioActionSupport,
     private val nowProvider: () -> Long,
     private val messageIdProvider: () -> String,
@@ -420,6 +435,18 @@ internal class RoleplaySendActionSupport(
                     messages = currentRawMessages.value,
                     conversationId = session.conversationId,
                 )
+                if (scenario.isGroupChat) {
+                    executeGroupRoleplaySend(
+                        state = state,
+                        scenario = scenario,
+                        session = session,
+                        selectedModel = selectedModel,
+                        baseMessages = baseMessages,
+                        userParts = resolvedUserParts,
+                        nextInput = nextInput,
+                    )
+                    return@launch
+                }
                 val preparedRoundTrip = RoleplayRoundTripSupport.prepareOutgoingRoundTrip(
                     baseMessages = baseMessages,
                     conversationId = session.conversationId,
@@ -487,5 +514,201 @@ internal class RoleplaySendActionSupport(
                 onSendingFinished()
             }
         }
+    }
+
+    private suspend fun executeGroupRoleplaySend(
+        state: RoleplayUiState,
+        scenario: com.example.myapplication.model.RoleplayScenario,
+        session: com.example.myapplication.model.RoleplaySession,
+        selectedModel: String,
+        baseMessages: List<ChatMessage>,
+        userParts: List<ChatMessagePart>,
+        nextInput: String,
+    ) {
+        if (scenario.interactionMode != RoleplayInteractionMode.ONLINE_PHONE) {
+            updateUiState { current ->
+                RoleplayStateSupport.finishSending(
+                    RoleplayStateSupport.applyErrorMessage(current, "群聊首版仅支持线上手机模式"),
+                    errorMessage = "群聊首版仅支持线上手机模式",
+                )
+            }
+            return
+        }
+        val assistants = state.settings.resolvedAssistants()
+        val members = roleplayRepository.listGroupParticipants(scenario.id)
+            .sortedWith(compareBy({ it.sortOrder }, { it.createdAt }))
+            .map { participant ->
+                RoleplayGroupMemberContext(
+                    participant = participant,
+                    assistant = assistants.firstOrNull { it.id == participant.assistantId },
+                )
+            }
+        if (members.isEmpty()) {
+            val userMessage = persistGroupUserMessage(
+                scenario = scenario,
+                session = session,
+                selectedModel = selectedModel,
+                baseMessages = baseMessages,
+                userParts = userParts,
+            )
+            currentRawMessages.value = baseMessages + userMessage
+            updateUiState { current ->
+                RoleplayStateSupport.finishSending(
+                    RoleplayStateSupport.applyErrorMessage(current, "请先给群聊添加角色"),
+                    errorMessage = "请先给群聊添加角色",
+                )
+            }
+            return
+        }
+        val userMessage = persistGroupUserMessage(
+            scenario = scenario,
+            session = session,
+            selectedModel = selectedModel,
+            baseMessages = baseMessages,
+            userParts = userParts,
+        )
+        val messagesWithUser = baseMessages + userMessage
+        currentRawMessages.value = messagesWithUser
+        val mutedMention = members.firstOrNull { member ->
+            member.participant.isMuted && userMessage.content.mentionsGroupMember(member.displayName)
+        }
+        if (mutedMention != null) {
+            updateUiState { current ->
+                RoleplayStateSupport.finishSending(
+                    RoleplayStateSupport.applyErrorMessage(current, "${mutedMention.displayName} 已禁言"),
+                    errorMessage = "${mutedMention.displayName} 已禁言",
+                )
+            }
+            return
+        }
+        val plan = when (scenario.groupReplyMode) {
+            RoleplayGroupReplyMode.NATURAL -> groupDirector.plan(
+                RoleplayGroupDirectorRequest(
+                    scenario = scenario,
+                    members = members,
+                    recentMessages = messagesWithUser,
+                    latestUserMessage = userMessage,
+                ),
+            )
+
+            RoleplayGroupReplyMode.ALL_MEMBERS,
+            RoleplayGroupReplyMode.MANUAL_ONLY,
+            -> RoleplayGroupReplyPlanner.plan(
+                mode = scenario.groupReplyMode,
+                members = members,
+                latestUserInput = userMessage.content,
+                maxTurns = scenario.maxGroupAutoReplies.coerceIn(1, MAX_GROUP_AUTO_REPLIES),
+            )
+        }
+        val effectiveTurns = if (scenario.enableGroupMentionAutoReply) {
+            plan.turns
+        } else {
+            plan.turns.filter { turn -> userMessage.content.mentionsGroupMember(turn.displayName) }
+                .ifEmpty { plan.turns.take(1) }
+        }
+        if (effectiveTurns.isEmpty()) {
+            updateUiState { current ->
+                RoleplayStateSupport.finishSending(
+                    RoleplayStateSupport.applyNoticeMessage(
+                        current,
+                        plan.notice.ifBlank { "这一轮暂时没有角色接话" },
+                    ),
+                    errorMessage = null,
+                )
+            }
+            return
+        }
+        effectiveTurns.forEachIndexed { index, turn ->
+            val member = members.firstOrNull { it.participant.id == turn.participantId }
+                ?: return@forEachIndexed
+            val speakerAssistant = member.assistant
+            val speakerScenario = scenario.copy(
+                assistantId = turn.assistantId,
+                characterDisplayNameOverride = turn.displayName,
+                characterPortraitUri = member.avatarUri,
+                characterPortraitUrl = "",
+            )
+            val timeline = RoleplayRoundTripSupport.currentConversationMessages(
+                messages = currentRawMessages.value,
+                conversationId = session.conversationId,
+            )
+            val loadingMessage = RoleplayRoundTripSupport.buildAssistantLoadingMessage(
+                conversationId = session.conversationId,
+                nowProvider = nowProvider,
+                messageIdProvider = messageIdProvider,
+                modelName = selectedModel,
+                roleplayOutputFormat = RoleplayMessageFormatSupport.resolveScenarioOutputFormat(scenario),
+                roleplayInteractionMode = RoleplayMessageFormatSupport.resolveScenarioInteractionMode(scenario),
+                speakerId = member.participant.assistantId,
+                speakerName = turn.displayName,
+                speakerAvatarUri = member.avatarUri,
+            )
+            currentRawMessages.value = timeline + loadingMessage
+            roundTripExecutor.execute(
+                state = state,
+                scenario = speakerScenario,
+                session = session,
+                selectedModel = selectedModel,
+                assistant = speakerAssistant,
+                requestMessages = timeline.filter { it.status == MessageStatus.COMPLETED && it.hasSendableContent() },
+                cancelledMessages = timeline,
+                initialPersistence = RoundTripInitialPersistence.Append(
+                    messages = listOf(loadingMessage),
+                ),
+                loadingMessage = loadingMessage,
+                buildFinalMessages = { completedAssistant ->
+                    timeline + completedAssistant
+                },
+                extraDirectorNote = buildRoleplayGroupSpeakerDirectorNote(
+                    turn = turn,
+                    members = members,
+                    recentMessages = timeline,
+                ),
+                finishSendingOnCompletion = false,
+            )
+            if (index < effectiveTurns.lastIndex) {
+                updateUiState { current ->
+                    current.copy(streamingContent = "")
+                }
+            }
+        }
+        updateUiState { current ->
+            RoleplayStateSupport.finishSending(current, errorMessage = null)
+        }
+    }
+
+    private suspend fun persistGroupUserMessage(
+        scenario: com.example.myapplication.model.RoleplayScenario,
+        session: com.example.myapplication.model.RoleplaySession,
+        selectedModel: String,
+        baseMessages: List<ChatMessage>,
+        userParts: List<ChatMessagePart>,
+    ): ChatMessage {
+        val userMessage = RoleplayRoundTripSupport.buildUserMessage(
+            conversationId = session.conversationId,
+            parts = userParts,
+            replyToMessageId = uiState().replyToMessageId,
+            replyToPreview = uiState().replyToPreview,
+            replyToSpeakerName = uiState().replyToSpeakerName,
+            roleplayInteractionMode = RoleplayMessageFormatSupport.resolveScenarioInteractionMode(scenario),
+            nowProvider = nowProvider,
+            messageIdProvider = messageIdProvider,
+        )
+        conversationRepository.appendMessages(
+            conversationId = session.conversationId,
+            messages = listOf(userMessage),
+            selectedModel = selectedModel,
+        )
+        currentRawMessages.value = baseMessages + userMessage
+        return userMessage
+    }
+
+    private fun String.mentionsGroupMember(displayName: String): Boolean {
+        val normalizedName = displayName.trim()
+        if (normalizedName.isBlank()) {
+            return false
+        }
+        return contains("@$normalizedName", ignoreCase = true) ||
+            contains(normalizedName, ignoreCase = true)
     }
 }

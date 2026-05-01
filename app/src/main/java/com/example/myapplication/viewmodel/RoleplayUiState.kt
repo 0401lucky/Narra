@@ -8,6 +8,7 @@ import com.example.myapplication.model.PendingMemoryProposal
 import com.example.myapplication.model.RoleplayChatSummary
 import com.example.myapplication.model.RoleplayContextStatus
 import com.example.myapplication.model.RoleplayDiaryEntry
+import com.example.myapplication.model.RoleplayGroupParticipant
 import com.example.myapplication.model.RoleplayMessageUiModel
 import com.example.myapplication.model.RoleplayScenario
 import com.example.myapplication.model.RoleplaySession
@@ -20,6 +21,7 @@ data class RoleplayUiState(
     val currentScenario: RoleplayScenario? = null,
     val currentSession: RoleplaySession? = null,
     val currentAssistant: Assistant? = null,
+    val currentGroupParticipants: List<RoleplayGroupParticipant> = emptyList(),
     val contextStatus: RoleplayContextStatus = RoleplayContextStatus(),
     val scenarioSessionIds: Set<String> = emptySet(),
     val messages: List<RoleplayMessageUiModel> = emptyList(),

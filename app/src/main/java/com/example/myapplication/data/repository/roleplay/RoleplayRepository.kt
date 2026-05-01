@@ -2,6 +2,7 @@ package com.example.myapplication.data.repository.roleplay
 
 import com.example.myapplication.data.local.roleplay.RoleplayDao
 import com.example.myapplication.data.local.roleplay.RoleplayDiaryEntryEntity
+import com.example.myapplication.data.local.roleplay.RoleplayGroupParticipantEntity
 import com.example.myapplication.data.local.roleplay.RoleplayChatSummaryRow
 import com.example.myapplication.data.local.roleplay.RoleplayScenarioEntity
 import com.example.myapplication.data.local.roleplay.RoleplaySessionEntity
@@ -13,6 +14,9 @@ import com.example.myapplication.model.MessageStatus
 import com.example.myapplication.model.RoleplayChatSummary
 import com.example.myapplication.model.RoleplayDiaryDraft
 import com.example.myapplication.model.RoleplayDiaryEntry
+import com.example.myapplication.model.RoleplayChatType
+import com.example.myapplication.model.RoleplayGroupParticipant
+import com.example.myapplication.model.RoleplayGroupReplyMode
 import com.example.myapplication.model.RoleplayInteractionMode
 import com.example.myapplication.model.RoleplayOnlineMeta
 import com.example.myapplication.model.RoleplayOutputFormat
@@ -48,6 +52,8 @@ interface RoleplayRepository {
 
     fun observeSessions(): Flow<List<RoleplaySession>>
 
+    fun observeGroupParticipants(scenarioId: String): Flow<List<RoleplayGroupParticipant>> = flowOf(emptyList())
+
     fun observeConversationMessages(scenarioId: String): Flow<List<ChatMessage>>
 
     fun observeDiaryEntries(conversationId: String): Flow<List<RoleplayDiaryEntry>>
@@ -58,6 +64,11 @@ interface RoleplayRepository {
 
     suspend fun upsertScenario(scenario: RoleplayScenario)
 
+    suspend fun upsertScenarioWithParticipants(
+        scenario: RoleplayScenario,
+        participants: List<RoleplayGroupParticipant>,
+    ) = upsertScenario(scenario)
+
     suspend fun deleteScenario(scenarioId: String)
 
     suspend fun startScenario(scenarioId: String): RoleplaySessionStartResult
@@ -67,6 +78,12 @@ interface RoleplayRepository {
     suspend fun getSessionByScenario(scenarioId: String): RoleplaySession?
 
     suspend fun getSession(sessionId: String): RoleplaySession?
+
+    suspend fun listGroupParticipants(scenarioId: String): List<RoleplayGroupParticipant> = emptyList()
+
+    suspend fun upsertGroupParticipant(participant: RoleplayGroupParticipant) = Unit
+
+    suspend fun deleteGroupParticipant(participantId: String) = Unit
 
     suspend fun listDiaryEntries(conversationId: String): List<RoleplayDiaryEntry>
 
@@ -123,6 +140,15 @@ class RoomRoleplayRepository(
         }
     }
 
+    override fun observeGroupParticipants(scenarioId: String): Flow<List<RoleplayGroupParticipant>> {
+        if (scenarioId.isBlank()) {
+            return flowOf(emptyList())
+        }
+        return roleplayDao.observeGroupParticipants(scenarioId).map { participants ->
+            participants.map(::toGroupParticipantDomain)
+        }
+    }
+
     override fun observeConversationMessages(scenarioId: String): Flow<List<ChatMessage>> {
         return roleplayDao.observeSessionByScenario(scenarioId).flatMapLatest { session ->
             if (session == null) {
@@ -161,6 +187,40 @@ class RoomRoleplayRepository(
                     updatedAt = timestamp,
                 ),
             ),
+        )
+    }
+
+    override suspend fun upsertScenarioWithParticipants(
+        scenario: RoleplayScenario,
+        participants: List<RoleplayGroupParticipant>,
+    ) {
+        val timestamp = nowProvider()
+        val existing = roleplayDao.getScenario(scenario.id)
+        val createdAt = existing?.createdAt ?: scenario.createdAt.takeIf { it > 0 } ?: timestamp
+        val normalizedScenario = scenario.copy(
+            createdAt = createdAt,
+            updatedAt = timestamp,
+        )
+        roleplayDao.upsertScenario(toScenarioEntity(normalizedScenario))
+        val participantEntities = participants
+            .filter { it.assistantId.isNotBlank() }
+            .distinctBy { it.assistantId.trim() }
+            .mapIndexed { index, participant ->
+                toGroupParticipantEntity(
+                    participant.copy(
+                        scenarioId = normalizedScenario.id,
+                        assistantId = participant.assistantId.trim(),
+                        displayNameOverride = participant.displayNameOverride.trim(),
+                        avatarUriOverride = participant.avatarUriOverride.trim(),
+                        sortOrder = index,
+                        createdAt = participant.createdAt.takeIf { it > 0 } ?: timestamp,
+                        updatedAt = timestamp,
+                    ),
+                )
+            }
+        roleplayDao.replaceGroupParticipantsForScenario(
+            scenarioId = normalizedScenario.id,
+            participants = participantEntities,
         )
     }
 
@@ -204,7 +264,7 @@ class RoomRoleplayRepository(
                             it.status != MessageStatus.LOADING
                     },
                     assistantMismatch = normalizeAssistantId(existingConversation.assistantId) !=
-                        normalizeAssistantId(scenario.assistantId),
+                        resolveConversationAssistantId(scenario),
                     conversationAssistantId = normalizeAssistantId(existingConversation.assistantId),
                     conversationMessages = historyMessages,
                 )
@@ -212,7 +272,7 @@ class RoomRoleplayRepository(
         }
 
         val conversation = conversationRepository.createConversation(
-            assistantId = scenario.assistantId.ifBlank { DEFAULT_ASSISTANT_ID },
+            assistantId = resolveConversationAssistantId(scenario),
         )
         seedOpeningNarrationIfNeeded(
             conversationId = conversation.id,
@@ -232,7 +292,7 @@ class RoomRoleplayRepository(
             reusedExistingSession = false,
             hasHistory = false,
             assistantMismatch = false,
-            conversationAssistantId = normalizeAssistantId(scenario.assistantId),
+            conversationAssistantId = resolveConversationAssistantId(scenario),
             conversationMessages = seededMessages,
         )
     }
@@ -249,7 +309,7 @@ class RoomRoleplayRepository(
             mailboxCleanup(session.conversationId)
         }
         val conversation = conversationRepository.createConversation(
-            assistantId = scenario.assistantId.ifBlank { DEFAULT_ASSISTANT_ID },
+            assistantId = resolveConversationAssistantId(scenario),
         )
         seedOpeningNarrationIfNeeded(
             conversationId = conversation.id,
@@ -269,7 +329,7 @@ class RoomRoleplayRepository(
             reusedExistingSession = false,
             hasHistory = false,
             assistantMismatch = false,
-            conversationAssistantId = normalizeAssistantId(scenario.assistantId),
+            conversationAssistantId = resolveConversationAssistantId(scenario),
             conversationMessages = seededMessages,
         )
     }
@@ -280,6 +340,41 @@ class RoomRoleplayRepository(
 
     override suspend fun getSession(sessionId: String): RoleplaySession? {
         return roleplayDao.getSession(sessionId)?.let(::toSessionDomain)
+    }
+
+    override suspend fun listGroupParticipants(scenarioId: String): List<RoleplayGroupParticipant> {
+        if (scenarioId.isBlank()) {
+            return emptyList()
+        }
+        return roleplayDao.listGroupParticipants(scenarioId).map(::toGroupParticipantDomain)
+    }
+
+    override suspend fun upsertGroupParticipant(participant: RoleplayGroupParticipant) {
+        if (participant.scenarioId.isBlank() || participant.assistantId.isBlank()) {
+            return
+        }
+        val timestamp = nowProvider()
+        val existing = roleplayDao.getGroupParticipant(participant.id)
+        roleplayDao.upsertGroupParticipants(
+            listOf(
+                toGroupParticipantEntity(
+                    participant.copy(
+                        assistantId = participant.assistantId.trim(),
+                        displayNameOverride = participant.displayNameOverride.trim(),
+                        avatarUriOverride = participant.avatarUriOverride.trim(),
+                        createdAt = existing?.createdAt ?: participant.createdAt.takeIf { it > 0 } ?: timestamp,
+                        updatedAt = timestamp,
+                    ),
+                ),
+            ),
+        )
+    }
+
+    override suspend fun deleteGroupParticipant(participantId: String) {
+        if (participantId.isBlank()) {
+            return
+        }
+        roleplayDao.deleteGroupParticipant(participantId)
     }
 
     override suspend fun listDiaryEntries(conversationId: String): List<RoleplayDiaryEntry> {
@@ -401,6 +496,10 @@ class RoomRoleplayRepository(
             enableDeepImmersion = entity.enableDeepImmersion,
             enableTimeAwareness = entity.enableTimeAwareness,
             enableNetMeme = entity.enableNetMeme,
+            chatType = RoleplayChatType.fromStorageValue(entity.chatType),
+            groupReplyMode = RoleplayGroupReplyMode.fromStorageValue(entity.groupReplyMode),
+            enableGroupMentionAutoReply = entity.enableGroupMentionAutoReply,
+            maxGroupAutoReplies = entity.maxGroupAutoReplies.coerceIn(1, com.example.myapplication.model.MAX_GROUP_AUTO_REPLIES),
             isPinned = entity.isPinned,
             isMuted = entity.isMuted,
             createdAt = entity.createdAt,
@@ -462,6 +561,10 @@ class RoomRoleplayRepository(
             enableDeepImmersion = enableDeepImmersion,
             enableTimeAwareness = enableTimeAwareness,
             enableNetMeme = enableNetMeme,
+            chatType = chatType,
+            groupReplyMode = groupReplyMode,
+            enableGroupMentionAutoReply = enableGroupMentionAutoReply,
+            maxGroupAutoReplies = maxGroupAutoReplies,
             isPinned = isPinned,
             isMuted = isMuted,
             createdAt = createdAt,
@@ -494,6 +597,11 @@ class RoomRoleplayRepository(
             enableDeepImmersion = scenario.enableDeepImmersion,
             enableTimeAwareness = scenario.enableTimeAwareness,
             enableNetMeme = scenario.enableNetMeme,
+            chatType = scenario.chatType.storageValue,
+            groupReplyMode = scenario.groupReplyMode.storageValue,
+            enableGroupMentionAutoReply = scenario.enableGroupMentionAutoReply,
+            maxGroupAutoReplies = scenario.maxGroupAutoReplies
+                .coerceIn(1, com.example.myapplication.model.MAX_GROUP_AUTO_REPLIES),
             isPinned = scenario.isPinned,
             isMuted = scenario.isMuted,
             createdAt = scenario.createdAt,
@@ -508,6 +616,36 @@ class RoomRoleplayRepository(
             conversationId = entity.conversationId,
             createdAt = entity.createdAt,
             updatedAt = entity.updatedAt,
+        )
+    }
+
+    private fun toGroupParticipantDomain(entity: RoleplayGroupParticipantEntity): RoleplayGroupParticipant {
+        return RoleplayGroupParticipant(
+            id = entity.id,
+            scenarioId = entity.scenarioId,
+            assistantId = entity.assistantId,
+            displayNameOverride = entity.displayNameOverride,
+            avatarUriOverride = entity.avatarUriOverride,
+            sortOrder = entity.sortOrder,
+            isMuted = entity.isMuted,
+            canAutoReply = entity.canAutoReply,
+            createdAt = entity.createdAt,
+            updatedAt = entity.updatedAt,
+        )
+    }
+
+    private fun toGroupParticipantEntity(participant: RoleplayGroupParticipant): RoleplayGroupParticipantEntity {
+        return RoleplayGroupParticipantEntity(
+            id = participant.id,
+            scenarioId = participant.scenarioId,
+            assistantId = participant.assistantId.trim(),
+            displayNameOverride = participant.displayNameOverride.trim(),
+            avatarUriOverride = participant.avatarUriOverride.trim(),
+            sortOrder = participant.sortOrder,
+            isMuted = participant.isMuted,
+            canAutoReply = participant.canAutoReply,
+            createdAt = participant.createdAt,
+            updatedAt = participant.updatedAt,
         )
     }
 
@@ -588,6 +726,14 @@ class RoomRoleplayRepository(
         return assistantId.trim().ifBlank { DEFAULT_ASSISTANT_ID }
     }
 
+    private fun resolveConversationAssistantId(scenario: RoleplayScenarioEntity): String {
+        return if (RoleplayChatType.fromStorageValue(scenario.chatType) == RoleplayChatType.GROUP) {
+            "$GROUP_CONVERSATION_ASSISTANT_PREFIX${scenario.id}"
+        } else {
+            normalizeAssistantId(scenario.assistantId)
+        }
+    }
+
     private fun ChatMessage.isOpeningNarrationMessage(scenarioId: String): Boolean {
         return RoleplayConversationSupport.isOpeningNarrationMessageId(id, scenarioId)
     }
@@ -603,6 +749,7 @@ class RoomRoleplayRepository(
 
 // 日记标签存储约定：; 分隔，每个标签已 trim；空标签被过滤。
 private const val DIARY_TAG_DELIMITER = ";"
+private const val GROUP_CONVERSATION_ASSISTANT_PREFIX = "roleplay-group:"
 
 private fun List<String>.joinDiaryTags(): String {
     return asSequence()

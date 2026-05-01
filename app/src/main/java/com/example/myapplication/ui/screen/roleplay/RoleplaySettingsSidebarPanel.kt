@@ -29,6 +29,7 @@ import androidx.compose.material.icons.automirrored.filled.MenuBook
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.AutoStories
 import androidx.compose.material.icons.filled.Code
+import androidx.compose.material.icons.filled.Group
 import androidx.compose.material.icons.filled.Link
 import androidx.compose.material.icons.filled.ManageAccounts
 import androidx.compose.material.icons.filled.Psychology
@@ -37,6 +38,7 @@ import androidx.compose.material.icons.filled.Style
 import androidx.compose.material.icons.filled.SyncAlt
 import androidx.compose.material.icons.filled.Tune
 import androidx.compose.material.icons.filled.ViewAgenda
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -44,6 +46,7 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -64,11 +67,14 @@ import com.example.myapplication.model.MemoryProposalHistoryItem
 import com.example.myapplication.model.ProviderSettings
 import com.example.myapplication.model.ProviderFunction
 import com.example.myapplication.model.RoleplayContextStatus
+import com.example.myapplication.model.RoleplayGroupParticipant
+import com.example.myapplication.model.RoleplayGroupReplyMode
 import com.example.myapplication.model.RoleplayImmersiveMode
 import com.example.myapplication.model.RoleplayInteractionMode
 import com.example.myapplication.model.RoleplayLineHeightScale
 import com.example.myapplication.model.RoleplayNoBackgroundSkinSettings
 import com.example.myapplication.model.RoleplayScenario
+import com.example.myapplication.model.isGroupChat
 import com.example.myapplication.roleplay.RoleplayConversationSupport
 import com.example.myapplication.ui.component.AssistantAvatar
 import com.example.myapplication.ui.component.roleplay.ImmersiveBackdropState
@@ -84,6 +90,7 @@ internal enum class RoleplaySettingsPanelPage {
     MAIN,
     SCENE,
     IDENTITY,
+    GROUP,
     THEME,
     QUICK,
     REGEX,
@@ -96,6 +103,7 @@ internal fun RoleplaySettingsSidebarContent(
     assistant: Assistant?,
     settings: AppSettings,
     contextStatus: RoleplayContextStatus,
+    groupParticipants: List<RoleplayGroupParticipant>,
     currentModel: String,
     currentProviderId: String,
     providerOptions: List<ProviderSettings>,
@@ -122,6 +130,9 @@ internal fun RoleplaySettingsSidebarContent(
     onUpdateScenarioNetMemeEnabled: (Boolean) -> Unit,
     onUpdateRoleplayLongformTargetChars: (Int) -> Unit,
     onUpdateScenarioInteractionMode: (RoleplayInteractionMode) -> Unit,
+    onToggleGroupParticipantMuted: (String) -> Unit,
+    onRemoveGroupParticipant: (String) -> Unit,
+    onUpdateGroupReplyMode: (RoleplayGroupReplyMode) -> Unit,
     systemHighContrastEnabled: Boolean,
     onUpdateRoleplayImmersiveMode: (RoleplayImmersiveMode) -> Unit,
     onUpdateRoleplayHighContrast: (Boolean) -> Unit,
@@ -159,6 +170,7 @@ internal fun RoleplaySettingsSidebarContent(
             assistant = assistant,
             settings = settings,
             contextStatus = contextStatus,
+            groupParticipants = groupParticipants,
             currentModel = currentModel,
             currentProviderId = currentProviderId,
             providerOptions = providerOptions,
@@ -180,6 +192,41 @@ internal fun RoleplaySettingsSidebarContent(
             onShowRestartDialog = onShowRestartDialog,
             onShowResetDialog = onShowResetDialog,
         )
+
+        RoleplaySettingsPanelPage.GROUP -> LazyColumn(
+            modifier = Modifier.fillMaxSize(),
+            contentPadding = PaddingValues(
+                start = SettingsScreenPadding,
+                top = 8.dp,
+                end = SettingsScreenPadding,
+                bottom = 28.dp,
+            ),
+            verticalArrangement = Arrangement.spacedBy(16.dp),
+        ) {
+            item {
+                DetailIntroCard(
+                    backdropState = backdropState,
+                    title = "群聊设置",
+                    summary = "管理成员禁言、移除和回复模式。主题、记忆和高级选项仍在侧栏其它分区里。",
+                )
+            }
+            item {
+                RoleplaySettingsGroupMembersSection(
+                    backdropState = backdropState,
+                    settings = settings,
+                    participants = groupParticipants,
+                    onToggleMuted = onToggleGroupParticipantMuted,
+                    onRemove = onRemoveGroupParticipant,
+                )
+            }
+            item {
+                RoleplaySettingsGroupReplyModeSection(
+                    backdropState = backdropState,
+                    scenario = scenario,
+                    onUpdateReplyMode = onUpdateGroupReplyMode,
+                )
+            }
+        }
 
         RoleplaySettingsPanelPage.SCENE -> LazyColumn(
             modifier = Modifier.fillMaxSize(),
@@ -376,6 +423,7 @@ private fun RoleplaySettingsMainPanel(
     assistant: Assistant?,
     settings: AppSettings,
     contextStatus: RoleplayContextStatus,
+    groupParticipants: List<RoleplayGroupParticipant>,
     currentModel: String,
     currentProviderId: String,
     providerOptions: List<ProviderSettings>,
@@ -435,6 +483,7 @@ private fun RoleplaySettingsMainPanel(
     val effectiveUserName = RoleplayConversationSupport
         .resolveUserPersona(scenario, settings)
         .displayName
+    val isGroupChat = scenario?.isGroupChat == true
     var advancedExpanded by rememberSaveable { mutableStateOf(true) }
 
     LazyColumn(
@@ -454,6 +503,7 @@ private fun RoleplaySettingsMainPanel(
                     backdropState = backdropState,
                     scenario = scenario,
                     assistant = assistant,
+                    groupParticipants = groupParticipants,
                     currentModel = currentModel,
                     contextStatus = contextStatus,
                     contextGovernance = contextGovernance,
@@ -481,6 +531,15 @@ private fun RoleplaySettingsMainPanel(
                     icon = Icons.Default.ManageAccounts,
                     onClick = { onNavigateToPage(RoleplaySettingsPanelPage.IDENTITY) },
                 )
+                if (isGroupChat) {
+                    SummaryDivider()
+                    SummaryLinkRow(
+                        title = "群聊设置",
+                        summary = "${groupParticipants.size} 位成员 · ${scenario?.groupReplyMode?.displayName.orEmpty()}",
+                        icon = Icons.Default.Group,
+                        onClick = { onNavigateToPage(RoleplaySettingsPanelPage.GROUP) },
+                    )
+                }
             }
             }
         }
@@ -630,20 +689,203 @@ private fun RoleplaySettingsMainPanel(
 }
 
 @Composable
+private fun RoleplaySettingsGroupMembersSection(
+    backdropState: ImmersiveBackdropState,
+    settings: AppSettings,
+    participants: List<RoleplayGroupParticipant>,
+    onToggleMuted: (String) -> Unit,
+    onRemove: (String) -> Unit,
+) {
+    val assistants = settings.resolvedAssistants()
+    ImmersiveSettingsCard(backdropState) {
+        Column(modifier = Modifier.padding(vertical = 8.dp)) {
+            if (participants.isEmpty()) {
+                Text(
+                    text = "还没有群成员",
+                    modifier = Modifier.padding(horizontal = 18.dp, vertical = 16.dp),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = RoleplaySettingsPanelBodyColor,
+                )
+            } else {
+                participants.sortedBy { it.sortOrder }.forEachIndexed { index, participant ->
+                    val assistant = assistants.firstOrNull { it.id == participant.assistantId }
+                    RoleplayGroupParticipantRow(
+                        participant = participant,
+                        assistant = assistant,
+                        onToggleMuted = onToggleMuted,
+                        onRemove = onRemove,
+                    )
+                    if (index < participants.lastIndex) {
+                        SummaryDivider()
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun RoleplayGroupParticipantRow(
+    participant: RoleplayGroupParticipant,
+    assistant: Assistant?,
+    onToggleMuted: (String) -> Unit,
+    onRemove: (String) -> Unit,
+) {
+    val displayName = participant.displayNameOverride.ifBlank { assistant?.name ?: "未知角色" }
+    var showRemoveConfirm by rememberSaveable(participant.id) { mutableStateOf(false) }
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 18.dp, vertical = 12.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(12.dp),
+    ) {
+        AssistantAvatar(
+            name = displayName,
+            iconName = assistant?.iconName?.ifBlank { "auto_stories" } ?: "auto_stories",
+            avatarUri = participant.avatarUriOverride.ifBlank { assistant?.avatarUri.orEmpty() },
+            size = 42.dp,
+            containerColor = RoleplaySettingsPanelBodyColor.copy(alpha = 0.14f),
+            contentColor = RoleplaySettingsPanelTitleColor,
+            cornerRadius = 14.dp,
+        )
+        Column(
+            modifier = Modifier.weight(1f),
+            verticalArrangement = Arrangement.spacedBy(3.dp),
+        ) {
+            Text(
+                text = displayName,
+                style = MaterialTheme.typography.bodyLarge,
+                fontWeight = FontWeight.SemiBold,
+                color = if (participant.isMuted) {
+                    RoleplaySettingsPanelBodyColor
+                } else {
+                    RoleplaySettingsPanelTitleColor
+                },
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
+            Text(
+                text = if (participant.isMuted) "已禁言" else "可自然接话",
+                style = MaterialTheme.typography.bodySmall,
+                color = RoleplaySettingsPanelBodyColor,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
+        }
+        Column(
+            horizontalAlignment = Alignment.End,
+        ) {
+            TextButton(onClick = { onToggleMuted(participant.id) }) {
+                Text(if (participant.isMuted) "解除" else "禁言")
+            }
+            TextButton(onClick = { showRemoveConfirm = true }) {
+                Text("移除", color = Color(0xFFD95C5C))
+            }
+        }
+    }
+    if (showRemoveConfirm) {
+        AlertDialog(
+            onDismissRequest = { showRemoveConfirm = false },
+            title = { Text("移除群成员") },
+            text = { Text("确认将 $displayName 从群聊中移除？历史消息会保留。") },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        showRemoveConfirm = false
+                        onRemove(participant.id)
+                    },
+                ) {
+                    Text("移除", color = Color(0xFFD95C5C))
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showRemoveConfirm = false }) {
+                    Text("取消")
+                }
+            },
+        )
+    }
+}
+
+@Composable
+private fun RoleplaySettingsGroupReplyModeSection(
+    backdropState: ImmersiveBackdropState,
+    scenario: RoleplayScenario?,
+    onUpdateReplyMode: (RoleplayGroupReplyMode) -> Unit,
+) {
+    ImmersiveSettingsCard(backdropState) {
+        Column(modifier = Modifier.padding(vertical = 8.dp)) {
+            RoleplayGroupReplyMode.entries.forEachIndexed { index, mode ->
+                val selected = scenario?.groupReplyMode == mode
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable { onUpdateReplyMode(mode) }
+                        .padding(horizontal = 18.dp, vertical = 14.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(12.dp),
+                ) {
+                    Column(
+                        modifier = Modifier.weight(1f),
+                        verticalArrangement = Arrangement.spacedBy(4.dp),
+                    ) {
+                        Text(
+                            text = mode.displayName,
+                            style = MaterialTheme.typography.bodyLarge,
+                            fontWeight = FontWeight.SemiBold,
+                            color = RoleplaySettingsPanelTitleColor,
+                        )
+                        Text(
+                            text = mode.description,
+                            style = MaterialTheme.typography.bodySmall,
+                            color = RoleplaySettingsPanelBodyColor,
+                        )
+                    }
+                    if (selected) {
+                        Surface(
+                            shape = RoundedCornerShape(999.dp),
+                            color = RoleplaySettingsPanelAccentColor.copy(alpha = 0.16f),
+                            contentColor = RoleplaySettingsPanelAccentColor,
+                        ) {
+                            Text(
+                                text = "当前",
+                                modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp),
+                                style = MaterialTheme.typography.labelMedium,
+                                fontWeight = FontWeight.SemiBold,
+                            )
+                        }
+                    }
+                }
+                if (index < RoleplayGroupReplyMode.entries.lastIndex) {
+                    SummaryDivider()
+                }
+            }
+        }
+    }
+}
+
+@Composable
 private fun RoleplaySettingsOverviewCard(
     backdropState: ImmersiveBackdropState,
     scenario: RoleplayScenario?,
     assistant: Assistant?,
+    groupParticipants: List<RoleplayGroupParticipant>,
     currentModel: String,
     contextStatus: RoleplayContextStatus,
     contextGovernance: ContextGovernanceSnapshot?,
 ) {
     val palette = backdropState.palette
     val scenarioTitle = scenario?.title?.trim().orEmpty().ifBlank { "沉浸扮演" }
-    val characterName = scenario?.characterDisplayNameOverride?.trim()
-        .orEmpty()
-        .ifBlank { assistant?.name?.trim().orEmpty() }
-        .ifBlank { "角色" }
+    val isGroupChat = scenario?.isGroupChat == true
+    val characterName = if (isGroupChat) {
+        "群聊 · ${groupParticipants.size} 位成员"
+    } else {
+        scenario?.characterDisplayNameOverride?.trim()
+            .orEmpty()
+            .ifBlank { assistant?.name?.trim().orEmpty() }
+            .ifBlank { "角色" }
+    }
     ImmersiveSettingsCard(backdropState) {
         Row(
             modifier = Modifier
@@ -652,15 +894,28 @@ private fun RoleplaySettingsOverviewCard(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(14.dp),
         ) {
-            AssistantAvatar(
-                name = characterName,
-                iconName = assistant?.iconName.orEmpty(),
-                avatarUri = assistant?.avatarUri.orEmpty(),
-                size = 54.dp,
-                containerColor = palette.panelTintStrong.copy(alpha = 0.85f),
-                contentColor = Color.White,
-                cornerRadius = 18.dp,
-            )
+            if (isGroupChat) {
+                Surface(
+                    modifier = Modifier.size(54.dp),
+                    shape = RoundedCornerShape(18.dp),
+                    color = palette.panelTintStrong.copy(alpha = 0.85f),
+                    contentColor = Color.White,
+                ) {
+                    Box(contentAlignment = Alignment.Center) {
+                        Icon(Icons.Default.Group, contentDescription = null)
+                    }
+                }
+            } else {
+                AssistantAvatar(
+                    name = characterName,
+                    iconName = assistant?.iconName.orEmpty(),
+                    avatarUri = assistant?.avatarUri.orEmpty(),
+                    size = 54.dp,
+                    containerColor = palette.panelTintStrong.copy(alpha = 0.85f),
+                    contentColor = Color.White,
+                    cornerRadius = 18.dp,
+                )
+            }
             Column(
                 modifier = Modifier.weight(1f),
                 verticalArrangement = Arrangement.spacedBy(4.dp),

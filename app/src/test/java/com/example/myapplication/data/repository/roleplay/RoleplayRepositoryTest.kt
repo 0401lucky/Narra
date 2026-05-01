@@ -2,6 +2,7 @@ package com.example.myapplication.data.repository.roleplay
 
 import com.example.myapplication.data.local.roleplay.RoleplayDao
 import com.example.myapplication.data.local.roleplay.RoleplayDiaryEntryEntity
+import com.example.myapplication.data.local.roleplay.RoleplayGroupParticipantEntity
 import com.example.myapplication.data.local.roleplay.RoleplayChatSummaryRow
 import com.example.myapplication.data.local.roleplay.RoleplayOnlineMetaEntity
 import com.example.myapplication.data.local.roleplay.RoleplayScenarioEntity
@@ -340,6 +341,7 @@ private class FakeRoleplayDao(
     private val scenariosState = MutableStateFlow(scenarios)
     private val sessionsState = MutableStateFlow(sessions)
     private val diaryEntriesState = MutableStateFlow<List<RoleplayDiaryEntryEntity>>(emptyList())
+    private val groupParticipantsState = MutableStateFlow<List<RoleplayGroupParticipantEntity>>(emptyList())
     val deletedScenarioIds = mutableListOf<String>()
 
     override fun observeScenarios(): Flow<List<RoleplayScenarioEntity>> {
@@ -401,6 +403,12 @@ private class FakeRoleplayDao(
         return sessionsState
     }
 
+    override fun observeGroupParticipants(scenarioId: String): Flow<List<RoleplayGroupParticipantEntity>> {
+        return groupParticipantsState.map { list ->
+            list.filter { it.scenarioId == scenarioId }.sortedWith(compareBy({ it.sortOrder }, { it.createdAt }))
+        }
+    }
+
     override fun observeDiaryEntries(conversationId: String): Flow<List<RoleplayDiaryEntryEntity>> {
         return diaryEntriesState.map { list -> list.filter { it.conversationId == conversationId } }
     }
@@ -411,6 +419,12 @@ private class FakeRoleplayDao(
 
     override suspend fun listSessions(): List<RoleplaySessionEntity> {
         return sessionsState.value
+    }
+
+    override suspend fun listGroupParticipants(scenarioId: String): List<RoleplayGroupParticipantEntity> {
+        return groupParticipantsState.value
+            .filter { it.scenarioId == scenarioId }
+            .sortedWith(compareBy({ it.sortOrder }, { it.createdAt }))
     }
 
     override suspend fun listDiaryEntries(conversationId: String): List<RoleplayDiaryEntryEntity> {
@@ -429,6 +443,10 @@ private class FakeRoleplayDao(
         return sessionsState.value.firstOrNull { it.id == sessionId }
     }
 
+    override suspend fun getGroupParticipant(participantId: String): RoleplayGroupParticipantEntity? {
+        return groupParticipantsState.value.firstOrNull { it.id == participantId }
+    }
+
     override suspend fun getOnlineMeta(conversationId: String): RoleplayOnlineMetaEntity? = null
 
     override suspend fun upsertOnlineMeta(meta: RoleplayOnlineMetaEntity) = Unit
@@ -443,15 +461,29 @@ private class FakeRoleplayDao(
         sessionsState.value = sessionsState.value.filterNot { it.id == session.id } + session
     }
 
+    override suspend fun upsertGroupParticipants(participants: List<RoleplayGroupParticipantEntity>) {
+        val targetIds = participants.map { it.id }.toSet()
+        groupParticipantsState.value = groupParticipantsState.value.filterNot { it.id in targetIds } + participants
+    }
+
     override suspend fun upsertDiaryEntries(entries: List<RoleplayDiaryEntryEntity>) {
         val targetIds = entries.map { it.id }.toSet()
         diaryEntriesState.value = diaryEntriesState.value.filterNot { it.id in targetIds } + entries
+    }
+
+    override suspend fun deleteGroupParticipant(participantId: String) {
+        groupParticipantsState.value = groupParticipantsState.value.filterNot { it.id == participantId }
+    }
+
+    override suspend fun deleteGroupParticipantsForScenario(scenarioId: String) {
+        groupParticipantsState.value = groupParticipantsState.value.filterNot { it.scenarioId == scenarioId }
     }
 
     override suspend fun deleteScenario(scenarioId: String) {
         deletedScenarioIds += scenarioId
         scenariosState.value = scenariosState.value.filterNot { it.id == scenarioId }
         sessionsState.value = sessionsState.value.filterNot { it.scenarioId == scenarioId }
+        groupParticipantsState.value = groupParticipantsState.value.filterNot { it.scenarioId == scenarioId }
     }
 
     override suspend fun deleteDiaryEntriesForConversation(conversationId: String) {

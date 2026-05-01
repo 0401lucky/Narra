@@ -19,6 +19,7 @@ import com.example.myapplication.data.repository.roleplay.RoleplayRepository
 import com.example.myapplication.model.Assistant
 import com.example.myapplication.model.ChatMessage
 import com.example.myapplication.model.ChatMessagePart
+import com.example.myapplication.model.ChatMessagePartType
 import com.example.myapplication.model.ChatReasoningStep
 import com.example.myapplication.model.ChatStreamEvent
 import com.example.myapplication.model.Conversation
@@ -33,6 +34,7 @@ import com.example.myapplication.model.RoleplayOutputFormat
 import com.example.myapplication.model.TransferDirection
 import com.example.myapplication.model.TransferStatus
 import com.example.myapplication.model.imageMessagePart
+import com.example.myapplication.model.isGroupChat
 import com.example.myapplication.model.normalizeChatMessageParts
 import com.example.myapplication.model.reasoningStepsToContent
 import com.example.myapplication.model.toContentMirror
@@ -80,6 +82,8 @@ internal class RoleplayRoundTripExecutor(
         loadingMessage: ChatMessage,
         buildFinalMessages: (ChatMessage) -> List<ChatMessage>,
         giftImageRequest: GiftImageGenerationRequest? = null,
+        extraDirectorNote: String = "",
+        finishSendingOnCompletion: Boolean = true,
     ) {
         try {
             when (initialPersistence) {
@@ -144,6 +148,14 @@ internal class RoleplayRoundTripExecutor(
                 recentMessages = requestMessagesForModel,
                 promptMode = PromptMode.ROLEPLAY,
             )
+            val generationPromptEnvelope = if (scenario.isGroupChat) {
+                promptContext.promptEnvelope.copy(
+                    statusCardsEnabled = false,
+                    hideStatusBlocksInBubble = true,
+                )
+            } else {
+                promptContext.promptEnvelope
+            }
             val referenceCandidates = RoleplayOnlineReferenceSupport.buildCandidates(
                 messages = requestMessagesForModel,
                 scenario = scenario,
@@ -172,6 +184,12 @@ internal class RoleplayRoundTripExecutor(
                         append(context)
                     }
                     directorNote.takeIf { it.isNotBlank() }?.let { note ->
+                        if (isNotBlank()) {
+                            append("\n\n")
+                        }
+                        append(note)
+                    }
+                    extraDirectorNote.takeIf { it.isNotBlank() }?.let { note ->
                         if (isNotBlank()) {
                             append("\n\n")
                         }
@@ -238,19 +256,20 @@ internal class RoleplayRoundTripExecutor(
                         loadingMessage = loadingMessage,
                         buildFinalMessages = buildFinalMessages,
                         systemPrompt = decoratedPrompt,
-                        statusCardsEnabled = promptContext.promptEnvelope.statusCardsEnabled,
-                        hideStatusBlocksInBubble = promptContext.promptEnvelope.hideStatusBlocksInBubble,
+                        statusCardsEnabled = generationPromptEnvelope.statusCardsEnabled,
+                        hideStatusBlocksInBubble = generationPromptEnvelope.hideStatusBlocksInBubble,
                         streamReply = { messages, systemPrompt ->
                             streamRoleplayAssistantReply(
                                 requestMessages = messages,
                                 systemPrompt = systemPrompt,
-                                promptEnvelope = promptContext.promptEnvelope,
+                                promptEnvelope = generationPromptEnvelope,
                                 fullContent = fullContent,
                                 fullReasoningSteps = fullReasoningSteps,
                                 fullParts = fullParts,
                                 toolingOptions = toolingOptions,
                                 expectedInteractionMode = loadingMessage.roleplayInteractionMode
                                     ?: scenario.interactionMode,
+                                isGroupChat = scenario.isGroupChat,
                             )
                         },
                         currentPayload = {
@@ -266,13 +285,21 @@ internal class RoleplayRoundTripExecutor(
                             onlineProtocolResult = scenario.takeIf {
                                 it.interactionMode == com.example.myapplication.model.RoleplayInteractionMode.ONLINE_PHONE
                             }?.let {
-                                OnlineActionProtocolParser.parseWithFallback(
-                                    rawContent = payload.content,
-                                    characterName = roleplayStateCharacterName(
-                                        scenario = scenario,
-                                        assistant = assistant,
-                                    ),
+                                val characterName = roleplayStateCharacterName(
+                                    scenario = scenario,
+                                    assistant = assistant,
                                 )
+                                if (scenario.isGroupChat) {
+                                    OnlineActionProtocolParser.parseGroupTextOnlyWithFallback(
+                                        rawContent = payload.content,
+                                        characterName = characterName,
+                                    )
+                                } else {
+                                    OnlineActionProtocolParser.parseWithFallback(
+                                        rawContent = payload.content,
+                                        characterName = characterName,
+                                    )
+                                }
                             }
                             val completedParts = onlineProtocolResult
                                 ?.parts
@@ -281,12 +308,20 @@ internal class RoleplayRoundTripExecutor(
                                         RoleplayOnlineReferenceSupport.resolveReplyTargets(
                                             parts = onlineParts,
                                             candidates = referenceCandidates,
-                                        ) + parsedOutput.parts.filter { part ->
-                                            part.type != com.example.myapplication.model.ChatMessagePartType.TEXT
+                                        ) + if (scenario.isGroupChat) {
+                                            emptyList()
+                                        } else {
+                                            parsedOutput.parts.filter { part ->
+                                                part.type != ChatMessagePartType.TEXT
+                                            }
                                         },
                                     )
                                 }
-                                ?: parsedOutput.parts
+                                ?: if (scenario.isGroupChat) {
+                                    parsedOutput.parts.filter { part -> part.type == ChatMessagePartType.TEXT }
+                                } else {
+                                    parsedOutput.parts
+                                }
                             val resolvedContent = completedParts.toContentMirror(
                                 imageFallback = "角色返回了图片",
                                 specialFallback = "角色已回应",
@@ -343,8 +378,10 @@ internal class RoleplayRoundTripExecutor(
                         conversationId = session.conversationId,
                         assistantMessage = postDirectiveMessages.lastOrNull { it.role == MessageRole.ASSISTANT && it.status == MessageStatus.COMPLETED },
                     )
-                    updateUiState { current ->
-                        RoleplayStateSupport.finishSending(current, errorMessage = null)
+                    if (finishSendingOnCompletion) {
+                        updateUiState { current ->
+                            RoleplayStateSupport.finishSending(current, errorMessage = null)
+                        }
                     }
                     launchConversationSummaryGeneration(
                         session.conversationId,
@@ -374,15 +411,19 @@ internal class RoleplayRoundTripExecutor(
                         selectedModel = selectedModel,
                     )
                     updateRawMessages(result.messages)
-                    updateUiState { current ->
-                        RoleplayStateSupport.finishSending(current, errorMessage = result.errorMessage)
+                    if (finishSendingOnCompletion) {
+                        updateUiState { current ->
+                            RoleplayStateSupport.finishSending(current, errorMessage = result.errorMessage)
+                        }
                     }
                 }
 
                 is AssistantRoundTripResult.Failed -> {
                     updateRawMessages(result.messages)
-                    updateUiState { current ->
-                        RoleplayStateSupport.finishSending(current, errorMessage = result.errorMessage)
+                    if (finishSendingOnCompletion) {
+                        updateUiState { current ->
+                            RoleplayStateSupport.finishSending(current, errorMessage = result.errorMessage)
+                        }
                     }
                 }
             }
@@ -393,7 +434,7 @@ internal class RoleplayRoundTripExecutor(
                 selectedModel = selectedModel,
             )
             updateRawMessages(cancelledMessages)
-            if (currentUiState().isSending) {
+            if (finishSendingOnCompletion && currentUiState().isSending) {
                 updateUiState { current ->
                     RoleplayStateSupport.finishSending(current, errorMessage = null)
                 }
@@ -408,8 +449,10 @@ internal class RoleplayRoundTripExecutor(
             )
             val failedMessages = buildFinalMessages(failedAssistant)
             updateRawMessages(failedMessages)
-            updateUiState { current ->
-                RoleplayStateSupport.finishSending(current, errorMessage = errorText)
+            if (finishSendingOnCompletion) {
+                updateUiState { current ->
+                    RoleplayStateSupport.finishSending(current, errorMessage = errorText)
+                }
             }
             conversationRepository.upsertMessages(
                 conversationId = session.conversationId,
@@ -459,6 +502,7 @@ internal class RoleplayRoundTripExecutor(
         fullParts: MutableList<ChatMessagePart>,
         toolingOptions: GatewayToolingOptions,
         expectedInteractionMode: com.example.myapplication.model.RoleplayInteractionMode,
+        isGroupChat: Boolean,
     ) {
         aiGateway.sendMessageStream(
             messages = requestMessages,
@@ -476,8 +520,12 @@ internal class RoleplayRoundTripExecutor(
                                 RoleplayLongformMarkupParser.stripMarkupForDisplay(fullContent.toString())
                             }
                             com.example.myapplication.model.RoleplayInteractionMode.ONLINE_PHONE -> {
-                                OnlineActionProtocolParser.extractStreamingPreview(fullContent.toString())
-                                    .ifBlank { outputParser.stripMarkup(fullContent.toString()) }
+                                if (isGroupChat) {
+                                    OnlineActionProtocolParser.extractGroupTextStreamingPreview(fullContent.toString())
+                                } else {
+                                    OnlineActionProtocolParser.extractStreamingPreview(fullContent.toString())
+                                        .ifBlank { outputParser.stripMarkup(fullContent.toString()) }
+                                }
                             }
                             com.example.myapplication.model.RoleplayInteractionMode.OFFLINE_DIALOGUE -> {
                                 outputParser.stripMarkup(fullContent.toString())

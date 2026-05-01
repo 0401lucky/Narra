@@ -16,6 +16,7 @@ import com.example.myapplication.data.local.preset.PresetDao
 import com.example.myapplication.data.local.preset.PresetEntity
 import com.example.myapplication.data.local.roleplay.RoleplayDao
 import com.example.myapplication.data.local.roleplay.RoleplayDiaryEntryEntity
+import com.example.myapplication.data.local.roleplay.RoleplayGroupParticipantEntity
 import com.example.myapplication.data.local.roleplay.RoleplayOnlineMetaEntity
 import com.example.myapplication.data.local.roleplay.RoleplayScenarioEntity
 import com.example.myapplication.data.local.roleplay.RoleplaySessionEntity
@@ -30,6 +31,7 @@ import com.example.myapplication.data.local.worldbook.WorldBookEntryEntity
         MemoryEntryEntity::class,
         ConversationSummaryEntity::class,
         RoleplayScenarioEntity::class,
+        RoleplayGroupParticipantEntity::class,
         RoleplaySessionEntity::class,
         RoleplayOnlineMetaEntity::class,
         RoleplayDiaryEntryEntity::class,
@@ -52,7 +54,7 @@ abstract class ChatDatabase : RoomDatabase() {
     abstract fun presetDao(): PresetDao
 
     companion object {
-        const val CURRENT_VERSION = 36
+        const val CURRENT_VERSION = 37
 
         /**
          * 所有 Room 迁移。具体 DDL 在 [ChatDbMigrations]，这里只暴露注册表给 `AppGraph` 和测试。

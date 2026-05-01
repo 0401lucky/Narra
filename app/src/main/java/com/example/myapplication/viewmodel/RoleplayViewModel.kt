@@ -49,7 +49,11 @@ import com.example.myapplication.model.MessageRole
 import com.example.myapplication.model.MessageStatus
 import com.example.myapplication.model.PromptMode
 import com.example.myapplication.model.ProviderFunction
+import com.example.myapplication.model.DEFAULT_GROUP_AUTO_REPLIES
+import com.example.myapplication.model.RoleplayChatType
 import com.example.myapplication.model.RoleplayDiaryDraft
+import com.example.myapplication.model.RoleplayGroupParticipant
+import com.example.myapplication.model.RoleplayGroupReplyMode
 import com.example.myapplication.model.RoleplayOnlineEventKind
 import com.example.myapplication.model.RoleplayOutputFormat
 import com.example.myapplication.model.TransferDirection
@@ -67,6 +71,7 @@ import com.example.myapplication.model.hasSendableContent
 import com.example.myapplication.model.shouldInjectDescriptionPrompt
 import com.example.myapplication.roleplay.RoleplayMessageUiMapper
 import com.example.myapplication.roleplay.RoleplayConversationSupport
+import com.example.myapplication.roleplay.DefaultRoleplayGroupDirector
 import com.example.myapplication.roleplay.RoleplayOutputParser
 import com.example.myapplication.roleplay.RoleplayPromptDecorator
 import com.example.myapplication.roleplay.RoleplayRoundTripSupport
@@ -166,6 +171,9 @@ class RoleplayViewModel(
         roleplayRepository = roleplayRepository,
         nowProvider = nowProvider,
     )
+    private val groupDirector = DefaultRoleplayGroupDirector(
+        aiGateway = aiGateway,
+    )
     private val suggestionActionSupport = RoleplaySuggestionActionSupport(
         scope = viewModelScope,
         uiState = { _uiState.value },
@@ -251,8 +259,10 @@ class RoleplayViewModel(
         updateUiState = { reducer -> _uiState.update(reducer) },
         currentRawMessages = currentRawMessages,
         roleplayRepository = roleplayRepository,
+        conversationRepository = conversationRepository,
         transferCoordinator = transferCoordinator,
         roundTripExecutor = roundTripExecutor,
+        groupDirector = groupDirector,
         scenarioActionSupport = scenarioActionSupport,
         nowProvider = nowProvider,
         messageIdProvider = messageIdProvider,
@@ -302,6 +312,12 @@ class RoleplayViewModel(
                     syncVideoCallState(session)
                 }
             },
+        )
+        RoleplayObservationSupport.observeCurrentGroupParticipants(
+            scope = viewModelScope,
+            roleplayRepository = roleplayRepository,
+            uiState = _uiState,
+            currentScenarioId = currentScenarioId,
         )
         observePendingMemoryProposal()
         observeMemoryProposalHistory()
@@ -370,6 +386,39 @@ class RoleplayViewModel(
         scenarioActionSupport.upsertScenario(scenario, onSuccess)
     }
 
+    fun upsertScenarioWithParticipants(
+        scenario: RoleplayScenario,
+        participants: List<RoleplayGroupParticipant>,
+        onSuccess: (() -> Unit)? = null,
+    ) {
+        viewModelScope.launch {
+            runCatching {
+                roleplayRepository.upsertScenarioWithParticipants(scenario, participants)
+            }.onSuccess {
+                onSuccess?.invoke()
+            }.onFailure { throwable ->
+                _uiState.update { current ->
+                    RoleplayStateSupport.applyErrorMessage(current, throwable.message ?: "保存群聊失败")
+                }
+            }
+        }
+    }
+
+    fun loadGroupParticipantsForScenario(scenarioId: String) {
+        if (scenarioId.isBlank() || scenarioId == "new") {
+            _uiState.update { current ->
+                RoleplayStateSupport.applyCurrentGroupParticipants(current, emptyList())
+            }
+            return
+        }
+        viewModelScope.launch {
+            val participants = roleplayRepository.listGroupParticipants(scenarioId)
+            _uiState.update { current ->
+                RoleplayStateSupport.applyCurrentGroupParticipants(current, participants)
+            }
+        }
+    }
+
     fun createChatForAssistant(
         assistantId: String,
         interactionMode: RoleplayInteractionMode,
@@ -393,6 +442,56 @@ class RoleplayViewModel(
         }
     }
 
+    fun createGroupChat(
+        title: String,
+        assistantIds: List<String>,
+        onCreated: (String) -> Unit,
+    ) {
+        val availableAssistantIds = _uiState.value.settings.resolvedAssistants()
+            .map { it.id }
+            .toSet()
+        val normalizedAssistantIds = assistantIds
+            .map { it.trim() }
+            .filter { it.isNotBlank() && it in availableAssistantIds }
+            .distinct()
+        if (normalizedAssistantIds.size < 2) {
+            _uiState.update { current ->
+                RoleplayStateSupport.applyErrorMessage(current, "群聊至少需要选择 2 位角色")
+            }
+            return
+        }
+
+        val scenarioId = UUID.randomUUID().toString()
+        val displayTitle = title.trim().ifBlank { "群聊" }
+        val participants = normalizedAssistantIds.mapIndexed { index, assistantId ->
+            RoleplayGroupParticipant(
+                scenarioId = scenarioId,
+                assistantId = assistantId,
+                sortOrder = index,
+            )
+        }
+
+        upsertScenarioWithParticipants(
+            scenario = RoleplayScenario(
+                id = scenarioId,
+                title = displayTitle,
+                assistantId = normalizedAssistantIds.first(),
+                interactionMode = RoleplayInteractionMode.ONLINE_PHONE,
+                enableNarration = false,
+                longformModeEnabled = false,
+                enableRoleplayProtocol = true,
+                descriptionPromptEnabled = false,
+                chatType = RoleplayChatType.GROUP,
+                groupReplyMode = RoleplayGroupReplyMode.NATURAL,
+                enableGroupMentionAutoReply = true,
+                maxGroupAutoReplies = DEFAULT_GROUP_AUTO_REPLIES,
+            ),
+            participants = participants,
+        ) {
+            onCreated(scenarioId)
+        }
+    }
+
     fun updateScenarioPinned(scenarioId: String, pinned: Boolean) {
         viewModelScope.launch {
             val scenario = roleplayRepository.getScenario(scenarioId) ?: return@launch
@@ -404,6 +503,26 @@ class RoleplayViewModel(
         viewModelScope.launch {
             val scenario = roleplayRepository.getScenario(scenarioId) ?: return@launch
             roleplayRepository.upsertScenario(scenario.copy(isMuted = muted))
+        }
+    }
+
+    fun updateGroupReplyMode(mode: RoleplayGroupReplyMode) {
+        val scenario = _uiState.value.currentScenario ?: return
+        viewModelScope.launch {
+            roleplayRepository.upsertScenario(scenario.copy(groupReplyMode = mode))
+        }
+    }
+
+    fun toggleGroupParticipantMuted(participantId: String) {
+        val participant = _uiState.value.currentGroupParticipants.firstOrNull { it.id == participantId } ?: return
+        viewModelScope.launch {
+            roleplayRepository.upsertGroupParticipant(participant.copy(isMuted = !participant.isMuted))
+        }
+    }
+
+    fun removeGroupParticipant(participantId: String) {
+        viewModelScope.launch {
+            roleplayRepository.deleteGroupParticipant(participantId)
         }
     }
 

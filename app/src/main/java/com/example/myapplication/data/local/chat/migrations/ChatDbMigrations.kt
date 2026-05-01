@@ -745,6 +745,52 @@ internal object ChatDbMigrations {
         }
     }
 
+    val MIGRATION_36_37 = object : Migration(36, 37) {
+        override fun migrate(db: SupportSQLiteDatabase) {
+            if (!hasColumn(db, "messages", "speakerId")) {
+                db.execSQL("ALTER TABLE messages ADD COLUMN speakerId TEXT NOT NULL DEFAULT ''")
+            }
+            if (!hasColumn(db, "messages", "speakerName")) {
+                db.execSQL("ALTER TABLE messages ADD COLUMN speakerName TEXT NOT NULL DEFAULT ''")
+            }
+            if (!hasColumn(db, "messages", "speakerAvatarUri")) {
+                db.execSQL("ALTER TABLE messages ADD COLUMN speakerAvatarUri TEXT NOT NULL DEFAULT ''")
+            }
+            if (!hasColumn(db, "roleplay_scenarios", "chatType")) {
+                db.execSQL("ALTER TABLE roleplay_scenarios ADD COLUMN chatType TEXT NOT NULL DEFAULT 'single'")
+            }
+            if (!hasColumn(db, "roleplay_scenarios", "groupReplyMode")) {
+                db.execSQL("ALTER TABLE roleplay_scenarios ADD COLUMN groupReplyMode TEXT NOT NULL DEFAULT 'natural'")
+            }
+            if (!hasColumn(db, "roleplay_scenarios", "enableGroupMentionAutoReply")) {
+                db.execSQL("ALTER TABLE roleplay_scenarios ADD COLUMN enableGroupMentionAutoReply INTEGER NOT NULL DEFAULT 1")
+            }
+            if (!hasColumn(db, "roleplay_scenarios", "maxGroupAutoReplies")) {
+                db.execSQL("ALTER TABLE roleplay_scenarios ADD COLUMN maxGroupAutoReplies INTEGER NOT NULL DEFAULT 3")
+            }
+            db.execSQL(
+                """
+                CREATE TABLE IF NOT EXISTS roleplay_group_participants (
+                    id TEXT NOT NULL PRIMARY KEY,
+                    scenarioId TEXT NOT NULL,
+                    assistantId TEXT NOT NULL,
+                    displayNameOverride TEXT NOT NULL DEFAULT '',
+                    avatarUriOverride TEXT NOT NULL DEFAULT '',
+                    sortOrder INTEGER NOT NULL DEFAULT 0,
+                    isMuted INTEGER NOT NULL DEFAULT 0,
+                    canAutoReply INTEGER NOT NULL DEFAULT 1,
+                    createdAt INTEGER NOT NULL,
+                    updatedAt INTEGER NOT NULL,
+                    FOREIGN KEY(scenarioId) REFERENCES roleplay_scenarios(id) ON UPDATE NO ACTION ON DELETE CASCADE
+                )
+                """.trimIndent(),
+            )
+            db.execSQL("CREATE INDEX IF NOT EXISTS index_roleplay_group_participants_scenarioId ON roleplay_group_participants (scenarioId)")
+            db.execSQL("CREATE UNIQUE INDEX IF NOT EXISTS index_roleplay_group_participants_scenarioId_assistantId ON roleplay_group_participants (scenarioId, assistantId)")
+            db.execSQL("CREATE INDEX IF NOT EXISTS index_roleplay_group_participants_scenarioId_sortOrder ON roleplay_group_participants (scenarioId, sortOrder)")
+        }
+    }
+
     /** 版本连续性由 `ChatDatabaseMigrationRegistryTest` 保证：`size == CURRENT_VERSION - 1`。 */
     val ALL: Array<Migration> = arrayOf(
         MIGRATION_1_2,
@@ -782,6 +828,7 @@ internal object ChatDbMigrations {
         MIGRATION_33_34,
         MIGRATION_34_35,
         MIGRATION_35_36,
+        MIGRATION_36_37,
     )
 
     /** 幂等列检查。子迁移在 `ALTER TABLE ADD COLUMN` 之前先探测，允许中间版本重复升级。 */

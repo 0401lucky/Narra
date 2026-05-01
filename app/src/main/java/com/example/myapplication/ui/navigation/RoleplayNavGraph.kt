@@ -32,6 +32,7 @@ import com.example.myapplication.ui.screen.roleplay.RoleplayMessageCallbacks
 import com.example.myapplication.ui.screen.roleplay.RoleplaySuggestionCallbacks
 import com.example.myapplication.ui.screen.roleplay.RoleplayNavigationCallbacks
 import com.example.myapplication.ui.screen.roleplay.RoleplaySessionCallbacks
+import com.example.myapplication.ui.screen.roleplay.RoleplayGroupCallbacks
 import com.example.myapplication.ui.screen.roleplay.RoleplayUiCallbacks
 import com.example.myapplication.ui.screen.roleplay.RoleplaySettingsScreen
 import com.example.myapplication.ui.screen.roleplay.RoleplayVideoCallScreen
@@ -179,6 +180,14 @@ internal fun NavGraphBuilder.registerRoleplayGraph(
                             navigateToRoleplayChat(scenarioId)
                         }
                     },
+                    onCreateGroupChat = { title, assistantIds ->
+                        roleplayViewModel.createGroupChat(
+                            title = title,
+                            assistantIds = assistantIds,
+                        ) { scenarioId ->
+                            navigateToRoleplayChat(scenarioId)
+                        }
+                    },
                     onUpdatePinned = roleplayViewModel::updateScenarioPinned,
                     onUpdateMuted = roleplayViewModel::updateScenarioMuted,
                     onClearChat = { scenarioId -> roleplayViewModel.clearScenarioConversation(scenarioId) },
@@ -264,12 +273,16 @@ internal fun NavGraphBuilder.registerRoleplayGraph(
             val rawScenarioId = backStackEntry.arguments?.getString("scenarioId").orEmpty()
             val scenarioId = Uri.decode(rawScenarioId)
             val scenario = roleplayState.scenarios.firstOrNull { it.id == scenarioId }.takeIf { scenarioId != "new" }
+            LaunchedEffect(scenarioId) {
+                roleplayViewModel.loadGroupParticipantsForScenario(scenarioId)
+            }
             RoleplayScenarioEditScreen(
                 scenario = scenario,
                 settings = roleplayState.settings,
                 assistants = roleplayState.settings.resolvedAssistants(),
-                onSave = { updatedScenario ->
-                    roleplayViewModel.upsertScenario(updatedScenario) {
+                groupParticipants = roleplayState.currentGroupParticipants,
+                onSave = { updatedScenario, participants ->
+                    roleplayViewModel.upsertScenarioWithParticipants(updatedScenario, participants) {
                         navController.popBackStack()
                     }
                 },
@@ -318,6 +331,7 @@ internal fun NavGraphBuilder.registerRoleplayGraph(
                 assistant = routeAssistant,
                 settings = roleplayState.settings,
                 contextStatus = roleplayState.contextStatus,
+                groupParticipants = roleplayState.currentGroupParticipants,
                 messages = roleplayState.messages,
                 suggestions = roleplayState.suggestions,
                 input = roleplayState.input,
@@ -420,6 +434,11 @@ internal fun NavGraphBuilder.registerRoleplayGraph(
                         onApprovePendingMemoryProposal = roleplayViewModel::approvePendingMemoryProposal,
                         onRejectPendingMemoryProposal = roleplayViewModel::rejectPendingMemoryProposal,
                     ),
+                    group = RoleplayGroupCallbacks(
+                        onToggleParticipantMuted = roleplayViewModel::toggleGroupParticipantMuted,
+                        onRemoveParticipant = roleplayViewModel::removeGroupParticipant,
+                        onUpdateReplyMode = roleplayViewModel::updateGroupReplyMode,
+                    ),
                     ui = RoleplayUiCallbacks(
                         onClearNoticeMessage = roleplayViewModel::clearNoticeMessage,
                         onClearErrorMessage = roleplayViewModel::clearErrorMessage,
@@ -481,6 +500,7 @@ internal fun NavGraphBuilder.registerRoleplayGraph(
                     roleplayNoBackgroundSkin = settingsUiState.roleplayNoBackgroundSkin,
                 ),
                 contextStatus = roleplayState.contextStatus,
+                groupParticipants = roleplayState.currentGroupParticipants,
                 currentModel = roleplayState.currentModel,
                 currentProviderId = roleplayState.currentProviderId,
                 providerOptions = providerOptions,
@@ -510,6 +530,9 @@ internal fun NavGraphBuilder.registerRoleplayGraph(
                 onUpdateScenarioNetMemeEnabled = roleplayViewModel::updateCurrentScenarioNetMemeEnabled,
                 onUpdateRoleplayLongformTargetChars = settingsViewModel::updateRoleplayLongformTargetChars,
                 onUpdateScenarioInteractionMode = roleplayViewModel::updateCurrentScenarioInteractionMode,
+                onToggleGroupParticipantMuted = roleplayViewModel::toggleGroupParticipantMuted,
+                onRemoveGroupParticipant = roleplayViewModel::removeGroupParticipant,
+                onUpdateGroupReplyMode = roleplayViewModel::updateGroupReplyMode,
                 onUpdateRoleplayImmersiveMode = settingsViewModel::updateRoleplayImmersiveMode,
                 onUpdateRoleplayHighContrast = settingsViewModel::updateRoleplayHighContrast,
                 onUpdateRoleplayLineHeightScale = settingsViewModel::updateRoleplayLineHeightScale,

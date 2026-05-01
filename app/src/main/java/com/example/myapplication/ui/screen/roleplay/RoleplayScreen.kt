@@ -39,6 +39,7 @@ import com.example.myapplication.model.PhoneSnapshotOwnerType
 import com.example.myapplication.model.PendingMemoryProposal
 import com.example.myapplication.model.PunishPlayDraft
 import com.example.myapplication.model.RoleplayContextStatus
+import com.example.myapplication.model.RoleplayGroupParticipant
 import com.example.myapplication.model.RoleplayInteractionMode
 import com.example.myapplication.model.RoleplayMessageUiModel
 import com.example.myapplication.model.RoleplayScenario
@@ -63,6 +64,7 @@ fun RoleplayScreen(
     assistant: Assistant?,
     settings: AppSettings,
     contextStatus: RoleplayContextStatus,
+    groupParticipants: List<RoleplayGroupParticipant>,
     messages: List<RoleplayMessageUiModel>,
     suggestions: List<RoleplaySuggestionUiModel>,
     input: String,
@@ -342,6 +344,7 @@ fun RoleplayScreen(
             settings = settings,
             backdropState = backdropState,
             contextStatus = contextStatus,
+            groupParticipants = groupParticipants,
             messages = messages,
             suggestions = suggestions,
             input = input,

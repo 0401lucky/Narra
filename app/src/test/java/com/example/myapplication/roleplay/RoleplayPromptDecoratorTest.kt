@@ -2,6 +2,7 @@ package com.example.myapplication.roleplay
 
 import com.example.myapplication.model.AppSettings
 import com.example.myapplication.model.Assistant
+import com.example.myapplication.model.RoleplayChatType
 import com.example.myapplication.model.RoleplayInteractionMode
 import com.example.myapplication.model.RoleplayScenario
 import org.junit.Assert.assertFalse
@@ -133,6 +134,34 @@ class RoleplayPromptDecoratorTest {
         assertTrue(prompt.contains("\"type\":\"transfer_action\",\"action\":\"accept\""))
         assertTrue(prompt.contains("圆括号()中的内容只是背景观察"))
         assertTrue(prompt.contains("吃饭了吗？(肚子咕咕叫)"))
+    }
+
+    @Test
+    fun decorate_groupOnlineModeAddsModeRoutingAndGroupBoundary() {
+        val prompt = RoleplayPromptDecorator.decorate(
+            baseSystemPrompt = "你是{{char}}，但如果和模式冲突，以模式为准。",
+            scenario = RoleplayScenario(
+                id = "group-1",
+                title = "地下室群聊",
+                userDisplayNameOverride = "lucky",
+                characterDisplayNameOverride = "陆宴清",
+                interactionMode = RoleplayInteractionMode.ONLINE_PHONE,
+                chatType = RoleplayChatType.GROUP,
+            ),
+            assistant = Assistant(id = "a", name = "陆宴清"),
+            settings = AppSettings(),
+        )
+
+        assertTrue(prompt.contains("当前模式：ONLINE_GROUP_CHAT"))
+        assertTrue(prompt.contains("多人手机群聊"))
+        assertTrue(prompt.contains("群聊标题：地下室群聊"))
+        assertTrue(prompt.contains("当前不是单聊，而是多人线上群聊"))
+        assertTrue(prompt.contains("不要替群内其他角色发言"))
+        assertTrue(prompt.contains("群聊首版只允许字符串元素"))
+        assertTrue(prompt.contains("只输出当前角色会亲手发到群里的文字"))
+        assertTrue(prompt.contains("群聊禁用语音对象"))
+        assertTrue(prompt.contains("群聊禁用照片对象和照片描述"))
+        assertTrue(prompt.contains("不是单聊"))
     }
 
     @Test

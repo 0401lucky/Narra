@@ -74,6 +74,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Surface
@@ -106,6 +107,7 @@ import com.example.myapplication.model.RoleplayChatSummary
 import com.example.myapplication.model.RoleplayInteractionMode
 import com.example.myapplication.model.RoleplayScenario
 import com.example.myapplication.model.UserPersonaMask
+import com.example.myapplication.model.isGroupChat
 import com.example.myapplication.ui.component.AppSnackbarHost
 import com.example.myapplication.ui.component.AssistantAvatar
 import com.example.myapplication.ui.component.UserProfileAvatar
@@ -133,6 +135,7 @@ data class ImmersivePhoneCallbacks(
     val onSetDefaultUserPersonaMask: (String) -> Unit,
     val onOpenAssistantCreate: () -> Unit,
     val onCreateChat: (String, RoleplayInteractionMode, Boolean) -> Unit,
+    val onCreateGroupChat: (String, List<String>) -> Unit,
     val onUpdatePinned: (String, Boolean) -> Unit,
     val onUpdateMuted: (String, Boolean) -> Unit,
     val onClearChat: (String) -> Unit,
@@ -200,6 +203,7 @@ fun ImmersivePhoneShell(
     var currentTab by rememberSaveable { mutableStateOf(ImmersiveTab.Messages) }
     var plusMenuExpanded by rememberSaveable { mutableStateOf(false) }
     var showNewChatSheet by rememberSaveable { mutableStateOf(false) }
+    var showNewGroupChatSheet by rememberSaveable { mutableStateOf(false) }
     var selectedContact by remember { mutableStateOf<Assistant?>(null) }
     var discoverTarget by remember { mutableStateOf<DiscoverTarget?>(null) }
 
@@ -243,6 +247,10 @@ fun ImmersivePhoneShell(
                 onOpenNewChat = {
                     plusMenuExpanded = false
                     showNewChatSheet = true
+                },
+                onOpenNewGroupChat = {
+                    plusMenuExpanded = false
+                    showNewGroupChatSheet = true
                 },
                 onOpenChatManage = {
                     plusMenuExpanded = false
@@ -324,6 +332,17 @@ fun ImmersivePhoneShell(
             onCreateChat = { assistantId, mode, narration ->
                 showNewChatSheet = false
                 callbacks.onCreateChat(assistantId, mode, narration)
+            },
+        )
+    }
+
+    if (showNewGroupChatSheet) {
+        NewGroupChatSheet(
+            assistants = assistants,
+            onDismiss = { showNewGroupChatSheet = false },
+            onCreateGroupChat = { title, assistantIds ->
+                showNewGroupChatSheet = false
+                callbacks.onCreateGroupChat(title, assistantIds)
             },
         )
     }
@@ -410,6 +429,7 @@ private fun ImmersivePhoneTopBar(
     plusMenuExpanded: Boolean,
     onDismissPlusMenu: () -> Unit,
     onOpenNewChat: () -> Unit,
+    onOpenNewGroupChat: () -> Unit,
     onOpenChatManage: () -> Unit,
 ) {
     Surface(
@@ -453,6 +473,11 @@ private fun ImmersivePhoneTopBar(
                         text = { Text("新建聊天") },
                         leadingIcon = { Icon(Icons.AutoMirrored.Filled.Chat, contentDescription = null) },
                         onClick = onOpenNewChat,
+                    )
+                    DropdownMenuItem(
+                        text = { Text("新建群聊") },
+                        leadingIcon = { Icon(Icons.Default.Group, contentDescription = null) },
+                        onClick = onOpenNewGroupChat,
                     )
                     DropdownMenuItem(
                         text = { Text("聊天管理") },
@@ -661,14 +686,20 @@ private fun ChatSummaryRow(
     dragged: Boolean,
 ) {
     val scenario = summary.scenario
-    val name = scenario.characterDisplayNameOverride.trim()
-        .ifBlank { assistant?.name.orEmpty() }
-        .ifBlank { "角色" }
-    val title = scenario.title.trim()
+    val isGroupChat = scenario.isGroupChat
+    val name = if (isGroupChat) {
+        scenario.title.trim().ifBlank { "群聊" }
+    } else {
+        scenario.characterDisplayNameOverride.trim()
+            .ifBlank { assistant?.name.orEmpty() }
+            .ifBlank { "角色" }
+    }
+    val title = if (isGroupChat) "" else scenario.title.trim()
     val displayName = if (title.isNotBlank()) "$name / $title" else name
-    val latest = summary.lastMessageText.ifBlank {
+    val latestContent = summary.lastMessageText.ifBlank {
         if (summary.hasSession) "最近没有消息" else "还没有开始聊天"
     }
+    val latest = if (isGroupChat) "群聊 · $latestContent" else latestContent
     Surface(
         modifier = modifier
             .fillMaxWidth()
@@ -681,13 +712,26 @@ private fun ChatSummaryRow(
                 .padding(horizontal = 16.dp, vertical = 12.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            AssistantAvatar(
-                name = name,
-                iconName = assistant?.iconName.orEmpty(),
-                avatarUri = scenario.characterPortraitUri.ifBlank { assistant?.avatarUri.orEmpty() },
-                size = 52.dp,
-                cornerRadius = 12.dp,
-            )
+            if (isGroupChat) {
+                Surface(
+                    modifier = Modifier.size(52.dp),
+                    shape = RoundedCornerShape(12.dp),
+                    color = MaterialTheme.colorScheme.secondaryContainer,
+                    contentColor = MaterialTheme.colorScheme.onSecondaryContainer,
+                ) {
+                    Box(contentAlignment = Alignment.Center) {
+                        Icon(Icons.Default.Group, contentDescription = null)
+                    }
+                }
+            } else {
+                AssistantAvatar(
+                    name = name,
+                    iconName = assistant?.iconName.orEmpty(),
+                    avatarUri = scenario.characterPortraitUri.ifBlank { assistant?.avatarUri.orEmpty() },
+                    size = 52.dp,
+                    cornerRadius = 12.dp,
+                )
+            }
             Spacer(modifier = Modifier.width(12.dp))
             Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
@@ -1169,6 +1213,143 @@ private fun NewChatSheet(
             Spacer(modifier = Modifier.height(12.dp))
         }
     }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun NewGroupChatSheet(
+    assistants: List<Assistant>,
+    onDismiss: () -> Unit,
+    onCreateGroupChat: (String, List<String>) -> Unit,
+) {
+    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+    var title by rememberSaveable { mutableStateOf("") }
+    var selectedAssistantIds by rememberSaveable { mutableStateOf(emptyList<String>()) }
+    val selectedAssistants = assistants.filter { assistant -> assistant.id in selectedAssistantIds }
+    val generatedTitle = selectedAssistants
+        .take(3)
+        .joinToString("、") { it.name.ifBlank { "角色" } }
+        .ifBlank { "群聊" }
+    val finalTitle = title.trim().ifBlank { "$generatedTitle 的群聊" }
+
+    fun toggleAssistant(assistantId: String) {
+        selectedAssistantIds = if (assistantId in selectedAssistantIds) {
+            selectedAssistantIds - assistantId
+        } else {
+            selectedAssistantIds + assistantId
+        }
+    }
+
+    ModalBottomSheet(onDismissRequest = onDismiss, sheetState = sheetState) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(20.dp),
+            verticalArrangement = Arrangement.spacedBy(14.dp),
+        ) {
+            Text("新建群聊", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
+            Text(
+                text = "选择至少 2 位角色，默认使用线上手机和自然聊天。",
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            OutlinedTextField(
+                value = title,
+                onValueChange = { title = it },
+                modifier = Modifier.fillMaxWidth(),
+                label = { Text("群聊名称") },
+                placeholder = { Text(finalTitle) },
+                singleLine = true,
+            )
+            Text(
+                text = "群成员（${selectedAssistantIds.size}）",
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                fontWeight = FontWeight.SemiBold,
+            )
+            if (assistants.isEmpty()) {
+                Text("还没有角色，先去通讯录创建角色。", color = MaterialTheme.colorScheme.onSurfaceVariant)
+            } else {
+                LazyColumn(
+                    modifier = Modifier.heightIn(max = 420.dp),
+                    verticalArrangement = Arrangement.spacedBy(6.dp),
+                ) {
+                    items(assistants, key = { it.id }) { assistant ->
+                        val selected = assistant.id in selectedAssistantIds
+                        GroupAssistantPickRow(
+                            assistant = assistant,
+                            selected = selected,
+                            onClick = { toggleAssistant(assistant.id) },
+                        )
+                    }
+                }
+            }
+            Button(
+                onClick = { onCreateGroupChat(finalTitle, selectedAssistantIds) },
+                enabled = selectedAssistantIds.size >= 2,
+                modifier = Modifier.fillMaxWidth(),
+            ) {
+                Text(if (selectedAssistantIds.size >= 2) "创建群聊" else "至少选择 2 位角色")
+            }
+            Spacer(modifier = Modifier.height(12.dp))
+        }
+    }
+}
+
+@Composable
+private fun GroupAssistantPickRow(
+    assistant: Assistant,
+    selected: Boolean,
+    onClick: () -> Unit,
+) {
+    ListItem(
+        modifier = Modifier
+            .clip(RoundedCornerShape(14.dp))
+            .clickable(onClick = onClick),
+        leadingContent = {
+            AssistantAvatar(
+                name = assistant.name,
+                iconName = assistant.iconName,
+                avatarUri = assistant.avatarUri,
+                size = 46.dp,
+                cornerRadius = 12.dp,
+            )
+        },
+        headlineContent = {
+            Text(
+                text = assistant.name.ifBlank { "未命名角色" },
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
+        },
+        supportingContent = {
+            Text(
+                text = assistant.description.ifBlank { "自然聊天候选成员" },
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
+        },
+        trailingContent = {
+            Surface(
+                modifier = Modifier.size(28.dp),
+                shape = CircleShape,
+                color = if (selected) {
+                    MaterialTheme.colorScheme.primary
+                } else {
+                    MaterialTheme.colorScheme.surfaceVariant
+                },
+                contentColor = if (selected) {
+                    MaterialTheme.colorScheme.onPrimary
+                } else {
+                    MaterialTheme.colorScheme.onSurfaceVariant
+                },
+            ) {
+                Box(contentAlignment = Alignment.Center) {
+                    if (selected) {
+                        Icon(Icons.Default.Check, contentDescription = "已选择", modifier = Modifier.size(18.dp))
+                    }
+                }
+            }
+        },
+    )
 }
 
 @OptIn(ExperimentalMaterial3Api::class)

@@ -7,6 +7,8 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -15,6 +17,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
@@ -57,13 +60,23 @@ import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.core.view.HapticFeedbackConstantsCompat
 import com.example.myapplication.R
+import com.example.myapplication.ui.component.AssistantAvatar
 import com.example.myapplication.ui.component.ExpandedDraftEditorDialog
 import com.example.myapplication.ui.component.NarraIconButton
+
+internal data class RoleplayMentionCandidate(
+    val id: String,
+    val displayName: String,
+    val avatarUri: String = "",
+    val iconName: String = "",
+    val muted: Boolean = false,
+)
 
 @Composable
 internal fun RoleplayInputBar(
@@ -77,6 +90,7 @@ internal fun RoleplayInputBar(
     onCancel: (() -> Unit)?,
     onOpenSpecialPlay: () -> Unit,
     quickActions: List<RoleplayInputQuickAction> = emptyList(),
+    mentionCandidates: List<RoleplayMentionCandidate> = emptyList(),
     showActionButton: Boolean = true,
     showExpandButton: Boolean = true,
 ) {
@@ -86,9 +100,26 @@ internal fun RoleplayInputBar(
     var showActionPanel by remember { mutableStateOf(false) }
     var showExpandedEditor by rememberSaveable { mutableStateOf(false) }
     var allowNextInlineNewline by remember { mutableStateOf(false) }
+    var dismissedMentionAnchor by remember { mutableStateOf<Int?>(null) }
     val focusRequester = remember { FocusRequester() }
     val keyboardController = LocalSoftwareKeyboardController.current
     val view = LocalView.current
+    val mentionAnchor = remember(input, mentionCandidates) {
+        findActiveMentionAnchor(input).takeIf { mentionCandidates.isNotEmpty() }
+    }
+    val mentionQuery = mentionAnchor?.let { input.substring(it + 1) }.orEmpty()
+    val activeMentionCandidates = remember(mentionCandidates, mentionQuery) {
+        val normalizedQuery = mentionQuery.trim()
+        mentionCandidates
+            .filter { candidate ->
+                normalizedQuery.isBlank() ||
+                    candidate.displayName.contains(normalizedQuery, ignoreCase = true)
+            }
+            .take(8)
+    }
+    val showMentionPanel = mentionAnchor != null &&
+        dismissedMentionAnchor != mentionAnchor &&
+        activeMentionCandidates.isNotEmpty()
 
     LaunchedEffect(inputFocusToken) {
         if (inputFocusToken > 0L && !isSending) {
@@ -112,11 +143,12 @@ internal fun RoleplayInputBar(
                     onSend()
                 }
             }
-        } else {
-            allowNextInlineNewline = false
-            onInputChange(nextValue)
+            } else {
+                allowNextInlineNewline = false
+                dismissedMentionAnchor = null
+                onInputChange(nextValue)
+            }
         }
-    }
 
     ImmersiveGlassSurface(
         backdropState = backdropState,
@@ -147,6 +179,27 @@ internal fun RoleplayInputBar(
                         },
                     )
                 }
+            }
+
+            AnimatedVisibility(
+                visible = showMentionPanel,
+                enter = expandVertically() + fadeIn(),
+                exit = shrinkVertically() + fadeOut(),
+            ) {
+                RoleplayMentionCandidatePanel(
+                    candidates = activeMentionCandidates,
+                    colors = colors,
+                    onDismiss = { dismissedMentionAnchor = mentionAnchor },
+                    onSelect = { candidate ->
+                        val anchor = mentionAnchor ?: return@RoleplayMentionCandidatePanel
+                        val prefix = input.substring(0, anchor)
+                        val replacement = "@${candidate.displayName} "
+                        onInputChange(prefix + replacement)
+                        dismissedMentionAnchor = null
+                        focusRequester.requestFocus()
+                        keyboardController?.show()
+                    },
+                )
             }
 
             Row(
@@ -335,6 +388,123 @@ internal fun RoleplayInputBar(
         contentColor = MaterialTheme.colorScheme.onSurface,
         accentColor = colors.characterAccent,
     )
+}
+
+@Composable
+private fun RoleplayMentionCandidatePanel(
+    candidates: List<RoleplayMentionCandidate>,
+    colors: ImmersiveRoleplayColors,
+    onDismiss: () -> Unit,
+    onSelect: (RoleplayMentionCandidate) -> Unit,
+) {
+    Surface(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(22.dp),
+        color = MaterialTheme.colorScheme.surface.copy(alpha = 0.96f),
+        tonalElevation = 1.dp,
+        shadowElevation = 0.dp,
+    ) {
+        Column(
+            modifier = Modifier.padding(horizontal = 10.dp, vertical = 10.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween,
+            ) {
+                Text(
+                    text = "@ 群成员",
+                    style = MaterialTheme.typography.labelLarge,
+                    fontWeight = FontWeight.SemiBold,
+                    color = colors.textPrimary,
+                )
+                Text(
+                    text = "收起",
+                    modifier = Modifier.clickable(onClick = onDismiss),
+                    style = MaterialTheme.typography.labelMedium,
+                    color = colors.textMuted,
+                )
+            }
+            Row(
+                modifier = Modifier.horizontalScroll(rememberScrollState()),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                candidates.forEach { candidate ->
+                    RoleplayMentionCandidateChip(
+                        candidate = candidate,
+                        colors = colors,
+                        onSelect = onSelect,
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun RoleplayMentionCandidateChip(
+    candidate: RoleplayMentionCandidate,
+    colors: ImmersiveRoleplayColors,
+    onSelect: (RoleplayMentionCandidate) -> Unit,
+) {
+    val enabled = !candidate.muted
+    Surface(
+        modifier = Modifier
+            .then(
+                if (enabled) {
+                    Modifier.clickable { onSelect(candidate) }
+                } else {
+                    Modifier
+                },
+            ),
+        shape = RoundedCornerShape(18.dp),
+        color = if (enabled) {
+            colors.characterAccent.copy(alpha = 0.12f)
+        } else {
+            colors.panelBackground.copy(alpha = 0.72f)
+        },
+    ) {
+        Row(
+            modifier = Modifier.padding(horizontal = 10.dp, vertical = 8.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+            AssistantAvatar(
+                name = candidate.displayName,
+                iconName = candidate.iconName,
+                avatarUri = candidate.avatarUri,
+                size = 28.dp,
+                cornerRadius = 9.dp,
+            )
+            Column {
+                Text(
+                    text = candidate.displayName,
+                    style = MaterialTheme.typography.labelLarge,
+                    color = if (enabled) colors.textPrimary else colors.textMuted,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
+                if (candidate.muted) {
+                    Text(
+                        text = "已禁言",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = colors.textMuted,
+                    )
+                }
+            }
+        }
+    }
+}
+
+private fun findActiveMentionAnchor(input: String): Int? {
+    val atIndex = input.lastIndexOf('@')
+    if (atIndex < 0) return null
+    val beforeAt = input.getOrNull(atIndex - 1)
+    if (beforeAt != null && !beforeAt.isWhitespace()) return null
+    val tail = input.substring(atIndex + 1)
+    if (tail.any { it.isWhitespace() }) return null
+    return atIndex
 }
 
 @Composable

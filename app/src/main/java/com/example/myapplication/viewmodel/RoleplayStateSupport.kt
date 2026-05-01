@@ -7,6 +7,7 @@ import com.example.myapplication.model.MemoryProposalHistoryItem
 import com.example.myapplication.model.PendingMemoryProposal
 import com.example.myapplication.model.RoleplayContextStatus
 import com.example.myapplication.model.RoleplayDiaryEntry
+import com.example.myapplication.model.RoleplayGroupParticipant
 import com.example.myapplication.model.RoleplayMessageUiModel
 import com.example.myapplication.model.RoleplayScenario
 import com.example.myapplication.model.RoleplaySession
@@ -59,6 +60,7 @@ object RoleplayStateSupport {
         return current.copy(
             currentScenario = current.currentScenario?.takeIf { scenario -> scenario.id == scenarioId },
             currentSession = null,
+            currentGroupParticipants = emptyList(),
             messages = emptyList(),
             suggestions = emptyList(),
             input = "",
@@ -94,6 +96,7 @@ object RoleplayStateSupport {
             currentScenario = null,
             currentSession = null,
             currentAssistant = null,
+            currentGroupParticipants = emptyList(),
             contextStatus = RoleplayContextStatus(),
             messages = emptyList(),
             suggestions = emptyList(),
@@ -512,6 +515,13 @@ object RoleplayStateSupport {
             currentAssistant = currentAssistant,
             isScenarioLoading = false,
         )
+    }
+
+    fun applyCurrentGroupParticipants(
+        current: RoleplayUiState,
+        participants: List<RoleplayGroupParticipant>,
+    ): RoleplayUiState {
+        return current.copy(currentGroupParticipants = participants)
     }
 
     fun applyCurrentSession(

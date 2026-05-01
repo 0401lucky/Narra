@@ -60,9 +60,14 @@ import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
 import com.example.myapplication.model.AppSettings
 import com.example.myapplication.model.Assistant
+import com.example.myapplication.model.DEFAULT_GROUP_AUTO_REPLIES
+import com.example.myapplication.model.RoleplayChatType
+import com.example.myapplication.model.RoleplayGroupParticipant
+import com.example.myapplication.model.RoleplayGroupReplyMode
 import com.example.myapplication.model.RoleplayInteractionMode
 import com.example.myapplication.model.RoleplayInteractionSpec
 import com.example.myapplication.model.RoleplayScenario
+import com.example.myapplication.model.isGroupChat
 import com.example.myapplication.model.toInteractionSpec
 import com.example.myapplication.ui.LocalImagePersister
 import com.example.myapplication.ui.component.AppSnackbarHost
@@ -88,7 +93,8 @@ fun RoleplayScenarioEditScreen(
     scenario: RoleplayScenario?,
     settings: AppSettings,
     assistants: List<Assistant>,
-    onSave: (RoleplayScenario) -> Unit,
+    groupParticipants: List<RoleplayGroupParticipant> = emptyList(),
+    onSave: (RoleplayScenario, List<RoleplayGroupParticipant>) -> Unit,
     onDelete: ((String) -> Unit)?,
     noticeMessage: String?,
     errorMessage: String?,
@@ -137,6 +143,17 @@ fun RoleplayScenarioEditScreen(
     var characterPortraitUri by rememberSaveable(scenarioStateKey) { mutableStateOf(baseScenario.characterPortraitUri) }
     var characterPortraitUrl by rememberSaveable(scenarioStateKey) { mutableStateOf(baseScenario.characterPortraitUrl) }
     var openingNarration by rememberSaveable(scenarioStateKey) { mutableStateOf(baseScenario.openingNarration) }
+    var chatType by rememberSaveable(scenarioStateKey) { mutableStateOf(baseScenario.chatType) }
+    var groupReplyMode by rememberSaveable(scenarioStateKey) { mutableStateOf(baseScenario.groupReplyMode) }
+    var enableGroupMentionAutoReply by rememberSaveable(scenarioStateKey) {
+        mutableStateOf(baseScenario.enableGroupMentionAutoReply)
+    }
+    var maxGroupAutoReplies by rememberSaveable(scenarioStateKey) {
+        mutableStateOf(baseScenario.maxGroupAutoReplies.takeIf { it > 0 } ?: DEFAULT_GROUP_AUTO_REPLIES)
+    }
+    var draftGroupParticipants by remember(scenarioStateKey, groupParticipants) {
+        mutableStateOf(groupParticipants.sortedBy { it.sortOrder })
+    }
     val normalizedSpec = remember(scenarioStateKey) { baseScenario.toInteractionSpec().normalized() }
     var interactionMode by rememberSaveable(scenarioStateKey) {
         mutableStateOf(normalizedSpec.interactionMode)
@@ -156,6 +173,7 @@ fun RoleplayScenarioEditScreen(
 
     var showAssistantPicker by remember { mutableStateOf(false) }
     var showMaskPicker by remember { mutableStateOf(false) }
+    var showGroupMemberPicker by remember { mutableStateOf(false) }
     var showDeleteConfirm by remember { mutableStateOf(false) }
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     val selectedAssistant = assistants.find { it.id == assistantId }
@@ -292,6 +310,43 @@ fun RoleplayScenarioEditScreen(
             }
             item {
                 SettingsGroup {
+                    Column(
+                        modifier = Modifier.padding(horizontal = 18.dp, vertical = 14.dp),
+                        verticalArrangement = Arrangement.spacedBy(10.dp),
+                    ) {
+                        Text(
+                            text = "聊天形态",
+                            style = MaterialTheme.typography.titleSmall,
+                            fontWeight = FontWeight.SemiBold,
+                            color = palette.title,
+                        )
+                        FlowRow(
+                            horizontalArrangement = Arrangement.spacedBy(10.dp),
+                            verticalArrangement = Arrangement.spacedBy(10.dp),
+                        ) {
+                            RoleplayChatType.entries.forEach { type ->
+                                FilterChip(
+                                    selected = chatType == type,
+                                    onClick = {
+                                        chatType = type
+                                        if (type == RoleplayChatType.GROUP) {
+                                            applyInteractionSpec { it.withInteractionMode(RoleplayInteractionMode.ONLINE_PHONE) }
+                                        }
+                                    },
+                                    shape = RoundedCornerShape(14.dp),
+                                    label = { Text(type.displayName) },
+                                    colors = FilterChipDefaults.filterChipColors(
+                                        selectedContainerColor = palette.accentSoft,
+                                        selectedLabelColor = palette.accent,
+                                    ),
+                                )
+                            }
+                        }
+                    }
+                }
+            }
+            item {
+                SettingsGroup {
                     SettingsListRow(
                         title = selectedAssistant?.name?.ifBlank { "默认助手" } ?: "请选择要绑定的角色",
                         supportingText = selectedAssistant?.description?.ifBlank { "未填写描述" } ?: "点击选择",
@@ -310,6 +365,92 @@ fun RoleplayScenarioEditScreen(
                         },
                         onClick = { showAssistantPicker = true },
                     )
+                }
+            }
+
+            if (chatType == RoleplayChatType.GROUP) {
+                item {
+                    SettingsSectionHeader(
+                        title = "群成员",
+                        description = "群聊首版只支持线上手机模式；每个成员会用自己的角色卡发言。",
+                    )
+                }
+                item {
+                    SettingsGroup {
+                        Column(
+                            modifier = Modifier.padding(vertical = 6.dp),
+                        ) {
+                            draftGroupParticipants.forEachIndexed { index, participant ->
+                                val memberAssistant = assistants.firstOrNull { it.id == participant.assistantId }
+                                GroupParticipantEditRow(
+                                    participant = participant,
+                                    assistant = memberAssistant,
+                                    onToggleMuted = {
+                                        draftGroupParticipants = draftGroupParticipants.map {
+                                            if (it.id == participant.id) it.copy(isMuted = !it.isMuted) else it
+                                        }
+                                    },
+                                    onRemove = {
+                                        draftGroupParticipants = draftGroupParticipants.filterNot { it.id == participant.id }
+                                    },
+                                )
+                                if (index != draftGroupParticipants.lastIndex) {
+                                    SettingsGroupDivider()
+                                }
+                            }
+                            if (draftGroupParticipants.isNotEmpty()) {
+                                SettingsGroupDivider()
+                            }
+                            SettingsListRow(
+                                title = "添加群成员",
+                                supportingText = "从现有角色卡中选择",
+                                onClick = { showGroupMemberPicker = true },
+                            )
+                        }
+                    }
+                }
+                item {
+                    SettingsSectionHeader(
+                        title = "群聊回复",
+                        description = "自然聊天会先由导演判断谁该说话，再逐个生成角色回复。",
+                    )
+                }
+                item {
+                    SettingsGroup {
+                        Column(
+                            modifier = Modifier.padding(horizontal = 18.dp, vertical = 14.dp),
+                            verticalArrangement = Arrangement.spacedBy(12.dp),
+                        ) {
+                            FlowRow(
+                                horizontalArrangement = Arrangement.spacedBy(10.dp),
+                                verticalArrangement = Arrangement.spacedBy(10.dp),
+                            ) {
+                                RoleplayGroupReplyMode.entries.forEach { mode ->
+                                    FilterChip(
+                                        selected = groupReplyMode == mode,
+                                        onClick = { groupReplyMode = mode },
+                                        shape = RoundedCornerShape(14.dp),
+                                        label = { Text(mode.displayName) },
+                                        colors = FilterChipDefaults.filterChipColors(
+                                            selectedContainerColor = palette.accentSoft,
+                                            selectedLabelColor = palette.accent,
+                                        ),
+                                    )
+                                }
+                            }
+                            Text(
+                                text = groupReplyMode.description,
+                                style = MaterialTheme.typography.bodySmall,
+                                color = palette.body,
+                            )
+                            SwitchRow(
+                                title = "被角色提及时自动回复",
+                                subtitle = "关闭后，只有用户消息会触发导演调度。",
+                                value = enableGroupMentionAutoReply,
+                                onValueChange = { enableGroupMentionAutoReply = it },
+                            )
+                        }
+                    }
                 }
             }
 
@@ -560,6 +701,11 @@ fun RoleplayScenarioEditScreen(
                         AnimatedSettingButton(
                             text = if (isNew) "创建聊天资料" else "保存聊天资料",
                             onClick = {
+                                val resolvedInteractionMode = if (chatType == RoleplayChatType.GROUP) {
+                                    RoleplayInteractionMode.ONLINE_PHONE
+                                } else {
+                                    interactionMode
+                                }
                                 onSave(
                                     baseScenario.copy(
                                         title = title.trim(),
@@ -576,16 +722,31 @@ fun RoleplayScenarioEditScreen(
                                         characterPortraitUri = characterPortraitUri.trim(),
                                         characterPortraitUrl = characterPortraitUrl.trim(),
                                         openingNarration = openingNarration.trim(),
-                                        interactionMode = interactionMode,
+                                        interactionMode = resolvedInteractionMode,
                                         enableNarration = enableNarration,
-                                        enableRoleplayProtocol = enableRoleplayProtocol,
-                                        longformModeEnabled = longformModeEnabled,
+                                        enableRoleplayProtocol = if (chatType == RoleplayChatType.GROUP) true else enableRoleplayProtocol,
+                                        longformModeEnabled = if (chatType == RoleplayChatType.GROUP) false else longformModeEnabled,
                                         autoHighlightSpeaker = autoHighlightSpeaker,
                                         enableDeepImmersion = enableDeepImmersion,
+                                        chatType = chatType,
+                                        groupReplyMode = groupReplyMode,
+                                        enableGroupMentionAutoReply = enableGroupMentionAutoReply,
+                                        maxGroupAutoReplies = maxGroupAutoReplies,
                                     ),
+                                    if (chatType == RoleplayChatType.GROUP) {
+                                        draftGroupParticipants.mapIndexed { index, participant ->
+                                            participant.copy(
+                                                scenarioId = baseScenario.id,
+                                                sortOrder = index,
+                                            )
+                                        }
+                                    } else {
+                                        emptyList()
+                                    },
                                 )
                             },
-                            enabled = title.isNotBlank(),
+                            enabled = title.isNotBlank() &&
+                                (chatType == RoleplayChatType.SINGLE || draftGroupParticipants.isNotEmpty()),
                             isPrimary = true,
                         )
                         if (!isNew && onDelete != null) {
@@ -625,6 +786,46 @@ fun RoleplayScenarioEditScreen(
                         onClick = {
                             assistantId = assistant.id
                             showAssistantPicker = false
+                        },
+                    )
+                    if (index != assistants.lastIndex) {
+                        SettingsGroupDivider()
+                    }
+                }
+            }
+        }
+    }
+
+    if (showGroupMemberPicker) {
+        ModalBottomSheet(
+            onDismissRequest = { showGroupMemberPicker = false },
+            sheetState = sheetState,
+        ) {
+            Column(
+                modifier = Modifier.padding(bottom = 24.dp),
+                verticalArrangement = Arrangement.spacedBy(4.dp),
+            ) {
+                Text(
+                    text = "添加群成员",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = palette.title,
+                    modifier = Modifier.padding(horizontal = 24.dp, vertical = 8.dp),
+                )
+                assistants.forEachIndexed { index, assistant ->
+                    val selected = draftGroupParticipants.any { it.assistantId == assistant.id }
+                    AssistantPickRow(
+                        assistant = assistant,
+                        selected = selected,
+                        onClick = {
+                            if (!selected) {
+                                draftGroupParticipants = draftGroupParticipants + RoleplayGroupParticipant(
+                                    scenarioId = baseScenario.id,
+                                    assistantId = assistant.id,
+                                    sortOrder = draftGroupParticipants.size,
+                                )
+                            }
+                            showGroupMemberPicker = false
                         },
                     )
                     if (index != assistants.lastIndex) {
@@ -726,6 +927,57 @@ fun RoleplayScenarioEditScreen(
             titleContentColor = palette.title,
             textContentColor = palette.body,
         )
+    }
+}
+
+@Composable
+private fun GroupParticipantEditRow(
+    participant: RoleplayGroupParticipant,
+    assistant: Assistant?,
+    onToggleMuted: () -> Unit,
+    onRemove: () -> Unit,
+) {
+    val palette = rememberSettingsPalette()
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 18.dp, vertical = 12.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(14.dp),
+    ) {
+        AssistantAvatar(
+            name = participant.displayNameOverride.ifBlank { assistant?.name ?: "角色" },
+            iconName = assistant?.iconName?.ifBlank { "auto_stories" } ?: "auto_stories",
+            avatarUri = participant.avatarUriOverride.ifBlank { assistant?.avatarUri.orEmpty() },
+            size = 40.dp,
+            containerColor = palette.subtleChip,
+            contentColor = palette.subtleChipContent,
+            cornerRadius = 12.dp,
+        )
+        Column(
+            modifier = Modifier.weight(1f),
+            verticalArrangement = Arrangement.spacedBy(2.dp),
+        ) {
+            Text(
+                text = participant.displayNameOverride.ifBlank { assistant?.name ?: "未知角色" },
+                style = MaterialTheme.typography.bodyLarge,
+                fontWeight = FontWeight.SemiBold,
+                color = if (participant.isMuted) palette.body else palette.title,
+                maxLines = 1,
+            )
+            Text(
+                text = if (participant.isMuted) "已禁言，不会参与回复" else "可参与导演调度",
+                style = MaterialTheme.typography.labelMedium,
+                color = palette.body,
+                maxLines = 1,
+            )
+        }
+        TextButton(onClick = onToggleMuted) {
+            Text(if (participant.isMuted) "解除" else "禁言")
+        }
+        TextButton(onClick = onRemove) {
+            Text("移除")
+        }
     }
 }
 

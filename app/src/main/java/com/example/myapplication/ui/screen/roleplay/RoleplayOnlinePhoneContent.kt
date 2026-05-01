@@ -11,7 +11,6 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.imePadding
-import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.WindowInsets
@@ -40,6 +39,7 @@ import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.MaterialTheme
@@ -69,12 +69,14 @@ import com.example.myapplication.model.Assistant
 import com.example.myapplication.model.PendingMemoryProposal
 import com.example.myapplication.model.RoleplayContentType
 import com.example.myapplication.model.RoleplayContextStatus
+import com.example.myapplication.model.RoleplayGroupParticipant
 import com.example.myapplication.model.RoleplayMessageUiModel
 import com.example.myapplication.model.RoleplayScenario
 import com.example.myapplication.model.RoleplayImmersiveMode
 import com.example.myapplication.model.RoleplaySpeaker
 import com.example.myapplication.model.RoleplaySuggestionAxis
 import com.example.myapplication.model.RoleplaySuggestionUiModel
+import com.example.myapplication.model.isGroupChat
 import com.example.myapplication.ui.component.AppSnackbarHost
 import com.example.myapplication.ui.component.NarraIconButton
 import com.example.myapplication.ui.component.roleplay.ImmersiveBackdropState
@@ -84,6 +86,7 @@ import com.example.myapplication.ui.component.roleplay.RoleplayInputQuickAction
 import com.example.myapplication.ui.component.roleplay.RoleplaySceneBackground
 import com.example.myapplication.ui.component.roleplay.RoleplayEmotionChip
 import com.example.myapplication.ui.component.roleplay.RoleplayInputBar
+import com.example.myapplication.ui.component.roleplay.RoleplayMentionCandidate
 import com.example.myapplication.ui.component.roleplay.RoleplayMessageItem
 import com.example.myapplication.ui.component.roleplay.RoleplayMessageBubbleMode
 import com.example.myapplication.ui.component.roleplay.rememberRoleplayNoBackgroundSkinSpec
@@ -98,6 +101,7 @@ private val OnlineTaskAccent = Color(0xFFD78B31)
 private val OnlinePunishAccent = Color(0xFFD55C73)
 private val OnlineVideoAccent = Color(0xFF6C84FF)
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 internal fun RoleplayOnlinePhoneContent(
     scenario: RoleplayScenario,
@@ -105,6 +109,7 @@ internal fun RoleplayOnlinePhoneContent(
     settings: AppSettings,
     backdropState: ImmersiveBackdropState,
     contextStatus: RoleplayContextStatus,
+    groupParticipants: List<RoleplayGroupParticipant>,
     messages: List<RoleplayMessageUiModel>,
     suggestions: List<RoleplaySuggestionUiModel>,
     input: String,
@@ -287,10 +292,37 @@ internal fun RoleplayOnlinePhoneContent(
             )
         }
     }
-    val characterName = remember(scenario.characterDisplayNameOverride, assistant?.name) {
-        scenario.characterDisplayNameOverride.trim()
-            .ifBlank { assistant?.name?.trim().orEmpty() }
+    val characterName = remember(scenario.title, scenario.characterDisplayNameOverride, assistant?.name, scenario.chatType) {
+        if (scenario.isGroupChat) {
+            scenario.title.ifBlank { "群聊" }
+        } else {
+            scenario.characterDisplayNameOverride.trim()
+                .ifBlank { assistant?.name?.trim().orEmpty() }
             .ifBlank { "角色" }
+        }
+    }
+    val groupMentionCandidates = remember(groupParticipants, settings, scenario.chatType) {
+        if (!scenario.isGroupChat) {
+            emptyList()
+        } else {
+            val assistants = settings.resolvedAssistants()
+            groupParticipants
+                .sortedWith(compareBy({ it.sortOrder }, { it.createdAt }))
+                .map { participant ->
+                    val memberAssistant = assistants.firstOrNull { it.id == participant.assistantId }
+                    RoleplayMentionCandidate(
+                        id = participant.id,
+                        displayName = participant.displayNameOverride.ifBlank {
+                            memberAssistant?.name?.trim().orEmpty()
+                        }.ifBlank { "角色" },
+                        avatarUri = participant.avatarUriOverride.ifBlank {
+                            memberAssistant?.avatarUri.orEmpty()
+                        },
+                        iconName = memberAssistant?.iconName.orEmpty(),
+                        muted = participant.isMuted,
+                    )
+                }
+        }
     }
     val visibleMessages = messages.filter { message ->
         message.contentType != RoleplayContentType.SYSTEM &&
@@ -391,7 +423,8 @@ internal fun RoleplayOnlinePhoneContent(
                             )
                             Text(
                                 text = buildString {
-                                    append("线上模式")
+                                    append(if (scenario.isGroupChat) "${groupParticipants.size} 位成员" else "线上模式")
+                                    if (scenario.isGroupChat) append(" · ${scenario.groupReplyMode.displayName}")
                                     if (contextStatus.isContinuingSession) append(" · 继续聊天")
                                     if (isSending) append(" · 正在输入")
                                     contextStatus.summaryCoveredMessageCount.takeIf { it > 0 }?.let { count ->
@@ -617,9 +650,11 @@ internal fun RoleplayOnlinePhoneContent(
                 onCancel = onCancelSending,
                 onOpenSpecialPlay = onOpenTransferPlay,
                 quickActions = quickActions,
+                mentionCandidates = groupMentionCandidates,
             )
         }
     }
+
 }
 }
 

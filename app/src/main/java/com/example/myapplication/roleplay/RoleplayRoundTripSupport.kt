@@ -55,25 +55,20 @@ object RoleplayRoundTripSupport {
         nowProvider: () -> Long,
         messageIdProvider: () -> String,
     ): PreparedRoleplayRoundTrip {
-        val userMessage = buildMessage(
+        val userMessage = buildUserMessage(
             conversationId = conversationId,
-            role = MessageRole.USER,
-            content = userParts.toContentMirror(specialFallback = "特殊玩法").ifBlank { "剧情互动" },
-            nowProvider = nowProvider,
-            messageIdProvider = messageIdProvider,
             parts = userParts,
             replyToMessageId = replyToMessageId,
             replyToPreview = replyToPreview,
             replyToSpeakerName = replyToSpeakerName,
             roleplayInteractionMode = roleplayInteractionMode,
-        )
-        val loadingMessage = buildMessage(
-            conversationId = conversationId,
-            role = MessageRole.ASSISTANT,
-            content = "",
             nowProvider = nowProvider,
             messageIdProvider = messageIdProvider,
-            status = MessageStatus.LOADING,
+        )
+        val loadingMessage = buildAssistantLoadingMessage(
+            conversationId = conversationId,
+            nowProvider = nowProvider,
+            messageIdProvider = messageIdProvider,
             modelName = selectedModel,
             roleplayOutputFormat = roleplayOutputFormat,
             roleplayInteractionMode = roleplayInteractionMode,
@@ -86,6 +81,57 @@ object RoleplayRoundTripSupport {
             requestMessages = baseMessages.filter {
                 it.status == MessageStatus.COMPLETED && it.hasSendableContent()
             } + userMessage,
+        )
+    }
+
+    fun buildUserMessage(
+        conversationId: String,
+        parts: List<ChatMessagePart>,
+        replyToMessageId: String,
+        replyToPreview: String,
+        replyToSpeakerName: String,
+        roleplayInteractionMode: RoleplayInteractionMode,
+        nowProvider: () -> Long,
+        messageIdProvider: () -> String,
+    ): ChatMessage {
+        return buildMessage(
+            conversationId = conversationId,
+            role = MessageRole.USER,
+            content = parts.toContentMirror(specialFallback = "特殊玩法").ifBlank { "剧情互动" },
+            nowProvider = nowProvider,
+            messageIdProvider = messageIdProvider,
+            parts = parts,
+            replyToMessageId = replyToMessageId,
+            replyToPreview = replyToPreview,
+            replyToSpeakerName = replyToSpeakerName,
+            roleplayInteractionMode = roleplayInteractionMode,
+        )
+    }
+
+    fun buildAssistantLoadingMessage(
+        conversationId: String,
+        nowProvider: () -> Long,
+        messageIdProvider: () -> String,
+        modelName: String,
+        roleplayOutputFormat: RoleplayOutputFormat,
+        roleplayInteractionMode: RoleplayInteractionMode,
+        speakerId: String = "",
+        speakerName: String = "",
+        speakerAvatarUri: String = "",
+    ): ChatMessage {
+        return buildMessage(
+            conversationId = conversationId,
+            role = MessageRole.ASSISTANT,
+            content = "",
+            nowProvider = nowProvider,
+            messageIdProvider = messageIdProvider,
+            status = MessageStatus.LOADING,
+            modelName = modelName,
+            roleplayOutputFormat = roleplayOutputFormat,
+            roleplayInteractionMode = roleplayInteractionMode,
+            speakerId = speakerId,
+            speakerName = speakerName,
+            speakerAvatarUri = speakerAvatarUri,
         )
     }
 
@@ -157,6 +203,9 @@ object RoleplayRoundTripSupport {
         replyToMessageId: String = "",
         replyToPreview: String = "",
         replyToSpeakerName: String = "",
+        speakerId: String = "",
+        speakerName: String = "",
+        speakerAvatarUri: String = "",
         roleplayOutputFormat: RoleplayOutputFormat = RoleplayOutputFormat.UNSPECIFIED,
         roleplayInteractionMode: RoleplayInteractionMode? = null,
     ): ChatMessage {
@@ -174,6 +223,9 @@ object RoleplayRoundTripSupport {
             replyToMessageId = replyToMessageId,
             replyToPreview = replyToPreview,
             replyToSpeakerName = replyToSpeakerName,
+            speakerId = speakerId,
+            speakerName = speakerName,
+            speakerAvatarUri = speakerAvatarUri,
             roleplayOutputFormat = roleplayOutputFormat,
             roleplayInteractionMode = roleplayInteractionMode,
         )

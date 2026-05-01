@@ -37,6 +37,10 @@ interface RoleplayDao {
             s.enableDeepImmersion AS enableDeepImmersion,
             s.enableTimeAwareness AS enableTimeAwareness,
             s.enableNetMeme AS enableNetMeme,
+            s.chatType AS chatType,
+            s.groupReplyMode AS groupReplyMode,
+            s.enableGroupMentionAutoReply AS enableGroupMentionAutoReply,
+            s.maxGroupAutoReplies AS maxGroupAutoReplies,
             s.isPinned AS isPinned,
             s.isMuted AS isMuted,
             s.createdAt AS createdAt,
@@ -82,6 +86,9 @@ interface RoleplayDao {
     @Query("SELECT * FROM roleplay_sessions ORDER BY updatedAt DESC, createdAt DESC")
     fun observeSessions(): Flow<List<RoleplaySessionEntity>>
 
+    @Query("SELECT * FROM roleplay_group_participants WHERE scenarioId = :scenarioId ORDER BY sortOrder ASC, createdAt ASC")
+    fun observeGroupParticipants(scenarioId: String): Flow<List<RoleplayGroupParticipantEntity>>
+
     @Query("SELECT * FROM roleplay_diary_entries WHERE conversationId = :conversationId ORDER BY sortOrder ASC, createdAt DESC")
     fun observeDiaryEntries(conversationId: String): Flow<List<RoleplayDiaryEntryEntity>>
 
@@ -90,6 +97,9 @@ interface RoleplayDao {
 
     @Query("SELECT * FROM roleplay_sessions ORDER BY updatedAt DESC, createdAt DESC")
     suspend fun listSessions(): List<RoleplaySessionEntity>
+
+    @Query("SELECT * FROM roleplay_group_participants WHERE scenarioId = :scenarioId ORDER BY sortOrder ASC, createdAt ASC")
+    suspend fun listGroupParticipants(scenarioId: String): List<RoleplayGroupParticipantEntity>
 
     @Query("SELECT * FROM roleplay_diary_entries WHERE conversationId = :conversationId ORDER BY sortOrder ASC, createdAt DESC")
     suspend fun listDiaryEntries(conversationId: String): List<RoleplayDiaryEntryEntity>
@@ -103,6 +113,9 @@ interface RoleplayDao {
     @Query("SELECT * FROM roleplay_sessions WHERE id = :sessionId LIMIT 1")
     suspend fun getSession(sessionId: String): RoleplaySessionEntity?
 
+    @Query("SELECT * FROM roleplay_group_participants WHERE id = :participantId LIMIT 1")
+    suspend fun getGroupParticipant(participantId: String): RoleplayGroupParticipantEntity?
+
     @Query("SELECT * FROM roleplay_online_meta WHERE conversationId = :conversationId LIMIT 1")
     suspend fun getOnlineMeta(conversationId: String): RoleplayOnlineMetaEntity?
 
@@ -114,6 +127,15 @@ interface RoleplayDao {
 
     @Upsert
     suspend fun upsertScenario(scenario: RoleplayScenarioEntity)
+
+    @Upsert
+    suspend fun upsertGroupParticipants(participants: List<RoleplayGroupParticipantEntity>)
+
+    @Query("DELETE FROM roleplay_group_participants WHERE id = :participantId")
+    suspend fun deleteGroupParticipant(participantId: String)
+
+    @Query("DELETE FROM roleplay_group_participants WHERE scenarioId = :scenarioId")
+    suspend fun deleteGroupParticipantsForScenario(scenarioId: String)
 
     @Upsert
     suspend fun upsertSession(session: RoleplaySessionEntity)
@@ -135,6 +157,17 @@ interface RoleplayDao {
         deleteDiaryEntriesForConversation(conversationId)
         if (entries.isNotEmpty()) {
             upsertDiaryEntries(entries)
+        }
+    }
+
+    @Transaction
+    suspend fun replaceGroupParticipantsForScenario(
+        scenarioId: String,
+        participants: List<RoleplayGroupParticipantEntity>,
+    ) {
+        deleteGroupParticipantsForScenario(scenarioId)
+        if (participants.isNotEmpty()) {
+            upsertGroupParticipants(participants)
         }
     }
 }
