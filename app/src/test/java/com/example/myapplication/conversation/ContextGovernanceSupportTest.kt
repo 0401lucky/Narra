@@ -5,6 +5,7 @@ import com.example.myapplication.model.AppSettings
 import com.example.myapplication.model.Assistant
 import com.example.myapplication.model.ChatMessage
 import com.example.myapplication.model.ContextSummaryState
+import com.example.myapplication.model.ContextLogSourceType
 import com.example.myapplication.model.MessageRole
 import com.example.myapplication.model.ModelInfo
 import com.example.myapplication.model.PromptMode
@@ -159,6 +160,48 @@ class ContextGovernanceSupportTest {
         )
 
         assertTrue(snapshot.summaryState == ContextSummaryState.STALE)
+    }
+
+    @Test
+    fun buildSnapshot_addsContextTrimmingSection() {
+        val provider = ProviderSettings(
+            id = "provider-1",
+            baseUrl = "https://example.com/v1/",
+            apiKey = "key",
+            selectedModel = "chat-model",
+            titleSummaryModel = "summary-model",
+        )
+        val requestMessages = (1..10).map { message("m$it") }
+        val effectiveMessages = requestMessages.takeLast(4)
+
+        val snapshot = ContextGovernanceSupport.buildSnapshot(
+            settings = AppSettings(
+                providers = listOf(provider),
+                selectedProviderId = provider.id,
+            ),
+            assistant = null,
+            promptMode = PromptMode.CHAT,
+            selectedModel = "chat-model",
+            requestMessages = requestMessages,
+            effectiveRequestMessages = effectiveMessages,
+            promptContext = PromptContextResult(
+                systemPrompt = "prompt",
+                summaryCoveredMessageCount = 6,
+            ),
+            completedMessageCount = requestMessages.size,
+            triggerMessageCount = 4,
+            recentWindow = 4,
+            minCoveredMessageCount = 2,
+            toolingOptions = com.example.myapplication.model.GatewayToolingOptions(),
+            rawDebugDump = "debug",
+        )
+
+        val trimmingSection = snapshot.contextSections.firstOrNull { section ->
+            section.sourceType == ContextLogSourceType.SUMMARY && section.title == "上下文裁剪"
+        } ?: error("未找到上下文裁剪日志")
+        assertTrue(trimmingSection.content.contains("裁剪前消息数：10"))
+        assertTrue(trimmingSection.content.contains("实际发送原文消息数：4"))
+        assertTrue(trimmingSection.content.contains("旧消息已由摘要覆盖，未作为原文发送：是"))
     }
 
     private fun message(id: String): ChatMessage {

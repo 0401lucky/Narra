@@ -6,6 +6,8 @@ import com.example.myapplication.model.Assistant
 import com.example.myapplication.model.ChatMessage
 import com.example.myapplication.model.ChatMessagePartType
 import com.example.myapplication.model.ContextGovernanceSnapshot
+import com.example.myapplication.model.ContextLogSection
+import com.example.myapplication.model.ContextLogSourceType
 import com.example.myapplication.model.ContextPressureLevel
 import com.example.myapplication.model.ContextSummaryState
 import com.example.myapplication.model.GatewayToolingOptions
@@ -71,6 +73,12 @@ object ContextGovernanceSupport {
             triggerMessageCount = triggerMessageCount,
             recentWindow = recentWindow,
         )
+        val contextSections = promptContext.contextSections + buildTrimmingLogSection(
+            requestMessageCountBeforeTrim = requestMessages.size,
+            sentMessageCount = effectiveRequestMessages.size,
+            recentWindow = recentWindow,
+            summaryCoveredMessageCount = promptContext.summaryCoveredMessageCount,
+        )
         return ContextGovernanceSnapshot(
             pressureLevel = resolvePressureLevel(
                 requestMessages = requestMessages,
@@ -115,8 +123,37 @@ object ContextGovernanceSupport {
             activePresetId = promptContext.activePresetId,
             activePresetName = promptContext.activePresetName,
             generatedAt = System.currentTimeMillis(),
-            estimatedContextTokens = promptContext.contextSections.sumOf { it.tokenEstimate },
-            contextSections = promptContext.contextSections,
+            estimatedContextTokens = contextSections.sumOf { it.tokenEstimate },
+            contextSections = contextSections,
+        )
+    }
+
+    private fun buildTrimmingLogSection(
+        requestMessageCountBeforeTrim: Int,
+        sentMessageCount: Int,
+        recentWindow: Int,
+        summaryCoveredMessageCount: Int,
+    ): ContextLogSection {
+        val oldMessagesCovered = summaryCoveredMessageCount > 0 && sentMessageCount < requestMessageCountBeforeTrim
+        return ContextLogSection(
+            sourceType = ContextLogSourceType.SUMMARY,
+            title = "上下文裁剪",
+            content = buildString {
+                append("裁剪前消息数：")
+                append(requestMessageCountBeforeTrim)
+                append('\n')
+                append("实际发送原文消息数：")
+                append(sentMessageCount)
+                append('\n')
+                append("最近原文窗口：")
+                append(recentWindow)
+                append('\n')
+                append("摘要覆盖消息数：")
+                append(summaryCoveredMessageCount)
+                append('\n')
+                append("旧消息已由摘要覆盖，未作为原文发送：")
+                append(if (oldMessagesCovered) "是" else "否")
+            },
         )
     }
 

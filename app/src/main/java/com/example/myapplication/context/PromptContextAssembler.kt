@@ -14,6 +14,7 @@ import com.example.myapplication.model.AppSettings
 import com.example.myapplication.model.Assistant
 import com.example.myapplication.model.ChatMessage
 import com.example.myapplication.model.ConversationSummary
+import com.example.myapplication.model.ConversationSummarySegment
 import com.example.myapplication.model.Conversation
 import com.example.myapplication.model.ContextGovernanceItem
 import com.example.myapplication.model.ContextLogSection
@@ -35,6 +36,7 @@ data class PromptContextResult(
     val activePresetName: String = "",
     val debugDump: String = "",
     val summaryCoveredMessageCount: Int = 0,
+    val summarySegmentCount: Int = 0,
     val worldBookHitCount: Int = 0,
     val memoryInjectionCount: Int = 0,
     val summaryPreview: String = "",
@@ -96,6 +98,10 @@ class DefaultPromptContextAssembler(
             recentMessages = recentMessages,
         )
         val conversationSummary = conversationSummaryRepository.getSummary(conversation.id)
+        val recentSummarySegments = conversationSummaryRepository.listSummarySegments(conversation.id)
+            .filter { segment -> segment.summary.isNotBlank() }
+            .sortedWith(compareBy({ it.startCreatedAt }, { it.endCreatedAt }))
+            .takeLast(RECENT_SUMMARY_SEGMENT_LIMIT)
         val phoneObservation = if (promptMode == PromptMode.ROLEPLAY) {
             phoneSnapshotRepository.getObservation(conversation.id)
         } else {
@@ -182,6 +188,10 @@ class DefaultPromptContextAssembler(
             conversationSummary = conversationSummary,
             promptMode = promptMode,
         )
+        val summarySegmentsSection = formatSummarySegmentsSection(
+            summarySegments = recentSummarySegments,
+            promptMode = promptMode,
+        )
         val worldBookSections = formatWorldBookSections(matchedWorldBookEntries)
         val phoneSnapshotSection = formatPhoneSnapshotSection(phoneSnapshotItems)
         val phoneObservationSection = formatPhoneObservationSection(phoneObservation.takeIf { shouldIncludePhoneObservation })
@@ -200,6 +210,7 @@ class DefaultPromptContextAssembler(
             greetingSection?.let(::add)
             exampleDialoguesSection?.let(::add)
             summarySection?.let(::add)
+            summarySegmentsSection?.let(::add)
 
             addAll(worldBookSections)
 
@@ -224,6 +235,7 @@ class DefaultPromptContextAssembler(
             matchedWorldBookEntries = matchedWorldBookEntries,
             selectedMemories = selectedMemories,
             conversationSummary = conversationSummary,
+            summarySegments = recentSummarySegments,
             phoneSnapshotItems = phoneSnapshotItems,
             phoneObservation = phoneObservation.takeIf { shouldIncludePhoneObservation },
         )
@@ -248,7 +260,8 @@ class DefaultPromptContextAssembler(
                         "persona" to userPersonaSection.orEmpty(),
                         "scenario" to scenarioSection.orEmpty(),
                         "example_dialogue" to exampleDialoguesSection.orEmpty(),
-                        "summary" to summarySection.orEmpty(),
+                        "summary" to listOfNotNull(summarySection, summarySegmentsSection)
+                            .joinToString(separator = "\n\n"),
                         "world_info" to worldBookSections.joinToString(separator = "\n\n"),
                         "long_memory" to memorySection.orEmpty(),
                         "phone_context" to phoneContextSection.orEmpty(),
@@ -281,11 +294,13 @@ class DefaultPromptContextAssembler(
                 matchedWorldBookEntries = matchedWorldBookEntries,
                 selectedMemories = selectedMemories,
                 conversationSummary = conversationSummary,
+                summarySegments = recentSummarySegments,
                 phoneSnapshotItems = phoneSnapshotItems,
                 phoneObservationText = phoneObservation?.eventText.orEmpty(),
                 systemPrompt = systemPrompt,
             ),
             summaryCoveredMessageCount = conversationSummary?.coveredMessageCount ?: 0,
+            summarySegmentCount = recentSummarySegments.size,
             worldBookHitCount = matchedWorldBookEntries.size,
             memoryInjectionCount = selectedMemories.size,
             summaryPreview = conversationSummary?.summary
@@ -463,6 +478,7 @@ class DefaultPromptContextAssembler(
         matchedWorldBookEntries: List<WorldBookEntry>,
         selectedMemories: List<MemoryEntry>,
         conversationSummary: ConversationSummary?,
+        summarySegments: List<ConversationSummarySegment>,
         phoneSnapshotItems: List<String>,
         phoneObservationText: String,
         systemPrompt: String,
@@ -474,7 +490,7 @@ class DefaultPromptContextAssembler(
             append("\n- 摘要注入：")
             append(
                 if (conversationSummary?.summary?.isNotBlank() == true) {
-                    "是（覆盖 ${conversationSummary.coveredMessageCount} 条）"
+                    "是（覆盖 ${conversationSummary.coveredMessageCount} 条，分段 ${summarySegments.size} 段）"
                 } else {
                     "否"
                 },
@@ -533,6 +549,34 @@ class DefaultPromptContextAssembler(
             )
             append(summaryText)
         }
+    }
+
+    private fun formatSummarySegmentsSection(
+        summarySegments: List<ConversationSummarySegment>,
+        promptMode: PromptMode,
+    ): String? {
+        val usableSegments = summarySegments.filter { it.summary.isNotBlank() }
+        if (usableSegments.isEmpty()) {
+            return null
+        }
+        return buildString {
+            append(
+                if (promptMode == PromptMode.ROLEPLAY) {
+                    "【近期剧情分段】\n"
+                } else {
+                    "【近期摘要分段】\n"
+                },
+            )
+            append("以下内容来自旧聊天原文的分段压缩，用于承接未随最近原文发送的历史内容：\n")
+            usableSegments.forEachIndexed { index, segment ->
+                append(index + 1)
+                append(". 覆盖 ")
+                append(segment.messageCount)
+                append(" 条消息：")
+                append(normalizePromptContent(segment.summary))
+                append('\n')
+            }
+        }.trim()
     }
 
     private fun formatMemorySection(
@@ -713,6 +757,7 @@ class DefaultPromptContextAssembler(
         matchedWorldBookEntries: List<WorldBookEntry>,
         selectedMemories: List<MemoryEntry>,
         conversationSummary: ConversationSummary?,
+        summarySegments: List<ConversationSummarySegment>,
         phoneSnapshotItems: List<String>,
         phoneObservation: com.example.myapplication.model.PhoneObservationState?,
     ): List<ContextLogSection> {
@@ -836,6 +881,17 @@ class DefaultPromptContextAssembler(
             )
         }
 
+        formatSummarySegmentsSection(
+            summarySegments = summarySegments,
+            promptMode = promptMode,
+        )?.let { summarySegmentsSection ->
+            sections += ContextLogSection(
+                sourceType = ContextLogSourceType.SUMMARY,
+                title = if (promptMode == PromptMode.ROLEPLAY) "近期剧情分段" else "近期摘要分段",
+                content = summarySegmentsSection,
+            )
+        }
+
         matchedWorldBookEntries.forEach { entry ->
             sections += ContextLogSection(
                 sourceType = ContextLogSourceType.WORLD_BOOK,
@@ -931,6 +987,7 @@ class DefaultPromptContextAssembler(
     }
 
     companion object {
+        private const val RECENT_SUMMARY_SEGMENT_LIMIT = 3
         private val MEMORIES_PLACEHOLDER_REGEX =
             Regex("""\{\{\s*memories\s*\}\}""", RegexOption.IGNORE_CASE)
     }

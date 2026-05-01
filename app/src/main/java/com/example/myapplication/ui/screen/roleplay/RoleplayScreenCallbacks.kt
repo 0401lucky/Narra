@@ -3,6 +3,7 @@ package com.example.myapplication.ui.screen.roleplay
 import com.example.myapplication.model.ChatSpecialPlayDraft
 import com.example.myapplication.model.PhoneSnapshotOwnerType
 import com.example.myapplication.model.RoleplayGroupReplyMode
+import com.example.myapplication.model.RoleplayMessageUiModel
 import com.example.myapplication.model.VoiceMessageDraft
 
 /**
@@ -24,7 +25,8 @@ data class RoleplayMessageCallbacks(
     val onCancelSending: () -> Unit,
     val onRetryTurn: (String) -> Unit,
     val onEditUserMessage: (String) -> Unit,
-    val onQuoteMessage: (messageId: String, preview: String, speakerName: String) -> Unit,
+    val onQuoteMessage: (messageId: String, speakerName: String, preview: String) -> Unit,
+    val onPokeMessageAvatar: (RoleplayMessageUiModel) -> Unit,
     val onClearQuotedMessage: () -> Unit,
     val onRecallMessage: (String) -> Unit,
     val onCaptureOnlineChat: () -> Unit,

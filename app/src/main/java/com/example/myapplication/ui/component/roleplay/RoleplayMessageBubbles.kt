@@ -55,6 +55,7 @@ internal fun RoleplayMessageItem(
     onRetryTurn: (String) -> Unit,
     onEditUserMessage: (String) -> Unit,
     onQuoteMessage: ((String, String, String) -> Unit)? = null,
+    onPokeMessageAvatar: ((RoleplayMessageUiModel) -> Unit)? = null,
     onRecallMessage: ((String) -> Unit)? = null,
     onOpenQuotedMessage: ((String) -> Unit)? = null,
     onConfirmTransferReceipt: (String) -> Unit,
@@ -72,6 +73,7 @@ internal fun RoleplayMessageItem(
             onRetryTurn = onRetryTurn,
             onEditUserMessage = onEditUserMessage,
             onQuoteMessage = onQuoteMessage,
+            onPokeMessageAvatar = onPokeMessageAvatar,
             onRecallMessage = onRecallMessage,
             onOpenQuotedMessage = onOpenQuotedMessage,
             onConfirmTransferReceipt = onConfirmTransferReceipt,
@@ -91,6 +93,7 @@ private fun RoleplayMessageItemContent(
     onRetryTurn: (String) -> Unit,
     onEditUserMessage: (String) -> Unit,
     onQuoteMessage: ((String, String, String) -> Unit)? = null,
+    onPokeMessageAvatar: ((RoleplayMessageUiModel) -> Unit)? = null,
     onRecallMessage: ((String) -> Unit)? = null,
     onOpenQuotedMessage: ((String) -> Unit)? = null,
     onConfirmTransferReceipt: (String) -> Unit,
@@ -241,6 +244,7 @@ private fun RoleplayMessageItemContent(
                             RoleplayMessageAvatar(
                                 message = message,
                                 colors = colors,
+                                onPokeMessageAvatar = onPokeMessageAvatar,
                                 modifier = Modifier.padding(start = 8.dp),
                             )
                         }
@@ -287,6 +291,7 @@ private fun RoleplayMessageItemContent(
                             RoleplayMessageAvatar(
                                 message = message,
                                 colors = colors,
+                                onPokeMessageAvatar = onPokeMessageAvatar,
                                 modifier = Modifier.padding(end = 8.dp),
                             )
                             RoleplayMessageMenuWrapper(
@@ -384,6 +389,7 @@ private fun RoleplayMessageItemContent(
                             RoleplayMessageAvatar(
                                 message = message,
                                 colors = colors,
+                                onPokeMessageAvatar = onPokeMessageAvatar,
                                 modifier = Modifier.padding(end = 8.dp),
                             )
                         }
@@ -411,6 +417,7 @@ private fun RoleplayMessageItemContent(
                             RoleplayMessageAvatar(
                                 message = message,
                                 colors = colors,
+                                onPokeMessageAvatar = onPokeMessageAvatar,
                                 modifier = Modifier.padding(start = 8.dp),
                             )
                         }
@@ -460,6 +467,7 @@ private fun RoleplayMessageItemContent(
                             RoleplayMessageAvatar(
                                 message = message,
                                 colors = colors,
+                                onPokeMessageAvatar = onPokeMessageAvatar,
                                 modifier = Modifier.padding(end = 8.dp),
                             )
                         }
@@ -481,6 +489,7 @@ private fun RoleplayMessageItemContent(
                             RoleplayMessageAvatar(
                                 message = message,
                                 colors = colors,
+                                onPokeMessageAvatar = onPokeMessageAvatar,
                                 modifier = Modifier.padding(start = 8.dp),
                             )
                         }
@@ -554,15 +563,27 @@ private fun resolveDialogueMaxWidthFraction(
 private fun RoleplayMessageAvatar(
     message: RoleplayMessageUiModel,
     colors: ImmersiveRoleplayColors,
+    onPokeMessageAvatar: ((RoleplayMessageUiModel) -> Unit)?,
     modifier: Modifier = Modifier,
 ) {
     val isUser = message.speaker == RoleplaySpeaker.USER
     val avatarSource = message.speakerAvatarUrl.ifBlank { message.speakerAvatarUri }
+    val avatarModifier = if (onPokeMessageAvatar != null) {
+        modifier
+            .size(36.dp)
+            .combinedClickable(
+                onClick = {},
+                onDoubleClick = { onPokeMessageAvatar(message) },
+                onLongClick = { onPokeMessageAvatar(message) },
+            )
+    } else {
+        modifier.size(36.dp)
+    }
     AssistantAvatar(
         name = message.speakerName.ifBlank { if (isUser) "你" else "角色" },
         iconName = if (isUser) "" else message.speakerIconName.ifBlank { "auto_stories" },
         avatarUri = avatarSource,
-        modifier = modifier.size(36.dp),
+        modifier = avatarModifier,
         size = 36.dp,
         containerColor = if (isUser) {
             colors.userAccent.copy(alpha = 0.16f)

@@ -93,6 +93,7 @@ fun RoleplayScreen(
     val onRetryTurn = callbacks.message.onRetryTurn
     val onEditUserMessage = callbacks.message.onEditUserMessage
     val onQuoteMessage = callbacks.message.onQuoteMessage
+    val onPokeMessageAvatar = callbacks.message.onPokeMessageAvatar
     val onClearQuotedMessage = callbacks.message.onClearQuotedMessage
     val onRecallMessage = callbacks.message.onRecallMessage
     val onCaptureOnlineChat = callbacks.message.onCaptureOnlineChat
@@ -364,6 +365,7 @@ fun RoleplayScreen(
             onRetryTurn = onRetryTurn,
             onEditUserMessage = onEditUserMessage,
             onQuoteMessage = onQuoteMessage,
+            onPokeMessageAvatar = onPokeMessageAvatar,
             onClearQuotedMessage = onClearQuotedMessage,
             onRecallMessage = onRecallMessage,
             onScreenshotChat = onCaptureOnlineChat,

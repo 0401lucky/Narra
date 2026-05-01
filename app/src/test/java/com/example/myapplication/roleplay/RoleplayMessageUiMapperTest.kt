@@ -58,6 +58,39 @@ class RoleplayMessageUiMapperTest {
     }
 
     @Test
+    fun mapMessages_userDialogueKeepsMessageLevelQuoteOnTextPart() {
+        val mapped = RoleplayMessageUiMapper.mapMessages(
+            scenario = RoleplayScenario(
+                id = "scene-quote",
+                userDisplayNameOverride = "lucky",
+                interactionMode = RoleplayInteractionMode.ONLINE_PHONE,
+            ),
+            assistant = Assistant(id = "assistant-1", name = "陆宴清"),
+            settings = AppSettings(),
+            rawMessages = listOf(
+                ChatMessage(
+                    id = "user-quote",
+                    conversationId = "conv-1",
+                    role = MessageRole.USER,
+                    content = "我知道了",
+                    createdAt = 1L,
+                    parts = listOf(textMessagePart("我知道了")),
+                    replyToMessageId = "quoted-1",
+                    replyToSpeakerName = "陆宴清",
+                    replyToPreview = "别急，先把话说完。",
+                ),
+            ),
+            streamingContent = null,
+            outputParser = RoleplayOutputParser(),
+            nowProvider = { 10L },
+        ).single()
+
+        assertEquals("quoted-1", mapped.replyToMessageId)
+        assertEquals("陆宴清", mapped.replyToSpeakerName)
+        assertEquals("别急，先把话说完。", mapped.replyToPreview)
+    }
+
+    @Test
     fun mapMessages_singleChatCharacterAvatarPrefersSnapshotThenScenarioThenAssistant() {
         val assistant = Assistant(
             id = "assistant-1",

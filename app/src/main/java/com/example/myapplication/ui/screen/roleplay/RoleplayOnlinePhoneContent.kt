@@ -16,6 +16,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.statusBars
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
@@ -129,6 +130,7 @@ internal fun RoleplayOnlinePhoneContent(
     onRetryTurn: (String) -> Unit,
     onEditUserMessage: (String) -> Unit,
     onQuoteMessage: (String, String, String) -> Unit,
+    onPokeMessageAvatar: (RoleplayMessageUiModel) -> Unit,
     onClearQuotedMessage: () -> Unit,
     onRecallMessage: (String) -> Unit,
     onScreenshotChat: () -> Unit,
@@ -553,6 +555,7 @@ internal fun RoleplayOnlinePhoneContent(
                         onRetryTurn = onRetryTurn,
                         onEditUserMessage = onEditUserMessage,
                         onQuoteMessage = onQuoteMessage,
+                        onPokeMessageAvatar = onPokeMessageAvatar,
                         onRecallMessage = onRecallMessage,
                         onOpenQuotedMessage = { quotedMessageId ->
                             val targetIndex = visibleMessages.indexOfFirst { it.sourceMessageId == quotedMessageId }
@@ -606,15 +609,23 @@ internal fun RoleplayOnlinePhoneContent(
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(horizontal = 12.dp, vertical = 10.dp),
-                    horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
+                    Surface(
+                        modifier = Modifier
+                            .width(3.dp)
+                            .height(36.dp),
+                        shape = RoundedCornerShape(999.dp),
+                        color = colors.characterAccent.copy(alpha = 0.68f),
+                    ) {}
                     Column(
-                        modifier = Modifier.weight(1f),
+                        modifier = Modifier
+                            .weight(1f)
+                            .padding(start = 10.dp),
                         verticalArrangement = Arrangement.spacedBy(4.dp),
                     ) {
                         Text(
-                            text = "引用 ${replyToSpeakerName.ifBlank { "对方" }}",
+                            text = "回复 ${replyToSpeakerName.ifBlank { "对方" }}",
                             style = MaterialTheme.typography.labelMedium,
                             color = colors.characterAccent,
                             fontWeight = FontWeight.SemiBold,

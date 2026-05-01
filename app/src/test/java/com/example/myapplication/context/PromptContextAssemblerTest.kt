@@ -7,6 +7,7 @@ import com.example.myapplication.model.BUILTIN_PRESETS
 import com.example.myapplication.model.ChatMessage
 import com.example.myapplication.model.Conversation
 import com.example.myapplication.model.ConversationSummary
+import com.example.myapplication.model.ConversationSummarySegment
 import com.example.myapplication.model.ContextLogSourceType
 import com.example.myapplication.model.DEFAULT_PRESET_ID
 import com.example.myapplication.model.MemoryEntry
@@ -14,6 +15,7 @@ import com.example.myapplication.model.MemoryScopeType
 import com.example.myapplication.model.MessageRole
 import com.example.myapplication.model.PromptMode
 import com.example.myapplication.model.WorldBookEntry
+import com.example.myapplication.testutil.FakeConversationSummaryRepository
 import com.example.myapplication.testutil.FakePresetRepository
 import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertEquals
@@ -294,7 +296,71 @@ class PromptContextAssemblerTest {
 
         assertTrue(result.systemPrompt.contains("【对话摘要】"))
         assertTrue(result.systemPrompt.contains("用户正在调查白塔城的失窃案"))
-        assertTrue(result.debugDump.contains("摘要注入：是（覆盖 18 条）"))
+        assertTrue(result.debugDump.contains("摘要注入：是（覆盖 18 条"))
+    }
+
+    @Test
+    fun assemble_includesRecentSummarySegmentsInPromptAndContextLog() = runBlocking {
+        val assembler = DefaultPromptContextAssembler(
+            conversationSummaryRepository = FakeConversationSummaryRepository(
+                initialSummaries = listOf(
+                    ConversationSummary(
+                        conversationId = "c1",
+                        assistantId = "assistant-1",
+                        summary = "总摘要：两人已经进入白塔。",
+                        coveredMessageCount = 12,
+                    ),
+                ),
+                initialSegments = listOf(
+                    ConversationSummarySegment(
+                        id = "seg-1",
+                        conversationId = "c1",
+                        assistantId = "assistant-1",
+                        startMessageId = "m1",
+                        endMessageId = "m6",
+                        startCreatedAt = 1L,
+                        endCreatedAt = 6L,
+                        messageCount = 6,
+                        summary = "第一段：发现白塔入口。",
+                    ),
+                    ConversationSummarySegment(
+                        id = "seg-2",
+                        conversationId = "c1",
+                        assistantId = "assistant-1",
+                        startMessageId = "m7",
+                        endMessageId = "m12",
+                        startCreatedAt = 7L,
+                        endCreatedAt = 12L,
+                        messageCount = 6,
+                        summary = "第二段：确认北境商会的暗号。",
+                    ),
+                ),
+            ),
+        )
+
+        val result = assembler.assemble(
+            settings = AppSettings(),
+            assistant = Assistant(
+                id = "assistant-1",
+                name = "霜岚",
+            ),
+            conversation = Conversation(id = "c1", createdAt = 1L, updatedAt = 1L),
+            userInputText = "继续调查",
+            recentMessages = emptyList(),
+            promptMode = PromptMode.ROLEPLAY,
+        )
+
+        assertTrue(result.systemPrompt.contains("【剧情摘要】"))
+        assertTrue(result.systemPrompt.contains("【近期剧情分段】"))
+        assertTrue(result.systemPrompt.contains("第二段：确认北境商会的暗号。"))
+        assertEquals(2, result.summarySegmentCount)
+        assertTrue(
+            result.contextSections.any { section ->
+                section.sourceType == ContextLogSourceType.SUMMARY &&
+                    section.title == "近期剧情分段" &&
+                    section.content.contains("旧聊天原文的分段压缩")
+            },
+        )
     }
 
     @Test

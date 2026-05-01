@@ -48,6 +48,9 @@ import com.example.myapplication.model.ProviderSettings
 import com.example.myapplication.model.ProviderFunctionModelMode
 import com.example.myapplication.model.RoleplayContentType
 import com.example.myapplication.model.RoleplayChatSummary
+import com.example.myapplication.model.RoleplayChatType
+import com.example.myapplication.model.RoleplayGroupParticipant
+import com.example.myapplication.model.RoleplayGroupReplyMode
 import com.example.myapplication.model.RoleplayInteractionMode
 import com.example.myapplication.model.RoleplayOnlineEventKind
 import com.example.myapplication.model.RoleplayOutputFormat
@@ -446,7 +449,7 @@ class RoleplayViewModelTest {
     }
 
     @Test
-    fun generateDraftInput_fillsInputWithoutWritingConversationHistory() = runTest(mainDispatcherRule.dispatcher.scheduler) {
+    fun generateDraftInput_showsSuggestionsWithoutWritingConversationHistory() = runTest(mainDispatcherRule.dispatcher.scheduler) {
         val assistant = Assistant(
             id = "assistant-1",
             name = "陆宴清",
@@ -530,7 +533,8 @@ class RoleplayViewModelTest {
                                             content = """
                                             [
                                               {"axis":"plot","label":"逼近真相","text":"我警惕地打量着四周。'这是哪里？'"},
-                                              {"axis":"info","label":"追问细节","text":"先告诉我，你为什么会突然出现在这里。"}
+                                              {"axis":"info","label":"追问细节","text":"先告诉我，你为什么会突然出现在这里。"},
+                                              {"axis":"emotion","label":"压住情绪","text":"我深吸一口气，没有让声音先颤起来。"}
                                             ]
                                             """.trimIndent(),
                                         ),
@@ -561,9 +565,11 @@ class RoleplayViewModelTest {
         advanceUntilIdle()
 
         val state = viewModel.uiState.value
-        assertEquals("我警惕地打量着四周。'这是哪里？'", state.input)
+        assertEquals("", state.input)
         assertFalse(state.isGeneratingSuggestions)
-        assertTrue(state.suggestions.isEmpty())
+        assertEquals(3, state.suggestions.size)
+        assertEquals("逼近真相", state.suggestions[0].label)
+        assertEquals("我警惕地打量着四周。'这是哪里？'", state.suggestions[0].text)
         assertEquals(originalMessages, store.listMessages(session.conversationId))
         assertEquals(1, store.listMessages(session.conversationId).size)
     }
@@ -1220,6 +1226,97 @@ class RoleplayViewModelTest {
         assertEquals("", savedUserMessage.replyToMessageId)
         assertEquals("", savedUserMessage.replyToPreview)
         assertEquals("", savedUserMessage.replyToSpeakerName)
+    }
+
+    @Test
+    fun sendMessage_groupChatPreservesQuotedReplyOnUserMessage() = runTest(mainDispatcherRule.dispatcher.scheduler) {
+        val assistant = Assistant(id = "assistant-a", name = "陆宴清")
+        val scenario = RoleplayScenario(
+            id = "group-scene",
+            title = "群聊",
+            assistantId = assistant.id,
+            interactionMode = RoleplayInteractionMode.ONLINE_PHONE,
+            chatType = RoleplayChatType.GROUP,
+            groupReplyMode = RoleplayGroupReplyMode.MANUAL_ONLY,
+        )
+        val session = RoleplaySession(
+            id = "session-group",
+            scenarioId = scenario.id,
+            conversationId = "conv-group",
+            createdAt = 1L,
+            updatedAt = 2L,
+        )
+        val store = FakeConversationStore(
+            conversations = listOf(
+                Conversation(
+                    id = session.conversationId,
+                    title = "群聊",
+                    model = "chat-model",
+                    createdAt = 1L,
+                    updatedAt = 2L,
+                    assistantId = "roleplay-group:${scenario.id}",
+                ),
+            ),
+            messagesByConversation = mapOf(
+                session.conversationId to listOf(
+                    ChatMessage(
+                        id = "quoted-assistant",
+                        conversationId = session.conversationId,
+                        role = MessageRole.ASSISTANT,
+                        content = "别急，先把话说完。",
+                        createdAt = 1L,
+                        speakerId = assistant.id,
+                        speakerName = assistant.name,
+                    ),
+                ),
+            ),
+        )
+        val provider = ProviderSettings(
+            id = "provider-1",
+            name = "测试 Provider",
+            baseUrl = server.url("/v1/").toString(),
+            apiKey = "test-key",
+            selectedModel = "chat-model",
+        )
+        val viewModel = createViewModel(
+            store = store,
+            roleplayRepository = FakeRoleplayRepository(
+                conversationStore = store,
+                scenarios = listOf(scenario),
+                sessions = listOf(session),
+                groupParticipants = listOf(
+                    RoleplayGroupParticipant(
+                        id = "participant-a",
+                        scenarioId = scenario.id,
+                        assistantId = assistant.id,
+                    ),
+                ),
+            ),
+            settings = AppSettings(
+                baseUrl = provider.baseUrl,
+                apiKey = provider.apiKey,
+                selectedModel = provider.selectedModel,
+                providers = listOf(provider),
+                selectedProviderId = provider.id,
+                assistants = listOf(assistant),
+                selectedAssistantId = assistant.id,
+            ),
+            promptContextAssembler = fixedPromptAssembler("提示词上下文"),
+            messageIdProvider = idProviderOf("user-group"),
+        )
+
+        viewModel.enterScenario(scenario.id)
+        advanceUntilIdle()
+        viewModel.quoteMessage("quoted-assistant", assistant.name, "别急，先把话说完。")
+        viewModel.updateInput("我知道了")
+        viewModel.sendMessage()
+        advanceUntilIdle()
+
+        val savedUserMessage = store.listMessages(session.conversationId)
+            .last { it.role == MessageRole.USER }
+        assertEquals("quoted-assistant", savedUserMessage.replyToMessageId)
+        assertEquals("别急，先把话说完。", savedUserMessage.replyToPreview)
+        assertEquals("陆宴清", savedUserMessage.replyToSpeakerName)
     }
 
     @Test
@@ -3333,7 +3430,10 @@ class RoleplayViewModelTest {
         viewModel.generateDraftInput()
         advanceUntilIdle()
 
-        assertTrue(viewModel.uiState.value.input.contains("我没有立刻逼问"))
+        val state = viewModel.uiState.value
+        assertEquals("", state.input)
+        assertEquals(3, state.suggestions.size)
+        assertTrue(state.suggestions[0].text.contains("我没有立刻逼问"))
         val request = lastSuggestionRequest ?: error("未记录到建议请求")
         val systemPrompt = request.messages.first().content.toString()
         assertTrue(systemPrompt.contains("当前场景处于长文小说模式"))
@@ -3971,10 +4071,12 @@ private class FakeRoleplayRepository(
     private val conversationStore: FakeConversationStore,
     scenarios: List<RoleplayScenario>,
     sessions: List<RoleplaySession>,
+    groupParticipants: List<RoleplayGroupParticipant> = emptyList(),
     onlineMetaByConversation: Map<String, com.example.myapplication.model.RoleplayOnlineMeta> = emptyMap(),
 ) : RoleplayRepository {
     private val scenariosState = MutableStateFlow(scenarios)
     private val sessionsState = MutableStateFlow(sessions)
+    private val groupParticipantsState = MutableStateFlow(groupParticipants)
     private val onlineMetaState = MutableStateFlow(onlineMetaByConversation)
 
     override fun observeScenarios(): Flow<List<RoleplayScenario>> = scenariosState
@@ -4005,6 +4107,14 @@ private class FakeRoleplayRepository(
     }
 
     override fun observeSessions(): Flow<List<RoleplaySession>> = sessionsState
+
+    override fun observeGroupParticipants(scenarioId: String): Flow<List<RoleplayGroupParticipant>> {
+        return groupParticipantsState.map { participants ->
+            participants
+                .filter { it.scenarioId == scenarioId }
+                .sortedWith(compareBy({ it.sortOrder }, { it.createdAt }))
+        }
+    }
 
     override fun observeDiaryEntries(conversationId: String): Flow<List<com.example.myapplication.model.RoleplayDiaryEntry>> {
         return flowOf(emptyList())
@@ -4060,6 +4170,21 @@ private class FakeRoleplayRepository(
 
     override suspend fun getSession(sessionId: String): RoleplaySession? {
         return sessionsState.value.firstOrNull { it.id == sessionId }
+    }
+
+    override suspend fun listGroupParticipants(scenarioId: String): List<RoleplayGroupParticipant> {
+        return groupParticipantsState.value
+            .filter { it.scenarioId == scenarioId }
+            .sortedWith(compareBy({ it.sortOrder }, { it.createdAt }))
+    }
+
+    override suspend fun upsertGroupParticipant(participant: RoleplayGroupParticipant) {
+        groupParticipantsState.value = groupParticipantsState.value
+            .filterNot { it.id == participant.id } + participant
+    }
+
+    override suspend fun deleteGroupParticipant(participantId: String) {
+        groupParticipantsState.value = groupParticipantsState.value.filterNot { it.id == participantId }
     }
 
     override suspend fun listDiaryEntries(conversationId: String): List<com.example.myapplication.model.RoleplayDiaryEntry> {

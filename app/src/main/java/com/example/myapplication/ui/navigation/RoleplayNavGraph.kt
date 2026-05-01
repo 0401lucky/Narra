@@ -357,6 +357,7 @@ internal fun NavGraphBuilder.registerRoleplayGraph(
                         onRetryTurn = roleplayViewModel::retryTurn,
                         onEditUserMessage = roleplayViewModel::editUserMessage,
                         onQuoteMessage = roleplayViewModel::quoteMessage,
+                        onPokeMessageAvatar = roleplayViewModel::pokeMessageAvatar,
                         onClearQuotedMessage = roleplayViewModel::clearQuotedMessage,
                         onRecallMessage = roleplayViewModel::recallMessage,
                         onCaptureOnlineChat = roleplayViewModel::captureOnlineChat,

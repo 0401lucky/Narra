@@ -14,6 +14,8 @@ import com.example.myapplication.model.MAX_GROUP_AUTO_REPLIES
 import com.example.myapplication.model.PunishPlayDraft
 import com.example.myapplication.model.RoleplayInteractionMode
 import com.example.myapplication.model.RoleplayGroupReplyMode
+import com.example.myapplication.model.RoleplayMessageUiModel
+import com.example.myapplication.model.RoleplaySpeaker
 import com.example.myapplication.model.TaskPlayDraft
 import com.example.myapplication.model.TransferPlayDraft
 import com.example.myapplication.model.TransferDirection
@@ -27,6 +29,7 @@ import com.example.myapplication.model.MessageStatus
 import com.example.myapplication.model.isGiftPart
 import com.example.myapplication.model.normalizeChatMessageParts
 import com.example.myapplication.model.ProviderFunction
+import com.example.myapplication.model.pokeMessagePart
 import com.example.myapplication.model.punishMessagePart
 import com.example.myapplication.model.resolveVoiceMessageDurationSeconds
 import com.example.myapplication.model.specialMetadataValue
@@ -34,6 +37,7 @@ import com.example.myapplication.model.taskMessagePart
 import com.example.myapplication.model.transferMessagePart
 import com.example.myapplication.model.textMessagePart
 import com.example.myapplication.model.toPlainText
+import com.example.myapplication.model.toActionCopyText
 import com.example.myapplication.model.voiceMessageActionPart
 import com.example.myapplication.model.withGiftImageGenerating
 import com.example.myapplication.model.hasSendableContent
@@ -337,6 +341,61 @@ internal class RoleplaySendActionSupport(
         }
     }
 
+    fun sendAvatarPoke(message: RoleplayMessageUiModel): Job? {
+        val state = uiState()
+        val scenario = state.currentScenario
+        if (scenario == null) {
+            updateUiState { current ->
+                RoleplayStateSupport.applyErrorMessage(current, "当前场景不存在")
+            }
+            return null
+        }
+        if (scenario.interactionMode != RoleplayInteractionMode.ONLINE_PHONE) {
+            updateUiState { current ->
+                RoleplayStateSupport.applyErrorMessage(current, "拍一拍只支持线上手机模式")
+            }
+            return null
+        }
+        if (state.isSending) {
+            return null
+        }
+
+        return when (message.speaker) {
+            RoleplaySpeaker.CHARACTER -> {
+                if (!state.settings.hasRequiredConfig()) {
+                    updateUiState { current ->
+                        RoleplayStateSupport.applyErrorMessage(current, "请先完成模型配置后再开始剧情互动")
+                    }
+                    return null
+                }
+                val targetName = message.speakerName.trim()
+                    .ifBlank {
+                        RoleplayConversationSupport.resolveRoleplayNames(
+                            scenario = scenario,
+                            assistant = RoleplayConversationSupport.resolveAssistant(state.settings, scenario.assistantId),
+                            settings = state.settings,
+                        ).second
+                    }
+                    .ifBlank { "对方" }
+                startRoleplaySend(
+                    state = state,
+                    scenario = scenario,
+                    userParts = listOf(pokeMessagePart(target = targetName)),
+                    nextInput = state.input,
+                )
+            }
+
+            RoleplaySpeaker.USER -> appendCharacterAvatarPokeToUser(
+                state = state,
+                scenario = scenario,
+            )
+
+            RoleplaySpeaker.NARRATOR,
+            RoleplaySpeaker.SYSTEM,
+            -> null
+        }
+    }
+
     fun sendMessage(): Job? {
         val state = uiState()
         val text = state.input.trim()
@@ -368,6 +427,100 @@ internal class RoleplaySendActionSupport(
             scenario = scenario,
             userParts = listOf(textMessagePart(text)),
             nextInput = "",
+        )
+    }
+
+    private fun appendCharacterAvatarPokeToUser(
+        state: RoleplayUiState,
+        scenario: com.example.myapplication.model.RoleplayScenario,
+    ): Job? {
+        val session = state.currentSession
+        if (session == null) {
+            updateUiState { current ->
+                RoleplayStateSupport.applyErrorMessage(current, "当前剧情会话不存在")
+            }
+            return null
+        }
+        val actor = resolveAvatarPokeActor(
+            state = state,
+            scenario = scenario,
+            conversationId = session.conversationId,
+        )
+        if (actor == null) {
+            updateUiState { current ->
+                RoleplayStateSupport.applyErrorMessage(current, "还没有可拍你的角色")
+            }
+            return null
+        }
+        return scope.launch {
+            val part = pokeMessagePart(target = "用户")
+            val pokeMessage = ChatMessage(
+                id = messageIdProvider(),
+                conversationId = session.conversationId,
+                role = MessageRole.ASSISTANT,
+                content = part.toActionCopyText(),
+                createdAt = nowProvider(),
+                parts = listOf(part),
+                speakerId = actor.assistantId,
+                speakerName = actor.displayName,
+                speakerAvatarUri = actor.avatarUri,
+                roleplayInteractionMode = RoleplayInteractionMode.ONLINE_PHONE,
+            )
+            conversationRepository.appendMessages(
+                conversationId = session.conversationId,
+                messages = listOf(pokeMessage),
+                selectedModel = RoleplayConversationSupport.resolveSelectedModelId(state.settings),
+            )
+            currentRawMessages.value = RoleplayRoundTripSupport.currentConversationMessages(
+                messages = currentRawMessages.value,
+                conversationId = session.conversationId,
+            ) + pokeMessage
+        }
+    }
+
+    private fun resolveAvatarPokeActor(
+        state: RoleplayUiState,
+        scenario: com.example.myapplication.model.RoleplayScenario,
+        conversationId: String,
+    ): AvatarPokeActor? {
+        if (scenario.isGroupChat) {
+            val latestSpeaker = currentRawMessages.value.asReversed().firstOrNull { message ->
+                message.conversationId == conversationId &&
+                    message.role == MessageRole.ASSISTANT &&
+                    message.status == MessageStatus.COMPLETED &&
+                    message.speakerName.isNotBlank()
+            }
+            if (latestSpeaker != null) {
+                return AvatarPokeActor(
+                    assistantId = latestSpeaker.speakerId,
+                    displayName = latestSpeaker.speakerName,
+                    avatarUri = latestSpeaker.speakerAvatarUri,
+                )
+            }
+            val assistants = state.settings.resolvedAssistants()
+            val participant = state.currentGroupParticipants
+                .filterNot { it.isMuted }
+                .sortedWith(compareBy({ it.sortOrder }, { it.createdAt }))
+                .firstOrNull()
+                ?: return null
+            val assistant = assistants.firstOrNull { it.id == participant.assistantId }
+            return AvatarPokeActor(
+                assistantId = participant.assistantId,
+                displayName = participant.displayNameOverride.trim()
+                    .ifBlank { assistant?.name.orEmpty() }
+                    .ifBlank { "角色" },
+                avatarUri = participant.avatarUriOverride.trim()
+                    .ifBlank { assistant?.avatarUri.orEmpty() },
+            )
+        }
+        val assistant = RoleplayConversationSupport.resolveAssistant(state.settings, scenario.assistantId)
+        return AvatarPokeActor(
+            assistantId = scenario.assistantId,
+            displayName = scenario.characterDisplayNameOverride.trim()
+                .ifBlank { assistant?.name.orEmpty() }
+                .ifBlank { "角色" },
+            avatarUri = scenario.characterPortraitUri.trim()
+                .ifBlank { assistant?.avatarUri.orEmpty() },
         )
     }
 
@@ -444,6 +597,9 @@ internal class RoleplaySendActionSupport(
                         baseMessages = baseMessages,
                         userParts = resolvedUserParts,
                         nextInput = nextInput,
+                        replyToMessageId = state.replyToMessageId,
+                        replyToPreview = state.replyToPreview,
+                        replyToSpeakerName = state.replyToSpeakerName,
                     )
                     return@launch
                 }
@@ -524,6 +680,9 @@ internal class RoleplaySendActionSupport(
         baseMessages: List<ChatMessage>,
         userParts: List<ChatMessagePart>,
         nextInput: String,
+        replyToMessageId: String,
+        replyToPreview: String,
+        replyToSpeakerName: String,
     ) {
         if (scenario.interactionMode != RoleplayInteractionMode.ONLINE_PHONE) {
             updateUiState { current ->
@@ -550,6 +709,9 @@ internal class RoleplaySendActionSupport(
                 selectedModel = selectedModel,
                 baseMessages = baseMessages,
                 userParts = userParts,
+                replyToMessageId = replyToMessageId,
+                replyToPreview = replyToPreview,
+                replyToSpeakerName = replyToSpeakerName,
             )
             currentRawMessages.value = baseMessages + userMessage
             updateUiState { current ->
@@ -566,6 +728,9 @@ internal class RoleplaySendActionSupport(
             selectedModel = selectedModel,
             baseMessages = baseMessages,
             userParts = userParts,
+            replyToMessageId = replyToMessageId,
+            replyToPreview = replyToPreview,
+            replyToSpeakerName = replyToSpeakerName,
         )
         val messagesWithUser = baseMessages + userMessage
         currentRawMessages.value = messagesWithUser
@@ -683,13 +848,16 @@ internal class RoleplaySendActionSupport(
         selectedModel: String,
         baseMessages: List<ChatMessage>,
         userParts: List<ChatMessagePart>,
+        replyToMessageId: String,
+        replyToPreview: String,
+        replyToSpeakerName: String,
     ): ChatMessage {
         val userMessage = RoleplayRoundTripSupport.buildUserMessage(
             conversationId = session.conversationId,
             parts = userParts,
-            replyToMessageId = uiState().replyToMessageId,
-            replyToPreview = uiState().replyToPreview,
-            replyToSpeakerName = uiState().replyToSpeakerName,
+            replyToMessageId = replyToMessageId,
+            replyToPreview = replyToPreview,
+            replyToSpeakerName = replyToSpeakerName,
             roleplayInteractionMode = RoleplayMessageFormatSupport.resolveScenarioInteractionMode(scenario),
             nowProvider = nowProvider,
             messageIdProvider = messageIdProvider,
@@ -712,3 +880,9 @@ internal class RoleplaySendActionSupport(
             contains(normalizedName, ignoreCase = true)
     }
 }
+
+private data class AvatarPokeActor(
+    val assistantId: String,
+    val displayName: String,
+    val avatarUri: String,
+)

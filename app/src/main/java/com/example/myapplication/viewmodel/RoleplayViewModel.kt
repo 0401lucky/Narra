@@ -54,6 +54,7 @@ import com.example.myapplication.model.RoleplayChatType
 import com.example.myapplication.model.RoleplayDiaryDraft
 import com.example.myapplication.model.RoleplayGroupParticipant
 import com.example.myapplication.model.RoleplayGroupReplyMode
+import com.example.myapplication.model.RoleplayMessageUiModel
 import com.example.myapplication.model.RoleplayOnlineEventKind
 import com.example.myapplication.model.RoleplayOutputFormat
 import com.example.myapplication.model.TransferDirection
@@ -735,6 +736,12 @@ class RoleplayViewModel(
         }
     }
 
+    fun pokeMessageAvatar(message: RoleplayMessageUiModel) {
+        sendActionSupport.sendAvatarPoke(message)?.let { job ->
+            sendingJob = job
+        }
+    }
+
     fun clearQuotedMessage() {
         _uiState.update { current ->
             current.copy(
@@ -1005,7 +1012,7 @@ class RoleplayViewModel(
         val scenario = state.currentScenario
         if (session == null || scenario == null) {
             _uiState.update { current ->
-                RoleplayStateSupport.applyErrorMessage(current, "当前聊天不存在，无法总结记忆")
+                RoleplayStateSupport.applyErrorMessage(current, "当前聊天不存在，无法整理摘要与记忆")
             }
             return
         }
@@ -1037,7 +1044,7 @@ class RoleplayViewModel(
                 current.copy(
                     isRefreshingConversationSummary = true,
                     errorMessage = null,
-                    noticeMessage = "正在总结并提炼记忆…",
+                    noticeMessage = "正在整理摘要与记忆…",
                 )
             }
             runCatching {
@@ -1099,7 +1106,7 @@ class RoleplayViewModel(
                 _uiState.update { current ->
                     RoleplayStateSupport.applyErrorMessage(
                         current.copy(isRefreshingConversationSummary = false),
-                        throwable.message ?: "总结记忆失败",
+                        throwable.message ?: "整理摘要与记忆失败",
                     )
                 }
             }

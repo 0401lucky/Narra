@@ -791,6 +791,39 @@ internal object ChatDbMigrations {
         }
     }
 
+    val MIGRATION_37_38 = object : Migration(37, 38) {
+        override fun migrate(db: SupportSQLiteDatabase) {
+            db.execSQL(
+                """
+                CREATE TABLE IF NOT EXISTS conversation_summary_segments (
+                    id TEXT NOT NULL PRIMARY KEY,
+                    conversationId TEXT NOT NULL,
+                    assistantId TEXT NOT NULL,
+                    startMessageId TEXT NOT NULL,
+                    endMessageId TEXT NOT NULL,
+                    startCreatedAt INTEGER NOT NULL,
+                    endCreatedAt INTEGER NOT NULL,
+                    messageCount INTEGER NOT NULL,
+                    summary TEXT NOT NULL,
+                    createdAt INTEGER NOT NULL,
+                    updatedAt INTEGER NOT NULL,
+                    FOREIGN KEY(conversationId) REFERENCES conversations(id) ON UPDATE NO ACTION ON DELETE CASCADE
+                )
+                """.trimIndent(),
+            )
+            db.execSQL("CREATE INDEX IF NOT EXISTS index_conversation_summary_segments_conversationId ON conversation_summary_segments (conversationId)")
+            db.execSQL("CREATE INDEX IF NOT EXISTS index_conversation_summary_segments_assistantId ON conversation_summary_segments (assistantId)")
+            db.execSQL("CREATE INDEX IF NOT EXISTS index_conversation_summary_segments_conversationId_startCreatedAt ON conversation_summary_segments (conversationId, startCreatedAt)")
+            db.execSQL("CREATE INDEX IF NOT EXISTS index_conversation_summary_segments_conversationId_endCreatedAt ON conversation_summary_segments (conversationId, endCreatedAt)")
+            db.execSQL(
+                """
+                CREATE UNIQUE INDEX IF NOT EXISTS index_conversation_summary_segments_conversationId_startMessageId_endMessageId
+                ON conversation_summary_segments (conversationId, startMessageId, endMessageId)
+                """.trimIndent(),
+            )
+        }
+    }
+
     /** 版本连续性由 `ChatDatabaseMigrationRegistryTest` 保证：`size == CURRENT_VERSION - 1`。 */
     val ALL: Array<Migration> = arrayOf(
         MIGRATION_1_2,
@@ -829,6 +862,7 @@ internal object ChatDbMigrations {
         MIGRATION_34_35,
         MIGRATION_35_36,
         MIGRATION_36_37,
+        MIGRATION_37_38,
     )
 
     /** 幂等列检查。子迁移在 `ALTER TABLE ADD COLUMN` 之前先探测，允许中间版本重复升级。 */

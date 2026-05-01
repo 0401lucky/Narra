@@ -1,9 +1,11 @@
 package com.example.myapplication.data.repository.context
 
 import com.example.myapplication.data.local.memory.ConversationSummaryEntity
+import com.example.myapplication.data.local.memory.ConversationSummarySegmentEntity
 import com.example.myapplication.data.local.memory.MemoryDao
 import com.example.myapplication.data.local.memory.MemoryEntryEntity
 import com.example.myapplication.model.ConversationSummary
+import com.example.myapplication.model.ConversationSummarySegment
 import com.example.myapplication.model.MemoryEntry
 import com.example.myapplication.model.MemoryScopeType
 import kotlinx.coroutines.flow.Flow
@@ -42,13 +44,21 @@ interface ConversationSummaryRepository {
 
     fun observeSummaries(): Flow<List<ConversationSummary>>
 
+    fun observeSummarySegments(conversationId: String): Flow<List<ConversationSummarySegment>> = flowOf(emptyList())
+
     suspend fun getSummary(conversationId: String): ConversationSummary?
 
     suspend fun listSummaries(): List<ConversationSummary>
 
+    suspend fun listSummarySegments(conversationId: String): List<ConversationSummarySegment> = emptyList()
+
     suspend fun upsertSummary(summary: ConversationSummary)
 
+    suspend fun upsertSummarySegment(segment: ConversationSummarySegment) = Unit
+
     suspend fun deleteSummary(conversationId: String)
+
+    suspend fun deleteSummarySegments(conversationId: String) = Unit
 }
 
 class RoomMemoryRepository(
@@ -118,6 +128,16 @@ class RoomMemoryRepository(
         }
     }
 
+    override fun observeSummarySegments(conversationId: String): Flow<List<ConversationSummarySegment>> {
+        return memoryDao.observeConversationSummarySegments(conversationId).map { segments ->
+            segments.map(::toSummarySegmentDomain)
+        }
+    }
+
+    override suspend fun listSummarySegments(conversationId: String): List<ConversationSummarySegment> {
+        return memoryDao.listConversationSummarySegments(conversationId).map(::toSummarySegmentDomain)
+    }
+
     override suspend fun upsertSummary(summary: ConversationSummary) {
         memoryDao.upsertConversationSummary(
             ConversationSummaryEntity(
@@ -130,8 +150,16 @@ class RoomMemoryRepository(
         )
     }
 
+    override suspend fun upsertSummarySegment(segment: ConversationSummarySegment) {
+        memoryDao.upsertConversationSummarySegment(toSummarySegmentEntity(segment))
+    }
+
     override suspend fun deleteSummary(conversationId: String) {
         memoryDao.deleteConversationSummary(conversationId)
+    }
+
+    override suspend fun deleteSummarySegments(conversationId: String) {
+        memoryDao.deleteConversationSummarySegments(conversationId)
     }
 
     private fun toMemoryDomain(entity: MemoryEntryEntity): MemoryEntry {
@@ -173,6 +201,38 @@ class RoomMemoryRepository(
             summary = entity.summary,
             coveredMessageCount = entity.coveredMessageCount,
             updatedAt = entity.updatedAt,
+        )
+    }
+
+    private fun toSummarySegmentDomain(entity: ConversationSummarySegmentEntity): ConversationSummarySegment {
+        return ConversationSummarySegment(
+            id = entity.id,
+            conversationId = entity.conversationId,
+            assistantId = entity.assistantId,
+            startMessageId = entity.startMessageId,
+            endMessageId = entity.endMessageId,
+            startCreatedAt = entity.startCreatedAt,
+            endCreatedAt = entity.endCreatedAt,
+            messageCount = entity.messageCount,
+            summary = entity.summary,
+            createdAt = entity.createdAt,
+            updatedAt = entity.updatedAt,
+        )
+    }
+
+    private fun toSummarySegmentEntity(segment: ConversationSummarySegment): ConversationSummarySegmentEntity {
+        return ConversationSummarySegmentEntity(
+            id = segment.id,
+            conversationId = segment.conversationId,
+            assistantId = segment.assistantId,
+            startMessageId = segment.startMessageId,
+            endMessageId = segment.endMessageId,
+            startCreatedAt = segment.startCreatedAt,
+            endCreatedAt = segment.endCreatedAt,
+            messageCount = segment.messageCount,
+            summary = segment.summary,
+            createdAt = segment.createdAt,
+            updatedAt = segment.updatedAt,
         )
     }
 }

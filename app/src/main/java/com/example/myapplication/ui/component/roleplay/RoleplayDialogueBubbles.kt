@@ -6,7 +6,9 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
@@ -230,28 +232,40 @@ internal fun RoleplayReplyPreview(
         } else {
             Modifier
         },
-        shape = RoundedCornerShape(14.dp),
-        color = colors.panelBackground,
+        shape = RoundedCornerShape(8.dp),
+        color = colors.panelBackground.copy(alpha = 0.78f),
     ) {
-        Column(
+        Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 10.dp, vertical = 8.dp),
-            verticalArrangement = Arrangement.spacedBy(4.dp),
+                .padding(horizontal = 9.dp, vertical = 7.dp),
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            verticalAlignment = Alignment.CenterVertically,
         ) {
-            Text(
-                text = message.replyToSpeakerName.ifBlank { "\u5F15\u7528\u6D88\u606F" },
-                style = MaterialTheme.typography.labelSmall,
-                color = colors.characterAccent,
-                fontWeight = FontWeight.SemiBold,
-            )
-            Text(
-                text = message.replyToPreview,
-                style = MaterialTheme.typography.bodySmall,
-                color = colors.textMuted,
-                maxLines = 2,
-                overflow = TextOverflow.Ellipsis,
-            )
+            Surface(
+                modifier = Modifier
+                    .width(3.dp)
+                    .height(32.dp),
+                shape = RoundedCornerShape(999.dp),
+                color = colors.characterAccent.copy(alpha = 0.62f),
+            ) {}
+            Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                Text(
+                    text = message.replyToSpeakerName.ifBlank { "\u5F15\u7528\u6D88\u606F" },
+                    style = MaterialTheme.typography.labelSmall,
+                    color = colors.characterAccent,
+                    fontWeight = FontWeight.SemiBold,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
+                Text(
+                    text = message.replyToPreview,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = colors.textMuted,
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis,
+                )
+            }
         }
     }
 }

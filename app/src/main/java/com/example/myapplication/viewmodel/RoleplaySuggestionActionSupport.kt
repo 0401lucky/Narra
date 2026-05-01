@@ -24,11 +24,11 @@ internal class RoleplaySuggestionActionSupport(
     private var suggestionJob: Job? = null
 
     fun generateSuggestions() {
-        requestRoleplaySuggestions(fillInputWithFirstSuggestion = false)
+        requestRoleplaySuggestions(showDraftFailureOnEmpty = false)
     }
 
     fun generateDraftInput() {
-        requestRoleplaySuggestions(fillInputWithFirstSuggestion = true)
+        requestRoleplaySuggestions(showDraftFailureOnEmpty = true)
     }
 
     fun clearSuggestions() {
@@ -49,7 +49,7 @@ internal class RoleplaySuggestionActionSupport(
     }
 
     private fun requestRoleplaySuggestions(
-        fillInputWithFirstSuggestion: Boolean,
+        showDraftFailureOnEmpty: Boolean,
     ) {
         val state = uiState()
         val scenario = state.currentScenario
@@ -118,18 +118,14 @@ internal class RoleplaySuggestionActionSupport(
                 if (!isSuggestionTargetStillCurrent(scenario.id, session.conversationId)) {
                     return@launch
                 }
-                if (fillInputWithFirstSuggestion) {
-                    val draftText = result.suggestions.firstOrNull()
-                        ?.text
-                        .orEmpty()
-                        .trim()
-                    if (!RoleplaySuggestionDraftGuard.isUsableDraft(draftText)) {
+                if (result.suggestions.isEmpty()) {
+                    if (showDraftFailureOnEmpty) {
                         updateUiState { current ->
                             RoleplayStateSupport.applySuggestionDraftFailure(current)
                         }
                     } else {
                         updateUiState { current ->
-                            RoleplayStateSupport.applySuggestionDraft(current, draftText)
+                            RoleplayStateSupport.applySuggestionResult(current, emptyList())
                         }
                     }
                 } else {

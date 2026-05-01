@@ -642,7 +642,7 @@ private fun RoleplaySettingsMainPanel(
                         )
                         SummaryDivider()
                         SummaryLinkRow(
-                            title = "手动总结记忆",
+                            title = "整理摘要与记忆",
                             summary = summaryRefreshText,
                             icon = Icons.Default.SettingsSuggest,
                             onClick = onRefreshConversationSummary,

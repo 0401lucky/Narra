@@ -38,11 +38,32 @@ interface MemoryDao {
     @Query("SELECT * FROM conversation_summaries ORDER BY updatedAt DESC")
     fun observeConversationSummaries(): Flow<List<ConversationSummaryEntity>>
 
+    @Query(
+        """
+        SELECT * FROM conversation_summary_segments
+        WHERE conversationId = :conversationId
+        ORDER BY startCreatedAt ASC, endCreatedAt ASC
+        """,
+    )
+    suspend fun listConversationSummarySegments(conversationId: String): List<ConversationSummarySegmentEntity>
+
+    @Query(
+        """
+        SELECT * FROM conversation_summary_segments
+        WHERE conversationId = :conversationId
+        ORDER BY startCreatedAt ASC, endCreatedAt ASC
+        """,
+    )
+    fun observeConversationSummarySegments(conversationId: String): Flow<List<ConversationSummarySegmentEntity>>
+
     @Upsert
     suspend fun upsertMemoryEntry(entry: MemoryEntryEntity)
 
     @Upsert
     suspend fun upsertConversationSummary(summary: ConversationSummaryEntity)
+
+    @Upsert
+    suspend fun upsertConversationSummarySegment(segment: ConversationSummarySegmentEntity)
 
     @Query("DELETE FROM memory_entries WHERE id = :entryId")
     suspend fun deleteMemoryEntry(entryId: String)
@@ -68,4 +89,7 @@ interface MemoryDao {
 
     @Query("DELETE FROM conversation_summaries WHERE conversationId = :conversationId")
     suspend fun deleteConversationSummary(conversationId: String)
+
+    @Query("DELETE FROM conversation_summary_segments WHERE conversationId = :conversationId")
+    suspend fun deleteConversationSummarySegments(conversationId: String)
 }

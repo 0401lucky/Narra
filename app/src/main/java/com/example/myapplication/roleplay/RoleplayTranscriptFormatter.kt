@@ -75,6 +75,8 @@ object RoleplayTranscriptFormatter {
             }
 
             MessageRole.ASSISTANT -> {
+                val resolvedCharacterName = message.speakerName.trim()
+                    .ifBlank { characterName }
                 val normalizedParts = resolveAssistantTranscriptParts(
                     message = message,
                     interactionMode = interactionMode,
@@ -85,12 +87,12 @@ object RoleplayTranscriptFormatter {
                             part.isOnlineThoughtPart() -> {
                                 part.onlineThoughtContent()
                                     .takeIf { it.isNotBlank() }
-                                    ?.let { thought -> "${characterName.ifBlank { "角色" }}心声：$thought" }
+                                    ?.let { thought -> "${resolvedCharacterName.ifBlank { "角色" }}心声：$thought" }
                             }
                             part.text.isNotBlank() -> {
                                 part.text.trim()
                                     .takeIf { it.isNotBlank() }
-                                    ?.let { text -> "${characterName.ifBlank { "角色" }}：$text" }
+                                    ?.let { text -> "${resolvedCharacterName.ifBlank { "角色" }}：$text" }
                             }
                             else -> null
                         }
@@ -104,14 +106,14 @@ object RoleplayTranscriptFormatter {
                         com.example.myapplication.model.RoleplayOutputFormat.LONGFORM -> {
                             formatLongformMessage(
                                 rawContent = content,
-                                characterName = characterName,
+                                characterName = resolvedCharacterName,
                             )
                         }
 
                         else -> {
                             parser.parseAssistantOutput(
                                 rawContent = content,
-                                characterName = characterName.ifBlank { "角色" },
+                                characterName = resolvedCharacterName.ifBlank { "角色" },
                                 allowNarration = allowNarration,
                             ).mapNotNull { parsedSegment ->
                                 val segment = normalizeAssistantSegmentForTranscript(
@@ -119,11 +121,11 @@ object RoleplayTranscriptFormatter {
                                     message = message,
                                     interactionMode = resolvedInteractionMode,
                                     systemEventKind = message.systemEventKind,
-                                    characterName = characterName,
+                                    characterName = resolvedCharacterName,
                                 )
                                 val prefix = when {
                                     segment.contentType == RoleplayContentType.THOUGHT -> {
-                                        "${characterName.ifBlank { "角色" }}心声"
+                                        "${resolvedCharacterName.ifBlank { "角色" }}心声"
                                     }
                                     else -> when (segment.speaker) {
                                         RoleplaySpeaker.USER -> userName.ifBlank { "用户" }

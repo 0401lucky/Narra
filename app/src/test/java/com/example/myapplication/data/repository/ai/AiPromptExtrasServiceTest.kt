@@ -242,7 +242,7 @@ class AiPromptExtrasServiceTest {
         val requestBody = JsonParser.parseString(server.takeRequest().body.readUtf8()).asJsonObject
         val prompt = requestBody.getAsJsonArray("messages")[0].asJsonObject["content"].asString
         assertTrue(prompt.contains("【剧情进展】"))
-        assertTrue(prompt.contains("【未解问题】"))
+        assertTrue(prompt.contains("【未解问题/伏笔】"))
     }
 
     @Test
