@@ -22,6 +22,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Pause
+import androidx.compose.material.icons.filled.PhotoCamera
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -34,6 +35,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
@@ -61,6 +63,16 @@ internal fun RoleplayActionCard(
     val isUserMessage = message.speaker == RoleplaySpeaker.USER
     if (actionPart.actionType == ChatActionType.VOICE_MESSAGE) {
         RoleplayVoiceMessageCard(
+            message = message,
+            actionPart = actionPart,
+            colors = colors,
+            backdropState = backdropState,
+            isUserMessage = isUserMessage,
+        )
+        return
+    }
+    if (actionPart.actionType == ChatActionType.AI_PHOTO) {
+        RoleplayAiPhotoCard(
             message = message,
             actionPart = actionPart,
             colors = colors,
@@ -132,6 +144,64 @@ internal fun RoleplayActionCard(
                     color = colors.textMuted,
                 )
             }
+        }
+    }
+}
+
+@Composable
+private fun RoleplayAiPhotoCard(
+    message: RoleplayMessageUiModel,
+    actionPart: com.example.myapplication.model.ChatMessagePart,
+    colors: ImmersiveRoleplayColors,
+    backdropState: ImmersiveBackdropState,
+    isUserMessage: Boolean,
+) {
+    val description = actionPart.actionMetadataValue("description")
+        .trim()
+        .ifBlank { message.copyText.ifBlank { "照片" } }
+    ImmersiveGlassSurface(
+        backdropState = backdropState,
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(22.dp),
+        overlayColor = if (isUserMessage) colors.panelBackgroundStrong else colors.panelBackground,
+    ) {
+        Column(
+            modifier = Modifier.padding(12.dp),
+            verticalArrangement = Arrangement.spacedBy(10.dp),
+        ) {
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(150.dp)
+                    .background(
+                        brush = Brush.linearGradient(
+                            colors = listOf(
+                                colors.characterAccent.copy(alpha = 0.26f),
+                                colors.panelBackgroundStrong.copy(alpha = 0.72f),
+                            ),
+                        ),
+                        shape = RoundedCornerShape(18.dp),
+                    ),
+                contentAlignment = Alignment.Center,
+            ) {
+                Icon(
+                    imageVector = Icons.Filled.PhotoCamera,
+                    contentDescription = null,
+                    tint = colors.textPrimary.copy(alpha = 0.72f),
+                    modifier = Modifier.size(34.dp),
+                )
+            }
+            Text(
+                text = "照片",
+                style = MaterialTheme.typography.labelLarge,
+                fontWeight = FontWeight.SemiBold,
+                color = if (isUserMessage) colors.userAccent else colors.characterAccent,
+            )
+            Text(
+                text = description,
+                style = MaterialTheme.typography.bodyMedium,
+                color = colors.textPrimary,
+            )
         }
     }
 }

@@ -271,6 +271,49 @@ class RoleplayRepositoryTest {
     }
 
     @Test
+    fun listScenarios_mapsOnlineReplyRangeWithBounds() = runBlocking {
+        val dao = FakeRoleplayDao(
+            scenarios = listOf(
+                RoleplayScenarioEntity(
+                    id = "scene-1",
+                    title = "线上",
+                    description = "",
+                    assistantId = "assistant-1",
+                    backgroundUri = "",
+                    userDisplayNameOverride = "",
+                    userPersonaOverride = "",
+                    userPortraitUri = "",
+                    userPortraitUrl = "",
+                    characterDisplayNameOverride = "",
+                    characterPortraitUri = "",
+                    characterPortraitUrl = "",
+                    openingNarration = "",
+                    enableNarration = true,
+                    enableRoleplayProtocol = true,
+                    autoHighlightSpeaker = true,
+                    onlineReplyMinCount = 0,
+                    onlineReplyMaxCount = 12,
+                    createdAt = 1L,
+                    updatedAt = 1L,
+                ),
+            ),
+        )
+        val repository = RoomRoleplayRepository(
+            roleplayDao = dao,
+            conversationRepository = ConversationRepository(
+                conversationStore = FakeConversationStore(),
+                nowProvider = { 10L },
+            ),
+            nowProvider = { 10L },
+        )
+
+        val scenario = repository.listScenarios().single()
+
+        assertEquals(1, scenario.onlineReplyMinCount)
+        assertEquals(10, scenario.onlineReplyMaxCount)
+    }
+
+    @Test
     fun deleteScenario_removesBoundConversation() = runBlocking {
         val conversation = Conversation(
             id = "conversation-1",
@@ -380,6 +423,12 @@ private class FakeRoleplayDao(
                     enableDeepImmersion = scenario.enableDeepImmersion,
                     enableTimeAwareness = scenario.enableTimeAwareness,
                     enableNetMeme = scenario.enableNetMeme,
+                    chatType = scenario.chatType,
+                    groupReplyMode = scenario.groupReplyMode,
+                    enableGroupMentionAutoReply = scenario.enableGroupMentionAutoReply,
+                    maxGroupAutoReplies = scenario.maxGroupAutoReplies,
+                    onlineReplyMinCount = scenario.onlineReplyMinCount,
+                    onlineReplyMaxCount = scenario.onlineReplyMaxCount,
                     isPinned = scenario.isPinned,
                     isMuted = scenario.isMuted,
                     createdAt = scenario.createdAt,

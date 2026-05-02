@@ -34,8 +34,10 @@ import com.example.myapplication.model.RoleplayOutputFormat
 import com.example.myapplication.model.TransferDirection
 import com.example.myapplication.model.TransferStatus
 import com.example.myapplication.model.imageMessagePart
+import com.example.myapplication.model.isOnlineThoughtPart
 import com.example.myapplication.model.isGroupChat
 import com.example.myapplication.model.normalizeChatMessageParts
+import com.example.myapplication.model.normalizedOnlineReplyRange
 import com.example.myapplication.model.reasoningStepsToContent
 import com.example.myapplication.model.toContentMirror
 import com.example.myapplication.model.transferResultText
@@ -301,27 +303,32 @@ internal class RoleplayRoundTripExecutor(
                                     )
                                 }
                             }
-                            val completedParts = onlineProtocolResult
-                                ?.parts
-                                ?.let { onlineParts ->
-                                    normalizeChatMessageParts(
-                                        RoleplayOnlineReferenceSupport.resolveReplyTargets(
-                                            parts = onlineParts,
-                                            candidates = referenceCandidates,
-                                        ) + if (scenario.isGroupChat) {
-                                            emptyList()
-                                        } else {
-                                            parsedOutput.parts.filter { part ->
-                                                part.type != ChatMessagePartType.TEXT
-                                            }
-                                        },
-                                    )
-                                }
-                                ?: if (scenario.isGroupChat) {
-                                    parsedOutput.parts.filter { part -> part.type == ChatMessagePartType.TEXT }
-                                } else {
-                                    parsedOutput.parts
-                                }
+                            val rawCompletedParts = if (onlineProtocolResult != null) {
+                                onlineProtocolResult
+                                    ?.parts
+                                    ?.let { onlineParts ->
+                                        normalizeChatMessageParts(
+                                            RoleplayOnlineReferenceSupport.resolveReplyTargets(
+                                                parts = onlineParts,
+                                                candidates = referenceCandidates,
+                                            ) + if (scenario.isGroupChat) {
+                                                emptyList()
+                                            } else {
+                                                parsedOutput.parts.filter { part ->
+                                                    part.type != ChatMessagePartType.TEXT
+                                                }
+                                            },
+                                        )
+                                    }
+                                    .orEmpty()
+                            } else if (scenario.interactionMode == com.example.myapplication.model.RoleplayInteractionMode.ONLINE_PHONE) {
+                                parsedOutput.parts.filter { part -> part.type != ChatMessagePartType.TEXT }
+                            } else if (scenario.isGroupChat) {
+                                parsedOutput.parts.filter { part -> part.type == ChatMessagePartType.TEXT }
+                            } else {
+                                parsedOutput.parts
+                            }
+                            val completedParts = limitOnlineReplyParts(rawCompletedParts, scenario)
                             val resolvedContent = completedParts.toContentMirror(
                                 imageFallback = "角色返回了图片",
                                 specialFallback = "角色已回应",
@@ -330,15 +337,32 @@ internal class RoleplayRoundTripExecutor(
                                 ?.directives
                                 ?.toDirectiveResultText()
                                 .orEmpty()
+                            val shouldUseParsedTextContent = parsedOutput.content.isNotBlank() &&
+                                onlineProtocolResult == null &&
+                                scenario.interactionMode != com.example.myapplication.model.RoleplayInteractionMode.ONLINE_PHONE
+                            val hasResolvedAssistantContent = completedParts.isNotEmpty() ||
+                                shouldUseParsedTextContent ||
+                                parsedOutput.transferUpdates.isNotEmpty() ||
+                                protocolDirectiveContent.isNotBlank()
+                            val isEmptyCompensationOpening = !hasResolvedAssistantContent &&
+                                loading.systemEventKind == com.example.myapplication.model.RoleplayOnlineEventKind.COMPENSATION_OPENING
                             loading.copy(
-                                content = parsedOutput.content.takeIf { it.isNotBlank() && onlineProtocolResult == null }
-                                    ?: parsedOutput.transferUpdates.lastOrNull()?.status?.transferResultText()
-                                    ?: protocolDirectiveContent.takeIf { it.isNotBlank() }
-                                    ?: resolvedContent.ifBlank { "模型未返回有效内容" },
-                                status = MessageStatus.COMPLETED,
+                                content = if (isEmptyCompensationOpening) {
+                                    ""
+                                } else {
+                                    parsedOutput.content.takeIf { shouldUseParsedTextContent }
+                                        ?: parsedOutput.transferUpdates.lastOrNull()?.status?.transferResultText()
+                                        ?: protocolDirectiveContent.takeIf { it.isNotBlank() }
+                                        ?: resolvedContent.ifBlank { "模型未返回有效内容" }
+                                },
+                                status = when {
+                                    hasResolvedAssistantContent -> MessageStatus.COMPLETED
+                                    isEmptyCompensationOpening -> MessageStatus.COMPLETED
+                                    else -> MessageStatus.ERROR
+                                },
                                 reasoningContent = payload.reasoning,
                                 reasoningSteps = payload.reasoningSteps,
-                                parts = completedParts,
+                                parts = if (isEmptyCompensationOpening) emptyList() else completedParts,
                             )
                         },
                         onCancelled = { _, _ ->
@@ -459,6 +483,31 @@ internal class RoleplayRoundTripExecutor(
                 messages = listOf(failedAssistant),
                 selectedModel = selectedModel,
             )
+        }
+    }
+
+    private fun limitOnlineReplyParts(
+        parts: List<ChatMessagePart>,
+        scenario: com.example.myapplication.model.RoleplayScenario,
+    ): List<ChatMessagePart> {
+        if (scenario.interactionMode != com.example.myapplication.model.RoleplayInteractionMode.ONLINE_PHONE) {
+            return parts
+        }
+        val maxVisibleReplyCount = scenario.normalizedOnlineReplyRange().last
+        var visibleReplyCount = 0
+        var hasThought = false
+        return parts.filter { part ->
+            if (part.isOnlineThoughtPart()) {
+                if (hasThought) {
+                    false
+                } else {
+                    hasThought = true
+                    true
+                }
+            } else {
+                visibleReplyCount += 1
+                visibleReplyCount <= maxVisibleReplyCount
+            }
         }
     }
 

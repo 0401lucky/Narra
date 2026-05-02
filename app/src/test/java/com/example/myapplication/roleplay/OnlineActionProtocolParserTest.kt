@@ -1,10 +1,13 @@
 package com.example.myapplication.roleplay
 
 import com.example.myapplication.model.ChatActionType
+import com.example.myapplication.model.ChatMessagePartType
+import com.example.myapplication.model.ChatSpecialType
 import com.example.myapplication.model.TransferDirection
 import com.example.myapplication.model.TransferStatus
 import com.example.myapplication.model.isOnlineThoughtPart
 import com.example.myapplication.model.onlineThoughtContent
+import com.example.myapplication.model.specialMetadataValue
 import com.example.myapplication.model.voiceMessageDurationSeconds
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -41,6 +44,29 @@ class OnlineActionProtocolParserTest {
         assertEquals(TransferDirection.ASSISTANT_TO_USER, result.parts[6].specialDirection)
         assertEquals(ChatActionType.POKE, result.parts[7].actionType)
         assertEquals(ChatActionType.VIDEO_CALL, result.parts[8].actionType)
+    }
+
+    @Test
+    fun parse_acceptsHyphenatedPhotoAndSpecialPlayObjects() {
+        val result = OnlineActionProtocolParser.parse(
+            rawContent = """
+                [
+                  {"type":"ai-photo","description":"厨房台面上的三菜一汤。"},
+                  {"type":"invite","target":"用户","place":"家里","time":"现在","note":"菜要凉了"},
+                  {"type":"gift","target":"用户","item":"围巾","note":"外面冷"},
+                  {"type":"task","title":"带伞","objective":"出门前把伞拿上","reward":"少淋雨","deadline":"出门前"},
+                  {"type":"punish","method":"今晚早点睡","count":"1","intensity":"low","reason":"昨天熬夜了"}
+                ]
+            """.trimIndent(),
+            characterName = "沈砚清",
+        )!!
+
+        assertEquals(ChatActionType.AI_PHOTO, result.parts[0].actionType)
+        assertEquals(ChatSpecialType.INVITE, result.parts[1].specialType)
+        assertEquals("家里", result.parts[1].specialMetadataValue("place"))
+        assertEquals(ChatSpecialType.GIFT, result.parts[2].specialType)
+        assertEquals(ChatSpecialType.TASK, result.parts[3].specialType)
+        assertEquals(ChatSpecialType.PUNISH, result.parts[4].specialType)
     }
 
     @Test
@@ -263,5 +289,42 @@ class OnlineActionProtocolParserTest {
         assertEquals("去吧。", result.parts[0].text)
         assertEquals("记得准时。", result.parts[1].text)
         assertTrue(result.parts.none { it.text.contains("<play") || it.text.contains("task_lunch_99") })
+    }
+
+    @Test
+    fun parseWithFallback_stripsMalformedProtocolFragmentsFromPlainText() {
+        val result = OnlineActionProtocolParser.parseWithFallback(
+            rawContent = "thought\",\"快点回好吧\",\"ai-photo\",\"厨房台面上摆着三菜一汤\",\"play id='meal_invitation_001' type='invite' target='用户' place='家里' time='现在' note='菜要凉了'/>",
+            characterName = "角色",
+        )!!
+
+        val text = result.parts.joinToString("\n") { it.text }
+        assertTrue(text.contains("快点回好吧"))
+        assertTrue(text.contains("厨房台面上摆着三菜一汤"))
+        assertFalse(text.contains("thought", ignoreCase = true))
+        assertFalse(text.contains("ai-photo", ignoreCase = true))
+        assertFalse(text.contains("play id", ignoreCase = true))
+        assertFalse(text.contains("meal_invitation_001", ignoreCase = true))
+    }
+
+    @Test
+    fun parseGroupTextOnlyWithFallback_keepsVoiceAndPhotoButDropsThoughts() {
+        val result = OnlineActionProtocolParser.parseGroupTextOnlyWithFallback(
+            rawContent = """
+                [
+                  {"type":"thought","content":"不想让群里看出来"},
+                  "群里说一句就行。",
+                  {"type":"ai_photo","description":"窗外夜色"},
+                  {"type":"voice_message","content":"别闹"}
+                ]
+            """.trimIndent(),
+            characterName = "角色",
+        )!!
+
+        assertEquals(3, result.parts.size)
+        assertEquals(ChatMessagePartType.TEXT, result.parts[0].type)
+        assertEquals("群里说一句就行。", result.parts[0].text)
+        assertEquals(ChatActionType.AI_PHOTO, result.parts[1].actionType)
+        assertEquals(ChatActionType.VOICE_MESSAGE, result.parts[2].actionType)
     }
 }

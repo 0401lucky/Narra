@@ -72,4 +72,17 @@ class ChatStatusBlockParserTest {
         assertTrue(!parts.last().text.contains("对lucky"))
         assertTrue(parts.last().text.contains("外滩夜色"))
     }
+
+    @Test
+    fun extract_normalizesEscapedNewlinesInsideStatusCard() {
+        val parts = ChatStatusBlockParser.extract(
+            "状态栏：时间：2026年5月2日 03:35\\n地点：大渡口 陆家老宅 阳台\\n状态：指尖冰凉，盯着屏幕\n\n回来了。",
+        )
+
+        assertEquals(ChatMessagePartType.STATUS, parts.first().type)
+        assertTrue(parts.first().text.contains("时间：2026年5月2日 03:35\n地点：大渡口"))
+        assertTrue(parts.first().text.contains("\n状态：指尖冰凉"))
+        assertEquals(ChatMessagePartType.TEXT, parts.last().type)
+        assertEquals("回来了。", parts.last().text)
+    }
 }

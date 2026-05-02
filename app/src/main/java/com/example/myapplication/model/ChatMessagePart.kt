@@ -132,16 +132,24 @@ fun statusMessagePart(
     rawText: String,
     title: String = "状态",
 ): ChatMessagePart {
+    val normalizedRawText = rawText.normalizeStatusRawText()
     return ChatMessagePart(
         type = ChatMessagePartType.STATUS,
-        text = rawText.trim(),
+        text = normalizedRawText,
         specialMetadata = normalizeSpecialMetadata(
             mapOf(
                 "title" to title.trim().ifBlank { "状态" },
-                "raw" to rawText.trim(),
+                "raw" to normalizedRawText,
             ),
         ),
     )
+}
+
+private fun String.normalizeStatusRawText(): String {
+    return trim()
+        .replace("\\r\\n", "\n")
+        .replace("\\n", "\n")
+        .replace("\\t", " ")
 }
 
 fun imageMessagePart(

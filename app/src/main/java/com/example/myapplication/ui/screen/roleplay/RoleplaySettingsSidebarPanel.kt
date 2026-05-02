@@ -130,6 +130,7 @@ internal fun RoleplaySettingsSidebarContent(
     onUpdateScenarioNetMemeEnabled: (Boolean) -> Unit,
     onUpdateRoleplayLongformTargetChars: (Int) -> Unit,
     onUpdateScenarioInteractionMode: (RoleplayInteractionMode) -> Unit,
+    onUpdateScenarioOnlineReplyRange: (Int, Int) -> Unit,
     onToggleGroupParticipantMuted: (String) -> Unit,
     onRemoveGroupParticipant: (String) -> Unit,
     onUpdateGroupReplyMode: (RoleplayGroupReplyMode) -> Unit,
@@ -276,6 +277,7 @@ internal fun RoleplaySettingsSidebarContent(
                         raw.filter(Char::isDigit).take(4).toIntOrNull()?.let(onUpdateRoleplayLongformTargetChars)
                     },
                     onUpdateScenarioInteractionMode = onUpdateScenarioInteractionMode,
+                    onUpdateScenarioOnlineReplyRange = onUpdateScenarioOnlineReplyRange,
                 )
             }
         }

@@ -1,7 +1,9 @@
 package com.example.myapplication.roleplay
 
 import com.example.myapplication.model.Assistant
+import com.example.myapplication.model.ChatActionType
 import com.example.myapplication.model.ChatMessage
+import com.example.myapplication.model.ChatMessagePartType
 import com.example.myapplication.model.MessageRole
 import com.example.myapplication.model.RoleplayGroupParticipant
 import com.example.myapplication.model.RoleplayGroupReplyMode
@@ -110,24 +112,38 @@ class RoleplayGroupReplyPlannerTest {
         assertTrue(note.contains("禁止原样或近义重复"))
         assertTrue(note.contains("多人排队复读“晚上好”"))
         assertTrue(note.contains("群聊输出协议硬规则"))
-        assertTrue(note.contains("数组元素只能是字符串"))
-        assertTrue(note.contains("禁止输出照片、语音"))
+        assertTrue(note.contains("数组元素只能是字符串、voice_message 对象或 ai_photo 对象"))
+        assertTrue(note.contains("允许语音"))
+        assertTrue(note.contains("允许图片"))
     }
 
     @Test
-    fun groupParser_keepsOnlyTextBubblesAndDropsSpecialActions() {
+    fun groupParser_keepsTextVoiceAndPhotoBubbles() {
         val result = OnlineActionProtocolParser.parseGroupTextOnlyWithFallback(
             rawContent = """[{"type":"ai_photo","description":"台灯暖光笼罩书桌"},{"type":"voice_message","content":"快十二点了才上来"},"晚上好"]""",
             characterName = "沈宴清",
-        )
+        )!!
 
-        assertEquals(listOf("晚上好"), result?.parts?.map { it.text })
+        assertEquals(ChatActionType.AI_PHOTO, result.parts[0].actionType)
+        assertEquals(ChatActionType.VOICE_MESSAGE, result.parts[1].actionType)
+        assertEquals(ChatMessagePartType.TEXT, result.parts[2].type)
+        assertEquals("晚上好", result.parts[2].text)
     }
 
     @Test
-    fun groupParser_rejectsOnlySpecialActionOutput() {
+    fun groupParser_acceptsOnlyPhotoOutput() {
         val result = OnlineActionProtocolParser.parseGroupTextOnlyWithFallback(
             rawContent = """[{"type":"ai_photo","description":"台灯暖光笼罩书桌"}]""",
+            characterName = "沈宴清",
+        )!!
+
+        assertEquals(ChatActionType.AI_PHOTO, result.parts.single().actionType)
+    }
+
+    @Test
+    fun groupParser_rejectsOnlyForbiddenActionOutput() {
+        val result = OnlineActionProtocolParser.parseGroupTextOnlyWithFallback(
+            rawContent = """[{"type":"transfer","amount":66,"note":"打车"}]""",
             characterName = "沈宴清",
         )
 
@@ -135,12 +151,12 @@ class RoleplayGroupReplyPlannerTest {
     }
 
     @Test
-    fun groupStreamingPreview_ignoresSpecialActions() {
+    fun groupStreamingPreview_includesVoiceAndText() {
         val preview = OnlineActionProtocolParser.extractGroupTextStreamingPreview(
             """[{"type":"voice_message","content":"快十二点了才上来"},"刚看到"]""",
         )
 
-        assertEquals("刚看到", preview)
+        assertEquals("语音消息：快十二点了才上来\n刚看到", preview)
     }
 
     private fun member(

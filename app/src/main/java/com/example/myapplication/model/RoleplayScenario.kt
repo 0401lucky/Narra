@@ -30,6 +30,8 @@ data class RoleplayScenario(
     val groupReplyMode: RoleplayGroupReplyMode = RoleplayGroupReplyMode.NATURAL,
     val enableGroupMentionAutoReply: Boolean = true,
     val maxGroupAutoReplies: Int = DEFAULT_GROUP_AUTO_REPLIES,
+    val onlineReplyMinCount: Int = DEFAULT_ONLINE_REPLY_MIN_COUNT,
+    val onlineReplyMaxCount: Int = DEFAULT_ONLINE_REPLY_MAX_COUNT,
     val isPinned: Boolean = false,
     val isMuted: Boolean = false,
     val createdAt: Long = 0L,
@@ -128,3 +130,16 @@ data class RoleplayGroupParticipant(
 
 const val DEFAULT_GROUP_AUTO_REPLIES = 3
 const val MAX_GROUP_AUTO_REPLIES = 6
+const val DEFAULT_ONLINE_REPLY_MIN_COUNT = 1
+const val DEFAULT_ONLINE_REPLY_MAX_COUNT = 3
+const val MAX_ONLINE_REPLY_COUNT = 10
+
+fun RoleplayScenario.normalizedOnlineReplyRange(): IntRange {
+    val min = onlineReplyMinCount.coerceIn(1, MAX_ONLINE_REPLY_COUNT)
+    val max = onlineReplyMaxCount.coerceIn(1, MAX_ONLINE_REPLY_COUNT)
+    return if (min <= max) {
+        min..max
+    } else {
+        max..min
+    }
+}

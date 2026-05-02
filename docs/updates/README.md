@@ -36,8 +36,8 @@ https://0401lucky.github.io/Narra/updates
 dev 包上传到远端 R2 时必须带 `--remote`，否则可能只写入 wrangler 本地资源环境。
 
 ```powershell
-wrangler r2 object put narra-updates/dev/Narra-v1.6.7-dev-10607-dev.apk `
-  --file .\app\build\outputs\apk\debug\Narra-v1.6.7-dev-10607-dev.apk `
+wrangler r2 object put narra-updates/dev/Narra-v1.6.8-dev-10608-dev.apk `
+  --file .\app\build\outputs\apk\debug\Narra-v1.6.8-dev-10608-dev.apk `
   --content-type application/vnd.android.package-archive `
   --remote
 ```
@@ -45,7 +45,7 @@ wrangler r2 object put narra-updates/dev/Narra-v1.6.7-dev-10607-dev.apk `
 上传后建议拉回远端对象再校验一次：
 
 ```powershell
-wrangler r2 object get narra-updates/dev/Narra-v1.6.7-dev-10607-dev.apk `
+wrangler r2 object get narra-updates/dev/Narra-v1.6.8-dev-10608-dev.apk `
   --remote `
   --file $env:TEMP\narra-r2-check.apk
 Get-FileHash $env:TEMP\narra-r2-check.apk -Algorithm SHA256
@@ -54,7 +54,7 @@ Get-FileHash $env:TEMP\narra-r2-check.apk -Algorithm SHA256
 若自定义下载域名曾缓存过 404，可在 `apk_url` 后追加版本查询参数，例如：
 
 ```text
-https://download.lsa1230.dpdns.org/dev/Narra-v1.6.7-dev-10607-dev.apk?v=10607
+https://download.lsa1230.dpdns.org/dev/Narra-v1.6.8-dev-10608-dev.apk?v=10608
 ```
 
 ## debug/dev 测试建议

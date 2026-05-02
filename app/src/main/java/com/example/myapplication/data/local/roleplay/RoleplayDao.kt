@@ -41,6 +41,8 @@ interface RoleplayDao {
             s.groupReplyMode AS groupReplyMode,
             s.enableGroupMentionAutoReply AS enableGroupMentionAutoReply,
             s.maxGroupAutoReplies AS maxGroupAutoReplies,
+            s.onlineReplyMinCount AS onlineReplyMinCount,
+            s.onlineReplyMaxCount AS onlineReplyMaxCount,
             s.isPinned AS isPinned,
             s.isMuted AS isMuted,
             s.createdAt AS createdAt,

@@ -36,6 +36,8 @@ data class RoleplayScenarioEntity(
     val groupReplyMode: String = "natural",
     val enableGroupMentionAutoReply: Boolean = true,
     val maxGroupAutoReplies: Int = 3,
+    val onlineReplyMinCount: Int = 1,
+    val onlineReplyMaxCount: Int = 3,
     val isPinned: Boolean = false,
     val isMuted: Boolean = false,
     val createdAt: Long,

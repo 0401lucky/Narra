@@ -137,6 +137,32 @@ class RoleplayPromptDecoratorTest {
     }
 
     @Test
+    fun decorate_onlineModeUsesScenarioReplyRangeAndSpecialPlayWhitelist() {
+        val prompt = RoleplayPromptDecorator.decorate(
+            baseSystemPrompt = "",
+            scenario = RoleplayScenario(
+                id = "scene-1",
+                userDisplayNameOverride = "林晚",
+                characterDisplayNameOverride = "余罪",
+                interactionMode = RoleplayInteractionMode.ONLINE_PHONE,
+                onlineReplyMinCount = 2,
+                onlineReplyMaxCount = 5,
+            ),
+            assistant = Assistant(id = "assistant-1", name = "余罪"),
+            settings = AppSettings(showOnlineRoleplayNarration = true),
+        )
+
+        assertTrue(prompt.contains("一次回复控制在 2 到 5 条消息内"))
+        assertTrue(prompt.contains("基于角色人设、关系状态和当下情绪自然取舍"))
+        assertTrue(prompt.contains("invite、gift、task、punish"))
+        assertTrue(prompt.contains("\"type\":\"invite\""))
+        assertTrue(prompt.contains("\"type\":\"gift\""))
+        assertTrue(prompt.contains("\"type\":\"task\""))
+        assertTrue(prompt.contains("\"type\":\"punish\""))
+        assertFalse(prompt.contains("最多 20 条"))
+    }
+
+    @Test
     fun decorate_groupOnlineModeAddsModeRoutingAndGroupBoundary() {
         val prompt = RoleplayPromptDecorator.decorate(
             baseSystemPrompt = "你是{{char}}，但如果和模式冲突，以模式为准。",
@@ -157,10 +183,12 @@ class RoleplayPromptDecoratorTest {
         assertTrue(prompt.contains("群聊标题：地下室群聊"))
         assertTrue(prompt.contains("当前不是单聊，而是多人线上群聊"))
         assertTrue(prompt.contains("不要替群内其他角色发言"))
-        assertTrue(prompt.contains("群聊首版只允许字符串元素"))
-        assertTrue(prompt.contains("只输出当前角色会亲手发到群里的文字"))
-        assertTrue(prompt.contains("群聊禁用语音对象"))
-        assertTrue(prompt.contains("群聊禁用照片对象和照片描述"))
+        assertTrue(prompt.contains("群聊允许字符串元素，以及 voice_message、ai_photo 对象"))
+        assertTrue(prompt.contains("只输出当前角色会亲手发到群里的文字、语音或照片"))
+        assertTrue(prompt.contains("群聊语音必须使用 voice_message 对象"))
+        assertTrue(prompt.contains("群聊照片必须使用 ai_photo 对象"))
+        assertFalse(prompt.contains("群聊禁用语音对象"))
+        assertFalse(prompt.contains("群聊禁用照片对象和照片描述"))
         assertTrue(prompt.contains("不是单聊"))
     }
 

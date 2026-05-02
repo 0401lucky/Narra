@@ -9,6 +9,7 @@ import com.example.myapplication.data.local.roleplay.RoleplaySessionEntity
 import com.example.myapplication.data.repository.ConversationRepository
 import com.example.myapplication.model.ChatMessage
 import com.example.myapplication.model.DEFAULT_ASSISTANT_ID
+import com.example.myapplication.model.MAX_ONLINE_REPLY_COUNT
 import com.example.myapplication.model.MessageRole
 import com.example.myapplication.model.MessageStatus
 import com.example.myapplication.model.RoleplayChatSummary
@@ -500,6 +501,8 @@ class RoomRoleplayRepository(
             groupReplyMode = RoleplayGroupReplyMode.fromStorageValue(entity.groupReplyMode),
             enableGroupMentionAutoReply = entity.enableGroupMentionAutoReply,
             maxGroupAutoReplies = entity.maxGroupAutoReplies.coerceIn(1, com.example.myapplication.model.MAX_GROUP_AUTO_REPLIES),
+            onlineReplyMinCount = entity.onlineReplyMinCount.coerceIn(1, MAX_ONLINE_REPLY_COUNT),
+            onlineReplyMaxCount = entity.onlineReplyMaxCount.coerceIn(1, MAX_ONLINE_REPLY_COUNT),
             isPinned = entity.isPinned,
             isMuted = entity.isMuted,
             createdAt = entity.createdAt,
@@ -565,6 +568,8 @@ class RoomRoleplayRepository(
             groupReplyMode = groupReplyMode,
             enableGroupMentionAutoReply = enableGroupMentionAutoReply,
             maxGroupAutoReplies = maxGroupAutoReplies,
+            onlineReplyMinCount = onlineReplyMinCount,
+            onlineReplyMaxCount = onlineReplyMaxCount,
             isPinned = isPinned,
             isMuted = isMuted,
             createdAt = createdAt,
@@ -602,6 +607,10 @@ class RoomRoleplayRepository(
             enableGroupMentionAutoReply = scenario.enableGroupMentionAutoReply,
             maxGroupAutoReplies = scenario.maxGroupAutoReplies
                 .coerceIn(1, com.example.myapplication.model.MAX_GROUP_AUTO_REPLIES),
+            onlineReplyMinCount = scenario.onlineReplyMinCount
+                .coerceIn(1, MAX_ONLINE_REPLY_COUNT),
+            onlineReplyMaxCount = scenario.onlineReplyMaxCount
+                .coerceIn(1, MAX_ONLINE_REPLY_COUNT),
             isPinned = scenario.isPinned,
             isMuted = scenario.isMuted,
             createdAt = scenario.createdAt,

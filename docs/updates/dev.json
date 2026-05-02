@@ -1,17 +1,17 @@
 {
   "app_id": "com.narra.app.dev",
   "channel": "dev",
-  "latest_version_name": "1.6.7-dev",
-  "latest_version_code": 10607,
+  "latest_version_name": "1.6.8-dev",
+  "latest_version_code": 10608,
   "minimum_supported_version_code": 0,
-  "apk_url": "https://download.lsa1230.dpdns.org/dev/Narra-v1.6.7-dev-10607-dev.apk?v=10607",
-  "apk_sha256": "70559cd5324798bc4cc2f8a5d923905fa9ab7a08198aae58ffbfedad6305a83f",
-  "published_at": "2026-05-02T10:58:07+08:00",
+  "apk_url": "https://download.lsa1230.dpdns.org/dev/Narra-v1.6.8-dev-10608-dev.apk?v=10608",
+  "apk_sha256": "27095203bce9b7237facf394147c5bb2706833a2797c4c6514b18da2f1ced198",
+  "published_at": "2026-05-02T15:13:27+08:00",
   "release_notes": [
-    "修复 release 混淆可能破坏 Gson JSON 读写的问题",
-    "修复系统备份、摘要分段删除和上下文导入导出的一致性问题",
-    "强化 APK 更新 SHA-256 校验和 API Base URL HTTPS 限制",
-    "导入文件和 Tavern PNG 解析增加大小上限，降低异常文件卡死或 OOM 风险",
-    "修复信箱设置残留和世界书概率字段未生效的问题"
+    "线上模式新增按情景配置的回复条数范围，默认 1-3，可在 1-10 内调整",
+    "修复时间感知关闭后仍显示线上时间分隔、状态卡换行糊行和上线自动搭话空回问题",
+    "强化线上玩法解析与渲染，避免 thought、ai_photo、play 等协议残片露出",
+    "ai_photo 无真实图片 URI 时会渲染为图片式预览卡",
+    "群聊线上模式保留语音和图片玩法，同时继续过滤心声、状态栏和偏单聊特殊卡片"
   ]
 }

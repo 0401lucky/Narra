@@ -1,5 +1,6 @@
 package com.example.myapplication.roleplay
 
+import com.example.myapplication.model.ChatActionType
 import com.example.myapplication.model.ChatMessagePart
 import com.example.myapplication.model.ChatMessagePartType
 import com.example.myapplication.model.PunishIntensity
@@ -77,9 +78,9 @@ internal object OnlineActionProtocolParser {
     }
 
     /**
-     * 群聊首版只保留真实文字气泡。
-     * 角色卡或预设如果偷输出照片、语音、状态栏、转账等单聊动作，这里直接丢弃，
-     * 避免手机群聊里出现“照片/语音/状态栏”这类沉浸式残留。
+     * 群聊首版保留真实文字气泡、语音和照片。
+     * 心声、状态栏、转账等更偏单聊或系统沉浸的动作仍会被丢弃，
+     * 避免群聊里混入不可渲染或不合群聊语境的协议残留。
      */
     fun parseGroupTextOnlyWithFallback(
         rawContent: String,
@@ -87,7 +88,7 @@ internal object OnlineActionProtocolParser {
     ): OnlineActionProtocolParseResult? {
         val parsed = parse(rawContent, characterName)
         if (parsed != null) {
-            return parsed.toGroupTextOnly()
+            return parsed.toGroupAllowed()
         }
         return fallbackGroupPlainText(rawContent)
     }
@@ -98,24 +99,13 @@ internal object OnlineActionProtocolParser {
         if (!parsedRoot.isJsonArray) {
             return ""
         }
-        return parsedRoot.asJsonArray.mapNotNull { element ->
-            when {
-                element.isJsonPrimitive && element.asJsonPrimitive.isString -> {
-                    sanitizeOnlineDialogueText(element.asString).takeIf { it.isNotBlank() }
-                }
-
-                element.isJsonObject -> {
-                    val item = element.asJsonObject
-                    if (item.stringValue("type").lowercase() == "reply_to") {
-                        sanitizeOnlineDialogueText(item.stringValue("content")).takeIf { it.isNotBlank() }
-                    } else {
-                        null
-                    }
-                }
-
-                else -> null
-            }
-        }.joinToString(separator = "\n")
+        val result = parseArray(
+            array = parsedRoot.asJsonArray,
+            characterName = "角色",
+        ).toGroupAllowed() ?: return ""
+        return result.parts.map { part -> part.toStreamingPreviewText() }
+            .filter { it.isNotBlank() }
+            .joinToString(separator = "\n")
             .trim()
     }
 
@@ -171,13 +161,13 @@ internal object OnlineActionProtocolParser {
         }
         val lines = cleaned.split('\n')
             .map { line ->
-                line.trim()
+                line.sanitizeMalformedProtocolLeak()
                     .removeSurrounding("\"")
                     .trim()
                     .removeSuffix(",")
                     .trim()
             }
-            .filter { it.isNotBlank() }
+            .filter { it.isNotBlank() && !it.looksLikeProtocolLeak() }
         if (lines.isEmpty()) {
             return null
         }
@@ -265,7 +255,7 @@ internal object OnlineActionProtocolParser {
         parts: MutableList<ChatMessagePart>,
         directives: MutableList<OnlineActionDirective>,
     ) {
-        when (item.stringValue("type").lowercase()) {
+        when (item.protocolType()) {
             "reply_to" -> {
                 val content = sanitizeOnlineDialogueText(item.stringValue("content"))
                 if (content.isNotBlank()) {
@@ -648,16 +638,27 @@ internal object OnlineActionProtocolParser {
         return referenceIdPrefixRegex.replace(text.trim(), "").trim()
     }
 
-    private fun OnlineActionProtocolParseResult.toGroupTextOnly(): OnlineActionProtocolParseResult? {
-        val textParts = parts.filter { part -> part.type == ChatMessagePartType.TEXT }
-        if (textParts.isEmpty()) {
+    private fun OnlineActionProtocolParseResult.toGroupAllowed(): OnlineActionProtocolParseResult? {
+        val allowedParts = parts.filter { part ->
+            when {
+                part.type == ChatMessagePartType.TEXT -> !part.isOnlineThoughtPart()
+                part.type == ChatMessagePartType.ACTION -> part.actionType in groupAllowedActionTypes
+                else -> false
+            }
+        }
+        if (allowedParts.isEmpty()) {
             return null
         }
         return OnlineActionProtocolParseResult(
-            parts = normalizeChatMessageParts(textParts),
+            parts = normalizeChatMessageParts(allowedParts),
             directives = emptyList(),
         )
     }
+
+    private val groupAllowedActionTypes = setOf(
+        ChatActionType.VOICE_MESSAGE,
+        ChatActionType.AI_PHOTO,
+    )
 
     private fun looksLikeGroupForbiddenOutput(text: String): Boolean {
         val normalized = text.trim()
@@ -680,10 +681,28 @@ internal object OnlineActionProtocolParser {
         "状态栏",
         "【状态】",
         "【状态栏】",
-        "\"type\":\"ai_photo\"",
-        "\"type\": \"ai_photo\"",
-        "\"type\":\"voice_message\"",
-        "\"type\": \"voice_message\"",
+        "心声",
+        "[[rp_online_thought]]",
+        "\"type\":\"thought\"",
+        "\"type\": \"thought\"",
+        "\"type\":\"location\"",
+        "\"type\": \"location\"",
+        "\"type\":\"transfer\"",
+        "\"type\": \"transfer\"",
+        "\"type\":\"transfer_action\"",
+        "\"type\": \"transfer_action\"",
+        "\"type\":\"poke\"",
+        "\"type\": \"poke\"",
+        "\"type\":\"video_call\"",
+        "\"type\": \"video_call\"",
+        "\"type\":\"invite\"",
+        "\"type\": \"invite\"",
+        "\"type\":\"gift\"",
+        "\"type\": \"gift\"",
+        "\"type\":\"task\"",
+        "\"type\": \"task\"",
+        "\"type\":\"punish\"",
+        "\"type\": \"punish\"",
         "<status",
     )
     private val groupNarrationMarkers = listOf(
@@ -697,6 +716,49 @@ internal object OnlineActionProtocolParser {
         "映出",
         "隐约",
         "指尖",
+    )
+
+    private fun JsonObject.protocolType(): String {
+        return stringValue("type")
+            .lowercase()
+            .replace('-', '_')
+    }
+
+    private fun String.sanitizeMalformedProtocolLeak(): String {
+        return trim()
+            .replace(Regex("""(?i)\b(?:thought|ai[-_]?photo|voice[-_]?message|reply[-_]?to|play)\b\s*,?"""), "")
+            .replace(Regex("""(?i)\b(?:type|target|place|time|note|description|content|message_id)\s*=\s*['"][^'"]*['"]"""), "")
+            .replace(Regex("""(?i)\b(?:type|target|place|time|note|description|content|message_id)\s*:\s*"""), "")
+            .replace(Regex("""(?i)\bid\s*=\s*['"][^'"]*['"]"""), "")
+            .replace(Regex("""/?>"""), "")
+            .replace(Regex("""[<>]"""), "")
+            .trim(',', '，', '"', '\'', ' ', '\t')
+            .trim()
+    }
+
+    private fun String.looksLikeProtocolLeak(): Boolean {
+        val normalized = trim()
+        if (normalized.isBlank()) {
+            return false
+        }
+        return protocolLeakMarkers.any { marker ->
+            normalized.contains(marker, ignoreCase = true)
+        }
+    }
+
+    private val protocolLeakMarkers = listOf(
+        "\"type\"",
+        "{",
+        "}",
+        "<play",
+        "play id=",
+        "message_id",
+        "duration_seconds",
+        "ai_photo",
+        "ai-photo",
+        "voice_message",
+        "reply_to",
+        "transfer_action",
     )
 
     private fun JsonObject.stringValue(key: String): String {

@@ -2,7 +2,9 @@ package com.example.myapplication.roleplay
 
 import com.example.myapplication.model.AppSettings
 import com.example.myapplication.model.Assistant
+import com.example.myapplication.model.ChatActionType
 import com.example.myapplication.model.ChatMessage
+import com.example.myapplication.model.ChatSpecialType
 import com.example.myapplication.model.MessageRole
 import com.example.myapplication.model.MessageStatus
 import com.example.myapplication.model.RoleplayChatType
@@ -19,6 +21,7 @@ import com.example.myapplication.model.textMessagePart
 import com.example.myapplication.model.thoughtMessagePart
 import com.example.myapplication.model.transferMessagePart
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
@@ -1171,6 +1174,88 @@ class RoleplayMessageUiMapperTest {
 
         assertEquals(RoleplayContentType.SPECIAL_PLAY, mapped.single().contentType)
         assertEquals("江边步道", mapped.single().specialPart?.specialMetadataValue("place"))
+    }
+
+    @Test
+    fun mapMessages_onlineProtocolRendersActionsAndSpecialPlays() {
+        val scenario = RoleplayScenario(
+            id = "scene-1",
+            title = "线上玩法",
+            characterDisplayNameOverride = "陆宴清",
+            interactionMode = RoleplayInteractionMode.ONLINE_PHONE,
+            enableNarration = true,
+        )
+
+        val mapped = RoleplayMessageUiMapper.mapMessages(
+            scenario = scenario,
+            assistant = Assistant(id = "assistant-1", name = "陆宴清"),
+            settings = AppSettings(showOnlineRoleplayNarration = true),
+            rawMessages = listOf(
+                ChatMessage(
+                    id = "assistant-actions",
+                    conversationId = "conv-1",
+                    role = MessageRole.ASSISTANT,
+                    content = """
+                        [
+                          {"type":"thought","content":"想见。"},
+                          {"type":"reply_to","message_id":"m-old","content":"这句我回你。"},
+                          {"type":"emoji","description":"轻轻挑眉"},
+                          {"type":"voice_message","content":"我在楼下。","duration_seconds":4},
+                          {"type":"ai-photo","description":"楼下路灯照着湿漉漉的台阶。"},
+                          {"type":"location","locationName":"南滨路老仓库","address":"江边旧仓库"},
+                          {"type":"transfer","amount":66,"note":"打车"},
+                          {"type":"poke","target":"用户","suffix":"的肩"},
+                          {"type":"video_call","reason":"想看看你"},
+                          {"type":"invite","target":"用户","place":"家里","time":"现在","note":"菜要凉了"},
+                          {"type":"gift","target":"用户","item":"围巾","note":"外面冷"},
+                          {"type":"task","title":"带伞","objective":"出门前把伞拿上","reward":"少淋雨","deadline":"出门前"},
+                          {"type":"punish","method":"今晚早点睡","count":"1","intensity":"low","reason":"昨天熬夜了"}
+                        ]
+                    """.trimIndent(),
+                    createdAt = 2L,
+                    status = MessageStatus.COMPLETED,
+                    roleplayOutputFormat = RoleplayOutputFormat.PROTOCOL,
+                    roleplayInteractionMode = RoleplayInteractionMode.ONLINE_PHONE,
+                ),
+            ),
+            streamingContent = null,
+            outputParser = RoleplayOutputParser(),
+            nowProvider = { 20L },
+        )
+
+        assertTrue(mapped.any { it.contentType == RoleplayContentType.THOUGHT && it.content == "想见。" })
+        assertTrue(mapped.any {
+            it.contentType == RoleplayContentType.DIALOGUE &&
+                it.replyToMessageId == "m-old" &&
+                it.content == "这句我回你。"
+        })
+        val actionTypes = mapped.mapNotNull { it.actionPart?.actionType }
+        assertTrue(actionTypes.containsAll(
+            listOf(
+                ChatActionType.EMOJI,
+                ChatActionType.VOICE_MESSAGE,
+                ChatActionType.AI_PHOTO,
+                ChatActionType.LOCATION,
+                ChatActionType.POKE,
+                ChatActionType.VIDEO_CALL,
+            ),
+        ))
+        val specialTypes = mapped.mapNotNull { it.specialPart?.specialType }
+        assertTrue(specialTypes.containsAll(
+            listOf(
+                ChatSpecialType.TRANSFER,
+                ChatSpecialType.INVITE,
+                ChatSpecialType.GIFT,
+                ChatSpecialType.TASK,
+                ChatSpecialType.PUNISH,
+            ),
+        ))
+        assertFalse(mapped.any { ui ->
+            listOf("\"type\"", "ai-photo", "voice_message", "play id").any { marker ->
+                ui.content.contains(marker, ignoreCase = true) ||
+                    ui.copyText.contains(marker, ignoreCase = true)
+            }
+        })
     }
 
     @Test

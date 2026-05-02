@@ -47,12 +47,14 @@ import com.example.myapplication.model.AppSettings
 import com.example.myapplication.model.ContextGovernanceSnapshot
 import com.example.myapplication.model.MemoryProposalHistoryItem
 import com.example.myapplication.model.MemoryProposalStatus
+import com.example.myapplication.model.MAX_ONLINE_REPLY_COUNT
 import com.example.myapplication.model.RoleplayImmersiveMode
 import com.example.myapplication.model.RoleplayInteractionMode
 import com.example.myapplication.model.RoleplayLineHeightScale
 import com.example.myapplication.model.RoleplayNoBackgroundSkinPreset
 import com.example.myapplication.model.RoleplayNoBackgroundSkinSettings
 import com.example.myapplication.model.RoleplayScenario
+import com.example.myapplication.model.normalizedOnlineReplyRange
 import com.example.myapplication.ui.component.roleplay.ImmersiveBackdropState
 import com.example.myapplication.ui.component.roleplay.ImmersiveGlassPalette
 import com.example.myapplication.ui.component.roleplay.ImmersiveTabRow
@@ -250,8 +252,12 @@ internal fun RoleplaySettingsInteractionSection(
     longformCharsText: String,
     onLongformCharsTextChange: (String) -> Unit,
     onUpdateScenarioInteractionMode: (RoleplayInteractionMode) -> Unit,
+    onUpdateScenarioOnlineReplyRange: (Int, Int) -> Unit,
 ) {
     val palette = backdropState.palette
+    val isOnlinePhoneMode = scenario?.interactionMode == RoleplayInteractionMode.ONLINE_PHONE
+    val isLongformMode = scenario?.interactionMode == RoleplayInteractionMode.OFFLINE_LONGFORM ||
+        scenario?.longformModeEnabled == true
     ImmersiveSettingsCard(backdropState) {
         Column(
             modifier = Modifier.padding(horizontal = 18.dp, vertical = 16.dp),
@@ -281,53 +287,136 @@ internal fun RoleplaySettingsInteractionSection(
         }
     }
 
-    ImmersiveSettingsCard(backdropState) {
-        Column(
-            modifier = Modifier.padding(horizontal = 18.dp, vertical = 16.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp),
-        ) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(12.dp),
+    if (isOnlinePhoneMode) {
+        val replyRange = scenario?.normalizedOnlineReplyRange() ?: 1..3
+        ImmersiveSettingsCard(backdropState) {
+            Column(
+                modifier = Modifier.padding(horizontal = 18.dp, vertical = 16.dp),
+                verticalArrangement = Arrangement.spacedBy(12.dp),
             ) {
-                Icon(
-                    imageVector = Icons.Default.TextFields,
-                    contentDescription = null,
-                    tint = RoleplaySettingsPanelAccentColor,
-                    modifier = Modifier.size(22.dp),
-                )
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(12.dp),
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Tune,
+                        contentDescription = null,
+                        tint = RoleplaySettingsPanelAccentColor,
+                        modifier = Modifier.size(22.dp),
+                    )
+                    Text(
+                        text = "线上回复条数",
+                        style = MaterialTheme.typography.bodyLarge,
+                        color = RoleplaySettingsPanelTitleColor,
+                        fontWeight = FontWeight.SemiBold,
+                    )
+                }
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(10.dp),
+                ) {
+                    OnlineReplyCountField(
+                        value = replyRange.first.toString(),
+                        label = "最少条数",
+                        modifier = Modifier.weight(1f),
+                        onValueChange = { nextMin ->
+                            onUpdateScenarioOnlineReplyRange(nextMin, replyRange.last)
+                        },
+                    )
+                    OnlineReplyCountField(
+                        value = replyRange.last.toString(),
+                        label = "最多条数",
+                        modifier = Modifier.weight(1f),
+                        onValueChange = { nextMax ->
+                            onUpdateScenarioOnlineReplyRange(replyRange.first, nextMax)
+                        },
+                    )
+                }
                 Text(
-                    text = stringResource(id = R.string.roleplay_settings_longform_default_title),
-                    style = MaterialTheme.typography.bodyLarge,
-                    color = RoleplaySettingsPanelTitleColor,
-                    fontWeight = FontWeight.SemiBold,
+                    text = "范围 1-$MAX_ONLINE_REPLY_COUNT；实际回复仍按角色人设和当下情绪自然取舍。",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = RoleplaySettingsPanelBodyColor,
                 )
             }
-            OutlinedTextField(
-                value = longformCharsText,
-                onValueChange = onLongformCharsTextChange,
-                modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(18.dp),
-                label = { Text(stringResource(id = R.string.roleplay_settings_longform_default_label)) },
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                colors = OutlinedTextFieldDefaults.colors(
-                    unfocusedContainerColor = Color.Transparent,
-                    focusedContainerColor = Color.Transparent,
-                    unfocusedBorderColor = RoleplaySettingsPanelBodyColor.copy(alpha = 0.3f),
-                    focusedBorderColor = RoleplaySettingsPanelAccentColor.copy(alpha = 0.5f),
-                    unfocusedTextColor = RoleplaySettingsPanelTitleColor,
-                    focusedTextColor = RoleplaySettingsPanelTitleColor,
-                    unfocusedLabelColor = RoleplaySettingsPanelBodyColor,
-                    focusedLabelColor = RoleplaySettingsPanelBodyColor,
-                    unfocusedSupportingTextColor = RoleplaySettingsPanelBodyColor,
-                    focusedSupportingTextColor = RoleplaySettingsPanelBodyColor,
-                ),
-                singleLine = true,
-            )
+        }
+    } else if (isLongformMode) {
+        ImmersiveSettingsCard(backdropState) {
+            Column(
+                modifier = Modifier.padding(horizontal = 18.dp, vertical = 16.dp),
+                verticalArrangement = Arrangement.spacedBy(12.dp),
+            ) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(12.dp),
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.TextFields,
+                        contentDescription = null,
+                        tint = RoleplaySettingsPanelAccentColor,
+                        modifier = Modifier.size(22.dp),
+                    )
+                    Text(
+                        text = stringResource(id = R.string.roleplay_settings_longform_default_title),
+                        style = MaterialTheme.typography.bodyLarge,
+                        color = RoleplaySettingsPanelTitleColor,
+                        fontWeight = FontWeight.SemiBold,
+                    )
+                }
+                OutlinedTextField(
+                    value = longformCharsText,
+                    onValueChange = onLongformCharsTextChange,
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(18.dp),
+                    label = { Text(stringResource(id = R.string.roleplay_settings_longform_default_label)) },
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                    colors = roleplaySettingsOutlinedTextFieldColors(),
+                    singleLine = true,
+                )
+            }
         }
     }
 }
+
+@Composable
+private fun OnlineReplyCountField(
+    value: String,
+    label: String,
+    modifier: Modifier = Modifier,
+    onValueChange: (Int) -> Unit,
+) {
+    OutlinedTextField(
+        value = value,
+        onValueChange = { raw ->
+            raw.filter(Char::isDigit)
+                .take(2)
+                .toIntOrNull()
+                ?.coerceIn(1, MAX_ONLINE_REPLY_COUNT)
+                ?.let(onValueChange)
+        },
+        modifier = modifier,
+        shape = RoundedCornerShape(18.dp),
+        label = { Text(label) },
+        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+        colors = roleplaySettingsOutlinedTextFieldColors(),
+        singleLine = true,
+    )
+}
+
+@Composable
+private fun roleplaySettingsOutlinedTextFieldColors() = OutlinedTextFieldDefaults.colors(
+    unfocusedContainerColor = Color.Transparent,
+    focusedContainerColor = Color.Transparent,
+    unfocusedBorderColor = RoleplaySettingsPanelBodyColor.copy(alpha = 0.3f),
+    focusedBorderColor = RoleplaySettingsPanelAccentColor.copy(alpha = 0.5f),
+    unfocusedTextColor = RoleplaySettingsPanelTitleColor,
+    focusedTextColor = RoleplaySettingsPanelTitleColor,
+    unfocusedLabelColor = RoleplaySettingsPanelBodyColor,
+    focusedLabelColor = RoleplaySettingsPanelBodyColor,
+    unfocusedSupportingTextColor = RoleplaySettingsPanelBodyColor,
+    focusedSupportingTextColor = RoleplaySettingsPanelBodyColor,
+)
 
 @Composable
 internal fun RoleplayNoBackgroundThemeSection(

@@ -172,7 +172,9 @@ internal fun StatusCardPart(
     part: ChatMessagePart,
     contentColor: androidx.compose.ui.graphics.Color,
 ) {
-    val rawText = part.specialMetadataValue("raw").ifBlank { part.text }.trim()
+    val rawText = part.specialMetadataValue("raw").ifBlank { part.text }
+        .normalizeStatusCardEscapedLines()
+        .trim()
     if (rawText.isBlank()) {
         return
     }
@@ -315,6 +317,12 @@ private fun parseStatusRows(rawText: String): List<Pair<String, String>> {
                 key to value
             }
         }
+}
+
+private fun String.normalizeStatusCardEscapedLines(): String {
+    return replace("\\r\\n", "\n")
+        .replace("\\n", "\n")
+        .replace("\\t", " ")
 }
 
 @Composable

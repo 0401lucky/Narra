@@ -7,6 +7,7 @@ import com.example.myapplication.model.DEFAULT_ROLEPLAY_LONGFORM_TARGET_CHARS
 import com.example.myapplication.model.RoleplayInteractionMode
 import com.example.myapplication.model.RoleplayScenario
 import com.example.myapplication.model.isGroupChat
+import com.example.myapplication.model.normalizedOnlineReplyRange
 import com.example.myapplication.model.shouldInjectDescriptionPrompt
 
 object RoleplayPromptDecorator {
@@ -29,6 +30,12 @@ object RoleplayPromptDecorator {
             .ifBlank { "角色" }
         val isGroupChat = scenario.isGroupChat
         val allowOnlineThoughtHints = scenario.enableNarration && settings.showOnlineRoleplayNarration
+        val onlineReplyRange = scenario.normalizedOnlineReplyRange()
+        val onlineReplyRangeLabel = if (onlineReplyRange.first == onlineReplyRange.last) {
+            "${onlineReplyRange.first} 条"
+        } else {
+            "${onlineReplyRange.first} 到 ${onlineReplyRange.last} 条"
+        }
         val resolvedBaseSystemPrompt = ContextPlaceholderResolver.resolve(
             text = baseSystemPrompt,
             userName = playerName,
@@ -193,21 +200,27 @@ object RoleplayPromptDecorator {
                         append("你的全部输出必须且只能是一个合法 JSON 数组。\n")
                         append("- 即使只有一条消息，也必须用 [...] 包裹，绝不能输出裸对象 {...}。\n")
                         append("- 正确示例：[\"你好\",\"还没睡？\"]\n")
-                        append("- 正确示例（含对象）：[{\"type\":\"thought\",\"content\":\"心声\"},\"对白\"]\n")
+                        append(
+                            if (isGroupChat) {
+                                "- 正确示例（含对象）：[{\"type\":\"ai_photo\",\"description\":\"窗外刚下过雨的路面\"},\"刚拍的\"]\n"
+                            } else {
+                                "- 正确示例（含对象）：[{\"type\":\"thought\",\"content\":\"心声\"},\"对白\"]\n"
+                            },
+                        )
                         append("- 错误示例：{\"type\":\"thought\",\"content\":\"...\"} ← 缺少外层数组\n")
                         append("- 严禁输出 Markdown、代码块、XML 标签、<dialogue>/<thought>/<narration>、纯文本段落或任何解释文字。\n")
                         if (isGroupChat) {
-                            append("- 群聊首版只允许字符串元素，例如 [\"刚看到\",\"怎么都还没睡\"]。\n")
-                            append("- 禁止输出对象元素，禁止使用 thought、voice_message、ai_photo、location、transfer、transfer_action、poke、video_call、状态栏或任何特殊动作。\n")
-                            append("- 禁止把照片描述、语音内容、状态栏、旁白、环境描写塞进聊天气泡。\n\n")
+                            append("- 群聊允许字符串元素，以及 voice_message、ai_photo 对象，例如 [\"刚看到\",{\"type\":\"voice_message\",\"content\":\"快十二点了才上来\",\"duration_seconds\":3}]。\n")
+                            append("- 群聊禁止使用 thought、reply_to、recall、emoji、location、transfer、transfer_action、poke、video_call、invite、gift、task、punish、状态栏或任何其他特殊动作。\n")
+                            append("- 群聊里要发语音或照片时必须使用对象，不要把照片描述、语音内容、状态栏、旁白、环境描写塞进普通文字气泡。\n\n")
                         } else {
                             append("- 数组元素可以是字符串（普通聊天消息）或对象（特殊动作）。\n")
                             append("- 允许的对象类型：")
                             append(
                                 if (allowOnlineThoughtHints) {
-                                    "reply_to、thought、recall、emoji、voice_message、ai_photo、location、transfer、transfer_action、poke、video_call"
+                                    "reply_to、thought、recall、emoji、voice_message、ai_photo、location、transfer、transfer_action、poke、video_call、invite、gift、task、punish"
                                 } else {
-                                    "reply_to、recall、emoji、voice_message、ai_photo、location、transfer、transfer_action、poke、video_call"
+                                    "reply_to、recall、emoji、voice_message、ai_photo、location、transfer、transfer_action、poke、video_call、invite、gift、task、punish"
                                 },
                             )
                             append("。\n\n")
@@ -221,7 +234,9 @@ object RoleplayPromptDecorator {
                             append('\n')
                         }
                         append("【线上行为基线】\n")
-                        append("1. 默认一次连续发 2 到 3 条消息；一句就能说完、高冷或冷战场景可以更少，情绪明显上来时可以更多，但最多 20 条。\n")
+                        append("1. 本情景要求一次回复控制在 ")
+                        append(onlineReplyRangeLabel)
+                        append("消息内；具体条数必须基于角色人设、关系状态和当下情绪自然取舍，不要为了凑条数拆废话。\n")
                         append("2. 你必须始终以 ")
                         append(characterName)
                         append(" 的身份说话，不要跳出角色，不要把用户写成旁白人物")
@@ -249,19 +264,21 @@ object RoleplayPromptDecorator {
                                 },
                             )
                             if (isGroupChat) {
-                                append("2. 回复必须像真实群聊里的文字气泡，通常 1 条，必要时 2 条，最多 3 条。\n")
-                                append("3. 只输出当前角色会亲手发到群里的文字，不输出照片、语音、状态栏、心声、旁白、环境或动作描写。\n")
-                                append("4. 不要把一句寒暄扩写成小说画面；不要说“发了张照片”“发了条语音”，只写真实可发送文字。\n")
+                                append("2. 回复必须像真实群聊里的文字气泡，本轮按情景设置控制在 ")
+                                append(onlineReplyRangeLabel)
+                                append("内。\n")
+                                append("3. 只输出当前角色会亲手发到群里的文字、语音或照片；不输出状态栏、心声、旁白、环境或动作描写。\n")
+                                append("4. 不要把一句寒暄扩写成小说画面；要发照片用 {\"type\":\"ai_photo\",\"description\":\"照片内容\"}，要发语音用 {\"type\":\"voice_message\",\"content\":\"语音内容\",\"duration_seconds\":3}。\n")
                                 append("5. 如果要引用旧消息，用普通文字接话或点名，不要输出 reply_to 对象。\n")
                             } else {
                                 append("2. 回复必须像真实聊天软件里的独立气泡，优先一句一气泡，不要把整轮内容塞进一个长段落。\n")
                                 append("3. 如果要引用旧消息，使用对象：{\"type\":\"reply_to\",\"message_id\":\"消息ID\",\"content\":\"回复内容\"}。\n")
                                 if (allowOnlineThoughtHints) {
                                     append("4. 如果要写没发出去的心声，使用对象：{\"type\":\"thought\",\"content\":\"心声内容\"}。\n")
-                                    append("5. 当剧情适合时，可以主动使用 emoji、voice_message、ai_photo、location、poke、transfer、video_call 这些高频动作。\n")
+                                    append("5. 当剧情适合时，可以主动使用 emoji、voice_message、ai_photo、location、poke、transfer、video_call、invite、gift、task、punish 这些动作。\n")
                                 } else {
                                     append("4. 当前不允许输出 thought；没说出口的情绪只能通过正常聊天消息侧写出来。\n")
-                                    append("5. 当剧情适合时，可以主动使用 emoji、voice_message、ai_photo、location、poke、transfer、video_call 这些高频动作。\n")
+                                    append("5. 当剧情适合时，可以主动使用 emoji、voice_message、ai_photo、location、poke、transfer、video_call、invite、gift、task、punish 这些动作。\n")
                                 }
                                 append("6. 如果你要发送语音，必须使用对象：{\"type\":\"voice_message\",\"content\":\"语音内容\",\"duration_seconds\":6}；其中 content 必填，duration_seconds 可选，不写时客户端会自动估算时长。\n")
                                 append("7. 如果你要主动给用户转账，必须单独输出对象：{\"type\":\"transfer\",\"amount\":520,\"note\":\"备注\"}；禁止用文字描述转账动作。\n")
@@ -270,14 +287,18 @@ object RoleplayPromptDecorator {
                                 append("10. 如果你想拍一拍对方或拍一拍自己，使用对象：{\"type\":\"poke\",\"target\":\"用户/自己\",\"suffix\":\"的脑袋\"}。target 为拍的对象，suffix 为拍的部位或附加动作描述（如'的脑袋'、'说你别生气了'、'并蹭了蹭'）。\n")
                                 append("   - 拍一拍适用场景：道歉、撒娇、吃醋、试探、无聊想引起注意、表达轻微不满或亲昵。\n")
                                 append("   - 不要滥用，通常整轮对话最多用一次。\n")
+                                append("11. 如果你要发起邀约，使用对象：{\"type\":\"invite\",\"target\":\"用户\",\"place\":\"地点\",\"time\":\"时间\",\"note\":\"补充说明\"}。\n")
+                                append("12. 如果你要送礼物，使用对象：{\"type\":\"gift\",\"target\":\"用户\",\"item\":\"礼物名称\",\"note\":\"附言\"}。\n")
+                                append("13. 如果你要布置委托或任务，使用对象：{\"type\":\"task\",\"title\":\"标题\",\"objective\":\"目标\",\"reward\":\"奖励\",\"deadline\":\"截止时间\"}。\n")
+                                append("14. 如果剧情需要惩罚卡，使用对象：{\"type\":\"punish\",\"method\":\"方式\",\"count\":\"次数\",\"intensity\":\"low/medium/high\",\"reason\":\"原因\",\"note\":\"补充\"}。\n")
                             }
                         }
                         append("【线上细节提醒】\n")
                         if (isGroupChat) {
-                            append("1. 只通过群聊文字气泡表达情绪与推进，不写心声、旁白、状态栏或小说段落。\n")
+                            append("1. 只通过群聊文字气泡、语音卡或照片卡表达情绪与推进，不写心声、旁白、状态栏或小说段落。\n")
                             append("2. 你可以接用户，也可以接其他角色刚发的话；要看清楚发送者，不要默认所有话都只对用户说。\n")
                             append("3. 群聊不是角色独角戏；不要一口气输出大段设定、环境、心理活动或舞台调度。\n")
-                            append("4. 如果近期失联较久，可用一句符合人设的群聊话术表现状态，不要生成照片、语音或状态卡。\n")
+                            append("4. 如果近期失联较久，可用一句符合人设的群聊话术表现状态；只有确实符合人设和群聊气氛时才发语音或照片，不要生成状态卡。\n")
                         } else if (allowOnlineThoughtHints) {
                             append("【心声（thought）使用规范】\n")
                             append("核心原则：心声的价值 = 它和发出去的消息之间的反差。没有反差的心声是废话。\n")
@@ -340,7 +361,9 @@ object RoleplayPromptDecorator {
                         append("【正例】\n")
                         if (isGroupChat) {
                             append("[\"刚看到\",\"你们怎么都还没睡\"]\n")
-                            append("[\"别都看我，我才刚忙完\"]\n\n")
+                            append("[\"别都看我，我才刚忙完\"]\n")
+                            append("[{\"type\":\"voice_message\",\"content\":\"快十二点了才上来\",\"duration_seconds\":3},\"刚忙完\"]\n")
+                            append("[{\"type\":\"ai_photo\",\"description\":\"桌上只剩一盏台灯和半杯冷掉的水\"}]\n\n")
                         } else {
                             append("[\"嗯 在呢\",\"刚到家\"]\n")
                             if (allowOnlineThoughtHints) {
@@ -351,9 +374,9 @@ object RoleplayPromptDecorator {
                         append("【反例（任何一条都会让解析失败，绝对禁止）】\n")
                         append("❌ 嗯 在呢 ← 裸文本，没有最外层 [ ]\n")
                         if (isGroupChat) {
-                            append("❌ {\"type\":\"thought\",\"content\":\"...\"} ← 群聊不允许对象，必须改成字符串数组\n")
-                            append("❌ [{\"type\":\"voice_message\",\"content\":\"快十二点了才上来\"}] ← 群聊禁用语音对象，改成 [\"快十二点了才上来\"]\n")
-                            append("❌ [{\"type\":\"ai_photo\",\"description\":\"台灯暖光笼罩书桌\"}] ← 群聊禁用照片对象和照片描述\n")
+                            append("❌ {\"type\":\"thought\",\"content\":\"...\"} ← 群聊不允许心声对象，必须改成真实群聊消息\n")
+                            append("❌ [\"发了条语音：快十二点了才上来\"] ← 群聊语音必须使用 voice_message 对象\n")
+                            append("❌ [\"发了一张台灯照片\"] ← 群聊照片必须使用 ai_photo 对象\n")
                             append("❌ [\"状态栏：时间 23:44\"] ← 群聊禁用状态栏\n")
                         } else {
                             append("❌ {\"type\":\"thought\",\"content\":\"...\"} ← 单个对象也必须用 [ ] 包起来\n")
@@ -367,7 +390,7 @@ object RoleplayPromptDecorator {
                         append("1. 最外层是不是 [ ]？\n")
                         append(
                             if (isGroupChat) {
-                                "2. 每个元素是不是字符串？群聊里只允许文字字符串，不允许对象。\n"
+                                "2. 每个元素是不是字符串、voice_message 对象或 ai_photo 对象？群聊里不允许其他对象。\n"
                             } else {
                                 "2. 每个元素是不是字符串（裸消息）或合法对象（允许的 type）？\n"
                             },

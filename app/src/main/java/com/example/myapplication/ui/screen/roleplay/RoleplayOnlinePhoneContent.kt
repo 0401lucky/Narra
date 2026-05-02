@@ -530,7 +530,7 @@ internal fun RoleplayOnlinePhoneContent(
                             ),
                     ) {
                         val previous = visibleMessages.getOrNull(index - 1)
-                        if (shouldShowOnlineTimestamp(previous, message)) {
+                        if (scenario.enableTimeAwareness && shouldShowOnlineTimestamp(previous, message)) {
                             Box(
                                 modifier = Modifier.fillMaxWidth(),
                                 contentAlignment = Alignment.Center,

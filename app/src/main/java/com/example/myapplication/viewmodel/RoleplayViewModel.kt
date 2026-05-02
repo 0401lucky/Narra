@@ -50,6 +50,7 @@ import com.example.myapplication.model.MessageStatus
 import com.example.myapplication.model.PromptMode
 import com.example.myapplication.model.ProviderFunction
 import com.example.myapplication.model.DEFAULT_GROUP_AUTO_REPLIES
+import com.example.myapplication.model.MAX_ONLINE_REPLY_COUNT
 import com.example.myapplication.model.RoleplayChatType
 import com.example.myapplication.model.RoleplayDiaryDraft
 import com.example.myapplication.model.RoleplayGroupParticipant
@@ -847,6 +848,23 @@ class RoleplayViewModel(
         upsertScenario(scenario.copy(enableNetMeme = enabled))
     }
 
+    fun updateCurrentScenarioOnlineReplyRange(minCount: Int, maxCount: Int) {
+        val scenario = _uiState.value.currentScenario ?: return
+        val safeMin = minCount.coerceIn(1, MAX_ONLINE_REPLY_COUNT)
+        val safeMax = maxCount.coerceIn(1, MAX_ONLINE_REPLY_COUNT)
+        val (resolvedMin, resolvedMax) = if (safeMin <= safeMax) {
+            safeMin to safeMax
+        } else {
+            safeMax to safeMin
+        }
+        upsertScenario(
+            scenario.copy(
+                onlineReplyMinCount = resolvedMin,
+                onlineReplyMaxCount = resolvedMax,
+            ),
+        )
+    }
+
     fun generateRoleplayDiaries() {
         val state = _uiState.value
         val scenario = state.currentScenario ?: return
@@ -1183,6 +1201,20 @@ class RoleplayViewModel(
                         baseMessages + completedAssistant
                     },
                 )
+                val updatedMessages = RoleplayRoundTripSupport.currentConversationMessages(
+                    messages = currentRawMessages.value,
+                    conversationId = session.conversationId,
+                )
+                val compensationMessage = updatedMessages.firstOrNull { it.id == loadingMessage.id }
+                if (compensationMessage == null || !compensationMessage.hasSendableContent()) {
+                    conversationRepository.replaceConversationSnapshot(
+                        conversationId = session.conversationId,
+                        messages = baseMessages,
+                        selectedModel = selectedModel,
+                    )
+                    currentRawMessages.value = baseMessages
+                    return@launch
+                }
                 roleplayRepository.upsertOnlineMeta(
                     com.example.myapplication.model.RoleplayOnlineMeta(
                         conversationId = session.conversationId,
