@@ -25,11 +25,37 @@ https://0401lucky.github.io/Narra/updates
       - `latest_version_name`
       - `latest_version_code`
       - `minimum_supported_version_code`
-     - `apk_url`
-     - `apk_sha256`
-     - `published_at`
-     - `release_notes`
+      - `apk_url`
+      - `apk_sha256`
+      - `published_at`
+      - `release_notes`
    - 再次 push
+
+## Cloudflare R2 上传
+
+dev 包上传到远端 R2 时必须带 `--remote`，否则可能只写入 wrangler 本地资源环境。
+
+```powershell
+wrangler r2 object put narra-updates/dev/Narra-v1.6.7-dev-10607-dev.apk `
+  --file .\app\build\outputs\apk\debug\Narra-v1.6.7-dev-10607-dev.apk `
+  --content-type application/vnd.android.package-archive `
+  --remote
+```
+
+上传后建议拉回远端对象再校验一次：
+
+```powershell
+wrangler r2 object get narra-updates/dev/Narra-v1.6.7-dev-10607-dev.apk `
+  --remote `
+  --file $env:TEMP\narra-r2-check.apk
+Get-FileHash $env:TEMP\narra-r2-check.apk -Algorithm SHA256
+```
+
+若自定义下载域名曾缓存过 404，可在 `apk_url` 后追加版本查询参数，例如：
+
+```text
+https://download.lsa1230.dpdns.org/dev/Narra-v1.6.7-dev-10607-dev.apk?v=10607
+```
 
 ## debug/dev 测试建议
 
@@ -50,7 +76,7 @@ https://0401lucky.github.io/Narra/updates
   "latest_version_code": 10001,
   "minimum_supported_version_code": 10000,
   "apk_url": "https://download.lsa1230.dpdns.org/dev/Narra-v1.0.1-dev-10001-dev.apk",
-  "apk_sha256": "替换成真实 sha256",
+  "apk_sha256": "替换成真实 sha256，当前客户端要求新版本必须提供",
   "published_at": "2026-03-22T12:00:00+08:00",
   "release_notes": [
     "测试应用内更新"
@@ -72,3 +98,5 @@ Get-FileHash .\app\build\outputs\apk\debug\Narra-v1.0.1-dev-10001-dev.apk -Algor
 ```
 
 把输出中的 `Hash` 填到 `apk_sha256`。
+
+从 `1.6.7-dev` 起，新版本元数据缺少 `apk_sha256` 会被客户端判定为无效更新。
