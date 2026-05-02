@@ -111,6 +111,7 @@ internal fun rememberContextTransferViewModel(
                     fileNamePrefix = "assistant-avatar-${importedAvatar.assistantId}",
                 ).path
             },
+            dataImportTransaction = appGraph::runDatabaseTransaction,
         ),
     )
 }

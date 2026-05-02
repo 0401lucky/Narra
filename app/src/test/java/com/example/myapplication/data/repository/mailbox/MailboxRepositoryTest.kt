@@ -78,6 +78,31 @@ class MailboxRepositoryTest {
     }
 
     @Test
+    fun deleteScenarioData_removesLettersAndSettings() = runTest {
+        val dao = FakeMailboxDao()
+        val repository = RoomMailboxRepository(
+            mailboxDao = dao,
+            nowProvider = { 100L },
+        )
+        repository.insertIncomingLetter(
+            scenarioId = "scenario-1",
+            conversationId = "conversation-1",
+            assistantId = "assistant-1",
+            subject = "旧信",
+            content = "正文",
+            tags = emptyList(),
+            mood = "",
+        )
+        repository.updateSettings(MailboxSettings(scenarioId = "scenario-1"))
+
+        repository.deleteScenarioData("scenario-1", "conversation-1")
+
+        assertTrue(dao.currentLetters.isEmpty())
+        assertEquals(null, dao.getSettings("scenario-1"))
+    }
+
+
+    @Test
     fun moveToTrash_keepsLetterOutOfVisibleBoxes() = runTest {
         val dao = FakeMailboxDao()
         val repository = RoomMailboxRepository(
@@ -209,6 +234,10 @@ private class FakeMailboxDao(
         state.value = state.value.filterNot { it.conversationId == conversationId }
     }
 
+    override suspend fun deleteLettersForScenario(scenarioId: String) {
+        state.value = state.value.filterNot { it.scenarioId == scenarioId }
+    }
+
     override fun observeSettings(scenarioId: String): Flow<MailboxSettingsEntity?> {
         return settingsState.map { settings -> settings[scenarioId] }
     }
@@ -219,5 +248,9 @@ private class FakeMailboxDao(
 
     override suspend fun upsertSettings(settings: MailboxSettingsEntity) {
         settingsState.value = settingsState.value + (settings.scenarioId to settings)
+    }
+
+    override suspend fun deleteSettingsForScenario(scenarioId: String) {
+        settingsState.value = settingsState.value - scenarioId
     }
 }

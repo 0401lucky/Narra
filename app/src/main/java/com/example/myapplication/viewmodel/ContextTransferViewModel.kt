@@ -92,6 +92,7 @@ class ContextTransferViewModel(
     private val tavernCharacterImageAdapter: TavernCharacterImageAdapter = TavernCharacterImageAdapter(),
     private val tavernWorldBookAdapter: TavernWorldBookAdapter = TavernWorldBookAdapter(),
     private val importedAssistantAvatarSaver: suspend (AssistantAvatarImport) -> String? = { null },
+    private val dataImportTransaction: suspend (suspend () -> Unit) -> Unit = { block -> block() },
 ) : ViewModel() {
     val settings = settingsRepository.settingsFlow.stateIn(
         scope = viewModelScope,
@@ -240,6 +241,7 @@ class ContextTransferViewModel(
             worldBookEntries = worldBookRepository.listEntries(),
             memoryEntries = memoryRepository.listEntries(),
             conversationSummaries = conversationSummaryRepository.listSummaries(),
+            conversationSummarySegments = conversationSummaryRepository.listAllSummarySegments(),
             presets = presetRepository.listPresets().filterNot { preset -> preset.builtIn },
         )
     }
@@ -250,6 +252,24 @@ class ContextTransferViewModel(
             currentAssistants = currentSettings.assistants,
             importedAssistants = bundle.assistants,
         )
+        dataImportTransaction {
+            bundle.worldBookEntries.forEach { entry ->
+                worldBookRepository.upsertEntry(entry)
+            }
+            bundle.memoryEntries.forEach { entry ->
+                memoryRepository.upsertEntry(entry)
+            }
+            bundle.conversationSummaries.forEach { summary ->
+                conversationSummaryRepository.upsertSummary(summary)
+            }
+            bundle.conversationSummarySegments.forEach { segment ->
+                conversationSummaryRepository.upsertSummarySegment(segment)
+            }
+            bundle.presets.forEach { preset ->
+                presetRepository.upsertPreset(preset.asImportedCustomPreset())
+            }
+        }
+
         settingsEditor.saveAssistants(
             assistants = mergedAssistants,
             selectedAssistantId = resolveSelectedAssistantId(
@@ -257,26 +277,14 @@ class ContextTransferViewModel(
                 assistants = mergedAssistants,
             ),
         )
-
-        bundle.worldBookEntries.forEach { entry ->
-            worldBookRepository.upsertEntry(entry)
-        }
-        bundle.memoryEntries.forEach { entry ->
-            memoryRepository.upsertEntry(entry)
-        }
-        bundle.conversationSummaries.forEach { summary ->
-            conversationSummaryRepository.upsertSummary(summary)
-        }
-        bundle.presets.forEach { preset ->
-            presetRepository.upsertPreset(preset.asImportedCustomPreset())
-        }
     }
 
     private suspend fun refreshCounts() {
         val customAssistantCount = settings.value.assistants.size
         val worldBookCount = worldBookRepository.listEntries().size
         val memoryCount = memoryRepository.listEntries().size
-        val summaryCount = conversationSummaryRepository.listSummaries().size
+        val summaryCount = conversationSummaryRepository.listSummaries().size +
+            conversationSummaryRepository.listAllSummarySegments().size
         val presetCount = presetRepository.listPresets().count { preset -> !preset.builtIn }
         _uiState.update {
             it.copy(
@@ -345,6 +353,7 @@ class ContextTransferViewModel(
         val currentWorldBookIds = worldBookRepository.listEntries().map { it.id }.toSet()
         val currentMemoryIds = memoryRepository.listEntries().map { it.id }.toSet()
         val currentSummaryIds = conversationSummaryRepository.listSummaries().map { it.conversationId }.toSet()
+        val currentSummarySegmentIds = conversationSummaryRepository.listAllSummarySegments().map { it.id }.toSet()
         val currentPresetIds = presetRepository.listPresets().map { it.id }.toSet()
 
         val conflicts = buildList {
@@ -368,6 +377,11 @@ class ContextTransferViewModel(
                 .forEach { summary ->
                     add(ContextImportConflict("摘要", summary.conversationId, summary.conversationId))
                 }
+            bundle.conversationSummarySegments
+                .filter { it.id in currentSummarySegmentIds }
+                .forEach { segment ->
+                    add(ContextImportConflict("摘要分段", segment.conversationId, segment.id))
+                }
             bundle.presets
                 .filter { it.id in currentPresetIds }
                 .forEach { preset ->
@@ -381,7 +395,7 @@ class ContextTransferViewModel(
             assistantCount = bundle.assistants.size,
             worldBookCount = bundle.worldBookEntries.size,
             memoryCount = bundle.memoryEntries.size,
-            summaryCount = bundle.conversationSummaries.size,
+            summaryCount = bundle.conversationSummaries.size + bundle.conversationSummarySegments.size,
             presetCount = bundle.presets.size,
             conflicts = conflicts,
         )
@@ -505,6 +519,7 @@ class ContextTransferViewModel(
                 },
                 memoryEntries = emptyList(),
                 conversationSummaries = emptyList(),
+                conversationSummarySegments = emptyList(),
                 presets = emptyList(),
             )
 
@@ -512,6 +527,7 @@ class ContextTransferViewModel(
                 assistants = emptyList(),
                 memoryEntries = emptyList(),
                 conversationSummaries = emptyList(),
+                conversationSummarySegments = emptyList(),
                 presets = emptyList(),
             )
 
@@ -526,6 +542,7 @@ class ContextTransferViewModel(
                 worldBookEntries = emptyList(),
                 memoryEntries = emptyList(),
                 conversationSummaries = emptyList(),
+                conversationSummarySegments = emptyList(),
             )
         }
     }
@@ -535,6 +552,7 @@ class ContextTransferViewModel(
             bundle.worldBookEntries.isEmpty() &&
             bundle.memoryEntries.isEmpty() &&
             bundle.conversationSummaries.isEmpty() &&
+            bundle.conversationSummarySegments.isEmpty() &&
             bundle.presets.isEmpty()
     }
 
@@ -614,6 +632,7 @@ class ContextTransferViewModel(
             conversationSummaryRepository: ConversationSummaryRepository,
             presetRepository: PresetRepository = EmptyPresetRepository,
             importedAssistantAvatarSaver: suspend (AssistantAvatarImport) -> String? = { null },
+            dataImportTransaction: suspend (suspend () -> Unit) -> Unit = { block -> block() },
         ): ViewModelProvider.Factory {
             return typedViewModelFactory {
                 ContextTransferViewModel(
@@ -624,6 +643,7 @@ class ContextTransferViewModel(
                     conversationSummaryRepository = conversationSummaryRepository,
                     presetRepository = presetRepository,
                     importedAssistantAvatarSaver = importedAssistantAvatarSaver,
+                    dataImportTransaction = dataImportTransaction,
                 )
             }
         }

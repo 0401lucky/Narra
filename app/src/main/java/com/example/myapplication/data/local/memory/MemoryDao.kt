@@ -50,6 +50,14 @@ interface MemoryDao {
     @Query(
         """
         SELECT * FROM conversation_summary_segments
+        ORDER BY conversationId ASC, startCreatedAt ASC, endCreatedAt ASC
+        """,
+    )
+    suspend fun listAllConversationSummarySegments(): List<ConversationSummarySegmentEntity>
+
+    @Query(
+        """
+        SELECT * FROM conversation_summary_segments
         WHERE conversationId = :conversationId
         ORDER BY startCreatedAt ASC, endCreatedAt ASC
         """,

@@ -2,6 +2,8 @@
 <data-extraction-rules>
     <cloud-backup>
         <exclude domain="file" path="datastore/" />
+        <exclude domain="file" path="user_images/" />
+        <exclude domain="file" path="generated_images/" />
         <exclude domain="database" path="chat.db" />
         <exclude domain="database" path="chat.db-shm" />
         <exclude domain="database" path="chat.db-wal" />
@@ -9,6 +11,8 @@
     </cloud-backup>
     <device-transfer>
         <exclude domain="file" path="datastore/" />
+        <exclude domain="file" path="user_images/" />
+        <exclude domain="file" path="generated_images/" />
         <exclude domain="database" path="chat.db" />
         <exclude domain="database" path="chat.db-shm" />
         <exclude domain="database" path="chat.db-wal" />

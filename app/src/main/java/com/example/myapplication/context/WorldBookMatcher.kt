@@ -26,11 +26,6 @@ data class WorldBookHitPreview(
 )
 
 class WorldBookMatcher {
-    // TODO(T15-D4 遗留)：entry.probability 字段已在 v30 入库、UI 可编辑，
-    //  但匹配流程仍按 100% 命中处理。待产品确认"命中后是否真的按概率掷骰子"
-    //  的语义后，再在此处引入 Random(seed=sourceText.hashCode()) 之类的可测
-    //  实现，避免非确定性测试。
-
     fun match(
         entries: List<WorldBookEntry>,
         assistant: Assistant?,
@@ -65,6 +60,7 @@ class WorldBookMatcher {
             .filter { entry ->
                 entry.alwaysActive || hasKeywordHit(entry, sourceText)
             }
+            .filter { entry -> passesProbability(entry, sourceText) }
             .sortedWith(WorldBookScopeSupport.priorityComparator())
             .take(maxEntries)
             .toList()
@@ -106,6 +102,15 @@ class WorldBookMatcher {
                     matchMode = entry.matchMode,
                 )
             }
+    }
+
+    private fun passesProbability(entry: WorldBookEntry, sourceText: String): Boolean {
+        val probability = entry.probability.coerceIn(0, 100)
+        if (probability >= 100) return true
+        if (probability <= 0) return false
+        val rollSeed = "${entry.id}\u0000$sourceText"
+        val roll = Math.floorMod(rollSeed.hashCode(), 100)
+        return roll < probability
     }
 
     /**

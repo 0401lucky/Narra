@@ -118,6 +118,24 @@ class AppUpdateRepositoryTest {
     }
 
     @Test
+    fun checkForUpdates_rejectsNewVersionWithoutApkSha256() = runTest {
+        val repository = AppUpdateRepository(
+            stateStore = FakeAppUpdateStateStore(),
+            metadataFetcher = { optionalUpdateJson(apkSha256 = "") },
+            nowProvider = { 1_000L },
+        )
+
+        val outcome = repository.checkForUpdates(
+            environment = testEnvironment(),
+            manual = true,
+        )
+
+        assertEquals(AppUpdateAvailability.UNKNOWN, outcome?.availability)
+        assertEquals("更新元数据缺少 APK 校验信息", outcome?.errorMessage)
+    }
+
+
+    @Test
     fun checkForUpdates_cachesUpToDateMetadataAndReusesItWithinThrottleWindow() = runTest {
         val store = FakeAppUpdateStateStore()
         var fetchCount = 0
@@ -159,7 +177,7 @@ class AppUpdateRepositoryTest {
         )
     }
 
-    private fun optionalUpdateJson(): String {
+    private fun optionalUpdateJson(apkSha256: String = "abcdef"): String {
         return """
             {
               "app_id": "com.narra.app",
@@ -168,7 +186,7 @@ class AppUpdateRepositoryTest {
               "latest_version_code": 10100,
               "minimum_supported_version_code": 10000,
               "apk_url": "https://downloads.example.com/Narra-v1.1.0-10100-release.apk",
-              "apk_sha256": "abcdef",
+              "apk_sha256": "$apkSha256",
               "published_at": "2026-03-22T12:00:00+08:00",
               "release_notes": ["新增功能 A", "修复问题 B"]
             }

@@ -1,17 +1,17 @@
 {
   "app_id": "com.narra.app.dev",
   "channel": "dev",
-  "latest_version_name": "1.6.6-dev",
-  "latest_version_code": 10606,
+  "latest_version_name": "1.6.7-dev",
+  "latest_version_code": 10607,
   "minimum_supported_version_code": 0,
-  "apk_url": "https://download.lsa1230.dpdns.org/dev/Narra-v1.6.6-dev-10606-dev.apk",
-  "apk_sha256": "b565690df3557dda03a4e71dd2c21eda510756b1a2046bc17897731c6917189a",
-  "published_at": "2026-05-02T00:12:19+08:00",
+  "apk_url": "https://download.lsa1230.dpdns.org/dev/Narra-v1.6.7-dev-10607-dev.apk?v=10607",
+  "apk_sha256": "70559cd5324798bc4cc2f8a5d923905fa9ab7a08198aae58ffbfedad6305a83f",
+  "published_at": "2026-05-02T10:58:07+08:00",
   "release_notes": [
-    "新增聊天记录分段压缩：旧聊天由总摘要、近期分段和最近原文窗口承接，减少超长上下文",
-    "上下文日志新增摘要与裁剪可视化，可查看裁剪前后消息数、摘要覆盖数和实际发送原文数",
-    "线上手机头像新增双向拍一拍，支持用户拍角色头像，也支持角色拍用户头像",
-    "线上手机引用改为微信式引用条，发送时会保留被引用角色名和预览内容",
-    "AI 帮写恢复三条候选建议，不再默认把第一条直接填入输入框"
+    "修复 release 混淆可能破坏 Gson JSON 读写的问题",
+    "修复系统备份、摘要分段删除和上下文导入导出的一致性问题",
+    "强化 APK 更新 SHA-256 校验和 API Base URL HTTPS 限制",
+    "导入文件和 Tavern PNG 解析增加大小上限，降低异常文件卡死或 OOM 风险",
+    "修复信箱设置残留和世界书概率字段未生效的问题"
   ]
 }

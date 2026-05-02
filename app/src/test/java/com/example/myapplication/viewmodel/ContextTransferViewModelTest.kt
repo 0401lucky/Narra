@@ -6,6 +6,7 @@ import com.example.myapplication.viewmodel.ContextTransferSection
 import com.example.myapplication.model.AppSettings
 import com.example.myapplication.model.Assistant
 import com.example.myapplication.model.ConversationSummary
+import com.example.myapplication.model.ConversationSummarySegment
 import com.example.myapplication.model.MemoryEntry
 import com.example.myapplication.model.MemoryScopeType
 import com.example.myapplication.model.Preset
@@ -93,6 +94,15 @@ class ContextTransferViewModelTest {
                         coveredMessageCount = 10,
                     ),
                 ),
+                conversationSummarySegments = listOf(
+                    ConversationSummarySegment(
+                        id = "segment-1",
+                        conversationId = "c1",
+                        startMessageId = "m1",
+                        endMessageId = "m4",
+                        summary = "前四条消息已压缩。",
+                    ),
+                ),
             ),
         )
 
@@ -101,6 +111,7 @@ class ContextTransferViewModelTest {
         assertEquals(1, viewModel.uiState.value.importPreview?.assistantCount)
         assertEquals(1, viewModel.uiState.value.importPreview?.worldBookCount)
         assertEquals(1, viewModel.uiState.value.importPreview?.memoryCount)
+        assertEquals(2, viewModel.uiState.value.importPreview?.summaryCount)
 
         viewModel.confirmImport()
         advanceUntilIdle()
@@ -110,6 +121,7 @@ class ContextTransferViewModelTest {
         assertEquals("白塔城", worldBookRepository.listEntries().single().title)
         assertEquals("用户喜欢短句回复", memoryRepository.currentEntries().single().content)
         assertEquals("已经整理好前文摘要。", summaryRepository.getSummary("c1")?.summary)
+        assertEquals("前四条消息已压缩。", summaryRepository.listAllSummarySegments().single().summary)
         assertEquals("上下文数据已合并导入", viewModel.uiState.value.message)
     }
 
@@ -146,6 +158,7 @@ class ContextTransferViewModelTest {
         assertEquals(0, decoded.worldBookEntries.size)
         assertEquals(0, decoded.memoryEntries.size)
         assertEquals(0, decoded.conversationSummaries.size)
+        assertEquals(0, decoded.conversationSummarySegments.size)
     }
 
     @Test
@@ -197,6 +210,53 @@ class ContextTransferViewModelTest {
         assertEquals(1, decoded.worldBookEntries.size)
         assertEquals(0, decoded.memoryEntries.size)
         assertEquals(0, decoded.conversationSummaries.size)
+        assertEquals(0, decoded.conversationSummarySegments.size)
+    }
+
+    @Test
+    fun exportBundleJson_memorySectionIncludesSummarySegments() = runTest(mainDispatcherRule.dispatcher.scheduler) {
+        val services = createTestAiServices(
+            settings = AppSettings(),
+            dispatcher = mainDispatcherRule.dispatcher,
+        )
+        val summaryRepository = FakeConversationSummaryRepository(
+            initialSummaries = listOf(
+                ConversationSummary(
+                    conversationId = "c1",
+                    summary = "总摘要",
+                ),
+            ),
+            initialSegments = listOf(
+                ConversationSummarySegment(
+                    id = "segment-1",
+                    conversationId = "c1",
+                    startMessageId = "m1",
+                    endMessageId = "m4",
+                    summary = "分段摘要",
+                ),
+            ),
+        )
+        val viewModel = createContextTransferViewModel(
+            services = services,
+            worldBookRepository = FakeWorldBookRepository(),
+            memoryRepository = FakeMemoryRepository(),
+            conversationSummaryRepository = summaryRepository,
+        )
+
+        advanceUntilIdle()
+
+        var exportedJson = ""
+        viewModel.exportBundleJson(ContextTransferSection.MEMORY) { json, _ ->
+            exportedJson = json
+        }
+        advanceUntilIdle()
+
+        val decoded = ContextTransferCodec().decode(exportedJson)
+        assertEquals("总摘要", decoded.conversationSummaries.single().summary)
+        assertEquals("分段摘要", decoded.conversationSummarySegments.single().summary)
+        assertEquals(0, decoded.assistants.size)
+        assertEquals(0, decoded.worldBookEntries.size)
+        assertEquals(0, decoded.presets.size)
     }
 
     @Test

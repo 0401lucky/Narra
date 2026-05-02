@@ -607,6 +607,16 @@ private class FakeMailboxRepository : MailboxRepository {
         state.value = state.value.filterNot { it.conversationId == conversationId }
     }
 
+    override suspend fun deleteScenarioData(scenarioId: String, conversationId: String) {
+        state.value = state.value.filterNot { letter ->
+            (conversationId.isNotBlank() && letter.conversationId == conversationId) ||
+                (scenarioId.isNotBlank() && letter.scenarioId == scenarioId)
+        }
+        if (scenarioId.isNotBlank()) {
+            settingsState.value = settingsState.value - scenarioId
+        }
+    }
+
     override fun observeSettings(scenarioId: String): Flow<MailboxSettings> {
         return settingsState.map { settings ->
             settings[scenarioId] ?: MailboxSettings(scenarioId = scenarioId)

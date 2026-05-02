@@ -320,10 +320,14 @@ class RoleplayRepositoryTest {
             conversationStore = conversationStore,
             nowProvider = { 10L },
         )
+        val mailboxCleanupCalls = mutableListOf<Pair<String, String>>()
         val repository = RoomRoleplayRepository(
             roleplayDao = dao,
             conversationRepository = conversationRepository,
             nowProvider = { 10L },
+            mailboxCleanup = { scenarioId, conversationId ->
+                mailboxCleanupCalls += scenarioId to conversationId
+            },
         )
 
         repository.deleteScenario("scene-1")
@@ -331,6 +335,7 @@ class RoleplayRepositoryTest {
         assertTrue(conversationStore.listConversations().isEmpty())
         assertEquals(emptyList<RoleplayScenarioEntity>(), dao.listScenarios())
         assertNotNull(dao.deletedScenarioIds.singleOrNull())
+        assertEquals(listOf("scene-1" to "conversation-1"), mailboxCleanupCalls)
     }
 }
 

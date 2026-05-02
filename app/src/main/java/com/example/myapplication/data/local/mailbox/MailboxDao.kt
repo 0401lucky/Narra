@@ -62,6 +62,9 @@ interface MailboxDao {
     @Query("DELETE FROM mailbox_letters WHERE conversationId = :conversationId")
     suspend fun deleteLettersForConversation(conversationId: String)
 
+    @Query("DELETE FROM mailbox_letters WHERE scenarioId = :scenarioId")
+    suspend fun deleteLettersForScenario(scenarioId: String)
+
     @Query("SELECT * FROM mailbox_settings WHERE scenarioId = :scenarioId LIMIT 1")
     fun observeSettings(scenarioId: String): Flow<MailboxSettingsEntity?>
 
@@ -70,4 +73,7 @@ interface MailboxDao {
 
     @Upsert
     suspend fun upsertSettings(settings: MailboxSettingsEntity)
+
+    @Query("DELETE FROM mailbox_settings WHERE scenarioId = :scenarioId")
+    suspend fun deleteSettingsForScenario(scenarioId: String)
 }

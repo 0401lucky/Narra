@@ -47,4 +47,20 @@ class ApiServiceFactoryTest {
 
         assertEquals("请先填写 Base URL", error.message)
     }
+
+    @Test
+    fun normalizeBaseUrl_rejectsRemoteHttpEndpoint() {
+        val error = assertThrows(IllegalArgumentException::class.java) {
+            factory.normalizeBaseUrl("http://api.example.com/v1")
+        }
+
+        assertEquals("Base URL 必须使用 https://，本机调试地址除外", error.message)
+    }
+
+    @Test
+    fun normalizeBaseUrl_allowsLoopbackHttpEndpointForLocalTesting() {
+        val normalized = factory.normalizeBaseUrl("http://127.0.0.1:8080/v1")
+
+        assertEquals("http://127.0.0.1:8080/v1/", normalized)
+    }
 }

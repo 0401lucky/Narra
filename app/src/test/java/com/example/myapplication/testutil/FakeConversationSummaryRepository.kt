@@ -44,6 +44,11 @@ class FakeConversationSummaryRepository(
             .sortedWith(compareBy({ it.startCreatedAt }, { it.endCreatedAt }))
     }
 
+    override suspend fun listAllSummarySegments(): List<ConversationSummarySegment> {
+        return segmentsState.value
+            .sortedWith(compareBy({ it.conversationId }, { it.startCreatedAt }, { it.endCreatedAt }))
+    }
+
     override suspend fun upsertSummary(summary: ConversationSummary) {
         summariesState.value = summariesState.value
             .filterNot { it.conversationId == summary.conversationId } + summary
@@ -56,6 +61,8 @@ class FakeConversationSummaryRepository(
 
     override suspend fun deleteSummary(conversationId: String) {
         summariesState.value = summariesState.value
+            .filterNot { it.conversationId == conversationId }
+        segmentsState.value = segmentsState.value
             .filterNot { it.conversationId == conversationId }
     }
 

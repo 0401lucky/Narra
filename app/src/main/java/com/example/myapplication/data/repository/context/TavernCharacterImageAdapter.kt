@@ -130,18 +130,29 @@ class TavernCharacterImageAdapter(
     private fun inflateToString(bytes: ByteArray): String? {
         return runCatching {
             val inflater = Inflater()
-            inflater.setInput(bytes)
-            val output = ByteArrayOutputStream()
-            val buffer = ByteArray(1024)
-            while (!inflater.finished()) {
-                val count = inflater.inflate(buffer)
-                if (count == 0 && inflater.needsInput()) {
-                    break
+            try {
+                inflater.setInput(bytes)
+                val output = ByteArrayOutputStream()
+                val buffer = ByteArray(1024)
+                var totalBytes = 0
+                while (!inflater.finished()) {
+                    val count = inflater.inflate(buffer)
+                    if (count == 0) {
+                        if (inflater.needsInput() || inflater.needsDictionary()) {
+                            break
+                        }
+                        return@runCatching null
+                    }
+                    totalBytes += count
+                    if (totalBytes > MAX_INFLATED_TEXT_BYTES) {
+                        return@runCatching null
+                    }
+                    output.write(buffer, 0, count)
                 }
-                output.write(buffer, 0, count)
+                output.toString(StandardCharsets.UTF_8.name())
+            } finally {
+                inflater.end()
             }
-            inflater.end()
-            output.toString(StandardCharsets.UTF_8.name())
         }.getOrNull()
     }
 
@@ -204,5 +215,6 @@ class TavernCharacterImageAdapter(
             0x1A,
             0x0A,
         )
+        private const val MAX_INFLATED_TEXT_BYTES = 4 * 1024 * 1024
     }
 }

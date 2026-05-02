@@ -2,6 +2,7 @@ package com.example.myapplication.di
 
 import android.app.Application
 import androidx.room.Room
+import androidx.room.withTransaction
 import com.example.myapplication.context.DefaultPromptContextAssembler
 import com.example.myapplication.context.MemorySelector
 import com.example.myapplication.context.PromptContextAssembler
@@ -268,7 +269,7 @@ class AppGraph(
             roleplayDao = database.roleplayDao(),
             conversationRepository = conversationRepository,
             imageFileCleaner = localImageStore::deleteIfLocalAsync,
-            mailboxCleanup = mailboxRepository::deleteLettersForConversation,
+            mailboxCleanup = mailboxRepository::deleteScenarioData,
         )
     }
 
@@ -300,6 +301,12 @@ class AppGraph(
 
     fun scheduleStartup(block: suspend CoroutineScope.() -> Unit) {
         startupScope.launch(block = block)
+    }
+
+    suspend fun runDatabaseTransaction(block: suspend () -> Unit) {
+        database.withTransaction {
+            block()
+        }
     }
 
     fun launchStartupTasks() {

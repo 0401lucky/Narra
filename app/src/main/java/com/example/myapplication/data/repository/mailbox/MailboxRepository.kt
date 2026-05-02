@@ -68,6 +68,8 @@ interface MailboxRepository {
 
     suspend fun deleteLettersForConversation(conversationId: String)
 
+    suspend fun deleteScenarioData(scenarioId: String, conversationId: String = "")
+
     fun observeSettings(scenarioId: String): Flow<MailboxSettings>
 
     suspend fun getSettings(scenarioId: String): MailboxSettings
@@ -268,6 +270,18 @@ class RoomMailboxRepository(
             return
         }
         mailboxDao.deleteLettersForConversation(conversationId.trim())
+    }
+
+    override suspend fun deleteScenarioData(scenarioId: String, conversationId: String) {
+        val normalizedScenarioId = scenarioId.trim()
+        val normalizedConversationId = conversationId.trim()
+        if (normalizedConversationId.isNotBlank()) {
+            mailboxDao.deleteLettersForConversation(normalizedConversationId)
+        }
+        if (normalizedScenarioId.isNotBlank()) {
+            mailboxDao.deleteLettersForScenario(normalizedScenarioId)
+            mailboxDao.deleteSettingsForScenario(normalizedScenarioId)
+        }
     }
 
     override fun observeSettings(scenarioId: String): Flow<MailboxSettings> {

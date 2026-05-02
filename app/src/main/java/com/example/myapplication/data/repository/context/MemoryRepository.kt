@@ -52,6 +52,8 @@ interface ConversationSummaryRepository {
 
     suspend fun listSummarySegments(conversationId: String): List<ConversationSummarySegment> = emptyList()
 
+    suspend fun listAllSummarySegments(): List<ConversationSummarySegment> = emptyList()
+
     suspend fun upsertSummary(summary: ConversationSummary)
 
     suspend fun upsertSummarySegment(segment: ConversationSummarySegment) = Unit
@@ -138,6 +140,10 @@ class RoomMemoryRepository(
         return memoryDao.listConversationSummarySegments(conversationId).map(::toSummarySegmentDomain)
     }
 
+    override suspend fun listAllSummarySegments(): List<ConversationSummarySegment> {
+        return memoryDao.listAllConversationSummarySegments().map(::toSummarySegmentDomain)
+    }
+
     override suspend fun upsertSummary(summary: ConversationSummary) {
         memoryDao.upsertConversationSummary(
             ConversationSummaryEntity(
@@ -156,6 +162,7 @@ class RoomMemoryRepository(
 
     override suspend fun deleteSummary(conversationId: String) {
         memoryDao.deleteConversationSummary(conversationId)
+        memoryDao.deleteConversationSummarySegments(conversationId)
     }
 
     override suspend fun deleteSummarySegments(conversationId: String) {

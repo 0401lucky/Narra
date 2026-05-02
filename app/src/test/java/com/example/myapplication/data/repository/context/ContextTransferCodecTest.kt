@@ -3,6 +3,7 @@ package com.example.myapplication.data.repository.context
 import com.example.myapplication.model.Assistant
 import com.example.myapplication.model.ContextDataBundle
 import com.example.myapplication.model.ConversationSummary
+import com.example.myapplication.model.ConversationSummarySegment
 import com.example.myapplication.model.MemoryEntry
 import com.example.myapplication.model.MemoryScopeType
 import com.example.myapplication.model.WorldBookEntry
@@ -54,6 +55,15 @@ class ContextTransferCodecTest {
                     coveredMessageCount = 12,
                 ),
             ),
+            conversationSummarySegments = listOf(
+                ConversationSummarySegment(
+                    id = "segment-1",
+                    conversationId = "c1",
+                    startMessageId = "m1",
+                    endMessageId = "m4",
+                    summary = "北境商会线索已经被压缩成分段摘要。",
+                ),
+            ),
         )
 
         val rawJson = codec.encode(bundle)
@@ -71,5 +81,6 @@ class ContextTransferCodecTest {
         assertEquals("白塔设定", decoded.worldBookEntries.single().sourceBookName)
         assertEquals("用户喜欢短句回复", decoded.memoryEntries.single().content)
         assertEquals("已经确认主要线索指向北境商会。", decoded.conversationSummaries.single().summary)
+        assertEquals("北境商会线索已经被压缩成分段摘要。", decoded.conversationSummarySegments.single().summary)
     }
 }

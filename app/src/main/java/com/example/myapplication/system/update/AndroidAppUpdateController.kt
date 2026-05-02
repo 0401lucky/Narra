@@ -91,14 +91,18 @@ class AndroidAppUpdateController(
             )
 
         val expectedSha256 = metadata.normalizedSha256()
-        if (expectedSha256.isNotBlank()) {
-            val actualSha256 = computeSha256(uri)
-            if (actualSha256.isBlank() || actualSha256 != expectedSha256) {
-                return@withContext AppUpdateInstallResult(
-                    type = AppUpdateInstallResultType.HASH_MISMATCH,
-                    message = "安装包校验失败，请重新下载",
-                )
-            }
+        if (expectedSha256.isBlank()) {
+            return@withContext AppUpdateInstallResult(
+                type = AppUpdateInstallResultType.ERROR,
+                message = "安装包缺少校验信息，请重新检查更新",
+            )
+        }
+        val actualSha256 = computeSha256(uri)
+        if (actualSha256.isBlank() || actualSha256 != expectedSha256) {
+            return@withContext AppUpdateInstallResult(
+                type = AppUpdateInstallResultType.HASH_MISMATCH,
+                message = "安装包校验失败，请重新下载",
+            )
         }
 
         val canRequestPackageInstalls = Build.VERSION.SDK_INT < Build.VERSION_CODES.O ||

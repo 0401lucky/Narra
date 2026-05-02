@@ -4,6 +4,7 @@ import com.example.myapplication.model.ProviderApiProtocol
 import okhttp3.OkHttpClient
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
+import java.net.URI
 import java.util.concurrent.TimeUnit
 
 class ApiServiceFactory {
@@ -326,11 +327,28 @@ class ApiServiceFactory {
         require(trimmed.startsWith("http://") || trimmed.startsWith("https://")) {
             "Base URL 必须以 http:// 或 https:// 开头"
         }
+        require(trimmed.startsWith("https://") || isLoopbackHttpBaseUrl(trimmed)) {
+            "Base URL 必须使用 https://，本机调试地址除外"
+        }
         val normalizedBaseUrl = if (trimmed.endsWith('/')) trimmed else "$trimmed/"
         return when (apiProtocol) {
             ProviderApiProtocol.OPENAI_COMPATIBLE -> normalizeGeminiBaseUrl(normalizedBaseUrl)
             ProviderApiProtocol.ANTHROPIC -> normalizedBaseUrl
         }
+    }
+
+    private fun isLoopbackHttpBaseUrl(baseUrl: String): Boolean {
+        if (!baseUrl.startsWith("http://", ignoreCase = true)) {
+            return false
+        }
+        val host = runCatching { URI(baseUrl).host.orEmpty().lowercase() }.getOrDefault("")
+        return host == "localhost" ||
+            host == "127.0.0.1" ||
+            host == "::1" ||
+            host == "[::1]" ||
+            host == "10.0.2.2" ||
+            host == "10.0.3.2" ||
+            host.endsWith(".localhost")
     }
 
     private fun normalizeGeminiBaseUrl(baseUrl: String): String {

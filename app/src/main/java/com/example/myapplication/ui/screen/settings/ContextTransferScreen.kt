@@ -40,6 +40,8 @@ import com.example.myapplication.viewmodel.ContextTransferUiState
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import java.io.ByteArrayOutputStream
+import java.io.InputStream
 
 @Composable
 fun ContextTransferScreen(
@@ -474,7 +476,7 @@ private suspend fun readImportPayload(
         val mimeType = resolver.getType(uri).orEmpty()
         val fileName = resolveImportFileName(context, uri)
         val bytes = resolver.openInputStream(uri)?.use { input ->
-            input.readBytes()
+            input.readBytesWithLimit(MAX_IMPORT_FILE_BYTES)
         } ?: error("无法读取导入文件")
         val isImage = mimeType.startsWith("image/") || fileName.endsWith(".png", ignoreCase = true)
         if (isImage) {
@@ -509,4 +511,21 @@ private fun resolveImportFileName(
     return uri.lastPathSegment.orEmpty()
 }
 
+private fun InputStream.readBytesWithLimit(maxBytes: Int): ByteArray {
+    val output = ByteArrayOutputStream()
+    val buffer = ByteArray(DEFAULT_BUFFER_SIZE)
+    var totalBytes = 0
+    while (true) {
+        val read = read(buffer)
+        if (read == -1) break
+        totalBytes += read
+        if (totalBytes > maxBytes) {
+            throw IllegalArgumentException("导入文件过大，请选择不超过 ${maxBytes / 1024 / 1024}MB 的文件")
+        }
+        output.write(buffer, 0, read)
+    }
+    return output.toByteArray()
+}
+
 private val IMPORT_TEXT_MIME_TYPES = arrayOf("application/json", "text/plain")
+private const val MAX_IMPORT_FILE_BYTES = 16 * 1024 * 1024

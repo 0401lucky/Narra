@@ -118,6 +118,34 @@ class WorldBookMatcherTest {
     }
 
     @Test
+    fun match_respectsZeroProbabilityAfterKeywordHit() {
+        val result = matcher.match(
+            entries = listOf(
+                WorldBookEntry(
+                    id = "entry-never",
+                    title = "概率关闭",
+                    content = "不应注入。",
+                    keywords = listOf("白塔城"),
+                    probability = 0,
+                ),
+                WorldBookEntry(
+                    id = "entry-always",
+                    title = "概率开启",
+                    content = "应注入。",
+                    keywords = listOf("白塔城"),
+                    probability = 100,
+                ),
+            ),
+            assistant = Assistant(id = "assistant-1", worldBookMaxEntries = 8),
+            conversation = Conversation(id = "c1", createdAt = 1L, updatedAt = 1L),
+            userInputText = "我准备去白塔城做生意",
+            recentMessages = emptyList(),
+        )
+
+        assertEquals(listOf("概率开启"), result.entries.map { it.title })
+    }
+
+    @Test
     fun match_supportsRegexAndSelectiveSecondaryKeywords() {
         val result = matcher.match(
             entries = listOf(
