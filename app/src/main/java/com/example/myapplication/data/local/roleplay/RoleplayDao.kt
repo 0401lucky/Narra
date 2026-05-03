@@ -37,6 +37,7 @@ interface RoleplayDao {
             s.enableDeepImmersion AS enableDeepImmersion,
             s.enableTimeAwareness AS enableTimeAwareness,
             s.enableNetMeme AS enableNetMeme,
+            s.enableOnlineProactiveReply AS enableOnlineProactiveReply,
             s.chatType AS chatType,
             s.groupReplyMode AS groupReplyMode,
             s.enableGroupMentionAutoReply AS enableGroupMentionAutoReply,

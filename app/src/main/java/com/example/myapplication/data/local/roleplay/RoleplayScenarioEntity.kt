@@ -32,6 +32,7 @@ data class RoleplayScenarioEntity(
     val enableDeepImmersion: Boolean = false,
     val enableTimeAwareness: Boolean = true,
     val enableNetMeme: Boolean = false,
+    val enableOnlineProactiveReply: Boolean = false,
     val chatType: String = "single",
     val groupReplyMode: String = "natural",
     val enableGroupMentionAutoReply: Boolean = true,

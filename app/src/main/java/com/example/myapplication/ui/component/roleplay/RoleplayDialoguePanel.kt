@@ -298,6 +298,39 @@ internal fun RoleplayDialoguePanel(
                 onClearSuggestions = onClearSuggestions,
             )
         }
+        if (isSending && onCancel != null) {
+            ImmersiveGlassSurface(
+                backdropState = backdropState,
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(16.dp),
+                blurRadius = 16.dp,
+                overlayColor = colors.panelBackgroundStrong,
+            ) {
+                Row(
+                    modifier = Modifier.padding(horizontal = 14.dp, vertical = 9.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(10.dp),
+                ) {
+                    CircularProgressIndicator(
+                        modifier = Modifier.size(16.dp),
+                        strokeWidth = 2.dp,
+                        color = colors.characterAccent,
+                    )
+                    Text(
+                        text = stringResource(id = R.string.roleplay_sending),
+                        color = colors.textMuted,
+                        style = MaterialTheme.typography.bodySmall,
+                        modifier = Modifier.weight(1f),
+                    )
+                    NarraTextButton(onClick = onCancel) {
+                        Text(
+                            text = stringResource(id = R.string.common_cancel),
+                            color = colors.errorText,
+                        )
+                    }
+                }
+            }
+        }
         RoleplayInputBar(
             colors = colors,
             backdropState = backdropState,

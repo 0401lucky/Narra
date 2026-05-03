@@ -228,8 +228,12 @@ internal fun RoleplaySuggestionSection(
                 }
                 NarraTextButton(onClick = onClearSuggestions) {
                     Text(
-                        text = stringResource(id = R.string.common_collapse),
-                        color = colors.textMuted,
+                        text = if (isGeneratingSuggestions) {
+                            stringResource(id = R.string.common_cancel)
+                        } else {
+                            stringResource(id = R.string.common_collapse)
+                        },
+                        color = if (isGeneratingSuggestions) colors.errorText else colors.textMuted,
                     )
                 }
             }

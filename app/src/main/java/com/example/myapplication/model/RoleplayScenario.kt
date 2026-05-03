@@ -26,6 +26,7 @@ data class RoleplayScenario(
     val enableDeepImmersion: Boolean = false,
     val enableTimeAwareness: Boolean = true,
     val enableNetMeme: Boolean = false,
+    val enableOnlineProactiveReply: Boolean = false,
     val chatType: RoleplayChatType = RoleplayChatType.SINGLE,
     val groupReplyMode: RoleplayGroupReplyMode = RoleplayGroupReplyMode.NATURAL,
     val enableGroupMentionAutoReply: Boolean = true,

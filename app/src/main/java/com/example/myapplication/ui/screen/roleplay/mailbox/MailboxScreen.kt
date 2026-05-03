@@ -115,6 +115,7 @@ data class MailboxCallbacks(
     val onDefaultAllowMemorySettingChange: (Boolean) -> Unit,
     val onProactiveFrequencyChange: (MailboxProactiveFrequency) -> Unit,
     val onRequestProactiveLetterNow: () -> Unit,
+    val onCancelGeneration: () -> Unit,
     val onSaveDraft: () -> Unit,
     val onSend: () -> Unit,
     val onArchive: (String) -> Unit,
@@ -284,7 +285,11 @@ private fun MailboxList(
             trailingIcon = Icons.Default.MoreHoriz,
             onTrailingClick = callbacks.onOpenSettings,
         )
-        MailboxHeroCard(uiState, colors)
+        MailboxHeroCard(
+            uiState = uiState,
+            colors = colors,
+            onCancelGeneration = callbacks.onCancelGeneration,
+        )
         MailboxBridgeCard(
             uiState = uiState,
             colors = colors,
@@ -579,20 +584,28 @@ private fun MailboxSettingsDialog(
                     colors = colors,
                 )
                 Button(
-                    onClick = callbacks.onRequestProactiveLetterNow,
-                    enabled = !uiState.isGeneratingProactiveLetter && !uiState.isGeneratingReply,
+                    onClick = {
+                        if (uiState.isGeneratingProactiveLetter || uiState.isGeneratingReply) {
+                            callbacks.onCancelGeneration()
+                        } else {
+                            callbacks.onRequestProactiveLetterNow()
+                        }
+                    },
+                    enabled = true,
                     modifier = Modifier.fillMaxWidth(),
                     colors = ButtonDefaults.buttonColors(
-                        containerColor = colors.accent,
+                        containerColor = if (uiState.isGeneratingProactiveLetter || uiState.isGeneratingReply) {
+                            colors.unread
+                        } else {
+                            colors.accent
+                        },
                         contentColor = Color.White,
                     ),
                 ) {
-                    if (uiState.isGeneratingProactiveLetter) {
-                        CircularProgressIndicator(
-                            modifier = Modifier.size(18.dp),
-                            strokeWidth = 2.dp,
-                            color = Color.White,
-                        )
+                    if (uiState.isGeneratingProactiveLetter || uiState.isGeneratingReply) {
+                        Icon(Icons.Default.Close, contentDescription = null, modifier = Modifier.size(18.dp))
+                        Spacer(Modifier.width(8.dp))
+                        Text(if (uiState.isGeneratingProactiveLetter) "停止写信" else "停止回信")
                     } else {
                         Icon(Icons.Default.AutoAwesome, contentDescription = null, modifier = Modifier.size(18.dp))
                         Spacer(Modifier.width(8.dp))
@@ -704,8 +717,10 @@ private fun MailboxTopBar(
 private fun MailboxHeroCard(
     uiState: MailboxUiState,
     colors: MailboxColors,
+    onCancelGeneration: () -> Unit,
 ) {
     val latest = uiState.letters.firstOrNull()
+    val isGenerating = uiState.isGeneratingProactiveLetter || uiState.isGeneratingReply
     Surface(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(22.dp),
@@ -726,6 +741,7 @@ private fun MailboxHeroCard(
                 Text(
                     text = when {
                         uiState.isGeneratingProactiveLetter -> "${uiState.characterName} 正在写信"
+                        uiState.isGeneratingReply -> "${uiState.characterName} 正在回信"
                         uiState.unreadCount > 0 -> "${uiState.unreadCount} 封未读来信"
                         else -> "信箱很安静"
                     },
@@ -744,6 +760,15 @@ private fun MailboxHeroCard(
                     color = colors.muted,
                     maxLines = 2,
                     overflow = TextOverflow.Ellipsis,
+                )
+            }
+            if (isGenerating) {
+                MailboxActionButton(
+                    label = "停止",
+                    icon = Icons.Default.Close,
+                    tint = colors.unread,
+                    colors = colors,
+                    onClick = onCancelGeneration,
                 )
             }
         }
@@ -1057,8 +1082,14 @@ private fun MailboxActionBar(
                 }
             }
             if (letter.box == MailboxBox.SENT) {
-                MailboxActionButton("生成回信", Icons.Default.AutoAwesome, colors.accent, colors, enabled = !isGeneratingReply) {
-                    callbacks.onGenerateReply(letter.id)
+                if (isGeneratingReply) {
+                    MailboxActionButton("停止回信", Icons.Default.Close, colors.unread, colors) {
+                        callbacks.onCancelGeneration()
+                    }
+                } else {
+                    MailboxActionButton("生成回信", Icons.Default.AutoAwesome, colors.accent, colors) {
+                        callbacks.onGenerateReply(letter.id)
+                    }
                 }
             }
             if (letter.box == MailboxBox.DRAFT) {

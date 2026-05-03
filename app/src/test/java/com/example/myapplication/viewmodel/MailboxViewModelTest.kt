@@ -265,6 +265,61 @@ class MailboxViewModelTest {
     }
 
     @Test
+    fun cancelGeneration_stopsProactiveLetterWithoutCreatingIncomingMail() = runTest(mainDispatcherRule.dispatcher.scheduler) {
+        server.enqueue(
+            MockResponse()
+                .setHeadersDelay(5, TimeUnit.SECONDS)
+                .setResponseCode(200)
+                .setBody(
+                    """
+                    {
+                      "choices": [
+                        {
+                          "message": {
+                            "role": "assistant",
+                            "content": "{\"subject\":\"延迟来信\",\"content\":\"这封信不应该落地。\"}"
+                          }
+                        }
+                      ]
+                    }
+                    """.trimIndent(),
+                ),
+        )
+        val provider = ProviderSettings(
+            id = "mailbox-provider",
+            name = "信箱模型",
+            baseUrl = server.url("/v1/").toString(),
+            apiKey = "test-key",
+            selectedModel = "mailbox-model",
+        )
+        val mailboxRepository = FakeMailboxRepository()
+        val viewModel = createMailboxViewModel(
+            mailboxRepository = mailboxRepository,
+            settings = defaultSettings().copy(
+                providers = listOf(provider),
+                selectedProviderId = provider.id,
+                baseUrl = provider.baseUrl,
+                apiKey = provider.apiKey,
+                selectedModel = provider.selectedModel,
+            ),
+        )
+        advanceUntilIdle()
+
+        viewModel.requestProactiveLetterNow()
+        runCurrent()
+        assertTrue(viewModel.uiState.value.isGeneratingProactiveLetter)
+
+        viewModel.cancelGeneration()
+        runCurrent()
+
+        val state = viewModel.uiState.value
+        assertEquals(false, state.isGeneratingProactiveLetter)
+        assertEquals(false, state.isGeneratingReply)
+        assertEquals("已停止生成", state.noticeMessage)
+        assertTrue(mailboxRepository.currentLetters.none { it.source == MailboxSource.ROLEPLAY_EVENT })
+    }
+
+    @Test
     fun filtersBySearchTagAndUnreadOnly() = runTest(mainDispatcherRule.dispatcher.scheduler) {
         val mailboxRepository = FakeMailboxRepository()
         val viewModel = createMailboxViewModel(mailboxRepository = mailboxRepository)

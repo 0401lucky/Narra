@@ -27,6 +27,7 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.Assignment
 import androidx.compose.material.icons.filled.AutoStories
 import androidx.compose.material.icons.filled.CardGiftcard
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Event
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Forum
@@ -451,6 +452,16 @@ internal fun RoleplayOnlinePhoneContent(
                             contentDescription = "查手机",
                             colors = colors,
                         )
+                        if (isSending) {
+                            OnlinePhoneHeaderButton(
+                                onClick = onCancelSending,
+                                icon = Icons.Default.Close,
+                                contentDescription = "停止生成",
+                                colors = colors,
+                                containerColor = colors.errorBackgroundStrong.copy(alpha = 0.72f),
+                                contentColor = colors.errorText,
+                            )
+                        }
                         Box {
                             OnlinePhoneHeaderButton(
                                 onClick = { showMenu = true },
@@ -685,19 +696,21 @@ private fun OnlinePhoneHeaderButton(
     icon: ImageVector,
     contentDescription: String,
     colors: ImmersiveRoleplayColors,
+    containerColor: Color = Color.Transparent,
+    contentColor: Color = colors.textPrimary,
 ) {
     NarraIconButton(
         onClick = onClick,
         modifier = Modifier.size(36.dp),
         colors = IconButtonDefaults.iconButtonColors(
-            containerColor = Color.Transparent,
-            contentColor = colors.textPrimary,
+            containerColor = containerColor,
+            contentColor = contentColor,
         ),
     ) {
         Icon(
             imageVector = icon,
             contentDescription = contentDescription,
-            tint = colors.textPrimary,
+            tint = contentColor,
         )
     }
 }
@@ -766,8 +779,8 @@ private fun RoleplayOnlineAiHelperBar(
                     if (showPanel) {
                         androidx.compose.material3.TextButton(onClick = onClearSuggestions) {
                             Text(
-                                text = "收起",
-                                color = colors.textMuted,
+                                text = if (isGeneratingSuggestions) "停止" else "收起",
+                                color = if (isGeneratingSuggestions) colors.errorText else colors.textMuted,
                             )
                         }
                     }

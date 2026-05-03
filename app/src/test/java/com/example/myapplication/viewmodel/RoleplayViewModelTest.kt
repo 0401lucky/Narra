@@ -2132,8 +2132,95 @@ class RoleplayViewModelTest {
     }
 
     @Test
-    fun onlineCompensation_emptyModelOutputRemovesPlaceholderAndKeepsBucketReusable() = runTest(mainDispatcherRule.dispatcher.scheduler) {
-        enqueueStreamResponse("")
+    fun onlineCompensation_emptyModelOutputRemovesPlaceholderAndKeepsBucketReusable_whenProactiveReplyEnabled() =
+        runTest(mainDispatcherRule.dispatcher.scheduler) {
+            enqueueStreamResponse("")
+            val assistant = Assistant(
+                id = "assistant-1",
+                name = "陆宴清",
+            )
+            val scenario = RoleplayScenario(
+                id = "scene-1",
+                assistantId = assistant.id,
+                userDisplayNameOverride = "林晚",
+                characterDisplayNameOverride = "陆宴清",
+                interactionMode = RoleplayInteractionMode.ONLINE_PHONE,
+                enableNarration = true,
+                enableRoleplayProtocol = true,
+                enableOnlineProactiveReply = true,
+            )
+            val session = RoleplaySession(
+                id = "session-1",
+                scenarioId = scenario.id,
+                conversationId = "conv-1",
+                createdAt = 1L,
+                updatedAt = 2L,
+            )
+            val store = FakeConversationStore(
+                conversations = listOf(
+                    Conversation(
+                        id = session.conversationId,
+                        title = "旧夜",
+                        model = "chat-model",
+                        createdAt = 1L,
+                        updatedAt = 2L,
+                        assistantId = assistant.id,
+                    ),
+                ),
+                messagesByConversation = mapOf(
+                    session.conversationId to listOf(
+                        ChatMessage(
+                            id = "user-1",
+                            conversationId = session.conversationId,
+                            role = MessageRole.USER,
+                            content = "你还在吗？",
+                            createdAt = 10L,
+                        ),
+                    ),
+                ),
+            )
+            val provider = ProviderSettings(
+                id = "provider-1",
+                name = "测试 Provider",
+                baseUrl = server.url("/v1/").toString(),
+                apiKey = "test-key",
+                selectedModel = "chat-model",
+            )
+            val roleplayRepository = FakeRoleplayRepository(
+                conversationStore = store,
+                scenarios = listOf(scenario),
+                sessions = listOf(session),
+            )
+            val viewModel = createViewModel(
+                store = store,
+                roleplayRepository = roleplayRepository,
+                settings = AppSettings(
+                    baseUrl = provider.baseUrl,
+                    apiKey = provider.apiKey,
+                    selectedModel = provider.selectedModel,
+                    providers = listOf(provider),
+                    selectedProviderId = provider.id,
+                    assistants = listOf(assistant),
+                    selectedAssistantId = assistant.id,
+                ),
+                promptContextAssembler = fixedPromptAssembler("提示词上下文"),
+                nowProvider = incrementingNowProvider(8 * 60 * 60 * 1000L + 100L),
+            )
+
+            viewModel.enterScenario(scenario.id)
+            advanceUntilIdle()
+
+            assertEquals(1, server.requestCount)
+            assertTrue(
+                store.listMessages(session.conversationId).none { message ->
+                    message.systemEventKind == RoleplayOnlineEventKind.COMPENSATION_OPENING
+                },
+            )
+            assertEquals(null, roleplayRepository.getOnlineMeta(session.conversationId)?.lastCompensationBucket)
+        }
+
+    @Test
+    fun onlineCompensation_enterScenarioDoesNotAutoStartFromLoadedHistory() = runTest(mainDispatcherRule.dispatcher.scheduler) {
         val assistant = Assistant(
             id = "assistant-1",
             name = "陆宴清",
@@ -2208,13 +2295,102 @@ class RoleplayViewModelTest {
         viewModel.enterScenario(scenario.id)
         advanceUntilIdle()
 
-        assertEquals(1, server.requestCount)
+        assertEquals(0, server.requestCount)
         assertTrue(
             store.listMessages(session.conversationId).none { message ->
                 message.systemEventKind == RoleplayOnlineEventKind.COMPENSATION_OPENING
             },
         )
         assertEquals(null, roleplayRepository.getOnlineMeta(session.conversationId)?.lastCompensationBucket)
+    }
+
+    @Test
+    fun onlineProactiveReply_enabledAllowsCompensationFromLoadedHistory() = runTest(mainDispatcherRule.dispatcher.scheduler) {
+        enqueueStreamResponse("""["你终于回来了。"]""")
+        val assistant = Assistant(
+            id = "assistant-1",
+            name = "陆宴清",
+        )
+        val scenario = RoleplayScenario(
+            id = "scene-1",
+            assistantId = assistant.id,
+            userDisplayNameOverride = "林晚",
+            characterDisplayNameOverride = "陆宴清",
+            interactionMode = RoleplayInteractionMode.ONLINE_PHONE,
+            enableNarration = true,
+            enableRoleplayProtocol = true,
+            enableOnlineProactiveReply = true,
+        )
+        val session = RoleplaySession(
+            id = "session-1",
+            scenarioId = scenario.id,
+            conversationId = "conv-1",
+            createdAt = 1L,
+            updatedAt = 2L,
+        )
+        val store = FakeConversationStore(
+            conversations = listOf(
+                Conversation(
+                    id = session.conversationId,
+                    title = "旧夜",
+                    model = "chat-model",
+                    createdAt = 1L,
+                    updatedAt = 2L,
+                    assistantId = assistant.id,
+                ),
+            ),
+            messagesByConversation = mapOf(
+                session.conversationId to listOf(
+                    ChatMessage(
+                        id = "user-1",
+                        conversationId = session.conversationId,
+                        role = MessageRole.USER,
+                        content = "你还在吗？",
+                        createdAt = 10L,
+                    ),
+                ),
+            ),
+        )
+        val provider = ProviderSettings(
+            id = "provider-1",
+            name = "测试 Provider",
+            baseUrl = server.url("/v1/").toString(),
+            apiKey = "test-key",
+            selectedModel = "chat-model",
+        )
+        val roleplayRepository = FakeRoleplayRepository(
+            conversationStore = store,
+            scenarios = listOf(scenario),
+            sessions = listOf(session),
+        )
+        val viewModel = createViewModel(
+            store = store,
+            roleplayRepository = roleplayRepository,
+            settings = AppSettings(
+                baseUrl = provider.baseUrl,
+                apiKey = provider.apiKey,
+                selectedModel = provider.selectedModel,
+                providers = listOf(provider),
+                selectedProviderId = provider.id,
+                assistants = listOf(assistant),
+                selectedAssistantId = assistant.id,
+            ),
+            promptContextAssembler = fixedPromptAssembler("提示词上下文"),
+            nowProvider = incrementingNowProvider(8 * 60 * 60 * 1000L + 100L),
+        )
+
+        viewModel.enterScenario(scenario.id)
+        advanceUntilIdle()
+
+        assertEquals(1, server.requestCount)
+        assertTrue(
+            store.listMessages(session.conversationId).any { message ->
+                message.systemEventKind == RoleplayOnlineEventKind.COMPENSATION_OPENING &&
+                    message.status == MessageStatus.COMPLETED &&
+                    message.content.contains("你终于回来了")
+            },
+        )
+        assertEquals("6h_24h", roleplayRepository.getOnlineMeta(session.conversationId)?.lastCompensationBucket)
     }
 
     @Test

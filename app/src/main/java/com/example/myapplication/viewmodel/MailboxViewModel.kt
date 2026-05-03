@@ -30,6 +30,7 @@ import com.example.myapplication.model.PhoneSnapshotOwnerType
 import com.example.myapplication.model.ProviderFunction
 import com.example.myapplication.model.RoleplayDiaryEntry
 import com.example.myapplication.model.RoleplayScenario
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -103,6 +104,8 @@ class MailboxViewModel(
     private var diaryContextJob: Job? = null
     private var phoneContextJob: Job? = null
     private var settingsJob: Job? = null
+    private var proactiveLetterJob: Job? = null
+    private var replyGenerationJob: Job? = null
 
     private val _uiState = MutableStateFlow(
         MailboxUiState(
@@ -290,6 +293,24 @@ class MailboxViewModel(
         generateProactiveLetter(force = true)
     }
 
+    fun cancelGeneration() {
+        val wasGenerating = _uiState.value.isGeneratingProactiveLetter || _uiState.value.isGeneratingReply
+        proactiveLetterJob?.cancel()
+        replyGenerationJob?.cancel()
+        proactiveLetterJob = null
+        replyGenerationJob = null
+        if (wasGenerating) {
+            _uiState.update {
+                it.copy(
+                    isGeneratingProactiveLetter = false,
+                    isGeneratingReply = false,
+                    errorMessage = null,
+                    noticeMessage = "已停止生成",
+                )
+            }
+        }
+    }
+
     fun saveDraft() {
         val state = _uiState.value
         if (state.draftSubject.isBlank() && state.draftContent.isBlank()) {
@@ -392,7 +413,10 @@ class MailboxViewModel(
         if (letterId.isBlank()) {
             return
         }
-        viewModelScope.launch {
+        if (_uiState.value.isGeneratingReply) {
+            return
+        }
+        replyGenerationJob = viewModelScope.launch {
             val letter = mailboxRepository.getLetter(letterId) ?: return@launch
             generateReplyFor(letter)
         }
@@ -779,8 +803,8 @@ class MailboxViewModel(
             }
         }
         _uiState.update { it.copy(isGeneratingProactiveLetter = true, errorMessage = null) }
-        viewModelScope.launch {
-            runCatching {
+        proactiveLetterJob = viewModelScope.launch {
+            try {
                 val currentState = _uiState.value
                 val settings = settingsRepository.settingsFlow.first()
                 val scenario = roleplayRepository.getScenario(currentState.scenarioId)
@@ -826,7 +850,6 @@ class MailboxViewModel(
                     source = MailboxSource.ROLEPLAY_EVENT,
                 )
                 mailboxRepository.markProactiveLetterCreated(currentState.scenarioId)
-            }.onSuccess {
                 selectedBoxFlow.value = MailboxBox.INBOX
                 _uiState.update {
                     val next = it.copy(
@@ -841,13 +864,22 @@ class MailboxViewModel(
                     )
                     next.copy(visibleLetters = filterLetters(next))
                 }
-            }.onFailure { throwable ->
+            } catch (cancellation: CancellationException) {
+                _uiState.update {
+                    it.copy(
+                        isGeneratingProactiveLetter = false,
+                        errorMessage = null,
+                    )
+                }
+            } catch (throwable: Throwable) {
                 _uiState.update {
                     it.copy(
                         isGeneratingProactiveLetter = false,
                         errorMessage = throwable.message ?: "主动来信生成失败",
                     )
                 }
+            } finally {
+                proactiveLetterJob = null
             }
         }
     }
@@ -858,7 +890,7 @@ class MailboxViewModel(
             return
         }
         _uiState.update { it.copy(isGeneratingReply = true, errorMessage = null) }
-        runCatching {
+        try {
             val settings = settingsRepository.settingsFlow.first()
             val scenario = roleplayRepository.getScenario(letter.scenarioId)
             val conversation = conversationRepository.getConversation(letter.conversationId)
@@ -903,7 +935,6 @@ class MailboxViewModel(
                 allowMemory = letter.allowMemory,
                 memoryCandidate = replyDraft.memoryCandidate,
             )
-        }.onSuccess {
             selectedBoxFlow.value = MailboxBox.INBOX
             _uiState.update {
                 val next = it.copy(
@@ -917,13 +948,22 @@ class MailboxViewModel(
                 )
                 next.copy(visibleLetters = filterLetters(next))
             }
-        }.onFailure { throwable ->
+        } catch (cancellation: CancellationException) {
+            _uiState.update {
+                it.copy(
+                    isGeneratingReply = false,
+                    errorMessage = null,
+                )
+            }
+        } catch (throwable: Throwable) {
             _uiState.update {
                 it.copy(
                     isGeneratingReply = false,
                     errorMessage = throwable.message ?: "回信生成失败，已保留你的已寄信件",
                 )
             }
+        } finally {
+            replyGenerationJob = null
         }
     }
 

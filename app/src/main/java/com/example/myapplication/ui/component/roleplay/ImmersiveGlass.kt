@@ -66,6 +66,7 @@ import kotlinx.coroutines.withContext
 // androidx.collection.LruCache 内置线程安全且语义更贴 Android 生态。
 private val paletteCache =
     androidx.collection.LruCache<String, ImmersiveGlassPalette>(ImmersivePaletteCacheMaxEntries)
+private const val ImmersiveBackdropMaxDecodeSidePx = 1600
 
 @Immutable
 data class ImmersiveGlassPalette(
@@ -137,10 +138,13 @@ fun rememberImmersiveBackdropState(
             )
         }
     }
+    val backdropRequestSize = remember(screenSize) {
+        screenSize.coerceForImmersiveBackdropRequest()
+    }
     val backgroundState = rememberUserProfileAvatarState(
         avatarUri = backgroundUri,
         avatarUrl = "",
-        requestSize = screenSize,
+        requestSize = backdropRequestSize,
         allowHardware = false,
     )
 
@@ -210,70 +214,77 @@ fun ImmersiveBackdrop(
     fallbackBackgroundColor: Color? = null,
 ) {
     Box(modifier = modifier.fillMaxSize()) {
-        // 背景图切换时使用 Crossfade 过渡，避免场景切换/首次加载时的突兀替换。
-        // 320ms 与 produceState 异步计算调色板的感知时延接近，体验上"调色板与底图同步"。
-        androidx.compose.animation.Crossfade(
-            targetState = backdropState.imageBitmap,
-            animationSpec = androidx.compose.animation.core.tween(durationMillis = 320),
-            label = "immersive_backdrop_crossfade",
-        ) { bitmap ->
-            if (bitmap != null) {
-                Image(
-                    bitmap = bitmap,
-                    contentDescription = null,
-                    modifier = Modifier.fillMaxSize(),
-                    contentScale = ContentScale.Crop,
-                )
-            } else if (fallbackBackgroundColor != null) {
+        val bitmap = backdropState.imageBitmap
+        if (bitmap != null) {
+            Image(
+                bitmap = bitmap,
+                contentDescription = null,
+                modifier = Modifier.fillMaxSize(),
+                contentScale = ContentScale.Crop,
+            )
+        } else if (fallbackBackgroundColor != null) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(fallbackBackgroundColor),
+            )
+        } else {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(
+                        Brush.linearGradient(
+                            colors = listOf(
+                                Color(0xFFEAF2F8),
+                                Color(0xFFF7F2E8),
+                                Color(0xFFE8F0EA),
+                            ),
+                        ),
+                    ),
+            ) {
                 Box(
                     modifier = Modifier
                         .fillMaxSize()
-                        .background(fallbackBackgroundColor),
+                        .background(
+                            Brush.verticalGradient(
+                                colors = listOf(
+                                    Color.White.copy(alpha = 0.42f),
+                                    Color.Transparent,
+                                    Color(0xFF9FAFC3).copy(alpha = 0.16f),
+                                ),
+                            ),
+                        ),
                 )
-            } else {
                 Box(
                     modifier = Modifier
                         .fillMaxSize()
                         .background(
                             Brush.linearGradient(
                                 colors = listOf(
-                                    Color(0xFFEAF2F8),
-                                    Color(0xFFF7F2E8),
-                                    Color(0xFFE8F0EA),
+                                    Color(0xFFB8C8D8).copy(alpha = 0.18f),
+                                    Color.Transparent,
+                                    Color(0xFFD9CDBA).copy(alpha = 0.14f),
                                 ),
                             ),
                         ),
-                ) {
-                    Box(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .background(
-                                Brush.verticalGradient(
-                                    colors = listOf(
-                                        Color.White.copy(alpha = 0.42f),
-                                        Color.Transparent,
-                                        Color(0xFF9FAFC3).copy(alpha = 0.16f),
-                                    ),
-                                ),
-                            ),
-                    )
-                    Box(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .background(
-                                Brush.linearGradient(
-                                    colors = listOf(
-                                        Color(0xFFB8C8D8).copy(alpha = 0.18f),
-                                        Color.Transparent,
-                                        Color(0xFFD9CDBA).copy(alpha = 0.14f),
-                                    ),
-                                ),
-                            ),
-                    )
-                }
+                )
             }
         }
     }
+}
+
+private fun IntSize.coerceForImmersiveBackdropRequest(): IntSize {
+    val safeWidth = width.coerceAtLeast(1)
+    val safeHeight = height.coerceAtLeast(1)
+    val longSide = max(safeWidth, safeHeight)
+    if (longSide <= ImmersiveBackdropMaxDecodeSidePx) {
+        return IntSize(safeWidth, safeHeight)
+    }
+    val scale = ImmersiveBackdropMaxDecodeSidePx.toFloat() / longSide.toFloat()
+    return IntSize(
+        width = (safeWidth * scale).roundToInt().coerceAtLeast(1),
+        height = (safeHeight * scale).roundToInt().coerceAtLeast(1),
+    )
 }
 
 @Composable

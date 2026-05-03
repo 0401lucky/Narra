@@ -150,6 +150,7 @@ internal fun RoleplaySettingsPluginSection(
     onUpdateScenarioDeepImmersionEnabled: (Boolean) -> Unit,
     onUpdateScenarioTimeAwarenessEnabled: (Boolean) -> Unit,
     onUpdateScenarioNetMemeEnabled: (Boolean) -> Unit,
+    onUpdateScenarioOnlineProactiveReplyEnabled: (Boolean) -> Unit,
 ) {
     val palette = backdropState.palette
     ImmersiveSettingsCard(backdropState) {
@@ -223,6 +224,21 @@ internal fun RoleplaySettingsPluginSection(
             onCheckedChange = onUpdateScenarioTimeAwarenessEnabled,
         )
         if (scenario?.interactionMode == RoleplayInteractionMode.ONLINE_PHONE) {
+            SectionDivider(palette = palette)
+            RoleplaySettingSwitchRow(
+                palette = palette,
+                icon = {
+                    Icon(
+                        imageVector = Icons.Default.Refresh,
+                        contentDescription = null,
+                        tint = RoleplaySettingsPanelAccentColor,
+                    )
+                },
+                title = "主动回复",
+                supportingText = "开启后，线上聊天久未联系时角色可以主动补一条开场；默认关闭。当前不会影响你手动发送后的正常回复。",
+                checked = scenario.enableOnlineProactiveReply,
+                onCheckedChange = onUpdateScenarioOnlineProactiveReplyEnabled,
+            )
             SectionDivider(palette = palette)
             RoleplaySettingSwitchRow(
                 palette = palette,

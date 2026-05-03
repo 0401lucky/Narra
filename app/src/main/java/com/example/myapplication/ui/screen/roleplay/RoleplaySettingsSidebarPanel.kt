@@ -128,6 +128,7 @@ internal fun RoleplaySettingsSidebarContent(
     onUpdateScenarioDeepImmersionEnabled: (Boolean) -> Unit,
     onUpdateScenarioTimeAwarenessEnabled: (Boolean) -> Unit,
     onUpdateScenarioNetMemeEnabled: (Boolean) -> Unit,
+    onUpdateScenarioOnlineProactiveReplyEnabled: (Boolean) -> Unit,
     onUpdateRoleplayLongformTargetChars: (Int) -> Unit,
     onUpdateScenarioInteractionMode: (RoleplayInteractionMode) -> Unit,
     onUpdateScenarioOnlineReplyRange: (Int, Int) -> Unit,
@@ -265,6 +266,7 @@ internal fun RoleplaySettingsSidebarContent(
                     onUpdateScenarioDeepImmersionEnabled = onUpdateScenarioDeepImmersionEnabled,
                     onUpdateScenarioTimeAwarenessEnabled = onUpdateScenarioTimeAwarenessEnabled,
                     onUpdateScenarioNetMemeEnabled = onUpdateScenarioNetMemeEnabled,
+                    onUpdateScenarioOnlineProactiveReplyEnabled = onUpdateScenarioOnlineProactiveReplyEnabled,
                 )
             }
             item {

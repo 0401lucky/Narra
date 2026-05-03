@@ -1,17 +1,17 @@
 {
   "app_id": "com.narra.app.dev",
   "channel": "dev",
-  "latest_version_name": "1.7.0-dev",
-  "latest_version_code": 10700,
+  "latest_version_name": "1.7.1-dev",
+  "latest_version_code": 10701,
   "minimum_supported_version_code": 0,
-  "apk_url": "https://download.lsa1230.dpdns.org/dev/Narra-v1.7.0-dev-10700-dev.apk?v=10700",
-  "apk_sha256": "304f766c2284bc67107b39556f505344579479f8a0a07d21543d5b8af7df9986",
-  "published_at": "2026-05-03T15:59:21+08:00",
+  "apk_url": "https://download.lsa1230.dpdns.org/dev/Narra-v1.7.1-dev-10701-dev.apk?v=10701",
+  "apk_sha256": "bf003b148747efa43ae5a03410e8d629ca5e68d87399d95cea20661a5c4563ac",
+  "published_at": "2026-05-03T23:56:33+08:00",
   "release_notes": [
-    "线上 voice_message 接入 MiMo TTS，生成成功后可播放本地真实语音，失败仍保留文字兜底",
-    "新增独立 MiMo 语音设置，支持 Token Plan / 普通官方入口 / 第三方兼容中转 Base URL 与连通性测试",
-    "支持全局默认音色、角色级预置音色、文本设计音色、从人设生成音色描述和声音克隆样本",
-    "角色声音克隆可导入 wav/mp3 样本并固定给单个角色使用，支持测试克隆效果",
-    "修复聊天消息高度变化时语音、心声、对白卡片可能互相叠压的问题"
+    "信箱主动来信、信箱回信、沉浸式聊天和 AI 帮写生成中新增停止入口",
+    "线上模式新增场景级主动回复开关，默认关闭，开启后才会在久未联系时自动补开场",
+    "沉浸式背景图降低解码尺寸并移除双图层切换，减少返回主页面白屏或崩溃风险",
+    "修复聊天消息高度变化时语音、心声、对白卡片可能互相叠压的问题",
+    "MiMo 真实语音、Base URL 测试、音色设计和声音克隆能力继续保留"
   ]
 }

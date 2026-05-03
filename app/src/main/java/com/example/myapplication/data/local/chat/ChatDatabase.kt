@@ -56,7 +56,7 @@ abstract class ChatDatabase : RoomDatabase() {
     abstract fun presetDao(): PresetDao
 
     companion object {
-        const val CURRENT_VERSION = 39
+        const val CURRENT_VERSION = 40
 
         /**
          * 所有 Room 迁移。具体 DDL 在 [ChatDbMigrations]，这里只暴露注册表给 `AppGraph` 和测试。

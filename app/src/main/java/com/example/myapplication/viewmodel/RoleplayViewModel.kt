@@ -138,6 +138,7 @@ class RoleplayViewModel(
     private var sendingJob: Job? = null
     private var compensationJob: Job? = null
     private var diaryJob: Job? = null
+    private val suppressedOnlineCompensationAttemptKeys = mutableSetOf<String>()
     private val assistantRoundTripRunner = ConversationAssistantRoundTripRunner(
         conversationRepository = conversationRepository,
         aiGateway = aiGateway,
@@ -858,6 +859,15 @@ class RoleplayViewModel(
         upsertScenario(scenario.copy(enableNetMeme = enabled))
     }
 
+    fun updateCurrentScenarioOnlineProactiveReplyEnabled(enabled: Boolean) {
+        val scenario = _uiState.value.currentScenario ?: return
+        if (!enabled) {
+            compensationJob?.cancel()
+            compensationJob = null
+        }
+        upsertScenario(scenario.copy(enableOnlineProactiveReply = enabled))
+    }
+
     fun updateCurrentScenarioOnlineReplyRange(minCount: Int, maxCount: Int) {
         val scenario = _uiState.value.currentScenario ?: return
         val safeMin = minCount.coerceIn(1, MAX_ONLINE_REPLY_COUNT)
@@ -1018,7 +1028,25 @@ class RoleplayViewModel(
     }
 
     fun cancelSending() {
-        sendingJob?.cancel()
+        val activeSendingJob = sendingJob
+        val activeCompensationJob = compensationJob
+        if (activeSendingJob == null && activeCompensationJob == null && !_uiState.value.isSending) {
+            return
+        }
+        sendingJob = null
+        compensationJob = null
+        _uiState.update { current ->
+            current.copy(
+                isSending = false,
+                streamingContent = "",
+                errorMessage = null,
+                noticeMessage = "已停止生成",
+            )
+        }
+        viewModelScope.launch {
+            activeSendingJob?.cancelAndJoin()
+            activeCompensationJob?.cancelAndJoin()
+        }
     }
 
     fun resetCurrentSession(onSuccess: () -> Unit = {}) {
@@ -1162,13 +1190,21 @@ class RoleplayViewModel(
         if (scenario.interactionMode != RoleplayInteractionMode.ONLINE_PHONE) {
             return
         }
+        if (!scenario.enableOnlineProactiveReply) {
+            return
+        }
         if (state.isVideoCallActive || state.isSending || state.input.isNotBlank() || compensationJob?.isActive == true) {
             return
         }
         if (currentRawMessages.value.any { it.status == MessageStatus.LOADING }) {
             return
         }
-        val bucket = resolveOnlineCompensationBucket(currentRawMessages.value) ?: return
+        val trigger = resolveOnlineCompensationTrigger(currentRawMessages.value) ?: return
+        val bucket = trigger.bucket
+        val attemptKey = buildOnlineCompensationAttemptKey(session.conversationId, trigger)
+        if (attemptKey in suppressedOnlineCompensationAttemptKeys) {
+            return
+        }
         val meta = roleplayRepository.getOnlineMeta(session.conversationId)
         if (meta?.lastCompensationBucket == bucket) {
             return
@@ -1217,6 +1253,7 @@ class RoleplayViewModel(
                 )
                 val compensationMessage = updatedMessages.firstOrNull { it.id == loadingMessage.id }
                 if (compensationMessage == null || !compensationMessage.hasSendableContent()) {
+                    suppressedOnlineCompensationAttemptKeys += attemptKey
                     conversationRepository.replaceConversationSnapshot(
                         conversationId = session.conversationId,
                         messages = baseMessages,
@@ -1252,21 +1289,38 @@ class RoleplayViewModel(
         }
     }
 
-    private fun resolveOnlineCompensationBucket(
+    private fun resolveOnlineCompensationTrigger(
         messages: List<ChatMessage>,
-    ): String? {
-        val latestTimestamp = messages
+    ): OnlineCompensationTrigger? {
+        val latestMessage = messages
             .filter { it.status == MessageStatus.COMPLETED && it.createdAt > 0L }
-            .maxOfOrNull { it.createdAt }
+            .maxByOrNull { it.createdAt }
             ?: return null
-        val gapMillis = (nowProvider() - latestTimestamp).coerceAtLeast(0L)
-        return when {
+        val gapMillis = (nowProvider() - latestMessage.createdAt).coerceAtLeast(0L)
+        val bucket = when {
             gapMillis < 6 * 60 * 60 * 1000L -> null
             gapMillis < 24 * 60 * 60 * 1000L -> "6h_24h"
             gapMillis < 3 * 24 * 60 * 60 * 1000L -> "1d_3d"
             gapMillis < 14 * 24 * 60 * 60 * 1000L -> "3d_14d"
             else -> "14d_plus"
-        }
+        } ?: return null
+        return OnlineCompensationTrigger(
+            bucket = bucket,
+            latestMessageId = latestMessage.id,
+            latestMessageCreatedAt = latestMessage.createdAt,
+        )
+    }
+
+    private fun buildOnlineCompensationAttemptKey(
+        conversationId: String,
+        trigger: OnlineCompensationTrigger,
+    ): String {
+        return listOf(
+            conversationId,
+            trigger.bucket,
+            trigger.latestMessageId,
+            trigger.latestMessageCreatedAt.toString(),
+        ).joinToString(separator = ":")
     }
 
     private fun resolveSummaryRecentWindow(
@@ -1608,6 +1662,12 @@ class RoleplayViewModel(
         }
     }
 
+
+    private data class OnlineCompensationTrigger(
+        val bucket: String,
+        val latestMessageId: String,
+        val latestMessageCreatedAt: Long,
+    )
 
     companion object {
         private const val SUMMARY_TRIGGER_MESSAGE_COUNT = 12
