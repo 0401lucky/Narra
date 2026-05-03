@@ -6,6 +6,9 @@ import androidx.lifecycle.viewModelScope
 import com.example.myapplication.data.repository.ai.AiModelCatalogRepository
 import com.example.myapplication.data.repository.ai.AiSettingsEditor
 import com.example.myapplication.data.repository.ai.AiSettingsRepository
+import com.example.myapplication.data.repository.VoiceCloneSampleStorage
+import com.example.myapplication.data.repository.tts.MimoTtsClient
+import com.example.myapplication.data.repository.tts.MimoTtsRequest
 import com.example.myapplication.model.AppSettings
 import com.example.myapplication.model.Assistant
 import com.example.myapplication.model.ConnectionHealth
@@ -22,6 +25,8 @@ import com.example.myapplication.model.ScreenTranslationSettings
 import com.example.myapplication.model.SearchSettings
 import com.example.myapplication.model.ThemeMode
 import com.example.myapplication.model.UserPersonaMask
+import com.example.myapplication.model.VoiceSynthesisSettings
+import com.example.myapplication.model.VoiceProfileMode
 import com.example.myapplication.model.normalized
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -30,6 +35,8 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import java.io.File
+import java.util.Base64
 
 data class SettingsUiState(
     val providers: List<ProviderSettings> = emptyList(),
@@ -64,6 +71,8 @@ data class SettingsUiState(
     val roleplayNoBackgroundSkin: RoleplayNoBackgroundSkinSettings = RoleplayNoBackgroundSkinSettings(),
     val screenTranslationSettings: ScreenTranslationSettings = ScreenTranslationSettings(),
     val searchSettings: SearchSettings = SearchSettings(),
+    val voiceSynthesisSettings: VoiceSynthesisSettings = VoiceSynthesisSettings(),
+    val isTestingVoiceSynthesis: Boolean = false,
 ) {
     val currentProvider: ProviderSettings?
         get() = providers.firstOrNull { it.id == selectedProviderId } ?: providers.firstOrNull()
@@ -112,7 +121,8 @@ data class SettingsUiState(
             roleplayLineHeightScale != savedSettings.roleplayLineHeightScale ||
             roleplayNoBackgroundSkin != savedSettings.roleplayNoBackgroundSkin ||
             screenTranslationSettings != savedSettings.screenTranslationSettings ||
-            searchSettings != savedSettings.resolvedSearchSettings()
+            searchSettings != savedSettings.resolvedSearchSettings() ||
+            voiceSynthesisSettings != savedSettings.voiceSynthesisSettings.normalized()
     }
 }
 
@@ -121,6 +131,7 @@ class SettingsViewModel(
     private val settingsEditor: AiSettingsEditor,
     private val modelCatalogRepository: AiModelCatalogRepository,
     private val imageFileCleaner: suspend (String?) -> Boolean = { false },
+    private val mimoTtsClient: MimoTtsClient? = null,
 ) : ViewModel() {
     val storedSettings: StateFlow<AppSettings> = settingsRepository.settingsFlow.stateIn(
         scope = viewModelScope,
@@ -575,6 +586,55 @@ class SettingsViewModel(
         },
     )
 
+    fun updateVoiceSynthesisSettings(settings: VoiceSynthesisSettings) = updateUiState { current ->
+        current.copy(
+            voiceSynthesisSettings = settings.normalized(),
+            message = null,
+        )
+    }
+
+    fun testVoiceSynthesis(settings: VoiceSynthesisSettings = _uiState.value.voiceSynthesisSettings) {
+        viewModelScope.launch {
+            val normalizedSettings = settings.normalized()
+            val apiKey = normalizedSettings.apiKey.trim()
+            if (apiKey.isBlank()) {
+                updateUiState {
+                    it.copy(message = "MiMo 测试失败：请先填写 API Key")
+                }
+                return@launch
+            }
+            updateUiState {
+                it.copy(
+                    isTestingVoiceSynthesis = true,
+                    message = null,
+                )
+            }
+            runCatching {
+                val request = buildVoiceSynthesisTestRequest(normalizedSettings)
+                val result = (mimoTtsClient ?: MimoTtsClient()).synthesize(
+                    apiKey = apiKey,
+                    request = request,
+                    baseUrl = normalizedSettings.baseUrl,
+                )
+                Triple(request.model, normalizedSettings.baseUrl, result.b64Audio.length)
+            }.onSuccess { (model, baseUrl, audioLength) ->
+                updateUiState {
+                    it.copy(
+                        isTestingVoiceSynthesis = false,
+                        message = "MiMo 测试成功：$model 已通过 $baseUrl 返回音频数据（Base64 ${audioLength} 位）",
+                    )
+                }
+            }.onFailure { throwable ->
+                updateUiState {
+                    it.copy(
+                        isTestingVoiceSynthesis = false,
+                        message = "MiMo 测试失败：${throwable.message ?: "未知错误"}",
+                    )
+                }
+            }
+        }
+    }
+
     // ── 记忆与上下文日志：直接落库（子页面无"保存"按钮，操作即时反馈） ──
 
     fun updateMemoryAutoSummaryEvery(value: Int) {
@@ -804,12 +864,72 @@ class SettingsViewModel(
         }
     }
 
+    private fun buildVoiceSynthesisTestRequest(settings: VoiceSynthesisSettings): MimoTtsRequest {
+        val profile = settings.normalized().defaultProfile.normalized()
+        return when (profile.mode) {
+            VoiceProfileMode.VOICE_DESIGN -> {
+                val prompt = profile.voiceDesignPrompt.trim()
+                if (prompt.isBlank()) {
+                    throw IllegalArgumentException("文本设计音色需要先填写音色描述")
+                }
+                MimoTtsRequest.voiceDesign(
+                    text = "这是 MiMo 语音合成测试。",
+                    prompt = prompt,
+                )
+            }
+
+            VoiceProfileMode.VOICE_CLONE -> MimoTtsRequest.voiceClone(
+                text = "这是 MiMo 语音合成测试。",
+                sampleDataUri = buildVoiceCloneSampleDataUriForTest(profile),
+            )
+
+            VoiceProfileMode.PRESET,
+            VoiceProfileMode.INHERIT,
+            VoiceProfileMode.DISABLED,
+            -> MimoTtsRequest.preset(
+                text = "这是 MiMo 语音合成测试。",
+                voiceId = profile.presetVoiceId,
+            )
+        }
+    }
+
+    private fun buildVoiceCloneSampleDataUriForTest(
+        profile: com.example.myapplication.model.VoiceProfile,
+    ): String {
+        val path = profile.voiceCloneSamplePath.trim()
+        if (path.isBlank()) {
+            throw IllegalArgumentException("声音克隆需要先选择 wav/mp3 样本")
+        }
+        val file = File(path)
+        if (!file.isFile) {
+            throw IllegalArgumentException("声音克隆样本文件不存在")
+        }
+        val mimeType = profile.voiceCloneSampleMimeType.trim().ifBlank {
+            when (file.extension.lowercase()) {
+                "wav" -> "audio/wav"
+                "mp3" -> "audio/mpeg"
+                else -> "application/octet-stream"
+            }
+        }
+        val encoded = Base64.getEncoder().encodeToString(file.readBytes())
+        if (encoded.length > VoiceCloneSampleStorage.MAX_BASE64_CHARS) {
+            throw IllegalArgumentException("声音克隆样本太大，Base64 后超过 10 MB")
+        }
+        val normalizedMimeType = when (mimeType) {
+            "audio/x-wav" -> "audio/wav"
+            "audio/mp3" -> "audio/mpeg"
+            else -> mimeType
+        }
+        return "data:$normalizedMimeType;base64,$encoded"
+    }
+
     companion object {
         fun factory(
             settingsRepository: AiSettingsRepository,
             settingsEditor: AiSettingsEditor,
             modelCatalogRepository: AiModelCatalogRepository,
             imageFileCleaner: suspend (String?) -> Boolean = { false },
+            mimoTtsClient: MimoTtsClient? = null,
         ): ViewModelProvider.Factory {
             return typedViewModelFactory {
                 SettingsViewModel(
@@ -817,6 +937,7 @@ class SettingsViewModel(
                     settingsEditor = settingsEditor,
                     modelCatalogRepository = modelCatalogRepository,
                     imageFileCleaner = imageFileCleaner,
+                    mimoTtsClient = mimoTtsClient,
                 )
             }
         }

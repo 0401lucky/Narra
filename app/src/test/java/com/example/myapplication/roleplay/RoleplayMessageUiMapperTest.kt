@@ -481,6 +481,49 @@ class RoleplayMessageUiMapperTest {
     }
 
     @Test
+    fun mapMessages_onlineModeRendersSlashWrappedStatusBlock() {
+        val scenario = RoleplayScenario(
+            id = "scene-1",
+            title = "线上模式",
+            characterDisplayNameOverride = "陆暗",
+            interactionMode = RoleplayInteractionMode.ONLINE_PHONE,
+        )
+        val content = """
+            status/心情：被激到，眼眶泛红但死撑着没掉下来
+            声音：有点哑/status
+
+            我上个月喝多了，当着全家人的面说了。
+        """.trimIndent()
+        val mapped = RoleplayMessageUiMapper.mapMessages(
+            scenario = scenario,
+            assistant = Assistant(id = "assistant-1", name = "陆暗"),
+            settings = AppSettings(),
+            rawMessages = listOf(
+                ChatMessage(
+                    id = "assistant-status",
+                    conversationId = "conv-1",
+                    role = MessageRole.ASSISTANT,
+                    content = content,
+                    createdAt = 2L,
+                    status = MessageStatus.COMPLETED,
+                    parts = listOf(textMessagePart(content)),
+                    roleplayInteractionMode = RoleplayInteractionMode.ONLINE_PHONE,
+                    roleplayOutputFormat = RoleplayOutputFormat.PLAIN,
+                ),
+            ),
+            streamingContent = null,
+            outputParser = RoleplayOutputParser(),
+            nowProvider = { 20L },
+        )
+
+        assertEquals(2, mapped.size)
+        assertEquals(RoleplayContentType.STATUS, mapped[0].contentType)
+        assertTrue(mapped[0].content.contains("心情：被激到"))
+        assertEquals(RoleplayContentType.DIALOGUE, mapped[1].contentType)
+        assertEquals("我上个月喝多了，当着全家人的面说了。", mapped[1].content)
+    }
+
+    @Test
     fun mapMessages_keepsStoredLongformHistoryAfterSwitchingBackToDialogueMode() {
         val scenario = RoleplayScenario(
             id = "scene-1",

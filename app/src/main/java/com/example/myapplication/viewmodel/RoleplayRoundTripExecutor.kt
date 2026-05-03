@@ -9,6 +9,7 @@ import com.example.myapplication.conversation.ConversationMessageTransforms
 import com.example.myapplication.conversation.GiftImageGenerationRequest
 import com.example.myapplication.conversation.RoundTripInitialPersistence
 import com.example.myapplication.conversation.StreamedAssistantPayload
+import com.example.myapplication.conversation.VoiceSynthesisRequest
 import com.example.myapplication.data.repository.TransferUpdateDirective
 import com.example.myapplication.context.PromptContextAssembler
 import com.example.myapplication.data.repository.ConversationRepository
@@ -68,6 +69,7 @@ internal class RoleplayRoundTripExecutor(
     private val updateUiState: ((RoleplayUiState) -> RoleplayUiState) -> Unit,
     private val updateRawMessages: (List<ChatMessage>) -> Unit,
     private val launchGiftImageGeneration: (GiftImageGenerationRequest, (List<ChatMessage>) -> Unit) -> Unit,
+    private val launchVoiceSynthesis: (VoiceSynthesisRequest, (List<ChatMessage>) -> Unit) -> Unit,
     private val launchConversationSummaryGeneration: (String, List<ChatMessage>, com.example.myapplication.model.AppSettings, Assistant?, com.example.myapplication.model.RoleplayScenario) -> Unit,
     private val launchAutomaticMemoryExtraction: (String, List<ChatMessage>, com.example.myapplication.model.AppSettings, Assistant?, com.example.myapplication.model.RoleplayScenario) -> Unit,
     private val contextLogStore: com.example.myapplication.data.repository.context.ContextLogStore,
@@ -413,6 +415,16 @@ internal class RoleplayRoundTripExecutor(
                         state.settings,
                         assistant,
                         scenario,
+                    )
+                    launchVoiceSynthesis(
+                        VoiceSynthesisRequest(
+                            conversationId = session.conversationId,
+                            selectedModel = selectedModel,
+                            messages = postDirectiveMessages,
+                            settings = state.settings,
+                            fallbackAssistantId = scenario.assistantId,
+                        ),
+                        updateRawMessages,
                     )
                     val completedCount = postDirectiveMessages.count { it.status == MessageStatus.COMPLETED }
                     val memoryWindow = state.settings.memoryAutoSummaryEvery

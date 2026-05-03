@@ -8,6 +8,7 @@ object AppRoutes {
     const val SETTINGS = "settings"
     const val SETTINGS_MODEL = "settings/model"
     const val SETTINGS_SEARCH_TOOLS = "settings/search-tools"
+    const val SETTINGS_VOICE_SYNTHESIS = "settings/voice-synthesis"
     const val SETTINGS_PRESETS = "settings/presets"
     const val SETTINGS_PRESET_EDIT = "settings/presets/{presetId}"
     const val SETTINGS_PROVIDERS = "settings/providers"

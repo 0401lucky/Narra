@@ -13,6 +13,7 @@ import com.example.myapplication.ui.screen.settings.PresetEditScreen
 import com.example.myapplication.ui.screen.settings.PresetListScreen
 import com.example.myapplication.ui.screen.settings.SettingsScreen
 import com.example.myapplication.ui.screen.settings.UserPersonaMasksScreen
+import com.example.myapplication.ui.screen.settings.VoiceSynthesisSettingsScreen
 import com.example.myapplication.ui.screen.settings.copyPresetForUser
 import com.example.myapplication.viewmodel.AppUpdateViewModel
 import com.example.myapplication.viewmodel.SettingsViewModel
@@ -75,6 +76,11 @@ internal fun NavGraphBuilder.registerSettingsNavGraph(
                 },
                 onOpenPresetSettings = {
                     navController.navigate(AppRoutes.SETTINGS_PRESETS) {
+                        launchSingleTop = true
+                    }
+                },
+                onOpenVoiceSynthesisSettings = {
+                    navController.navigate(AppRoutes.SETTINGS_VOICE_SYNTHESIS) {
                         launchSingleTop = true
                     }
                 },
@@ -219,6 +225,20 @@ internal fun NavGraphBuilder.registerSettingsNavGraph(
                 onUpsertMask = settingsViewModel::upsertUserPersonaMask,
                 onDeleteMask = settingsViewModel::deleteUserPersonaMask,
                 onSetDefaultMask = settingsViewModel::setDefaultUserPersonaMask,
+                onNavigateBack = { navController.popBackStack() },
+            )
+        }
+
+        composable(AppRoutes.SETTINGS_VOICE_SYNTHESIS) {
+            val settingsUiState by settingsViewModel.uiState.collectAsStateWithLifecycle()
+            VoiceSynthesisSettingsScreen(
+                settings = settingsUiState.voiceSynthesisSettings,
+                assistants = settingsUiState.savedSettings.resolvedAssistants(),
+                uiMessage = settingsUiState.message,
+                isTesting = settingsUiState.isTestingVoiceSynthesis,
+                onUpdateSettings = settingsViewModel::updateVoiceSynthesisSettings,
+                onTestSettings = settingsViewModel::testVoiceSynthesis,
+                onSaveChanges = { settingsViewModel.saveSettings {} },
                 onNavigateBack = { navController.popBackStack() },
             )
         }

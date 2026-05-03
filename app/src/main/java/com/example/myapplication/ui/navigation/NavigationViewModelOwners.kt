@@ -48,6 +48,7 @@ internal fun rememberRoleplayViewModel(
             imageSaver = { b64Data ->
                 ImageFileStorage.saveBase64Image(context, b64Data)
             },
+            voiceSynthesisCoordinator = appGraph.voiceSynthesisCoordinator,
         ),
     )
 }

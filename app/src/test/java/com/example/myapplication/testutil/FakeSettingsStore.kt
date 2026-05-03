@@ -15,6 +15,7 @@ import com.example.myapplication.model.SearchSettings
 import com.example.myapplication.model.ThemeMode
 import com.example.myapplication.model.TranslationHistoryEntry
 import com.example.myapplication.model.UserPersonaMask
+import com.example.myapplication.model.VoiceSynthesisSettings
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 
@@ -84,6 +85,7 @@ class FakeSettingsStore(
             defaultPresetId = state.value.defaultPresetId,
             screenTranslationSettings = state.value.screenTranslationSettings,
             searchSettings = state.value.searchSettings,
+            voiceSynthesisSettings = state.value.voiceSynthesisSettings,
         )
     }
 
@@ -141,6 +143,12 @@ class FakeSettingsStore(
     override suspend fun saveSearchSettings(settings: SearchSettings) {
         state.value = state.value.copy(
             searchSettings = settings.normalized(),
+        )
+    }
+
+    override suspend fun saveVoiceSynthesisSettings(settings: VoiceSynthesisSettings) {
+        state.value = state.value.copy(
+            voiceSynthesisSettings = settings.normalized(),
         )
     }
 

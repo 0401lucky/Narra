@@ -40,6 +40,7 @@ import com.example.myapplication.model.ScreenTranslationSettings
 import com.example.myapplication.model.ThemeMode
 import com.example.myapplication.model.TranslationHistoryEntry
 import com.example.myapplication.model.UserPersonaMask
+import com.example.myapplication.model.VoiceSynthesisSettings
 import com.example.myapplication.model.createDefaultProvider
 import com.example.myapplication.model.inferredModelInfo
 import com.example.myapplication.model.normalized
@@ -95,6 +96,8 @@ interface SettingsStore {
 
     suspend fun saveSearchSettings(settings: SearchSettings)
 
+    suspend fun saveVoiceSynthesisSettings(settings: VoiceSynthesisSettings)
+
     suspend fun saveUserProfile(
         displayName: String,
         personaPrompt: String,
@@ -138,6 +141,7 @@ class AppSettingsStore(
     private val userPersonaMaskListType = object : TypeToken<List<UserPersonaMask>>() {}.type
     private val translationHistoryType = object : TypeToken<List<TranslationHistoryEntry>>() {}.type
     private val searchSettingsType = object : TypeToken<SearchSettings>() {}.type
+    private val voiceSynthesisSettingsType = object : TypeToken<VoiceSynthesisSettings>() {}.type
     private val secureValueStore = SecureValueStore(context)
 
     override val settingsFlow: Flow<AppSettings> = context.dataStore.data.map { preferences ->
@@ -147,6 +151,7 @@ class AppSettingsStore(
         val legacySelectedModel = preferences[PreferencesKeys.selectedModel].orEmpty()
         val secureProviderApiKeys = secureValueStore.getStringMap(SecureKeys.providerApiKeys)
         val secureSearchApiKeys = secureValueStore.getStringMap(SecureKeys.searchSourceApiKeys)
+        val secureVoiceApiKey = secureValueStore.getString(SecureKeys.voiceSynthesisApiKey)
         val storedProviders = decodeProviders(preferences[PreferencesKeys.providersJson].orEmpty())
             .map { provider ->
                 normalizeProviderFields(provider).copy(
@@ -184,6 +189,14 @@ class AppSettingsStore(
                         .orEmpty()
                         .ifBlank { source.apiKey.trim() },
                 )
+            },
+        ).normalized()
+        val storedVoiceSynthesisSettings = decodeVoiceSynthesisSettings(
+            preferences[PreferencesKeys.voiceSynthesisSettingsJson].orEmpty(),
+        )
+        val voiceSynthesisSettings = storedVoiceSynthesisSettings.copy(
+            apiKey = secureVoiceApiKey.ifBlank {
+                storedVoiceSynthesisSettings.apiKey
             },
         ).normalized()
 
@@ -255,6 +268,7 @@ class AppSettingsStore(
                 vendorGuideDismissed = preferences[PreferencesKeys.screenTranslationVendorGuideDismissed] ?: false,
             ),
             searchSettings = searchSettings,
+            voiceSynthesisSettings = voiceSynthesisSettings,
             memoryAutoSummaryEvery = (preferences[PreferencesKeys.memoryAutoSummaryEvery]
                 ?: DEFAULT_MEMORY_AUTO_SUMMARY_EVERY)
                 .coerceIn(MEMORY_AUTO_SUMMARY_EVERY_MIN, MEMORY_AUTO_SUMMARY_EVERY_MAX),
@@ -450,6 +464,20 @@ class AppSettingsStore(
         }
     }
 
+    override suspend fun saveVoiceSynthesisSettings(settings: VoiceSynthesisSettings) {
+        val normalizedSettings = settings.normalized()
+        secureValueStore.putString(
+            SecureKeys.voiceSynthesisApiKey,
+            normalizedSettings.apiKey,
+        )
+        context.dataStore.edit { preferences ->
+            preferences[PreferencesKeys.voiceSynthesisSettingsJson] = gson.toJson(
+                normalizedSettings.stripSensitiveFields(),
+                voiceSynthesisSettingsType,
+            )
+        }
+    }
+
     override suspend fun saveUserProfile(
         displayName: String,
         personaPrompt: String,
@@ -554,6 +582,9 @@ class AppSettingsStore(
             val currentSecureSearchApiKeys = secureValueStore.getStringMap(SecureKeys.searchSourceApiKeys)
             val legacyPlainApiKey = preferences[PreferencesKeys.apiKey].orEmpty()
             val storedProviders = decodeProviders(preferences[PreferencesKeys.providersJson].orEmpty())
+            val storedVoiceSettings = decodeVoiceSynthesisSettings(
+                preferences[PreferencesKeys.voiceSynthesisSettingsJson].orEmpty(),
+            )
             val migratedSearchSettings = SearchSettingsSensitiveMigrationSupport.migrate(
                 rawJson = preferences[PreferencesKeys.searchSettingsJson].orEmpty(),
                 existingSecureApiKeys = currentSecureSearchApiKeys,
@@ -582,6 +613,14 @@ class AppSettingsStore(
                 stripSensitiveProviderFields(provider)
             }
 
+            if (storedVoiceSettings.apiKey.isNotBlank() &&
+                secureValueStore.getString(SecureKeys.voiceSynthesisApiKey).isBlank()
+            ) {
+                secureValueStore.putString(SecureKeys.voiceSynthesisApiKey, storedVoiceSettings.apiKey)
+                updated = true
+            }
+            val sanitizedVoiceSettings = storedVoiceSettings.stripSensitiveFields()
+
             if (!updated) {
                 if (migratedSearchSettings == null) {
                     return@edit
@@ -599,6 +638,10 @@ class AppSettingsStore(
             secureValueStore.putStringMap(SecureKeys.providerApiKeys, currentSecureProviderApiKeys)
             preferences[PreferencesKeys.apiKey] = ""
             preferences[PreferencesKeys.providersJson] = gson.toJson(sanitizedProviders, providerListType)
+            preferences[PreferencesKeys.voiceSynthesisSettingsJson] = gson.toJson(
+                sanitizedVoiceSettings,
+                voiceSynthesisSettingsType,
+            )
         }
     }
 
@@ -641,6 +684,18 @@ class AppSettingsStore(
                 ?: SearchSettings()
         }.logFailure(TAG) { "decodeSearchSettings fromJson failed, raw.len=${rawJson.length}" }
             .getOrDefault(SearchSettings())
+    }
+
+    private fun decodeVoiceSynthesisSettings(rawJson: String): VoiceSynthesisSettings {
+        if (rawJson.isBlank()) {
+            return VoiceSynthesisSettings()
+        }
+        return runCatching {
+            gson.fromJson<VoiceSynthesisSettings>(rawJson, voiceSynthesisSettingsType)
+                ?.normalized()
+                ?: VoiceSynthesisSettings()
+        }.logFailure(TAG) { "decodeVoiceSynthesisSettings fromJson failed, raw.len=${rawJson.length}" }
+            .getOrDefault(VoiceSynthesisSettings())
     }
 
     private fun decodeFunctionModelProviderIds(rawJson: String): FunctionModelProviderIds {
@@ -1014,6 +1069,7 @@ class AppSettingsStore(
         val screenTranslationShowSourceText = booleanPreferencesKey("screen_translation_show_source_text")
         val screenTranslationVendorGuideDismissed = booleanPreferencesKey("screen_translation_vendor_guide_dismissed")
         val searchSettingsJson = stringPreferencesKey("search_settings_json")
+        val voiceSynthesisSettingsJson = stringPreferencesKey("voice_synthesis_settings_json")
         val memoryAutoSummaryEvery = PreferencesKeysCompat.intPreferencesKey("memory_auto_summary_every")
         val memoryCapacity = PreferencesKeysCompat.intPreferencesKey("memory_capacity")
         val memoryExtractionPrompt = stringPreferencesKey("memory_extraction_prompt")
@@ -1027,6 +1083,7 @@ class AppSettingsStore(
         const val legacyApiKey = "legacy_api_key"
         const val providerApiKeys = "provider_api_keys"
         const val searchSourceApiKeys = "search_source_api_keys"
+        const val voiceSynthesisApiKey = "voice_synthesis_api_key"
     }
 
     private companion object {

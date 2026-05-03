@@ -38,6 +38,7 @@ data class AppSettings(
     val defaultPresetId: String = DEFAULT_PRESET_ID,
     val screenTranslationSettings: ScreenTranslationSettings = ScreenTranslationSettings(),
     val searchSettings: SearchSettings = SearchSettings(),
+    val voiceSynthesisSettings: VoiceSynthesisSettings = VoiceSynthesisSettings(),
     val memoryAutoSummaryEvery: Int = DEFAULT_MEMORY_AUTO_SUMMARY_EVERY,
     val memoryCapacity: Int = DEFAULT_MEMORY_CAPACITY,
     val memoryExtractionPrompt: String = "",

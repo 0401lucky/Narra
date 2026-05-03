@@ -186,6 +186,10 @@ class SettingsAssistantCoordinatorTest {
 
         override suspend fun saveSearchSettings(settings: SearchSettings) = Unit
 
+        override suspend fun saveVoiceSynthesisSettings(
+            settings: com.example.myapplication.model.VoiceSynthesisSettings,
+        ) = Unit
+
         override suspend fun saveUserProfile(displayName: String, personaPrompt: String, avatarUri: String, avatarUrl: String) = Unit
         override suspend fun saveUserPersonaMasks(masks: List<UserPersonaMask>, defaultMaskId: String) = Unit
         override suspend fun saveDefaultPresetId(presetId: String) = Unit

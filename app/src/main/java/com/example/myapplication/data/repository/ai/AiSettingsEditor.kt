@@ -12,6 +12,7 @@ import com.example.myapplication.model.ProviderSettings
 import com.example.myapplication.model.RoleplayNoBackgroundSkinSettings
 import com.example.myapplication.model.TranslationHistoryEntry
 import com.example.myapplication.model.UserPersonaMask
+import com.example.myapplication.model.VoiceSynthesisSettings
 
 interface AiSettingsEditor {
     suspend fun saveProviderSettings(
@@ -56,6 +57,8 @@ interface AiSettingsEditor {
     suspend fun saveScreenTranslationSettings(settings: ScreenTranslationSettings)
 
     suspend fun saveSearchSettings(settings: SearchSettings)
+
+    suspend fun saveVoiceSynthesisSettings(settings: VoiceSynthesisSettings)
 
     suspend fun saveUserProfile(
         displayName: String,
@@ -178,6 +181,10 @@ class DefaultAiSettingsEditor(
 
     override suspend fun saveSearchSettings(settings: SearchSettings) {
         settingsStore.saveSearchSettings(settings)
+    }
+
+    override suspend fun saveVoiceSynthesisSettings(settings: VoiceSynthesisSettings) {
+        settingsStore.saveVoiceSynthesisSettings(settings.normalized())
     }
 
     override suspend fun saveUserProfile(

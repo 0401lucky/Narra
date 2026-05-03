@@ -13,6 +13,7 @@ import com.example.myapplication.data.local.RoomConversationStore
 import com.example.myapplication.data.local.chat.ChatDatabase
 import com.example.myapplication.data.remote.ApiServiceFactory
 import com.example.myapplication.data.repository.AppUpdateRepository
+import com.example.myapplication.data.repository.AudioFileStorage
 import com.example.myapplication.data.repository.ConversationRepository
 import com.example.myapplication.data.repository.FileAttachmentResolver
 import com.example.myapplication.data.repository.ImageAttachmentResolver
@@ -45,6 +46,8 @@ import com.example.myapplication.data.repository.ai.PromptExtrasCore
 import com.example.myapplication.data.repository.ai.RoleplayDiaryPromptService
 import com.example.myapplication.data.repository.ai.RoleplaySuggestionPromptService
 import com.example.myapplication.data.repository.ai.TitleAndChatSuggestionPromptService
+import com.example.myapplication.data.repository.tts.MimoTtsClient
+import com.example.myapplication.conversation.VoiceSynthesisCoordinator
 import com.example.myapplication.data.repository.ai.tooling.GetConversationSummaryTool
 import com.example.myapplication.data.repository.ai.tooling.DefaultMemoryWriteService
 import com.example.myapplication.data.repository.ai.tooling.MemoryWriteService
@@ -241,6 +244,24 @@ class AppGraph(
         DefaultAiTranslationService(
             settingsStore = settingsStore,
             apiServiceFactory = apiServiceFactory,
+        )
+    }
+
+    val mimoTtsClient: MimoTtsClient by lazy {
+        MimoTtsClient()
+    }
+
+    val voiceSynthesisCoordinator: VoiceSynthesisCoordinator by lazy {
+        VoiceSynthesisCoordinator(
+            mimoTtsClient = mimoTtsClient,
+            conversationRepository = conversationRepository,
+            audioSaver = { b64Data, fileNamePrefix ->
+                AudioFileStorage.saveBase64Audio(
+                    context = application,
+                    b64Data = b64Data,
+                    fileNamePrefix = fileNamePrefix,
+                )
+            },
         )
     }
 

@@ -1,6 +1,8 @@
 package com.example.myapplication.ui.component.roleplay
 
+import android.media.MediaPlayer
 import androidx.compose.animation.animateContentSize
+import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.infiniteRepeatable
@@ -14,6 +16,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -28,7 +31,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -38,6 +41,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -46,11 +51,15 @@ import com.example.myapplication.model.ChatActionType
 import com.example.myapplication.model.RoleplayMessageUiModel
 import com.example.myapplication.model.RoleplaySpeaker
 import com.example.myapplication.model.actionMetadataValue
+import com.example.myapplication.model.VoiceAudioStatus
+import com.example.myapplication.model.hasReadyVoiceAudio
+import com.example.myapplication.model.voiceAudioErrorMessage
+import com.example.myapplication.model.voiceAudioPath
+import com.example.myapplication.model.voiceAudioStatus
 import com.example.myapplication.model.voiceMessageContent
 import com.example.myapplication.model.voiceMessageDurationLabel
 import com.example.myapplication.model.voiceMessageDurationSeconds
 import kotlin.math.abs
-import kotlinx.coroutines.delay
 
 @Composable
 internal fun RoleplayActionCard(
@@ -159,48 +168,134 @@ private fun RoleplayAiPhotoCard(
     val description = actionPart.actionMetadataValue("description")
         .trim()
         .ifBlank { message.copyText.ifBlank { "照片" } }
+    var isFlipped by rememberSaveable(message.sourceMessageId, actionPart.actionId) {
+        mutableStateOf(false)
+    }
+    val photoRotationY by animateFloatAsState(
+        targetValue = if (isFlipped) 180f else 0f,
+        animationSpec = tween(durationMillis = 320),
+        label = "roleplay_ai_photo_flip",
+    )
+    val showBack = photoRotationY > 90f
+    val density = LocalDensity.current.density
+    val accentColor = if (isUserMessage) colors.userAccent else colors.characterAccent
     ImmersiveGlassSurface(
         backdropState = backdropState,
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable { isFlipped = !isFlipped }
+            .graphicsLayer {
+                this.rotationY = photoRotationY
+                cameraDistance = 18f * density
+            },
         shape = RoundedCornerShape(22.dp),
         overlayColor = if (isUserMessage) colors.panelBackgroundStrong else colors.panelBackground,
     ) {
-        Column(
-            modifier = Modifier.padding(12.dp),
-            verticalArrangement = Arrangement.spacedBy(10.dp),
+        Box(
+            modifier = Modifier
+                .animateContentSize()
+                .fillMaxWidth()
+                .padding(12.dp)
+                .graphicsLayer {
+                    if (showBack) {
+                        this.rotationY = 180f
+                    }
+                },
         ) {
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(150.dp)
-                    .background(
-                        brush = Brush.linearGradient(
-                            colors = listOf(
-                                colors.characterAccent.copy(alpha = 0.26f),
-                                colors.panelBackgroundStrong.copy(alpha = 0.72f),
-                            ),
-                        ),
-                        shape = RoundedCornerShape(18.dp),
-                    ),
-                contentAlignment = Alignment.Center,
-            ) {
-                Icon(
-                    imageVector = Icons.Filled.PhotoCamera,
-                    contentDescription = null,
-                    tint = colors.textPrimary.copy(alpha = 0.72f),
-                    modifier = Modifier.size(34.dp),
+            if (showBack) {
+                RoleplayAiPhotoBack(
+                    description = description,
+                    accentColor = accentColor,
+                    colors = colors,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .heightIn(min = 150.dp),
+                )
+            } else {
+                RoleplayAiPhotoFront(
+                    accentColor = accentColor,
+                    colors = colors,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(150.dp),
                 )
             }
+        }
+    }
+}
+
+@Composable
+private fun RoleplayAiPhotoFront(
+    accentColor: Color,
+    colors: ImmersiveRoleplayColors,
+    modifier: Modifier,
+) {
+    Box(
+        modifier = modifier.background(
+            brush = Brush.linearGradient(
+                colors = listOf(
+                    accentColor.copy(alpha = 0.24f),
+                    colors.panelBackgroundStrong.copy(alpha = 0.72f),
+                ),
+            ),
+            shape = RoundedCornerShape(18.dp),
+        ),
+        contentAlignment = Alignment.Center,
+    ) {
+        Icon(
+            imageVector = Icons.Filled.PhotoCamera,
+            contentDescription = "照片",
+            tint = colors.textPrimary.copy(alpha = 0.72f),
+            modifier = Modifier.size(34.dp),
+        )
+        Text(
+            text = "照片",
+            style = MaterialTheme.typography.labelLarge,
+            fontWeight = FontWeight.SemiBold,
+            color = accentColor,
+            modifier = Modifier
+                .align(Alignment.BottomStart)
+                .padding(start = 14.dp, bottom = 12.dp),
+        )
+    }
+}
+
+@Composable
+private fun RoleplayAiPhotoBack(
+    description: String,
+    accentColor: Color,
+    colors: ImmersiveRoleplayColors,
+    modifier: Modifier,
+) {
+    Box(
+        modifier = modifier.background(
+            color = colors.panelBackgroundStrong.copy(alpha = 0.78f),
+            shape = RoundedCornerShape(18.dp),
+        ),
+        contentAlignment = Alignment.Center,
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .heightIn(min = 150.dp)
+                .padding(horizontal = 18.dp, vertical = 16.dp),
+            verticalArrangement = Arrangement.Center,
+        ) {
             Text(
                 text = "照片",
                 style = MaterialTheme.typography.labelLarge,
                 fontWeight = FontWeight.SemiBold,
-                color = if (isUserMessage) colors.userAccent else colors.characterAccent,
+                color = accentColor,
             )
             Text(
                 text = description,
-                style = MaterialTheme.typography.bodyMedium,
+                style = MaterialTheme.typography.bodyMedium.copy(
+                    fontSize = 14.sp,
+                    lineHeight = 22.sp,
+                    letterSpacing = 0.4.sp,
+                ),
                 color = colors.textPrimary,
+                modifier = Modifier.padding(top = 8.dp),
             )
         }
     }
@@ -216,8 +311,18 @@ private fun RoleplayVoiceMessageCard(
 ) {
     var isPlaying by rememberSaveable(message.sourceMessageId, actionPart.actionId) { mutableStateOf(false) }
     var isExpanded by rememberSaveable(message.sourceMessageId, actionPart.actionId) { mutableStateOf(false) }
+    var playbackError by rememberSaveable(message.sourceMessageId, actionPart.actionId) { mutableStateOf("") }
+    var mediaPlayer by remember(message.sourceMessageId, actionPart.actionId) { mutableStateOf<MediaPlayer?>(null) }
     val voiceContent = actionPart.voiceMessageContent()
     val durationSeconds = actionPart.voiceMessageDurationSeconds()
+    val audioStatus = actionPart.voiceAudioStatus()
+    val canPlayAudio = actionPart.hasReadyVoiceAudio()
+    val statusLabel = when (audioStatus) {
+        VoiceAudioStatus.GENERATING -> "生成中"
+        VoiceAudioStatus.READY -> if (canPlayAudio) "可播放" else "音频缺失"
+        VoiceAudioStatus.FAILED -> "生成失败"
+        null -> if (isUserMessage) "文字语音" else "文字兜底"
+    }
     val waveform = remember(actionPart.actionId, voiceContent) {
         buildVoiceWaveformSeed(
             seed = "${actionPart.actionId}:$voiceContent",
@@ -240,16 +345,75 @@ private fun RoleplayVoiceMessageCard(
         ).value
     }
 
-    LaunchedEffect(isPlaying, actionPart.actionId) {
+    fun stopPlayback() {
+        mediaPlayer?.let { player ->
+            runCatching {
+                if (player.isPlaying) {
+                    player.stop()
+                }
+            }
+            player.release()
+        }
+        mediaPlayer = null
+        isPlaying = false
+    }
+
+    fun togglePlayback() {
+        if (!canPlayAudio) {
+            isExpanded = true
+            playbackError = when (audioStatus) {
+                VoiceAudioStatus.GENERATING -> "语音正在生成，稍后再试"
+                VoiceAudioStatus.FAILED -> actionPart.voiceAudioErrorMessage().ifBlank { "语音生成失败" }
+                VoiceAudioStatus.READY -> "本地音频文件不可用"
+                null -> "暂时只有文字内容"
+            }
+            return
+        }
         if (isPlaying) {
-            val fakePlaybackMillis = durationSeconds
-                .coerceIn(1, 8) * 420L
-            delay(fakePlaybackMillis)
+            stopPlayback()
+            return
+        }
+        playbackError = ""
+        runCatching {
+            val player = MediaPlayer()
+            player.setDataSource(actionPart.voiceAudioPath())
+            player.setOnCompletionListener {
+                it.release()
+                if (mediaPlayer === it) {
+                    mediaPlayer = null
+                }
+                isPlaying = false
+            }
+            player.setOnErrorListener { failedPlayer, _, _ ->
+                failedPlayer.release()
+                if (mediaPlayer === failedPlayer) {
+                    mediaPlayer = null
+                }
+                isPlaying = false
+                isExpanded = true
+                playbackError = "语音播放失败，已保留文字内容"
+                true
+            }
+            player.prepare()
+            player.start()
+            mediaPlayer = player
+            isPlaying = true
+        }.onFailure { throwable ->
+            mediaPlayer?.release()
+            mediaPlayer = null
             isPlaying = false
+            isExpanded = true
+            playbackError = throwable.message?.takeIf { it.isNotBlank() } ?: "语音播放失败"
         }
     }
 
-    // \u8BED\u97F3\u65F6\u957F\u52A8\u6001\u5BBD\u5EA6
+    DisposableEffect(message.sourceMessageId, actionPart.actionId) {
+        onDispose {
+            stopPlayback()
+        }
+    }
+
+    // 语音时长动态宽度
     val dynamicWidth = (120 + (durationSeconds.coerceIn(1, 12) - 1) * 12).coerceAtMost(260).dp
 
     ImmersiveGlassSurface(
@@ -278,7 +442,7 @@ private fun RoleplayVoiceMessageCard(
                         .clickable(
                             indication = null,
                             interactionSource = remember { androidx.compose.foundation.interaction.MutableInteractionSource() },
-                        ) { isPlaying = !isPlaying },
+                        ) { togglePlayback() },
                     contentAlignment = Alignment.Center,
                 ) {
                     Icon(
@@ -315,27 +479,40 @@ private fun RoleplayVoiceMessageCard(
                     }
                 }
                 Text(
-                    text = actionPart.voiceMessageDurationLabel(),
+                    text = "${actionPart.voiceMessageDurationLabel()} · $statusLabel",
                     style = MaterialTheme.typography.labelMedium,
                     fontWeight = FontWeight.SemiBold,
                     color = colors.textMuted,
                 )
             }
-            if (isExpanded && voiceContent.isNotBlank()) {
-                Text(
-                    text = voiceContent,
-                    style = MaterialTheme.typography.bodyMedium.copy(
-                        fontSize = 14.sp,
-                        lineHeight = 22.sp,
-                        letterSpacing = 0.4.sp,
-                    ),
-                    color = colors.textPrimary.copy(alpha = 0.88f),
+            if (isExpanded && (voiceContent.isNotBlank() || playbackError.isNotBlank())) {
+                Column(
                     modifier = Modifier.padding(
                         start = 14.dp,
                         end = 14.dp,
                         bottom = 12.dp,
                     ),
-                )
+                    verticalArrangement = Arrangement.spacedBy(6.dp),
+                ) {
+                    if (playbackError.isNotBlank()) {
+                        Text(
+                            text = playbackError,
+                            style = MaterialTheme.typography.labelMedium,
+                            color = colors.textMuted,
+                        )
+                    }
+                    if (voiceContent.isNotBlank()) {
+                        Text(
+                            text = voiceContent,
+                            style = MaterialTheme.typography.bodyMedium.copy(
+                                fontSize = 14.sp,
+                                lineHeight = 22.sp,
+                                letterSpacing = 0.4.sp,
+                            ),
+                            color = colors.textPrimary.copy(alpha = 0.88f),
+                        )
+                    }
+                }
             }
         }
     }

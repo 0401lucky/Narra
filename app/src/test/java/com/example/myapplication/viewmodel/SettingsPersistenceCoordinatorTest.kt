@@ -338,6 +338,10 @@ class SettingsPersistenceCoordinatorTest {
             savedSearchSettings = settings
         }
 
+        override suspend fun saveVoiceSynthesisSettings(
+            settings: com.example.myapplication.model.VoiceSynthesisSettings,
+        ) = Unit
+
         override suspend fun saveUserProfile(displayName: String, personaPrompt: String, avatarUri: String, avatarUrl: String) {
             savedDisplayName = displayName
             savedPersonaPrompt = personaPrompt

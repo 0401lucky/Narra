@@ -10,6 +10,9 @@ internal object ChatStatusBlockParser {
         pattern = """<\s*(StatusBlock|user_status|status)\s*>(.*?)<\s*/\s*\1\s*>""",
         options = setOf(RegexOption.IGNORE_CASE, RegexOption.DOT_MATCHES_ALL),
     )
+    private val slashFenceRegex = Regex(
+        pattern = """(?is)(?<![A-Za-z0-9_])(statusbar|状态栏|status)\s*/(.*?)/\s*(?:statusbar|状态栏|status)(?![A-Za-z0-9_])""",
+    )
     private val codeBlockRegex = Regex(
         pattern = """(?im)^```\s*(status|statusbar|状态栏|tracker)\s*\R([\s\S]*?)\R```""",
     )
@@ -46,6 +49,17 @@ internal object ChatStatusBlockParser {
         val sourceText = text.replace("\r\n", "\n")
         val matches = buildList {
             tagRegex.findAll(sourceText).forEach { match ->
+                add(
+                    StatusMatch(
+                        range = match.range,
+                        title = match.groupValues.getOrNull(1)
+                            .orEmpty()
+                            .statusTitle(),
+                        rawText = match.groupValues.getOrNull(2).orEmpty(),
+                    ),
+                )
+            }
+            slashFenceRegex.findAll(sourceText).forEach { match ->
                 add(
                     StatusMatch(
                         range = match.range,

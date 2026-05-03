@@ -39,6 +39,7 @@ fun AppRoot(
             settingsEditor = appGraph.aiSettingsEditor,
             modelCatalogRepository = appGraph.aiModelCatalogRepository,
             imageFileCleaner = appGraph.localImageStore::deleteIfLocalAsync,
+            mimoTtsClient = appGraph.mimoTtsClient,
         ),
     )
     val appUpdateViewModel: AppUpdateViewModel = viewModel(

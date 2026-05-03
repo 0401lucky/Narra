@@ -19,6 +19,8 @@ import com.example.myapplication.conversation.RoleplaySuggestionCoordinator
 import com.example.myapplication.conversation.RoleplayVideoCallCoordinator
 import com.example.myapplication.conversation.StreamedAssistantPayload
 import com.example.myapplication.conversation.SummaryUpdateResult
+import com.example.myapplication.conversation.VoiceSynthesisCoordinator
+import com.example.myapplication.conversation.VoiceSynthesisRequest
 import com.example.myapplication.conversation.persistInitialRoundTripState
 import com.example.myapplication.context.ContextPlaceholderResolver
 import com.example.myapplication.context.PromptContextAssembler
@@ -120,6 +122,7 @@ class RoleplayViewModel(
     private val nowProvider: () -> Long = { System.currentTimeMillis() },
     private val messageIdProvider: () -> String = { UUID.randomUUID().toString() },
     private val imageSaver: suspend (String) -> SavedImageFile = { throw IllegalStateException("图片保存未配置") },
+    private val voiceSynthesisCoordinator: VoiceSynthesisCoordinator? = null,
 ) : ViewModel() {
     val settings: StateFlow<AppSettings> = settingsRepository.settingsFlow.stateIn(
         scope = viewModelScope,
@@ -225,6 +228,13 @@ class RoleplayViewModel(
         launchGiftImageGeneration = { request, onUpdated ->
             viewModelScope.launch {
                 val updatedMessages = giftImageCoordinator.generate(request) ?: return@launch
+                onUpdated(updatedMessages)
+            }
+        },
+        launchVoiceSynthesis = launchVoiceSynthesis@ { request, onUpdated ->
+            val coordinator = voiceSynthesisCoordinator ?: return@launchVoiceSynthesis
+            viewModelScope.launch {
+                val updatedMessages = coordinator.generate(request) ?: return@launch
                 onUpdated(updatedMessages)
             }
         },
@@ -1625,6 +1635,7 @@ class RoleplayViewModel(
             memoryWriteService: MemoryWriteService,
             contextLogStore: com.example.myapplication.data.repository.context.ContextLogStore,
             imageSaver: suspend (String) -> SavedImageFile = { throw IllegalStateException("图片保存未配置") },
+            voiceSynthesisCoordinator: VoiceSynthesisCoordinator? = null,
         ): ViewModelProvider.Factory {
             return typedViewModelFactory {
                 RoleplayViewModel(
@@ -1642,6 +1653,7 @@ class RoleplayViewModel(
                     memoryWriteService = memoryWriteService,
                     contextLogStore = contextLogStore,
                     imageSaver = imageSaver,
+                    voiceSynthesisCoordinator = voiceSynthesisCoordinator,
                 )
             }
         }

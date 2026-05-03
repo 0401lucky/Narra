@@ -66,6 +66,7 @@ object SettingsUiMutationSupport {
             roleplayNoBackgroundSkin = sourceState.roleplayNoBackgroundSkin.normalized(),
             screenTranslationSettings = sourceState.screenTranslationSettings,
             searchSettings = sourceState.searchSettings,
+            voiceSynthesisSettings = sourceState.voiceSynthesisSettings.normalized(),
             isSaving = false,
             message = result.message,
         )

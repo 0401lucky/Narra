@@ -118,4 +118,36 @@ class ChatMessagePartTest {
         assertEquals("礼物图生成失败", failed.giftImageErrorMessage())
         assertFalse(failed.hasGiftGeneratedImage())
     }
+
+    @Test
+    fun voiceAudioStateHelpers_updateVoiceMetadata() {
+        val generating = voiceMessageActionPart("今晚想听你说晚安")
+            .withVoiceAudioGenerating(
+                model = MIMO_TTS_MODEL_PRESET,
+                voiceMode = VoiceProfileMode.PRESET,
+                voiceId = "冰糖",
+                voicePromptHash = "abc123",
+            )
+
+        assertEquals(VoiceAudioStatus.GENERATING, generating.voiceAudioStatus())
+        assertFalse(generating.hasReadyVoiceAudio())
+
+        val ready = generating.withVoiceAudioSuccess(
+            audioPath = "/tmp/voice.wav",
+            mimeType = "audio/wav",
+            fileName = "voice.wav",
+        )
+
+        assertEquals(VoiceAudioStatus.READY, ready.voiceAudioStatus())
+        assertEquals("/tmp/voice.wav", ready.voiceAudioPath())
+        assertEquals("audio/wav", ready.voiceAudioMimeType())
+        assertEquals("voice.wav", ready.voiceAudioFileName())
+        assertTrue(ready.hasReadyVoiceAudio())
+
+        val failed = ready.withVoiceAudioFailure("语音生成失败")
+        assertEquals(VoiceAudioStatus.FAILED, failed.voiceAudioStatus())
+        assertEquals("语音生成失败", failed.voiceAudioErrorMessage())
+        assertFalse(failed.hasReadyVoiceAudio())
+        assertEquals("今晚想听你说晚安", failed.voiceMessageContent())
+    }
 }

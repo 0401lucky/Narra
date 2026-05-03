@@ -219,8 +219,8 @@ internal fun RoleplayDialoguePanel(
                 ) {
                     itemsIndexed(
                         items = storyMessages,
-                        key = { index, item ->
-                            "${item.sourceMessageId}-${item.contentType}-${item.createdAt}-$index"
+                        key = { _, item ->
+                            buildRoleplayDialogueMessageListKey(item)
                         },
                     ) { _, message ->
                         RoleplayMessageItem(
@@ -232,13 +232,6 @@ internal fun RoleplayDialoguePanel(
                             onConfirmTransferReceipt = onConfirmTransferReceipt,
                             lineHeightScale = lineHeightScale,
                             noBackgroundSkin = noBackgroundSkin,
-                            modifier = Modifier.animateItem(
-                                fadeInSpec = androidx.compose.animation.core.tween(durationMillis = 240),
-                                fadeOutSpec = androidx.compose.animation.core.tween(durationMillis = 160),
-                                placementSpec = androidx.compose.animation.core.spring(
-                                    stiffness = androidx.compose.animation.core.Spring.StiffnessMediumLow,
-                                ),
-                            ),
                         )
                     }
                 }
@@ -318,5 +311,19 @@ internal fun RoleplayDialoguePanel(
             quickActions = quickActions,
         )
     }
+}
+
+private fun buildRoleplayDialogueMessageListKey(message: RoleplayMessageUiModel): String {
+    val partId = message.actionPart?.actionId
+        ?: message.specialPart?.actionId
+        ?: message.replyToMessageId
+        ?: ""
+    return listOf(
+        message.sourceMessageId,
+        message.contentType.name,
+        partId,
+        message.createdAt.toString(),
+        message.content.hashCode().toString(),
+    ).joinToString("|")
 }
 

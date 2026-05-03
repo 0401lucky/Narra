@@ -1439,6 +1439,7 @@ class RoleplayViewModelTest {
             updateUiState = { reducer -> latestState = reducer(latestState) },
             updateRawMessages = { messages -> latestRawMessages = messages },
             launchGiftImageGeneration = { _, _ -> },
+            launchVoiceSynthesis = { _, _ -> },
             launchConversationSummaryGeneration = { _, _, _, _, _ -> },
             launchAutomaticMemoryExtraction = { _, _, _, _, _ -> },
             contextLogStore = com.example.myapplication.data.repository.context.ContextLogStore(),

@@ -65,6 +65,7 @@ fun SettingsScreen(
     onOpenChat: () -> Unit,
     onOpenProviderSettings: () -> Unit,
     onOpenPresetSettings: () -> Unit,
+    onOpenVoiceSynthesisSettings: () -> Unit,
     onOpenSearchToolSettings: () -> Unit,
     onOpenUpdateSettings: () -> Unit,
     onOpenUserMasks: () -> Unit,
@@ -107,6 +108,13 @@ fun SettingsScreen(
     val searchSummary = uiState.searchSettings.selectedSourceOrNull()?.let { source ->
         stringResource(R.string.settings_search_default_count, source.name, uiState.searchSettings.defaultResultCount)
     } ?: stringResource(R.string.settings_search_not_configured)
+    val voiceSummary = if (uiState.voiceSynthesisSettings.enabled) {
+        val voiceSettings = uiState.voiceSynthesisSettings.normalized()
+        val profile = voiceSettings.defaultProfile
+        "已启用 · ${profile.storageLabel()} · ${voiceSettings.baseUrl.ifBlank { "默认入口" }}"
+    } else {
+        "未启用 · 文字兜底可用"
+    }
     val displaySummary = buildString {
         append(displayScaleLabel(uiState.messageTextScale))
         append(" · ")
@@ -248,6 +256,13 @@ fun SettingsScreen(
                         title = "预设管理",
                         supportingText = "Prompt Manager、状态卡与默认预设",
                         onClick = onOpenPresetSettings,
+                    )
+                    SettingsGroupDivider()
+                    SettingsListRow(
+                        leadingContent = { Icon(Icons.Default.RecordVoiceOver, contentDescription = null, tint = palette.title) },
+                        title = "MiMo 语音合成",
+                        supportingText = voiceSummary,
+                        onClick = onOpenVoiceSynthesisSettings,
                     )
                     SettingsGroupDivider()
                     SettingsListRow(

@@ -514,20 +514,13 @@ internal fun RoleplayOnlinePhoneContent(
             ) {
                 itemsIndexed(
                     items = visibleMessages,
-                    key = { index, item ->
-                        "${item.sourceMessageId}-${item.contentType}-${item.createdAt}-$index"
+                    key = { _, item ->
+                        buildOnlinePhoneMessageListKey(item)
                     },
                 ) { index, message ->
                     Column(
                         modifier = Modifier
-                            .fillMaxWidth()
-                            .animateItem(
-                                fadeInSpec = androidx.compose.animation.core.tween(durationMillis = 240),
-                                fadeOutSpec = androidx.compose.animation.core.tween(durationMillis = 160),
-                                placementSpec = androidx.compose.animation.core.spring(
-                                    stiffness = androidx.compose.animation.core.Spring.StiffnessMediumLow,
-                                ),
-                            ),
+                            .fillMaxWidth(),
                     ) {
                         val previous = visibleMessages.getOrNull(index - 1)
                         if (scenario.enableTimeAwareness && shouldShowOnlineTimestamp(previous, message)) {
@@ -667,6 +660,23 @@ internal fun RoleplayOnlinePhoneContent(
     }
 
 }
+
+}
+
+private fun buildOnlinePhoneMessageListKey(
+    message: com.example.myapplication.model.RoleplayMessageUiModel,
+): String {
+    val partId = message.actionPart?.actionId
+        ?: message.specialPart?.actionId
+        ?: message.replyToMessageId
+        ?: ""
+    return listOf(
+        message.sourceMessageId,
+        message.contentType.name,
+        partId,
+        message.createdAt.toString(),
+        message.content.hashCode().toString(),
+    ).joinToString("|")
 }
 
 @Composable

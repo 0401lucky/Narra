@@ -90,6 +90,21 @@ enum class GiftImageStatus {
     }
 }
 
+enum class VoiceAudioStatus {
+    GENERATING,
+    READY,
+    FAILED;
+
+    val storageValue: String
+        get() = name.lowercase()
+
+    companion object {
+        fun fromStorageValue(value: String): VoiceAudioStatus? {
+            return entries.firstOrNull { it.storageValue == value.trim().lowercase() }
+        }
+    }
+}
+
 @Immutable
 data class ChatMessagePart(
     val type: ChatMessagePartType = ChatMessagePartType.TEXT,
@@ -893,6 +908,104 @@ fun ChatMessagePart.voiceMessageDurationLabel(): String {
     return "${voiceMessageDurationSeconds()}″"
 }
 
+fun ChatMessagePart.voiceAudioStatus(): VoiceAudioStatus? {
+    if (actionType != ChatActionType.VOICE_MESSAGE) {
+        return null
+    }
+    return VoiceAudioStatus.fromStorageValue(actionMetadataValue(VOICE_AUDIO_STATUS_KEY))
+}
+
+fun ChatMessagePart.voiceAudioPath(): String {
+    return actionMetadataValue(VOICE_AUDIO_PATH_KEY)
+}
+
+fun ChatMessagePart.voiceAudioMimeType(): String {
+    return actionMetadataValue(VOICE_AUDIO_MIME_TYPE_KEY)
+}
+
+fun ChatMessagePart.voiceAudioFileName(): String {
+    return actionMetadataValue(VOICE_AUDIO_FILE_NAME_KEY)
+}
+
+fun ChatMessagePart.voiceAudioErrorMessage(): String {
+    return actionMetadataValue(VOICE_AUDIO_ERROR_KEY)
+}
+
+fun ChatMessagePart.hasReadyVoiceAudio(): Boolean {
+    return actionType == ChatActionType.VOICE_MESSAGE &&
+        voiceAudioStatus() == VoiceAudioStatus.READY &&
+        voiceAudioPath().isNotBlank()
+}
+
+fun ChatMessagePart.withVoiceAudioGenerating(
+    model: String,
+    voiceMode: VoiceProfileMode,
+    voiceId: String,
+    voicePromptHash: String,
+): ChatMessagePart {
+    if (actionType != ChatActionType.VOICE_MESSAGE) {
+        return this
+    }
+    return copy(
+        actionMetadata = normalizeActionMetadata(
+            actionMetadata +
+                mapOf(
+                    VOICE_AUDIO_STATUS_KEY to VoiceAudioStatus.GENERATING.storageValue,
+                    VOICE_AUDIO_PATH_KEY to "",
+                    VOICE_AUDIO_MIME_TYPE_KEY to "",
+                    VOICE_AUDIO_FILE_NAME_KEY to "",
+                    VOICE_AUDIO_ERROR_KEY to "",
+                    VOICE_TTS_MODEL_KEY to model,
+                    VOICE_TTS_VOICE_MODE_KEY to voiceMode.storageValue,
+                    VOICE_TTS_VOICE_ID_KEY to voiceId,
+                    VOICE_TTS_VOICE_PROMPT_HASH_KEY to voicePromptHash,
+                ),
+        ),
+    )
+}
+
+fun ChatMessagePart.withVoiceAudioSuccess(
+    audioPath: String,
+    mimeType: String,
+    fileName: String,
+): ChatMessagePart {
+    if (actionType != ChatActionType.VOICE_MESSAGE) {
+        return this
+    }
+    return copy(
+        actionMetadata = normalizeActionMetadata(
+            actionMetadata +
+                mapOf(
+                    VOICE_AUDIO_STATUS_KEY to VoiceAudioStatus.READY.storageValue,
+                    VOICE_AUDIO_PATH_KEY to audioPath,
+                    VOICE_AUDIO_MIME_TYPE_KEY to mimeType,
+                    VOICE_AUDIO_FILE_NAME_KEY to fileName,
+                    VOICE_AUDIO_ERROR_KEY to "",
+                ),
+        ),
+    )
+}
+
+fun ChatMessagePart.withVoiceAudioFailure(
+    errorMessage: String,
+): ChatMessagePart {
+    if (actionType != ChatActionType.VOICE_MESSAGE) {
+        return this
+    }
+    return copy(
+        actionMetadata = normalizeActionMetadata(
+            actionMetadata +
+                mapOf(
+                    VOICE_AUDIO_STATUS_KEY to VoiceAudioStatus.FAILED.storageValue,
+                    VOICE_AUDIO_PATH_KEY to "",
+                    VOICE_AUDIO_MIME_TYPE_KEY to "",
+                    VOICE_AUDIO_FILE_NAME_KEY to "",
+                    VOICE_AUDIO_ERROR_KEY to errorMessage,
+                ),
+        ),
+    )
+}
+
 fun ChatMessagePart.specialPlayTitle(): String {
     return when (specialType) {
         ChatSpecialType.TRANSFER -> transferDirectionLabel()
@@ -1126,6 +1239,15 @@ private const val ACTION_REASON_KEY = "reason"
 private const val ACTION_POKE_NOTE_KEY = "note"
 private const val ACTION_POKE_TARGET_KEY = "poke_target"
 private const val ACTION_POKE_SUFFIX_KEY = "poke_suffix"
+private const val VOICE_AUDIO_STATUS_KEY = "audio_status"
+private const val VOICE_AUDIO_PATH_KEY = "audio_path"
+private const val VOICE_AUDIO_MIME_TYPE_KEY = "audio_mime_type"
+private const val VOICE_AUDIO_FILE_NAME_KEY = "audio_file_name"
+private const val VOICE_AUDIO_ERROR_KEY = "audio_error"
+private const val VOICE_TTS_MODEL_KEY = "tts_model"
+private const val VOICE_TTS_VOICE_MODE_KEY = "tts_voice_mode"
+private const val VOICE_TTS_VOICE_ID_KEY = "tts_voice_id"
+private const val VOICE_TTS_VOICE_PROMPT_HASH_KEY = "tts_voice_prompt_hash"
 
 private fun buildPokeDisplayText(
     target: String,

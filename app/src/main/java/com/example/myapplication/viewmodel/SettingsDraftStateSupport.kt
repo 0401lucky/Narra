@@ -65,6 +65,7 @@ object SettingsDraftStateSupport {
                 roleplayNoBackgroundSkin = settings.roleplayNoBackgroundSkin.normalized(),
                 screenTranslationSettings = settings.screenTranslationSettings,
                 searchSettings = settings.resolvedSearchSettings(),
+                voiceSynthesisSettings = settings.voiceSynthesisSettings.normalized(),
             )
         }
     }

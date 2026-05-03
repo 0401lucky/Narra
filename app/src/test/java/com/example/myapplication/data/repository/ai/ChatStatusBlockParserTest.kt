@@ -85,4 +85,22 @@ class ChatStatusBlockParserTest {
         assertEquals(ChatMessagePartType.TEXT, parts.last().type)
         assertEquals("回来了。", parts.last().text)
     }
+
+    @Test
+    fun extract_detectsSlashWrappedStatusBlock() {
+        val parts = ChatStatusBlockParser.extract(
+            """
+                status/心情：被激到，眼眶泛红但死撑着没掉下来
+                声音：有点哑/status
+
+                我上个月喝多了，当着全家人的面说了。
+            """.trimIndent(),
+        )
+
+        assertEquals(ChatMessagePartType.STATUS, parts.first().type)
+        assertTrue(parts.first().text.contains("心情：被激到"))
+        assertTrue(parts.first().text.contains("声音：有点哑"))
+        assertEquals(ChatMessagePartType.TEXT, parts.last().type)
+        assertEquals("我上个月喝多了，当着全家人的面说了。", parts.last().text)
+    }
 }
