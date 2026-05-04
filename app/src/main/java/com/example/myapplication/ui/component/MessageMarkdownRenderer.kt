@@ -42,6 +42,7 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.isSpecified
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -63,6 +64,8 @@ import com.mikepenz.markdown.model.MarkdownPadding
 import com.mikepenz.markdown.model.MarkdownTypography
 
 private const val MessageBubbleCodeBlockCollapseLines = 10
+private const val SafeHtmlAutoCollapseBlockThreshold = 6
+private const val SafeHtmlAutoCollapseTextLength = 1200
 private val MessageBubbleCodeBlockShape = RoundedCornerShape(22.dp)
 internal val CitationMarkdownRegex = Regex("""\[citation,([^\]]+)]\(([^)]+)\)""")
 
@@ -84,6 +87,7 @@ internal fun MessagePartsRenderer(
     citations: List<MessageCitation> = emptyList(),
     onOpenCitation: ((MessageCitation) -> Unit)? = null,
     fillTextWidth: Boolean = true,
+    fastPlainText: Boolean = false,
 ) {
     var imageIndex = 0
     parts.forEachIndexed { index, part ->
@@ -102,6 +106,7 @@ internal fun MessagePartsRenderer(
                     citations = citations,
                     onOpenCitation = onOpenCitation,
                     fillWidth = fillTextWidth,
+                    fastPlainText = fastPlainText,
                 )
             }
 
@@ -142,6 +147,7 @@ internal fun MessagePartsRenderer(
                     codeBlockAutoCollapse = codeBlockAutoCollapse,
                     performanceMode = performanceMode,
                     fillWidth = fillTextWidth,
+                    fastPlainText = fastPlainText,
                 )
             }
 
@@ -187,6 +193,18 @@ internal fun StatusCardPart(
         parsedRows.firstOrNull()?.let { "${it.first}：${it.second}" }
             ?: rawText.lineSequence().firstOrNull()?.trim().orEmpty()
     }
+    val statusMeta = remember(rawText, parsedRows) {
+        val lineCount = rawText.lineSequence().count()
+        buildString {
+            if (parsedRows.isNotEmpty()) {
+                append("${parsedRows.size} 项")
+            } else {
+                append("${lineCount} 行")
+            }
+            append(" · ")
+            append("${rawText.length} 字")
+        }
+    }
     var expanded by remember(rawText) { mutableStateOf(false) }
     val cardColor = MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.42f)
     val borderColor = MaterialTheme.colorScheme.secondary.copy(alpha = 0.18f)
@@ -226,6 +244,12 @@ internal fun StatusCardPart(
                         style = MaterialTheme.typography.bodySmall,
                         color = contentColor.copy(alpha = 0.74f),
                         maxLines = if (expanded) Int.MAX_VALUE else 1,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                    Text(
+                        text = statusMeta,
+                        style = MaterialTheme.typography.labelSmall,
+                        color = contentColor.copy(alpha = 0.58f),
                     )
                 }
                 Row(
@@ -339,8 +363,19 @@ internal fun RenderMessageText(
     citations: List<MessageCitation> = emptyList(),
     onOpenCitation: ((MessageCitation) -> Unit)? = null,
     fillWidth: Boolean = true,
+    fastPlainText: Boolean = false,
 ) {
     if (text.isBlank()) {
+        return
+    }
+
+    if (fastPlainText) {
+        Text(
+            text = text,
+            modifier = if (fillWidth) Modifier.fillMaxWidth() else Modifier,
+            color = contentColor,
+            style = plainTextStyle,
+        )
         return
     }
 
@@ -352,6 +387,7 @@ internal fun RenderMessageText(
     }
     if (safeHtmlBlocks != null) {
         SafeHtmlRichText(
+            sourceText = renderedText,
             blocks = safeHtmlBlocks,
             contentColor = contentColor,
             plainTextStyle = plainTextStyle,
@@ -414,6 +450,104 @@ internal fun RenderMessageText(
 
 @Composable
 private fun SafeHtmlRichText(
+    sourceText: String,
+    blocks: List<SafeHtmlTextBlock>,
+    contentColor: androidx.compose.ui.graphics.Color,
+    plainTextStyle: TextStyle,
+    fillWidth: Boolean,
+) {
+    val textBlockCount = remember(blocks) { blocks.count { !it.divider } }
+    val shouldCollapse = remember(sourceText, blocks) {
+        sourceText.length > SafeHtmlAutoCollapseTextLength ||
+            textBlockCount > SafeHtmlAutoCollapseBlockThreshold
+    }
+    var expanded by remember(sourceText, shouldCollapse) { mutableStateOf(!shouldCollapse) }
+
+    if (shouldCollapse) {
+        val preview = remember(blocks) {
+            blocks.firstOrNull { !it.divider }
+                ?.text
+                ?.lineSequence()
+                ?.firstOrNull()
+                ?.trim()
+                .orEmpty()
+        }
+        Surface(
+            modifier = if (fillWidth) Modifier.fillMaxWidth() else Modifier,
+            shape = RoundedCornerShape(18.dp),
+            color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.42f),
+            border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.42f)),
+        ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .animateContentSize()
+                    .padding(horizontal = 14.dp, vertical = 12.dp),
+                verticalArrangement = Arrangement.spacedBy(10.dp),
+            ) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Column(
+                        modifier = Modifier.weight(1f),
+                        verticalArrangement = Arrangement.spacedBy(2.dp),
+                    ) {
+                        Text(
+                            text = "HTML 内容",
+                            style = MaterialTheme.typography.labelLarge,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            fontWeight = FontWeight.SemiBold,
+                        )
+                        if (preview.isNotBlank()) {
+                            Text(
+                                text = preview,
+                                style = MaterialTheme.typography.bodySmall,
+                                color = contentColor.copy(alpha = 0.72f),
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis,
+                            )
+                        }
+                        Text(
+                            text = "$textBlockCount 段 · ${sourceText.length} 字",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = contentColor.copy(alpha = 0.58f),
+                        )
+                    }
+                    Text(
+                        text = if (expanded) "收起" else "展开",
+                        modifier = Modifier
+                            .clickable { expanded = !expanded }
+                            .padding(horizontal = 6.dp, vertical = 5.dp),
+                        style = MaterialTheme.typography.labelMedium,
+                        color = MaterialTheme.colorScheme.primary,
+                    )
+                }
+                if (expanded) {
+                    HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.42f))
+                    SafeHtmlBlocksColumn(
+                        blocks = blocks,
+                        contentColor = contentColor,
+                        plainTextStyle = plainTextStyle,
+                        fillWidth = true,
+                    )
+                }
+            }
+        }
+        return
+    }
+
+    SafeHtmlBlocksColumn(
+        blocks = blocks,
+        contentColor = contentColor,
+        plainTextStyle = plainTextStyle,
+        fillWidth = fillWidth,
+    )
+}
+
+@Composable
+private fun SafeHtmlBlocksColumn(
     blocks: List<SafeHtmlTextBlock>,
     contentColor: androidx.compose.ui.graphics.Color,
     plainTextStyle: TextStyle,

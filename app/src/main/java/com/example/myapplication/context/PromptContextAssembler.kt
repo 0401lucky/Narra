@@ -654,7 +654,7 @@ class DefaultPromptContextAssembler(
             }
         }
         val containsMemoriesToken = MEMORIES_PLACEHOLDER_REGEX.containsMatchIn(template)
-        var rendered = template.replace(MEMORIES_PLACEHOLDER_REGEX, memoriesBlock)
+        var rendered = MEMORIES_PLACEHOLDER_REGEX.replace(template) { memoriesBlock }
         rendered = ContextPlaceholderResolver.resolve(
             text = rendered,
             userName = userName,

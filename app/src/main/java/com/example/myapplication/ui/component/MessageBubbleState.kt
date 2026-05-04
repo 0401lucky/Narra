@@ -104,18 +104,21 @@ internal fun rememberMessageBubbleRenderState(
     reasoningExpandedByDefault: Boolean,
     showThinkingContent: Boolean,
     autoCollapseThinking: Boolean,
+    deferRichRendering: Boolean = false,
 ): MessageBubbleRenderState {
     val isUser = message.role == MessageRole.USER
     val isError = !isUser && message.status == MessageStatus.ERROR
     val isLoading = !isUser && message.status == MessageStatus.LOADING
     val isStreaming = streamingContent != null
+    val useFastAssistantText = !isUser && (isStreaming || deferRichRendering)
     val resolvedContent = streamingContent ?: message.content
     val rawMessageParts = remember(message.parts, streamingParts) {
         normalizeChatMessageParts(streamingParts ?: message.parts)
     }
-    val statusAwareMessageParts = remember(rawMessageParts, resolvedContent, isUser, isStreaming) {
+    val statusAwareMessageParts = remember(rawMessageParts, resolvedContent, isUser, useFastAssistantText) {
         when {
-            isUser || isStreaming -> rawMessageParts
+            isUser -> rawMessageParts
+            useFastAssistantText -> emptyList()
             rawMessageParts.isNotEmpty() -> {
                 ChatStatusBlockParser.extractFromParts(
                     parts = rawMessageParts,
@@ -135,10 +138,10 @@ internal fun rememberMessageBubbleRenderState(
             else -> emptyList()
         }
     }
-    val displayParts = remember(statusAwareMessageParts, isUser, isStreaming) {
+    val displayParts = remember(statusAwareMessageParts, isUser, useFastAssistantText) {
         if (statusAwareMessageParts.isNotEmpty()) {
             statusAwareMessageParts.map { part ->
-                if (part.type == ChatMessagePartType.TEXT && !isUser && !isStreaming) {
+                if (part.type == ChatMessagePartType.TEXT && !isUser && !useFastAssistantText) {
                     part.copy(text = cachedNormalizeAssistantMarkdown(part.text))
                 } else {
                     part
@@ -160,9 +163,9 @@ internal fun rememberMessageBubbleRenderState(
         if (hasStructuredParts) emptyList() else message.attachments
     }
 
-    val resolvedReasoningSteps = remember(message.reasoningSteps, streamingReasoningSteps, isLoading) {
+    val resolvedReasoningSteps = remember(message.reasoningSteps, streamingReasoningSteps, isLoading, useFastAssistantText) {
         (streamingReasoningSteps ?: message.reasoningSteps).map { step ->
-            if (isLoading) {
+            if (isLoading || useFastAssistantText) {
                 step
             } else {
                 step.copy(text = cachedNormalizeAssistantMarkdown(step.text))
@@ -242,15 +245,15 @@ internal fun rememberMessageBubbleRenderState(
             if (isLoading && resolvedReasoningContent.isBlank()) "正在生成回复…" else ""
         }
     }
-    val assistantVisualContent = remember(isUser, isStreaming, hasStructuredParts, displayContent) {
-        if (!isUser && !isStreaming && !hasStructuredParts) {
+    val assistantVisualContent = remember(isUser, useFastAssistantText, hasStructuredParts, displayContent) {
+        if (!isUser && !useFastAssistantText && !hasStructuredParts) {
             cachedExtractAssistantVisualContent(displayContent)
         } else {
             AssistantVisualContent(text = displayContent, imageSources = emptyList())
         }
     }
-    val renderedDisplayContent = remember(isUser, isStreaming, hasStructuredParts, assistantVisualContent) {
-        if (!isUser && !isStreaming && !hasStructuredParts) {
+    val renderedDisplayContent = remember(isUser, useFastAssistantText, hasStructuredParts, assistantVisualContent) {
+        if (!isUser && !useFastAssistantText && !hasStructuredParts) {
             cachedNormalizeAssistantMarkdown(assistantVisualContent.text)
         } else {
             assistantVisualContent.text

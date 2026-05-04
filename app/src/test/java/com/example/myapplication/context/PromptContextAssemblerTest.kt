@@ -568,6 +568,69 @@ class PromptContextAssemblerTest {
     }
 
     @Test
+    fun assemble_treatsDollarMacrosInMemoryBlockAsLiteralText() = runBlocking {
+        val assembler = DefaultPromptContextAssembler(
+            memoryRepository = singleMemoryRepository(
+                MemoryEntry(
+                    id = "memory-dollar",
+                    scopeType = MemoryScopeType.ASSISTANT,
+                    scopeId = "assistant-1",
+                    content = "记忆变量原样保留：\${time_diff}、\${随机三位数}。",
+                    importance = 70,
+                ),
+            ),
+        )
+
+        val result = assembler.assemble(
+            settings = AppSettings(
+                memoryInjectionPrompt = "请遵守：\n{{memories}}",
+            ),
+            assistant = Assistant(
+                id = "assistant-1",
+                name = "助手",
+                systemPrompt = "保持一致。",
+                memoryEnabled = true,
+            ),
+            conversation = Conversation(id = "c1", createdAt = 1L, updatedAt = 1L),
+            userInputText = "继续",
+            recentMessages = emptyList(),
+        )
+
+        assertTrue(result.systemPrompt.contains("\${time_diff}"))
+        assertTrue(result.systemPrompt.contains("\${随机三位数}"))
+    }
+
+    @Test
+    fun assemble_treatsDollarMacrosInWorldBookBlockAsLiteralText() = runBlocking {
+        val assembler = DefaultPromptContextAssembler(
+            worldBookRepository = singleWorldBookRepository(
+                WorldBookEntry(
+                    id = "world-dollar",
+                    title = "后悔文脚本",
+                    content = "章节标题保留：\${随机三位数}，计时保留：\${time_diff}。",
+                    alwaysActive = true,
+                ),
+            ),
+            presetRepository = FakePresetRepository(BUILTIN_PRESETS),
+        )
+
+        val result = assembler.assemble(
+            settings = AppSettings(defaultPresetId = DEFAULT_PRESET_ID),
+            assistant = Assistant(
+                id = "assistant-1",
+                name = "助手",
+                systemPrompt = "保持一致。",
+            ),
+            conversation = Conversation(id = "c1", createdAt = 1L, updatedAt = 1L),
+            userInputText = "继续",
+            recentMessages = emptyList(),
+        )
+
+        assertTrue(result.systemPrompt.contains("\${time_diff}"))
+        assertTrue(result.systemPrompt.contains("\${随机三位数}"))
+    }
+
+    @Test
     fun assemble_blankInjectionPromptFallsBackToDefaultTemplate() = runBlocking {
         val assembler = DefaultPromptContextAssembler(
             memoryRepository = singleMemoryRepository(
@@ -751,6 +814,36 @@ class PromptContextAssemblerTest {
         // 末尾位置：截断最后一行就是记忆。
         val tail = result.systemPrompt.trimEnd().lines().last()
         assertTrue("AT_END 时 systemPrompt 末尾应当属于记忆段", tail.contains("用户讨厌啰嗦的引子。"))
+    }
+
+    private fun singleWorldBookRepository(
+        vararg entries: WorldBookEntry,
+    ): WorldBookRepository {
+        val list = entries.toList()
+        return object : WorldBookRepository {
+            override fun observeEntries() = kotlinx.coroutines.flow.flowOf(emptyList<WorldBookEntry>())
+
+            override suspend fun listEntries(): List<WorldBookEntry> = list
+
+            override suspend fun listEnabledEntries(): List<WorldBookEntry> = list.filter { it.enabled }
+
+            override suspend fun listAccessibleEnabledEntries(
+                assistant: Assistant?,
+                conversation: Conversation?,
+            ): List<WorldBookEntry> = listEnabledEntries()
+
+            override suspend fun getEntry(entryId: String): WorldBookEntry? {
+                return list.firstOrNull { it.id == entryId }
+            }
+
+            override suspend fun upsertEntry(entry: WorldBookEntry) = Unit
+
+            override suspend fun deleteEntry(entryId: String) = Unit
+
+            override suspend fun renameBook(bookId: String, newBookName: String) = Unit
+
+            override suspend fun deleteBook(bookId: String) = Unit
+        }
     }
 
     private fun singleMemoryRepository(

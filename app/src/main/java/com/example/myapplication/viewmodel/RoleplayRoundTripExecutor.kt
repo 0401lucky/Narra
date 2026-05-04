@@ -9,6 +9,7 @@ import com.example.myapplication.conversation.ConversationMessageTransforms
 import com.example.myapplication.conversation.GiftImageGenerationRequest
 import com.example.myapplication.conversation.RoundTripInitialPersistence
 import com.example.myapplication.conversation.StreamedAssistantPayload
+import com.example.myapplication.conversation.StreamingReplyBuffer
 import com.example.myapplication.conversation.VoiceSynthesisRequest
 import com.example.myapplication.data.repository.TransferUpdateDirective
 import com.example.myapplication.context.PromptContextAssembler
@@ -22,7 +23,6 @@ import com.example.myapplication.model.ChatMessage
 import com.example.myapplication.model.ChatMessagePart
 import com.example.myapplication.model.ChatMessagePartType
 import com.example.myapplication.model.ChatReasoningStep
-import com.example.myapplication.model.ChatStreamEvent
 import com.example.myapplication.model.Conversation
 import com.example.myapplication.model.GatewayToolRuntimeContext
 import com.example.myapplication.model.GatewayToolingOptions
@@ -34,7 +34,6 @@ import com.example.myapplication.model.PromptMode
 import com.example.myapplication.model.RoleplayOutputFormat
 import com.example.myapplication.model.TransferDirection
 import com.example.myapplication.model.TransferStatus
-import com.example.myapplication.model.imageMessagePart
 import com.example.myapplication.model.isOnlineThoughtPart
 import com.example.myapplication.model.isGroupChat
 import com.example.myapplication.model.normalizeChatMessageParts
@@ -53,7 +52,6 @@ import com.example.myapplication.roleplay.RoleplayOnlineReferenceSupport
 import com.example.myapplication.roleplay.RoleplayOutputParser
 import com.example.myapplication.roleplay.RoleplayPromptDecorator
 import kotlinx.coroutines.CancellationException
-import kotlinx.coroutines.flow.collect
 
 internal class RoleplayRoundTripExecutor(
     private val aiGateway: AiGateway,
@@ -565,82 +563,48 @@ internal class RoleplayRoundTripExecutor(
         expectedInteractionMode: com.example.myapplication.model.RoleplayInteractionMode,
         isGroupChat: Boolean,
     ) {
-        aiGateway.sendMessageStream(
-            messages = requestMessages,
-            systemPrompt = systemPrompt,
-            promptMode = PromptMode.ROLEPLAY,
-            promptEnvelope = promptEnvelope,
-            toolingOptions = toolingOptions,
-        ).collect { event ->
-            when (event) {
-                is ChatStreamEvent.ContentDelta -> {
-                    fullContent.append(event.value)
-                    updateUiState { current ->
-                        val streamingText = when (expectedInteractionMode) {
-                            com.example.myapplication.model.RoleplayInteractionMode.OFFLINE_LONGFORM -> {
-                                RoleplayLongformMarkupParser.stripMarkupForDisplay(fullContent.toString())
-                            }
-                            com.example.myapplication.model.RoleplayInteractionMode.ONLINE_PHONE -> {
-                                if (isGroupChat) {
-                                    OnlineActionProtocolParser.extractGroupTextStreamingPreview(fullContent.toString())
-                                } else {
-                                    OnlineActionProtocolParser.extractStreamingPreview(fullContent.toString())
-                                        .ifBlank { outputParser.stripMarkup(fullContent.toString()) }
-                                }
-                            }
-                            com.example.myapplication.model.RoleplayInteractionMode.OFFLINE_DIALOGUE -> {
-                                outputParser.stripMarkup(fullContent.toString())
+        val streamBuffer = StreamingReplyBuffer()
+        ChatStreamingSupport.collectStreamingReply(
+            streamBuffer = streamBuffer,
+            streamEvents = aiGateway.sendMessageStream(
+                messages = requestMessages,
+                systemPrompt = systemPrompt,
+                promptMode = PromptMode.ROLEPLAY,
+                promptEnvelope = promptEnvelope,
+                toolingOptions = toolingOptions,
+            ),
+            publishFrame = { content, _, reasoningSteps, parts ->
+                fullContent.setLength(0)
+                fullContent.append(content)
+                fullReasoningSteps.clear()
+                fullReasoningSteps += reasoningSteps
+                fullParts.clear()
+                fullParts += parts
+
+                updateUiState { current ->
+                    val streamingText = when (expectedInteractionMode) {
+                        com.example.myapplication.model.RoleplayInteractionMode.OFFLINE_LONGFORM -> {
+                            RoleplayLongformMarkupParser.stripMarkupForDisplay(content)
+                        }
+                        com.example.myapplication.model.RoleplayInteractionMode.ONLINE_PHONE -> {
+                            if (isGroupChat) {
+                                OnlineActionProtocolParser.extractGroupTextStreamingPreview(content)
+                            } else {
+                                OnlineActionProtocolParser.extractStreamingPreview(content)
+                                    .ifBlank { outputParser.stripMarkup(content) }
                             }
                         }
-                        RoleplayStateSupport.applyStreamingContent(
-                            current,
-                            streamingText,
-                        )
+                        com.example.myapplication.model.RoleplayInteractionMode.OFFLINE_DIALOGUE -> {
+                            outputParser.stripMarkup(content)
+                        }
                     }
-                }
-
-                is ChatStreamEvent.ReasoningStepStarted -> {
-                    if (fullReasoningSteps.none { it.id == event.stepId }) {
-                        fullReasoningSteps += ChatReasoningStep(
-                            id = event.stepId,
-                            text = "",
-                            createdAt = event.createdAt,
-                            finishedAt = null,
-                        )
-                    }
-                }
-
-                is ChatStreamEvent.ReasoningStepDelta -> {
-                    val index = fullReasoningSteps.indexOfLast { it.id == event.stepId }
-                    if (index != -1) {
-                        val step = fullReasoningSteps[index]
-                        fullReasoningSteps[index] = step.copy(
-                            text = step.text + event.value,
-                        )
-                    }
-                }
-
-                is ChatStreamEvent.ReasoningStepCompleted -> {
-                    val index = fullReasoningSteps.indexOfLast { it.id == event.stepId }
-                    if (index != -1) {
-                        val step = fullReasoningSteps[index]
-                        fullReasoningSteps[index] = step.copy(finishedAt = event.finishedAt)
-                    }
-                }
-
-                is ChatStreamEvent.ReasoningDelta -> Unit
-                is ChatStreamEvent.ImageDelta -> {
-                    fullParts += imageMessagePart(
-                        uri = event.part.uri,
-                        mimeType = event.part.mimeType,
-                        fileName = event.part.fileName,
+                    RoleplayStateSupport.applyStreamingContent(
+                        current,
+                        streamingText,
                     )
                 }
-
-                is ChatStreamEvent.Citations -> Unit
-                ChatStreamEvent.Completed -> Unit
-            }
-        }
+            },
+        )
     }
 
     private suspend fun resolveRequestMessagesForRoundTrip(

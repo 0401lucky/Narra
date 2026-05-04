@@ -30,18 +30,36 @@ internal object ChatStatusBlockParser {
         if (parts.isEmpty()) {
             return emptyList()
         }
-        return parts.flatMap { part ->
-            if (part.type == ChatMessagePartType.TEXT) {
-                extract(part.text, hideStatusBlocksInBubble)
-            } else {
-                listOf(part)
+        return runCatching {
+            parts.flatMap { part ->
+                if (part.type == ChatMessagePartType.TEXT) {
+                    extract(part.text, hideStatusBlocksInBubble)
+                } else {
+                    listOf(part)
+                }
             }
+        }.getOrElse {
+            parts
         }
     }
 
     fun extract(
         text: String,
         hideStatusBlocksInBubble: Boolean = true,
+    ): List<ChatMessagePart> {
+        return runCatching {
+            extractUnsafe(text, hideStatusBlocksInBubble)
+        }.getOrElse {
+            text.replace("\r\n", "\n")
+                .takeIf { normalized -> normalized.isNotBlank() }
+                ?.let { normalized -> listOf(textMessagePart(normalized)) }
+                ?: emptyList()
+        }
+    }
+
+    private fun extractUnsafe(
+        text: String,
+        hideStatusBlocksInBubble: Boolean,
     ): List<ChatMessagePart> {
         if (text.isBlank()) {
             return emptyList()

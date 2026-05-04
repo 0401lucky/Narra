@@ -22,10 +22,10 @@ object ContextPlaceholderResolver {
         }
         var resolved = text
         userPatterns.forEach { pattern ->
-            resolved = resolved.replace(pattern, userName)
+            resolved = pattern.replace(resolved) { userName }
         }
         characterPatterns.forEach { pattern ->
-            resolved = resolved.replace(pattern, characterName)
+            resolved = pattern.replace(resolved) { characterName }
         }
         return resolved
     }
@@ -46,7 +46,7 @@ object ContextPlaceholderResolver {
         )
         values.forEach { (key, value) ->
             val pattern = Regex("""\{\{\s*${Regex.escape(key)}\s*\}\}""", RegexOption.IGNORE_CASE)
-            resolved = resolved.replace(pattern, value)
+            resolved = pattern.replace(resolved) { value }
         }
         return resolved
     }

@@ -97,8 +97,10 @@ import com.mikepenz.markdown.m3.markdownTypography
 import com.mikepenz.markdown.model.MarkdownPadding
 import com.mikepenz.markdown.model.MarkdownTypography
 import com.mikepenz.markdown.model.markdownPadding
+import kotlinx.coroutines.delay
 
 private const val AssistantBubbleWidthFactor = 0.94f
+private const val MessageBubbleFinalRichRenderDelayMillis = 260L
 private val MessageActionButtonSize = 30.dp
 private val MessageActionIconSize = 16.dp
 private val UserMessageMaxWidth = 300.dp
@@ -122,7 +124,6 @@ fun MessageBubble(
     onOpenImagePreview: ((ChatMessage, Int) -> Unit)? = null,
     onToggleMemory: ((String) -> Unit)? = null,
     isRemembered: Boolean = false,
-    onTranslate: ((String) -> Unit)? = null,
     onOpenUrlPreview: ((String, String) -> Unit)? = null,
     onConfirmTransferReceipt: ((String) -> Unit)? = null,
     messageTextScale: Float = 1f,
@@ -136,6 +137,23 @@ fun MessageBubble(
     reduceVisualEffects: Boolean = false,
 ) {
     val uriHandler = LocalUriHandler.current
+    val isStreaming = streamingContent != null
+    var hadStreamingContent by remember(message.id) { mutableStateOf(false) }
+    var deferFinalRichRender by remember(message.id) { mutableStateOf(false) }
+    val shouldDeferFinalRichRender = message.role == MessageRole.ASSISTANT &&
+        !isStreaming &&
+        (hadStreamingContent || deferFinalRichRender)
+    LaunchedEffect(message.id, isStreaming) {
+        if (isStreaming) {
+            hadStreamingContent = true
+            deferFinalRichRender = false
+        } else if (hadStreamingContent) {
+            deferFinalRichRender = true
+            hadStreamingContent = false
+            delay(MessageBubbleFinalRichRenderDelayMillis)
+            deferFinalRichRender = false
+        }
+    }
     val renderState = rememberMessageBubbleRenderState(
         message = message,
         streamingContent = streamingContent,
@@ -147,8 +165,8 @@ fun MessageBubble(
         reasoningExpandedByDefault = reasoningExpandedByDefault,
         showThinkingContent = showThinkingContent,
         autoCollapseThinking = autoCollapseThinking,
+        deferRichRendering = shouldDeferFinalRichRender,
     )
-    val isStreaming = streamingContent != null
     val resolvedContent = streamingContent ?: message.content
     val isUser = renderState.isUser
     val isError = renderState.isError
@@ -182,15 +200,20 @@ fun MessageBubble(
     val reasoningMarkdownPadding = renderState.reasoningMarkdownPadding
     val copyPayload = renderState.copyPayload
     val assistantWidthModifier = Modifier.fillMaxWidth(AssistantBubbleWidthFactor)
-    val isScrollingLight = performanceMode == ChatMessagePerformanceMode.SCROLLING_LIGHT
+    val effectivePerformanceMode = if (shouldDeferFinalRichRender) {
+        ChatMessagePerformanceMode.SCROLLING_LIGHT
+    } else {
+        performanceMode
+    }
+    val isScrollingLight = effectivePerformanceMode == ChatMessagePerformanceMode.SCROLLING_LIGHT
     val effectiveReduceVisualEffects = reduceVisualEffects || isScrollingLight
     val effectiveReasoningExpanded = reasoningExpanded
     val effectiveReasoningPreviewVisible = reasoningPreviewVisible
-    val effectiveUseMarkdown = remember(isUser, isStreaming, renderedDisplayContent, performanceMode) {
-        if (isUser || isStreaming) {
+    val effectiveUseMarkdown = remember(isUser, isStreaming, shouldDeferFinalRichRender, renderedDisplayContent, effectivePerformanceMode) {
+        if (isUser || isStreaming || shouldDeferFinalRichRender) {
             false
         } else {
-            when (performanceMode) {
+            when (effectivePerformanceMode) {
                 ChatMessagePerformanceMode.FULL -> true
                 ChatMessagePerformanceMode.SCROLLING_LIGHT -> {
                     shouldRenderWithMarkdownDuringScrolling(renderedDisplayContent)
@@ -243,7 +266,8 @@ fun MessageBubble(
                 autoPreviewImages = autoPreviewImages,
                 codeBlockAutoWrap = codeBlockAutoWrap,
                 codeBlockAutoCollapse = codeBlockAutoCollapse,
-                performanceMode = performanceMode,
+                performanceMode = effectivePerformanceMode,
+                deferRichRendering = shouldDeferFinalRichRender,
                 modifier = assistantWidthModifier,
             )
             Spacer(modifier = Modifier.height(8.dp))
@@ -257,7 +281,7 @@ fun MessageBubble(
                     contentColor = contentColor,
                     messageTextScale = messageTextScale,
                     autoPreviewImages = autoPreviewImages,
-                    performanceMode = performanceMode,
+                    performanceMode = effectivePerformanceMode,
                     onConfirmTransferReceipt = onConfirmTransferReceipt,
                     onOpenImagePreview = { imageIndex ->
                         onOpenImagePreview?.invoke(message, imageIndex)
@@ -285,7 +309,8 @@ fun MessageBubble(
                         autoPreviewImages = autoPreviewImages,
                         codeBlockAutoWrap = codeBlockAutoWrap,
                         codeBlockAutoCollapse = codeBlockAutoCollapse,
-                        performanceMode = performanceMode,
+                        performanceMode = effectivePerformanceMode,
+                        fastPlainText = isStreaming || shouldDeferFinalRichRender,
                         onConfirmTransferReceipt = onConfirmTransferReceipt,
                         onOpenImagePreview = { imageIndex ->
                             onOpenImagePreview?.invoke(message, imageIndex)
@@ -325,7 +350,8 @@ fun MessageBubble(
                         autoPreviewImages = autoPreviewImages,
                         codeBlockAutoWrap = codeBlockAutoWrap,
                         codeBlockAutoCollapse = codeBlockAutoCollapse,
-                        performanceMode = performanceMode,
+                        performanceMode = effectivePerformanceMode,
+                        fastPlainText = isStreaming || shouldDeferFinalRichRender,
                         onConfirmTransferReceipt = onConfirmTransferReceipt,
                         onOpenImagePreview = { imageIndex ->
                             onOpenImagePreview?.invoke(message, imageIndex)
@@ -344,6 +370,12 @@ fun MessageBubble(
                     )
                 }
             }
+        }
+
+        if (shouldDeferFinalRichRender) {
+            MessageBubbleFinalizingHint(
+                modifier = Modifier.padding(top = 6.dp),
+            )
         }
 
         if (!isUser && message.citations.isNotEmpty()) {
@@ -368,7 +400,24 @@ fun MessageBubble(
             onRetry = onRetry,
             onOpenActionSheet = onOpenMessageActions,
             onToggleMemory = onToggleMemory,
-            onTranslate = onTranslate,
+        )
+    }
+}
+
+@Composable
+private fun MessageBubbleFinalizingHint(
+    modifier: Modifier = Modifier,
+) {
+    Surface(
+        modifier = modifier,
+        shape = RoundedCornerShape(999.dp),
+        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.42f),
+        contentColor = MaterialTheme.colorScheme.onSurfaceVariant,
+    ) {
+        Text(
+            text = "正在整理格式…",
+            modifier = Modifier.padding(horizontal = 10.dp, vertical = 5.dp),
+            style = MaterialTheme.typography.labelSmall,
         )
     }
 }

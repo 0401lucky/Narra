@@ -330,6 +330,7 @@ internal fun MessageBubbleContent(
     codeBlockAutoWrap: Boolean,
     codeBlockAutoCollapse: Boolean,
     performanceMode: ChatMessagePerformanceMode,
+    fastPlainText: Boolean,
     onConfirmTransferReceipt: ((String) -> Unit)?,
     onOpenImagePreview: ((Int) -> Unit)? = null,
     onOpenCitation: ((MessageCitation) -> Unit)?,
@@ -376,6 +377,7 @@ internal fun MessageBubbleContent(
                 citations = message.citations,
                 onOpenCitation = onOpenCitation,
                 fillTextWidth = !isUser,
+                fastPlainText = fastPlainText,
             )
         } else {
             if (!isUser && assistantImageSources.isNotEmpty()) {
@@ -405,6 +407,7 @@ internal fun MessageBubbleContent(
                     citations = message.citations,
                     onOpenCitation = onOpenCitation,
                     fillWidth = !isUser,
+                    fastPlainText = fastPlainText,
                 )
             }
         }

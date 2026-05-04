@@ -86,7 +86,12 @@ fun ChatScreen(
     val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
     val scope = rememberCoroutineScope()
     val autoFollowState = rememberChatAutoFollowState(uiState.displayedConversationId)
-    val chatMessagePerformanceMode = ChatMessagePerformanceMode.SCROLLING_LIGHT
+    val scrollPerformanceState = rememberChatScrollPerformanceState(uiState.displayedConversationId)
+    val chatMessagePerformanceMode = if (uiState.isSending) {
+        ChatMessagePerformanceMode.SCROLLING_LIGHT
+    } else {
+        scrollPerformanceState.mode
+    }
     val colorScheme = MaterialTheme.colorScheme
     val derivations = rememberChatScreenDerivations(uiState, resources)
     val localState = rememberChatScreenLocalState(
@@ -120,6 +125,20 @@ fun ChatScreen(
         lastMessagePartCount = derivations.lastMessagePartCount,
         lastMessageId = derivations.lastMessage?.id,
         lastMessageStatus = derivations.lastMessage?.status,
+    )
+
+    ChatImeAutoFollowEffect(
+        state = autoFollowState,
+        listState = listState,
+        displayedConversationId = uiState.displayedConversationId,
+        enabled = uiState.messages.isNotEmpty(),
+        isNearBottom = isNearBottom,
+    )
+
+    ChatScrollPerformanceEffects(
+        state = scrollPerformanceState,
+        listState = listState,
+        displayedConversationId = uiState.displayedConversationId,
     )
 
     ChatFeedbackEffects(
@@ -195,7 +214,6 @@ fun ChatScreen(
                 availableModelInfos = derivations.availableModelInfos,
                 listState = listState,
                 isNearBottom = isNearBottom,
-                shouldAutoFollowStreaming = autoFollowState.shouldAutoFollowStreaming,
                 performanceMode = chatMessagePerformanceMode,
                 isSavingModel = isSavingModel,
                 currentModel = derivations.currentModel,
@@ -232,7 +250,6 @@ fun ChatScreen(
                     )
                 },
                 onToggleMemoryMessage = onToggleMemoryMessage,
-                onTranslateMessage = onTranslateMessage,
                 onConfirmTransferReceipt = onConfirmTransferReceipt,
                 onToggleSearch = onToggleSearch,
                 onSelectSearchSource = onSelectSearchSource,
@@ -443,6 +460,14 @@ fun ChatScreen(
         },
         onRetryMessage = { message ->
             onRetryMessage(message.id)
+            localState.setActiveMessageActionId(null)
+        },
+        onTranslateMessage = { message ->
+            onTranslateMessage(message.id)
+            localState.setActiveMessageActionId(null)
+        },
+        onToggleMemoryMessage = { message ->
+            onToggleMemoryMessage(message.id)
             localState.setActiveMessageActionId(null)
         },
         messageSelectionPayload = localState.messageSelectionPayload,

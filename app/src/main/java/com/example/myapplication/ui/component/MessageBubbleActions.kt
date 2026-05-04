@@ -4,7 +4,6 @@ import android.widget.Toast
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.MoreHoriz
-import androidx.compose.material.icons.filled.Translate
 import androidx.compose.material.icons.outlined.ContentCopy
 import androidx.compose.material.icons.outlined.Psychology
 import androidx.compose.material.icons.outlined.Refresh
@@ -33,7 +32,6 @@ internal fun MessageBubbleActionRows(
     onRetry: ((String) -> Unit)?,
     onOpenActionSheet: ((String) -> Unit)?,
     onToggleMemory: ((String) -> Unit)?,
-    onTranslate: ((String) -> Unit)?,
 ) {
     val context = LocalContext.current
 
@@ -42,7 +40,6 @@ internal fun MessageBubbleActionRows(
             message = message,
             copyPayload = copyPayload,
             isRemembered = isRemembered,
-            onTranslate = onTranslate,
             onToggleMemory = onToggleMemory,
             onOpenActionSheet = onOpenActionSheet,
             onShowToast = { Toast.makeText(context, it, Toast.LENGTH_SHORT).show() },
@@ -55,7 +52,6 @@ internal fun MessageBubbleActionRows(
             copyPayload = copyPayload,
             isRemembered = isRemembered,
             modifier = assistantWidthModifier,
-            onTranslate = onTranslate,
             onRetry = onRetry,
             onToggleMemory = onToggleMemory,
             onOpenActionSheet = onOpenActionSheet,
@@ -69,7 +65,6 @@ internal fun MessageBubbleActionRows(
             copyPayload = copyPayload,
             modifier = assistantWidthModifier,
             onRetry = onRetry,
-            onTranslate = onTranslate,
             onOpenActionSheet = onOpenActionSheet,
             onShowToast = { Toast.makeText(context, it, Toast.LENGTH_SHORT).show() },
         )
@@ -81,7 +76,6 @@ private fun MessageBubbleUserActions(
     message: ChatMessage,
     copyPayload: String,
     isRemembered: Boolean,
-    onTranslate: ((String) -> Unit)?,
     onToggleMemory: ((String) -> Unit)?,
     onOpenActionSheet: ((String) -> Unit)?,
     onShowToast: (String) -> Unit,
@@ -104,19 +98,12 @@ private fun MessageBubbleUserActions(
                 onShowToast("已复制消息")
             },
         )
-        if (onTranslate != null) {
-            MessageActionIconButton(
-                icon = Icons.Default.Translate,
-                contentDescription = "翻译消息",
-                onClick = { onTranslate(message.id) },
-            )
-        }
-        if (onToggleMemory != null) {
+        if (isRemembered && onToggleMemory != null) {
             MessageActionIconButton(
                 icon = Icons.Outlined.Psychology,
-                contentDescription = if (isRemembered) "取消记忆" else "记住这条",
+                contentDescription = "取消记忆",
                 onClick = { onToggleMemory(message.id) },
-                highlighted = isRemembered,
+                highlighted = true,
             )
         }
         if (onOpenActionSheet != null) {
@@ -135,7 +122,6 @@ private fun MessageBubbleAssistantActions(
     copyPayload: String,
     isRemembered: Boolean,
     modifier: Modifier,
-    onTranslate: ((String) -> Unit)?,
     onRetry: ((String) -> Unit)?,
     onToggleMemory: ((String) -> Unit)?,
     onOpenActionSheet: ((String) -> Unit)?,
@@ -158,13 +144,6 @@ private fun MessageBubbleAssistantActions(
                 },
             )
         }
-        if (onTranslate != null && copyPayload.isNotBlank()) {
-            MessageActionIconButton(
-                icon = Icons.Default.Translate,
-                contentDescription = "翻译回复",
-                onClick = { onTranslate(message.id) },
-            )
-        }
         if (onRetry != null) {
             MessageActionIconButton(
                 icon = Icons.Outlined.Refresh,
@@ -172,12 +151,12 @@ private fun MessageBubbleAssistantActions(
                 onClick = { onRetry(message.id) },
             )
         }
-        if (onToggleMemory != null && copyPayload.isNotBlank()) {
+        if (isRemembered && onToggleMemory != null && copyPayload.isNotBlank()) {
             MessageActionIconButton(
                 icon = Icons.Outlined.Psychology,
-                contentDescription = if (isRemembered) "取消记忆" else "记住这条",
+                contentDescription = "取消记忆",
                 onClick = { onToggleMemory(message.id) },
-                highlighted = isRemembered,
+                highlighted = true,
             )
         }
         if (onOpenActionSheet != null) {
@@ -196,7 +175,6 @@ private fun MessageBubbleErrorActions(
     copyPayload: String,
     modifier: Modifier,
     onRetry: ((String) -> Unit)?,
-    onTranslate: ((String) -> Unit)?,
     onOpenActionSheet: ((String) -> Unit)?,
     onShowToast: (String) -> Unit,
 ) {
@@ -222,13 +200,6 @@ private fun MessageBubbleErrorActions(
             contentDescription = "重试",
             onClick = { onRetry?.invoke(message.id) },
         )
-        if (onTranslate != null && copyPayload.isNotBlank()) {
-            MessageActionIconButton(
-                icon = Icons.Default.Translate,
-                contentDescription = "翻译错误消息",
-                onClick = { onTranslate(message.id) },
-            )
-        }
         if (onOpenActionSheet != null) {
             MessageActionIconButton(
                 icon = Icons.Default.MoreHoriz,

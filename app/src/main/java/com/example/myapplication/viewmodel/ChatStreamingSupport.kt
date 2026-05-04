@@ -12,7 +12,7 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.launch
 
 internal object ChatStreamingSupport {
-    private const val STREAM_FRAME_DELAY_MILLIS = 32L
+    private const val STREAM_FRAME_DELAY_MILLIS = 48L
 
     suspend fun collectStreamingReply(
         streamBuffer: StreamingReplyBuffer,

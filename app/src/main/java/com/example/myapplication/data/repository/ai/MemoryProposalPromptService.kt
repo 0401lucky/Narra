@@ -304,8 +304,8 @@ internal class MemoryProposalPromptService(
         val containsConversationToken = CONVERSATION_PLACEHOLDER_REGEX.containsMatchIn(template)
         val containsKnownMemoriesToken = KNOWN_MEMORIES_PLACEHOLDER_REGEX.containsMatchIn(template)
         var rendered = template
-            .replace(CONVERSATION_PLACEHOLDER_REGEX, conversationExcerpt)
-            .replace(KNOWN_MEMORIES_PLACEHOLDER_REGEX, knownMemoriesBlock)
+            .let { CONVERSATION_PLACEHOLDER_REGEX.replace(it) { conversationExcerpt } }
+            .let { KNOWN_MEMORIES_PLACEHOLDER_REGEX.replace(it) { knownMemoriesBlock } }
         rendered = ContextPlaceholderResolver.resolve(
             text = rendered,
             userName = userName,

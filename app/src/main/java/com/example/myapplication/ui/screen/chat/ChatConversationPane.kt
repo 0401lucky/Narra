@@ -1,14 +1,28 @@
 package com.example.myapplication.ui.screen.chat
 
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.scaleIn
+import androidx.compose.animation.scaleOut
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ArrowDownward
+import androidx.compose.material.icons.filled.ArrowUpward
 import androidx.compose.material3.FilterChip
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.derivedStateOf
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextOverflow
@@ -21,12 +35,15 @@ import com.example.myapplication.model.ProviderSettings
 import com.example.myapplication.ui.component.ChatMessagePerformanceMode
 import com.example.myapplication.ui.component.MessageBubble
 import com.example.myapplication.ui.component.MessageInputBar
-import com.example.myapplication.ui.component.NarraFilledTonalButton
+import com.example.myapplication.ui.component.NarraFilledTonalIconButton
 import com.example.myapplication.viewmodel.ChatUiState
+import kotlinx.coroutines.launch
 
 private val ChatScreenPadding = 20.dp
 private val ChatSectionSpacing = 12.dp
+private val ChatJumpButtonSize = 46.dp
 private const val ChatStreamBottomAnchorKey = "stream-bottom-anchor"
+private const val ChatJumpButtonMessageThreshold = 4
 
 @Composable
 internal fun ChatConversationPane(
@@ -37,7 +54,6 @@ internal fun ChatConversationPane(
     availableModelInfos: List<ModelInfo>,
     listState: LazyListState,
     isNearBottom: Boolean,
-    shouldAutoFollowStreaming: Boolean,
     performanceMode: ChatMessagePerformanceMode,
     isSavingModel: Boolean,
     currentModel: String,
@@ -60,7 +76,6 @@ internal fun ChatConversationPane(
     onOpenImagePreview: (ChatMessage, Int) -> Unit,
     onOpenUrlPreview: (String, String) -> Unit,
     onToggleMemoryMessage: (String) -> Unit,
-    onTranslateMessage: (String) -> Unit,
     onConfirmTransferReceipt: (String) -> Unit,
     onToggleSearch: () -> Unit,
     onSelectSearchSource: (String) -> Unit,
@@ -152,14 +167,12 @@ internal fun ChatConversationPane(
                         uiState = uiState,
                         listState = listState,
                         isNearBottom = isNearBottom,
-                        shouldAutoFollowStreaming = shouldAutoFollowStreaming,
                         performanceMode = performanceMode,
                         onRetryMessage = onRetryMessage,
                         onOpenMessageActions = onOpenMessageActions,
                         onOpenImagePreview = onOpenImagePreview,
                         onOpenUrlPreview = onOpenUrlPreview,
                         onToggleMemoryMessage = onToggleMemoryMessage,
-                        onTranslateMessage = onTranslateMessage,
                         onConfirmTransferReceipt = onConfirmTransferReceipt,
                         onJumpToBottom = onJumpToBottom,
                     )
@@ -238,17 +251,23 @@ private fun ColumnScope.ChatMessageListPane(
     uiState: ChatUiState,
     listState: LazyListState,
     isNearBottom: Boolean,
-    shouldAutoFollowStreaming: Boolean,
     performanceMode: ChatMessagePerformanceMode,
     onRetryMessage: (String) -> Unit,
     onOpenMessageActions: (String) -> Unit,
     onOpenImagePreview: (ChatMessage, Int) -> Unit,
     onOpenUrlPreview: (String, String) -> Unit,
     onToggleMemoryMessage: (String) -> Unit,
-    onTranslateMessage: (String) -> Unit,
     onConfirmTransferReceipt: (String) -> Unit,
     onJumpToBottom: () -> Unit,
 ) {
+    val scope = rememberCoroutineScope()
+    val isAtTop by remember(listState) {
+        derivedStateOf {
+            listState.firstVisibleItemIndex == 0 && listState.firstVisibleItemScrollOffset <= 4
+        }
+    }
+    val showJumpButtons = uiState.messages.size > ChatJumpButtonMessageThreshold &&
+        (!isAtTop || !isNearBottom)
     Box(
         modifier = Modifier
             .fillMaxWidth()
@@ -292,7 +311,6 @@ private fun ColumnScope.ChatMessageListPane(
                     onOpenImagePreview = onOpenImagePreview,
                     onToggleMemory = onToggleMemoryMessage,
                     isRemembered = message.id in uiState.rememberedMessageIds,
-                    onTranslate = onTranslateMessage,
                     onOpenUrlPreview = onOpenUrlPreview,
                     messageTextScale = uiState.settings.messageTextScale,
                     reasoningExpandedByDefault = uiState.settings.reasoningExpandedByDefault,
@@ -316,14 +334,72 @@ private fun ColumnScope.ChatMessageListPane(
             }
         }
 
-        if (uiState.isSending && !shouldAutoFollowStreaming && !isNearBottom) {
-            NarraFilledTonalButton(
-                onClick = onJumpToBottom,
-                modifier = Modifier
-                    .align(Alignment.BottomEnd)
-                    .padding(bottom = 12.dp),
-            ) {
-                Text("回到底部")
+        ChatMessageJumpControls(
+            visible = showJumpButtons,
+            showTop = !isAtTop,
+            showBottom = !isNearBottom,
+            onJumpToTop = {
+                scope.launch {
+                    listState.animateScrollToItem(0)
+                }
+            },
+            onJumpToBottom = onJumpToBottom,
+            modifier = Modifier
+                .align(Alignment.BottomEnd)
+                .padding(bottom = 12.dp),
+        )
+    }
+}
+
+@Composable
+private fun ChatMessageJumpControls(
+    visible: Boolean,
+    showTop: Boolean,
+    showBottom: Boolean,
+    onJumpToTop: () -> Unit,
+    onJumpToBottom: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    AnimatedVisibility(
+        visible = visible,
+        modifier = modifier,
+        enter = fadeIn() + scaleIn(initialScale = 0.92f),
+        exit = fadeOut() + scaleOut(targetScale = 0.92f),
+    ) {
+        Column(
+            verticalArrangement = Arrangement.spacedBy(8.dp),
+            horizontalAlignment = Alignment.End,
+        ) {
+            if (showTop) {
+                NarraFilledTonalIconButton(
+                    onClick = onJumpToTop,
+                    modifier = Modifier.size(ChatJumpButtonSize),
+                    colors = IconButtonDefaults.filledTonalIconButtonColors(
+                        containerColor = MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.82f),
+                        contentColor = MaterialTheme.colorScheme.onSecondaryContainer,
+                    ),
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.ArrowUpward,
+                        contentDescription = "跳到顶部",
+                    )
+                }
+            }
+
+            if (showBottom) {
+                NarraFilledTonalIconButton(
+                    onClick = onJumpToBottom,
+                    modifier = Modifier.size(ChatJumpButtonSize),
+                    colors = IconButtonDefaults.filledTonalIconButtonColors(
+                        containerColor = MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.82f),
+                        contentColor = MaterialTheme.colorScheme.onSecondaryContainer,
+                    ),
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.ArrowDownward,
+                        contentDescription = "跳到底部",
+                    )
+                }
             }
         }
     }

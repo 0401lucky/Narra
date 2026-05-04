@@ -53,12 +53,12 @@ class StreamingReplyBufferTest {
     @Test
     fun advanceFrame_usesLargerBatchWhenStreamCompleted() {
         val buffer = StreamingReplyBuffer()
-        buffer.appendContent("a".repeat(120))
+        buffer.appendContent("a".repeat(220))
 
         val advanced = buffer.advanceFrame(streamCompleted = true)
 
         assertTrue(advanced)
-        assertEquals(96, buffer.visibleContent().length)
+        assertEquals(160, buffer.visibleContent().length)
         assertTrue(buffer.hasPending())
     }
 

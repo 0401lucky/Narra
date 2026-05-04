@@ -1,17 +1,17 @@
 {
   "app_id": "com.narra.app.dev",
   "channel": "dev",
-  "latest_version_name": "1.7.1-dev",
-  "latest_version_code": 10701,
+  "latest_version_name": "1.7.2-dev",
+  "latest_version_code": 10702,
   "minimum_supported_version_code": 0,
-  "apk_url": "https://download.lsa1230.dpdns.org/dev/Narra-v1.7.1-dev-10701-dev.apk?v=10701",
-  "apk_sha256": "bf003b148747efa43ae5a03410e8d629ca5e68d87399d95cea20661a5c4563ac",
-  "published_at": "2026-05-03T23:56:33+08:00",
+  "apk_url": "https://download.lsa1230.dpdns.org/dev/Narra-v1.7.2-dev-10702-dev.apk?v=10702",
+  "apk_sha256": "ea8c24688f5784829a0b0b7d22d038d32af72230a63c694e9b23d7432fdf7613",
+  "published_at": "2026-05-04T11:27:17+08:00",
   "release_notes": [
-    "信箱主动来信、信箱回信、沉浸式聊天和 AI 帮写生成中新增停止入口",
-    "线上模式新增场景级主动回复开关，默认关闭，开启后才会在久未联系时自动补开场",
-    "沉浸式背景图降低解码尺寸并移除双图层切换，减少返回主页面白屏或崩溃风险",
-    "修复聊天消息高度变化时语音、心声、对白卡片可能互相叠压的问题",
-    "MiMo 真实语音、Base URL 测试、音色设计和声音克隆能力继续保留"
+    "MiMo 预置音色新增官方试听，已生成试听音频会复用缓存",
+    "优化普通聊天和沉浸式聊天流式输出，减少高频刷新导致的卡顿",
+    "普通聊天新增键盘弹起跟随、顶部/底部跳转和输出完成后的整理提示",
+    "消息操作栏收敛，高频动作常驻，翻译、记忆、预览、导出等放入更多菜单",
+    "修复角色卡变量文本包含 ${...} 时生成失败的问题，状态块解析增加异常兜底"
   ]
 }

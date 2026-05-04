@@ -39,6 +39,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -81,6 +82,8 @@ private enum class RoleplayJumpIndicator {
     TOP,
     BOTTOM,
 }
+
+private const val RoleplayStreamingScrollWindowMillis = 64L
 
 @Composable
 internal fun RoleplayDialoguePanel(
@@ -154,6 +157,9 @@ internal fun RoleplayDialoguePanel(
     LaunchedEffect(storyMessages.firstOrNull()?.sourceMessageId, storyMessages.firstOrNull()?.createdAt, storyMessages.size) {
         jumpIndicator = null
     }
+    var lastStreamingFollowAtMillis by remember(listState, storyMessages.size) {
+        mutableLongStateOf(0L)
+    }
     val scrollHintConnection = remember(storyMessages.size, isAtTop, isAtBottomExact) {
         object : NestedScrollConnection {
             override fun onPreScroll(available: Offset, source: NestedScrollSource): Offset {
@@ -177,7 +183,17 @@ internal fun RoleplayDialoguePanel(
         }
     }
     LaunchedEffect(storyMessages.size, storyMessages.lastOrNull()?.content?.length, storyMessages.lastOrNull()?.isStreaming) {
-        if (storyMessages.isNotEmpty() && shouldStickToBottom) {
+        if (storyMessages.isEmpty() || !shouldStickToBottom) {
+            return@LaunchedEffect
+        }
+        val lastMessage = storyMessages.last()
+        if (lastMessage.isStreaming) {
+            val now = System.currentTimeMillis()
+            if (now - lastStreamingFollowAtMillis >= RoleplayStreamingScrollWindowMillis) {
+                lastStreamingFollowAtMillis = now
+                listState.scrollToItem(storyMessages.lastIndex)
+            }
+        } else {
             listState.animateScrollToItem(storyMessages.lastIndex)
         }
     }

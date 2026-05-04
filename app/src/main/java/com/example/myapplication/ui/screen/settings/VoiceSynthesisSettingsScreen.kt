@@ -1,5 +1,6 @@
 package com.example.myapplication.ui.screen.settings
 
+import android.media.MediaPlayer
 import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -8,15 +9,20 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.activity.compose.BackHandler
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.GraphicEq
+import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.RecordVoiceOver
+import androidx.compose.material.icons.filled.Stop
 import androidx.compose.material.icons.filled.Tune
 import androidx.compose.material.icons.outlined.Visibility
 import androidx.compose.material.icons.outlined.VisibilityOff
@@ -32,8 +38,11 @@ import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -43,11 +52,15 @@ import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.example.myapplication.data.repository.AudioFileStorage
 import com.example.myapplication.data.repository.VoiceCloneSampleStorage
+import com.example.myapplication.data.repository.tts.MimoTtsClient
+import com.example.myapplication.data.repository.tts.MimoTtsRequest
 import com.example.myapplication.model.Assistant
 import com.example.myapplication.model.MIMO_DEFAULT_VOICE_ID
 import com.example.myapplication.model.MIMO_PRESET_VOICES
 import com.example.myapplication.model.MIMO_STANDARD_BASE_URL
+import com.example.myapplication.model.MimoPresetVoice
 import com.example.myapplication.model.MIMO_TTS_MODEL_PRESET
 import com.example.myapplication.model.MIMO_TTS_MODEL_VOICE_DESIGN
 import com.example.myapplication.model.MIMO_TOKEN_PLAN_BASE_URL
@@ -58,6 +71,7 @@ import com.example.myapplication.model.buildVoiceDesignPromptFromAssistant
 import com.example.myapplication.model.resolveMimoChatCompletionsEndpoint
 import com.example.myapplication.ui.component.NarraButton
 import kotlinx.coroutines.launch
+import java.io.File
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -362,6 +376,7 @@ fun VoiceSynthesisSettingsScreen(
     if (showDefaultVoiceSheet) {
         PresetVoiceSheet(
             selectedVoiceId = defaultProfile.presetVoiceId,
+            settings = normalizedSettings,
             onDismissRequest = { showDefaultVoiceSheet = false },
             onSelectVoice = { voiceId ->
                 onUpdateSettings(
@@ -395,6 +410,7 @@ fun VoiceSynthesisSettingsScreen(
     if (selectedAssistant != null) {
         AssistantVoiceProfileSheet(
             assistant = selectedAssistant,
+            voiceSynthesisSettings = normalizedSettings,
             initialProfile = normalizedSettings.assistantProfiles[selectedAssistant.id]
                 ?: VoiceProfile(),
             isTesting = isTesting,
@@ -463,9 +479,151 @@ private fun VoiceSwitchRow(
 @Composable
 private fun PresetVoiceSheet(
     selectedVoiceId: String,
+    settings: VoiceSynthesisSettings,
     onDismissRequest: () -> Unit,
     onSelectVoice: (String) -> Unit,
 ) {
+    val context = LocalContext.current
+    val coroutineScope = rememberCoroutineScope()
+    val normalizedSettings = settings.normalized()
+    var previewingVoiceId by rememberSaveable { mutableStateOf("") }
+    var previewMessage by rememberSaveable { mutableStateOf("") }
+    var previewFilePath by rememberSaveable { mutableStateOf("") }
+    var mediaPlayer by remember { mutableStateOf<MediaPlayer?>(null) }
+
+    fun deletePreviewFile(path: String) {
+        val previewDir = File(context.cacheDir, MIMO_PRESET_PREVIEW_CACHE_DIR)
+        val previewFile = File(path)
+        if (previewFile.isFile && previewFile.parentFile?.absolutePath == previewDir.absolutePath) {
+            runCatching { previewFile.delete() }
+        }
+    }
+
+    fun stopPreview(clearMessage: Boolean = true) {
+        mediaPlayer?.let { player ->
+            runCatching {
+                if (player.isPlaying) {
+                    player.stop()
+                }
+            }
+            player.release()
+        }
+        mediaPlayer = null
+        previewingVoiceId = ""
+        if (clearMessage) {
+            previewMessage = ""
+        }
+    }
+
+    fun playPreviewFile(
+        voiceId: String,
+        filePath: String,
+    ) {
+        runCatching {
+            val player = MediaPlayer()
+            player.setDataSource(filePath)
+            player.setOnCompletionListener { completedPlayer ->
+                completedPlayer.release()
+                if (mediaPlayer === completedPlayer) {
+                    mediaPlayer = null
+                }
+                if (previewingVoiceId == voiceId) {
+                    previewingVoiceId = ""
+                    previewMessage = "试听完成"
+                }
+            }
+            player.setOnErrorListener { failedPlayer, _, _ ->
+                failedPlayer.release()
+                if (mediaPlayer === failedPlayer) {
+                    mediaPlayer = null
+                }
+                deletePreviewFile(filePath)
+                if (previewingVoiceId == voiceId) {
+                    previewingVoiceId = ""
+                    previewMessage = "试听播放失败"
+                }
+                true
+            }
+            player.prepare()
+            player.start()
+            mediaPlayer = player
+            previewMessage = "正在播放 $voiceId"
+        }.onFailure { throwable ->
+            deletePreviewFile(filePath)
+            previewingVoiceId = ""
+            previewMessage = throwable.message?.takeIf { it.isNotBlank() } ?: "试听播放失败"
+        }
+    }
+
+    fun previewVoice(voice: MimoPresetVoice) {
+        val voiceId = voice.id.trim().ifBlank { MIMO_DEFAULT_VOICE_ID }
+        if (previewingVoiceId == voiceId) {
+            stopPreview(clearMessage = false)
+            previewMessage = "已停止试听"
+            return
+        }
+        val apiKey = normalizedSettings.apiKey.trim()
+        if (apiKey.isBlank()) {
+            previewMessage = "请先填写 MiMo API Key 后再试听"
+            return
+        }
+
+        stopPreview(clearMessage = false)
+        val previewDir = File(context.cacheDir, MIMO_PRESET_PREVIEW_CACHE_DIR)
+        val previewCacheKey = buildPresetVoicePreviewCacheKey(
+            baseUrl = normalizedSettings.baseUrl,
+            voiceId = voiceId,
+        )
+        findPresetVoicePreviewFile(previewDir, previewCacheKey)?.let { cachedFile ->
+            previewingVoiceId = voiceId
+            previewFilePath = cachedFile.absolutePath
+            playPreviewFile(
+                voiceId = voiceId,
+                filePath = cachedFile.absolutePath,
+            )
+            return
+        }
+
+        previewingVoiceId = voiceId
+        previewMessage = "正在合成 $voiceId 的试听音频..."
+        coroutineScope.launch {
+            runCatching {
+                val result = MimoTtsClient().synthesize(
+                    apiKey = apiKey,
+                    request = MimoTtsRequest.preset(
+                        text = buildPresetVoicePreviewText(voice),
+                        voiceId = voiceId,
+                    ),
+                    baseUrl = normalizedSettings.baseUrl,
+                )
+                AudioFileStorage.saveBase64AudioToDirectory(
+                    directory = previewDir,
+                    b64Data = result.b64Audio,
+                    fileNamePrefix = buildPresetVoicePreviewCachePrefix(previewCacheKey),
+                )
+            }.onSuccess { savedAudio ->
+                previewFilePath = savedAudio.path
+                if (previewingVoiceId == voiceId) {
+                    playPreviewFile(
+                        voiceId = voiceId,
+                        filePath = savedAudio.path,
+                    )
+                }
+            }.onFailure { throwable ->
+                if (previewingVoiceId == voiceId) {
+                    previewingVoiceId = ""
+                    previewMessage = "试听失败：${throwable.message ?: "未知错误"}"
+                }
+            }
+        }
+    }
+
+    DisposableEffect(Unit) {
+        onDispose {
+            stopPreview()
+        }
+    }
+
     ModalBottomSheet(onDismissRequest = onDismissRequest) {
         Column(
             modifier = Modifier
@@ -479,12 +637,36 @@ private fun PresetVoiceSheet(
                 fontWeight = FontWeight.Bold,
             )
             MIMO_PRESET_VOICES.forEach { voice ->
+                val isPreviewing = previewingVoiceId == voice.id
                 SettingsListRow(
                     title = voice.displayName,
                     supportingText = voice.language,
                     highlighted = voice.id == selectedVoiceId,
                     onClick = { onSelectVoice(voice.id) },
+                    trailingContent = {
+                        TextButton(onClick = { previewVoice(voice) }) {
+                            Icon(
+                                imageVector = if (isPreviewing) Icons.Default.Stop else Icons.Default.PlayArrow,
+                                contentDescription = null,
+                                modifier = Modifier.size(18.dp),
+                            )
+                            Spacer(modifier = Modifier.width(4.dp))
+                            Text(if (isPreviewing) "停止" else "试听")
+                        }
+                    },
                     showArrow = false,
+                )
+            }
+            if (previewMessage.isNotBlank()) {
+                Text(
+                    text = previewMessage,
+                    modifier = Modifier.padding(horizontal = 4.dp, vertical = 4.dp),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = if (previewMessage.contains("失败") || previewMessage.contains("请先")) {
+                        MaterialTheme.colorScheme.error
+                    } else {
+                        MaterialTheme.colorScheme.onSurfaceVariant
+                    },
                 )
             }
         }
@@ -532,6 +714,7 @@ private fun DefaultVoiceModelSheet(
 @Composable
 private fun AssistantVoiceProfileSheet(
     assistant: Assistant,
+    voiceSynthesisSettings: VoiceSynthesisSettings,
     initialProfile: VoiceProfile,
     isTesting: Boolean,
     onDismissRequest: () -> Unit,
@@ -539,7 +722,7 @@ private fun AssistantVoiceProfileSheet(
     onSaveProfile: (VoiceProfile) -> Unit,
 ) {
     val context = LocalContext.current
-    val coroutineScope = androidx.compose.runtime.rememberCoroutineScope()
+    val coroutineScope = rememberCoroutineScope()
     var mode by rememberSaveable(assistant.id) { mutableStateOf(initialProfile.mode) }
     var presetVoiceId by rememberSaveable(assistant.id) {
         mutableStateOf(initialProfile.presetVoiceId.ifBlank { MIMO_DEFAULT_VOICE_ID })
@@ -772,6 +955,7 @@ private fun AssistantVoiceProfileSheet(
     if (showPresetVoiceSheet) {
         PresetVoiceSheet(
             selectedVoiceId = presetVoiceId,
+            settings = voiceSynthesisSettings,
             onDismissRequest = { showPresetVoiceSheet = false },
             onSelectVoice = { voiceId ->
                 presetVoiceId = voiceId
@@ -788,4 +972,41 @@ private fun formatVoiceCloneSampleSize(sizeBytes: Long): String {
     } else {
         "${(safeBytes / 1024f).coerceAtLeast(0.1f).let { "%.1f".format(it) }} KB"
     }
+}
+
+private const val MIMO_PRESET_PREVIEW_CACHE_DIR = "mimo_preset_voice_previews"
+
+private fun buildPresetVoicePreviewText(voice: MimoPresetVoice): String {
+    return if (voice.language.contains("英文")) {
+        "Hi, this is a quick preview of this MiMo preset voice."
+    } else {
+        "你好，这是 Narra 的 MiMo 预置音色试听。"
+    }
+}
+
+private fun buildPresetVoicePreviewCacheKey(
+    baseUrl: String,
+    voiceId: String,
+): String {
+    return "${baseUrl.trim()}|${voiceId.ifBlank { MIMO_DEFAULT_VOICE_ID }}"
+}
+
+private fun buildPresetVoicePreviewCachePrefix(voiceId: String): String {
+    val hexVoiceId = voiceId
+        .ifBlank { MIMO_DEFAULT_VOICE_ID }
+        .toByteArray(Charsets.UTF_8)
+        .joinToString(separator = "") { byte -> "%02x".format(byte) }
+        .take(48)
+    return "preview-$hexVoiceId"
+}
+
+private fun findPresetVoicePreviewFile(
+    directory: File,
+    previewCacheKey: String,
+): File? {
+    val prefix = buildPresetVoicePreviewCachePrefix(previewCacheKey)
+    return listOf("wav", "mp3")
+        .asSequence()
+        .map { extension -> File(directory, "$prefix.$extension") }
+        .firstOrNull { file -> file.isFile && file.length() > 0L }
 }

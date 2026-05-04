@@ -9,10 +9,10 @@ import com.example.myapplication.model.normalizeChatMessageParts
 import com.example.myapplication.model.reasoningStepsToContent
 import com.example.myapplication.model.textMessagePart
 
-private const val streamSmallBatchSize = 10
-private const val streamMediumBatchSize = 20
-private const val streamLargeBatchSize = 40
-private const val streamFinishBatchSize = 96
+private const val streamSmallBatchSize = 16
+private const val streamMediumBatchSize = 32
+private const val streamLargeBatchSize = 64
+private const val streamFinishBatchSize = 160
 
 class StreamingReplyBuffer {
     private sealed interface PendingVisualDelta {

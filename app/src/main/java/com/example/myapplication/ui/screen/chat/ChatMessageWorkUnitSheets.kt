@@ -33,6 +33,8 @@ import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Share
+import androidx.compose.material.icons.filled.Translate
+import androidx.compose.material.icons.outlined.Psychology
 import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material3.Card
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -82,6 +84,9 @@ internal fun ChatMessageActionSheet(
     onOpenImagePreview: (() -> Unit)?,
     onSaveImageToGallery: (() -> Unit)?,
     onOpenSearchResults: (() -> Unit)?,
+    isRemembered: Boolean,
+    onTranslateMessage: (() -> Unit)?,
+    onToggleMemoryMessage: (() -> Unit)?,
     onExportMarkdown: () -> Unit,
     onShareMessage: () -> Unit,
     onEditUserMessage: (() -> Unit)?,
@@ -94,6 +99,8 @@ internal fun ChatMessageActionSheet(
         Column(
             modifier = Modifier
                 .fillMaxWidth()
+                .navigationBarsPadding()
+                .verticalScroll(rememberScrollState())
                 .padding(horizontal = 16.dp, vertical = 8.dp),
             verticalArrangement = Arrangement.spacedBy(8.dp),
         ) {
@@ -110,6 +117,28 @@ internal fun ChatMessageActionSheet(
                     onSelectAndCopy()
                 },
             )
+
+            if (onTranslateMessage != null) {
+                MessageActionCard(
+                    title = "翻译消息",
+                    icon = Icons.Default.Translate,
+                    onClick = {
+                        onDismissRequest()
+                        onTranslateMessage()
+                    },
+                )
+            }
+
+            if (onToggleMemoryMessage != null) {
+                MessageActionCard(
+                    title = if (isRemembered) "取消记忆" else "记住这条",
+                    icon = Icons.Outlined.Psychology,
+                    onClick = {
+                        onDismissRequest()
+                        onToggleMemoryMessage()
+                    },
+                )
+            }
 
             if (onOpenPreview != null) {
                 MessageActionCard(

@@ -100,6 +100,37 @@ class PresetPromptRendererTest {
     }
 
     @Test
+    fun render_treatsDollarMacrosInSlotValuesAsLiteralText() {
+        val preset = Preset(
+            id = "preset-dollar",
+            name = "测试预设",
+            entries = listOf(
+                PresetPromptEntry(
+                    id = "description",
+                    title = "角色描述",
+                    kind = PresetPromptEntryKind.CHARACTER_DESCRIPTION,
+                    content = "{{description}}",
+                    order = 0,
+                ),
+            ),
+        )
+
+        val rendered = renderer.render(
+            PresetPromptRenderInput(
+                preset = preset,
+                userName = "慕晗",
+                characterName = "岑下流年",
+                slotValues = mapOf(
+                    "description" to "变量应原样保留：\${time_diff}、\${随机三位数}。",
+                ),
+            ),
+        )
+
+        assertTrue(rendered.systemPrompt.contains("\${time_diff}"))
+        assertTrue(rendered.systemPrompt.contains("\${随机三位数}"))
+    }
+
+    @Test
     fun render_mapsDynamicPresetSlotsBackToOriginalContextSources() {
         val preset = Preset(
             id = "preset-3",

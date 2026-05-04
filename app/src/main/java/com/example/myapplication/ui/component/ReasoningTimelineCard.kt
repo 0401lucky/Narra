@@ -68,6 +68,7 @@ internal fun ReasoningTimelineCard(
     codeBlockAutoWrap: Boolean,
     codeBlockAutoCollapse: Boolean,
     performanceMode: ChatMessagePerformanceMode,
+    deferRichRendering: Boolean = false,
     modifier: Modifier = Modifier,
 ) {
     if (reasoningSteps.isEmpty()) {
@@ -160,6 +161,7 @@ internal fun ReasoningTimelineCard(
                             codeBlockAutoWrap = codeBlockAutoWrap,
                             codeBlockAutoCollapse = codeBlockAutoCollapse,
                             performanceMode = performanceMode,
+                            deferRichRendering = deferRichRendering,
                             onToggleExpanded = onToggleExpanded,
                         )
                     }
@@ -183,6 +185,7 @@ private fun ReasoningTimelineStep(
     codeBlockAutoWrap: Boolean,
     codeBlockAutoCollapse: Boolean,
     performanceMode: ChatMessagePerformanceMode,
+    deferRichRendering: Boolean,
     onToggleExpanded: () -> Unit,
 ) {
     val scrollState = rememberScrollState()
@@ -339,7 +342,7 @@ private fun ReasoningTimelineStep(
             ) {
                 RenderMessageText(
                     text = step.text,
-                    useMarkdown = step.finishedAt != null,
+                    useMarkdown = step.finishedAt != null && !deferRichRendering,
                     contentColor = MaterialTheme.colorScheme.onSurface,
                     assistantMarkdownTypography = markdownTypography,
                     assistantMarkdownPadding = markdownPadding,
@@ -347,6 +350,7 @@ private fun ReasoningTimelineStep(
                     codeBlockAutoWrap = codeBlockAutoWrap,
                     codeBlockAutoCollapse = codeBlockAutoCollapse,
                     performanceMode = performanceMode,
+                    fastPlainText = step.finishedAt == null || deferRichRendering,
                 )
             }
         }

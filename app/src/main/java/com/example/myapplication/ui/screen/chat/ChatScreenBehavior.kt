@@ -1,17 +1,23 @@
 package com.example.myapplication.ui.screen.chat
 
 import androidx.compose.foundation.gestures.scrollBy
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.ime
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.runtime.withFrameNanos
 import androidx.compose.material3.SnackbarHostState
+import androidx.compose.ui.platform.LocalDensity
 import com.example.myapplication.ui.component.ChatMessagePerformanceMode
 import kotlinx.coroutines.delay
 
@@ -210,6 +216,51 @@ internal fun ChatAutoFollowEffects(
         }
         state.shouldAutoFollowStreaming = true
         state.pendingCompletionFollow = false
+    }
+}
+
+@Composable
+internal fun ChatImeAutoFollowEffect(
+    state: ChatAutoFollowState,
+    listState: LazyListState,
+    displayedConversationId: String,
+    enabled: Boolean,
+    isNearBottom: Boolean,
+) {
+    val density = LocalDensity.current
+    val imeInsets = WindowInsets.ime
+    val latestIsNearBottom by rememberUpdatedState(isNearBottom)
+    val latestShouldAutoFollow by rememberUpdatedState(state.shouldAutoFollowStreaming)
+    val latestUserDisabledAutoFollow by rememberUpdatedState(state.userDisabledAutoFollow)
+    var previousImeBottom by remember(displayedConversationId) { mutableIntStateOf(0) }
+
+    LaunchedEffect(displayedConversationId, enabled, listState, density) {
+        if (!enabled) {
+            previousImeBottom = 0
+            return@LaunchedEffect
+        }
+
+        snapshotFlow { imeInsets.getBottom(density) }
+            .collect { imeBottom ->
+                val delta = imeBottom - previousImeBottom
+                previousImeBottom = imeBottom
+                if (delta <= 0) {
+                    return@collect
+                }
+                if (latestUserDisabledAutoFollow && !latestIsNearBottom) {
+                    return@collect
+                }
+                if (!latestIsNearBottom && !latestShouldAutoFollow) {
+                    return@collect
+                }
+
+                state.isProgrammaticScroll = true
+                try {
+                    listState.scrollBy(delta.toFloat())
+                } finally {
+                    state.isProgrammaticScroll = false
+                }
+            }
     }
 }
 

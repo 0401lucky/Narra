@@ -80,6 +80,8 @@ internal fun ChatScreenOverlays(
     onShareMessage: (ChatMessage) -> Unit,
     onEditUserMessage: (ChatMessage) -> Unit,
     onRetryMessage: (ChatMessage) -> Unit,
+    onTranslateMessage: (ChatMessage) -> Unit,
+    onToggleMemoryMessage: (ChatMessage) -> Unit,
     messageSelectionPayload: ChatMessageSelectionPayload?,
     onDismissMessageSelection: () -> Unit,
     messagePreviewPayload: ChatMessagePreviewPayload?,
@@ -227,6 +229,17 @@ internal fun ChatScreenOverlays(
             },
             onOpenSearchResults = buildSearchResultPreviewPayload(message)?.let {
                 { onOpenSearchResultPreview(message) }
+            },
+            isRemembered = message.id in uiState.rememberedMessageIds,
+            onTranslateMessage = if (availability.canPreview) {
+                { onTranslateMessage(message) }
+            } else {
+                null
+            },
+            onToggleMemoryMessage = if (availability.canPreview) {
+                { onToggleMemoryMessage(message) }
+            } else {
+                null
             },
             onExportMarkdown = { onExportMessageMarkdown(message) },
             onShareMessage = { onShareMessage(message) },
