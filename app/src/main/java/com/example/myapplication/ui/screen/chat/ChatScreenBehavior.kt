@@ -18,11 +18,8 @@ import androidx.compose.runtime.snapshotFlow
 import androidx.compose.runtime.withFrameNanos
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.ui.platform.LocalDensity
-import com.example.myapplication.ui.component.ChatMessagePerformanceMode
-import kotlinx.coroutines.delay
 
 private const val ChatStreamFollowScrollWindowMillis = 64L
-private const val ChatScrollPerformanceRecoveryMillis = 180L
 
 internal class ChatAutoFollowState {
     var shouldAutoFollowStreaming by mutableStateOf(true)
@@ -67,23 +64,11 @@ internal class ChatAutoFollowState {
     }
 }
 
-internal class ChatScrollPerformanceState {
-    var mode by mutableStateOf(ChatMessagePerformanceMode.FULL)
-    var activityToken by mutableLongStateOf(0L)
-}
-
 @Composable
 internal fun rememberChatAutoFollowState(
     conversationId: String,
 ): ChatAutoFollowState {
     return remember(conversationId) { ChatAutoFollowState() }
-}
-
-@Composable
-internal fun rememberChatScrollPerformanceState(
-    conversationId: String,
-): ChatScrollPerformanceState {
-    return remember(conversationId) { ChatScrollPerformanceState() }
 }
 
 @Composable
@@ -120,10 +105,8 @@ internal fun ChatAutoFollowEffects(
         state.isProgrammaticScroll,
         displayedConversationId,
     ) {
-        if (listState.isScrollInProgress &&
-            !state.isProgrammaticScroll &&
-            !isNearBottom
-        ) {
+        if (listState.isScrollInProgress && !state.isProgrammaticScroll) {
+            state.pendingCompletionFollow = false
             state.shouldAutoFollowStreaming = false
             state.userDisabledAutoFollow = true
         }
@@ -194,7 +177,9 @@ internal fun ChatAutoFollowEffects(
             if (!state.userDisabledAutoFollow && (state.shouldAutoFollowStreaming || isNearBottom)) {
                 state.pendingCompletionFollow = true
             }
-            state.userDisabledAutoFollow = false
+            if (isNearBottom) {
+                state.userDisabledAutoFollow = false
+            }
         }
         state.wasSending = isSending
     }
@@ -212,6 +197,16 @@ internal fun ChatAutoFollowEffects(
 
         repeat(4) {
             withFrameNanos { }
+            if (listState.isScrollInProgress && !state.isProgrammaticScroll) {
+                state.pendingCompletionFollow = false
+                state.shouldAutoFollowStreaming = false
+                state.userDisabledAutoFollow = true
+                return@LaunchedEffect
+            }
+            if (state.userDisabledAutoFollow) {
+                state.pendingCompletionFollow = false
+                return@LaunchedEffect
+            }
             state.scrollToConversationEnd(listState, bottomAnchorIndex, animated = false)
         }
         state.shouldAutoFollowStreaming = true
@@ -253,6 +248,9 @@ internal fun ChatImeAutoFollowEffect(
                 if (!latestIsNearBottom && !latestShouldAutoFollow) {
                     return@collect
                 }
+                if (listState.isScrollInProgress && !state.isProgrammaticScroll) {
+                    return@collect
+                }
 
                 state.isProgrammaticScroll = true
                 try {
@@ -261,31 +259,6 @@ internal fun ChatImeAutoFollowEffect(
                     state.isProgrammaticScroll = false
                 }
             }
-    }
-}
-
-@Composable
-internal fun ChatScrollPerformanceEffects(
-    state: ChatScrollPerformanceState,
-    listState: LazyListState,
-    displayedConversationId: String,
-) {
-    LaunchedEffect(displayedConversationId) {
-        state.activityToken += 1L
-        state.mode = ChatMessagePerformanceMode.FULL
-    }
-
-    LaunchedEffect(listState.isScrollInProgress, displayedConversationId) {
-        if (listState.isScrollInProgress) {
-            state.activityToken += 1L
-            state.mode = ChatMessagePerformanceMode.SCROLLING_LIGHT
-        } else {
-            val currentToken = state.activityToken
-            delay(ChatScrollPerformanceRecoveryMillis)
-            if (currentToken == state.activityToken) {
-                state.mode = ChatMessagePerformanceMode.FULL
-            }
-        }
     }
 }
 

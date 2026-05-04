@@ -86,11 +86,10 @@ fun ChatScreen(
     val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
     val scope = rememberCoroutineScope()
     val autoFollowState = rememberChatAutoFollowState(uiState.displayedConversationId)
-    val scrollPerformanceState = rememberChatScrollPerformanceState(uiState.displayedConversationId)
     val chatMessagePerformanceMode = if (uiState.isSending) {
         ChatMessagePerformanceMode.SCROLLING_LIGHT
     } else {
-        scrollPerformanceState.mode
+        ChatMessagePerformanceMode.FULL
     }
     val colorScheme = MaterialTheme.colorScheme
     val derivations = rememberChatScreenDerivations(uiState, resources)
@@ -133,12 +132,6 @@ fun ChatScreen(
         displayedConversationId = uiState.displayedConversationId,
         enabled = uiState.messages.isNotEmpty(),
         isNearBottom = isNearBottom,
-    )
-
-    ChatScrollPerformanceEffects(
-        state = scrollPerformanceState,
-        listState = listState,
-        displayedConversationId = uiState.displayedConversationId,
     )
 
     ChatFeedbackEffects(

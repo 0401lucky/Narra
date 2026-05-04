@@ -1,17 +1,15 @@
 {
   "app_id": "com.narra.app.dev",
   "channel": "dev",
-  "latest_version_name": "1.7.2-dev",
-  "latest_version_code": 10702,
+  "latest_version_name": "1.7.3-dev",
+  "latest_version_code": 10703,
   "minimum_supported_version_code": 0,
-  "apk_url": "https://download.lsa1230.dpdns.org/dev/Narra-v1.7.2-dev-10702-dev.apk?v=10702",
-  "apk_sha256": "ea8c24688f5784829a0b0b7d22d038d32af72230a63c694e9b23d7432fdf7613",
-  "published_at": "2026-05-04T11:27:17+08:00",
+  "apk_url": "https://download.lsa1230.dpdns.org/dev/Narra-v1.7.3-dev-10703-dev.apk?v=10703",
+  "apk_sha256": "1353f7a46925235a55c17db6bdb725322f332dc75d8d3f288ac87aa336cbaa13",
+  "published_at": "2026-05-04T13:16:36+08:00",
   "release_notes": [
-    "MiMo 预置音色新增官方试听，已生成试听音频会复用缓存",
-    "优化普通聊天和沉浸式聊天流式输出，减少高频刷新导致的卡顿",
-    "普通聊天新增键盘弹起跟随、顶部/底部跳转和输出完成后的整理提示",
-    "消息操作栏收敛，高频动作常驻，翻译、记忆、预览、导出等放入更多菜单",
-    "修复角色卡变量文本包含 ${...} 时生成失败的问题，状态块解析增加异常兜底"
+    "修复普通聊天页手动滚动后仍可能被自动贴底拉回的问题",
+    "普通聊天页历史消息滚动保持完整渲染，避免停稳后富文本重排造成跳动",
+    "流式输出阶段继续保留轻量渲染和完成后整理，兼顾输出流畅度与最终展示"
   ]
 }

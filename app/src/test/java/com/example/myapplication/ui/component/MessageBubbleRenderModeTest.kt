@@ -96,6 +96,15 @@ class MessageBubbleRenderModeTest {
     }
 
     @Test
+    fun shouldRenderWithMarkdownDuringScrolling_keepsInlineMarkdownLayoutStable() {
+        assertTrue(
+            shouldRenderWithMarkdownDuringScrolling(
+                "它主要用于实现**通过按钮切换不同页面（Fragment）**的功能。",
+            ),
+        )
+    }
+
+    @Test
     fun normalizeCitationMarkdownForDisplay_rewritesCitationSyntax() {
         assertEquals(
             "巴黎是法国首都。[〔example.com〕](citation:abc123)",
