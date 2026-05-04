@@ -60,7 +60,7 @@ internal object OnlineActionProtocolParser {
                 return parseArray(
                     array = parsedRoot.asJsonArray,
                     characterName = characterName,
-                )
+                ).takeIf { it.parts.isNotEmpty() || it.directives.isNotEmpty() }
             }
         }
         return trySingleJsonObject(rawContent, characterName)
@@ -146,6 +146,7 @@ internal object OnlineActionProtocolParser {
             return null
         }
         val cleaned = rawContent
+            .stripOnlineControlArtifactSections()
             .replace(Regex("```[\\s\\S]*?```"), "")
             // 线上模式中的特殊玩法标签由 GatewaySpecialPlaySupport 负责转成卡片，不应原样显示到文本气泡里
             .replace(specialPlayTagPattern, "\n")
@@ -167,7 +168,7 @@ internal object OnlineActionProtocolParser {
                     .removeSuffix(",")
                     .trim()
             }
-            .filter { it.isNotBlank() && !it.looksLikeProtocolLeak() }
+            .filter { it.isNotBlank() && !it.looksLikeProtocolLeak() && !it.looksLikeControlArtifactLine() }
         if (lines.isEmpty()) {
             return null
         }
@@ -209,6 +210,18 @@ internal object OnlineActionProtocolParser {
             addAll(result.parts.map { part -> part.toStreamingPreviewText() })
             addAll(result.directives.map { directive -> directive.toPreviewText() })
         }.filter { it.isNotBlank() }
+            .joinToString(separator = "\n")
+            .trim()
+    }
+
+    fun extractFallbackStreamingPreview(rawContent: String): String {
+        val trimmed = stripMarkdownCodeFence(rawContent).trim()
+        if (trimmed.startsWith("[") || trimmed.startsWith("{")) {
+            return ""
+        }
+        val result = fallbackPlainText(rawContent) ?: return ""
+        return result.parts.map { part -> part.toStreamingPreviewText() }
+            .filter { it.isNotBlank() }
             .joinToString(separator = "\n")
             .trim()
     }
@@ -727,8 +740,8 @@ internal object OnlineActionProtocolParser {
     private fun String.sanitizeMalformedProtocolLeak(): String {
         return trim()
             .replace(Regex("""(?i)\b(?:thought|ai[-_]?photo|voice[-_]?message|reply[-_]?to|play)\b\s*,?"""), "")
-            .replace(Regex("""(?i)\b(?:type|target|place|time|note|description|content|message_id)\s*=\s*['"][^'"]*['"]"""), "")
-            .replace(Regex("""(?i)\b(?:type|target|place|time|note|description|content|message_id)\s*:\s*"""), "")
+            .replace(Regex("""(?i)\b(?:type|target|place|time|note|description|content|message_id|op|path|value|delta|from)\s*=\s*['"][^'"]*['"]"""), "")
+            .replace(Regex("""(?i)\b(?:type|target|place|time|note|description|content|message_id|op|path|value|delta|from)\s*:\s*"""), "")
             .replace(Regex("""(?i)\bid\s*=\s*['"][^'"]*['"]"""), "")
             .replace(Regex("""/?>"""), "")
             .replace(Regex("""[<>]"""), "")
@@ -748,6 +761,10 @@ internal object OnlineActionProtocolParser {
 
     private val protocolLeakMarkers = listOf(
         "\"type\"",
+        "\"op\"",
+        "\"path\"",
+        "\"value\"",
+        "\"delta\"",
         "{",
         "}",
         "<play",
@@ -760,6 +777,60 @@ internal object OnlineActionProtocolParser {
         "reply_to",
         "transfer_action",
     )
+
+    private val controlArtifactSectionPattern = Regex(
+        """(?is)<\s*(?:UpdateVariable|Analysis|JSONPatch|status_current_variables)\b[^>]*>.*?(?:<\s*/\s*(?:UpdateVariable|Analysis|JSONPatch|status_current_variables)\s*>|$)""",
+    )
+    private val controlArtifactClosingTagPattern = Regex(
+        """(?is)<\s*/\s*(?:UpdateVariable|Analysis|JSONPatch|status_current_variables)\s*>""",
+    )
+    private val controlArtifactLinePattern = Regex(
+        """(?i)^\s*(?:[-*]\s*)?(?:time\s+passed|dramatic\s+updates?|variables?\s+update|变量更新|current\s+variables|status_current_variables|ntk\s+detected|state\s+initializes|resource\s+exchange|relationship\s+starts)\b.*""",
+    )
+    private val jsonPatchMarkerPattern = Regex("""(?i)"?\s*(?:op|path|value|delta|from)\s*"?\s*:""")
+    private val jsonPatchFragmentWords = setOf(
+        "op",
+        "path",
+        "value",
+        "values",
+        "delta",
+        "from",
+        "old",
+        "new",
+        "replace",
+        "add",
+        "remove",
+        "test",
+    )
+
+    private fun String.stripOnlineControlArtifactSections(): String {
+        val withoutXmlBlocks = replace(controlArtifactSectionPattern, "\n")
+            .replace(controlArtifactClosingTagPattern, "\n")
+        val lines = withoutXmlBlocks.lines()
+        val artifactStart = lines.indices.firstOrNull { index ->
+            val line = lines[index].trim()
+            line.looksLikeControlArtifactLine() ||
+                (
+                    line.startsWith("[") &&
+                        lines.drop(index).take(10).any { jsonPatchMarkerPattern.containsMatchIn(it) }
+                    )
+        } ?: return withoutXmlBlocks
+        return lines.take(artifactStart).joinToString(separator = "\n")
+    }
+
+    private fun String.looksLikeControlArtifactLine(): Boolean {
+        val raw = trim()
+        if (raw.isBlank()) {
+            return false
+        }
+        if (controlArtifactLinePattern.containsMatchIn(raw) || jsonPatchMarkerPattern.containsMatchIn(raw)) {
+            return true
+        }
+        val compact = raw
+            .trim(',', '，', ':', '：', '"', '\'', '[', ']', '{', '}', ' ', '\t')
+            .lowercase()
+        return compact in jsonPatchFragmentWords
+    }
 
     private fun JsonObject.stringValue(key: String): String {
         return runCatching { get(key)?.takeIf(JsonElement::isJsonPrimitive)?.asString.orEmpty() }

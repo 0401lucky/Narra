@@ -39,3 +39,14 @@ Kotlin 统一使用 4 空格缩进，遵循 Android Studio 默认格式。类、
 - GitHub Release 现在仅作为可选的展示页与备份下载页，不再是内置更新的前置条件。
 - 未拿到最终 APK 下载链接前，不要提前把更新 JSON 改成新版本，避免内置更新指向空地址或错误地址。
 - 应用内更新默认只做“可选更新提示”，不要实现或配置成强制更新；`minimum_supported_version_code` 仅保留兼容字段，不作为锁定使用的依据。
+
+## 默认 dev 发版触发语
+- 当用户说“构建 X.Y.Z-dev 的包并推送更新”“发 X.Y.Z-dev”“构建多少版本的包，然后推送更新”等同类表达时，默认执行完整 dev 发版流程，不再反复询问流程细节。
+- 默认流程：
+  1. 将 `gradle.properties` 的 `appVersionMajorOverride` / `appVersionMinorOverride` / `appVersionPatchOverride` 更新到目标版本。
+  2. 同步更新 `CHANGELOG.md`、`版本功能添加/优化.md`、`docs/版本策略.md`、`docs/发布候选记录.md` 和 `docs/updates/dev.json`。
+  3. 运行与本次改动相关的单元测试；时间允许时再运行 `.\gradlew.bat assembleDebug --console=plain`。
+  4. 计算 APK SHA-256，并使用 `wrangler r2 object put narra-updates/dev/{apkName} --file {apkPath} --content-type application/vnd.android.package-archive --remote` 上传。
+  5. 使用 `wrangler r2 object get ... --remote` 拉回远端对象并校验 SHA-256；用 `Invoke-WebRequest -Method Head` 确认公开下载链接返回 `200`。
+  6. 只 stage 本次发版相关文件和 APK 元数据，提交并推送到 GitHub 当前目标分支。
+- 若工作区存在无关未跟踪文件、截图、日志或用户改动，默认忽略，不纳入提交。

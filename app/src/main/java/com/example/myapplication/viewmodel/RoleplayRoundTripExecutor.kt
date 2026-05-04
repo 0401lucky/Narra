@@ -591,7 +591,7 @@ internal class RoleplayRoundTripExecutor(
                                 OnlineActionProtocolParser.extractGroupTextStreamingPreview(content)
                             } else {
                                 OnlineActionProtocolParser.extractStreamingPreview(content)
-                                    .ifBlank { outputParser.stripMarkup(content) }
+                                    .ifBlank { OnlineActionProtocolParser.extractFallbackStreamingPreview(content) }
                             }
                         }
                         com.example.myapplication.model.RoleplayInteractionMode.OFFLINE_DIALOGUE -> {

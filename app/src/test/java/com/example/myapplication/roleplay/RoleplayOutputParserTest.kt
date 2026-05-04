@@ -216,4 +216,45 @@ class RoleplayOutputParserTest {
 
         assertEquals("你先别躲。", stripped)
     }
+
+    @Test
+    fun parseAssistantOutput_dropsVariableUpdateArtifactsAfterVisibleText() {
+        val result = parser.parseAssistantOutput(
+            rawContent = """
+                她低下头，指尖在那颗右鼻翼的小痣旁轻轻点了一下。
+
+                <UpdateVariable>
+                <Analysis>
+                - Time passed: negligible.
+                - Variables update: NTK intensity maintained.
+                </Analysis>
+                <JSONPatch>[{"op":"delta","path":"/User/NTK累计强度","value":3}]</JSONPatch>
+                </UpdateVariable>
+            """.trimIndent(),
+            characterName = "沈鸦",
+            allowNarration = true,
+        )
+
+        assertEquals(1, result.size)
+        assertEquals("她低下头，指尖在那颗右鼻翼的小痣旁轻轻点了一下。", result.single().content)
+        assertTrue(!result.single().content.contains("JSONPatch"))
+        assertTrue(!result.single().content.contains("\"op\""))
+        assertTrue(!result.single().content.contains("Time passed", ignoreCase = true))
+    }
+
+    @Test
+    fun stripMarkup_dropsStandaloneJsonPatchArtifact() {
+        val stripped = parser.stripMarkup(
+            """
+                你到底在等什么？
+                NTK detected (unprovoked friendliness) but too early to quantify.
+                [
+                  {"op":"replace","path":"/世界环境/当前场景地点","value":"便利店后巷"},
+                  {"op":"delta","path":"/User/NTK累计强度","value":3}
+                ]
+            """.trimIndent(),
+        )
+
+        assertEquals("你到底在等什么？", stripped)
+    }
 }

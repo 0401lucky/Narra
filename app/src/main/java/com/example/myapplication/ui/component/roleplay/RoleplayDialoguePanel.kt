@@ -235,8 +235,8 @@ internal fun RoleplayDialoguePanel(
                 ) {
                     itemsIndexed(
                         items = storyMessages,
-                        key = { _, item ->
-                            buildRoleplayDialogueMessageListKey(item)
+                        key = { index, item ->
+                            buildRoleplayDialogueMessageListKey(item, index)
                         },
                     ) { _, message ->
                         RoleplayMessageItem(
@@ -362,7 +362,10 @@ internal fun RoleplayDialoguePanel(
     }
 }
 
-private fun buildRoleplayDialogueMessageListKey(message: RoleplayMessageUiModel): String {
+private fun buildRoleplayDialogueMessageListKey(
+    message: RoleplayMessageUiModel,
+    index: Int,
+): String {
     val partId = message.actionPart?.actionId
         ?: message.specialPart?.actionId
         ?: message.replyToMessageId
@@ -373,6 +376,7 @@ private fun buildRoleplayDialogueMessageListKey(message: RoleplayMessageUiModel)
         partId,
         message.createdAt.toString(),
         message.content.hashCode().toString(),
+        index.toString(),
     ).joinToString("|")
 }
 

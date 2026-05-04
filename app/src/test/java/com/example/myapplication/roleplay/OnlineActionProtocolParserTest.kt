@@ -308,6 +308,66 @@ class OnlineActionProtocolParserTest {
     }
 
     @Test
+    fun parseWithFallback_dropsVariablePatchArtifactOnly() {
+        val result = OnlineActionProtocolParser.parseWithFallback(
+            rawContent = """
+                - Time passed: negligible.
+                - Dramatic updates: no.
+                - Variables update: NTK intensity maintained.
+                [
+                  {"op":"replace","path":"/世界环境/当前日期时间","value":"2026-05-04 14:40"},
+                  {"op":"delta","path":"/User/NTK累计强度","value":3}
+                ]
+            """.trimIndent(),
+            characterName = "角色",
+        )
+
+        assertEquals(null, result)
+    }
+
+    @Test
+    fun parseWithFallback_keepsVisibleTextBeforeVariablePatchArtifact() {
+        val result = OnlineActionProtocolParser.parseWithFallback(
+            rawContent = """
+                你到底在等什么？是觉得我迟早会露出底牌吗？
+
+                <UpdateVariable>
+                <Analysis>- Time passed: negligible.</Analysis>
+                <JSONPatch>[{"op":"delta","path":"/User/NTK累计强度","value":3}]</JSONPatch>
+                </UpdateVariable>
+            """.trimIndent(),
+            characterName = "沈鸦",
+        )!!
+
+        assertEquals(1, result.parts.size)
+        assertEquals("你到底在等什么？是觉得我迟早会露出底牌吗？", result.parts.single().text)
+    }
+
+    @Test
+    fun extractFallbackStreamingPreview_returnsEmptyForJsonPatchPrefix() {
+        val preview = OnlineActionProtocolParser.extractFallbackStreamingPreview(
+            rawContent = """[{"op":"delta","path":"/User/NTK累计强度","value":3}]""",
+        )
+
+        assertEquals("", preview)
+    }
+
+    @Test
+    fun parseWithFallback_dropsBareNtkAnalysisTail() {
+        val result = OnlineActionProtocolParser.parseWithFallback(
+            rawContent = """
+                视线扫过屏幕上的 IDE 界面。
+                NTK detected (unprovoked friendliness) but too early to quantify.
+                [{"op":"replace","path":"/世界环境/当前状态","value":"CONFUSION"}]
+            """.trimIndent(),
+            characterName = "沈鸦",
+        )!!
+
+        assertEquals(1, result.parts.size)
+        assertEquals("视线扫过屏幕上的 IDE 界面。", result.parts.single().text)
+    }
+
+    @Test
     fun parseGroupTextOnlyWithFallback_keepsVoiceAndPhotoButDropsThoughts() {
         val result = OnlineActionProtocolParser.parseGroupTextOnlyWithFallback(
             rawContent = """

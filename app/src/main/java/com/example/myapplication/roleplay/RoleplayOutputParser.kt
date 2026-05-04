@@ -32,6 +32,16 @@ class RoleplayOutputParser {
     private val protocolTagNamePattern = Regex("""(?is)</?(dialogue|narration|thought)\b""")
     private val angleBracketPattern = Regex("""[<>]""")
     private val emptyProtocolLinePattern = Regex("""(?m)^[\s"'=:：/\\-]+$""")
+    private val variableUpdateBlockPattern = Regex(
+        """(?is)<\s*(?:UpdateVariable|Analysis|JSONPatch|status_current_variables)\b[^>]*>.*?(?:<\s*/\s*(?:UpdateVariable|Analysis|JSONPatch|status_current_variables)\s*>|$)""",
+    )
+    private val variableUpdateClosingTagPattern = Regex(
+        """(?is)<\s*/\s*(?:UpdateVariable|Analysis|JSONPatch|status_current_variables)\s*>""",
+    )
+    private val variableUpdateLinePattern = Regex(
+        """(?i)^\s*(?:[-*]\s*)?(?:time\s+passed|dramatic\s+updates?|variables?\s+update|变量更新|current\s+variables|status_current_variables|ntk\s+detected|state\s+initializes|resource\s+exchange|relationship\s+starts)\b.*""",
+    )
+    private val jsonPatchMarkerPattern = Regex("""(?i)"?\s*(?:op|path|value|delta|from)\s*"?\s*:""")
 
     fun parseAssistantOutput(
         rawContent: String,
@@ -480,9 +490,51 @@ class RoleplayOutputParser {
     private fun stripControlArtifacts(
         rawContent: String,
     ): String {
-        return rawContent
+        return stripVariableUpdateArtifacts(rawContent)
             .replace(llmControlTagPattern, " ")
             .replace(llmControlWordPattern, " ")
+    }
+
+    private fun stripVariableUpdateArtifacts(rawContent: String): String {
+        val withoutBlocks = rawContent.replace(variableUpdateBlockPattern, "\n")
+            .replace(variableUpdateClosingTagPattern, "\n")
+        val lines = withoutBlocks.lines()
+        val artifactStart = lines.indices.firstOrNull { index ->
+            val line = lines[index].trim()
+            line.looksLikeVariableUpdateArtifactLine() ||
+                (
+                    line.startsWith("[") &&
+                        lines.drop(index).take(10).any { jsonPatchMarkerPattern.containsMatchIn(it) }
+                    )
+        } ?: return withoutBlocks
+        return lines.take(artifactStart).joinToString(separator = "\n")
+    }
+
+    private fun String.looksLikeVariableUpdateArtifactLine(): Boolean {
+        val raw = trim()
+        if (raw.isBlank()) {
+            return false
+        }
+        if (variableUpdateLinePattern.containsMatchIn(raw) || jsonPatchMarkerPattern.containsMatchIn(raw)) {
+            return true
+        }
+        val compact = raw
+            .trim(',', '，', ':', '：', '"', '\'', '[', ']', '{', '}', ' ', '\t')
+            .lowercase()
+        return compact in setOf(
+            "op",
+            "path",
+            "value",
+            "values",
+            "delta",
+            "from",
+            "old",
+            "new",
+            "replace",
+            "add",
+            "remove",
+            "test",
+        )
     }
 
     private data class PlainSegmentCandidate(
