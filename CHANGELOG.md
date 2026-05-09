@@ -19,6 +19,30 @@
 
 ---
 
+## [1.7.5-dev] - 2026-05-09
+
+### Added
+
+- 新增 SillyTavern Chat Completion 预设 JSON 导入入口，导入前展示预设名、条目数、采样参数、绝对插入条目数和兼容字段提示。
+- 新增 Narra 预设导出为近似兼容 SillyTavern Chat Completion JSON 的能力。
+- 资料库“预设包”导入支持在 Narra 包解析为空后自动识别 SillyTavern 预设。
+
+### Changed
+
+- 预设模型补充兼容元数据、来源标识、动态槽位、相对/绝对注入、注入深度、优先级、触发器和 extras 保留。
+- AI 请求构建支持 `historyInjections`，可按深度把酒馆绝对注入条目插入聊天历史内部。
+
+### Fixed
+
+- 修复线上模式多行 `status/.../status` 状态栏可能先被短文本自动拆段，导致状态栏气泡拆分异常的问题。
+
+### Docs
+
+- 更新真预设设计文档和版本记录，明确当前只兼容 SillyTavern Chat Completion 首版，不执行脚本、正则替换或 HTML/JS。
+- `dev` 渠道构建版本推进到 `1.7.5-dev (10705)`，继续通过 Cloudflare R2 分发 APK。
+
+---
+
 ## [1.7.4-dev] - 2026-05-04
 
 ### Fixed

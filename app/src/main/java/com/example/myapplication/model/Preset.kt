@@ -16,6 +16,7 @@ data class Preset(
     val stopSequences: List<String> = emptyList(),
     val entries: List<PresetPromptEntry> = emptyList(),
     val renderConfig: PresetRenderConfig = PresetRenderConfig(),
+    val compatMetadata: PresetCompatMetadata = PresetCompatMetadata(),
     val version: Int = 1,
     val builtIn: Boolean = false,
     val userModified: Boolean = false,
@@ -37,6 +38,7 @@ data class Preset(
                 .mapIndexed { index, entry -> entry.normalized(index) }
                 .distinctBy(PresetPromptEntry::id),
             renderConfig = renderConfig.normalized(),
+            compatMetadata = compatMetadata.normalized(),
             version = version.coerceAtLeast(1),
             createdAt = resolvedCreatedAt,
             updatedAt = updatedAt.takeIf { it > 0L } ?: resolvedCreatedAt,
@@ -101,6 +103,26 @@ data class PresetInstructConfig(
     val wrapWithNewlines: Boolean = true,
 )
 
+data class PresetCompatMetadata(
+    val source: String = "",
+    val sourceName: String = "",
+    val sourceVersion: Int = 1,
+    val rootExtrasJson: String = "{}",
+    val promptOrderCharacterId: String = "",
+    val promptOrderExtrasJson: String = "{}",
+) {
+    fun normalized(): PresetCompatMetadata {
+        return copy(
+            source = source.trim(),
+            sourceName = sourceName.trim(),
+            sourceVersion = sourceVersion.coerceAtLeast(1),
+            rootExtrasJson = rootExtrasJson.trim().ifBlank { "{}" },
+            promptOrderCharacterId = promptOrderCharacterId.trim(),
+            promptOrderExtrasJson = promptOrderExtrasJson.trim().ifBlank { "{}" },
+        )
+    }
+}
+
 enum class PresetPromptRole(val storageValue: String, val label: String) {
     SYSTEM("system", "SYSTEM"),
     USER("user", "USER"),
@@ -115,6 +137,7 @@ enum class PresetPromptRole(val storageValue: String, val label: String) {
 
 enum class PresetPromptEntryKind(val storageValue: String, val label: String) {
     MAIN_PROMPT("main_prompt", "Main Prompt"),
+    NSFW_PROMPT("nsfw_prompt", "NSFW Prompt"),
     CONTEXT_TEMPLATE("context_template", "Context Template"),
     CHARACTER_DESCRIPTION("character_description", "Char Description"),
     CHARACTER_PROMPT("character_prompt", "Char Prompt"),
@@ -122,6 +145,7 @@ enum class PresetPromptEntryKind(val storageValue: String, val label: String) {
     SCENARIO("scenario", "Scenario"),
     EXAMPLE_DIALOGUE("example_dialogue", "Chat Examples"),
     WORLD_INFO_BEFORE("world_info_before", "World Info before"),
+    WORLD_INFO_AFTER("world_info_after", "World Info after"),
     LONG_MEMORY("long_memory", "Long Memory"),
     SUMMARY("summary", "Summary"),
     PHONE_CONTEXT("phone_context", "Phone Context"),
@@ -137,6 +161,17 @@ enum class PresetPromptEntryKind(val storageValue: String, val label: String) {
     }
 }
 
+enum class PresetPromptInjectionPosition(val tavernValue: Int, val label: String) {
+    RELATIVE(0, "相对顺序"),
+    ABSOLUTE(1, "历史内插入");
+
+    companion object {
+        fun fromTavernValue(value: Int?): PresetPromptInjectionPosition {
+            return entries.firstOrNull { it.tavernValue == value } ?: RELATIVE
+        }
+    }
+}
+
 data class PresetPromptEntry(
     val id: String = UUID.randomUUID().toString(),
     val title: String = "",
@@ -146,6 +181,13 @@ data class PresetPromptEntry(
     val enabled: Boolean = true,
     val order: Int = 0,
     val locked: Boolean = false,
+    val sourceIdentifier: String = "",
+    val marker: Boolean = false,
+    val injectionPosition: PresetPromptInjectionPosition = PresetPromptInjectionPosition.RELATIVE,
+    val injectionDepth: Int? = null,
+    val injectionOrder: Int? = null,
+    val injectionTriggers: List<String> = emptyList(),
+    val extrasJson: String = "{}",
 ) {
     fun normalized(index: Int = order): PresetPromptEntry {
         return copy(
@@ -153,6 +195,11 @@ data class PresetPromptEntry(
             title = title.trim().ifBlank { kind.label },
             content = content.replace("\r\n", "\n").trim(),
             order = order.takeIf { it >= 0 } ?: index,
+            sourceIdentifier = sourceIdentifier.trim(),
+            injectionPosition = injectionPosition ?: PresetPromptInjectionPosition.RELATIVE,
+            injectionDepth = injectionDepth?.coerceAtLeast(0),
+            injectionTriggers = injectionTriggers.map(String::trim).filter(String::isNotBlank).distinct(),
+            extrasJson = extrasJson.trim().ifBlank { "{}" },
         )
     }
 }

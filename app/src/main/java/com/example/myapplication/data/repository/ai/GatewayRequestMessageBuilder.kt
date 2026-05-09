@@ -10,6 +10,7 @@ import com.example.myapplication.model.MessageAttachment
 import com.example.myapplication.model.MessageRole
 import com.example.myapplication.model.MessageStatus
 import com.example.myapplication.model.PresetPromptRole
+import com.example.myapplication.model.PromptHistoryInjection
 import com.example.myapplication.model.PromptEnvelope
 import com.example.myapplication.model.PromptEnvelopeMessage
 import com.example.myapplication.model.PromptMode
@@ -64,12 +65,17 @@ internal object GatewayRequestMessageBuilder {
                         ),
                     )
                 }
-            completedMessages.forEach { message ->
+            completedMessages.forEachIndexed { index, message ->
+                addHistoryInjectionsForIndex(
+                    historyInjections = promptEnvelope.historyInjections,
+                    insertionIndex = index,
+                    historySize = completedMessages.size,
+                )
                 val requestContent = buildRequestContent(
                     message = message,
                     imagePayloadResolver = imagePayloadResolver,
                     filePromptResolver = filePromptResolver,
-                ) ?: return@forEach
+                ) ?: return@forEachIndexed
                 add(
                     ChatMessageDto(
                         role = if (message.role == MessageRole.USER) "user" else "assistant",
@@ -77,6 +83,11 @@ internal object GatewayRequestMessageBuilder {
                     ),
                 )
             }
+            addHistoryInjectionsForIndex(
+                historyInjections = promptEnvelope.historyInjections,
+                insertionIndex = completedMessages.size,
+                historySize = completedMessages.size,
+            )
             promptEnvelope.postHistoryMessages
                 .mapNotNull(PromptEnvelopeMessage::normalized)
                 .forEach { promptMessage ->
@@ -90,11 +101,44 @@ internal object GatewayRequestMessageBuilder {
         }
     }
 
+    private fun MutableList<ChatMessageDto>.addHistoryInjectionsForIndex(
+        historyInjections: List<PromptHistoryInjection>,
+        insertionIndex: Int,
+        historySize: Int,
+    ) {
+        historyInjections
+            .mapNotNull(PromptHistoryInjection::normalized)
+            .filter { injection ->
+                insertionIndex == (historySize - injection.depth).coerceIn(0, historySize)
+            }
+            .sortedWith(
+                compareByDescending<PromptHistoryInjection> { it.order }
+                    .thenBy { it.role.toRequestPriority() }
+                    .thenBy { it.sourceTitle.lowercase() },
+            )
+            .forEach { injection ->
+                add(
+                    ChatMessageDto(
+                        role = injection.role.toRequestRole(),
+                        content = injection.content,
+                    ),
+                )
+            }
+    }
+
     private fun PresetPromptRole.toRequestRole(): String {
         return when (this) {
             PresetPromptRole.SYSTEM -> "system"
             PresetPromptRole.USER -> "user"
             PresetPromptRole.ASSISTANT -> "assistant"
+        }
+    }
+
+    private fun PresetPromptRole.toRequestPriority(): Int {
+        return when (this) {
+            PresetPromptRole.SYSTEM -> 0
+            PresetPromptRole.USER -> 1
+            PresetPromptRole.ASSISTANT -> 2
         }
     }
 

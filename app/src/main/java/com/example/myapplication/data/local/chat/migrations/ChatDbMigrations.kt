@@ -721,6 +721,7 @@ internal object ChatDbMigrations {
                     stopSequencesJson TEXT NOT NULL,
                     entriesJson TEXT NOT NULL DEFAULT '[]',
                     renderConfigJson TEXT NOT NULL DEFAULT '{}',
+                    compatMetadataJson TEXT NOT NULL DEFAULT '{}',
                     version INTEGER NOT NULL,
                     builtIn INTEGER NOT NULL,
                     userModified INTEGER NOT NULL,
@@ -849,6 +850,14 @@ internal object ChatDbMigrations {
         }
     }
 
+    val MIGRATION_40_41 = object : Migration(40, 41) {
+        override fun migrate(db: SupportSQLiteDatabase) {
+            if (!hasColumn(db, "presets", "compatMetadataJson")) {
+                db.execSQL("ALTER TABLE presets ADD COLUMN compatMetadataJson TEXT NOT NULL DEFAULT '{}'")
+            }
+        }
+    }
+
     /** 版本连续性由 `ChatDatabaseMigrationRegistryTest` 保证：`size == CURRENT_VERSION - 1`。 */
     val ALL: Array<Migration> = arrayOf(
         MIGRATION_1_2,
@@ -890,6 +899,7 @@ internal object ChatDbMigrations {
         MIGRATION_37_38,
         MIGRATION_38_39,
         MIGRATION_39_40,
+        MIGRATION_40_41,
     )
 
     /** 幂等列检查。子迁移在 `ALTER TABLE ADD COLUMN` 之前先探测，允许中间版本重复升级。 */

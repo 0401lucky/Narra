@@ -12,6 +12,7 @@ import com.example.myapplication.data.repository.context.MemoryRepository
 import com.example.myapplication.data.repository.context.PresetRepository
 import com.example.myapplication.data.repository.context.TavernCharacterAdapter
 import com.example.myapplication.data.repository.context.TavernCharacterImageAdapter
+import com.example.myapplication.data.repository.context.TavernPresetAdapter
 import com.example.myapplication.data.repository.context.TavernWorldBookAdapter
 import com.example.myapplication.data.repository.context.WorldBookRepository
 import com.example.myapplication.model.Assistant
@@ -91,6 +92,7 @@ class ContextTransferViewModel(
     private val tavernCharacterAdapter: TavernCharacterAdapter = TavernCharacterAdapter(),
     private val tavernCharacterImageAdapter: TavernCharacterImageAdapter = TavernCharacterImageAdapter(),
     private val tavernWorldBookAdapter: TavernWorldBookAdapter = TavernWorldBookAdapter(),
+    private val tavernPresetAdapter: TavernPresetAdapter = TavernPresetAdapter(),
     private val importedAssistantAvatarSaver: suspend (AssistantAvatarImport) -> String? = { null },
     private val dataImportTransaction: suspend (suspend () -> Unit) -> Unit = { block -> block() },
 ) : ViewModel() {
@@ -436,6 +438,16 @@ class ContextTransferViewModel(
                 return decodedBundle
             }
 
+            tavernPresetAdapter.decodeAsBundle(
+                rawJson = rawJson,
+                fileName = payload.fileName,
+            )?.let { bundle ->
+                return DecodedImportBundle(
+                    sourceType = ImportSourceType.TAVERN_PRESET,
+                    bundle = bundle,
+                )
+            }
+
             tavernWorldBookAdapter.decodeAsBundle(
                 rawJson = rawJson,
                 fileName = payload.fileName,
@@ -673,6 +685,10 @@ private enum class ImportSourceType(
     ),
     TAVERN_WORLD_BOOK(
         sourceLabel = "独立世界书",
+        includesAssistantScopedWorldBooks = false,
+    ),
+    TAVERN_PRESET(
+        sourceLabel = "SillyTavern 预设",
         includesAssistantScopedWorldBooks = false,
     ),
 }

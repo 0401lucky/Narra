@@ -22,6 +22,7 @@ data class PresetEntity(
     val stopSequencesJson: String,
     val entriesJson: String,
     val renderConfigJson: String,
+    val compatMetadataJson: String,
     val version: Int,
     val builtIn: Boolean,
     val userModified: Boolean,

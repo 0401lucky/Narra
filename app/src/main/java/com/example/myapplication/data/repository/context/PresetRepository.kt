@@ -4,6 +4,7 @@ import com.example.myapplication.data.local.preset.PresetDao
 import com.example.myapplication.data.local.preset.PresetEntity
 import com.example.myapplication.model.BUILTIN_PRESETS
 import com.example.myapplication.model.Preset
+import com.example.myapplication.model.PresetCompatMetadata
 import com.example.myapplication.model.PresetInstructConfig
 import com.example.myapplication.model.PresetPromptEntry
 import com.example.myapplication.model.PresetRenderConfig
@@ -118,6 +119,7 @@ class RoomPresetRepository(
             stopSequences = decodeStringList(entity.stopSequencesJson),
             entries = decodeEntries(entity.entriesJson),
             renderConfig = decodeRenderConfig(entity.renderConfigJson),
+            compatMetadata = decodeCompatMetadata(entity.compatMetadataJson),
             version = entity.version,
             builtIn = entity.builtIn,
             userModified = entity.userModified,
@@ -139,6 +141,7 @@ class RoomPresetRepository(
             stopSequencesJson = AppJson.gson.toJson(normalized.stopSequences),
             entriesJson = AppJson.gson.toJson(normalized.entries),
             renderConfigJson = AppJson.gson.toJson(normalized.renderConfig),
+            compatMetadataJson = AppJson.gson.toJson(normalized.compatMetadata.normalized()),
             version = normalized.version,
             builtIn = normalized.builtIn,
             userModified = normalized.userModified,
@@ -192,6 +195,15 @@ class RoomPresetRepository(
         return runCatching {
             AppJson.gson.fromJson(rawJson, PresetRenderConfig::class.java)
         }.getOrNull()?.normalized() ?: PresetRenderConfig()
+    }
+
+    private fun decodeCompatMetadata(rawJson: String): PresetCompatMetadata {
+        if (rawJson.isBlank()) {
+            return PresetCompatMetadata()
+        }
+        return runCatching {
+            AppJson.gson.fromJson(rawJson, PresetCompatMetadata::class.java)
+        }.getOrNull()?.normalized() ?: PresetCompatMetadata()
     }
 
     private companion object {

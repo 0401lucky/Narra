@@ -171,6 +171,14 @@ internal fun NavGraphBuilder.registerSettingsNavGraph(
                         }
                     }
                 },
+                onImportPreset = { preset ->
+                    coroutineScope.launch {
+                        appGraph.presetRepository.upsertPreset(preset)
+                        navController.navigate(AppRoutes.settingsPresetEdit(preset.id)) {
+                            launchSingleTop = true
+                        }
+                    }
+                },
                 onDeletePreset = { presetId ->
                     coroutineScope.launch {
                         appGraph.presetRepository.deleteCustomPreset(presetId)

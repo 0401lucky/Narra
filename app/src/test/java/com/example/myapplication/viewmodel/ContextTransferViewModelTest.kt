@@ -322,6 +322,57 @@ class ContextTransferViewModelTest {
     }
 
     @Test
+    fun previewImportJson_presetsSectionSupportsSillyTavernPreset() = runTest(mainDispatcherRule.dispatcher.scheduler) {
+        val services = createTestAiServices(
+            settings = AppSettings(),
+            dispatcher = mainDispatcherRule.dispatcher,
+        )
+        val targetRepository = FakePresetRepository()
+        val viewModel = createContextTransferViewModel(
+            services = services,
+            worldBookRepository = FakeWorldBookRepository(),
+            memoryRepository = FakeMemoryRepository(),
+            conversationSummaryRepository = FakeConversationSummaryRepository(),
+            presetRepository = targetRepository,
+        )
+        val rawJson = """
+            {
+              "name": "酒馆预设",
+              "temperature": 0.8,
+              "prompts": [
+                { "identifier": "main", "name": "Main Prompt", "role": "system", "content": "Act as {{char}}.", "system_prompt": true },
+                { "identifier": "chatHistory", "name": "Chat History", "marker": true },
+                { "identifier": "jailbreak", "name": "Post-History Instructions", "role": "system", "content": "Stay immersive.", "system_prompt": true }
+              ],
+              "prompt_order": [
+                {
+                  "character_id": 100000,
+                  "order": [
+                    { "identifier": "main", "enabled": true },
+                    { "identifier": "chatHistory", "enabled": true },
+                    { "identifier": "jailbreak", "enabled": true }
+                  ]
+                }
+              ]
+            }
+        """.trimIndent()
+
+        viewModel.previewImportJson(rawJson, ContextTransferSection.PRESETS)
+        advanceUntilIdle()
+        assertEquals(1, viewModel.uiState.value.importPreview?.presetCount)
+
+        viewModel.confirmImport()
+        advanceUntilIdle()
+
+        val imported = targetRepository.currentPresets().single()
+        assertEquals("酒馆预设", imported.name)
+        assertEquals(0.8f, imported.sampler.temperature ?: 0f, 0.0001f)
+        assertEquals(listOf("main", "chatHistory", "jailbreak"), imported.entries.map { it.sourceIdentifier })
+        assertTrue(imported.userModified)
+        assertEquals(false, imported.builtIn)
+    }
+
+    @Test
     fun previewImportJson_detectsConflictAndSupportsTavernSource() = runTest(mainDispatcherRule.dispatcher.scheduler) {
         val services = createTestAiServices(
             settings = AppSettings(

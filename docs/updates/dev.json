@@ -1,15 +1,16 @@
 {
   "app_id": "com.narra.app.dev",
   "channel": "dev",
-  "latest_version_name": "1.7.4-dev",
-  "latest_version_code": 10704,
+  "latest_version_name": "1.7.5-dev",
+  "latest_version_code": 10705,
   "minimum_supported_version_code": 0,
-  "apk_url": "https://download.lsa1230.dpdns.org/dev/Narra-v1.7.4-dev-10704-dev.apk?v=10704",
-  "apk_sha256": "260e364798361b485c7ea06d487098e9f6e2e1ce4fdd4505f3c571ae848963cf",
-  "published_at": "2026-05-04T15:10:54+08:00",
+  "apk_url": "https://download.lsa1230.dpdns.org/dev/Narra-v1.7.5-dev-10705-dev.apk?v=10705",
+  "apk_sha256": "d316ef7e1cce9c001703c13bfb75dafdaa1775fe4dce225639ba8bbee5a5e218",
+  "published_at": "2026-05-09T15:35:05+08:00",
   "release_notes": [
-    "修复线下-心声和旁白渲染中变量更新协议被当正文显示的问题",
-    "修复沉浸式聊天同源片段 key 重复导致的闪退",
-    "过滤线上流式 fallback 中的 JSONPatch、op、delta、path 等控制残片"
+    "新增 SillyTavern Chat Completion 预设 JSON 导入预览和导出能力",
+    "资料库预设包导入支持自动识别 SillyTavern Chat Completion 预设",
+    "支持酒馆绝对注入条目按深度插入聊天历史，并保留未知兼容字段",
+    "修复线上多行 status 状态栏可能被提前拆段的问题"
   ]
 }

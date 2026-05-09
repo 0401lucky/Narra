@@ -4,6 +4,7 @@ import com.example.myapplication.model.ContextLogSourceType
 import com.example.myapplication.model.Preset
 import com.example.myapplication.model.PresetPromptEntry
 import com.example.myapplication.model.PresetPromptEntryKind
+import com.example.myapplication.model.PresetPromptInjectionPosition
 import com.example.myapplication.model.PresetPromptRole
 import com.example.myapplication.model.PresetSamplerConfig
 import org.junit.Assert.assertEquals
@@ -218,5 +219,65 @@ class PresetPromptRendererTest {
         val insertionPoint = rendered.contextSections.first { it.title.contains("插入点") }
         assertEquals(ContextLogSourceType.PROMPT_PRESET, insertionPoint.sourceType)
         assertEquals(0, insertionPoint.tokenEstimate)
+    }
+
+    @Test
+    fun render_absoluteEntriesBecomeHistoryInjectionsAndRespectOrdering() {
+        val preset = Preset(
+            id = "preset-absolute",
+            name = "测试预设",
+            entries = listOf(
+                PresetPromptEntry(
+                    id = "history",
+                    title = "Chat History",
+                    kind = PresetPromptEntryKind.CHAT_HISTORY,
+                    order = 0,
+                ),
+                PresetPromptEntry(
+                    id = "low",
+                    title = "低优先级",
+                    role = PresetPromptRole.ASSISTANT,
+                    content = "较低优先级",
+                    injectionPosition = PresetPromptInjectionPosition.ABSOLUTE,
+                    injectionDepth = 1,
+                    injectionOrder = 10,
+                    order = 10,
+                ),
+                PresetPromptEntry(
+                    id = "high",
+                    title = "高优先级",
+                    role = PresetPromptRole.SYSTEM,
+                    content = "较高优先级",
+                    injectionPosition = PresetPromptInjectionPosition.ABSOLUTE,
+                    injectionDepth = 1,
+                    injectionOrder = 200,
+                    order = 20,
+                ),
+                PresetPromptEntry(
+                    id = "continue-only",
+                    title = "续写专用",
+                    content = "普通主回复不应运行",
+                    injectionPosition = PresetPromptInjectionPosition.ABSOLUTE,
+                    injectionDepth = 0,
+                    injectionTriggers = listOf("continue"),
+                    order = 30,
+                ),
+            ),
+        )
+
+        val rendered = renderer.render(
+            PresetPromptRenderInput(
+                preset = preset,
+                userName = "用户",
+                characterName = "角色",
+                slotValues = emptyMap(),
+            ),
+        )
+
+        assertEquals(2, rendered.promptEnvelope.historyInjections.size)
+        assertEquals("较高优先级", rendered.promptEnvelope.historyInjections[0].content)
+        assertEquals(PresetPromptRole.SYSTEM, rendered.promptEnvelope.historyInjections[0].role)
+        assertEquals("较低优先级", rendered.promptEnvelope.historyInjections[1].content)
+        assertFalse(rendered.contextSections.any { it.content.contains("普通主回复不应运行") })
     }
 }

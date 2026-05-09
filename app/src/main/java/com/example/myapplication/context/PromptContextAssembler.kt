@@ -263,6 +263,7 @@ class DefaultPromptContextAssembler(
                         "summary" to listOfNotNull(summarySection, summarySegmentsSection)
                             .joinToString(separator = "\n\n"),
                         "world_info" to worldBookSections.joinToString(separator = "\n\n"),
+                        "world_info_after" to "",
                         "long_memory" to memorySection.orEmpty(),
                         "phone_context" to phoneContextSection.orEmpty(),
                         "context" to legacySystemPrompt,

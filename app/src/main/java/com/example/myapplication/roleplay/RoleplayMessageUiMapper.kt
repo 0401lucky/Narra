@@ -850,6 +850,11 @@ object RoleplayMessageUiMapper {
             return normalizedParts
         }
         if (normalizedParts.size == 1 && normalizedParts.single().text.isNotBlank()) {
+            if (ChatStatusBlockParser.extract(normalizedParts.single().text, hideStatusBlocksInBubble = true)
+                    .any { it.type == ChatMessagePartType.STATUS }
+            ) {
+                return normalizedParts
+            }
             OnlineInlineThoughtFallback.splitToParts(normalizedParts.single().text)?.let { fallbackParts ->
                 return normalizeChatMessageParts(fallbackParts)
             }
@@ -858,6 +863,11 @@ object RoleplayMessageUiMapper {
             }
         }
         if (normalizedParts.isEmpty()) {
+            if (ChatStatusBlockParser.extract(message.content, hideStatusBlocksInBubble = true)
+                    .any { it.type == ChatMessagePartType.STATUS }
+            ) {
+                return normalizedParts
+            }
             OnlineInlineThoughtFallback.splitToParts(message.content)?.let { fallbackParts ->
                 return normalizeChatMessageParts(fallbackParts)
             }

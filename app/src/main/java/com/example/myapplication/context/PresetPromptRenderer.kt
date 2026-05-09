@@ -5,7 +5,9 @@ import com.example.myapplication.model.ContextLogSourceType
 import com.example.myapplication.model.Preset
 import com.example.myapplication.model.PresetPromptEntry
 import com.example.myapplication.model.PresetPromptEntryKind
+import com.example.myapplication.model.PresetPromptInjectionPosition
 import com.example.myapplication.model.PresetPromptRole
+import com.example.myapplication.model.PromptHistoryInjection
 import com.example.myapplication.model.PromptEnvelope
 import com.example.myapplication.model.PromptEnvelopeMessage
 
@@ -14,6 +16,7 @@ data class PresetPromptRenderInput(
     val userName: String,
     val characterName: String,
     val slotValues: Map<String, String>,
+    val generationTrigger: String = "normal",
 )
 
 data class RenderedPresetPrompt(
@@ -28,6 +31,7 @@ class PresetPromptRenderer {
         val beforeSystemBlocks = mutableListOf<String>()
         val preHistoryMessages = mutableListOf<PromptEnvelopeMessage>()
         val postHistoryMessages = mutableListOf<PromptEnvelopeMessage>()
+        val historyInjections = mutableListOf<PromptHistoryInjection>()
         val contextSections = mutableListOf<ContextLogSection>()
         var reachedChatHistory = false
 
@@ -35,6 +39,29 @@ class PresetPromptRenderer {
             .filter(PresetPromptEntry::enabled)
             .sortedWith(compareBy<PresetPromptEntry> { it.order }.thenBy { it.title.lowercase() })
             .forEach { entry ->
+                if (entry.injectionPosition == PresetPromptInjectionPosition.ABSOLUTE) {
+                    if (!entry.shouldRunForTrigger(input.generationTrigger)) {
+                        return@forEach
+                    }
+                    val renderedContent = renderEntryContent(entry, input)
+                    if (renderedContent.isBlank()) {
+                        return@forEach
+                    }
+                    contextSections += ContextLogSection(
+                        sourceType = entry.sourceType(),
+                        title = "${entry.title} · 历史内插入",
+                        content = renderedContent,
+                    )
+                    historyInjections += PromptHistoryInjection(
+                        role = entry.role,
+                        content = renderedContent,
+                        depth = entry.injectionDepth ?: DEFAULT_ABSOLUTE_INJECTION_DEPTH,
+                        order = entry.injectionOrder ?: DEFAULT_ABSOLUTE_INJECTION_ORDER,
+                        sourceTitle = entry.title,
+                    )
+                    return@forEach
+                }
+
                 if (entry.kind == PresetPromptEntryKind.CHAT_HISTORY) {
                     reachedChatHistory = true
                     contextSections += ContextLogSection(
@@ -71,6 +98,14 @@ class PresetPromptRenderer {
             promptEnvelope = PromptEnvelope(
                 preHistoryMessages = preHistoryMessages,
                 postHistoryMessages = postHistoryMessages,
+                historyInjections = historyInjections
+                    .mapNotNull(PromptHistoryInjection::normalized)
+                    .sortedWith(
+                        compareBy<PromptHistoryInjection> { it.depth }
+                            .thenByDescending { it.order }
+                            .thenBy { it.role.requestPriority() }
+                            .thenBy { it.sourceTitle.lowercase() },
+                    ),
                 sampler = preset.sampler,
                 stopSequences = preset.stopSequences,
                 statusCardsEnabled = preset.renderConfig.statusCardsEnabled,
@@ -98,6 +133,7 @@ class PresetPromptRenderer {
     private fun PresetPromptEntryKind.defaultSlotKey(): String {
         return when (this) {
             PresetPromptEntryKind.MAIN_PROMPT -> "main_prompt"
+            PresetPromptEntryKind.NSFW_PROMPT -> "nsfw_prompt"
             PresetPromptEntryKind.CONTEXT_TEMPLATE -> "context"
             PresetPromptEntryKind.CHARACTER_DESCRIPTION -> "description"
             PresetPromptEntryKind.CHARACTER_PROMPT -> "char_prompt"
@@ -105,6 +141,7 @@ class PresetPromptRenderer {
             PresetPromptEntryKind.SCENARIO -> "scenario"
             PresetPromptEntryKind.EXAMPLE_DIALOGUE -> "example_dialogue"
             PresetPromptEntryKind.WORLD_INFO_BEFORE -> "world_info"
+            PresetPromptEntryKind.WORLD_INFO_AFTER -> "world_info_after"
             PresetPromptEntryKind.LONG_MEMORY -> "long_memory"
             PresetPromptEntryKind.SUMMARY -> "summary"
             PresetPromptEntryKind.PHONE_CONTEXT -> "phone_context"
@@ -126,10 +163,12 @@ class PresetPromptRenderer {
             PresetPromptEntryKind.EXAMPLE_DIALOGUE,
             -> ContextLogSourceType.ROLE_EXTRAS
             PresetPromptEntryKind.WORLD_INFO_BEFORE -> ContextLogSourceType.WORLD_BOOK
+            PresetPromptEntryKind.WORLD_INFO_AFTER -> ContextLogSourceType.WORLD_BOOK
             PresetPromptEntryKind.LONG_MEMORY -> ContextLogSourceType.LONG_MEMORY
             PresetPromptEntryKind.SUMMARY -> ContextLogSourceType.SUMMARY
             PresetPromptEntryKind.PHONE_CONTEXT -> ContextLogSourceType.PHONE_CONTEXT
             PresetPromptEntryKind.MAIN_PROMPT,
+            PresetPromptEntryKind.NSFW_PROMPT,
             PresetPromptEntryKind.CONTEXT_TEMPLATE,
             PresetPromptEntryKind.POST_HISTORY,
             PresetPromptEntryKind.STATUS_RULES,
@@ -137,5 +176,29 @@ class PresetPromptRenderer {
             PresetPromptEntryKind.CUSTOM,
             -> ContextLogSourceType.PROMPT_PRESET
         }
+    }
+
+    private fun PresetPromptEntry.shouldRunForTrigger(generationTrigger: String): Boolean {
+        val triggers = injectionTriggers.map { it.trim().lowercase() }.filter { it.isNotBlank() }
+        if (triggers.isEmpty()) {
+            return true
+        }
+        val normalizedTrigger = generationTrigger.trim().lowercase().ifBlank { "normal" }
+        return normalizedTrigger in triggers ||
+            (normalizedTrigger == "normal" && triggers.any { it in NORMAL_TRIGGER_ALIASES })
+    }
+
+    private fun PresetPromptRole.requestPriority(): Int {
+        return when (this) {
+            PresetPromptRole.SYSTEM -> 0
+            PresetPromptRole.USER -> 1
+            PresetPromptRole.ASSISTANT -> 2
+        }
+    }
+
+    private companion object {
+        private const val DEFAULT_ABSOLUTE_INJECTION_DEPTH = 4
+        private const val DEFAULT_ABSOLUTE_INJECTION_ORDER = 100
+        private val NORMAL_TRIGGER_ALIASES = setOf("normal", "chat", "main")
     }
 }

@@ -1,5 +1,9 @@
 package com.example.myapplication.ui.screen.settings
 
+import android.content.Context
+import android.net.Uri
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -23,11 +27,13 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.ContentCopy
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Download
 import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.KeyboardArrowUp
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Tune
+import androidx.compose.material.icons.filled.Upload
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -41,23 +47,32 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import com.example.myapplication.data.repository.context.TavernPresetAdapter
 import com.example.myapplication.model.DEFAULT_PRESET_ID
 import com.example.myapplication.model.Preset
 import com.example.myapplication.model.PresetPromptEntry
 import com.example.myapplication.model.PresetPromptEntryKind
+import com.example.myapplication.model.PresetPromptInjectionPosition
 import com.example.myapplication.model.PresetPromptRole
 import com.example.myapplication.ui.component.NarraFilledTonalButton
 import com.example.myapplication.ui.component.NarraIconButton
 import com.example.myapplication.ui.component.NarraOutlinedButton
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import java.io.ByteArrayOutputStream
+import java.io.InputStream
 import java.util.UUID
 
 @Composable
@@ -67,12 +82,19 @@ fun PresetListScreen(
     onOpenPreset: (String) -> Unit,
     onSetDefault: (String) -> Unit,
     onCopyPreset: (Preset) -> Unit,
+    onImportPreset: (Preset) -> Unit,
     onDeletePreset: (String) -> Unit,
     onNavigateBack: () -> Unit,
 ) {
+    val context = LocalContext.current
+    val scope = rememberCoroutineScope()
     val palette = rememberSettingsPalette()
+    val tavernPresetAdapter = remember { TavernPresetAdapter() }
     var searchQuery by rememberSaveable { mutableStateOf("") }
     var pendingDelete by remember { mutableStateOf<Preset?>(null) }
+    var pendingImportPreset by remember { mutableStateOf<Preset?>(null) }
+    var importError by remember { mutableStateOf<String?>(null) }
+    var pendingExportPreset by remember { mutableStateOf<Preset?>(null) }
     val normalizedPresets = remember(presets) {
         presets.map(Preset::normalized).sortedWith(compareBy<Preset> { !it.builtIn }.thenBy { it.name })
     }
@@ -81,6 +103,43 @@ fun PresetListScreen(
         query.isBlank() ||
             preset.name.contains(query, ignoreCase = true) ||
             preset.description.contains(query, ignoreCase = true)
+    }
+    val importLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.OpenDocument(),
+    ) { uri ->
+        if (uri == null) return@rememberLauncherForActivityResult
+        scope.launch {
+            runCatching {
+                val rawJson = readTextFromUri(context, uri)
+                tavernPresetAdapter.decodeAsBundle(
+                    rawJson = rawJson,
+                    fileName = resolveDisplayName(context, uri),
+                )?.presets?.singleOrNull()
+                    ?: error("未识别到 SillyTavern Chat 预设")
+            }.onSuccess { preset ->
+                pendingImportPreset = preset
+            }.onFailure { throwable ->
+                importError = throwable.message ?: "导入失败"
+            }
+        }
+    }
+    val exportLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.CreateDocument("application/json"),
+    ) { uri ->
+        val preset = pendingExportPreset
+        pendingExportPreset = null
+        if (uri == null || preset == null) return@rememberLauncherForActivityResult
+        scope.launch {
+            runCatching {
+                writeTextToUri(
+                    context = context,
+                    uri = uri,
+                    text = tavernPresetAdapter.encodePreset(preset),
+                )
+            }.onFailure { throwable ->
+                importError = throwable.message ?: "导出失败"
+            }
+        }
     }
 
     Scaffold(
@@ -112,6 +171,22 @@ fun PresetListScreen(
                 )
             }
             item {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(10.dp),
+                ) {
+                    NarraOutlinedButton(
+                        onClick = { importLauncher.launch(PRESET_IMPORT_MIME_TYPES) },
+                        modifier = Modifier.weight(1f),
+                        shape = RoundedCornerShape(18.dp),
+                    ) {
+                        Icon(Icons.Default.Upload, contentDescription = null, modifier = Modifier.size(17.dp))
+                        Spacer(Modifier.width(8.dp))
+                        Text("导入酒馆 JSON")
+                    }
+                }
+            }
+            item {
                 OutlinedTextField(
                     value = searchQuery,
                     onValueChange = { searchQuery = it },
@@ -136,6 +211,10 @@ fun PresetListScreen(
                                 onOpen = { onOpenPreset(preset.id) },
                                 onSetDefault = { onSetDefault(preset.id) },
                                 onCopy = { onCopyPreset(preset) },
+                                onExport = {
+                                    pendingExportPreset = preset
+                                    exportLauncher.launch(buildTavernPresetExportFileName(preset))
+                                },
                                 onDelete = {
                                     if (!preset.builtIn) {
                                         pendingDelete = preset
@@ -174,6 +253,42 @@ fun PresetListScreen(
             text = { Text("将删除「${preset.name}」。内置预设不会受影响。") },
         )
     }
+
+    pendingImportPreset?.let { preset ->
+        AlertDialog(
+            onDismissRequest = { pendingImportPreset = null },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        onImportPreset(preset)
+                        pendingImportPreset = null
+                    },
+                ) {
+                    Text("确认导入")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { pendingImportPreset = null }) {
+                    Text("取消")
+                }
+            },
+            title = { Text("导入酒馆预设") },
+            text = { Text(buildTavernPresetPreviewText(preset)) },
+        )
+    }
+
+    importError?.let { message ->
+        AlertDialog(
+            onDismissRequest = { importError = null },
+            confirmButton = {
+                TextButton(onClick = { importError = null }) {
+                    Text("知道了")
+                }
+            },
+            title = { Text("预设导入导出") },
+            text = { Text(message) },
+        )
+    }
 }
 
 @Composable
@@ -183,6 +298,7 @@ private fun PresetListRow(
     onOpen: () -> Unit,
     onSetDefault: () -> Unit,
     onCopy: () -> Unit,
+    onExport: () -> Unit,
     onDelete: () -> Unit,
 ) {
     val palette = rememberSettingsPalette()
@@ -219,6 +335,9 @@ private fun PresetListRow(
                 }
                 NarraIconButton(onClick = onCopy, modifier = Modifier.size(34.dp)) {
                     Icon(Icons.Default.ContentCopy, contentDescription = "复制预设", modifier = Modifier.size(17.dp))
+                }
+                NarraIconButton(onClick = onExport, modifier = Modifier.size(34.dp)) {
+                    Icon(Icons.Default.Download, contentDescription = "导出酒馆 JSON", modifier = Modifier.size(17.dp))
                 }
                 if (!preset.builtIn) {
                     NarraIconButton(onClick = onDelete, modifier = Modifier.size(34.dp)) {
@@ -537,6 +656,16 @@ private fun PresetEntryCard(
                         style = MaterialTheme.typography.labelSmall,
                         color = palette.body,
                     )
+                    val compatLine = buildPresetEntryCompatLine(entry)
+                    if (compatLine.isNotBlank()) {
+                        Text(
+                            text = compatLine,
+                            style = MaterialTheme.typography.labelSmall,
+                            color = palette.body.copy(alpha = 0.76f),
+                            maxLines = 2,
+                            overflow = TextOverflow.Ellipsis,
+                        )
+                    }
                 }
                 Switch(
                     checked = entry.enabled,
@@ -679,6 +808,7 @@ internal fun copyPresetForUser(source: Preset): Preset {
             )
         },
         renderConfig = normalizedSource.renderConfig,
+        compatMetadata = normalizedSource.compatMetadata,
     )
 }
 
@@ -698,3 +828,129 @@ private fun moveEntry(
         entry.copy(order = newIndex * 10)
     }
 }
+
+private fun buildPresetEntryCompatLine(entry: PresetPromptEntry): String {
+    val parts = buildList {
+        entry.sourceIdentifier.takeIf { it.isNotBlank() }?.let { add("来源 $it") }
+        if (entry.marker) add("动态槽位")
+        if (entry.injectionPosition == PresetPromptInjectionPosition.ABSOLUTE) {
+            add("历史深度 ${entry.injectionDepth ?: 4}")
+            add("优先级 ${entry.injectionOrder ?: 100}")
+        }
+        if (entry.injectionTriggers.isNotEmpty()) {
+            add("触发 ${entry.injectionTriggers.joinToString("/")}")
+        }
+    }
+    return parts.joinToString(" · ")
+}
+
+private fun buildTavernPresetPreviewText(preset: Preset): String {
+    val normalized = preset.normalized()
+    val absoluteCount = normalized.entries.count {
+        it.injectionPosition == PresetPromptInjectionPosition.ABSOLUTE
+    }
+    val unsupportedTriggerCount = normalized.entries.count { it.injectionTriggers.isNotEmpty() }
+    val preservedFieldCount = normalized.entries.count { it.extrasJson.trim() != "{}" } +
+        if (normalized.compatMetadata.rootExtrasJson.trim() == "{}") 0 else 1
+    return buildString {
+        append("名称：")
+        append(normalized.name.ifBlank { "未命名预设" })
+        append("\n条目：")
+        append(normalized.entries.size)
+        append(" 个")
+        append("\n采样：")
+        append(buildSamplerSummary(normalized.sampler))
+        append("\n历史内插入：")
+        append(absoluteCount)
+        append(" 个")
+        if (unsupportedTriggerCount > 0) {
+            append("\n触发类型：保留 ")
+            append(unsupportedTriggerCount)
+            append(" 个；首版只在普通主回复运行。")
+        }
+        if (preservedFieldCount > 0) {
+            append("\n兼容字段：已保留 ")
+            append(preservedFieldCount)
+            append(" 处未知字段，导出时会尽量还原。")
+        }
+    }
+}
+
+private fun buildSamplerSummary(sampler: com.example.myapplication.model.PresetSamplerConfig): String {
+    val parts = buildList {
+        sampler.temperature?.let { add("temp=$it") }
+        sampler.topP?.let { add("top_p=$it") }
+        sampler.topK?.let { add("top_k=$it") }
+        sampler.minP?.let { add("min_p=$it") }
+        sampler.repetitionPenalty?.let { add("rep=$it") }
+        sampler.frequencyPenalty?.let { add("freq=$it") }
+        sampler.presencePenalty?.let { add("pres=$it") }
+        sampler.maxOutputTokens?.let { add("max=$it") }
+    }
+    return parts.ifEmpty { listOf("沿用模型默认") }.joinToString(" · ")
+}
+
+private fun buildTavernPresetExportFileName(preset: Preset): String {
+    val safeName = preset.name
+        .ifBlank { "narra-preset" }
+        .replace(Regex("""[\\/:*?"<>|]+"""), "-")
+        .take(48)
+        .ifBlank { "narra-preset" }
+    return "$safeName.sillytavern.json"
+}
+
+private suspend fun readTextFromUri(
+    context: Context,
+    uri: Uri,
+    maxBytes: Long = 4L * 1024L * 1024L,
+): String = withContext(Dispatchers.IO) {
+    context.contentResolver.openInputStream(uri)?.use { input ->
+        readTextWithLimit(input, maxBytes)
+    } ?: error("无法读取导入文件")
+}
+
+private suspend fun writeTextToUri(
+    context: Context,
+    uri: Uri,
+    text: String,
+) = withContext(Dispatchers.IO) {
+    context.contentResolver.openOutputStream(uri)?.use { output ->
+        output.write(text.toByteArray(Charsets.UTF_8))
+    } ?: error("无法写入导出文件")
+}
+
+private fun readTextWithLimit(
+    input: InputStream,
+    maxBytes: Long,
+): String {
+    val buffer = ByteArray(DEFAULT_BUFFER_SIZE)
+    val output = ByteArrayOutputStream()
+    var total = 0L
+    while (true) {
+        val read = input.read(buffer)
+        if (read == -1) break
+        total += read
+        if (total > maxBytes) {
+            throw IllegalArgumentException("导入文件过大，请选择不超过 ${maxBytes / 1024 / 1024}MB 的文件")
+        }
+        output.write(buffer, 0, read)
+    }
+    return output.toString(Charsets.UTF_8.name())
+}
+
+private fun resolveDisplayName(
+    context: Context,
+    uri: Uri,
+): String {
+    return uri.lastPathSegment
+        ?.substringAfterLast('/')
+        ?.takeIf { it.isNotBlank() }
+        ?: "import.json"
+}
+
+private val PRESET_IMPORT_MIME_TYPES = arrayOf(
+    "application/json",
+    "text/json",
+    "text/plain",
+    "*/*",
+)
