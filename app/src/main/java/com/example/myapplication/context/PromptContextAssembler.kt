@@ -23,6 +23,8 @@ import com.example.myapplication.model.DEFAULT_PRESET_ID
 import com.example.myapplication.model.MemoryEntry
 import com.example.myapplication.model.MemoryInjectionPosition
 import com.example.myapplication.model.MemoryPromptDefaults
+import com.example.myapplication.model.Preset
+import com.example.myapplication.model.PresetPromptEntryKind
 import com.example.myapplication.model.PhoneSnapshotOwnerType
 import com.example.myapplication.model.PromptEnvelope
 import com.example.myapplication.model.PromptMode
@@ -192,6 +194,8 @@ class DefaultPromptContextAssembler(
             summarySegments = recentSummarySegments,
             promptMode = promptMode,
         )
+        val summarySlotValue = listOfNotNull(summarySection, summarySegmentsSection)
+            .joinToString(separator = "\n\n")
         val worldBookSections = formatWorldBookSections(matchedWorldBookEntries)
         val phoneSnapshotSection = formatPhoneSnapshotSection(phoneSnapshotItems)
         val phoneObservationSection = formatPhoneObservationSection(phoneObservation.takeIf { shouldIncludePhoneObservation })
@@ -260,8 +264,7 @@ class DefaultPromptContextAssembler(
                         "persona" to userPersonaSection.orEmpty(),
                         "scenario" to scenarioSection.orEmpty(),
                         "example_dialogue" to exampleDialoguesSection.orEmpty(),
-                        "summary" to listOfNotNull(summarySection, summarySegmentsSection)
-                            .joinToString(separator = "\n\n"),
+                        "summary" to summarySlotValue,
                         "world_info" to worldBookSections.joinToString(separator = "\n\n"),
                         "world_info_after" to "",
                         "long_memory" to memorySection.orEmpty(),
@@ -273,13 +276,31 @@ class DefaultPromptContextAssembler(
                 ),
             )
         }
-        val systemPrompt = renderedPreset?.systemPrompt ?: legacySystemPrompt
+        val presetSummaryFallbackSection = if (renderedPreset != null && activePreset != null &&
+            shouldAddPresetSummaryFallback(
+                preset = activePreset,
+                renderedPreset = renderedPreset,
+                summarySlotValue = summarySlotValue,
+                promptMode = promptMode,
+            )
+        ) {
+            ContextLogSection(
+                sourceType = ContextLogSourceType.SUMMARY,
+                title = if (promptMode == PromptMode.ROLEPLAY) "剧情摘要" else "对话摘要",
+                content = summarySlotValue,
+            )
+        } else {
+            null
+        }
+        val systemPrompt = renderedPreset?.systemPrompt
+            ?.let { prompt -> appendSummaryFallback(prompt, presetSummaryFallbackSection?.content.orEmpty()) }
+            ?: legacySystemPrompt
         val promptEnvelope = renderedPreset?.promptEnvelope ?: PromptEnvelope()
         val contextSections = if (renderedPreset == null) {
             baseContextSections
         } else {
             mergePresetContextSections(
-                presetSections = renderedPreset.contextSections,
+                presetSections = renderedPreset.contextSections + listOfNotNull(presetSummaryFallbackSection),
                 chatHistorySections = baseContextSections.filter { section ->
                     section.sourceType == ContextLogSourceType.CHAT_HISTORY
                 },
@@ -974,6 +995,52 @@ class DefaultPromptContextAssembler(
         }
     }
 
+    private fun shouldAddPresetSummaryFallback(
+        preset: Preset,
+        renderedPreset: RenderedPresetPrompt,
+        summarySlotValue: String,
+        promptMode: PromptMode,
+    ): Boolean {
+        val normalizedSummary = summarySlotValue.trim()
+        if (promptMode != PromptMode.ROLEPLAY || normalizedSummary.isBlank()) {
+            return false
+        }
+        val hasExplicitSummarySlot = preset.normalized().entries
+            .filter { it.enabled }
+            .any { entry ->
+                entry.kind == PresetPromptEntryKind.SUMMARY ||
+                    SUMMARY_PLACEHOLDER_REGEX.containsMatchIn(entry.content)
+            }
+        if (hasExplicitSummarySlot) {
+            return false
+        }
+        return !renderedPreset.containsRenderedContent(normalizedSummary)
+    }
+
+    private fun RenderedPresetPrompt.containsRenderedContent(content: String): Boolean {
+        val renderedTexts = buildList {
+            add(systemPrompt)
+            promptEnvelope.preHistoryMessages.forEach { add(it.content) }
+            promptEnvelope.postHistoryMessages.forEach { add(it.content) }
+            promptEnvelope.historyInjections.forEach { add(it.content) }
+            contextSections.forEach { add(it.content) }
+        }
+        return renderedTexts.any { rendered -> rendered.contains(content) }
+    }
+
+    private fun appendSummaryFallback(
+        systemPrompt: String,
+        summaryFallback: String,
+    ): String {
+        val normalizedSummary = summaryFallback.trim()
+        if (normalizedSummary.isBlank()) {
+            return systemPrompt
+        }
+        return listOf(systemPrompt.trim(), normalizedSummary)
+            .filter { it.isNotBlank() }
+            .joinToString(separator = "\n\n")
+    }
+
     private fun normalizePromptContent(content: String): String {
         return content.trim()
     }
@@ -988,8 +1055,10 @@ class DefaultPromptContextAssembler(
     }
 
     companion object {
-        private const val RECENT_SUMMARY_SEGMENT_LIMIT = 3
+        private const val RECENT_SUMMARY_SEGMENT_LIMIT = 5
         private val MEMORIES_PLACEHOLDER_REGEX =
             Regex("""\{\{\s*memories\s*\}\}""", RegexOption.IGNORE_CASE)
+        private val SUMMARY_PLACEHOLDER_REGEX =
+            Regex("""\{\{\s*summary\s*\}\}""", RegexOption.IGNORE_CASE)
     }
 }

@@ -243,6 +243,8 @@ class AiPromptExtrasServiceTest {
         val prompt = requestBody.getAsJsonArray("messages")[0].asJsonObject["content"].asString
         assertTrue(prompt.contains("【剧情进展】"))
         assertTrue(prompt.contains("【未解问题/伏笔】"))
+        assertTrue(prompt.contains("下一轮应接住的最新钩子"))
+        assertTrue(prompt.contains("下一轮不要换个说法重复"))
     }
 
     @Test

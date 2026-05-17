@@ -51,6 +51,7 @@ import com.example.myapplication.roleplay.RoleplayMessageFormatSupport
 import com.example.myapplication.roleplay.RoleplayOnlineReferenceSupport
 import com.example.myapplication.roleplay.RoleplayOutputParser
 import com.example.myapplication.roleplay.RoleplayPromptDecorator
+import com.example.myapplication.roleplay.RoleplaySummaryWindowSupport
 import kotlinx.coroutines.CancellationException
 
 internal class RoleplayRoundTripExecutor(
@@ -627,8 +628,7 @@ internal class RoleplayRoundTripExecutor(
     private fun resolveSummaryRecentWindow(
         assistant: Assistant?,
     ): Int {
-        return assistant?.contextMessageSize?.takeIf { it > 0 }
-            ?: SUMMARY_RECENT_MESSAGE_WINDOW
+        return RoleplaySummaryWindowSupport.resolveRecentWindow(assistant)
     }
 
     private suspend fun applyOnlineProtocolDirectivesIfNeeded(
@@ -708,6 +708,5 @@ internal class RoleplayRoundTripExecutor(
     private companion object {
         private const val SUMMARY_TRIGGER_MESSAGE_COUNT = 12
         private const val SUMMARY_MIN_COVERED_MESSAGE_COUNT = 4
-        private const val SUMMARY_RECENT_MESSAGE_WINDOW = 8
     }
 }

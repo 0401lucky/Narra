@@ -232,6 +232,58 @@ class ConversationSummaryCoordinatorTest {
     }
 
     @Test
+    fun updateConversationSummary_forceRefreshSummarizesShortHistory() = runBlocking {
+        val repository = FakeConversationSummaryRepository()
+        val coordinator = ConversationSummaryCoordinator(
+            aiPromptExtrasService = unusedPromptExtrasService(),
+            conversationSummaryRepository = repository,
+            nowProvider = { 567L },
+        )
+        val provider = ProviderSettings(
+            id = "provider-1",
+            name = "Provider",
+            baseUrl = "https://example.com/v1/",
+            apiKey = "key",
+            selectedModel = "chat-model",
+            titleSummaryModel = "summary-model",
+        )
+        val messages = listOf(
+            ChatMessage(id = "m1", conversationId = "conv-1", role = MessageRole.USER, content = "你还记得旧车站吗？", createdAt = 1L),
+            ChatMessage(id = "m2", conversationId = "conv-1", role = MessageRole.ASSISTANT, content = "我记得你没有走。", createdAt = 2L),
+        )
+
+        val result = coordinator.updateConversationSummary(
+            conversationId = "conv-1",
+            assistantId = "assistant-1",
+            completedMessages = messages,
+            settings = AppSettings(
+                providers = listOf(provider),
+                selectedProviderId = provider.id,
+            ),
+            config = SummaryGenerationConfig(
+                triggerMessageCount = 12,
+                recentMessageWindow = 8,
+                minCoveredMessageCount = 4,
+            ),
+            forceRefresh = true,
+            buildSummaryInput = { summaryMessages ->
+                summaryMessages.joinToString(separator = "\n") { it.content }
+            },
+            generateSummary = { conversationText, _, _, modelId, _ ->
+                assertEquals("summary-model", modelId)
+                assertTrue(conversationText.contains("旧车站"))
+                assertTrue(conversationText.contains("没有走"))
+                "短剧情摘要"
+            },
+        )
+
+        assertTrue(result.updated)
+        assertEquals(2, result.coveredMessageCount)
+        assertEquals("短剧情摘要", repository.getSummary("conv-1")?.summary)
+        assertEquals(2, repository.getSummary("conv-1")?.coveredMessageCount)
+    }
+
+    @Test
     fun updateConversationSummary_splitsLongHistoryIntoSegmentsAndRefreshesTotalSummary() = runBlocking {
         val repository = FakeConversationSummaryRepository()
         val coordinator = ConversationSummaryCoordinator(
@@ -288,7 +340,10 @@ class ConversationSummaryCoordinatorTest {
         assertEquals(7, result.coveredMessageCount)
         assertEquals(7, segments.sumOf { it.messageCount })
         assertEquals("摘要 ${generatedInputs.size}", repository.getSummary("conv-1")?.summary)
+        assertTrue(generatedInputs.last().contains("【合并要求】"))
         assertTrue(generatedInputs.last().contains("【分段摘要档案】"))
+        assertTrue(generatedInputs.last().contains("当前状态"))
+        assertTrue(generatedInputs.last().contains("未解问题"))
     }
 
     @Test
@@ -435,6 +490,11 @@ class ConversationSummaryCoordinatorTest {
             forceRefresh = true,
             buildSummaryInput = { error("已全覆盖时不应重新读取原始消息") },
             generateSummary = { conversationText, _, _, _, _ ->
+                assertTrue(conversationText.contains("【合并要求】"))
+                assertTrue(conversationText.contains("【已有总摘要】"))
+                assertTrue(conversationText.contains("旧总摘要"))
+                assertTrue(conversationText.contains("当前状态"))
+                assertTrue(conversationText.contains("未解问题"))
                 assertTrue(conversationText.contains("已有分段摘要"))
                 "新总摘要"
             },

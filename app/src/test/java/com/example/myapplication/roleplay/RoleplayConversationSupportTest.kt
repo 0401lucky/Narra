@@ -277,6 +277,22 @@ class RoleplayConversationSupportTest {
     }
 
     @Test
+    fun resolveRecentWindow_appliesRoleplayMinimumWindow() {
+        assertEquals(
+            4,
+            RoleplaySummaryWindowSupport.resolveRecentWindow(
+                Assistant(id = "assistant-1", contextMessageSize = 1),
+            ),
+        )
+        assertEquals(
+            8,
+            RoleplaySummaryWindowSupport.resolveRecentWindow(
+                Assistant(id = "assistant-1", contextMessageSize = 0),
+            ),
+        )
+    }
+
+    @Test
     fun buildDynamicDirectorNote_timeAwarenessDisabled_skipsTimeGapNarration() {
         val note = RoleplayConversationSupport.buildDynamicDirectorNote(
             messages = listOf(

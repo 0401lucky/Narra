@@ -64,7 +64,7 @@ internal class ConversationSummaryPromptService(
             append("请根据下面的剧情记录输出结构化摘要，帮助下一轮扮演保持连续性。")
             append("严格使用以下 6 个小节，每节 1 到 3 句：")
             append("【剧情进展】、【当前状态】、【关系变化】、【角色状态】、【未解问题/伏笔】、【近期触发点】。")
-            append("保留明确人物关系、地点、任务进度、情绪转折和悬念。\n")
+            append("保留明确人物关系、地点、任务进度、情绪转折、悬念和下一轮应承接的钩子。\n")
             append("摘要质量约束：\n")
             append("1. 使用角色第一人称视角进行总结。\n")
             append("2. 必须使用精确时间（如 15:20），禁止使用模糊时间（如\u201c上午\u201d\u201c下午\u201d\u201c晚上\u201d）。\n")
@@ -72,7 +72,10 @@ internal class ConversationSummaryPromptService(
             append("4. 按话题自动划分，一个话题视为一件事，不要全部堆在一起。单个事件叙述控制在 150 字以内。\n")
             append("5. 如果对话中涉及图片，必须说明图片的具体内容，禁止只写\u201c发了一张图片/照片\u201d。\n")
             append("6. 如果是群聊，必须保留发言者和角色认知差异：谁说了什么、谁知道什么、谁和谁的关系变化、哪些角色未参与。\n")
-            append("7. 严禁编造对话中不存在的内容，如实直述。\n")
+            append("7. 在【当前状态】里写清当前地点、双方姿态、已完成进展和下一步可行动目标。\n")
+            append("8. 在【未解问题/伏笔】里保留仍未解决、仍会影响后续选择的信息，不要把悬念提前补完。\n")
+            append("9. 在【近期触发点】里标明下一轮应接住的最新钩子，以及已经表达完、下一轮不要换个说法重复的旧推进点。\n")
+            append("10. 严禁编造对话中不存在的内容，如实直述。\n")
             append("不要输出 XML、不要解释规则、不要省略小节标题：\n")
             append(conversationText)
         }
@@ -98,6 +101,6 @@ internal class ConversationSummaryPromptService(
         if (content.isBlank()) {
             throw IllegalStateException("RP 摘要模型未返回有效内容")
         }
-        return content.take(1_200)
+        return content.take(1_800)
     }
 }

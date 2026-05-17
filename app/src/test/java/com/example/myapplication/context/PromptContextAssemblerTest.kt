@@ -13,6 +13,10 @@ import com.example.myapplication.model.DEFAULT_PRESET_ID
 import com.example.myapplication.model.MemoryEntry
 import com.example.myapplication.model.MemoryScopeType
 import com.example.myapplication.model.MessageRole
+import com.example.myapplication.model.Preset
+import com.example.myapplication.model.PresetPromptEntry
+import com.example.myapplication.model.PresetPromptEntryKind
+import com.example.myapplication.model.PresetPromptRole
 import com.example.myapplication.model.PromptMode
 import com.example.myapplication.model.WorldBookEntry
 import com.example.myapplication.testutil.FakeConversationSummaryRepository
@@ -359,6 +363,68 @@ class PromptContextAssemblerTest {
                 section.sourceType == ContextLogSourceType.SUMMARY &&
                     section.title == "近期剧情分段" &&
                     section.content.contains("旧聊天原文的分段压缩")
+            },
+        )
+    }
+
+    @Test
+    fun assemble_roleplayAddsSummaryFallbackWhenPresetHasNoSummarySlot() = runBlocking {
+        val customPreset = Preset(
+            id = "custom-no-summary",
+            name = "自定义无摘要预设",
+            entries = listOf(
+                PresetPromptEntry(
+                    id = "custom-main",
+                    title = "Main",
+                    role = PresetPromptRole.SYSTEM,
+                    kind = PresetPromptEntryKind.MAIN_PROMPT,
+                    content = "只保留角色底色。",
+                    order = 0,
+                ),
+                PresetPromptEntry(
+                    id = "custom-history",
+                    title = "Chat History",
+                    role = PresetPromptRole.SYSTEM,
+                    kind = PresetPromptEntryKind.CHAT_HISTORY,
+                    order = 100,
+                ),
+            ),
+        )
+        val assembler = DefaultPromptContextAssembler(
+            conversationSummaryRepository = FakeConversationSummaryRepository(
+                initialSummaries = listOf(
+                    ConversationSummary(
+                        conversationId = "c1",
+                        assistantId = "assistant-1",
+                        summary = "总摘要：两人已进入钟楼，守夜人刚离开。",
+                        coveredMessageCount = 6,
+                    ),
+                ),
+            ),
+            presetRepository = FakePresetRepository(listOf(customPreset)),
+        )
+
+        val result = assembler.assemble(
+            settings = AppSettings(defaultPresetId = customPreset.id),
+            assistant = Assistant(
+                id = "assistant-1",
+                name = "霜岚",
+                defaultPresetId = customPreset.id,
+            ),
+            conversation = Conversation(id = "c1", createdAt = 1L, updatedAt = 1L),
+            userInputText = "继续",
+            recentMessages = emptyList(),
+            promptMode = PromptMode.ROLEPLAY,
+        )
+
+        assertEquals(customPreset.id, result.activePresetId)
+        assertTrue(result.systemPrompt.contains("只保留角色底色。"))
+        assertTrue(result.systemPrompt.contains("【剧情摘要】"))
+        assertTrue(result.systemPrompt.contains("守夜人刚离开"))
+        assertTrue(
+            result.contextSections.any { section ->
+                section.sourceType == ContextLogSourceType.SUMMARY &&
+                    section.content.contains("守夜人刚离开")
             },
         )
     }

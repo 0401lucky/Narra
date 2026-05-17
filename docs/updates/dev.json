@@ -1,16 +1,16 @@
 {
   "app_id": "com.narra.app.dev",
   "channel": "dev",
-  "latest_version_name": "1.7.5-dev",
-  "latest_version_code": 10705,
+  "latest_version_name": "1.7.6-dev",
+  "latest_version_code": 10706,
   "minimum_supported_version_code": 0,
-  "apk_url": "https://download.lsa1230.dpdns.org/dev/Narra-v1.7.5-dev-10705-dev.apk?v=10705",
-  "apk_sha256": "d316ef7e1cce9c001703c13bfb75dafdaa1775fe4dce225639ba8bbee5a5e218",
-  "published_at": "2026-05-09T15:35:05+08:00",
+  "apk_url": "https://download.lsa1230.dpdns.org/dev/Narra-v1.7.6-dev-10706-dev.apk?v=10706",
+  "apk_sha256": "52789b320d8d8350bb2d922b7409370b63f08f11eb22d48e6ca7acdc74b55c81",
+  "published_at": "2026-05-17T12:39:18+08:00",
   "release_notes": [
-    "新增 SillyTavern Chat Completion 预设 JSON 导入预览和导出能力",
-    "资料库预设包导入支持自动识别 SillyTavern Chat Completion 预设",
-    "支持酒馆绝对注入条目按深度插入聊天历史，并保留未知兼容字段",
-    "修复线上多行 status 状态栏可能被提前拆段的问题"
+    "修复短中剧情手动整理摘要与记忆时可能不会更新的问题",
+    "导入或自定义预设缺少 Summary 槽位时，沉浸式剧情摘要仍会注入提示词",
+    "统一沉浸式摘要窗口规则，减少低上下文窗口下摘要长期 stale",
+    "优化剧情摘要档案结构，保留当前状态、未解决伏笔和避免重复推进点"
   ]
 }

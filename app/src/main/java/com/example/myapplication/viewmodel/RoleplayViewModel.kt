@@ -79,6 +79,7 @@ import com.example.myapplication.roleplay.DefaultRoleplayGroupDirector
 import com.example.myapplication.roleplay.RoleplayOutputParser
 import com.example.myapplication.roleplay.RoleplayPromptDecorator
 import com.example.myapplication.roleplay.RoleplayRoundTripSupport
+import com.example.myapplication.roleplay.RoleplaySummaryWindowSupport
 import com.example.myapplication.roleplay.RoleplayTimeAwarenessSupport
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.Job
@@ -1326,11 +1327,7 @@ class RoleplayViewModel(
     private fun resolveSummaryRecentWindow(
         assistant: Assistant?,
     ): Int {
-        // 下限保护：Assistant 若把 contextMessageSize 配成 1 或 2，
-        // olderMessages 会被拉得过大导致摘要输入爆炸，强制不小于 MIN。
-        return (assistant?.contextMessageSize?.takeIf { it > 0 }
-            ?: SUMMARY_RECENT_MESSAGE_WINDOW)
-            .coerceAtLeast(SUMMARY_RECENT_MESSAGE_WINDOW_MIN)
+        return RoleplaySummaryWindowSupport.resolveRecentWindow(assistant)
     }
 
     private suspend fun rebuildContextGovernanceSnapshot(
@@ -1672,8 +1669,6 @@ class RoleplayViewModel(
     companion object {
         private const val SUMMARY_TRIGGER_MESSAGE_COUNT = 12
         private const val SUMMARY_MIN_COVERED_MESSAGE_COUNT = 4
-        private const val SUMMARY_RECENT_MESSAGE_WINDOW = 8
-        private const val SUMMARY_RECENT_MESSAGE_WINDOW_MIN = 4
         private const val SUGGESTION_RECENT_MESSAGE_WINDOW = 10
         private const val MANUAL_MEMORY_MESSAGE_WINDOW = 24
         private const val MAX_SUMMARY_INPUT_LENGTH = 4_000

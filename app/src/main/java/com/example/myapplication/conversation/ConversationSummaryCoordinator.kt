@@ -42,7 +42,7 @@ class ConversationSummaryCoordinator(
         buildSummaryInput: (List<ChatMessage>) -> String,
         generateSummary: suspend (conversationText: String, baseUrl: String, apiKey: String, modelId: String, apiProtocol: com.example.myapplication.model.ProviderApiProtocol) -> String,
     ): SummaryUpdateResult {
-        if (completedMessages.size <= config.triggerMessageCount) {
+        if (!forceRefresh && completedMessages.size <= config.triggerMessageCount) {
             return SummaryUpdateResult()
         }
         val summaryProvider = settings.resolveFunctionProvider(ProviderFunction.TITLE_SUMMARY)
@@ -52,7 +52,14 @@ class ConversationSummaryCoordinator(
             return SummaryUpdateResult()
         }
         val olderMessages = completedMessages.dropLast(config.recentMessageWindow)
-        if (olderMessages.size < config.minCoveredMessageCount) {
+        val messagesForSummary = if (forceRefresh && olderMessages.size < config.minCoveredMessageCount) {
+            completedMessages
+        } else {
+            olderMessages
+        }
+        if (messagesForSummary.size < config.minCoveredMessageCount &&
+            !(forceRefresh && messagesForSummary.isNotEmpty())
+        ) {
             return SummaryUpdateResult()
         }
         val existingSummary = conversationSummaryRepository.getSummary(conversationId)
@@ -60,21 +67,21 @@ class ConversationSummaryCoordinator(
         val existingCoveredPrefixCount = resolveCoveredPrefixCount(
             existingSummary = existingSummary,
             existingSegments = existingSegments,
-            maxCoveredCount = olderMessages.size,
+            maxCoveredCount = messagesForSummary.size,
         )
         val coveredPrefixCount = if (forceRefresh && existingSegments.isEmpty()) {
             0
         } else {
             existingCoveredPrefixCount
         }
-        if (!forceRefresh && existingSummary != null && existingCoveredPrefixCount >= olderMessages.size) {
+        if (!forceRefresh && existingSummary != null && existingCoveredPrefixCount >= messagesForSummary.size) {
             return SummaryUpdateResult(
                 updated = false,
                 summaryText = existingSummary.summary,
                 coveredMessageCount = existingCoveredPrefixCount,
             )
         }
-        val uncoveredMessages = olderMessages.drop(coveredPrefixCount)
+        val uncoveredMessages = messagesForSummary.drop(coveredPrefixCount)
         if (uncoveredMessages.isEmpty()) {
             if (forceRefresh && existingSegments.isNotEmpty()) {
                 val summaryText = buildUpdatedTotalSummary(
@@ -240,6 +247,9 @@ class ConversationSummaryCoordinator(
             return generatedSegments.single().summary.trim()
         }
         val summaryInput = buildString {
+            append("【合并要求】\n")
+            append("请把已有总摘要与分段摘要合并成当前可用的连续档案，优先保留已完成进展、当前状态、待办/未解问题、近期触发点。")
+            append("不要把已完成事件改写成又发生了一次，也不要丢掉仍会影响下一轮的关系变化和剧情约束。\n\n")
             if (normalizedExistingSummary.isNotBlank()) {
                 append("【已有总摘要】\n")
                 append(normalizedExistingSummary)
@@ -276,6 +286,6 @@ class ConversationSummaryCoordinator(
     }
 
     companion object {
-        private const val MAX_TOTAL_SUMMARY_SEGMENTS = 12
+        private const val MAX_TOTAL_SUMMARY_SEGMENTS = 16
     }
 }
