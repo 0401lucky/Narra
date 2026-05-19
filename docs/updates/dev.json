@@ -1,16 +1,16 @@
 {
   "app_id": "com.narra.app.dev",
   "channel": "dev",
-  "latest_version_name": "1.7.6-dev",
-  "latest_version_code": 10706,
+  "latest_version_name": "1.7.7-dev",
+  "latest_version_code": 10707,
   "minimum_supported_version_code": 0,
-  "apk_url": "https://download.lsa1230.dpdns.org/dev/Narra-v1.7.6-dev-10706-dev.apk?v=10706",
-  "apk_sha256": "52789b320d8d8350bb2d922b7409370b63f08f11eb22d48e6ca7acdc74b55c81",
-  "published_at": "2026-05-17T12:39:18+08:00",
+  "apk_url": "https://download.lsa1230.dpdns.org/dev/Narra-v1.7.7-dev-10707-dev.apk?v=10707",
+  "apk_sha256": "826e9a3e6093f96fb3e31135b814109380e84c9cf553235f32dfc32484917978",
+  "published_at": "2026-05-19T09:42:21+08:00",
   "release_notes": [
-    "修复短中剧情手动整理摘要与记忆时可能不会更新的问题",
-    "导入或自定义预设缺少 Summary 槽位时，沉浸式剧情摘要仍会注入提示词",
-    "统一沉浸式摘要窗口规则，减少低上下文窗口下摘要长期 stale",
-    "优化剧情摘要档案结构，保留当前状态、未解决伏笔和避免重复推进点"
+    "修复沉浸式刷新摘要或记忆后，上下文日志可能展示全量聊天历史的问题",
+    "普通聊天上下文治理日志同步改为使用裁剪后的实际发送窗口",
+    "明确长记忆提取与聊天摘要压缩的边界，最近 N 条消息仍保留原文",
+    "长记忆和剧情摘要卡片支持展开全文，长内容可完整查看"
   ]
 }

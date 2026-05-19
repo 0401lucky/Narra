@@ -365,7 +365,7 @@ fun AssistantPromptScreen(
                     palette = palette,
                 ) {
                     Text(
-                        text = "填 0 为自动。超出窗口的历史将会被压缩。",
+                        text = "填 0 为自动。需要摘要模型可用时，超出窗口的旧消息会由摘要承接；最近 N 条仍保留原文发送。",
                         style = MaterialTheme.typography.bodySmall,
                         color = palette.body.copy(alpha = 0.6f),
                     )

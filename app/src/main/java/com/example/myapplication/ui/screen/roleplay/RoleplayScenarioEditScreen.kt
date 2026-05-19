@@ -170,6 +170,7 @@ fun RoleplayScenarioEditScreen(
     var autoHighlightSpeaker by rememberSaveable(scenarioStateKey) { mutableStateOf(baseScenario.autoHighlightSpeaker) }
     val enableDeepImmersion = baseScenario.enableDeepImmersion
     val isOnlinePhoneMode = interactionMode == RoleplayInteractionMode.ONLINE_PHONE
+    val canSaveScenario = chatType == RoleplayChatType.SINGLE || draftGroupParticipants.isNotEmpty()
 
     var showAssistantPicker by remember { mutableStateOf(false) }
     var showMaskPicker by remember { mutableStateOf(false) }
@@ -745,8 +746,7 @@ fun RoleplayScenarioEditScreen(
                                     },
                                 )
                             },
-                            enabled = title.isNotBlank() &&
-                                (chatType == RoleplayChatType.SINGLE || draftGroupParticipants.isNotEmpty()),
+                            enabled = canSaveScenario,
                             isPrimary = true,
                         )
                         if (!isNew && onDelete != null) {

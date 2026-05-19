@@ -655,6 +655,8 @@ private fun AssistantMemorySummaryCard(
     summary: ConversationSummary,
 ) {
     val palette = rememberSettingsPalette()
+    val summaryText = summary.summary.ifBlank { "暂无摘要内容" }
+    var expanded by rememberSaveable(summary.conversationId) { mutableStateOf(false) }
     Surface(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(24.dp),
@@ -666,12 +668,17 @@ private fun AssistantMemorySummaryCard(
             verticalArrangement = Arrangement.spacedBy(10.dp),
         ) {
             Text(
-                text = summary.summary.ifBlank { "暂无摘要内容" },
+                text = summaryText,
                 style = MaterialTheme.typography.bodyLarge,
                 color = palette.title,
-                maxLines = 5,
-                overflow = TextOverflow.Ellipsis,
+                maxLines = if (expanded) Int.MAX_VALUE else 5,
+                overflow = if (expanded) TextOverflow.Clip else TextOverflow.Ellipsis,
             )
+            if (shouldShowAssistantMemoryContentToggle(summaryText, collapsedLineCount = 5)) {
+                TextButton(onClick = { expanded = !expanded }) {
+                    Text(if (expanded) "收起" else "展开全文")
+                }
+            }
             FlowRow(
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
                 verticalArrangement = Arrangement.spacedBy(8.dp),
@@ -728,6 +735,7 @@ private fun AssistantMemoryEntryCard(
     onDelete: () -> Unit,
 ) {
     val palette = rememberSettingsPalette()
+    var expanded by rememberSaveable(memory.id) { mutableStateOf(false) }
     Surface(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(24.dp),
@@ -742,8 +750,8 @@ private fun AssistantMemoryEntryCard(
                 text = memory.content,
                 style = MaterialTheme.typography.bodyLarge,
                 color = palette.title,
-                maxLines = 4,
-                overflow = TextOverflow.Ellipsis,
+                maxLines = if (expanded) Int.MAX_VALUE else 4,
+                overflow = if (expanded) TextOverflow.Clip else TextOverflow.Ellipsis,
             )
             FlowRow(
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
@@ -781,6 +789,14 @@ private fun AssistantMemoryEntryCard(
                 }
             }
             Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                if (shouldShowAssistantMemoryContentToggle(memory.content, collapsedLineCount = 4)) {
+                    Text(
+                        text = if (expanded) "收起" else "展开全文",
+                        color = palette.accent,
+                        modifier = Modifier.clickable { expanded = !expanded },
+                        fontWeight = FontWeight.SemiBold,
+                    )
+                }
                 Text(
                     text = "编辑",
                     color = palette.accent,
@@ -809,6 +825,13 @@ private fun parsePositiveIntOrDefaultForMemory(
     defaultValue: Int,
 ): Int {
     return rawValue.trim().toIntOrNull()?.takeIf { it > 0 } ?: defaultValue
+}
+
+internal fun shouldShowAssistantMemoryContentToggle(
+    content: String,
+    collapsedLineCount: Int,
+): Boolean {
+    return content.length > collapsedLineCount * 48 || content.count { it == '\n' } >= collapsedLineCount
 }
 
 private fun List<MemoryEntry>.sortedForAssistantMemoryDisplay(): List<MemoryEntry> {

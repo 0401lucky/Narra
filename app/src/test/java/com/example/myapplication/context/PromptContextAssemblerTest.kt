@@ -518,6 +518,57 @@ class PromptContextAssemblerTest {
     }
 
     @Test
+    fun assemble_roleplayChatHistorySectionsReflectProvidedRecentWindowOnly() = runBlocking {
+        val fullHistory = listOf(
+            ChatMessage(
+                id = "m1",
+                conversationId = "c1",
+                role = MessageRole.USER,
+                content = "旧剧情：第一次追问。",
+            ),
+            ChatMessage(
+                id = "m2",
+                conversationId = "c1",
+                role = MessageRole.ASSISTANT,
+                content = "旧剧情：第一次回应。",
+            ),
+            ChatMessage(
+                id = "m3",
+                conversationId = "c1",
+                role = MessageRole.USER,
+                content = "最近问题",
+            ),
+            ChatMessage(
+                id = "m4",
+                conversationId = "c1",
+                role = MessageRole.ASSISTANT,
+                content = "最近回应",
+            ),
+        )
+        val result = assembler.assemble(
+            settings = AppSettings(),
+            assistant = Assistant(
+                id = "assistant-1",
+                name = "陆承渊",
+                systemPrompt = "维持角色。",
+            ),
+            conversation = Conversation(id = "c1", createdAt = 1L, updatedAt = 1L),
+            userInputText = "最近问题",
+            recentMessages = fullHistory.takeLast(2),
+            promptMode = PromptMode.ROLEPLAY,
+        )
+
+        val chatHistoryContent = result.contextSections
+            .filter { it.sourceType == ContextLogSourceType.CHAT_HISTORY }
+            .joinToString(separator = "\n") { it.content }
+
+        assertTrue(chatHistoryContent.contains("最近问题"))
+        assertTrue(chatHistoryContent.contains("最近回应"))
+        assertFalse(chatHistoryContent.contains("旧剧情：第一次追问。"))
+        assertFalse(chatHistoryContent.contains("旧剧情：第一次回应。"))
+    }
+
+    @Test
     fun assemble_roleplayIncludesGlobalUserPersonaPrompt() = runBlocking {
         val result = assembler.assemble(
             settings = AppSettings(userPersonaPrompt = "lucky是个表面轻佻、实际很会试探边界的人。"),

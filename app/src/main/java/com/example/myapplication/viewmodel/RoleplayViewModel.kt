@@ -1350,16 +1350,21 @@ class RoleplayViewModel(
                 updatedAt = nowProvider(),
                 assistantId = scenario.assistantId,
             )
+        val effectiveRequestMessages = resolveRoleplayRequestMessagesForRoundTrip(
+            conversationId = conversationId,
+            assistant = assistant,
+            requestMessages = requestMessages,
+        )
         val promptContext = promptContextAssembler.assemble(
             settings = RoleplayConversationSupport.resolvePromptSettings(scenario, settings),
             assistant = RoleplayConversationSupport.resolvePromptAssistant(scenario, assistant),
             conversation = conversation,
-            userInputText = RoleplayConversationSupport.resolveLatestUserInputText(requestMessages),
-            recentMessages = requestMessages,
+            userInputText = RoleplayConversationSupport.resolveLatestUserInputText(effectiveRequestMessages),
+            recentMessages = effectiveRequestMessages,
             promptMode = PromptMode.ROLEPLAY,
         )
         val directorNote = RoleplayConversationSupport.buildDynamicDirectorNote(
-            messages = requestMessages,
+            messages = effectiveRequestMessages,
             scenario = scenario,
             assistant = assistant,
             settings = settings,
@@ -1376,18 +1381,13 @@ class RoleplayViewModel(
             directorNote = directorNote,
             modelId = RoleplayConversationSupport.resolveSelectedModelId(settings),
         )
-        val effectiveRequestMessages = resolveRoleplayRequestMessagesForRoundTrip(
-            conversationId = conversationId,
-            assistant = assistant,
-            requestMessages = requestMessages,
-        )
         val toolingOptions = GatewayToolingOptions.localContextOnly(
             com.example.myapplication.model.GatewayToolRuntimeContext(
                 promptMode = PromptMode.ROLEPLAY,
                 assistant = assistant,
                 conversation = conversation,
-                userInputText = RoleplayConversationSupport.resolveLatestUserInputText(requestMessages),
-                recentMessages = requestMessages,
+                userInputText = RoleplayConversationSupport.resolveLatestUserInputText(effectiveRequestMessages),
+                recentMessages = effectiveRequestMessages,
             ),
         )
         val completedMessageCount = requestMessages.size

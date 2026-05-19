@@ -44,6 +44,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -223,7 +224,9 @@ fun MemoryManagementScreen(
                 .padding(innerPadding),
         ) {
             LazyColumn(
-                modifier = Modifier.fillMaxSize(),
+                modifier = Modifier
+                    .fillMaxSize()
+                    .testTag("memory_management_list"),
                 contentPadding = PaddingValues(
                     start = SettingsScreenPadding,
                     top = 4.dp,
@@ -705,6 +708,7 @@ private fun MemoryEntryCard(
 ) {
     val palette = rememberSettingsPalette()
     var showDeleteConfirm by remember { mutableStateOf(false) }
+    var expanded by rememberSaveable(entry.id) { mutableStateOf(false) }
     Surface(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(24.dp),
@@ -719,9 +723,14 @@ private fun MemoryEntryCard(
                 text = entry.content,
                 style = MaterialTheme.typography.bodyLarge,
                 color = palette.title,
-                maxLines = 4,
-                overflow = TextOverflow.Ellipsis,
+                maxLines = if (expanded) Int.MAX_VALUE else 4,
+                overflow = if (expanded) TextOverflow.Clip else TextOverflow.Ellipsis,
             )
+            if (shouldShowMemoryViewerContentToggle(entry.content, collapsedLineCount = 4)) {
+                TextButton(onClick = { expanded = !expanded }) {
+                    Text(if (expanded) stringResource(R.string.common_collapse) else stringResource(R.string.common_expand_full))
+                }
+            }
 
             FlowRow(
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
@@ -823,6 +832,8 @@ private fun SummaryCard(
 ) {
     val palette = rememberSettingsPalette()
     var showDeleteConfirm by remember { mutableStateOf(false) }
+    val summaryText = summary.summary.ifBlank { stringResource(R.string.memory_summary_empty) }
+    var expanded by rememberSaveable(summary.conversationId) { mutableStateOf(false) }
     Surface(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(24.dp),
@@ -834,10 +845,17 @@ private fun SummaryCard(
             verticalArrangement = Arrangement.spacedBy(10.dp),
         ) {
             Text(
-                text = summary.summary,
+                text = summaryText,
                 style = MaterialTheme.typography.bodyLarge,
                 color = palette.title,
+                maxLines = if (expanded) Int.MAX_VALUE else 5,
+                overflow = if (expanded) TextOverflow.Clip else TextOverflow.Ellipsis,
             )
+            if (shouldShowMemoryViewerContentToggle(summaryText, collapsedLineCount = 5)) {
+                TextButton(onClick = { expanded = !expanded }) {
+                    Text(if (expanded) stringResource(R.string.common_collapse) else stringResource(R.string.common_expand_full))
+                }
+            }
             FlowRow(
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
                 verticalArrangement = Arrangement.spacedBy(8.dp),
@@ -985,6 +1003,13 @@ private fun formatMemoryViewerTime(timestamp: Long): String {
     return SimpleDateFormat("yyyy/MM/dd HH:mm", Locale.getDefault()).format(Date(timestamp))
 }
 
+private fun shouldShowMemoryViewerContentToggle(
+    content: String,
+    collapsedLineCount: Int,
+): Boolean {
+    return content.length > collapsedLineCount * 48 || content.count { it == '\n' } >= collapsedLineCount
+}
+
 private const val MEMORY_CAPACITY_STEP = 50
 
 @Composable
@@ -1017,7 +1042,7 @@ private fun MemoryGlobalConfigCard(
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
                     Text(
-                        text = "自动总结频率",
+                        text = "自动记忆提取频率",
                         style = MaterialTheme.typography.titleSmall,
                         fontWeight = FontWeight.SemiBold,
                         color = palette.title,
@@ -1029,7 +1054,7 @@ private fun MemoryGlobalConfigCard(
                     )
                 }
                 Text(
-                    text = "每 N 条已完成消息触发一次记忆提取；调到 0 关闭自动总结。",
+                    text = "每 N 条已完成消息触发一次长记忆提取；调到 0 关闭自动提取。聊天压缩由摘要模型和最近消息窗口负责。",
                     style = MaterialTheme.typography.bodySmall,
                     color = palette.body.copy(alpha = 0.7f),
                 )

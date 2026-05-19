@@ -48,6 +48,7 @@ import com.example.myapplication.model.DEFAULT_CONVERSATION_TITLE
 import com.example.myapplication.model.GatewayToolingOptions
 import com.example.myapplication.model.MemoryEntry
 import com.example.myapplication.model.MemoryScopeType
+import com.example.myapplication.model.MessageRole
 import com.example.myapplication.model.MessageAttachment
 import com.example.myapplication.model.MessageStatus
 import com.example.myapplication.model.ProviderFunction
@@ -59,6 +60,7 @@ import com.example.myapplication.model.normalizeChatMessageParts
 import com.example.myapplication.model.specialMetadataValue
 import com.example.myapplication.model.toContentMirror
 import com.example.myapplication.model.toMessageAttachmentOrNull
+import com.example.myapplication.model.toPlainText
 import com.example.myapplication.model.transferResultText
 import com.example.myapplication.model.withGiftImageGenerating
 import kotlinx.coroutines.CancellationException
@@ -830,22 +832,23 @@ class ChatViewModel(
                 giftImageRequest?.let { request ->
                     launchGiftImageGeneration(request)
                 }
-                val promptContext = promptContextAssembler.assemble(
-                    settings = promptAssemblyInput.settings,
-                    assistant = promptAssemblyInput.assistant,
-                    conversation = promptAssemblyInput.conversation,
-                    userInputText = promptAssemblyInput.userInputText,
-                    recentMessages = promptAssemblyInput.recentMessages,
-                    promptMode = PromptMode.CHAT,
-                )
                 val effectiveRequestMessages = resolveRequestMessagesForRoundTrip(
                     promptAssemblyInput = promptAssemblyInput,
                     requestMessages = requestMessages,
                 )
+                val effectivePromptAssemblyInput = promptAssemblyInput.withRecentMessages(effectiveRequestMessages)
+                val promptContext = promptContextAssembler.assemble(
+                    settings = effectivePromptAssemblyInput.settings,
+                    assistant = effectivePromptAssemblyInput.assistant,
+                    conversation = effectivePromptAssemblyInput.conversation,
+                    userInputText = effectivePromptAssemblyInput.userInputText,
+                    recentMessages = effectivePromptAssemblyInput.recentMessages,
+                    promptMode = PromptMode.CHAT,
+                )
                 val toolingOptions = GatewayToolingOptions.chat(
-                    searchEnabled = promptAssemblyInput.conversation.searchEnabled,
+                    searchEnabled = effectivePromptAssemblyInput.conversation.searchEnabled,
                     runtimeContext = ChatConversationSupport.buildToolRuntimeContext(
-                        promptAssemblyInput = promptAssemblyInput,
+                        promptAssemblyInput = effectivePromptAssemblyInput,
                         promptMode = PromptMode.CHAT,
                     ),
                 )
@@ -1358,6 +1361,21 @@ class ChatViewModel(
         )
     }
 
+    private fun ChatPromptAssemblyInput.withRecentMessages(
+        messages: List<ChatMessage>,
+    ): ChatPromptAssemblyInput {
+        val latestUserMessage = messages.lastOrNull { it.role == MessageRole.USER }
+        val latestUserInputText = latestUserMessage
+            ?.parts
+            ?.toPlainText()
+            .orEmpty()
+            .ifBlank { latestUserMessage?.content.orEmpty() }
+        return copy(
+            userInputText = latestUserInputText,
+            recentMessages = messages,
+        )
+    }
+
     private suspend fun updateConversationSummary(
         conversationId: String,
         messages: List<ChatMessage>,
@@ -1427,23 +1445,24 @@ class ChatViewModel(
             requestMessages = requestMessages,
             nowProvider = nowProvider,
         )
-        val promptContext = promptContextAssembler.assemble(
-            settings = promptAssemblyInput.settings,
-            assistant = promptAssemblyInput.assistant,
-            conversation = promptAssemblyInput.conversation,
-            userInputText = promptAssemblyInput.userInputText,
-            recentMessages = promptAssemblyInput.recentMessages,
-            promptMode = PromptMode.CHAT,
-        )
         val effectiveRequestMessages = resolveRequestMessagesForRoundTrip(
             promptAssemblyInput = promptAssemblyInput,
             requestMessages = requestMessages,
         )
+        val effectivePromptAssemblyInput = promptAssemblyInput.withRecentMessages(effectiveRequestMessages)
+        val promptContext = promptContextAssembler.assemble(
+            settings = effectivePromptAssemblyInput.settings,
+            assistant = effectivePromptAssemblyInput.assistant,
+            conversation = effectivePromptAssemblyInput.conversation,
+            userInputText = effectivePromptAssemblyInput.userInputText,
+            recentMessages = effectivePromptAssemblyInput.recentMessages,
+            promptMode = PromptMode.CHAT,
+        )
         val selectedModel = ChatConversationSupport.resolveSelectedModelId(settings)
         val toolingOptions = GatewayToolingOptions.chat(
-            searchEnabled = promptAssemblyInput.conversation.searchEnabled,
+            searchEnabled = effectivePromptAssemblyInput.conversation.searchEnabled,
             runtimeContext = ChatConversationSupport.buildToolRuntimeContext(
-                promptAssemblyInput = promptAssemblyInput,
+                promptAssemblyInput = effectivePromptAssemblyInput,
                 promptMode = PromptMode.CHAT,
             ),
         )
