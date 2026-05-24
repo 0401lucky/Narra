@@ -836,43 +836,93 @@ class DefaultAiGateway(
         promptEnvelope: PromptEnvelope,
     ): AssistantReply {
         if (gatewayTooling.enabledToolNames.isEmpty()) {
-            val request = buildRequestWithRoleplaySampling(
-                model = selectedModel,
-                messages = requestMessages,
+            return sendAnthropicMessageWithoutTools(
                 baseUrl = baseUrl,
-                apiProtocol = ProviderApiProtocol.ANTHROPIC,
+                apiKey = apiKey,
+                selectedModel = selectedModel,
+                requestMessages = requestMessages,
+                thinkingRequestConfig = thinkingRequestConfig,
                 promptMode = PromptMode.CHAT,
-                thinking = thinkingRequestConfig.thinking,
                 promptEnvelope = promptEnvelope,
             )
-            val response = anthropicApiProvider(baseUrl, apiKey).createMessage(
-                AnthropicProtocolSupport.buildMessageRequest(
-                    request,
-                ),
-            )
-            if (!response.isSuccessful) {
-                throw PromptExtrasResponseSupport.buildHttpFailure(
-                    operation = "聊天请求失败",
-                    code = response.code(),
-                    errorDetail = response.errorBody()?.string().orEmpty(),
-                    headers = response.headers(),
-                )
-            }
-            val body = response.body() ?: throw IllegalStateException("响应体为空")
-            return ensureAssistantReplyHasContent(AnthropicProtocolSupport.toAssistantReply(body))
         }
 
-        return toolEngine.runAnthropicToolLoop(
+        val outcome = try {
+            toolEngine.runAnthropicToolLoop(
+                baseUrl = baseUrl,
+                apiKey = apiKey,
+                selectedModel = selectedModel,
+                requestMessages = requestMessages,
+                thinkingRequestConfig = thinkingRequestConfig,
+                enabledToolNames = gatewayTooling.enabledToolNames,
+                toolContext = gatewayTooling.toolContext,
+                promptMode = PromptMode.CHAT,
+                promptEnvelope = promptEnvelope,
+            )
+        } catch (exception: Exception) {
+            if (exception is CancellationException) throw exception
+            if (!shouldRetryAnthropicWithoutTools(exception)) throw exception
+            return sendAnthropicMessageWithoutTools(
+                baseUrl = baseUrl,
+                apiKey = apiKey,
+                selectedModel = selectedModel,
+                requestMessages = requestMessages,
+                thinkingRequestConfig = thinkingRequestConfig,
+                promptMode = PromptMode.CHAT,
+                promptEnvelope = promptEnvelope,
+            )
+        }
+        return outcome.finalReply ?: throw IllegalStateException("模型未返回有效内容")
+    }
+
+    private suspend fun sendAnthropicMessageWithoutTools(
+        baseUrl: String,
+        apiKey: String,
+        selectedModel: String,
+        requestMessages: List<ChatMessageDto>,
+        thinkingRequestConfig: com.example.myapplication.model.ThinkingRequestConfig,
+        promptMode: PromptMode,
+        promptEnvelope: PromptEnvelope,
+    ): AssistantReply {
+        var request = buildRequestWithRoleplaySampling(
+            model = selectedModel,
+            messages = requestMessages,
             baseUrl = baseUrl,
-            apiKey = apiKey,
-            selectedModel = selectedModel,
-            requestMessages = requestMessages,
-            thinkingRequestConfig = thinkingRequestConfig,
-            enabledToolNames = gatewayTooling.enabledToolNames,
-            toolContext = gatewayTooling.toolContext,
-            promptMode = PromptMode.CHAT,
+            apiProtocol = ProviderApiProtocol.ANTHROPIC,
+            promptMode = promptMode,
+            thinking = thinkingRequestConfig.thinking,
             promptEnvelope = promptEnvelope,
-        ).finalReply ?: throw IllegalStateException("模型未返回有效内容")
+        )
+        var response = anthropicApiProvider(baseUrl, apiKey).createMessage(
+            AnthropicProtocolSupport.buildMessageRequest(
+                request,
+            ),
+        )
+        if (!response.isSuccessful) {
+            var errorDetail = response.errorBody()?.string().orEmpty()
+            if (response.code() == 400 && shouldRetryWithoutRoleplaySampling(request, errorDetail)) {
+                markRoleplaySamplingUnsupported(baseUrl, ProviderApiProtocol.ANTHROPIC)
+                request = withoutRoleplaySampling(request)
+                response = anthropicApiProvider(baseUrl, apiKey).createMessage(
+                    AnthropicProtocolSupport.buildMessageRequest(
+                        request,
+                    ),
+                )
+                errorDetail = response.errorBody()?.string().orEmpty()
+            }
+            if (response.isSuccessful) {
+                val body = response.body() ?: throw IllegalStateException("响应体为空")
+                return ensureAssistantReplyHasContent(AnthropicProtocolSupport.toAssistantReply(body))
+            }
+            throw PromptExtrasResponseSupport.buildHttpFailure(
+                operation = "聊天请求失败",
+                code = response.code(),
+                errorDetail = errorDetail,
+                headers = response.headers(),
+            )
+        }
+        val body = response.body() ?: throw IllegalStateException("响应体为空")
+        return ensureAssistantReplyHasContent(AnthropicProtocolSupport.toAssistantReply(body))
     }
 
     private fun streamOpenAiMessageWithTools(
@@ -981,17 +1031,32 @@ class DefaultAiGateway(
         promptMode: PromptMode,
         promptEnvelope: PromptEnvelope,
     ): Flow<ChatStreamEvent> = flow {
-        val toolLoopOutcome = toolEngine.runAnthropicToolLoop(
-            baseUrl = baseUrl,
-            apiKey = apiKey,
-            selectedModel = selectedModel,
-            requestMessages = requestMessages,
-            thinkingRequestConfig = thinkingRequestConfig,
-            enabledToolNames = gatewayTooling.enabledToolNames,
-            toolContext = gatewayTooling.toolContext,
-            promptMode = promptMode,
-            promptEnvelope = promptEnvelope,
-        )
+        val toolLoopOutcome = try {
+            toolEngine.runAnthropicToolLoop(
+                baseUrl = baseUrl,
+                apiKey = apiKey,
+                selectedModel = selectedModel,
+                requestMessages = requestMessages,
+                thinkingRequestConfig = thinkingRequestConfig,
+                enabledToolNames = gatewayTooling.enabledToolNames,
+                toolContext = gatewayTooling.toolContext,
+                promptMode = promptMode,
+                promptEnvelope = promptEnvelope,
+            )
+        } catch (exception: Exception) {
+            if (exception is CancellationException) throw exception
+            if (!shouldRetryAnthropicWithoutTools(exception)) throw exception
+            streamAnthropicMessage(
+                baseUrl = baseUrl,
+                apiKey = apiKey,
+                selectedModel = selectedModel,
+                requestMessages = requestMessages,
+                thinkingRequestConfig = thinkingRequestConfig,
+                promptMode = promptMode,
+                promptEnvelope = promptEnvelope,
+            ).collect { emit(it) }
+            return@flow
+        }
         if (toolLoopOutcome.toolRoundCount == 0) {
             emitAssistantReply(toolLoopOutcome.finalReply).collect { emit(it) }
         } else {
@@ -1138,17 +1203,7 @@ class DefaultAiGateway(
             ) {
                 response.close()
                 markRoleplaySamplingUnsupported(baseUrl, ProviderApiProtocol.OPENAI_COMPATIBLE)
-                requestBody = requestBody.copy(
-                    temperature = null,
-                    topP = null,
-                    topK = null,
-                    minP = null,
-                    repetitionPenalty = null,
-                    frequencyPenalty = null,
-                    presencePenalty = null,
-                    maxTokens = null,
-                    stop = emptyList(),
-                )
+                requestBody = withoutRoleplaySampling(requestBody)
                 call = client.newCall(
                     buildStreamingRequest(
                         fullUrl = buildOpenAiTextUrl(baseUrl, activeProvider),
@@ -1312,7 +1367,7 @@ class DefaultAiGateway(
         promptMode: PromptMode,
         promptEnvelope: PromptEnvelope = PromptEnvelope(),
     ): Flow<ChatStreamEvent> = flow {
-        val requestBody = buildRequestWithRoleplaySampling(
+        var requestBody = buildRequestWithRoleplaySampling(
             model = selectedModel,
             messages = requestMessages,
             baseUrl = baseUrl,
@@ -1323,12 +1378,8 @@ class DefaultAiGateway(
             promptEnvelope = promptEnvelope,
         )
         val normalizedBaseUrl = apiServiceFactory.normalizeBaseUrl(baseUrl, ProviderApiProtocol.ANTHROPIC)
-        val httpRequest = Request.Builder()
-            .url("${normalizedBaseUrl}messages")
-            .post(gson.toJson(AnthropicProtocolSupport.buildMessageRequest(requestBody)).toRequestBody("application/json".toMediaType()))
-            .build()
         val client = anthropicStreamClientProvider(baseUrl, apiKey)
-        val call = client.newCall(httpRequest)
+        var call = client.newCall(buildAnthropicStreamingRequest(normalizedBaseUrl, requestBody))
         var response: okhttp3.Response? = null
         val coroutineContext = currentCoroutineContext()
         val coroutineJob = coroutineContext[Job]
@@ -1339,6 +1390,18 @@ class DefaultAiGateway(
         }
         try {
             response = call.execute()
+            val streamErrorDetail = if (!response.isSuccessful) {
+                response.peekBody(64L * 1024L).string()
+            } else {
+                ""
+            }
+            if (response.code == 400 && shouldRetryWithoutRoleplaySampling(requestBody, streamErrorDetail)) {
+                response.close()
+                markRoleplaySamplingUnsupported(baseUrl, ProviderApiProtocol.ANTHROPIC)
+                requestBody = withoutRoleplaySampling(requestBody)
+                call = client.newCall(buildAnthropicStreamingRequest(normalizedBaseUrl, requestBody))
+                response = call.execute()
+            }
             if (!response.isSuccessful) {
                 throw GatewayNetworkSupport.okhttpFailure("聊天请求失败", response)
             }
@@ -1383,6 +1446,19 @@ class DefaultAiGateway(
         requestBody: String,
     ): Request = GatewayRequestSupport.buildStreamingRequest(fullUrl, requestBody)
 
+    private fun buildAnthropicStreamingRequest(
+        normalizedBaseUrl: String,
+        requestBody: ChatCompletionRequest,
+    ): Request {
+        return Request.Builder()
+            .url("${normalizedBaseUrl}messages")
+            .post(
+                gson.toJson(AnthropicProtocolSupport.buildMessageRequest(requestBody))
+                    .toRequestBody("application/json".toMediaType()),
+            )
+            .build()
+    }
+
     private fun buildOpenAiTextUrl(
         baseUrl: String,
         provider: ProviderSettings?,
@@ -1421,6 +1497,35 @@ class DefaultAiGateway(
         request: ChatCompletionRequest,
         errorDetail: String,
     ): Boolean = GatewayRequestSupport.shouldRetryWithoutRoleplaySampling(request, errorDetail)
+
+    private fun withoutRoleplaySampling(
+        request: ChatCompletionRequest,
+    ): ChatCompletionRequest = GatewayRequestSupport.withoutRoleplaySampling(request)
+
+    private fun shouldRetryAnthropicWithoutTools(
+        exception: Exception,
+    ): Boolean {
+        val message = exception.message.orEmpty().lowercase()
+        if (!message.contains("聊天请求失败：400")) {
+            return false
+        }
+        return listOf(
+            "tool",
+            "tools",
+            "tool_use",
+            "temperature",
+            "top_p",
+            "top p",
+            "top_k",
+            "stop_sequences",
+            "unknown field",
+            "unknown parameter",
+            "unsupported",
+            "not supported",
+            "not allowed",
+            "not permitted",
+        ).any(message::contains)
+    }
 
     private fun markRoleplaySamplingUnsupported(
         baseUrl: String,

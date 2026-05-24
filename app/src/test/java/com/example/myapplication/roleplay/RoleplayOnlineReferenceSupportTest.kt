@@ -126,6 +126,48 @@ class RoleplayOnlineReferenceSupportTest {
     }
 
     @Test
+    fun sanitizeRequestMessages_switchingOnlineAssistantToLongformDropsSpecialPlayResidualLines() {
+        val sanitized = RoleplayOnlineReferenceSupport.sanitizeRequestMessages(
+            messages = listOf(
+                ChatMessage(
+                    id = "assistant-1",
+                    conversationId = "conv-1",
+                    role = MessageRole.ASSISTANT,
+                    content = "",
+                    createdAt = 2L,
+                    status = MessageStatus.COMPLETED,
+                    parts = listOf(
+                        textMessagePart("我公馆"),
+                        textMessagePart("time="),
+                        textMessagePart("note="),
+                        textMessagePart("/>"),
+                        textMessagePart("视频通话已结束，通话时长 09:49"),
+                    ),
+                    roleplayInteractionMode = RoleplayInteractionMode.ONLINE_PHONE,
+                ),
+            ),
+            scenario = scenario.copy(
+                interactionMode = RoleplayInteractionMode.OFFLINE_LONGFORM,
+                longformModeEnabled = true,
+            ),
+            assistant = assistant,
+            settings = AppSettings(showOnlineRoleplayNarration = true),
+            outputParser = RoleplayOutputParser(),
+        )
+
+        val message = sanitized.single()
+        assertEquals(RoleplayInteractionMode.OFFLINE_LONGFORM, message.roleplayInteractionMode)
+        assertEquals(
+            "我公馆\n视频通话已结束，通话时长 09:49",
+            message.content,
+        )
+        assertTrue(message.parts.isEmpty())
+        assertTrue(!message.content.contains("time=", ignoreCase = true))
+        assertTrue(!message.content.contains("note=", ignoreCase = true))
+        assertTrue(!message.content.contains("/>"))
+    }
+
+    @Test
     fun buildSystemEventPromptContext_rewritesVideoEndAndScreenshotAsPlainContext() {
         val context = RoleplayOnlineReferenceSupport.buildSystemEventPromptContext(
             messages = listOf(

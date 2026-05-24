@@ -308,6 +308,31 @@ class OnlineActionProtocolParserTest {
     }
 
     @Test
+    fun parseWithFallback_dropsBareSpecialPlayAttributeLines() {
+        val result = OnlineActionProtocolParser.parseWithFallback(
+            rawContent = """
+                我公馆
+                <play id='call_1' type='invite'
+                time=
+                note=
+                />
+                视频通话已结束，通话时长 09:49
+            """.trimIndent(),
+            characterName = "沈烬",
+        )!!
+
+        val text = result.parts.joinToString("\n") { it.text }
+        assertEquals(
+            "我公馆\n视频通话已结束，通话时长 09:49",
+            text,
+        )
+        assertFalse(text.contains("time=", ignoreCase = true))
+        assertFalse(text.contains("note=", ignoreCase = true))
+        assertFalse(text.contains("/>"))
+        assertFalse(text.contains("<play", ignoreCase = true))
+    }
+
+    @Test
     fun parseWithFallback_dropsVariablePatchArtifactOnly() {
         val result = OnlineActionProtocolParser.parseWithFallback(
             rawContent = """
@@ -350,6 +375,21 @@ class OnlineActionProtocolParserTest {
         )
 
         assertEquals("", preview)
+    }
+
+    @Test
+    fun extractFallbackStreamingPreview_dropsBareSpecialPlayAttributeLines() {
+        val preview = OnlineActionProtocolParser.extractFallbackStreamingPreview(
+            rawContent = """
+                <play id='invite_1' type='invite'
+                time=
+                note=
+                />
+                今晚见。
+            """.trimIndent(),
+        )
+
+        assertEquals("今晚见。", preview)
     }
 
     @Test

@@ -30,10 +30,12 @@ import com.example.myapplication.model.MessageRole
 import com.example.myapplication.model.MessageStatus
 import com.example.myapplication.model.ModelsResponse
 import com.example.myapplication.model.OpenAiTextApiMode
+import com.example.myapplication.model.ProviderApiProtocol
 import com.example.myapplication.model.ProviderSettings
 import com.example.myapplication.model.ProviderType
 import com.example.myapplication.model.PresetSamplerConfig
 import com.example.myapplication.model.PromptEnvelope
+import com.example.myapplication.model.PromptMode
 import com.example.myapplication.model.SearchSettings
 import com.example.myapplication.model.SearchSourceConfig
 import com.example.myapplication.model.SearchSourceIds
@@ -585,6 +587,65 @@ class AiGatewayTest {
     }
 
     @Test
+    fun sendMessage_retriesAnthropicWithoutUnsupportedSampling() = runBlocking {
+        server.enqueue(
+            MockResponse().setResponseCode(400).setBody(
+                """{"error":{"message":"unknown field: temperature"}}""",
+            ),
+        )
+        server.enqueue(
+            MockResponse().setResponseCode(200).setBody(
+                """
+                {
+                  "id": "msg_1",
+                  "model": "claude-sonnet-4-20250514",
+                  "content": [
+                    {
+                      "type": "text",
+                      "text": "去掉采样参数后成功"
+                    }
+                  ]
+                }
+                """.trimIndent(),
+            ),
+        )
+        val provider = ProviderSettings(
+            id = "provider-claude-retry",
+            name = "Claude",
+            baseUrl = server.url("/v1/").toString(),
+            apiKey = "anthropic-key",
+            selectedModel = "claude-sonnet-4-20250514",
+            apiProtocol = ProviderApiProtocol.ANTHROPIC,
+        )
+        val gateway = createGateway(
+            settings = AppSettings(
+                providers = listOf(provider),
+                selectedProviderId = provider.id,
+            ),
+        )
+
+        val reply = gateway.sendMessage(
+            listOf(ChatMessage(id = "1", role = MessageRole.USER, content = "你好")),
+            promptEnvelope = PromptEnvelope(
+                sampler = PresetSamplerConfig(
+                    temperature = 0.7f,
+                    topP = 0.8f,
+                ),
+            ),
+        )
+
+        assertEquals("去掉采样参数后成功", reply.content)
+        val firstRequest = JsonParser.parseString(server.takeRequest().body.readUtf8()).asJsonObject
+        assertEquals(0.7f, firstRequest["temperature"].asFloat)
+        assertEquals(0.8f, firstRequest["top_p"].asFloat)
+        val retryRequest = JsonParser.parseString(server.takeRequest().body.readUtf8()).asJsonObject
+        assertFalse(retryRequest.has("temperature"))
+        assertFalse(retryRequest.has("top_p"))
+        assertFalse(retryRequest.has("stop_sequences"))
+        assertFalse(retryRequest.has("tools"))
+    }
+
+    @Test
     fun sendMessage_supportsAnthropicToolLoop() = runBlocking {
         server.enqueue(
             MockResponse().setResponseCode(200).setBody(
@@ -698,7 +759,9 @@ class AiGatewayTest {
         )
 
         val requestBody = server.takeRequest().body.readUtf8()
-        assertTrue(requestBody.contains("\"thinking\":{\"type\":\"enabled\",\"budget_tokens\":16000}"))
+        val requestJson = JsonParser.parseString(requestBody).asJsonObject
+        assertEquals(16_000, requestJson.getAsJsonObject("thinking")["budget_tokens"].asInt)
+        assertEquals(17_024, requestJson["max_tokens"].asInt)
         assertFalse(requestBody.contains("\"reasoning_effort\""))
     }
 
@@ -1276,6 +1339,112 @@ class AiGatewayTest {
             ),
             deltas,
         )
+    }
+
+    @Test
+    fun sendMessageStream_retriesAnthropicWithoutRoleplaySampling() = runBlocking {
+        val sseBody = buildString {
+            append("data: {\"type\":\"content_block_delta\",\"delta\":{\"type\":\"text_delta\",\"text\":\"成功\"}}\n\n")
+            append("data: {\"type\":\"message_stop\"}\n\n")
+        }
+        server.enqueue(
+            MockResponse().setResponseCode(400).setBody(
+                """{"error":{"message":"temperature and top_p cannot both be specified"}}""",
+            ),
+        )
+        server.enqueue(
+            MockResponse()
+                .setResponseCode(200)
+                .setHeader("Content-Type", "text/event-stream")
+                .setBody(sseBody),
+        )
+        val provider = ProviderSettings(
+            id = "provider-claude-stream-retry",
+            name = "Claude",
+            baseUrl = server.url("/v1/").toString(),
+            apiKey = "anthropic-key",
+            selectedModel = "claude-sonnet-4-20250514",
+            apiProtocol = ProviderApiProtocol.ANTHROPIC,
+        )
+        val gateway = createGateway(
+            settings = AppSettings(
+                providers = listOf(provider),
+                selectedProviderId = provider.id,
+            ),
+        )
+
+        val deltas = gateway.sendMessageStream(
+            listOf(ChatMessage(id = "1", role = MessageRole.USER, content = "你好")),
+            promptMode = PromptMode.ROLEPLAY,
+        ).toList()
+
+        assertEquals(
+            listOf(
+                ChatStreamEvent.ContentDelta("成功"),
+                ChatStreamEvent.Completed,
+            ),
+            deltas,
+        )
+        val firstRequest = JsonParser.parseString(server.takeRequest().body.readUtf8()).asJsonObject
+        assertEquals(0.9f, firstRequest["temperature"].asFloat)
+        assertEquals(0.92f, firstRequest["top_p"].asFloat)
+        val retryRequest = JsonParser.parseString(server.takeRequest().body.readUtf8()).asJsonObject
+        assertFalse(retryRequest.has("temperature"))
+        assertFalse(retryRequest.has("top_p"))
+        assertFalse(retryRequest.has("stop_sequences"))
+        assertFalse(retryRequest.has("tools"))
+    }
+
+    @Test
+    fun sendMessageStream_fallsBackToPlainAnthropicStreamWhenToolsUnsupported() = runBlocking {
+        val sseBody = buildString {
+            append("data: {\"type\":\"content_block_delta\",\"delta\":{\"type\":\"text_delta\",\"text\":\"普通流式成功\"}}\n\n")
+            append("data: {\"type\":\"message_stop\"}\n\n")
+        }
+        server.enqueue(
+            MockResponse().setResponseCode(400).setBody(
+                """{"error":{"message":"unknown field: tools"}}""",
+            ),
+        )
+        server.enqueue(
+            MockResponse()
+                .setResponseCode(200)
+                .setHeader("Content-Type", "text/event-stream")
+                .setBody(sseBody),
+        )
+        val provider = ProviderSettings(
+            id = "provider-claude-tools-fallback",
+            name = "Claude",
+            baseUrl = server.url("/v1/").toString(),
+            apiKey = "anthropic-key",
+            selectedModel = "claude-sonnet-4-20250514",
+            apiProtocol = ProviderApiProtocol.ANTHROPIC,
+        )
+        val gateway = createGateway(
+            settings = AppSettings(
+                providers = listOf(provider),
+                selectedProviderId = provider.id,
+                searchSettings = configuredSearchSettings(),
+            ),
+            searchRepository = fakeSearchRepository(),
+        )
+
+        val deltas = gateway.sendMessageStream(
+            listOf(ChatMessage(id = "1", role = MessageRole.USER, content = "查一下资料")),
+            toolingOptions = GatewayToolingOptions.searchOnly(true),
+        ).toList()
+
+        assertEquals(
+            listOf(
+                ChatStreamEvent.ContentDelta("普通流式成功"),
+                ChatStreamEvent.Completed,
+            ),
+            deltas,
+        )
+        val firstRequest = JsonParser.parseString(server.takeRequest().body.readUtf8()).asJsonObject
+        assertTrue(firstRequest.has("tools"))
+        val fallbackRequest = JsonParser.parseString(server.takeRequest().body.readUtf8()).asJsonObject
+        assertFalse(fallbackRequest.has("tools"))
     }
 
     @Test

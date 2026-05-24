@@ -205,6 +205,21 @@ class RoleplayOutputParserTest {
     }
 
     @Test
+    fun stripMarkup_dropsBareSpecialPlayProtocolFragments() {
+        val stripped = parser.stripMarkup(
+            """
+                <play id='call_1' type='invite'
+                time=
+                note=
+                />
+                视频通话已结束，通话时长 09:49
+            """.trimIndent(),
+        )
+
+        assertEquals("视频通话已结束，通话时长 09:49", stripped)
+    }
+
+    @Test
     fun stripMarkup_removesLlMControlTokensFromVisibleText() {
         val stripped = parser.stripMarkup(
             """

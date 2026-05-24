@@ -122,6 +122,11 @@ class ModelInfoTest {
     }
 
     @Test
+    fun reasoning_gemini35Flash() {
+        assertTrue(inferModelAbilities("gemini-3.5-flash").contains(ModelAbility.REASONING))
+    }
+
+    @Test
     fun reasoning_gpt5() {
         assertTrue(inferModelAbilities("gpt-5").contains(ModelAbility.REASONING))
     }
@@ -249,6 +254,14 @@ class ModelInfoTest {
     @Test
     fun combined_claudeSonnet_allThree() {
         val abilities = inferModelAbilities("claude-sonnet-4-20250514")
+        assertTrue(abilities.contains(ModelAbility.VISION))
+        assertTrue(abilities.contains(ModelAbility.REASONING))
+        assertTrue(abilities.contains(ModelAbility.TOOL))
+    }
+
+    @Test
+    fun combined_gemini35Flash_allThree() {
+        val abilities = inferModelAbilities("gemini-3.5-flash")
         assertTrue(abilities.contains(ModelAbility.VISION))
         assertTrue(abilities.contains(ModelAbility.REASONING))
         assertTrue(abilities.contains(ModelAbility.TOOL))

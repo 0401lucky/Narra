@@ -20,6 +20,16 @@ class ReasoningConfigTest {
     }
 
     @Test
+    fun supportsThinkingBudgetControl_gemini35Flash() {
+        val provider = ProviderSettings(
+            type = ProviderType.GOOGLE,
+            selectedModel = "gemini-3.5-flash",
+        )
+
+        assertTrue(supportsThinkingBudgetControl(provider))
+    }
+
+    @Test
     fun supportsThinkingBudgetControl_claudeAnthropic() {
         val provider = ProviderSettings(
             type = ProviderType.ANTHROPIC,
@@ -54,6 +64,17 @@ class ReasoningConfigTest {
         val provider = ProviderSettings(
             type = ProviderType.GOOGLE,
             selectedModel = "gemini-3-flash-preview",
+            thinkingBudget = REASONING_BUDGET_MEDIUM,
+        )
+
+        assertEquals("high", mapThinkingBudgetToReasoningEffort(provider))
+    }
+
+    @Test
+    fun mapThinkingBudgetToReasoningEffort_gemini35StandardUsesHigh() {
+        val provider = ProviderSettings(
+            type = ProviderType.GOOGLE,
+            selectedModel = "gemini-3.5-flash",
             thinkingBudget = REASONING_BUDGET_MEDIUM,
         )
 

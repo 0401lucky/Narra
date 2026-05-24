@@ -26,7 +26,7 @@ val BUILT_IN_TEMPLATES: List<ProviderTemplate> = listOf(
     ProviderTemplate(
         type = ProviderType.GOOGLE,
         name = "Google Gemini",
-        description = "Gemini 2.5 Pro / Flash 等系列模型",
+        description = "Gemini 3.5 Flash / 2.5 Pro / Flash 等系列模型",
         defaultBaseUrl = ProviderType.GOOGLE.defaultBaseUrl,
     ),
     ProviderTemplate(

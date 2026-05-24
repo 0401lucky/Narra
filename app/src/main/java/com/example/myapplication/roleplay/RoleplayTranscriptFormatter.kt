@@ -203,6 +203,9 @@ object RoleplayTranscriptFormatter {
         interactionMode: RoleplayInteractionMode,
     ): List<com.example.myapplication.model.ChatMessagePart> {
         val normalizedParts = normalizeChatMessageParts(message.parts)
+            .filterNot { part ->
+                part.text.isNotBlank() && OnlineActionProtocolParser.isProtocolResidualText(part.text)
+            }
         if (interactionMode != RoleplayInteractionMode.ONLINE_PHONE) {
             return normalizedParts
         }

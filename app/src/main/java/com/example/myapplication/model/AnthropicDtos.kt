@@ -25,9 +25,9 @@ data class AnthropicMessageRequest(
     @SerializedName("top_k")
     val topK: Int? = null,
     @SerializedName("stop_sequences")
-    val stopSequences: List<String> = emptyList(),
+    val stopSequences: List<String>? = null,
     val thinking: AnthropicThinkingDto? = null,
-    val tools: List<AnthropicToolDto> = emptyList(),
+    val tools: List<AnthropicToolDto>? = null,
 )
 
 data class AnthropicMessageDto(

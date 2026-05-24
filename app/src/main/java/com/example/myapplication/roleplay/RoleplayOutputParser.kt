@@ -26,6 +26,9 @@ class RoleplayOutputParser {
         """(?is)\b(?:begin_of_text|end_of_text|begin_of_sentence|end_of_sentence|eot_id|eom_id|bos|eos)\b\s*\|>""",
     )
     private val protocolHintPattern = Regex("""(?is)</?(dialogue|narration|thought)\b|\b(speaker|emotion|reply_to|reply_preview|reply_speaker)\s*=""")
+    private val specialPlayProtocolHintPattern = Regex(
+        """(?im)^\s*(?:</?play(?:-update)?\b|(?:id|type|target|place|time|note|description|content|title|objective|reward|deadline|method|count|intensity|reason|item|counterparty|amount|direction|status|ref)\s*=|/?>|/)\s*$""",
+    )
     private val protocolAttributeNoisePattern = Regex(
         """(?is)\b(speaker|emotion|reply_to|reply_preview|reply_speaker)\s*=\s*("[^"]*"|'[^']*'|[^\s<>]+)?""",
     )
@@ -471,13 +474,24 @@ class RoleplayOutputParser {
         val normalized = stripControlArtifacts(
             normalizeRoleplayProtocolAliases(rawContent),
         )
-        if (!protocolHintPattern.containsMatchIn(normalized)) {
+        val hasRoleplayProtocolHint = protocolHintPattern.containsMatchIn(normalized)
+        val hasSpecialPlayProtocolHint = specialPlayProtocolHintPattern.containsMatchIn(normalized)
+        if (!hasRoleplayProtocolHint && !hasSpecialPlayProtocolHint) {
             return normalized
                 .replace(llmControlTagPattern, " ")
                 .replace(llmControlWordPattern, " ")
                 .trim()
         }
-        return normalized
+        val withoutRoleplayProtocolNoise = if (hasRoleplayProtocolHint) {
+            normalized
+                .replace(protocolTagNamePattern, " ")
+                .replace(protocolAttributeNoisePattern, " ")
+                .replace(angleBracketPattern, " ")
+                .replace(emptyProtocolLinePattern, "")
+        } else {
+            normalized
+        }
+        return OnlineActionProtocolParser.sanitizeProtocolResidualText(withoutRoleplayProtocolNoise)
             .replace(protocolTagNamePattern, " ")
             .replace(protocolAttributeNoisePattern, " ")
             .replace(angleBracketPattern, " ")

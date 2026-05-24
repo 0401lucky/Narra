@@ -185,4 +185,18 @@ internal object GatewayRequestSupport {
             normalizedError.contains(hint)
         }
     }
+
+    fun withoutRoleplaySampling(request: ChatCompletionRequest): ChatCompletionRequest {
+        return request.copy(
+            temperature = null,
+            topP = null,
+            topK = null,
+            minP = null,
+            repetitionPenalty = null,
+            frequencyPenalty = null,
+            presencePenalty = null,
+            maxTokens = null,
+            stop = emptyList(),
+        )
+    }
 }

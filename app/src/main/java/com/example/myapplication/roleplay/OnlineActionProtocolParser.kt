@@ -47,6 +47,47 @@ internal sealed class OnlineActionDirective {
 
 internal object OnlineActionProtocolParser {
     private val specialPlayTagPattern = Regex("""(?is)<play(?:-update)?\b[^>]*?/>""")
+    private val protocolAttributeNames = listOf(
+        "id",
+        "type",
+        "target",
+        "place",
+        "time",
+        "note",
+        "description",
+        "content",
+        "message_id",
+        "op",
+        "path",
+        "value",
+        "delta",
+        "from",
+        "title",
+        "objective",
+        "reward",
+        "deadline",
+        "method",
+        "count",
+        "intensity",
+        "reason",
+        "item",
+        "counterparty",
+        "amount",
+        "direction",
+        "status",
+        "ref",
+    )
+    private val protocolAttributeNamePattern = protocolAttributeNames.joinToString(separator = "|")
+    private val malformedProtocolAttributePattern = Regex(
+        """(?i)\b(?:$protocolAttributeNamePattern)\s*=\s*(?:"[^"]*"|'[^']*'|[^<>\s,，/]*)?""",
+    )
+    private val malformedProtocolColonKeyPattern = Regex(
+        """(?i)\b(?:$protocolAttributeNamePattern)\s*:\s*""",
+    )
+    private val protocolAttributeResidualLinePattern = Regex(
+        """(?i)^\s*(?:$protocolAttributeNamePattern)\s*=\s*.*$""",
+    )
+    private val protocolPunctuationResidualLinePattern = Regex("""^[\s"'=:：/\\,，<>-]+$""")
 
     fun parse(
         rawContent: String,
@@ -161,14 +202,8 @@ internal object OnlineActionProtocolParser {
             return null
         }
         val lines = cleaned.split('\n')
-            .map { line ->
-                line.sanitizeMalformedProtocolLeak()
-                    .removeSurrounding("\"")
-                    .trim()
-                    .removeSuffix(",")
-                    .trim()
-            }
-            .filter { it.isNotBlank() && !it.looksLikeProtocolLeak() && !it.looksLikeControlArtifactLine() }
+            .map(::sanitizeProtocolResidualTextLine)
+            .filter { it.isNotBlank() }
         if (lines.isEmpty()) {
             return null
         }
@@ -224,6 +259,19 @@ internal object OnlineActionProtocolParser {
             .filter { it.isNotBlank() }
             .joinToString(separator = "\n")
             .trim()
+    }
+
+    fun sanitizeProtocolResidualText(rawContent: String): String {
+        return rawContent.lines()
+            .map(::sanitizeProtocolResidualTextLine)
+            .filter { it.isNotBlank() }
+            .joinToString(separator = "\n")
+            .trim()
+    }
+
+    fun isProtocolResidualText(rawContent: String): Boolean {
+        val normalized = sanitizeProtocolResidualText(rawContent)
+        return normalized.isBlank() && rawContent.trim().isNotBlank()
     }
 
     private fun parseArray(
@@ -740,12 +788,11 @@ internal object OnlineActionProtocolParser {
     private fun String.sanitizeMalformedProtocolLeak(): String {
         return trim()
             .replace(Regex("""(?i)\b(?:thought|ai[-_]?photo|voice[-_]?message|reply[-_]?to|play)\b\s*,?"""), "")
-            .replace(Regex("""(?i)\b(?:type|target|place|time|note|description|content|message_id|op|path|value|delta|from)\s*=\s*['"][^'"]*['"]"""), "")
-            .replace(Regex("""(?i)\b(?:type|target|place|time|note|description|content|message_id|op|path|value|delta|from)\s*:\s*"""), "")
-            .replace(Regex("""(?i)\bid\s*=\s*['"][^'"]*['"]"""), "")
+            .replace(malformedProtocolAttributePattern, "")
+            .replace(malformedProtocolColonKeyPattern, "")
             .replace(Regex("""/?>"""), "")
             .replace(Regex("""[<>]"""), "")
-            .trim(',', '，', '"', '\'', ' ', '\t')
+            .trim(',', '，', '"', '\'', '=', '/', ' ', '\t')
             .trim()
     }
 
@@ -754,9 +801,28 @@ internal object OnlineActionProtocolParser {
         if (normalized.isBlank()) {
             return false
         }
+        if (
+            protocolAttributeResidualLinePattern.matches(normalized) ||
+            protocolPunctuationResidualLinePattern.matches(normalized)
+        ) {
+            return true
+        }
         return protocolLeakMarkers.any { marker ->
             normalized.contains(marker, ignoreCase = true)
         }
+    }
+
+    private fun sanitizeProtocolResidualTextLine(rawLine: String): String {
+        val sanitized = rawLine.sanitizeMalformedProtocolLeak()
+            .removeSurrounding("\"")
+            .trim()
+            .removeSuffix(",")
+            .trim()
+        return sanitized.takeUnless { line ->
+            line.isBlank() ||
+                line.looksLikeProtocolLeak() ||
+                line.looksLikeControlArtifactLine()
+        }.orEmpty()
     }
 
     private val protocolLeakMarkers = listOf(

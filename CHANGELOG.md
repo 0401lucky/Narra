@@ -19,6 +19,26 @@
 
 ---
 
+## [1.9.0-dev] - 2026-05-24
+
+### Changed
+
+- Google Gemini 模板文案补充 Gemini 3.5 Flash，模型能力推断明确覆盖 `gemini-3.5-flash` 的视觉、工具和推理能力。
+- 继续强化沉浸式默认角色执行与反八股规则，减少状态栏、固定镜头和模板化心理描写对角色回复的干扰。
+
+### Fixed
+
+- 修复线上特殊玩法、视频通话等协议结束后，`time=`、`note=`、`/>` 等残片可能被当成正文气泡或历史上下文的问题，降低切到长文线下后模型空回概率。
+- 修复 Anthropic `/messages` 原生协议在沉浸式流式请求中遇到 `temperature`、`top_p` 等采样参数不兼容时直接失败的问题，现在会自动移除采样参数重试。
+- 修复自建 Claude / Anthropic 中转不支持 `tools` 字段时，沉浸式工具链路可能卡在无返回状态的问题，现在会退回普通 Anthropic 流式请求。
+- Claude thinking 预算启用时会保证 `max_tokens` 大于 `budget_tokens`，避免默认输出上限小于思考预算导致 400。
+
+### Docs
+
+- `dev` 渠道构建版本推进到 `1.9.0-dev (10900)`，继续通过 Cloudflare R2 分发 APK。
+
+---
+
 ## [1.7.9-dev] - 2026-05-24
 
 ### Changed

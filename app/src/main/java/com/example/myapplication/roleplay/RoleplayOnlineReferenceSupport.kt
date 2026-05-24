@@ -397,6 +397,7 @@ internal object RoleplayOnlineReferenceSupport {
                 }
             }
             .filter { it.content.isNotBlank() }
+            .filterNot { OnlineActionProtocolParser.isProtocolResidualText(it.content) }
     }
 
     private enum class AssistantTranscriptLineKind {

@@ -25,6 +25,7 @@ internal data class AnthropicStreamDelta(
 
 internal object AnthropicProtocolSupport {
     private const val DefaultMaxTokens = 8_192
+    private const val MinTextTokensAfterThinking = 1_024
 
     fun buildMessageRequest(
         request: ChatCompletionRequest,
@@ -40,13 +41,13 @@ internal object AnthropicProtocolSupport {
         return AnthropicMessageRequest(
             model = request.model,
             messages = messages,
-            maxTokens = request.maxTokens ?: DefaultMaxTokens,
+            maxTokens = resolveMaxTokens(request),
             system = systemPrompt,
             stream = request.stream,
             temperature = request.temperature,
             topP = request.topP,
             topK = request.topK,
-            stopSequences = request.stop,
+            stopSequences = request.stop.takeIf { it.isNotEmpty() },
             thinking = request.thinking?.let { thinking ->
                 AnthropicThinkingDto(
                     budgetTokens = thinking.budgetTokens,
@@ -58,8 +59,18 @@ internal object AnthropicProtocolSupport {
                     description = tool.function.description,
                     inputSchema = tool.function.parameters,
                 )
-            },
+            }.takeIf { it.isNotEmpty() },
         )
+    }
+
+    private fun resolveMaxTokens(request: ChatCompletionRequest): Int {
+        val requestedMaxTokens = request.maxTokens ?: DefaultMaxTokens
+        val thinkingBudget = request.thinking?.budgetTokens?.takeIf { it > 0 }
+            ?: return requestedMaxTokens
+        if (requestedMaxTokens > thinkingBudget) {
+            return requestedMaxTokens
+        }
+        return thinkingBudget + MinTextTokensAfterThinking
     }
 
     fun toAssistantReply(response: AnthropicMessageResponse): AssistantReply {
