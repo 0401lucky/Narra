@@ -7,7 +7,7 @@ import org.junit.Test
 
 class ChatStatusBlockParserTest {
     @Test
-    fun extract_detectsLooseLeadingStatusLines() {
+    fun extract_stripsLooseLeadingStatusLines() {
         val parts = ChatStatusBlockParser.extract(
             """
                 > 时间：23:03 | 日期：2026年4月29日
@@ -19,16 +19,16 @@ class ChatStatusBlockParserTest {
             """.trimIndent(),
         )
 
-        assertEquals(ChatMessagePartType.STATUS, parts.first().type)
-        assertTrue(parts.first().text.contains("时间：23:03"))
-        assertTrue(parts.first().text.contains("陆承渊·状态"))
-        assertEquals(ChatMessagePartType.TEXT, parts.last().type)
-        assertTrue(parts.last().text.contains("外滩夜色"))
-        assertTrue(parts.last().text.contains("拇指停在后腰窝"))
+        assertEquals(1, parts.size)
+        assertEquals(ChatMessagePartType.TEXT, parts.single().type)
+        assertTrue(!parts.single().text.contains("时间：23:03"))
+        assertTrue(!parts.single().text.contains("陆承渊·状态"))
+        assertTrue(parts.single().text.contains("外滩夜色"))
+        assertTrue(parts.single().text.contains("拇指停在后腰窝"))
     }
 
     @Test
-    fun extract_detectsLooseLeadingStatusLinesWithOpenFence() {
+    fun extract_stripsLooseLeadingStatusLinesWithOpenFence() {
         val parts = ChatStatusBlockParser.extract(
             """
                 『时间：10:07 | 日期：2026年4月21日星期二 | 地点：申江新区管委会主任办公室 | 天气：百叶窗的缝隙切碎了日光
@@ -37,15 +37,14 @@ class ChatStatusBlockParserTest {
             """.trimIndent(),
         )
 
-        assertEquals(ChatMessagePartType.STATUS, parts.first().type)
-        assertTrue(parts.first().text.contains("时间：10:07"))
-        assertTrue(!parts.first().text.contains("『时间"))
-        assertEquals(ChatMessagePartType.TEXT, parts.last().type)
-        assertTrue(parts.last().text.contains("录音笔"))
+        assertEquals(1, parts.size)
+        assertEquals(ChatMessagePartType.TEXT, parts.single().type)
+        assertTrue(!parts.single().text.contains("时间：10:07"))
+        assertTrue(parts.single().text.contains("录音笔"))
     }
 
     @Test
-    fun extract_mergesSeparatedLeadingStatusParagraphs() {
+    fun extract_stripsSeparatedLeadingStatusParagraphs() {
         val parts = ChatStatusBlockParser.extract(
             """
                 『时间：23:03 ｜ 日期：2026年10月14日 星期三 ｜ 地点：静安区·江屿公寓卧室 ｜ 天气/场景：雨停后的深夜』
@@ -61,33 +60,27 @@ class ChatStatusBlockParserTest {
             """.trimIndent(),
         )
 
-        assertEquals(ChatMessagePartType.STATUS, parts.first().type)
-        assertTrue(parts.first().text.contains("时间：23:03"))
-        assertTrue(parts.first().text.contains("陆承渊·状态"))
-        assertTrue(parts.first().text.contains("阶段: 破线"))
-        assertTrue(parts.first().text.contains("对lucky: 等到了"))
-        assertTrue(parts.first().text.contains("底线: 没了"))
-        assertEquals(ChatMessagePartType.TEXT, parts.last().type)
-        assertTrue(!parts.last().text.contains("陆承渊·状态"))
-        assertTrue(!parts.last().text.contains("对lucky"))
-        assertTrue(parts.last().text.contains("外滩夜色"))
+        assertEquals(1, parts.size)
+        assertEquals(ChatMessagePartType.TEXT, parts.single().type)
+        assertTrue(!parts.single().text.contains("时间：23:03"))
+        assertTrue(!parts.single().text.contains("陆承渊·状态"))
+        assertTrue(!parts.single().text.contains("对lucky"))
+        assertTrue(parts.single().text.contains("外滩夜色"))
     }
 
     @Test
-    fun extract_normalizesEscapedNewlinesInsideStatusCard() {
+    fun extract_stripsEscapedNewlinesInsideStatusCard() {
         val parts = ChatStatusBlockParser.extract(
             "状态栏：时间：2026年5月2日 03:35\\n地点：大渡口 陆家老宅 阳台\\n状态：指尖冰凉，盯着屏幕\n\n回来了。",
         )
 
-        assertEquals(ChatMessagePartType.STATUS, parts.first().type)
-        assertTrue(parts.first().text.contains("时间：2026年5月2日 03:35\n地点：大渡口"))
-        assertTrue(parts.first().text.contains("\n状态：指尖冰凉"))
-        assertEquals(ChatMessagePartType.TEXT, parts.last().type)
-        assertEquals("回来了。", parts.last().text)
+        assertEquals(1, parts.size)
+        assertEquals(ChatMessagePartType.TEXT, parts.single().type)
+        assertEquals("回来了。", parts.single().text)
     }
 
     @Test
-    fun extract_detectsSlashWrappedStatusBlock() {
+    fun extract_stripsSlashWrappedStatusBlock() {
         val parts = ChatStatusBlockParser.extract(
             """
                 status/心情：被激到，眼眶泛红但死撑着没掉下来
@@ -97,10 +90,8 @@ class ChatStatusBlockParserTest {
             """.trimIndent(),
         )
 
-        assertEquals(ChatMessagePartType.STATUS, parts.first().type)
-        assertTrue(parts.first().text.contains("心情：被激到"))
-        assertTrue(parts.first().text.contains("声音：有点哑"))
-        assertEquals(ChatMessagePartType.TEXT, parts.last().type)
-        assertEquals("我上个月喝多了，当着全家人的面说了。", parts.last().text)
+        assertEquals(1, parts.size)
+        assertEquals(ChatMessagePartType.TEXT, parts.single().type)
+        assertEquals("我上个月喝多了，当着全家人的面说了。", parts.single().text)
     }
 }

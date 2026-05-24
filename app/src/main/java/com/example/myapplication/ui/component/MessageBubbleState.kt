@@ -115,29 +115,42 @@ internal fun rememberMessageBubbleRenderState(
     val rawMessageParts = remember(message.parts, streamingParts) {
         normalizeChatMessageParts(streamingParts ?: message.parts)
     }
-    val statusAwareMessageParts = remember(rawMessageParts, resolvedContent, isUser, useFastAssistantText) {
+    val statusAwareMessagePartsResult = remember(rawMessageParts, resolvedContent, isUser, useFastAssistantText) {
         when {
-            isUser -> rawMessageParts
-            useFastAssistantText -> emptyList()
+            isUser -> rawMessageParts to false
             rawMessageParts.isNotEmpty() -> {
-                ChatStatusBlockParser.extractFromParts(
+                val cleanedParts = ChatStatusBlockParser.extractFromParts(
                     parts = rawMessageParts,
                     hideStatusBlocksInBubble = true,
-                ).takeIf { parts -> parts.any { it.type == ChatMessagePartType.STATUS } }
-                    ?: rawMessageParts
+                )
+                val statusStripped = cleanedParts != rawMessageParts
+                if (useFastAssistantText && !statusStripped) {
+                    emptyList<ChatMessagePart>() to false
+                } else {
+                    cleanedParts to statusStripped
+                }
             }
 
             resolvedContent.isNotBlank() -> {
-                ChatStatusBlockParser.extract(
+                val cleanedParts = ChatStatusBlockParser.extract(
                     text = resolvedContent,
                     hideStatusBlocksInBubble = true,
-                ).takeIf { parts -> parts.any { it.type == ChatMessagePartType.STATUS } }
-                    ?: emptyList()
+                )
+                val isUnchangedText = cleanedParts.size == 1 &&
+                    cleanedParts.single().type == ChatMessagePartType.TEXT &&
+                    cleanedParts.single().text == resolvedContent
+                if (isUnchangedText) {
+                    emptyList<ChatMessagePart>() to false
+                } else {
+                    cleanedParts to true
+                }
             }
 
-            else -> emptyList()
+            else -> emptyList<ChatMessagePart>() to false
         }
     }
+    val statusAwareMessageParts = statusAwareMessagePartsResult.first
+    val statusBlocksStripped = statusAwareMessagePartsResult.second
     val displayParts = remember(statusAwareMessageParts, isUser, useFastAssistantText) {
         if (statusAwareMessageParts.isNotEmpty()) {
             statusAwareMessageParts.map { part ->
@@ -152,8 +165,10 @@ internal fun rememberMessageBubbleRenderState(
         }
     }
     val hasStructuredParts = displayParts.isNotEmpty()
-    val messageDisplayText = remember(hasStructuredParts, displayParts, resolvedContent) {
-        if (hasStructuredParts) {
+    val messageDisplayText = remember(hasStructuredParts, displayParts, resolvedContent, statusBlocksStripped) {
+        if (statusBlocksStripped) {
+            displayParts.toPlainText()
+        } else if (hasStructuredParts) {
             displayParts.toPlainText().ifBlank { resolvedContent }
         } else {
             resolvedContent

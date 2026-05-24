@@ -143,30 +143,6 @@ fun textMessagePart(
     )
 }
 
-fun statusMessagePart(
-    rawText: String,
-    title: String = "状态",
-): ChatMessagePart {
-    val normalizedRawText = rawText.normalizeStatusRawText()
-    return ChatMessagePart(
-        type = ChatMessagePartType.STATUS,
-        text = normalizedRawText,
-        specialMetadata = normalizeSpecialMetadata(
-            mapOf(
-                "title" to title.trim().ifBlank { "状态" },
-                "raw" to normalizedRawText,
-            ),
-        ),
-    )
-}
-
-private fun String.normalizeStatusRawText(): String {
-    return trim()
-        .replace("\\r\\n", "\n")
-        .replace("\\n", "\n")
-        .replace("\\t", " ")
-}
-
 fun imageMessagePart(
     uri: String,
     mimeType: String = "",
@@ -567,29 +543,7 @@ fun normalizeChatMessageParts(parts: List<ChatMessagePart>): List<ChatMessagePar
             }
 
             ChatMessagePartType.STATUS -> {
-                if (part.text.isBlank()) {
-                    return@forEach
-                }
-                normalized += part.copy(
-                    text = part.text.trim(),
-                    uri = "",
-                    mimeType = "",
-                    fileName = "",
-                    actionType = null,
-                    actionId = "",
-                    actionMetadata = emptyMap(),
-                    specialType = null,
-                    specialId = "",
-                    specialDirection = null,
-                    specialStatus = null,
-                    specialCounterparty = "",
-                    specialAmount = "",
-                    specialNote = "",
-                    specialMetadata = normalizeSpecialMetadata(part.specialMetadata),
-                    replyToMessageId = "",
-                    replyToPreview = "",
-                    replyToSpeakerName = "",
-                )
+                return@forEach
             }
         }
     }
@@ -630,7 +584,6 @@ fun List<ChatMessagePart>.toContentMirror(
         normalized.any { it.type == ChatMessagePartType.SPECIAL } -> normalized.firstOrNull {
             it.type == ChatMessagePartType.SPECIAL
         }?.specialPlayFallbackText().orEmpty().ifBlank { specialFallback }
-        normalized.any { it.type == ChatMessagePartType.STATUS } -> "状态卡"
         else -> ""
     }
 }

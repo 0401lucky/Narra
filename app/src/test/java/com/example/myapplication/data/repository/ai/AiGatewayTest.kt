@@ -1749,7 +1749,7 @@ class AiGatewayTest {
     }
 
     @Test
-    fun parseAssistantSpecialOutput_extractsStatusBlockAsStatusCard() {
+    fun parseAssistantSpecialOutput_stripsStatusBlock() {
         val gateway = createGateway(settings = AppSettings())
 
         val parsed = gateway.parseAssistantSpecialOutput(
@@ -1758,14 +1758,13 @@ class AiGatewayTest {
         )
 
         assertEquals("我在。", parsed.content)
-        assertEquals(ChatMessagePartType.TEXT, parsed.parts.first().type)
-        assertEquals(ChatMessagePartType.STATUS, parsed.parts.last().type)
-        assertEquals("心情：紧张\n位置：门口", parsed.parts.last().text)
-        assertEquals("状态", parsed.parts.last().specialMetadataValue("title"))
+        assertEquals(1, parsed.parts.size)
+        assertEquals(ChatMessagePartType.TEXT, parsed.parts.single().type)
+        assertEquals("我在。", parsed.parts.single().text)
     }
 
     @Test
-    fun parseAssistantSpecialOutput_extractsBracketStatusBarAsStatusCard() {
+    fun parseAssistantSpecialOutput_stripsBracketStatusBar() {
         val gateway = createGateway(settings = AppSettings())
 
         val parsed = gateway.parseAssistantSpecialOutput(
@@ -1781,28 +1780,29 @@ class AiGatewayTest {
             existingParts = emptyList(),
         )
 
-        assertEquals(ChatMessagePartType.TEXT, parsed.parts.first().type)
-        assertEquals(ChatMessagePartType.STATUS, parsed.parts[1].type)
-        assertTrue(parsed.parts[1].text.contains("时间：21:00"))
-        assertTrue(parsed.parts.last().text.contains("<content>"))
+        assertEquals(1, parsed.parts.size)
+        assertEquals(ChatMessagePartType.TEXT, parsed.parts.single().type)
+        assertTrue(!parsed.parts.single().text.contains("时间：21:00"))
+        assertTrue(parsed.parts.single().text.contains("<content>"))
     }
 
     @Test
-    fun parseAssistantSpecialOutput_keepsStatusBlockAsTextWhenDisabled() {
+    fun parseAssistantSpecialOutput_stripsStatusBlockEvenWhenDisabled() {
         val gateway = createGateway(settings = AppSettings())
 
         val parsed = gateway.parseAssistantSpecialOutput(
-            content = "```status\n心情：平稳\n```",
+            content = "```status\n时间：10:00\n心情：平稳\n```\n我在。",
             existingParts = emptyList(),
             statusCardsEnabled = false,
         )
 
+        assertEquals("我在。", parsed.content)
         assertEquals(ChatMessagePartType.TEXT, parsed.parts.single().type)
-        assertTrue(parsed.content.contains("```status"))
+        assertEquals("我在。", parsed.parts.single().text)
     }
 
     @Test
-    fun parseAssistantSpecialOutput_canKeepRawStatusBlockAndRenderCard() {
+    fun parseAssistantSpecialOutput_stripsStatusBlockEvenWhenRawDisplayRequested() {
         val gateway = createGateway(settings = AppSettings())
 
         val parsed = gateway.parseAssistantSpecialOutput(
@@ -1812,10 +1812,10 @@ class AiGatewayTest {
             hideStatusBlocksInBubble = false,
         )
 
-        assertTrue(parsed.content.contains("<status>"))
-        assertEquals(ChatMessagePartType.TEXT, parsed.parts.first().type)
-        assertEquals(ChatMessagePartType.STATUS, parsed.parts.last().type)
-        assertEquals("心情：紧张", parsed.parts.last().text)
+        assertEquals("正文", parsed.content)
+        assertEquals(1, parsed.parts.size)
+        assertEquals(ChatMessagePartType.TEXT, parsed.parts.single().type)
+        assertEquals("正文", parsed.parts.single().text)
     }
 
     private fun createGateway(

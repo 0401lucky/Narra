@@ -408,7 +408,6 @@ fun RoleplayScreen(
             scenario = scenario,
             assistant = assistant,
             settings = settings,
-            contextStatus = contextStatus,
             messages = messages,
             suggestions = suggestions,
             input = input,

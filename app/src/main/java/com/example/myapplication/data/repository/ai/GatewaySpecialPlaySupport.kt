@@ -117,6 +117,7 @@ internal object GatewaySpecialPlaySupport {
     fun parseAssistantSpecialOutput(
         content: String,
         existingParts: List<ChatMessagePart>,
+        @Suppress("UNUSED_PARAMETER")
         statusCardsEnabled: Boolean = true,
         hideStatusBlocksInBubble: Boolean = true,
     ): ParsedAssistantSpecialOutput {
@@ -179,16 +180,12 @@ internal object GatewaySpecialPlaySupport {
             }
         }
 
-        val normalizedVisibleParts = if (statusCardsEnabled) {
-            normalizeChatMessageParts(
-                ChatStatusBlockParser.extractFromParts(
-                    parts = renderedParts,
-                    hideStatusBlocksInBubble = hideStatusBlocksInBubble,
-                ),
+        val normalizedVisibleParts = normalizeChatMessageParts(
+            ChatStatusBlockParser.extractFromParts(
+                parts = renderedParts,
+                hideStatusBlocksInBubble = hideStatusBlocksInBubble,
             )
-        } else {
-            normalizeChatMessageParts(renderedParts)
-        }
+        )
         return ParsedAssistantSpecialOutput(
             content = normalizedVisibleParts.toPlainText(),
             parts = normalizeChatMessageParts(normalizedVisibleParts + preservedNonTextParts),

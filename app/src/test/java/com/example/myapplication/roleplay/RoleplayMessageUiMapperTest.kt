@@ -352,7 +352,7 @@ class RoleplayMessageUiMapperTest {
     }
 
     @Test
-    fun mapMessages_inLongformModeExtractsLeadingStatusBlock() {
+    fun mapMessages_inLongformModeStripsLeadingStatusBlock() {
         val scenario = RoleplayScenario(
             id = "scene-1",
             title = "长文模式",
@@ -386,17 +386,15 @@ class RoleplayMessageUiMapperTest {
             nowProvider = { 20L },
         )
 
-        assertEquals(2, mapped.size)
-        assertEquals(RoleplayContentType.STATUS, mapped[0].contentType)
-        assertTrue(mapped[0].content.contains("时间：23:03"))
-        assertEquals(RoleplayContentType.LONGFORM, mapped[1].contentType)
-        assertTrue(mapped[1].content.contains("—— 外滩夜色 ——"))
-        assertTrue(mapped[1].content.contains("拇指停在后腰窝的位置。"))
-        assertTrue(!mapped[1].content.contains("时间：23:03"))
+        assertEquals(1, mapped.size)
+        assertEquals(RoleplayContentType.LONGFORM, mapped.single().contentType)
+        assertTrue(mapped.single().content.contains("—— 外滩夜色 ——"))
+        assertTrue(mapped.single().content.contains("拇指停在后腰窝的位置。"))
+        assertTrue(!mapped.single().content.contains("时间：23:03"))
     }
 
     @Test
-    fun mapMessages_extractsLeadingStatusBlockFromDialogueContent() {
+    fun mapMessages_stripsLeadingStatusBlockFromDialogueContent() {
         val scenario = RoleplayScenario(
             id = "scene-1",
             title = "普通模式",
@@ -425,16 +423,14 @@ class RoleplayMessageUiMapperTest {
             nowProvider = { 20L },
         )
 
-        assertEquals(2, mapped.size)
-        assertEquals(RoleplayContentType.STATUS, mapped[0].contentType)
-        assertTrue(mapped[0].content.contains("时间：10:07"))
-        assertTrue(!mapped[0].content.contains("『时间"))
-        assertTrue(mapped[1].content.contains("录音笔轻轻放在桌面上"))
-        assertTrue(!mapped[1].content.contains("时间：10:07"))
+        assertEquals(1, mapped.size)
+        assertEquals(RoleplayContentType.DIALOGUE, mapped.single().contentType)
+        assertTrue(mapped.single().content.contains("录音笔轻轻放在桌面上"))
+        assertTrue(!mapped.single().content.contains("时间：10:07"))
     }
 
     @Test
-    fun mapMessages_extractsLeadingStatusBlockBeforeOnlineProtocolFallback() {
+    fun mapMessages_stripsLeadingStatusBlockBeforeOnlineProtocolFallback() {
         val scenario = RoleplayScenario(
             id = "scene-1",
             title = "线上模式",
@@ -470,18 +466,15 @@ class RoleplayMessageUiMapperTest {
             nowProvider = { 20L },
         )
 
-        assertTrue(mapped.size >= 2)
-        assertEquals(RoleplayContentType.STATUS, mapped[0].contentType)
-        assertTrue(mapped[0].content.contains("时间：10:07"))
-        assertTrue(!mapped[0].content.contains("『时间"))
-        val visibleBody = mapped.drop(1).joinToString(separator = "\n") { it.content }
+        assertTrue(mapped.isNotEmpty())
+        val visibleBody = mapped.joinToString(separator = "\n") { it.content }
         assertTrue(visibleBody.contains("卷页翻开"))
         assertTrue(visibleBody.contains("录音笔"))
         assertTrue(!visibleBody.contains("时间：10:07"))
     }
 
     @Test
-    fun mapMessages_onlineModeRendersSlashWrappedStatusBlock() {
+    fun mapMessages_onlineModeStripsSlashWrappedStatusBlock() {
         val scenario = RoleplayScenario(
             id = "scene-1",
             title = "线上模式",
@@ -516,11 +509,9 @@ class RoleplayMessageUiMapperTest {
             nowProvider = { 20L },
         )
 
-        assertEquals(2, mapped.size)
-        assertEquals(RoleplayContentType.STATUS, mapped[0].contentType)
-        assertTrue(mapped[0].content.contains("心情：被激到"))
-        assertEquals(RoleplayContentType.DIALOGUE, mapped[1].contentType)
-        assertEquals("我上个月喝多了，当着全家人的面说了。", mapped[1].content)
+        assertEquals(1, mapped.size)
+        assertEquals(RoleplayContentType.DIALOGUE, mapped.single().contentType)
+        assertEquals("我上个月喝多了，当着全家人的面说了。", mapped.single().content)
     }
 
     @Test

@@ -1,16 +1,16 @@
 {
   "app_id": "com.narra.app.dev",
   "channel": "dev",
-  "latest_version_name": "1.7.7-dev",
-  "latest_version_code": 10707,
+  "latest_version_name": "1.7.9-dev",
+  "latest_version_code": 10709,
   "minimum_supported_version_code": 0,
-  "apk_url": "https://download.lsa1230.dpdns.org/dev/Narra-v1.7.7-dev-10707-dev.apk?v=10707",
-  "apk_sha256": "826e9a3e6093f96fb3e31135b814109380e84c9cf553235f32dfc32484917978",
-  "published_at": "2026-05-19T09:42:21+08:00",
+  "apk_url": "https://download.lsa1230.dpdns.org/dev/Narra-v1.7.9-dev-10709-dev.apk?v=10709",
+  "apk_sha256": "8f438b6be3af30c03f9d9a63ccb5002f05c3814f4afe9be4742f02c8747ad389",
+  "published_at": "2026-05-24T19:24:19+08:00",
   "release_notes": [
-    "修复沉浸式刷新摘要或记忆后，上下文日志可能展示全量聊天历史的问题",
-    "普通聊天上下文治理日志同步改为使用裁剪后的实际发送窗口",
-    "明确长记忆提取与聊天摘要压缩的边界，最近 N 条消息仍保留原文",
-    "长记忆和剧情摘要卡片支持展开全文，长内容可完整查看"
+    "移除聊天状态栏 / 状态卡展示链路，状态块会被剥离且不再进入上下文",
+    "默认预设禁止输出状态栏、状态卡和前端状态面板代码",
+    "强化角色卡执行与反八股规则，让回复更贴合人设、减少固定套路",
+    "新建聊天页的已选角色入口改为更醒目的整行角色卡"
   ]
 }

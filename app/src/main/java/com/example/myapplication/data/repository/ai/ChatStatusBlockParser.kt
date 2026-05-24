@@ -2,7 +2,6 @@ package com.example.myapplication.data.repository.ai
 
 import com.example.myapplication.model.ChatMessagePart
 import com.example.myapplication.model.ChatMessagePartType
-import com.example.myapplication.model.statusMessagePart
 import com.example.myapplication.model.textMessagePart
 
 internal object ChatStatusBlockParser {
@@ -32,14 +31,14 @@ internal object ChatStatusBlockParser {
         }
         return runCatching {
             parts.flatMap { part ->
-                if (part.type == ChatMessagePartType.TEXT) {
-                    extract(part.text, hideStatusBlocksInBubble)
-                } else {
-                    listOf(part)
+                when (part.type) {
+                    ChatMessagePartType.TEXT -> extract(part.text, hideStatusBlocksInBubble)
+                    ChatMessagePartType.STATUS -> emptyList()
+                    else -> listOf(part)
                 }
             }
         }.getOrElse {
-            parts
+            parts.filterNot { part -> part.type == ChatMessagePartType.STATUS }
         }
     }
 
@@ -57,6 +56,7 @@ internal object ChatStatusBlockParser {
         }
     }
 
+    @Suppress("UNUSED_PARAMETER")
     private fun extractUnsafe(
         text: String,
         hideStatusBlocksInBubble: Boolean,
@@ -70,10 +70,6 @@ internal object ChatStatusBlockParser {
                 add(
                     StatusMatch(
                         range = match.range,
-                        title = match.groupValues.getOrNull(1)
-                            .orEmpty()
-                            .statusTitle(),
-                        rawText = match.groupValues.getOrNull(2).orEmpty(),
                     ),
                 )
             }
@@ -81,10 +77,6 @@ internal object ChatStatusBlockParser {
                 add(
                     StatusMatch(
                         range = match.range,
-                        title = match.groupValues.getOrNull(1)
-                            .orEmpty()
-                            .statusTitle(),
-                        rawText = match.groupValues.getOrNull(2).orEmpty(),
                     ),
                 )
             }
@@ -92,10 +84,6 @@ internal object ChatStatusBlockParser {
                 add(
                     StatusMatch(
                         range = match.range,
-                        title = match.groupValues.getOrNull(1)
-                            .orEmpty()
-                            .statusTitle(),
-                        rawText = match.groupValues.getOrNull(2).orEmpty(),
                     ),
                 )
             }
@@ -103,8 +91,6 @@ internal object ChatStatusBlockParser {
                 add(
                     StatusMatch(
                         range = match.range,
-                        title = "状态栏",
-                        rawText = match.groupValues.getOrNull(1).orEmpty(),
                     ),
                 )
             }
@@ -113,9 +99,7 @@ internal object ChatStatusBlockParser {
                 if (rawStatus.isLikelyStatusBlock()) {
                     add(
                         StatusMatch(
-                            range = match.range,
-                            title = "状态栏",
-                            rawText = rawStatus,
+                            range = match.range.expandLeadingStatusLabel(sourceText, rawStatus),
                         ),
                     )
                 }
@@ -137,15 +121,6 @@ internal object ChatStatusBlockParser {
             return listOf(textMessagePart(sourceText))
         }
 
-        if (!hideStatusBlocksInBubble) {
-            return listOf(textMessagePart(sourceText)) + matches.mapNotNull { match ->
-                match.rawText
-                    .trim()
-                    .takeIf { it.isNotBlank() }
-                    ?.let { raw -> statusMessagePart(rawText = raw, title = match.title) }
-            }
-        }
-
         val result = mutableListOf<ChatMessagePart>()
         var cursor = 0
         matches.forEach { match ->
@@ -155,10 +130,6 @@ internal object ChatStatusBlockParser {
                     .takeIf { it.isNotBlank() }
                     ?.let { result += textMessagePart(it) }
             }
-            match.rawText
-                .trim()
-                .takeIf { it.isNotBlank() }
-                ?.let { raw -> result += statusMessagePart(rawText = raw, title = match.title) }
             cursor = match.range.last + 1
         }
         if (cursor < sourceText.length) {
@@ -172,8 +143,6 @@ internal object ChatStatusBlockParser {
 
     private data class StatusMatch(
         val range: IntRange,
-        val title: String,
-        val rawText: String,
     )
 
     private fun findLeadingLooseStatusBlock(text: String): StatusMatch? {
@@ -219,8 +188,6 @@ internal object ChatStatusBlockParser {
         }
         return StatusMatch(
             range = statusStart until statusEnd,
-            title = "状态栏",
-            rawText = rawStatus,
         )
     }
 
@@ -228,14 +195,36 @@ internal object ChatStatusBlockParser {
         return first <= other.last && other.first <= last
     }
 
-    private fun String.statusTitle(): String {
-        return when (trim().lowercase()) {
-            "statusblock" -> "状态块"
-            "user_status" -> "用户状态"
-            "statusbar", "状态栏" -> "状态栏"
-            "tracker" -> "状态追踪"
-            else -> "状态"
+    private fun IntRange.expandLeadingStatusLabel(text: String, rawStatus: String): IntRange {
+        if (first <= 0) {
+            return this
         }
+        val lineBreakBeforeMatch = text.lastIndexOf('\n', startIndex = first - 1)
+        if (lineBreakBeforeMatch < 0 || lineBreakBeforeMatch + 1 != first) {
+            return this
+        }
+        val previousLineBreak = text.lastIndexOf('\n', startIndex = lineBreakBeforeMatch - 1)
+        val previousLineStart = previousLineBreak + 1
+        val previousLine = text.substring(previousLineStart, lineBreakBeforeMatch).trim()
+        if (!previousLine.isLikelyStatusLabelFor(rawStatus)) {
+            return this
+        }
+        return previousLineStart..last
+    }
+
+    private fun String.isLikelyStatusLabelFor(rawStatus: String): Boolean {
+        if (isBlank() || length > 16 || any(Char::isWhitespace)) {
+            return false
+        }
+        val forbiddenChars = setOf(
+            '。', '！', '？', '，', '、', ',', '.', '!', '?',
+            '：', ':', '|', '｜', '<', '>', '[', ']', '【', '】',
+            '『', '』', '「', '」', '“', '”', '"', '\'',
+        )
+        if (any { char -> char in forbiddenChars }) {
+            return false
+        }
+        return rawStatus.contains(this) || rawStatus.contains("${this}状态")
     }
 
     private fun String.isLikelyStatusBlock(): Boolean {

@@ -121,7 +121,6 @@ internal fun RoleplaySettingsSidebarContent(
     onOpenModelPicker: () -> Unit,
     onOpenContextLog: () -> Unit,
     onUpdateShowRoleplayPresenceStrip: (Boolean) -> Unit,
-    onUpdateShowRoleplayStatusStrip: (Boolean) -> Unit,
     onUpdateShowOnlineRoleplayNarration: (Boolean) -> Unit,
     onUpdateShowRoleplayAiHelper: (Boolean) -> Unit,
     onUpdateScenarioNarrationEnabled: (Boolean) -> Unit,
@@ -253,7 +252,6 @@ internal fun RoleplaySettingsSidebarContent(
                     scenario = scenario,
                     settings = settings,
                     onUpdateShowRoleplayPresenceStrip = onUpdateShowRoleplayPresenceStrip,
-                    onUpdateShowRoleplayStatusStrip = onUpdateShowRoleplayStatusStrip,
                     onUpdateShowRoleplayAiHelper = onUpdateShowRoleplayAiHelper,
                     onUpdateShowOnlineRoleplayNarration = onUpdateShowOnlineRoleplayNarration,
                 )

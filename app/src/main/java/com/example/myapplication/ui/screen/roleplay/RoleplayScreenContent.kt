@@ -43,7 +43,6 @@ import com.example.myapplication.model.ChatSpecialPlayDraft
 import com.example.myapplication.model.ChatSpecialType
 import com.example.myapplication.model.PendingMemoryProposal
 import com.example.myapplication.model.RoleplayImmersiveMode
-import com.example.myapplication.model.RoleplayContextStatus
 import com.example.myapplication.model.RoleplayMessageUiModel
 import com.example.myapplication.model.RoleplayScenario
 import com.example.myapplication.model.RoleplaySpeaker
@@ -70,7 +69,6 @@ internal fun RoleplaySceneContent(
     scenario: RoleplayScenario,
     assistant: Assistant?,
     settings: AppSettings,
-    contextStatus: RoleplayContextStatus,
     messages: List<RoleplayMessageUiModel>,
     suggestions: List<RoleplaySuggestionUiModel>,
     input: String,
@@ -203,9 +201,6 @@ internal fun RoleplaySceneContent(
                         sceneMoodState = sceneMoodState,
                         sceneMoodColor = sceneMoodColor,
                         backdropState = backdropState,
-                        scenario = scenario,
-                        contextStatus = contextStatus,
-                        showStatusStrip = settings.showRoleplayStatusStrip,
                         onOpenSettings = onOpenSettings,
                         onNavigateBack = onNavigateBack,
                         onToggleChrome = { chromeVisible = false },
@@ -363,9 +358,6 @@ private fun RoleplaySceneTopBar(
     sceneMoodState: RoleplaySceneMoodState,
     sceneMoodColor: Color,
     backdropState: ImmersiveBackdropState,
-    scenario: RoleplayScenario,
-    contextStatus: RoleplayContextStatus,
-    showStatusStrip: Boolean,
     onOpenSettings: () -> Unit,
     onNavigateBack: () -> Unit,
     onToggleChrome: () -> Unit,
@@ -419,23 +411,8 @@ private fun RoleplaySceneTopBar(
                             .size(8.dp)
                             .background(color = sceneMoodColor, shape = RoundedCornerShape(4.dp)),
                     )
-                    val subtitle = buildString {
-                        append(sceneMoodState.label)
-                        if (showStatusStrip) {
-                            append(" · ")
-                            append(if (scenario.longformModeEnabled) "长文" else "对白")
-                            append(" · ")
-                            append(if (contextStatus.isContinuingSession) "继续" else "新剧情")
-                            if (contextStatus.worldBookHitCount > 0) {
-                                append(" · 世界书 ${contextStatus.worldBookHitCount}")
-                            }
-                            if (contextStatus.memoryInjectionCount > 0) {
-                                append(" · 记忆 ${contextStatus.memoryInjectionCount}")
-                            }
-                        }
-                    }
                     Text(
-                        text = subtitle,
+                        text = sceneMoodState.label,
                         style = MaterialTheme.typography.bodySmall,
                         color = palette.onGlassMuted,
                         maxLines = 1,

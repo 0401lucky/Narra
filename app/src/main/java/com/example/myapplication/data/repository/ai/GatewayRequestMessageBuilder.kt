@@ -188,9 +188,7 @@ internal object GatewayRequestMessageBuilder {
                         }
                         ChatMessagePartType.ACTION -> null
                         ChatMessagePartType.SPECIAL -> GatewaySpecialPlaySupport.buildSpecialPlayPrompt(part)
-                        ChatMessagePartType.STATUS -> part.text
-                            .takeIf { it.isNotBlank() }
-                            ?.let { status -> "【状态卡】\n$status" }
+                        ChatMessagePartType.STATUS -> null
                         ChatMessagePartType.IMAGE,
                         ChatMessagePartType.FILE,
                         -> null
@@ -267,9 +265,7 @@ internal object GatewayRequestMessageBuilder {
                     }
 
                     ChatMessagePartType.STATUS -> {
-                        if (part.text.isNotBlank()) {
-                            add(TextContentPartDto(text = "【状态卡】\n${part.text}"))
-                        }
+                        Unit
                     }
                 }
             }

@@ -44,7 +44,6 @@ import com.example.myapplication.model.RoleplayNoBackgroundSkinSettings
 import com.example.myapplication.model.RoleplaySpeaker
 import com.example.myapplication.ui.component.AssistantAvatar
 import com.example.myapplication.ui.component.SpecialPlayCard
-import com.example.myapplication.ui.component.StatusCardPart
 import com.example.myapplication.ui.component.copyPlainTextToClipboard
 
 @Composable
@@ -519,25 +518,7 @@ private fun RoleplayMessageItemContent(
         }
 
         RoleplayContentType.STATUS -> {
-            val statusPart = message.specialPart ?: return
-            Box(
-                modifier = Modifier.fillMaxWidth(),
-                contentAlignment = Alignment.Center,
-            ) {
-                RoleplayMessageMenuWrapper(
-                    message = message,
-                    onRetryTurn = onRetryTurn,
-                    onEditUserMessage = onEditUserMessage,
-                    modifier = Modifier.fillMaxWidth(0.92f),
-                    onQuoteMessage = onQuoteMessage,
-                    onRecallMessage = onRecallMessage,
-                ) {
-                    StatusCardPart(
-                        part = statusPart,
-                        contentColor = colors.textPrimary,
-                    )
-                }
-            }
+            Unit
         }
 
         RoleplayContentType.SYSTEM -> Unit

@@ -22,7 +22,6 @@ import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.SettingsSuggest
 import androidx.compose.material.icons.filled.TextFields
 import androidx.compose.material.icons.filled.Tune
-import androidx.compose.material.icons.filled.ViewAgenda
 import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material.icons.filled.WarningAmber
 import androidx.compose.material3.HorizontalDivider
@@ -67,7 +66,7 @@ import com.example.myapplication.ui.screen.settings.SettingsStatusPill
 import kotlin.math.roundToInt
 
 /**
- * 可视性开关组：身份条 / 状态条 / AI 帮写，以及线上模式特有的心声和网络热梗。
+ * 可视性开关组：身份条 / AI 帮写，以及线上模式特有的心声和网络热梗。
  */
 @Composable
 internal fun RoleplaySettingsToggleSection(
@@ -75,7 +74,6 @@ internal fun RoleplaySettingsToggleSection(
     scenario: RoleplayScenario?,
     settings: AppSettings,
     onUpdateShowRoleplayPresenceStrip: (Boolean) -> Unit,
-    onUpdateShowRoleplayStatusStrip: (Boolean) -> Unit,
     onUpdateShowRoleplayAiHelper: (Boolean) -> Unit,
     onUpdateShowOnlineRoleplayNarration: (Boolean) -> Unit,
 ) {
@@ -93,20 +91,6 @@ internal fun RoleplaySettingsToggleSection(
             title = stringResource(id = R.string.roleplay_settings_show_presence_strip),
             checked = settings.showRoleplayPresenceStrip,
             onCheckedChange = onUpdateShowRoleplayPresenceStrip,
-        )
-        SectionDivider(palette = palette)
-        RoleplaySettingSwitchRow(
-            palette = palette,
-            icon = {
-                Icon(
-                    imageVector = Icons.Default.ViewAgenda,
-                    contentDescription = null,
-                    tint = RoleplaySettingsPanelAccentColor,
-                )
-            },
-            title = stringResource(id = R.string.roleplay_settings_show_status_strip),
-            checked = settings.showRoleplayStatusStrip,
-            onCheckedChange = onUpdateShowRoleplayStatusStrip,
         )
         SectionDivider(palette = palette)
         RoleplaySettingSwitchRow(

@@ -19,7 +19,6 @@
 
     <!-- 设置页开关组 -->
     <string name="roleplay_settings_show_presence_strip">显示身份条</string>
-    <string name="roleplay_settings_show_status_strip">显示状态条</string>
     <string name="roleplay_settings_show_ai_helper">显示 AI 帮写</string>
     <string name="roleplay_settings_show_online_narration">显示心声与状态提示</string>
     <string name="roleplay_settings_show_online_narration_hint">关闭后不会继续生成或显示线上心声星标，仍保留必要的系统状态提示。</string>

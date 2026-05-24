@@ -522,7 +522,6 @@ internal fun NavGraphBuilder.registerRoleplayGraph(
                     }
                 },
                 onUpdateShowRoleplayPresenceStrip = settingsViewModel::updateShowRoleplayPresenceStrip,
-                onUpdateShowRoleplayStatusStrip = settingsViewModel::updateShowRoleplayStatusStrip,
                 onUpdateShowOnlineRoleplayNarration = settingsViewModel::updateShowOnlineRoleplayNarration,
                 onUpdateShowRoleplayAiHelper = settingsViewModel::updateShowRoleplayAiHelper,
                 onUpdateScenarioNarrationEnabled = roleplayViewModel::updateCurrentScenarioNarrationEnabled,

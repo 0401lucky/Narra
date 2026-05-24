@@ -254,7 +254,7 @@ fun SettingsScreen(
                     SettingsListRow(
                         leadingContent = { Icon(Icons.Default.LibraryBooks, contentDescription = null, tint = palette.title) },
                         title = "预设管理",
-                        supportingText = "Prompt Manager、状态卡与默认预设",
+                        supportingText = "Prompt Manager、条目顺序与默认预设",
                         onClick = onOpenPresetSettings,
                     )
                     SettingsGroupDivider()

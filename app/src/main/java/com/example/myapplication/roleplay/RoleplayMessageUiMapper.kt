@@ -24,7 +24,6 @@ import com.example.myapplication.model.isOnlineThoughtPart
 import com.example.myapplication.model.isSpecialPlayPart
 import com.example.myapplication.model.normalizeChatMessageParts
 import com.example.myapplication.model.onlineThoughtContent
-import com.example.myapplication.model.specialMetadataValue
 import com.example.myapplication.model.toActionCopyText
 import com.example.myapplication.model.toPlainText
 import com.example.myapplication.model.toSpecialPlayCopyText
@@ -376,18 +375,9 @@ object RoleplayMessageUiMapper {
             }
             val longformSource = rawContent
             val longformParts = ChatStatusBlockParser.extract(longformSource, hideStatusBlocksInBubble = true)
-            if (longformParts.any { it.type == ChatMessagePartType.STATUS }) {
+            if (!longformParts.isSameSingleText(longformSource)) {
                 longformParts.forEach { part ->
                     when (part.type) {
-                        ChatMessagePartType.STATUS -> {
-                            target += part.toRoleplayStatusUiModel(
-                                sourceMessageId = message.id,
-                                createdAt = message.createdAt,
-                                messageStatus = message.status,
-                                canRetry = canRetry,
-                            )
-                        }
-
                         ChatMessagePartType.TEXT -> {
                             appendLongformTextUiModel(
                                 target = target,
@@ -469,15 +459,6 @@ object RoleplayMessageUiMapper {
 
         normalizedParts.forEach { part ->
             when {
-                part.type == ChatMessagePartType.STATUS -> {
-                    target += part.toRoleplayStatusUiModel(
-                        sourceMessageId = message.id,
-                        createdAt = message.createdAt,
-                        messageStatus = message.status,
-                        canRetry = canRetry,
-                    )
-                }
-
                 part.isActionPart() -> {
                     target += part.toRoleplayActionUiModel(
                         sourceMessageId = message.id,
@@ -625,18 +606,9 @@ object RoleplayMessageUiMapper {
             text = rawContent,
             hideStatusBlocksInBubble = true,
         )
-        if (statusSplitParts.any { it.type == ChatMessagePartType.STATUS }) {
+        if (!statusSplitParts.isSameSingleText(rawContent)) {
             statusSplitParts.forEach { part ->
                 when (part.type) {
-                    ChatMessagePartType.STATUS -> {
-                        target += part.toRoleplayStatusUiModel(
-                            sourceMessageId = sourceMessageId,
-                            createdAt = createdAt,
-                            messageStatus = messageStatus,
-                            canRetry = canRetry,
-                        )
-                    }
-
                     ChatMessagePartType.TEXT -> {
                         if (
                             !appendOnlineProtocolAssistantMessages(
@@ -850,10 +822,12 @@ object RoleplayMessageUiMapper {
             return normalizedParts
         }
         if (normalizedParts.size == 1 && normalizedParts.single().text.isNotBlank()) {
-            if (ChatStatusBlockParser.extract(normalizedParts.single().text, hideStatusBlocksInBubble = true)
-                    .any { it.type == ChatMessagePartType.STATUS }
-            ) {
-                return normalizedParts
+            val cleanedParts = ChatStatusBlockParser.extract(
+                normalizedParts.single().text,
+                hideStatusBlocksInBubble = true,
+            )
+            if (!cleanedParts.isSameSingleText(normalizedParts.single().text)) {
+                return normalizeChatMessageParts(cleanedParts)
             }
             OnlineInlineThoughtFallback.splitToParts(normalizedParts.single().text)?.let { fallbackParts ->
                 return normalizeChatMessageParts(fallbackParts)
@@ -863,10 +837,12 @@ object RoleplayMessageUiMapper {
             }
         }
         if (normalizedParts.isEmpty()) {
-            if (ChatStatusBlockParser.extract(message.content, hideStatusBlocksInBubble = true)
-                    .any { it.type == ChatMessagePartType.STATUS }
-            ) {
-                return normalizedParts
+            val cleanedParts = ChatStatusBlockParser.extract(
+                message.content,
+                hideStatusBlocksInBubble = true,
+            )
+            if (!cleanedParts.isSameSingleText(message.content)) {
+                return normalizeChatMessageParts(cleanedParts)
             }
             OnlineInlineThoughtFallback.splitToParts(message.content)?.let { fallbackParts ->
                 return normalizeChatMessageParts(fallbackParts)
@@ -923,18 +899,9 @@ object RoleplayMessageUiMapper {
             text = normalizedContent,
             hideStatusBlocksInBubble = true,
         )
-        if (statusSplitParts.any { it.type == ChatMessagePartType.STATUS }) {
+        if (!statusSplitParts.isSameSingleText(normalizedContent)) {
             statusSplitParts.forEach { part ->
                 when (part.type) {
-                    ChatMessagePartType.STATUS -> {
-                        target += part.toRoleplayStatusUiModel(
-                            sourceMessageId = sourceMessageId,
-                            createdAt = createdAt,
-                            messageStatus = messageStatus,
-                            canRetry = canRetry,
-                        )
-                    }
-
                     ChatMessagePartType.TEXT -> {
                         appendAssistantTextSegments(
                             target = target,
@@ -1074,26 +1041,10 @@ object RoleplayMessageUiMapper {
         )
     }
 
-    private fun ChatMessagePart.toRoleplayStatusUiModel(
-        sourceMessageId: String,
-        createdAt: Long,
-        messageStatus: MessageStatus,
-        canRetry: Boolean,
-    ): RoleplayMessageUiModel {
-        val rawStatus = specialMetadataValue("raw").ifBlank { text }.trim()
-        val title = specialMetadataValue("title").ifBlank { "状态" }
-        return RoleplayMessageUiModel(
-            sourceMessageId = sourceMessageId,
-            contentType = RoleplayContentType.STATUS,
-            speaker = RoleplaySpeaker.SYSTEM,
-            speakerName = title,
-            content = rawStatus,
-            createdAt = createdAt,
-            messageStatus = messageStatus,
-            copyText = rawStatus,
-            canRetry = canRetry,
-            specialPart = this,
-        )
+    private fun List<ChatMessagePart>.isSameSingleText(source: String): Boolean {
+        return size == 1 &&
+            single().type == ChatMessagePartType.TEXT &&
+            single().text == source.replace("\r\n", "\n")
     }
 
     private fun ChatMessagePart.toRoleplayActionUiModel(

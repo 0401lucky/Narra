@@ -1190,13 +1190,48 @@ private fun NewChatSheet(
                 }
             } else {
                 selectedAssistant?.let { assistant ->
-                    AssistChip(
-                        onClick = { selectedAssistant = null },
-                        label = { Text(assistant.name.ifBlank { "未命名角色" }) },
-                        leadingIcon = {
-                            Icon(Icons.Default.Person, contentDescription = null, modifier = Modifier.size(18.dp))
-                        },
-                    )
+                    Text("已选择角色", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Surface(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable { selectedAssistant = null },
+                        shape = RoundedCornerShape(18.dp),
+                        color = MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.72f),
+                        contentColor = MaterialTheme.colorScheme.onSecondaryContainer,
+                    ) {
+                        Row(
+                            modifier = Modifier.padding(horizontal = 14.dp, vertical = 12.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(12.dp),
+                        ) {
+                            AssistantAvatar(
+                                name = assistant.name,
+                                iconName = assistant.iconName,
+                                avatarUri = assistant.avatarUri,
+                                size = 40.dp,
+                                cornerRadius = 12.dp,
+                            )
+                            Column(modifier = Modifier.weight(1f)) {
+                                Text(
+                                    text = assistant.name.ifBlank { "未命名角色" },
+                                    style = MaterialTheme.typography.titleSmall,
+                                    fontWeight = FontWeight.SemiBold,
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis,
+                                )
+                                Text(
+                                    text = "点击这里重新选择角色",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSecondaryContainer.copy(alpha = 0.78f),
+                                )
+                            }
+                            Icon(
+                                Icons.Default.KeyboardArrowDown,
+                                contentDescription = "重新选择角色",
+                                modifier = Modifier.size(22.dp),
+                            )
+                        }
+                    }
                 }
                 Text("选择聊天模式", color = MaterialTheme.colorScheme.onSurfaceVariant)
                 ModeOptions.forEach { option ->

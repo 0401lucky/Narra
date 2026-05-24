@@ -229,7 +229,7 @@ fun RoleplayReadingMode(
 
                             RoleplayContentType.SPECIAL_PLAY -> TransferReadingBlock(message)
 
-                            RoleplayContentType.STATUS -> SystemReadingBlock(message, backdropState)
+                            RoleplayContentType.STATUS -> Unit
                         }
                     }
                 }

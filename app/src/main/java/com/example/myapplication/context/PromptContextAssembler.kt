@@ -381,13 +381,21 @@ class DefaultPromptContextAssembler(
         val roleDescription = assistant?.description
             ?.trim()
             .orEmpty()
+        val roleTags = assistant?.tags
+            .orEmpty()
+            .map { it.trim() }
+            .filter { it.isNotBlank() }
         val creatorNotes = assistant?.creatorNotes
             ?.trim()
             .orEmpty()
-        if (roleDescription.isBlank() && (promptMode != PromptMode.ROLEPLAY || creatorNotes.isBlank())) {
+        if (roleDescription.isBlank() && roleTags.isEmpty() && (promptMode != PromptMode.ROLEPLAY || creatorNotes.isBlank())) {
             return null
         }
         return buildString {
+            if (promptMode == PromptMode.ROLEPLAY && (roleDescription.isNotBlank() || roleTags.isNotEmpty())) {
+                append("【角色卡执行要求】\n")
+                append("以下内容是当前角色的稳定事实和行为约束。回复前必须先读，不要只套用通用文风；至少让两项设定影响本轮语气、边界或行动。\n\n")
+            }
             if (roleDescription.isNotBlank()) {
                 append(
                     if (promptMode == PromptMode.ROLEPLAY) {
@@ -405,6 +413,13 @@ class DefaultPromptContextAssembler(
                         ),
                     ),
                 )
+            }
+            if (promptMode == PromptMode.ROLEPLAY && roleTags.isNotEmpty()) {
+                if (isNotBlank()) {
+                    append("\n\n")
+                }
+                append("【角色标签】\n")
+                append(roleTags.joinToString("、"))
             }
             if (promptMode == PromptMode.ROLEPLAY && creatorNotes.isNotBlank()) {
                 if (isNotBlank()) {

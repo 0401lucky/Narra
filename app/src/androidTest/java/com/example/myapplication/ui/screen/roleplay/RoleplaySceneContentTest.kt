@@ -8,7 +8,6 @@ import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.performClick
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.example.myapplication.model.AppSettings
-import com.example.myapplication.model.RoleplayContextStatus
 import com.example.myapplication.model.RoleplayImmersiveMode
 import com.example.myapplication.model.RoleplayScenario
 import org.junit.Rule
@@ -34,7 +33,6 @@ class RoleplaySceneContentTest {
                 settings = AppSettings(
                     roleplayImmersiveMode = RoleplayImmersiveMode.NONE,
                 ),
-                contextStatus = RoleplayContextStatus(),
                 messages = emptyList(),
                 suggestions = emptyList(),
                 input = "",

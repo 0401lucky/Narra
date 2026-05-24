@@ -167,7 +167,7 @@ fun PresetListScreen(
             item {
                 SettingsPageIntro(
                     title = "真预设",
-                    summary = "内置预设只读；复制或导入后才能编辑条目、开关、顺序和状态卡规则。",
+                    summary = "内置预设只读；复制或导入后才能编辑条目、开关和发送顺序。",
                 )
             }
             item {
@@ -314,7 +314,6 @@ private fun PresetListRow(
         supportingText = buildString {
             append(if (preset.builtIn) "内置只读" else "我的预设")
             append(" · ${preset.entries.size} 个条目")
-            if (preset.renderConfig.statusCardsEnabled) append(" · 状态卡开启")
         },
         onClick = onOpen,
         trailingContent = {
@@ -407,7 +406,7 @@ fun PresetEditScreen(
                 SettingsPageIntro(
                     title = if (readOnly) "只读内置预设" else "编辑我的预设",
                     summary = if (readOnly) {
-                        "可以查看条目、最终顺序和状态卡规则；需要修改时请先复制为我的预设。"
+                        "可以查看条目和最终顺序；需要修改时请先复制为我的预设。"
                     } else {
                         "条目顺序决定最终发送顺序，Chat History 后面的条目会作为后置指令发送。"
                     },
@@ -429,37 +428,6 @@ fun PresetEditScreen(
                         enabled = !readOnly,
                         minLines = 2,
                         onValueChange = { value -> draft = draft.copy(description = value) },
-                    )
-                    SettingsGroupDivider()
-                    SettingsListRow(
-                        leadingContent = { Icon(Icons.Default.Tune, null, tint = palette.title) },
-                        title = "状态卡识别",
-                        supportingText = "识别 status / 状态栏块并渲染为安全卡片",
-                        enabled = !readOnly,
-                        trailingContent = {
-                            Switch(
-                                checked = draft.renderConfig.statusCardsEnabled,
-                                enabled = !readOnly,
-                                onCheckedChange = { checked ->
-                                    draft = draft.copy(renderConfig = draft.renderConfig.copy(statusCardsEnabled = checked))
-                                },
-                            )
-                        },
-                    )
-                    SettingsGroupDivider()
-                    SettingsListRow(
-                        title = "隐藏原始状态块",
-                        supportingText = "开启后正文气泡只显示状态卡，避免状态栏重复刷屏",
-                        enabled = !readOnly && draft.renderConfig.statusCardsEnabled,
-                        trailingContent = {
-                            Switch(
-                                checked = draft.renderConfig.hideStatusBlocksInBubble,
-                                enabled = !readOnly && draft.renderConfig.statusCardsEnabled,
-                                onCheckedChange = { checked ->
-                                    draft = draft.copy(renderConfig = draft.renderConfig.copy(hideStatusBlocksInBubble = checked))
-                                },
-                            )
-                        },
                     )
                     SettingsGroupDivider()
                     SettingsListRow(

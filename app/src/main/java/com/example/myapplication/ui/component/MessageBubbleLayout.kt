@@ -147,12 +147,7 @@ internal fun UserStructuredMessageContent(
                     }
 
                     ChatMessagePartType.STATUS -> {
-                        Box(modifier = Modifier.widthIn(max = MessageBubbleUserMessageMaxWidth)) {
-                            StatusCardPart(
-                                part = part,
-                                contentColor = contentColor,
-                            )
-                        }
+                        Unit
                     }
                 }
             }
@@ -273,8 +268,6 @@ internal fun buildMessageCopyPayload(
                 part.type == ChatMessagePartType.ACTION -> part.toActionCopyText().lineSequence().firstOrNull().orEmpty()
 
                 part.type == ChatMessagePartType.SPECIAL -> part.toSpecialPlayCopyText().lineSequence().firstOrNull().orEmpty()
-
-                part.type == ChatMessagePartType.STATUS -> part.text.lineSequence().firstOrNull().orEmpty().ifBlank { "状态卡" }
 
                 else -> ""
             }
