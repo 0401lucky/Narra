@@ -7,6 +7,7 @@ import com.example.myapplication.model.MessageRole
 import com.example.myapplication.model.MessageStatus
 import com.example.myapplication.model.RoleplayInteractionMode
 import com.example.myapplication.model.RoleplayOnlineEventKind
+import com.example.myapplication.model.RoleplayOutputFormat
 import com.example.myapplication.model.RoleplayScenario
 import com.example.myapplication.model.textMessagePart
 import com.example.myapplication.model.thoughtMessagePart
@@ -165,6 +166,38 @@ class RoleplayOnlineReferenceSupportTest {
         assertTrue(!message.content.contains("time=", ignoreCase = true))
         assertTrue(!message.content.contains("note=", ignoreCase = true))
         assertTrue(!message.content.contains("/>"))
+    }
+
+    @Test
+    fun sanitizeRequestMessages_longformModeStripsDanglingLongformTagsFromHistory() {
+        val sanitized = RoleplayOnlineReferenceSupport.sanitizeRequestMessages(
+            messages = listOf(
+                ChatMessage(
+                    id = "assistant-1",
+                    conversationId = "conv-1",
+                    role = MessageRole.ASSISTANT,
+                    content = "玄关的灯光落下来。<char>“过来。”</char><thought>（不能让她再退。）</thought",
+                    createdAt = 2L,
+                    status = MessageStatus.COMPLETED,
+                    roleplayOutputFormat = RoleplayOutputFormat.LONGFORM,
+                    roleplayInteractionMode = RoleplayInteractionMode.OFFLINE_LONGFORM,
+                ),
+            ),
+            scenario = scenario.copy(
+                interactionMode = RoleplayInteractionMode.OFFLINE_LONGFORM,
+                longformModeEnabled = true,
+            ),
+            assistant = assistant,
+            settings = AppSettings(showOnlineRoleplayNarration = true),
+            outputParser = RoleplayOutputParser(),
+        )
+
+        val message = sanitized.single()
+        assertEquals("玄关的灯光落下来。“过来。”（不能让她再退。）", message.content)
+        assertTrue(message.parts.isEmpty())
+        assertTrue(!message.content.contains("<thought", ignoreCase = true))
+        assertTrue(!message.content.contains("</thought", ignoreCase = true))
+        assertTrue(!message.content.contains("<char", ignoreCase = true))
     }
 
     @Test

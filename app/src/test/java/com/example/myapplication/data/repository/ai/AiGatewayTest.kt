@@ -1342,6 +1342,129 @@ class AiGatewayTest {
     }
 
     @Test
+    fun sendMessageStream_acceptsJsonChatCompletionFromStreamRequest() = runBlocking {
+        server.enqueue(
+            MockResponse()
+                .setResponseCode(200)
+                .setHeader("Content-Type", "application/json")
+                .setBody(
+                    """
+                    {
+                      "choices": [
+                        {
+                          "index": 0,
+                          "message": {
+                            "role": "assistant",
+                            "content": "API 站返回了普通 JSON。"
+                          }
+                        }
+                      ]
+                    }
+                    """.trimIndent(),
+                ),
+        )
+        val gateway = createGateway(
+            settings = AppSettings(
+                baseUrl = server.url("/v1/").toString(),
+                apiKey = "stream-key",
+                selectedModel = "gemini-3.5-flash",
+            ),
+        )
+
+        val deltas = gateway.sendMessageStream(
+            listOf(ChatMessage(id = "1", role = MessageRole.USER, content = "你好")),
+        ).toList()
+
+        assertEquals(
+            listOf(
+                ChatStreamEvent.ContentDelta("API 站返回了普通 JSON。"),
+                ChatStreamEvent.Completed,
+            ),
+            deltas,
+        )
+        val requestBody = JsonParser.parseString(server.takeRequest().body.readUtf8()).asJsonObject
+        assertTrue(requestBody["stream"].asBoolean)
+    }
+
+    @Test
+    fun sendMessageStream_acceptsGeminiNativeJsonFromCompatibleProxy() = runBlocking {
+        server.enqueue(
+            MockResponse()
+                .setResponseCode(200)
+                .setHeader("Content-Type", "application/json")
+                .setBody(
+                    """
+                    {
+                      "candidates": [
+                        {
+                          "content": {
+                            "parts": [
+                              {"text": "Gemini 原生响应内容"}
+                            ],
+                            "role": "model"
+                          },
+                          "finishReason": "STOP"
+                        }
+                      ]
+                    }
+                    """.trimIndent(),
+                ),
+        )
+        val gateway = createGateway(
+            settings = AppSettings(
+                baseUrl = server.url("/v1/").toString(),
+                apiKey = "stream-key",
+                selectedModel = "gemini-3.5-flash",
+            ),
+        )
+
+        val deltas = gateway.sendMessageStream(
+            listOf(ChatMessage(id = "1", role = MessageRole.USER, content = "你好")),
+        ).toList()
+
+        assertEquals(
+            listOf(
+                ChatStreamEvent.ContentDelta("Gemini 原生响应内容"),
+                ChatStreamEvent.Completed,
+            ),
+            deltas,
+        )
+    }
+
+    @Test
+    fun sendMessageStream_acceptsContentPartsInSseDelta() = runBlocking {
+        val sseBody = buildString {
+            append("data:{\"choices\":[{\"delta\":{\"content\":[{\"type\":\"text\",\"text\":\"数组内容\"}]},\"index\":0}]}\n\n")
+            append("data:[DONE]\n\n")
+        }
+        server.enqueue(
+            MockResponse()
+                .setResponseCode(200)
+                .setHeader("Content-Type", "text/event-stream")
+                .setBody(sseBody),
+        )
+        val gateway = createGateway(
+            settings = AppSettings(
+                baseUrl = server.url("/v1/").toString(),
+                apiKey = "stream-key",
+                selectedModel = "gemini-3.5-flash",
+            ),
+        )
+
+        val deltas = gateway.sendMessageStream(
+            listOf(ChatMessage(id = "1", role = MessageRole.USER, content = "你好")),
+        ).toList()
+
+        assertEquals(
+            listOf(
+                ChatStreamEvent.ContentDelta("数组内容"),
+                ChatStreamEvent.Completed,
+            ),
+            deltas,
+        )
+    }
+
+    @Test
     fun sendMessageStream_retriesAnthropicWithoutRoleplaySampling() = runBlocking {
         val sseBody = buildString {
             append("data: {\"type\":\"content_block_delta\",\"delta\":{\"type\":\"text_delta\",\"text\":\"成功\"}}\n\n")

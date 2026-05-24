@@ -29,6 +29,7 @@ object RoleplayPromptDecorator {
             .ifBlank { assistant?.name?.trim().orEmpty() }
             .ifBlank { "角色" }
         val isGroupChat = scenario.isGroupChat
+        val useVideoCallMode = scenario.interactionMode == RoleplayInteractionMode.ONLINE_PHONE && isVideoCallActive
         val allowOnlineThoughtHints = scenario.enableNarration && settings.showOnlineRoleplayNarration
         val onlineReplyRange = scenario.normalizedOnlineReplyRange()
         val onlineReplyRangeLabel = if (onlineReplyRange.first == onlineReplyRange.last) {
@@ -50,7 +51,7 @@ object RoleplayPromptDecorator {
                 buildModeRoutingSection(
                     scenario = scenario,
                     isGroupChat = isGroupChat,
-                    isVideoCallActive = isVideoCallActive,
+                    isVideoCallActive = useVideoCallMode,
                 ),
             )
 
@@ -251,7 +252,7 @@ object RoleplayPromptDecorator {
                         append("3. 用户名称默认为 ")
                         append(playerName.ifBlank { "用户" })
                         append("，如存在用户人设或场景覆写，必须把它视为当前稳定设定。\n")
-                        if (isVideoCallActive) {
+                        if (useVideoCallMode) {
                             append("【线上视频通话模式】\n")
                             append("1. 当前是已经接通的实时视频通话，不是普通文字聊天，也不是线下长篇小说场景。\n")
                             append("2. 回复要更短、更即时，像正在通话时一句一句说出来；可以连续发多条，但不要长篇独白。\n")

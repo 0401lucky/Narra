@@ -55,6 +55,10 @@ internal object GatewayAssistantOutputParser {
             .orEmpty()
     }
 
+    fun extractContent(delta: ChatDeltaDto?): String {
+        return extractContentText(delta?.content)
+    }
+
     fun extractReasoning(message: AssistantMessageDto?): String {
         return message?.reasoningContent
             ?.trim()
@@ -150,7 +154,7 @@ internal object GatewayAssistantOutputParser {
         return normalizeChatMessageParts(normalizedContentParts + imageParts)
     }
 
-    private fun extractContentText(content: Any?): String {
+    fun extractContentText(content: Any?): String {
         return when (content) {
             is String -> content
             is List<*> -> content.joinToString(separator = "\n\n") { part ->

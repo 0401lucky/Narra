@@ -9,13 +9,19 @@ import com.example.myapplication.model.ChatMessage
 import com.example.myapplication.model.Conversation
 import com.example.myapplication.model.MessageRole
 import com.example.myapplication.model.MessageStatus
+import com.example.myapplication.model.ProviderApiProtocol
+import com.example.myapplication.model.ProviderFunction
 import com.example.myapplication.model.PromptMode
+import com.example.myapplication.model.RoleplayInteractionMode
 import com.example.myapplication.model.RoleplayScenario
 import com.example.myapplication.model.RoleplaySession
 import com.example.myapplication.model.RoleplaySuggestionUiModel
 import com.example.myapplication.model.hasSendableContent
 import com.example.myapplication.model.toPlainText
 import com.example.myapplication.roleplay.RoleplayConversationSupport
+import com.example.myapplication.roleplay.RoleplayMessageFormatSupport
+import com.example.myapplication.roleplay.RoleplayOnlineReferenceSupport
+import com.example.myapplication.roleplay.RoleplayOutputParser
 import com.example.myapplication.roleplay.RoleplayPromptDecorator
 import com.example.myapplication.roleplay.RoleplayTranscriptFormatter
 
@@ -43,10 +49,15 @@ class RoleplaySuggestionCoordinator(
     private val aiPromptExtrasService: AiPromptExtrasService,
     private val nowProvider: () -> Long = { System.currentTimeMillis() },
 ) {
+    private val outputParser = RoleplayOutputParser()
+
     suspend fun generateSuggestions(
         request: RoleplaySuggestionRequest,
     ): RoleplaySuggestionResult {
         val assistant = request.resolveAssistant(request.settings, request.scenario.assistantId)
+        val currentInteractionMode = RoleplayMessageFormatSupport.resolveScenarioInteractionMode(request.scenario)
+        val useVideoCallMode = currentInteractionMode == RoleplayInteractionMode.ONLINE_PHONE &&
+            request.isVideoCallActive
         val conversation = conversationRepository.getConversation(request.session.conversationId)
             ?: Conversation(
                 id = request.session.conversationId,
@@ -64,29 +75,40 @@ class RoleplaySuggestionCoordinator(
             ?.coerceAtMost(request.recentMessageWindow)
             ?: request.recentMessageWindow
         val recentMessages = allMessages.takeLast(recentWindow)
+        val sanitizedRecentMessages = RoleplayOnlineReferenceSupport.sanitizeRequestMessages(
+            messages = recentMessages,
+            scenario = request.scenario,
+            assistant = assistant,
+            settings = request.settings,
+            outputParser = outputParser,
+        )
         val promptContext = promptContextAssembler.assemble(
             settings = RoleplayConversationSupport.resolvePromptSettings(request.scenario, request.settings),
             assistant = RoleplayConversationSupport.resolvePromptAssistant(request.scenario, assistant),
             conversation = conversation,
             userInputText = request.currentInput.trim(),
-            recentMessages = recentMessages,
+            recentMessages = sanitizedRecentMessages,
             promptMode = PromptMode.ROLEPLAY,
         )
         val directorNote = request.buildDynamicDirectorNote(
-            recentMessages,
+            sanitizedRecentMessages,
             request.scenario,
             assistant,
             request.settings,
         )
+        val suggestionModel = request.resolveSuggestionModelId(request.settings)
+        if (suggestionModel.isBlank()) {
+            return RoleplaySuggestionResult(emptyList())
+        }
         val decoratedPrompt = RoleplayPromptDecorator.decorate(
             baseSystemPrompt = promptContext.systemPrompt,
             scenario = request.scenario,
             assistant = assistant,
             settings = request.settings,
             includeOpeningNarrationReference = allMessages.isEmpty(),
-            isVideoCallActive = request.isVideoCallActive,
+            isVideoCallActive = useVideoCallMode,
             directorNote = directorNote,
-            modelId = request.resolveSuggestionModelId(request.settings),
+            modelId = suggestionModel,
         )
         val (userName, characterName) = request.resolveRoleplayNames(
             request.scenario,
@@ -94,29 +116,25 @@ class RoleplaySuggestionCoordinator(
             request.settings,
         )
         val conversationExcerpt = RoleplayTranscriptFormatter.formatMessages(
-            messages = recentMessages,
+            messages = sanitizedRecentMessages,
             userName = userName,
             characterName = characterName,
             allowNarration = request.scenario.enableNarration,
-            interactionMode = request.scenario.interactionMode,
+            interactionMode = currentInteractionMode,
         )
-        val activeProvider = request.settings.activeProvider()
-        val baseUrl = activeProvider?.baseUrl ?: request.settings.baseUrl
-        val apiKey = activeProvider?.apiKey ?: request.settings.apiKey
-        val suggestionModel = request.resolveSuggestionModelId(request.settings)
-        if (suggestionModel.isBlank()) {
-            return RoleplaySuggestionResult(emptyList())
-        }
+        val suggestionProvider = request.settings.resolveFunctionProvider(ProviderFunction.CHAT_SUGGESTION)
+        val baseUrl = suggestionProvider?.baseUrl ?: request.settings.baseUrl
+        val apiKey = suggestionProvider?.apiKey ?: request.settings.apiKey
         val suggestions = aiPromptExtrasService.generateRoleplaySuggestions(
             conversationExcerpt = conversationExcerpt,
             systemPrompt = decoratedPrompt,
-            playerStyleReference = buildPlayerStyleReference(recentMessages),
+            playerStyleReference = buildPlayerStyleReference(sanitizedRecentMessages),
             baseUrl = baseUrl,
             apiKey = apiKey,
             modelId = suggestionModel,
-            apiProtocol = activeProvider?.resolvedApiProtocol() ?: com.example.myapplication.model.ProviderApiProtocol.OPENAI_COMPATIBLE,
-            provider = activeProvider,
-            longformMode = request.scenario.longformModeEnabled,
+            apiProtocol = suggestionProvider?.resolvedApiProtocol() ?: ProviderApiProtocol.OPENAI_COMPATIBLE,
+            provider = suggestionProvider,
+            longformMode = currentInteractionMode == RoleplayInteractionMode.OFFLINE_LONGFORM,
         )
         return RoleplaySuggestionResult(
             suggestions = suggestions,

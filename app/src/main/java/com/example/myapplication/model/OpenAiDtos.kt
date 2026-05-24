@@ -130,7 +130,7 @@ data class ChatChunkChoiceDto(
 
 data class ChatDeltaDto(
     val role: String? = null,
-    val content: String? = null,
+    val content: Any? = null,
     val images: List<AssistantImagePartDto> = emptyList(),
     @SerializedName("reasoning_content")
     val reasoningContent: String? = null,

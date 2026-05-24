@@ -28,6 +28,7 @@ import com.example.myapplication.data.repository.search.SearchRepository
 import com.example.myapplication.model.AssistantReply
 import com.example.myapplication.model.ChatCompletionChunk
 import com.example.myapplication.model.ChatCompletionRequest
+import com.example.myapplication.model.ChatCompletionResponse
 import com.example.myapplication.model.ChatMessage
 import com.example.myapplication.model.ChatMessageDto
 import com.example.myapplication.model.ChatMessagePart
@@ -44,6 +45,7 @@ import com.example.myapplication.model.PromptEnvelope
 import com.example.myapplication.model.ProviderApiProtocol
 import com.example.myapplication.model.ProviderSettings
 import com.example.myapplication.model.ResponseApiRequest
+import com.example.myapplication.model.ResponseApiResponse
 import com.example.myapplication.model.buildThinkingRequestConfig
 import com.example.myapplication.model.legacyReasoningStepsFromContent
 import com.example.myapplication.model.normalizeChatReasoningSteps
@@ -57,6 +59,7 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.FlowCollector
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOn
@@ -1105,19 +1108,24 @@ class DefaultAiGateway(
             if (!response.isSuccessful) {
                 throw GatewayNetworkSupport.okhttpFailure("聊天请求失败", response)
             }
+            if (!response.isEventStreamResponse()) {
+                val rawBody = response.body?.string()
+                    ?: throw IllegalStateException("响应体为空")
+                streamBufferedOpenAiResponse(
+                    rawBody = rawBody,
+                    apiMode = OpenAiTextApiMode.RESPONSES,
+                ).collect { emit(it) }
+                return@flow
+            }
             val source = response.body?.source()
                 ?: throw IllegalStateException("响应体为空")
+            val thinkTagParser = ThinkTagStreamParser()
             while (!source.exhausted()) {
                 coroutineContext.ensureActive()
                 val line = source.readUtf8Line() ?: break
-                if (line.isBlank() || !line.startsWith("data: ")) continue
-                val data = line.removePrefix("data: ").trim()
-                when (val event = ResponseApiSupport.parseStreamEvent(data)) {
-                    is ResponseApiStreamEvent.ContentDelta -> emit(ChatStreamEvent.ContentDelta(event.value))
-                    is ResponseApiStreamEvent.ReasoningDelta -> emit(ChatStreamEvent.ReasoningDelta(event.value))
-                    ResponseApiStreamEvent.Completed -> break
-                    null -> Unit
-                }
+                if (line.isBlank()) continue
+                val data = extractSseData(line) ?: continue
+                if (emitOpenAiStreamData(data, OpenAiTextApiMode.RESPONSES, thinkTagParser)) break
             }
             emit(ChatStreamEvent.Completed)
         } catch (exception: IOException) {
@@ -1216,54 +1224,25 @@ class DefaultAiGateway(
                 throw GatewayNetworkSupport.okhttpFailure("聊天请求失败", response)
             }
 
+            if (!response.isEventStreamResponse()) {
+                val rawBody = response.body?.string()
+                    ?: throw IllegalStateException("响应体为空")
+                streamBufferedOpenAiResponse(
+                    rawBody = rawBody,
+                    apiMode = apiMode,
+                ).collect { emit(it) }
+                return@flow
+            }
+
             val source = response.body?.source()
                 ?: throw IllegalStateException("响应体为空")
 
             while (!source.exhausted()) {
                 coroutineContext.ensureActive()
                 val line = source.readUtf8Line() ?: break
-                if (line.isBlank() || !line.startsWith("data: ")) continue
-                val data = line.removePrefix("data: ").trim()
-                if (data == "[DONE]") break
-
-                if (apiMode == OpenAiTextApiMode.RESPONSES) {
-                    when (val event = ResponseApiSupport.parseStreamEvent(data)) {
-                        is ResponseApiStreamEvent.ContentDelta -> emit(ChatStreamEvent.ContentDelta(event.value))
-                        is ResponseApiStreamEvent.ReasoningDelta -> emit(ChatStreamEvent.ReasoningDelta(event.value))
-                        ResponseApiStreamEvent.Completed -> break
-                        null -> Unit
-                    }
-                    continue
-                }
-
-                val chunk = try {
-                    gson.fromJson(data, ChatCompletionChunk::class.java)
-                } catch (_: Exception) {
-                    null
-                } ?: continue
-
-                val delta = chunk.choices.firstOrNull()?.delta
-                val reasoningDelta = GatewayAssistantOutputParser.extractReasoning(delta)
-                if (reasoningDelta.isNotBlank()) {
-                    emit(ChatStreamEvent.ReasoningDelta(reasoningDelta))
-                }
-                val contentDelta = delta?.content.orEmpty()
-                if (contentDelta.isNotBlank()) {
-                    if (thinkTagParser.shouldConsume(contentDelta)) {
-                        val parsedContent = thinkTagParser.consume(contentDelta)
-                        if (parsedContent.reasoning.isNotBlank()) {
-                            emit(ChatStreamEvent.ReasoningDelta(parsedContent.reasoning))
-                        }
-                        if (parsedContent.content.isNotBlank()) {
-                            emit(ChatStreamEvent.ContentDelta(parsedContent.content))
-                        }
-                    } else {
-                        emit(ChatStreamEvent.ContentDelta(contentDelta))
-                    }
-                }
-                GatewayAssistantOutputParser.extractAssistantImageParts(delta?.images).forEach { imagePart ->
-                    emit(ChatStreamEvent.ImageDelta(imagePart))
-                }
+                if (line.isBlank()) continue
+                val data = extractSseData(line) ?: continue
+                if (emitOpenAiStreamData(data, apiMode, thinkTagParser)) break
             }
             if (apiMode == OpenAiTextApiMode.CHAT_COMPLETIONS && thinkTagParser.hasPending()) {
                 val trailingOutput = thinkTagParser.flush()
@@ -1288,6 +1267,165 @@ class DefaultAiGateway(
             call.cancel()
             response?.close()
         }
+    }
+
+    private fun streamBufferedOpenAiResponse(
+        rawBody: String,
+        apiMode: OpenAiTextApiMode,
+    ): Flow<ChatStreamEvent> = flow {
+        val body = rawBody.trim()
+        if (body.isBlank()) {
+            throw IllegalStateException("响应体为空")
+        }
+
+        if (body.lineSequence().any { extractSseData(it) != null }) {
+            val thinkTagParser = ThinkTagStreamParser()
+            for (line in body.lineSequence()) {
+                if (line.isBlank()) continue
+                val data = extractSseData(line) ?: continue
+                if (emitOpenAiStreamData(data, apiMode, thinkTagParser)) break
+            }
+            if (apiMode == OpenAiTextApiMode.CHAT_COMPLETIONS && thinkTagParser.hasPending()) {
+                val trailingOutput = thinkTagParser.flush()
+                if (trailingOutput.reasoning.isNotBlank()) {
+                    emit(ChatStreamEvent.ReasoningDelta(trailingOutput.reasoning))
+                }
+                if (trailingOutput.content.isNotBlank()) {
+                    emit(ChatStreamEvent.ContentDelta(trailingOutput.content))
+                }
+            }
+            emit(ChatStreamEvent.Completed)
+            return@flow
+        }
+
+        when (apiMode) {
+            OpenAiTextApiMode.CHAT_COMPLETIONS -> emitAssistantReply(
+                parseChatCompletionJsonResponse(body),
+            ).collect { emit(it) }
+
+            OpenAiTextApiMode.RESPONSES -> emitAssistantReply(
+                parseResponsesJsonResponse(body),
+            ).collect { emit(it) }
+        }
+    }
+
+    private fun parseChatCompletionJsonResponse(
+        rawBody: String,
+    ): AssistantReply {
+        val response = runCatching {
+            gson.fromJson(rawBody, ChatCompletionResponse::class.java)
+        }.getOrNull()
+        val assistantMessage = response?.choices?.firstOrNull()?.message
+        if (assistantMessage != null) {
+            return assistantReplyFromOpenAiMessage(assistantMessage)
+        }
+        return parseGeminiNativeJsonResponse(rawBody)
+            ?: throw IllegalStateException("模型未返回有效内容")
+    }
+
+    private fun parseResponsesJsonResponse(
+        rawBody: String,
+    ): AssistantReply {
+        val response = runCatching {
+            gson.fromJson(rawBody, ResponseApiResponse::class.java)
+        }.getOrNull()
+        val parsed = response?.let(ResponseApiSupport::parseResponse)
+            ?: ResponseApiParsedOutput()
+        return ensureAssistantReplyHasContent(
+            AssistantReply(
+                content = parsed.content,
+                reasoningContent = parsed.reasoning,
+            ),
+        )
+    }
+
+    private fun parseGeminiNativeJsonResponse(
+        rawBody: String,
+    ): AssistantReply? {
+        val root = runCatching { com.google.gson.JsonParser.parseString(rawBody).asJsonObject }
+            .getOrNull()
+            ?: return null
+        val candidates = root.getAsJsonArray("candidates") ?: return null
+        if (candidates.size() == 0) return null
+        val firstCandidate = candidates[0].takeIf { it.isJsonObject }?.asJsonObject ?: return null
+        val parts = firstCandidate
+            .getAsJsonObject("content")
+            ?.getAsJsonArray("parts")
+            ?: return null
+        val content = buildString {
+            for (part in parts) {
+                if (!part.isJsonObject) continue
+                val text = part.asJsonObject.get("text")?.asString.orEmpty()
+                if (text.isBlank()) continue
+                if (isNotEmpty()) append("\n\n")
+                append(text)
+            }
+        }
+        return ensureAssistantReplyHasContent(
+            AssistantReply(content = content),
+        )
+    }
+
+    private suspend fun FlowCollector<ChatStreamEvent>.emitOpenAiStreamData(
+        data: String,
+        apiMode: OpenAiTextApiMode,
+        thinkTagParser: ThinkTagStreamParser,
+    ): Boolean {
+        if (data == "[DONE]") {
+            return true
+        }
+
+        if (apiMode == OpenAiTextApiMode.RESPONSES) {
+            when (val event = ResponseApiSupport.parseStreamEvent(data)) {
+                is ResponseApiStreamEvent.ContentDelta -> emit(ChatStreamEvent.ContentDelta(event.value))
+                is ResponseApiStreamEvent.ReasoningDelta -> emit(ChatStreamEvent.ReasoningDelta(event.value))
+                ResponseApiStreamEvent.Completed -> return true
+                null -> Unit
+            }
+            return false
+        }
+
+        val chunk = runCatching {
+            gson.fromJson(data, ChatCompletionChunk::class.java)
+        }.getOrNull() ?: return false
+
+        val delta = chunk.choices.firstOrNull()?.delta
+        val reasoningDelta = GatewayAssistantOutputParser.extractReasoning(delta)
+        if (reasoningDelta.isNotBlank()) {
+            emit(ChatStreamEvent.ReasoningDelta(reasoningDelta))
+        }
+        val contentDelta = GatewayAssistantOutputParser.extractContent(delta)
+        if (contentDelta.isNotBlank()) {
+            if (thinkTagParser.shouldConsume(contentDelta)) {
+                val parsedContent = thinkTagParser.consume(contentDelta)
+                if (parsedContent.reasoning.isNotBlank()) {
+                    emit(ChatStreamEvent.ReasoningDelta(parsedContent.reasoning))
+                }
+                if (parsedContent.content.isNotBlank()) {
+                    emit(ChatStreamEvent.ContentDelta(parsedContent.content))
+                }
+            } else {
+                emit(ChatStreamEvent.ContentDelta(contentDelta))
+            }
+        }
+        GatewayAssistantOutputParser.extractAssistantImageParts(delta?.images).forEach { imagePart ->
+            emit(ChatStreamEvent.ImageDelta(imagePart))
+        }
+        return false
+    }
+
+    private fun okhttp3.Response.isEventStreamResponse(): Boolean {
+        return header("Content-Type")
+            .orEmpty()
+            .lowercase()
+            .contains("text/event-stream")
+    }
+
+    private fun extractSseData(line: String): String? {
+        if (!line.startsWith("data:")) {
+            return null
+        }
+        return line.removePrefix("data:").trim()
     }
 
     private suspend fun sendOpenAiMessageWithoutStreaming(

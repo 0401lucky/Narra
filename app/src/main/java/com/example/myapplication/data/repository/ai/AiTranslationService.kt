@@ -361,7 +361,12 @@ class DefaultAiTranslationService(
                         } else {
                             runCatching {
                                 gson.fromJson(data, ChatCompletionChunk::class.java)
-                            }.getOrNull()?.choices?.firstOrNull()?.delta?.content.orEmpty()
+                            }.getOrNull()
+                                ?.choices
+                                ?.firstOrNull()
+                                ?.delta
+                                ?.let(GatewayAssistantOutputParser::extractContent)
+                                .orEmpty()
                         }
                     },
                 ).collect { emit(it) }

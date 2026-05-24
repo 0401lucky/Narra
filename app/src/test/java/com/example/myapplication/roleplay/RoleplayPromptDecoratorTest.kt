@@ -256,4 +256,28 @@ class RoleplayPromptDecoratorTest {
         assertTrue(prompt.contains("不要再输出 video_call 动作"))
         assertTrue(prompt.contains("更短、更即时"))
     }
+
+    @Test
+    fun decorate_longformModeIgnoresStaleVideoCallState() {
+        val prompt = RoleplayPromptDecorator.decorate(
+            baseSystemPrompt = "",
+            scenario = RoleplayScenario(
+                id = "scene-1",
+                userDisplayNameOverride = "林晚",
+                characterDisplayNameOverride = "余罪",
+                interactionMode = RoleplayInteractionMode.OFFLINE_LONGFORM,
+                longformModeEnabled = true,
+                enableRoleplayProtocol = false,
+            ),
+            assistant = Assistant(id = "assistant-1", name = "余罪"),
+            settings = AppSettings(showOnlineRoleplayNarration = true),
+            isVideoCallActive = true,
+        )
+
+        assertTrue(prompt.contains("当前模式：OFFLINE_LONGFORM_NOVEL"))
+        assertTrue(prompt.contains("【长文小说模式】"))
+        assertFalse(prompt.contains("当前模式：ONLINE_VIDEO_CALL"))
+        assertFalse(prompt.contains("【线上视频通话模式】"))
+        assertFalse(prompt.contains("合法 JSON 数组"))
+    }
 }

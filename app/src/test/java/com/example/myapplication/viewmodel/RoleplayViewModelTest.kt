@@ -37,6 +37,7 @@ import com.example.myapplication.model.GiftPlayDraft
 import com.example.myapplication.model.GatewayToolingOptions
 import com.example.myapplication.model.ImageGenerationRequest
 import com.example.myapplication.model.ImageGenerationResponse
+import com.example.myapplication.model.FunctionModelProviderIds
 import com.example.myapplication.model.PunishIntensity
 import com.example.myapplication.model.PunishPlayDraft
 import com.example.myapplication.model.MemoryEntry
@@ -572,6 +573,126 @@ class RoleplayViewModelTest {
         assertEquals("我警惕地打量着四周。'这是哪里？'", state.suggestions[0].text)
         assertEquals(originalMessages, store.listMessages(session.conversationId))
         assertEquals(1, store.listMessages(session.conversationId).size)
+    }
+
+    @Test
+    fun generateDraftInput_usesChatSuggestionProviderWhenConfigured() = runTest(mainDispatcherRule.dispatcher.scheduler) {
+        val assistant = Assistant(
+            id = "assistant-1",
+            name = "陆宴清",
+        )
+        val scenario = RoleplayScenario(
+            id = "scene-1",
+            title = "雨夜对峙",
+            assistantId = assistant.id,
+        )
+        val session = RoleplaySession(
+            id = "session-1",
+            scenarioId = scenario.id,
+            conversationId = "conv-1",
+            createdAt = 1L,
+            updatedAt = 2L,
+        )
+        val conversation = Conversation(
+            id = session.conversationId,
+            title = "雨夜",
+            model = "chat-model",
+            createdAt = 1L,
+            updatedAt = 2L,
+            assistantId = assistant.id,
+        )
+        val store = FakeConversationStore(conversations = listOf(conversation))
+        val chatProvider = ProviderSettings(
+            id = "chat-provider",
+            name = "主聊天 Provider",
+            baseUrl = "https://chat.example.com/v1/",
+            apiKey = "chat-key",
+            selectedModel = "chat-model",
+        )
+        val suggestionProvider = ProviderSettings(
+            id = "suggestion-provider",
+            name = "建议 Provider",
+            baseUrl = "https://suggestion.example.com/v1/",
+            apiKey = "suggestion-key",
+            selectedModel = "suggestion-default-model",
+            chatSuggestionModel = "rp-suggestion-model",
+        )
+        var capturedBaseUrl = ""
+        var capturedApiKey = ""
+        var capturedModel = ""
+        val viewModel = createViewModel(
+            store = store,
+            roleplayRepository = FakeRoleplayRepository(
+                conversationStore = store,
+                scenarios = listOf(scenario),
+                sessions = listOf(session),
+            ),
+            settings = AppSettings(
+                baseUrl = chatProvider.baseUrl,
+                apiKey = chatProvider.apiKey,
+                selectedModel = chatProvider.selectedModel,
+                providers = listOf(chatProvider, suggestionProvider),
+                selectedProviderId = chatProvider.id,
+                functionModelProviderIds = FunctionModelProviderIds(
+                    chatSuggestionProviderId = suggestionProvider.id,
+                ),
+                assistants = listOf(assistant),
+                selectedAssistantId = assistant.id,
+            ),
+            promptContextAssembler = fixedPromptAssembler("提示词上下文"),
+            apiServiceProvider = { baseUrl, apiKey ->
+                capturedBaseUrl = baseUrl
+                capturedApiKey = apiKey
+                object : com.example.myapplication.testutil.TestOpenAiCompatibleApi() {
+                    override suspend fun listModels(): Response<ModelsResponse> {
+                        error("不应调用模型列表")
+                    }
+
+                    override suspend fun createChatCompletion(request: ChatCompletionRequest): Response<ChatCompletionResponse> {
+                        capturedModel = request.model
+                        return Response.success(
+                            ChatCompletionResponse(
+                                choices = listOf(
+                                    ChatChoiceDto(
+                                        index = 0,
+                                        message = AssistantMessageDto(
+                                            role = "assistant",
+                                            content = """
+                                            [
+                                              {"axis":"plot","label":"推进","text":"我往前一步，压低声音问他到底想隐瞒什么。"},
+                                              {"axis":"info","label":"追问","text":"我没有放过那个细节，继续问他刚才看见了谁。"},
+                                              {"axis":"emotion","label":"靠近","text":"我忍住情绪，只说你别再把我推远了。"}
+                                            ]
+                                            """.trimIndent(),
+                                        ),
+                                    ),
+                                ),
+                            ),
+                        )
+                    }
+
+                    override suspend fun createChatCompletionAt(url: String, request: ChatCompletionRequest): Response<ChatCompletionResponse> = createChatCompletion(request)
+
+                    override suspend fun createResponseAt(url: String, request: com.example.myapplication.model.ResponseApiRequest): Response<com.example.myapplication.model.ResponseApiResponse> {
+                        error("不应调用 responses 接口")
+                    }
+
+                    override suspend fun generateImage(request: ImageGenerationRequest): Response<ImageGenerationResponse> {
+                        error("不应调用生图接口")
+                    }
+                }
+            },
+        )
+
+        viewModel.enterScenario(scenario.id)
+        advanceUntilIdle()
+        viewModel.generateDraftInput()
+        advanceUntilIdle()
+
+        assertEquals(suggestionProvider.baseUrl, capturedBaseUrl)
+        assertEquals(suggestionProvider.apiKey, capturedApiKey)
+        assertEquals("rp-suggestion-model", capturedModel)
+        assertEquals(3, viewModel.uiState.value.suggestions.size)
     }
 
     @Test
@@ -3193,6 +3314,125 @@ class RoleplayViewModelTest {
     }
 
     @Test
+    fun sendMessage_switchingOnlineVideoBackToLongformStripsStaleLongformTagsAndOnlineDirectorContext() = runTest(mainDispatcherRule.dispatcher.scheduler) {
+        enqueueStreamResponse("玄关的灯光落下来。<char>“过来。”</char><thought>（不能让她再退。）</thought")
+        enqueueStreamResponse("""["没躲着你。","刚才那句我看到了。"]""")
+        enqueueStreamResponse("他把手里的杯子放下。<char>“那就过来。”</char>")
+
+        val assistant = Assistant(
+            id = "assistant-1",
+            name = "余罪",
+        )
+        val scenario = RoleplayScenario(
+            id = "scene-1",
+            title = "旧夜",
+            assistantId = assistant.id,
+            userDisplayNameOverride = "林晚",
+            characterDisplayNameOverride = "余罪",
+            interactionMode = RoleplayInteractionMode.OFFLINE_LONGFORM,
+            longformModeEnabled = true,
+            enableRoleplayProtocol = false,
+        )
+        val session = RoleplaySession(
+            id = "session-1",
+            scenarioId = scenario.id,
+            conversationId = "conv-1",
+            createdAt = 1L,
+            updatedAt = 2L,
+        )
+        val store = FakeConversationStore(
+            conversations = listOf(
+                Conversation(
+                    id = session.conversationId,
+                    title = "旧夜",
+                    model = "chat-model",
+                    createdAt = 1L,
+                    updatedAt = 2L,
+                    assistantId = assistant.id,
+                ),
+            ),
+        )
+        val repository = FakeRoleplayRepository(
+            conversationStore = store,
+            scenarios = listOf(scenario),
+            sessions = listOf(session),
+        )
+        val provider = ProviderSettings(
+            id = "provider-1",
+            name = "测试 Provider",
+            baseUrl = server.url("/v1/").toString(),
+            apiKey = "test-key",
+            selectedModel = "chat-model",
+        )
+        var now = 1_000L
+        val viewModel = createViewModel(
+            store = store,
+            roleplayRepository = repository,
+            settings = AppSettings(
+                baseUrl = provider.baseUrl,
+                apiKey = provider.apiKey,
+                selectedModel = provider.selectedModel,
+                providers = listOf(provider),
+                selectedProviderId = provider.id,
+                assistants = listOf(assistant),
+                selectedAssistantId = assistant.id,
+            ),
+            promptContextAssembler = fixedPromptAssembler("提示词上下文"),
+            messageIdProvider = idProviderOf("user-1", "assistant-1", "user-2", "assistant-2", "user-3", "assistant-3"),
+            nowProvider = {
+                val value = now
+                now += 1_000L
+                value
+            },
+        )
+
+        viewModel.enterScenario(scenario.id)
+        advanceUntilIdle()
+
+        viewModel.updateInput("daddy，抱抱")
+        viewModel.sendMessage()
+        advanceUntilIdle()
+
+        viewModel.updateCurrentScenarioInteractionMode(RoleplayInteractionMode.ONLINE_PHONE)
+        advanceUntilIdle()
+        viewModel.startVideoCall()
+        advanceUntilIdle()
+        assertTrue(viewModel.uiState.value.isVideoCallActive)
+
+        viewModel.updateInput("想你了")
+        viewModel.sendMessage()
+        advanceUntilIdle()
+
+        viewModel.updateCurrentScenarioInteractionMode(RoleplayInteractionMode.OFFLINE_LONGFORM)
+        advanceUntilIdle()
+        assertFalse(viewModel.uiState.value.isVideoCallActive)
+
+        viewModel.updateInput("就蹭就蹭")
+        viewModel.sendMessage()
+        advanceUntilIdle()
+
+        server.takeRequest()
+        server.takeRequest()
+        val thirdRequest = JsonParser.parseString(server.takeRequest().body.readUtf8()).asJsonObject
+        val messages = thirdRequest.getAsJsonArray("messages")
+        val systemPrompt = messages[0].asJsonObject["content"].asString
+        val assistantHistory = messages
+            .filter { element -> element.asJsonObject["role"].asString == "assistant" }
+            .map { element -> element.asJsonObject["content"].asString }
+            .joinToString(separator = "\n")
+
+        assertTrue(systemPrompt.contains("【长文小说模式】"))
+        assertFalse(systemPrompt.contains("当前模式：ONLINE_VIDEO_CALL"))
+        assertFalse(systemPrompt.contains("【线上视频通话模式】"))
+        assertFalse(systemPrompt.contains("【最近线上系统事件】"))
+        assertFalse(systemPrompt.contains("线上聊天协议"))
+        assertTrue(assistantHistory.contains("不能让她再退"))
+        assertFalse(assistantHistory.contains("<thought", ignoreCase = true))
+        assertFalse(assistantHistory.contains("</thought", ignoreCase = true))
+        assertFalse(assistantHistory.contains("<char", ignoreCase = true))
+    }
+
+    @Test
     fun startVideoCall_recordsConnectedEventWithoutAutoReply() = runTest(mainDispatcherRule.dispatcher.scheduler) {
         val assistant = Assistant(
             id = "assistant-1",
@@ -3700,6 +3940,167 @@ class RoleplayViewModelTest {
         val request = lastSuggestionRequest ?: error("未记录到建议请求")
         val systemPrompt = request.messages.first().content.toString()
         assertTrue(systemPrompt.contains("当前场景处于长文小说模式"))
+    }
+
+    @Test
+    fun generateDraftInput_longformModeSanitizesOnlineVideoHistory() = runTest(mainDispatcherRule.dispatcher.scheduler) {
+        val assistant = Assistant(
+            id = "assistant-1",
+            name = "余罪",
+            systemPrompt = "保持克制。",
+        )
+        val scenario = RoleplayScenario(
+            id = "scene-1",
+            title = "旧夜",
+            assistantId = assistant.id,
+            userDisplayNameOverride = "林晚",
+            characterDisplayNameOverride = "余罪",
+            interactionMode = RoleplayInteractionMode.OFFLINE_LONGFORM,
+            longformModeEnabled = true,
+            enableRoleplayProtocol = false,
+        )
+        val session = RoleplaySession(
+            id = "session-1",
+            scenarioId = scenario.id,
+            conversationId = "conv-1",
+            createdAt = 1L,
+            updatedAt = 2L,
+        )
+        val conversation = Conversation(
+            id = session.conversationId,
+            title = "旧夜",
+            model = "chat-model",
+            createdAt = 1L,
+            updatedAt = 2L,
+            assistantId = assistant.id,
+        )
+        val store = FakeConversationStore(
+            conversations = listOf(conversation),
+            messagesByConversation = mapOf(
+                conversation.id to listOf(
+                    ChatMessage(
+                        id = "m1",
+                        conversationId = conversation.id,
+                        role = MessageRole.USER,
+                        content = "就蹭就蹭",
+                        createdAt = 10L,
+                    ),
+                    ChatMessage(
+                        id = "m2",
+                        conversationId = conversation.id,
+                        role = MessageRole.ASSISTANT,
+                        content = "<narration>视频通话已结束，通话时长 09:49</narration>",
+                        createdAt = 20L,
+                        systemEventKind = RoleplayOnlineEventKind.VIDEO_CALL_ENDED,
+                        roleplayOutputFormat = RoleplayOutputFormat.PROTOCOL,
+                        roleplayInteractionMode = RoleplayInteractionMode.ONLINE_PHONE,
+                    ),
+                    ChatMessage(
+                        id = "m3",
+                        conversationId = conversation.id,
+                        role = MessageRole.ASSISTANT,
+                        content = "玄关的灯光落下来。<char>“过来。”</char><thought>不能让她再退。</thought",
+                        createdAt = 30L,
+                        roleplayOutputFormat = RoleplayOutputFormat.LONGFORM,
+                        roleplayInteractionMode = RoleplayInteractionMode.OFFLINE_LONGFORM,
+                    ),
+                ),
+            ),
+        )
+        val provider = ProviderSettings(
+            id = "provider-1",
+            name = "测试 Provider",
+            baseUrl = "https://example.com/v1/",
+            apiKey = "test-key",
+            selectedModel = "chat-model",
+            chatSuggestionModel = "rp-suggestion-model",
+        )
+        var lastSuggestionRequest: ChatCompletionRequest? = null
+        val viewModel = createViewModel(
+            store = store,
+            roleplayRepository = FakeRoleplayRepository(
+                conversationStore = store,
+                scenarios = listOf(scenario),
+                sessions = listOf(session),
+            ),
+            settings = AppSettings(
+                baseUrl = provider.baseUrl,
+                apiKey = provider.apiKey,
+                selectedModel = provider.selectedModel,
+                providers = listOf(provider),
+                selectedProviderId = provider.id,
+                assistants = listOf(assistant),
+                selectedAssistantId = assistant.id,
+            ),
+            promptContextAssembler = fixedPromptAssembler("【对话摘要】两人仍在互相试探。"),
+            apiServiceProvider = { _, _ ->
+                object : com.example.myapplication.testutil.TestOpenAiCompatibleApi() {
+                    override suspend fun listModels(): Response<ModelsResponse> {
+                        error("不应调用模型列表")
+                    }
+
+                    override suspend fun createChatCompletion(request: ChatCompletionRequest): Response<ChatCompletionResponse> {
+                        lastSuggestionRequest = request
+                        return Response.success(
+                            ChatCompletionResponse(
+                                choices = listOf(
+                                    ChatChoiceDto(
+                                        index = 0,
+                                        message = AssistantMessageDto(
+                                            role = "assistant",
+                                            content = """
+                                            [
+                                              {"axis":"plot","label":"继续靠近","text":"我没有退开，反而更轻地抓住他的衣角，低声问他还想躲到什么时候。"},
+                                              {"axis":"info","label":"问清细节","text":"我抬头看着他，追问他刚才那句话到底是在提醒我，还是在威胁我。"},
+                                              {"axis":"emotion","label":"压住心跳","text":"我把慌乱压回去，只留下很轻的一句：“余罪，你别总用这种语气吓我。”"}
+                                            ]
+                                            """.trimIndent(),
+                                        ),
+                                    ),
+                                ),
+                            ),
+                        )
+                    }
+
+                    override suspend fun createChatCompletionAt(url: String, request: ChatCompletionRequest): Response<ChatCompletionResponse> = createChatCompletion(request)
+
+                    override suspend fun createResponseAt(url: String, request: com.example.myapplication.model.ResponseApiRequest): Response<com.example.myapplication.model.ResponseApiResponse> {
+                        error("不应调用 responses 接口")
+                    }
+
+                    override suspend fun generateImage(request: ImageGenerationRequest): Response<ImageGenerationResponse> {
+                        error("不应调用生图接口")
+                    }
+                }
+            },
+        )
+
+        viewModel.enterScenario(scenario.id)
+        advanceUntilIdle()
+        viewModel.generateDraftInput()
+        advanceUntilIdle()
+
+        val requestText = lastSuggestionRequest
+            ?.messages
+            ?.joinToString(separator = "\n") { message -> message.content.toString() }
+            ?: error("未记录到建议请求")
+        val recentPlotText = lastSuggestionRequest
+            ?.messages
+            ?.last()
+            ?.content
+            ?.toString()
+            ?.substringAfter("【最近剧情】")
+            ?.substringBefore("\n\n请基于")
+            ?: error("未记录到建议用户提示词")
+        assertTrue(requestText.contains("当前场景处于长文小说模式"))
+        assertTrue(recentPlotText.contains("不能让她再退"))
+        assertFalse(recentPlotText.contains("视频通话已结束"))
+        assertFalse(recentPlotText.contains("通话时长"))
+        assertFalse(requestText.contains("线上视频通话模式"))
+        assertFalse(requestText.contains("最近线上系统事件"))
+        assertFalse(recentPlotText.contains("<thought", ignoreCase = true))
+        assertFalse(recentPlotText.contains("</thought", ignoreCase = true))
+        assertFalse(recentPlotText.contains("<char", ignoreCase = true))
     }
 
     @Test

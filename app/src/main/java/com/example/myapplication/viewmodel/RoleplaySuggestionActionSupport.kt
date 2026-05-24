@@ -3,7 +3,9 @@ package com.example.myapplication.viewmodel
 import com.example.myapplication.conversation.RoleplaySuggestionCoordinator
 import com.example.myapplication.conversation.RoleplaySuggestionRequest
 import com.example.myapplication.model.ChatMessage
+import com.example.myapplication.model.RoleplayInteractionMode
 import com.example.myapplication.roleplay.RoleplayConversationSupport
+import com.example.myapplication.roleplay.RoleplayMessageFormatSupport
 import com.example.myapplication.roleplay.RoleplayOutputParser
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
@@ -91,12 +93,15 @@ internal class RoleplaySuggestionActionSupport(
             val runningSuggestionJob = currentCoroutineContext()[Job]
             try {
                 val latestState = uiState()
+                val currentInteractionMode = RoleplayMessageFormatSupport.resolveScenarioInteractionMode(scenario)
+                val useVideoCallMode = currentInteractionMode == RoleplayInteractionMode.ONLINE_PHONE &&
+                    latestState.isVideoCallActive
                 val result = suggestionCoordinator.generateSuggestions(
                     request = RoleplaySuggestionRequest(
                         scenario = scenario,
                         settings = latestState.settings,
                         currentInput = latestState.input,
-                        isVideoCallActive = latestState.isVideoCallActive,
+                        isVideoCallActive = useVideoCallMode,
                         session = session,
                         recentMessageWindow = recentMessageWindow,
                         conversationMessages = currentRawMessages.value,
@@ -110,7 +115,7 @@ internal class RoleplaySuggestionActionSupport(
                                 assistant = currentAssistant,
                                 settings = currentSettings,
                                 outputParser = outputParser,
-                                isVideoCallActive = latestState.isVideoCallActive,
+                                isVideoCallActive = useVideoCallMode,
                             )
                         },
                     ),

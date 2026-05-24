@@ -826,7 +826,26 @@ class RoleplayViewModel(
     }
 
     fun updateCurrentScenarioInteractionMode(mode: RoleplayInteractionMode) {
-        val scenario = _uiState.value.currentScenario ?: return
+        val state = _uiState.value
+        val scenario = state.currentScenario ?: return
+        if (mode != RoleplayInteractionMode.ONLINE_PHONE && state.isVideoCallActive) {
+            val switchingSendingJob = sendingJob
+            val switchingCompensationJob = compensationJob
+            sendingJob = null
+            compensationJob = null
+            switchingSendingJob?.cancel()
+            switchingCompensationJob?.cancel()
+            _uiState.update { current ->
+                RoleplayStateSupport.clearVideoCallState(current)
+            }
+            state.currentSession?.conversationId?.let { conversationId ->
+                viewModelScope.launch {
+                    switchingSendingJob?.cancelAndJoin()
+                    switchingCompensationJob?.cancelAndJoin()
+                    roleplayRepository.deleteOnlineMeta(conversationId)
+                }
+            }
+        }
         upsertScenario(
             scenario.copy(
                 interactionMode = mode,

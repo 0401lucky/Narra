@@ -31,6 +31,7 @@ import com.example.myapplication.model.MessageStatus
 import com.example.myapplication.model.PhoneSnapshotOwnerType
 import com.example.myapplication.model.PromptEnvelope
 import com.example.myapplication.model.PromptMode
+import com.example.myapplication.model.RoleplayInteractionMode
 import com.example.myapplication.model.RoleplayOutputFormat
 import com.example.myapplication.model.TransferDirection
 import com.example.myapplication.model.TransferStatus
@@ -129,10 +130,17 @@ internal class RoleplayRoundTripExecutor(
                 assistant = assistant,
                 requestMessages = requestMessages,
             )
-            val onlineSystemEventContext = RoleplayOnlineReferenceSupport.buildSystemEventPromptContext(
-                messages = effectiveRequestMessages,
-                outputParser = outputParser,
-            )
+            val currentInteractionMode = RoleplayMessageFormatSupport.resolveScenarioInteractionMode(scenario)
+            val useVideoCallMode = currentInteractionMode == RoleplayInteractionMode.ONLINE_PHONE &&
+                state.isVideoCallActive
+            val onlineSystemEventContext = if (currentInteractionMode == RoleplayInteractionMode.ONLINE_PHONE) {
+                RoleplayOnlineReferenceSupport.buildSystemEventPromptContext(
+                    messages = effectiveRequestMessages,
+                    outputParser = outputParser,
+                )
+            } else {
+                ""
+            }
             val requestMessagesForModel = RoleplayFormatReminderSupport.injectIntoLatestUser(
                 messages = RoleplayOnlineReferenceSupport.sanitizeRequestMessages(
                     messages = effectiveRequestMessages,
@@ -172,7 +180,7 @@ internal class RoleplayRoundTripExecutor(
                 assistant = assistant,
                 settings = state.settings,
                 outputParser = outputParser,
-                isVideoCallActive = state.isVideoCallActive,
+                isVideoCallActive = useVideoCallMode,
                 referenceCandidates = referenceCandidates,
             )
             val decoratedPrompt = RoleplayPromptDecorator.decorate(
@@ -181,7 +189,7 @@ internal class RoleplayRoundTripExecutor(
                 assistant = assistant,
                 settings = state.settings,
                 includeOpeningNarrationReference = requestMessages.none { it.role == MessageRole.USER },
-                isVideoCallActive = state.isVideoCallActive,
+                isVideoCallActive = useVideoCallMode,
                 directorNote = buildString {
                     onlineSystemEventContext.takeIf { it.isNotBlank() }?.let { context ->
                         append(context)

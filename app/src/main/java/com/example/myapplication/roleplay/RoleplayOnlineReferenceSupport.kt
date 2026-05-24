@@ -140,10 +140,7 @@ internal object RoleplayOnlineReferenceSupport {
             if (message.role != MessageRole.ASSISTANT) {
                 return@mapNotNull message
             }
-            if (
-                currentInteractionMode == RoleplayInteractionMode.ONLINE_PHONE &&
-                message.systemEventKind != RoleplayOnlineEventKind.NONE
-            ) {
+            if (message.systemEventKind != RoleplayOnlineEventKind.NONE) {
                 return@mapNotNull null
             }
             val sourceMode = RoleplayMessageFormatSupport.resolveMessageInteractionMode(
@@ -157,6 +154,9 @@ internal object RoleplayOnlineReferenceSupport {
                     characterName = characterName,
                     allowThought = allowThought,
                 )
+            }
+            if (currentInteractionMode == RoleplayInteractionMode.OFFLINE_LONGFORM) {
+                return@mapNotNull sanitizeLongformAssistantMessageForPrompt(message)
             }
             if (currentInteractionMode != RoleplayInteractionMode.ONLINE_PHONE) {
                 return@mapNotNull message
@@ -203,6 +203,23 @@ internal object RoleplayOnlineReferenceSupport {
                 message.copy(content = cleanedContent, parts = emptyList())
             }
         }
+    }
+
+    private fun sanitizeLongformAssistantMessageForPrompt(
+        message: ChatMessage,
+    ): ChatMessage? {
+        val rawContent = RoleplayMessageFormatSupport.resolveAssistantRawContent(message)
+        val cleanedContent = RoleplayLongformMarkupParser.stripMarkupForDisplay(rawContent)
+            .trim()
+        if (cleanedContent.isBlank()) {
+            return null
+        }
+        return message.copy(
+            content = cleanedContent,
+            parts = emptyList(),
+            roleplayOutputFormat = RoleplayOutputFormat.LONGFORM,
+            roleplayInteractionMode = RoleplayInteractionMode.OFFLINE_LONGFORM,
+        )
     }
 
     private fun sanitizeAssistantMessageForCurrentMode(
