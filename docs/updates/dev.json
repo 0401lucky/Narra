@@ -1,16 +1,16 @@
 {
   "app_id": "com.narra.app.dev",
   "channel": "dev",
-  "latest_version_name": "1.9.1-dev",
-  "latest_version_code": 10901,
+  "latest_version_name": "1.9.2-dev",
+  "latest_version_code": 10902,
   "minimum_supported_version_code": 0,
-  "apk_url": "https://download.lsa1230.dpdns.org/dev/Narra-v1.9.1-dev-10901-dev.apk?v=10901-202605250017",
-  "apk_sha256": "e01610c554862dfb39bdb06bc3e2a6c47d344ded9fb1f471e8c7153b4e14a19f",
-  "published_at": "2026-05-25T00:17:02+08:00",
+  "apk_url": "https://download.lsa1230.dpdns.org/dev/Narra-v1.9.2-dev-10902-dev.apk?v=10902-202605282331",
+  "apk_sha256": "c0c0ad095a6b21ce2d73f3763e3f38b03c485ac7b22983b7b9edda693f43979d",
+  "published_at": "2026-05-28T23:31:53+08:00",
   "release_notes": [
-    "修复部分 API 站有输出但客户端显示“模型未返回有效内容”的问题",
-    "兼容 Gemini 原生响应、普通 JSON 回包和更宽松的 SSE 数据格式",
-    "修复沉浸式 AI 帮写可能使用错误供应商或模型的问题",
-    "修复线上玩法或视频通话切回长文线下后上下文被残留系统事件污染的问题"
+    "新增 Google Gemini 模型内置搜索源，可直接使用模型自带联网搜索能力",
+    "修复本地工具链路下模型内置搜索 grounding 配置可能丢失的问题",
+    "限制模型内置搜索仅在 Google Gemini Chat Completions 模式下可用",
+    "优化聊天输入栏按钮动效、生成中等待态和打开会话后的自动滚动体验"
   ]
 }
