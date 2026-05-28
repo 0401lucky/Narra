@@ -92,6 +92,7 @@ internal object GatewayRequestSupport {
         stopSequences: List<String> = emptyList(),
         tools: List<com.example.myapplication.model.ChatToolDto> = emptyList(),
         toolChoice: String? = null,
+        googleSearchRetrieval: Map<String, Any>? = null,
     ): ChatCompletionRequest {
         val sampling = resolveRoleplaySampling(
             baseUrl = baseUrl,
@@ -119,6 +120,7 @@ internal object GatewayRequestSupport {
             thinking = thinking,
             tools = tools,
             toolChoice = toolChoice,
+            googleSearchRetrieval = googleSearchRetrieval,
         )
     }
 

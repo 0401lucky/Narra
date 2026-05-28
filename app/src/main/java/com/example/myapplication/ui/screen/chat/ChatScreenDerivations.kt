@@ -164,6 +164,8 @@ internal fun rememberChatScreenDerivations(
                     selectedSearchProvider.resolveFunctionModelMode(ProviderFunction.SEARCH) == ProviderFunctionModelMode.FOLLOW_DEFAULT -> resources.getString(R.string.chat_search_unavail_follow_chat)
                     else -> resources.getString(R.string.chat_search_unavail_enable_source)
                 }
+            } else if (selectedSearchSource?.type == SearchSourceType.MODEL_BUILTIN) {
+                resources.getString(R.string.chat_search_unavail_model_builtin_unsupported)
             } else {
                 resources.getString(R.string.chat_search_unavail_configure_source)
             }

@@ -63,6 +63,9 @@ class DefaultSearchRepository(
         require(normalizedQuery.isNotBlank()) { "搜索词不能为空" }
         require(source.isConfigured()) { "当前搜索源尚未配置完成" }
         when (source.type) {
+            SearchSourceType.MODEL_BUILTIN -> {
+                throw UnsupportedOperationException("模型内置搜索由模型端直接调用，不应在本地执行搜索仓库")
+            }
             SearchSourceType.BRAVE -> searchBrave(source, normalizedQuery, resultCount)
             SearchSourceType.TAVILY -> searchTavily(source, normalizedQuery, resultCount)
             SearchSourceType.GOOGLE_CSE -> searchGoogleCse(source, normalizedQuery, resultCount)

@@ -33,6 +33,7 @@ import com.example.myapplication.model.ChatMessage
 import com.example.myapplication.model.ChatMessageDto
 import com.example.myapplication.model.ChatMessagePart
 import com.example.myapplication.model.ChatStreamEvent
+import com.example.myapplication.model.ChatToolDto
 import com.example.myapplication.model.ImageEditInputImageDto
 import com.example.myapplication.model.ImageEditRequest
 import com.example.myapplication.model.ImageGenerationRequest
@@ -46,6 +47,7 @@ import com.example.myapplication.model.ProviderApiProtocol
 import com.example.myapplication.model.ProviderSettings
 import com.example.myapplication.model.ResponseApiRequest
 import com.example.myapplication.model.ResponseApiResponse
+import com.example.myapplication.model.SearchSourceType
 import com.example.myapplication.model.buildThinkingRequestConfig
 import com.example.myapplication.model.legacyReasoningStepsFromContent
 import com.example.myapplication.model.normalizeChatReasoningSteps
@@ -196,10 +198,35 @@ class DefaultAiGateway(
                 tools = spec.tools,
                 toolChoice = spec.toolChoice,
                 promptEnvelope = spec.promptEnvelope,
+                googleSearchRetrieval = spec.googleSearchRetrieval,
             )
         },
     )
     private val roleplaySamplingDisabledBaseUrls = Collections.synchronizedSet(mutableSetOf<String>())
+
+    private data class ModelBuiltInSearchRequestOptions(
+        val tools: List<ChatToolDto> = emptyList(),
+        val googleSearchRetrieval: Map<String, Any>? = null,
+    )
+
+    private fun modelBuiltInSearchRequestOptions(
+        enabled: Boolean,
+    ): ModelBuiltInSearchRequestOptions {
+        if (!enabled) {
+            return ModelBuiltInSearchRequestOptions()
+        }
+        return ModelBuiltInSearchRequestOptions(
+            tools = listOf(
+                ChatToolDto(
+                    type = "google_search",
+                    googleSearch = emptyMap(),
+                ),
+            ),
+            googleSearchRetrieval = mapOf(
+                "dynamic_retrieval_config" to mapOf("mode" to "dynamic"),
+            ),
+        )
+    }
 
     override suspend fun generateImage(
         prompt: String,
@@ -441,6 +468,8 @@ class DefaultAiGateway(
             promptMode = PromptMode.CHAT,
             toolingOptions = toolingOptions,
         )
+        val isModelBuiltInSearch = toolingOptions.searchEnabled &&
+            settings.activeSearchSource(activeProvider)?.type == SearchSourceType.MODEL_BUILTIN
 
         return try {
             when (apiProtocol) {
@@ -453,6 +482,7 @@ class DefaultAiGateway(
                     activeProvider = activeProvider,
                     gatewayTooling = gatewayTooling,
                     promptEnvelope = promptEnvelope,
+                    isModelBuiltInSearch = isModelBuiltInSearch,
                 )
 
                 ProviderApiProtocol.ANTHROPIC -> sendAnthropicMessage(
@@ -495,6 +525,8 @@ class DefaultAiGateway(
             promptMode = promptMode,
             toolingOptions = toolingOptions,
         )
+        val isModelBuiltInSearch = toolingOptions.searchEnabled &&
+            settings.activeSearchSource(activeProvider)?.type == SearchSourceType.MODEL_BUILTIN
 
         val rawEvents = when (apiProtocol) {
             ProviderApiProtocol.OPENAI_COMPATIBLE -> {
@@ -508,6 +540,7 @@ class DefaultAiGateway(
                         promptMode = promptMode,
                         promptEnvelope = promptEnvelope,
                         activeProvider = activeProvider,
+                        isModelBuiltInSearch = isModelBuiltInSearch,
                     )
                 } else {
                     streamOpenAiMessageWithTools(
@@ -520,6 +553,7 @@ class DefaultAiGateway(
                         gatewayTooling = gatewayTooling,
                         promptMode = promptMode,
                         promptEnvelope = promptEnvelope,
+                        isModelBuiltInSearch = isModelBuiltInSearch,
                     )
                 }
             }
@@ -731,7 +765,9 @@ class DefaultAiGateway(
         activeProvider: ProviderSettings?,
         gatewayTooling: ResolvedGatewayTooling,
         promptEnvelope: PromptEnvelope,
+        isModelBuiltInSearch: Boolean = false,
     ): AssistantReply {
+        val modelBuiltInSearchOptions = modelBuiltInSearchRequestOptions(isModelBuiltInSearch)
         return when (activeProvider?.resolvedOpenAiTextApiMode() ?: OpenAiTextApiMode.CHAT_COMPLETIONS) {
             OpenAiTextApiMode.CHAT_COMPLETIONS -> {
                 if (gatewayTooling.enabledToolNames.isEmpty()) {
@@ -744,6 +780,8 @@ class DefaultAiGateway(
                         reasoningEffort = thinkingRequestConfig.reasoningEffort,
                         thinking = thinkingRequestConfig.thinking,
                         promptEnvelope = promptEnvelope,
+                        tools = modelBuiltInSearchOptions.tools,
+                        googleSearchRetrieval = modelBuiltInSearchOptions.googleSearchRetrieval,
                     )
                     val response = apiServiceProvider(
                         baseUrl,
@@ -772,6 +810,8 @@ class DefaultAiGateway(
                         toolContext = gatewayTooling.toolContext,
                         promptMode = PromptMode.CHAT,
                         promptEnvelope = promptEnvelope,
+                        additionalOpenAiTools = modelBuiltInSearchOptions.tools,
+                        googleSearchRetrieval = modelBuiltInSearchOptions.googleSearchRetrieval,
                     ).finalReply ?: throw IllegalStateException("模型未返回有效内容")
                 }
             }
@@ -938,7 +978,9 @@ class DefaultAiGateway(
         gatewayTooling: ResolvedGatewayTooling,
         promptMode: PromptMode,
         promptEnvelope: PromptEnvelope,
+        isModelBuiltInSearch: Boolean = false,
     ): Flow<ChatStreamEvent> = flow {
+        val modelBuiltInSearchOptions = modelBuiltInSearchRequestOptions(isModelBuiltInSearch)
         when (activeProvider?.resolvedOpenAiTextApiMode() ?: OpenAiTextApiMode.CHAT_COMPLETIONS) {
             OpenAiTextApiMode.CHAT_COMPLETIONS -> {
                 val toolLoopOutcome = toolEngine.runOpenAiChatCompletionToolLoop(
@@ -952,6 +994,8 @@ class DefaultAiGateway(
                     toolContext = gatewayTooling.toolContext,
                     promptMode = promptMode,
                     promptEnvelope = promptEnvelope,
+                    additionalOpenAiTools = modelBuiltInSearchOptions.tools,
+                    googleSearchRetrieval = modelBuiltInSearchOptions.googleSearchRetrieval,
                 )
                 if (toolLoopOutcome.toolRoundCount == 0) {
                     emitAssistantReply(toolLoopOutcome.finalReply).collect { emit(it) }
@@ -967,6 +1011,7 @@ class DefaultAiGateway(
                         promptMode = promptMode,
                         activeProvider = activeProvider?.copy(openAiTextApiMode = OpenAiTextApiMode.CHAT_COMPLETIONS),
                         promptEnvelope = promptEnvelope,
+                        isModelBuiltInSearch = isModelBuiltInSearch,
                     ).collect { event ->
                         if (event is ChatStreamEvent.Completed && toolLoopOutcome.citations.isNotEmpty()) {
                             emit(ChatStreamEvent.Citations(toolLoopOutcome.citations))
@@ -1149,8 +1194,12 @@ class DefaultAiGateway(
         promptMode: PromptMode,
         activeProvider: ProviderSettings? = null,
         promptEnvelope: PromptEnvelope = PromptEnvelope(),
+        isModelBuiltInSearch: Boolean = false,
     ): Flow<ChatStreamEvent> = flow {
         val apiMode = activeProvider?.resolvedOpenAiTextApiMode() ?: OpenAiTextApiMode.CHAT_COMPLETIONS
+        val modelBuiltInSearchOptions = modelBuiltInSearchRequestOptions(
+            enabled = isModelBuiltInSearch && apiMode == OpenAiTextApiMode.CHAT_COMPLETIONS,
+        )
         val client = runCatching {
             streamClientProvider(baseUrl, apiKey)
         }.getOrElse {
@@ -1163,6 +1212,7 @@ class DefaultAiGateway(
                     thinkingRequestConfig = thinkingRequestConfig,
                     activeProvider = activeProvider,
                     promptEnvelope = promptEnvelope,
+                    isModelBuiltInSearch = isModelBuiltInSearch,
                 ),
             ).collect { emit(it) }
             return@flow
@@ -1177,6 +1227,8 @@ class DefaultAiGateway(
             thinking = thinkingRequestConfig.thinking,
             promptMode = promptMode,
             promptEnvelope = promptEnvelope,
+            tools = modelBuiltInSearchOptions.tools,
+            googleSearchRetrieval = modelBuiltInSearchOptions.googleSearchRetrieval,
         )
         var call = client.newCall(
             buildStreamingRequest(
@@ -1436,8 +1488,13 @@ class DefaultAiGateway(
         thinkingRequestConfig: com.example.myapplication.model.ThinkingRequestConfig,
         activeProvider: ProviderSettings?,
         promptEnvelope: PromptEnvelope = PromptEnvelope(),
+        isModelBuiltInSearch: Boolean = false,
     ): AssistantReply {
-        return when (activeProvider?.resolvedOpenAiTextApiMode() ?: OpenAiTextApiMode.CHAT_COMPLETIONS) {
+        val apiMode = activeProvider?.resolvedOpenAiTextApiMode() ?: OpenAiTextApiMode.CHAT_COMPLETIONS
+        val modelBuiltInSearchOptions = modelBuiltInSearchRequestOptions(
+            enabled = isModelBuiltInSearch && apiMode == OpenAiTextApiMode.CHAT_COMPLETIONS,
+        )
+        return when (apiMode) {
             OpenAiTextApiMode.CHAT_COMPLETIONS -> {
                 val request = buildRequestWithRoleplaySampling(
                     model = selectedModel,
@@ -1448,6 +1505,8 @@ class DefaultAiGateway(
                     reasoningEffort = thinkingRequestConfig.reasoningEffort,
                     thinking = thinkingRequestConfig.thinking,
                     promptEnvelope = promptEnvelope,
+                    tools = modelBuiltInSearchOptions.tools,
+                    googleSearchRetrieval = modelBuiltInSearchOptions.googleSearchRetrieval,
                 )
                 val response = apiServiceProvider(baseUrl, apiKey).createChatCompletionAt(
                     buildOpenAiTextUrl(baseUrl, activeProvider),
@@ -1614,6 +1673,7 @@ class DefaultAiGateway(
         tools: List<com.example.myapplication.model.ChatToolDto> = emptyList(),
         toolChoice: String? = null,
         promptEnvelope: PromptEnvelope = PromptEnvelope(),
+        googleSearchRetrieval: Map<String, Any>? = null,
     ): ChatCompletionRequest = GatewayRequestSupport.buildRequestWithRoleplaySampling(
         model = model,
         messages = messages,
@@ -1629,6 +1689,7 @@ class DefaultAiGateway(
         stopSequences = promptEnvelope.stopSequences,
         tools = tools,
         toolChoice = toolChoice,
+        googleSearchRetrieval = googleSearchRetrieval,
     )
 
     private fun shouldRetryWithoutRoleplaySampling(

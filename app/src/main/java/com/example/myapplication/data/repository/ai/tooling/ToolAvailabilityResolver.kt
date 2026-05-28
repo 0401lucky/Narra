@@ -133,6 +133,9 @@ class ToolAvailabilityResolver(
             return null
         }
         val source = settings.activeSearchSource(activeProvider) ?: return null
+        if (source.type == com.example.myapplication.model.SearchSourceType.MODEL_BUILTIN) {
+            return null
+        }
         return SearchToolConfig(
             source = source,
             resultCount = settings.resolvedSearchSettings().defaultResultCount,

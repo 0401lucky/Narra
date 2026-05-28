@@ -53,11 +53,12 @@ internal object ResponseApiSupport {
                     summary = "auto",
                 )
             },
-            tools = request.tools.map { tool ->
+            tools = request.tools.mapNotNull { tool ->
+                val function = tool.function ?: return@mapNotNull null
                 ResponseApiToolDto(
-                    name = tool.function.name,
-                    description = tool.function.description,
-                    parameters = tool.function.parameters,
+                    name = function.name,
+                    description = function.description,
+                    parameters = function.parameters,
                 )
             },
         )

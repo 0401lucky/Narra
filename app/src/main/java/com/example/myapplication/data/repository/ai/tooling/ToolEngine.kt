@@ -12,6 +12,7 @@ import com.example.myapplication.model.AssistantMessageDto
 import com.example.myapplication.model.AssistantReply
 import com.example.myapplication.model.ChatCompletionRequest
 import com.example.myapplication.model.ChatMessageDto
+import com.example.myapplication.model.ChatToolDto
 import com.example.myapplication.model.MessageCitation
 import com.example.myapplication.model.OpenAiTextApiMode
 import com.example.myapplication.model.PromptEnvelope
@@ -51,8 +52,9 @@ data class ToolLoopChatRequestSpec(
     val thinking: ThinkingConfigDto? = null,
     val promptMode: PromptMode = PromptMode.CHAT,
     val promptEnvelope: PromptEnvelope = PromptEnvelope(),
-    val tools: List<com.example.myapplication.model.ChatToolDto> = emptyList(),
+    val tools: List<ChatToolDto> = emptyList(),
     val toolChoice: String? = null,
+    val googleSearchRetrieval: Map<String, Any>? = null,
 )
 
 class ToolEngine(
@@ -74,6 +76,8 @@ class ToolEngine(
         toolContext: ToolContext,
         promptMode: PromptMode,
         promptEnvelope: PromptEnvelope,
+        additionalOpenAiTools: List<ChatToolDto> = emptyList(),
+        googleSearchRetrieval: Map<String, Any>? = null,
     ): ToolLoopOutcome {
         val enabledTools = toolRegistry.resolve(enabledToolNames)
         var state = TranscriptToolState(transcript = requestMessages)
@@ -88,8 +92,9 @@ class ToolEngine(
                     thinking = thinkingRequestConfig.thinking,
                     promptMode = promptMode,
                     promptEnvelope = promptEnvelope,
-                    tools = GatewayToolSupport.toOpenAiTools(enabledTools),
+                    tools = GatewayToolSupport.toOpenAiTools(enabledTools) + additionalOpenAiTools,
                     toolChoice = "auto",
+                    googleSearchRetrieval = googleSearchRetrieval,
                 ),
             )
             val response = apiServiceProvider(

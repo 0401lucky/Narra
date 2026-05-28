@@ -9,6 +9,7 @@ import com.example.myapplication.data.repository.ai.tooling.SearchWebTool
 import com.example.myapplication.data.repository.ai.tooling.SearchWorldBookTool
 import com.example.myapplication.data.repository.ai.tooling.ToolAvailabilityResolver
 import com.example.myapplication.data.repository.ai.tooling.ToolRegistry
+import com.example.myapplication.data.repository.context.ConversationSummaryRepository
 import com.example.myapplication.data.repository.context.EmptyConversationSummaryRepository
 import com.example.myapplication.data.repository.context.EmptyMemoryRepository
 import com.example.myapplication.data.repository.context.EmptyWorldBookRepository
@@ -22,6 +23,9 @@ import com.example.myapplication.model.ChatCompletionResponse
 import com.example.myapplication.model.ChatMessage
 import com.example.myapplication.model.ChatMessagePartType
 import com.example.myapplication.model.ChatStreamEvent
+import com.example.myapplication.model.Conversation
+import com.example.myapplication.model.ConversationSummary
+import com.example.myapplication.model.GatewayToolRuntimeContext
 import com.example.myapplication.model.GatewayToolingOptions
 import com.example.myapplication.model.ImageGenerationRequest
 import com.example.myapplication.model.ImageGenerationResponse
@@ -40,6 +44,7 @@ import com.example.myapplication.model.SearchSettings
 import com.example.myapplication.model.SearchSourceConfig
 import com.example.myapplication.model.SearchSourceIds
 import com.example.myapplication.model.SearchSourceType
+import com.example.myapplication.model.defaultSearchSources
 import com.example.myapplication.model.TransferDirection
 import com.example.myapplication.model.TransferStatus
 import com.example.myapplication.model.specialMetadataValue
@@ -50,6 +55,7 @@ import com.example.myapplication.model.transferMessagePart
 import com.example.myapplication.testutil.FakeSettingsStore
 import com.google.gson.JsonParser
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.runBlocking
 import okhttp3.OkHttpClient
@@ -2110,6 +2116,165 @@ class AiGatewayTest {
         assertEquals("正文", parsed.parts.single().text)
     }
 
+    @Test
+    fun sendMessage_withModelBuiltinSearch_injectsSearchGroundingIntoRequest() = runBlocking {
+        server.enqueue(
+            MockResponse().setResponseCode(200).setBody(
+                """
+                {
+                  "choices": [
+                    {
+                      "index": 0,
+                      "message": {
+                        "role": "assistant",
+                        "content": "我使用了内置联网搜索为你查找了信息。"
+                      }
+                    }
+                  ]
+                }
+                """.trimIndent(),
+            ),
+        )
+        val gateway = createGateway(
+            settings = modelBuiltinSearchSettings(),
+        )
+
+        val reply = gateway.sendMessage(
+            messages = listOf(
+                ChatMessage(id = "1", role = MessageRole.USER, content = "今天天气怎么样？"),
+            ),
+            toolingOptions = GatewayToolingOptions.chat(
+                searchEnabled = true,
+                runtimeContext = GatewayToolRuntimeContext(
+                    promptMode = PromptMode.CHAT,
+                ),
+            ),
+        )
+
+        assertEquals("我使用了内置联网搜索为你查找了信息。", reply.content)
+        val request = server.takeRequest()
+        val requestBody = JsonParser.parseString(request.body.readUtf8()).asJsonObject
+
+        assertTrue(requestBody.has("google_search_retrieval"))
+        val retrieval = requestBody.getAsJsonObject("google_search_retrieval")
+        val config = retrieval.getAsJsonObject("dynamic_retrieval_config")
+        assertEquals("dynamic", config["mode"].asString)
+
+        assertTrue(requestBody.has("tools"))
+        val tools = requestBody.getAsJsonArray("tools")
+        assertEquals(1, tools.size())
+        val tool = tools[0].asJsonObject
+        assertEquals("google_search", tool["type"].asString)
+        assertTrue(tool.has("google_search"))
+    }
+
+    @Test
+    fun sendMessage_withModelBuiltinSearchAndLocalTools_keepsSearchGroundingInToolLoop() = runBlocking {
+        server.enqueue(
+            MockResponse().setResponseCode(200).setBody(
+                """
+                {
+                  "choices": [
+                    {
+                      "index": 0,
+                      "message": {
+                        "role": "assistant",
+                        "content": "我结合上下文和内置搜索回答。"
+                      }
+                    }
+                  ]
+                }
+                """.trimIndent(),
+            ),
+        )
+        val conversationId = "conversation-with-summary"
+        val gateway = createGateway(
+            settings = modelBuiltinSearchSettings(),
+            conversationSummaryRepository = fakeConversationSummaryRepository(
+                ConversationSummary(
+                    conversationId = conversationId,
+                    summary = "这是一段已缓存的对话摘要。",
+                ),
+            ),
+        )
+
+        val reply = gateway.sendMessage(
+            messages = listOf(
+                ChatMessage(id = "1", role = MessageRole.USER, content = "继续回答并联网确认。"),
+            ),
+            toolingOptions = GatewayToolingOptions.chat(
+                searchEnabled = true,
+                runtimeContext = GatewayToolRuntimeContext(
+                    promptMode = PromptMode.CHAT,
+                    conversation = Conversation(
+                        id = conversationId,
+                        createdAt = 1L,
+                        updatedAt = 1L,
+                    ),
+                ),
+            ),
+        )
+
+        assertEquals("我结合上下文和内置搜索回答。", reply.content)
+        val requestBody = JsonParser.parseString(server.takeRequest().body.readUtf8()).asJsonObject
+        assertTrue(requestBody.has("google_search_retrieval"))
+        val tools = requestBody.getAsJsonArray("tools")
+        assertTrue(
+            tools.any { tool ->
+                tool.asJsonObject["type"].asString == "google_search"
+            },
+        )
+        assertTrue(
+            tools.any { tool ->
+                val function = tool.asJsonObject.getAsJsonObject("function")
+                function != null && function["name"].asString == GetConversationSummaryTool.NAME
+            },
+        )
+    }
+
+    @Test
+    fun sendMessage_withModelBuiltinSearchAndResponsesMode_doesNotInjectUnsupportedSearchFields() = runBlocking {
+        server.enqueue(
+            MockResponse().setResponseCode(200).setBody(
+                """
+                {
+                  "id": "resp_plain_1",
+                  "output": [
+                    {
+                      "type": "message",
+                      "content": [
+                        {"type": "output_text", "text": "Responses 普通回复"}
+                      ]
+                    }
+                  ]
+                }
+                """.trimIndent(),
+            ),
+        )
+        val gateway = createGateway(
+            settings = modelBuiltinSearchSettings(
+                openAiTextApiMode = OpenAiTextApiMode.RESPONSES,
+            ),
+        )
+
+        val reply = gateway.sendMessage(
+            messages = listOf(
+                ChatMessage(id = "1", role = MessageRole.USER, content = "今天天气怎么样？"),
+            ),
+            toolingOptions = GatewayToolingOptions.chat(
+                searchEnabled = true,
+                runtimeContext = GatewayToolRuntimeContext(
+                    promptMode = PromptMode.CHAT,
+                ),
+            ),
+        )
+
+        assertEquals("Responses 普通回复", reply.content)
+        val requestBody = JsonParser.parseString(server.takeRequest().body.readUtf8()).asJsonObject
+        assertFalse(requestBody.has("google_search_retrieval"))
+        assertEquals(0, requestBody.getAsJsonArray("tools").size())
+    }
+
     private fun createGateway(
         settings: AppSettings,
         apiServiceProvider: ((String, String) -> OpenAiCompatibleApi)? = null,
@@ -2123,6 +2288,7 @@ class AiGatewayTest {
                 resultCount: Int,
             ) = error("不应执行搜索")
         },
+        conversationSummaryRepository: ConversationSummaryRepository = EmptyConversationSummaryRepository,
     ): DefaultAiGateway {
         val settingsStore = FakeSettingsStore(settings)
         val apiServiceFactory = ApiServiceFactory()
@@ -2139,7 +2305,7 @@ class AiGatewayTest {
             searchRepository = searchRepository,
             memoryRepository = EmptyMemoryRepository,
             worldBookRepository = EmptyWorldBookRepository,
-            conversationSummaryRepository = EmptyConversationSummaryRepository,
+            conversationSummaryRepository = conversationSummaryRepository,
         )
         return DefaultAiGateway(
             settingsStore = settingsStore,
@@ -2158,11 +2324,64 @@ class AiGatewayTest {
             searchRepository = searchRepository,
             memoryRepository = EmptyMemoryRepository,
             worldBookRepository = EmptyWorldBookRepository,
-            conversationSummaryRepository = EmptyConversationSummaryRepository,
+            conversationSummaryRepository = conversationSummaryRepository,
             toolAvailabilityResolver = toolAvailabilityResolver,
             toolRegistry = toolRegistry,
             ioDispatcher = Dispatchers.Unconfined,
         )
+    }
+
+    private fun modelBuiltinSearchSettings(
+        openAiTextApiMode: OpenAiTextApiMode = OpenAiTextApiMode.CHAT_COMPLETIONS,
+    ): AppSettings {
+        val provider = ProviderSettings(
+            id = "provider-gemini",
+            name = "Gemini",
+            baseUrl = server.url("/v1/").toString(),
+            apiKey = "saved-key",
+            selectedModel = "gemini-2.0-flash",
+            type = ProviderType.GOOGLE,
+            openAiTextApiMode = openAiTextApiMode,
+        )
+        val modifiedSources = defaultSearchSources().map { source ->
+            if (source.type == SearchSourceType.MODEL_BUILTIN) {
+                source.copy(enabled = true)
+            } else {
+                source.copy(enabled = false)
+            }
+        }
+        return AppSettings(
+            providers = listOf(provider),
+            selectedProviderId = provider.id,
+            searchSettings = SearchSettings(
+                sources = modifiedSources,
+                selectedSourceId = SearchSourceIds.MODEL_BUILTIN,
+            ),
+        )
+    }
+
+    private fun fakeConversationSummaryRepository(
+        summary: ConversationSummary,
+    ): ConversationSummaryRepository {
+        return object : ConversationSummaryRepository {
+            override fun observeSummary(conversationId: String) = flowOf(
+                summary.takeIf { it.conversationId == conversationId },
+            )
+
+            override fun observeSummaries() = flowOf(listOf(summary))
+
+            override suspend fun getSummary(conversationId: String): ConversationSummary? {
+                return summary.takeIf { it.conversationId == conversationId }
+            }
+
+            override suspend fun listSummaries(): List<ConversationSummary> {
+                return listOf(summary)
+            }
+
+            override suspend fun upsertSummary(summary: ConversationSummary) = Unit
+
+            override suspend fun deleteSummary(conversationId: String) = Unit
+        }
     }
 
     private fun configuredSearchSettings(): SearchSettings {

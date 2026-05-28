@@ -229,6 +229,13 @@ data class AppSettings(
                 }
             }
 
+            SearchSourceType.MODEL_BUILTIN -> {
+                source.takeIf {
+                    it.enabled &&
+                        activeProvider?.supportsModelBuiltInSearchSource() == true
+                }
+            }
+
             else -> source.takeIf(SearchSourceConfig::isConfigured)
         }
     }

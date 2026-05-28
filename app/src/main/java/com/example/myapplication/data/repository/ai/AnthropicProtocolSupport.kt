@@ -53,11 +53,12 @@ internal object AnthropicProtocolSupport {
                     budgetTokens = thinking.budgetTokens,
                 )
             },
-            tools = request.tools.map { tool ->
+            tools = request.tools.mapNotNull { tool ->
+                val function = tool.function ?: return@mapNotNull null
                 AnthropicToolDto(
-                    name = tool.function.name,
-                    description = tool.function.description,
-                    inputSchema = tool.function.parameters,
+                    name = function.name,
+                    description = function.description,
+                    inputSchema = function.parameters,
                 )
             }.takeIf { it.isNotEmpty() },
         )

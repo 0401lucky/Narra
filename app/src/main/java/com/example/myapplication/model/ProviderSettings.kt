@@ -158,6 +158,23 @@ data class ProviderSettings(
         }
     }
 
+    fun supportsModelBuiltInSearchSource(): Boolean {
+        if (!hasRequiredConfig()) {
+            return false
+        }
+        if (resolvedApiProtocol() != ProviderApiProtocol.OPENAI_COMPATIBLE) {
+            return false
+        }
+        if (resolvedOpenAiTextApiMode() != OpenAiTextApiMode.CHAT_COMPLETIONS) {
+            return false
+        }
+        val normalizedModel = selectedModel.trim().lowercase()
+        if ("gemini" !in normalizedModel) {
+            return false
+        }
+        return resolvedType() == ProviderType.GOOGLE
+    }
+
     private fun defaultFunctionModelMode(function: ProviderFunction): ProviderFunctionModelMode {
         return when (function) {
             ProviderFunction.GIFT_IMAGE -> ProviderFunctionModelMode.DISABLED

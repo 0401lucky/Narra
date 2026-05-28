@@ -227,6 +227,66 @@ class AppSettingsTest {
     }
 
     @Test
+    fun hasConfiguredSearchSource_acceptsModelBuiltinSearchForGeminiChatCompletions() {
+        val provider = ProviderSettings(
+            id = "provider-gemini",
+            name = "Gemini",
+            baseUrl = "https://generativelanguage.googleapis.com/v1beta/openai/",
+            apiKey = "search-key",
+            selectedModel = "gemini-2.0-flash",
+            type = ProviderType.GOOGLE,
+            openAiTextApiMode = OpenAiTextApiMode.CHAT_COMPLETIONS,
+        )
+        val settings = AppSettings(
+            providers = listOf(provider),
+            selectedProviderId = provider.id,
+            searchSettings = modelBuiltinSearchSettings(),
+        )
+
+        assertTrue(settings.hasConfiguredSearchSource(provider))
+    }
+
+    @Test
+    fun hasConfiguredSearchSource_rejectsModelBuiltinSearchForResponsesMode() {
+        val provider = ProviderSettings(
+            id = "provider-gemini",
+            name = "Gemini",
+            baseUrl = "https://generativelanguage.googleapis.com/v1beta/openai/",
+            apiKey = "search-key",
+            selectedModel = "gemini-2.0-flash",
+            type = ProviderType.GOOGLE,
+            openAiTextApiMode = OpenAiTextApiMode.RESPONSES,
+        )
+        val settings = AppSettings(
+            providers = listOf(provider),
+            selectedProviderId = provider.id,
+            searchSettings = modelBuiltinSearchSettings(),
+        )
+
+        assertFalse(settings.hasConfiguredSearchSource(provider))
+    }
+
+    @Test
+    fun hasConfiguredSearchSource_rejectsModelBuiltinSearchForNonGoogleProvider() {
+        val provider = ProviderSettings(
+            id = "provider-custom",
+            name = "Custom",
+            baseUrl = "https://proxy.example.com/v1/",
+            apiKey = "search-key",
+            selectedModel = "gemini-2.0-flash",
+            type = ProviderType.CUSTOM,
+            openAiTextApiMode = OpenAiTextApiMode.CHAT_COMPLETIONS,
+        )
+        val settings = AppSettings(
+            providers = listOf(provider),
+            selectedProviderId = provider.id,
+            searchSettings = modelBuiltinSearchSettings(),
+        )
+
+        assertFalse(settings.hasConfiguredSearchSource(provider))
+    }
+
+    @Test
     fun resolvedAssistants_prefersSavedOverrideForBuiltinAssistant() {
         val overrideAssistant = Assistant(
             id = DEFAULT_ASSISTANT_ID,
@@ -279,5 +339,19 @@ class AppSettingsTest {
         val masks = settings.normalizedUserPersonaMasks()
 
         assertEquals(listOf(USER_PROFILE_PERSONA_MASK_ID, "mask-custom"), masks.map { it.id })
+    }
+
+    private fun modelBuiltinSearchSettings(): SearchSettings {
+        return SearchSettings(
+            sources = listOf(
+                SearchSourceConfig(
+                    id = SearchSourceIds.MODEL_BUILTIN,
+                    type = SearchSourceType.MODEL_BUILTIN,
+                    name = "模型内置",
+                    enabled = true,
+                ),
+            ),
+            selectedSourceId = SearchSourceIds.MODEL_BUILTIN,
+        )
     }
 }

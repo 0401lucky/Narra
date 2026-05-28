@@ -175,6 +175,14 @@ private fun SearchSourceCard(
     val providerOptions = settings.enabledProviders()
     val selectedProvider = settings.resolveSearchSourceProvider(source)
     val statusText = when (source.type) {
+        SearchSourceType.MODEL_BUILTIN -> {
+            when {
+                !source.enabled -> "启用后可在支持的 Gemini 模型上使用，无需额外凭据。"
+                settings.activeProvider()?.supportsModelBuiltInSearchSource() == true -> "配置完整，聊天页可用。"
+                else -> "需要使用 Google Gemini 提供商、Chat Completions 模式，并选择 Gemini 模型。"
+            }
+        }
+
         SearchSourceType.LLM_SEARCH -> {
             when {
                 !source.enabled -> "启用后，主聊天模型会把 search_web 调用转发给这里配置的搜索提供商。"
@@ -228,6 +236,7 @@ private fun SearchSourceCard(
                             SearchSourceType.BRAVE -> "使用 Brave Search API"
                             SearchSourceType.TAVILY -> "使用 Tavily Search API"
                             SearchSourceType.GOOGLE_CSE -> "使用 Google Programmable Search"
+                            SearchSourceType.MODEL_BUILTIN -> "直接使用模型自带的联网搜索能力"
                             SearchSourceType.LLM_SEARCH -> "自动代理 search_web 搜索请求"
                         },
                         style = androidx.compose.material3.MaterialTheme.typography.bodySmall,
@@ -254,7 +263,7 @@ private fun SearchSourceCard(
                 )
             }
 
-            if (source.type != SearchSourceType.LLM_SEARCH) {
+            if (source.type != SearchSourceType.LLM_SEARCH && source.type != SearchSourceType.MODEL_BUILTIN) {
                 OutlinedTextField(
                     value = source.apiKey,
                     onValueChange = onApiKeyChange,

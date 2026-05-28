@@ -39,6 +39,8 @@ data class ChatCompletionRequest(
     val tools: List<ChatToolDto> = emptyList(),
     @SerializedName("tool_choice")
     val toolChoice: String? = null,
+    @SerializedName("google_search_retrieval")
+    val googleSearchRetrieval: Map<String, Any>? = null,
 )
 
 data class ThinkingConfigDto(
@@ -59,7 +61,9 @@ data class ChatMessageDto(
 
 data class ChatToolDto(
     val type: String = "function",
-    val function: ChatFunctionDefinitionDto,
+    val function: ChatFunctionDefinitionDto? = null,
+    @SerializedName("google_search")
+    val googleSearch: Map<String, Any>? = null,
 )
 
 data class ChatFunctionDefinitionDto(

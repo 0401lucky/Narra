@@ -305,6 +305,7 @@ private fun SearchSourceRow(
                     SearchSourceType.BRAVE -> "Brave 网页搜索"
                     SearchSourceType.TAVILY -> "Tavily 网页搜索"
                     SearchSourceType.GOOGLE_CSE -> "Google 自定义搜索"
+                    SearchSourceType.MODEL_BUILTIN -> "直接使用模型自带的联网搜索能力"
                     SearchSourceType.LLM_SEARCH -> buildString {
                         append("把 search_web 代理给独立搜索模型")
                         if (selectedProvider != null) {

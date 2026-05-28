@@ -9,6 +9,7 @@ object SearchSourceIds {
     const val TAVILY = "search-source-tavily"
     const val GOOGLE_CSE = "search-source-google-cse"
     const val LLM_SEARCH = "search-source-llm-search"
+    const val MODEL_BUILTIN = "search-source-model-builtin"
 }
 
 enum class SearchSourceType(
@@ -18,6 +19,7 @@ enum class SearchSourceType(
     TAVILY("Tavily"),
     GOOGLE_CSE("Google CSE"),
     LLM_SEARCH("LLM 搜索"),
+    MODEL_BUILTIN("模型内置"),
 }
 
 data class SearchSourceConfig(
@@ -42,6 +44,8 @@ data class SearchSourceConfig(
                 && apiKey.isNotBlank()
 
             SearchSourceType.LLM_SEARCH -> providerId.isNotBlank()
+
+            SearchSourceType.MODEL_BUILTIN -> true
         }
     }
 
@@ -52,6 +56,11 @@ data class SearchSourceConfig(
                     activeProvider?.hasBaseCredentials() == true &&
                     activeProvider.supportsLlmSearchSource() &&
                     activeProvider.resolveFunctionModel(ProviderFunction.SEARCH).isNotBlank()
+            }
+
+            SearchSourceType.MODEL_BUILTIN -> {
+                enabled &&
+                    activeProvider?.supportsModelBuiltInSearchSource() == true
             }
 
             else -> isConfigured()
@@ -132,6 +141,12 @@ fun defaultSearchSources(): List<SearchSourceConfig> {
             id = SearchSourceIds.LLM_SEARCH,
             type = SearchSourceType.LLM_SEARCH,
             name = "LLM 搜索",
+        ),
+        SearchSourceConfig(
+            id = SearchSourceIds.MODEL_BUILTIN,
+            type = SearchSourceType.MODEL_BUILTIN,
+            name = "模型内置",
+            enabled = true,
         ),
     )
 }
