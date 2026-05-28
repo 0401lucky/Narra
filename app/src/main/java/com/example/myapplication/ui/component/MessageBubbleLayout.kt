@@ -23,6 +23,14 @@ import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import androidx.compose.runtime.getValue
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.ui.draw.scale
+import androidx.compose.ui.draw.rotate
+import androidx.compose.foundation.background
 import com.example.myapplication.model.AttachmentType
 import com.example.myapplication.model.ChatMessage
 import com.example.myapplication.model.ChatMessagePart
@@ -332,6 +340,21 @@ internal fun MessageBubbleContent(
     val displayAttachments = renderedContent.displayAttachments
     val displayParts = renderedContent.displayParts
     val assistantImageSources = renderedContent.assistantImageSources
+
+    val isLoading = !isUser && message.status == com.example.myapplication.model.MessageStatus.LOADING
+    val isRealContentBlank = displayContent.isBlank() || displayContent == "正在生成回复…"
+    val isFirstTokenLoading = isLoading &&
+        isRealContentBlank &&
+        message.reasoningContent.isBlank() &&
+        displayParts.isEmpty() &&
+        displayAttachments.isEmpty() &&
+        assistantImageSources.isEmpty()
+
+    if (isFirstTokenLoading) {
+        NarraPremiumLoadingIndicator(contentColor = contentColor, modifier = modifier)
+        return
+    }
+
     Column(
         modifier = modifier,
         verticalArrangement = Arrangement.spacedBy(12.dp),
@@ -432,4 +455,95 @@ internal fun chatMarkdownPadding(
         blockQuote = PaddingValues(horizontal = if (compact) 12.dp else 14.dp, vertical = 2.dp),
         blockQuoteText = PaddingValues(bottom = if (compact) 3.dp else 4.dp),
     )
+}
+
+@Composable
+internal fun NarraPremiumLoadingIndicator(
+    contentColor: androidx.compose.ui.graphics.Color,
+    modifier: Modifier = Modifier,
+) {
+    val infiniteTransition = androidx.compose.animation.core.rememberInfiniteTransition(label = "premium_loading")
+
+    val scale by infiniteTransition.animateFloat(
+        initialValue = 0.85f,
+        targetValue = 1.15f,
+        animationSpec = androidx.compose.animation.core.infiniteRepeatable(
+            animation = androidx.compose.animation.core.keyframes {
+                durationMillis = 1800
+                0.85f at 0 using androidx.compose.animation.core.FastOutSlowInEasing
+                1.15f at 900 using androidx.compose.animation.core.FastOutSlowInEasing
+                0.85f at 1800 using androidx.compose.animation.core.FastOutSlowInEasing
+            },
+            repeatMode = androidx.compose.animation.core.RepeatMode.Restart
+        ),
+        label = "scale"
+    )
+
+    val rotation by infiniteTransition.animateFloat(
+        initialValue = 0f,
+        targetValue = 360f,
+        animationSpec = androidx.compose.animation.core.infiniteRepeatable(
+            animation = androidx.compose.animation.core.tween(durationMillis = 2400, easing = androidx.compose.animation.core.LinearEasing),
+            repeatMode = androidx.compose.animation.core.RepeatMode.Restart
+        ),
+        label = "rotation"
+    )
+
+    val glowAlpha by infiniteTransition.animateFloat(
+        initialValue = 0.35f,
+        targetValue = 0.85f,
+        animationSpec = androidx.compose.animation.core.infiniteRepeatable(
+            animation = androidx.compose.animation.core.tween(durationMillis = 1800, easing = androidx.compose.animation.core.FastOutSlowInEasing),
+            repeatMode = androidx.compose.animation.core.RepeatMode.Reverse
+        ),
+        label = "glowAlpha"
+    )
+
+    Row(
+        modifier = modifier
+            .padding(vertical = 4.dp),
+        verticalAlignment = androidx.compose.ui.Alignment.CenterVertically,
+        horizontalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(10.dp)
+    ) {
+        val primaryColor = MaterialTheme.colorScheme.primary
+        val tertiaryColor = MaterialTheme.colorScheme.tertiary
+        val primaryContainer = MaterialTheme.colorScheme.primaryContainer
+
+        Box(
+            modifier = Modifier
+                .size(18.dp)
+                .scale(scale)
+                .rotate(rotation)
+                .background(
+                    brush = androidx.compose.ui.graphics.Brush.sweepGradient(
+                        colors = listOf(
+                            primaryColor,
+                            tertiaryColor,
+                            primaryContainer,
+                            primaryColor
+                        )
+                    ),
+                    shape = androidx.compose.foundation.shape.CircleShape
+                )
+                .padding(2.dp)
+        ) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(
+                        color = MaterialTheme.colorScheme.surface,
+                        shape = androidx.compose.foundation.shape.CircleShape
+                    )
+            )
+        }
+
+        Text(
+            text = "正在思考...",
+            style = MaterialTheme.typography.bodyMedium.copy(
+                fontWeight = androidx.compose.ui.text.font.FontWeight.Medium,
+                letterSpacing = 0.5.sp
+            ),
+            color = contentColor.copy(alpha = glowAlpha)
+        )
+    }
 }

@@ -98,6 +98,7 @@ internal fun ChatAutoFollowEffects(
     lastMessageStatus: com.example.myapplication.model.MessageStatus?,
 ) {
     val bottomAnchorIndex = messageCount
+    var hasInitiallyScrolled by remember(displayedConversationId) { mutableStateOf(false) }
 
     LaunchedEffect(
         listState.isScrollInProgress,
@@ -134,11 +135,21 @@ internal fun ChatAutoFollowEffects(
         state.userDisabledAutoFollow = false
         if (messageCount > 0) {
             state.scrollToConversationEnd(listState, bottomAnchorIndex, animated = false)
+            hasInitiallyScrolled = true
         }
     }
 
     LaunchedEffect(messageCount, displayedConversationId) {
         if (messageCount == 0) {
+            return@LaunchedEffect
+        }
+        if (!hasInitiallyScrolled) {
+            state.scrollToConversationEnd(
+                listState = listState,
+                bottomAnchorIndex = bottomAnchorIndex,
+                animated = false,
+            )
+            hasInitiallyScrolled = true
             return@LaunchedEffect
         }
         if (!state.userDisabledAutoFollow && (state.shouldAutoFollowStreaming || isNearBottom)) {

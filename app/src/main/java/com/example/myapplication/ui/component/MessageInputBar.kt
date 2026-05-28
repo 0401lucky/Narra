@@ -7,6 +7,9 @@ import androidx.compose.animation.animateContentSize
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.animation.animateColorAsState
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.interaction.MutableInteractionSource
@@ -504,19 +507,57 @@ private fun SearchActionChip(
         else -> MaterialTheme.colorScheme.outline.copy(alpha = 0.18f)
     }
 
+    val animatedContainerColor by androidx.compose.animation.animateColorAsState(
+        targetValue = containerColor,
+        animationSpec = spring(stiffness = Spring.StiffnessMediumLow),
+        label = "search_container_color"
+    )
+    val animatedContentColor by androidx.compose.animation.animateColorAsState(
+        targetValue = contentColor,
+        animationSpec = spring(stiffness = Spring.StiffnessMediumLow),
+        label = "search_content_color"
+    )
+    val animatedBorderColor by androidx.compose.animation.animateColorAsState(
+        targetValue = borderColor,
+        animationSpec = spring(stiffness = Spring.StiffnessMediumLow),
+        label = "search_border_color"
+    )
+
+    val rotationAngle by animateFloatAsState(
+        targetValue = if (selected) 360f else 0f,
+        animationSpec = spring(
+            dampingRatio = Spring.DampingRatioMediumBouncy,
+            stiffness = Spring.StiffnessMediumLow,
+        ),
+        label = "search_rotation"
+    )
+
+    val scale by animateFloatAsState(
+        targetValue = if (selected) 1.08f else 1f,
+        animationSpec = spring(
+            dampingRatio = Spring.DampingRatioMediumBouncy,
+            stiffness = Spring.StiffnessMediumLow,
+        ),
+        label = "search_scale"
+    )
+
     Surface(
         modifier = Modifier
             .size(38.dp)
+            .graphicsLayer {
+                scaleX = scale
+                scaleY = scale
+            }
             .clip(CircleShape)
             .border(
                 width = 1.dp,
-                color = borderColor,
+                color = animatedBorderColor,
                 shape = CircleShape,
             )
             .clickable(enabled = enabled, onClick = onClick),
         shape = CircleShape,
-        color = containerColor,
-        contentColor = contentColor,
+        color = animatedContainerColor,
+        contentColor = animatedContentColor,
     ) {
         Box(
             modifier = Modifier.fillMaxSize(),
@@ -525,7 +566,11 @@ private fun SearchActionChip(
             Icon(
                 imageVector = Icons.Default.Search,
                 contentDescription = if (selected) stringResource(R.string.search_disable) else stringResource(R.string.search_enable),
-                modifier = Modifier.size(20.dp),
+                modifier = Modifier
+                    .size(20.dp)
+                    .graphicsLayer {
+                        rotationZ = rotationAngle
+                    },
             )
         }
     }
@@ -613,9 +658,22 @@ private fun ModelSelectorButton(
     enabled: Boolean,
     onClick: () -> Unit,
 ) {
+    val scale by animateFloatAsState(
+        targetValue = if (enabled) 1f else 0.94f,
+        animationSpec = spring(
+            dampingRatio = Spring.DampingRatioMediumBouncy,
+            stiffness = Spring.StiffnessMediumLow,
+        ),
+        label = "model_scale"
+    )
+
     Surface(
         modifier = Modifier
             .size(38.dp)
+            .graphicsLayer {
+                scaleX = scale
+                scaleY = scale
+            }
             .clip(CircleShape)
             .clickable(enabled = enabled, onClick = onClick),
         shape = CircleShape,
@@ -646,26 +704,62 @@ private fun ReasoningActionChip(
     enabled: Boolean,
     onClick: () -> Unit,
 ) {
+    val isDeep = label.contains("深") || label.contains("Deep")
+    val isStandard = label.contains("标准") || label.contains("Standard")
+
     val chipColor = when {
-        label.contains("深") || label.contains("Deep") -> MaterialTheme.colorScheme.primaryContainer
-        label.contains("标准") || label.contains("Standard") -> MaterialTheme.colorScheme.tertiaryContainer
+        isDeep -> MaterialTheme.colorScheme.primaryContainer
+        isStandard -> MaterialTheme.colorScheme.tertiaryContainer
         else -> MaterialTheme.colorScheme.secondaryContainer
     }
     
     val contentColor = when {
-        label.contains("深") || label.contains("Deep") -> MaterialTheme.colorScheme.onPrimaryContainer
-        label.contains("标准") || label.contains("Standard") -> MaterialTheme.colorScheme.onTertiaryContainer
+        isDeep -> MaterialTheme.colorScheme.onPrimaryContainer
+        isStandard -> MaterialTheme.colorScheme.onTertiaryContainer
         else -> MaterialTheme.colorScheme.onSecondaryContainer
     }
+
+    val animatedChipColor by androidx.compose.animation.animateColorAsState(
+        targetValue = chipColor,
+        animationSpec = spring(stiffness = Spring.StiffnessMediumLow),
+        label = "reasoning_container_color"
+    )
+    val animatedContentColor by androidx.compose.animation.animateColorAsState(
+        targetValue = contentColor,
+        animationSpec = spring(stiffness = Spring.StiffnessMediumLow),
+        label = "reasoning_content_color"
+    )
+
+    val scale by animateFloatAsState(
+        targetValue = if (isDeep) 1.08f else 1.0f,
+        animationSpec = spring(
+            dampingRatio = Spring.DampingRatioMediumBouncy,
+            stiffness = Spring.StiffnessMediumLow,
+        ),
+        label = "reasoning_scale"
+    )
+
+    val rotationAngle by animateFloatAsState(
+        targetValue = if (isDeep) 15f else 0f,
+        animationSpec = spring(
+            dampingRatio = Spring.DampingRatioMediumBouncy,
+            stiffness = Spring.StiffnessMediumLow,
+        ),
+        label = "reasoning_rotation"
+    )
 
     Surface(
         modifier = Modifier
             .size(38.dp)
+            .graphicsLayer {
+                scaleX = scale
+                scaleY = scale
+            }
             .clip(CircleShape)
             .clickable(enabled = enabled, onClick = onClick),
         shape = CircleShape,
-        color = chipColor.copy(alpha = 0.82f),
-        contentColor = contentColor,
+        color = animatedChipColor.copy(alpha = 0.82f),
+        contentColor = animatedContentColor,
     ) {
         Box(
             modifier = Modifier.fillMaxSize(),
@@ -674,7 +768,11 @@ private fun ReasoningActionChip(
             Icon(
                 imageVector = Icons.Outlined.Psychology,
                 contentDescription = label,
-                modifier = Modifier.size(20.dp),
+                modifier = Modifier
+                    .size(20.dp)
+                    .graphicsLayer {
+                        rotationZ = rotationAngle
+                    },
             )
         }
     }
@@ -685,9 +783,33 @@ private fun TranslationActionChip(
     enabled: Boolean,
     onClick: () -> Unit,
 ) {
+    val density = LocalDensity.current.density
+    val scale by animateFloatAsState(
+        targetValue = if (enabled) 1.08f else 1.0f,
+        animationSpec = spring(
+            dampingRatio = Spring.DampingRatioMediumBouncy,
+            stiffness = Spring.StiffnessMediumLow,
+        ),
+        label = "translation_scale"
+    )
+
+    val translationYOffset by animateFloatAsState(
+        targetValue = if (enabled) -2f else 0f,
+        animationSpec = spring(
+            dampingRatio = Spring.DampingRatioMediumBouncy,
+            stiffness = Spring.StiffnessMediumLow,
+        ),
+        label = "translation_offset"
+    )
+
     Surface(
         modifier = Modifier
             .size(38.dp)
+            .graphicsLayer {
+                scaleX = scale
+                scaleY = scale
+                translationY = translationYOffset * density
+            }
             .clip(CircleShape)
             .clickable(enabled = enabled, onClick = onClick),
         shape = CircleShape,
