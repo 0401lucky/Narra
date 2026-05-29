@@ -140,7 +140,7 @@ class RoleplayViewModel(
     private var compensationJob: Job? = null
     private var diaryJob: Job? = null
     private var activeSendingRunId: Long = 0L
-    private val suppressedOnlineCompensationAttemptKeys = mutableSetOf<String>()
+    private val suppressedOnlineCompensationAttemptKeys = BoundedKeySet(MAX_SUPPRESSED_COMPENSATION_KEYS)
     private val assistantRoundTripRunner = ConversationAssistantRoundTripRunner(
         conversationRepository = conversationRepository,
         aiGateway = aiGateway,
@@ -1766,6 +1766,8 @@ class RoleplayViewModel(
         private const val MAX_SUMMARY_INPUT_LENGTH = 4_000
         private const val MAX_MEMORY_INPUT_LENGTH = 3_200
         private const val ROLEPLAY_SCENE_MEMORY_MAX_ITEMS = 12
+        // 在线补偿空结果抑制键上限：足够覆盖活跃会话的工作集，同时硬性防止长会话无界增长。
+        private const val MAX_SUPPRESSED_COMPENSATION_KEYS = 128
 
         fun factory(
             settingsRepository: AiSettingsRepository,
