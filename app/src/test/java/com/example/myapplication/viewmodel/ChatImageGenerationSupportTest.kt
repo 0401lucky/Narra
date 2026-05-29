@@ -90,4 +90,30 @@ class ChatImageGenerationSupportTest {
         assertEquals("图片已生成", completed.content)
         assertTrue(completed.parts.first().text.contains("图片已生成"))
     }
+
+    @Test
+    fun buildCancelledAssistant_marksCompletedWithCancelledContent() {
+        val support = ChatImageGenerationSupport(
+            imageSaver = {
+                SavedImageFile(
+                    path = "/tmp/generated.png",
+                    mimeType = "image/png",
+                    fileName = "generated.png",
+                )
+            },
+        )
+        val loadingMessage = ChatMessage(
+            id = "assistant-1",
+            conversationId = "c1",
+            role = MessageRole.ASSISTANT,
+            content = "",
+            status = MessageStatus.LOADING,
+            createdAt = 1L,
+        )
+
+        val cancelled = support.buildCancelledAssistant(loadingMessage)
+
+        assertEquals(MessageStatus.COMPLETED, cancelled.status)
+        assertEquals("已取消", cancelled.content)
+    }
 }

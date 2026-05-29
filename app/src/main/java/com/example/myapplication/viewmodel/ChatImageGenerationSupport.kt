@@ -69,7 +69,7 @@ class ChatImageGenerationSupport(
     fun buildCancelledAssistant(loadingMessage: ChatMessage): ChatMessage {
         return loadingMessage.copy(
             content = "已取消",
-            status = MessageStatus.ERROR,
+            status = MessageStatus.COMPLETED,
         )
     }
 

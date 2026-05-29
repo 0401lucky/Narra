@@ -931,19 +931,9 @@ class ChatViewModel(
                                 )
                             },
                             onCancelled = { payload, loading ->
-                                val partialContent = payload.content.ifBlank {
-                                    payload.parts.toContentMirror(specialFallback = "特殊玩法")
-                                }
                                 AssistantRoundTripOutcome(
                                     messages = buildFinalMessages(
-                                        loading.copy(
-                                            content = partialContent.ifBlank { "已取消" },
-                                            status = MessageStatus.ERROR,
-                                            reasoningContent = payload.reasoning,
-                                            reasoningSteps = payload.reasoningSteps,
-                                            parts = payload.parts,
-                                            citations = payload.citations,
-                                        ),
+                                        buildCancelledAssistantMessage(payload, loading),
                                     ),
                                     errorMessage = null,
                                 )
