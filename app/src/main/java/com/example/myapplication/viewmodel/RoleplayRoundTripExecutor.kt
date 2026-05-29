@@ -56,6 +56,8 @@ import com.example.myapplication.roleplay.RoleplayOutputParser
 import com.example.myapplication.roleplay.RoleplayPromptDecorator
 import com.example.myapplication.roleplay.RoleplaySummaryWindowSupport
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.NonCancellable
+import kotlinx.coroutines.withContext
 
 internal data class RoleplayRoundTripExecutionOutcome(
     val errorMessage: String? = null,
@@ -426,11 +428,29 @@ internal class RoleplayRoundTripExecutor(
                                 parts = if (isEmptyCompensationOpening) emptyList() else completedParts,
                             )
                         },
-                        onCancelled = { _, _ ->
-                            AssistantRoundTripOutcome(
-                                messages = cancelledMessages,
-                                errorMessage = null,
-                            )
+                        onCancelled = { payload, loading ->
+                            val partialContent = payload.content.trim()
+                            if (partialContent.isBlank() && payload.parts.isEmpty()) {
+                                // 没有任何已生成内容：回退到发送前快照
+                                AssistantRoundTripOutcome(
+                                    messages = cancelledMessages,
+                                    errorMessage = null,
+                                )
+                            } else {
+                                // 用户主动停止：保留已生成内容并落为 COMPLETED（非失败，不进重试集合）
+                                AssistantRoundTripOutcome(
+                                    messages = buildFinalMessages(
+                                        loading.copy(
+                                            content = partialContent,
+                                            status = MessageStatus.COMPLETED,
+                                            reasoningContent = payload.reasoning,
+                                            reasoningSteps = payload.reasoningSteps,
+                                            parts = payload.parts,
+                                        ),
+                                    ),
+                                    errorMessage = null,
+                                )
+                            }
                         },
                         onFailed = { _, throwable, loading ->
                             val errorText = throwable.message ?: "发送失败"
@@ -612,11 +632,13 @@ internal class RoleplayRoundTripExecutor(
         loadingMessage: ChatMessage,
         cancelledMessages: List<ChatMessage>,
         selectedModel: String,
-    ): List<ChatMessage> {
+    ): List<ChatMessage> = withContext(NonCancellable) {
+        // 该函数在已取消的协程里被调用：真实 Room 的挂起点在取消态会抛 CancellationException，
+        // 导致清理（读取 + 落库）半途中断、loading 占位永久残留。用 NonCancellable 保证清理跑完。
         val persistedMessages = conversationRepository.listMessages(conversationId)
         val loadingExists = persistedMessages.any { it.id == loadingMessage.id }
         if (!loadingExists) {
-            return persistedMessages.ifEmpty { cancelledMessages }
+            return@withContext persistedMessages.ifEmpty { cancelledMessages }
         }
         val cancelledMessageIds = cancelledMessages.mapTo(linkedSetOf()) { it.id }
         val hasNewerExternalMessages = persistedMessages.any { message ->
@@ -632,7 +654,7 @@ internal class RoleplayRoundTripExecutor(
             messages = snapshot,
             selectedModel = selectedModel,
         )
-        return snapshot
+        snapshot
     }
 
     private fun List<ChatMessage>.assistantMessageError(loadingMessageId: String): String? {

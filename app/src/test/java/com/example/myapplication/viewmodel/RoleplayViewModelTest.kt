@@ -91,6 +91,7 @@ import okhttp3.mockwebserver.SocketPolicy
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertTrue
 import org.junit.Assert.fail
 import org.junit.Before
@@ -1691,6 +1692,337 @@ class RoleplayViewModelTest {
         assertTrue(savedMessages.none { it.status == MessageStatus.LOADING })
         assertEquals(1, savedMessages.size)
         assertEquals("先停一下", savedMessages.single().content)
+    }
+
+    @Test
+    fun cancelMidStream_withPartialContent_keepsPartialAsCompleted() =
+        runTest(mainDispatcherRule.dispatcher.scheduler) {
+            val assistant = Assistant(id = "assistant-1", name = "陆宴清")
+            val scenario = RoleplayScenario(id = "scene-1", assistantId = assistant.id)
+            val session = RoleplaySession(
+                id = "session-1",
+                scenarioId = scenario.id,
+                conversationId = "conv-1",
+                createdAt = 1L,
+                updatedAt = 2L,
+            )
+            val store = FakeConversationStore(
+                conversations = listOf(
+                    Conversation(
+                        id = session.conversationId,
+                        title = "剧情",
+                        model = "chat-model",
+                        createdAt = 1L,
+                        updatedAt = 2L,
+                        assistantId = assistant.id,
+                    ),
+                ),
+            )
+            val conversationRepository = ConversationRepository(
+                conversationStore = store,
+                nowProvider = incrementingNowProvider(1L),
+            )
+            val partialStreamingGateway = object : AiGateway {
+                override suspend fun generateImage(prompt: String, modelId: String): List<ImageGenerationResult> {
+                    return emptyList()
+                }
+
+                override suspend fun sendMessage(
+                    messages: List<ChatMessage>,
+                    systemPrompt: String,
+                    promptEnvelope: com.example.myapplication.model.PromptEnvelope,
+                    toolingOptions: GatewayToolingOptions,
+                ): AssistantReply {
+                    error("不应调用非流式发送")
+                }
+
+                override fun sendMessageStream(
+                    messages: List<ChatMessage>,
+                    systemPrompt: String,
+                    promptMode: com.example.myapplication.model.PromptMode,
+                    promptEnvelope: com.example.myapplication.model.PromptEnvelope,
+                    toolingOptions: GatewayToolingOptions,
+                ) = kotlinx.coroutines.flow.flow<com.example.myapplication.model.ChatStreamEvent> {
+                    emit(com.example.myapplication.model.ChatStreamEvent.ContentDelta("陆宴清正说到一半"))
+                    delay(Long.MAX_VALUE)
+                }
+
+                override fun parseAssistantSpecialOutput(
+                    content: String,
+                    existingParts: List<ChatMessagePart>,
+                    statusCardsEnabled: Boolean,
+                    hideStatusBlocksInBubble: Boolean,
+                ): ParsedAssistantSpecialOutput {
+                    return ParsedAssistantSpecialOutput(content = content, parts = existingParts)
+                }
+            }
+            var latestState = RoleplayUiState(
+                settings = AppSettings(
+                    baseUrl = "https://example.com/v1/",
+                    apiKey = "test-key",
+                    selectedModel = "chat-model",
+                    assistants = listOf(assistant),
+                    selectedAssistantId = assistant.id,
+                ),
+                currentScenario = scenario,
+                currentSession = session,
+                currentAssistant = assistant,
+                isSending = true,
+            )
+            var latestRawMessages: List<ChatMessage> = emptyList()
+            val userMessage = ChatMessage(
+                id = "user-1",
+                conversationId = session.conversationId,
+                role = MessageRole.USER,
+                content = "你说",
+                createdAt = 10L,
+                parts = listOf(textMessagePart("你说")),
+            )
+            val loadingMessage = ChatMessage(
+                id = "assistant-loading",
+                conversationId = session.conversationId,
+                role = MessageRole.ASSISTANT,
+                content = "",
+                status = MessageStatus.LOADING,
+                createdAt = 11L,
+                modelName = "chat-model",
+                roleplayOutputFormat = RoleplayOutputFormat.PROTOCOL,
+            )
+            val executor = RoleplayRoundTripExecutor(
+                aiGateway = partialStreamingGateway,
+                conversationRepository = conversationRepository,
+                conversationSummaryRepository = FakeConversationSummaryRepository(),
+                phoneSnapshotRepository = EmptyPhoneSnapshotRepository,
+                roleplayRepository = FakeRoleplayRepository(
+                    conversationStore = store,
+                    scenarios = listOf(scenario),
+                    sessions = listOf(session),
+                ),
+                promptContextAssembler = fixedPromptAssembler("提示词上下文"),
+                assistantRoundTripRunner = ConversationAssistantRoundTripRunner(
+                    conversationRepository = conversationRepository,
+                    aiGateway = partialStreamingGateway,
+                ),
+                outputParser = com.example.myapplication.roleplay.RoleplayOutputParser(),
+                nowProvider = incrementingNowProvider(100L),
+                currentUiState = { latestState },
+                updateUiState = { reducer -> latestState = reducer(latestState) },
+                updateRawMessages = { messages -> latestRawMessages = messages },
+                launchGiftImageGeneration = { _, _ -> },
+                launchVoiceSynthesis = { _, _ -> },
+                launchConversationSummaryGeneration = { _, _, _, _, _ -> },
+                launchAutomaticMemoryExtraction = { _, _, _, _, _ -> },
+                contextLogStore = com.example.myapplication.data.repository.context.ContextLogStore(),
+            )
+
+            var roundTripActive = true
+            val executeJob = launch {
+                executor.execute(
+                    state = latestState,
+                    scenario = scenario,
+                    session = session,
+                    selectedModel = "chat-model",
+                    assistant = assistant,
+                    requestMessages = listOf(userMessage),
+                    cancelledMessages = listOf(userMessage),
+                    initialPersistence = RoundTripInitialPersistence.Append(
+                        messages = listOf(userMessage, loadingMessage),
+                    ),
+                    loadingMessage = loadingMessage,
+                    buildFinalMessages = { completedAssistant ->
+                        listOf(userMessage, completedAssistant)
+                    },
+                    isRoundTripActive = { roundTripActive },
+                )
+            }
+            // 让流式增量被泵入 fullContent（多帧揭示），此时尚未触及 delay(MAX)
+            runCurrent()
+            advanceTimeBy(300)
+            runCurrent()
+
+            // 用户点击停止：先失活回合（对应 invalidateSendingRun），再取消协程
+            roundTripActive = false
+            executeJob.cancel()
+            advanceUntilIdle()
+
+            val assistantMessage = latestRawMessages.firstOrNull { it.id == loadingMessage.id }
+            assertNotNull(assistantMessage)
+            assertEquals(MessageStatus.COMPLETED, assistantMessage!!.status)
+            assertTrue(assistantMessage.content.isNotBlank())
+            assertTrue(latestRawMessages.none { it.status == MessageStatus.LOADING })
+
+            val savedMessages = store.listMessages(session.conversationId)
+            assertTrue(savedMessages.any { it.id == loadingMessage.id && it.status == MessageStatus.COMPLETED })
+            assertTrue(savedMessages.none { it.status == MessageStatus.LOADING })
+        }
+
+    @Test
+    fun cancelCleanup_completesEvenWhenStoreSuspends() =
+        runTest(mainDispatcherRule.dispatcher.scheduler) {
+            val assistant = Assistant(id = "assistant-1", name = "陆宴清")
+            val scenario = RoleplayScenario(id = "scene-1", assistantId = assistant.id)
+            val session = RoleplaySession(
+                id = "session-1",
+                scenarioId = scenario.id,
+                conversationId = "conv-1",
+                createdAt = 1L,
+                updatedAt = 2L,
+            )
+            val backingStore = FakeConversationStore(
+                conversations = listOf(
+                    Conversation(
+                        id = session.conversationId,
+                        title = "剧情",
+                        model = "chat-model",
+                        createdAt = 1L,
+                        updatedAt = 2L,
+                        assistantId = assistant.id,
+                    ),
+                ),
+            )
+            // 模拟真实 Room：listMessages / replaceConversationSnapshot 带可取消挂起点
+            val suspendingStore = YieldingConversationStore(backingStore)
+            val conversationRepository = ConversationRepository(
+                conversationStore = suspendingStore,
+                nowProvider = incrementingNowProvider(1L),
+            )
+            val hangingGateway = object : AiGateway {
+                override suspend fun generateImage(prompt: String, modelId: String): List<ImageGenerationResult> {
+                    return emptyList()
+                }
+
+                override suspend fun sendMessage(
+                    messages: List<ChatMessage>,
+                    systemPrompt: String,
+                    promptEnvelope: com.example.myapplication.model.PromptEnvelope,
+                    toolingOptions: GatewayToolingOptions,
+                ): AssistantReply {
+                    error("不应调用非流式发送")
+                }
+
+                override fun sendMessageStream(
+                    messages: List<ChatMessage>,
+                    systemPrompt: String,
+                    promptMode: com.example.myapplication.model.PromptMode,
+                    promptEnvelope: com.example.myapplication.model.PromptEnvelope,
+                    toolingOptions: GatewayToolingOptions,
+                ) = kotlinx.coroutines.flow.flow<com.example.myapplication.model.ChatStreamEvent> {
+                    delay(Long.MAX_VALUE)
+                }
+
+                override fun parseAssistantSpecialOutput(
+                    content: String,
+                    existingParts: List<ChatMessagePart>,
+                    statusCardsEnabled: Boolean,
+                    hideStatusBlocksInBubble: Boolean,
+                ): ParsedAssistantSpecialOutput {
+                    return ParsedAssistantSpecialOutput(content = content, parts = existingParts)
+                }
+            }
+            var latestState = RoleplayUiState(
+                settings = AppSettings(
+                    baseUrl = "https://example.com/v1/",
+                    apiKey = "test-key",
+                    selectedModel = "chat-model",
+                    assistants = listOf(assistant),
+                    selectedAssistantId = assistant.id,
+                ),
+                currentScenario = scenario,
+                currentSession = session,
+                currentAssistant = assistant,
+                isSending = true,
+            )
+            var latestRawMessages: List<ChatMessage> = emptyList()
+            val userMessage = ChatMessage(
+                id = "user-1",
+                conversationId = session.conversationId,
+                role = MessageRole.USER,
+                content = "先停一下",
+                createdAt = 10L,
+                parts = listOf(textMessagePart("先停一下")),
+            )
+            val loadingMessage = ChatMessage(
+                id = "assistant-loading",
+                conversationId = session.conversationId,
+                role = MessageRole.ASSISTANT,
+                content = "",
+                status = MessageStatus.LOADING,
+                createdAt = 11L,
+                modelName = "chat-model",
+                roleplayOutputFormat = RoleplayOutputFormat.PROTOCOL,
+            )
+            val executor = RoleplayRoundTripExecutor(
+                aiGateway = hangingGateway,
+                conversationRepository = conversationRepository,
+                conversationSummaryRepository = FakeConversationSummaryRepository(),
+                phoneSnapshotRepository = EmptyPhoneSnapshotRepository,
+                roleplayRepository = FakeRoleplayRepository(
+                    conversationStore = backingStore,
+                    scenarios = listOf(scenario),
+                    sessions = listOf(session),
+                ),
+                promptContextAssembler = fixedPromptAssembler("提示词上下文"),
+                assistantRoundTripRunner = ConversationAssistantRoundTripRunner(
+                    conversationRepository = conversationRepository,
+                    aiGateway = hangingGateway,
+                ),
+                outputParser = com.example.myapplication.roleplay.RoleplayOutputParser(),
+                nowProvider = incrementingNowProvider(100L),
+                currentUiState = { latestState },
+                updateUiState = { reducer -> latestState = reducer(latestState) },
+                updateRawMessages = { messages -> latestRawMessages = messages },
+                launchGiftImageGeneration = { _, _ -> },
+                launchVoiceSynthesis = { _, _ -> },
+                launchConversationSummaryGeneration = { _, _, _, _, _ -> },
+                launchAutomaticMemoryExtraction = { _, _, _, _, _ -> },
+                contextLogStore = com.example.myapplication.data.repository.context.ContextLogStore(),
+            )
+
+            val executeJob = launch {
+                executor.execute(
+                    state = latestState,
+                    scenario = scenario,
+                    session = session,
+                    selectedModel = "chat-model",
+                    assistant = assistant,
+                    requestMessages = listOf(userMessage),
+                    cancelledMessages = listOf(userMessage),
+                    initialPersistence = RoundTripInitialPersistence.Append(
+                        messages = listOf(userMessage, loadingMessage),
+                    ),
+                    loadingMessage = loadingMessage,
+                    buildFinalMessages = { completedAssistant ->
+                        listOf(userMessage, completedAssistant)
+                    },
+                )
+            }
+            runCurrent()
+            assertTrue(backingStore.listMessages(session.conversationId).any { it.status == MessageStatus.LOADING })
+
+            executeJob.cancel()
+            advanceUntilIdle()
+
+            val savedMessages = backingStore.listMessages(session.conversationId)
+            assertTrue(savedMessages.none { it.status == MessageStatus.LOADING })
+            assertEquals(listOf(userMessage), latestRawMessages)
+        }
+
+    private class YieldingConversationStore(
+        private val delegate: com.example.myapplication.data.local.ConversationStore,
+    ) : com.example.myapplication.data.local.ConversationStore by delegate {
+        override suspend fun listMessages(conversationId: String): List<ChatMessage> {
+            kotlinx.coroutines.yield()
+            return delegate.listMessages(conversationId)
+        }
+
+        override suspend fun replaceConversationSnapshot(
+            conversation: Conversation,
+            conversationId: String,
+            messages: List<ChatMessage>,
+        ) {
+            kotlinx.coroutines.yield()
+            delegate.replaceConversationSnapshot(conversation, conversationId, messages)
+        }
     }
 
     @Test
