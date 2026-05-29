@@ -292,7 +292,7 @@ internal object AnthropicProtocolSupport {
     }
 
     private fun JsonObject.getString(key: String): String {
-        return get(key)?.asString.orEmpty()
+        return get(key)?.takeIf { it.isJsonPrimitive }?.asString.orEmpty()
     }
 
     private data class ParsedDataUrl(

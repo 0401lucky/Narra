@@ -168,6 +168,6 @@ internal object ResponseApiSupport {
     }
 
     private fun JsonObject.getString(key: String): String {
-        return get(key)?.asString.orEmpty()
+        return get(key)?.takeIf { it.isJsonPrimitive }?.asString.orEmpty()
     }
 }
