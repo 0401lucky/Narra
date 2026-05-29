@@ -840,6 +840,7 @@ internal class RoleplaySendActionSupport(
                 speakerId = member.participant.assistantId,
                 speakerName = turn.displayName,
                 speakerAvatarUri = member.avatarUri,
+                afterCreatedAt = timeline.maxOfOrNull { it.createdAt },
             )
             currentRawMessages.value = timeline + loadingMessage
             val outcome = roundTripExecutor.execute(

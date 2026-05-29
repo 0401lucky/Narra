@@ -72,6 +72,7 @@ object RoleplayRoundTripSupport {
             modelName = selectedModel,
             roleplayOutputFormat = roleplayOutputFormat,
             roleplayInteractionMode = roleplayInteractionMode,
+            afterCreatedAt = userMessage.createdAt,
         )
         return PreparedRoleplayRoundTrip(
             baseMessages = baseMessages,
@@ -118,6 +119,7 @@ object RoleplayRoundTripSupport {
         speakerId: String = "",
         speakerName: String = "",
         speakerAvatarUri: String = "",
+        afterCreatedAt: Long? = null,
     ): ChatMessage {
         return buildMessage(
             conversationId = conversationId,
@@ -132,6 +134,7 @@ object RoleplayRoundTripSupport {
             speakerId = speakerId,
             speakerName = speakerName,
             speakerAvatarUri = speakerAvatarUri,
+            createdAt = nextCreatedAt(nowProvider, afterCreatedAt),
         )
     }
 
@@ -208,6 +211,7 @@ object RoleplayRoundTripSupport {
         speakerAvatarUri: String = "",
         roleplayOutputFormat: RoleplayOutputFormat = RoleplayOutputFormat.UNSPECIFIED,
         roleplayInteractionMode: RoleplayInteractionMode? = null,
+        createdAt: Long = nowProvider(),
     ): ChatMessage {
         return ChatMessage(
             id = messageIdProvider(),
@@ -215,7 +219,7 @@ object RoleplayRoundTripSupport {
             role = role,
             content = content,
             status = status,
-            createdAt = nowProvider(),
+            createdAt = createdAt,
             modelName = modelName,
             reasoningContent = reasoningContent.ifBlank { reasoningStepsToContent(reasoningSteps) },
             reasoningSteps = normalizeChatReasoningSteps(reasoningSteps),
@@ -229,5 +233,17 @@ object RoleplayRoundTripSupport {
             roleplayOutputFormat = roleplayOutputFormat,
             roleplayInteractionMode = roleplayInteractionMode,
         )
+    }
+
+    private fun nextCreatedAt(
+        nowProvider: () -> Long,
+        afterCreatedAt: Long?,
+    ): Long {
+        val now = nowProvider()
+        val previous = afterCreatedAt ?: return now
+        if (previous == Long.MAX_VALUE) {
+            return Long.MAX_VALUE
+        }
+        return maxOf(now, previous + 1)
     }
 }

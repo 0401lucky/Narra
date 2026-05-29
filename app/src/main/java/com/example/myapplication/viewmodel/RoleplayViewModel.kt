@@ -1262,17 +1262,17 @@ class RoleplayViewModel(
             messages = currentRawMessages.value,
             conversationId = session.conversationId,
         )
-        val loadingMessage = ChatMessage(
-            id = "online-compensation-loading-${session.conversationId}-${nowProvider()}",
+        val loadingMessageId = "online-compensation-loading-${session.conversationId}-${nowProvider()}"
+        val loadingMessage = RoleplayRoundTripSupport.buildAssistantLoadingMessage(
             conversationId = session.conversationId,
-            role = MessageRole.ASSISTANT,
-            content = "",
-            status = MessageStatus.LOADING,
-            createdAt = nowProvider(),
+            nowProvider = nowProvider,
+            messageIdProvider = { loadingMessageId },
             modelName = selectedModel,
-            systemEventKind = RoleplayOnlineEventKind.COMPENSATION_OPENING,
             roleplayOutputFormat = RoleplayOutputFormat.PROTOCOL,
             roleplayInteractionMode = RoleplayInteractionMode.ONLINE_PHONE,
+            afterCreatedAt = baseMessages.maxOfOrNull { it.createdAt },
+        ).copy(
+            systemEventKind = RoleplayOnlineEventKind.COMPENSATION_OPENING,
         )
         compensationJob = viewModelScope.launch {
             try {

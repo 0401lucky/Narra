@@ -31,6 +31,30 @@ class ChatConversationSupportTest {
     }
 
     @Test
+    fun prepareOutgoingRoundTrip_ordersAssistantAfterUserWhenClockDoesNotAdvance() {
+        val prepared = ChatConversationSupport.prepareOutgoingRoundTrip(
+            baseMessages = emptyList(),
+            conversationId = "conv-1",
+            userParts = ChatConversationSupport.buildUserMessageParts(
+                text = "先发一句",
+                pendingParts = emptyList(),
+            ),
+            selectedModel = "chat-model",
+            nowProvider = { 100L },
+            messageIdProvider = idProviderOf("z-user", "a-assistant"),
+        )
+
+        assertEquals(100L, prepared.userMessage.createdAt)
+        assertEquals(101L, prepared.loadingMessage.createdAt)
+        assertEquals(
+            listOf("z-user", "a-assistant"),
+            prepared.persistedMessages
+                .sortedWith(compareBy<ChatMessage> { it.createdAt }.thenBy { it.id })
+                .map { it.id },
+        )
+    }
+
+    @Test
     fun buildPromptAssemblyInput_usesLatestUserMessageText() {
         val input = ChatConversationSupport.buildPromptAssemblyInput(
             settings = AppSettings(
@@ -241,5 +265,12 @@ class ChatConversationSupportTest {
             providers = listOf(provider),
             selectedProviderId = provider.id,
         )
+    }
+
+    private fun idProviderOf(vararg ids: String): () -> String {
+        val values = ArrayDeque(ids.toList())
+        return {
+            values.removeFirstOrNull() ?: error("测试消息 ID 不足")
+        }
     }
 }
