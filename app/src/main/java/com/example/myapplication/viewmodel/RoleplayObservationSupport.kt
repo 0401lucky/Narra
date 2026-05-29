@@ -194,6 +194,7 @@ internal object RoleplayObservationSupport {
         roleplayRepository: RoleplayRepository,
         currentRawMessages: MutableStateFlow<List<ChatMessage>>,
         currentScenarioId: StateFlow<String?>,
+        isSending: () -> Boolean,
     ) {
         scope.launch {
             currentScenarioId
@@ -205,6 +206,7 @@ internal object RoleplayObservationSupport {
                     }
                 }
                 .collect { messages ->
+                    if (isSending()) return@collect // 发送期间由发送链路独占 currentRawMessages，避免 Room 迟到帧覆盖乐观更新
                     currentRawMessages.value = messages
                 }
         }

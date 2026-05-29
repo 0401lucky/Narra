@@ -351,6 +351,7 @@ class RoleplayViewModel(
             roleplayRepository = roleplayRepository,
             currentRawMessages = currentRawMessages,
             currentScenarioId = currentScenarioId,
+            isSending = { _uiState.value.isSending },
         )
         RoleplayObservationSupport.observeMappedMessages(
             scope = viewModelScope,
