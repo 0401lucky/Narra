@@ -258,6 +258,43 @@ class RoleplayPromptDecoratorTest {
     }
 
     @Test
+    fun buildRuntimeDecoration_returnsDecorationWithoutBaseSystemPrompt() {
+        val baseSystemPrompt = "这是不应该重复计入分区的基础系统提示词。"
+        val scenario = RoleplayScenario(
+            id = "scene-1",
+            userDisplayNameOverride = "林晚",
+            characterDisplayNameOverride = "余罪",
+            longformModeEnabled = true,
+        )
+        val assistant = Assistant(id = "assistant-1", name = "余罪")
+        val settings = AppSettings()
+        val directorNote = "优先接住她刚刚的逼问。"
+
+        val decorated = RoleplayPromptDecorator.decorate(
+            baseSystemPrompt = baseSystemPrompt,
+            scenario = scenario,
+            assistant = assistant,
+            settings = settings,
+            directorNote = directorNote,
+        )
+        val runtimeDecoration = RoleplayPromptDecorator.buildRuntimeDecoration(
+            baseSystemPrompt = baseSystemPrompt,
+            scenario = scenario,
+            assistant = assistant,
+            settings = settings,
+            directorNote = directorNote,
+        )
+
+        // 运行时装饰增量应包含导演注记等运行时内容，但不含基础系统提示词原文。
+        assertTrue(runtimeDecoration.contains("【本轮导演提示】"))
+        assertTrue(runtimeDecoration.contains(directorNote))
+        assertTrue(runtimeDecoration.contains("【角色锁定与互动边界】"))
+        assertFalse(runtimeDecoration.contains(baseSystemPrompt))
+        // 增量应是完整装饰去掉基础提示后的剩余，因此应当被完整装饰包含。
+        assertTrue(decorated.contains(runtimeDecoration))
+    }
+
+    @Test
     fun decorate_longformModeIgnoresStaleVideoCallState() {
         val prompt = RoleplayPromptDecorator.decorate(
             baseSystemPrompt = "",

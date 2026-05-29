@@ -21,13 +21,11 @@ object RoleplayPromptDecorator {
         directorNote: String = "",
         modelId: String = "",
     ): String {
-        val playerName = RoleplayConversationSupport.resolveUserPersona(
+        val (playerName, characterName) = resolveDisplayNames(
             scenario = scenario,
+            assistant = assistant,
             settings = settings,
-        ).displayName
-        val characterName = scenario.characterDisplayNameOverride.trim()
-            .ifBlank { assistant?.name?.trim().orEmpty() }
-            .ifBlank { "角色" }
+        )
         val isGroupChat = scenario.isGroupChat
         val useVideoCallMode = scenario.interactionMode == RoleplayInteractionMode.ONLINE_PHONE && isVideoCallActive
         val allowOnlineThoughtHints = scenario.enableNarration && settings.showOnlineRoleplayNarration
@@ -42,11 +40,97 @@ object RoleplayPromptDecorator {
             userName = playerName,
             characterName = characterName,
         )
-        val sections = buildList {
-            resolvedBaseSystemPrompt.trim()
-                .takeIf { it.isNotBlank() }
-                ?.let(::add)
+        val runtimeDecoration = buildRuntimeDecorationText(
+            scenario = scenario,
+            settings = settings,
+            playerName = playerName,
+            characterName = characterName,
+            isGroupChat = isGroupChat,
+            useVideoCallMode = useVideoCallMode,
+            allowOnlineThoughtHints = allowOnlineThoughtHints,
+            onlineReplyRangeLabel = onlineReplyRangeLabel,
+            includeOpeningNarrationReference = includeOpeningNarrationReference,
+            directorNote = directorNote,
+            modelId = modelId,
+        )
+        return listOf(resolvedBaseSystemPrompt.trim(), runtimeDecoration)
+            .filter { it.isNotBlank() }
+            .joinToString(separator = "\n\n")
+            .trim()
+    }
 
+    /**
+     * 运行时装饰增量：与 [decorate] 输出一致，但不含 baseSystemPrompt 原文，
+     * 仅包含导演注记、角色锁定边界等运行时拼接内容，供上下文日志单独计入分区与 token。
+     */
+    fun buildRuntimeDecoration(
+        baseSystemPrompt: String,
+        scenario: RoleplayScenario,
+        assistant: Assistant?,
+        settings: AppSettings,
+        includeOpeningNarrationReference: Boolean = true,
+        isVideoCallActive: Boolean = false,
+        directorNote: String = "",
+        modelId: String = "",
+    ): String {
+        val (playerName, characterName) = resolveDisplayNames(
+            scenario = scenario,
+            assistant = assistant,
+            settings = settings,
+        )
+        val isGroupChat = scenario.isGroupChat
+        val useVideoCallMode = scenario.interactionMode == RoleplayInteractionMode.ONLINE_PHONE && isVideoCallActive
+        val allowOnlineThoughtHints = scenario.enableNarration && settings.showOnlineRoleplayNarration
+        val onlineReplyRange = scenario.normalizedOnlineReplyRange()
+        val onlineReplyRangeLabel = if (onlineReplyRange.first == onlineReplyRange.last) {
+            "${onlineReplyRange.first} 条"
+        } else {
+            "${onlineReplyRange.first} 到 ${onlineReplyRange.last} 条"
+        }
+        return buildRuntimeDecorationText(
+            scenario = scenario,
+            settings = settings,
+            playerName = playerName,
+            characterName = characterName,
+            isGroupChat = isGroupChat,
+            useVideoCallMode = useVideoCallMode,
+            allowOnlineThoughtHints = allowOnlineThoughtHints,
+            onlineReplyRangeLabel = onlineReplyRangeLabel,
+            includeOpeningNarrationReference = includeOpeningNarrationReference,
+            directorNote = directorNote,
+            modelId = modelId,
+        )
+    }
+
+    private fun resolveDisplayNames(
+        scenario: RoleplayScenario,
+        assistant: Assistant?,
+        settings: AppSettings,
+    ): Pair<String, String> {
+        val playerName = RoleplayConversationSupport.resolveUserPersona(
+            scenario = scenario,
+            settings = settings,
+        ).displayName
+        val characterName = scenario.characterDisplayNameOverride.trim()
+            .ifBlank { assistant?.name?.trim().orEmpty() }
+            .ifBlank { "角色" }
+        return playerName to characterName
+    }
+
+    private fun buildRuntimeDecorationText(
+        scenario: RoleplayScenario,
+        settings: AppSettings,
+        playerName: String,
+        characterName: String,
+        isGroupChat: Boolean,
+        useVideoCallMode: Boolean,
+        allowOnlineThoughtHints: Boolean,
+        onlineReplyRangeLabel: String,
+        includeOpeningNarrationReference: Boolean,
+        directorNote: String,
+        modelId: String,
+    ): String {
+        val sections = buildList {
             add(
                 buildModeRoutingSection(
                     scenario = scenario,

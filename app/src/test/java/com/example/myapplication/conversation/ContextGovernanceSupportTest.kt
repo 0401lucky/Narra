@@ -255,6 +255,107 @@ class ContextGovernanceSupportTest {
         assertTrue(snapshot.sentMessageCount == requestMessages.size)
     }
 
+    @Test
+    fun buildSnapshot_appendsRuntimeDecorationSectionAndCountsItsTokens() {
+        val provider = ProviderSettings(
+            id = "provider-1",
+            baseUrl = "https://example.com/v1/",
+            apiKey = "key",
+            selectedModel = "rp-model",
+            titleSummaryModel = "summary-model",
+        )
+        val requestMessages = (1..4).map { message("m$it") }
+        val decorationSection = ContextLogSection(
+            sourceType = ContextLogSourceType.SYSTEM_RULE,
+            title = "运行时导演注记",
+            content = "【本轮导演提示】\n优先接住她刚刚的逼问，再推进局势。",
+        )
+
+        fun snapshot(extraSections: List<ContextLogSection>) = ContextGovernanceSupport.buildSnapshot(
+            settings = AppSettings(
+                providers = listOf(provider),
+                selectedProviderId = provider.id,
+            ),
+            assistant = null,
+            promptMode = PromptMode.ROLEPLAY,
+            selectedModel = "rp-model",
+            requestMessages = requestMessages,
+            effectiveRequestMessages = requestMessages,
+            promptContext = PromptContextResult(systemPrompt = "prompt"),
+            completedMessageCount = requestMessages.size,
+            triggerMessageCount = 12,
+            recentWindow = 4,
+            minCoveredMessageCount = 2,
+            toolingOptions = com.example.myapplication.model.GatewayToolingOptions(),
+            rawDebugDump = "debug",
+            extraContextSections = extraSections,
+        )
+
+        val withDecoration = snapshot(listOf(decorationSection))
+        val withoutDecoration = snapshot(emptyList())
+
+        val matchedSection = withDecoration.contextSections.firstOrNull { section ->
+            section.title == "运行时导演注记"
+        } ?: error("未找到运行时装饰分区")
+        assertTrue(matchedSection.content.contains("优先接住她刚刚的逼问"))
+        assertTrue(matchedSection.sourceType == ContextLogSourceType.SYSTEM_RULE)
+        assertTrue(
+            "装饰增量的 token 必须计入估算",
+            withDecoration.estimatedContextTokens > withoutDecoration.estimatedContextTokens,
+        )
+        assertTrue(
+            withDecoration.estimatedContextTokens ==
+                withoutDecoration.estimatedContextTokens + decorationSection.tokenEstimate,
+        )
+    }
+
+    @Test
+    fun buildSnapshot_withoutExtraSectionsKeepsChatPathUnchanged() {
+        val provider = ProviderSettings(
+            id = "provider-1",
+            baseUrl = "https://example.com/v1/",
+            apiKey = "key",
+            selectedModel = "chat-model",
+            titleSummaryModel = "summary-model",
+        )
+        val requestMessages = (1..3).map { message("m$it") }
+        val promptContext = PromptContextResult(
+            systemPrompt = "prompt",
+            contextSections = listOf(
+                ContextLogSection(
+                    sourceType = ContextLogSourceType.SYSTEM_RULE,
+                    title = "系统规则",
+                    content = "保持友好。",
+                ),
+            ),
+        )
+
+        val snapshot = ContextGovernanceSupport.buildSnapshot(
+            settings = AppSettings(
+                providers = listOf(provider),
+                selectedProviderId = provider.id,
+            ),
+            assistant = null,
+            promptMode = PromptMode.CHAT,
+            selectedModel = "chat-model",
+            requestMessages = requestMessages,
+            effectiveRequestMessages = requestMessages,
+            promptContext = promptContext,
+            completedMessageCount = requestMessages.size,
+            triggerMessageCount = 4,
+            recentWindow = 2,
+            minCoveredMessageCount = 2,
+            toolingOptions = com.example.myapplication.model.GatewayToolingOptions(),
+            rawDebugDump = "debug",
+        )
+
+        // chat 路径不传装饰增量：分区仅为 promptContext + 上下文裁剪，无额外节。
+        assertTrue(snapshot.contextSections.none { it.title == "运行时导演注记" })
+        val expectedTokens = (promptContext.contextSections + snapshot.contextSections.last())
+            .sumOf { it.tokenEstimate }
+        assertTrue(snapshot.estimatedContextTokens == expectedTokens)
+    }
+
     private fun message(id: String): ChatMessage {
         return ChatMessage(
             id = id,

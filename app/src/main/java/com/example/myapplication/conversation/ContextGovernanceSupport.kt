@@ -62,6 +62,7 @@ object ContextGovernanceSupport {
         minCoveredMessageCount: Int,
         toolingOptions: GatewayToolingOptions,
         rawDebugDump: String,
+        extraContextSections: List<ContextLogSection> = emptyList(),
     ): ContextGovernanceSnapshot {
         val summaryConfigured = resolveConversationSummaryModel(settings).isNotBlank()
         val summaryState = resolveSummaryState(
@@ -73,7 +74,7 @@ object ContextGovernanceSupport {
             triggerMessageCount = triggerMessageCount,
             recentWindow = recentWindow,
         )
-        val contextSections = promptContext.contextSections + buildTrimmingLogSection(
+        val contextSections = promptContext.contextSections + extraContextSections + buildTrimmingLogSection(
             requestMessageCountBeforeTrim = requestMessages.size,
             sentMessageCount = effectiveRequestMessages.size,
             recentWindow = recentWindow,

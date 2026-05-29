@@ -23,6 +23,8 @@ import com.example.myapplication.model.ChatMessage
 import com.example.myapplication.model.ChatMessagePart
 import com.example.myapplication.model.ChatMessagePartType
 import com.example.myapplication.model.ChatReasoningStep
+import com.example.myapplication.model.ContextLogSection
+import com.example.myapplication.model.ContextLogSourceType
 import com.example.myapplication.model.Conversation
 import com.example.myapplication.model.GatewayToolRuntimeContext
 import com.example.myapplication.model.GatewayToolingOptions
@@ -205,6 +207,23 @@ internal class RoleplayRoundTripExecutor(
                 isVideoCallActive = useVideoCallMode,
                 referenceCandidates = referenceCandidates,
             )
+            val composedDirectorNote = buildString {
+                onlineSystemEventContext.takeIf { it.isNotBlank() }?.let { context ->
+                    append(context)
+                }
+                directorNote.takeIf { it.isNotBlank() }?.let { note ->
+                    if (isNotBlank()) {
+                        append("\n\n")
+                    }
+                    append(note)
+                }
+                extraDirectorNote.takeIf { it.isNotBlank() }?.let { note ->
+                    if (isNotBlank()) {
+                        append("\n\n")
+                    }
+                    append(note)
+                }
+            }
             val decoratedPrompt = RoleplayPromptDecorator.decorate(
                 baseSystemPrompt = promptContext.systemPrompt,
                 scenario = scenario,
@@ -212,25 +231,31 @@ internal class RoleplayRoundTripExecutor(
                 settings = state.settings,
                 includeOpeningNarrationReference = requestMessages.none { it.role == MessageRole.USER },
                 isVideoCallActive = useVideoCallMode,
-                directorNote = buildString {
-                    onlineSystemEventContext.takeIf { it.isNotBlank() }?.let { context ->
-                        append(context)
-                    }
-                    directorNote.takeIf { it.isNotBlank() }?.let { note ->
-                        if (isNotBlank()) {
-                            append("\n\n")
-                        }
-                        append(note)
-                    }
-                    extraDirectorNote.takeIf { it.isNotBlank() }?.let { note ->
-                        if (isNotBlank()) {
-                            append("\n\n")
-                        }
-                        append(note)
-                    }
-                },
+                directorNote = composedDirectorNote,
                 modelId = selectedModel,
             )
+            val runtimeDecoration = RoleplayPromptDecorator.buildRuntimeDecoration(
+                baseSystemPrompt = promptContext.systemPrompt,
+                scenario = scenario,
+                assistant = assistant,
+                settings = state.settings,
+                includeOpeningNarrationReference = requestMessages.none { it.role == MessageRole.USER },
+                isVideoCallActive = useVideoCallMode,
+                directorNote = composedDirectorNote,
+                modelId = selectedModel,
+            )
+            val runtimeDecorationSections = runtimeDecoration
+                .takeIf { it.isNotBlank() }
+                ?.let { decoration ->
+                    listOf(
+                        ContextLogSection(
+                            sourceType = ContextLogSourceType.SYSTEM_RULE,
+                            title = "运行时导演注记",
+                            content = decoration,
+                        ),
+                    )
+                }
+                ?: emptyList()
             val toolingOptions = GatewayToolingOptions.localContextOnly(
                 GatewayToolRuntimeContext(
                     promptMode = PromptMode.ROLEPLAY,
@@ -264,6 +289,7 @@ internal class RoleplayRoundTripExecutor(
                     minCoveredMessageCount = SUMMARY_MIN_COVERED_MESSAGE_COUNT,
                     toolingOptions = toolingOptions,
                     rawDebugDump = debugDump,
+                    extraContextSections = runtimeDecorationSections,
                 )
                 contextLogStore.push(contextSnapshot)
                 RoleplayStateSupport.applyPromptContext(
