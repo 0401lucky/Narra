@@ -63,6 +63,70 @@ class StreamingReplyBufferTest {
     }
 
     @Test
+    fun safeSurrogateBoundary_backsOffWhenSplittingSurrogatePair() {
+        // 高代理在 index 1（"a😀" -> a, high, low），切点 2 会拆开代理对，应回退到 1
+        assertEquals(1, safeSurrogateBoundary("a😀", 2))
+        // 切点 3 落在低代理之后，是完整边界，不回退
+        assertEquals(3, safeSurrogateBoundary("a😀", 3))
+        // 切点 1 落在高代理之前，是完整边界，不回退
+        assertEquals(1, safeSurrogateBoundary("a😀", 1))
+        // 整帧只剩半个代理对：切点 1 会拆开，回退到 0（本帧不揭示）
+        assertEquals(0, safeSurrogateBoundary("😀", 1))
+        // 普通 BMP 字符不受影响
+        assertEquals(2, safeSurrogateBoundary("你好", 2))
+        // 边界保护：endIndex 为 0 或等于长度时原样返回
+        assertEquals(0, safeSurrogateBoundary("a😀", 0))
+        assertEquals(3, safeSurrogateBoundary("a😀", 3))
+    }
+
+    @Test
+    fun advanceFrame_neverRevealsLoneHighSurrogateInContent() {
+        val buffer = StreamingReplyBuffer()
+        // 15 个普通字符 + Emoji，使批量大小 16 的切点恰好落在代理对中间
+        val source = "a".repeat(15) + "😀" + "你好🎉世界"
+        buffer.appendContent(source)
+
+        while (buffer.hasPending()) {
+            buffer.advanceFrame(streamCompleted = false)
+            val visible = buffer.visibleContent()
+            assertFalse(
+                "可见内容不应包含替换字符 U+FFFD: $visible",
+                visible.contains('�'),
+            )
+            assertFalse(
+                "可见内容末尾不应是孤立高代理: $visible",
+                visible.isNotEmpty() && Character.isHighSurrogate(visible.last()),
+            )
+        }
+
+        assertEquals(source, buffer.visibleContent())
+    }
+
+    @Test
+    fun advanceFrame_neverRevealsLoneHighSurrogateInReasoning() {
+        val buffer = StreamingReplyBuffer()
+        val source = "a".repeat(15) + "😀" + "推理🎉过程"
+        buffer.startReasoningStep(stepId = "reasoning-1", createdAt = 10L)
+        buffer.appendReasoningStepDelta(stepId = "reasoning-1", value = source)
+        buffer.completeReasoningStep(stepId = "reasoning-1", finishedAt = 40L)
+
+        while (buffer.hasPending()) {
+            buffer.advanceFrame(streamCompleted = false)
+            val visible = buffer.visibleReasoning()
+            assertFalse(
+                "可见推理不应包含替换字符 U+FFFD: $visible",
+                visible.contains('�'),
+            )
+            assertFalse(
+                "可见推理末尾不应是孤立高代理: $visible",
+                visible.isNotEmpty() && Character.isHighSurrogate(visible.last()),
+            )
+        }
+
+        assertEquals(source, buffer.visibleReasoning())
+    }
+
+    @Test
     fun advanceFrame_revealsMultipleReasoningStepsAndCompletion() {
         val buffer = StreamingReplyBuffer()
 

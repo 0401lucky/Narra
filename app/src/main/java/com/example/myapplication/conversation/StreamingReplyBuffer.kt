@@ -225,7 +225,10 @@ class StreamingReplyBuffer {
                         return advanced
                     }
 
-                    val endIndex = remaining.coerceAtMost(next.value.length)
+                    val endIndex = safeSurrogateBoundary(
+                        next.value,
+                        remaining.coerceAtMost(next.value.length),
+                    )
                     if (endIndex <= 0) {
                         return advanced
                     }
@@ -285,7 +288,10 @@ class StreamingReplyBuffer {
                         pendingReasoning.removeFirst()
                         continue
                     }
-                    val endIndex = remaining.coerceAtMost(next.value.length)
+                    val endIndex = safeSurrogateBoundary(
+                        next.value,
+                        remaining.coerceAtMost(next.value.length),
+                    )
                     if (endIndex <= 0) {
                         return advanced
                     }
@@ -337,4 +343,15 @@ class StreamingReplyBuffer {
             else -> streamSmallBatchSize
         }
     }
+}
+
+/**
+ * 若 endIndex 落在低代理前（即 endIndex-1 是高代理），回退 1 位，避免拆开代理对。
+ * 回退后 endIndex 可能为 0（整帧只剩半个代理对），调用方据此本帧不揭示、保留待下帧。
+ */
+internal fun safeSurrogateBoundary(text: CharSequence, endIndex: Int): Int {
+    if (endIndex in 1 until text.length && Character.isHighSurrogate(text[endIndex - 1])) {
+        return endIndex - 1
+    }
+    return endIndex
 }
