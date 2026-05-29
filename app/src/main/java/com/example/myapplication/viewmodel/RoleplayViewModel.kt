@@ -1282,8 +1282,11 @@ class RoleplayViewModel(
                     return@launch
                 }
                 updateUiStateForCompensationStart()
+                // 在 job 内重新读取最新 UI 状态：触发时（launch 之前）捕获的 state 可能已过期，
+                // 例如用户在补偿启动前切换了视频通话 / 沉浸模式开关，应以执行时刻的状态组装提示词
+                val freshState = _uiState.value
                 roundTripExecutor.execute(
-                    state = state,
+                    state = freshState,
                     scenario = scenario,
                     session = session,
                     selectedModel = selectedModel,
