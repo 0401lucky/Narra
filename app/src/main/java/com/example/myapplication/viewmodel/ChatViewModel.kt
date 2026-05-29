@@ -171,6 +171,7 @@ class ChatViewModel(
         memoryRepository = memoryRepository,
         nowProvider = nowProvider,
     )
+    private val memoryExtractionGate = MemoryExtractionGate()
     private val transferCoordinator = ConversationTransferCoordinator(
         conversationRepository = conversationRepository,
     )
@@ -1310,8 +1311,8 @@ class ChatViewModel(
         val state = _uiState.value
         val assistant = state.currentAssistant ?: state.settings.activeAssistant() ?: return
         val window = state.settings.memoryAutoSummaryEvery
-        // Tavo 语义：每 N 条 completed 消息触发一次记忆提取，而不是每条都触发
-        if (window <= 0 || completedMessages.isEmpty() || completedMessages.size % window != 0) {
+        // 累计水位线：自上次提取以来新增 completed ≥ window 即触发，避免计数跳变跨过倍数点时永久丢失窗口
+        if (!memoryExtractionGate.shouldExtract(conversationId, completedMessages.size, window)) {
             return
         }
         viewModelScope.launch {

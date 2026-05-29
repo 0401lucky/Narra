@@ -81,6 +81,8 @@ internal class RoleplayRoundTripExecutor(
     private val launchAutomaticMemoryExtraction: (String, List<ChatMessage>, com.example.myapplication.model.AppSettings, Assistant?, com.example.myapplication.model.RoleplayScenario) -> Unit,
     private val contextLogStore: com.example.myapplication.data.repository.context.ContextLogStore,
 ) {
+    private val memoryExtractionGate = MemoryExtractionGate()
+
     suspend fun execute(
         state: RoleplayUiState,
         scenario: com.example.myapplication.model.RoleplayScenario,
@@ -496,8 +498,8 @@ internal class RoleplayRoundTripExecutor(
                     )
                     val completedCount = postDirectiveMessages.count { it.status == MessageStatus.COMPLETED }
                     val memoryWindow = state.settings.memoryAutoSummaryEvery
-                    // Tavo 语义：每 N 条 completed 消息触发一次记忆提取，而不是每条都触发
-                    if (memoryWindow > 0 && completedCount > 0 && completedCount % memoryWindow == 0) {
+                    // 累计水位线：自上次提取以来新增 completed ≥ window 即触发，避免计数跳变跨过倍数点时永久丢失窗口
+                    if (memoryExtractionGate.shouldExtract(session.conversationId, completedCount, memoryWindow)) {
                         launchAutomaticMemoryExtraction(
                             session.conversationId,
                             postDirectiveMessages,
