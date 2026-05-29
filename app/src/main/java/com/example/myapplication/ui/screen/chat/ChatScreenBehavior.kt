@@ -21,6 +21,9 @@ import androidx.compose.ui.platform.LocalDensity
 
 private const val ChatStreamFollowScrollWindowMillis = 64L
 
+// 单帧跟随滚动的最大步长（px）：超出则分帧逼近，避免大块 token 一次到达时列表猛地跳动
+private const val ChatStreamFollowMaxScrollStepPx = 600
+
 internal class ChatAutoFollowState {
     var shouldAutoFollowStreaming by mutableStateOf(true)
     var isProgrammaticScroll by mutableStateOf(false)
@@ -55,7 +58,7 @@ internal class ChatAutoFollowState {
         try {
             val delta = conversationEndDeltaPx(listState)
             when {
-                delta > 0 -> listState.scrollBy(delta.toFloat())
+                delta > 0 -> listState.scrollBy(delta.coerceAtMost(ChatStreamFollowMaxScrollStepPx).toFloat())
                 !isListNearBottom(listState) -> listState.scrollToItem(bottomAnchorIndex)
             }
         } finally {
@@ -206,7 +209,8 @@ internal fun ChatAutoFollowEffects(
             return@LaunchedEffect
         }
 
-        repeat(4) {
+        // 先等布局落位（保留用户手动滚动 / 关闭跟随的守卫），再用一次动画滚动平滑收尾
+        repeat(2) {
             withFrameNanos { }
             if (listState.isScrollInProgress && !state.isProgrammaticScroll) {
                 state.pendingCompletionFollow = false
@@ -218,8 +222,8 @@ internal fun ChatAutoFollowEffects(
                 state.pendingCompletionFollow = false
                 return@LaunchedEffect
             }
-            state.scrollToConversationEnd(listState, bottomAnchorIndex, animated = false)
         }
+        state.scrollToConversationEnd(listState, bottomAnchorIndex, animated = true)
         state.shouldAutoFollowStreaming = true
         state.pendingCompletionFollow = false
     }

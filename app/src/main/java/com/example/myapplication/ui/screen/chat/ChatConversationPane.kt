@@ -284,8 +284,17 @@ private fun ColumnScope.ChatMessageListPane(
                 key = { it.id },
                 contentType = { messageContentType(it) },
             ) { message ->
+                val bubbleModifier = if (
+                    performanceMode == ChatMessagePerformanceMode.FULL && !uiState.isSending
+                ) {
+                    // 仅在非流式 + 完整性能模式下启用列表项位移动画，避免流式期间气泡尺寸频变导致抖动
+                    Modifier.animateItem()
+                } else {
+                    Modifier
+                }
                 MessageBubble(
                     message = message,
+                    modifier = bubbleModifier,
                     streamingContent = if (message.id == uiState.streamingMessageId) {
                         uiState.streamingContent
                     } else {
