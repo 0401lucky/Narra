@@ -683,4 +683,48 @@ class WorldBookMatcherTest {
             preview.secondaryHits.isEmpty(),
         )
     }
+
+    @Test
+    fun passesProbability_full100AlwaysTrue_zeroAlwaysFalse() {
+        // probability 边界语义保持不变：>=100 恒命中、<=0 恒不命中。
+        assertTrue(
+            matcher.passesProbability(
+                WorldBookEntry(id = "entry-1", probability = 100),
+                conversationId = "c10",
+            ),
+        )
+        assertFalse(
+            matcher.passesProbability(
+                WorldBookEntry(id = "entry-1", probability = 0),
+                conversationId = "c10",
+            ),
+        )
+    }
+
+    @Test
+    fun passesProbability_sameConversation_isStableAcrossCalls() {
+        // 核心：同一 entry + 同一 conversationId，多次掷骰结果必须完全一致、可复现。
+        // 这能防止种子重新混入每轮都在变的 sourceText（T6 的 bug）。
+        val entry = WorldBookEntry(id = "entry-1", probability = 50)
+        val first = matcher.passesProbability(entry, conversationId = "c10")
+        repeat(20) {
+            assertEquals(
+                "同一会话内同一条目的掷骰结果应稳定",
+                first,
+                matcher.passesProbability(entry, conversationId = "c10"),
+            )
+        }
+        // entry-1 + "c10" 的 roll 为 4，probability=50 → 命中。
+        assertTrue("entry-1/c10 在 probability=50 下应命中", first)
+    }
+
+    @Test
+    fun passesProbability_seedIncludesConversationId_differentConversationFlipsResult() {
+        // 种子确实包含 conversationId：固定 entry 与 probability，
+        // 仅切换 conversationId 即可让同一条目从命中变为不命中。
+        // entry-1 + "c10" → roll 4（<50 命中）；entry-1 + "c30" → roll 66（>=50 不命中）。
+        val entry = WorldBookEntry(id = "entry-1", probability = 50)
+        assertTrue(matcher.passesProbability(entry, conversationId = "c10"))
+        assertFalse(matcher.passesProbability(entry, conversationId = "c30"))
+    }
 }

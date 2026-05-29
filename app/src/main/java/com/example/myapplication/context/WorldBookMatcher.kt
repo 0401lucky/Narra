@@ -60,7 +60,7 @@ class WorldBookMatcher {
             .filter { entry ->
                 entry.alwaysActive || hasKeywordHit(entry, sourceText)
             }
-            .filter { entry -> passesProbability(entry, sourceText) }
+            .filter { entry -> passesProbability(entry, conversation.id) }
             .sortedWith(WorldBookScopeSupport.priorityComparator())
             .take(maxEntries)
             .toList()
@@ -104,11 +104,11 @@ class WorldBookMatcher {
             }
     }
 
-    private fun passesProbability(entry: WorldBookEntry, sourceText: String): Boolean {
+    internal fun passesProbability(entry: WorldBookEntry, conversationId: String): Boolean {
         val probability = entry.probability.coerceIn(0, 100)
         if (probability >= 100) return true
         if (probability <= 0) return false
-        val rollSeed = "${entry.id}\u0000$sourceText"
+        val rollSeed = "${entry.id}\u0000$conversationId"
         val roll = Math.floorMod(rollSeed.hashCode(), 100)
         return roll < probability
     }
