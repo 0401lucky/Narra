@@ -296,4 +296,57 @@ class RoleplayStateSupportTest {
         assertEquals("debug-dump", updated.latestPromptDebugDump)
         assertEquals(snapshot, updated.contextGovernance)
     }
+
+    @Test
+    fun applyRestartSessionSuccess_resetsLongMemoryCountAndContextStatus() {
+        val updated = RoleplayStateSupport.applyRestartSessionSuccess(
+            current = RoleplayUiState(
+                longMemoryCount = 7,
+                sceneMemoryCount = 4,
+                contextStatus = RoleplayContextStatus(
+                    hasSummary = true,
+                    summaryCoveredMessageCount = 12,
+                    worldBookHitCount = 3,
+                    memoryInjectionCount = 5,
+                    isContinuingSession = true,
+                ),
+            ),
+        )
+
+        // 重开剧情应把会话级计数与上下文状态一并清零（原实现遗漏 longMemoryCount 与 contextStatus）
+        assertEquals(0, updated.longMemoryCount)
+        assertEquals(0, updated.sceneMemoryCount)
+        assertEquals(RoleplayContextStatus(), updated.contextStatus)
+    }
+
+    @Test
+    fun resetAndRestartSession_clearSameSessionScopedFields() {
+        val dirty = RoleplayUiState(
+            longMemoryCount = 9,
+            sceneMemoryCount = 6,
+            contextStatus = RoleplayContextStatus(
+                hasSummary = true,
+                summaryCoveredMessageCount = 20,
+                worldBookHitCount = 4,
+                memoryInjectionCount = 7,
+                isContinuingSession = true,
+            ),
+            isRefreshingConversationSummary = true,
+            activeVideoCallSessionId = "call-1",
+            activeVideoCallStartedAt = 99L,
+            contextGovernance = ContextGovernanceSnapshot(summaryCoveredMessageCount = 20),
+        )
+
+        val reset = RoleplayStateSupport.applyResetSessionSuccess(dirty)
+        val restart = RoleplayStateSupport.applyRestartSessionSuccess(dirty)
+
+        // 清空与重开应对同一批会话级字段做一致的重置（各自专属的 noticeMessage 等除外）
+        assertEquals(reset.longMemoryCount, restart.longMemoryCount)
+        assertEquals(reset.sceneMemoryCount, restart.sceneMemoryCount)
+        assertEquals(reset.contextStatus, restart.contextStatus)
+        assertEquals(reset.contextGovernance, restart.contextGovernance)
+        assertEquals(reset.isRefreshingConversationSummary, restart.isRefreshingConversationSummary)
+        assertEquals(reset.activeVideoCallSessionId, restart.activeVideoCallSessionId)
+        assertEquals(reset.activeVideoCallStartedAt, restart.activeVideoCallStartedAt)
+    }
 }

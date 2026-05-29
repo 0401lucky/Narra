@@ -57,74 +57,18 @@ object RoleplayStateSupport {
         current: RoleplayUiState,
         scenarioId: String,
     ): RoleplayUiState {
-        return current.copy(
+        return clearedForScenarioSwitch(current).copy(
             currentScenario = current.currentScenario?.takeIf { scenario -> scenario.id == scenarioId },
-            currentSession = null,
-            currentGroupParticipants = emptyList(),
-            messages = emptyList(),
-            suggestions = emptyList(),
-            input = "",
             isScenarioLoading = true,
-            isGeneratingSuggestions = false,
-            showAssistantMismatchDialog = false,
-            previousAssistantName = "",
-            currentAssistantName = "",
-            errorMessage = null,
-            noticeMessage = null,
-            latestPromptDebugDump = "",
-            contextGovernance = null,
-            streamingContent = "",
-            suggestionErrorMessage = null,
-            replyToMessageId = "",
-            replyToPreview = "",
-            replyToSpeakerName = "",
-            activeVideoCallSessionId = "",
-            activeVideoCallStartedAt = 0L,
-            pendingMemoryProposal = null,
-            recentMemoryProposalHistory = emptyList(),
-            longMemoryCount = 0,
-            sceneMemoryCount = 0,
-            isRefreshingConversationSummary = false,
-            diaryEntries = emptyList(),
-            isGeneratingDiary = false,
-            contextStatus = RoleplayContextStatus(),
         )
     }
 
     fun leaveScenario(current: RoleplayUiState): RoleplayUiState {
-        return current.copy(
+        return clearedForScenarioSwitch(current).copy(
             currentScenario = null,
-            currentSession = null,
             currentAssistant = null,
-            currentGroupParticipants = emptyList(),
-            contextStatus = RoleplayContextStatus(),
-            messages = emptyList(),
-            suggestions = emptyList(),
-            input = "",
             isSending = false,
-            isGeneratingSuggestions = false,
             isScenarioLoading = false,
-            showAssistantMismatchDialog = false,
-            previousAssistantName = "",
-            currentAssistantName = "",
-            errorMessage = null,
-            noticeMessage = null,
-            latestPromptDebugDump = "",
-            contextGovernance = null,
-            streamingContent = "",
-            suggestionErrorMessage = null,
-            replyToMessageId = "",
-            replyToPreview = "",
-            replyToSpeakerName = "",
-            activeVideoCallSessionId = "",
-            activeVideoCallStartedAt = 0L,
-            pendingMemoryProposal = null,
-            recentMemoryProposalHistory = emptyList(),
-            longMemoryCount = 0,
-            sceneMemoryCount = 0,
-            isRefreshingConversationSummary = false,
-            diaryEntries = emptyList(),
-            isGeneratingDiary = false,
         )
     }
 
@@ -263,61 +207,17 @@ object RoleplayStateSupport {
     }
 
     fun applyResetSessionSuccess(current: RoleplayUiState): RoleplayUiState {
-        return current.copy(
-            messages = emptyList(),
-            suggestions = emptyList(),
-            streamingContent = "",
-            latestPromptDebugDump = "",
-            isGeneratingSuggestions = false,
-            suggestionErrorMessage = null,
-            contextStatus = current.contextStatus.copy(
-                hasSummary = false,
-                summaryCoveredMessageCount = 0,
-                memoryInjectionCount = 0,
-                worldBookHitCount = 0,
-                isContinuingSession = false,
-            ),
-            contextGovernance = null,
+        return clearedForSessionReset(current).copy(
             noticeMessage = "剧情已清空",
-            replyToMessageId = "",
-            replyToPreview = "",
-            replyToSpeakerName = "",
-            activeVideoCallSessionId = "",
-            activeVideoCallStartedAt = 0L,
-            pendingMemoryProposal = null,
-            recentMemoryProposalHistory = emptyList(),
-            longMemoryCount = 0,
-            sceneMemoryCount = 0,
-            isRefreshingConversationSummary = false,
-            diaryEntries = emptyList(),
-            isGeneratingDiary = false,
         )
     }
 
     fun applyRestartSessionSuccess(current: RoleplayUiState): RoleplayUiState {
-        return current.copy(
-            messages = emptyList(),
-            suggestions = emptyList(),
-            streamingContent = "",
-            latestPromptDebugDump = "",
-            isGeneratingSuggestions = false,
-            suggestionErrorMessage = null,
+        return clearedForSessionReset(current).copy(
             noticeMessage = "已重开剧情",
             showAssistantMismatchDialog = false,
             previousAssistantName = "",
             currentAssistantName = "",
-            contextGovernance = null,
-            replyToMessageId = "",
-            replyToPreview = "",
-            replyToSpeakerName = "",
-            activeVideoCallSessionId = "",
-            activeVideoCallStartedAt = 0L,
-            pendingMemoryProposal = null,
-            recentMemoryProposalHistory = emptyList(),
-            sceneMemoryCount = 0,
-            isRefreshingConversationSummary = false,
-            diaryEntries = emptyList(),
-            isGeneratingDiary = false,
         )
     }
 
@@ -586,6 +486,55 @@ object RoleplayStateSupport {
         return current.copy(
             activeVideoCallSessionId = "",
             activeVideoCallStartedAt = 0L,
+        )
+    }
+
+    /**
+     * 会话级重置：清空当前会话的消息 / 草稿 / 上下文 / 视频通话 / 记忆计数等所有"应随会话清空"的字段。
+     * 供 [applyResetSessionSuccess]（清空剧情）与 [applyRestartSessionSuccess]（重开剧情）共用，
+     * 避免两处手抄字段导致遗漏（历史上 restart 曾漏 longMemoryCount 与 contextStatus）。
+     * 调用方在其结果上 .copy() 各自的专属字段（如 noticeMessage）。
+     */
+    private fun clearedForSessionReset(current: RoleplayUiState): RoleplayUiState {
+        return current.copy(
+            messages = emptyList(),
+            suggestions = emptyList(),
+            streamingContent = "",
+            latestPromptDebugDump = "",
+            isGeneratingSuggestions = false,
+            suggestionErrorMessage = null,
+            contextStatus = RoleplayContextStatus(),
+            contextGovernance = null,
+            replyToMessageId = "",
+            replyToPreview = "",
+            replyToSpeakerName = "",
+            activeVideoCallSessionId = "",
+            activeVideoCallStartedAt = 0L,
+            pendingMemoryProposal = null,
+            recentMemoryProposalHistory = emptyList(),
+            longMemoryCount = 0,
+            sceneMemoryCount = 0,
+            isRefreshingConversationSummary = false,
+            diaryEntries = emptyList(),
+            isGeneratingDiary = false,
+        )
+    }
+
+    /**
+     * 场景切换级重置：在 [clearedForSessionReset] 基础上，再清空场景级字段（当前会话、群成员、
+     * 输入草稿、角色不匹配提示、错误 / 通知消息）。供 [enterScenario] 与 [leaveScenario] 共用，
+     * 调用方在其结果上 .copy() 各自专属字段（如 currentScenario / isScenarioLoading）。
+     */
+    private fun clearedForScenarioSwitch(current: RoleplayUiState): RoleplayUiState {
+        return clearedForSessionReset(current).copy(
+            currentSession = null,
+            currentGroupParticipants = emptyList(),
+            input = "",
+            showAssistantMismatchDialog = false,
+            previousAssistantName = "",
+            currentAssistantName = "",
+            errorMessage = null,
+            noticeMessage = null,
         )
     }
 }
