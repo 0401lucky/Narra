@@ -35,7 +35,7 @@ class FakeConversationStore(
     }
 
     override fun observeMessages(conversationId: String): Flow<List<ChatMessage>> {
-        return messagesState.map { it[conversationId].orEmpty().sortedBy { message -> message.createdAt } }
+        return messagesState.map { it[conversationId].orEmpty().sortedForConversation() }
     }
 
     override suspend fun listConversations(): List<Conversation> {
@@ -48,7 +48,7 @@ class FakeConversationStore(
 
     override suspend fun listMessages(conversationId: String): List<ChatMessage> {
         listMessagesCount += 1
-        return messagesState.value[conversationId].orEmpty().sortedBy { it.createdAt }
+        return messagesState.value[conversationId].orEmpty().sortedForConversation()
     }
 
     override suspend fun upsertConversationMetadata(conversation: Conversation) {
@@ -64,7 +64,7 @@ class FakeConversationStore(
         replaceConversationSnapshotCount += 1
         upsertConversationMetadata(conversation)
         messagesState.value = messagesState.value.toMutableMap().apply {
-            this[conversationId] = messages.sortedBy { it.createdAt }
+            this[conversationId] = messages.sortedForConversation()
         }
     }
 
@@ -74,7 +74,7 @@ class FakeConversationStore(
         transform: (List<ChatMessage>) -> List<ChatMessage>,
     ): List<ChatMessage> {
         updateConversationMessagesCount += 1
-        val existingMessages = messagesState.value[conversationId].orEmpty().sortedBy { it.createdAt }
+        val existingMessages = messagesState.value[conversationId].orEmpty().sortedForConversation()
         val updatedMessages = transform(existingMessages)
         if (updatedMessages == existingMessages) {
             return existingMessages
@@ -113,7 +113,7 @@ class FakeConversationStore(
                 scopedMessages.any { incoming -> incoming.id == existing.id }
             } + scopedMessages
             messagesState.value = messagesState.value.toMutableMap().apply {
-                this[conversationId] = mergedMessages.sortedBy { it.createdAt }
+                this[conversationId] = mergedMessages.sortedForConversation()
             }
         }
     }
@@ -131,5 +131,9 @@ class FakeConversationStore(
         messagesState.value = messagesState.value.toMutableMap().apply {
             this[conversationId] = emptyList()
         }
+    }
+
+    private fun List<ChatMessage>.sortedForConversation(): List<ChatMessage> {
+        return sortedWith(compareBy<ChatMessage> { it.createdAt }.thenBy { it.id })
     }
 }

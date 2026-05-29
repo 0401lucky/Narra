@@ -206,6 +206,7 @@ object ChatConversationSupport {
             messageIdProvider = messageIdProvider,
             status = MessageStatus.LOADING,
             modelName = selectedModel,
+            createdAt = nextCreatedAt(nowProvider, userMessage.createdAt),
         )
         return PreparedChatRoundTrip(
             userMessage = userMessage,
@@ -297,6 +298,7 @@ object ChatConversationSupport {
         attachments: List<MessageAttachment> = emptyList(),
         parts: List<ChatMessagePart> = emptyList(),
         citations: List<MessageCitation> = emptyList(),
+        createdAt: Long = nowProvider(),
     ): ChatMessage {
         return ChatMessage(
             id = messageIdProvider(),
@@ -304,7 +306,7 @@ object ChatConversationSupport {
             role = role,
             content = content,
             status = status,
-            createdAt = nowProvider(),
+            createdAt = createdAt,
             modelName = modelName,
             reasoningContent = reasoningContent.ifBlank { reasoningStepsToContent(reasoningSteps) },
             reasoningSteps = normalizeChatReasoningSteps(reasoningSteps),
@@ -312,5 +314,16 @@ object ChatConversationSupport {
             parts = normalizeChatMessageParts(parts),
             citations = citations,
         )
+    }
+
+    private fun nextCreatedAt(
+        nowProvider: () -> Long,
+        afterCreatedAt: Long,
+    ): Long {
+        val now = nowProvider()
+        if (afterCreatedAt == Long.MAX_VALUE) {
+            return Long.MAX_VALUE
+        }
+        return maxOf(now, afterCreatedAt + 1)
     }
 }
