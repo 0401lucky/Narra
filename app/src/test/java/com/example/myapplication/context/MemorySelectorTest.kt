@@ -163,6 +163,89 @@ class MemorySelectorTest {
     }
 
     @Test
+    fun select_chatPrefersRelevantEntryOverRecentlyUsedWhenTruncated() {
+        val result = selector.select(
+            entries = listOf(
+                MemoryEntry(
+                    id = "recent1",
+                    content = "用户喜欢喝美式咖啡。",
+                    scopeType = MemoryScopeType.GLOBAL,
+                    importance = 10,
+                    lastUsedAt = 1_000L,
+                ),
+                MemoryEntry(
+                    id = "recent2",
+                    content = "用户养了一只橘猫。",
+                    scopeType = MemoryScopeType.GLOBAL,
+                    importance = 10,
+                    lastUsedAt = 900L,
+                ),
+                MemoryEntry(
+                    id = "relevant",
+                    content = "用户正在学习吉他指弹。",
+                    scopeType = MemoryScopeType.GLOBAL,
+                    importance = 10,
+                    lastUsedAt = 1L,
+                ),
+            ),
+            assistant = Assistant(
+                id = "assistant-1",
+                memoryEnabled = true,
+                memoryMaxItems = 2,
+            ),
+            conversation = Conversation(id = "c1", createdAt = 1L, updatedAt = 1L),
+            promptMode = PromptMode.CHAT,
+            userInputText = "帮我推荐一首适合练习指弹吉他的曲子",
+        )
+
+        assertEquals(2, result.size)
+        assertEquals(true, result.any { it.id == "relevant" })
+        assertEquals("relevant", result.first().id)
+    }
+
+    @Test
+    fun select_chatKeepsPinnedEntryEvenWhenIrrelevant() {
+        val result = selector.select(
+            entries = listOf(
+                MemoryEntry(
+                    id = "pinned",
+                    content = "用户偏好简洁直接的回答风格。",
+                    scopeType = MemoryScopeType.GLOBAL,
+                    importance = 5,
+                    pinned = true,
+                    lastUsedAt = 1L,
+                ),
+                MemoryEntry(
+                    id = "relevant",
+                    content = "用户正在学习吉他指弹。",
+                    scopeType = MemoryScopeType.GLOBAL,
+                    importance = 10,
+                    pinned = false,
+                    lastUsedAt = 1_000L,
+                ),
+                MemoryEntry(
+                    id = "filler",
+                    content = "用户养了一只橘猫。",
+                    scopeType = MemoryScopeType.GLOBAL,
+                    importance = 50,
+                    pinned = false,
+                    lastUsedAt = 900L,
+                ),
+            ),
+            assistant = Assistant(
+                id = "assistant-1",
+                memoryEnabled = true,
+                memoryMaxItems = 1,
+            ),
+            conversation = Conversation(id = "c1", createdAt = 1L, updatedAt = 1L),
+            promptMode = PromptMode.CHAT,
+            userInputText = "帮我推荐一首适合练习指弹吉他的曲子",
+        )
+
+        assertEquals(listOf("pinned"), result.map { it.id })
+    }
+
+    @Test
     fun select_ignoresAssistantScopedLongTermMemoriesWhenUsingGlobalMemory() {
         val result = selector.select(
             entries = listOf(

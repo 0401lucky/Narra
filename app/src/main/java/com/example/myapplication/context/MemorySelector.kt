@@ -28,15 +28,16 @@ class MemorySelector {
             assistant = assistant,
             conversation = conversation,
         )
-        if (promptMode != PromptMode.ROLEPLAY) {
-            return MemoryScopeSupport.sortByPriority(scopedEntries)
-                .take(maxItems)
-                .toList()
-        }
         val queryTerms = buildQueryTerms(
             userInputText = userInputText,
             recentMessages = recentMessages,
         )
+        if (promptMode != PromptMode.ROLEPLAY) {
+            return scopedEntries
+                .sortedWith(chatComparator(queryTerms))
+                .take(maxItems)
+                .toList()
+        }
         val conversationEntries = scopedEntries
             .filter { it.scopeType == MemoryScopeType.CONVERSATION }
             .sortedWith(roleplayComparator(queryTerms))
@@ -78,6 +79,16 @@ class MemorySelector {
                 }
         }
         return selected
+    }
+
+    private fun chatComparator(queryTerms: Set<String>): Comparator<MemoryEntry> {
+        // pinned 始终绝对置顶；非 pinned 之间在 importance 之上叠加相关性，
+        // 让与当前输入相关的记忆优先于不相关的（queryTerms 为空时退化为原 priority 排序）。
+        return compareByDescending<MemoryEntry> { it.pinned }
+            .thenByDescending { entry -> calculateRelevanceScore(entry, queryTerms) }
+            .thenByDescending { it.importance }
+            .thenByDescending { it.lastUsedAt }
+            .thenByDescending { it.updatedAt }
     }
 
     private fun roleplayComparator(queryTerms: Set<String>): Comparator<MemoryEntry> {
