@@ -12,12 +12,9 @@ import org.junit.Test
 
 class ChatStateSupportTest {
     @Test
-    fun finishSending_resetsStreamingAndSendingState() {
+    fun finishSending_resetsSendingState() {
         val updated = ChatStateSupport.finishSending(
             current = ChatUiState(
-                streamingMessageId = "m1",
-                streamingContent = "流式内容",
-                streamingReasoningContent = "思考中",
                 isSending = true,
             ),
             messages = listOf(
@@ -33,9 +30,6 @@ class ChatStateSupportTest {
         )
 
         assertFalse(updated.isSending)
-        assertEquals("", updated.streamingMessageId)
-        assertEquals("", updated.streamingContent)
-        assertEquals("", updated.streamingReasoningContent)
         assertEquals("发送失败", updated.errorMessage)
         assertEquals(1, updated.messages.size)
     }

@@ -28,12 +28,10 @@ class ChatViewModelUiUpdatesTest {
     }
 
     @Test
-    fun beginRetry_entersSendingStateAndResetsStreamingBuffers() {
+    fun beginRetry_entersSendingStateAndClearsError() {
         val updated = ChatViewModelUiUpdates.beginRetry(
             current = ChatUiState(
                 isSending = false,
-                streamingContent = "old",
-                streamingReasoningContent = "reason",
                 errorMessage = "old error",
             ),
             messages = listOf(
@@ -45,13 +43,9 @@ class ChatViewModelUiUpdatesTest {
                     createdAt = 1L,
                 ),
             ),
-            loadingMessageId = "m1",
         )
 
         assertFalse(updated.messages.isEmpty())
-        assertEquals("m1", updated.streamingMessageId)
-        assertEquals("", updated.streamingContent)
-        assertEquals("", updated.streamingReasoningContent)
         assertFalse(updated.errorMessage != null)
         assertEquals(true, updated.isSending)
     }
@@ -59,11 +53,7 @@ class ChatViewModelUiUpdatesTest {
     @Test
     fun applyStreamingFrame_updatesReasoningSteps() {
         val updated = ChatViewModelUiUpdates.applyStreamingFrame(
-            current = ChatUiState(
-                currentConversationId = "c1",
-                streamingMessageId = "m1",
-            ),
-            conversationId = "c1",
+            current = ChatStreamingState(streamingMessageId = "m1"),
             loadingMessageId = "m1",
             content = "",
             reasoning = "**分析目标**\n先看输入。",
@@ -81,5 +71,24 @@ class ChatViewModelUiUpdatesTest {
         assertEquals(1, updated.streamingReasoningSteps.size)
         assertEquals("reasoning-1", updated.streamingReasoningSteps.single().id)
         assertEquals("**分析目标**\n先看输入。", updated.streamingReasoningContent)
+    }
+
+    @Test
+    fun applyStreamingFrame_ignoresFrameForDifferentLoadingMessage() {
+        val current = ChatStreamingState(
+            streamingMessageId = "m1",
+            streamingContent = "已有内容",
+        )
+
+        val updated = ChatViewModelUiUpdates.applyStreamingFrame(
+            current = current,
+            loadingMessageId = "m2",
+            content = "迟到的旧帧",
+            reasoning = "",
+            reasoningSteps = emptyList(),
+            parts = emptyList(),
+        )
+
+        assertEquals(current, updated)
     }
 }

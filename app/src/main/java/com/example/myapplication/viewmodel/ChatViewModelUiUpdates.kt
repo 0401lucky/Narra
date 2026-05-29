@@ -30,11 +30,6 @@ object ChatViewModelUiUpdates {
             displayedConversationId = "",
             currentConversationTitle = DEFAULT_CONVERSATION_TITLE,
             messages = emptyList(),
-            streamingMessageId = "",
-            streamingContent = "",
-            streamingReasoningContent = "",
-            streamingReasoningSteps = emptyList(),
-            streamingParts = emptyList(),
             isConversationReady = false,
             hasConversationSummary = false,
             summaryCoveredMessageCount = 0,
@@ -67,11 +62,6 @@ object ChatViewModelUiUpdates {
         return current.copy(
             displayedConversationId = conversationId,
             messages = messages,
-            streamingMessageId = "",
-            streamingContent = "",
-            streamingReasoningContent = "",
-            streamingReasoningSteps = emptyList(),
-            streamingParts = emptyList(),
             isConversationReady = true,
         )
     }
@@ -79,17 +69,11 @@ object ChatViewModelUiUpdates {
     fun beginRoundTrip(
         current: ChatUiState,
         messages: List<ChatMessage>,
-        loadingMessageId: String,
         nextInput: String,
         nextPendingParts: List<ChatMessagePart>,
     ): ChatUiState {
         return current.copy(
             messages = messages,
-            streamingMessageId = loadingMessageId,
-            streamingContent = "",
-            streamingReasoningContent = "",
-            streamingReasoningSteps = emptyList(),
-            streamingParts = emptyList(),
             input = nextInput,
             pendingParts = nextPendingParts,
             isSending = true,
@@ -98,15 +82,14 @@ object ChatViewModelUiUpdates {
     }
 
     fun applyStreamingFrame(
-        current: ChatUiState,
-        conversationId: String,
+        current: ChatStreamingState,
         loadingMessageId: String,
         content: String,
         reasoning: String,
         reasoningSteps: List<ChatReasoningStep>,
         parts: List<ChatMessagePart>,
-    ): ChatUiState {
-        if (current.currentConversationId != conversationId || current.streamingMessageId != loadingMessageId) {
+    ): ChatStreamingState {
+        if (current.streamingMessageId != loadingMessageId) {
             return current
         }
         return current.copy(
@@ -137,15 +120,9 @@ object ChatViewModelUiUpdates {
     fun beginRetry(
         current: ChatUiState,
         messages: List<ChatMessage>,
-        loadingMessageId: String,
     ): ChatUiState {
         return current.copy(
             messages = messages,
-            streamingMessageId = loadingMessageId,
-            streamingContent = "",
-            streamingReasoningContent = "",
-            streamingReasoningSteps = emptyList(),
-            streamingParts = emptyList(),
             isSending = true,
             errorMessage = null,
         )

@@ -20,6 +20,7 @@ import com.example.myapplication.model.inferModelAbilities
 import com.example.myapplication.model.reasoningBudgetSupportHint
 import com.example.myapplication.model.resolveReasoningBudgetLabel
 import com.example.myapplication.model.supportsThinkingBudgetControl
+import com.example.myapplication.viewmodel.ChatStreamingState
 import com.example.myapplication.viewmodel.ChatUiState
 
 // ChatScreen 派生态聚合：将 ChatScreen 内部约 150 行的 provider/model/user/search/reasoning/last-message
@@ -65,6 +66,7 @@ internal data class ChatScreenDerivations(
 @Composable
 internal fun rememberChatScreenDerivations(
     uiState: ChatUiState,
+    streamingState: ChatStreamingState,
     resources: Resources,
 ): ChatScreenDerivations {
     val providerOptions = remember(uiState.settings) { uiState.settings.enabledProviders() }
@@ -187,15 +189,15 @@ internal fun rememberChatScreenDerivations(
 
     val lastMessage = uiState.messages.lastOrNull()
     val lastMessageContentLength = when {
-        lastMessage?.id == uiState.streamingMessageId -> uiState.streamingContent.length
+        lastMessage?.id == streamingState.streamingMessageId -> streamingState.streamingContent.length
         else -> lastMessage?.content?.length
     }
     val lastReasoningContentLength = when {
-        lastMessage?.id == uiState.streamingMessageId -> uiState.streamingReasoningContent.length
+        lastMessage?.id == streamingState.streamingMessageId -> streamingState.streamingReasoningContent.length
         else -> lastMessage?.reasoningContent?.length
     }
     val lastMessagePartCount = when {
-        lastMessage?.id == uiState.streamingMessageId -> uiState.streamingParts.size
+        lastMessage?.id == streamingState.streamingMessageId -> streamingState.streamingParts.size
         else -> lastMessage?.parts?.size ?: 0
     }
 

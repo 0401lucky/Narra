@@ -36,6 +36,7 @@ import com.example.myapplication.ui.component.ChatMessagePerformanceMode
 import com.example.myapplication.ui.component.MessageBubble
 import com.example.myapplication.ui.component.MessageInputBar
 import com.example.myapplication.ui.component.NarraFilledTonalIconButton
+import com.example.myapplication.viewmodel.ChatStreamingState
 import com.example.myapplication.viewmodel.ChatUiState
 import kotlinx.coroutines.launch
 
@@ -54,7 +55,7 @@ internal fun ChatConversationPane(
     availableModelInfos: List<ModelInfo>,
     listState: LazyListState,
     isNearBottom: Boolean,
-    performanceMode: ChatMessagePerformanceMode,
+    streamingState: ChatStreamingState,
     isSavingModel: Boolean,
     currentModel: String,
     canAttachImages: Boolean,
@@ -175,7 +176,7 @@ internal fun ChatConversationPane(
                         uiState = uiState,
                         listState = listState,
                         isNearBottom = isNearBottom,
-                        performanceMode = performanceMode,
+                        streamingState = streamingState,
                         onRetryMessage = onRetryMessage,
                         onOpenMessageActions = onOpenMessageActions,
                         onOpenImagePreview = onOpenImagePreview,
@@ -259,7 +260,7 @@ private fun ColumnScope.ChatMessageListPane(
     uiState: ChatUiState,
     listState: LazyListState,
     isNearBottom: Boolean,
-    performanceMode: ChatMessagePerformanceMode,
+    streamingState: ChatStreamingState,
     onRetryMessage: (String) -> Unit,
     onOpenMessageActions: (String) -> Unit,
     onOpenImagePreview: (ChatMessage, Int) -> Unit,
@@ -292,10 +293,15 @@ private fun ColumnScope.ChatMessageListPane(
                 key = { it.id },
                 contentType = { messageContentType(it) },
             ) { message ->
-                val bubbleModifier = if (
-                    performanceMode == ChatMessagePerformanceMode.FULL && !uiState.isSending
-                ) {
-                    // 仅在非流式 + 完整性能模式下启用列表项位移动画，避免流式期间气泡尺寸频变导致抖动
+                val isStreamingBubble = message.id == streamingState.streamingMessageId
+                // 仅把正在流式输出的那条气泡降级为轻量渲染，其余气泡保持完整渲染（不再因发送态整列降级）
+                val bubblePerformanceMode = if (isStreamingBubble) {
+                    ChatMessagePerformanceMode.SCROLLING_LIGHT
+                } else {
+                    ChatMessagePerformanceMode.FULL
+                }
+                val bubbleModifier = if (!uiState.isSending) {
+                    // 仅在非发送态启用列表项位移动画，避免流式期间气泡尺寸频变导致抖动
                     Modifier.animateItem()
                 } else {
                     Modifier
@@ -303,26 +309,18 @@ private fun ColumnScope.ChatMessageListPane(
                 MessageBubble(
                     message = message,
                     modifier = bubbleModifier,
-                    streamingContent = if (message.id == uiState.streamingMessageId) {
-                        uiState.streamingContent
+                    streamingContent = if (isStreamingBubble) streamingState.streamingContent else null,
+                    streamingReasoningContent = if (isStreamingBubble) {
+                        streamingState.streamingReasoningContent
                     } else {
                         null
                     },
-                    streamingReasoningContent = if (message.id == uiState.streamingMessageId) {
-                        uiState.streamingReasoningContent
+                    streamingReasoningSteps = if (isStreamingBubble) {
+                        streamingState.streamingReasoningSteps
                     } else {
                         null
                     },
-                    streamingReasoningSteps = if (message.id == uiState.streamingMessageId) {
-                        uiState.streamingReasoningSteps
-                    } else {
-                        null
-                    },
-                    streamingParts = if (message.id == uiState.streamingMessageId) {
-                        uiState.streamingParts
-                    } else {
-                        null
-                    },
+                    streamingParts = if (isStreamingBubble) streamingState.streamingParts else null,
                     onRetry = onRetryMessage,
                     onOpenMessageActions = onOpenMessageActions,
                     onOpenImagePreview = onOpenImagePreview,
@@ -336,8 +334,8 @@ private fun ColumnScope.ChatMessageListPane(
                     autoPreviewImages = uiState.settings.autoPreviewImages,
                     codeBlockAutoWrap = uiState.settings.codeBlockAutoWrap,
                     codeBlockAutoCollapse = uiState.settings.codeBlockAutoCollapse,
-                    performanceMode = performanceMode,
-                    reduceVisualEffects = performanceMode != ChatMessagePerformanceMode.FULL,
+                    performanceMode = bubblePerformanceMode,
+                    reduceVisualEffects = bubblePerformanceMode != ChatMessagePerformanceMode.FULL,
                     onConfirmTransferReceipt = onConfirmTransferReceipt,
                 )
             }

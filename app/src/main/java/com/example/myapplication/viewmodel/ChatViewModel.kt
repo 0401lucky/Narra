@@ -87,11 +87,6 @@ data class ChatUiState(
     val displayedConversationId: String = "",
     val currentConversationTitle: String = DEFAULT_CONVERSATION_TITLE,
     val messages: List<ChatMessage> = emptyList(),
-    val streamingMessageId: String = "",
-    val streamingContent: String = "",
-    val streamingReasoningContent: String = "",
-    val streamingReasoningSteps: List<ChatReasoningStep> = emptyList(),
-    val streamingParts: List<ChatMessagePart> = emptyList(),
     val input: String = "",
     val pendingParts: List<ChatMessagePart> = emptyList(),
     val isConversationReady: Boolean = false,
@@ -108,6 +103,19 @@ data class ChatUiState(
     val latestPromptDebugDump: String = "",
     val contextGovernance: ContextGovernanceSnapshot? = null,
     val translation: TranslationUiState = TranslationUiState(),
+)
+
+/**
+ * 流式生成期间高频变化的缓冲区，从 [ChatUiState] 拆出独立 StateFlow。
+ * 每个 token 到达只更新本状态，触发流式气泡与跟随滚动重组，
+ * 而不让整张 UiState（顶栏 / 抽屉 / 弹窗）跟着重组。
+ */
+data class ChatStreamingState(
+    val streamingMessageId: String = "",
+    val streamingContent: String = "",
+    val streamingReasoningContent: String = "",
+    val streamingReasoningSteps: List<ChatReasoningStep> = emptyList(),
+    val streamingParts: List<ChatMessagePart> = emptyList(),
 )
 
 data class TranslationUiState(
@@ -146,6 +154,8 @@ class ChatViewModel(
     private val currentMemoryEntries = MutableStateFlow<List<MemoryEntry>>(emptyList())
     private val _uiState = MutableStateFlow(ChatUiState())
     val uiState: StateFlow<ChatUiState> = _uiState.asStateFlow()
+    private val _streamingState = MutableStateFlow(ChatStreamingState())
+    val streamingState: StateFlow<ChatStreamingState> = _streamingState.asStateFlow()
 
     private var sendingJob: Job? = null
     /** 确保后台 API 请求（摘要/记忆提取）串行执行，避免并发触发 429。 */
@@ -504,9 +514,9 @@ class ChatViewModel(
                     ChatViewModelUiUpdates.beginRetry(
                         current = current,
                         messages = retryResolution.retryMessages,
-                        loadingMessageId = retryResolution.loadingMessage.id,
                     )
                 }
+                _streamingState.value = ChatStreamingState(streamingMessageId = retryResolution.loadingMessage.id)
 
                 if (imageGenerationEnabled) {
                     executeImageGeneration(
@@ -574,6 +584,7 @@ class ChatViewModel(
                     rewoundMessages = preparedEdit.rewoundMessages,
                 )
             }
+            _streamingState.value = ChatStreamingState()
         }
     }
 
@@ -1017,6 +1028,7 @@ class ChatViewModel(
                 errorMessage = errorMessage,
             )
         }
+        _streamingState.value = ChatStreamingState()
     }
 
     private fun observeSettings() {
@@ -1058,6 +1070,7 @@ class ChatViewModel(
                         _uiState.update { current ->
                             ChatViewModelUiUpdates.clearConversationCollection(current, conversations)
                         }
+                        _streamingState.value = ChatStreamingState()
                         return@collect
                     }
 
@@ -1150,6 +1163,7 @@ class ChatViewModel(
                             messages = messages,
                         )
                     }
+                    _streamingState.value = ChatStreamingState()
                 }
         }
     }
@@ -1227,6 +1241,7 @@ class ChatViewModel(
                 title = title,
             )
         }
+        _streamingState.value = ChatStreamingState()
     }
 
     private fun launchAiTitleGeneration(
@@ -1533,10 +1548,12 @@ class ChatViewModel(
         reasoningSteps: List<ChatReasoningStep>,
         parts: List<ChatMessagePart>,
     ) {
-        _uiState.update { current ->
+        if (_uiState.value.currentConversationId != conversationId) {
+            return
+        }
+        _streamingState.update { current ->
             ChatViewModelUiUpdates.applyStreamingFrame(
                 current = current,
-                conversationId = conversationId,
                 loadingMessageId = loadingMessageId,
                 content = content,
                 reasoning = reasoning,
@@ -1616,7 +1633,6 @@ class ChatViewModel(
             ChatViewModelUiUpdates.beginRoundTrip(
                 current = current,
                 messages = preparedRoundTrip.persistedMessages,
-                loadingMessageId = preparedRoundTrip.loadingMessage.id,
                 nextInput = nextInput,
                 nextPendingParts = nextPendingParts,
             ).let { updated ->
@@ -1627,6 +1643,7 @@ class ChatViewModel(
                 }
             }
         }
+        _streamingState.value = ChatStreamingState(streamingMessageId = preparedRoundTrip.loadingMessage.id)
 
         if (!forceChatRoundTrip && ChatConversationSupport.supportsImageGeneration(state.settings, selectedModel)) {
             executeImageGeneration(

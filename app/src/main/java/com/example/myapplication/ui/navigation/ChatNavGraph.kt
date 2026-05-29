@@ -52,8 +52,10 @@ internal fun NavGraphBuilder.registerChatNavGraph(
             ),
         )
         val chatState by chatViewModel.uiState.collectAsStateWithLifecycle()
+        val chatStreamingState by chatViewModel.streamingState.collectAsStateWithLifecycle()
         ChatScreen(
             uiState = chatState,
+            streamingState = chatStreamingState,
             isLoadingModels = settingsUiState.isLoadingModels,
             loadingProviderId = settingsUiState.loadingProviderId,
             isSavingModel = settingsUiState.isSaving,

@@ -19,7 +19,7 @@ import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.unit.dp
 import com.example.myapplication.R
 import com.example.myapplication.model.ChatMessage
-import com.example.myapplication.ui.component.ChatMessagePerformanceMode
+import com.example.myapplication.viewmodel.ChatStreamingState
 import com.example.myapplication.viewmodel.ChatUiState
 import kotlinx.coroutines.launch
 
@@ -32,6 +32,7 @@ private const val StreamBottomAnchorKey = "stream-bottom-anchor"
 @Composable
 fun ChatScreen(
     uiState: ChatUiState,
+    streamingState: ChatStreamingState,
     isLoadingModels: Boolean,
     loadingProviderId: String,
     isSavingModel: Boolean,
@@ -86,13 +87,8 @@ fun ChatScreen(
     val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
     val scope = rememberCoroutineScope()
     val autoFollowState = rememberChatAutoFollowState(uiState.displayedConversationId)
-    val chatMessagePerformanceMode = if (uiState.isSending) {
-        ChatMessagePerformanceMode.SCROLLING_LIGHT
-    } else {
-        ChatMessagePerformanceMode.FULL
-    }
     val colorScheme = MaterialTheme.colorScheme
-    val derivations = rememberChatScreenDerivations(uiState, resources)
+    val derivations = rememberChatScreenDerivations(uiState, streamingState, resources)
     val localState = rememberChatScreenLocalState(
         userDisplayName = derivations.userDisplayName,
         userPersonaPrompt = derivations.userPersonaPrompt,
@@ -207,7 +203,7 @@ fun ChatScreen(
                 availableModelInfos = derivations.availableModelInfos,
                 listState = listState,
                 isNearBottom = isNearBottom,
-                performanceMode = chatMessagePerformanceMode,
+                streamingState = streamingState,
                 isSavingModel = isSavingModel,
                 currentModel = derivations.currentModel,
                 canAttachImages = derivations.canAttachImages,
