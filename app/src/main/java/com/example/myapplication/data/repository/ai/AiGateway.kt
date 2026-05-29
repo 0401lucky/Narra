@@ -1371,14 +1371,16 @@ class DefaultAiGateway(
     private fun parseChatCompletionJsonResponse(
         rawBody: String,
     ): AssistantReply {
-        val response = runCatching {
-            gson.fromJson(rawBody, ChatCompletionResponse::class.java)
-        }.getOrNull()
+        // 仅解析一次 JSON：先得到树，再从树反序列化为 OpenAI 结构，Gemini 原生兜底复用同一棵树
+        val root = runCatching { JsonParser.parseString(rawBody).asJsonObject }.getOrNull()
+        val response = root?.let {
+            runCatching { gson.fromJson(it, ChatCompletionResponse::class.java) }.getOrNull()
+        }
         val assistantMessage = response?.choices?.firstOrNull()?.message
         if (assistantMessage != null) {
             return assistantReplyFromOpenAiMessage(assistantMessage)
         }
-        return parseGeminiNativeJsonResponse(rawBody)
+        return root?.let { parseGeminiNativeJsonResponse(it) }
             ?: throw IllegalStateException("模型未返回有效内容")
     }
 
@@ -1399,11 +1401,8 @@ class DefaultAiGateway(
     }
 
     private fun parseGeminiNativeJsonResponse(
-        rawBody: String,
+        root: JsonObject,
     ): AssistantReply? {
-        val root = runCatching { JsonParser.parseString(rawBody).asJsonObject }
-            .getOrNull()
-            ?: return null
         val candidates = root.getAsJsonArrayOrNull("candidates") ?: return null
         if (candidates.size() == 0) {
             throw geminiNativeEmptyContentException(root)

@@ -210,7 +210,8 @@ private fun parseSafeCssColor(raw: String): Color? {
                 "ff$expanded"
             }
             6 -> "ff$hex"
-            8 -> hex
+            // CSS #RRGGBBAA（alpha 在末位）转为 Android 0xAARRGGBB（alpha 在首位）
+            8 -> hex.substring(6, 8) + hex.substring(0, 6)
             else -> return null
         }
         return argb.toLongOrNull(16)?.let { Color(it) }

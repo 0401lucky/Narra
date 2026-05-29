@@ -79,6 +79,18 @@ internal fun ReasoningTimelineCard(
         visibleReasoningTimelineSteps(reasoningSteps, expanded)
     }
     val contentVisible = expanded || previewVisible
+    // 卡片级单 ticker：仅当存在未结束的步骤时每 100ms 推进一次，替代每个步骤各自的计时器
+    val hasRunningStep = remember(visibleSteps) { visibleSteps.any { it.finishedAt == null } }
+    var nowMillis by remember { mutableStateOf(System.currentTimeMillis()) }
+    LaunchedEffect(hasRunningStep) {
+        if (!hasRunningStep) {
+            return@LaunchedEffect
+        }
+        while (isActive) {
+            nowMillis = System.currentTimeMillis()
+            delay(100)
+        }
+    }
     val cardModifier = if (isLoading || performanceMode != ChatMessagePerformanceMode.FULL) {
         modifier
     } else {
@@ -150,6 +162,8 @@ internal fun ReasoningTimelineCard(
                     visibleSteps.forEachIndexed { index, step ->
                         ReasoningTimelineStep(
                             step = step,
+                            // 已结束步骤传入冻结的 finishedAt，避免其随 ticker 每帧重组；仅未结束步骤跟随 nowMillis
+                            currentTimeMillis = step.finishedAt ?: nowMillis,
                             isFirst = index == 0,
                             isLast = index == visibleSteps.lastIndex,
                             contentVisible = contentVisible,
@@ -174,6 +188,7 @@ internal fun ReasoningTimelineCard(
 @Composable
 private fun ReasoningTimelineStep(
     step: ChatReasoningStep,
+    currentTimeMillis: Long,
     isFirst: Boolean,
     isLast: Boolean,
     contentVisible: Boolean,
@@ -189,19 +204,6 @@ private fun ReasoningTimelineStep(
     onToggleExpanded: () -> Unit,
 ) {
     val scrollState = rememberScrollState()
-    var currentTimeMillis by remember(step.id, step.finishedAt) {
-        mutableStateOf(step.finishedAt ?: System.currentTimeMillis())
-    }
-    LaunchedEffect(step.id, step.finishedAt) {
-        if (step.finishedAt != null) {
-            currentTimeMillis = step.finishedAt
-            return@LaunchedEffect
-        }
-        while (isActive) {
-            currentTimeMillis = System.currentTimeMillis()
-            delay(100)
-        }
-    }
     LaunchedEffect(previewVisible, step.id, step.text, step.finishedAt) {
         if (previewVisible && step.finishedAt == null) {
             scrollState.scrollTo(scrollState.maxValue)
