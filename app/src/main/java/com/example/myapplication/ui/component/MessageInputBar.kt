@@ -422,6 +422,22 @@ fun MessageInputBar(
                         }
                     }
 
+                    val sendButtonContainerColor by animateColorAsState(
+                        targetValue = if (canSend) {
+                            MaterialTheme.colorScheme.primary
+                        } else {
+                            MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f)
+                        },
+                        label = "sendButtonContainerColor",
+                    )
+                    val sendButtonContentColor by animateColorAsState(
+                        targetValue = if (canSend) {
+                            MaterialTheme.colorScheme.onPrimary
+                        } else {
+                            MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)
+                        },
+                        label = "sendButtonContentColor",
+                    )
                     if (isSending && onCancelClick != null) {
                         NarraIconButton(
                             onClick = onCancelClick,
@@ -450,16 +466,8 @@ fun MessageInputBar(
                                 .scale(scale)
                                 .clip(CircleShape),
                             colors = IconButtonDefaults.iconButtonColors(
-                                containerColor = if (canSend) {
-                                    MaterialTheme.colorScheme.primary
-                                } else {
-                                    MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f)
-                                },
-                                contentColor = if (canSend) {
-                                    MaterialTheme.colorScheme.onPrimary
-                                } else {
-                                    MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)
-                                },
+                                containerColor = sendButtonContainerColor,
+                                contentColor = sendButtonContentColor,
                             ),
                             interactionSource = sendInteractionSource,
                         ) {

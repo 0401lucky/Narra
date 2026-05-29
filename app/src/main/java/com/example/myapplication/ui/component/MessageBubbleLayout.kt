@@ -1,5 +1,6 @@
 package com.example.myapplication.ui.component
 
+import androidx.compose.animation.animateContentSize
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -356,7 +357,10 @@ internal fun MessageBubbleContent(
     }
 
     Column(
-        modifier = modifier,
+        // 流式结束、纯文本切换为富文本（Markdown）落定时平滑尺寸变化；流式进行中不启用，避免持续重排动画
+        modifier = modifier.then(
+            if (!fastPlainText) Modifier.animateContentSize() else Modifier,
+        ),
         verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
         if (displayAttachments.isNotEmpty()) {

@@ -159,7 +159,15 @@ internal fun ChatConversationPane(
                 }
 
                 uiState.messages.isEmpty() -> {
-                    Spacer(modifier = Modifier.weight(1f))
+                    EmptyConversationState(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .weight(1f),
+                        title = "开始新的对话",
+                        body = "在下方输入框发送消息即可开始聊天，也可以从历史记录中继续之前的会话。",
+                        primaryActionLabel = "打开历史记录",
+                        onPrimaryAction = onOpenConversationDrawer,
+                    )
                 }
 
                 else -> {
