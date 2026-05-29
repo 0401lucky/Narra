@@ -1732,8 +1732,9 @@ class DefaultAiGateway(
             while (!source.exhausted()) {
                 coroutineContext.ensureActive()
                 val line = source.readUtf8Line() ?: break
-                if (line.isBlank() || !line.startsWith("data: ")) continue
-                val delta = AnthropicProtocolSupport.parseStreamData(line.removePrefix("data: ").trim())
+                val data = extractSseData(line) ?: continue
+                if (data == "[DONE]") break
+                val delta = AnthropicProtocolSupport.parseStreamData(data)
                 if (!delta.errorMessage.isNullOrBlank()) {
                     throw IllegalStateException(delta.errorMessage)
                 }

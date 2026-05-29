@@ -1607,6 +1607,88 @@ class AiGatewayTest {
     }
 
     @Test
+    fun sendMessageStream_acceptsAnthropicSseWithoutSpaceAfterData() = runBlocking {
+        val sseBody = buildString {
+            append("data:{\"type\":\"content_block_delta\",\"delta\":{\"type\":\"text_delta\",\"text\":\"无空格也能解析\"}}\n\n")
+            append("data:{\"type\":\"message_stop\"}\n\n")
+        }
+        server.enqueue(
+            MockResponse()
+                .setResponseCode(200)
+                .setHeader("Content-Type", "text/event-stream")
+                .setBody(sseBody),
+        )
+        val provider = ProviderSettings(
+            id = "provider-claude-stream-nospace",
+            name = "Claude",
+            baseUrl = server.url("/v1/").toString(),
+            apiKey = "anthropic-key",
+            selectedModel = "claude-sonnet-4-20250514",
+            apiProtocol = ProviderApiProtocol.ANTHROPIC,
+        )
+        val gateway = createGateway(
+            settings = AppSettings(
+                providers = listOf(provider),
+                selectedProviderId = provider.id,
+            ),
+        )
+
+        val deltas = gateway.sendMessageStream(
+            listOf(ChatMessage(id = "1", role = MessageRole.USER, content = "你好")),
+        ).toList()
+
+        assertEquals(
+            listOf(
+                ChatStreamEvent.ContentDelta("无空格也能解析"),
+                ChatStreamEvent.Completed,
+            ),
+            deltas,
+        )
+    }
+
+    @Test
+    fun sendMessageStream_terminatesAnthropicStreamOnDoneSentinel() = runBlocking {
+        // [DONE] 之后再追加一个 error 事件：若未在 [DONE] 处终止，该事件会被解析并抛错。
+        val sseBody = buildString {
+            append("data: {\"type\":\"content_block_delta\",\"delta\":{\"type\":\"text_delta\",\"text\":\"正文\"}}\n\n")
+            append("data: [DONE]\n\n")
+            append("data: {\"type\":\"error\",\"error\":{\"message\":\"不应被处理\"}}\n\n")
+        }
+        server.enqueue(
+            MockResponse()
+                .setResponseCode(200)
+                .setHeader("Content-Type", "text/event-stream")
+                .setBody(sseBody),
+        )
+        val provider = ProviderSettings(
+            id = "provider-claude-stream-done",
+            name = "Claude",
+            baseUrl = server.url("/v1/").toString(),
+            apiKey = "anthropic-key",
+            selectedModel = "claude-sonnet-4-20250514",
+            apiProtocol = ProviderApiProtocol.ANTHROPIC,
+        )
+        val gateway = createGateway(
+            settings = AppSettings(
+                providers = listOf(provider),
+                selectedProviderId = provider.id,
+            ),
+        )
+
+        val deltas = gateway.sendMessageStream(
+            listOf(ChatMessage(id = "1", role = MessageRole.USER, content = "你好")),
+        ).toList()
+
+        assertEquals(
+            listOf(
+                ChatStreamEvent.ContentDelta("正文"),
+                ChatStreamEvent.Completed,
+            ),
+            deltas,
+        )
+    }
+
+    @Test
     fun sendMessageStream_fallsBackToPlainAnthropicStreamWhenToolsUnsupported() = runBlocking {
         val sseBody = buildString {
             append("data: {\"type\":\"content_block_delta\",\"delta\":{\"type\":\"text_delta\",\"text\":\"普通流式成功\"}}\n\n")
