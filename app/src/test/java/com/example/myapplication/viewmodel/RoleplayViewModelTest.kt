@@ -1441,6 +1441,102 @@ class RoleplayViewModelTest {
     }
 
     @Test
+    fun sendMessage_groupChatStopsAfterFirstFailedTurnAndShowsError() = runTest(mainDispatcherRule.dispatcher.scheduler) {
+        server.enqueue(
+            MockResponse()
+                .setResponseCode(500)
+                .setBody("""{"error":{"message":"上游失败"}}"""),
+        )
+        enqueueStreamResponse("第二位不应继续发言")
+
+        val assistantA = Assistant(id = "assistant-a", name = "陆宴清")
+        val assistantB = Assistant(id = "assistant-b", name = "沈今")
+        val scenario = RoleplayScenario(
+            id = "group-scene-failure",
+            title = "群聊失败",
+            assistantId = assistantA.id,
+            interactionMode = RoleplayInteractionMode.ONLINE_PHONE,
+            chatType = RoleplayChatType.GROUP,
+            groupReplyMode = RoleplayGroupReplyMode.ALL_MEMBERS,
+            maxGroupAutoReplies = 2,
+        )
+        val session = RoleplaySession(
+            id = "session-group-failure",
+            scenarioId = scenario.id,
+            conversationId = "conv-group-failure",
+            createdAt = 1L,
+            updatedAt = 2L,
+        )
+        val store = FakeConversationStore(
+            conversations = listOf(
+                Conversation(
+                    id = session.conversationId,
+                    title = "群聊失败",
+                    model = "chat-model",
+                    createdAt = 1L,
+                    updatedAt = 2L,
+                    assistantId = "roleplay-group:${scenario.id}",
+                ),
+            ),
+        )
+        val provider = ProviderSettings(
+            id = "provider-1",
+            name = "测试 Provider",
+            baseUrl = server.url("/v1/").toString(),
+            apiKey = "test-key",
+            selectedModel = "chat-model",
+        )
+        val viewModel = createViewModel(
+            store = store,
+            roleplayRepository = FakeRoleplayRepository(
+                conversationStore = store,
+                scenarios = listOf(scenario),
+                sessions = listOf(session),
+                groupParticipants = listOf(
+                    RoleplayGroupParticipant(
+                        id = "participant-a",
+                        scenarioId = scenario.id,
+                        assistantId = assistantA.id,
+                        sortOrder = 0,
+                    ),
+                    RoleplayGroupParticipant(
+                        id = "participant-b",
+                        scenarioId = scenario.id,
+                        assistantId = assistantB.id,
+                        sortOrder = 1,
+                    ),
+                ),
+            ),
+            settings = AppSettings(
+                baseUrl = provider.baseUrl,
+                apiKey = provider.apiKey,
+                selectedModel = provider.selectedModel,
+                providers = listOf(provider),
+                selectedProviderId = provider.id,
+                assistants = listOf(assistantA, assistantB),
+                selectedAssistantId = assistantA.id,
+            ),
+            promptContextAssembler = fixedPromptAssembler("提示词上下文"),
+            messageIdProvider = idProviderOf("user-group", "assistant-a-loading", "assistant-b-loading"),
+        )
+
+        viewModel.enterScenario(scenario.id)
+        advanceUntilIdle()
+        viewModel.updateInput("大家都说说")
+        viewModel.sendMessage()
+        advanceUntilIdle()
+
+        val state = viewModel.uiState.value
+        val savedMessages = store.listMessages(session.conversationId)
+        assertFalse(state.isSending)
+        assertTrue(state.errorMessage.orEmpty().contains("聊天请求失败"))
+        assertEquals(1, server.requestCount)
+        assertTrue(savedMessages.any { it.role == MessageRole.USER && it.content == "大家都说说" })
+        assertTrue(savedMessages.any { it.id == "assistant-a-loading" && it.status == MessageStatus.ERROR })
+        assertTrue(savedMessages.none { it.id == "assistant-b-loading" || it.speakerId == assistantB.id })
+    }
+
+    @Test
     fun cancelSending_removesLoadingAssistantMessage() = runTest(mainDispatcherRule.dispatcher.scheduler) {
         val assistant = Assistant(id = "assistant-1", name = "陆宴清")
         val scenario = RoleplayScenario(id = "scene-1", assistantId = assistant.id)

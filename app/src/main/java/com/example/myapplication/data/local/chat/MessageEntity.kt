@@ -15,7 +15,10 @@ import androidx.room.PrimaryKey
             onDelete = ForeignKey.CASCADE,
         ),
     ],
-    indices = [Index(value = ["conversationId"])],
+    indices = [
+        Index(value = ["conversationId"]),
+        Index(value = ["conversationId", "createdAt", "id"]),
+    ],
 )
 data class MessageEntity(
     @PrimaryKey val id: String,

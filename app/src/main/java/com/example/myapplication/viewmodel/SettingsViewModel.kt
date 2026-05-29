@@ -560,6 +560,26 @@ class SettingsViewModel(
         )
     }
 
+    fun clearModelsFromProvider(providerId: String) = updateUiState { current ->
+        SettingsUiMutationSupport.clearModelsFromProvider(
+            current = current,
+            providerId = providerId,
+        )
+    }
+
+    fun addManualModelToProvider(
+        providerId: String,
+        modelId: String,
+        displayName: String,
+    ) = updateUiState { current ->
+        SettingsUiMutationSupport.addManualModelToProvider(
+            current = current,
+            providerId = providerId,
+            modelId = modelId,
+            displayName = displayName,
+        )
+    }
+
     // ── T7.1：5 个助手 op 统一走 launchAssistantOp helper。 ──
     fun addAssistant(assistant: Assistant) =
         launchAssistantOp { addAssistant(it, assistant) }

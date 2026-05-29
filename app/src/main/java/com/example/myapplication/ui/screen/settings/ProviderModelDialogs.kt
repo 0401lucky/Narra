@@ -54,6 +54,7 @@ import com.example.myapplication.ui.component.ModelIcon
 import com.example.myapplication.ui.component.NarraButton
 import com.example.myapplication.ui.component.NarraOutlinedButton
 import com.example.myapplication.ui.component.NarraTextButton
+import com.example.myapplication.ui.component.NarraAlertDialog
 
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
@@ -562,4 +563,96 @@ internal fun FetchedModelRow(
             }
         }
     }
+}
+
+@Composable
+internal fun ManualAddModelDialog(
+    onDismissRequest: () -> Unit,
+    onConfirm: (modelId: String, displayName: String) -> Unit,
+) {
+    val palette = rememberSettingsPalette()
+    var modelId by remember { mutableStateOf("") }
+    var displayName by remember { mutableStateOf("") }
+    var errorText by remember { mutableStateOf<String?>(null) }
+
+    NarraAlertDialog(
+        title = "手动添加模型",
+        message = "手动输入模型 ID 和显示名称。适用于未暴露获取接口的提供商。",
+        onDismiss = onDismissRequest,
+        onConfirm = {
+            val cleanedId = modelId.trim()
+            if (cleanedId.isBlank()) {
+                errorText = "模型 ID 不能为空"
+            } else {
+                onConfirm(cleanedId, displayName.trim().ifBlank { cleanedId })
+                onDismissRequest()
+            }
+        },
+        confirmLabel = "添加",
+        dismissLabel = "取消",
+        content = {
+            Column(
+                modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
+                verticalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                    Text(
+                        "模型 ID *",
+                        style = MaterialTheme.typography.labelMedium,
+                        color = palette.body,
+                        fontWeight = FontWeight.Bold
+                    )
+                    Surface(
+                        shape = RoundedCornerShape(10.dp),
+                        color = palette.surface,
+                        border = BorderStroke(1.dp, if (errorText != null) MaterialTheme.colorScheme.error else palette.border),
+                    ) {
+                        BasicTextField(
+                            value = modelId,
+                            onValueChange = {
+                                modelId = it
+                                errorText = null
+                            },
+                            textStyle = MaterialTheme.typography.bodyMedium.copy(color = palette.title),
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = 12.dp, vertical = 10.dp),
+                            singleLine = true,
+                        )
+                    }
+                    if (errorText != null) {
+                        Text(
+                            errorText!!,
+                            color = MaterialTheme.colorScheme.error,
+                            style = MaterialTheme.typography.labelSmall
+                        )
+                    }
+                }
+
+                Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                    Text(
+                        "显示名称",
+                        style = MaterialTheme.typography.labelMedium,
+                        color = palette.body,
+                        fontWeight = FontWeight.Bold
+                    )
+                    Surface(
+                        shape = RoundedCornerShape(10.dp),
+                        color = palette.surface,
+                        border = BorderStroke(1.dp, palette.border),
+                    ) {
+                        BasicTextField(
+                            value = displayName,
+                            onValueChange = { displayName = it },
+                            textStyle = MaterialTheme.typography.bodyMedium.copy(color = palette.title),
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = 12.dp, vertical = 10.dp),
+                            singleLine = true,
+                        )
+                    }
+                }
+            }
+        }
+    )
 }

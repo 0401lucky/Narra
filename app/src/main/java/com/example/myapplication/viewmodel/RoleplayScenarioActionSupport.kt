@@ -28,6 +28,7 @@ internal class RoleplayScenarioActionSupport(
     private val nowProvider: () -> Long,
     private val refreshContextStatus: (String?, Boolean, Int, Int) -> Unit,
     private val clearConversationScopedContext: suspend (String) -> Unit,
+    private val cancelActiveGeneration: () -> Unit = {},
 ) {
     private var enterScenarioJob: Job? = null
 
@@ -176,6 +177,7 @@ internal class RoleplayScenarioActionSupport(
         if (state.isSending) {
             return
         }
+        cancelActiveGeneration()
         scope.launch {
             runCatching {
                 conversationRepository.clearConversation(
@@ -206,6 +208,7 @@ internal class RoleplayScenarioActionSupport(
         if (session == null || scenario == null || state.isSending) {
             return
         }
+        cancelActiveGeneration()
         scope.launch {
             runCatching {
                 val oldConversationId = session.conversationId

@@ -6,8 +6,11 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
@@ -168,6 +171,7 @@ internal fun AssistantDrawerBar(
             Column(
                 modifier = Modifier
                     .padding(horizontal = 16.dp, vertical = 8.dp)
+                    .fillMaxHeight(0.75f)
                     .navigationBarsPadding()
                     .imePadding(),
                 verticalArrangement = Arrangement.spacedBy(4.dp),
@@ -177,58 +181,65 @@ internal fun AssistantDrawerBar(
                     style = MaterialTheme.typography.titleMedium,
                     modifier = Modifier.padding(bottom = 8.dp),
                 )
-                assistants.forEach { assistant ->
-                    val isSelected = assistant.id == currentAssistant?.id
-                    Surface(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clickable {
-                                onSelectAssistant(assistant.id)
-                                showAssistantPicker = false
+                LazyColumn(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .weight(1f),
+                    verticalArrangement = Arrangement.spacedBy(4.dp)
+                ) {
+                    items(assistants, key = { it.id }) { assistant ->
+                        val isSelected = assistant.id == currentAssistant?.id
+                        Surface(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clickable {
+                                    onSelectAssistant(assistant.id)
+                                    showAssistantPicker = false
+                                },
+                            shape = RoundedCornerShape(16.dp),
+                            color = if (isSelected) {
+                                MaterialTheme.colorScheme.primaryContainer
+                            } else {
+                                Color.Transparent
                             },
-                        shape = RoundedCornerShape(16.dp),
-                        color = if (isSelected) {
-                            MaterialTheme.colorScheme.primaryContainer
-                        } else {
-                            Color.Transparent
-                        },
-                    ) {
-                        Row(
-                            modifier = Modifier.padding(horizontal = 14.dp, vertical = 12.dp),
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(12.dp),
                         ) {
-                            AssistantAvatar(
-                                name = assistant.name,
-                                iconName = assistant.iconName,
-                                avatarUri = assistant.avatarUri,
-                                size = 38.dp,
-                                containerColor = if (isSelected) {
-                                    MaterialTheme.colorScheme.primary.copy(alpha = 0.15f)
-                                } else {
-                                    MaterialTheme.colorScheme.secondaryContainer
-                                },
-                                contentColor = if (isSelected) {
-                                    MaterialTheme.colorScheme.primary
-                                } else {
-                                    MaterialTheme.colorScheme.onSecondaryContainer
-                                },
-                                cornerRadius = 12.dp,
-                            )
-                            Column(modifier = Modifier.weight(1f)) {
-                                Text(
-                                    text = assistant.name.ifBlank { stringResource(R.string.drawer_unnamed) },
-                                    style = MaterialTheme.typography.titleSmall,
-                                    fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
+                            Row(
+                                modifier = Modifier.padding(horizontal = 14.dp, vertical = 12.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(12.dp),
+                            ) {
+                                AssistantAvatar(
+                                    name = assistant.name,
+                                    iconName = assistant.iconName,
+                                    avatarUri = assistant.avatarUri,
+                                    size = 38.dp,
+                                    containerColor = if (isSelected) {
+                                        MaterialTheme.colorScheme.primary.copy(alpha = 0.15f)
+                                    } else {
+                                        MaterialTheme.colorScheme.secondaryContainer
+                                    },
+                                    contentColor = if (isSelected) {
+                                        MaterialTheme.colorScheme.primary
+                                    } else {
+                                        MaterialTheme.colorScheme.onSecondaryContainer
+                                    },
+                                    cornerRadius = 12.dp,
                                 )
-                                if (assistant.description.isNotBlank()) {
+                                Column(modifier = Modifier.weight(1f)) {
                                     Text(
-                                        text = assistant.description,
-                                        style = MaterialTheme.typography.bodySmall,
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                        maxLines = 1,
-                                        overflow = TextOverflow.Ellipsis,
+                                        text = assistant.name.ifBlank { stringResource(R.string.drawer_unnamed) },
+                                        style = MaterialTheme.typography.titleSmall,
+                                        fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
                                     )
+                                    if (assistant.description.isNotBlank()) {
+                                        Text(
+                                            text = assistant.description,
+                                            style = MaterialTheme.typography.bodySmall,
+                                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                            maxLines = 1,
+                                            overflow = TextOverflow.Ellipsis,
+                                        )
+                                    }
                                 }
                             }
                         }

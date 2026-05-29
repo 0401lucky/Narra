@@ -1438,6 +1438,88 @@ class AiGatewayTest {
     }
 
     @Test
+    fun sendMessageStream_acceptsGeminiNativeSseChunks() = runBlocking {
+        val sseBody = buildString {
+            append(
+                """
+                data: {"candidates":[{"content":{"parts":[{"text":"先整理上下文","thought":true}],"role":"model"}}]}
+                """.trimIndent(),
+            )
+            append("\n\n")
+            append(
+                """
+                data: {"candidates":[{"content":{"parts":[{"text":"Gemini 流式正文"}],"role":"model"},"finishReason":"STOP"}]}
+                """.trimIndent(),
+            )
+            append("\n\n")
+        }
+        server.enqueue(
+            MockResponse()
+                .setResponseCode(200)
+                .setHeader("Content-Type", "text/event-stream")
+                .setBody(sseBody),
+        )
+        val gateway = createGateway(
+            settings = AppSettings(
+                baseUrl = server.url("/v1/").toString(),
+                apiKey = "stream-key",
+                selectedModel = "gemini-3.5-flash",
+            ),
+        )
+
+        val deltas = gateway.sendMessageStream(
+            listOf(ChatMessage(id = "1", role = MessageRole.USER, content = "你好")),
+            promptMode = PromptMode.ROLEPLAY,
+        ).toList()
+
+        assertEquals(5, deltas.size)
+        assertTrue(deltas[0] is ChatStreamEvent.ReasoningStepStarted)
+        assertEquals(
+            "先整理上下文",
+            (deltas[1] as ChatStreamEvent.ReasoningStepDelta).value,
+        )
+        assertTrue(deltas[2] is ChatStreamEvent.ReasoningStepCompleted)
+        assertEquals(ChatStreamEvent.ContentDelta("Gemini 流式正文"), deltas[3])
+        assertEquals(ChatStreamEvent.Completed, deltas[4])
+    }
+
+    @Test
+    fun sendMessageStream_reportsGeminiNativePromptBlockReason() {
+        val sseBody = buildString {
+            append(
+                """
+                data: {"promptFeedback":{"blockReason":"SAFETY"},"candidates":[]}
+                """.trimIndent(),
+            )
+            append("\n\n")
+        }
+        server.enqueue(
+            MockResponse()
+                .setResponseCode(200)
+                .setHeader("Content-Type", "text/event-stream")
+                .setBody(sseBody),
+        )
+        val gateway = createGateway(
+            settings = AppSettings(
+                baseUrl = server.url("/v1/").toString(),
+                apiKey = "stream-key",
+                selectedModel = "gemini-3.5-flash",
+            ),
+        )
+
+        val error = assertThrows(IllegalStateException::class.java) {
+            runBlocking {
+                gateway.sendMessageStream(
+                    listOf(ChatMessage(id = "1", role = MessageRole.USER, content = "你好")),
+                    promptMode = PromptMode.ROLEPLAY,
+                ).toList()
+            }
+        }
+
+        assertEquals("Gemini 请求被安全策略拦截：SAFETY", error.message)
+    }
+
+    @Test
     fun sendMessageStream_acceptsContentPartsInSseDelta() = runBlocking {
         val sseBody = buildString {
             append("data:{\"choices\":[{\"delta\":{\"content\":[{\"type\":\"text\",\"text\":\"数组内容\"}]},\"index\":0}]}\n\n")

@@ -72,6 +72,7 @@ import com.example.myapplication.ui.component.NarraButton
 import com.example.myapplication.ui.component.NarraIconButton
 import com.example.myapplication.ui.component.NarraOutlinedButton
 import com.example.myapplication.ui.component.NarraTextButton
+import com.example.myapplication.ui.component.NarraAlertDialog
 import com.example.myapplication.viewmodel.SettingsUiState
 
 @Composable
@@ -81,12 +82,14 @@ internal fun ModelTabContent(
     onUpdateProviderSelectedModel: (String, String) -> Unit,
     onUpdateProviderModelAbilities: (String, String, Set<ModelAbility>?) -> Unit,
     onRemoveModel: (String, String) -> Unit,
+    onClearAllModels: (String) -> Unit,
     onConfirmFetchedModels: (String, Set<String>) -> Unit,
     onDismissFetchedModels: () -> Unit,
 ) {
     val palette = rememberSettingsPalette()
     val modelInfos = provider.resolvedModels().sortedForModelListDisplay()
     var editingModelInfo by remember(provider.id) { mutableStateOf<ModelInfo?>(null) }
+    var showClearConfirm by remember { mutableStateOf(false) }
     val showFetchedDialog = uiState.pendingFetchedModels.isNotEmpty() &&
         uiState.pendingFetchProviderId == provider.id
 
@@ -100,10 +103,34 @@ internal fun ModelTabContent(
                 item {
                     SettingsPlaceholderRow(
                         title = "暂无模型",
-                        subtitle = if (provider.hasBaseCredentials()) "点击右下角浮动按钮获取模型，然后选择要添加的。" else "先在配置页补全信息，再来获取。",
+                        subtitle = if (provider.hasBaseCredentials()) "点击下方浮动按钮获取模型，然后选择要添加的。" else "先在配置页补全信息，再来获取。",
                     )
                 }
             } else {
+                item {
+                    Row(
+                        modifier = Modifier.fillMaxWidth().padding(horizontal = 4.dp, vertical = 4.dp),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = "已添加模型 (${modelInfos.size})",
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Bold,
+                            color = palette.title
+                        )
+                        NarraTextButton(
+                            onClick = { showClearConfirm = true }
+                        ) {
+                            Text(
+                                "清空已添加",
+                                color = MaterialTheme.colorScheme.error,
+                                fontWeight = FontWeight.Bold,
+                                style = MaterialTheme.typography.labelLarge
+                            )
+                        }
+                    }
+                }
                 items(modelInfos, key = { it.modelId }) { modelInfo ->
                     PremiumModelCard(
                         modelInfo = modelInfo,
@@ -116,6 +143,21 @@ internal fun ModelTabContent(
                 }
             }
         }
+    }
+
+    if (showClearConfirm) {
+        NarraAlertDialog(
+            title = "清空模型",
+            message = "确定要清空该提供商下的所有已添加模型吗？该操作不会影响云端模型，你可以随时重新获取。",
+            confirmLabel = "确认清空",
+            dismissLabel = "取消",
+            isDestructive = true,
+            onDismiss = { showClearConfirm = false },
+            onConfirm = {
+                onClearAllModels(provider.id)
+                showClearConfirm = false
+            }
+        )
     }
 
     editingModelInfo?.let { modelInfo ->
@@ -140,4 +182,3 @@ internal fun ModelTabContent(
         )
     }
 }
-

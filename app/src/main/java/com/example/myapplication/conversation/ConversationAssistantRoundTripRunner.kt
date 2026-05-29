@@ -49,6 +49,7 @@ data class AssistantRoundTripRequest(
     val hideStatusBlocksInBubble: Boolean = true,
     val streamReply: suspend (requestMessages: List<ChatMessage>, systemPrompt: String) -> Unit,
     val currentPayload: () -> StreamedAssistantPayload,
+    val canPersistResult: () -> Boolean = { true },
     val onCompleted: (
         payload: StreamedAssistantPayload,
         parsedOutput: ParsedAssistantSpecialOutput,
@@ -84,11 +85,21 @@ class ConversationAssistantRoundTripRunner(
                 parsedOutput,
                 request.loadingMessage,
             )
+            if (!request.canPersistResult()) {
+                return AssistantRoundTripResult.Completed(
+                    request.buildFinalMessages(completedAssistant),
+                )
+            }
             conversationRepository.upsertMessages(
                 conversationId = request.conversationId,
                 messages = listOf(completedAssistant),
                 selectedModel = request.selectedModel,
             )
+            if (!request.canPersistResult()) {
+                return AssistantRoundTripResult.Completed(
+                    request.buildFinalMessages(completedAssistant),
+                )
+            }
             val completedMessages = if (parsedOutput.transferUpdates.isEmpty()) {
                 request.buildFinalMessages(completedAssistant)
             } else {
@@ -104,10 +115,12 @@ class ConversationAssistantRoundTripRunner(
                 request.currentPayload(),
                 request.loadingMessage,
             ) ?: throw cancellation
-            persistOutcomeAssistantMessage(
-                request = request,
-                messages = outcome.messages,
-            )
+            if (request.canPersistResult()) {
+                persistOutcomeAssistantMessage(
+                    request = request,
+                    messages = outcome.messages,
+                )
+            }
             return AssistantRoundTripResult.Cancelled(
                 messages = outcome.messages,
                 errorMessage = outcome.errorMessage,
@@ -118,10 +131,12 @@ class ConversationAssistantRoundTripRunner(
                 throwable,
                 request.loadingMessage,
             )
-            persistOutcomeAssistantMessage(
-                request = request,
-                messages = outcome.messages,
-            )
+            if (request.canPersistResult()) {
+                persistOutcomeAssistantMessage(
+                    request = request,
+                    messages = outcome.messages,
+                )
+            }
             return AssistantRoundTripResult.Failed(
                 messages = outcome.messages,
                 errorMessage = outcome.errorMessage ?: (throwable.message ?: "发送失败"),

@@ -200,4 +200,60 @@ object SettingsProviderDraftSupport {
             }
         }
     }
+
+    fun clearModelsFromProvider(
+        providers: List<ProviderSettings>,
+        providerId: String,
+    ): List<ProviderSettings> {
+        return providers.map { provider ->
+            if (provider.id == providerId) {
+                provider.copy(
+                    availableModels = emptyList(),
+                    models = null,
+                    selectedModel = "",
+                )
+            } else {
+                provider
+            }
+        }
+    }
+
+    fun addManualModelToProvider(
+        providers: List<ProviderSettings>,
+        providerId: String,
+        modelId: String,
+        displayName: String,
+    ): ProviderModelSelectionUpdate {
+        val updatedProviders = providers.map { provider ->
+            if (provider.id == providerId) {
+                val cleanedModelId = modelId.trim()
+                if (cleanedModelId.isBlank()) return@map provider
+
+                val existingModels = provider.models.orEmpty()
+                val isDuplicate = existingModels.any { it.modelId.lowercase() == cleanedModelId.lowercase() }
+                if (isDuplicate) return@map provider
+
+                val newModel = inferredModelInfo(
+                    modelId = cleanedModelId,
+                    displayName = displayName.trim().ifBlank { cleanedModelId },
+                )
+                val finalModels = existingModels + newModel
+                val finalIds = provider.availableModels + cleanedModelId
+
+                provider.copy(
+                    availableModels = finalIds.distinct(),
+                    models = finalModels,
+                    selectedModel = if (provider.selectedModel.isBlank()) cleanedModelId else provider.selectedModel
+                )
+            } else {
+                provider
+            }
+        }
+
+        val cleanedModelId = modelId.trim()
+        return ProviderModelSelectionUpdate(
+            providers = updatedProviders,
+            message = "已手动添加模型：$cleanedModelId"
+        )
+    }
 }

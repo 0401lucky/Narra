@@ -78,14 +78,14 @@ class RoleplayVideoCallCoordinator(
             selectedModel = selectedModel,
         )
         val refreshed = conversationRepository.listMessages(conversationId)
-        roleplayRepository.upsertOnlineMeta(
-            meta.withUpdatedCall(
+        roleplayRepository.updateOnlineMeta(conversationId) { currentMeta ->
+            currentMeta.withUpdatedCall(
                 conversationId = conversationId,
                 activeVideoCallSessionId = callSessionId,
                 activeVideoCallStartedAt = startedAt,
                 updatedAt = startedAt,
-            ),
-        )
+            )
+        }
         return StartOutcome(
             callSessionId = callSessionId,
             startedAt = startedAt,
@@ -128,14 +128,14 @@ class RoleplayVideoCallCoordinator(
             )
             refreshed = conversationRepository.listMessages(conversationId)
         }
-        roleplayRepository.upsertOnlineMeta(
-            meta.withUpdatedCall(
+        roleplayRepository.updateOnlineMeta(conversationId) { currentMeta ->
+            currentMeta.withUpdatedCall(
                 conversationId = conversationId,
                 activeVideoCallSessionId = "",
                 activeVideoCallStartedAt = 0L,
                 updatedAt = endedAt,
-            ),
-        )
+            )
+        }
         return HangupOutcome(
             endedAt = endedAt,
             durationText = durationText,

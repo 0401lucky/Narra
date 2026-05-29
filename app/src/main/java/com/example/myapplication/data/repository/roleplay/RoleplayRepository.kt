@@ -31,6 +31,8 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import java.util.UUID
 
 data class RoleplaySessionStartResult(
@@ -98,6 +100,13 @@ interface RoleplayRepository {
 
     suspend fun upsertOnlineMeta(meta: RoleplayOnlineMeta)
 
+    suspend fun updateOnlineMeta(
+        conversationId: String,
+        transform: (RoleplayOnlineMeta?) -> RoleplayOnlineMeta,
+    ) {
+        upsertOnlineMeta(transform(getOnlineMeta(conversationId)))
+    }
+
     suspend fun deleteOnlineMeta(conversationId: String)
 
     suspend fun deleteDiaryEntriesForConversation(conversationId: String)
@@ -111,6 +120,8 @@ class RoomRoleplayRepository(
     private val imageFileCleaner: suspend (String?) -> Boolean = { false },
     private val mailboxCleanup: suspend (String, String) -> Unit = { _, _ -> },
 ) : RoleplayRepository {
+    private val onlineMetaMutex = Mutex()
+
     override fun observeScenarios(): Flow<List<RoleplayScenario>> {
         return roleplayDao.observeScenarios().map { scenarios ->
             scenarios.map(::toScenarioDomain)
@@ -434,6 +445,15 @@ class RoomRoleplayRepository(
                 updatedAt = meta.updatedAt,
             ),
         )
+    }
+
+    override suspend fun updateOnlineMeta(
+        conversationId: String,
+        transform: (RoleplayOnlineMeta?) -> RoleplayOnlineMeta,
+    ) {
+        onlineMetaMutex.withLock {
+            upsertOnlineMeta(transform(getOnlineMeta(conversationId)))
+        }
     }
 
     override suspend fun deleteOnlineMeta(conversationId: String) {

@@ -69,13 +69,14 @@ interface RoleplayDao {
                     OR m.partsJson != '[]'
                     OR m.attachmentsJson != '[]'
                 )
-            ORDER BY m.createdAt DESC
+            ORDER BY m.createdAt DESC, m.id DESC
             LIMIT 1
         )
         ORDER BY
             s.isPinned DESC,
             COALESCE(lm.createdAt, rs.updatedAt, s.updatedAt, s.createdAt) DESC,
-            s.createdAt DESC
+            s.createdAt DESC,
+            s.id DESC
         """,
     )
     fun observeChatSummaryRows(): Flow<List<RoleplayChatSummaryRow>>

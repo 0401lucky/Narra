@@ -16,7 +16,7 @@ interface ConversationDao {
     @Query("SELECT * FROM conversations WHERE assistantId = :assistantId ORDER BY updatedAt DESC")
     fun observeConversationsByAssistant(assistantId: String): Flow<List<ConversationEntity>>
 
-    @Query("SELECT * FROM messages WHERE conversationId = :conversationId ORDER BY createdAt ASC")
+    @Query("SELECT * FROM messages WHERE conversationId = :conversationId ORDER BY createdAt ASC, id ASC")
     fun observeMessages(conversationId: String): Flow<List<MessageEntity>>
 
     @Query("SELECT * FROM conversations ORDER BY updatedAt DESC")
@@ -25,7 +25,7 @@ interface ConversationDao {
     @Query("SELECT * FROM conversations WHERE id = :conversationId LIMIT 1")
     suspend fun getConversation(conversationId: String): ConversationEntity?
 
-    @Query("SELECT * FROM messages WHERE conversationId = :conversationId ORDER BY createdAt ASC")
+    @Query("SELECT * FROM messages WHERE conversationId = :conversationId ORDER BY createdAt ASC, id ASC")
     suspend fun listMessages(conversationId: String): List<MessageEntity>
 
     @Upsert

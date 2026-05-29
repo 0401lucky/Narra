@@ -68,7 +68,9 @@ internal class RoleplaySendActionSupport(
     private val nowProvider: () -> Long,
     private val messageIdProvider: () -> String,
     private val cancelSuggestionGeneration: (Boolean) -> Unit,
-    private val onSendingFinished: () -> Unit,
+    private val beginSendingRun: () -> Long,
+    private val isSendingRunActive: (Long) -> Boolean,
+    private val onSendingFinished: (Long) -> Unit,
 ) {
     fun retryTurn(sourceMessageId: String): Job? {
         val state = uiState()
@@ -80,8 +82,12 @@ internal class RoleplaySendActionSupport(
 
         val selectedModel = RoleplayConversationSupport.resolveSelectedModelId(state.settings)
         val assistant = RoleplayConversationSupport.resolveAssistant(state.settings, scenario.assistantId)
+        val sendingRunId = beginSendingRun()
         return scope.launch {
             try {
+                if (!isSendingRunActive(sendingRunId) || !isConversationActive(session.conversationId)) {
+                    return@launch
+                }
                 val currentMessages = RoleplayRoundTripSupport.currentConversationMessages(
                     messages = currentRawMessages.value,
                     conversationId = session.conversationId,
@@ -91,6 +97,9 @@ internal class RoleplaySendActionSupport(
                     sourceMessageId = sourceMessageId,
                 ) ?: return@launch
 
+                if (!isSendingRunActive(sendingRunId) || !isConversationActive(session.conversationId)) {
+                    return@launch
+                }
                 updateUiState { current ->
                     RoleplayStateSupport.beginSending(current, current.input)
                 }
@@ -110,9 +119,10 @@ internal class RoleplaySendActionSupport(
                     buildFinalMessages = { completedAssistant ->
                         preparedRetry.baseMessages + completedAssistant
                     },
+                    isRoundTripActive = { isSendingRunActive(sendingRunId) },
                 )
             } finally {
-                onSendingFinished()
+                onSendingFinished(sendingRunId)
             }
         }
     }
@@ -530,6 +540,7 @@ internal class RoleplaySendActionSupport(
         userParts: List<ChatMessagePart>,
         nextInput: String,
     ): Job {
+        val sendingRunId = beginSendingRun()
         val giftProvider = state.settings.resolveFunctionProvider(ProviderFunction.GIFT_IMAGE)
         val originalGiftPart = normalizeChatMessageParts(userParts).firstOrNull { it.isGiftPart() }
         val giftImageModelId = state.settings.resolveFunctionModel(ProviderFunction.GIFT_IMAGE)
@@ -561,10 +572,16 @@ internal class RoleplaySendActionSupport(
 
         return scope.launch {
             try {
+                if (!isSendingRunActive(sendingRunId) || !isScenarioActive(scenario.id)) {
+                    return@launch
+                }
                 val startResult = if (state.currentSession == null) {
                     roleplayRepository.startScenario(scenario.id)
                 } else {
                     null
+                }
+                if (!isSendingRunActive(sendingRunId) || !isScenarioActive(scenario.id)) {
+                    return@launch
                 }
                 startResult?.let {
                     scenarioActionSupport.applySessionStartResult(
@@ -582,6 +599,9 @@ internal class RoleplaySendActionSupport(
 
                 val session = startResult?.session ?: state.currentSession
                     ?: error("当前剧情会话不存在")
+                if (!isConversationActive(session.conversationId)) {
+                    return@launch
+                }
                 val selectedModel = RoleplayConversationSupport.resolveSelectedModelId(state.settings)
                 val assistant = RoleplayConversationSupport.resolveAssistant(state.settings, scenario.assistantId)
                 val baseMessages = startResult?.conversationMessages ?: RoleplayRoundTripSupport.currentConversationMessages(
@@ -600,6 +620,7 @@ internal class RoleplaySendActionSupport(
                         replyToMessageId = state.replyToMessageId,
                         replyToPreview = state.replyToPreview,
                         replyToSpeakerName = state.replyToSpeakerName,
+                        sendingRunId = sendingRunId,
                     )
                     return@launch
                 }
@@ -647,6 +668,9 @@ internal class RoleplaySendActionSupport(
                 } else {
                     null
                 }
+                if (!isSendingRunActive(sendingRunId) || !isConversationActive(session.conversationId)) {
+                    return@launch
+                }
                 currentRawMessages.value = preparedRoundTrip.initialMessages
 
                 roundTripExecutor.execute(
@@ -665,9 +689,10 @@ internal class RoleplaySendActionSupport(
                         preparedRoundTrip.baseMessages + preparedRoundTrip.userMessage + completedAssistant
                     },
                     giftImageRequest = giftImageRequest,
+                    isRoundTripActive = { isSendingRunActive(sendingRunId) },
                 )
             } finally {
-                onSendingFinished()
+                onSendingFinished(sendingRunId)
             }
         }
     }
@@ -683,7 +708,11 @@ internal class RoleplaySendActionSupport(
         replyToMessageId: String,
         replyToPreview: String,
         replyToSpeakerName: String,
+        sendingRunId: Long,
     ) {
+        if (!isSendingRunActive(sendingRunId) || !isConversationActive(session.conversationId)) {
+            return
+        }
         if (scenario.interactionMode != RoleplayInteractionMode.ONLINE_PHONE) {
             updateUiState { current ->
                 RoleplayStateSupport.finishSending(
@@ -783,9 +812,13 @@ internal class RoleplaySendActionSupport(
             }
             return
         }
-        effectiveTurns.forEachIndexed { index, turn ->
+        var firstTurnError: String? = null
+        for ((index, turn) in effectiveTurns.withIndex()) {
+            if (!isSendingRunActive(sendingRunId) || !isConversationActive(session.conversationId)) {
+                return
+            }
             val member = members.firstOrNull { it.participant.id == turn.participantId }
-                ?: return@forEachIndexed
+                ?: continue
             val speakerAssistant = member.assistant
             val speakerScenario = scenario.copy(
                 assistantId = turn.assistantId,
@@ -809,7 +842,7 @@ internal class RoleplaySendActionSupport(
                 speakerAvatarUri = member.avatarUri,
             )
             currentRawMessages.value = timeline + loadingMessage
-            roundTripExecutor.execute(
+            val outcome = roundTripExecutor.execute(
                 state = state,
                 scenario = speakerScenario,
                 session = session,
@@ -830,15 +863,22 @@ internal class RoleplaySendActionSupport(
                     recentMessages = timeline,
                 ),
                 finishSendingOnCompletion = false,
+                isRoundTripActive = { isSendingRunActive(sendingRunId) },
             )
+            if (!outcome.errorMessage.isNullOrBlank()) {
+                firstTurnError = outcome.errorMessage
+                break
+            }
             if (index < effectiveTurns.lastIndex) {
                 updateUiState { current ->
                     current.copy(streamingContent = "")
                 }
             }
         }
-        updateUiState { current ->
-            RoleplayStateSupport.finishSending(current, errorMessage = null)
+        if (isSendingRunActive(sendingRunId) && isConversationActive(session.conversationId)) {
+            updateUiState { current ->
+                RoleplayStateSupport.finishSending(current, errorMessage = firstTurnError)
+            }
         }
     }
 
@@ -878,6 +918,14 @@ internal class RoleplaySendActionSupport(
         }
         return contains("@$normalizedName", ignoreCase = true) ||
             contains(normalizedName, ignoreCase = true)
+    }
+
+    private fun isScenarioActive(scenarioId: String): Boolean {
+        return uiState().currentScenario?.id == scenarioId
+    }
+
+    private fun isConversationActive(conversationId: String): Boolean {
+        return uiState().currentSession?.conversationId == conversationId
     }
 }
 

@@ -139,6 +139,8 @@ internal fun NavGraphBuilder.registerSettingsProviderRoutes(
             onConfirmFetchedModels = settingsViewModel::confirmFetchedModels,
             onDismissFetchedModels = settingsViewModel::dismissFetchedModels,
             onRemoveModel = settingsViewModel::removeModelFromProvider,
+            onClearAllModels = settingsViewModel::clearModelsFromProvider,
+            onAddManualModel = settingsViewModel::addManualModelToProvider,
             onNavigateBack = {
                 settingsViewModel.saveSettings {}
                 navController.popBackStack()

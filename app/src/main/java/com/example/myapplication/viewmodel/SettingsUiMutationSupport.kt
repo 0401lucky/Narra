@@ -146,6 +146,41 @@ object SettingsUiMutationSupport {
         )
     }
 
+    fun clearModelsFromProvider(
+        current: SettingsUiState,
+        providerId: String,
+    ): SettingsUiState {
+        return current.copy(
+            providers = SettingsProviderDraftSupport.clearModelsFromProvider(
+                providers = current.providers,
+                providerId = providerId,
+            ),
+            message = "已清空所有模型",
+        )
+    }
+
+    fun addManualModelToProvider(
+        current: SettingsUiState,
+        providerId: String,
+        modelId: String,
+        displayName: String,
+    ): SettingsUiState {
+        val cleanedId = modelId.trim()
+        if (cleanedId.isBlank()) {
+            return current.copy(message = "模型 ID 不能为空")
+        }
+        val update = SettingsProviderDraftSupport.addManualModelToProvider(
+            providers = current.providers,
+            providerId = providerId,
+            modelId = cleanedId,
+            displayName = displayName,
+        )
+        return current.copy(
+            providers = update.providers,
+            message = update.message,
+        )
+    }
+
     fun beginLoadingModels(
         current: SettingsUiState,
         providerId: String,

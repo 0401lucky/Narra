@@ -139,6 +139,7 @@ class RoleplayViewModel(
     private var sendingJob: Job? = null
     private var compensationJob: Job? = null
     private var diaryJob: Job? = null
+    private var activeSendingRunId: Long = 0L
     private val suppressedOnlineCompensationAttemptKeys = mutableSetOf<String>()
     private val assistantRoundTripRunner = ConversationAssistantRoundTripRunner(
         conversationRepository = conversationRepository,
@@ -213,6 +214,7 @@ class RoleplayViewModel(
         nowProvider = nowProvider,
         refreshContextStatus = contextUpdateSupport::refreshContextStatus,
         clearConversationScopedContext = contextUpdateSupport::clearConversationScopedContext,
+        cancelActiveGeneration = ::cancelActiveGenerationSilently,
     )
     private val roundTripExecutor = RoleplayRoundTripExecutor(
         aiGateway = aiGateway,
@@ -227,6 +229,7 @@ class RoleplayViewModel(
         currentUiState = { _uiState.value },
         updateUiState = { reducer -> _uiState.update(reducer) },
         updateRawMessages = { messages -> currentRawMessages.value = messages },
+        canUpdateConversation = ::isCurrentConversation,
         launchGiftImageGeneration = { request, onUpdated ->
             viewModelScope.launch {
                 val updatedMessages = giftImageCoordinator.generate(request) ?: return@launch
@@ -281,7 +284,9 @@ class RoleplayViewModel(
         nowProvider = nowProvider,
         messageIdProvider = messageIdProvider,
         cancelSuggestionGeneration = suggestionActionSupport::cancelSuggestionGeneration,
-        onSendingFinished = { sendingJob = null },
+        beginSendingRun = ::beginSendingRun,
+        isSendingRunActive = ::isSendingRunActive,
+        onSendingFinished = ::finishSendingRun,
     )
 
     init {
@@ -369,11 +374,13 @@ class RoleplayViewModel(
 
     fun enterScenario(scenarioId: String) {
         suggestionActionSupport.cancelSuggestionGeneration(resetState = false)
+        cancelActiveGenerationSilently()
         scenarioActionSupport.enterScenario(scenarioId)
     }
 
     fun leaveScenario() {
         suggestionActionSupport.cancelSuggestionGeneration(resetState = false)
+        cancelActiveGenerationSilently()
         scenarioActionSupport.leaveScenario()
     }
 
@@ -672,6 +679,7 @@ class RoleplayViewModel(
             return
         }
         suggestionActionSupport.cancelSuggestionGeneration(resetState = false)
+        val requestedScenarioId = scenario.id
         viewModelScope.launch {
             try {
                 val session = ensureSessionForVideoCall(state, scenario) ?: return@launch
@@ -680,6 +688,9 @@ class RoleplayViewModel(
                     conversationId = session.conversationId,
                     selectedModel = selectedModel,
                 )
+                if (!isCurrentConversation(session.conversationId)) {
+                    return@launch
+                }
                 outcome.refreshedMessages?.let { currentRawMessages.value = it }
                 _uiState.update { current ->
                     RoleplayStateSupport.applyVideoCallState(
@@ -690,6 +701,9 @@ class RoleplayViewModel(
                     )
                 }
             } catch (throwable: Throwable) {
+                if (_uiState.value.currentScenario?.id != requestedScenarioId) {
+                    return@launch
+                }
                 _uiState.update { current ->
                     RoleplayStateSupport.applyErrorMessage(current, throwable.message ?: "启动视频通话失败")
                 }
@@ -706,6 +720,7 @@ class RoleplayViewModel(
         suggestionActionSupport.cancelSuggestionGeneration(resetState = false)
         val hangingSendingJob = sendingJob
         val hangingCompensationJob = compensationJob
+        invalidateSendingRun()
         sendingJob = null
         compensationJob = null
         _uiState.update { current ->
@@ -722,8 +737,14 @@ class RoleplayViewModel(
                     fallbackSessionId = state.activeVideoCallSessionId,
                     fallbackStartedAt = state.activeVideoCallStartedAt,
                 )
+                if (!isCurrentConversation(session.conversationId)) {
+                    return@launch
+                }
                 outcome.refreshedMessages?.let { currentRawMessages.value = it }
             } catch (throwable: Throwable) {
+                if (!isCurrentConversation(session.conversationId)) {
+                    return@launch
+                }
                 _uiState.update { current ->
                     RoleplayStateSupport.applyErrorMessage(current, throwable.message ?: "挂断视频通话失败")
                 }
@@ -831,6 +852,7 @@ class RoleplayViewModel(
         if (mode != RoleplayInteractionMode.ONLINE_PHONE && state.isVideoCallActive) {
             val switchingSendingJob = sendingJob
             val switchingCompensationJob = compensationJob
+            invalidateSendingRun()
             sendingJob = null
             compensationJob = null
             switchingSendingJob?.cancel()
@@ -1053,6 +1075,7 @@ class RoleplayViewModel(
         if (activeSendingJob == null && activeCompensationJob == null && !_uiState.value.isSending) {
             return
         }
+        invalidateSendingRun()
         sendingJob = null
         compensationJob = null
         _uiState.update { current ->
@@ -1234,6 +1257,7 @@ class RoleplayViewModel(
         if (selectedModel.isBlank()) {
             return
         }
+        val compensationRunId = beginSendingRun()
         val baseMessages = RoleplayRoundTripSupport.currentConversationMessages(
             messages = currentRawMessages.value,
             conversationId = session.conversationId,
@@ -1252,6 +1276,9 @@ class RoleplayViewModel(
         )
         compensationJob = viewModelScope.launch {
             try {
+                if (!isSendingRunActive(compensationRunId) || !isCurrentConversation(session.conversationId)) {
+                    return@launch
+                }
                 updateUiStateForCompensationStart()
                 roundTripExecutor.execute(
                     state = state,
@@ -1266,7 +1293,11 @@ class RoleplayViewModel(
                     buildFinalMessages = { completedAssistant ->
                         baseMessages + completedAssistant
                     },
+                    isRoundTripActive = { isSendingRunActive(compensationRunId) },
                 )
+                if (!isSendingRunActive(compensationRunId) || !isCurrentConversation(session.conversationId)) {
+                    return@launch
+                }
                 val updatedMessages = RoleplayRoundTripSupport.currentConversationMessages(
                     messages = currentRawMessages.value,
                     conversationId = session.conversationId,
@@ -1282,19 +1313,21 @@ class RoleplayViewModel(
                     currentRawMessages.value = baseMessages
                     return@launch
                 }
-                roleplayRepository.upsertOnlineMeta(
+                roleplayRepository.updateOnlineMeta(session.conversationId) { currentMeta ->
                     com.example.myapplication.model.RoleplayOnlineMeta(
                         conversationId = session.conversationId,
                         lastCompensationBucket = bucket,
-                        lastConsumedObservationUpdatedAt = roleplayRepository.getOnlineMeta(session.conversationId)?.lastConsumedObservationUpdatedAt ?: 0L,
+                        lastConsumedObservationUpdatedAt = currentMeta?.lastConsumedObservationUpdatedAt ?: 0L,
                         lastSystemEventToken = "compensation-$bucket",
-                        activeVideoCallSessionId = roleplayRepository.getOnlineMeta(session.conversationId)?.activeVideoCallSessionId.orEmpty(),
-                        activeVideoCallStartedAt = roleplayRepository.getOnlineMeta(session.conversationId)?.activeVideoCallStartedAt ?: 0L,
+                        activeVideoCallSessionId = currentMeta?.activeVideoCallSessionId.orEmpty(),
+                        activeVideoCallStartedAt = currentMeta?.activeVideoCallStartedAt ?: 0L,
                         updatedAt = nowProvider(),
-                    ),
-                )
+                    )
+                }
             } finally {
-                compensationJob = null
+                if (isSendingRunActive(compensationRunId)) {
+                    compensationJob = null
+                }
             }
         }
     }
@@ -1461,6 +1494,40 @@ class RoleplayViewModel(
                 ?: 0,
             recentWindow = resolveSummaryRecentWindow(assistant),
         )
+    }
+
+    private fun beginSendingRun(): Long {
+        activeSendingRunId += 1
+        return activeSendingRunId
+    }
+
+    private fun invalidateSendingRun(): Long {
+        activeSendingRunId += 1
+        return activeSendingRunId
+    }
+
+    private fun isSendingRunActive(runId: Long): Boolean {
+        return runId != 0L && activeSendingRunId == runId
+    }
+
+    private fun finishSendingRun(runId: Long) {
+        if (isSendingRunActive(runId)) {
+            sendingJob = null
+        }
+    }
+
+    private fun cancelActiveGenerationSilently() {
+        val activeSendingJob = sendingJob
+        val activeCompensationJob = compensationJob
+        invalidateSendingRun()
+        sendingJob = null
+        compensationJob = null
+        activeSendingJob?.cancel()
+        activeCompensationJob?.cancel()
+    }
+
+    private fun isCurrentConversation(conversationId: String): Boolean {
+        return conversationId.isNotBlank() && _uiState.value.currentSession?.conversationId == conversationId
     }
 
     private suspend fun ensureSessionForVideoCall(

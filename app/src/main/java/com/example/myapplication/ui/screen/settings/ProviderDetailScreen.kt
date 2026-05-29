@@ -62,6 +62,8 @@ fun ProviderDetailScreen(
     onConfirmFetchedModels: (String, Set<String>) -> Unit,
     onDismissFetchedModels: () -> Unit,
     onRemoveModel: (String, String) -> Unit,
+    onClearAllModels: (String) -> Unit,
+    onAddManualModel: (String, String, String) -> Unit,
 ) {
     BackHandler {
         onNavigateBack()
@@ -92,6 +94,7 @@ fun ProviderDetailScreen(
     }
 
     var selectedTab by rememberSaveable(providerId) { mutableIntStateOf(0) }
+    var showManualAddDialog by remember { mutableStateOf(false) }
 
     Scaffold(
         topBar = {
@@ -122,10 +125,37 @@ fun ProviderDetailScreen(
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.spacedBy(16.dp)
                     ) {
-                        Box(modifier = Modifier.padding(start = 12.dp, end = 4.dp)) {
-                            Icon(Icons.Outlined.Inventory2, contentDescription = "Models", Modifier.size(24.dp), tint = palette.title)
+                        // 左侧的类似于盒子的 Box：点击触发从上游获取模型
+                        Box(
+                            modifier = Modifier
+                                .clip(RoundedCornerShape(12.dp))
+                                .clickable(
+                                    enabled = canLoadModels && !isFetching,
+                                    onClick = { onLoadModels(provider.id) }
+                                )
+                                .padding(horizontal = 12.dp, vertical = 8.dp),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            if (isFetching) {
+                                CircularProgressIndicator(
+                                    modifier = Modifier.size(24.dp),
+                                    color = palette.accentStrong,
+                                    strokeWidth = 2.dp
+                                )
+                            } else {
+                                Icon(
+                                    imageVector = Icons.Outlined.Inventory2,
+                                    contentDescription = "获取模型",
+                                    modifier = Modifier.size(24.dp),
+                                    tint = if (canLoadModels) palette.title else palette.body.copy(alpha = 0.4f)
+                                )
+                            }
+
+                            // Badge with count
                             Surface(
-                                modifier = Modifier.align(Alignment.TopEnd).offset(x = 8.dp, y = (-6).dp),
+                                modifier = Modifier
+                                    .align(Alignment.TopEnd)
+                                    .offset(x = 8.dp, y = (-6).dp),
                                 shape = CircleShape,
                                 color = palette.accentStrong,
                                 contentColor = palette.accentOnStrong
@@ -140,8 +170,9 @@ fun ProviderDetailScreen(
                             }
                         }
                         
+                        // 右侧的添加新模型按钮：点击进行手动添加
                         NarraButton(
-                            onClick = { if (canLoadModels && !isFetching) onLoadModels(provider.id) },
+                            onClick = { showManualAddDialog = true },
                             shape = RoundedCornerShape(24.dp),
                             colors = ButtonDefaults.buttonColors(containerColor = palette.accentStrong, contentColor = palette.accentOnStrong),
                             contentPadding = PaddingValues(horizontal = 24.dp, vertical = 12.dp),
@@ -150,7 +181,7 @@ fun ProviderDetailScreen(
                             Row(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalAlignment = Alignment.CenterVertically) {
                                 Icon(Icons.Default.Add, contentDescription = null, modifier = Modifier.size(20.dp))
                                 Text(
-                                    text = if (isFetching) "获取中..." else "添加新模型", 
+                                    text = "添加新模型",
                                     style = MaterialTheme.typography.titleSmall, 
                                     fontWeight = FontWeight.Bold 
                                 )
@@ -160,7 +191,7 @@ fun ProviderDetailScreen(
                 }
             }
         },
-        floatingActionButtonPosition = FabPosition.End,
+        floatingActionButtonPosition = FabPosition.Center,
         containerColor = palette.background,
     ) { innerPadding ->
         Box(
@@ -191,6 +222,7 @@ fun ProviderDetailScreen(
                         onUpdateProviderSelectedModel = onUpdateProviderSelectedModel,
                         onUpdateProviderModelAbilities = onUpdateProviderModelAbilities,
                         onRemoveModel = onRemoveModel,
+                        onClearAllModels = onClearAllModels,
                         onConfirmFetchedModels = onConfirmFetchedModels,
                         onDismissFetchedModels = onDismissFetchedModels,
                     )
@@ -203,5 +235,13 @@ fun ProviderDetailScreen(
             )
         }
     }
-}
 
+    if (showManualAddDialog) {
+        ManualAddModelDialog(
+            onDismissRequest = { showManualAddDialog = false },
+            onConfirm = { modelId, displayName ->
+                onAddManualModel(provider.id, modelId, displayName)
+            }
+        )
+    }
+}

@@ -54,6 +54,8 @@ import com.example.myapplication.model.normalizeChatReasoningSteps
 import com.example.myapplication.model.reasoningStepsToContent
 import com.example.myapplication.system.json.AppJson
 import com.google.gson.Gson
+import com.google.gson.JsonObject
+import com.google.gson.JsonParser
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
@@ -207,6 +209,11 @@ class DefaultAiGateway(
     private data class ModelBuiltInSearchRequestOptions(
         val tools: List<ChatToolDto> = emptyList(),
         val googleSearchRetrieval: Map<String, Any>? = null,
+    )
+
+    private data class GeminiNativeOutput(
+        val content: String = "",
+        val reasoningContent: String = "",
     )
 
     private fun modelBuiltInSearchRequestOptions(
@@ -1394,27 +1401,22 @@ class DefaultAiGateway(
     private fun parseGeminiNativeJsonResponse(
         rawBody: String,
     ): AssistantReply? {
-        val root = runCatching { com.google.gson.JsonParser.parseString(rawBody).asJsonObject }
+        val root = runCatching { JsonParser.parseString(rawBody).asJsonObject }
             .getOrNull()
             ?: return null
-        val candidates = root.getAsJsonArray("candidates") ?: return null
-        if (candidates.size() == 0) return null
-        val firstCandidate = candidates[0].takeIf { it.isJsonObject }?.asJsonObject ?: return null
-        val parts = firstCandidate
-            .getAsJsonObject("content")
-            ?.getAsJsonArray("parts")
-            ?: return null
-        val content = buildString {
-            for (part in parts) {
-                if (!part.isJsonObject) continue
-                val text = part.asJsonObject.get("text")?.asString.orEmpty()
-                if (text.isBlank()) continue
-                if (isNotEmpty()) append("\n\n")
-                append(text)
-            }
+        val candidates = root.getAsJsonArrayOrNull("candidates") ?: return null
+        if (candidates.size() == 0) {
+            throw geminiNativeEmptyContentException(root)
+        }
+        val output = extractGeminiNativeOutput(root)
+        if (output.content.isBlank() && output.reasoningContent.isBlank()) {
+            throw geminiNativeEmptyContentException(root)
         }
         return ensureAssistantReplyHasContent(
-            AssistantReply(content = content),
+            AssistantReply(
+                content = output.content,
+                reasoningContent = output.reasoningContent,
+            ),
         )
     }
 
@@ -1437,6 +1439,10 @@ class DefaultAiGateway(
             return false
         }
 
+        if (emitGeminiNativeStreamData(data, thinkTagParser)) {
+            return false
+        }
+
         val chunk = runCatching {
             gson.fromJson(data, ChatCompletionChunk::class.java)
         }.getOrNull() ?: return false
@@ -1448,22 +1454,141 @@ class DefaultAiGateway(
         }
         val contentDelta = GatewayAssistantOutputParser.extractContent(delta)
         if (contentDelta.isNotBlank()) {
-            if (thinkTagParser.shouldConsume(contentDelta)) {
-                val parsedContent = thinkTagParser.consume(contentDelta)
-                if (parsedContent.reasoning.isNotBlank()) {
-                    emit(ChatStreamEvent.ReasoningDelta(parsedContent.reasoning))
-                }
-                if (parsedContent.content.isNotBlank()) {
-                    emit(ChatStreamEvent.ContentDelta(parsedContent.content))
-                }
-            } else {
-                emit(ChatStreamEvent.ContentDelta(contentDelta))
-            }
+            emitContentDelta(contentDelta, thinkTagParser)
         }
         GatewayAssistantOutputParser.extractAssistantImageParts(delta?.images).forEach { imagePart ->
             emit(ChatStreamEvent.ImageDelta(imagePart))
         }
         return false
+    }
+
+    private suspend fun FlowCollector<ChatStreamEvent>.emitContentDelta(
+        contentDelta: String,
+        thinkTagParser: ThinkTagStreamParser,
+    ) {
+        if (thinkTagParser.shouldConsume(contentDelta)) {
+            val parsedContent = thinkTagParser.consume(contentDelta)
+            if (parsedContent.reasoning.isNotBlank()) {
+                emit(ChatStreamEvent.ReasoningDelta(parsedContent.reasoning))
+            }
+            if (parsedContent.content.isNotBlank()) {
+                emit(ChatStreamEvent.ContentDelta(parsedContent.content))
+            }
+        } else {
+            emit(ChatStreamEvent.ContentDelta(contentDelta))
+        }
+    }
+
+    private suspend fun FlowCollector<ChatStreamEvent>.emitGeminiNativeStreamData(
+        data: String,
+        thinkTagParser: ThinkTagStreamParser,
+    ): Boolean {
+        val root = runCatching { JsonParser.parseString(data).asJsonObject }
+            .getOrNull()
+            ?: return false
+        if (!root.has("candidates")) {
+            return false
+        }
+        val output = extractGeminiNativeOutput(root)
+        if (output.reasoningContent.isNotBlank()) {
+            emit(ChatStreamEvent.ReasoningDelta(output.reasoningContent))
+        }
+        if (output.content.isNotBlank()) {
+            emitContentDelta(output.content, thinkTagParser)
+        }
+        if (output.content.isBlank() && output.reasoningContent.isBlank()) {
+            val failure = geminiNativeEmptyContentMessage(root)
+            if (failure != null) {
+                throw IllegalStateException(failure)
+            }
+        }
+        return true
+    }
+
+    private fun extractGeminiNativeOutput(
+        root: JsonObject,
+    ): GeminiNativeOutput {
+        val candidates = root.getAsJsonArrayOrNull("candidates") ?: return GeminiNativeOutput()
+        var fallbackReasoning = ""
+        for (candidateElement in candidates) {
+            val candidate = candidateElement.takeIf { it.isJsonObject }?.asJsonObject ?: continue
+            val parts = candidate
+                .get("content")
+                ?.takeIf { it.isJsonObject }
+                ?.asJsonObject
+                ?.getAsJsonArrayOrNull("parts")
+                ?: continue
+            val output = extractGeminiNativeParts(parts)
+            if (output.content.isNotBlank()) {
+                return output
+            }
+            if (fallbackReasoning.isBlank() && output.reasoningContent.isNotBlank()) {
+                fallbackReasoning = output.reasoningContent
+            }
+        }
+        return GeminiNativeOutput(reasoningContent = fallbackReasoning)
+    }
+
+    private fun extractGeminiNativeParts(
+        parts: Iterable<com.google.gson.JsonElement>,
+    ): GeminiNativeOutput {
+        val content = mutableListOf<String>()
+        val reasoning = mutableListOf<String>()
+        for (partElement in parts) {
+            val part = partElement.takeIf { it.isJsonObject }?.asJsonObject ?: continue
+            val text = part.get("text")
+                ?.takeIf { !it.isJsonNull }
+                ?.asString
+                .orEmpty()
+            if (text.isBlank()) {
+                continue
+            }
+            if (part.booleanValue("thought")) {
+                reasoning += text
+            } else {
+                content += text
+            }
+        }
+        return GeminiNativeOutput(
+            content = content.joinToString(separator = "\n\n"),
+            reasoningContent = reasoning.joinToString(separator = "\n\n"),
+        )
+    }
+
+    private fun geminiNativeEmptyContentException(
+        root: JsonObject,
+    ): IllegalStateException {
+        return IllegalStateException(
+            geminiNativeEmptyContentMessage(root) ?: "模型未返回有效内容",
+        )
+    }
+
+    private fun geminiNativeEmptyContentMessage(
+        root: JsonObject,
+    ): String? {
+        val blockReason = root
+            .get("promptFeedback")
+            ?.takeIf { it.isJsonObject }
+            ?.asJsonObject
+            ?.stringValue("blockReason")
+            .orEmpty()
+        if (blockReason.isNotBlank()) {
+            return "Gemini 请求被安全策略拦截：$blockReason"
+        }
+        val finishReason = root.getAsJsonArrayOrNull("candidates")
+            ?.asSequence()
+            ?.mapNotNull { candidate ->
+                candidate.takeIf { it.isJsonObject }
+                    ?.asJsonObject
+                    ?.stringValue("finishReason")
+                    ?.takeIf { it.isNotBlank() }
+            }
+            ?.firstOrNull { it != "STOP" }
+            .orEmpty()
+        if (finishReason.isNotBlank()) {
+            return "Gemini 未返回可见正文，结束原因：$finishReason"
+        }
+        return null
     }
 
     private fun okhttp3.Response.isEventStreamResponse(): Boolean {
