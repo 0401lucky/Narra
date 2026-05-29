@@ -318,7 +318,7 @@ internal fun JsonObject?.stringValue(key: String): String {
         return ""
     }
     return this.get(key)
-        ?.takeIf { !it.isJsonNull }
+        ?.takeIf { it.isJsonPrimitive }
         ?.asString
         ?.trim()
         .orEmpty()
