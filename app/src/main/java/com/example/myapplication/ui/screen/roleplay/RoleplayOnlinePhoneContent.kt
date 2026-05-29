@@ -525,8 +525,8 @@ internal fun RoleplayOnlinePhoneContent(
             ) {
                 itemsIndexed(
                     items = visibleMessages,
-                    key = { _, item ->
-                        buildOnlinePhoneMessageListKey(item)
+                    key = { index, item ->
+                        buildOnlinePhoneMessageListKey(item, index)
                     },
                 ) { index, message ->
                     Column(
@@ -674,8 +674,9 @@ internal fun RoleplayOnlinePhoneContent(
 
 }
 
-private fun buildOnlinePhoneMessageListKey(
+internal fun buildOnlinePhoneMessageListKey(
     message: com.example.myapplication.model.RoleplayMessageUiModel,
+    index: Int,
 ): String {
     val partId = message.actionPart?.actionId
         ?: message.specialPart?.actionId
@@ -687,6 +688,7 @@ private fun buildOnlinePhoneMessageListKey(
         partId,
         message.createdAt.toString(),
         message.content.hashCode().toString(),
+        index.toString(),
     ).joinToString("|")
 }
 
