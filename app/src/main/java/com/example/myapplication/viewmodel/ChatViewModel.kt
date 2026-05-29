@@ -599,24 +599,26 @@ class ChatViewModel(
         val conversationId = state.currentConversationId.takeIf { it.isNotBlank() } ?: return
         val assistant = state.currentAssistant ?: state.settings.activeAssistant()
         viewModelScope.launch {
-            val result = runCatching {
-                updateConversationSummary(
-                    conversationId = conversationId,
-                    messages = state.messages,
-                    settings = state.settings,
-                    assistant = assistant,
-                    forceRefresh = true,
-                )
-            }.getOrDefault(SummaryUpdateResult())
-            if (result.updated && _uiState.value.currentConversationId == conversationId) {
-                rebuildContextGovernanceSnapshot(
-                    conversationId = conversationId,
-                    messages = state.messages,
-                    settings = state.settings,
-                    assistant = assistant,
-                )
-                _uiState.update { current ->
-                    ChatStateSupport.applyNoticeMessage(current, "上下文摘要已刷新")
+            backgroundApiMutex.withLock {
+                val result = runCatching {
+                    updateConversationSummary(
+                        conversationId = conversationId,
+                        messages = state.messages,
+                        settings = state.settings,
+                        assistant = assistant,
+                        forceRefresh = true,
+                    )
+                }.getOrDefault(SummaryUpdateResult())
+                if (result.updated && _uiState.value.currentConversationId == conversationId) {
+                    rebuildContextGovernanceSnapshot(
+                        conversationId = conversationId,
+                        messages = state.messages,
+                        settings = state.settings,
+                        assistant = assistant,
+                    )
+                    _uiState.update { current ->
+                        ChatStateSupport.applyNoticeMessage(current, "上下文摘要已刷新")
+                    }
                 }
             }
         }
