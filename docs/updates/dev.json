@@ -1,17 +1,20 @@
 {
   "app_id": "com.narra.app.dev",
   "channel": "dev",
-  "latest_version_name": "1.9.3-dev",
-  "latest_version_code": 10903,
+  "latest_version_name": "1.9.5-dev",
+  "latest_version_code": 10905,
   "minimum_supported_version_code": 0,
-  "apk_url": "https://download.lsa1230.dpdns.org/dev/Narra-v1.9.3-dev-10903-dev.apk?v=10903-20260529134057",
-  "apk_sha256": "65e779b4a8def699856930c44c416e48a748e2776bedde0c84c6301317d5f2c6",
-  "published_at": "2026-05-29T13:40:57+08:00",
+  "apk_url": "https://download.lsa1230.dpdns.org/dev/Narra-v1.9.5-dev-10905-dev.apk?v=10905-20260530000332",
+  "apk_sha256": "a89ef3364734c1fd132bb6d26606fc8ce7ae157fe582f2fde885a569aaa92148",
+  "published_at": "2026-05-30T00:03:32+08:00",
   "release_notes": [
-    "修复 Gemini 原生 JSON / SSE 响应可能被误判为模型未返回有效内容的问题",
-    "修复沉浸式取消、重发、旧任务回调和群聊失败时的状态污染问题",
-    "修复沉浸式视频通话、补偿状态等 onlineMeta 写入互相覆盖的问题",
-    "优化模型提供商详情页，支持手动添加模型和清空已添加模型",
-    "优化助手抽屉列表，助手较多时可滚动选择"
+    "流式回复改为独立状态刷新，长对话时其他气泡不再随每个字重组，滚动与输入更跟手",
+    "优化流式跟随与生成结束时的滚动收尾，减少大段内容到达时的跳动",
+    "聊天页新增空会话欢迎卡片，发送按钮配色过渡与富文本尺寸变化更柔和",
+    "修复富文本 8 位十六进制颜色（#RRGGBBAA）alpha 与 RGB 错位的显示问题",
+    "修复沉浸式扮演取消生成、重发及旧任务回调引发的状态污染",
+    "修复 AI 回复时间戳可能与用户消息同刻导致的消息乱序",
+    "提升记忆自动提取、上下文摘要刷新在并发场景下的稳定性",
+    "增强流式协议兼容性：容忍非字符串字段、无空格 data: 前缀，避免拆分 Emoji"
   ]
 }
