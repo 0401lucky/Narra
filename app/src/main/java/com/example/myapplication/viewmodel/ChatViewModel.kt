@@ -1457,6 +1457,7 @@ class ChatViewModel(
             userInputText = effectivePromptAssemblyInput.userInputText,
             recentMessages = effectivePromptAssemblyInput.recentMessages,
             promptMode = PromptMode.CHAT,
+            markUsage = false,
         )
         val selectedModel = ChatConversationSupport.resolveSelectedModelId(settings)
         val toolingOptions = GatewayToolingOptions.chat(

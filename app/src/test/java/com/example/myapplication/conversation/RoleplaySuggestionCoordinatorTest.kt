@@ -84,6 +84,7 @@ class RoleplaySuggestionCoordinatorTest {
                     recentMessages: List<ChatMessage>,
                     promptMode: com.example.myapplication.model.PromptMode,
                     includePhoneSnapshot: Boolean,
+                    markUsage: Boolean,
                 ): PromptContextResult {
                     return PromptContextResult(systemPrompt = "【对话摘要】正在互相试探")
                 }

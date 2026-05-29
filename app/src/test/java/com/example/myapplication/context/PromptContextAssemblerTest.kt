@@ -857,6 +857,70 @@ class PromptContextAssemblerTest {
     }
 
     @Test
+    fun assemble_defaultMarksSelectedMemoriesUsed() = runBlocking {
+        val memoryRepository = RecordingMemoryRepository(
+            listOf(
+                MemoryEntry(
+                    id = "memory-used",
+                    scopeType = MemoryScopeType.ASSISTANT,
+                    scopeId = "assistant-mark",
+                    content = "用户喜欢深夜聊天。",
+                    importance = 70,
+                ),
+            ),
+        )
+        val assembler = DefaultPromptContextAssembler(memoryRepository = memoryRepository)
+
+        assembler.assemble(
+            settings = AppSettings(),
+            assistant = Assistant(
+                id = "assistant-mark",
+                name = "记忆助手",
+                systemPrompt = "保持上下文一致。",
+                memoryEnabled = true,
+            ),
+            conversation = Conversation(id = "c-mark", createdAt = 1L, updatedAt = 1L),
+            userInputText = "继续聊",
+            recentMessages = emptyList(),
+        )
+
+        assertTrue("默认（发送路径）应记录记忆使用", memoryRepository.markUsedInvoked)
+        assertEquals(listOf("memory-used"), memoryRepository.lastMarkedEntryIds)
+    }
+
+    @Test
+    fun assemble_withMarkUsageFalseDoesNotMarkMemoriesUsed() = runBlocking {
+        val memoryRepository = RecordingMemoryRepository(
+            listOf(
+                MemoryEntry(
+                    id = "memory-not-used",
+                    scopeType = MemoryScopeType.ASSISTANT,
+                    scopeId = "assistant-mark",
+                    content = "用户喜欢深夜聊天。",
+                    importance = 70,
+                ),
+            ),
+        )
+        val assembler = DefaultPromptContextAssembler(memoryRepository = memoryRepository)
+
+        assembler.assemble(
+            settings = AppSettings(),
+            assistant = Assistant(
+                id = "assistant-mark",
+                name = "记忆助手",
+                systemPrompt = "保持上下文一致。",
+                memoryEnabled = true,
+            ),
+            conversation = Conversation(id = "c-mark", createdAt = 1L, updatedAt = 1L),
+            userInputText = "继续聊",
+            recentMessages = emptyList(),
+            markUsage = false,
+        )
+
+        assertFalse("重建快照/展示路径不应写记忆使用副作用", memoryRepository.markUsedInvoked)
+    }
+
+    @Test
     fun assemble_memoryInjectionPosition_beforePromptMovesMemoryEarly() = runBlocking {
         val assembler = DefaultPromptContextAssembler(
             memoryRepository = singleMemoryRepository(
@@ -985,6 +1049,36 @@ class PromptContextAssemblerTest {
             override suspend fun pruneToCapacity(capacity: Int) = Unit
 
             override suspend fun markEntriesUsed(entryIds: List<String>, timestamp: Long) = Unit
+        }
+    }
+
+    private class RecordingMemoryRepository(
+        private val entries: List<MemoryEntry>,
+    ) : com.example.myapplication.data.repository.context.MemoryRepository {
+        var markUsedInvoked: Boolean = false
+            private set
+        var lastMarkedEntryIds: List<String> = emptyList()
+            private set
+
+        override fun observeEntries() = kotlinx.coroutines.flow.flowOf(emptyList<MemoryEntry>())
+
+        override suspend fun listEntries(): List<MemoryEntry> = entries
+
+        override suspend fun findEntryBySourceMessage(
+            scopeType: MemoryScopeType,
+            scopeId: String,
+            sourceMessageId: String,
+        ): MemoryEntry? = null
+
+        override suspend fun upsertEntry(entry: MemoryEntry) = Unit
+
+        override suspend fun deleteEntry(entryId: String) = Unit
+
+        override suspend fun pruneToCapacity(capacity: Int) = Unit
+
+        override suspend fun markEntriesUsed(entryIds: List<String>, timestamp: Long) {
+            markUsedInvoked = true
+            lastMarkedEntryIds = entryIds
         }
     }
 

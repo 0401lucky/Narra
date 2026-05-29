@@ -28,6 +28,7 @@ class PhoneContextBuilderTest {
                     recentMessages: List<ChatMessage>,
                     promptMode: PromptMode,
                     includePhoneSnapshot: Boolean,
+                    markUsage: Boolean,
                 ): PromptContextResult {
                     return PromptContextResult(systemPrompt = "【助手简介】冷静、克制。")
                 }
@@ -62,6 +63,7 @@ class PhoneContextBuilderTest {
                     recentMessages: List<ChatMessage>,
                     promptMode: PromptMode,
                     includePhoneSnapshot: Boolean,
+                    markUsage: Boolean,
                 ): PromptContextResult {
                     return PromptContextResult(systemPrompt = "【角色长期记忆】他对亲密关系很克制。")
                 }
@@ -107,6 +109,7 @@ class PhoneContextBuilderTest {
                     recentMessages: List<ChatMessage>,
                     promptMode: PromptMode,
                     includePhoneSnapshot: Boolean,
+                    markUsage: Boolean,
                 ): PromptContextResult {
                     return PromptContextResult(systemPrompt = "【角色长期记忆】他对细节很敏锐。")
                 }
@@ -147,6 +150,7 @@ class PhoneContextBuilderTest {
                     recentMessages: List<ChatMessage>,
                     promptMode: PromptMode,
                     includePhoneSnapshot: Boolean,
+                    markUsage: Boolean,
                 ): PromptContextResult {
                     return PromptContextResult(systemPrompt = "【角色长期记忆】他很在意用户最近的动向。")
                 }

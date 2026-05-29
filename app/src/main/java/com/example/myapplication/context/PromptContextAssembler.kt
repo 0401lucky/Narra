@@ -56,6 +56,7 @@ interface PromptContextAssembler {
         recentMessages: List<ChatMessage>,
         promptMode: PromptMode = PromptMode.CHAT,
         includePhoneSnapshot: Boolean = true,
+        markUsage: Boolean = true,
     ): PromptContextResult
 }
 
@@ -78,6 +79,7 @@ class DefaultPromptContextAssembler(
         recentMessages: List<ChatMessage>,
         promptMode: PromptMode,
         includePhoneSnapshot: Boolean,
+        markUsage: Boolean,
     ): PromptContextResult {
         val resolvedUserName = settings.resolvedUserDisplayName()
         val resolvedCharacterName = assistant?.name?.trim().orEmpty().ifBlank { "角色" }
@@ -128,10 +130,12 @@ class DefaultPromptContextAssembler(
         } else {
             emptyList()
         }
-        memoryRepository.markEntriesUsed(
-            entryIds = selectedMemories.map { it.id },
-            timestamp = System.currentTimeMillis(),
-        )
+        if (markUsage) {
+            memoryRepository.markEntriesUsed(
+                entryIds = selectedMemories.map { it.id },
+                timestamp = System.currentTimeMillis(),
+            )
+        }
         val memorySection = formatMemorySection(
             entries = selectedMemories,
             promptMode = promptMode,

@@ -4313,6 +4313,7 @@ class RoleplayViewModelTest {
                 recentMessages: List<ChatMessage>,
                 promptMode: com.example.myapplication.model.PromptMode,
                 includePhoneSnapshot: Boolean,
+                markUsage: Boolean,
             ): PromptContextResult {
                 return PromptContextResult(
                     systemPrompt = systemPrompt,

@@ -979,6 +979,7 @@ class RoleplayViewModel(
                     userInputText = RoleplayConversationSupport.resolveLatestUserInputText(requestMessages),
                     recentMessages = requestMessages,
                     promptMode = PromptMode.ROLEPLAY,
+                    markUsage = false,
                 )
                 val diaryDrafts = aiPromptExtrasService.generateRoleplayDiaries(
                     characterContext = this@RoleplayViewModel.buildDiaryCharacterContext(
@@ -1414,6 +1415,7 @@ class RoleplayViewModel(
             userInputText = RoleplayConversationSupport.resolveLatestUserInputText(effectiveRequestMessages),
             recentMessages = effectiveRequestMessages,
             promptMode = PromptMode.ROLEPLAY,
+            markUsage = false,
         )
         val directorNote = RoleplayConversationSupport.buildDynamicDirectorNote(
             messages = effectiveRequestMessages,

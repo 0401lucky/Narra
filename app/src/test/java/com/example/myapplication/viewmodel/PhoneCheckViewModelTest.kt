@@ -118,6 +118,7 @@ class PhoneCheckViewModelTest {
                         recentMessages: List<ChatMessage>,
                         promptMode: PromptMode,
                         includePhoneSnapshot: Boolean,
+                        markUsage: Boolean,
                     ): PromptContextResult {
                         return PromptContextResult(systemPrompt = "")
                     }
@@ -766,6 +767,7 @@ private fun createPhoneCheckViewModel(
                     recentMessages: List<ChatMessage>,
                     promptMode: PromptMode,
                     includePhoneSnapshot: Boolean,
+                    markUsage: Boolean,
                 ): PromptContextResult {
                     return PromptContextResult(systemPrompt = "")
                 }
