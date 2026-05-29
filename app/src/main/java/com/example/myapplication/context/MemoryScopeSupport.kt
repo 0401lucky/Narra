@@ -14,8 +14,10 @@ object MemoryScopeSupport {
         val resolvedConversationId = conversation?.id.orEmpty()
         val resolvedAssistantId = assistant?.id.orEmpty()
         return entries.filter { entry ->
-            // 角色隔离：如果记忆绑定了特定角色，只对匹配的 assistant 可见
-            // characterId 为空代表全局记忆（渐进迁移兼容），任何角色可见
+            // 角色隔离（有意为之，勿改成真全局共享）：记忆按 characterId 隔离，
+            // 包括 GLOBAL 作用域——每个角色只能看到自己的全局记忆（写入时已带上
+            // characterId = assistant.id）。characterId 为空仅为兼容历史迁移数据，
+            // 这类旧数据没有归属角色，故对任何角色可见。
             if (entry.characterId.isNotBlank() && entry.characterId != resolvedAssistantId) {
                 return@filter false
             }
