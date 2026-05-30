@@ -1,20 +1,14 @@
 {
   "app_id": "com.narra.app.dev",
   "channel": "dev",
-  "latest_version_name": "1.9.5-dev",
-  "latest_version_code": 10905,
+  "latest_version_name": "1.9.6-dev",
+  "latest_version_code": 10906,
   "minimum_supported_version_code": 0,
-  "apk_url": "https://download.lsa1230.dpdns.org/dev/Narra-v1.9.5-dev-10905-dev.apk?v=10905-20260530000332",
-  "apk_sha256": "a89ef3364734c1fd132bb6d26606fc8ce7ae157fe582f2fde885a569aaa92148",
-  "published_at": "2026-05-30T00:03:32+08:00",
+  "apk_url": "https://download.lsa1230.dpdns.org/dev/Narra-v1.9.6-dev-10906-dev.apk?v=10906-20260530123216",
+  "apk_sha256": "8d13ef0c7c150e9b41dac9a11f3187912fa475e7f177455dc61b837b5f3c60b2",
+  "published_at": "2026-05-30T12:32:16+08:00",
   "release_notes": [
-    "流式回复改为独立状态刷新，长对话时其他气泡不再随每个字重组，滚动与输入更跟手",
-    "优化流式跟随与生成结束时的滚动收尾，减少大段内容到达时的跳动",
-    "聊天页新增空会话欢迎卡片，发送按钮配色过渡与富文本尺寸变化更柔和",
-    "修复富文本 8 位十六进制颜色（#RRGGBBAA）alpha 与 RGB 错位的显示问题",
-    "修复沉浸式扮演取消生成、重发及旧任务回调引发的状态污染",
-    "修复 AI 回复时间戳可能与用户消息同刻导致的消息乱序",
-    "提升记忆自动提取、上下文摘要刷新在并发场景下的稳定性",
-    "增强流式协议兼容性：容忍非字符串字段、无空格 data: 前缀，避免拆分 Emoji"
+    "修复使用 Gemini 等模型沉浸式扮演时，回复被安全策略拦截（content_filter）却只提示「模型未返回有效内容」的问题，现在会明确告知拦截原因，便于判断重试或调整措辞",
+    "其他导致空回复的结束原因（finish_reason）也会一并透出，方便排查"
   ]
 }
