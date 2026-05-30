@@ -17,6 +17,24 @@ internal data class ParsedAssistantOutput(
     val parts: List<ChatMessagePart> = emptyList(),
 )
 
+/**
+ * 当助手消息没有可见正文时，依据结束原因（finish_reason）生成尽量精准的提示。
+ * content_filter 表示正文被模型安全策略拦截；其他非 stop 原因原样透出，便于排查；
+ * 缺省（无原因或正常 stop）时回退到通用提示。
+ */
+internal fun emptyAssistantContentMessage(finishReason: String?): String {
+    val reason = finishReason?.trim().orEmpty()
+    return when {
+        reason.equals("content_filter", ignoreCase = true) ->
+            "内容被模型安全策略拦截（content_filter），未返回正文。可重试或调整措辞后再发。"
+
+        reason.isNotBlank() && !reason.equals("stop", ignoreCase = true) ->
+            "模型未返回有效正文，结束原因：$reason"
+
+        else -> "模型未返回有效内容"
+    }
+}
+
 internal object GatewayAssistantOutputParser {
     private val thinkTagRegex = Regex("<think>([\\s\\S]*?)(?:</think>|$)", RegexOption.DOT_MATCHES_ALL)
     private val closingThinkTagRegex = Regex("</think>")

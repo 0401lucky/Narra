@@ -4,6 +4,7 @@ import com.example.myapplication.data.remote.AnthropicApi
 import com.example.myapplication.data.remote.OpenAiCompatibleApi
 import com.example.myapplication.data.repository.ai.AnthropicProtocolSupport
 import com.example.myapplication.data.repository.ai.GatewayAssistantOutputParser
+import com.example.myapplication.data.repository.ai.emptyAssistantContentMessage
 import com.example.myapplication.data.repository.ai.GatewayToolSupport
 import com.example.myapplication.data.repository.ai.GatewayNetworkSupport
 import com.example.myapplication.data.repository.ai.PromptExtrasResponseSupport
@@ -107,10 +108,10 @@ class ToolEngine(
             if (!response.isSuccessful) {
                 throw GatewayNetworkSupport.retrofitFailure("聊天请求失败", response)
             }
-            val assistantMessage = response.body()
+            val choice = response.body()
                 ?.choices
                 ?.firstOrNull()
-                ?.message
+            val assistantMessage = choice?.message
             val invocations = assistantMessage?.toolCalls
                 .orEmpty()
                 .mapNotNull { toolCall ->
@@ -124,6 +125,7 @@ class ToolEngine(
                     finalReply = assistantReplyFromOpenAiMessage(
                         assistantMessage = assistantMessage,
                         citations = state.citations,
+                        finishReason = choice?.finishReason,
                     ),
                     citations = state.citations,
                     toolRoundCount = state.toolRoundCount,
@@ -406,6 +408,7 @@ class ToolEngine(
     private fun assistantReplyFromOpenAiMessage(
         assistantMessage: AssistantMessageDto?,
         citations: List<MessageCitation> = emptyList(),
+        finishReason: String? = null,
     ): AssistantReply {
         val extractedOutput = GatewayAssistantOutputParser.extractAssistantOutput(assistantMessage)
         return ensureAssistantReplyHasContent(
@@ -415,11 +418,13 @@ class ToolEngine(
                 parts = extractedOutput.parts,
                 citations = citations,
             ),
+            finishReason = finishReason,
         )
     }
 
     private fun ensureAssistantReplyHasContent(
         reply: AssistantReply,
+        finishReason: String? = null,
     ): AssistantReply {
         val normalizedReply = reply.copy(
             reasoningSteps = normalizeChatReasoningSteps(
@@ -440,7 +445,7 @@ class ToolEngine(
             )
         }
         if (normalizedReply.content.isBlank() && normalizedReply.parts.isEmpty()) {
-            throw IllegalStateException("模型未返回有效内容")
+            throw IllegalStateException(emptyAssistantContentMessage(finishReason))
         }
         return normalizedReply
     }

@@ -1871,6 +1871,105 @@ class AiGatewayTest {
     }
 
     @Test
+    fun sendMessage_reportsContentFilterWhenChatCompletionsReturnsEmptyContent() {
+        server.enqueue(
+            MockResponse().setResponseCode(200).setBody(
+                """
+                {
+                  "choices": [
+                    {
+                      "index": 0,
+                      "message": {
+                        "role": "assistant",
+                        "content": ""
+                      },
+                      "finish_reason": "content_filter"
+                    }
+                  ]
+                }
+                """.trimIndent(),
+            ),
+        )
+        val provider = ProviderSettings(
+            id = "provider-content-filter",
+            name = "OpenAI",
+            baseUrl = server.url("/v1/").toString(),
+            apiKey = "filter-key",
+            selectedModel = "gemini-3.5-flash",
+        )
+        val gateway = createGateway(
+            settings = AppSettings(
+                providers = listOf(provider),
+                selectedProviderId = provider.id,
+                searchSettings = configuredSearchSettings(),
+            ),
+            searchRepository = fakeSearchRepository(),
+        )
+
+        val error = assertThrows(IllegalStateException::class.java) {
+            runBlocking {
+                gateway.sendMessage(
+                    listOf(ChatMessage(id = "1", role = MessageRole.USER, content = "继续")),
+                    toolingOptions = GatewayToolingOptions.searchOnly(true),
+                )
+            }
+        }
+
+        assertEquals(
+            "内容被模型安全策略拦截（content_filter），未返回正文。可重试或调整措辞后再发。",
+            error.message,
+        )
+    }
+
+    @Test
+    fun sendMessage_surfacesFinishReasonWhenChatCompletionsReturnsEmptyContent() {
+        server.enqueue(
+            MockResponse().setResponseCode(200).setBody(
+                """
+                {
+                  "choices": [
+                    {
+                      "index": 0,
+                      "message": {
+                        "role": "assistant",
+                        "content": ""
+                      },
+                      "finish_reason": "length"
+                    }
+                  ]
+                }
+                """.trimIndent(),
+            ),
+        )
+        val provider = ProviderSettings(
+            id = "provider-empty-length",
+            name = "OpenAI",
+            baseUrl = server.url("/v1/").toString(),
+            apiKey = "length-key",
+            selectedModel = "gpt-4.1-mini",
+        )
+        val gateway = createGateway(
+            settings = AppSettings(
+                providers = listOf(provider),
+                selectedProviderId = provider.id,
+                searchSettings = configuredSearchSettings(),
+            ),
+            searchRepository = fakeSearchRepository(),
+        )
+
+        val error = assertThrows(IllegalStateException::class.java) {
+            runBlocking {
+                gateway.sendMessage(
+                    listOf(ChatMessage(id = "1", role = MessageRole.USER, content = "继续")),
+                    toolingOptions = GatewayToolingOptions.searchOnly(true),
+                )
+            }
+        }
+
+        assertEquals("模型未返回有效正文，结束原因：length", error.message)
+    }
+
+    @Test
     fun sendMessageStream_splitsThinkTagsIntoReasoningAndContentDeltas() = runBlocking {
         val sseBody = buildString {
             append("data: {\"choices\":[{\"delta\":{\"content\":\"<think>先分析问题</think>最终\"},\"index\":0}]}\n\n")
