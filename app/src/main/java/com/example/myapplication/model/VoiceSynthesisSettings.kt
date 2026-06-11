@@ -1,6 +1,7 @@
 package com.example.myapplication.model
 
 import androidx.compose.runtime.Immutable
+import com.example.myapplication.system.network.normalizeSecureHttpBaseUrl
 
 const val MIMO_TTS_MODEL_PRESET = "mimo-v2.5-tts"
 const val MIMO_TTS_MODEL_VOICE_DESIGN = "mimo-v2.5-tts-voicedesign"
@@ -79,6 +80,15 @@ data class VoiceSynthesisSettings(
 
 fun normalizeMimoBaseUrl(baseUrl: String): String {
     return baseUrl.trim().ifBlank { MIMO_DEFAULT_BASE_URL }
+}
+
+fun requireSecureMimoBaseUrl(baseUrl: String): String {
+    return normalizeSecureHttpBaseUrl(
+        baseUrl = normalizeMimoBaseUrl(baseUrl),
+        blankMessage = "MiMo Base URL 为空",
+        schemeMessage = "MiMo Base URL 必须以 http:// 或 https:// 开头",
+        secureMessage = "MiMo Base URL 必须使用 https://，本机调试地址除外",
+    ).trimEnd('/')
 }
 
 fun resolveMimoChatCompletionsEndpoint(baseUrl: String): String {

@@ -22,6 +22,8 @@ import okhttp3.mockwebserver.MockResponse
 import okhttp3.mockwebserver.MockWebServer
 import org.junit.After
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
+import org.junit.Assert.assertThrows
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
@@ -208,6 +210,38 @@ class AiTranslationServiceTest {
     }
 
     @Test
+    fun translateText_redactsChatCompletionsHttpErrorBody() {
+        server.enqueue(
+            MockResponse()
+                .setResponseCode(401)
+                .setBody(secretErrorBody()),
+        )
+        val provider = ProviderSettings(
+            id = "provider-translate-error",
+            name = "Translate",
+            baseUrl = server.url("/v1/").toString(),
+            apiKey = "saved-key",
+            selectedModel = "deepseek-chat",
+            translationModel = "gpt-4o-mini",
+        )
+        val service = createService(
+            settings = AppSettings(
+                providers = listOf(provider),
+                selectedProviderId = provider.id,
+            ),
+        )
+
+        val error = assertThrows(IllegalStateException::class.java) {
+            runBlocking {
+                service.translateText("你好")
+            }
+        }
+
+        assertTrue(error.message.orEmpty().contains("翻译失败：401"))
+        assertRedactedErrorMessage(error.message)
+    }
+
+    @Test
     fun translateStructuredSegments_parsesStructuredResponse() = runBlocking {
         server.enqueue(
             MockResponse().setResponseCode(200).setBody(
@@ -326,6 +360,79 @@ class AiTranslationServiceTest {
         assertEquals(listOf("Hello", "Hello world"), deltas)
     }
 
+    @Test
+    fun translateTextStream_redactsHttpErrorBody() {
+        server.enqueue(
+            MockResponse()
+                .setResponseCode(401)
+                .setBody(secretErrorBody()),
+        )
+        val provider = ProviderSettings(
+            id = "provider-translate-stream-error",
+            name = "Translate",
+            baseUrl = server.url("/v1/").toString(),
+            apiKey = "saved-key",
+            selectedModel = "deepseek-chat",
+            translationModel = "gpt-4o-mini",
+        )
+        val service = createService(
+            settings = AppSettings(
+                providers = listOf(provider),
+                selectedProviderId = provider.id,
+            ),
+        )
+
+        val error = assertThrows(IllegalStateException::class.java) {
+            runBlocking {
+                service.translateTextStream("你好").toList()
+            }
+        }
+
+        assertTrue(error.message.orEmpty().contains("翻译失败：401"))
+        assertRedactedErrorMessage(error.message)
+    }
+
+    @Test
+    fun translateTextStream_redactsAnthropicSseErrorMessage() {
+        val sseBody = buildString {
+            append(
+                """
+                data: {"type":"error","error":{"message":"Authorization: Bearer sk-stream-secret api-key: anthropic-secret"}}
+                """.trimIndent(),
+            )
+            append("\n\n")
+        }
+        server.enqueue(
+            MockResponse()
+                .setResponseCode(200)
+                .setHeader("Content-Type", "text/event-stream")
+                .setBody(sseBody),
+        )
+        val provider = ProviderSettings(
+            id = "provider-claude-stream-error",
+            name = "Claude Translate",
+            baseUrl = server.url("/v1/").toString(),
+            apiKey = "anthropic-key",
+            selectedModel = "claude-sonnet-4-20250514",
+            translationModel = "claude-sonnet-4-20250514",
+            apiProtocol = ProviderApiProtocol.ANTHROPIC,
+        )
+        val service = createService(
+            settings = AppSettings(
+                providers = listOf(provider),
+                selectedProviderId = provider.id,
+            ),
+        )
+
+        val error = assertThrows(IllegalStateException::class.java) {
+            runBlocking {
+                service.translateTextStream("你好").toList()
+            }
+        }
+
+        assertRedactedErrorMessage(error.message)
+    }
+
     private fun createService(settings: AppSettings): DefaultAiTranslationService {
         val settingsStore = FakeSettingsStore(settings)
         return DefaultAiTranslationService(
@@ -333,5 +440,32 @@ class AiTranslationServiceTest {
             apiServiceFactory = ApiServiceFactory(),
             ioDispatcher = Dispatchers.Unconfined,
         )
+    }
+
+    private fun secretErrorBody(): String {
+        return """
+            {
+              "error": "Authorization: Bearer sk-secret
+              api-key: header-secret",
+              "api_key": "json-secret",
+              "token": "token-secret",
+              "url": "https://example.com/v1?api_key=query-secret&signature=sig-secret",
+              "image": "data:image/png;base64,QUJDRA=="
+            }
+        """.trimIndent()
+    }
+
+    private fun assertRedactedErrorMessage(message: String?) {
+        val text = message.orEmpty()
+        assertFalse(text.contains("sk-secret"))
+        assertFalse(text.contains("header-secret"))
+        assertFalse(text.contains("json-secret"))
+        assertFalse(text.contains("token-secret"))
+        assertFalse(text.contains("query-secret"))
+        assertFalse(text.contains("sig-secret"))
+        assertFalse(text.contains("QUJDRA=="))
+        assertFalse(text.contains("sk-stream-secret"))
+        assertFalse(text.contains("anthropic-secret"))
+        assertTrue(text.contains("[REDACTED]"))
     }
 }

@@ -6,6 +6,7 @@ import com.example.myapplication.model.ModelInfo
 import com.example.myapplication.model.ProviderSettings
 import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Test
 
 class SettingsHealthCoordinatorTest {
@@ -85,5 +86,41 @@ class SettingsHealthCoordinatorTest {
             "当前版本仅支持 OpenAI 兼容接口。Anthropic 官方 API 不兼容 /models 与 /chat/completions，请改用 Claude 的 OpenAI 兼容网关或代理地址。",
             result.message,
         )
+    }
+
+    @Test
+    fun checkProviderHealth_redactsSensitiveFailureMessage() = runBlocking {
+        val coordinator = SettingsHealthCoordinator(
+            modelCatalogRepository = object : AiModelCatalogRepository {
+                override suspend fun fetchModels(
+                    baseUrl: String,
+                    apiKey: String,
+                    apiProtocol: com.example.myapplication.model.ProviderApiProtocol,
+                ): List<String> {
+                    error("""Authorization: Bearer sk-secret {"api_key":"json-secret"}""")
+                }
+
+                override suspend fun fetchModelInfos(
+                    baseUrl: String,
+                    apiKey: String,
+                    apiProtocol: com.example.myapplication.model.ProviderApiProtocol,
+                ): List<ModelInfo> = error("不应调用")
+            },
+        )
+
+        val result = coordinator.checkProviderHealth(
+            ProviderSettings(
+                id = "provider-1",
+                name = "Provider",
+                baseUrl = "https://example.com/v1/",
+                apiKey = "key",
+                selectedModel = "model-a",
+            ),
+        )
+
+        assertEquals(ConnectionHealth.UNHEALTHY, result.health)
+        assertFalse(result.message.orEmpty().contains("sk-secret"))
+        assertFalse(result.message.orEmpty().contains("json-secret"))
+        assertEquals("""Authorization: Bearer [REDACTED] {"api_key":"[REDACTED]"}""", result.message)
     }
 }

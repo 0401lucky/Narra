@@ -13,25 +13,19 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Assignment
-import androidx.compose.material.icons.automirrored.filled.MenuBook
 import androidx.compose.material.icons.filled.AutoAwesome
-import androidx.compose.material.icons.filled.Backup
 import androidx.compose.material.icons.filled.DarkMode
 import androidx.compose.material.icons.filled.Extension
 import androidx.compose.material.icons.filled.Face
 import androidx.compose.material.icons.filled.Handshake
 import androidx.compose.material.icons.filled.Image
 import androidx.compose.material.icons.filled.KeyboardArrowDown
-import androidx.compose.material.icons.filled.Language
 import androidx.compose.material.icons.filled.LibraryBooks
 import androidx.compose.material.icons.filled.LightMode
-import androidx.compose.material.icons.filled.Mood
 import androidx.compose.material.icons.filled.Psychology
 import androidx.compose.material.icons.filled.RecordVoiceOver
-import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Share
-import androidx.compose.material.icons.filled.Translate
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -62,11 +56,10 @@ fun SettingsScreen(
     uiState: SettingsUiState,
     onSave: () -> Unit,
     onConsumeMessage: () -> Unit,
-    onOpenChat: () -> Unit,
+    onOpenRoleplay: () -> Unit,
     onOpenProviderSettings: () -> Unit,
     onOpenPresetSettings: () -> Unit,
     onOpenVoiceSynthesisSettings: () -> Unit,
-    onOpenSearchToolSettings: () -> Unit,
     onOpenUpdateSettings: () -> Unit,
     onOpenUserMasks: () -> Unit,
     onOpenModelSettings: () -> Unit,
@@ -74,7 +67,7 @@ fun SettingsScreen(
     onOpenWorldBookSettings: () -> Unit,
     onOpenMemorySettings: () -> Unit,
     onOpenContextTransferSettings: () -> Unit,
-    onOpenScreenTranslationSettings: () -> Unit,
+    onOpenRoleplayScripts: () -> Unit,
     onOpenHome: () -> Unit,
     onNavigateBack: () -> Unit,
     onUpdateThemeMode: (ThemeMode) -> Unit,
@@ -105,9 +98,6 @@ fun SettingsScreen(
             }
         }
     } ?: "未配置提供商"
-    val searchSummary = uiState.searchSettings.selectedSourceOrNull()?.let { source ->
-        stringResource(R.string.settings_search_default_count, source.name, uiState.searchSettings.defaultResultCount)
-    } ?: stringResource(R.string.settings_search_not_configured)
     val voiceSummary = if (uiState.voiceSynthesisSettings.enabled) {
         val voiceSettings = uiState.voiceSynthesisSettings.normalized()
         val profile = voiceSettings.defaultProfile
@@ -135,7 +125,7 @@ fun SettingsScreen(
                 },
                 onAction = when {
                     canSave -> onSave
-                    savedHasRequiredConfig -> onOpenChat
+                    savedHasRequiredConfig -> onOpenRoleplay
                     else -> onOpenHome
                 },
                 actionEnabled = !uiState.isSaving,
@@ -197,40 +187,10 @@ fun SettingsScreen(
                     )
                     SettingsGroupDivider()
                     SettingsListRow(
-                        leadingContent = { Icon(Icons.Default.Face, contentDescription = null, tint = palette.title) },
-                        title = stringResource(R.string.settings_assistant_label),
-                        onClick = onOpenAssistantSettings,
-                    )
-                    SettingsGroupDivider()
-                    SettingsListRow(
-                        leadingContent = { Icon(Icons.Default.Mood, contentDescription = null, tint = palette.title) },
-                        title = "我的面具",
-                        supportingText = "${uiState.savedSettings.normalizedUserPersonaMasks().size} 个身份",
-                        onClick = onOpenUserMasks,
-                    )
-                    SettingsGroupDivider()
-                    SettingsListRow(
-                        leadingContent = { Icon(Icons.AutoMirrored.Filled.MenuBook, contentDescription = null, tint = palette.title) },
-                        title = stringResource(R.string.settings_world_book_label),
-                        onClick = onOpenWorldBookSettings,
-                    )
-                    SettingsGroupDivider()
-                    SettingsListRow(
-                        leadingContent = { Icon(Icons.Default.Psychology, contentDescription = null, tint = palette.title) },
-                        title = stringResource(R.string.settings_memory_summary),
-                        onClick = onOpenMemorySettings,
-                    )
-                    SettingsGroupDivider()
-                    SettingsListRow(
-                        leadingContent = { Icon(Icons.Default.Backup, contentDescription = null, tint = palette.title) },
-                        title = stringResource(R.string.settings_data_transfer),
-                        onClick = onOpenContextTransferSettings,
-                    )
-                    SettingsGroupDivider()
-                    SettingsListRow(
-                        leadingContent = { Icon(Icons.Default.Translate, contentDescription = null, tint = palette.title) },
-                        title = stringResource(R.string.settings_floating_translate),
-                        onClick = onOpenScreenTranslationSettings,
+                        leadingContent = { Icon(Icons.Default.Extension, contentDescription = null, tint = palette.title) },
+                        title = "脚本实验室",
+                        supportingText = "角色、场景和会话 JS 脚本",
+                        onClick = onOpenRoleplayScripts,
                     )
                 }
             }
@@ -263,13 +223,6 @@ fun SettingsScreen(
                         title = "MiMo 语音合成",
                         supportingText = voiceSummary,
                         onClick = onOpenVoiceSynthesisSettings,
-                    )
-                    SettingsGroupDivider()
-                    SettingsListRow(
-                        leadingContent = { Icon(Icons.Default.Search, contentDescription = null, tint = palette.title) },
-                        title = stringResource(R.string.settings_search_and_tools),
-                        supportingText = searchSummary,
-                        onClick = onOpenSearchToolSettings,
                     )
                 }
             }

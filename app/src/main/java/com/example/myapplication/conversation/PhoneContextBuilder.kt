@@ -117,7 +117,7 @@ class PhoneContextBuilder(
                         append('\n')
                     }
                     if (scenario.shouldInjectDescriptionPrompt()) {
-                        append("聊天背景补充：")
+                        append("场景背景补充：")
                         append(scenario.description.trim())
                         append('\n')
                     }

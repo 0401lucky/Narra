@@ -19,6 +19,7 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.emptyFlow
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
@@ -102,6 +103,85 @@ class ConversationAssistantRoundTripRunnerTest {
             listOf(userMessage, loadingMessage),
             store.listMessages(conversationId),
         )
+    }
+
+    @Test
+    fun execute_failedFallbackRedactsThrowableMessage() = runTest {
+        val conversationId = "conv-1"
+        val userMessage = ChatMessage(
+            id = "user-1",
+            conversationId = conversationId,
+            role = MessageRole.USER,
+            content = "继续",
+            createdAt = 1L,
+        )
+        val loadingMessage = ChatMessage(
+            id = "assistant-loading",
+            conversationId = conversationId,
+            role = MessageRole.ASSISTANT,
+            content = "",
+            status = MessageStatus.LOADING,
+            createdAt = 2L,
+        )
+        val store = FakeConversationStore(
+            conversations = listOf(
+                Conversation(
+                    id = conversationId,
+                    title = "剧情",
+                    model = "chat-model",
+                    createdAt = 1L,
+                    updatedAt = 2L,
+                ),
+            ),
+            messagesByConversation = mapOf(
+                conversationId to listOf(userMessage, loadingMessage),
+            ),
+        )
+        val runner = ConversationAssistantRoundTripRunner(
+            conversationRepository = ConversationRepository(store),
+            aiGateway = completedGateway(),
+        )
+
+        val result = runner.execute(
+            AssistantRoundTripRequest(
+                conversationId = conversationId,
+                selectedModel = "chat-model",
+                requestMessages = listOf(userMessage),
+                loadingMessage = loadingMessage,
+                buildFinalMessages = { failedAssistant -> listOf(userMessage, failedAssistant) },
+                systemPrompt = "系统提示",
+                streamReply = { _, _ ->
+                    error("""HTTP 401 Authorization: Bearer sk-secret C:\Users\me\secret.json""")
+                },
+                currentPayload = {
+                    StreamedAssistantPayload(
+                        content = "",
+                        reasoning = "",
+                        reasoningSteps = emptyList(),
+                        parts = emptyList(),
+                        citations = emptyList(),
+                    )
+                },
+                onCompleted = { _, _, loading -> loading },
+                onCancelled = { _, _ -> null },
+                onFailed = { _, _, loading ->
+                    AssistantRoundTripOutcome(
+                        messages = listOf(
+                            loading.copy(
+                                content = "发送失败，请检查网络或模型配置后重试",
+                                status = MessageStatus.ERROR,
+                            ),
+                        ),
+                        errorMessage = null,
+                    )
+                },
+            ),
+        )
+
+        val failed = result as AssistantRoundTripResult.Failed
+        assertEquals("发送失败，请检查网络或模型配置后重试", failed.errorMessage)
+        assertFalse(failed.errorMessage.contains("sk-secret"))
+        assertFalse(failed.errorMessage.contains("Users"))
     }
 
     private fun completedGateway(): AiGateway {

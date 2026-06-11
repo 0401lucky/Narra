@@ -219,7 +219,7 @@ internal fun RoleplaySettingsPluginSection(
                     )
                 },
                 title = "主动回复",
-                supportingText = "开启后，线上聊天久未联系时角色可以主动补一条开场；默认关闭。当前不会影响你手动发送后的正常回复。",
+                supportingText = "开启后，线上会话久未联系时角色可以主动补一条开场；默认关闭。当前不会影响你手动发送后的正常回复。",
                 checked = scenario.enableOnlineProactiveReply,
                 onCheckedChange = onUpdateScenarioOnlineProactiveReplyEnabled,
             )

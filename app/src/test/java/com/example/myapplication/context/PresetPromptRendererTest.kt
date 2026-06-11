@@ -218,6 +218,7 @@ class PresetPromptRendererTest {
 
         val insertionPoint = rendered.contextSections.first { it.title.contains("插入点") }
         assertEquals(ContextLogSourceType.PROMPT_PRESET, insertionPoint.sourceType)
+        assertEquals("近期记录会从这里插入。", insertionPoint.content)
         assertEquals(0, insertionPoint.tokenEstimate)
     }
 

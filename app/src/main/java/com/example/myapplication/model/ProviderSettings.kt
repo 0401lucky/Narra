@@ -29,6 +29,8 @@ data class ProviderSettings(
     val translationModelMode: ProviderFunctionModelMode = ProviderFunctionModelMode.FOLLOW_DEFAULT,
     val phoneSnapshotModel: String = "",
     val phoneSnapshotModelMode: ProviderFunctionModelMode = ProviderFunctionModelMode.FOLLOW_DEFAULT,
+    val momentsModel: String = "",
+    val momentsModelMode: ProviderFunctionModelMode = ProviderFunctionModelMode.FOLLOW_DEFAULT,
     val searchModel: String = "",
     val searchModelMode: ProviderFunctionModelMode = ProviderFunctionModelMode.FOLLOW_DEFAULT,
     val giftImageModel: String = "",
@@ -82,16 +84,19 @@ data class ProviderSettings(
 
     /** 优先读取 provider 已保存的模型能力，再回退到本地 registry 推断。 */
     fun resolveModelAbilities(modelId: String): Set<ModelAbility> {
-        if (modelId.isBlank()) {
+        val normalizedModelId = normalizeKnownModelId(modelId)
+        if (normalizedModelId.isBlank()) {
             return emptySet()
         }
 
-        val explicitModel = models?.firstOrNull { it.modelId == modelId }
+        val explicitModel = models?.firstOrNull {
+            it.modelId == modelId || normalizeKnownModelId(it.modelId) == normalizedModelId
+        }
         if (explicitModel != null) {
             return explicitModel.resolvedAbilities()
         }
 
-        return inferModelAbilities(modelId)
+        return inferModelAbilities(normalizedModelId)
     }
 
     /** 返回所有模型 ID，优先使用 models 字段。 */
@@ -111,6 +116,7 @@ data class ProviderSettings(
             ProviderFunction.MEMORY -> memoryModelMode
             ProviderFunction.TRANSLATION -> translationModelMode
             ProviderFunction.PHONE_SNAPSHOT -> phoneSnapshotModelMode
+            ProviderFunction.MOMENTS -> momentsModelMode
             ProviderFunction.SEARCH -> searchModelMode
             ProviderFunction.GIFT_IMAGE -> giftImageModelMode
         }
@@ -135,6 +141,7 @@ data class ProviderSettings(
             ProviderFunction.MEMORY -> memoryModel
             ProviderFunction.TRANSLATION -> translationModel
             ProviderFunction.PHONE_SNAPSHOT -> phoneSnapshotModel
+            ProviderFunction.MOMENTS -> momentsModel
             ProviderFunction.SEARCH -> searchModel
             ProviderFunction.GIFT_IMAGE -> giftImageModel
         }.trim()
@@ -153,7 +160,8 @@ data class ProviderSettings(
         return when (resolvedApiProtocol()) {
             ProviderApiProtocol.ANTHROPIC -> true
             ProviderApiProtocol.OPENAI_COMPATIBLE -> {
-                resolvedOpenAiTextApiMode() == OpenAiTextApiMode.RESPONSES
+                resolvedType() != ProviderType.GOOGLE &&
+                    resolvedOpenAiTextApiMode() == OpenAiTextApiMode.RESPONSES
             }
         }
     }
@@ -168,7 +176,7 @@ data class ProviderSettings(
         if (resolvedOpenAiTextApiMode() != OpenAiTextApiMode.CHAT_COMPLETIONS) {
             return false
         }
-        val normalizedModel = selectedModel.trim().lowercase()
+        val normalizedModel = normalizeKnownModelId(selectedModel).lowercase()
         if ("gemini" !in normalizedModel) {
             return false
         }
@@ -197,6 +205,7 @@ enum class ProviderFunction {
     MEMORY,
     TRANSLATION,
     PHONE_SNAPSHOT,
+    MOMENTS,
     SEARCH,
     GIFT_IMAGE,
 }

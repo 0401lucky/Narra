@@ -38,6 +38,8 @@ internal fun rememberRoleplayViewModel(
             aiPromptExtrasService = appGraph.aiPromptExtrasService,
             conversationRepository = appGraph.conversationRepository,
             roleplayRepository = appGraph.roleplayRepository,
+            roleplayScriptRepository = appGraph.roleplayScriptRepository,
+            roleplayScriptEngine = appGraph.roleplayScriptEngine,
             promptContextAssembler = appGraph.promptContextAssembler,
             memoryRepository = appGraph.memoryRepository,
             conversationSummaryRepository = appGraph.conversationSummaryRepository,
@@ -150,25 +152,11 @@ internal fun rememberMomentsViewModel(
     appGraph: AppGraph,
     backStackEntry: NavBackStackEntry,
 ): MomentsViewModel {
-    val rawConversationId = backStackEntry.arguments?.getString("conversationId").orEmpty()
-    val rawScenarioId = backStackEntry.arguments?.getString("scenarioId").orEmpty()
-    val rawOwnerType = backStackEntry.arguments?.getString("ownerType").orEmpty()
-    val conversationId = Uri.decode(rawConversationId)
-    val scenarioId = Uri.decode(rawScenarioId)
-    val ownerType = PhoneSnapshotOwnerType.fromStorageValue(Uri.decode(rawOwnerType))
     return viewModel(
         factory = MomentsViewModel.factory(
-            conversationId = conversationId,
-            scenarioId = scenarioId,
-            ownerType = ownerType,
             settingsRepository = appGraph.aiSettingsRepository,
-            conversationRepository = appGraph.conversationRepository,
-            roleplayRepository = appGraph.roleplayRepository,
-            phoneSnapshotRepository = appGraph.phoneSnapshotRepository,
-            aiPromptExtrasService = appGraph.aiPromptExtrasService,
-            phoneContextBuilder = PhoneContextBuilder(
-                promptContextAssembler = appGraph.promptContextAssembler,
-            ),
+            momentsRepository = appGraph.momentsRepository,
+            momentsGenerationCoordinator = appGraph.momentsGenerationCoordinator,
         ),
     )
 }

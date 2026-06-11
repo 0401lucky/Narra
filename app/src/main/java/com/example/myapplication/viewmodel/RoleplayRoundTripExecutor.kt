@@ -18,6 +18,8 @@ import com.example.myapplication.data.repository.ai.AiGateway
 import com.example.myapplication.data.repository.context.ConversationSummaryRepository
 import com.example.myapplication.data.repository.phone.PhoneSnapshotRepository
 import com.example.myapplication.data.repository.roleplay.RoleplayRepository
+import com.example.myapplication.data.repository.roleplay.script.EmptyRoleplayScriptRepository
+import com.example.myapplication.data.repository.roleplay.script.RoleplayScriptRepository
 import com.example.myapplication.model.Assistant
 import com.example.myapplication.model.ChatMessage
 import com.example.myapplication.model.ChatMessagePart
@@ -55,6 +57,11 @@ import com.example.myapplication.roleplay.RoleplayOnlineReferenceSupport
 import com.example.myapplication.roleplay.RoleplayOutputParser
 import com.example.myapplication.roleplay.RoleplayPromptDecorator
 import com.example.myapplication.roleplay.RoleplaySummaryWindowSupport
+import com.example.myapplication.roleplay.script.DisabledRoleplayScriptEngine
+import com.example.myapplication.roleplay.script.RoleplayScriptEngine
+import com.example.myapplication.roleplay.script.RoleplayScriptEvent
+import com.example.myapplication.roleplay.script.RoleplayScriptExecutionResult
+import com.example.myapplication.system.security.SensitiveTextRedactor
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.withContext
@@ -69,6 +76,8 @@ internal class RoleplayRoundTripExecutor(
     private val conversationSummaryRepository: ConversationSummaryRepository,
     private val phoneSnapshotRepository: PhoneSnapshotRepository,
     private val roleplayRepository: RoleplayRepository,
+    private val roleplayScriptRepository: RoleplayScriptRepository = EmptyRoleplayScriptRepository,
+    private val roleplayScriptEngine: RoleplayScriptEngine = DisabledRoleplayScriptEngine(),
     private val promptContextAssembler: PromptContextAssembler,
     private val assistantRoundTripRunner: ConversationAssistantRoundTripRunner,
     private val outputParser: RoleplayOutputParser,
@@ -84,6 +93,10 @@ internal class RoleplayRoundTripExecutor(
     private val contextLogStore: com.example.myapplication.data.repository.context.ContextLogStore,
 ) {
     private val memoryExtractionGate = MemoryExtractionGate()
+    private val scriptEventCoordinator = RoleplayScriptEventCoordinator(
+        scriptRepository = roleplayScriptRepository,
+        scriptEngine = roleplayScriptEngine,
+    )
 
     suspend fun execute(
         state: RoleplayUiState,
@@ -179,14 +192,26 @@ internal class RoleplayRoundTripExecutor(
                 ),
                 scenario = scenario,
             )
+            val latestUserInputText = RoleplayConversationSupport.resolveLatestUserInputText(requestMessagesForModel)
             val promptContext = promptContextAssembler.assemble(
                 settings = RoleplayConversationSupport.resolvePromptSettings(scenario, state.settings),
                 assistant = RoleplayConversationSupport.resolvePromptAssistant(scenario, assistant),
                 conversation = conversation,
-                userInputText = RoleplayConversationSupport.resolveLatestUserInputText(requestMessagesForModel),
+                userInputText = latestUserInputText,
                 recentMessages = requestMessagesForModel,
                 promptMode = PromptMode.ROLEPLAY,
             )
+            val beforePromptScriptResult = scriptEventCoordinator.execute(
+                RoleplayScriptEventRequest(
+                    event = RoleplayScriptEvent.BEFORE_PROMPT,
+                    sessionId = session.id,
+                    scenarioId = scenario.id,
+                    characterId = assistant?.id ?: scenario.assistantId,
+                    userText = latestUserInputText,
+                    promptText = promptContext.systemPrompt,
+                ),
+            )
+            val scriptDirectorNote = formatScriptPromptAdditions(beforePromptScriptResult.promptAdditions)
             val generationPromptEnvelope = if (scenario.isGroupChat) {
                 promptContext.promptEnvelope.copy(
                     statusCardsEnabled = false,
@@ -216,6 +241,12 @@ internal class RoleplayRoundTripExecutor(
                     append(context)
                 }
                 directorNote.takeIf { it.isNotBlank() }?.let { note ->
+                    if (isNotBlank()) {
+                        append("\n\n")
+                    }
+                    append(note)
+                }
+                scriptDirectorNote.takeIf { it.isNotBlank() }?.let { note ->
                     if (isNotBlank()) {
                         append("\n\n")
                     }
@@ -453,11 +484,14 @@ internal class RoleplayRoundTripExecutor(
                             }
                         },
                         onFailed = { _, throwable, loading ->
-                            val errorText = throwable.message ?: "发送失败"
+                            val errorText = SensitiveTextRedactor.throwableMessageForUi(
+                                throwable = throwable,
+                                fallback = ROLEPLAY_SEND_FAILURE_MESSAGE,
+                            )
                             AssistantRoundTripOutcome(
                                 messages = buildFinalMessages(
                                     loading.copy(
-                                        content = errorText,
+                                        content = ROLEPLAY_SEND_FAILURE_MESSAGE,
                                         status = MessageStatus.ERROR,
                                         parts = emptyList(),
                                     ),
@@ -490,9 +524,19 @@ internal class RoleplayRoundTripExecutor(
                         protocolResult = onlineProtocolResult,
                     )
                     applyActiveRawMessages(postDirectiveMessages)
+                    val completedAssistantMessage = postDirectiveMessages.lastOrNull {
+                        it.role == MessageRole.ASSISTANT && it.status == MessageStatus.COMPLETED
+                    }
+                    executeAfterAssistantScripts(
+                        session = session,
+                        scenario = scenario,
+                        assistant = assistant,
+                        userText = latestUserInputText,
+                        assistantMessage = completedAssistantMessage,
+                    )
                     markPhoneObservationConsumedIfNeeded(
                         conversationId = session.conversationId,
-                        assistantMessage = postDirectiveMessages.lastOrNull { it.role == MessageRole.ASSISTANT && it.status == MessageStatus.COMPLETED },
+                        assistantMessage = completedAssistantMessage,
                     )
                     if (finishSendingOnCompletion && canApplyUiUpdate()) {
                         updateUiState { current ->
@@ -581,9 +625,12 @@ internal class RoleplayRoundTripExecutor(
             }
             throw cancellation
         } catch (throwable: Throwable) {
-            val errorText = throwable.message ?: "发送失败"
+            val errorText = SensitiveTextRedactor.throwableMessageForUi(
+                throwable = throwable,
+                fallback = ROLEPLAY_SEND_FAILURE_MESSAGE,
+            )
             val failedAssistant = loadingMessage.copy(
-                content = errorText,
+                content = ROLEPLAY_SEND_FAILURE_MESSAGE,
                 status = MessageStatus.ERROR,
                 parts = emptyList(),
             )
@@ -610,6 +657,31 @@ internal class RoleplayRoundTripExecutor(
             )
             return RoleplayRoundTripExecutionOutcome(errorMessage = errorText)
         }
+    }
+
+    suspend fun rewriteOutgoingTextWithScripts(
+        session: com.example.myapplication.model.RoleplaySession,
+        scenario: com.example.myapplication.model.RoleplayScenario,
+        assistant: Assistant?,
+        text: String,
+    ): String {
+        val normalizedText = text.trim()
+        if (normalizedText.isBlank()) {
+            return text
+        }
+        val result = scriptEventCoordinator.execute(
+            RoleplayScriptEventRequest(
+                event = RoleplayScriptEvent.BEFORE_SEND,
+                sessionId = session.id,
+                scenarioId = scenario.id,
+                characterId = assistant?.id ?: scenario.assistantId,
+                userText = normalizedText,
+            ),
+        )
+        return result.outgoingMessage
+            ?.trim()
+            ?.takeIf(String::isNotBlank)
+            ?: text
     }
 
     private suspend fun removeStaleAssistantMessage(
@@ -800,6 +872,60 @@ internal class RoleplayRoundTripExecutor(
         return RoleplaySummaryWindowSupport.resolveRecentWindow(assistant)
     }
 
+    private fun formatScriptPromptAdditions(additions: List<String>): String {
+        val content = additions
+            .map(String::trim)
+            .filter(String::isNotBlank)
+            .distinct()
+            .joinToString(separator = "\n\n")
+        if (content.isBlank()) {
+            return ""
+        }
+        return "【脚本追加提示】\n$content"
+    }
+
+    private suspend fun executeAfterAssistantScripts(
+        session: com.example.myapplication.model.RoleplaySession,
+        scenario: com.example.myapplication.model.RoleplayScenario,
+        assistant: Assistant?,
+        userText: String,
+        assistantMessage: ChatMessage?,
+    ) {
+        val assistantText = assistantMessage?.content?.trim().orEmpty()
+        if (assistantText.isBlank()) {
+            return
+        }
+        val request = RoleplayScriptEventRequest(
+            event = RoleplayScriptEvent.AFTER_ASSISTANT,
+            sessionId = session.id,
+            scenarioId = scenario.id,
+            characterId = assistant?.id ?: scenario.assistantId,
+            userText = userText,
+            assistantText = assistantText,
+        )
+        applyScriptUiDirectives(scriptEventCoordinator.execute(request))
+        applyScriptUiDirectives(
+            scriptEventCoordinator.execute(
+                request.copy(event = RoleplayScriptEvent.RENDER_STATE),
+            ),
+        )
+    }
+
+    private fun applyScriptUiDirectives(result: RoleplayScriptExecutionResult) {
+        val message = result.uiDirectives
+            .firstOrNull { directive ->
+                directive.type.lowercase() in setOf("notice", "status", "toast")
+            }
+            ?.payload
+            ?.trim()
+            ?.let { payload -> SensitiveTextRedactor.redact(payload, maxLength = SCRIPT_NOTICE_MAX_LENGTH) }
+            ?.takeIf(String::isNotBlank)
+            ?: return
+        updateUiState { current ->
+            RoleplayStateSupport.applyNoticeMessage(current, message)
+        }
+    }
+
     private suspend fun applyOnlineProtocolDirectivesIfNeeded(
         conversationId: String,
         selectedModel: String,
@@ -875,6 +1001,8 @@ internal class RoleplayRoundTripExecutor(
     }
 
     private companion object {
+        private const val ROLEPLAY_SEND_FAILURE_MESSAGE = "发送失败，请检查网络或模型配置后重试"
+        private const val SCRIPT_NOTICE_MAX_LENGTH = 160
         private const val SUMMARY_TRIGGER_MESSAGE_COUNT = 12
         private const val SUMMARY_MIN_COVERED_MESSAGE_COUNT = 4
     }

@@ -4,9 +4,11 @@ import com.example.myapplication.data.remote.AnthropicApi
 import com.example.myapplication.data.remote.OpenAiCompatibleApi
 import com.example.myapplication.data.repository.ai.AnthropicProtocolSupport
 import com.example.myapplication.data.repository.ai.GatewayAssistantOutputParser
+import com.example.myapplication.data.repository.ai.AiErrorRedaction
 import com.example.myapplication.data.repository.ai.emptyAssistantContentMessage
 import com.example.myapplication.data.repository.ai.GatewayToolSupport
 import com.example.myapplication.data.repository.ai.GatewayNetworkSupport
+import com.example.myapplication.data.repository.ai.GatewayRequestSupport
 import com.example.myapplication.data.repository.ai.PromptExtrasResponseSupport
 import com.example.myapplication.data.repository.ai.ResponseApiSupport
 import com.example.myapplication.model.AssistantMessageDto
@@ -29,6 +31,7 @@ import com.example.myapplication.model.normalizeChatReasoningSteps
 import com.example.myapplication.model.reasoningStepsToContent
 import com.example.myapplication.system.json.AppJson
 import com.google.gson.Gson
+import kotlinx.coroutines.CancellationException
 
 private const val MAX_TOOL_ROUNDS = 4
 
@@ -50,6 +53,8 @@ data class ToolLoopChatRequestSpec(
     val apiProtocol: ProviderApiProtocol,
     val stream: Boolean = false,
     val reasoningEffort: String? = null,
+    val enableThinking: Boolean? = null,
+    val thinkingBudget: Int? = null,
     val thinking: ThinkingConfigDto? = null,
     val promptMode: PromptMode = PromptMode.CHAT,
     val promptEnvelope: PromptEnvelope = PromptEnvelope(),
@@ -83,13 +88,15 @@ class ToolEngine(
         val enabledTools = toolRegistry.resolve(enabledToolNames)
         var state = TranscriptToolState(transcript = requestMessages)
         repeat(MAX_TOOL_ROUNDS) {
-            val request = requestBuilder(
+            var request = requestBuilder(
                 ToolLoopChatRequestSpec(
                     model = selectedModel,
                     messages = state.transcript,
                     baseUrl = baseUrl,
                     apiProtocol = ProviderApiProtocol.OPENAI_COMPATIBLE,
                     reasoningEffort = thinkingRequestConfig.reasoningEffort,
+                    enableThinking = thinkingRequestConfig.enableThinking,
+                    thinkingBudget = thinkingRequestConfig.thinkingBudget,
                     thinking = thinkingRequestConfig.thinking,
                     promptMode = promptMode,
                     promptEnvelope = promptEnvelope,
@@ -98,13 +105,36 @@ class ToolEngine(
                     googleSearchRetrieval = googleSearchRetrieval,
                 ),
             )
-            val response = apiServiceProvider(
+            val api = apiServiceProvider(
                 baseUrl,
                 apiKey,
-            ).createChatCompletionAt(
+            )
+            var response = api.createChatCompletionAt(
                 openAiTextUrlBuilder(baseUrl, activeProvider?.copy(openAiTextApiMode = OpenAiTextApiMode.CHAT_COMPLETIONS)),
                 request,
             )
+            if (!response.isSuccessful) {
+                val errorDetail = response.errorBody()?.string().orEmpty()
+                if (response.code() == 400 &&
+                    GatewayRequestSupport.shouldRetryWithoutReasoningParameters(request, errorDetail)
+                ) {
+                    request = GatewayRequestSupport.withoutReasoningParameters(request)
+                    response = api.createChatCompletionAt(
+                        openAiTextUrlBuilder(
+                            baseUrl,
+                            activeProvider?.copy(openAiTextApiMode = OpenAiTextApiMode.CHAT_COMPLETIONS),
+                        ),
+                        request,
+                    )
+                } else {
+                    throw PromptExtrasResponseSupport.buildHttpFailure(
+                        operation = "聊天请求失败",
+                        code = response.code(),
+                        errorDetail = errorDetail,
+                        headers = response.headers(),
+                    )
+                }
+            }
             if (!response.isSuccessful) {
                 throw GatewayNetworkSupport.retrofitFailure("聊天请求失败", response)
             }
@@ -153,7 +183,11 @@ class ToolEngine(
                 toolRoundCount = state.toolRoundCount + 1,
             )
         }
-        throw IllegalStateException("工具调用轮次过多，请稍后重试")
+        return toolLoopExceededOutcome(
+            citations = state.citations,
+            toolRoundCount = state.toolRoundCount,
+            continuation = ToolContinuation.Transcript(state.transcript),
+        )
     }
 
     suspend fun runAnthropicToolLoop(
@@ -260,7 +294,11 @@ class ToolEngine(
                 toolRoundCount = state.toolRoundCount + 1,
             )
         }
-        throw IllegalStateException("工具调用轮次过多，请稍后重试")
+        return toolLoopExceededOutcome(
+            citations = state.citations,
+            toolRoundCount = state.toolRoundCount,
+            continuation = ToolContinuation.Transcript(state.transcript),
+        )
     }
 
     suspend fun runResponsesToolLoop(
@@ -283,6 +321,8 @@ class ToolEngine(
                 baseUrl = baseUrl,
                 apiProtocol = ProviderApiProtocol.OPENAI_COMPATIBLE,
                 reasoningEffort = thinkingRequestConfig.reasoningEffort,
+                enableThinking = thinkingRequestConfig.enableThinking,
+                thinkingBudget = thinkingRequestConfig.thinkingBudget,
                 thinking = thinkingRequestConfig.thinking,
                 promptMode = promptMode,
                 promptEnvelope = promptEnvelope,
@@ -370,7 +410,17 @@ class ToolEngine(
             }
             toolRoundCount += 1
         }
-        throw IllegalStateException("工具调用轮次过多，请稍后重试")
+        return toolLoopExceededOutcome(
+            citations = citations,
+            toolRoundCount = toolRoundCount,
+            continuation = ToolContinuation.Responses(
+                input = nextInput,
+                previousResponseId = previousResponseId,
+                temperature = requestTemplate.temperature,
+                topP = requestTemplate.topP,
+                maxOutputTokens = requestTemplate.maxTokens,
+            ),
+        )
     }
 
     private suspend fun executeInvocations(
@@ -389,13 +439,54 @@ class ToolEngine(
                     isError = true,
                 )
             } else {
-                tool.execute(invocation, toolContext)
+                runCatching {
+                    tool.execute(invocation, toolContext)
+                }.getOrElse { throwable ->
+                    if (throwable is CancellationException) {
+                        throw throwable
+                    }
+                    ToolExecutionResult(
+                        payload = gson.toJson(
+                            mapOf(
+                                "status" to "error",
+                                "tool" to invocation.name,
+                                "error" to buildToolFailureMessage(throwable),
+                            ),
+                        ),
+                        isError = true,
+                    )
+                }
             }
             ToolExecutionRecord(
                 invocation = invocation,
                 result = result,
             )
         }
+    }
+
+    private fun buildToolFailureMessage(throwable: Throwable): String {
+        val redactedMessage = AiErrorRedaction.redact(throwable.message ?: "工具执行失败")
+        return if (redactedMessage.isBlank()) {
+            "工具执行失败"
+        } else {
+            "工具执行失败：$redactedMessage"
+        }
+    }
+
+    private fun toolLoopExceededOutcome(
+        citations: List<MessageCitation>,
+        toolRoundCount: Int,
+        continuation: ToolContinuation,
+    ): ToolLoopOutcome {
+        return ToolLoopOutcome(
+            finalReply = AssistantReply(
+                content = "我先不继续调用工具，基于当前已知信息继续推进。",
+                citations = citations,
+            ),
+            citations = citations,
+            toolRoundCount = toolRoundCount,
+            continuation = continuation,
+        )
     }
 
     private fun mergeCitations(

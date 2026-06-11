@@ -50,6 +50,7 @@ import com.example.myapplication.model.ResponseApiResponse
 import com.example.myapplication.model.SearchSourceType
 import com.example.myapplication.model.buildThinkingRequestConfig
 import com.example.myapplication.model.legacyReasoningStepsFromContent
+import com.example.myapplication.model.normalizeKnownModelId
 import com.example.myapplication.model.normalizeChatReasoningSteps
 import com.example.myapplication.model.reasoningStepsToContent
 import com.example.myapplication.system.json.AppJson
@@ -120,6 +121,12 @@ class DefaultAiGateway(
     private val apiServiceFactory: ApiServiceFactory,
     private val apiServiceProvider: (String, String) -> OpenAiCompatibleApi = { baseUrl, apiKey ->
         apiServiceFactory.create(
+            baseUrl = baseUrl,
+            apiKey = apiKey,
+        )
+    },
+    private val imageApiServiceProvider: (String, String) -> OpenAiCompatibleApi = { baseUrl, apiKey ->
+        apiServiceFactory.createLongRunning(
             baseUrl = baseUrl,
             apiKey = apiKey,
         )
@@ -195,6 +202,8 @@ class DefaultAiGateway(
                 apiProtocol = spec.apiProtocol,
                 stream = spec.stream,
                 reasoningEffort = spec.reasoningEffort,
+                enableThinking = spec.enableThinking,
+                thinkingBudget = spec.thinkingBudget,
                 thinking = spec.thinking,
                 promptMode = spec.promptMode,
                 tools = spec.tools,
@@ -229,9 +238,6 @@ class DefaultAiGateway(
                     googleSearch = emptyMap(),
                 ),
             ),
-            googleSearchRetrieval = mapOf(
-                "dynamic_retrieval_config" to mapOf("mode" to "dynamic"),
-            ),
         )
     }
 
@@ -244,14 +250,16 @@ class DefaultAiGateway(
         val activeProvider = settings.activeProvider()
         val baseUrl = activeProvider?.baseUrl ?: settings.baseUrl
         val apiKey = activeProvider?.apiKey ?: settings.apiKey
-        val selectedModel = modelId.trim().ifBlank {
-            activeProvider?.selectedModel ?: settings.selectedModel
-        }
+        val selectedModel = normalizeKnownModelId(
+            modelId.trim().ifBlank {
+                activeProvider?.selectedModel ?: settings.selectedModel
+            },
+        )
         if (activeProvider?.resolvedApiProtocol() == ProviderApiProtocol.ANTHROPIC) {
             throw IllegalStateException("Anthropic /messages 协议当前不支持图片生成")
         }
 
-        val response = apiServiceProvider(baseUrl, apiKey).generateImage(
+        val response = imageApiServiceProvider(baseUrl, apiKey).generateImage(
             ImageGenerationRequest(
                 model = selectedModel,
                 prompt = prompt,
@@ -290,9 +298,11 @@ class DefaultAiGateway(
         val activeProvider = settings.activeProvider()
         val baseUrl = activeProvider?.baseUrl ?: settings.baseUrl
         val apiKey = activeProvider?.apiKey ?: settings.apiKey
-        val selectedModel = modelId.trim().ifBlank {
-            activeProvider?.selectedModel ?: settings.selectedModel
-        }
+        val selectedModel = normalizeKnownModelId(
+            modelId.trim().ifBlank {
+                activeProvider?.selectedModel ?: settings.selectedModel
+            },
+        )
         if (activeProvider?.resolvedApiProtocol() == ProviderApiProtocol.ANTHROPIC) {
             throw IllegalStateException("Anthropic /messages 协议当前不支持图片编辑")
         }
@@ -302,7 +312,7 @@ class DefaultAiGateway(
                 add(imagePayloadResolver(attachment))
             }
         }
-        val api = apiServiceProvider(baseUrl, apiKey)
+        val api = imageApiServiceProvider(baseUrl, apiKey)
         val response = api.editImage(
             ImageEditRequest(
                 model = selectedModel,
@@ -462,7 +472,7 @@ class DefaultAiGateway(
         val activeProvider = settings.activeProvider()
         val baseUrl = activeProvider?.baseUrl ?: settings.baseUrl
         val apiKey = activeProvider?.apiKey ?: settings.apiKey
-        val selectedModel = activeProvider?.selectedModel ?: settings.selectedModel
+        val selectedModel = normalizeKnownModelId(activeProvider?.selectedModel ?: settings.selectedModel)
         val thinkingRequestConfig = buildThinkingRequestConfig(activeProvider, selectedModel)
         val apiProtocol = activeProvider?.resolvedApiProtocol() ?: ProviderApiProtocol.OPENAI_COMPATIBLE
 
@@ -519,7 +529,7 @@ class DefaultAiGateway(
         val activeProvider = settings.activeProvider()
         val baseUrl = activeProvider?.baseUrl ?: settings.baseUrl
         val apiKey = activeProvider?.apiKey ?: settings.apiKey
-        val selectedModel = activeProvider?.selectedModel ?: settings.selectedModel
+        val selectedModel = normalizeKnownModelId(activeProvider?.selectedModel ?: settings.selectedModel)
         val thinkingRequestConfig = buildThinkingRequestConfig(activeProvider, selectedModel)
         val apiProtocol = activeProvider?.resolvedApiProtocol() ?: ProviderApiProtocol.OPENAI_COMPATIBLE
 
@@ -611,6 +621,7 @@ class DefaultAiGateway(
     private fun assistantReplyFromOpenAiMessage(
         assistantMessage: com.example.myapplication.model.AssistantMessageDto?,
         citations: List<MessageCitation> = emptyList(),
+        finishReason: String? = null,
     ): AssistantReply {
         val extractedOutput = GatewayAssistantOutputParser.extractAssistantOutput(assistantMessage)
         return ensureAssistantReplyHasContent(
@@ -620,11 +631,13 @@ class DefaultAiGateway(
                 parts = extractedOutput.parts,
                 citations = citations,
             ),
+            finishReason = finishReason,
         )
     }
 
     private fun ensureAssistantReplyHasContent(
         reply: AssistantReply,
+        finishReason: String? = null,
     ): AssistantReply {
         val normalizedReply = reply.copy(
             reasoningSteps = normalizeChatReasoningSteps(
@@ -645,7 +658,7 @@ class DefaultAiGateway(
             )
         }
         if (normalizedReply.content.isBlank() && normalizedReply.parts.isEmpty()) {
-            throw IllegalStateException("模型未返回有效内容")
+            throw IllegalStateException(emptyAssistantContentMessage(finishReason))
         }
         return normalizedReply
     }
@@ -778,33 +791,73 @@ class DefaultAiGateway(
         return when (activeProvider?.resolvedOpenAiTextApiMode() ?: OpenAiTextApiMode.CHAT_COMPLETIONS) {
             OpenAiTextApiMode.CHAT_COMPLETIONS -> {
                 if (gatewayTooling.enabledToolNames.isEmpty()) {
-                    val request = buildRequestWithRoleplaySampling(
+                    var request = buildRequestWithRoleplaySampling(
                         model = selectedModel,
                         messages = requestMessages,
                         baseUrl = baseUrl,
                         apiProtocol = ProviderApiProtocol.OPENAI_COMPATIBLE,
                         promptMode = PromptMode.CHAT,
                         reasoningEffort = thinkingRequestConfig.reasoningEffort,
+                        enableThinking = thinkingRequestConfig.enableThinking,
+                        thinkingBudget = thinkingRequestConfig.thinkingBudget,
                         thinking = thinkingRequestConfig.thinking,
                         promptEnvelope = promptEnvelope,
                         tools = modelBuiltInSearchOptions.tools,
                         googleSearchRetrieval = modelBuiltInSearchOptions.googleSearchRetrieval,
                     )
-                    val response = apiServiceProvider(
+                    val api = apiServiceProvider(
                         baseUrl,
                         apiKey,
-                    ).createChatCompletionAt(
+                    )
+                    var response = api.createChatCompletionAt(
                         buildOpenAiTextUrl(baseUrl, activeProvider),
                         request,
                     )
-                    if (!response.isSuccessful) {
-                        throw GatewayNetworkSupport.retrofitFailure("聊天请求失败", response)
+                    var latestErrorDetail = if (!response.isSuccessful) {
+                        response.errorBody()?.string().orEmpty()
+                    } else {
+                        ""
                     }
-                    val assistantMessage = response.body()
+                    if (response.code() == 400 && shouldRetryWithoutReasoningParameters(request, latestErrorDetail)) {
+                        request = withoutReasoningParameters(request)
+                        response = api.createChatCompletionAt(
+                            buildOpenAiTextUrl(baseUrl, activeProvider),
+                            request,
+                        )
+                        latestErrorDetail = if (!response.isSuccessful) {
+                            response.errorBody()?.string().orEmpty()
+                        } else {
+                            ""
+                        }
+                    }
+                    if (response.code() == 400 && shouldRetryWithoutRoleplaySampling(request, latestErrorDetail)) {
+                        markRoleplaySamplingUnsupported(baseUrl, ProviderApiProtocol.OPENAI_COMPATIBLE)
+                        request = withoutRoleplaySampling(request)
+                        response = api.createChatCompletionAt(
+                            buildOpenAiTextUrl(baseUrl, activeProvider),
+                            request,
+                        )
+                        latestErrorDetail = if (!response.isSuccessful) {
+                            response.errorBody()?.string().orEmpty()
+                        } else {
+                            ""
+                        }
+                    }
+                    if (!response.isSuccessful) {
+                        throw PromptExtrasResponseSupport.buildHttpFailure(
+                            operation = "聊天请求失败",
+                            code = response.code(),
+                            errorDetail = latestErrorDetail,
+                            headers = response.headers(),
+                        )
+                    }
+                    val choice = response.body()
                         ?.choices
                         ?.firstOrNull()
-                        ?.message
-                    assistantReplyFromOpenAiMessage(assistantMessage)
+                    assistantReplyFromOpenAiMessage(
+                        assistantMessage = choice?.message,
+                        finishReason = choice?.finishReason,
+                    )
                 } else {
                     toolEngine.runOpenAiChatCompletionToolLoop(
                         baseUrl = baseUrl,
@@ -825,13 +878,15 @@ class DefaultAiGateway(
 
             OpenAiTextApiMode.RESPONSES -> {
                 if (gatewayTooling.enabledToolNames.isEmpty()) {
-                    val request = buildRequestWithRoleplaySampling(
+                    var request = buildRequestWithRoleplaySampling(
                         model = selectedModel,
                         messages = requestMessages,
                         baseUrl = baseUrl,
                         apiProtocol = ProviderApiProtocol.OPENAI_COMPATIBLE,
                         promptMode = PromptMode.CHAT,
                         reasoningEffort = thinkingRequestConfig.reasoningEffort,
+                        enableThinking = thinkingRequestConfig.enableThinking,
+                        thinkingBudget = thinkingRequestConfig.thinkingBudget,
                         thinking = thinkingRequestConfig.thinking,
                         promptEnvelope = promptEnvelope,
                     )
@@ -1231,6 +1286,8 @@ class DefaultAiGateway(
             apiProtocol = ProviderApiProtocol.OPENAI_COMPATIBLE,
             stream = true,
             reasoningEffort = thinkingRequestConfig.reasoningEffort,
+            enableThinking = thinkingRequestConfig.enableThinking,
+            thinkingBudget = thinkingRequestConfig.thinkingBudget,
             thinking = thinkingRequestConfig.thinking,
             promptMode = promptMode,
             promptEnvelope = promptEnvelope,
@@ -1240,11 +1297,7 @@ class DefaultAiGateway(
         var call = client.newCall(
             buildStreamingRequest(
                 fullUrl = buildOpenAiTextUrl(baseUrl, activeProvider),
-                requestBody = if (apiMode == OpenAiTextApiMode.RESPONSES) {
-                    gson.toJson(ResponseApiSupport.buildRequest(requestBody))
-                } else {
-                    gson.toJson(requestBody)
-                },
+                requestBody = serializeOpenAiStreamingRequestBody(apiMode, requestBody),
             ),
         )
         var response: okhttp3.Response? = null
@@ -1264,17 +1317,30 @@ class DefaultAiGateway(
             } else {
                 ""
             }
-            if (apiMode == OpenAiTextApiMode.CHAT_COMPLETIONS &&
-                response.code == 400 &&
-                shouldRetryWithoutRoleplaySampling(requestBody, streamErrorDetail)
-            ) {
+            if (response.code == 400 && shouldRetryWithoutReasoningParameters(requestBody, streamErrorDetail)) {
+                response.close()
+                requestBody = withoutReasoningParameters(requestBody)
+                call = client.newCall(
+                    buildStreamingRequest(
+                        fullUrl = buildOpenAiTextUrl(baseUrl, activeProvider),
+                        requestBody = serializeOpenAiStreamingRequestBody(apiMode, requestBody),
+                    ),
+                )
+                response = call.execute()
+            }
+            val retryWithoutReasoningErrorDetail = if (!response.isSuccessful) {
+                response.peekBody(64L * 1024L).string()
+            } else {
+                ""
+            }
+            if (response.code == 400 && shouldRetryWithoutRoleplaySampling(requestBody, retryWithoutReasoningErrorDetail)) {
                 response.close()
                 markRoleplaySamplingUnsupported(baseUrl, ProviderApiProtocol.OPENAI_COMPATIBLE)
                 requestBody = withoutRoleplaySampling(requestBody)
                 call = client.newCall(
                     buildStreamingRequest(
                         fullUrl = buildOpenAiTextUrl(baseUrl, activeProvider),
-                        requestBody = gson.toJson(requestBody),
+                        requestBody = serializeOpenAiStreamingRequestBody(apiMode, requestBody),
                     ),
                 )
                 response = call.execute()
@@ -1376,9 +1442,13 @@ class DefaultAiGateway(
         val response = root?.let {
             runCatching { gson.fromJson(it, ChatCompletionResponse::class.java) }.getOrNull()
         }
-        val assistantMessage = response?.choices?.firstOrNull()?.message
+        val choice = response?.choices?.firstOrNull()
+        val assistantMessage = choice?.message
         if (assistantMessage != null) {
-            return assistantReplyFromOpenAiMessage(assistantMessage)
+            return assistantReplyFromOpenAiMessage(
+                assistantMessage = assistantMessage,
+                finishReason = choice.finishReason,
+            )
         }
         return root?.let { parseGeminiNativeJsonResponse(it) }
             ?: throw IllegalStateException("模型未返回有效内容")
@@ -1498,7 +1568,7 @@ class DefaultAiGateway(
         if (output.content.isBlank() && output.reasoningContent.isBlank()) {
             val failure = geminiNativeEmptyContentMessage(root)
             if (failure != null) {
-                throw IllegalStateException(failure)
+                throw IllegalStateException(AiErrorRedaction.redact(failure))
             }
         }
         return true
@@ -1558,7 +1628,7 @@ class DefaultAiGateway(
         root: JsonObject,
     ): IllegalStateException {
         return IllegalStateException(
-            geminiNativeEmptyContentMessage(root) ?: "模型未返回有效内容",
+            AiErrorRedaction.redact(geminiNativeEmptyContentMessage(root) ?: "模型未返回有效内容"),
         )
     }
 
@@ -1604,6 +1674,17 @@ class DefaultAiGateway(
         return line.removePrefix("data:").trim()
     }
 
+    private fun serializeOpenAiStreamingRequestBody(
+        apiMode: OpenAiTextApiMode,
+        request: ChatCompletionRequest,
+    ): String {
+        return if (apiMode == OpenAiTextApiMode.RESPONSES) {
+            gson.toJson(ResponseApiSupport.buildRequest(request))
+        } else {
+            gson.toJson(request)
+        }
+    }
+
     private suspend fun sendOpenAiMessageWithoutStreaming(
         baseUrl: String,
         apiKey: String,
@@ -1620,27 +1701,67 @@ class DefaultAiGateway(
         )
         return when (apiMode) {
             OpenAiTextApiMode.CHAT_COMPLETIONS -> {
-                val request = buildRequestWithRoleplaySampling(
+                var request = buildRequestWithRoleplaySampling(
                     model = selectedModel,
                     messages = requestMessages,
                     baseUrl = baseUrl,
                     apiProtocol = ProviderApiProtocol.OPENAI_COMPATIBLE,
                     promptMode = PromptMode.CHAT,
                     reasoningEffort = thinkingRequestConfig.reasoningEffort,
+                    enableThinking = thinkingRequestConfig.enableThinking,
+                    thinkingBudget = thinkingRequestConfig.thinkingBudget,
                     thinking = thinkingRequestConfig.thinking,
                     promptEnvelope = promptEnvelope,
                     tools = modelBuiltInSearchOptions.tools,
                     googleSearchRetrieval = modelBuiltInSearchOptions.googleSearchRetrieval,
                 )
-                val response = apiServiceProvider(baseUrl, apiKey).createChatCompletionAt(
+                val api = apiServiceProvider(baseUrl, apiKey)
+                var response = api.createChatCompletionAt(
                     buildOpenAiTextUrl(baseUrl, activeProvider),
                     request,
                 )
-                if (!response.isSuccessful) {
-                    throw GatewayNetworkSupport.retrofitFailure("聊天请求失败", response)
+                var latestErrorDetail = if (!response.isSuccessful) {
+                    response.errorBody()?.string().orEmpty()
+                } else {
+                    ""
                 }
+                if (response.code() == 400 && shouldRetryWithoutReasoningParameters(request, latestErrorDetail)) {
+                    request = withoutReasoningParameters(request)
+                    response = api.createChatCompletionAt(
+                        buildOpenAiTextUrl(baseUrl, activeProvider),
+                        request,
+                    )
+                    latestErrorDetail = if (!response.isSuccessful) {
+                        response.errorBody()?.string().orEmpty()
+                    } else {
+                        ""
+                    }
+                }
+                if (response.code() == 400 && shouldRetryWithoutRoleplaySampling(request, latestErrorDetail)) {
+                    markRoleplaySamplingUnsupported(baseUrl, ProviderApiProtocol.OPENAI_COMPATIBLE)
+                    request = withoutRoleplaySampling(request)
+                    response = api.createChatCompletionAt(
+                        buildOpenAiTextUrl(baseUrl, activeProvider),
+                        request,
+                    )
+                    latestErrorDetail = if (!response.isSuccessful) {
+                        response.errorBody()?.string().orEmpty()
+                    } else {
+                        ""
+                    }
+                }
+                if (!response.isSuccessful) {
+                    throw PromptExtrasResponseSupport.buildHttpFailure(
+                        operation = "聊天请求失败",
+                        code = response.code(),
+                        errorDetail = latestErrorDetail,
+                        headers = response.headers(),
+                    )
+                }
+                val choice = response.body()?.choices?.firstOrNull()
                 assistantReplyFromOpenAiMessage(
-                    response.body()?.choices?.firstOrNull()?.message,
+                    assistantMessage = choice?.message,
+                    finishReason = choice?.finishReason,
                 )
             }
 
@@ -1652,6 +1773,8 @@ class DefaultAiGateway(
                     apiProtocol = ProviderApiProtocol.OPENAI_COMPATIBLE,
                     promptMode = PromptMode.CHAT,
                     reasoningEffort = thinkingRequestConfig.reasoningEffort,
+                    enableThinking = thinkingRequestConfig.enableThinking,
+                    thinkingBudget = thinkingRequestConfig.thinkingBudget,
                     thinking = thinkingRequestConfig.thinking,
                     promptEnvelope = promptEnvelope,
                 )
@@ -1735,7 +1858,7 @@ class DefaultAiGateway(
                 if (data == "[DONE]") break
                 val delta = AnthropicProtocolSupport.parseStreamData(data)
                 if (!delta.errorMessage.isNullOrBlank()) {
-                    throw IllegalStateException(delta.errorMessage)
+                    throw IllegalStateException(AiErrorRedaction.redact(delta.errorMessage))
                 }
                 if (delta.reasoning.isNotBlank()) {
                     emit(ChatStreamEvent.ReasoningDelta(delta.reasoning))
@@ -1793,6 +1916,8 @@ class DefaultAiGateway(
         apiProtocol: ProviderApiProtocol,
         stream: Boolean = false,
         reasoningEffort: String? = null,
+        enableThinking: Boolean? = null,
+        thinkingBudget: Int? = null,
         thinking: com.example.myapplication.model.ThinkingConfigDto? = null,
         promptMode: PromptMode = PromptMode.ROLEPLAY,
         tools: List<com.example.myapplication.model.ChatToolDto> = emptyList(),
@@ -1808,6 +1933,8 @@ class DefaultAiGateway(
         disabledBaseUrls = roleplaySamplingDisabledBaseUrls,
         stream = stream,
         reasoningEffort = reasoningEffort,
+        enableThinking = enableThinking,
+        thinkingBudget = thinkingBudget,
         thinking = thinking,
         promptMode = promptMode,
         samplerOverride = promptEnvelope.sampler,
@@ -1822,9 +1949,18 @@ class DefaultAiGateway(
         errorDetail: String,
     ): Boolean = GatewayRequestSupport.shouldRetryWithoutRoleplaySampling(request, errorDetail)
 
+    private fun shouldRetryWithoutReasoningParameters(
+        request: ChatCompletionRequest,
+        errorDetail: String,
+    ): Boolean = GatewayRequestSupport.shouldRetryWithoutReasoningParameters(request, errorDetail)
+
     private fun withoutRoleplaySampling(
         request: ChatCompletionRequest,
     ): ChatCompletionRequest = GatewayRequestSupport.withoutRoleplaySampling(request)
+
+    private fun withoutReasoningParameters(
+        request: ChatCompletionRequest,
+    ): ChatCompletionRequest = GatewayRequestSupport.withoutReasoningParameters(request)
 
     private fun shouldRetryAnthropicWithoutTools(
         exception: Exception,

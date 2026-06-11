@@ -41,6 +41,11 @@ fun SettingsViewModel.updateProviderPhoneSnapshotModel(providerId: String, model
     updateProvider(providerId) { it.copy(phoneSnapshotModel = modelId, phoneSnapshotModelMode = CUSTOM) }
 }
 
+fun SettingsViewModel.updateProviderMomentsModel(providerId: String, modelId: String) {
+    selectFunctionProvider(ProviderFunction.MOMENTS, providerId)
+    updateProvider(providerId) { it.copy(momentsModel = modelId, momentsModelMode = CUSTOM) }
+}
+
 fun SettingsViewModel.updateProviderSearchModel(providerId: String, modelId: String) {
     selectFunctionProvider(ProviderFunction.SEARCH, providerId)
     updateProvider(providerId) { it.copy(searchModel = modelId, searchModelMode = CUSTOM) }
@@ -83,6 +88,13 @@ fun SettingsViewModel.updateProviderPhoneSnapshotModelMode(providerId: String, m
     selectFunctionProvider(ProviderFunction.PHONE_SNAPSHOT, providerId)
     updateProvider(providerId) {
         it.copy(phoneSnapshotModelMode = mode, phoneSnapshotModel = if (mode == CUSTOM) it.phoneSnapshotModel else "")
+    }
+}
+
+fun SettingsViewModel.updateProviderMomentsModelMode(providerId: String, mode: ProviderFunctionModelMode) {
+    selectFunctionProvider(ProviderFunction.MOMENTS, providerId)
+    updateProvider(providerId) {
+        it.copy(momentsModelMode = mode, momentsModel = if (mode == CUSTOM) it.momentsModel else "")
     }
 }
 

@@ -27,6 +27,8 @@ import com.example.myapplication.model.MEMORY_AUTO_SUMMARY_EVERY_MIN
 import com.example.myapplication.model.MEMORY_CAPACITY_MAX
 import com.example.myapplication.model.MEMORY_CAPACITY_MIN
 import com.example.myapplication.model.MemoryInjectionPosition
+import com.example.myapplication.model.MomentAutoPostFrequency
+import com.example.myapplication.model.MomentCommentStyle
 import com.example.myapplication.model.ProviderFunctionModelMode
 import com.example.myapplication.model.ProviderSettings
 import com.example.myapplication.model.ProviderType
@@ -750,6 +752,7 @@ class AppSettingsStore(
         val normalizedMemoryModel = (provider.memoryModel as String?).orEmpty().trim()
         val normalizedTranslationModel = (provider.translationModel as String?).orEmpty().trim()
         val normalizedPhoneSnapshotModel = (provider.phoneSnapshotModel as String?).orEmpty().trim()
+        val normalizedMomentsModel = (provider.momentsModel as String?).orEmpty().trim()
         val normalizedSearchModel = (provider.searchModel as String?).orEmpty().trim()
         val normalizedGiftImageModel = (provider.giftImageModel as String?).orEmpty().trim()
         return provider.copy(
@@ -787,6 +790,12 @@ class AppSettingsStore(
             phoneSnapshotModelMode = normalizeFunctionModelMode(
                 rawMode = provider.phoneSnapshotModelMode as ProviderFunctionModelMode?,
                 rawModel = normalizedPhoneSnapshotModel,
+                blankMode = ProviderFunctionModelMode.FOLLOW_DEFAULT,
+            ),
+            momentsModel = normalizedMomentsModel,
+            momentsModelMode = normalizeFunctionModelMode(
+                rawMode = provider.momentsModelMode as ProviderFunctionModelMode?,
+                rawModel = normalizedMomentsModel,
                 blankMode = ProviderFunctionModelMode.FOLLOW_DEFAULT,
             ),
             searchModel = normalizedSearchModel,
@@ -880,6 +889,7 @@ class AppSettingsStore(
                 memoryModel = (provider.memoryModel as String?).orEmpty().trim(),
                 translationModel = (provider.translationModel as String?).orEmpty().trim(),
                 phoneSnapshotModel = (provider.phoneSnapshotModel as String?).orEmpty().trim(),
+                momentsModel = (provider.momentsModel as String?).orEmpty().trim(),
                 searchModel = (provider.searchModel as String?).orEmpty().trim(),
                 giftImageModel = (provider.giftImageModel as String?).orEmpty().trim(),
                 chatCompletionsPath = normalizeChatCompletionsPath(provider.chatCompletionsPath),
@@ -941,8 +951,16 @@ class AppSettingsStore(
             return emptyList()
         }
         return runCatching {
-            gson.fromJson<List<Assistant>>(rawJson, assistantListType).orEmpty()
-                .map(::normalizeAssistant)
+            com.google.gson.JsonParser.parseString(rawJson)
+                .asJsonArray
+                .mapNotNull { element ->
+                    val assistant = gson.fromJson(element, Assistant::class.java) ?: return@mapNotNull null
+                    normalizeAssistant(
+                        assistant = assistant,
+                        hasMomentAutoCommentEnabled = element.asJsonObject
+                            ?.has("momentAutoCommentEnabled") == true,
+                    )
+                }
         }.logFailure(TAG) { "decodeAssistants fromJson failed, raw.len=${rawJson.length}" }
             .getOrDefault(emptyList())
     }
@@ -971,7 +989,10 @@ class AppSettingsStore(
             .getOrDefault(emptyList())
     }
 
-    private fun normalizeAssistant(assistant: Assistant): Assistant {
+    private fun normalizeAssistant(
+        assistant: Assistant,
+        hasMomentAutoCommentEnabled: Boolean = true,
+    ): Assistant {
         return assistant.copy(
             iconName = sanitizeText(assistant.iconName as String?).ifBlank { DEFAULT_ASSISTANT_ICON },
             avatarUri = sanitizeText(assistant.avatarUri as String?),
@@ -991,6 +1012,15 @@ class AppSettingsStore(
                 ?: DEFAULT_WORLD_BOOK_SCAN_DEPTH,
             defaultPresetId = sanitizeText(assistant.defaultPresetId as String?).ifBlank { DEFAULT_PRESET_ID },
             tags = sanitizeStringList(assistant.tags as? List<*>),
+            momentAutoCommentEnabled = if (hasMomentAutoCommentEnabled) {
+                assistant.momentAutoCommentEnabled
+            } else {
+                true
+            },
+            momentAutoPostFrequency = (assistant.momentAutoPostFrequency as MomentAutoPostFrequency?)
+                ?: MomentAutoPostFrequency.STANDARD,
+            momentCommentStyle = (assistant.momentCommentStyle as MomentCommentStyle?)
+                ?: MomentCommentStyle.NATURAL,
         )
     }
 

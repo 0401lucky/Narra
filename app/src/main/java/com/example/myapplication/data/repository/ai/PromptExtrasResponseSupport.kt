@@ -3,6 +3,28 @@ package com.example.myapplication.data.repository.ai
 import okhttp3.Headers
 
 internal object PromptExtrasResponseSupport {
+    private val ContentSafetyHints = listOf(
+        "data_inspection_failed",
+        "content_filter",
+        "inappropriate content",
+        "responsibleaipolicyviolation",
+        "content management policy",
+        "safety policy",
+        "policy violation",
+        "moderation",
+        "blocked by",
+        "risk control",
+        "sensitive content",
+        "unsafe content",
+        "违规",
+        "敏感内容",
+        "安全策略",
+        "内容安全",
+        "风控",
+        "审核",
+        "拦截",
+    )
+
     fun extractContentText(content: Any?): String {
         return when (content) {
             null -> ""
@@ -34,7 +56,7 @@ internal object PromptExtrasResponseSupport {
         errorDetail: String,
         headers: Headers,
     ): IllegalStateException {
-        val guidance = when (code) {
+        val guidance = contentSafetyGuidance(errorDetail) ?: when (code) {
             400 -> "请求参数或供应商兼容性问题，请检查 Base URL、模型名与请求参数"
             429 -> "请求过于频繁或额度不足，请稍后重试"
             else -> ""
@@ -62,13 +84,25 @@ internal object PromptExtrasResponseSupport {
                     append("\nretry-after: ")
                     append(retryAfter)
                 }
-                val normalizedErrorDetail = errorDetail.trim()
+                val normalizedErrorDetail = AiErrorRedaction.redact(errorDetail)
                 if (normalizedErrorDetail.isNotBlank()) {
                     append('\n')
                     append(normalizedErrorDetail)
                 }
             },
         )
+    }
+
+    fun contentSafetyGuidance(errorDetail: String): String? {
+        val normalized = errorDetail.lowercase()
+        if (normalized.isBlank()) {
+            return null
+        }
+        return if (ContentSafetyHints.any(normalized::contains)) {
+            "内容被模型或供应商安全策略拦截，请调整输入、预设或角色设定后再试；这不是 Base URL 或模型名配置问题"
+        } else {
+            null
+        }
     }
 
     private fun extractContentPartText(contentPart: Any?): String {

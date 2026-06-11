@@ -3,8 +3,8 @@ package com.example.myapplication.data.repository.ai.tooling
 import com.example.myapplication.data.repository.search.toCitations
 import com.example.myapplication.model.MessageCitation
 import com.example.myapplication.system.json.AppJson
+import com.example.myapplication.system.security.SensitiveTextRedactor
 import com.google.gson.Gson
-import com.google.gson.JsonParser
 
 class SearchWebTool(
     private val gson: Gson = AppJson.gson,
@@ -73,24 +73,17 @@ class SearchWebTool(
                 citations = result.toCitations().distinctBy(MessageCitation::url),
             )
         }.getOrElse { throwable ->
-            errorResult(query, throwable.message ?: "搜索失败")
+            errorResult(
+                query,
+                SensitiveTextRedactor.redact(throwable.message ?: "搜索失败", maxLength = 160),
+            )
         }
     }
 
     private fun parseQuery(invocation: ToolInvocation): String? {
-        invocation.argumentsMap["query"]
-            ?.toString()
-            ?.trim()
-            ?.takeIf(String::isNotBlank)
-            ?.let { return it }
-        val normalized = invocation.argumentsJson.orEmpty().trim()
-        if (normalized.isBlank()) {
-            return null
-        }
-        val json = runCatching {
-            JsonParser.parseString(normalized).asJsonObject
-        }.getOrNull() ?: return null
-        return json.get("query")?.asString?.trim()?.takeIf { it.isNotBlank() }
+        return ToolArgumentSupport.stringArgument(invocation, "query")
+            ?.let(MemoryToolPayloadPolicy::normalizeQuery)
+            ?.takeIf { it.isNotBlank() }
     }
 
     private fun errorResult(

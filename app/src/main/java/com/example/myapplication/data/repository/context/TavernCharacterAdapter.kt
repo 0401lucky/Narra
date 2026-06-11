@@ -1,11 +1,26 @@
 package com.example.myapplication.data.repository.context
 
 import com.example.myapplication.model.Assistant
+import com.example.myapplication.model.CONTEXT_IMPORT_MAX_ASSISTANT_EXAMPLE_DIALOGUES
+import com.example.myapplication.model.CONTEXT_IMPORT_MAX_ASSISTANT_EXAMPLE_DIALOGUE_CHARS
+import com.example.myapplication.model.CONTEXT_IMPORT_MAX_ASSISTANT_TAGS
+import com.example.myapplication.model.CONTEXT_IMPORT_MAX_ASSISTANT_TAG_CHARS
+import com.example.myapplication.model.CONTEXT_IMPORT_MAX_WORLD_BOOK_CONTENT_CHARS
+import com.example.myapplication.model.CONTEXT_IMPORT_MAX_WORLD_BOOK_ENTRIES
+import com.example.myapplication.model.CONTEXT_IMPORT_MAX_WORLD_BOOK_TITLE_CHARS
 import com.example.myapplication.model.ContextDataBundle
 import com.example.myapplication.model.DEFAULT_WORLD_BOOK_MAX_ENTRIES
+import com.example.myapplication.model.WORLD_BOOK_MAX_PRIMARY_KEYWORDS
+import com.example.myapplication.model.WORLD_BOOK_MAX_SECONDARY_KEYWORDS
 import com.example.myapplication.model.WorldBookEntry
+import com.example.myapplication.model.WorldBookMatchMode
 import com.example.myapplication.model.WorldBookScopeType
 import com.example.myapplication.model.deriveWorldBookBookId
+import com.example.myapplication.model.limitForContextImport
+import com.example.myapplication.model.normalizeContextImportSourceBookName
+import com.example.myapplication.model.normalizeContextImportStringList
+import com.example.myapplication.model.normalizeWorldBookKeywords
+import com.example.myapplication.model.normalizedForContextImport
 import com.example.myapplication.system.json.AppJson
 import com.example.myapplication.system.logging.logFailure
 import com.google.gson.Gson
@@ -103,7 +118,7 @@ class TavernCharacterAdapter(
                 DEFAULT_WORLD_BOOK_MAX_ENTRIES,
                 worldBookEntries.count { it.enabled }.coerceAtMost(24),
             ),
-        )
+        ).normalizedForContextImport()
     }
 
     private fun buildWorldBookEntries(
@@ -116,22 +131,31 @@ class TavernCharacterAdapter(
             root = root,
         )
             ?: return emptyList()
-        val bookName = characterBook.getString("name").trim()
+        val bookName = normalizeContextImportSourceBookName(characterBook.getString("name"))
         val bookEntries = characterBook.getArray("entries") ?: return emptyList()
         val baseTimestamp = System.currentTimeMillis()
         val bookId = deriveWorldBookBookId(bookName)
-        return bookEntries.mapIndexedNotNull { index, element ->
+        return bookEntries.take(CONTEXT_IMPORT_MAX_WORLD_BOOK_ENTRIES).mapIndexedNotNull { index, element ->
             val entry = element.asJsonObjectOrNull() ?: return@mapIndexedNotNull null
-            val keys = parseStringList(entry.get("keys"))
-            val secondaryKeys = parseStringList(entry.get("secondary_keys"))
+            val keys = normalizeWorldBookKeywords(
+                values = parseStringList(entry.get("keys")),
+                matchMode = WorldBookMatchMode.WORD_CJK,
+                maxItems = WORLD_BOOK_MAX_PRIMARY_KEYWORDS,
+            )
+            val secondaryKeys = normalizeWorldBookKeywords(
+                values = parseStringList(entry.get("secondary_keys")),
+                matchMode = WorldBookMatchMode.WORD_CJK,
+                maxItems = WORLD_BOOK_MAX_SECONDARY_KEYWORDS,
+            )
             val title = entry.getString("name").ifBlank {
                 deriveWorldBookTitle(
                     index = index,
                     bookName = bookName,
                     keys = keys,
                 )
-            }
+            }.limitForContextImport(CONTEXT_IMPORT_MAX_WORLD_BOOK_TITLE_CHARS)
             val content = entry.getString("content").trim()
+                .limitForContextImport(CONTEXT_IMPORT_MAX_WORLD_BOOK_CONTENT_CHARS)
             if (title.isBlank() && content.isBlank() && keys.isEmpty() && secondaryKeys.isEmpty()) {
                 return@mapIndexedNotNull null
             }
@@ -169,7 +193,7 @@ class TavernCharacterAdapter(
                 scopeId = assistant.id,
                 createdAt = entryTimestamp,
                 updatedAt = entryTimestamp,
-            )
+            ).normalizedForContextImport(gson)
         }
     }
 
@@ -198,17 +222,35 @@ class TavernCharacterAdapter(
             .split(Regex("""\n\s*\n+"""))
             .map { it.trim() }
             .filter { it.isNotEmpty() }
+            .let { dialogues ->
+                normalizeContextImportStringList(
+                    values = dialogues,
+                    maxItems = CONTEXT_IMPORT_MAX_ASSISTANT_EXAMPLE_DIALOGUES,
+                    maxChars = CONTEXT_IMPORT_MAX_ASSISTANT_EXAMPLE_DIALOGUE_CHARS,
+                )
+            }
     }
 
     private fun parseTags(element: JsonElement?): List<String> {
-        return parseStringList(element)
+        return normalizeContextImportStringList(
+            values = parseStringList(element),
+            maxItems = CONTEXT_IMPORT_MAX_ASSISTANT_TAGS,
+            maxChars = CONTEXT_IMPORT_MAX_ASSISTANT_TAG_CHARS,
+        )
     }
 
     private fun parseStringList(element: JsonElement?): List<String> {
         return when {
             element == null || element.isJsonNull -> emptyList()
-            element.isJsonArray -> element.asJsonArray.mapNotNull { item ->
-                item.asStringOrNull()?.trim()?.takeIf { it.isNotEmpty() }
+            element.isJsonArray -> buildList {
+                val maxRawItems = maxOf(
+                    WORLD_BOOK_MAX_PRIMARY_KEYWORDS,
+                    CONTEXT_IMPORT_MAX_ASSISTANT_TAGS,
+                )
+                for (item in element.asJsonArray) {
+                    if (size >= maxRawItems) break
+                    item.asStringOrNull()?.trim()?.takeIf { it.isNotEmpty() }?.let(::add)
+                }
             }
             else -> element.asStringOrNull()
                 ?.split(",", "，")
@@ -229,8 +271,8 @@ class TavernCharacterAdapter(
         )
             ?: return emptyList()
         val entries = characterBook.getArray("entries") ?: return emptyList()
-        val bookName = characterBook.getString("name").trim()
-        return entries.mapIndexedNotNull { index, element ->
+        val bookName = normalizeContextImportSourceBookName(characterBook.getString("name"))
+        return entries.take(CONTEXT_IMPORT_MAX_WORLD_BOOK_ENTRIES).mapIndexedNotNull { index, element ->
             val entry = element.asJsonObjectOrNull() ?: return@mapIndexedNotNull null
             val title = entry.getString("name").ifBlank {
                 deriveWorldBookTitle(
@@ -238,7 +280,7 @@ class TavernCharacterAdapter(
                     bookName = bookName.ifBlank { characterName },
                     keys = parseStringList(entry.get("keys")),
                 )
-            }
+            }.limitForContextImport(CONTEXT_IMPORT_MAX_WORLD_BOOK_TITLE_CHARS)
             PreviewWorldBookEntry(
                 title = title,
                 enabled = entry.getBoolean("enabled", defaultValue = true),

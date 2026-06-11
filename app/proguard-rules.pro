@@ -24,6 +24,15 @@
 # release 启用 R8 后需要保留模型字段，避免正式包读写 JSON 时字段名被混淆。
 -keepattributes Signature,*Annotation*
 -keep class com.example.myapplication.model.** { *; }
+# repository 层也有少量内部 Gson DTO，release 混淆时需要保留字段名。
+-keep class com.example.myapplication.data.repository.tts.MimoTtsRequest { *; }
+-keep class com.example.myapplication.data.repository.tts.MimoTtsMessage { *; }
+-keep class com.example.myapplication.data.repository.tts.MimoTtsAudio { *; }
+-keep class com.example.myapplication.data.repository.tts.MimoTtsResponse { *; }
+-keep class com.example.myapplication.data.repository.tts.MimoTtsChoice { *; }
+-keep class com.example.myapplication.data.repository.tts.MimoTtsResponseMessage { *; }
+-keep class com.example.myapplication.data.repository.tts.MimoTtsResponseAudio { *; }
+-keep class com.example.myapplication.data.repository.phone.Phone*Payload { *; }
 -keep class * extends com.google.gson.reflect.TypeToken { *; }
 -keepclassmembers,allowobfuscation class * {
     @com.google.gson.annotations.SerializedName <fields>;

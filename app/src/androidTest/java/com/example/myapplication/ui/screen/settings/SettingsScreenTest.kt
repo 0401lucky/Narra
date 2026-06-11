@@ -22,7 +22,7 @@ class SettingsScreenTest {
     @Test
     fun actionButtonWithDraftChanges_callsSaveInsteadOfImmediateNavigation() {
         var saveCalls = 0
-        var openChatCalls = 0
+        var openRoleplayCalls = 0
         var openHomeCalls = 0
 
         composeRule.setContent {
@@ -34,11 +34,10 @@ class SettingsScreenTest {
                     ),
                     onSave = { saveCalls++ },
                     onConsumeMessage = {},
-                    onOpenChat = { openChatCalls++ },
+                    onOpenRoleplay = { openRoleplayCalls++ },
                     onOpenProviderSettings = {},
                     onOpenPresetSettings = {},
                     onOpenVoiceSynthesisSettings = {},
-                    onOpenSearchToolSettings = {},
                     onOpenUpdateSettings = {},
                     onOpenUserMasks = {},
                     onOpenModelSettings = {},
@@ -46,7 +45,7 @@ class SettingsScreenTest {
                     onOpenWorldBookSettings = {},
                     onOpenMemorySettings = {},
                     onOpenContextTransferSettings = {},
-                    onOpenScreenTranslationSettings = {},
+                    onOpenRoleplayScripts = {},
                     onOpenHome = { openHomeCalls++ },
                     onNavigateBack = {},
                     onUpdateThemeMode = {},
@@ -66,7 +65,7 @@ class SettingsScreenTest {
 
         composeRule.runOnIdle {
             check(saveCalls == 1)
-            check(openChatCalls == 0)
+            check(openRoleplayCalls == 0)
             check(openHomeCalls == 0)
         }
     }

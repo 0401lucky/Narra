@@ -1,10 +1,21 @@
 package com.example.myapplication.data.repository.context
 
 import com.example.myapplication.model.ContextDataBundle
+import com.example.myapplication.model.CONTEXT_IMPORT_MAX_WORLD_BOOK_CONTENT_CHARS
+import com.example.myapplication.model.CONTEXT_IMPORT_MAX_WORLD_BOOK_ENTRIES
+import com.example.myapplication.model.CONTEXT_IMPORT_MAX_WORLD_BOOK_TITLE_CHARS
 import com.example.myapplication.model.DEFAULT_WORLD_BOOK_PROBABILITY
+import com.example.myapplication.model.WORLD_BOOK_MAX_PRIMARY_KEYWORDS
+import com.example.myapplication.model.WORLD_BOOK_MAX_SECONDARY_KEYWORDS
 import com.example.myapplication.model.WorldBookEntry
+import com.example.myapplication.model.WorldBookMatchMode
 import com.example.myapplication.model.WorldBookScopeType
 import com.example.myapplication.model.deriveWorldBookBookId
+import com.example.myapplication.model.limitForContextImport
+import com.example.myapplication.model.normalizeContextImportExtrasObject
+import com.example.myapplication.model.normalizeContextImportSourceBookName
+import com.example.myapplication.model.normalizeContextImportStringList
+import com.example.myapplication.model.normalizeWorldBookKeywords
 import com.example.myapplication.system.json.AppJson
 import com.example.myapplication.system.logging.logFailure
 import com.google.gson.Gson
@@ -43,12 +54,17 @@ class TavernWorldBookAdapter(
     ): List<WorldBookEntry> {
         val entryObjects = when {
             entriesElement.isJsonObject -> {
-                entriesElement.asJsonObject.entrySet()
+                entriesElement.asJsonObject.entrySet().asSequence()
                     .mapNotNull { (_, value) -> value.asJsonObjectOrNull() }
+                    .take(CONTEXT_IMPORT_MAX_WORLD_BOOK_ENTRIES)
+                    .toList()
             }
 
             entriesElement.isJsonArray -> {
-                entriesElement.asJsonArray.mapNotNull { element -> element.asJsonObjectOrNull() }
+                entriesElement.asJsonArray.asSequence()
+                    .mapNotNull { element -> element.asJsonObjectOrNull() }
+                    .take(CONTEXT_IMPORT_MAX_WORLD_BOOK_ENTRIES)
+                    .toList()
             }
 
             else -> emptyList()
@@ -57,26 +73,38 @@ class TavernWorldBookAdapter(
             return emptyList()
         }
         val baseTimestamp = System.currentTimeMillis()
-        val bookId = deriveWorldBookBookId(bookName)
+        val normalizedBookName = normalizeContextImportSourceBookName(bookName)
+        val bookId = deriveWorldBookBookId(normalizedBookName)
         return entryObjects.mapIndexedNotNull { index, entry ->
-            val keys = parseStringList(entry.get("key")) + parseStringList(entry.get("keys"))
-            val secondaryKeys = parseStringList(entry.get("keysecondary")) +
-                parseStringList(entry.get("secondary_keys"))
+            val keys = normalizeWorldBookKeywords(
+                values = parseStringList(entry.get("key")) + parseStringList(entry.get("keys")),
+                matchMode = WorldBookMatchMode.WORD_CJK,
+                maxItems = WORLD_BOOK_MAX_PRIMARY_KEYWORDS,
+            )
+            val secondaryKeys = normalizeWorldBookKeywords(
+                values = parseStringList(entry.get("keysecondary")) +
+                    parseStringList(entry.get("secondary_keys")),
+                matchMode = WorldBookMatchMode.WORD_CJK,
+                maxItems = WORLD_BOOK_MAX_SECONDARY_KEYWORDS,
+            )
             val title = entry.getString("comment")
                 .ifBlank { entry.getString("memo") }
                 .ifBlank { entry.getString("name") }
                 .ifBlank {
                     keys.firstOrNull()?.trim().orEmpty().ifBlank {
-                        if (bookName.isNotBlank()) "$bookName ${index + 1}" else "条目 ${index + 1}"
+                        if (normalizedBookName.isNotBlank()) "$normalizedBookName ${index + 1}" else "条目 ${index + 1}"
                     }
                 }
+                .trim()
+                .limitForContextImport(CONTEXT_IMPORT_MAX_WORLD_BOOK_TITLE_CHARS)
             val content = entry.getString("content")
                 .ifBlank { entry.getString("entry") }
                 .trim()
+                .limitForContextImport(CONTEXT_IMPORT_MAX_WORLD_BOOK_CONTENT_CHARS)
             if (title.isBlank() && content.isBlank() && keys.isEmpty() && secondaryKeys.isEmpty()) {
                 return@mapIndexedNotNull null
             }
-            val stableId = deriveStableId(bookName, entry, index, title, content)
+            val stableId = deriveStableId(normalizedBookName, entry, index, title, content)
             val extrasPayload = buildExtrasPayload(entry)
             val timestamp = baseTimestamp + index
             WorldBookEntry(
@@ -96,7 +124,7 @@ class TavernWorldBookAdapter(
                 insertionOrder = entry.getInt("position", index),
                 probability = entry.getInt("probability", DEFAULT_WORLD_BOOK_PROBABILITY)
                     .coerceIn(0, 100),
-                sourceBookName = bookName,
+                sourceBookName = normalizedBookName,
                 scopeType = WorldBookScopeType.ATTACHABLE,
                 scopeId = "",
                 createdAt = timestamp,
@@ -139,7 +167,7 @@ class TavernWorldBookAdapter(
                 extras.add(key, value)
             }
         }
-        return if (extras.size() > 0) gson.toJson(extras) else "{}"
+        return normalizeContextImportExtrasObject(extras, gson)
     }
 
     private fun resolveBookName(
@@ -152,22 +180,29 @@ class TavernWorldBookAdapter(
             .ifBlank { root.getString("lorebook") }
             .ifBlank { fileName.substringBeforeLast('.') }
             .ifBlank { "导入世界书" }
-            .trim()
+            .let(::normalizeContextImportSourceBookName)
     }
 
     private fun parseStringList(element: JsonElement?): List<String> {
-        return when {
+        val rawValues = when {
             element == null || element.isJsonNull -> emptyList()
-            element.isJsonArray -> element.asJsonArray.mapNotNull { item ->
-                item.asStringOrNull()?.trim()?.takeIf { it.isNotEmpty() }
+            element.isJsonArray -> buildList {
+                for (item in element.asJsonArray) {
+                    if (size >= WORLD_BOOK_MAX_PRIMARY_KEYWORDS) break
+                    item.asStringOrNull()?.trim()?.takeIf { it.isNotEmpty() }?.let(::add)
+                }
             }
 
             else -> element.asStringOrNull()
                 ?.split(",", "，")
-                ?.map { it.trim() }
-                ?.filter { it.isNotEmpty() }
+                ?.mapNotNull { it.trim().takeIf { value -> value.isNotEmpty() } }
                 .orEmpty()
         }
+        return normalizeContextImportStringList(
+            values = rawValues,
+            maxItems = WORLD_BOOK_MAX_PRIMARY_KEYWORDS,
+            maxChars = CONTEXT_IMPORT_MAX_WORLD_BOOK_TITLE_CHARS,
+        )
     }
 
     private fun JsonObject.getString(key: String): String {

@@ -4,7 +4,6 @@ import com.example.myapplication.model.MemoryScopeType
 import com.example.myapplication.model.PromptMode
 import com.example.myapplication.system.json.AppJson
 import com.google.gson.Gson
-import com.google.gson.JsonParser
 
 class SaveMemoryTool(
     private val gson: Gson = AppJson.gson,
@@ -48,15 +47,21 @@ class SaveMemoryTool(
             return errorResult("save_memory 目前只支持剧情模式")
         }
         val assistant = runtimeContext.assistant
-            ?: return errorResult("当前没有可用助手，无法保存记忆")
+            ?: return errorResult("当前没有可用角色，无法保存记忆")
         if (!assistant.memoryEnabled) {
-            return errorResult("当前助手未开启记忆")
+            return errorResult("当前角色未开启记忆")
         }
         val conversation = runtimeContext.conversation
             ?: return errorResult("当前没有可用会话，无法保存记忆")
+        validateArguments(invocation)?.let { message ->
+            return errorResult(message)
+        }
         val arguments = parseArguments(invocation)
         if (arguments.content.isBlank()) {
             return errorResult("记忆内容不能为空")
+        }
+        if (arguments.contentTooLong) {
+            return errorResult("记忆内容过长，请压缩到 ${MemoryToolPayloadPolicy.MAX_CONTENT_LENGTH} 字以内")
         }
 
         return when (arguments.memoryType) {
@@ -105,31 +110,52 @@ class SaveMemoryTool(
         }
     }
 
+    private fun validateArguments(
+        invocation: ToolInvocation,
+    ): String? {
+        val unknownNames = ToolArgumentSupport.argumentNames(invocation) - ALLOWED_ARGUMENTS
+        if (unknownNames.isNotEmpty()) {
+            return "不支持的参数：${unknownNames.sorted().joinToString("、")}"
+        }
+        if (ToolArgumentSupport.hasArgument(invocation, "content") &&
+            ToolArgumentSupport.stringArgument(invocation, "content") == null
+        ) {
+            return "记忆内容必须是文本"
+        }
+        if (ToolArgumentSupport.hasArgument(invocation, "memory_type") &&
+            ToolArgumentSupport.stringArgument(invocation, "memory_type") == null
+        ) {
+            return "记忆类型必须是文本"
+        }
+        if (ToolArgumentSupport.hasArgument(invocation, "reason") &&
+            ToolArgumentSupport.stringArgument(invocation, "reason") == null
+        ) {
+            return "记忆原因必须是文本"
+        }
+        if (ToolArgumentSupport.hasArgument(invocation, "importance") &&
+            ToolArgumentSupport.intArgument(invocation, "importance") == null
+        ) {
+            return "记忆重要度必须是数字"
+        }
+        return null
+    }
+
     private fun parseArguments(
         invocation: ToolInvocation,
     ): SaveMemoryArgs {
-        val json = invocation.argumentsJson
+        val rawContent = ToolArgumentSupport.stringArgument(invocation, "content").orEmpty()
+        val memoryType = ToolArgumentSupport.stringArgument(invocation, "memory_type")
             ?.trim()
-            ?.takeIf { it.isNotBlank() }
-            ?.let { raw ->
-                runCatching { JsonParser.parseString(raw).asJsonObject }.getOrNull()
-            }
-        val content = invocation.argumentsMap["content"]?.toString()
-            ?: json?.get("content")?.takeIf { !it.isJsonNull }?.asString
-            ?: ""
-        val memoryType = invocation.argumentsMap["memory_type"]?.toString()
-            ?: json?.get("memory_type")?.takeIf { !it.isJsonNull }?.asString
+            ?.ifBlank { null }
             ?: "scene_state"
-        val reason = invocation.argumentsMap["reason"]?.toString()
-            ?: json?.get("reason")?.takeIf { !it.isJsonNull }?.asString
-            ?: ""
-        val importance = invocation.argumentsMap["importance"]?.toString()?.toIntOrNull()
-            ?: json?.get("importance")?.takeIf { !it.isJsonNull }?.asInt
+        val rawReason = ToolArgumentSupport.stringArgument(invocation, "reason").orEmpty()
+        val importance = ToolArgumentSupport.intArgument(invocation, "importance")
             ?: if (memoryType == "persistent") PERSISTENT_IMPORTANCE else SCENE_IMPORTANCE
         return SaveMemoryArgs(
-            content = content.trim(),
-            memoryType = memoryType.trim(),
-            reason = reason.trim(),
+            content = MemoryToolPayloadPolicy.normalizeContent(rawContent),
+            contentTooLong = MemoryToolPayloadPolicy.isContentTooLong(rawContent),
+            memoryType = memoryType,
+            reason = MemoryToolPayloadPolicy.normalizeReason(rawReason),
             importance = importance.coerceIn(0, 100),
         )
     }
@@ -150,6 +176,7 @@ class SaveMemoryTool(
 
     private data class SaveMemoryArgs(
         val content: String,
+        val contentTooLong: Boolean,
         val memoryType: String,
         val reason: String,
         val importance: Int,
@@ -159,5 +186,6 @@ class SaveMemoryTool(
         const val NAME = "save_memory"
         private const val SCENE_IMPORTANCE = 70
         private const val PERSISTENT_IMPORTANCE = 60
+        private val ALLOWED_ARGUMENTS = setOf("content", "memory_type", "reason", "importance")
     }
 }

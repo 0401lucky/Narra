@@ -51,11 +51,11 @@ import com.example.myapplication.ui.component.NarraTextButton
 import com.example.myapplication.ui.component.roleplay.RoleplayInputQuickAction
 import com.example.myapplication.ui.component.rememberSystemHighTextContrastEnabled
 import com.example.myapplication.ui.component.roleplay.rememberImmersiveBackdropState
-import com.example.myapplication.ui.screen.chat.GiftPlayDraftSaver
-import com.example.myapplication.ui.screen.chat.InvitePlayDraftSaver
-import com.example.myapplication.ui.screen.chat.PunishPlayDraftSaver
-import com.example.myapplication.ui.screen.chat.TaskPlayDraftSaver
-import com.example.myapplication.ui.screen.chat.TransferPlayDraftSaver
+import com.example.myapplication.ui.component.specialplay.GiftPlayDraftSaver
+import com.example.myapplication.ui.component.specialplay.InvitePlayDraftSaver
+import com.example.myapplication.ui.component.specialplay.PunishPlayDraftSaver
+import com.example.myapplication.ui.component.specialplay.TaskPlayDraftSaver
+import com.example.myapplication.ui.component.specialplay.TransferPlayDraftSaver
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable

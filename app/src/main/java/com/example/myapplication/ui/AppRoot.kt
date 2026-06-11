@@ -18,6 +18,7 @@ import com.example.myapplication.model.AppUpdateEnvironment
 import com.example.myapplication.model.ThemeMode
 import com.example.myapplication.ui.component.AppUpdateDialogHost
 import com.example.myapplication.ui.navigation.AppNavHost
+import com.example.myapplication.ui.navigation.AppRoutes
 import com.example.myapplication.ui.theme.ChatAppTheme
 import com.example.myapplication.viewmodel.AppUpdateViewModel
 import com.example.myapplication.viewmodel.SettingsViewModel
@@ -82,7 +83,7 @@ fun AppRoot(
                         navController = navController,
                         settingsViewModel = settingsViewModel,
                         appUpdateViewModel = appUpdateViewModel,
-                        startDestination = com.example.myapplication.ui.navigation.AppRoutes.CHAT,
+                        startDestination = AppRoutes.ROLEPLAY_GRAPH,
                     )
                     AppUpdateDialogHost(
                         uiState = appUpdateState,

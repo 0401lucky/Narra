@@ -34,6 +34,8 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalClipboard
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontStyle
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.myapplication.model.ChatActionType
@@ -222,11 +224,48 @@ private fun RoleplayMessageItemContent(
                             horizontalArrangement = Arrangement.End,
                             verticalAlignment = Alignment.Top,
                         ) {
+                            Column(
+                                modifier = Modifier.widthIn(max = messageMaxWidth * maxWidthFraction),
+                                horizontalAlignment = Alignment.End,
+                                verticalArrangement = Arrangement.spacedBy(4.dp),
+                            ) {
+                                RoleplaySpeakerNameLabel(message = message, isUser = true)
+                                RoleplayMessageMenuWrapper(
+                                    message = message,
+                                    onRetryTurn = onRetryTurn,
+                                    onEditUserMessage = onEditUserMessage,
+                                    onQuoteMessage = onQuoteMessage,
+                                    onRecallMessage = onRecallMessage,
+                                ) {
+                                    UserDialogueBubbleContent(
+                                        message = message,
+                                        colors = colors,
+                                        backdropState = backdropState,
+                                        lineHeightScale = lineHeightScale,
+                                        onOpenQuotedMessage = onOpenQuotedMessage,
+                                        fillWidth = false,
+                                        bubbleStyle = bubbleStyle,
+                                    )
+                                }
+                            }
+                            RoleplayMessageAvatar(
+                                message = message,
+                                colors = colors,
+                                onPokeMessageAvatar = onPokeMessageAvatar,
+                                modifier = Modifier.padding(start = 8.dp),
+                            )
+                        }
+                    } else {
+                        Column(
+                            modifier = Modifier.widthIn(max = messageMaxWidth * maxWidthFraction),
+                            horizontalAlignment = Alignment.End,
+                            verticalArrangement = Arrangement.spacedBy(4.dp),
+                        ) {
+                            RoleplaySpeakerNameLabel(message = message, isUser = true)
                             RoleplayMessageMenuWrapper(
                                 message = message,
                                 onRetryTurn = onRetryTurn,
                                 onEditUserMessage = onEditUserMessage,
-                                modifier = Modifier.widthIn(max = messageMaxWidth * maxWidthFraction),
                                 onQuoteMessage = onQuoteMessage,
                                 onRecallMessage = onRecallMessage,
                             ) {
@@ -240,31 +279,6 @@ private fun RoleplayMessageItemContent(
                                     bubbleStyle = bubbleStyle,
                                 )
                             }
-                            RoleplayMessageAvatar(
-                                message = message,
-                                colors = colors,
-                                onPokeMessageAvatar = onPokeMessageAvatar,
-                                modifier = Modifier.padding(start = 8.dp),
-                            )
-                        }
-                    } else {
-                        RoleplayMessageMenuWrapper(
-                            message = message,
-                            onRetryTurn = onRetryTurn,
-                            onEditUserMessage = onEditUserMessage,
-                            modifier = Modifier.widthIn(max = messageMaxWidth * maxWidthFraction),
-                            onQuoteMessage = onQuoteMessage,
-                            onRecallMessage = onRecallMessage,
-                        ) {
-                            UserDialogueBubbleContent(
-                                message = message,
-                                colors = colors,
-                                backdropState = backdropState,
-                                lineHeightScale = lineHeightScale,
-                                onOpenQuotedMessage = onOpenQuotedMessage,
-                                fillWidth = false,
-                                bubbleStyle = bubbleStyle,
-                            )
                         }
                     }
                 }
@@ -293,11 +307,43 @@ private fun RoleplayMessageItemContent(
                                 onPokeMessageAvatar = onPokeMessageAvatar,
                                 modifier = Modifier.padding(end = 8.dp),
                             )
+                            Column(
+                                modifier = Modifier.widthIn(max = messageMaxWidth * maxWidthFraction),
+                                horizontalAlignment = Alignment.Start,
+                                verticalArrangement = Arrangement.spacedBy(4.dp),
+                            ) {
+                                RoleplaySpeakerNameLabel(message = message, isUser = false)
+                                RoleplayMessageMenuWrapper(
+                                    message = message,
+                                    onRetryTurn = onRetryTurn,
+                                    onEditUserMessage = onEditUserMessage,
+                                    onQuoteMessage = onQuoteMessage,
+                                    onRecallMessage = onRecallMessage,
+                                ) {
+                                    CharacterDialogueBubbleContent(
+                                        message = message,
+                                        colors = colors,
+                                        backdropState = backdropState,
+                                        lineHeightScale = lineHeightScale,
+                                        onOpenQuotedMessage = onOpenQuotedMessage,
+                                        isError = isError,
+                                        fillWidth = false,
+                                        bubbleStyle = bubbleStyle,
+                                    )
+                                }
+                            }
+                        }
+                    } else {
+                        Column(
+                            modifier = Modifier.widthIn(max = messageMaxWidth * maxWidthFraction),
+                            horizontalAlignment = Alignment.Start,
+                            verticalArrangement = Arrangement.spacedBy(4.dp),
+                        ) {
+                            RoleplaySpeakerNameLabel(message = message, isUser = false)
                             RoleplayMessageMenuWrapper(
                                 message = message,
                                 onRetryTurn = onRetryTurn,
                                 onEditUserMessage = onEditUserMessage,
-                                modifier = Modifier.widthIn(max = messageMaxWidth * maxWidthFraction),
                                 onQuoteMessage = onQuoteMessage,
                                 onRecallMessage = onRecallMessage,
                             ) {
@@ -313,26 +359,6 @@ private fun RoleplayMessageItemContent(
                                 )
                             }
                         }
-                    } else {
-                        RoleplayMessageMenuWrapper(
-                            message = message,
-                            onRetryTurn = onRetryTurn,
-                            onEditUserMessage = onEditUserMessage,
-                            modifier = Modifier.widthIn(max = messageMaxWidth * maxWidthFraction),
-                            onQuoteMessage = onQuoteMessage,
-                            onRecallMessage = onRecallMessage,
-                        ) {
-                            CharacterDialogueBubbleContent(
-                                message = message,
-                                colors = colors,
-                                backdropState = backdropState,
-                                lineHeightScale = lineHeightScale,
-                                onOpenQuotedMessage = onOpenQuotedMessage,
-                                isError = isError,
-                                fillWidth = false,
-                                bubbleStyle = bubbleStyle,
-                            )
-                        }
                     }
                 }
             }
@@ -340,30 +366,41 @@ private fun RoleplayMessageItemContent(
 
         RoleplayContentType.LONGFORM -> {
             val isError = message.messageStatus == MessageStatus.ERROR
-            RoleplayMessageMenuWrapper(message, onRetryTurn, onEditUserMessage, onQuoteMessage = onQuoteMessage, onRecallMessage = onRecallMessage) {
-                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    if (isError) {
-                        FailedTurnHint(colors = colors)
+            Column(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalAlignment = if (message.speaker == RoleplaySpeaker.USER) Alignment.End else Alignment.Start,
+                verticalArrangement = Arrangement.spacedBy(4.dp),
+            ) {
+                RoleplaySpeakerNameLabel(
+                    message = message,
+                    isUser = message.speaker == RoleplaySpeaker.USER,
+                )
+                RoleplayMessageMenuWrapper(message, onRetryTurn, onEditUserMessage, onQuoteMessage = onQuoteMessage, onRecallMessage = onRecallMessage) {
+                    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                        if (isError) {
+                            FailedTurnHint(colors = colors)
+                        }
+                        RoleplayLongformCard(
+                            speakerName = message.speakerName,
+                            content = message.content,
+                            richTextSource = message.richTextSource,
+                            backdropState = backdropState,
+                            containerColor = if (isError) colors.errorBackground else colors.panelBackground,
+                            titleColor = if (isError) colors.errorText else colors.characterAccent,
+                            bodyColor = if (isError) colors.errorText.copy(alpha = 0.88f) else colors.textPrimary.copy(alpha = 0.94f),
+                            accentColor = if (isError) {
+                                colors.errorText
+                            } else {
+                                resolveRoleplayDialogueHighlightColor(
+                                    hasImage = backdropState.hasImage,
+                                    colors = colors,
+                                )
+                            },
+                            thoughtColor = if (isError) colors.errorText.copy(alpha = 0.76f) else colors.thoughtText,
+                            lineHeightScale = lineHeightScale,
+                            showSpeakerName = false,
+                        )
                     }
-                    RoleplayLongformCard(
-                        speakerName = message.speakerName,
-                        content = message.content,
-                        richTextSource = message.richTextSource,
-                        backdropState = backdropState,
-                        containerColor = if (isError) colors.errorBackground else colors.panelBackground,
-                        titleColor = if (isError) colors.errorText else colors.characterAccent,
-                        bodyColor = if (isError) colors.errorText.copy(alpha = 0.88f) else colors.textPrimary.copy(alpha = 0.94f),
-                        accentColor = if (isError) {
-                            colors.errorText
-                        } else {
-                            resolveRoleplayDialogueHighlightColor(
-                                hasImage = backdropState.hasImage,
-                                colors = colors,
-                            )
-                        },
-                        thoughtColor = if (isError) colors.errorText.copy(alpha = 0.76f) else colors.thoughtText,
-                        lineHeightScale = lineHeightScale,
-                    )
                 }
             }
         }
@@ -538,6 +575,26 @@ private fun resolveDialogueMaxWidthFraction(
         RoleplayMessageBubbleMode.ONLINE_PHONE -> if (isUser) 0.82f else 0.84f
         RoleplayMessageBubbleMode.DEFAULT -> if (isUser) 0.82f else 0.88f
     }
+}
+
+private val RoleplaySpeakerNameColor = Color(0xFF3F4652)
+
+@Composable
+private fun RoleplaySpeakerNameLabel(
+    message: RoleplayMessageUiModel,
+    isUser: Boolean,
+) {
+    val displayName = message.speakerName.trim()
+        .ifBlank { if (isUser) "我" else "角色" }
+    Text(
+        text = displayName,
+        modifier = Modifier.padding(horizontal = 4.dp),
+        style = MaterialTheme.typography.labelMedium,
+        color = RoleplaySpeakerNameColor,
+        fontWeight = FontWeight.SemiBold,
+        maxLines = 1,
+        overflow = TextOverflow.Ellipsis,
+    )
 }
 
 @Composable

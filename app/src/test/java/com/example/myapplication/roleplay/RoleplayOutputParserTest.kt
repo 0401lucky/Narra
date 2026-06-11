@@ -173,6 +173,44 @@ class RoleplayOutputParserTest {
     }
 
     @Test
+    fun parseAssistantOutput_acceptsLooseDialogueAttributes() {
+        val result = parser.parseAssistantOutput(
+            rawContent = """
+                <dialogue speaker='character' emotion=压低 reply_to=1007 reply_preview='刚才的话' reply_speaker=用户>我知道你在等。</dialogue>
+            """.trimIndent(),
+            characterName = "余罪",
+            allowNarration = true,
+        )
+
+        assertEquals(1, result.size)
+        assertEquals(RoleplayContentType.DIALOGUE, result.single().contentType)
+        assertEquals("我知道你在等。", result.single().content)
+        assertEquals("压低", result.single().emotion)
+        assertEquals("1007", result.single().replyToMessageId)
+        assertEquals("刚才的话", result.single().replyToPreview)
+        assertEquals("用户", result.single().replyToSpeakerName)
+    }
+
+    @Test
+    fun parseAssistantOutput_acceptsCaseInsensitiveTagsAndChineseQuotedAttributes() {
+        val result = parser.parseAssistantOutput(
+            rawContent = """
+                <Narration tone="低声">灯光在窗边晃了一下。</Narration>
+                <Dialogue speaker=“character” emotion=“心虚”>别看我。</Dialogue>
+            """.trimIndent(),
+            characterName = "余罪",
+            allowNarration = true,
+        )
+
+        assertEquals(2, result.size)
+        assertEquals(RoleplayContentType.NARRATION, result[0].contentType)
+        assertEquals("灯光在窗边晃了一下。", result[0].content)
+        assertEquals(RoleplayContentType.DIALOGUE, result[1].contentType)
+        assertEquals("心虚", result[1].emotion)
+        assertEquals("别看我。", result[1].content)
+    }
+
+    @Test
     fun parseAssistantOutput_dropsMalformedProtocolAttributesFromBody() {
         val result = parser.parseAssistantOutput(
             rawContent = """

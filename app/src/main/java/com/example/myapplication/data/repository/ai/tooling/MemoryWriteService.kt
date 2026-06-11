@@ -124,7 +124,7 @@ class DefaultMemoryWriteService(
         val runtimeContext = toolContext.runtimeContext
             ?: error("当前没有可用会话上下文")
         val assistant = runtimeContext.assistant
-            ?: error("当前没有可用助手")
+            ?: error("当前没有可用角色")
         val conversation = runtimeContext.conversation
             ?: error("当前没有可用会话")
         val proposal = PendingMemoryProposal(
@@ -341,11 +341,7 @@ class DefaultMemoryWriteService(
     private fun normalizeMemoryContent(
         value: String,
     ): String {
-        return value.trim()
-            .replace(Regex("\\s+"), " ")
-            .removePrefix("-")
-            .removePrefix("•")
-            .trim()
+        return MemoryToolPayloadPolicy.normalizeContent(value)
     }
 }
 

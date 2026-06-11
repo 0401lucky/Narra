@@ -1,4 +1,4 @@
-﻿package com.example.myapplication.ui.screen.chat
+﻿package com.example.myapplication.ui.component.modelpicker
 
 import com.example.myapplication.ui.component.*
 
@@ -63,6 +63,8 @@ import com.example.myapplication.model.sortedForModelListDisplay
 import com.example.myapplication.model.supportsThinkingBudgetControl
 import com.example.myapplication.ui.component.ModelIcon
 
+private val ModelPickerCardRadius = 24.dp
+
 internal data class ModelPickerQuickAction(
     val id: String,
     val title: String,
@@ -125,7 +127,7 @@ internal fun ReasoningBudgetSheet(
             } else {
                 Surface(
                     modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(ChatMediumCardRadius),
+                    shape = RoundedCornerShape(ModelPickerCardRadius),
                     color = MaterialTheme.colorScheme.primaryContainer,
                     contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
                 ) {
@@ -483,7 +485,7 @@ internal fun SheetOptionRow(
 
     val rowModifier = Modifier
         .fillMaxWidth()
-        .clip(RoundedCornerShape(ChatMediumCardRadius))
+        .clip(RoundedCornerShape(ModelPickerCardRadius))
         .then(
             if (onLongClick != null) {
                 Modifier.combinedClickable(
@@ -497,7 +499,7 @@ internal fun SheetOptionRow(
 
     Surface(
         modifier = rowModifier,
-        shape = RoundedCornerShape(ChatMediumCardRadius),
+        shape = RoundedCornerShape(ModelPickerCardRadius),
         color = containerColor,
         contentColor = headlineColor,
         tonalElevation = if (selected) 2.dp else 0.dp,
@@ -542,6 +544,55 @@ internal fun SheetOptionRow(
                 }
                 supportingContent?.invoke()
             }
+        }
+    }
+}
+
+@Composable
+private fun StatusPill(
+    text: String,
+    containerColor: Color,
+    contentColor: Color,
+) {
+    Surface(
+        shape = CircleShape,
+        color = containerColor,
+        contentColor = contentColor,
+    ) {
+        Text(
+            text = text,
+            modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
+            style = MaterialTheme.typography.labelLarge,
+        )
+    }
+}
+
+@Composable
+private fun NoticeCard(
+    title: String,
+    body: String,
+    containerColor: Color,
+    contentColor: Color,
+) {
+    Surface(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(ModelPickerCardRadius),
+        color = containerColor,
+        contentColor = contentColor,
+    ) {
+        Column(
+            modifier = Modifier.padding(horizontal = 18.dp, vertical = 16.dp),
+            verticalArrangement = Arrangement.spacedBy(6.dp),
+        ) {
+            Text(
+                text = title,
+                style = MaterialTheme.typography.titleMedium,
+            )
+            Text(
+                text = body,
+                style = MaterialTheme.typography.bodyMedium,
+                color = contentColor.copy(alpha = 0.84f),
+            )
         }
     }
 }

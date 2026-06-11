@@ -27,6 +27,7 @@ import com.example.myapplication.model.Conversation
 import com.example.myapplication.model.ConversationSummary
 import com.example.myapplication.model.GatewayToolRuntimeContext
 import com.example.myapplication.model.GatewayToolingOptions
+import com.example.myapplication.model.ImageGenerationDataDto
 import com.example.myapplication.model.ImageGenerationRequest
 import com.example.myapplication.model.ImageGenerationResponse
 import com.example.myapplication.model.MessageAttachment
@@ -53,6 +54,7 @@ import com.example.myapplication.model.imageMessagePart
 import com.example.myapplication.model.textMessagePart
 import com.example.myapplication.model.transferMessagePart
 import com.example.myapplication.testutil.FakeSettingsStore
+import com.example.myapplication.testutil.TestOpenAiCompatibleApi
 import com.google.gson.JsonParser
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.flowOf
@@ -542,6 +544,267 @@ class AiGatewayTest {
 
         val requestBody = server.takeRequest().body.readUtf8()
         assertTrue(requestBody.contains("\"reasoning_effort\":\"high\""))
+    }
+
+    @Test
+    fun sendMessage_retriesGemini35WithoutReasoningEffortWhenUnsupported() = runBlocking {
+        server.enqueue(
+            MockResponse().setResponseCode(400).setBody(
+                """{"error":{"message":"Unknown field: reasoning_effort"}}""",
+            ),
+        )
+        server.enqueue(
+            MockResponse().setResponseCode(200).setBody(
+                """
+                {
+                  "choices": [
+                    {
+                      "index": 0,
+                      "message": {
+                        "role": "assistant",
+                        "content": "收到"
+                      }
+                    }
+                  ]
+                }
+                """.trimIndent(),
+            ),
+        )
+        val provider = ProviderSettings(
+            id = "provider-gemini35",
+            name = "Gemini",
+            baseUrl = server.url("/v1/").toString(),
+            apiKey = "saved-key",
+            selectedModel = "gemini-3.5-flash",
+            thinkingBudget = 16_000,
+            type = ProviderType.GOOGLE,
+        )
+        val gateway = createGateway(
+            settings = AppSettings(
+                baseUrl = provider.baseUrl,
+                apiKey = provider.apiKey,
+                selectedModel = provider.selectedModel,
+                providers = listOf(provider),
+                selectedProviderId = provider.id,
+            ),
+        )
+
+        val reply = gateway.sendMessage(
+            listOf(ChatMessage(id = "1", role = MessageRole.USER, content = "你好")),
+        )
+
+        assertEquals("收到", reply.content)
+        val firstRequest = server.takeRequest().body.readUtf8()
+        val secondRequest = server.takeRequest().body.readUtf8()
+        assertTrue(firstRequest.contains("\"model\":\"gemini-3.5-flash\""))
+        assertTrue(firstRequest.contains("\"reasoning_effort\":\"high\""))
+        assertTrue(secondRequest.contains("\"model\":\"gemini-3.5-flash\""))
+        assertFalse(secondRequest.contains("\"reasoning_effort\""))
+        assertFalse(secondRequest.contains("\"thinking\""))
+    }
+
+    @Test
+    fun sendMessage_normalizesGemini35DisplayNameBeforeRequest() = runBlocking {
+        server.enqueue(
+            MockResponse().setResponseCode(200).setBody(
+                """
+                {
+                  "choices": [
+                    {
+                      "index": 0,
+                      "message": {
+                        "role": "assistant",
+                        "content": "收到"
+                      }
+                    }
+                  ]
+                }
+                """.trimIndent(),
+            ),
+        )
+        val provider = ProviderSettings(
+            id = "provider-gemini35-display",
+            name = "Gemini",
+            baseUrl = server.url("/v1/").toString(),
+            apiKey = "saved-key",
+            selectedModel = "Gemini 3.5 Flash",
+            thinkingBudget = 16_000,
+            type = ProviderType.GOOGLE,
+        )
+        val gateway = createGateway(
+            settings = AppSettings(
+                baseUrl = provider.baseUrl,
+                apiKey = provider.apiKey,
+                selectedModel = provider.selectedModel,
+                providers = listOf(provider),
+                selectedProviderId = provider.id,
+            ),
+        )
+
+        val reply = gateway.sendMessage(
+            listOf(ChatMessage(id = "1", role = MessageRole.USER, content = "你好")),
+        )
+
+        assertEquals("收到", reply.content)
+        val requestBody = server.takeRequest().body.readUtf8()
+        assertTrue(requestBody.contains("\"model\":\"gemini-3.5-flash\""))
+        assertTrue(requestBody.contains("\"reasoning_effort\":\"high\""))
+        assertFalse(requestBody.contains("Gemini 3.5 Flash"))
+    }
+
+    @Test
+    fun sendMessage_includesQwenThinkingFieldsWhenBudgetConfigured() = runBlocking {
+        server.enqueue(
+            MockResponse().setResponseCode(200).setBody(
+                """
+                {
+                  "choices": [
+                    {
+                      "index": 0,
+                      "message": {
+                        "role": "assistant",
+                        "content": "收到"
+                      }
+                    }
+                  ]
+                }
+                """.trimIndent(),
+            ),
+        )
+        val provider = ProviderSettings(
+            id = "provider-qwen37",
+            name = "Qwen",
+            baseUrl = server.url("/v1/").toString(),
+            apiKey = "saved-key",
+            selectedModel = "qwen3.7-flash",
+            thinkingBudget = 16_000,
+            type = ProviderType.QWEN,
+        )
+        val gateway = createGateway(
+            settings = AppSettings(
+                baseUrl = provider.baseUrl,
+                apiKey = provider.apiKey,
+                selectedModel = provider.selectedModel,
+                providers = listOf(provider),
+                selectedProviderId = provider.id,
+            ),
+        )
+
+        gateway.sendMessage(
+            listOf(ChatMessage(id = "1", role = MessageRole.USER, content = "你好")),
+        )
+
+        val requestBody = server.takeRequest().body.readUtf8()
+        assertTrue(requestBody.contains("\"model\":\"qwen3.7-flash\""))
+        assertTrue(requestBody.contains("\"enable_thinking\":true"))
+        assertTrue(requestBody.contains("\"thinking_budget\":16000"))
+        assertFalse(requestBody.contains("\"reasoning_effort\""))
+        assertFalse(requestBody.contains("\"thinking\""))
+    }
+
+    @Test
+    fun sendMessage_retriesQwenWithoutThinkingFieldsWhenUnsupported() = runBlocking {
+        server.enqueue(
+            MockResponse().setResponseCode(400).setBody(
+                """{"error":{"message":"Unknown field: enable_thinking"}}""",
+            ),
+        )
+        server.enqueue(
+            MockResponse().setResponseCode(200).setBody(
+                """
+                {
+                  "choices": [
+                    {
+                      "index": 0,
+                      "message": {
+                        "role": "assistant",
+                        "content": "收到"
+                      }
+                    }
+                  ]
+                }
+                """.trimIndent(),
+            ),
+        )
+        val provider = ProviderSettings(
+            id = "provider-qwen37-retry",
+            name = "Qwen",
+            baseUrl = server.url("/v1/").toString(),
+            apiKey = "saved-key",
+            selectedModel = "qwen3.7-flash",
+            thinkingBudget = 16_000,
+            type = ProviderType.QWEN,
+        )
+        val gateway = createGateway(
+            settings = AppSettings(
+                baseUrl = provider.baseUrl,
+                apiKey = provider.apiKey,
+                selectedModel = provider.selectedModel,
+                providers = listOf(provider),
+                selectedProviderId = provider.id,
+            ),
+        )
+
+        val reply = gateway.sendMessage(
+            listOf(ChatMessage(id = "1", role = MessageRole.USER, content = "你好")),
+        )
+
+        assertEquals("收到", reply.content)
+        val firstRequest = server.takeRequest().body.readUtf8()
+        val secondRequest = server.takeRequest().body.readUtf8()
+        assertTrue(firstRequest.contains("\"model\":\"qwen3.7-flash\""))
+        assertTrue(firstRequest.contains("\"enable_thinking\":true"))
+        assertTrue(firstRequest.contains("\"thinking_budget\":16000"))
+        assertTrue(secondRequest.contains("\"model\":\"qwen3.7-flash\""))
+        assertFalse(secondRequest.contains("\"enable_thinking\""))
+        assertFalse(secondRequest.contains("\"thinking_budget\""))
+        assertFalse(secondRequest.contains("\"reasoning_effort\""))
+        assertFalse(secondRequest.contains("\"thinking\""))
+    }
+
+    @Test
+    fun sendMessage_reportsQwenContentSafetyHttpError() {
+        server.enqueue(
+            MockResponse().setResponseCode(400).setBody(
+                """
+                {
+                  "code": "data_inspection_failed",
+                  "message": "Input data may contain inappropriate content."
+                }
+                """.trimIndent(),
+            ),
+        )
+        val provider = ProviderSettings(
+            id = "provider-qwen37-safety",
+            name = "Qwen",
+            baseUrl = server.url("/v1/").toString(),
+            apiKey = "saved-key",
+            selectedModel = "qwen3.7-flash",
+            type = ProviderType.QWEN,
+        )
+        val gateway = createGateway(
+            settings = AppSettings(
+                baseUrl = provider.baseUrl,
+                apiKey = provider.apiKey,
+                selectedModel = provider.selectedModel,
+                providers = listOf(provider),
+                selectedProviderId = provider.id,
+            ),
+        )
+
+        val error = assertThrows(IllegalStateException::class.java) {
+            runBlocking {
+                gateway.sendMessage(
+                    listOf(ChatMessage(id = "1", role = MessageRole.USER, content = "继续")),
+                )
+            }
+        }
+
+        val message = error.message.orEmpty()
+        assertTrue(message.contains("聊天请求失败：400"))
+        assertTrue(message.contains("内容被模型或供应商安全策略拦截"))
+        assertTrue(message.contains("data_inspection_failed"))
+        assertFalse(message.contains("请求参数或供应商兼容性问题"))
     }
 
     @Test
@@ -1438,6 +1701,63 @@ class AiGatewayTest {
     }
 
     @Test
+    fun sendMessageStream_retriesGemini35WithoutReasoningEffortWhenUnsupported() = runBlocking {
+        val sseBody = buildString {
+            append("data:{\"choices\":[{\"delta\":{\"content\":\"重试成功\"},\"index\":0}]}\n\n")
+            append("data:[DONE]\n\n")
+        }
+        server.enqueue(
+            MockResponse().setResponseCode(400).setBody(
+                """{"error":{"message":"Unsupported parameter: reasoning_effort"}}""",
+            ),
+        )
+        server.enqueue(
+            MockResponse()
+                .setResponseCode(200)
+                .setHeader("Content-Type", "text/event-stream")
+                .setBody(sseBody),
+        )
+        val provider = ProviderSettings(
+            id = "provider-gemini35",
+            name = "Gemini",
+            baseUrl = server.url("/v1/").toString(),
+            apiKey = "stream-key",
+            selectedModel = "gemini-3.5-flash",
+            thinkingBudget = 16_000,
+            type = ProviderType.GOOGLE,
+        )
+        val gateway = createGateway(
+            settings = AppSettings(
+                baseUrl = provider.baseUrl,
+                apiKey = provider.apiKey,
+                selectedModel = provider.selectedModel,
+                providers = listOf(provider),
+                selectedProviderId = provider.id,
+            ),
+        )
+
+        val deltas = gateway.sendMessageStream(
+            listOf(ChatMessage(id = "1", role = MessageRole.USER, content = "你好")),
+            promptMode = PromptMode.ROLEPLAY,
+        ).toList()
+
+        assertEquals(
+            listOf(
+                ChatStreamEvent.ContentDelta("重试成功"),
+                ChatStreamEvent.Completed,
+            ),
+            deltas,
+        )
+        val firstRequest = server.takeRequest().body.readUtf8()
+        val secondRequest = server.takeRequest().body.readUtf8()
+        assertTrue(firstRequest.contains("\"model\":\"gemini-3.5-flash\""))
+        assertTrue(firstRequest.contains("\"reasoning_effort\":\"high\""))
+        assertTrue(secondRequest.contains("\"model\":\"gemini-3.5-flash\""))
+        assertFalse(secondRequest.contains("\"reasoning_effort\""))
+        assertFalse(secondRequest.contains("\"thinking\""))
+    }
+
+    @Test
     fun sendMessageStream_acceptsGeminiNativeSseChunks() = runBlocking {
         val sseBody = buildString {
             append(
@@ -1922,6 +2242,55 @@ class AiGatewayTest {
     }
 
     @Test
+    fun sendMessage_reportsContentFilterWithoutToolsWhenChatCompletionsReturnsEmptyContent() {
+        server.enqueue(
+            MockResponse().setResponseCode(200).setBody(
+                """
+                {
+                  "choices": [
+                    {
+                      "index": 0,
+                      "message": {
+                        "role": "assistant",
+                        "content": ""
+                      },
+                      "finish_reason": "content_filter"
+                    }
+                  ]
+                }
+                """.trimIndent(),
+            ),
+        )
+        val provider = ProviderSettings(
+            id = "provider-content-filter-plain",
+            name = "Qwen",
+            baseUrl = server.url("/v1/").toString(),
+            apiKey = "filter-key",
+            selectedModel = "qwen3.7-flash",
+            type = ProviderType.QWEN,
+        )
+        val gateway = createGateway(
+            settings = AppSettings(
+                providers = listOf(provider),
+                selectedProviderId = provider.id,
+            ),
+        )
+
+        val error = assertThrows(IllegalStateException::class.java) {
+            runBlocking {
+                gateway.sendMessage(
+                    listOf(ChatMessage(id = "1", role = MessageRole.USER, content = "继续")),
+                )
+            }
+        }
+
+        assertEquals(
+            "内容被模型安全策略拦截（content_filter），未返回正文。可重试或调整措辞后再发。",
+            error.message,
+        )
+    }
+
+    @Test
     fun sendMessage_surfacesFinishReasonWhenChatCompletionsReturnsEmptyContent() {
         server.enqueue(
             MockResponse().setResponseCode(200).setBody(
@@ -2072,6 +2441,75 @@ class AiGatewayTest {
     }
 
     @Test
+    fun sendMessageStream_redactsHttpErrorBody() {
+        server.enqueue(
+            MockResponse()
+                .setResponseCode(401)
+                .setBody(secretErrorBody()),
+        )
+        val gateway = createGateway(
+            settings = AppSettings(
+                baseUrl = server.url("/v1/").toString(),
+                apiKey = "stream-key",
+                selectedModel = "deepseek-chat",
+            ),
+        )
+
+        val error = assertThrows(IllegalStateException::class.java) {
+            runBlocking {
+                gateway.sendMessageStream(
+                    listOf(ChatMessage(id = "1", role = MessageRole.USER, content = "你好")),
+                ).toList()
+            }
+        }
+
+        assertTrue(error.message.orEmpty().contains("聊天请求失败：401"))
+        assertErrorMessageIsRedacted(error.message)
+    }
+
+    @Test
+    fun sendMessageStream_redactsAnthropicSseErrorMessage() {
+        val sseBody = buildString {
+            append(
+                """
+                data: {"type":"error","error":{"message":"Authorization: Bearer sk-stream-secret api-key: anthropic-secret"}}
+                """.trimIndent(),
+            )
+            append("\n\n")
+        }
+        server.enqueue(
+            MockResponse()
+                .setResponseCode(200)
+                .setHeader("Content-Type", "text/event-stream")
+                .setBody(sseBody),
+        )
+        val provider = ProviderSettings(
+            id = "provider-claude-stream-error",
+            name = "Claude",
+            baseUrl = server.url("/v1/").toString(),
+            apiKey = "anthropic-key",
+            selectedModel = "claude-sonnet-4-20250514",
+            apiProtocol = ProviderApiProtocol.ANTHROPIC,
+        )
+        val gateway = createGateway(
+            settings = AppSettings(
+                providers = listOf(provider),
+                selectedProviderId = provider.id,
+            ),
+        )
+
+        val error = assertThrows(IllegalStateException::class.java) {
+            runBlocking {
+                gateway.sendMessageStream(
+                    listOf(ChatMessage(id = "1", role = MessageRole.USER, content = "你好")),
+                ).toList()
+            }
+        }
+
+        assertErrorMessageIsRedacted(error.message)
+    }
+
+    @Test
     fun generateImage_returnsImageGenerationResult() = runBlocking {
         server.enqueue(
             MockResponse().setResponseCode(200).setBody(
@@ -2108,6 +2546,58 @@ class AiGatewayTest {
         assertEquals("abc123", results.first().b64Data)
         assertEquals("https://cdn.example.com/out.png", results.first().url)
         assertEquals("修订后的提示词", results.first().revisedPrompt)
+    }
+
+    @Test
+    fun generateImage_usesImageApiServiceProvider() = runBlocking {
+        val provider = ProviderSettings(
+            id = "provider-image-long-running",
+            name = "Provider",
+            baseUrl = "https://image.example.com/v1/",
+            apiKey = "img-key",
+            selectedModel = "image-model",
+        )
+        val providerCalls = mutableListOf<Pair<String, String>>()
+        val gateway = createGateway(
+            settings = AppSettings(
+                providers = listOf(provider),
+                selectedProviderId = provider.id,
+            ),
+            apiServiceProvider = { _, _ ->
+                object : TestOpenAiCompatibleApi() {
+                    override suspend fun generateImage(
+                        request: ImageGenerationRequest,
+                    ): Response<ImageGenerationResponse> = error("普通客户端不应处理生图")
+                }
+            },
+            imageApiServiceProvider = { baseUrl, apiKey ->
+                providerCalls += baseUrl to apiKey
+                object : TestOpenAiCompatibleApi() {
+                    override suspend fun generateImage(
+                        request: ImageGenerationRequest,
+                    ): Response<ImageGenerationResponse> {
+                        assertEquals("image-model", request.model)
+                        assertEquals("一只猫", request.prompt)
+                        return Response.success(
+                            ImageGenerationResponse(
+                                data = listOf(
+                                    ImageGenerationDataDto(
+                                        b64Json = "long-running-result",
+                                        revisedPrompt = "长超时客户端返回",
+                                    ),
+                                ),
+                            ),
+                        )
+                    }
+                }
+            },
+        )
+
+        val results = gateway.generateImage("一只猫")
+
+        assertEquals(listOf("https://image.example.com/v1/" to "img-key"), providerCalls)
+        assertEquals("long-running-result", results.single().b64Data)
+        assertEquals("长超时客户端返回", results.single().revisedPrompt)
     }
 
     @Test
@@ -2418,10 +2908,7 @@ class AiGatewayTest {
         val request = server.takeRequest()
         val requestBody = JsonParser.parseString(request.body.readUtf8()).asJsonObject
 
-        assertTrue(requestBody.has("google_search_retrieval"))
-        val retrieval = requestBody.getAsJsonObject("google_search_retrieval")
-        val config = retrieval.getAsJsonObject("dynamic_retrieval_config")
-        assertEquals("dynamic", config["mode"].asString)
+        assertFalse(requestBody.has("google_search_retrieval"))
 
         assertTrue(requestBody.has("tools"))
         val tools = requestBody.getAsJsonArray("tools")
@@ -2480,7 +2967,7 @@ class AiGatewayTest {
 
         assertEquals("我结合上下文和内置搜索回答。", reply.content)
         val requestBody = JsonParser.parseString(server.takeRequest().body.readUtf8()).asJsonObject
-        assertTrue(requestBody.has("google_search_retrieval"))
+        assertFalse(requestBody.has("google_search_retrieval"))
         val tools = requestBody.getAsJsonArray("tools")
         assertTrue(
             tools.any { tool ->
@@ -2541,6 +3028,7 @@ class AiGatewayTest {
     private fun createGateway(
         settings: AppSettings,
         apiServiceProvider: ((String, String) -> OpenAiCompatibleApi)? = null,
+        imageApiServiceProvider: ((String, String) -> OpenAiCompatibleApi)? = null,
         streamClientProvider: ((String, String) -> OkHttpClient)? = null,
         imagePayloadResolver: suspend (MessageAttachment) -> String = { error("不应解析图片") },
         filePromptResolver: suspend (MessageAttachment) -> String = { error("不应解析文件") },
@@ -2579,6 +3067,12 @@ class AiGatewayTest {
                     apiKey = apiKey,
                 )
             },
+            imageApiServiceProvider = imageApiServiceProvider ?: { baseUrl, apiKey ->
+                apiServiceFactory.createLongRunning(
+                    baseUrl = baseUrl,
+                    apiKey = apiKey,
+                )
+            },
             streamClientProvider = streamClientProvider ?: { _, _ ->
                 OkHttpClient.Builder().build()
             },
@@ -2592,6 +3086,33 @@ class AiGatewayTest {
             toolRegistry = toolRegistry,
             ioDispatcher = Dispatchers.Unconfined,
         )
+    }
+
+    private fun secretErrorBody(): String {
+        return """
+            {
+              "error": "Authorization: Bearer sk-secret
+              api-key: header-secret",
+              "api_key": "json-secret",
+              "token": "token-secret",
+              "url": "https://example.com/v1?api_key=query-secret&signature=sig-secret",
+              "image": "data:image/png;base64,QUJDRA=="
+            }
+        """.trimIndent()
+    }
+
+    private fun assertErrorMessageIsRedacted(message: String?) {
+        val text = message.orEmpty()
+        assertFalse(text.contains("sk-secret"))
+        assertFalse(text.contains("header-secret"))
+        assertFalse(text.contains("json-secret"))
+        assertFalse(text.contains("token-secret"))
+        assertFalse(text.contains("query-secret"))
+        assertFalse(text.contains("sig-secret"))
+        assertFalse(text.contains("QUJDRA=="))
+        assertFalse(text.contains("sk-stream-secret"))
+        assertFalse(text.contains("anthropic-secret"))
+        assertTrue(text.contains("[REDACTED]"))
     }
 
     private fun modelBuiltinSearchSettings(

@@ -30,6 +30,7 @@ import com.example.myapplication.model.PhoneSnapshotOwnerType
 import com.example.myapplication.model.ProviderFunction
 import com.example.myapplication.model.RoleplayDiaryEntry
 import com.example.myapplication.model.RoleplayScenario
+import com.example.myapplication.system.security.SensitiveTextRedactor
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -347,7 +348,7 @@ class MailboxViewModel(
                 _uiState.update {
                     it.copy(
                         isSaving = false,
-                        errorMessage = throwable.message ?: "草稿保存失败，请稍后重试",
+                        errorMessage = throwable.toMailboxUiError("草稿保存失败，请稍后重试"),
                     )
                 }
             }
@@ -402,7 +403,7 @@ class MailboxViewModel(
                 _uiState.update {
                     it.copy(
                         isSaving = false,
-                        errorMessage = throwable.message ?: "寄出失败，已保留你的草稿",
+                        errorMessage = throwable.toMailboxUiError("寄出失败，已保留你的草稿"),
                     )
                 }
             }
@@ -438,7 +439,7 @@ class MailboxViewModel(
                     )
                 }
             }.onFailure { throwable ->
-                _uiState.update { it.copy(errorMessage = throwable.message ?: "归档失败") }
+                _uiState.update { it.copy(errorMessage = throwable.toMailboxUiError("归档失败")) }
             }
         }
     }
@@ -459,7 +460,7 @@ class MailboxViewModel(
                     )
                 }
             }.onFailure { throwable ->
-                _uiState.update { it.copy(errorMessage = throwable.message ?: "删除失败") }
+                _uiState.update { it.copy(errorMessage = throwable.toMailboxUiError("删除失败")) }
             }
         }
     }
@@ -533,7 +534,7 @@ class MailboxViewModel(
                     )
                 }
             }.onFailure { throwable ->
-                _uiState.update { it.copy(errorMessage = throwable.message ?: "记忆写入失败") }
+                _uiState.update { it.copy(errorMessage = throwable.toMailboxUiError("记忆写入失败")) }
             }
         }
     }
@@ -568,7 +569,7 @@ class MailboxViewModel(
         viewModelScope.launch {
             runCatching {
                 val scenario = roleplayRepository.getScenario(initialScenarioId)
-                    ?: error("当前聊天不存在或已被删除")
+                    ?: error("当前会话不存在或已被删除")
                 val session = roleplayRepository.getSessionByScenario(initialScenarioId)
                     ?: roleplayRepository.startScenario(initialScenarioId).session
                 val conversation = conversationRepository.getConversation(session.conversationId)
@@ -600,7 +601,7 @@ class MailboxViewModel(
                 _uiState.update {
                     it.copy(
                         isLoading = false,
-                        errorMessage = throwable.message ?: "信箱加载失败",
+                        errorMessage = throwable.toMailboxUiError("信箱加载失败"),
                     )
                 }
             }
@@ -720,7 +721,7 @@ class MailboxViewModel(
         val state = _uiState.value
         val scenarioId = state.scenarioId.ifBlank { initialScenarioId }.trim()
         if (scenarioId.isBlank()) {
-            _uiState.update { it.copy(errorMessage = "当前聊天不存在，无法保存信箱设置") }
+            _uiState.update { it.copy(errorMessage = "当前会话不存在，无法保存信箱设置") }
             return
         }
         val nextSettings = transform(state.settings.copy(scenarioId = scenarioId))
@@ -745,7 +746,7 @@ class MailboxViewModel(
                 generateProactiveLetter(force = false)
             }.onFailure { throwable ->
                 _uiState.update {
-                    it.copy(errorMessage = throwable.message ?: "信箱设置保存失败")
+                    it.copy(errorMessage = throwable.toMailboxUiError("信箱设置保存失败"))
                 }
             }
         }
@@ -875,7 +876,7 @@ class MailboxViewModel(
                 _uiState.update {
                     it.copy(
                         isGeneratingProactiveLetter = false,
-                        errorMessage = throwable.message ?: "主动来信生成失败",
+                        errorMessage = throwable.toMailboxUiError("主动来信生成失败"),
                     )
                 }
             } finally {
@@ -959,7 +960,7 @@ class MailboxViewModel(
             _uiState.update {
                 it.copy(
                     isGeneratingReply = false,
-                    errorMessage = throwable.message ?: "回信生成失败，已保留你的已寄信件",
+                    errorMessage = throwable.toMailboxUiError("回信生成失败，已保留你的已寄信件"),
                 )
             }
         } finally {
@@ -977,7 +978,7 @@ class MailboxViewModel(
                 val messages = conversationRepository.listMessages(conversationId).takeLast(12)
                 val excerpt = formatRecentMessages(messages)
                 if (excerpt.isNotBlank()) {
-                    appendLine("【最近聊天】")
+                    appendLine("【近期剧情】")
                     appendLine(excerpt)
                 }
             }
@@ -1147,6 +1148,13 @@ class MailboxViewModel(
         val count: Int = 0,
         val text: String = "",
     )
+
+    private fun Throwable.toMailboxUiError(fallback: String): String {
+        return SensitiveTextRedactor.throwableMessageForUi(
+            throwable = this,
+            fallback = fallback,
+        )
+    }
 
     companion object {
         fun factory(

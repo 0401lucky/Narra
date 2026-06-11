@@ -7,14 +7,13 @@ object AppRoutes {
     const val SETTINGS_GRAPH = "settings_graph"
     const val SETTINGS = "settings"
     const val SETTINGS_MODEL = "settings/model"
-    const val SETTINGS_SEARCH_TOOLS = "settings/search-tools"
     const val SETTINGS_VOICE_SYNTHESIS = "settings/voice-synthesis"
     const val SETTINGS_PRESETS = "settings/presets"
     const val SETTINGS_PRESET_EDIT = "settings/presets/{presetId}"
     const val SETTINGS_PROVIDERS = "settings/providers"
     const val SETTINGS_UPDATES = "settings/updates"
     const val SETTINGS_USER_MASKS = "settings/user-masks"
-    const val SETTINGS_SCREEN_TRANSLATION = "settings/screen-translation"
+    const val SETTINGS_ROLEPLAY_SCRIPTS = "settings/roleplay-scripts"
     const val SETTINGS_PROVIDER_DETAIL = "settings/providers/{providerId}"
     const val SETTINGS_ASSISTANTS = "settings/assistants"
     const val SETTINGS_ASSISTANT_DETAIL = "settings/assistants/{assistantId}"
@@ -43,6 +42,7 @@ object AppRoutes {
     const val ROLEPLAY_VIDEO_CALL = "roleplay/play/{scenarioId}/video-call"
     const val ROLEPLAY_MAILBOX = "roleplay/play/{scenarioId}/mailbox"
     const val PHONE_CHECK = "phone-check/{conversationId}?scenarioId={scenarioId}&ownerType={ownerType}"
+    const val MOMENTS_GLOBAL = "moments"
     const val MOMENTS = "moments/{conversationId}?scenarioId={scenarioId}&ownerType={ownerType}"
 
     fun settingsProviderDetail(providerId: String): String {
@@ -131,6 +131,10 @@ object AppRoutes {
         val encodedConversationId = Uri.encode(conversationId)
         val encodedScenarioId = Uri.encode(scenarioId.orEmpty())
         return "phone-check/$encodedConversationId?scenarioId=$encodedScenarioId&ownerType=${ownerType.storageValue}"
+    }
+
+    fun moments(): String {
+        return MOMENTS_GLOBAL
     }
 
     fun moments(

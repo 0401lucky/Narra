@@ -7,7 +7,7 @@ enum class MemoryScopeType(
     val label: String,
 ) {
     GLOBAL("global", "全局"),
-    ASSISTANT("assistant", "助手"),
+    ASSISTANT("assistant", "角色"),
     CONVERSATION("conversation", "会话");
 
     companion object {

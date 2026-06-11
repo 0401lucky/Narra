@@ -29,6 +29,9 @@ object RoleplayMessageFormatSupport {
         """(?is)\b(?:begin_of_text|end_of_text|begin_of_sentence|end_of_sentence|eot_id|eom_id|bos|eos)\b\s*\|>""",
     )
     private val genericTagPattern = Regex("""(?is)<[^>]+>""")
+    private val onlineJsonProtocolMarkerPattern = Regex(
+        """(?is)["']?\s*(?:type|action_type|actionType|kind|event|action)\s*["']?\s*[:：]""",
+    )
 
     fun resolveScenarioInteractionMode(
         scenario: RoleplayScenario,
@@ -124,8 +127,10 @@ object RoleplayMessageFormatSupport {
         val hasProtocolStructure = protocolStructuralTagPattern.containsMatchIn(normalizedContent)
         val hasLongformSpeech = longformSpeechTagPattern.containsMatchIn(normalizedContent)
         val hasThought = sharedThoughtTagPattern.containsMatchIn(normalizedContent)
+        val hasOnlineJsonProtocol = looksLikeOnlineJsonProtocol(normalizedContent)
         return when {
             hasProtocolStructure -> RoleplayOutputFormat.PROTOCOL
+            hasOnlineJsonProtocol -> RoleplayOutputFormat.PROTOCOL
             hasLongformSpeech -> RoleplayOutputFormat.LONGFORM
             hasThought && preferredFormat == RoleplayOutputFormat.PROTOCOL && hasVisibleTextOutsideThoughtBlocks(normalizedContent) -> {
                 RoleplayOutputFormat.LONGFORM
@@ -136,6 +141,13 @@ object RoleplayMessageFormatSupport {
             preferredFormat != RoleplayOutputFormat.UNSPECIFIED -> preferredFormat
             else -> RoleplayOutputFormat.PLAIN
         }
+    }
+
+    private fun looksLikeOnlineJsonProtocol(rawContent: String): Boolean {
+        if (!onlineJsonProtocolMarkerPattern.containsMatchIn(rawContent)) {
+            return false
+        }
+        return OnlineActionProtocolParser.parse(rawContent = rawContent, characterName = "角色") != null
     }
 
     private fun hasVisibleTextOutsideThoughtBlocks(

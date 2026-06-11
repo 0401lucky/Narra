@@ -35,6 +35,10 @@ data class ChatCompletionRequest(
     val stop: List<String> = emptyList(),
     @SerializedName("reasoning_effort")
     val reasoningEffort: String? = null,
+    @SerializedName("enable_thinking")
+    val enableThinking: Boolean? = null,
+    @SerializedName("thinking_budget")
+    val thinkingBudget: Int? = null,
     val thinking: ThinkingConfigDto? = null,
     val tools: List<ChatToolDto> = emptyList(),
     @SerializedName("tool_choice")

@@ -49,7 +49,7 @@ import com.example.myapplication.ui.component.NarraTextButton
 import com.example.myapplication.ui.component.roleplay.ImmersiveBackdropState
 import com.example.myapplication.ui.component.roleplay.ImmersiveGlassPalette
 import com.example.myapplication.ui.component.roleplay.ImmersiveGlassSurface
-import com.example.myapplication.ui.screen.chat.ModelPickerSheet
+import com.example.myapplication.ui.component.modelpicker.ModelPickerSheet
 import com.example.myapplication.ui.screen.settings.SettingsScreenPadding
 
 internal const val TAG_ROLEPLAY_SETTINGS_LIST = "roleplay_settings_list"

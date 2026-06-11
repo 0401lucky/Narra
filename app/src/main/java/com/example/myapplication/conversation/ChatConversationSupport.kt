@@ -58,7 +58,7 @@ object ChatConversationSupport {
         perMessageLimit: Int,
     ): String {
         val segments = messages.mapNotNull { message ->
-            val role = if (message.role == MessageRole.USER) "用户" else "助手"
+            val role = if (message.role == MessageRole.USER) "用户" else "角色"
             val content = message.parts.toPlainText()
                 .ifBlank { message.content }
                 .trim()
@@ -160,7 +160,7 @@ object ChatConversationSupport {
         if (!supportsImageGeneration(settings, selectedModel)) {
             return null
         }
-        return "当前模型为生图模型，不支持特殊玩法。请切换到聊天模型后再继续"
+        return "当前模型为生图模型，不支持特殊玩法。请切换到主会话模型后再继续"
     }
 
     fun buildUserMessageParts(

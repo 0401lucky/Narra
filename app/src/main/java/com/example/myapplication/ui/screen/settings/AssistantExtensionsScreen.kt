@@ -216,7 +216,7 @@ fun AssistantExtensionsScreen(
                             }
                             if (ownedEntries.isNotEmpty()) {
                                 Text(
-                                    text = "当前助手专属",
+                                    text = "当前角色专属",
                                     style = MaterialTheme.typography.bodySmall,
                                     color = palette.body,
                                 )
@@ -292,7 +292,7 @@ fun AssistantExtensionsScreen(
                             }
                         }
                         Text(
-                            text = "选择整本世界书后，这本世界书下的全部可挂载条目都会对当前助手生效。",
+                            text = "选择整本世界书后，这本世界书下的全部可挂载条目都会对当前角色生效。",
                             style = MaterialTheme.typography.bodySmall,
                             color = palette.body,
                         )

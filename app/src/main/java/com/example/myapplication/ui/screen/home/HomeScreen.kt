@@ -20,7 +20,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.Chat
 import androidx.compose.material.icons.filled.PhoneAndroid
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.ButtonDefaults
@@ -57,7 +56,6 @@ import com.example.myapplication.model.AppSettings
 @Composable
 fun HomeScreen(
     storedSettings: AppSettings,
-    onOpenChat: () -> Unit,
     onOpenSettings: () -> Unit,
     onOpenRoleplay: () -> Unit,
 ) {
@@ -135,16 +133,6 @@ fun HomeScreen(
             )
 
             Spacer(modifier = Modifier.height(28.dp))
-
-                AnimatedHoverButton(
-                    text = stringResource(id = R.string.home_open_chat),
-                    icon = Icons.AutoMirrored.Filled.Chat,
-                    onClick = onOpenChat,
-                    enabled = hasRequiredConfig,
-                    isPrimary = false
-                )
-
-                Spacer(modifier = Modifier.height(16.dp))
 
                 AnimatedHoverButton(
                     text = stringResource(id = R.string.home_open_settings),

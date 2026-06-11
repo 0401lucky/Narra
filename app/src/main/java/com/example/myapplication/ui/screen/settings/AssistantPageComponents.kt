@@ -28,7 +28,7 @@ import com.example.myapplication.model.Assistant
 import com.example.myapplication.ui.component.AssistantAvatar
 
 /**
- * 助手子页（基础 / 提示词 / 扩展 / 记忆）顶部的玻璃拟态 hero。
+ * 角色子页（基础 / 提示词 / 扩展 / 记忆）顶部的玻璃拟态 hero。
  * 当前走"渐变底色 + 半透明填充 + 边缘柔光 + 圆角 28"的现代玻璃感，
  * 避免与外层 SettingsTopBar 的标题重复，聚焦"我在谁的配置里"。
  */
@@ -83,7 +83,7 @@ internal fun AssistantSubPageHeader(
                     overflow = TextOverflow.Ellipsis,
                 )
                 Text(
-                    text = assistant.name.ifBlank { "未命名助手" },
+                    text = assistant.name.ifBlank { "未命名角色" },
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold,
                     color = palette.title,

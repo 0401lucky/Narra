@@ -79,7 +79,7 @@ internal enum class WorldBookListScopeFilter(val label: String, val scope: World
     ALL("全部", null),
     GLOBAL("全局", WorldBookScopeType.GLOBAL),
     ATTACHABLE("可挂载", WorldBookScopeType.ATTACHABLE),
-    ASSISTANT("助手", WorldBookScopeType.ASSISTANT),
+    ASSISTANT("角色", WorldBookScopeType.ASSISTANT),
     CONVERSATION("会话", WorldBookScopeType.CONVERSATION),
 }
 

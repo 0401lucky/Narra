@@ -109,7 +109,7 @@ internal fun ChatConversationPane(
                     body = if (hasBaseCredentials) {
                         "当前已经保存基础连接信息，请先刷新或选择模型，完成后即可在底部输入栏直接发起对话。"
                     } else {
-                        "请先进入设置页保存 Base URL、API Key 和模型配置。保存成功后，聊天页会自动恢复发送能力。"
+                        "请先进入设置页保存 Base URL、API Key 和模型配置。保存成功后，会话页会自动恢复发送能力。"
                     },
                     containerColor = if (hasBaseCredentials) {
                         MaterialTheme.colorScheme.tertiaryContainer
@@ -128,9 +128,9 @@ internal fun ChatConversationPane(
                 NoticeCard(
                     title = "当前处于生图模式",
                     body = if (canAttachImages) {
-                        "发送文字会直接生成图片，也可以上传参考图做修改。文件和特殊玩法仍不可用；如需普通对话，请切换到聊天模型。"
+                        "发送文字会直接生成图片，也可以上传参考图做修改。文件和特殊玩法仍不可用；如需普通对话，请切换到主会话模型。"
                     } else {
-                        "发送文字会直接生成图片。附件和特殊玩法已临时禁用；如需普通对话，请切换到聊天模型。"
+                        "发送文字会直接生成图片。附件和特殊玩法已临时禁用；如需普通对话，请切换到主会话模型。"
                     },
                     containerColor = MaterialTheme.colorScheme.tertiaryContainer,
                     contentColor = MaterialTheme.colorScheme.onTertiaryContainer,

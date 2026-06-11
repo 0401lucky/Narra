@@ -67,7 +67,7 @@ class PresetPromptRenderer {
                     contextSections += ContextLogSection(
                         sourceType = ContextLogSourceType.PROMPT_PRESET,
                         title = "${entry.title} · 插入点",
-                        content = "聊天历史会从这里插入。",
+                        content = "近期记录会从这里插入。",
                         tokenEstimate = 0,
                     )
                     return@forEach

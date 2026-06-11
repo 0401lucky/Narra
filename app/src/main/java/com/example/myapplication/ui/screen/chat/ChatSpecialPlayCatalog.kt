@@ -1,4 +1,4 @@
-package com.example.myapplication.ui.screen.chat
+package com.example.myapplication.ui.component.specialplay
 
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material.icons.Icons

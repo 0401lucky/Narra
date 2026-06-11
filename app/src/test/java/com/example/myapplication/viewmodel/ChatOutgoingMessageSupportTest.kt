@@ -134,7 +134,7 @@ class ChatOutgoingMessageSupportTest {
         )
 
         val error = result as ChatOutgoingMessageResolution.Error
-        assertEquals("当前模型为生图模型，不支持特殊玩法。请切换到聊天模型后再继续", error.message)
+        assertEquals("当前模型为生图模型，不支持特殊玩法。请切换到主会话模型后再继续", error.message)
     }
 
     @Test

@@ -50,7 +50,7 @@ data class Preset(
         if (systemPrompt.isNotBlank()) {
             legacy += PresetPromptEntry(
                 id = "legacy-main-prompt",
-                title = "Main Prompt",
+                title = "核心提示",
                 role = PresetPromptRole.SYSTEM,
                 kind = PresetPromptEntryKind.MAIN_PROMPT,
                 content = systemPrompt,
@@ -61,7 +61,7 @@ data class Preset(
         if (contextTemplate.isNotBlank()) {
             legacy += PresetPromptEntry(
                 id = "legacy-context-template",
-                title = "Context Template",
+                title = "上下文模板",
                 role = PresetPromptRole.SYSTEM,
                 kind = PresetPromptEntryKind.CONTEXT_TEMPLATE,
                 content = contextTemplate,
@@ -71,7 +71,7 @@ data class Preset(
         }
         legacy += PresetPromptEntry(
             id = "legacy-chat-history",
-            title = "Chat History",
+            title = "近期记录",
             role = PresetPromptRole.SYSTEM,
             kind = PresetPromptEntryKind.CHAT_HISTORY,
             content = "",
@@ -136,23 +136,23 @@ enum class PresetPromptRole(val storageValue: String, val label: String) {
 }
 
 enum class PresetPromptEntryKind(val storageValue: String, val label: String) {
-    MAIN_PROMPT("main_prompt", "Main Prompt"),
-    NSFW_PROMPT("nsfw_prompt", "NSFW Prompt"),
-    CONTEXT_TEMPLATE("context_template", "Context Template"),
-    CHARACTER_DESCRIPTION("character_description", "Char Description"),
-    CHARACTER_PROMPT("character_prompt", "Char Prompt"),
-    USER_PERSONA("user_persona", "User Persona"),
-    SCENARIO("scenario", "Scenario"),
-    EXAMPLE_DIALOGUE("example_dialogue", "Chat Examples"),
-    WORLD_INFO_BEFORE("world_info_before", "World Info before"),
-    WORLD_INFO_AFTER("world_info_after", "World Info after"),
-    LONG_MEMORY("long_memory", "Long Memory"),
-    SUMMARY("summary", "Summary"),
-    PHONE_CONTEXT("phone_context", "Phone Context"),
-    CHAT_HISTORY("chat_history", "Chat History"),
-    POST_HISTORY("post_history", "Post-History"),
-    STATUS_RULES("status_rules", "Status Rules"),
-    CUSTOM("custom", "Custom");
+    MAIN_PROMPT("main_prompt", "核心提示"),
+    NSFW_PROMPT("nsfw_prompt", "敏感内容提示"),
+    CONTEXT_TEMPLATE("context_template", "上下文模板"),
+    CHARACTER_DESCRIPTION("character_description", "角色描述"),
+    CHARACTER_PROMPT("character_prompt", "角色补充"),
+    USER_PERSONA("user_persona", "玩家侧设定"),
+    SCENARIO("scenario", "场景"),
+    EXAMPLE_DIALOGUE("example_dialogue", "示例互动"),
+    WORLD_INFO_BEFORE("world_info_before", "前置世界书"),
+    WORLD_INFO_AFTER("world_info_after", "后置世界书"),
+    LONG_MEMORY("long_memory", "长记忆"),
+    SUMMARY("summary", "摘要"),
+    PHONE_CONTEXT("phone_context", "手机线索"),
+    CHAT_HISTORY("chat_history", "近期记录"),
+    POST_HISTORY("post_history", "记录后提示"),
+    STATUS_RULES("status_rules", "状态规则"),
+    CUSTOM("custom", "自定义");
 
     companion object {
         fun fromStorageValue(value: String): PresetPromptEntryKind {
@@ -222,7 +222,7 @@ val BUILTIN_PRESETS: List<Preset> = listOf(
         """.trimIndent(),
         contextTemplate = """
             动态上下文由 Narra 按真实来源插入：
-            角色卡、用户身份、角色补充、世界书、长记忆、摘要、手机线索与聊天历史会分别展示。
+            角色卡、玩家侧设定、角色补充、世界书、长记忆、摘要、手机线索与近期记录会分别展示。
         """.trimIndent(),
         sampler = PresetSamplerConfig(
             temperature = 0.8f,
@@ -241,7 +241,7 @@ val BUILTIN_PRESETS: List<Preset> = listOf(
 
                     始终以 {{char}} 的视角观察、判断、行动和回应。你可以描写 {{char}} 的动作、神态、语气、心理波动和环境感受，但不要替 {{user}} 做决定、补完台词或越权描写 {{user}} 的内心。
 
-                    角色卡、世界书、长期记忆、剧情摘要与聊天历史是当前故事事实。它们优先级高于临场发挥；如果信息存在张力，选择最能维持角色稳定性、人物关系和剧情连续性的解释。
+                    角色卡、世界书、长期记忆、剧情摘要与近期剧情记录是当前故事事实。它们优先级高于临场发挥；如果信息存在张力，选择最能维持角色稳定性、人物关系和剧情连续性的解释。
 
                     主动推进场景，不只回答表面问题。每次回应都要让关系、信息、气氛或行动至少发生一个细微变化，让 {{user}} 感到故事正在往前走。
                 """.trimIndent(),
@@ -258,7 +258,7 @@ val BUILTIN_PRESETS: List<Preset> = listOf(
 
                     不要只读取角色名和表面标签。角色卡里出现的职业、年龄、关系、创伤、偏好、口癖、边界和秘密，都是行为约束；如果当前输入触发了其中某条，必须优先按人设反应。
 
-                    不要把角色写成通用温柔助手、通用霸总、通用心理咨询师或通用小说旁白。宁可短一点，也要让这句话像只有 {{char}} 会这样说。
+                    不要把角色写成通用温柔模板、通用霸总、通用心理咨询师或通用小说旁白。宁可短一点，也要让这句话像只有 {{char}} 会这样说。
                 """.trimIndent(),
                 order = 2,
                 locked = true,
@@ -348,7 +348,7 @@ val BUILTIN_PRESETS: List<Preset> = listOf(
             ),
             PresetPromptEntry(
                 id = "narra-char-description",
-                title = "Char Description",
+                title = "角色描述",
                 role = PresetPromptRole.SYSTEM,
                 kind = PresetPromptEntryKind.CHARACTER_DESCRIPTION,
                 content = "{{description}}",
@@ -357,7 +357,7 @@ val BUILTIN_PRESETS: List<Preset> = listOf(
             ),
             PresetPromptEntry(
                 id = "narra-char-prompt",
-                title = "Char Prompt",
+                title = "角色补充",
                 role = PresetPromptRole.SYSTEM,
                 kind = PresetPromptEntryKind.CHARACTER_PROMPT,
                 content = "{{char_prompt}}",
@@ -366,7 +366,7 @@ val BUILTIN_PRESETS: List<Preset> = listOf(
             ),
             PresetPromptEntry(
                 id = "narra-user-persona",
-                title = "User Persona",
+                title = "玩家侧设定",
                 role = PresetPromptRole.SYSTEM,
                 kind = PresetPromptEntryKind.USER_PERSONA,
                 content = "{{persona}}",
@@ -375,7 +375,7 @@ val BUILTIN_PRESETS: List<Preset> = listOf(
             ),
             PresetPromptEntry(
                 id = "narra-scenario",
-                title = "Scenario",
+                title = "场景",
                 role = PresetPromptRole.SYSTEM,
                 kind = PresetPromptEntryKind.SCENARIO,
                 content = "{{scenario}}",
@@ -384,7 +384,7 @@ val BUILTIN_PRESETS: List<Preset> = listOf(
             ),
             PresetPromptEntry(
                 id = "narra-examples",
-                title = "Chat Examples",
+                title = "示例互动",
                 role = PresetPromptRole.SYSTEM,
                 kind = PresetPromptEntryKind.EXAMPLE_DIALOGUE,
                 content = "{{example_dialogue}}",
@@ -393,7 +393,7 @@ val BUILTIN_PRESETS: List<Preset> = listOf(
             ),
             PresetPromptEntry(
                 id = "narra-summary",
-                title = "Summary",
+                title = "摘要",
                 role = PresetPromptRole.SYSTEM,
                 kind = PresetPromptEntryKind.SUMMARY,
                 content = "{{summary}}",
@@ -402,7 +402,7 @@ val BUILTIN_PRESETS: List<Preset> = listOf(
             ),
             PresetPromptEntry(
                 id = "narra-world-info",
-                title = "World Info",
+                title = "世界书",
                 role = PresetPromptRole.SYSTEM,
                 kind = PresetPromptEntryKind.WORLD_INFO_BEFORE,
                 content = "{{world_info}}",
@@ -411,7 +411,7 @@ val BUILTIN_PRESETS: List<Preset> = listOf(
             ),
             PresetPromptEntry(
                 id = "narra-long-memory",
-                title = "Long Memory",
+                title = "长记忆",
                 role = PresetPromptRole.SYSTEM,
                 kind = PresetPromptEntryKind.LONG_MEMORY,
                 content = "{{long_memory}}",
@@ -420,7 +420,7 @@ val BUILTIN_PRESETS: List<Preset> = listOf(
             ),
             PresetPromptEntry(
                 id = "narra-phone-context",
-                title = "Phone Context",
+                title = "手机线索",
                 role = PresetPromptRole.SYSTEM,
                 kind = PresetPromptEntryKind.PHONE_CONTEXT,
                 content = "{{phone_context}}",
@@ -429,7 +429,7 @@ val BUILTIN_PRESETS: List<Preset> = listOf(
             ),
             PresetPromptEntry(
                 id = "narra-chat-history",
-                title = "Chat History",
+                title = "近期记录",
                 role = PresetPromptRole.SYSTEM,
                 kind = PresetPromptEntryKind.CHAT_HISTORY,
                 order = 100,
@@ -437,7 +437,7 @@ val BUILTIN_PRESETS: List<Preset> = listOf(
             ),
             PresetPromptEntry(
                 id = "narra-status-rules",
-                title = "Status Rules",
+                title = "状态规则",
                 role = PresetPromptRole.SYSTEM,
                 kind = PresetPromptEntryKind.STATUS_RULES,
                 content = """
@@ -455,7 +455,7 @@ val BUILTIN_PRESETS: List<Preset> = listOf(
                 role = PresetPromptRole.SYSTEM,
                 kind = PresetPromptEntryKind.POST_HISTORY,
                 content = """
-                    回应时承接最后一条用户消息，不要复述整段聊天历史，也不要重复上一条助手回复的原文。
+                    回应时承接最后一条用户消息，不要复述整段近期记录，也不要重复上一条角色回复的原文。
                     如果需要续写上一段未完成内容，只继续未完成的部分。
                 """.trimIndent(),
                 order = 120,
@@ -463,7 +463,7 @@ val BUILTIN_PRESETS: List<Preset> = listOf(
             ),
         ),
         builtIn = true,
-        version = 7,
+        version = 8,
         createdAt = 1L,
         updatedAt = 1L,
     ),
@@ -491,7 +491,7 @@ val BUILTIN_PRESETS: List<Preset> = listOf(
                 content = """
                     你是 {{char}}。先理解角色卡、世界书、长期记忆、摘要和 {{user}} 当前意图，再给出克制、连贯、不中断沉浸感的回应。
 
-                    回复前必须在内部确认：角色卡中至少两项设定已经影响本轮语气、边界或行动。不要输出通用助手式安慰、通用小说旁白或套话。
+                    回复前必须在内部确认：角色卡中至少两项设定已经影响本轮语气、边界或行动。不要输出通用安慰模板、通用小说旁白或套话。
 
                     不展示推理过程，不解释系统规则。只输出最终角色回应。
                 """.trimIndent(),
@@ -515,7 +515,7 @@ val BUILTIN_PRESETS: List<Preset> = listOf(
             ),
             PresetPromptEntry(
                 id = "reasoning-char-description",
-                title = "Char Description",
+                title = "角色描述",
                 role = PresetPromptRole.SYSTEM,
                 kind = PresetPromptEntryKind.CHARACTER_DESCRIPTION,
                 content = "{{description}}",
@@ -524,7 +524,7 @@ val BUILTIN_PRESETS: List<Preset> = listOf(
             ),
             PresetPromptEntry(
                 id = "reasoning-char-prompt",
-                title = "Char Prompt",
+                title = "角色补充",
                 role = PresetPromptRole.SYSTEM,
                 kind = PresetPromptEntryKind.CHARACTER_PROMPT,
                 content = "{{char_prompt}}",
@@ -533,7 +533,7 @@ val BUILTIN_PRESETS: List<Preset> = listOf(
             ),
             PresetPromptEntry(
                 id = "reasoning-summary",
-                title = "Summary",
+                title = "摘要",
                 role = PresetPromptRole.SYSTEM,
                 kind = PresetPromptEntryKind.SUMMARY,
                 content = "{{summary}}",
@@ -542,7 +542,7 @@ val BUILTIN_PRESETS: List<Preset> = listOf(
             ),
             PresetPromptEntry(
                 id = "reasoning-world-info",
-                title = "World Info",
+                title = "世界书",
                 role = PresetPromptRole.SYSTEM,
                 kind = PresetPromptEntryKind.WORLD_INFO_BEFORE,
                 content = "{{world_info}}",
@@ -551,7 +551,7 @@ val BUILTIN_PRESETS: List<Preset> = listOf(
             ),
             PresetPromptEntry(
                 id = "reasoning-long-memory",
-                title = "Long Memory",
+                title = "长记忆",
                 role = PresetPromptRole.SYSTEM,
                 kind = PresetPromptEntryKind.LONG_MEMORY,
                 content = "{{long_memory}}",
@@ -560,7 +560,7 @@ val BUILTIN_PRESETS: List<Preset> = listOf(
             ),
             PresetPromptEntry(
                 id = "reasoning-chat-history",
-                title = "Chat History",
+                title = "近期记录",
                 role = PresetPromptRole.SYSTEM,
                 kind = PresetPromptEntryKind.CHAT_HISTORY,
                 order = 100,
@@ -577,7 +577,7 @@ val BUILTIN_PRESETS: List<Preset> = listOf(
             ),
         ),
         builtIn = true,
-        version = 4,
+        version = 5,
         createdAt = 1L,
         updatedAt = 1L,
     ),

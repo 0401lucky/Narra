@@ -16,6 +16,10 @@ import com.example.myapplication.model.PhoneSnapshotSection
 import com.example.myapplication.model.PhoneSnapshotSections
 import com.example.myapplication.model.PhoneSocialComment
 import com.example.myapplication.model.PhoneSocialPost
+import com.example.myapplication.model.MomentAssistantContext
+import com.example.myapplication.model.MomentAuthorType
+import com.example.myapplication.model.MomentCommentDraft
+import com.example.myapplication.model.MomentPostDraft
 import com.example.myapplication.model.ProviderApiProtocol
 import com.example.myapplication.model.ProviderSettings
 import com.google.gson.JsonObject
@@ -298,6 +302,195 @@ internal class PhoneContentPromptService(
         }.getOrDefault(emptyList())
     }
 
+    suspend fun generateMomentPost(
+        assistantName: String,
+        assistantPersona: String,
+        userName: String,
+        recentMoments: String,
+        baseUrl: String,
+        apiKey: String,
+        modelId: String,
+        apiProtocol: ProviderApiProtocol,
+        provider: ProviderSettings?,
+    ): MomentPostDraft {
+        val prompt = buildString {
+            appendLine("你正在为一个虚构角色生成一条微信朋友圈。")
+            appendLine("发布者：$assistantName")
+            appendLine("用户昵称：$userName")
+            appendLine()
+            appendLine("【角色设定】")
+            appendLine(assistantPersona.ifBlank { "保持自然、真实、有生活感。" })
+            if (recentMoments.isNotBlank()) {
+                appendLine()
+                appendLine("【最近朋友圈，仅用于避免重复】")
+                appendLine(recentMoments)
+            }
+            appendLine()
+            appendLine("【要求】")
+            appendLine("1. 文案像真实朋友圈：短、口语、带生活碎片或情绪，不要写成旁白。")
+            appendLine("2. 可以轻微暗示和用户的关系，但不要解释设定。")
+            appendLine("3. 不要使用 Markdown，不要带标题，不要写 hashtags。")
+            appendLine("4. image_prompt 用于可选配图：如果这条朋友圈适合配图，写一条具体画面提示词；不适合则留空。")
+            appendLine("5. 严格输出 JSON：{\"content\":\"...\",\"image_prompt\":\"...\"}")
+        }
+        val content = core.requestCompletionContent(
+            baseUrl = baseUrl,
+            apiKey = apiKey,
+            operation = "朋友圈生成失败",
+            request = core.buildRequestWithRoleplaySampling(
+                model = modelId,
+                messages = listOf(ChatMessageDto(role = "user", content = prompt)),
+                baseUrl = baseUrl,
+                apiProtocol = apiProtocol,
+            ),
+            apiProtocol = apiProtocol,
+            provider = provider,
+            allowRoleplaySamplingFallback = true,
+        ).trim()
+        val parsedJson = runCatching {
+            core.parseRequiredStructuredJsonObject(
+                content = content,
+                operation = "朋友圈生成失败",
+            )
+        }.getOrNull()
+        return MomentPostDraft(
+            content = parsedJson?.stringValue("content").orEmpty().ifBlank {
+                content
+                    .removePrefix("```json")
+                    .removePrefix("```")
+                    .removeSuffix("```")
+                    .trim()
+            },
+            imagePrompt = parsedJson?.stringValue("image_prompt").orEmpty(),
+        )
+    }
+
+    suspend fun generateMomentCommentReplies(
+        assistants: List<MomentAssistantContext>,
+        postAuthorName: String,
+        postAuthorType: MomentAuthorType = MomentAuthorType.ASSISTANT,
+        postContent: String,
+        existingComments: String,
+        userName: String,
+        userComment: String,
+        isUserCommentTrigger: Boolean = true,
+        baseUrl: String,
+        apiKey: String,
+        modelId: String,
+        apiProtocol: ProviderApiProtocol,
+        provider: ProviderSettings?,
+    ): List<MomentCommentDraft> {
+        if (assistants.isEmpty()) return emptyList()
+        val prompt = buildString {
+            appendLine("你正在模拟微信朋友圈评论区互动。")
+            appendLine("所有回复都必须符合各自角色人设，像真实社交评论，不要写旁白。")
+            appendLine("$userName 是当前故事和关系的核心锚点，角色之间的互动不能抢走或改写角色对 $userName 的情感指向。")
+            appendLine()
+            appendLine("【可参与角色】")
+            assistants.forEach { assistant ->
+                appendLine("- id=${assistant.id}，昵称=${assistant.name}，评论风格=${assistant.commentStyle.label}")
+                if (assistant.persona.isNotBlank()) {
+                    appendLine("  人设：${assistant.persona.take(900)}")
+                }
+            }
+            appendLine()
+            appendLine("【动态】")
+            appendLine("发布者：$postAuthorName（${postAuthorType.toPromptLabel(userName)}）")
+            appendLine("正文：$postContent")
+            if (existingComments.isNotBlank()) {
+                appendLine()
+                appendLine("【已有评论】")
+                appendLine(existingComments)
+            }
+            appendLine()
+            if (isUserCommentTrigger) {
+                appendLine("【$userName 刚发表的新评论】")
+                appendLine("$userName：$userComment")
+            } else {
+                appendLine("【触发事件】")
+                appendLine(userComment)
+            }
+            appendLine()
+            appendLine("【要求】")
+            appendLine("1. 生成 1-3 条回复，可以角色之间互相打趣、接话或隐晦较劲。")
+            appendLine("2. 只能使用上面列出的角色 id 和昵称。")
+            appendLine("3. 每条回复控制在 40 字以内，口语化。")
+            appendLine("4. 如果动态发布者不是 $userName，正文里的“你 / 想你 / 等你 / 陪你”默认指向 $userName，不是参与评论的其它角色。")
+            appendLine("5. 角色可以吃醋或调侃，但不得把自己写成动态发布者正在想念、等待或邀约的人；不要生成“我也想你”“只许想我”“等我过去”等角色对角色恋爱式回复。")
+            appendLine("6. 如果已有评论里有违背上述关系锚点的内容，不要模仿或延续。")
+            appendLine("7. 严格输出 JSON 数组：[{\"author_id\":\"...\",\"author_name\":\"...\",\"text\":\"...\"}]")
+        }
+        val content = core.requestCompletionContent(
+            baseUrl = baseUrl,
+            apiKey = apiKey,
+            operation = "朋友圈评论生成失败",
+            request = core.buildRequestWithRoleplaySampling(
+                model = modelId,
+                messages = listOf(ChatMessageDto(role = "user", content = prompt)),
+                baseUrl = baseUrl,
+                apiProtocol = apiProtocol,
+            ),
+            apiProtocol = apiProtocol,
+            provider = provider,
+            allowRoleplaySamplingFallback = true,
+        )
+        val allowedIds = assistants.map(MomentAssistantContext::id).toSet()
+        return runCatching {
+            val cleaned = content.trim()
+                .removePrefix("```json")
+                .removePrefix("```JSON")
+                .removePrefix("```")
+                .removeSuffix("```")
+                .trim()
+            val parsed = JsonParser.parseString(cleaned)
+            val array = if (parsed.isJsonArray) {
+                parsed.asJsonArray
+            } else {
+                parsed.asJsonObjectOrNull()
+                    ?.getAsJsonArrayOrNull("replies")
+                    ?: return@runCatching emptyList()
+            }
+            array.mapNotNull { element ->
+                val obj = element.asJsonObjectOrNull() ?: return@mapNotNull null
+                val authorId = obj.stringValue("author_id")
+                val authorName = obj.stringValue("author_name")
+                val text = obj.stringValue("text")
+                if (
+                    authorId in allowedIds &&
+                    authorName.isNotBlank() &&
+                    text.isNotBlank() &&
+                    !text.isMisaddressedMomentReply(postAuthorType)
+                ) {
+                    MomentCommentDraft(
+                        authorId = authorId,
+                        authorName = authorName,
+                        text = text,
+                    )
+                } else {
+                    null
+                }
+            }
+        }.getOrDefault(emptyList())
+    }
+
+    private fun MomentAuthorType.toPromptLabel(userName: String): String {
+        return when (this) {
+            MomentAuthorType.USER -> "$userName / 用户本人"
+            MomentAuthorType.ASSISTANT -> "角色，不是用户本人"
+            MomentAuthorType.SYSTEM -> "系统"
+        }
+    }
+
+    private fun String.isMisaddressedMomentReply(postAuthorType: MomentAuthorType): Boolean {
+        if (postAuthorType == MomentAuthorType.USER) {
+            return false
+        }
+        val normalized = filterNot(Char::isWhitespace)
+        return MisaddressedMomentReplyPatterns.any { pattern ->
+            pattern.containsMatchIn(normalized)
+        }
+    }
+
     private fun buildPhoneSnapshotReference(
         snapshot: PhoneSnapshot,
         excludeSections: Set<PhoneSnapshotSection>,
@@ -553,6 +746,17 @@ internal class PhoneContentPromptService(
                     )
                 }
                 ?.filter { it.authorName.isNotBlank() && it.content.isNotBlank() },
+        )
+    }
+
+    private companion object {
+        val MisaddressedMomentReplyPatterns = listOf(
+            Regex("我也.*想你"),
+            Regex("也在想你"),
+            Regex("(只许|只能|只准).*想我"),
+            Regex("等着?我(过去|过来|去|来)"),
+            Regex("我(现在|马上|一会儿|这就)?.*(过去|过来)"),
+            Regex("(过来|来|到)我这"),
         )
     }
 }

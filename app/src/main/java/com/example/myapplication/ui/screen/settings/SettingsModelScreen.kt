@@ -21,12 +21,11 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.Chat
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.outlined.Build
+import androidx.compose.material.icons.outlined.Forum
 import androidx.compose.material.icons.outlined.Image
 import androidx.compose.material.icons.outlined.Psychology
 import androidx.compose.material.icons.outlined.QuestionAnswer
-import androidx.compose.material.icons.outlined.Search
 import androidx.compose.material.icons.outlined.Subtitles
-import androidx.compose.material.icons.outlined.Translate
 import androidx.compose.material.icons.outlined.Tune
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Icon
@@ -51,8 +50,8 @@ import com.example.myapplication.model.AppSettings
 import com.example.myapplication.model.ProviderFunction
 import com.example.myapplication.model.ProviderFunctionModelMode
 import com.example.myapplication.ui.component.ModelIcon
-import com.example.myapplication.ui.screen.chat.ModelPickerQuickAction
-import com.example.myapplication.ui.screen.chat.ModelPickerSheet
+import com.example.myapplication.ui.component.modelpicker.ModelPickerQuickAction
+import com.example.myapplication.ui.component.modelpicker.ModelPickerSheet
 import com.example.myapplication.viewmodel.SettingsUiState
 
 @Composable
@@ -149,11 +148,11 @@ fun SettingsModelScreen(
                 item {
                     RoleModelCard(
                         icon = Icons.AutoMirrored.Outlined.Chat,
-                        title = "聊天模型",
+                        title = "主会话模型",
                         statusLabel = "默认模型",
                         currentModelId = uiState.selectedModel,
                         providerName = provider?.name.orEmpty(),
-                        emptyStateText = "还没选择默认聊天模型",
+                        emptyStateText = "还没选择主会话模型",
                         onClick = { selectingRole = "chat" },
                     )
                 }
@@ -175,7 +174,7 @@ fun SettingsModelScreen(
                     val cardState = draftSettings.toRoleModelCardState(ProviderFunction.CHAT_SUGGESTION)
                     RoleModelCard(
                         icon = Icons.Outlined.QuestionAnswer,
-                        title = "聊天建议模型",
+                        title = "会话建议模型",
                         statusLabel = cardState.statusLabel,
                         currentModelId = cardState.displayModelId,
                         providerName = cardState.providerName,
@@ -198,19 +197,6 @@ fun SettingsModelScreen(
                 }
 
                 item {
-                    val cardState = draftSettings.toRoleModelCardState(ProviderFunction.TRANSLATION)
-                    RoleModelCard(
-                        icon = Icons.Outlined.Translate,
-                        title = "翻译模型",
-                        statusLabel = cardState.statusLabel,
-                        currentModelId = cardState.displayModelId,
-                        providerName = cardState.providerName,
-                        emptyStateText = cardState.emptyStateText,
-                        onClick = { selectingRole = "translation" },
-                    )
-                }
-
-                item {
                     val cardState = draftSettings.toRoleModelCardState(ProviderFunction.PHONE_SNAPSHOT)
                     RoleModelCard(
                         icon = Icons.Outlined.Build,
@@ -225,16 +211,16 @@ fun SettingsModelScreen(
                 }
 
                 item {
-                    val cardState = draftSettings.toRoleModelCardState(ProviderFunction.SEARCH)
+                    val cardState = draftSettings.toRoleModelCardState(ProviderFunction.MOMENTS)
                     RoleModelCard(
-                        icon = Icons.Outlined.Search,
-                        title = "搜索模型",
-                        subtitle = "仅 LLM 搜索",
+                        icon = Icons.Outlined.Forum,
+                        title = "朋友圈模型",
+                        subtitle = "用于角色发朋友圈与评论互动",
                         statusLabel = cardState.statusLabel,
                         currentModelId = cardState.displayModelId,
                         providerName = cardState.providerName,
                         emptyStateText = cardState.emptyStateText,
-                        onClick = { selectingRole = "search" },
+                        onClick = { selectingRole = "moments" },
                     )
                 }
 
@@ -242,8 +228,8 @@ fun SettingsModelScreen(
                     val cardState = draftSettings.toRoleModelCardState(ProviderFunction.GIFT_IMAGE)
                     RoleModelCard(
                         icon = Icons.Outlined.Image,
-                        title = "礼物生图模型",
-                        subtitle = "用于礼物卡自动生成图片",
+                        title = "默认生图模型",
+                        subtitle = "用于礼物卡与朋友圈配图",
                         statusLabel = cardState.statusLabel,
                         currentModelId = cardState.displayModelId,
                         providerName = cardState.providerName,
@@ -270,14 +256,13 @@ fun SettingsModelScreen(
         }
         val pickerProviderId = pickerProvider?.id.orEmpty().ifBlank { currentProviderId }
         val roleTitle = when (selectingRole) {
-            "chat" -> "选择聊天模型 · ${provider?.name.orEmpty().ifBlank { "当前提供商" }}"
+            "chat" -> "选择主会话模型 · ${provider?.name.orEmpty().ifBlank { "当前提供商" }}"
             "title" -> "选择标题总结模型"
-            "suggestion" -> "选择聊天建议模型"
+            "suggestion" -> "选择会话建议模型"
             "memory" -> "选择记忆模型"
-            "translation" -> "选择翻译模型"
             "phone_snapshot" -> "选择查手机模型"
-            "search" -> "选择搜索模型"
-            "gift_image" -> "选择礼物生图模型"
+            "moments" -> "选择朋友圈模型"
+            "gift_image" -> "选择默认生图模型"
             else -> "选择模型"
         }
 
@@ -314,7 +299,7 @@ fun SettingsModelScreen(
                         ModelPickerQuickAction(
                             id = QuickActionFollowDefault,
                             title = "跟随默认模型",
-                            supportingText = "自动使用当前聊天模型",
+                            supportingText = "自动使用当前主会话模型",
                             selected = mode == ProviderFunctionModelMode.FOLLOW_DEFAULT,
                         ),
                         ModelPickerQuickAction(
@@ -500,7 +485,7 @@ private fun AppSettings.toRoleModelCardState(
             statusLabel = "默认模型",
             displayModelId = provider?.selectedModel.orEmpty(),
             pickerSelectedModelId = provider?.selectedModel.orEmpty(),
-            emptyStateText = "还没选择默认聊天模型",
+            emptyStateText = "还没选择主会话模型",
             providerName = provider?.name.orEmpty(),
         )
     }
@@ -514,7 +499,7 @@ private fun AppSettings.toRoleModelCardState(
             statusLabel = "跟随默认",
             displayModelId = resolvedModel,
             pickerSelectedModelId = "",
-            emptyStateText = "将跟随默认聊天模型",
+            emptyStateText = "将跟随默认主会话模型",
             providerName = provider?.name.orEmpty(),
         )
         ProviderFunctionModelMode.CUSTOM -> RoleModelCardState(
@@ -562,9 +547,8 @@ private fun String.toProviderFunctionOrNull(): ProviderFunction? {
         "title" -> ProviderFunction.TITLE_SUMMARY
         "suggestion" -> ProviderFunction.CHAT_SUGGESTION
         "memory" -> ProviderFunction.MEMORY
-        "translation" -> ProviderFunction.TRANSLATION
         "phone_snapshot" -> ProviderFunction.PHONE_SNAPSHOT
-        "search" -> ProviderFunction.SEARCH
+        "moments" -> ProviderFunction.MOMENTS
         "gift_image" -> ProviderFunction.GIFT_IMAGE
         else -> null
     }

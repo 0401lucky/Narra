@@ -4,7 +4,6 @@ import com.example.myapplication.context.WorldBookScopeSupport
 import com.example.myapplication.model.WorldBookEntry
 import com.example.myapplication.system.json.AppJson
 import com.google.gson.Gson
-import com.google.gson.JsonParser
 
 class SearchWorldBookTool(
     private val gson: Gson = AppJson.gson,
@@ -12,7 +11,7 @@ class SearchWorldBookTool(
     override val name: String = NAME
 
     override val description: String =
-        "搜索当前助手与会话可访问的世界书条目，返回相关设定内容。此为全文搜索，不等同于自动注入时的关键词命中。"
+        "搜索当前角色与会话可访问的世界书条目，返回相关设定内容。此为全文搜索，不等同于自动注入时的关键词命中。"
 
     override val inputSchema: Map<String, Any> = mapOf(
         "type" to "object",
@@ -67,20 +66,11 @@ class SearchWorldBookTool(
     private fun parseArguments(
         invocation: ToolInvocation,
     ): SearchWorldBookArgs {
-        val json = invocation.argumentsJson
-            ?.trim()
-            ?.takeIf { it.isNotBlank() }
-            ?.let { raw ->
-                runCatching { JsonParser.parseString(raw).asJsonObject }.getOrNull()
-            }
-        val query = invocation.argumentsMap["query"]?.toString()
-            ?: json?.get("query")?.takeIf { !it.isJsonNull }?.asString
-            ?: ""
-        val limit = invocation.argumentsMap["limit"]?.toString()?.toIntOrNull()
-            ?: json?.get("limit")?.takeIf { !it.isJsonNull }?.asInt
+        val query = ToolArgumentSupport.stringArgument(invocation, "query").orEmpty()
+        val limit = ToolArgumentSupport.intArgument(invocation, "limit")
             ?: DEFAULT_LIMIT
         return SearchWorldBookArgs(
-            query = query.trim(),
+            query = MemoryToolPayloadPolicy.normalizeQuery(query),
             limit = limit.coerceIn(1, 8),
         )
     }

@@ -55,6 +55,11 @@ class ModelInfoTest {
     }
 
     @Test
+    fun vision_qwen37() {
+        assertTrue(inferModelAbilities("qwen3.7-flash").contains(ModelAbility.VISION))
+    }
+
+    @Test
     fun vision_o3Mini() {
         assertTrue(inferModelAbilities("o3-mini").contains(ModelAbility.VISION))
     }
@@ -97,6 +102,11 @@ class ModelInfoTest {
     }
 
     @Test
+    fun reasoning_qwen37() {
+        assertTrue(inferModelAbilities("qwen3.7-flash").contains(ModelAbility.REASONING))
+    }
+
+    @Test
     fun reasoning_claudeOpus() {
         assertTrue(inferModelAbilities("claude-opus-4-20250514").contains(ModelAbility.REASONING))
     }
@@ -124,6 +134,11 @@ class ModelInfoTest {
     @Test
     fun reasoning_gemini35Flash() {
         assertTrue(inferModelAbilities("gemini-3.5-flash").contains(ModelAbility.REASONING))
+    }
+
+    @Test
+    fun reasoning_gemini35FlashDisplayName() {
+        assertTrue(inferModelAbilities("Gemini 3.5 Flash").contains(ModelAbility.REASONING))
     }
 
     @Test
@@ -268,8 +283,24 @@ class ModelInfoTest {
     }
 
     @Test
+    fun combined_gemini35FlashDisplayName_allThree() {
+        val abilities = inferModelAbilities("Gemini 3.5 Flash")
+        assertTrue(abilities.contains(ModelAbility.VISION))
+        assertTrue(abilities.contains(ModelAbility.REASONING))
+        assertTrue(abilities.contains(ModelAbility.TOOL))
+    }
+
+    @Test
     fun combined_qwen3_allThree() {
         val abilities = inferModelAbilities("qwen3-235b")
+        assertTrue(abilities.contains(ModelAbility.VISION))
+        assertTrue(abilities.contains(ModelAbility.REASONING))
+        assertTrue(abilities.contains(ModelAbility.TOOL))
+    }
+
+    @Test
+    fun combined_qwen37_allThree() {
+        val abilities = inferModelAbilities("qwen3.7-flash")
         assertTrue(abilities.contains(ModelAbility.VISION))
         assertTrue(abilities.contains(ModelAbility.REASONING))
         assertTrue(abilities.contains(ModelAbility.TOOL))

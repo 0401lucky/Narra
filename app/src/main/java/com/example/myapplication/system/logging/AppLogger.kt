@@ -2,6 +2,7 @@ package com.example.myapplication.system.logging
 
 import android.util.Log
 import com.example.myapplication.BuildConfig
+import com.example.myapplication.system.security.SensitiveTextRedactor
 
 /**
  * 全局轻量 Logger。
@@ -22,25 +23,58 @@ object AppLogger {
     var sink: Sink = LogcatSink
 
     fun d(tag: String, message: String) {
-        if (BuildConfig.DEBUG) sink.log(Level.DEBUG, tag, message, null)
+        if (BuildConfig.DEBUG) log(Level.DEBUG, tag, message, null)
     }
 
     fun i(tag: String, message: String) {
-        sink.log(Level.INFO, tag, message, null)
+        log(Level.INFO, tag, message, null)
     }
 
     fun w(tag: String, message: String, throwable: Throwable? = null) {
-        sink.log(Level.WARN, tag, message, throwable)
+        log(Level.WARN, tag, message, throwable)
     }
 
     fun e(tag: String, message: String, throwable: Throwable? = null) {
-        sink.log(Level.ERROR, tag, message, throwable)
+        log(Level.ERROR, tag, message, throwable)
     }
 
     enum class Level { DEBUG, INFO, WARN, ERROR }
 
     fun interface Sink {
         fun log(level: Level, tag: String, message: String, throwable: Throwable?)
+    }
+
+    private fun log(
+        level: Level,
+        tag: String,
+        message: String,
+        throwable: Throwable?,
+    ) {
+        sink.log(
+            level = level,
+            tag = tag,
+            message = SensitiveTextRedactor.redact(message, maxLength = Int.MAX_VALUE),
+            throwable = throwable?.toRedactedThrowable(),
+        )
+    }
+
+    private fun Throwable.toRedactedThrowable(): Throwable {
+        val redacted = RedactedLoggedThrowable(
+            originalClassName = javaClass.name,
+            redactedMessage = message
+                ?.let { SensitiveTextRedactor.redact(it, maxLength = Int.MAX_VALUE) },
+        )
+        redacted.stackTrace = stackTrace
+        return redacted
+    }
+
+    private class RedactedLoggedThrowable(
+        private val originalClassName: String,
+        redactedMessage: String?,
+    ) : RuntimeException(redactedMessage) {
+        override fun toString(): String {
+            return message?.let { "$originalClassName: $it" } ?: originalClassName
+        }
     }
 
     private object LogcatSink : Sink {

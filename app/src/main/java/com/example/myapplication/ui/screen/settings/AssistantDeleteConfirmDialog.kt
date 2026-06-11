@@ -16,7 +16,7 @@ internal fun AssistantDeleteConfirmDialog(
     onConfirm: () -> Unit,
 ) {
     NarraAlertDialog(
-        title = "删除助手",
+        title = "删除角色",
         message = "将删除“$assistantName”，这个操作不可撤销。",
         onDismiss = onDismissRequest,
         onConfirm = onConfirm,

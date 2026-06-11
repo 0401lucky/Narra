@@ -10,6 +10,10 @@ import com.example.myapplication.model.PhoneSearchDetail
 import com.example.myapplication.model.PhoneSnapshot
 import com.example.myapplication.model.PhoneSnapshotSection
 import com.example.myapplication.model.PhoneSnapshotSections
+import com.example.myapplication.model.MomentAssistantContext
+import com.example.myapplication.model.MomentAuthorType
+import com.example.myapplication.model.MomentCommentDraft
+import com.example.myapplication.model.MomentPostDraft
 import com.example.myapplication.model.ProviderApiProtocol
 import com.example.myapplication.model.ProviderSettings
 import com.example.myapplication.model.RoleplayDiaryDraft
@@ -168,6 +172,34 @@ interface AiPromptExtrasService {
         apiProtocol: ProviderApiProtocol = ProviderApiProtocol.OPENAI_COMPATIBLE,
         provider: ProviderSettings? = null,
     ): List<Pair<String, String>> = emptyList()
+
+    suspend fun generateMomentPost(
+        assistantName: String,
+        assistantPersona: String,
+        userName: String,
+        recentMoments: String,
+        baseUrl: String,
+        apiKey: String,
+        modelId: String,
+        apiProtocol: ProviderApiProtocol = ProviderApiProtocol.OPENAI_COMPATIBLE,
+        provider: ProviderSettings? = null,
+    ): MomentPostDraft = MomentPostDraft()
+
+    suspend fun generateMomentCommentReplies(
+        assistants: List<MomentAssistantContext>,
+        postAuthorName: String,
+        postAuthorType: MomentAuthorType = MomentAuthorType.ASSISTANT,
+        postContent: String,
+        existingComments: String,
+        userName: String,
+        userComment: String,
+        isUserCommentTrigger: Boolean = true,
+        baseUrl: String,
+        apiKey: String,
+        modelId: String,
+        apiProtocol: ProviderApiProtocol = ProviderApiProtocol.OPENAI_COMPATIBLE,
+        provider: ProviderSettings? = null,
+    ): List<MomentCommentDraft> = emptyList()
 }
 
 /**
@@ -481,6 +513,58 @@ class DefaultAiPromptExtrasService internal constructor(
         postContent = postContent,
         existingComments = existingComments,
         userComment = userComment,
+        baseUrl = baseUrl,
+        apiKey = apiKey,
+        modelId = modelId,
+        apiProtocol = apiProtocol,
+        provider = provider,
+    )
+
+    override suspend fun generateMomentPost(
+        assistantName: String,
+        assistantPersona: String,
+        userName: String,
+        recentMoments: String,
+        baseUrl: String,
+        apiKey: String,
+        modelId: String,
+        apiProtocol: ProviderApiProtocol,
+        provider: ProviderSettings?,
+    ): MomentPostDraft = phoneService.generateMomentPost(
+        assistantName = assistantName,
+        assistantPersona = assistantPersona,
+        userName = userName,
+        recentMoments = recentMoments,
+        baseUrl = baseUrl,
+        apiKey = apiKey,
+        modelId = modelId,
+        apiProtocol = apiProtocol,
+        provider = provider,
+    )
+
+    override suspend fun generateMomentCommentReplies(
+        assistants: List<MomentAssistantContext>,
+        postAuthorName: String,
+        postAuthorType: MomentAuthorType,
+        postContent: String,
+        existingComments: String,
+        userName: String,
+        userComment: String,
+        isUserCommentTrigger: Boolean,
+        baseUrl: String,
+        apiKey: String,
+        modelId: String,
+        apiProtocol: ProviderApiProtocol,
+        provider: ProviderSettings?,
+    ): List<MomentCommentDraft> = phoneService.generateMomentCommentReplies(
+        assistants = assistants,
+        postAuthorName = postAuthorName,
+        postAuthorType = postAuthorType,
+        postContent = postContent,
+        existingComments = existingComments,
+        userName = userName,
+        userComment = userComment,
+        isUserCommentTrigger = isUserCommentTrigger,
         baseUrl = baseUrl,
         apiKey = apiKey,
         modelId = modelId,

@@ -10,6 +10,10 @@ import com.example.myapplication.data.local.memory.ConversationSummaryEntity
 import com.example.myapplication.data.local.memory.ConversationSummarySegmentEntity
 import com.example.myapplication.data.local.memory.MemoryDao
 import com.example.myapplication.data.local.memory.MemoryEntryEntity
+import com.example.myapplication.data.local.moments.MomentCommentEntity
+import com.example.myapplication.data.local.moments.MomentDao
+import com.example.myapplication.data.local.moments.MomentMediaEntity
+import com.example.myapplication.data.local.moments.MomentPostEntity
 import com.example.myapplication.data.local.phone.PhoneObservationEntity
 import com.example.myapplication.data.local.phone.PhoneSnapshotDao
 import com.example.myapplication.data.local.phone.PhoneSnapshotEntity
@@ -21,6 +25,9 @@ import com.example.myapplication.data.local.roleplay.RoleplayGroupParticipantEnt
 import com.example.myapplication.data.local.roleplay.RoleplayOnlineMetaEntity
 import com.example.myapplication.data.local.roleplay.RoleplayScenarioEntity
 import com.example.myapplication.data.local.roleplay.RoleplaySessionEntity
+import com.example.myapplication.data.local.roleplay.script.RoleplayScriptDao
+import com.example.myapplication.data.local.roleplay.script.RoleplayScriptEntity
+import com.example.myapplication.data.local.roleplay.script.RoleplayScriptStateEntity
 import com.example.myapplication.data.local.worldbook.WorldBookDao
 import com.example.myapplication.data.local.worldbook.WorldBookEntryEntity
 
@@ -42,6 +49,11 @@ import com.example.myapplication.data.local.worldbook.WorldBookEntryEntity
         MailboxLetterEntity::class,
         MailboxSettingsEntity::class,
         PresetEntity::class,
+        RoleplayScriptEntity::class,
+        RoleplayScriptStateEntity::class,
+        MomentPostEntity::class,
+        MomentCommentEntity::class,
+        MomentMediaEntity::class,
     ],
     version = ChatDatabase.CURRENT_VERSION,
     exportSchema = true,
@@ -54,9 +66,11 @@ abstract class ChatDatabase : RoomDatabase() {
     abstract fun phoneSnapshotDao(): PhoneSnapshotDao
     abstract fun mailboxDao(): MailboxDao
     abstract fun presetDao(): PresetDao
+    abstract fun roleplayScriptDao(): RoleplayScriptDao
+    abstract fun momentDao(): MomentDao
 
     companion object {
-        const val CURRENT_VERSION = 42
+        const val CURRENT_VERSION = 45
 
         /**
          * 所有 Room 迁移。具体 DDL 在 [ChatDbMigrations]，这里只暴露注册表给 `AppGraph` 和测试。

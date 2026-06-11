@@ -19,7 +19,7 @@ import com.example.myapplication.ui.screen.settings.worldbook.buildWorldBookBook
 import com.example.myapplication.viewmodel.SettingsViewModel
 import com.example.myapplication.viewmodel.SimpleMemoryEditorViewModel
 
-// 助手列表、详情、基本信息、提示词、扩展、记忆
+// 角色列表、详情、基本信息、提示词、扩展、记忆
 
 internal fun NavGraphBuilder.registerSettingsAssistantRoutes(
     appGraph: AppGraph,
@@ -100,6 +100,7 @@ internal fun NavGraphBuilder.registerSettingsAssistantRoutes(
                     launchSingleTop = true
                 }
             },
+            onUpdateAssistant = settingsViewModel::updateAssistant,
             onSelectPreset = { presetId ->
                 settingsViewModel.updateAssistant(assistant.copy(defaultPresetId = presetId))
             },

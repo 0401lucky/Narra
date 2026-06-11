@@ -104,13 +104,13 @@ internal object ModelCapabilityRegistry {
             features = setOf(ModelFeature.REASONING),
             """\bqwq\b""",
             """\bqvq\b""",
-            """\bqwen[-_.]?3(?:[-_.]?5)?(?:$|[-_.])""",
+            """\bqwen[-_.]?3(?:[-_.]?[5-7])?(?:$|[-_.])""",
         ),
         rule(
             features = setOf(ModelFeature.VISION),
             """\bqwen\b.*(?:vl|vision)""",
             """\bqwen[-_.]?(?:max|plus|turbo)\b""",
-            """\bqwen[-_.]?3(?:$|[-_.])""",
+            """\bqwen[-_.]?3(?:[-_.]?[5-7])?(?:$|[-_.])""",
             """\bqvq\b""",
         ),
         rule(
@@ -231,7 +231,7 @@ internal object ModelCapabilityRegistry {
     }
 
     private fun resolveFeatures(modelId: String): Set<ModelFeature> {
-        val normalizedId = modelId.trim().lowercase()
+        val normalizedId = normalizeKnownModelId(modelId).lowercase()
         if (normalizedId.isBlank()) {
             return emptySet()
         }

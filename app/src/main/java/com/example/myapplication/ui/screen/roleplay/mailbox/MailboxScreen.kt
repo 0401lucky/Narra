@@ -566,7 +566,7 @@ private fun MailboxSettingsDialog(
                     colors = colors,
                 )
                 MailboxSwitchRow(
-                    label = "默认带入最近聊天",
+                    label = "默认带入最近会话",
                     checked = uiState.settings.includeRecentChatByDefault,
                     onCheckedChange = callbacks.onDefaultIncludeRecentChatSettingChange,
                     colors = colors,
@@ -1159,7 +1159,7 @@ private fun MailboxComposer(
                                 color = colors.accentSoft,
                             ) {
                                 Text(
-                                    text = "${uiState.characterName} · 当前聊天",
+                                    text = "${uiState.characterName} · 当前会话",
                                     modifier = Modifier.padding(horizontal = 14.dp, vertical = 10.dp),
                                     color = colors.title,
                                     fontWeight = FontWeight.Bold,
@@ -1182,7 +1182,7 @@ private fun MailboxComposer(
                             label = { Text("正文") },
                             minLines = 10,
                         )
-                        MailboxSwitchRow("带入最近聊天", uiState.includeRecentChat, callbacks.onIncludeRecentChatChange, colors)
+                        MailboxSwitchRow("带入最近会话", uiState.includeRecentChat, callbacks.onIncludeRecentChatChange, colors)
                         MailboxSwitchRow("带入手机线索", uiState.includePhoneClues, callbacks.onIncludePhoneCluesChange, colors)
                         MailboxSwitchRow("允许沉淀为记忆", uiState.allowMemory, callbacks.onAllowMemoryChange, colors)
                         MailboxSwitchRow("生成角色回信", uiState.generateReplyAfterSend, callbacks.onGenerateReplyAfterSendChange, colors)

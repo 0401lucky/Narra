@@ -8,6 +8,7 @@ import com.example.myapplication.model.SearchSourceType
 import com.google.gson.JsonParser
 import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
@@ -86,6 +87,26 @@ class SearchWebToolTest {
     }
 
     @Test
+    fun execute_returnsErrorPayloadWhenQueryHasInvalidType() = runBlocking {
+        val tool = SearchWebTool()
+        val result = tool.execute(
+            invocation = ToolInvocation(
+                id = "call-invalid-query",
+                name = SearchWebTool.NAME,
+                argumentsJson = """{"query":{"bad":true}}""",
+            ),
+            context = ToolContext(
+                searchRepository = fakeSearchRepository(),
+                searchToolConfig = searchToolConfig,
+            ),
+        )
+
+        val payload = JsonParser.parseString(result.payload).asJsonObject
+        assertEquals("搜索词不能为空", payload["error"].asString)
+        assertTrue(result.isError)
+    }
+
+    @Test
     fun execute_returnsErrorPayloadWhenSearchFails() = runBlocking {
         val tool = SearchWebTool()
         val result = tool.execute(
@@ -112,6 +133,34 @@ class SearchWebToolTest {
         assertEquals("坏请求", payload["query"].asString)
         assertEquals("搜索失败", payload["error"].asString)
         assertTrue(result.isError)
+    }
+
+    @Test
+    fun execute_redactsSearchFailureMessage() = runBlocking {
+        val tool = SearchWebTool()
+        val result = tool.execute(
+            invocation = ToolInvocation(
+                id = "call-secret-error",
+                name = SearchWebTool.NAME,
+                argumentsJson = """{"query":"坏请求"}""",
+            ),
+            context = ToolContext(
+                searchRepository = object : SearchRepository {
+                    override suspend fun search(
+                        source: SearchSourceConfig,
+                        query: String,
+                        resultCount: Int,
+                    ): SearchResult {
+                        error("Authorization: Bearer search-secret")
+                    }
+                },
+                searchToolConfig = searchToolConfig,
+            ),
+        )
+
+        val payload = JsonParser.parseString(result.payload).asJsonObject
+        assertFalse(payload["error"].asString.contains("search-secret"))
+        assertTrue(payload["error"].asString.contains("[REDACTED]"))
     }
 
     private fun fakeSearchRepository(): SearchRepository {

@@ -447,7 +447,7 @@ class RoleplayViewModelTest {
 
         val state = viewModel.uiState.value
         assertFalse(state.isGeneratingSuggestions)
-        assertEquals("请先在模型页开启聊天建议模型", state.suggestionErrorMessage)
+        assertEquals("请先在模型页开启会话建议模型", state.suggestionErrorMessage)
     }
 
     @Test
@@ -1442,13 +1442,14 @@ class RoleplayViewModelTest {
     }
 
     @Test
-    fun sendMessage_groupChatStopsAfterFirstFailedTurnAndShowsError() = runTest(mainDispatcherRule.dispatcher.scheduler) {
+    fun sendMessage_groupChatRetriesFailedTurnThenContinuesNextMember() = runTest(mainDispatcherRule.dispatcher.scheduler) {
         server.enqueue(
             MockResponse()
                 .setResponseCode(500)
                 .setBody("""{"error":{"message":"上游失败"}}"""),
         )
-        enqueueStreamResponse("第二位不应继续发言")
+        enqueueStreamResponse("""["第一位重试成功"]""")
+        enqueueStreamResponse("""["第二位继续发言"]""")
 
         val assistantA = Assistant(id = "assistant-a", name = "陆宴清")
         val assistantB = Assistant(id = "assistant-b", name = "沈今")
@@ -1530,11 +1531,23 @@ class RoleplayViewModelTest {
         val state = viewModel.uiState.value
         val savedMessages = store.listMessages(session.conversationId)
         assertFalse(state.isSending)
-        assertTrue(state.errorMessage.orEmpty().contains("聊天请求失败"))
-        assertEquals(1, server.requestCount)
+        assertTrue(state.errorMessage.isNullOrBlank())
+        assertEquals(3, server.requestCount)
         assertTrue(savedMessages.any { it.role == MessageRole.USER && it.content == "大家都说说" })
-        assertTrue(savedMessages.any { it.id == "assistant-a-loading" && it.status == MessageStatus.ERROR })
-        assertTrue(savedMessages.none { it.id == "assistant-b-loading" || it.speakerId == assistantB.id })
+        assertTrue(
+            savedMessages.any {
+                it.id == "assistant-a-loading" &&
+                    it.speakerId == assistantA.id &&
+                    it.status == MessageStatus.COMPLETED
+            },
+        )
+        assertTrue(
+            savedMessages.any {
+                it.id == "assistant-b-loading" &&
+                    it.speakerId == assistantB.id &&
+                    it.status == MessageStatus.COMPLETED
+            },
+        )
     }
 
     @Test

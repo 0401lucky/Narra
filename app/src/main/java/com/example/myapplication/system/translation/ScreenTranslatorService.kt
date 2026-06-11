@@ -302,7 +302,7 @@ class ScreenTranslatorService : Service() {
                 overlayController.showTranslationResult(
                     appLabel = ForegroundAppSnapshot.appLabel.ifBlank { "当前屏幕" },
                     sourceText = "",
-                    translatedText = throwable.message ?: "屏幕翻译失败",
+                    translatedText = throwable.message ?: "屏幕译文失败",
                     targetLanguage = latestScreenSettings.targetLanguage,
                     availableLanguages = supportedTargetLanguages(),
                     showSourceText = latestScreenSettings.showSourceText,

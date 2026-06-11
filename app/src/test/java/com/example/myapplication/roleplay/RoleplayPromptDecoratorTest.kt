@@ -85,6 +85,8 @@ class RoleplayPromptDecoratorTest {
 
         assertTrue(prompt.contains("金乘 没有看向lucky"))
         assertTrue(prompt.contains("场景标题：金乘的夜班"))
+        assertTrue(prompt.contains("场景背景补充："))
+        assertFalse(prompt.contains("聊天背景补充："))
         assertTrue(prompt.contains("lucky 走进值班室时，金乘 正低头扣上颈间的金属扣"))
         assertTrue(prompt.contains("lucky 听见那声轻响时"))
     }

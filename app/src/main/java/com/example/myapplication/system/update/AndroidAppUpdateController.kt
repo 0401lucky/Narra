@@ -35,6 +35,10 @@ class AndroidAppUpdateController(
     private val downloadManager = appContext.getSystemService(DownloadManager::class.java)
 
     override fun enqueueDownload(metadata: AppUpdateMetadata): Long {
+        validateUpdateApkUrl(
+            apkUrl = metadata.apkUrl,
+            channel = metadata.channel,
+        )
         val request = DownloadManager.Request(metadata.apkUrl.toUri()).apply {
             setTitle(buildDownloadTitle(metadata))
             setDescription("下载最新安装包")

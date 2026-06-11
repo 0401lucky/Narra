@@ -243,7 +243,7 @@ class FloatingOverlayController(
             text = "译"
             gravity = Gravity.CENTER
             textSize = 18f
-            contentDescription = "屏幕翻译悬浮球"
+            contentDescription = "屏幕译文悬浮球"
             setTextColor(Color.WHITE)
             background = GradientDrawable().apply {
                 shape = GradientDrawable.OVAL

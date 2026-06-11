@@ -8,6 +8,7 @@ import com.example.myapplication.model.Assistant
 import com.example.myapplication.model.ChatMessage
 import com.example.myapplication.model.RoleplayScenario
 import com.example.myapplication.roleplay.RoleplayConversationSupport
+import com.example.myapplication.system.security.SensitiveTextRedactor
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
@@ -63,7 +64,10 @@ internal class RoleplayScenarioActionSupport(
                 updateUiState { current ->
                     RoleplayStateSupport.applyScenarioLoadFailure(
                         current,
-                        throwable.message ?: "启动场景失败",
+                        SensitiveTextRedactor.throwableMessageForUi(
+                            throwable = throwable,
+                            fallback = "启动场景失败",
+                        ),
                     )
                 }
             } finally {
@@ -102,7 +106,13 @@ internal class RoleplayScenarioActionSupport(
                 onSuccess?.invoke()
             }.onFailure { throwable ->
                 updateUiState { current ->
-                    RoleplayStateSupport.applyErrorMessage(current, throwable.message ?: "保存场景失败")
+                    RoleplayStateSupport.applyErrorMessage(
+                        current,
+                        SensitiveTextRedactor.throwableMessageForUi(
+                            throwable = throwable,
+                            fallback = "保存场景失败",
+                        ),
+                    )
                 }
             }
         }
@@ -125,7 +135,13 @@ internal class RoleplayScenarioActionSupport(
                 onSuccess?.invoke()
             }.onFailure { throwable ->
                 updateUiState { current ->
-                    RoleplayStateSupport.applyErrorMessage(current, throwable.message ?: "删除场景失败")
+                    RoleplayStateSupport.applyErrorMessage(
+                        current,
+                        SensitiveTextRedactor.throwableMessageForUi(
+                            throwable = throwable,
+                            fallback = "删除场景失败",
+                        ),
+                    )
                 }
             }
         }
@@ -195,7 +211,13 @@ internal class RoleplayScenarioActionSupport(
                 onSuccess()
             }.onFailure { throwable ->
                 updateUiState { current ->
-                    RoleplayStateSupport.applyErrorMessage(current, throwable.message ?: "清空剧情失败")
+                    RoleplayStateSupport.applyErrorMessage(
+                        current,
+                        SensitiveTextRedactor.throwableMessageForUi(
+                            throwable = throwable,
+                            fallback = "清空剧情失败",
+                        ),
+                    )
                 }
             }
         }
@@ -226,7 +248,13 @@ internal class RoleplayScenarioActionSupport(
                 onSuccess()
             }.onFailure { throwable ->
                 updateUiState { current ->
-                    RoleplayStateSupport.applyErrorMessage(current, throwable.message ?: "重开剧情失败")
+                    RoleplayStateSupport.applyErrorMessage(
+                        current,
+                        SensitiveTextRedactor.throwableMessageForUi(
+                            throwable = throwable,
+                            fallback = "重开剧情失败",
+                        ),
+                    )
                 }
             }
         }

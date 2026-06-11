@@ -3,9 +3,9 @@ package com.example.myapplication.ui.screen.home
 import androidx.activity.ComponentActivity
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsEnabled
-import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.onNodeWithText
+import androidx.compose.ui.test.performClick
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.example.myapplication.R
 import com.example.myapplication.model.AppSettings
@@ -20,28 +20,35 @@ class HomeScreenTest {
     val composeRule = createAndroidComposeRule<ComponentActivity>()
 
     @Test
-    fun missingConfig_disablesOpenChatAndRoleplayButtons() {
-        val context = composeRule.activity
+    fun missingConfig_primaryActionOpensSettings() {
+        var openSettingsCalls = 0
+        var openRoleplayCalls = 0
+
         composeRule.setContent {
             HomeScreen(
                 storedSettings = AppSettings(),
-                onOpenChat = {},
-                onOpenSettings = {},
-                onOpenRoleplay = {},
+                onOpenSettings = { openSettingsCalls++ },
+                onOpenRoleplay = { openRoleplayCalls++ },
             )
         }
 
-        composeRule.onNodeWithText(context.getString(R.string.home_open_chat))
+        composeRule.onNodeWithText("配置提供商")
             .assertIsDisplayed()
-            .assertIsNotEnabled()
-        composeRule.onNodeWithText(context.getString(R.string.home_open_roleplay))
-            .assertIsDisplayed()
-            .assertIsNotEnabled()
+            .assertIsEnabled()
+            .performClick()
+
+        composeRule.runOnIdle {
+            check(openSettingsCalls == 1)
+            check(openRoleplayCalls == 0)
+        }
     }
 
     @Test
-    fun completedConfig_enablesPrimaryActions() {
+    fun completedConfig_primaryActionOpensRoleplay() {
         val context = composeRule.activity
+        var openSettingsCalls = 0
+        var openRoleplayCalls = 0
+
         composeRule.setContent {
             HomeScreen(
                 storedSettings = AppSettings(
@@ -49,15 +56,18 @@ class HomeScreenTest {
                     apiKey = "key",
                     selectedModel = "gpt-test",
                 ),
-                onOpenChat = {},
-                onOpenSettings = {},
-                onOpenRoleplay = {},
+                onOpenSettings = { openSettingsCalls++ },
+                onOpenRoleplay = { openRoleplayCalls++ },
             )
         }
 
-        composeRule.onNodeWithText(context.getString(R.string.home_open_chat))
-            .assertIsEnabled()
         composeRule.onNodeWithText(context.getString(R.string.home_open_roleplay))
             .assertIsEnabled()
+            .performClick()
+
+        composeRule.runOnIdle {
+            check(openRoleplayCalls == 1)
+            check(openSettingsCalls == 0)
+        }
     }
 }

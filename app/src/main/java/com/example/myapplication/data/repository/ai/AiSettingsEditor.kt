@@ -13,6 +13,7 @@ import com.example.myapplication.model.RoleplayNoBackgroundSkinSettings
 import com.example.myapplication.model.TranslationHistoryEntry
 import com.example.myapplication.model.UserPersonaMask
 import com.example.myapplication.model.VoiceSynthesisSettings
+import com.example.myapplication.model.normalizedForContextImport
 
 interface AiSettingsEditor {
     suspend fun saveProviderSettings(
@@ -124,7 +125,7 @@ class DefaultAiSettingsEditor(
         selectedAssistantId: String,
     ) {
         settingsStore.saveAssistants(
-            assistants = assistants,
+            assistants = assistants.map { assistant -> assistant.normalizedForContextImport() },
             selectedAssistantId = selectedAssistantId,
         )
     }

@@ -166,7 +166,7 @@ object RoleplayPromptDecorator {
                         )
                     }
                     if (scenario.shouldInjectDescriptionPrompt()) {
-                        append("\n聊天背景补充：")
+                        append("\n场景背景补充：")
                         append(
                             ContextPlaceholderResolver.resolve(
                                 text = scenario.description.trim(),
@@ -241,7 +241,7 @@ object RoleplayPromptDecorator {
                     append("11. 每轮先读角色卡、场景、记忆和世界书，再决定回应；至少让两项人设信息影响本轮语气、边界、动作或取舍\n")
                     append("12. 不要把 ")
                     append(characterName)
-                    append(" 写成通用温柔助手、通用霸总、通用心理咨询师或通用小说旁白；宁可短，也要像这个角色本人")
+                    append(" 写成通用温柔模板、通用霸总、通用心理咨询师或通用小说旁白；宁可短，也要像这个角色本人")
                 },
             )
 
@@ -303,7 +303,7 @@ object RoleplayPromptDecorator {
                             append("- 群聊禁止使用 thought、reply_to、recall、emoji、location、transfer、transfer_action、poke、video_call、invite、gift、task、punish、状态栏或任何其他特殊动作。\n")
                             append("- 群聊里要发语音或照片时必须使用对象，不要把照片描述、语音内容、状态栏、旁白、环境描写塞进普通文字气泡。\n\n")
                         } else {
-                            append("- 数组元素可以是字符串（普通聊天消息）或对象（特殊动作）。\n")
+                            append("- 数组元素可以是字符串（普通会话消息）或对象（特殊动作）。\n")
                             append("- 允许的对象类型：")
                             append(
                                 if (allowOnlineThoughtHints) {

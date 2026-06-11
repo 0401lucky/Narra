@@ -39,6 +39,7 @@ data class AppSettings(
     val screenTranslationSettings: ScreenTranslationSettings = ScreenTranslationSettings(),
     val searchSettings: SearchSettings = SearchSettings(),
     val voiceSynthesisSettings: VoiceSynthesisSettings = VoiceSynthesisSettings(),
+    val momentsSettings: MomentsSettings = MomentsSettings(),
     val memoryAutoSummaryEvery: Int = DEFAULT_MEMORY_AUTO_SUMMARY_EVERY,
     val memoryCapacity: Int = DEFAULT_MEMORY_CAPACITY,
     val memoryExtractionPrompt: String = "",
@@ -53,7 +54,10 @@ data class AppSettings(
         val mergedBuiltins = BUILTIN_ASSISTANTS.map { builtin ->
             customAssistantsById[builtin.id]?.copy(isBuiltin = builtin.isBuiltin) ?: builtin
         }
-        val customAssistants = assistants.filter { it.id !in builtinIds }
+        val hiddenBuiltinIds = HIDDEN_BUILTIN_ASSISTANT_IDS
+        val customAssistants = assistants.filter { assistant ->
+            assistant.id !in builtinIds && assistant.id !in hiddenBuiltinIds
+        }
         return mergedBuiltins + customAssistants
     }
 

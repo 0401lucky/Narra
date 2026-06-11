@@ -30,6 +30,16 @@ class ReasoningConfigTest {
     }
 
     @Test
+    fun supportsThinkingBudgetControl_gemini35FlashDisplayName() {
+        val provider = ProviderSettings(
+            type = ProviderType.GOOGLE,
+            selectedModel = "Gemini 3.5 Flash",
+        )
+
+        assertTrue(supportsThinkingBudgetControl(provider))
+    }
+
+    @Test
     fun supportsThinkingBudgetControl_claudeAnthropic() {
         val provider = ProviderSettings(
             type = ProviderType.ANTHROPIC,
@@ -44,6 +54,16 @@ class ReasoningConfigTest {
         val provider = ProviderSettings(
             type = ProviderType.CUSTOM,
             selectedModel = "claude-sonnet-4-20250514",
+        )
+
+        assertTrue(supportsThinkingBudgetControl(provider))
+    }
+
+    @Test
+    fun supportsThinkingBudgetControl_qwen37DashScope() {
+        val provider = ProviderSettings(
+            type = ProviderType.QWEN,
+            selectedModel = "qwen3.7-flash",
         )
 
         assertTrue(supportsThinkingBudgetControl(provider))
@@ -82,6 +102,17 @@ class ReasoningConfigTest {
     }
 
     @Test
+    fun mapThinkingBudgetToReasoningEffort_gemini35DisplayNameStandardUsesHigh() {
+        val provider = ProviderSettings(
+            type = ProviderType.GOOGLE,
+            selectedModel = "Gemini 3.5 Flash",
+            thinkingBudget = REASONING_BUDGET_MEDIUM,
+        )
+
+        assertEquals("high", mapThinkingBudgetToReasoningEffort(provider))
+    }
+
+    @Test
     fun buildThinkingRequestConfig_anthropicUsesBudgetTokens() {
         val provider = ProviderSettings(
             type = ProviderType.ANTHROPIC,
@@ -108,6 +139,38 @@ class ReasoningConfigTest {
 
         assertEquals("medium", config.reasoningEffort)
         assertNull(config.thinking)
+    }
+
+    @Test
+    fun buildThinkingRequestConfig_qwen37UsesEnableThinkingAndThinkingBudget() {
+        val provider = ProviderSettings(
+            type = ProviderType.QWEN,
+            selectedModel = "qwen3.7-flash",
+            thinkingBudget = REASONING_BUDGET_MEDIUM,
+        )
+
+        val config = buildThinkingRequestConfig(provider)
+
+        assertNull(config.reasoningEffort)
+        assertNull(config.thinking)
+        assertEquals(true, config.enableThinking)
+        assertEquals(REASONING_BUDGET_MEDIUM, config.thinkingBudget)
+    }
+
+    @Test
+    fun buildThinkingRequestConfig_qwen37AutoDoesNotForceThinking() {
+        val provider = ProviderSettings(
+            type = ProviderType.QWEN,
+            selectedModel = "qwen3.7-flash",
+            thinkingBudget = null,
+        )
+
+        val config = buildThinkingRequestConfig(provider)
+
+        assertNull(config.reasoningEffort)
+        assertNull(config.thinking)
+        assertNull(config.enableThinking)
+        assertNull(config.thinkingBudget)
     }
 
     @Test

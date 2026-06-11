@@ -3,6 +3,7 @@ package com.example.myapplication.viewmodel
 import com.example.myapplication.data.repository.ai.AiModelCatalogRepository
 import com.example.myapplication.model.ConnectionHealth
 import com.example.myapplication.model.ProviderSettings
+import com.example.myapplication.system.security.SensitiveTextRedactor
 
 data class ProviderHealthCheckResult(
     val health: ConnectionHealth,
@@ -29,7 +30,10 @@ class SettingsHealthCoordinator(
         }.getOrElse { throwable ->
             ProviderHealthCheckResult(
                 health = ConnectionHealth.UNHEALTHY,
-                message = throwable.message ?: "连接检测失败",
+                message = SensitiveTextRedactor.throwableMessageForUi(
+                    throwable = throwable,
+                    fallback = "连接检测失败",
+                ),
             )
         }
     }

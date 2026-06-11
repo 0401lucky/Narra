@@ -40,7 +40,7 @@ import androidx.compose.ui.unit.dp
 import com.example.myapplication.R
 
 /**
- * 助手头像组件。
+ * 角色头像组件。
  * 优先显示用户上传头像（avatarUri），其次显示预设图标（iconName），
  * 最后回退为名称首字母。
  */

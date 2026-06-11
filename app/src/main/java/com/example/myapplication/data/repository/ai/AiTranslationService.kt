@@ -385,7 +385,7 @@ class DefaultAiTranslationService(
                     onData = { data ->
                         val delta = AnthropicProtocolSupport.parseStreamData(data)
                         if (!delta.errorMessage.isNullOrBlank()) {
-                            throw IllegalStateException(delta.errorMessage)
+                            throw IllegalStateException(AiErrorRedaction.redact(delta.errorMessage))
                         }
                         if (delta.stop) {
                             null
@@ -453,7 +453,7 @@ class DefaultAiTranslationService(
             ChatMessageDto(
                 role = "system",
                 content = buildString {
-                    append("你是一个专业翻译助手。")
+                    append("你是一个专业译文处理模型。")
                     if (sourceLanguage.isNotBlank() && sourceLanguage != "自动检测") {
                         append("请将用户提供的内容从")
                         append(sourceLanguage)
@@ -484,7 +484,7 @@ class DefaultAiTranslationService(
             ChatMessageDto(
                 role = "system",
                 content = buildString {
-                    append("你是一个屏幕文本翻译助手。")
+                    append("你是一个屏幕文本译文处理模型。")
                     append("请将用户提供的每一行文本逐条翻译为")
                     append(targetLanguage)
                     append("。")
@@ -572,7 +572,7 @@ class DefaultAiTranslationService(
                 append(operation)
                 append('：')
                 append(response.code())
-                val normalizedErrorDetail = errorDetail.trim()
+                val normalizedErrorDetail = AiErrorRedaction.redact(errorDetail)
                 if (normalizedErrorDetail.isNotBlank()) {
                     append('\n')
                     append(normalizedErrorDetail)
@@ -591,7 +591,7 @@ class DefaultAiTranslationService(
                 append(operation)
                 append('：')
                 append(response.code)
-                val normalizedErrorDetail = errorDetail.trim()
+                val normalizedErrorDetail = AiErrorRedaction.redact(errorDetail)
                 if (normalizedErrorDetail.isNotBlank()) {
                     append('\n')
                     append(normalizedErrorDetail)

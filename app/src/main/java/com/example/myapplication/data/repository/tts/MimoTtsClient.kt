@@ -5,8 +5,10 @@ import com.example.myapplication.model.MIMO_DEFAULT_BASE_URL
 import com.example.myapplication.model.MIMO_TTS_MODEL_PRESET
 import com.example.myapplication.model.MIMO_TTS_MODEL_VOICE_CLONE
 import com.example.myapplication.model.MIMO_TTS_MODEL_VOICE_DESIGN
+import com.example.myapplication.model.requireSecureMimoBaseUrl
 import com.example.myapplication.model.resolveMimoChatCompletionsEndpoint
 import com.example.myapplication.system.json.AppJson
+import com.example.myapplication.system.security.SensitiveTextRedactor
 import com.google.gson.Gson
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
@@ -143,7 +145,7 @@ class MimoTtsClient(
             throw IllegalArgumentException("语音文本为空")
         }
 
-        val endpoint = resolveMimoChatCompletionsEndpoint(baseUrl)
+        val endpoint = resolveMimoChatCompletionsEndpoint(requireSecureMimoBaseUrl(baseUrl))
         val body = gson.toJson(request).toRequestBody(JSON_MEDIA_TYPE)
         val httpRequest = Request.Builder()
             .url(endpoint)
@@ -189,7 +191,7 @@ class MimoTtsClient(
         code: Int,
         responseBody: String,
     ): String {
-        val bodyExcerpt = responseBody.trim().take(160)
+        val bodyExcerpt = SensitiveTextRedactor.redact(responseBody.trim(), maxLength = 160)
         return if (bodyExcerpt.isBlank()) {
             "MiMo TTS 请求失败：HTTP $code"
         } else {

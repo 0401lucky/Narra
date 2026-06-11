@@ -6,6 +6,7 @@ data class FunctionModelProviderIds(
     val memoryProviderId: String = "",
     val translationProviderId: String = "",
     val phoneSnapshotProviderId: String = "",
+    val momentsProviderId: String = "",
     val searchProviderId: String = "",
     val giftImageProviderId: String = "",
 ) {
@@ -17,6 +18,7 @@ data class FunctionModelProviderIds(
             ProviderFunction.MEMORY -> (memoryProviderId as String?).orEmpty().trim()
             ProviderFunction.TRANSLATION -> (translationProviderId as String?).orEmpty().trim()
             ProviderFunction.PHONE_SNAPSHOT -> (phoneSnapshotProviderId as String?).orEmpty().trim()
+            ProviderFunction.MOMENTS -> (momentsProviderId as String?).orEmpty().trim()
             ProviderFunction.SEARCH -> (searchProviderId as String?).orEmpty().trim()
             ProviderFunction.GIFT_IMAGE -> (giftImageProviderId as String?).orEmpty().trim()
         }
@@ -31,6 +33,7 @@ data class FunctionModelProviderIds(
             ProviderFunction.MEMORY -> copy(memoryProviderId = normalizedProviderId)
             ProviderFunction.TRANSLATION -> copy(translationProviderId = normalizedProviderId)
             ProviderFunction.PHONE_SNAPSHOT -> copy(phoneSnapshotProviderId = normalizedProviderId)
+            ProviderFunction.MOMENTS -> copy(momentsProviderId = normalizedProviderId)
             ProviderFunction.SEARCH -> copy(searchProviderId = normalizedProviderId)
             ProviderFunction.GIFT_IMAGE -> copy(giftImageProviderId = normalizedProviderId)
         }
@@ -49,6 +52,7 @@ data class FunctionModelProviderIds(
             memoryProviderId = keepIfValid((memoryProviderId as String?).orEmpty()),
             translationProviderId = keepIfValid((translationProviderId as String?).orEmpty()),
             phoneSnapshotProviderId = keepIfValid((phoneSnapshotProviderId as String?).orEmpty()),
+            momentsProviderId = keepIfValid((momentsProviderId as String?).orEmpty()),
             searchProviderId = keepIfValid((searchProviderId as String?).orEmpty()),
             giftImageProviderId = keepIfValid((giftImageProviderId as String?).orEmpty()),
         )

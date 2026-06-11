@@ -89,12 +89,11 @@ class RoleplaySettingsScreenTest {
             )
         }
 
-        val restartLabel = composeRule.activity.getString(R.string.roleplay_settings_action_restart)
         val confirmLabel = composeRule.activity.getString(R.string.roleplay_restart_dialog_confirm)
 
         composeRule.onNodeWithTag(TAG_ROLEPLAY_SETTINGS_LIST)
-            .performScrollToNode(hasText(restartLabel))
-        composeRule.onNodeWithText(restartLabel).performClick()
+            .performScrollToNode(hasText("重启"))
+        composeRule.onNodeWithText("重启").performClick()
         composeRule.onNodeWithText(confirmLabel).performClick()
 
         composeRule.runOnIdle {

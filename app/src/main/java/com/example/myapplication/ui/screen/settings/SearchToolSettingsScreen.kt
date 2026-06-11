@@ -76,7 +76,7 @@ fun SearchToolSettingsScreen(
                 item {
                     SettingsPageIntro(
                         title = "搜索与工具",
-                        summary = "配置聊天中可用的搜索能力，支持多种搜索源和 LLM 搜索代理。",
+                        summary = "配置会话中可用的搜索能力，支持多种搜索源和 LLM 搜索代理。",
                     )
                 }
                 item {
@@ -178,35 +178,35 @@ private fun SearchSourceCard(
         SearchSourceType.MODEL_BUILTIN -> {
             when {
                 !source.enabled -> "启用后可在支持的 Gemini 模型上使用，无需额外凭据。"
-                settings.activeProvider()?.supportsModelBuiltInSearchSource() == true -> "配置完整，聊天页可用。"
+                settings.activeProvider()?.supportsModelBuiltInSearchSource() == true -> "配置完整，会话页可用。"
                 else -> "需要使用 Google Gemini 提供商、Chat Completions 模式，并选择 Gemini 模型。"
             }
         }
 
         SearchSourceType.LLM_SEARCH -> {
             when {
-                !source.enabled -> "启用后，主聊天模型会把 search_web 调用转发给这里配置的搜索提供商。"
+                !source.enabled -> "启用后，主会话模型会把 search_web 调用转发给这里配置的搜索提供商。"
                 providerOptions.isEmpty() -> "当前没有可用提供商，请先在提供商页完成配置。"
                 selectedProvider == null -> "请先为 LLM 搜索选择一个独立的搜索提供商。"
                 !selectedProvider.supportsLlmSearchSource() -> {
-                    "所选搜索提供商需要使用 Responses API 或 Anthropic 协议。"
+                    "所选搜索提供商需要使用非 Google 的 Responses API，或 Anthropic 协议。"
                 }
                 selectedProvider.resolveFunctionModel(com.example.myapplication.model.ProviderFunction.SEARCH).isBlank() -> {
                     "已启用，但该搜索提供商的搜索模型已关闭；请先在模型页开启搜索模型。"
                 }
                 selectedProvider.resolveFunctionModelMode(com.example.myapplication.model.ProviderFunction.SEARCH) ==
                     com.example.myapplication.model.ProviderFunctionModelMode.FOLLOW_DEFAULT -> {
-                    "配置完整，当前会跟随该提供商的聊天模型执行搜索。"
+                    "配置完整，当前会跟随该提供商的主会话模型执行搜索。"
                 }
-                else -> "配置完整，聊天页可用。"
+                else -> "配置完整，会话页可用。"
             }
         }
 
         else -> {
             if (source.isConfigured()) {
-                "配置完整，聊天页可用。"
+                "配置完整，会话页可用。"
             } else {
-                "需要启用并填写完整凭据后，聊天页才会允许模型调用该搜索源。"
+                "需要启用并填写完整凭据后，会话页才会允许模型调用该搜索源。"
             }
         }
     }
@@ -323,7 +323,7 @@ private fun SearchSourceCard(
                                             },
                                         )
                                         if (provider.id == settings.selectedProviderId) {
-                                            append(" · 当前聊天提供商")
+                                            append(" · 当前会话提供商")
                                         }
                                     },
                                     style = androidx.compose.material3.MaterialTheme.typography.bodySmall,

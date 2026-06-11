@@ -7,6 +7,8 @@ import com.example.myapplication.model.AppUpdateEnvironment
 import com.example.myapplication.model.AppUpdateLocalState
 import com.example.myapplication.model.AppUpdateMetadata
 import com.example.myapplication.model.normalizedSha256
+import com.example.myapplication.system.update.normalizeAndValidateUpdateMetadataBaseUrl
+import com.example.myapplication.system.update.validateUpdateApkUrl
 import com.google.gson.FieldNamingPolicy
 import com.google.gson.Gson
 import com.google.gson.GsonBuilder
@@ -139,6 +141,10 @@ class AppUpdateRepository(
         require(metadata.latestVersionCode > 0) { "更新元数据缺少有效的版本号" }
         if (metadata.latestVersionCode > environment.versionCode) {
             require(metadata.apkUrl.isNotBlank()) { "更新元数据缺少 APK 下载地址" }
+            validateUpdateApkUrl(
+                apkUrl = metadata.apkUrl,
+                channel = environment.channel,
+            )
             require(metadata.normalizedSha256().isNotBlank()) { "更新元数据缺少 APK 校验信息" }
         }
 
@@ -155,7 +161,7 @@ class AppUpdateRepository(
     }
 
     private fun buildMetadataUrl(environment: AppUpdateEnvironment): String {
-        val normalizedBaseUrl = environment.metadataBaseUrl.trim().removeSuffix("/")
+        val normalizedBaseUrl = normalizeAndValidateUpdateMetadataBaseUrl(environment.metadataBaseUrl)
         return "$normalizedBaseUrl/${environment.channel}.json"
     }
 

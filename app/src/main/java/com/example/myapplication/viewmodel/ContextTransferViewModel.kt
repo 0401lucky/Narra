@@ -17,9 +17,14 @@ import com.example.myapplication.data.repository.context.TavernWorldBookAdapter
 import com.example.myapplication.data.repository.context.WorldBookRepository
 import com.example.myapplication.model.Assistant
 import com.example.myapplication.model.BUILTIN_ASSISTANTS
+import com.example.myapplication.model.CONTEXT_IMPORT_MAX_ASSISTANTS
+import com.example.myapplication.model.CONTEXT_IMPORT_MAX_WORLD_BOOK_ENTRIES
 import com.example.myapplication.model.ContextDataBundle
 import com.example.myapplication.model.DEFAULT_ASSISTANT_ID
+import com.example.myapplication.model.HIDDEN_BUILTIN_ASSISTANT_IDS
 import com.example.myapplication.model.Preset
+import com.example.myapplication.model.normalizedForContextImport
+import com.example.myapplication.system.security.SensitiveTextRedactor
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -54,6 +59,7 @@ data class ContextImportPreview(
     val summaryCount: Int,
     val presetCount: Int,
     val conflicts: List<ContextImportConflict>,
+    val noticeMessages: List<String> = emptyList(),
 )
 
 data class ContextImportPayload(
@@ -158,7 +164,7 @@ class ContextTransferViewModel(
                     section = section,
                     bundle = decodedImport.bundle,
                     sourceType = decodedImport.sourceType,
-                )
+                ).normalizedForContextImport()
                 if (isBundleEmpty(filteredBundle)) {
                     error("导入文件中没有可用于 ${section.label} 的内容")
                 }
@@ -191,7 +197,7 @@ class ContextTransferViewModel(
                     it.copy(
                         isBusy = false,
                         importPreview = null,
-                        message = throwable.message ?: "导入失败",
+                        message = throwable.toContextTransferUiError("导入失败"),
                     )
                 }
             }
@@ -219,7 +225,7 @@ class ContextTransferViewModel(
                 _uiState.update {
                     it.copy(
                         isBusy = false,
-                        message = throwable.message ?: "导入失败",
+                        message = throwable.toContextTransferUiError("导入失败"),
                     )
                 }
             }
@@ -249,25 +255,26 @@ class ContextTransferViewModel(
     }
 
     private suspend fun mergeImportedData(bundle: ContextDataBundle) {
+        val normalizedBundle = bundle.normalizedForContextImport()
         val currentSettings = settings.value
         val mergedAssistants = mergeAssistants(
             currentAssistants = currentSettings.assistants,
-            importedAssistants = bundle.assistants,
+            importedAssistants = normalizedBundle.assistants,
         )
         dataImportTransaction {
-            bundle.worldBookEntries.forEach { entry ->
+            normalizedBundle.worldBookEntries.forEach { entry ->
                 worldBookRepository.upsertEntry(entry)
             }
-            bundle.memoryEntries.forEach { entry ->
+            normalizedBundle.memoryEntries.forEach { entry ->
                 memoryRepository.upsertEntry(entry)
             }
-            bundle.conversationSummaries.forEach { summary ->
+            normalizedBundle.conversationSummaries.forEach { summary ->
                 conversationSummaryRepository.upsertSummary(summary)
             }
-            bundle.conversationSummarySegments.forEach { segment ->
+            normalizedBundle.conversationSummarySegments.forEach { segment ->
                 conversationSummaryRepository.upsertSummarySegment(segment)
             }
-            bundle.presets.forEach { preset ->
+            normalizedBundle.presets.forEach { preset ->
                 presetRepository.upsertPreset(preset.asImportedCustomPreset())
             }
         }
@@ -321,7 +328,7 @@ class ContextTransferViewModel(
         currentAssistants: List<Assistant>,
         importedAssistants: List<Assistant>,
     ): List<Assistant> {
-        val builtinIds = BUILTIN_ASSISTANTS.map { it.id }.toSet()
+        val builtinIds = BUILTIN_ASSISTANTS.map { it.id }.toSet() + HIDDEN_BUILTIN_ASSISTANT_IDS
         val importedCustomAssistants = importedAssistants.filter { it.id !in builtinIds }
         val merged = linkedMapOf<String, Assistant>()
         currentAssistants.forEach { assistant ->
@@ -337,7 +344,7 @@ class ContextTransferViewModel(
         currentSelectedAssistantId: String,
         assistants: List<Assistant>,
     ): String {
-        val builtinIds = BUILTIN_ASSISTANTS.map { it.id }.toSet()
+        val builtinIds = BUILTIN_ASSISTANTS.map { it.id }.toSet() + HIDDEN_BUILTIN_ASSISTANT_IDS
         return when {
             currentSelectedAssistantId in builtinIds -> currentSelectedAssistantId
             assistants.any { it.id == currentSelectedAssistantId } -> currentSelectedAssistantId
@@ -400,7 +407,19 @@ class ContextTransferViewModel(
             summaryCount = bundle.conversationSummaries.size + bundle.conversationSummarySegments.size,
             presetCount = bundle.presets.size,
             conflicts = conflicts,
+            noticeMessages = buildImportNoticeMessages(bundle),
         )
+    }
+
+    private fun buildImportNoticeMessages(bundle: ContextDataBundle): List<String> {
+        return buildList {
+            if (bundle.assistants.size >= CONTEXT_IMPORT_MAX_ASSISTANTS) {
+                add("角色卡数量已达到安全上限（最多 ${CONTEXT_IMPORT_MAX_ASSISTANTS} 条），超出部分不会导入。")
+            }
+            if (bundle.worldBookEntries.size >= CONTEXT_IMPORT_MAX_WORLD_BOOK_ENTRIES) {
+                add("世界书数量已达到安全上限（最多 ${CONTEXT_IMPORT_MAX_WORLD_BOOK_ENTRIES} 条），超出部分不会导入。")
+            }
+        }
     }
 
     private fun resolveAssistantAvatarImport(
@@ -621,6 +640,13 @@ class ContextTransferViewModel(
             entry.scopeType == com.example.myapplication.model.WorldBookScopeType.ASSISTANT &&
                 entry.scopeId in assistantIds
         }
+    }
+
+    private fun Throwable.toContextTransferUiError(fallback: String): String {
+        return SensitiveTextRedactor.throwableMessageForUi(
+            throwable = this,
+            fallback = fallback,
+        )
     }
 
     companion object {

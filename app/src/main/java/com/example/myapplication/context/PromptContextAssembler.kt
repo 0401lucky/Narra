@@ -389,10 +389,7 @@ class DefaultPromptContextAssembler(
             .orEmpty()
             .map { it.trim() }
             .filter { it.isNotBlank() }
-        val creatorNotes = assistant?.creatorNotes
-            ?.trim()
-            .orEmpty()
-        if (roleDescription.isBlank() && roleTags.isEmpty() && (promptMode != PromptMode.ROLEPLAY || creatorNotes.isBlank())) {
+        if (roleDescription.isBlank() && roleTags.isEmpty()) {
             return null
         }
         return buildString {
@@ -405,7 +402,7 @@ class DefaultPromptContextAssembler(
                     if (promptMode == PromptMode.ROLEPLAY) {
                         "【角色核心设定】\n"
                     } else {
-                        "【助手简介】\n"
+                        "【角色简介】\n"
                     },
                 )
                 append(
@@ -424,22 +421,6 @@ class DefaultPromptContextAssembler(
                 }
                 append("【角色标签】\n")
                 append(roleTags.joinToString("、"))
-            }
-            if (promptMode == PromptMode.ROLEPLAY && creatorNotes.isNotBlank()) {
-                if (isNotBlank()) {
-                    append("\n\n")
-                }
-                append("【创作者导演说明】\n")
-                append("以下内容仅供你在内部把握角色与剧情节奏时遵循，不要直接复述给用户。\n")
-                append(
-                    normalizePromptContent(
-                        ContextPlaceholderResolver.resolve(
-                            text = creatorNotes,
-                            userName = userName,
-                            characterName = characterName,
-                        ),
-                    ),
-                )
             }
         }.trim()
             .takeIf { it.isNotBlank() }
@@ -485,7 +466,7 @@ class DefaultPromptContextAssembler(
             return null
         }
         return buildString {
-            append("【对话者设定】\n")
+            append("【玩家侧设定】\n")
             append(
                 normalizePromptContent(
                     ContextPlaceholderResolver.resolve(
@@ -526,7 +507,7 @@ class DefaultPromptContextAssembler(
     ): String {
         return buildString {
             append("【上下文调试】")
-            append("\n- 助手：")
+            append("\n- 角色：")
             append(assistant?.name?.ifBlank { assistant.id }.orEmpty().ifBlank { "未选择" })
             append("\n- 摘要注入：")
             append(
@@ -608,7 +589,7 @@ class DefaultPromptContextAssembler(
                     "【近期摘要分段】\n"
                 },
             )
-            append("以下内容来自旧聊天原文的分段压缩，用于承接未随最近原文发送的历史内容：\n")
+            append("以下内容来自历史剧情记录的分段压缩，用于承接未随近期原文发送的历史内容：\n")
             usableSegments.forEachIndexed { index, segment ->
                 append(index + 1)
                 append(". 覆盖 ")
@@ -849,7 +830,7 @@ class DefaultPromptContextAssembler(
         )?.let { roleCard ->
             sections += ContextLogSection(
                 sourceType = ContextLogSourceType.ROLE_CARD,
-                title = if (promptMode == PromptMode.ROLEPLAY) "角色卡" else "助手设定",
+                title = if (promptMode == PromptMode.ROLEPLAY) "角色卡" else "角色设定",
                 content = roleCard,
             )
         }
@@ -965,12 +946,16 @@ class DefaultPromptContextAssembler(
             memoryLogSection?.let(sections::add)
         }
 
-        sections += buildChatHistorySections(recentMessages)
+        sections += buildChatHistorySections(
+            recentMessages = recentMessages,
+            promptMode = promptMode,
+        )
         return sections.filter { it.content.isNotBlank() }
     }
 
     private fun buildChatHistorySections(
         recentMessages: List<ChatMessage>,
+        promptMode: PromptMode,
     ): List<ContextLogSection> {
         return recentMessages.mapNotNull { message ->
             val messageText = message.parts.toPlainText()
@@ -981,9 +966,16 @@ class DefaultPromptContextAssembler(
             }
             ContextLogSection(
                 sourceType = ContextLogSourceType.CHAT_HISTORY,
-                title = when (message.role) {
-                    com.example.myapplication.model.MessageRole.USER -> "聊天历史 · 用户"
-                    com.example.myapplication.model.MessageRole.ASSISTANT -> "聊天历史 · 角色"
+                title = if (promptMode == PromptMode.ROLEPLAY) {
+                    when (message.role) {
+                        com.example.myapplication.model.MessageRole.USER -> "近期剧情 · 玩家"
+                        com.example.myapplication.model.MessageRole.ASSISTANT -> "近期剧情 · 角色"
+                    }
+                } else {
+                    when (message.role) {
+                        com.example.myapplication.model.MessageRole.USER -> "近期记录 · 用户"
+                        com.example.myapplication.model.MessageRole.ASSISTANT -> "近期记录 · 角色"
+                    }
                 },
                 content = messageText,
             )

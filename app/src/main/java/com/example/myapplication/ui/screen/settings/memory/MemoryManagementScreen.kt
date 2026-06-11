@@ -1054,7 +1054,7 @@ private fun MemoryGlobalConfigCard(
                     )
                 }
                 Text(
-                    text = "每 N 条已完成消息触发一次长记忆提取；调到 0 关闭自动提取。聊天压缩由摘要模型和最近消息窗口负责。",
+                    text = "每 N 条已完成消息触发一次长记忆提取；调到 0 关闭自动提取。会话压缩由摘要模型和最近消息窗口负责。",
                     style = MaterialTheme.typography.bodySmall,
                     color = palette.body.copy(alpha = 0.7f),
                 )

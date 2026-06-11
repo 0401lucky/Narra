@@ -118,7 +118,7 @@ object ContextGovernanceSupport {
             providerLabel = resolveProviderLabel(settings),
             modelLabel = selectedModel,
             promptModeLabel = when (promptMode) {
-                PromptMode.CHAT -> "聊天"
+                PromptMode.CHAT -> "会话"
                 PromptMode.ROLEPLAY -> "沉浸"
             },
             activePresetId = promptContext.activePresetId,

@@ -110,6 +110,46 @@ class ReadMemoryToolTest {
         assertTrue(persistentMemories[0].asJsonObject["content"].asString.contains("短句"))
     }
 
+    @Test
+    fun execute_ignoresInvalidLimitType() = runBlocking {
+        val tool = ReadMemoryTool()
+        val result = tool.execute(
+            invocation = ToolInvocation(
+                id = "call-invalid-limit",
+                name = ReadMemoryTool.NAME,
+                argumentsJson = """{"query":"短句","limit":{"bad":true}}""",
+            ),
+            context = ToolContext(
+                searchRepository = fakeSearchRepository(),
+                memoryRepository = FakeMemoryRepository(
+                    initialEntries = listOf(
+                        MemoryEntry(
+                            id = "memory-1",
+                            scopeType = MemoryScopeType.ASSISTANT,
+                            scopeId = "assistant-1",
+                            content = "用户喜欢短句回复。",
+                        ),
+                    ),
+                ),
+                runtimeContext = GatewayToolRuntimeContext(
+                    promptMode = PromptMode.CHAT,
+                    assistant = Assistant(
+                        id = "assistant-1",
+                        memoryEnabled = true,
+                    ),
+                    conversation = Conversation(
+                        id = "conversation-1",
+                        createdAt = 1L,
+                        updatedAt = 1L,
+                    ),
+                ),
+            ),
+        )
+
+        val payload = JsonParser.parseString(result.payload).asJsonObject
+        assertEquals(1, payload.getAsJsonArray("persistent_memories").size())
+    }
+
     private fun fakeSearchRepository(): com.example.myapplication.data.repository.search.SearchRepository {
         return object : com.example.myapplication.data.repository.search.SearchRepository {
             override suspend fun search(

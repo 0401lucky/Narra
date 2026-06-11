@@ -31,13 +31,6 @@ fun AppNavHost(
             val settingsUiState by settingsViewModel.uiState.collectAsStateWithLifecycle()
             HomeScreen(
                 storedSettings = settingsUiState.savedSettings,
-                onOpenChat = {
-                    if (settingsUiState.savedSettings.hasRequiredConfig()) {
-                        navController.navigate(AppRoutes.CHAT) {
-                            launchSingleTop = true
-                        }
-                    }
-                },
                 onOpenSettings = {
                     navController.navigate(AppRoutes.SETTINGS) {
                         launchSingleTop = true
@@ -62,12 +55,6 @@ fun AppNavHost(
             navController = navController,
             settingsViewModel = settingsViewModel,
             appUpdateViewModel = appUpdateViewModel,
-        )
-
-        registerChatNavGraph(
-            appGraph = appGraph,
-            navController = navController,
-            settingsViewModel = settingsViewModel,
         )
 
         composable(AppRoutes.PHONE_CHECK) { backStackEntry ->
@@ -97,6 +84,25 @@ fun AppNavHost(
             )
         }
 
+        composable(AppRoutes.MOMENTS_GLOBAL) { backStackEntry ->
+            val momentsViewModel = rememberMomentsViewModel(
+                appGraph = appGraph,
+                backStackEntry = backStackEntry,
+            )
+            val uiState by momentsViewModel.uiState.collectAsStateWithLifecycle()
+            MomentsScreen(
+                uiState = uiState,
+                viewerName = uiState.viewerName,
+                onNavigateBack = { navController.popBackStack() },
+                onPublishPost = momentsViewModel::publishUserPost,
+                onToggleLikePost = momentsViewModel::toggleLikePost,
+                onAddComment = momentsViewModel::addCommentToPost,
+                onRetryImage = momentsViewModel::retryImage,
+                onGenerateDueAssistantPosts = momentsViewModel::generateDueAssistantPosts,
+                onClearErrorMessage = momentsViewModel::clearErrorMessage,
+            )
+        }
+
         composable(AppRoutes.MOMENTS) { backStackEntry ->
             val momentsViewModel = rememberMomentsViewModel(
                 appGraph = appGraph,
@@ -112,19 +118,26 @@ fun AppNavHost(
                 uiState = uiState,
                 viewerName = uiState.viewerName,
                 onNavigateBack = { navController.popBackStack() },
+                onPublishPost = momentsViewModel::publishUserPost,
                 onToggleLikePost = momentsViewModel::toggleLikePost,
                 onAddComment = momentsViewModel::addCommentToPost,
+                onRetryImage = momentsViewModel::retryImage,
+                onGenerateDueAssistantPosts = momentsViewModel::generateDueAssistantPosts,
                 onClearErrorMessage = momentsViewModel::clearErrorMessage,
-                onOpenPhoneCheck = {
-                    navController.navigate(
-                        AppRoutes.phoneCheck(
-                            conversationId = conversationId,
-                            scenarioId = scenarioId,
-                            ownerType = ownerType,
-                        ),
-                    ) {
-                        launchSingleTop = true
+                onOpenPhoneCheck = if (conversationId.isNotBlank()) {
+                    {
+                        navController.navigate(
+                            AppRoutes.phoneCheck(
+                                conversationId = conversationId,
+                                scenarioId = scenarioId,
+                                ownerType = ownerType,
+                            ),
+                        ) {
+                            launchSingleTop = true
+                        }
                     }
+                } else {
+                    null
                 },
             )
         }

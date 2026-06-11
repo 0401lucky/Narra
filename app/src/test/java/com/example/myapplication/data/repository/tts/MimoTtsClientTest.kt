@@ -176,6 +176,26 @@ class MimoTtsClientTest {
     }
 
     @Test
+    fun synthesize_rejectsRemoteHttpBaseUrl() = runTest {
+        val client = MimoTtsClient(
+            baseUrl = "http://api.example.com/v1",
+        )
+
+        val failure = runCatching {
+            client.synthesize(
+                apiKey = "test-key",
+                request = MimoTtsRequest.preset(
+                    text = "测试非安全地址。",
+                    voiceId = "冰糖",
+                ),
+            )
+        }.exceptionOrNull()
+
+        assertTrue(failure is IllegalArgumentException)
+        assertTrue(failure?.message.orEmpty().contains("MiMo Base URL 必须使用 https://"))
+    }
+
+    @Test
     fun synthesize_missingAudioDataThrowsFailure() = runTest {
         server.enqueue(
             MockResponse()
@@ -197,5 +217,42 @@ class MimoTtsClientTest {
         }.exceptionOrNull()
 
         assertTrue(failure?.message.orEmpty().contains("MiMo 未返回音频数据"))
+    }
+
+    @Test
+    fun synthesize_redactsSensitiveHttpErrorBody() = runTest {
+        server.enqueue(
+            MockResponse()
+                .setResponseCode(401)
+                .setBody(
+                    """
+                    {
+                      "error": "Authorization: Bearer sk-secret",
+                      "api_key": "mimo-secret",
+                      "audio": {"data": "data:audio/wav;base64,UklGRgAAAAAA"}
+                    }
+                    """.trimIndent(),
+                ),
+        )
+        val client = MimoTtsClient(
+            baseUrl = server.url("/v1/").toString(),
+        )
+
+        val failure = runCatching {
+            client.synthesize(
+                apiKey = "test-key",
+                request = MimoTtsRequest.preset(
+                    text = "我在。",
+                    voiceId = "冰糖",
+                ),
+            )
+        }.exceptionOrNull()
+        val message = failure?.message.orEmpty()
+
+        assertTrue(message.contains("MiMo TTS 请求失败：HTTP 401"))
+        assertFalse(message.contains("sk-secret"))
+        assertFalse(message.contains("mimo-secret"))
+        assertFalse(message.contains("UklGRgAAAAAA"))
+        assertTrue(message.contains("[REDACTED]"))
     }
 }

@@ -61,8 +61,8 @@ import com.example.myapplication.roleplay.RoleplayConversationSupport
 import com.example.myapplication.roleplay.RoleplaySceneMood
 import com.example.myapplication.roleplay.RoleplaySceneMoodState
 import com.example.myapplication.roleplay.resolveRoleplaySceneMood
-import com.example.myapplication.ui.screen.chat.SpecialPlayEditorSheet
-import com.example.myapplication.ui.screen.chat.SpecialPlaySheet
+import com.example.myapplication.ui.component.specialplay.SpecialPlayEditorSheet
+import com.example.myapplication.ui.component.specialplay.SpecialPlaySheet
 
 @Composable
 internal fun RoleplaySceneContent(
@@ -327,7 +327,7 @@ private fun PendingMemoryProposalCard(
                         if (proposal.scopeType == com.example.myapplication.model.MemoryScopeType.GLOBAL) {
                             "将写入全局长期记忆"
                         } else {
-                            "将写入助手长期记忆"
+                            "将写入角色长期记忆"
                         },
                     )
                     proposal.reason.takeIf { it.isNotBlank() }?.let { reason ->

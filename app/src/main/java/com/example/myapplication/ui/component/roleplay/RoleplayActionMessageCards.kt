@@ -59,6 +59,7 @@ import com.example.myapplication.model.voiceAudioStatus
 import com.example.myapplication.model.voiceMessageContent
 import com.example.myapplication.model.voiceMessageDurationLabel
 import com.example.myapplication.model.voiceMessageDurationSeconds
+import com.example.myapplication.system.security.SensitiveTextRedactor
 import kotlin.math.abs
 
 @Composable
@@ -363,7 +364,10 @@ private fun RoleplayVoiceMessageCard(
             isExpanded = true
             playbackError = when (audioStatus) {
                 VoiceAudioStatus.GENERATING -> "语音正在生成，稍后再试"
-                VoiceAudioStatus.FAILED -> actionPart.voiceAudioErrorMessage().ifBlank { "语音生成失败" }
+                VoiceAudioStatus.FAILED -> redactedVoiceErrorMessage(
+                    rawMessage = actionPart.voiceAudioErrorMessage(),
+                    fallback = "语音生成失败",
+                )
                 VoiceAudioStatus.READY -> "本地音频文件不可用"
                 null -> "暂时只有文字内容"
             }
@@ -403,7 +407,10 @@ private fun RoleplayVoiceMessageCard(
             mediaPlayer = null
             isPlaying = false
             isExpanded = true
-            playbackError = throwable.message?.takeIf { it.isNotBlank() } ?: "语音播放失败"
+            playbackError = SensitiveTextRedactor.throwableMessageForUi(
+                throwable = throwable,
+                fallback = "语音播放失败",
+            )
         }
     }
 
@@ -528,6 +535,18 @@ private fun buildVoiceWaveformSeed(
         val normalized = abs(state % 1000) / 1000f
         0.35f + normalized * 0.75f
     }
+}
+
+private fun redactedVoiceErrorMessage(
+    rawMessage: String,
+    fallback: String,
+): String {
+    val normalized = rawMessage.trim()
+    if (normalized.isBlank()) return fallback
+    return SensitiveTextRedactor.throwableMessageForUi(
+        throwable = IllegalStateException(normalized),
+        fallback = fallback,
+    )
 }
 
 @Composable

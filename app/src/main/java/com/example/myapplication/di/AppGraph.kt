@@ -66,8 +66,16 @@ import com.example.myapplication.data.repository.phone.PhoneSnapshotRepository
 import com.example.myapplication.data.repository.phone.RoomPhoneSnapshotRepository
 import com.example.myapplication.data.repository.mailbox.MailboxRepository
 import com.example.myapplication.data.repository.mailbox.RoomMailboxRepository
+import com.example.myapplication.data.repository.ImageFileStorage
+import com.example.myapplication.data.repository.moments.MomentsRepository
+import com.example.myapplication.data.repository.moments.MomentsGenerationCoordinator
+import com.example.myapplication.data.repository.moments.RoomMomentsRepository
 import com.example.myapplication.data.repository.roleplay.RoleplayRepository
 import com.example.myapplication.data.repository.roleplay.RoomRoleplayRepository
+import com.example.myapplication.data.repository.roleplay.script.RoleplayScriptRepository
+import com.example.myapplication.data.repository.roleplay.script.RoomRoleplayScriptRepository
+import com.example.myapplication.roleplay.script.AndroidRoleplayScriptEngine
+import com.example.myapplication.roleplay.script.RoleplayScriptEngine
 import com.example.myapplication.system.update.AndroidAppUpdateController
 import com.example.myapplication.system.update.AppUpdateDownloadController
 import kotlinx.coroutines.CoroutineScope
@@ -112,6 +120,25 @@ class AppGraph(
 
     val mailboxRepository: MailboxRepository by lazy {
         RoomMailboxRepository(database.mailboxDao())
+    }
+
+    val momentsRepository: MomentsRepository by lazy {
+        RoomMomentsRepository(database.momentDao())
+    }
+
+    val momentsGenerationCoordinator: MomentsGenerationCoordinator by lazy {
+        MomentsGenerationCoordinator(
+            momentsRepository = momentsRepository,
+            settingsRepository = aiSettingsRepository,
+            aiPromptExtrasService = aiPromptExtrasService,
+            aiGateway = aiGateway,
+            imageSaver = { b64Data ->
+                ImageFileStorage.saveBase64Image(
+                    context = application,
+                    b64Data = b64Data,
+                )
+            },
+        )
     }
 
     val conversationRepository: ConversationRepository by lazy {
@@ -292,6 +319,14 @@ class AppGraph(
             imageFileCleaner = localImageStore::deleteIfLocalAsync,
             mailboxCleanup = mailboxRepository::deleteScenarioData,
         )
+    }
+
+    val roleplayScriptRepository: RoleplayScriptRepository by lazy {
+        RoomRoleplayScriptRepository(database.roleplayScriptDao())
+    }
+
+    val roleplayScriptEngine: RoleplayScriptEngine by lazy {
+        AndroidRoleplayScriptEngine(application)
     }
 
     val promptContextAssembler: PromptContextAssembler by lazy {

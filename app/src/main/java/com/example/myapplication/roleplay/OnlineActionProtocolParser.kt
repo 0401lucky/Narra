@@ -55,14 +55,31 @@ internal object OnlineActionProtocolParser {
         "time",
         "note",
         "description",
+        "desc",
+        "caption",
+        "prompt",
         "content",
+        "text",
+        "message",
+        "dialogue",
+        "speech",
+        "action",
+        "action_type",
+        "actionType",
+        "kind",
+        "event",
         "message_id",
+        "reply_preview",
+        "preview",
+        "reply_speaker",
+        "speaker_name",
         "op",
         "path",
         "value",
         "delta",
         "from",
         "title",
+        "name",
         "objective",
         "reward",
         "deadline",
@@ -76,6 +93,16 @@ internal object OnlineActionProtocolParser {
         "direction",
         "status",
         "ref",
+        "ref_id",
+        "transfer_id",
+        "duration_seconds",
+        "durationSeconds",
+        "locationName",
+        "location_name",
+        "location",
+        "coordinates",
+        "address",
+        "suffix",
     )
     private val protocolAttributeNamePattern = protocolAttributeNames.joinToString(separator = "|")
     private val malformedProtocolAttributePattern = Regex(
@@ -96,7 +123,7 @@ internal object OnlineActionProtocolParser {
         // 优先尝试标准 JSON 数组解析
         val candidate = prepareProtocolArrayCandidate(rawContent)
         if (candidate != null) {
-            val parsedRoot = runCatching { JsonParser.parseString(candidate) }.getOrNull()
+            val parsedRoot = parseJsonElement(candidate)
             if (parsedRoot != null && parsedRoot.isJsonArray) {
                 return parseArray(
                     array = parsedRoot.asJsonArray,
@@ -135,8 +162,10 @@ internal object OnlineActionProtocolParser {
     }
 
     fun extractGroupTextStreamingPreview(rawContent: String): String {
-        val candidate = extractCompleteArrayPrefix(stripMarkdownCodeFence(rawContent)) ?: return ""
-        val parsedRoot = runCatching { JsonParser.parseString(candidate) }.getOrNull() ?: return ""
+        val candidate = extractCompleteArrayPrefix(
+            stripMarkdownCodeFence(rawContent).normalizeLooseJsonQuoteChars(),
+        ) ?: return ""
+        val parsedRoot = parseJsonElement(candidate) ?: return ""
         if (!parsedRoot.isJsonArray) {
             return ""
         }
@@ -155,7 +184,7 @@ internal object OnlineActionProtocolParser {
      * 尝试解析为单对象，成功则包装为数组处理。
      */
     private fun trySingleJsonObject(rawContent: String, characterName: String): OnlineActionProtocolParseResult? {
-        val stripped = stripMarkdownCodeFence(rawContent)
+        val stripped = stripMarkdownCodeFence(rawContent).normalizeLooseJsonQuoteChars()
         val trimmed = stripped.trim()
         val objectCandidate = if (trimmed.startsWith("{") && trimmed.endsWith("}")) {
             trimmed
@@ -168,7 +197,7 @@ internal object OnlineActionProtocolParser {
                 return null
             }
         }
-        val parsedObject = runCatching { JsonParser.parseString(objectCandidate) }.getOrNull()
+        val parsedObject = parseJsonElement(objectCandidate)
             ?.takeIf { it.isJsonObject }
             ?.asJsonObject
             ?: return null
@@ -203,6 +232,7 @@ internal object OnlineActionProtocolParser {
         }
         val lines = cleaned.split('\n')
             .map(::sanitizeProtocolResidualTextLine)
+            .flatMap(::splitFallbackBubbleText)
             .filter { it.isNotBlank() }
         if (lines.isEmpty()) {
             return null
@@ -232,8 +262,10 @@ internal object OnlineActionProtocolParser {
     }
 
     fun extractStreamingPreview(rawContent: String): String {
-        val candidate = extractCompleteArrayPrefix(stripMarkdownCodeFence(rawContent)) ?: return ""
-        val parsedRoot = runCatching { JsonParser.parseString(candidate) }.getOrNull() ?: return ""
+        val candidate = extractCompleteArrayPrefix(
+            stripMarkdownCodeFence(rawContent).normalizeLooseJsonQuoteChars(),
+        ) ?: return ""
+        val parsedRoot = parseJsonElement(candidate) ?: return ""
         if (!parsedRoot.isJsonArray) {
             return ""
         }
@@ -318,7 +350,7 @@ internal object OnlineActionProtocolParser {
     ) {
         when (item.protocolType()) {
             "reply_to" -> {
-                val content = sanitizeOnlineDialogueText(item.stringValue("content"))
+                val content = sanitizeOnlineDialogueText(item.contentValue())
                 if (content.isNotBlank()) {
                     parts += textMessagePart(
                         text = content,
@@ -332,7 +364,7 @@ internal object OnlineActionProtocolParser {
             }
 
             "thought" -> {
-                item.stringValue("content")
+                item.contentValue()
                     .takeIf { it.isNotBlank() }
                     ?.let { content ->
                         parts += thoughtMessagePart(content)
@@ -346,7 +378,7 @@ internal object OnlineActionProtocolParser {
             }
 
             "emoji" -> {
-                item.stringValue("description")
+                item.descriptionValue()
                     .takeIf { it.isNotBlank() }
                     ?.let { description ->
                         parts += emojiMessagePart(description)
@@ -354,7 +386,7 @@ internal object OnlineActionProtocolParser {
             }
 
             "voice_message" -> {
-                item.stringValue("content")
+                item.contentValue()
                     .takeIf { it.isNotBlank() }
                     ?.let { content ->
                         val durationSeconds = item.numericStringValue("duration_seconds")
@@ -368,7 +400,7 @@ internal object OnlineActionProtocolParser {
             }
 
             "ai_photo" -> {
-                item.stringValue("description")
+                item.descriptionValue()
                     .takeIf { it.isNotBlank() }
                     ?.let { description ->
                         parts += aiPhotoMessagePart(description)
@@ -376,9 +408,13 @@ internal object OnlineActionProtocolParser {
             }
 
             "location" -> {
-                val locationName = item.stringValue("locationName")
-                    .ifBlank { item.stringValue("name") }
-                    .ifBlank { item.stringValue("location_name") }
+                val locationName = item.firstStringValue(
+                    "locationName",
+                    "name",
+                    "location_name",
+                    "place",
+                    "location",
+                )
                 if (locationName.isNotBlank()) {
                     parts += locationMessagePart(
                         locationName = locationName,
@@ -436,7 +472,7 @@ internal object OnlineActionProtocolParser {
                 val title = item.stringValue("title")
                     .ifBlank { item.stringValue("name") }
                 val objective = item.stringValue("objective")
-                    .ifBlank { item.stringValue("content") }
+                    .ifBlank { item.contentValue() }
                     .ifBlank { item.stringValue("description") }
                 if (title.isNotBlank() && objective.isNotBlank()) {
                     parts += taskMessagePart(
@@ -477,7 +513,7 @@ internal object OnlineActionProtocolParser {
 
             "punish", "惩罚" -> {
                 val method = item.stringValue("method")
-                    .ifBlank { item.stringValue("content") }
+                    .ifBlank { item.contentValue() }
                 if (method.isNotBlank()) {
                     parts += punishMessagePart(
                         method = method,
@@ -493,9 +529,7 @@ internal object OnlineActionProtocolParser {
 
             // 未知类型兜底：尝试提取 content 作为纯文本，避免内容丢失
             else -> {
-                val content = item.stringValue("content")
-                    .ifBlank { item.stringValue("text") }
-                    .ifBlank { item.stringValue("message") }
+                val content = item.contentValue()
                 if (content.isNotBlank()) {
                     parts += textMessagePart(sanitizeOnlineDialogueText(content))
                 }
@@ -504,12 +538,32 @@ internal object OnlineActionProtocolParser {
     }
 
     private fun prepareProtocolArrayCandidate(rawContent: String): String? {
-        val stripped = stripMarkdownCodeFence(rawContent)
+        val stripped = stripMarkdownCodeFence(rawContent).normalizeLooseJsonQuoteChars()
         val candidate = extractFirstCompleteJsonArray(stripped)
             ?: extractCompleteArrayPrefix(stripped)
             ?: return null
         return removeTrailingCommas(candidate).trim()
             .takeIf { it.startsWith("[") && it.endsWith("]") }
+    }
+
+    private fun parseJsonElement(candidate: String): JsonElement? {
+        val strictCandidate = removeTrailingCommas(candidate).trim()
+        return runCatching { JsonParser.parseString(strictCandidate) }.getOrNull()
+            ?: repairLooseJsonCandidate(strictCandidate)
+                .takeIf { it != strictCandidate }
+                ?.let { repaired ->
+                    runCatching { JsonParser.parseString(repaired) }.getOrNull()
+                }
+    }
+
+    private fun repairLooseJsonCandidate(candidate: String): String {
+        return candidate
+            .normalizeLooseJsonQuoteChars()
+            .replaceStructuralFullWidthPunctuation()
+            .quoteUnquotedObjectKeys()
+            .convertSingleQuotedStringsToJsonStrings()
+            .let(::removeTrailingCommas)
+            .trim()
     }
 
     private fun stripMarkdownCodeFence(rawContent: String): String {
@@ -530,21 +584,21 @@ internal object OnlineActionProtocolParser {
         if (startIndex == -1) {
             return null
         }
-        var inString = false
+        var quoteChar: Char? = null
         var escaped = false
         var depth = 0
         for (index in startIndex until rawContent.length) {
             val char = rawContent[index]
-            if (inString) {
+            if (quoteChar != null) {
                 when {
                     escaped -> escaped = false
                     char == '\\' -> escaped = true
-                    char == '"' -> inString = false
+                    char == quoteChar -> quoteChar = null
                 }
                 continue
             }
             when (char) {
-                '"' -> inString = true
+                '"', '\'' -> quoteChar = char
                 '[' -> depth += 1
                 ']' -> {
                     depth -= 1
@@ -565,7 +619,7 @@ internal object OnlineActionProtocolParser {
         val source = rawContent.substring(startIndex)
         val items = mutableListOf<String>()
         var itemStart = -1
-        var inString = false
+        var quoteChar: Char? = null
         var escaped = false
         var objectDepth = 0
         var nestedArrayDepth = 0
@@ -582,7 +636,7 @@ internal object OnlineActionProtocolParser {
                     else -> itemStart = index
                 }
             }
-            if (!inString && objectDepth == 0 && nestedArrayDepth == 0 && (char == ',' || char == ']')) {
+            if (quoteChar == null && objectDepth == 0 && nestedArrayDepth == 0 && (char == ',' || char == ']')) {
                 val item = source.substring(itemStart, index).trim()
                 if (item.isNotBlank()) {
                     items += item
@@ -594,17 +648,17 @@ internal object OnlineActionProtocolParser {
                 index += 1
                 continue
             }
-            if (inString) {
+            if (quoteChar != null) {
                 when {
                     escaped -> escaped = false
                     char == '\\' -> escaped = true
-                    char == '"' -> inString = false
+                    char == quoteChar -> quoteChar = null
                 }
                 index += 1
                 continue
             }
             when (char) {
-                '"' -> inString = true
+                '"', '\'' -> quoteChar = char
                 '{' -> objectDepth += 1
                 '}' -> objectDepth = (objectDepth - 1).coerceAtLeast(0)
                 '[' -> nestedArrayDepth += 1
@@ -616,7 +670,7 @@ internal object OnlineActionProtocolParser {
             }
             index += 1
         }
-        if (itemStart != -1 && !inString && objectDepth == 0 && nestedArrayDepth == 0) {
+        if (itemStart != -1 && quoteChar == null && objectDepth == 0 && nestedArrayDepth == 0) {
             val trailingItem = source.substring(itemStart).trim().removeSuffix("]")
                 .trim()
                 .removeSuffix(",")
@@ -637,23 +691,23 @@ internal object OnlineActionProtocolParser {
 
     private fun removeTrailingCommas(rawContent: String): String {
         val builder = StringBuilder(rawContent.length)
-        var inString = false
+        var quoteChar: Char? = null
         var escaped = false
         var index = 0
         while (index < rawContent.length) {
             val char = rawContent[index]
-            if (inString) {
+            if (quoteChar != null) {
                 builder.append(char)
                 when {
                     escaped -> escaped = false
                     char == '\\' -> escaped = true
-                    char == '"' -> inString = false
+                    char == quoteChar -> quoteChar = null
                 }
                 index += 1
                 continue
             }
-            if (char == '"') {
-                inString = true
+            if (char == '"' || char == '\'') {
+                quoteChar = char
                 builder.append(char)
                 index += 1
                 continue
@@ -680,6 +734,196 @@ internal object OnlineActionProtocolParser {
         return -1
     }
 
+    private fun String.normalizeLooseJsonQuoteChars(): String {
+        return map { char ->
+            when (char) {
+                '“', '”', '„', '‟' -> '"'
+                '‘', '’', '‚', '‛' -> '\''
+                else -> char
+            }
+        }.joinToString(separator = "")
+    }
+
+    private fun String.replaceStructuralFullWidthPunctuation(): String {
+        val builder = StringBuilder(length)
+        var quoteChar: Char? = null
+        var escaped = false
+        for (char in this) {
+            if (quoteChar != null) {
+                builder.append(char)
+                when {
+                    escaped -> escaped = false
+                    char == '\\' -> escaped = true
+                    char == quoteChar -> quoteChar = null
+                }
+                continue
+            }
+            when (char) {
+                '"', '\'' -> {
+                    quoteChar = char
+                    builder.append(char)
+                }
+                '：' -> builder.append(':')
+                '，' -> builder.append(',')
+                else -> builder.append(char)
+            }
+        }
+        return builder.toString()
+    }
+
+    private fun String.quoteUnquotedObjectKeys(): String {
+        val builder = StringBuilder(length)
+        var index = 0
+        var quoteChar: Char? = null
+        var escaped = false
+        while (index < length) {
+            val char = this[index]
+            if (quoteChar != null) {
+                builder.append(char)
+                when {
+                    escaped -> escaped = false
+                    char == '\\' -> escaped = true
+                    char == quoteChar -> quoteChar = null
+                }
+                index += 1
+                continue
+            }
+            if (char == '"' || char == '\'') {
+                quoteChar = char
+                builder.append(char)
+                index += 1
+                continue
+            }
+            if (char == '{' || char == ',') {
+                builder.append(char)
+                index += 1
+                val whitespaceStart = index
+                while (index < length && this[index].isWhitespace()) {
+                    builder.append(this[index])
+                    index += 1
+                }
+                val keyStart = index
+                if (index < length && (this[index].isLetter() || this[index] == '_')) {
+                    index += 1
+                    while (
+                        index < length &&
+                        (this[index].isLetterOrDigit() || this[index] == '_' || this[index] == '-')
+                    ) {
+                        index += 1
+                    }
+                    val key = substring(keyStart, index)
+                    var colonIndex = index
+                    while (colonIndex < length && this[colonIndex].isWhitespace()) {
+                        colonIndex += 1
+                    }
+                    if (
+                        colonIndex < length &&
+                        this[colonIndex] == ':' &&
+                        key.lowercase() in looseJsonProtocolKeyNames
+                    ) {
+                        builder.append('"')
+                        builder.append(key)
+                        builder.append('"')
+                        builder.append(':')
+                        index = colonIndex + 1
+                        continue
+                    }
+                    builder.append(substring(keyStart, colonIndex))
+                    index = colonIndex
+                    continue
+                }
+                if (whitespaceStart == index) {
+                    continue
+                }
+                continue
+            }
+            builder.append(char)
+            index += 1
+        }
+        return builder.toString()
+    }
+
+    private fun String.convertSingleQuotedStringsToJsonStrings(): String {
+        val builder = StringBuilder(length)
+        var quoteChar: Char? = null
+        var escaped = false
+        for (char in this) {
+            when (quoteChar) {
+                null -> {
+                    when (char) {
+                        '"' -> {
+                            quoteChar = '"'
+                            builder.append(char)
+                        }
+                        '\'' -> {
+                            quoteChar = '\''
+                            builder.append('"')
+                        }
+                        else -> builder.append(char)
+                    }
+                }
+                '"' -> {
+                    builder.appendJsonStringChar(
+                        char = char,
+                        quoteChar = '"',
+                        escaped = escaped,
+                    )
+                    when {
+                        escaped -> escaped = false
+                        char == '\\' -> escaped = true
+                        char == '"' -> quoteChar = null
+                    }
+                }
+                '\'' -> {
+                    when {
+                        escaped -> {
+                            builder.appendEscapedSingleQuotedJsonChar(char)
+                            escaped = false
+                        }
+                        char == '\\' -> escaped = true
+                        char == '\'' -> {
+                            builder.append('"')
+                            quoteChar = null
+                        }
+                        else -> builder.appendJsonStringChar(
+                            char = char,
+                            quoteChar = '\'',
+                            escaped = false,
+                        )
+                    }
+                }
+            }
+        }
+        return builder.toString()
+    }
+
+    private fun StringBuilder.appendJsonStringChar(
+        char: Char,
+        quoteChar: Char,
+        escaped: Boolean,
+    ) {
+        when {
+            escaped -> append(char)
+            char == '\n' -> append("\\n")
+            char == '\r' -> append("\\r")
+            quoteChar == '\'' && char == '"' -> append("\\\"")
+            else -> append(char)
+        }
+    }
+
+    private fun StringBuilder.appendEscapedSingleQuotedJsonChar(char: Char) {
+        when (char) {
+            '\'', '"' -> append(char)
+            '\n' -> append("\\n")
+            '\r' -> append("\\r")
+            'n', 'r', 't', 'b', 'f', 'u', '\\', '/' -> {
+                append('\\')
+                append(char)
+            }
+            else -> append(char)
+        }
+    }
+
     // 模型有时把心声作为纯字符串输出（如 "【心声】谁也没你重要"），
     // 而不是正确的 {"type":"thought","content":"..."}。
     // 在这里做前缀探测，让 parseArray 对字符串元素也能生成 thoughtMessagePart。
@@ -697,6 +941,30 @@ internal object OnlineActionProtocolParser {
 
     private fun sanitizeOnlineDialogueText(text: String): String {
         return referenceIdPrefixRegex.replace(text.trim(), "").trim()
+    }
+
+    private fun splitFallbackBubbleText(text: String): List<String> {
+        val normalized = text.trim()
+        if (normalized.length < MIN_FALLBACK_SPLIT_CHARS || normalized.contains("://")) {
+            return listOf(normalized)
+        }
+        val sentences = fallbackSentencePattern.findAll(normalized)
+            .map { it.value.trim() }
+            .filter { it.isNotBlank() }
+            .toList()
+        if (sentences.size < 2 || sentences.joinToString(separator = "").length != normalized.length) {
+            return listOf(normalized)
+        }
+        if (sentences.any { it.length > MAX_FALLBACK_SENTENCE_CHARS }) {
+            return listOf(normalized)
+        }
+        if (sentences.size <= MAX_FALLBACK_BUBBLE_COUNT) {
+            return sentences
+        }
+        return buildList {
+            addAll(sentences.take(MAX_FALLBACK_BUBBLE_COUNT - 1))
+            add(sentences.drop(MAX_FALLBACK_BUBBLE_COUNT - 1).joinToString(separator = ""))
+        }
     }
 
     private fun OnlineActionProtocolParseResult.toGroupAllowed(): OnlineActionProtocolParseResult? {
@@ -780,9 +1048,14 @@ internal object OnlineActionProtocolParser {
     )
 
     private fun JsonObject.protocolType(): String {
-        return stringValue("type")
-            .lowercase()
-            .replace('-', '_')
+        val rawType = firstStringValue("type", "action_type", "actionType", "kind", "event")
+            .ifBlank {
+                stringValue("action")
+                    .takeIf { it.normalizeProtocolTypeToken() in actionValueProtocolTypeAliases }
+                    .orEmpty()
+            }
+        val normalizedType = rawType.normalizeProtocolTypeToken()
+        return protocolTypeAliases[normalizedType] ?: normalizedType
     }
 
     private fun String.sanitizeMalformedProtocolLeak(): String {
@@ -899,18 +1172,66 @@ internal object OnlineActionProtocolParser {
     }
 
     private fun JsonObject.stringValue(key: String): String {
-        return runCatching { get(key)?.takeIf(JsonElement::isJsonPrimitive)?.asString.orEmpty() }
+        return runCatching { valueElement(key)?.protocolTextValue().orEmpty() }
             .getOrDefault("")
             .trim()
     }
 
     private fun JsonObject.numericStringValue(key: String): String {
-        val element = get(key) ?: return ""
+        val element = valueElement(key) ?: return ""
         return when {
             element.isJsonPrimitive && element.asJsonPrimitive.isNumber -> element.asNumber.toString()
             element.isJsonPrimitive && element.asJsonPrimitive.isString -> element.asString.trim()
             else -> ""
         }
+    }
+
+    private fun JsonObject.firstStringValue(vararg keys: String): String {
+        return keys.firstNotNullOfOrNull { key ->
+            stringValue(key).takeIf { it.isNotBlank() }
+        }.orEmpty()
+    }
+
+    private fun JsonObject.contentValue(): String {
+        return firstStringValue("content", "text", "message", "dialogue", "speech")
+    }
+
+    private fun JsonObject.descriptionValue(): String {
+        return firstStringValue("description", "desc", "caption", "prompt", "content", "text", "message")
+    }
+
+    private fun JsonObject.valueElement(key: String): JsonElement? {
+        return get(key) ?: entrySet().firstOrNull { entry ->
+            entry.key.equals(key, ignoreCase = true)
+        }?.value
+    }
+
+    private fun JsonElement.protocolTextValue(): String {
+        return when {
+            isJsonNull -> ""
+            isJsonPrimitive -> asString
+            isJsonArray -> asJsonArray
+                .map { element -> element.protocolTextValue() }
+                .filter { it.isNotBlank() }
+                .joinToString(separator = "\n")
+            isJsonObject -> {
+                val objectValue = asJsonObject
+                objectValue.contentValue()
+                    .ifBlank { objectValue.descriptionValue() }
+                    .ifBlank {
+                        objectValue.entrySet()
+                            .joinToString(separator = "\n") { entry -> entry.value.protocolTextValue() }
+                    }
+            }
+            else -> ""
+        }.trim()
+    }
+
+    private fun String.normalizeProtocolTypeToken(): String {
+        return trim()
+            .lowercase()
+            .replace('-', '_')
+            .replace(' ', '_')
     }
 
     private fun ChatMessagePart.toActionOrSpecialCopyText(): String {
@@ -935,4 +1256,43 @@ internal object OnlineActionProtocolParser {
             is OnlineActionDirective.UpdateTransferStatus -> status.transferResultText()
         }
     }
+
+    private val looseJsonProtocolKeyNames = protocolAttributeNames
+        .map { it.lowercase() }
+        .toSet()
+
+    private val protocolTypeAliases = mapOf(
+        "reply" to "reply_to",
+        "replyto" to "reply_to",
+        "voice" to "voice_message",
+        "audio" to "voice_message",
+        "photo" to "ai_photo",
+        "image" to "ai_photo",
+        "ai_image" to "ai_photo",
+        "transfer_receipt" to "transfer_action",
+        "transfer_status" to "transfer_action",
+        "video" to "video_call",
+        "call" to "video_call",
+    )
+    private val actionValueProtocolTypeAliases = protocolTypeAliases.keys + setOf(
+        "reply_to",
+        "thought",
+        "recall",
+        "emoji",
+        "voice_message",
+        "ai_photo",
+        "location",
+        "transfer",
+        "transfer_action",
+        "poke",
+        "video_call",
+        "task",
+        "invite",
+        "gift",
+        "punish",
+    )
+    private val fallbackSentencePattern = Regex("""[^。！？!?；;…]+[。！？!?；;…]*""")
+    private const val MIN_FALLBACK_SPLIT_CHARS = 30
+    private const val MAX_FALLBACK_SENTENCE_CHARS = 48
+    private const val MAX_FALLBACK_BUBBLE_COUNT = 4
 }

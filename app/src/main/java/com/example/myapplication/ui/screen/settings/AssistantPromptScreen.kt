@@ -250,7 +250,7 @@ fun AssistantPromptScreen(
                     // Mini chat bubble preview — inspired by RikkaHub
                     if (greeting.isNotBlank()) {
                         GreetingPreviewBubble(
-                            assistantName = assistant.name.ifBlank { "助手" },
+                            assistantName = assistant.name.ifBlank { "角色" },
                             assistant = assistant,
                             greeting = greeting,
                             palette = palette,

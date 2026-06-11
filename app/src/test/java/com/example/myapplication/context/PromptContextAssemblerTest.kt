@@ -362,9 +362,10 @@ class PromptContextAssemblerTest {
             result.contextSections.any { section ->
                 section.sourceType == ContextLogSourceType.SUMMARY &&
                     section.title == "近期剧情分段" &&
-                    section.content.contains("旧聊天原文的分段压缩")
+                    section.content.contains("历史剧情记录的分段压缩")
             },
         )
+        assertFalse(result.systemPrompt.contains("旧聊天原文"))
     }
 
     @Test
@@ -430,7 +431,7 @@ class PromptContextAssemblerTest {
     }
 
     @Test
-    fun assemble_roleplayIncludesDescriptionAndCreatorNotes() = runBlocking {
+    fun assemble_roleplayIncludesDescriptionAndSkipsCreatorNotes() = runBlocking {
         val result = assembler.assemble(
             settings = AppSettings(),
             assistant = Assistant(
@@ -448,8 +449,8 @@ class PromptContextAssemblerTest {
 
         assertTrue(result.systemPrompt.contains("【角色核心设定】"))
         assertTrue(result.systemPrompt.contains("嘴硬、警惕、反应快"))
-        assertTrue(result.systemPrompt.contains("【创作者导演说明】"))
-        assertTrue(result.systemPrompt.contains("边试探边推进局势"))
+        assertFalse(result.systemPrompt.contains("【创作者导演说明】"))
+        assertFalse(result.systemPrompt.contains("边试探边推进局势"))
     }
 
     @Test
@@ -558,12 +559,16 @@ class PromptContextAssemblerTest {
             promptMode = PromptMode.ROLEPLAY,
         )
 
-        val chatHistoryContent = result.contextSections
+        val chatHistorySections = result.contextSections
             .filter { it.sourceType == ContextLogSourceType.CHAT_HISTORY }
-            .joinToString(separator = "\n") { it.content }
+        val chatHistoryContent = chatHistorySections.joinToString(separator = "\n") { it.content }
+        val chatHistoryTitles = chatHistorySections.map { it.title }
 
         assertTrue(chatHistoryContent.contains("最近问题"))
         assertTrue(chatHistoryContent.contains("最近回应"))
+        assertTrue(chatHistoryTitles.contains("近期剧情 · 玩家"))
+        assertTrue(chatHistoryTitles.contains("近期剧情 · 角色"))
+        assertFalse(chatHistoryTitles.any { it.contains("聊天历史") })
         assertFalse(chatHistoryContent.contains("旧剧情：第一次追问。"))
         assertFalse(chatHistoryContent.contains("旧剧情：第一次回应。"))
     }
@@ -583,7 +588,8 @@ class PromptContextAssemblerTest {
             promptMode = PromptMode.ROLEPLAY,
         )
 
-        assertTrue(result.systemPrompt.contains("【对话者设定】"))
+        assertTrue(result.systemPrompt.contains("【玩家侧设定】"))
+        assertFalse(result.systemPrompt.contains("【对话者设定】"))
         assertTrue(result.systemPrompt.contains("lucky是个表面轻佻"))
     }
 
@@ -952,7 +958,7 @@ class PromptContextAssemblerTest {
 
         val systemPromptIndex = result.systemPrompt.indexOf("你是设定整理专家。")
         val memoryIndex = result.systemPrompt.indexOf("用户喜欢列表式回答。")
-        val roleCardIndex = result.systemPrompt.indexOf("【助手简介】")
+        val roleCardIndex = result.systemPrompt.indexOf("【角色简介】")
 
         assertTrue("BEFORE_PROMPT 时记忆应在系统提示词之后", memoryIndex > systemPromptIndex)
         assertTrue("BEFORE_PROMPT 时记忆应在角色卡之前", memoryIndex < roleCardIndex)
@@ -988,7 +994,7 @@ class PromptContextAssemblerTest {
             recentMessages = emptyList(),
         )
 
-        val roleCardIndex = result.systemPrompt.indexOf("【助手简介】")
+        val roleCardIndex = result.systemPrompt.indexOf("【角色简介】")
         val memoryIndex = result.systemPrompt.indexOf("用户讨厌啰嗦的引子。")
 
         assertTrue("AT_END 时记忆应位于角色卡之后", memoryIndex > roleCardIndex)

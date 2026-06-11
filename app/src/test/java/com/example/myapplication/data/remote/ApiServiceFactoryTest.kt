@@ -30,6 +30,34 @@ class ApiServiceFactoryTest {
     }
 
     @Test
+    fun normalizeBaseUrl_rejectsGeminiNativeGenerateContentEndpoint() {
+        val error = assertThrows(IllegalArgumentException::class.java) {
+            factory.normalizeBaseUrl(
+                "https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash:generateContent",
+            )
+        }
+
+        assertEquals(
+            "Google Gemini 的 Base URL 请填写 https://generativelanguage.googleapis.com/v1beta/ 或 https://generativelanguage.googleapis.com/v1beta/openai/，不要填写 /models/...:generateContent 这类原生接口地址",
+            error.message,
+        )
+    }
+
+    @Test
+    fun normalizeBaseUrl_rejectsGeminiFullChatCompletionsEndpoint() {
+        val error = assertThrows(IllegalArgumentException::class.java) {
+            factory.normalizeBaseUrl(
+                "https://generativelanguage.googleapis.com/v1beta/openai/chat/completions",
+            )
+        }
+
+        assertEquals(
+            "Google Gemini 的 Base URL 请填写到 /v1beta/ 或 /v1beta/openai/，不要包含 /chat/completions 或 /responses",
+            error.message,
+        )
+    }
+
+    @Test
     fun normalizeBaseUrl_keepsOfficialAnthropicEndpointWhenUsingAnthropicProtocol() {
         val normalized = factory.normalizeBaseUrl(
             baseUrl = "https://api.anthropic.com/v1/",

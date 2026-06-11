@@ -1,14 +1,18 @@
 {
   "app_id": "com.narra.app.dev",
   "channel": "dev",
-  "latest_version_name": "1.9.6-dev",
-  "latest_version_code": 10906,
+  "latest_version_name": "2.0.1-dev",
+  "latest_version_code": 20001,
   "minimum_supported_version_code": 0,
-  "apk_url": "https://download.lsa1230.dpdns.org/dev/Narra-v1.9.6-dev-10906-dev.apk?v=10906-20260530123216",
-  "apk_sha256": "8d13ef0c7c150e9b41dac9a11f3187912fa475e7f177455dc61b837b5f3c60b2",
-  "published_at": "2026-05-30T12:32:16+08:00",
+  "apk_url": "https://download.lsa1230.dpdns.org/dev/Narra-v2.0.1-dev-20001-dev.apk?v=20001-20260611180556",
+  "apk_sha256": "2fbf3947e462578481719255f6a4094e081953e7a94e1d90a97f2ec46655ac51",
+  "published_at": "2026-06-11T18:05:56+08:00",
   "release_notes": [
-    "修复使用 Gemini 等模型沉浸式扮演时，回复被安全策略拦截（content_filter）却只提示「模型未返回有效内容」的问题，现在会明确告知拦截原因，便于判断重试或调整措辞",
-    "其他导致空回复的结束原因（finish_reason）也会一并透出，方便排查"
+    "Narra 2.0 RP 化大版本：默认入口切换为沉浸式私人手机，导航、设置和文案全面收束到角色、会话和剧情体验",
+    "新增 RP 脚本实验室与沙盒脚本地基，支持多作用域脚本、生命周期事件和变量持久化",
+    "新增朋友圈系统：默认时间线、用户发圈、角色主动发圈、角色评论互动，以及每角色朋友圈开关和频率设置",
+    "朋友圈配图与礼物生图统一走默认生图模型，支持生成中、失败重试和长耗时生图请求",
+    "优化 RP 聊天和群聊 UI：角色名独立展示、名称颜色统一可读，线上模式补齐一键向上和一键向下",
+    "修复朋友圈评论 OOC、配图过早超时、模型兼容性和错误脱敏等稳定性问题"
   ]
 }

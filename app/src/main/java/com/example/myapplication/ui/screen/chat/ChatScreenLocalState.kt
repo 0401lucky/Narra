@@ -14,6 +14,11 @@ import com.example.myapplication.model.InvitePlayDraft
 import com.example.myapplication.model.PunishPlayDraft
 import com.example.myapplication.model.TaskPlayDraft
 import com.example.myapplication.model.TransferPlayDraft
+import com.example.myapplication.ui.component.specialplay.GiftPlayDraftSaver
+import com.example.myapplication.ui.component.specialplay.InvitePlayDraftSaver
+import com.example.myapplication.ui.component.specialplay.PunishPlayDraftSaver
+import com.example.myapplication.ui.component.specialplay.TaskPlayDraftSaver
+import com.example.myapplication.ui.component.specialplay.TransferPlayDraftSaver
 
 @Immutable
 internal data class ChatScreenLocalState(

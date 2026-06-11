@@ -79,6 +79,9 @@ class MemoryManagementScreenTest {
         composeRule.onNodeWithText(expandLabel)
             .assertIsDisplayed()
             .performClick()
+
+        composeRule.onNodeWithTag("memory_management_list")
+            .performScrollToNode(hasText(collapseLabel))
         composeRule.onNodeWithText(collapseLabel)
             .assertIsDisplayed()
     }

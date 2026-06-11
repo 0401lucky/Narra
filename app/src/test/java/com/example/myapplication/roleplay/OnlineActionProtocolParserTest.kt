@@ -427,4 +427,76 @@ class OnlineActionProtocolParserTest {
         assertEquals(ChatActionType.AI_PHOTO, result.parts[1].actionType)
         assertEquals(ChatActionType.VOICE_MESSAGE, result.parts[2].actionType)
     }
+
+    @Test
+    fun parse_extractsProtocolArrayFromWrappedExplanationText() {
+        val result = OnlineActionProtocolParser.parse(
+            rawContent = """
+                可以，按线上消息协议输出：
+                ```json
+                [
+                  {type:'reply', message_id:1007, text:'ID:1007 我看到了。'}
+                ]
+                ```
+                以上就是本轮回复。
+            """.trimIndent(),
+            characterName = "角色",
+        )!!
+
+        assertEquals(1, result.parts.size)
+        assertEquals("1007", result.parts.single().replyToMessageId)
+        assertEquals("我看到了。", result.parts.single().text)
+    }
+
+    @Test
+    fun parse_repairsLooseJsonAliasesAndSingleQuotedValues() {
+        val result = OnlineActionProtocolParser.parse(
+            rawContent = """
+                [
+                  {action:'voice', content:'你先别急，我在听。', durationSeconds:'6'},
+                  {kind:'photo', caption:'窗台上还亮着一盏小灯。'},
+                  {event:'poke', target:'用户', suffix:'的肩膀'}
+                ]
+            """.trimIndent(),
+            characterName = "望汐",
+        )!!
+
+        assertEquals(3, result.parts.size)
+        assertEquals(ChatActionType.VOICE_MESSAGE, result.parts[0].actionType)
+        assertEquals(6, result.parts[0].voiceMessageDurationSeconds())
+        assertEquals(ChatActionType.AI_PHOTO, result.parts[1].actionType)
+        assertEquals(ChatActionType.POKE, result.parts[2].actionType)
+        assertEquals("用户", result.parts[2].actionMetadata["poke_target"])
+    }
+
+    @Test
+    fun parse_convertsStructuredContentIntoReadableText() {
+        val result = OnlineActionProtocolParser.parse(
+            rawContent = """
+                [
+                  {"type":"reply_to","message_id":"42","content":["第一句我听见了。","第二句也记住了。"]},
+                  {"type":"thought","content":{"text":"其实已经反复看了三遍。"}}
+                ]
+            """.trimIndent(),
+            characterName = "角色",
+        )!!
+
+        assertEquals(2, result.parts.size)
+        assertEquals("第一句我听见了。\n第二句也记住了。", result.parts[0].text)
+        assertTrue(result.parts[1].isOnlineThoughtPart())
+        assertEquals("其实已经反复看了三遍。", result.parts[1].onlineThoughtContent())
+    }
+
+    @Test
+    fun parseWithFallback_splitsLongSingleLineIntoNaturalBubbles() {
+        val result = OnlineActionProtocolParser.parseWithFallback(
+            rawContent = "你终于回来了。我刚才一直看着手机等你。下次别突然消失，好不好？",
+            characterName = "角色",
+        )!!
+
+        assertEquals(3, result.parts.size)
+        assertEquals("你终于回来了。", result.parts[0].text)
+        assertEquals("我刚才一直看着手机等你。", result.parts[1].text)
+        assertEquals("下次别突然消失，好不好？", result.parts[2].text)
+    }
 }

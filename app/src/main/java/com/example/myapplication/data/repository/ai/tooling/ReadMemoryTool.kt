@@ -6,8 +6,6 @@ import com.example.myapplication.model.MemoryEntry
 import com.example.myapplication.model.MemoryScopeType
 import com.example.myapplication.system.json.AppJson
 import com.google.gson.Gson
-import com.google.gson.JsonObject
-import com.google.gson.JsonParser
 
 class ReadMemoryTool(
     private val memorySelector: MemorySelector = MemorySelector(),
@@ -15,7 +13,7 @@ class ReadMemoryTool(
 ) : AppTool {
     override val name: String = NAME
 
-    override val description: String = "读取当前助手与会话可访问的长期记忆与场景记忆，帮助模型回忆已确认事实。"
+    override val description: String = "读取当前角色与会话可访问的长期记忆与场景记忆，帮助模型回忆已确认事实。"
 
     override val inputSchema: Map<String, Any> = mapOf(
         "type" to "object",
@@ -39,7 +37,7 @@ class ReadMemoryTool(
         val runtimeContext = context.runtimeContext
             ?: return errorResult("当前没有可用的会话上下文")
         val assistant = runtimeContext.assistant
-            ?: return errorResult("当前没有可用助手，无法读取记忆")
+            ?: return errorResult("当前没有可用角色，无法读取记忆")
         val conversation = runtimeContext.conversation
             ?: return errorResult("当前没有可用会话，无法读取记忆")
 
@@ -99,20 +97,11 @@ class ReadMemoryTool(
     private fun parseArguments(
         invocation: ToolInvocation,
     ): ReadMemoryArgs {
-        val jsonObject = invocation.argumentsJson
-            ?.trim()
-            ?.takeIf { it.isNotBlank() }
-            ?.let { raw ->
-                runCatching { JsonParser.parseString(raw).asJsonObject }.getOrNull()
-            }
-        val query = invocation.argumentsMap["query"]?.toString()
-            ?: jsonObject?.get("query")?.takeIf { !it.isJsonNull }?.asString
-            ?: ""
-        val limit = invocation.argumentsMap["limit"]?.toString()?.toIntOrNull()
-            ?: jsonObject?.get("limit")?.takeIf { !it.isJsonNull }?.asInt
+        val query = ToolArgumentSupport.stringArgument(invocation, "query").orEmpty()
+        val limit = ToolArgumentSupport.intArgument(invocation, "limit")
             ?: DEFAULT_LIMIT
         return ReadMemoryArgs(
-            query = query.trim(),
+            query = MemoryToolPayloadPolicy.normalizeQuery(query),
             limit = limit.coerceIn(1, 8),
         )
     }
@@ -120,10 +109,13 @@ class ReadMemoryTool(
     private fun toPayloadItem(
         entry: MemoryEntry,
     ): Map<String, Any> {
+        val normalizedContent = entry.content.trim()
+        val cappedContent = normalizedContent.take(MemoryToolPayloadPolicy.MAX_CONTENT_LENGTH)
         return mapOf(
             "id" to entry.id,
             "scope_type" to entry.scopeType.storageValue,
-            "content" to entry.content,
+            "content" to cappedContent,
+            "content_truncated" to (normalizedContent.length > cappedContent.length),
             "pinned" to entry.pinned,
             "importance" to entry.importance,
         )

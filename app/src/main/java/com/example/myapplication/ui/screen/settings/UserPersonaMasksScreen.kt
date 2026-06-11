@@ -108,7 +108,7 @@ fun UserPersonaMasksScreen(
             item {
                 SettingsPageIntro(
                     title = "身份库",
-                    summary = "每个面具都包含昵称、头像和用户人设。角色场景绑定面具后，聊天展示、提示词、日记和手机内容都会使用这套身份。",
+                    summary = "每个面具都包含昵称、头像和用户人设。角色场景绑定面具后，会话展示、提示词、日记和手机内容都会使用这套身份。",
                 )
             }
             item {
@@ -159,7 +159,7 @@ fun UserPersonaMasksScreen(
         AlertDialog(
             onDismissRequest = { deletingMask = null },
             title = { Text("删除面具") },
-            text = { Text("删除后，已绑定这个面具的聊天会回退到默认面具或全局个人资料。") },
+            text = { Text("删除后，已绑定这个面具的会话会回退到默认面具或全局个人资料。") },
             confirmButton = {
                 TextButton(
                     onClick = {

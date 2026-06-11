@@ -1,10 +1,26 @@
 package com.example.myapplication.ui.screen.immersive
 
+import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.SizeTransform
+import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.FastOutLinearInEasing
+import androidx.compose.animation.core.LinearOutSlowInEasing
+import androidx.compose.animation.core.VisibilityThreshold
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.spring
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInHorizontally
+import androidx.compose.animation.slideOutHorizontally
+import androidx.compose.animation.togetherWith
 import android.icu.text.Transliterator
 import android.os.Build
 import androidx.annotation.RequiresApi
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.gestures.Orientation
@@ -17,6 +33,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -32,7 +49,6 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.Chat
 import androidx.compose.material.icons.automirrored.filled.LibraryBooks
 import androidx.compose.material.icons.filled.Add
@@ -72,8 +88,6 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.ListItem
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
-import androidx.compose.material3.NavigationBar
-import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHostState
@@ -85,6 +99,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -92,12 +107,16 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import com.example.myapplication.model.AppSettings
@@ -111,6 +130,16 @@ import com.example.myapplication.model.isGroupChat
 import com.example.myapplication.ui.component.AppSnackbarHost
 import com.example.myapplication.ui.component.AssistantAvatar
 import com.example.myapplication.ui.component.UserProfileAvatar
+import com.composables.icons.lucide.BookUser
+import com.composables.icons.lucide.CircleUserRound
+import com.composables.icons.lucide.Compass
+import com.composables.icons.lucide.Lucide
+import com.composables.icons.lucide.MessageCircleMore
+import dev.chrisbanes.haze.HazeState
+import dev.chrisbanes.haze.HazeStyle
+import dev.chrisbanes.haze.HazeTint
+import dev.chrisbanes.haze.haze
+import dev.chrisbanes.haze.hazeChild
 import java.text.Collator
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -151,10 +180,10 @@ private enum class ImmersiveTab(
     val label: String,
     val icon: ImageVector,
 ) {
-    Messages("消息", Icons.AutoMirrored.Filled.Chat),
-    Contacts("通讯录", Icons.Default.Person),
-    Discover("手机", Icons.Default.PhoneAndroid),
-    Profile("我", Icons.Default.Person),
+    Messages("消息", Lucide.MessageCircleMore),
+    Contacts("通讯录", Lucide.BookUser),
+    Discover("发现", Lucide.Compass),
+    Profile("我", Lucide.CircleUserRound),
 }
 
 private enum class DiscoverTarget(
@@ -164,7 +193,7 @@ private enum class DiscoverTarget(
 ) {
     Moments("朋友圈", "角色动态、评论和关系里的日常痕迹", Icons.Default.Forum),
     PhoneCheck("查手机", "查看角色手机内容与可触发的生活线索", Icons.Default.PhoneAndroid),
-    Diary("日记本", "按聊天回看角色日记和剧情章节", Icons.Default.Book),
+    Diary("日记本", "按会话回看角色日记和剧情章节", Icons.Default.Book),
     Mailbox("信箱", "查看来信、草稿与已寄信件", Icons.Default.Mail),
     VideoCall("视频通话", "进入当前角色关系里的通话场景", Icons.Default.Videocam),
 }
@@ -177,8 +206,8 @@ private data class ModeOption(
 )
 
 private val ModeOptions = listOf(
-    ModeOption("线上", "手机聊天，无心声", RoleplayInteractionMode.ONLINE_PHONE, false),
-    ModeOption("线上-心声", "手机聊天，允许心声", RoleplayInteractionMode.ONLINE_PHONE, true),
+    ModeOption("线上", "手机会话，无心声", RoleplayInteractionMode.ONLINE_PHONE, false),
+    ModeOption("线上-心声", "手机会话，允许心声", RoleplayInteractionMode.ONLINE_PHONE, true),
     ModeOption("线下", "对白推进，无旁白", RoleplayInteractionMode.OFFLINE_DIALOGUE, false),
     ModeOption("线下-心声", "对白推进，允许旁白", RoleplayInteractionMode.OFFLINE_DIALOGUE, true),
     ModeOption("剧情模式", "长文叙事体验", RoleplayInteractionMode.OFFLINE_LONGFORM, true),
@@ -200,6 +229,7 @@ fun ImmersivePhoneShell(
     callbacks: ImmersivePhoneCallbacks,
 ) {
     val snackbarHostState = remember { SnackbarHostState() }
+    val hazeState = remember { HazeState() }
     var currentTab by rememberSaveable { mutableStateOf(ImmersiveTab.Messages) }
     var plusMenuExpanded by rememberSaveable { mutableStateOf(false) }
     var showNewChatSheet by rememberSaveable { mutableStateOf(false) }
@@ -230,54 +260,52 @@ fun ImmersivePhoneShell(
     Scaffold(
         snackbarHost = { AppSnackbarHost(hostState = snackbarHostState) },
         topBar = {
-            ImmersivePhoneTopBar(
-                title = currentTab.label,
-                onNavigateBack = callbacks.onNavigateBack,
-                showSearch = false,
-                showAdd = currentTab == ImmersiveTab.Messages || currentTab == ImmersiveTab.Contacts,
-                onAdd = {
-                    if (currentTab == ImmersiveTab.Messages) {
-                        plusMenuExpanded = true
-                    } else {
-                        callbacks.onOpenAssistantCreate()
-                    }
-                },
-                plusMenuExpanded = plusMenuExpanded,
-                onDismissPlusMenu = { plusMenuExpanded = false },
-                onOpenNewChat = {
-                    plusMenuExpanded = false
-                    showNewChatSheet = true
-                },
-                onOpenNewGroupChat = {
-                    plusMenuExpanded = false
-                    showNewGroupChatSheet = true
-                },
-                onOpenChatManage = {
-                    plusMenuExpanded = false
-                    callbacks.onOpenChatManage()
-                },
-            )
+            if (currentTab != ImmersiveTab.Profile) {
+                ImmersivePhoneTopBar(
+                    title = currentTab.label,
+                    showSearch = false,
+                    showAdd = currentTab == ImmersiveTab.Messages || currentTab == ImmersiveTab.Contacts,
+                    onAdd = {
+                        if (currentTab == ImmersiveTab.Messages) {
+                            plusMenuExpanded = true
+                        } else {
+                            callbacks.onOpenAssistantCreate()
+                        }
+                    },
+                    plusMenuExpanded = plusMenuExpanded,
+                    onDismissPlusMenu = { plusMenuExpanded = false },
+                    onOpenNewChat = {
+                        plusMenuExpanded = false
+                        showNewChatSheet = true
+                    },
+                    onOpenNewGroupChat = {
+                        plusMenuExpanded = false
+                        showNewGroupChatSheet = true
+                    },
+                    onOpenChatManage = {
+                        plusMenuExpanded = false
+                        callbacks.onOpenChatManage()
+                    },
+                )
+            }
         },
         bottomBar = {
-            NavigationBar(
-                modifier = Modifier.navigationBarsPadding(),
-            ) {
-                ImmersiveTab.entries.forEach { tab ->
-                    NavigationBarItem(
-                        selected = currentTab == tab,
-                        onClick = { currentTab = tab },
-                        icon = { Icon(tab.icon, contentDescription = tab.label) },
-                        label = { Text(tab.label) },
-                    )
-                }
-            }
+            ImmersiveFloatingBottomBar(
+                currentTab = currentTab,
+                hazeState = hazeState,
+                onTabSelected = { currentTab = it },
+            )
         },
         containerColor = MaterialTheme.colorScheme.surface,
     ) { innerPadding ->
+        // 只消费顶部 padding，让内容延伸到底部栏下方穿过毛玻璃；
+        // 底部空隙交给各页面的列表 contentPadding 预留
+        val bottomPadding = innerPadding.calculateBottomPadding()
         Box(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(innerPadding)
+                .padding(top = innerPadding.calculateTopPadding())
+                .haze(hazeState)
                 .background(
                     Brush.verticalGradient(
                         listOf(
@@ -287,39 +315,73 @@ fun ImmersivePhoneShell(
                     ),
                 ),
         ) {
-            when (currentTab) {
-                ImmersiveTab.Messages -> ImmersiveMessagesPage(
-                    summaries = sortedSummaries,
-                    assistants = assistants,
-                    callbacks = callbacks,
-                    onOpenNewChat = { showNewChatSheet = true },
-                )
+            AnimatedContent(
+                targetState = currentTab,
+                label = "immersive_phone_tab_content",
+                transitionSpec = {
+                    val direction = if (targetState.ordinal >= initialState.ordinal) 1 else -1
+                    (
+                        slideInHorizontally(
+                            animationSpec = spring(
+                                dampingRatio = 0.92f,
+                                stiffness = 380f,
+                                visibilityThreshold = IntOffset.VisibilityThreshold,
+                            ),
+                        ) { width -> direction * width / 4 } +
+                            fadeIn(animationSpec = tween(240, easing = LinearOutSlowInEasing))
+                        ).togetherWith(
+                            slideOutHorizontally(
+                                animationSpec = tween(200, easing = FastOutLinearInEasing),
+                            ) { width -> -direction * width / 5 } +
+                                fadeOut(animationSpec = tween(150)),
+                        ).using(SizeTransform(clip = false))
+                },
+                modifier = Modifier.fillMaxSize(),
+            ) { tab ->
+                when (tab) {
+                    ImmersiveTab.Messages -> ImmersiveMessagesPage(
+                        summaries = sortedSummaries,
+                        assistants = assistants,
+                        callbacks = callbacks,
+                        onOpenNewChat = { showNewChatSheet = true },
+                        bottomPadding = bottomPadding,
+                    )
 
-                ImmersiveTab.Contacts -> ImmersiveContactsPage(
-                    assistants = assistants,
-                    summaries = sortedSummaries,
-                    onOpenContact = { selectedContact = it },
-                    onOpenAssistantCreate = callbacks.onOpenAssistantCreate,
-                    onOpenChatManage = callbacks.onOpenChatManage,
-                )
+                    ImmersiveTab.Contacts -> ImmersiveContactsPage(
+                        assistants = assistants,
+                        summaries = sortedSummaries,
+                        onOpenContact = { selectedContact = it },
+                        onOpenAssistantCreate = callbacks.onOpenAssistantCreate,
+                        onOpenChatManage = callbacks.onOpenChatManage,
+                        bottomPadding = bottomPadding,
+                    )
 
-                ImmersiveTab.Discover -> ImmersiveDiscoverPage(
-                    onOpenTarget = { discoverTarget = it },
-                )
+                    ImmersiveTab.Discover -> ImmersiveDiscoverPage(
+                        onOpenTarget = { target ->
+                            if (target == DiscoverTarget.Moments) {
+                                callbacks.onOpenMoments("")
+                            } else {
+                                discoverTarget = target
+                            }
+                        },
+                        bottomPadding = bottomPadding,
+                    )
 
-                ImmersiveTab.Profile -> ImmersiveProfilePage(
-                    settings = settings,
-                    chatCount = sortedSummaries.size,
-                    assistantCount = assistants.size,
-                    onOpenChatManage = callbacks.onOpenChatManage,
-                    onOpenUserMasks = callbacks.onOpenUserMasks,
-                    onOpenAssistantSettings = callbacks.onOpenAssistantSettings,
-                    onOpenWorldBookSettings = callbacks.onOpenWorldBookSettings,
-                    onOpenMemorySettings = callbacks.onOpenMemorySettings,
-                    onOpenContextTransferSettings = callbacks.onOpenContextTransferSettings,
-                    onSetDefaultUserPersonaMask = callbacks.onSetDefaultUserPersonaMask,
-                    onOpenSettings = callbacks.onOpenSettings,
-                )
+                    ImmersiveTab.Profile -> ImmersiveProfilePage(
+                        settings = settings,
+                        chatCount = sortedSummaries.size,
+                        assistantCount = assistants.size,
+                        onOpenChatManage = callbacks.onOpenChatManage,
+                        onOpenUserMasks = callbacks.onOpenUserMasks,
+                        onOpenAssistantSettings = callbacks.onOpenAssistantSettings,
+                        onOpenWorldBookSettings = callbacks.onOpenWorldBookSettings,
+                        onOpenMemorySettings = callbacks.onOpenMemorySettings,
+                        onOpenContextTransferSettings = callbacks.onOpenContextTransferSettings,
+                        onSetDefaultUserPersonaMask = callbacks.onSetDefaultUserPersonaMask,
+                        onOpenSettings = callbacks.onOpenSettings,
+                        bottomPadding = bottomPadding,
+                    )
+                }
             }
         }
     }
@@ -408,11 +470,11 @@ fun ImmersivePhoneShell(
             onSelect = { scenarioId ->
                 discoverTarget = null
                 when (target) {
-                    DiscoverTarget.Moments -> callbacks.onOpenMoments(scenarioId)
                     DiscoverTarget.PhoneCheck -> callbacks.onOpenPhoneCheck(scenarioId)
                     DiscoverTarget.Diary -> callbacks.onOpenDiary(scenarioId)
                     DiscoverTarget.Mailbox -> callbacks.onOpenMailbox(scenarioId)
                     DiscoverTarget.VideoCall -> callbacks.onOpenVideoCall(scenarioId)
+                    DiscoverTarget.Moments -> callbacks.onOpenMoments("")
                 }
             },
         )
@@ -420,9 +482,132 @@ fun ImmersivePhoneShell(
 }
 
 @Composable
+private fun ImmersiveFloatingBottomBar(
+    currentTab: ImmersiveTab,
+    hazeState: HazeState,
+    onTabSelected: (ImmersiveTab) -> Unit,
+) {
+    val barShape = RoundedCornerShape(999.dp)
+    val selectedShape = RoundedCornerShape(999.dp)
+    val tabCount = ImmersiveTab.entries.size
+    // 用 ordinal 而非像素驱动动画，宽度变化（旋转/状态恢复）时指示器不会漂移
+    val indicatorPosition by animateFloatAsState(
+        targetValue = currentTab.ordinal.toFloat(),
+        animationSpec = spring(dampingRatio = 0.75f, stiffness = 400f),
+        label = "bottom_bar_indicator_position",
+    )
+    var indicatorWidthPx by remember { mutableIntStateOf(0) }
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .navigationBarsPadding()
+            .padding(start = 24.dp, end = 24.dp, top = 8.dp, bottom = 10.dp),
+        contentAlignment = Alignment.Center,
+    ) {
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(64.dp)
+                .shadow(elevation = 8.dp, shape = barShape, clip = false)
+                .clip(barShape)
+                .hazeChild(
+                    state = hazeState,
+                    shape = barShape,
+                    style = HazeStyle(
+                        blurRadius = 24.dp,
+                        backgroundColor = Color.White,
+                        tint = HazeTint(Color.White.copy(alpha = 0.7f)),
+                    ),
+                )
+                .border(BorderStroke(1.dp, Color.White.copy(alpha = 0.55f)), barShape)
+                .padding(horizontal = 6.dp, vertical = 6.dp),
+        ) {
+            Box(
+                modifier = Modifier
+                    .offset { IntOffset((indicatorPosition * indicatorWidthPx).roundToInt(), 0) }
+                    .fillMaxWidth(1f / tabCount)
+                    .fillMaxHeight()
+                    .onSizeChanged { indicatorWidthPx = it.width }
+                    .clip(selectedShape)
+                    .background(Color(0xFFD8EFF9).copy(alpha = 0.92f)),
+            )
+            Row(
+                modifier = Modifier.fillMaxSize(),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                ImmersiveTab.entries.forEach { tab ->
+                    ImmersiveFloatingBottomBarItem(
+                        modifier = Modifier.weight(1f),
+                        tab = tab,
+                        selected = currentTab == tab,
+                        selectedShape = selectedShape,
+                        onClick = { onTabSelected(tab) },
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun ImmersiveFloatingBottomBarItem(
+    modifier: Modifier = Modifier,
+    tab: ImmersiveTab,
+    selected: Boolean,
+    selectedShape: RoundedCornerShape,
+    onClick: () -> Unit,
+) {
+    val activeContentColor = Color(0xFF3F91B7)
+    val inactiveContentColor = Color(0xFF222832).copy(alpha = 0.82f)
+    val contentColor by animateColorAsState(
+        targetValue = if (selected) activeContentColor else inactiveContentColor,
+        animationSpec = tween(220),
+        label = "bottom_bar_item_content",
+    )
+    // 低阻尼 spring 让图标落位时先过冲再回弹，产生轻弹一下的手感
+    val iconScale by animateFloatAsState(
+        targetValue = if (selected) 1.08f else 1f,
+        animationSpec = spring(dampingRatio = 0.45f, stiffness = 700f),
+        label = "bottom_bar_item_icon_scale",
+    )
+
+    Box(
+        modifier = modifier
+            .fillMaxHeight()
+            .clip(selectedShape)
+            .clickable(onClick = onClick),
+        contentAlignment = Alignment.Center,
+    ) {
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(2.dp),
+        ) {
+            Icon(
+                imageVector = tab.icon,
+                contentDescription = tab.label,
+                modifier = Modifier
+                    .size(24.dp)
+                    .graphicsLayer {
+                        scaleX = iconScale
+                        scaleY = iconScale
+                    },
+                tint = contentColor,
+            )
+            Text(
+                text = tab.label,
+                style = MaterialTheme.typography.labelMedium,
+                fontWeight = if (selected) FontWeight.Bold else FontWeight.Medium,
+                color = contentColor,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
+        }
+    }
+}
+
+@Composable
 private fun ImmersivePhoneTopBar(
     title: String,
-    onNavigateBack: () -> Unit,
     showSearch: Boolean,
     showAdd: Boolean,
     onAdd: () -> Unit,
@@ -437,53 +622,53 @@ private fun ImmersivePhoneTopBar(
         color = MaterialTheme.colorScheme.surface.copy(alpha = 0.96f),
         tonalElevation = 2.dp,
     ) {
-        Row(
+        Box(
             modifier = Modifier
                 .fillMaxWidth()
                 .height(56.dp)
                 .padding(horizontal = 8.dp),
-            verticalAlignment = Alignment.CenterVertically,
         ) {
-            IconButton(onClick = onNavigateBack) {
-                Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "返回")
-            }
-            Box(modifier = Modifier.weight(1f), contentAlignment = Alignment.Center) {
-                Text(title, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
-            }
-            if (showSearch) {
-                IconButton(onClick = {}) {
-                    Icon(Icons.Default.Search, contentDescription = "搜索")
-                }
-            } else {
-                Spacer(modifier = Modifier.size(48.dp))
-            }
-            Box {
-                if (showAdd) {
-                    IconButton(onClick = onAdd) {
-                        Icon(Icons.Default.Add, contentDescription = "新增")
+            Text(
+                text = title,
+                modifier = Modifier.align(Alignment.Center),
+                style = MaterialTheme.typography.titleLarge,
+                fontWeight = FontWeight.Bold,
+            )
+            Row(
+                modifier = Modifier.align(Alignment.CenterEnd),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                if (showSearch) {
+                    IconButton(onClick = {}) {
+                        Icon(Icons.Default.Search, contentDescription = "搜索")
                     }
-                } else {
-                    Spacer(modifier = Modifier.size(48.dp))
                 }
-                DropdownMenu(
-                    expanded = plusMenuExpanded,
-                    onDismissRequest = onDismissPlusMenu,
-                ) {
-                    DropdownMenuItem(
-                        text = { Text("新建聊天") },
-                        leadingIcon = { Icon(Icons.AutoMirrored.Filled.Chat, contentDescription = null) },
-                        onClick = onOpenNewChat,
-                    )
-                    DropdownMenuItem(
-                        text = { Text("新建群聊") },
-                        leadingIcon = { Icon(Icons.Default.Group, contentDescription = null) },
-                        onClick = onOpenNewGroupChat,
-                    )
-                    DropdownMenuItem(
-                        text = { Text("聊天管理") },
-                        leadingIcon = { Icon(Icons.Default.Edit, contentDescription = null) },
-                        onClick = onOpenChatManage,
-                    )
+                Box {
+                    if (showAdd) {
+                        IconButton(onClick = onAdd) {
+                            Icon(Icons.Default.Add, contentDescription = "新增")
+                        }
+                    }
+                    DropdownMenu(
+                        expanded = plusMenuExpanded,
+                        onDismissRequest = onDismissPlusMenu,
+                    ) {
+                        DropdownMenuItem(
+                            text = { Text("新建会话") },
+                            leadingIcon = { Icon(Icons.AutoMirrored.Filled.Chat, contentDescription = null) },
+                            onClick = onOpenNewChat,
+                        )
+                        DropdownMenuItem(
+                            text = { Text("新建群聊") },
+                            leadingIcon = { Icon(Icons.Default.Group, contentDescription = null) },
+                            onClick = onOpenNewGroupChat,
+                        )
+                        DropdownMenuItem(
+                            text = { Text("会话管理") },
+                            leadingIcon = { Icon(Icons.Default.Edit, contentDescription = null) },
+                            onClick = onOpenChatManage,
+                        )
+                    }
                 }
             }
         }
@@ -497,20 +682,22 @@ private fun ImmersiveMessagesPage(
     assistants: List<Assistant>,
     callbacks: ImmersivePhoneCallbacks,
     onOpenNewChat: () -> Unit,
+    bottomPadding: Dp,
 ) {
     if (summaries.isEmpty()) {
         EmptyState(
-            title = "还没有聊天",
-            subtitle = "先选择一个角色，开一段新的沉浸聊天。",
-            actionText = "新建聊天",
+            title = "还没有会话",
+            subtitle = "先选择一个角色，开一段新的沉浸剧情。",
+            actionText = "新建会话",
             onAction = onOpenNewChat,
+            modifier = Modifier.padding(bottom = bottomPadding),
         )
         return
     }
     var revealedScenarioId by rememberSaveable { mutableStateOf<String?>(null) }
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
-        contentPadding = PaddingValues(vertical = 8.dp),
+        contentPadding = PaddingValues(top = 8.dp, bottom = 8.dp + bottomPadding),
     ) {
         items(summaries, key = { it.scenario.id }) { summary ->
             val scenarioId = summary.scenario.id
@@ -696,8 +883,8 @@ private fun ChatSummaryRow(
     }
     val title = if (isGroupChat) "" else scenario.title.trim()
     val displayName = if (title.isNotBlank()) "$name / $title" else name
-    val latestContent = summary.lastMessageText.ifBlank {
-        if (summary.hasSession) "最近没有消息" else "还没有开始聊天"
+    val latestContent = sanitizeChatSummaryPreview(summary.lastMessageText).ifBlank {
+        if (summary.hasSession) "最近没有消息" else "还没有开始会话"
     }
     val latest = if (isGroupChat) "群聊 · $latestContent" else latestContent
     Surface(
@@ -767,7 +954,7 @@ private fun ChatSummaryRow(
                 }
             }
             IconButton(onClick = onEdit) {
-                Icon(Icons.Default.MoreVert, contentDescription = "聊天资料")
+                Icon(Icons.Default.MoreVert, contentDescription = "会话资料")
             }
         }
     }
@@ -781,6 +968,7 @@ private fun ImmersiveContactsPage(
     onOpenContact: (Assistant) -> Unit,
     onOpenAssistantCreate: () -> Unit,
     onOpenChatManage: () -> Unit,
+    bottomPadding: Dp,
 ) {
     val grouped = remember(assistants) {
         assistants.sortedWith(compareBy(Collator.getInstance(Locale.CHINA)) { it.name.ifBlank { "角色" } })
@@ -788,11 +976,11 @@ private fun ImmersiveContactsPage(
     }
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
-        contentPadding = PaddingValues(bottom = 24.dp),
+        contentPadding = PaddingValues(bottom = 24.dp + bottomPadding),
     ) {
         item {
             ContactShortcutRow("新的角色", Icons.Default.PersonAdd, onOpenAssistantCreate)
-            ContactShortcutRow("聊天管理", Icons.Default.Group, onOpenChatManage)
+            ContactShortcutRow("会话管理", Icons.Default.Group, onOpenChatManage)
             Divider()
         }
         grouped.forEach { (initial, items) ->
@@ -860,7 +1048,7 @@ private fun ContactRow(
         headlineContent = { Text(assistant.name.ifBlank { "未命名角色" }) },
         supportingContent = {
             Text(
-                text = if (chatCount > 0) "$chatCount 个聊天" else "还没有聊天",
+                text = if (chatCount > 0) "$chatCount 个会话" else "还没有会话",
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
             )
@@ -881,10 +1069,11 @@ private fun ContactRow(
 @Composable
 private fun ImmersiveDiscoverPage(
     onOpenTarget: (DiscoverTarget) -> Unit,
+    bottomPadding: Dp,
 ) {
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
-        contentPadding = PaddingValues(vertical = 14.dp),
+        contentPadding = PaddingValues(top = 14.dp, bottom = 14.dp + bottomPadding),
     ) {
         items(DiscoverTarget.entries, key = { it.name }) { target ->
             FeatureRow(
@@ -937,6 +1126,7 @@ private fun ImmersiveProfilePage(
     onOpenContextTransferSettings: () -> Unit,
     onSetDefaultUserPersonaMask: (String) -> Unit,
     onOpenSettings: () -> Unit,
+    bottomPadding: Dp,
 ) {
     val masks = settings.normalizedUserPersonaMasks()
     val defaultMask = settings.resolvedDefaultUserPersonaMask()
@@ -948,7 +1138,7 @@ private fun ImmersiveProfilePage(
     var masksExpanded by rememberSaveable { mutableStateOf(false) }
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
-        contentPadding = PaddingValues(vertical = 18.dp),
+        contentPadding = PaddingValues(top = 18.dp, bottom = 18.dp + bottomPadding),
     ) {
         item {
             Surface(
@@ -980,7 +1170,7 @@ private fun ImmersiveProfilePage(
                     Column(modifier = Modifier.weight(1f)) {
                         Text(settings.resolvedUserDisplayName(), style = MaterialTheme.typography.titleLarge)
                         Text(
-                            text = "$chatCount 个聊天 · $assistantCount 位角色",
+                            text = "$chatCount 个会话 · $assistantCount 位角色",
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
                         Text(
@@ -1004,11 +1194,11 @@ private fun ImmersiveProfilePage(
                 onOpenUserMasks = onOpenUserMasks,
             )
         }
-        item { FeatureRow("聊天管理", "查看、编辑和删除聊天资料", Icons.AutoMirrored.Filled.Chat, onOpenChatManage) }
+        item { FeatureRow("会话管理", "查看、编辑和删除会话资料", Icons.AutoMirrored.Filled.Chat, onOpenChatManage) }
         item { FeatureRow("角色资料", "管理角色卡、提示词和扩展能力", Icons.Default.Person, onOpenAssistantSettings) }
         item { FeatureRow("世界书", "维护角色关系会用到的设定资料", Icons.AutoMirrored.Filled.LibraryBooks, onOpenWorldBookSettings) }
         item { FeatureRow("记忆档案", "查看长期记忆、摘要和关系线索", Icons.Default.AutoStories, onOpenMemorySettings) }
-        item { FeatureRow("资料导入导出", "备份和迁移聊天、角色与上下文资料", Icons.Default.CloudSync, onOpenContextTransferSettings) }
+        item { FeatureRow("资料导入导出", "备份和迁移会话、角色与上下文资料", Icons.Default.CloudSync, onOpenContextTransferSettings) }
         item { FeatureRow("设置", "模型、显示、工具和应用更新", Icons.Default.Settings, onOpenSettings) }
         item { FeatureRow("关于", "Narra 角色手机", Icons.Default.Info) {} }
     }
@@ -1176,7 +1366,7 @@ private fun NewChatSheet(
                 .padding(20.dp),
             verticalArrangement = Arrangement.spacedBy(14.dp),
         ) {
-            Text("新建聊天", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
+            Text("新建会话", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
             if (selectedAssistant == null) {
                 Text("选择一个角色", color = MaterialTheme.colorScheme.onSurfaceVariant)
                 LazyColumn(modifier = Modifier.height(360.dp)) {
@@ -1233,7 +1423,7 @@ private fun NewChatSheet(
                         }
                     }
                 }
-                Text("选择聊天模式", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text("选择会话模式", color = MaterialTheme.colorScheme.onSurfaceVariant)
                 ModeOptions.forEach { option ->
                     ModeOptionCard(
                         option = option,
@@ -1284,7 +1474,7 @@ private fun NewGroupChatSheet(
         ) {
             Text("新建群聊", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
             Text(
-                text = "选择至少 2 位角色，默认使用线上手机和自然聊天。",
+                text = "选择至少 2 位角色，默认使用线上手机和自然会话。",
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
             OutlinedTextField(
@@ -1357,7 +1547,7 @@ private fun GroupAssistantPickRow(
         },
         supportingContent = {
             Text(
-                text = assistant.description.ifBlank { "自然聊天候选成员" },
+                text = assistant.description.ifBlank { "自然会话候选成员" },
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
             )
@@ -1431,7 +1621,7 @@ private fun ContactCardSheet(
                         Text(assistant.name.ifBlank { "未命名角色" }, style = MaterialTheme.typography.titleLarge)
                         Text(
                             primarySummary?.let { "最近互动 ${formatMessageTime(it.lastActiveAt)}" }
-                                ?: "还没有聊天",
+                                ?: "还没有会话",
                             maxLines = 1,
                             overflow = TextOverflow.Ellipsis,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -1447,7 +1637,7 @@ private fun ContactCardSheet(
                         .horizontalScroll(rememberScrollState()),
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
                 ) {
-                    ContactMetricPill("${summaries.size}", "聊天")
+                    ContactMetricPill("${summaries.size}", "会话")
                     ContactMetricPill(if (assistant.memoryEnabled) "开" else "关", "长记忆")
                     ContactMetricPill("$worldBookCount", "世界书")
                     ContactMetricPill("${assistant.tags.size}", "标签")
@@ -1501,7 +1691,7 @@ private fun ContactCardSheet(
                         Text("发消息")
                     }
                     TextButton(onClick = { showModePicker = !showModePicker }) {
-                        Text("新建聊天")
+                        Text("新建会话")
                     }
                     TextButton(onClick = { onOpenAssistantDetail(assistant.id) }) {
                         Text("编辑资料")
@@ -1656,9 +1846,9 @@ private fun ChatPickerSheet(
                 .padding(20.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
-            Text("选择聊天 · $title", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
+            Text("选择会话 · $title", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
             if (summaries.isEmpty()) {
-                Text("还没有可用聊天。", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text("还没有可用会话。", color = MaterialTheme.colorScheme.onSurfaceVariant)
             } else {
                 LazyColumn(
                     modifier = Modifier.heightIn(max = 520.dp),
@@ -1711,10 +1901,25 @@ private fun chatPickerSummaryText(summary: RoleplayChatSummary): String {
     val title = summary.scenario.title.trim()
     return when {
         title.isNotBlank() -> title
-        summary.hasHistory -> "最近有聊天记录"
+        summary.hasHistory -> "最近有会话记录"
         summary.hasSession -> "最近没有消息"
-        else -> "还没有开始聊天"
+        else -> "还没有开始会话"
     }
+}
+
+private fun sanitizeChatSummaryPreview(rawContent: String): String {
+    return rawContent
+        .replace(Regex("""(?is)<\s*(?:script|style)\b[^>]*>.*?<\s*/\s*(?:script|style)\s*>"""), " ")
+        .replace(Regex("""(?is)<\s*br\s*/?\s*>"""), " ")
+        .replace(Regex("""(?is)</?\s*(?:p|div|span|content)\b[^>]*>"""), " ")
+        .replace(Regex("""(?is)<[^>]+>"""), " ")
+        .replace("&nbsp;", " ")
+        .replace("&lt;", "<")
+        .replace("&gt;", ">")
+        .replace("&quot;", "\"")
+        .replace("&amp;", "&")
+        .replace(Regex("""[ \t\r\n]+"""), " ")
+        .trim()
 }
 
 @Composable
@@ -1723,8 +1928,9 @@ private fun EmptyState(
     subtitle: String,
     actionText: String,
     onAction: () -> Unit,
+    modifier: Modifier = Modifier,
 ) {
-    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+    Box(modifier = modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
         Column(
             modifier = Modifier.padding(28.dp),
             horizontalAlignment = Alignment.CenterHorizontally,

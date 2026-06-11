@@ -4,10 +4,14 @@ import com.example.myapplication.data.local.worldbook.WorldBookDao
 import com.example.myapplication.data.local.worldbook.WorldBookEntryEntity
 import com.example.myapplication.model.Assistant
 import com.example.myapplication.model.Conversation
+import com.example.myapplication.model.WORLD_BOOK_MAX_PRIMARY_KEYWORDS
+import com.example.myapplication.model.WORLD_BOOK_MAX_SECONDARY_KEYWORDS
 import com.example.myapplication.model.WorldBookEntry
 import com.example.myapplication.model.WorldBookMatchMode
 import com.example.myapplication.model.WorldBookScopeType
 import com.example.myapplication.model.deriveWorldBookBookId
+import com.example.myapplication.model.normalizedForContextImport
+import com.example.myapplication.model.normalizeWorldBookKeywords
 import com.example.myapplication.system.json.AppJson
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
@@ -144,8 +148,9 @@ class RoomWorldBookRepository(
     }
 
     private fun toEntity(entry: WorldBookEntry): WorldBookEntryEntity {
-        val normalizedSourceBookName = entry.sourceBookName.trim()
-        val resolvedBookId = entry.bookId.trim().ifBlank {
+        val normalizedEntry = entry.normalizedForContextImport(gson)
+        val normalizedSourceBookName = normalizedEntry.sourceBookName.trim()
+        val resolvedBookId = normalizedEntry.bookId.trim().ifBlank {
             normalizedSourceBookName
                 .takeIf { it.isNotBlank() }
                 ?.let(::deriveWorldBookBookId)
@@ -155,27 +160,45 @@ class RoomWorldBookRepository(
         val resolvedCreatedAt = entry.createdAt.takeIf { it > 0L } ?: now
         val resolvedUpdatedAt = entry.updatedAt.takeIf { it > 0L } ?: resolvedCreatedAt
         return WorldBookEntryEntity(
-            id = entry.id,
+            id = normalizedEntry.id,
             bookId = resolvedBookId,
-            title = entry.title,
-            content = entry.content,
-            keywordsJson = gson.toJson(normalizeStringList(entry.keywords)),
-            aliasesJson = gson.toJson(normalizeStringList(entry.aliases)),
-            secondaryKeywordsJson = gson.toJson(normalizeStringList(entry.secondaryKeywords)),
-            enabled = entry.enabled,
-            alwaysActive = entry.alwaysActive,
-            selective = entry.selective,
-            caseSensitive = entry.caseSensitive,
-            matchMode = entry.matchMode.storageValue,
-            priority = entry.priority,
-            insertionOrder = entry.insertionOrder,
-            probability = entry.probability.coerceIn(0, 100),
+            title = normalizedEntry.title,
+            content = normalizedEntry.content,
+            keywordsJson = gson.toJson(
+                normalizeWorldBookKeywords(
+                    values = normalizedEntry.keywords,
+                    matchMode = normalizedEntry.matchMode,
+                    maxItems = WORLD_BOOK_MAX_PRIMARY_KEYWORDS,
+                ),
+            ),
+            aliasesJson = gson.toJson(
+                normalizeWorldBookKeywords(
+                    values = normalizedEntry.aliases,
+                    matchMode = normalizedEntry.matchMode,
+                    maxItems = WORLD_BOOK_MAX_PRIMARY_KEYWORDS,
+                ),
+            ),
+            secondaryKeywordsJson = gson.toJson(
+                normalizeWorldBookKeywords(
+                    values = normalizedEntry.secondaryKeywords,
+                    matchMode = normalizedEntry.matchMode,
+                    maxItems = WORLD_BOOK_MAX_SECONDARY_KEYWORDS,
+                ),
+            ),
+            enabled = normalizedEntry.enabled,
+            alwaysActive = normalizedEntry.alwaysActive,
+            selective = normalizedEntry.selective,
+            caseSensitive = normalizedEntry.caseSensitive,
+            matchMode = normalizedEntry.matchMode.storageValue,
+            priority = normalizedEntry.priority,
+            insertionOrder = normalizedEntry.insertionOrder,
+            probability = normalizedEntry.probability.coerceIn(0, 100),
             sourceBookName = normalizedSourceBookName,
-            scopeType = entry.scopeType.storageValue,
-            scopeId = entry.resolvedScopeId(),
+            scopeType = normalizedEntry.scopeType.storageValue,
+            scopeId = normalizedEntry.resolvedScopeId(),
             createdAt = resolvedCreatedAt,
             updatedAt = resolvedUpdatedAt,
-            extrasJson = entry.extrasJson.ifBlank { "{}" },
+            extrasJson = normalizedEntry.extrasJson.ifBlank { "{}" },
         )
     }
 

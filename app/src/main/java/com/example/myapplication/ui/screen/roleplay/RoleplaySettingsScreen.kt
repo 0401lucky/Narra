@@ -193,7 +193,7 @@ fun RoleplaySettingsScreen(
                                 ) { page ->
                                     Text(
                                         text = when (page) {
-                                            RoleplaySettingsPanelPage.MAIN -> "聊天设定"
+                                            RoleplaySettingsPanelPage.MAIN -> "会话设定"
                                             RoleplaySettingsPanelPage.SCENE -> "情景设定"
                                             RoleplaySettingsPanelPage.IDENTITY -> "用户身份"
                                             RoleplaySettingsPanelPage.GROUP -> "群聊设置"

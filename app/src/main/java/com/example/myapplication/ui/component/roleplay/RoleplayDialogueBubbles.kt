@@ -53,13 +53,6 @@ internal fun UserDialogueBubbleContent(
                     onOpenQuotedMessage = onOpenQuotedMessage,
                 )
             }
-            Text(
-                message.speakerName,
-                modifier = Modifier.align(Alignment.End),
-                style = MaterialTheme.typography.labelMedium,
-                fontWeight = FontWeight.SemiBold,
-                color = colors.userAccent,
-            )
             if (message.isStreaming) {
                 StreamingLogText(
                     content = message.content,
@@ -145,23 +138,12 @@ internal fun CharacterDialogueBubbleContent(
                     onOpenQuotedMessage = onOpenQuotedMessage,
                 )
             }
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(6.dp),
-            ) {
-                Text(
-                    message.speakerName,
-                    style = MaterialTheme.typography.labelLarge,
-                    fontWeight = FontWeight.Bold,
-                    color = if (isError) colors.errorText else colors.characterAccent,
+            if (message.emotion.isNotBlank()) {
+                RoleplayEmotionChip(
+                    text = message.emotion,
+                    textColor = if (isError) colors.errorText else colors.characterAccent,
+                    containerColor = if (isError) colors.errorBackgroundStrong else colors.panelBackground,
                 )
-                if (message.emotion.isNotBlank()) {
-                    RoleplayEmotionChip(
-                        text = message.emotion,
-                        textColor = if (isError) colors.errorText else colors.characterAccent,
-                        containerColor = if (isError) colors.errorBackgroundStrong else colors.panelBackground,
-                    )
-                }
             }
             if (isError) {
                 FailedTurnHint(colors = colors)

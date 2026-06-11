@@ -104,7 +104,7 @@ internal fun PremiumModelCard(
                     val tertiaryBg = MaterialTheme.colorScheme.tertiaryContainer
                     val tertiaryFg = MaterialTheme.colorScheme.onTertiaryContainer
                     Surface(shape = RoundedCornerShape(50), color = tertiaryBg, contentColor = tertiaryFg) {
-                        Text("聊天", modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp), style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold)
+                        Text("主会话", modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp), style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold)
                     }
 
                     val secondaryBg = MaterialTheme.colorScheme.secondaryContainer

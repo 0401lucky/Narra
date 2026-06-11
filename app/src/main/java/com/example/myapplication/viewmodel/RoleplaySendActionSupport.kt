@@ -7,6 +7,7 @@ import com.example.myapplication.data.repository.ConversationRepository
 import com.example.myapplication.model.ChatSpecialPlayDraft
 import com.example.myapplication.model.ChatMessage
 import com.example.myapplication.model.ChatMessagePart
+import com.example.myapplication.model.ChatMessagePartType
 import com.example.myapplication.model.Assistant
 import com.example.myapplication.model.GiftPlayDraft
 import com.example.myapplication.model.InvitePlayDraft
@@ -608,6 +609,12 @@ internal class RoleplaySendActionSupport(
                     messages = currentRawMessages.value,
                     conversationId = session.conversationId,
                 )
+                val scriptAdjustedUserParts = applyBeforeSendScriptIfPureText(
+                    scenario = scenario,
+                    session = session,
+                    assistant = assistant,
+                    userParts = resolvedUserParts,
+                )
                 if (scenario.isGroupChat) {
                     executeGroupRoleplaySend(
                         state = state,
@@ -615,7 +622,7 @@ internal class RoleplaySendActionSupport(
                         session = session,
                         selectedModel = selectedModel,
                         baseMessages = baseMessages,
-                        userParts = resolvedUserParts,
+                        userParts = scriptAdjustedUserParts,
                         nextInput = nextInput,
                         replyToMessageId = state.replyToMessageId,
                         replyToPreview = state.replyToPreview,
@@ -627,7 +634,7 @@ internal class RoleplaySendActionSupport(
                 val preparedRoundTrip = RoleplayRoundTripSupport.prepareOutgoingRoundTrip(
                     baseMessages = baseMessages,
                     conversationId = session.conversationId,
-                    userParts = resolvedUserParts,
+                    userParts = scriptAdjustedUserParts,
                     replyToMessageId = state.replyToMessageId,
                     replyToPreview = state.replyToPreview,
                     replyToSpeakerName = state.replyToSpeakerName,
@@ -638,7 +645,7 @@ internal class RoleplaySendActionSupport(
                     messageIdProvider = messageIdProvider,
                 )
                 val giftImageRequest = if (shouldGenerateGiftImage) {
-                    val giftPart = normalizeChatMessageParts(resolvedUserParts).firstOrNull { it.isGiftPart() }
+                    val giftPart = normalizeChatMessageParts(scriptAdjustedUserParts).firstOrNull { it.isGiftPart() }
                     val (userName, characterName) = RoleplayConversationSupport.resolveRoleplayNames(
                         scenario = scenario,
                         assistant = assistant,
@@ -695,6 +702,32 @@ internal class RoleplaySendActionSupport(
                 onSendingFinished(sendingRunId)
             }
         }
+    }
+
+    private suspend fun applyBeforeSendScriptIfPureText(
+        scenario: com.example.myapplication.model.RoleplayScenario,
+        session: com.example.myapplication.model.RoleplaySession,
+        assistant: Assistant?,
+        userParts: List<ChatMessagePart>,
+    ): List<ChatMessagePart> {
+        val normalizedParts = normalizeChatMessageParts(userParts)
+        val textPart = normalizedParts.singleOrNull()
+            ?.takeIf { part -> part.type == ChatMessagePartType.TEXT }
+            ?: return userParts
+        val originalText = textPart.text.trim()
+        if (originalText.isBlank()) {
+            return userParts
+        }
+        val rewrittenText = roundTripExecutor.rewriteOutgoingTextWithScripts(
+            session = session,
+            scenario = scenario,
+            assistant = assistant,
+            text = originalText,
+        ).trim()
+        if (rewrittenText.isBlank() || rewrittenText == originalText) {
+            return userParts
+        }
+        return listOf(textMessagePart(rewrittenText))
     }
 
     private suspend fun executeGroupRoleplaySend(
@@ -813,6 +846,8 @@ internal class RoleplaySendActionSupport(
             return
         }
         var firstTurnError: String? = null
+        var successfulTurnCount = 0
+        val failedTurnNames = mutableListOf<String>()
         for ((index, turn) in effectiveTurns.withIndex()) {
             if (!isSendingRunActive(sendingRunId) || !isConversationActive(session.conversationId)) {
                 return
@@ -842,33 +877,64 @@ internal class RoleplaySendActionSupport(
                 speakerAvatarUri = member.avatarUri,
                 afterCreatedAt = timeline.maxOfOrNull { it.createdAt },
             )
-            currentRawMessages.value = timeline + loadingMessage
-            val outcome = roundTripExecutor.execute(
-                state = state,
-                scenario = speakerScenario,
-                session = session,
-                selectedModel = selectedModel,
-                assistant = speakerAssistant,
-                requestMessages = timeline.filter { it.status == MessageStatus.COMPLETED && it.hasSendableContent() },
-                cancelledMessages = timeline,
-                initialPersistence = RoundTripInitialPersistence.Append(
-                    messages = listOf(loadingMessage),
-                ),
-                loadingMessage = loadingMessage,
-                buildFinalMessages = { completedAssistant ->
-                    timeline + completedAssistant
-                },
-                extraDirectorNote = buildRoleplayGroupSpeakerDirectorNote(
-                    turn = turn,
-                    members = members,
-                    recentMessages = timeline,
-                ),
-                finishSendingOnCompletion = false,
-                isRoundTripActive = { isSendingRunActive(sendingRunId) },
-            )
-            if (!outcome.errorMessage.isNullOrBlank()) {
-                firstTurnError = outcome.errorMessage
-                break
+            var attempt = 0
+            var turnError: String? = null
+            while (
+                attempt < GROUP_TURN_MAX_ATTEMPTS &&
+                isSendingRunActive(sendingRunId) &&
+                isConversationActive(session.conversationId)
+            ) {
+                val attemptTimeline = RoleplayRoundTripSupport.currentConversationMessages(
+                    messages = currentRawMessages.value,
+                    conversationId = session.conversationId,
+                ).filterNot { it.id == loadingMessage.id }
+                val loadingForAttempt = loadingMessage.copy(
+                    content = "",
+                    status = MessageStatus.LOADING,
+                    reasoningContent = "",
+                    reasoningSteps = emptyList(),
+                    parts = emptyList(),
+                )
+                currentRawMessages.value = attemptTimeline + loadingForAttempt
+                val outcome = roundTripExecutor.execute(
+                    state = state,
+                    scenario = speakerScenario,
+                    session = session,
+                    selectedModel = selectedModel,
+                    assistant = speakerAssistant,
+                    requestMessages = attemptTimeline.filter {
+                        it.status == MessageStatus.COMPLETED && it.hasSendableContent()
+                    },
+                    cancelledMessages = attemptTimeline,
+                    initialPersistence = if (attempt == 0) {
+                        RoundTripInitialPersistence.Append(messages = listOf(loadingForAttempt))
+                    } else {
+                        RoundTripInitialPersistence.Upsert(messages = listOf(loadingForAttempt))
+                    },
+                    loadingMessage = loadingForAttempt,
+                    buildFinalMessages = { completedAssistant ->
+                        attemptTimeline + completedAssistant
+                    },
+                    extraDirectorNote = buildRoleplayGroupSpeakerDirectorNote(
+                        turn = turn,
+                        members = members,
+                        recentMessages = attemptTimeline,
+                    ),
+                    finishSendingOnCompletion = false,
+                    isRoundTripActive = { isSendingRunActive(sendingRunId) },
+                )
+                turnError = outcome.errorMessage
+                if (turnError.isNullOrBlank()) {
+                    successfulTurnCount += 1
+                    break
+                }
+                attempt += 1
+            }
+            if (!turnError.isNullOrBlank()) {
+                if (firstTurnError == null) {
+                    firstTurnError = turnError
+                }
+                failedTurnNames += turn.displayName
             }
             if (index < effectiveTurns.lastIndex) {
                 updateUiState { current ->
@@ -878,7 +944,16 @@ internal class RoleplaySendActionSupport(
         }
         if (isSendingRunActive(sendingRunId) && isConversationActive(session.conversationId)) {
             updateUiState { current ->
-                RoleplayStateSupport.finishSending(current, errorMessage = firstTurnError)
+                val errorMessage = if (successfulTurnCount == 0) firstTurnError else null
+                val finished = RoleplayStateSupport.finishSending(current, errorMessage = errorMessage)
+                if (failedTurnNames.isNotEmpty() && successfulTurnCount > 0) {
+                    RoleplayStateSupport.applyNoticeMessage(
+                        finished,
+                        "${failedTurnNames.joinToString("、")} 回复失败，已继续其他角色",
+                    )
+                } else {
+                    finished
+                }
             }
         }
     }
@@ -935,3 +1010,5 @@ private data class AvatarPokeActor(
     val displayName: String,
     val avatarUri: String,
 )
+
+private const val GROUP_TURN_MAX_ATTEMPTS = 2

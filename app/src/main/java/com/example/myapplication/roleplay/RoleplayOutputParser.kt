@@ -16,9 +16,11 @@ data class RoleplayParsedSegment(
 
 class RoleplayOutputParser {
     private val tagPattern = Regex(
-        """(?s)<narration>(.*?)</narration>|<thought>(.*?)</thought>|<dialogue\b([^>]*)>(.*?)</dialogue>""",
+        """(?is)<narration\b[^>]*>(.*?)</narration>|<thought\b[^>]*>(.*?)</thought>|<dialogue\b([^>]*)>(.*?)</dialogue>""",
     )
-    private val attributePattern = Regex("(\\w+)=\"([^\"]*)\"")
+    private val attributePattern = Regex(
+        """([\w:-]+)\s*=\s*(?:"([^"]*)"|'([^']*)'|“([^”]*)”|‘([^’]*)’|([^\s"'“”‘’<>]+))""",
+    )
     private val stripTagPattern = Regex("""<[^>]+>""")
     private val danglingOpenTagPattern = Regex("""<[^>]*$""")
     private val llmControlTagPattern = Regex("""(?is)<(?:\||｜)[^>\n]{0,80}(?:\||｜)>""")
@@ -168,7 +170,10 @@ class RoleplayOutputParser {
     private fun parseAttributes(rawAttributes: String): Map<String, String> {
         return attributePattern.findAll(rawAttributes)
             .associate { match ->
-                match.groupValues[1] to match.groupValues[2]
+                val value = (2..6).firstNotNullOfOrNull { index ->
+                    match.groups[index]?.value?.takeIf { it.isNotEmpty() }
+                }.orEmpty()
+                match.groupValues[1] to value
             }
     }
 

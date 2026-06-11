@@ -5,6 +5,19 @@ import com.example.myapplication.viewmodel.ContextImportPayload
 import com.example.myapplication.viewmodel.ContextTransferSection
 import com.example.myapplication.model.AppSettings
 import com.example.myapplication.model.Assistant
+import com.example.myapplication.model.CONTEXT_IMPORT_MAX_ASSISTANTS
+import com.example.myapplication.model.CONTEXT_IMPORT_MAX_ASSISTANT_EXAMPLE_DIALOGUES
+import com.example.myapplication.model.CONTEXT_IMPORT_MAX_ASSISTANT_EXAMPLE_DIALOGUE_CHARS
+import com.example.myapplication.model.CONTEXT_IMPORT_MAX_ASSISTANT_NAME_CHARS
+import com.example.myapplication.model.CONTEXT_IMPORT_MAX_ASSISTANT_TAGS
+import com.example.myapplication.model.CONTEXT_IMPORT_MAX_ASSISTANT_TAG_CHARS
+import com.example.myapplication.model.CONTEXT_IMPORT_MAX_ASSISTANT_TEXT_CHARS
+import com.example.myapplication.model.CONTEXT_IMPORT_MAX_ASSISTANT_WORLD_BOOK_MAX_ENTRIES
+import com.example.myapplication.model.CONTEXT_IMPORT_MAX_ASSISTANT_WORLD_BOOK_SCAN_DEPTH
+import com.example.myapplication.model.CONTEXT_IMPORT_MAX_WORLD_BOOK_CONTENT_CHARS
+import com.example.myapplication.model.CONTEXT_IMPORT_MAX_WORLD_BOOK_ENTRIES
+import com.example.myapplication.model.CONTEXT_IMPORT_MAX_WORLD_BOOK_EXTRAS_CHARS
+import com.example.myapplication.model.CONTEXT_IMPORT_MAX_WORLD_BOOK_TITLE_CHARS
 import com.example.myapplication.model.ConversationSummary
 import com.example.myapplication.model.ConversationSummarySegment
 import com.example.myapplication.model.MemoryEntry
@@ -25,9 +38,11 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
+import com.google.gson.JsonParser
 import java.io.ByteArrayOutputStream
 import java.nio.ByteBuffer
 import java.nio.ByteOrder
@@ -123,6 +138,97 @@ class ContextTransferViewModelTest {
         assertEquals("已经整理好前文摘要。", summaryRepository.getSummary("c1")?.summary)
         assertEquals("前四条消息已压缩。", summaryRepository.listAllSummarySegments().single().summary)
         assertEquals("上下文数据已合并导入", viewModel.uiState.value.message)
+    }
+
+    @Test
+    fun importBundleJson_normalizesNarraBackupBeforePersisting() = runTest(mainDispatcherRule.dispatcher.scheduler) {
+        val services = createTestAiServices(
+            settings = AppSettings(),
+            dispatcher = mainDispatcherRule.dispatcher,
+        )
+        val worldBookRepository = FakeWorldBookRepository()
+        val viewModel = createContextTransferViewModel(
+            services = services,
+            worldBookRepository = worldBookRepository,
+            memoryRepository = FakeMemoryRepository(),
+            conversationSummaryRepository = FakeConversationSummaryRepository(),
+        )
+        val hugeExtras = "x".repeat(CONTEXT_IMPORT_MAX_WORLD_BOOK_EXTRAS_CHARS + 20)
+        val entries = (0 until CONTEXT_IMPORT_MAX_WORLD_BOOK_ENTRIES + 2).map { index ->
+            if (index == 0) {
+                WorldBookEntry(
+                    id = "world-$index",
+                    title = "t".repeat(CONTEXT_IMPORT_MAX_WORLD_BOOK_TITLE_CHARS + 20),
+                    content = "c".repeat(CONTEXT_IMPORT_MAX_WORLD_BOOK_CONTENT_CHARS + 20),
+                    extrasJson = """{"safe":"保留","huge":"$hugeExtras"}""",
+                )
+            } else {
+                WorldBookEntry(
+                    id = "world-$index",
+                    title = "标题$index",
+                    content = "正文$index",
+                )
+            }
+        }
+        val rawJson = ContextTransferCodec().encode(
+            com.example.myapplication.model.ContextDataBundle(
+                assistants = List(CONTEXT_IMPORT_MAX_ASSISTANTS + 2) { index ->
+                    if (index == 0) {
+                        Assistant(
+                            id = "assistant-imported",
+                            name = "名".repeat(CONTEXT_IMPORT_MAX_ASSISTANT_NAME_CHARS + 20),
+                            description = "描述".repeat(CONTEXT_IMPORT_MAX_ASSISTANT_TEXT_CHARS),
+                            exampleDialogues = List(CONTEXT_IMPORT_MAX_ASSISTANT_EXAMPLE_DIALOGUES + 2) { dialogueIndex ->
+                                "示例$dialogueIndex" +
+                                    "长".repeat(CONTEXT_IMPORT_MAX_ASSISTANT_EXAMPLE_DIALOGUE_CHARS)
+                            },
+                            tags = List(CONTEXT_IMPORT_MAX_ASSISTANT_TAGS + 2) { tagIndex ->
+                                "标签$tagIndex" + "长".repeat(CONTEXT_IMPORT_MAX_ASSISTANT_TAG_CHARS)
+                            },
+                            worldBookMaxEntries = 999,
+                            worldBookScanDepth = 999,
+                        )
+                    } else {
+                        Assistant(
+                            id = "assistant-imported-$index",
+                            name = "角色$index",
+                        )
+                    }
+                },
+                worldBookEntries = entries,
+            ),
+        )
+
+        viewModel.previewImportJson(rawJson, ContextTransferSection.ALL)
+        advanceUntilIdle()
+        assertEquals(CONTEXT_IMPORT_MAX_ASSISTANTS, viewModel.uiState.value.importPreview?.assistantCount)
+        assertEquals(CONTEXT_IMPORT_MAX_WORLD_BOOK_ENTRIES, viewModel.uiState.value.importPreview?.worldBookCount)
+        val noticeMessages = viewModel.uiState.value.importPreview?.noticeMessages.orEmpty()
+        assertTrue(noticeMessages.any { it.contains("角色卡数量已达到安全上限") })
+        assertTrue(noticeMessages.any { it.contains("世界书数量已达到安全上限") })
+        assertTrue(noticeMessages.all { it.contains("超出部分不会导入") })
+
+        viewModel.confirmImport()
+        advanceUntilIdle()
+
+        val importedAssistants = services.settingsRepository.settingsFlow.first().assistants
+        val importedAssistant = importedAssistants.first()
+        val firstEntry = worldBookRepository.listEntries().first()
+        val extras = JsonParser.parseString(firstEntry.extrasJson).asJsonObject
+        assertEquals(CONTEXT_IMPORT_MAX_ASSISTANTS, importedAssistants.size)
+        assertEquals(CONTEXT_IMPORT_MAX_ASSISTANT_NAME_CHARS, importedAssistant.name.length)
+        assertEquals(CONTEXT_IMPORT_MAX_ASSISTANT_TEXT_CHARS, importedAssistant.description.length)
+        assertEquals(CONTEXT_IMPORT_MAX_ASSISTANT_EXAMPLE_DIALOGUES, importedAssistant.exampleDialogues.size)
+        assertTrue(importedAssistant.exampleDialogues.all { it.length <= CONTEXT_IMPORT_MAX_ASSISTANT_EXAMPLE_DIALOGUE_CHARS })
+        assertEquals(CONTEXT_IMPORT_MAX_ASSISTANT_TAGS, importedAssistant.tags.size)
+        assertTrue(importedAssistant.tags.all { it.length <= CONTEXT_IMPORT_MAX_ASSISTANT_TAG_CHARS })
+        assertEquals(CONTEXT_IMPORT_MAX_ASSISTANT_WORLD_BOOK_MAX_ENTRIES, importedAssistant.worldBookMaxEntries)
+        assertEquals(CONTEXT_IMPORT_MAX_ASSISTANT_WORLD_BOOK_SCAN_DEPTH, importedAssistant.worldBookScanDepth)
+        assertEquals(CONTEXT_IMPORT_MAX_WORLD_BOOK_ENTRIES, worldBookRepository.listEntries().size)
+        assertEquals(CONTEXT_IMPORT_MAX_WORLD_BOOK_TITLE_CHARS, firstEntry.title.length)
+        assertEquals(CONTEXT_IMPORT_MAX_WORLD_BOOK_CONTENT_CHARS, firstEntry.content.length)
+        assertEquals("保留", extras.get("safe").asString)
+        assertFalse("Narra 备份导入也不能把 extras 截断成非法 JSON", extras.has("huge"))
     }
 
     @Test

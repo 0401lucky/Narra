@@ -557,7 +557,7 @@ private fun buildMessageHeading(
     val roleLabel = if (message.role == MessageRole.USER) {
         "用户"
     } else {
-        "助手"
+        "角色"
     }
     return if (includeModelName && message.modelName.isNotBlank()) {
         "$roleLabel · ${message.modelName}"

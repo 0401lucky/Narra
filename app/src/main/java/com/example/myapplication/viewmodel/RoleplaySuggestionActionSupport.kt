@@ -7,6 +7,7 @@ import com.example.myapplication.model.RoleplayInteractionMode
 import com.example.myapplication.roleplay.RoleplayConversationSupport
 import com.example.myapplication.roleplay.RoleplayMessageFormatSupport
 import com.example.myapplication.roleplay.RoleplayOutputParser
+import com.example.myapplication.system.security.SensitiveTextRedactor
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
@@ -79,7 +80,7 @@ internal class RoleplaySuggestionActionSupport(
         }
         if (RoleplayConversationSupport.resolveSuggestionModelId(state.settings).isBlank()) {
             updateUiState { current ->
-                RoleplayStateSupport.applySuggestionValidationError(current, "请先在模型页开启聊天建议模型")
+                RoleplayStateSupport.applySuggestionValidationError(current, "请先在模型页开启会话建议模型")
             }
             return
         }
@@ -148,7 +149,10 @@ internal class RoleplaySuggestionActionSupport(
                 updateUiState { current ->
                     RoleplayStateSupport.applySuggestionFailure(
                         current,
-                        throwable.message ?: "建议生成失败",
+                        SensitiveTextRedactor.throwableMessageForUi(
+                            throwable = throwable,
+                            fallback = "建议生成失败",
+                        ),
                     )
                 }
             } finally {

@@ -228,7 +228,7 @@ fun RoleplayScenarioEditScreen(
     Scaffold(
         topBar = {
             SettingsTopBar(
-                title = if (isNew) "新建聊天资料" else "编辑聊天资料",
+                title = if (isNew) "新建会话资料" else "编辑会话资料",
                 subtitle = "配置角色、模式与背景补充",
                 onNavigateBack = onNavigateBack,
             )
@@ -251,8 +251,8 @@ fun RoleplayScenarioEditScreen(
         ) {
             item {
                 SettingsSectionHeader(
-                    title = "聊天资料",
-                    description = "角色人格仍由角色卡负责，这里只记录这段聊天自己的补充信息。",
+                    title = "会话资料",
+                    description = "角色人格仍由角色卡负责，这里只记录这段会话自己的补充信息。",
                 )
             }
             item {
@@ -267,7 +267,7 @@ fun RoleplayScenarioEditScreen(
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .testTag(TAG_SCENARIO_TITLE_INPUT),
-                            label = { Text("聊天备注") },
+                            label = { Text("会话备注") },
                             singleLine = true,
                             shape = RoundedCornerShape(18.dp),
                             colors = outlineColors,
@@ -278,13 +278,13 @@ fun RoleplayScenarioEditScreen(
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .testTag(TAG_SCENARIO_DESCRIPTION_INPUT),
-                            label = { Text("聊天背景补充") },
+                            label = { Text("会话背景补充") },
                             minLines = 3,
                             maxLines = 5,
                             supportingText = {
                                 Text(
                                     if (descriptionPromptEnabled) {
-                                        "已允许写入提示词，适合补充当前聊天背景。"
+                                        "已允许写入提示词，适合补充当前会话背景。"
                                     } else {
                                         "默认只作为资料保存，不写入提示词。"
                                     },
@@ -295,7 +295,7 @@ fun RoleplayScenarioEditScreen(
                         )
                         SwitchRow(
                             title = "写入提示词",
-                            subtitle = "关闭后，普通聊天、手机内容生成和日记上下文都不会注入这段补充。",
+                            subtitle = "关闭后，主会话、手机内容生成和日记上下文都不会注入这段补充。",
                             value = descriptionPromptEnabled,
                             onValueChange = { descriptionPromptEnabled = it },
                         )
@@ -306,7 +306,7 @@ fun RoleplayScenarioEditScreen(
             item {
                 SettingsSectionHeader(
                     title = "绑定角色",
-                    description = "聊天复用现有角色设定，角色卡决定人格和长期记忆。",
+                    description = "会话复用现有角色设定，角色卡决定人格和长期记忆。",
                 )
             }
             item {
@@ -316,7 +316,7 @@ fun RoleplayScenarioEditScreen(
                         verticalArrangement = Arrangement.spacedBy(10.dp),
                     ) {
                         Text(
-                            text = "聊天形态",
+                            text = "会话形态",
                             style = MaterialTheme.typography.titleSmall,
                             fontWeight = FontWeight.SemiBold,
                             color = palette.title,
@@ -349,12 +349,12 @@ fun RoleplayScenarioEditScreen(
             item {
                 SettingsGroup {
                     SettingsListRow(
-                        title = selectedAssistant?.name?.ifBlank { "默认助手" } ?: "请选择要绑定的角色",
+                        title = selectedAssistant?.name?.ifBlank { "默认角色" } ?: "请选择要绑定的角色",
                         supportingText = selectedAssistant?.description?.ifBlank { "未填写描述" } ?: "点击选择",
                         leadingContent = {
                             if (selectedAssistant != null) {
                                 AssistantAvatar(
-                                    name = selectedAssistant.name.ifBlank { "助手" },
+                                    name = selectedAssistant.name.ifBlank { "角色" },
                                     iconName = selectedAssistant.iconName.ifBlank { "auto_stories" },
                                     avatarUri = selectedAssistant.avatarUri,
                                     size = 40.dp,
@@ -413,7 +413,7 @@ fun RoleplayScenarioEditScreen(
                 item {
                     SettingsSectionHeader(
                         title = "群聊回复",
-                        description = "自然聊天会先由导演判断谁该说话，再逐个生成角色回复。",
+                        description = "自然对话会先由导演判断谁该说话，再逐个生成角色回复。",
                     )
                 }
                 item {
@@ -458,7 +458,7 @@ fun RoleplayScenarioEditScreen(
             item {
                 SettingsSectionHeader(
                     title = "用户面具",
-                    description = "选择这段聊天里“我是谁”。场景手动填写的昵称、人设和立绘仍会优先生效。",
+                    description = "选择这段会话里“我是谁”。场景手动填写的昵称、人设和立绘仍会优先生效。",
                 )
             }
             item {
@@ -488,7 +488,7 @@ fun RoleplayScenarioEditScreen(
             item {
                 SettingsSectionHeader(
                     title = "视觉资源",
-                    description = "背景用于烘托聊天氛围，用户与角色立绘可以覆盖默认头像。",
+                    description = "背景用于烘托会话氛围，用户与角色立绘可以覆盖默认头像。",
                 )
             }
             item {
@@ -549,7 +549,7 @@ fun RoleplayScenarioEditScreen(
             item {
                 SettingsSectionHeader(
                     title = "显示名与开场",
-                    description = "显示名只影响 RP 界面，不会改动原 Assistant。",
+                    description = "显示名只影响 RP 界面，不会改动原角色卡。",
                 )
             }
             item {
@@ -661,7 +661,7 @@ fun RoleplayScenarioEditScreen(
                     ) {
                         SwitchRow(
                             title = "长文小说模式",
-                            subtitle = "开启后，助手会输出更接近长篇小说的纯长文段落，适合重剧情用户。",
+                            subtitle = "开启后，角色会输出更接近长篇小说的纯长文段落，适合重剧情用户。",
                             value = longformModeEnabled,
                             onValueChange = { enabled ->
                                 applyInteractionSpec { it.withLongform(enabled) }
@@ -700,7 +700,7 @@ fun RoleplayScenarioEditScreen(
                         verticalArrangement = Arrangement.spacedBy(12.dp),
                     ) {
                         AnimatedSettingButton(
-                            text = if (isNew) "创建聊天资料" else "保存聊天资料",
+                            text = if (isNew) "创建会话资料" else "保存会话资料",
                             onClick = {
                                 val resolvedInteractionMode = if (chatType == RoleplayChatType.GROUP) {
                                     RoleplayInteractionMode.ONLINE_PHONE
@@ -751,7 +751,7 @@ fun RoleplayScenarioEditScreen(
                         )
                         if (!isNew && onDelete != null) {
                             AnimatedSettingButton(
-                                text = "删除聊天",
+                                text = "删除会话",
                                 onClick = { showDeleteConfirm = true },
                                 enabled = true,
                                 isPrimary = false,
@@ -897,14 +897,14 @@ fun RoleplayScenarioEditScreen(
             onDismissRequest = { showDeleteConfirm = false },
             title = {
                 Text(
-                    text = "确认删除聊天",
+                    text = "确认删除会话",
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold,
                 )
             },
             text = {
                 Text(
-                    text = "删除后无法恢复，相关聊天资料和会话数据会一起移除。",
+                    text = "删除后无法恢复，相关会话资料和会话数据会一起移除。",
                     style = MaterialTheme.typography.bodyMedium,
                 )
             },
@@ -915,7 +915,7 @@ fun RoleplayScenarioEditScreen(
                         onDelete(baseScenario.id)
                     },
                 ) {
-                    Text("删除聊天")
+                    Text("删除会话")
                 }
             },
             dismissButton = {
@@ -1061,7 +1061,7 @@ private fun AssistantPickRow(
         horizontalArrangement = Arrangement.spacedBy(14.dp),
     ) {
         AssistantAvatar(
-            name = assistant.name.ifBlank { "助手" },
+            name = assistant.name.ifBlank { "角色" },
             iconName = assistant.iconName.ifBlank { "auto_stories" },
             avatarUri = assistant.avatarUri,
             size = 40.dp,
@@ -1074,14 +1074,14 @@ private fun AssistantPickRow(
             verticalArrangement = Arrangement.spacedBy(2.dp),
         ) {
             Text(
-                text = assistant.name.ifBlank { "默认助手" },
+                text = assistant.name.ifBlank { "默认角色" },
                 style = MaterialTheme.typography.bodyLarge,
                 fontWeight = FontWeight.SemiBold,
                 color = palette.title,
                 maxLines = 1,
             )
             Text(
-                text = assistant.description.ifBlank { "未填写助手描述" },
+                text = assistant.description.ifBlank { "未填写角色描述" },
                 style = MaterialTheme.typography.labelMedium,
                 color = palette.body,
                 maxLines = 2,

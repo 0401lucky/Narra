@@ -22,17 +22,11 @@ internal object GatewayNetworkSupport {
         response: okhttp3.Response,
     ): IllegalStateException {
         val errorDetail = response.body?.string().orEmpty()
-        return IllegalStateException(
-            buildString {
-                append(operation)
-                append('：')
-                append(response.code)
-                val normalizedErrorDetail = errorDetail.trim()
-                if (normalizedErrorDetail.isNotBlank()) {
-                    append('\n')
-                    append(normalizedErrorDetail)
-                }
-            },
+        return PromptExtrasResponseSupport.buildHttpFailure(
+            operation = operation,
+            code = response.code,
+            errorDetail = errorDetail,
+            headers = response.headers,
         )
     }
 
@@ -41,17 +35,11 @@ internal object GatewayNetworkSupport {
         response: retrofit2.Response<T>,
     ): IllegalStateException {
         val errorDetail = response.errorBody()?.string().orEmpty()
-        return IllegalStateException(
-            buildString {
-                append(operation)
-                append('：')
-                append(response.code())
-                val normalizedErrorDetail = errorDetail.trim()
-                if (normalizedErrorDetail.isNotBlank()) {
-                    append('\n')
-                    append(normalizedErrorDetail)
-                }
-            },
+        return PromptExtrasResponseSupport.buildHttpFailure(
+            operation = operation,
+            code = response.code(),
+            errorDetail = errorDetail,
+            headers = response.headers(),
         )
     }
 

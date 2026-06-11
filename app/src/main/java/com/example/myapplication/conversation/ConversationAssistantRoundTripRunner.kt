@@ -7,6 +7,7 @@ import com.example.myapplication.model.ChatMessage
 import com.example.myapplication.model.ChatMessagePart
 import com.example.myapplication.model.ChatReasoningStep
 import com.example.myapplication.model.MessageCitation
+import com.example.myapplication.system.security.SensitiveTextRedactor
 import kotlinx.coroutines.CancellationException
 
 data class StreamedAssistantPayload(
@@ -139,7 +140,10 @@ class ConversationAssistantRoundTripRunner(
             }
             return AssistantRoundTripResult.Failed(
                 messages = outcome.messages,
-                errorMessage = outcome.errorMessage ?: (throwable.message ?: "发送失败"),
+                errorMessage = outcome.errorMessage ?: SensitiveTextRedactor.throwableMessageForUi(
+                    throwable = throwable,
+                    fallback = SEND_FAILURE_MESSAGE,
+                ),
             )
         }
     }
@@ -154,5 +158,9 @@ class ConversationAssistantRoundTripRunner(
             messages = listOf(assistantMessage),
             selectedModel = request.selectedModel,
         )
+    }
+
+    private companion object {
+        private const val SEND_FAILURE_MESSAGE = "发送失败，请检查网络或模型配置后重试"
     }
 }

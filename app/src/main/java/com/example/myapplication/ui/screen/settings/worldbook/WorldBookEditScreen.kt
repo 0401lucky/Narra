@@ -367,12 +367,12 @@ fun WorldBookEditScreen(
 
                             WorldBookScopeType.ATTACHABLE -> {
                                 Text(
-                                    text = "需要手动在助手中挂载才生效。",
+                                    text = "需要手动在角色中挂载才生效。",
                                     style = MaterialTheme.typography.bodySmall,
                                     color = palette.body,
                                 )
                                 androidx.compose.material3.TextButton(onClick = onOpenAssistantMount) {
-                                    Text("去助手页挂载")
+                                    Text("去角色页挂载")
                                 }
                             }
 
@@ -386,7 +386,7 @@ fun WorldBookEditScreen(
                                             selected = scopeId == assistant.id,
                                             onClick = { scopeId = assistant.id },
                                             label = {
-                                                Text(assistant.name.ifBlank { "未命名助手" })
+                                                Text(assistant.name.ifBlank { "未命名角色" })
                                             },
                                             colors = FilterChipDefaults.filterChipColors(
                                                 selectedContainerColor = palette.accentSoft,
@@ -686,7 +686,7 @@ private fun ConversationScopePicker(
             readOnly = true,
             shape = RoundedCornerShape(16.dp),
             colors = outlineColors,
-            placeholder = { Text("暂无会话，先到聊天页新建") },
+            placeholder = { Text("暂无会话，先到会话管理中新建") },
         )
         return
     }

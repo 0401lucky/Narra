@@ -140,7 +140,7 @@ class RoleplayScenarioEditScreenTest {
         val assistants = listOf(
             com.example.myapplication.model.Assistant(
                 id = "assistant-default",
-                name = "默认助手",
+                name = "默认角色",
                 description = "默认描述",
             ),
             com.example.myapplication.model.Assistant(
@@ -183,8 +183,8 @@ class RoleplayScenarioEditScreenTest {
             .assertExists()
 
         composeRule.onNodeWithTag(TAG_SCENARIO_EDIT_LIST)
-            .performScrollToNode(hasText("保存场景"))
-        composeRule.onNodeWithText("保存场景")
+            .performScrollToNode(hasText("保存会话资料"))
+        composeRule.onNodeWithText("保存会话资料")
             .performClick()
 
         composeRule.runOnIdle {
@@ -220,10 +220,10 @@ class RoleplayScenarioEditScreenTest {
         }
 
         composeRule.onNodeWithTag(TAG_SCENARIO_EDIT_LIST)
-            .performScrollToNode(hasText("删除场景"))
-        composeRule.onNodeWithText("删除场景")
+            .performScrollToNode(hasText("删除会话"))
+        composeRule.onNodeWithText("删除会话")
             .performClick()
-        composeRule.onNodeWithText("确认删除场景")
+        composeRule.onNodeWithText("确认删除会话")
             .assertExists()
         composeRule.onNodeWithText("取消")
             .performClick()
@@ -232,9 +232,9 @@ class RoleplayScenarioEditScreenTest {
             assertEquals(emptyList<String>(), deletedScenarioIds)
         }
 
-        composeRule.onNodeWithText("删除场景")
+        composeRule.onNodeWithText("删除会话")
             .performClick()
-        composeRule.onAllNodesWithText("删除场景")[1]
+        composeRule.onAllNodesWithText("删除会话")[1]
             .performClick()
 
         composeRule.runOnIdle {
@@ -271,8 +271,8 @@ class RoleplayScenarioEditScreenTest {
 
     private fun clickSaveButton() {
         composeRule.onNodeWithTag(TAG_SCENARIO_EDIT_LIST)
-            .performScrollToNode(hasText("创建场景"))
-        composeRule.onNodeWithText("创建场景")
+            .performScrollToNode(hasText("创建会话资料"))
+        composeRule.onNodeWithText("创建会话资料")
             .performClick()
     }
 }

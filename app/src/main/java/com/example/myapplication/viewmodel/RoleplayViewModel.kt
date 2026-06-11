@@ -36,6 +36,8 @@ import com.example.myapplication.data.repository.context.MemoryRepository
 import com.example.myapplication.data.repository.context.PendingMemoryProposalRepository
 import com.example.myapplication.data.repository.phone.PhoneSnapshotRepository
 import com.example.myapplication.data.repository.roleplay.RoleplayRepository
+import com.example.myapplication.data.repository.roleplay.script.EmptyRoleplayScriptRepository
+import com.example.myapplication.data.repository.roleplay.script.RoleplayScriptRepository
 import com.example.myapplication.data.repository.roleplay.RoleplaySessionStartResult
 import com.example.myapplication.model.AppSettings
 import com.example.myapplication.model.Assistant
@@ -81,6 +83,11 @@ import com.example.myapplication.roleplay.RoleplayPromptDecorator
 import com.example.myapplication.roleplay.RoleplayRoundTripSupport
 import com.example.myapplication.roleplay.RoleplaySummaryWindowSupport
 import com.example.myapplication.roleplay.RoleplayTimeAwarenessSupport
+import com.example.myapplication.roleplay.script.DisabledRoleplayScriptEngine
+import com.example.myapplication.roleplay.script.RoleplayScriptEngine
+import com.example.myapplication.roleplay.script.RoleplayScriptEvent
+import com.example.myapplication.roleplay.script.RoleplayScriptExecutionResult
+import com.example.myapplication.system.security.SensitiveTextRedactor
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.cancelAndJoin
@@ -112,6 +119,8 @@ class RoleplayViewModel(
     private val aiPromptExtrasService: AiPromptExtrasService,
     private val conversationRepository: ConversationRepository,
     private val roleplayRepository: RoleplayRepository,
+    private val roleplayScriptRepository: RoleplayScriptRepository = EmptyRoleplayScriptRepository,
+    private val roleplayScriptEngine: RoleplayScriptEngine = DisabledRoleplayScriptEngine(),
     private val promptContextAssembler: PromptContextAssembler,
     private val memoryRepository: MemoryRepository,
     private val conversationSummaryRepository: ConversationSummaryRepository,
@@ -132,6 +141,7 @@ class RoleplayViewModel(
     )
 
     private val currentScenarioId = MutableStateFlow<String?>(null)
+    private val scriptStartedSessionIds = mutableSetOf<String>()
     private val currentRawMessages = MutableStateFlow<List<ChatMessage>>(emptyList())
     private val _uiState = MutableStateFlow(RoleplayUiState())
     val uiState: StateFlow<RoleplayUiState> = _uiState.asStateFlow()
@@ -222,6 +232,8 @@ class RoleplayViewModel(
         conversationSummaryRepository = conversationSummaryRepository,
         phoneSnapshotRepository = phoneSnapshotRepository,
         roleplayRepository = roleplayRepository,
+        roleplayScriptRepository = roleplayScriptRepository,
+        roleplayScriptEngine = roleplayScriptEngine,
         promptContextAssembler = promptContextAssembler,
         assistantRoundTripRunner = assistantRoundTripRunner,
         outputParser = outputParser,
@@ -269,6 +281,10 @@ class RoleplayViewModel(
             )
         },
         contextLogStore = contextLogStore,
+    )
+    private val scriptEventCoordinator = RoleplayScriptEventCoordinator(
+        scriptRepository = roleplayScriptRepository,
+        scriptEngine = roleplayScriptEngine,
     )
     private val sendActionSupport = RoleplaySendActionSupport(
         scope = viewModelScope,
@@ -330,6 +346,7 @@ class RoleplayViewModel(
                 viewModelScope.launch {
                     syncVideoCallState(session)
                 }
+                triggerSessionStartScripts(session)
             },
         )
         RoleplayObservationSupport.observeCurrentGroupParticipants(
@@ -420,7 +437,13 @@ class RoleplayViewModel(
                 onSuccess?.invoke()
             }.onFailure { throwable ->
                 _uiState.update { current ->
-                    RoleplayStateSupport.applyErrorMessage(current, throwable.message ?: "保存群聊失败")
+                    RoleplayStateSupport.applyErrorMessage(
+                        current,
+                        SensitiveTextRedactor.throwableMessageForUi(
+                            throwable = throwable,
+                            fallback = "保存群聊失败",
+                        ),
+                    )
                 }
             }
         }
@@ -570,12 +593,18 @@ class RoleplayViewModel(
                 }
             }.onSuccess {
                 _uiState.update { current ->
-                    RoleplayStateSupport.applyNoticeMessage(current, "聊天记录已清空")
+                    RoleplayStateSupport.applyNoticeMessage(current, "会话记录已清空")
                 }
                 onSuccess?.invoke()
             }.onFailure { throwable ->
                 _uiState.update { current ->
-                    RoleplayStateSupport.applyErrorMessage(current, throwable.message ?: "清空聊天失败")
+                    RoleplayStateSupport.applyErrorMessage(
+                        current,
+                        SensitiveTextRedactor.throwableMessageForUi(
+                            throwable = throwable,
+                            fallback = "清空会话失败",
+                        ),
+                    )
                 }
             }
         }
@@ -594,7 +623,13 @@ class RoleplayViewModel(
                 }
             }.onFailure { throwable ->
                 _uiState.update { current ->
-                    RoleplayStateSupport.applyErrorMessage(current, throwable.message ?: "进入功能失败")
+                    RoleplayStateSupport.applyErrorMessage(
+                        current,
+                        SensitiveTextRedactor.throwableMessageForUi(
+                            throwable = throwable,
+                            fallback = "进入功能失败",
+                        ),
+                    )
                 }
             }
         }
@@ -706,7 +741,13 @@ class RoleplayViewModel(
                     return@launch
                 }
                 _uiState.update { current ->
-                    RoleplayStateSupport.applyErrorMessage(current, throwable.message ?: "启动视频通话失败")
+                    RoleplayStateSupport.applyErrorMessage(
+                        current,
+                        SensitiveTextRedactor.throwableMessageForUi(
+                            throwable = throwable,
+                            fallback = "启动视频通话失败",
+                        ),
+                    )
                 }
             }
         }
@@ -747,7 +788,13 @@ class RoleplayViewModel(
                     return@launch
                 }
                 _uiState.update { current ->
-                    RoleplayStateSupport.applyErrorMessage(current, throwable.message ?: "挂断视频通话失败")
+                    RoleplayStateSupport.applyErrorMessage(
+                        current,
+                        SensitiveTextRedactor.throwableMessageForUi(
+                            throwable = throwable,
+                            fallback = "挂断视频通话失败",
+                        ),
+                    )
                 }
             }
         }
@@ -828,9 +875,9 @@ class RoleplayViewModel(
                 id = "online-event-screenshot-${session.conversationId}-${nowProvider()}",
                 conversationId = session.conversationId,
                 role = MessageRole.ASSISTANT,
-                content = "你截了一张聊天截图。",
+                content = "你截了一张会话截图。",
                 createdAt = nowProvider(),
-                parts = listOf(textMessagePart("你截了一张聊天截图。")),
+                parts = listOf(textMessagePart("你截了一张会话截图。")),
                 systemEventKind = RoleplayOnlineEventKind.SCREENSHOT,
                 roleplayOutputFormat = RoleplayOutputFormat.PROTOCOL,
                 roleplayInteractionMode = RoleplayInteractionMode.ONLINE_PHONE,
@@ -1022,10 +1069,10 @@ class RoleplayViewModel(
                 }
             } catch (throwable: Throwable) {
                 if (_uiState.value.currentSession?.conversationId == conversationId) {
-                    val failureMessage = throwable.localizedMessage
-                        ?: throwable.message
-                        ?: throwable::class.simpleName
-                        ?: "角色日记生成失败"
+                    val failureMessage = SensitiveTextRedactor.throwableMessageForUi(
+                        throwable = throwable,
+                        fallback = "角色日记生成失败",
+                    )
                     _uiState.update { current ->
                         RoleplayStateSupport.failDiaryGeneration(
                             current,
@@ -1113,7 +1160,7 @@ class RoleplayViewModel(
         val scenario = state.currentScenario
         if (session == null || scenario == null) {
             _uiState.update { current ->
-                RoleplayStateSupport.applyErrorMessage(current, "当前聊天不存在，无法整理摘要与记忆")
+                RoleplayStateSupport.applyErrorMessage(current, "当前会话不存在，无法整理摘要与记忆")
             }
             return
         }
@@ -1207,7 +1254,10 @@ class RoleplayViewModel(
                 _uiState.update { current ->
                     RoleplayStateSupport.applyErrorMessage(
                         current.copy(isRefreshingConversationSummary = false),
-                        throwable.message ?: "整理摘要与记忆失败",
+                        SensitiveTextRedactor.throwableMessageForUi(
+                            throwable = throwable,
+                            fallback = "整理摘要与记忆失败",
+                        ),
                     )
                 }
             }
@@ -1556,6 +1606,51 @@ class RoleplayViewModel(
         return startResult.session
     }
 
+    private fun triggerSessionStartScripts(session: RoleplaySession?) {
+        if (session == null || session.id.isBlank()) {
+            return
+        }
+        if (!scriptStartedSessionIds.add(session.id)) {
+            return
+        }
+        viewModelScope.launch {
+            val scenario = _uiState.value.currentScenario
+                ?.takeIf { current -> current.id == session.scenarioId }
+                ?: roleplayRepository.getScenario(session.scenarioId)
+                ?: return@launch
+            val assistant = RoleplayConversationSupport.resolveAssistant(
+                settings = _uiState.value.settings,
+                assistantId = scenario.assistantId,
+            )
+            val request = RoleplayScriptEventRequest(
+                event = RoleplayScriptEvent.ON_SESSION_START,
+                sessionId = session.id,
+                scenarioId = scenario.id,
+                characterId = assistant?.id ?: scenario.assistantId,
+            )
+            applyScriptUiDirectives(scriptEventCoordinator.execute(request))
+            applyScriptUiDirectives(
+                scriptEventCoordinator.execute(
+                    request.copy(event = RoleplayScriptEvent.RENDER_STATE),
+                ),
+            )
+        }
+    }
+
+    private fun applyScriptUiDirectives(result: RoleplayScriptExecutionResult) {
+        val message = result.uiDirectives
+            .firstOrNull { directive ->
+                directive.type.lowercase() in setOf("notice", "status", "toast")
+            }
+            ?.payload
+            ?.trim()
+            ?.takeIf(String::isNotBlank)
+            ?: return
+        _uiState.update { current ->
+            RoleplayStateSupport.applyNoticeMessage(current, message)
+        }
+    }
+
     private suspend fun syncVideoCallState(session: RoleplaySession?) {
         if (session == null) {
             _uiState.update { current ->
@@ -1603,10 +1698,10 @@ class RoleplayViewModel(
             appendLine("角色：$characterName")
             appendLine("对话对象：$userName")
             if (scenario.title.isNotBlank()) {
-                appendLine("聊天标题：${scenario.title.trim()}")
+                appendLine("会话标题：${scenario.title.trim()}")
             }
             if (scenario.shouldInjectDescriptionPrompt()) {
-                appendLine("聊天背景补充：${scenario.description.trim()}")
+                appendLine("会话背景补充：${scenario.description.trim()}")
             }
             if (scenario.openingNarration.isNotBlank()) {
                 appendLine("开场旁白参考：${scenario.openingNarration.trim()}")
@@ -1776,6 +1871,8 @@ class RoleplayViewModel(
             aiPromptExtrasService: AiPromptExtrasService,
             conversationRepository: ConversationRepository,
             roleplayRepository: RoleplayRepository,
+            roleplayScriptRepository: RoleplayScriptRepository = EmptyRoleplayScriptRepository,
+            roleplayScriptEngine: RoleplayScriptEngine = DisabledRoleplayScriptEngine(),
             promptContextAssembler: PromptContextAssembler,
             memoryRepository: MemoryRepository,
             conversationSummaryRepository: ConversationSummaryRepository,
@@ -1794,6 +1891,8 @@ class RoleplayViewModel(
                     aiPromptExtrasService = aiPromptExtrasService,
                     conversationRepository = conversationRepository,
                     roleplayRepository = roleplayRepository,
+                    roleplayScriptRepository = roleplayScriptRepository,
+                    roleplayScriptEngine = roleplayScriptEngine,
                     promptContextAssembler = promptContextAssembler,
                     memoryRepository = memoryRepository,
                     conversationSummaryRepository = conversationSummaryRepository,

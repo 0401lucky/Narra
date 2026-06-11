@@ -91,8 +91,8 @@ fun RoleplayScenarioListScreen(
     Scaffold(
         topBar = {
             SettingsTopBar(
-                title = "聊天管理",
-                subtitle = "管理聊天资料与独立会话",
+                title = "会话管理",
+                subtitle = "管理会话资料与独立进度",
                 onNavigateBack = onNavigateBack,
                 actionLabel = "新建",
                 onAction = onAddScenario,
@@ -166,13 +166,13 @@ private fun EmptyScenarioCard(onAddScenario: () -> Unit) {
                 contentColor = palette.body,
             )
             Text(
-                text = "还没有聊天资料",
+                text = "还没有会话资料",
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.SemiBold,
                 color = palette.title,
             )
             Text(
-                text = "创建一份聊天资料，绑定角色、背景和用户形象，即可进入沉浸式对话。",
+                text = "创建一份会话资料，绑定角色、背景和用户形象，即可进入沉浸式对话。",
                 style = MaterialTheme.typography.bodyMedium.copy(lineHeight = 22.sp),
                 color = palette.body,
                 modifier = Modifier.padding(horizontal = 8.dp),
@@ -188,7 +188,7 @@ private fun EmptyScenarioCard(onAddScenario: () -> Unit) {
                     modifier = Modifier.size(16.dp),
                 )
                 Text(
-                    text = "新建聊天资料",
+                    text = "新建会话资料",
                     modifier = Modifier.padding(start = 6.dp),
                 )
             }
@@ -282,7 +282,7 @@ private fun RoleplayScenarioCard(
                     verticalArrangement = Arrangement.spacedBy(2.dp),
                 ) {
                     Text(
-                        text = scenario.title.ifBlank { "未命名聊天" },
+                        text = scenario.title.ifBlank { "未命名会话" },
                         style = MaterialTheme.typography.titleLarge,
                         fontWeight = FontWeight.Bold,
                         color = if (bitmapReady) Color.White else palette.title,
@@ -290,7 +290,7 @@ private fun RoleplayScenarioCard(
                         overflow = TextOverflow.Ellipsis,
                     )
                     Text(
-                        text = assistant?.name?.ifBlank { "默认助手" } ?: "默认助手",
+                        text = assistant?.name?.ifBlank { "默认角色" } ?: "默认角色",
                         style = MaterialTheme.typography.labelMedium,
                         color = if (bitmapReady) Color.White.copy(alpha = 0.82f) else palette.body,
                         maxLines = 1,
@@ -329,7 +329,7 @@ private fun RoleplayScenarioCard(
                         Box(contentAlignment = Alignment.Center) {
                             Icon(
                                 imageVector = Icons.Default.Edit,
-                                contentDescription = "编辑聊天资料",
+                                contentDescription = "编辑会话资料",
                                 tint = if (bitmapReady) Color.White else palette.title,
                                 modifier = Modifier.size(18.dp),
                             )
@@ -344,7 +344,7 @@ private fun RoleplayScenarioCard(
             ) {
                 Text(
                     text = scenario.description.ifBlank {
-                        "尚未填写聊天背景补充，进入后会直接按角色设定展开。"
+                        "尚未填写会话背景补充，进入后会直接按角色设定展开。"
                     },
                     style = MaterialTheme.typography.bodyMedium,
                     color = palette.body,
@@ -397,7 +397,7 @@ private fun RoleplayScenarioCard(
                         modifier = Modifier.size(18.dp),
                     )
                     Text(
-                        text = if (hasExistingSession) "继续聊天" else "开始聊天",
+                        text = if (hasExistingSession) "继续会话" else "开始会话",
                         modifier = Modifier.padding(start = 6.dp),
                     )
                 }

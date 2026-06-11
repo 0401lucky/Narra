@@ -3,17 +3,28 @@ package com.example.myapplication.data.repository.context
 import com.example.myapplication.data.local.worldbook.WorldBookDao
 import com.example.myapplication.data.local.worldbook.WorldBookEntryEntity
 import com.example.myapplication.model.Assistant
+import com.example.myapplication.model.CONTEXT_IMPORT_MAX_WORLD_BOOK_CONTENT_CHARS
+import com.example.myapplication.model.CONTEXT_IMPORT_MAX_WORLD_BOOK_EXTRAS_CHARS
+import com.example.myapplication.model.CONTEXT_IMPORT_MAX_WORLD_BOOK_SOURCE_NAME_CHARS
+import com.example.myapplication.model.CONTEXT_IMPORT_MAX_WORLD_BOOK_TITLE_CHARS
 import com.example.myapplication.model.Conversation
+import com.example.myapplication.model.WORLD_BOOK_MAX_SECONDARY_KEYWORDS
 import com.example.myapplication.model.WorldBookEntry
+import com.example.myapplication.model.WorldBookMatchMode
 import com.example.myapplication.model.WorldBookScopeType
+import com.google.gson.JsonParser
+import com.google.gson.Gson
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class WorldBookRepositoryTest {
+    private val gson = Gson()
+
     @Test
     fun upsertEntry_preservesTrailingNewlineInTitleAndContent() = runTest {
         val dao = RecordingWorldBookDao()
@@ -69,6 +80,78 @@ class WorldBookRepositoryTest {
         )
 
         assertEquals("""{"probability":80,"depth":3}""", dao.captured?.extrasJson)
+    }
+
+    @Test
+    fun upsertEntry_normalizesOversizedFieldsAndExtrasBeforePersisting() = runTest {
+        val dao = RecordingWorldBookDao()
+        val repository = RoomWorldBookRepository(dao)
+        val hugeExtras = "x".repeat(CONTEXT_IMPORT_MAX_WORLD_BOOK_EXTRAS_CHARS + 20)
+
+        repository.upsertEntry(
+            WorldBookEntry(
+                id = "entry-limited",
+                title = "t".repeat(CONTEXT_IMPORT_MAX_WORLD_BOOK_TITLE_CHARS + 20),
+                content = "c".repeat(CONTEXT_IMPORT_MAX_WORLD_BOOK_CONTENT_CHARS + 20),
+                sourceBookName = "书".repeat(CONTEXT_IMPORT_MAX_WORLD_BOOK_SOURCE_NAME_CHARS + 20),
+                extrasJson = """{"safe":"保留","huge":"$hugeExtras"}""",
+            ),
+        )
+
+        val saved = dao.captured!!
+        val extras = JsonParser.parseString(saved.extrasJson).asJsonObject
+        assertEquals(CONTEXT_IMPORT_MAX_WORLD_BOOK_TITLE_CHARS, saved.title.length)
+        assertEquals(CONTEXT_IMPORT_MAX_WORLD_BOOK_CONTENT_CHARS, saved.content.length)
+        assertEquals(CONTEXT_IMPORT_MAX_WORLD_BOOK_SOURCE_NAME_CHARS, saved.sourceBookName.length)
+        assertEquals("保留", extras.get("safe").asString)
+        assertFalse("超限 extras 字段应整字段丢弃，不能字符串截断", extras.has("huge"))
+    }
+
+    @Test
+    fun upsertEntry_normalizesKeywordListsBeforePersisting() = runTest {
+        val dao = RecordingWorldBookDao()
+        val repository = RoomWorldBookRepository(dao)
+        val secondaryKeywords = (0 until WORLD_BOOK_MAX_SECONDARY_KEYWORDS + 10)
+            .map { index -> "次级$index" }
+
+        repository.upsertEntry(
+            WorldBookEntry(
+                id = "entry-keywords",
+                title = "t",
+                content = "c",
+                keywords = listOf(" 白塔城 ", "", "白塔城", "武器, 枪", "x".repeat(120)),
+                aliases = listOf(" 别名 ", "别名"),
+                secondaryKeywords = secondaryKeywords,
+                matchMode = WorldBookMatchMode.CONTAINS,
+                sourceBookName = "书",
+            ),
+        )
+
+        assertEquals(listOf("白塔城", "武器", "枪"), dao.captured?.keywordsJson?.decodeStringList())
+        assertEquals(listOf("别名"), dao.captured?.aliasesJson?.decodeStringList())
+        assertEquals(
+            WORLD_BOOK_MAX_SECONDARY_KEYWORDS,
+            dao.captured?.secondaryKeywordsJson?.decodeStringList()?.size,
+        )
+    }
+
+    @Test
+    fun upsertEntry_dropsUnsafeRegexKeywordsBeforePersisting() = runTest {
+        val dao = RecordingWorldBookDao()
+        val repository = RoomWorldBookRepository(dao)
+
+        repository.upsertEntry(
+            WorldBookEntry(
+                id = "entry-regex",
+                title = "t",
+                content = "c",
+                keywords = listOf("白塔城", "(a+)+$", "a".repeat(240), "foo|bar"),
+                matchMode = WorldBookMatchMode.REGEX,
+                sourceBookName = "书",
+            ),
+        )
+
+        assertEquals(listOf("白塔城", "foo|bar"), dao.captured?.keywordsJson?.decodeStringList())
     }
 
     @Test
@@ -333,6 +416,10 @@ class WorldBookRepositoryTest {
         createdAt = now,
         updatedAt = now,
     )
+
+    private fun String.decodeStringList(): List<String> {
+        return gson.fromJson(this, Array<String>::class.java).toList()
+    }
 
     private class RecordingWorldBookDao : WorldBookDao {
         var captured: WorldBookEntryEntity? = null

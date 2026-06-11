@@ -59,7 +59,7 @@ object ChatInteractionSupport {
         return ChatTranslationResolution.Ready(
             request = ChatTranslationRequest(
                 sourceText = sourceText,
-                sourceLabel = if (message.role == MessageRole.USER) "用户消息" else "助手回复",
+                sourceLabel = if (message.role == MessageRole.USER) "用户消息" else "角色回复",
             ),
         )
     }

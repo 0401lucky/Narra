@@ -408,7 +408,7 @@ fun PresetEditScreen(
                     summary = if (readOnly) {
                         "可以查看条目和最终顺序；需要修改时请先复制为我的预设。"
                     } else {
-                        "条目顺序决定最终发送顺序，Chat History 后面的条目会作为后置指令发送。"
+                        "条目顺序决定最终发送顺序，近期记录插入点后面的条目会作为后置指令发送。"
                     },
                 )
             }
@@ -742,7 +742,7 @@ private fun PresetPreviewCard(
             entries.sortedBy(PresetPromptEntry::order).forEach { entry ->
                 val enabledLabel = if (entry.enabled) "" else "（关闭）"
                 val line = if (entry.kind == PresetPromptEntryKind.CHAT_HISTORY) {
-                    "──── Chat History 插入点 ────"
+                    "──── 近期记录插入点 ────"
                 } else {
                     "${entry.role.label} · ${entry.title.ifBlank { entry.kind.label }}$enabledLabel"
                 }

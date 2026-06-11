@@ -90,7 +90,7 @@ class ChatSuggestionCoordinatorTest {
         assertEquals("suggest-model", result?.modelName)
         assertEquals(listOf("继续追问", "确认钥匙下落"), result?.suggestions)
         assertTrue(capturedSummary.contains("用户: 第三句"))
-        assertTrue(capturedSummary.contains("助手: 第四句"))
+        assertTrue(capturedSummary.contains("角色: 第四句"))
         assertTrue(capturedSummary.contains("用户: 第五句"))
         assertTrue(!capturedSummary.contains("第一句"))
     }

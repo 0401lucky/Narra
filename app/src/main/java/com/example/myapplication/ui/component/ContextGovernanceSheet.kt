@@ -303,7 +303,7 @@ private fun ContextLogApiCard(
                     color = MaterialTheme.colorScheme.surfaceVariant,
                 ) {
                     Text(
-                        text = snapshot.promptModeLabel.ifBlank { "聊天" },
+                        text = snapshot.promptModeLabel.ifBlank { "会话" },
                         modifier = Modifier.padding(horizontal = 10.dp, vertical = 5.dp),
                         style = MaterialTheme.typography.labelMedium,
                         fontWeight = FontWeight.Medium,

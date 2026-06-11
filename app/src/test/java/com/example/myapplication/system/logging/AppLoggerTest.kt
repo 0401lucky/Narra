@@ -30,15 +30,15 @@ class AppLoggerTest {
 
     @Test
     fun warn_forwardsMessageAndThrowableToSink() {
-        val error = RuntimeException("boom")
-        AppLogger.w("UnitTest", "something went wrong", error)
+        val error = RuntimeException("Authorization: Bearer sk-secret")
+        AppLogger.w("UnitTest", "api-key: key-secret", error)
 
         assertEquals(1, fakeSink.events.size)
         val event = fakeSink.events.single()
         assertEquals(AppLogger.Level.WARN, event.level)
         assertEquals("UnitTest", event.tag)
-        assertEquals("something went wrong", event.message)
-        assertSame(error, event.throwable)
+        assertFalse(event.message.contains("key-secret"))
+        assertFalse(event.throwable.toString().contains("sk-secret"))
     }
 
     @Test
@@ -63,7 +63,7 @@ class AppLoggerTest {
         val event = fakeSink.events.single()
         assertEquals(AppLogger.Level.WARN, event.level)
         assertEquals("fromJson failed", event.message)
-        assertSame(error, event.throwable)
+        assertFalse(event.throwable === error)
     }
 
     @Test

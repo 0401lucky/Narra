@@ -28,6 +28,7 @@ import com.example.myapplication.model.UserPersonaMask
 import com.example.myapplication.model.VoiceSynthesisSettings
 import com.example.myapplication.model.VoiceProfileMode
 import com.example.myapplication.model.normalized
+import com.example.myapplication.system.security.SensitiveTextRedactor
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -645,10 +646,13 @@ class SettingsViewModel(
                     )
                 }
             }.onFailure { throwable ->
+                val safeMessage = throwable.message
+                    ?.let { SensitiveTextRedactor.redact(it, maxLength = 160) }
+                    ?: "未知错误"
                 updateUiState {
                     it.copy(
                         isTestingVoiceSynthesis = false,
-                        message = "MiMo 测试失败：${throwable.message ?: "未知错误"}",
+                        message = "MiMo 测试失败：$safeMessage",
                     )
                 }
             }
@@ -806,7 +810,7 @@ class SettingsViewModel(
                 updateUiState {
                     SettingsUiMutationSupport.applyMessageError(
                         current = it,
-                        errorMessage = throwable.message ?: "助手操作失败",
+                        errorMessage = throwable.message ?: "角色操作失败",
                     )
                 }
             }

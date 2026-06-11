@@ -55,7 +55,7 @@ fun AssistantListScreen(
         containerColor = palette.background,
         topBar = {
             SettingsTopBar(
-                title = "助手",
+                title = "角色",
                 onNavigateBack = onNavigateBack,
                 actionLabel = "新增",
                 onAction = { onNavigateToAssistantConfig(null) },
@@ -80,7 +80,7 @@ fun AssistantListScreen(
                     onValueChange = { searchQuery = it },
                     placeholder = {
                         Text(
-                            text = "搜索助手",
+                            text = "搜索角色",
                             color = palette.body.copy(alpha = 0.5f),
                         )
                     },
@@ -103,8 +103,8 @@ fun AssistantListScreen(
             if (filteredAssistants.isEmpty() && searchQuery.isNotBlank()) {
                 item {
                     SettingsPlaceholderRow(
-                        title = "没有匹配的助手",
-                        subtitle = "试试其他关键词，或者新增一个助手。",
+                        title = "没有匹配的角色",
+                        subtitle = "试试其他关键词，或者新增一个角色。",
                     )
                 }
             }
@@ -125,9 +125,9 @@ fun AssistantListScreen(
 
     deleteTarget?.let { assistant ->
         AssistantDeleteConfirmDialog(
-            assistantName = assistant.name.ifBlank { "未命名助手" },
+            assistantName = assistant.name.ifBlank { "未命名角色" },
             extraMessage = if (assistant.id == currentAssistantId) {
-                "删除后，当前选择会自动切换回默认助手。"
+                "删除后，当前选择会自动切换回默认角色。"
             } else {
                 ""
             },
@@ -259,7 +259,7 @@ private fun AssistantCardMinimal(
                     DropdownMenuItem(
                         text = {
                             Text(
-                                text = if (canDelete) "删除助手" else "内置助手不可删除",
+                                text = if (canDelete) "删除角色" else "内置角色不可删除",
                                 color = if (canDelete) {
                                     MaterialTheme.colorScheme.error
                                 } else {

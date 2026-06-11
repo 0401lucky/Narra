@@ -127,7 +127,7 @@ class RoomMailboxRepository(
         allowMemory: Boolean,
         existingLetterId: String,
     ): MailboxLetter {
-        require(scenarioId.isNotBlank()) { "当前聊天不存在，无法保存草稿" }
+        require(scenarioId.isNotBlank()) { "当前会话不存在，无法保存草稿" }
         require(conversationId.isNotBlank()) { "当前会话不存在，无法保存草稿" }
         val timestamp = nowProvider()
         val existing = existingLetterId.takeIf { it.isNotBlank() }?.let { mailboxDao.getLetter(it) }
@@ -160,7 +160,7 @@ class RoomMailboxRepository(
     }
 
     override suspend fun sendLetter(letter: MailboxLetter): MailboxLetter {
-        require(letter.scenarioId.isNotBlank()) { "当前聊天不存在，无法寄信" }
+        require(letter.scenarioId.isNotBlank()) { "当前会话不存在，无法寄信" }
         require(letter.conversationId.isNotBlank()) { "当前会话不存在，无法寄信" }
         require(letter.content.isNotBlank()) { "正文还没有内容" }
         val timestamp = nowProvider()
@@ -195,7 +195,7 @@ class RoomMailboxRepository(
         memoryCandidate: String,
         source: MailboxSource,
     ): MailboxLetter {
-        require(scenarioId.isNotBlank()) { "当前聊天不存在，无法保存来信" }
+        require(scenarioId.isNotBlank()) { "当前会话不存在，无法保存来信" }
         require(conversationId.isNotBlank()) { "当前会话不存在，无法保存来信" }
         require(content.isNotBlank()) { "回信正文为空" }
         val timestamp = nowProvider()
@@ -303,7 +303,7 @@ class RoomMailboxRepository(
     }
 
     override suspend fun updateSettings(settings: MailboxSettings): MailboxSettings {
-        require(settings.scenarioId.isNotBlank()) { "当前聊天不存在，无法保存信箱设置" }
+        require(settings.scenarioId.isNotBlank()) { "当前会话不存在，无法保存信箱设置" }
         val updated = settings.copy(
             scenarioId = settings.scenarioId.trim(),
             updatedAt = nowProvider(),
@@ -314,7 +314,7 @@ class RoomMailboxRepository(
 
     override suspend fun markProactiveLetterCreated(scenarioId: String): MailboxSettings {
         val normalizedScenarioId = scenarioId.trim()
-        require(normalizedScenarioId.isNotBlank()) { "当前聊天不存在，无法更新主动来信时间" }
+        require(normalizedScenarioId.isNotBlank()) { "当前会话不存在，无法更新主动来信时间" }
         val timestamp = nowProvider()
         val updated = getSettings(normalizedScenarioId).copy(
             lastProactiveLetterAt = timestamp,

@@ -33,7 +33,7 @@ class RoleplaySettingsContentTest {
 
         composeRule.setContent {
             RoleplaySettingsContent(
-                activePage = RoleplaySettingsPanelPage.MAIN,
+                activePage = RoleplaySettingsPanelPage.THEME,
                 scenario = null,
                 assistant = null,
                 settings = settings,
@@ -108,6 +108,8 @@ class RoleplaySettingsContentTest {
         composeRule.onNodeWithTag("roleplay_immersive_hide_system_bars")
             .assertIsSelected()
 
+        composeRule.onNodeWithTag(TAG_ROLEPLAY_SETTINGS_LIST)
+            .performScrollToNode(hasTestTag("roleplay_high_contrast_switch"))
         composeRule.onNodeWithTag("roleplay_high_contrast_switch")
             .performClick()
         composeRule.onNodeWithTag("roleplay_high_contrast_switch")

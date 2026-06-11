@@ -41,7 +41,7 @@ import androidx.compose.ui.window.DialogProperties
  * 典型用法：
  * ```
  * NarraAlertDialog(
- *     title = "删除助手",
+ *     title = "删除角色",
  *     message = "将删除“阿尘”，这个操作不可撤销。",
  *     confirmLabel = "确认删除",
  *     onConfirm = { ... },

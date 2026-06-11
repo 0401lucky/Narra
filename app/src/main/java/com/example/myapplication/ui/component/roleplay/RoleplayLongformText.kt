@@ -42,6 +42,7 @@ fun RoleplayLongformCard(
     accentColor: Color = MaterialTheme.colorScheme.onSurfaceVariant,
     thoughtColor: Color = bodyColor.copy(alpha = 0.72f),
     lineHeightScale: Float = 1.0f,
+    showSpeakerName: Boolean = true,
 ) {
     val paragraphs = remember(content, richTextSource) {
         RoleplayLongformMarkupParser.parseParagraphs(richTextSource)
@@ -55,12 +56,14 @@ fun RoleplayLongformCard(
             modifier = contentModifier,
             verticalArrangement = Arrangement.spacedBy(16.dp),
         ) {
-            Text(
-                text = speakerName,
-                style = MaterialTheme.typography.labelLarge,
-                color = titleColor,
-                fontWeight = FontWeight.Bold,
-            )
+            if (showSpeakerName) {
+                Text(
+                    text = speakerName,
+                    style = MaterialTheme.typography.labelLarge,
+                    color = titleColor,
+                    fontWeight = FontWeight.Bold,
+                )
+            }
             paragraphs.forEach { paragraph ->
                 LongformParagraphText(
                     paragraph = paragraph,

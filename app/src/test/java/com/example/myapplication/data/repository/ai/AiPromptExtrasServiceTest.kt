@@ -4,6 +4,9 @@ import com.example.myapplication.data.remote.ApiServiceFactory
 import com.example.myapplication.data.repository.RoleplayMemoryCondenseMode
 import com.example.myapplication.conversation.PhoneGenerationContext
 import com.example.myapplication.model.OpenAiTextApiMode
+import com.example.myapplication.model.MomentAssistantContext
+import com.example.myapplication.model.MomentAuthorType
+import com.example.myapplication.model.MomentCommentStyle
 import com.example.myapplication.model.PhoneSnapshotOwnerType
 import com.example.myapplication.model.PhoneSnapshotSection
 import com.example.myapplication.model.PhoneViewMode
@@ -1326,6 +1329,116 @@ class AiPromptExtrasServiceTest {
             assertTrue(error.message.orEmpty().contains("格式不符合要求"))
             assertTrue(error.message.orEmpty().contains("JSON 对象"))
         }
+    }
+
+    @Test
+    fun generateMomentCommentReplies_marksAssistantPostSecondPersonAsUserAnchor() = runBlocking {
+        enqueueChatContent(
+            """
+            [
+              {
+                "author_id": "junze",
+                "author_name": "君泽",
+                "text": "又在想 lucky？茶别放凉。"
+              }
+            ]
+            """.trimIndent(),
+        )
+        val service = createService()
+
+        service.generateMomentCommentReplies(
+            assistants = listOf(
+                MomentAssistantContext(
+                    id = "junze",
+                    name = "君泽",
+                    persona = "对 lucky 有占有欲，但不会把其它角色的告白抢成写给自己。",
+                    commentStyle = MomentCommentStyle.ACTIVE,
+                ),
+            ),
+            postAuthorName = "沈烬",
+            postAuthorType = MomentAuthorType.ASSISTANT,
+            postContent = "下雨天 适合静思\n泡了壶茶\n想你",
+            existingComments = "",
+            userName = "lucky",
+            userComment = "其他角色看到了这条朋友圈。",
+            isUserCommentTrigger = false,
+            baseUrl = server.url("/v1/").toString(),
+            apiKey = "test-key",
+            modelId = "deepseek-chat",
+        )
+
+        val requestBody = JsonParser.parseString(server.takeRequest().body.readUtf8()).asJsonObject
+        val prompt = requestBody
+            .getAsJsonArray("messages")
+            .first()
+            .asJsonObject
+            .get("content")
+            .asString
+        assertTrue(prompt.contains("发布者：沈烬（角色，不是用户本人）"))
+        assertTrue(prompt.contains("lucky 是当前故事和关系的核心锚点"))
+        assertTrue(prompt.contains("正文里的“你 / 想你 / 等你 / 陪你”默认指向 lucky"))
+        assertTrue(prompt.contains("【触发事件】"))
+        assertFalse(prompt.contains("【lucky 刚发表的新评论】"))
+    }
+
+    @Test
+    fun generateMomentCommentReplies_filtersMisaddressedAssistantPostReplies() = runBlocking {
+        enqueueChatContent(
+            """
+            [
+              {
+                "author_id": "yanqing",
+                "author_name": "沈宴清",
+                "text": "我也在想你。茶凉了，过来我这。"
+              },
+              {
+                "author_id": "junze",
+                "author_name": "君泽",
+                "text": "只许想我。茶泡好了，等着我过去。"
+              },
+              {
+                "author_id": "yuzui",
+                "author_name": "余罪",
+                "text": "又在想 lucky？茶别放凉。"
+              }
+            ]
+            """.trimIndent(),
+        )
+        val service = createService()
+
+        val replies = service.generateMomentCommentReplies(
+            assistants = listOf(
+                MomentAssistantContext(
+                    id = "yanqing",
+                    name = "沈宴清",
+                    persona = "温和克制",
+                ),
+                MomentAssistantContext(
+                    id = "junze",
+                    name = "君泽",
+                    persona = "占有欲强",
+                ),
+                MomentAssistantContext(
+                    id = "yuzui",
+                    name = "余罪",
+                    persona = "直接利落",
+                ),
+            ),
+            postAuthorName = "沈烬",
+            postAuthorType = MomentAuthorType.ASSISTANT,
+            postContent = "下雨天 适合静思\n泡了壶茶\n想你",
+            existingComments = "",
+            userName = "lucky",
+            userComment = "其他角色看到了这条朋友圈。",
+            isUserCommentTrigger = false,
+            baseUrl = server.url("/v1/").toString(),
+            apiKey = "test-key",
+            modelId = "deepseek-chat",
+        )
+
+        assertEquals(1, replies.size)
+        assertEquals("余罪", replies.single().authorName)
+        assertEquals("又在想 lucky？茶别放凉。", replies.single().text)
     }
 
     private fun enqueueChatContent(content: String) {

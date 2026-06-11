@@ -5,8 +5,14 @@ import com.example.myapplication.model.ChatMessage
 import com.example.myapplication.model.Conversation
 import com.example.myapplication.model.DEFAULT_WORLD_BOOK_MAX_ENTRIES
 import com.example.myapplication.model.DEFAULT_WORLD_BOOK_SCAN_DEPTH
+import com.example.myapplication.model.WORLD_BOOK_MAX_PRIMARY_KEYWORDS
+import com.example.myapplication.model.WORLD_BOOK_MAX_SECONDARY_KEYWORDS
+import com.example.myapplication.model.WORLD_BOOK_REGEX_MATCH_SOURCE_MAX_CHARS
 import com.example.myapplication.model.WorldBookEntry
 import com.example.myapplication.model.WorldBookMatchMode
+import com.example.myapplication.model.expandWorldBookKeywordCandidates
+import com.example.myapplication.model.isAllowedWorldBookKeyword
+import com.example.myapplication.model.parseWorldBookRegexLiteral
 import com.example.myapplication.system.logging.logFailure
 
 data class WorldBookMatchResult(
@@ -78,7 +84,11 @@ class WorldBookMatcher {
         if (sourceText.isBlank()) {
             return false
         }
-        val primaryMatched = expandKeywordPatterns(entry.keywords + entry.aliases, entry.matchMode)
+        val primaryMatched = expandKeywordPatterns(
+            rawPatterns = entry.keywords + entry.aliases,
+            matchMode = entry.matchMode,
+            maxItems = WORLD_BOOK_MAX_PRIMARY_KEYWORDS,
+        )
             .any { keyword ->
                 matchesPattern(
                     pattern = keyword,
@@ -93,7 +103,11 @@ class WorldBookMatcher {
         if (!entry.selective || entry.secondaryKeywords.isEmpty()) {
             return true
         }
-        return expandKeywordPatterns(entry.secondaryKeywords, entry.matchMode)
+        return expandKeywordPatterns(
+            rawPatterns = entry.secondaryKeywords,
+            matchMode = entry.matchMode,
+            maxItems = WORLD_BOOK_MAX_SECONDARY_KEYWORDS,
+        )
             .any { keyword ->
                 matchesPattern(
                     pattern = keyword,
@@ -136,7 +150,11 @@ class WorldBookMatcher {
                 reasonIfNotMatched = "待测文本为空",
             )
         }
-        val primaryHits = expandKeywordPatterns(entry.keywords + entry.aliases, entry.matchMode)
+        val primaryHits = expandKeywordPatterns(
+            rawPatterns = entry.keywords + entry.aliases,
+            matchMode = entry.matchMode,
+            maxItems = WORLD_BOOK_MAX_PRIMARY_KEYWORDS,
+        )
             .filter { pattern ->
                 matchesPattern(
                     pattern = pattern,
@@ -147,7 +165,11 @@ class WorldBookMatcher {
             }
             .distinct()
         val secondaryHits = if (entry.selective && entry.secondaryKeywords.isNotEmpty()) {
-            expandKeywordPatterns(entry.secondaryKeywords, entry.matchMode)
+            expandKeywordPatterns(
+                rawPatterns = entry.secondaryKeywords,
+                matchMode = entry.matchMode,
+                maxItems = WORLD_BOOK_MAX_SECONDARY_KEYWORDS,
+            )
                 .filter { pattern ->
                     matchesPattern(
                         pattern = pattern,
@@ -207,21 +229,20 @@ class WorldBookMatcher {
     private fun expandKeywordPatterns(
         rawPatterns: List<String>,
         matchMode: WorldBookMatchMode,
+        maxItems: Int,
     ): List<String> {
-        return rawPatterns.flatMap { rawPattern ->
-            val normalized = rawPattern.trim()
-            when {
-                normalized.isBlank() -> emptyList()
-                // REGEX 模式下：整条 keyword 直接作为正则，不按逗号拆
-                matchMode == WorldBookMatchMode.REGEX -> listOf(normalized)
-                parseRegexLiteral(normalized) != null -> listOf(normalized)
-                else -> normalized
-                    .split(KeywordDelimiterRegex)
-                    .mapNotNull { token ->
-                        token.trim().takeIf { it.isNotEmpty() }
-                    }
+        val expanded = mutableListOf<String>()
+        for (rawPattern in rawPatterns) {
+            if (expanded.size >= maxItems) break
+            for (candidate in expandWorldBookKeywordCandidates(rawPattern, matchMode)) {
+                if (expanded.size >= maxItems) break
+                val normalized = candidate.trim()
+                if (normalized.isNotEmpty() && isAllowedWorldBookKeyword(normalized, matchMode)) {
+                    expanded += normalized
+                }
             }
         }
+        return expanded
     }
 
     private fun matchesPattern(
@@ -230,48 +251,36 @@ class WorldBookMatcher {
         caseSensitive: Boolean,
         matchMode: WorldBookMatchMode,
     ): Boolean {
-        // /.../ 字面量语法跨 matchMode 保留 escape hatch，优先识别
+        val regexSourceText = sourceText.takeLast(WORLD_BOOK_REGEX_MATCH_SOURCE_MAX_CHARS)
+        // /.../ 字面量语法跨 matchMode 保留 escape hatch，优先识别。
         parseRegexLiteral(pattern, caseSensitive = caseSensitive)?.let { regex ->
-            return regex.containsMatchIn(sourceText)
+            return regex.containsMatchIn(regexSourceText)
         }
         return when (matchMode) {
             WorldBookMatchMode.CONTAINS -> sourceText.contains(pattern, ignoreCase = !caseSensitive)
             WorldBookMatchMode.WORD_CJK -> matchesContainsCjkAware(pattern, sourceText, caseSensitive)
             WorldBookMatchMode.REGEX -> {
                 val options = if (caseSensitive) emptySet() else setOf(RegexOption.IGNORE_CASE)
-                runCatching { Regex(pattern, options) }
-                    .logFailure("WorldBookMatcher") { "compile keyword regex failed: $pattern" }
-                    .getOrNull()
-                    ?.containsMatchIn(sourceText)
+                buildSafeRegex(pattern, options)
+                    ?.containsMatchIn(regexSourceText)
                     ?: false
             }
         }
     }
 
+    private fun buildSafeRegex(pattern: String, options: Set<RegexOption>): Regex? {
+        if (!isAllowedWorldBookKeyword(pattern, WorldBookMatchMode.REGEX)) {
+            return null
+        }
+        return runCatching { Regex(pattern, options) }
+            .logFailure("WorldBookMatcher") { "compile keyword regex failed" }
+            .getOrNull()
+    }
+
     private fun parseRegexLiteral(pattern: String, caseSensitive: Boolean = true): Regex? {
-        if (pattern.length < 2 || !pattern.startsWith('/')) {
-            return null
-        }
-        var escaped = false
-        var endIndex = -1
-        for (index in 1 until pattern.length) {
-            val current = pattern[index]
-            if (current == '/' && !escaped) {
-                endIndex = index
-                break
-            }
-            escaped = current == '\\' && !escaped
-            if (current != '\\') {
-                escaped = false
-            }
-        }
-        if (endIndex <= 1) {
-            return null
-        }
-        val body = pattern.substring(1, endIndex)
-        val flags = pattern.substring(endIndex + 1)
+        val literal = parseWorldBookRegexLiteral(pattern) ?: return null
         val options = mutableSetOf<RegexOption>()
-        for (flag in flags) {
+        for (flag in literal.flags) {
             when (flag.lowercaseChar()) {
                 'i' -> options.add(RegexOption.IGNORE_CASE)
                 'm' -> options.add(RegexOption.MULTILINE)
@@ -283,12 +292,6 @@ class WorldBookMatcher {
         if (!caseSensitive && RegexOption.IGNORE_CASE !in options) {
             options.add(RegexOption.IGNORE_CASE)
         }
-        return runCatching { Regex(body, options) }
-            .logFailure("WorldBookMatcher") { "parseRegexLiteral failed for pattern=$pattern" }
-            .getOrNull()
-    }
-
-    private companion object {
-        val KeywordDelimiterRegex = Regex("""\s*[,，]\s*""")
+        return buildSafeRegex(literal.body, options)
     }
 }

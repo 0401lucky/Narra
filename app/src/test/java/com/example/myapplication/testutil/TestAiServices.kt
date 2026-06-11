@@ -53,6 +53,7 @@ fun createTestAiServices(
     settings: AppSettings,
     dispatcher: CoroutineDispatcher = Dispatchers.Unconfined,
     apiServiceProvider: ((String, String) -> OpenAiCompatibleApi)? = null,
+    imageApiServiceProvider: ((String, String) -> OpenAiCompatibleApi)? = null,
     streamClientProvider: ((String, String) -> OkHttpClient)? = null,
     imagePayloadResolver: suspend (MessageAttachment) -> String = { error("不应解析图片") },
     filePromptResolver: suspend (MessageAttachment) -> String = { error("不应解析文件") },
@@ -76,6 +77,7 @@ fun createTestAiServices(
             apiKey = apiKey,
         )
     }
+    val resolvedImageApiServiceProvider = imageApiServiceProvider ?: resolvedApiServiceProvider
     val resolvedStreamClientProvider = streamClientProvider ?: { _, _ ->
         OkHttpClient.Builder().build()
     }
@@ -116,6 +118,7 @@ fun createTestAiServices(
             settingsStore = settingsStore,
             apiServiceFactory = apiServiceFactory,
             apiServiceProvider = resolvedApiServiceProvider,
+            imageApiServiceProvider = resolvedImageApiServiceProvider,
             streamClientProvider = resolvedStreamClientProvider,
             imagePayloadResolver = imagePayloadResolver,
             filePromptResolver = filePromptResolver,

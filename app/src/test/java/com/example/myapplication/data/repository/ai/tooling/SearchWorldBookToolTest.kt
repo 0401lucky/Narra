@@ -97,6 +97,40 @@ class SearchWorldBookToolTest {
     }
 
     @Test
+    fun execute_ignoresInvalidLimitType() = runBlocking {
+        val tool = SearchWorldBookTool()
+        val result = tool.execute(
+            invocation = ToolInvocation(
+                id = "call-invalid-limit",
+                name = SearchWorldBookTool.NAME,
+                argumentsJson = """{"query":"白塔城","limit":{"bad":true}}""",
+            ),
+            context = ToolContext(
+                searchRepository = fakeSearchRepository(),
+                worldBookRepository = FakeWorldBookRepository(
+                    initialEntries = listOf(
+                        WorldBookEntry(
+                            id = "entry-1",
+                            title = "白塔城",
+                            content = "白塔城是北境最大的贸易都会。",
+                            enabled = true,
+                            scopeType = WorldBookScopeType.GLOBAL,
+                        ),
+                    ),
+                ),
+                runtimeContext = GatewayToolRuntimeContext(
+                    promptMode = PromptMode.CHAT,
+                    assistant = Assistant(id = "assistant-1"),
+                    conversation = Conversation(id = "c1", createdAt = 1L, updatedAt = 1L),
+                ),
+            ),
+        )
+
+        val payload = JsonParser.parseString(result.payload).asJsonObject
+        assertEquals(1, payload.getAsJsonArray("entries").size())
+    }
+
+    @Test
     fun execute_flagsContentTruncatedWhenOver400Chars() = runBlocking {
         val longContent = "白塔城" + "x".repeat(500)
         val tool = SearchWorldBookTool()

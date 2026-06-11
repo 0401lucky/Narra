@@ -11,6 +11,7 @@ import com.example.myapplication.model.RoleplaySession
 import com.example.myapplication.roleplay.RoleplayConversationSupport
 import com.example.myapplication.roleplay.RoleplayMessageUiMapper
 import com.example.myapplication.roleplay.RoleplayOutputParser
+import com.example.myapplication.system.security.SensitiveTextRedactor
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -245,7 +246,12 @@ internal object RoleplayObservationSupport {
                 }.getOrElse { throwable ->
                     uiState.update { current ->
                         if (current.errorMessage.isNullOrBlank()) {
-                            current.copy(errorMessage = throwable.message ?: "剧情消息渲染失败")
+                            current.copy(
+                                errorMessage = SensitiveTextRedactor.throwableMessageForUi(
+                                    throwable = throwable,
+                                    fallback = "剧情消息渲染失败",
+                                ),
+                            )
                         } else {
                             current
                         }

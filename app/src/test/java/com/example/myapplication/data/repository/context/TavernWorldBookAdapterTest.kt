@@ -1,9 +1,16 @@
 package com.example.myapplication.data.repository.context
 
+import com.example.myapplication.model.CONTEXT_IMPORT_MAX_WORLD_BOOK_CONTENT_CHARS
+import com.example.myapplication.model.CONTEXT_IMPORT_MAX_WORLD_BOOK_ENTRIES
+import com.example.myapplication.model.CONTEXT_IMPORT_MAX_WORLD_BOOK_EXTRAS_CHARS
+import com.example.myapplication.model.CONTEXT_IMPORT_MAX_WORLD_BOOK_SOURCE_NAME_CHARS
+import com.example.myapplication.model.CONTEXT_IMPORT_MAX_WORLD_BOOK_TITLE_CHARS
 import com.example.myapplication.system.json.AppJson
 import com.google.gson.JsonObject
+import com.google.gson.JsonParser
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class TavernWorldBookAdapterTest {
@@ -86,6 +93,44 @@ class TavernWorldBookAdapterTest {
 
         val bundle = adapter.decodeAsBundle(raw)!!
         assertEquals("{}", bundle.worldBookEntries.single().extrasJson)
+    }
+
+    @Test
+    fun decodeAsBundle_limitsEntriesFieldsAndOversizedExtrasSafely() {
+        val longTitle = "t".repeat(CONTEXT_IMPORT_MAX_WORLD_BOOK_TITLE_CHARS + 20)
+        val longContent = "c".repeat(CONTEXT_IMPORT_MAX_WORLD_BOOK_CONTENT_CHARS + 20)
+        val longBookName = "b".repeat(CONTEXT_IMPORT_MAX_WORLD_BOOK_SOURCE_NAME_CHARS + 20)
+        val hugeExtras = "x".repeat(CONTEXT_IMPORT_MAX_WORLD_BOOK_EXTRAS_CHARS + 20)
+        val entries = (0 until CONTEXT_IMPORT_MAX_WORLD_BOOK_ENTRIES + 2)
+            .joinToString(",") { index ->
+                if (index == 0) {
+                    """
+                    {
+                      "uid":"u-$index",
+                      "comment":"$longTitle",
+                      "content":"$longContent",
+                      "key":["关键词"],
+                      "safe":"保留",
+                      "huge":"$hugeExtras"
+                    }
+                    """.trimIndent()
+                } else {
+                    """{"uid":"u-$index","comment":"标题$index","content":"正文$index","key":["k$index"]}"""
+                }
+            }
+        val raw = """{"name":"$longBookName","entries":[$entries]}"""
+
+        val bundle = adapter.decodeAsBundle(raw)!!
+        val first = bundle.worldBookEntries.first()
+        val extras = JsonParser.parseString(first.extrasJson).asJsonObject
+
+        assertEquals(CONTEXT_IMPORT_MAX_WORLD_BOOK_ENTRIES, bundle.worldBookEntries.size)
+        assertEquals(CONTEXT_IMPORT_MAX_WORLD_BOOK_TITLE_CHARS, first.title.length)
+        assertEquals(CONTEXT_IMPORT_MAX_WORLD_BOOK_CONTENT_CHARS, first.content.length)
+        assertEquals(CONTEXT_IMPORT_MAX_WORLD_BOOK_SOURCE_NAME_CHARS, first.sourceBookName.length)
+        assertEquals("保留", extras.get("safe").asString)
+        assertFalse("超限 extras 字段应被丢弃，而不是截断成非法 JSON", extras.has("huge"))
+        assertTrue(first.extrasJson.length <= CONTEXT_IMPORT_MAX_WORLD_BOOK_EXTRAS_CHARS)
     }
 
     @Test

@@ -546,6 +546,63 @@ class WorldBookMatcherTest {
     }
 
     @Test
+    fun match_matchModeRegex_rejectsNestedQuantifierPattern() {
+        val entry = WorldBookEntry(
+            id = "entry-1",
+            title = "危险正则",
+            content = "A",
+            keywords = listOf("(a+)+$"),
+            matchMode = WorldBookMatchMode.REGEX,
+        )
+        val result = matcher.match(
+            entries = listOf(entry),
+            assistant = Assistant(id = "assistant-1", worldBookScanDepth = 0),
+            conversation = Conversation(id = "c1", createdAt = 1L, updatedAt = 1L),
+            userInputText = "aaaaaaaaaaaaaaaa!",
+            recentMessages = emptyList(),
+        )
+        assertTrue(result.entries.isEmpty())
+    }
+
+    @Test
+    fun match_regexLiteral_rejectsDangerousPattern() {
+        val entry = WorldBookEntry(
+            id = "entry-1",
+            title = "危险字面量",
+            content = "A",
+            keywords = listOf("/(a+)+$/"),
+            matchMode = WorldBookMatchMode.CONTAINS,
+        )
+        val result = matcher.match(
+            entries = listOf(entry),
+            assistant = Assistant(id = "assistant-1", worldBookScanDepth = 0),
+            conversation = Conversation(id = "c1", createdAt = 1L, updatedAt = 1L),
+            userInputText = "aaaaaaaaaaaaaaaa!",
+            recentMessages = emptyList(),
+        )
+        assertTrue(result.entries.isEmpty())
+    }
+
+    @Test
+    fun match_matchModeRegex_rejectsOverlongPattern() {
+        val entry = WorldBookEntry(
+            id = "entry-1",
+            title = "超长正则",
+            content = "A",
+            keywords = listOf("a".repeat(240)),
+            matchMode = WorldBookMatchMode.REGEX,
+        )
+        val result = matcher.match(
+            entries = listOf(entry),
+            assistant = Assistant(id = "assistant-1", worldBookScanDepth = 0),
+            conversation = Conversation(id = "c1", createdAt = 1L, updatedAt = 1L),
+            userInputText = "a".repeat(240),
+            recentMessages = emptyList(),
+        )
+        assertTrue(result.entries.isEmpty())
+    }
+
+    @Test
     fun previewHit_withEmptySourceText_returnsNotMatchedWithReason() {
         val preview = matcher.previewHit(
             entry = WorldBookEntry(id = "e1", title = "t", content = "c", keywords = listOf("白塔城")),

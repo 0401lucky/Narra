@@ -195,7 +195,9 @@ internal fun RoleplaySettingsSidebarContent(
         )
 
         RoleplaySettingsPanelPage.GROUP -> LazyColumn(
-            modifier = Modifier.fillMaxSize(),
+            modifier = Modifier
+                .fillMaxSize()
+                .testTag(TAG_ROLEPLAY_SETTINGS_LIST),
             contentPadding = PaddingValues(
                 start = SettingsScreenPadding,
                 top = 8.dp,
@@ -230,7 +232,9 @@ internal fun RoleplaySettingsSidebarContent(
         }
 
         RoleplaySettingsPanelPage.SCENE -> LazyColumn(
-            modifier = Modifier.fillMaxSize(),
+            modifier = Modifier
+                .fillMaxSize()
+                .testTag(TAG_ROLEPLAY_SETTINGS_LIST),
             contentPadding = PaddingValues(
                 start = SettingsScreenPadding,
                 top = 8.dp,
@@ -283,7 +287,9 @@ internal fun RoleplaySettingsSidebarContent(
         }
 
         RoleplaySettingsPanelPage.IDENTITY -> LazyColumn(
-            modifier = Modifier.fillMaxSize(),
+            modifier = Modifier
+                .fillMaxSize()
+                .testTag(TAG_ROLEPLAY_SETTINGS_LIST),
             contentPadding = PaddingValues(
                 start = SettingsScreenPadding,
                 top = 8.dp,
@@ -330,7 +336,9 @@ internal fun RoleplaySettingsSidebarContent(
         }
 
         RoleplaySettingsPanelPage.THEME -> LazyColumn(
-            modifier = Modifier.fillMaxSize(),
+            modifier = Modifier
+                .fillMaxSize()
+                .testTag(TAG_ROLEPLAY_SETTINGS_LIST),
             contentPadding = PaddingValues(
                 start = SettingsScreenPadding,
                 top = 8.dp,
@@ -353,7 +361,9 @@ internal fun RoleplaySettingsSidebarContent(
         }
 
         RoleplaySettingsPanelPage.QUICK -> LazyColumn(
-            modifier = Modifier.fillMaxSize(),
+            modifier = Modifier
+                .fillMaxSize()
+                .testTag(TAG_ROLEPLAY_SETTINGS_LIST),
             contentPadding = PaddingValues(
                 start = SettingsScreenPadding,
                 top = 8.dp,
@@ -391,7 +401,9 @@ internal fun RoleplaySettingsSidebarContent(
         }
 
         RoleplaySettingsPanelPage.REGEX -> LazyColumn(
-            modifier = Modifier.fillMaxSize(),
+            modifier = Modifier
+                .fillMaxSize()
+                .testTag(TAG_ROLEPLAY_SETTINGS_LIST),
             contentPadding = PaddingValues(
                 start = SettingsScreenPadding,
                 top = 8.dp,
@@ -514,7 +526,7 @@ private fun RoleplaySettingsMainPanel(
         }
         item(key = "label_chat") {
             Box(modifier = Modifier.animateItem()) {
-                GroupLabel("聊天设定")
+                GroupLabel("会话设定")
             }
         }
         item(key = "card_chat_scene") {

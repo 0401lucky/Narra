@@ -37,6 +37,25 @@ private val UnsupportedSamplingMessageHints = listOf(
     "not allowed",
 )
 
+private val UnsupportedReasoningMessageHints = listOf(
+    "reasoning_effort",
+    "reasoning effort",
+    "reasoning",
+    "thinking",
+    "enable_thinking",
+    "enable thinking",
+    "thinking_budget",
+    "thinking budget",
+    "unknown parameter",
+    "unknown field",
+    "unrecognized field",
+    "unsupported parameter",
+    "not supported",
+    "not permitted",
+    "not allowed",
+    "invalid argument",
+)
+
 internal data class GatewayRoleplaySamplingConfig(
     val temperature: Float? = null,
     val topP: Float? = null,
@@ -86,6 +105,8 @@ internal object GatewayRequestSupport {
         disabledBaseUrls: Set<String>,
         stream: Boolean = false,
         reasoningEffort: String? = null,
+        enableThinking: Boolean? = null,
+        thinkingBudget: Int? = null,
         thinking: ThinkingConfigDto? = null,
         promptMode: PromptMode = PromptMode.ROLEPLAY,
         samplerOverride: PresetSamplerConfig = PresetSamplerConfig(),
@@ -117,6 +138,8 @@ internal object GatewayRequestSupport {
             maxTokens = sampling?.maxOutputTokens,
             stop = sampling?.stopSequences.orEmpty(),
             reasoningEffort = reasoningEffort,
+            enableThinking = enableThinking,
+            thinkingBudget = thinkingBudget,
             thinking = thinking,
             tools = tools,
             toolChoice = toolChoice,
@@ -188,6 +211,27 @@ internal object GatewayRequestSupport {
         }
     }
 
+    fun shouldRetryWithoutReasoningParameters(
+        request: ChatCompletionRequest,
+        errorDetail: String,
+    ): Boolean {
+        if (
+            request.reasoningEffort == null &&
+            request.enableThinking == null &&
+            request.thinkingBudget == null &&
+            request.thinking == null
+        ) {
+            return false
+        }
+        val normalizedError = errorDetail.trim().lowercase()
+        if (normalizedError.isBlank()) {
+            return false
+        }
+        return UnsupportedReasoningMessageHints.any { hint ->
+            normalizedError.contains(hint)
+        }
+    }
+
     fun withoutRoleplaySampling(request: ChatCompletionRequest): ChatCompletionRequest {
         return request.copy(
             temperature = null,
@@ -199,6 +243,15 @@ internal object GatewayRequestSupport {
             presencePenalty = null,
             maxTokens = null,
             stop = emptyList(),
+        )
+    }
+
+    fun withoutReasoningParameters(request: ChatCompletionRequest): ChatCompletionRequest {
+        return request.copy(
+            reasoningEffort = null,
+            enableThinking = null,
+            thinkingBudget = null,
+            thinking = null,
         )
     }
 }

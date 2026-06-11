@@ -92,7 +92,7 @@ class ChatConversationSupportTest {
     fun buildConversationExcerpt_keepsLatestMessagesWithinLimit() {
         val expected = listOf(
             "用户: 最新进展一",
-            "助手: 最新进展二",
+            "角色: 最新进展二",
         ).joinToString(separator = "\n")
 
         val excerpt = ChatConversationSupport.buildConversationExcerpt(

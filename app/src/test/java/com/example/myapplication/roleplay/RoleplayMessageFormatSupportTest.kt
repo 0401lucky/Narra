@@ -35,6 +35,31 @@ class RoleplayMessageFormatSupportTest {
     }
 
     @Test
+    fun resolveContentOutputFormat_detectsLooseOnlineJsonProtocol() {
+        val format = RoleplayMessageFormatSupport.resolveContentOutputFormat(
+            preferredFormat = RoleplayOutputFormat.UNSPECIFIED,
+            rawContent = """
+                这轮按线上协议回复：
+                [
+                  {action:'voice', content:'我在听。'}
+                ]
+            """.trimIndent(),
+        )
+
+        assertEquals(RoleplayOutputFormat.PROTOCOL, format)
+    }
+
+    @Test
+    fun resolveContentOutputFormat_doesNotTreatJsonPatchAsOnlineProtocol() {
+        val format = RoleplayMessageFormatSupport.resolveContentOutputFormat(
+            preferredFormat = RoleplayOutputFormat.UNSPECIFIED,
+            rawContent = """[{"op":"replace","path":"/状态","value":"CONFUSION"}]""",
+        )
+
+        assertEquals(RoleplayOutputFormat.PLAIN, format)
+    }
+
+    @Test
     fun resolveMessageInteractionMode_prefersStoredModeOverCurrentScene() {
         val message = ChatMessage(
             id = "assistant-1",

@@ -869,6 +869,113 @@ internal object ChatDbMigrations {
         }
     }
 
+    val MIGRATION_42_43 = object : Migration(42, 43) {
+        override fun migrate(db: SupportSQLiteDatabase) {
+            db.execSQL(
+                """
+                CREATE TABLE IF NOT EXISTS roleplay_scripts (
+                    id TEXT NOT NULL PRIMARY KEY,
+                    name TEXT NOT NULL,
+                    scope TEXT NOT NULL,
+                    ownerId TEXT NOT NULL,
+                    source TEXT NOT NULL,
+                    enabled INTEGER NOT NULL,
+                    grantedPermissionsJson TEXT NOT NULL,
+                    createdAt INTEGER NOT NULL,
+                    updatedAt INTEGER NOT NULL
+                )
+                """.trimIndent(),
+            )
+            db.execSQL("CREATE INDEX IF NOT EXISTS index_roleplay_scripts_scope_ownerId ON roleplay_scripts (scope, ownerId)")
+            db.execSQL("CREATE INDEX IF NOT EXISTS index_roleplay_scripts_enabled ON roleplay_scripts (enabled)")
+            db.execSQL("CREATE INDEX IF NOT EXISTS index_roleplay_scripts_updatedAt ON roleplay_scripts (updatedAt)")
+            db.execSQL(
+                """
+                CREATE TABLE IF NOT EXISTS roleplay_script_state (
+                    scriptId TEXT NOT NULL,
+                    stateKey TEXT NOT NULL,
+                    stateValue TEXT NOT NULL,
+                    updatedAt INTEGER NOT NULL,
+                    PRIMARY KEY(scriptId, stateKey),
+                    FOREIGN KEY(scriptId) REFERENCES roleplay_scripts(id) ON UPDATE NO ACTION ON DELETE CASCADE
+                )
+                """.trimIndent(),
+            )
+            db.execSQL("CREATE INDEX IF NOT EXISTS index_roleplay_script_state_scriptId ON roleplay_script_state (scriptId)")
+            db.execSQL("CREATE INDEX IF NOT EXISTS index_roleplay_script_state_updatedAt ON roleplay_script_state (updatedAt)")
+        }
+    }
+
+    val MIGRATION_43_44 = object : Migration(43, 44) {
+        override fun migrate(db: SupportSQLiteDatabase) {
+            db.execSQL(
+                """
+                CREATE TABLE IF NOT EXISTS moment_posts (
+                    id TEXT NOT NULL PRIMARY KEY,
+                    authorType TEXT NOT NULL,
+                    authorId TEXT NOT NULL,
+                    authorName TEXT NOT NULL,
+                    authorAvatarUri TEXT NOT NULL,
+                    authorLabel TEXT NOT NULL,
+                    content TEXT NOT NULL,
+                    likedByNamesJson TEXT NOT NULL,
+                    createdAt INTEGER NOT NULL,
+                    updatedAt INTEGER NOT NULL
+                )
+                """.trimIndent(),
+            )
+            db.execSQL("CREATE INDEX IF NOT EXISTS index_moment_posts_createdAt ON moment_posts (createdAt)")
+            db.execSQL("CREATE INDEX IF NOT EXISTS index_moment_posts_authorType_authorId ON moment_posts (authorType, authorId)")
+            db.execSQL(
+                """
+                CREATE TABLE IF NOT EXISTS moment_comments (
+                    id TEXT NOT NULL PRIMARY KEY,
+                    postId TEXT NOT NULL,
+                    authorType TEXT NOT NULL,
+                    authorId TEXT NOT NULL,
+                    authorName TEXT NOT NULL,
+                    text TEXT NOT NULL,
+                    createdAt INTEGER NOT NULL,
+                    FOREIGN KEY(postId) REFERENCES moment_posts(id) ON UPDATE NO ACTION ON DELETE CASCADE
+                )
+                """.trimIndent(),
+            )
+            db.execSQL("CREATE INDEX IF NOT EXISTS index_moment_comments_postId ON moment_comments (postId)")
+            db.execSQL("CREATE INDEX IF NOT EXISTS index_moment_comments_createdAt ON moment_comments (createdAt)")
+            db.execSQL("CREATE INDEX IF NOT EXISTS index_moment_comments_authorType_authorId ON moment_comments (authorType, authorId)")
+            db.execSQL(
+                """
+                CREATE TABLE IF NOT EXISTS moment_media (
+                    id TEXT NOT NULL PRIMARY KEY,
+                    postId TEXT NOT NULL,
+                    prompt TEXT NOT NULL,
+                    imageUri TEXT NOT NULL,
+                    mimeType TEXT NOT NULL,
+                    fileName TEXT NOT NULL,
+                    status TEXT NOT NULL,
+                    errorMessage TEXT NOT NULL,
+                    createdAt INTEGER NOT NULL,
+                    updatedAt INTEGER NOT NULL,
+                    FOREIGN KEY(postId) REFERENCES moment_posts(id) ON UPDATE NO ACTION ON DELETE CASCADE
+                )
+                """.trimIndent(),
+            )
+            db.execSQL("CREATE UNIQUE INDEX IF NOT EXISTS index_moment_media_postId ON moment_media (postId)")
+            db.execSQL("CREATE INDEX IF NOT EXISTS index_moment_media_status ON moment_media (status)")
+            db.execSQL("CREATE INDEX IF NOT EXISTS index_moment_media_updatedAt ON moment_media (updatedAt)")
+        }
+    }
+
+    val MIGRATION_44_45 = object : Migration(44, 45) {
+        override fun migrate(db: SupportSQLiteDatabase) {
+            if (!hasColumn(db, "moment_comments", "authorAvatarUri")) {
+                db.execSQL(
+                    "ALTER TABLE moment_comments ADD COLUMN authorAvatarUri TEXT NOT NULL DEFAULT ''",
+                )
+            }
+        }
+    }
+
     /** 版本连续性由 `ChatDatabaseMigrationRegistryTest` 保证：`size == CURRENT_VERSION - 1`。 */
     val ALL: Array<Migration> = arrayOf(
         MIGRATION_1_2,
@@ -912,6 +1019,9 @@ internal object ChatDbMigrations {
         MIGRATION_39_40,
         MIGRATION_40_41,
         MIGRATION_41_42,
+        MIGRATION_42_43,
+        MIGRATION_43_44,
+        MIGRATION_44_45,
     )
 
     /** 幂等列检查。子迁移在 `ALTER TABLE ADD COLUMN` 之前先探测，允许中间版本重复升级。 */

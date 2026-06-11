@@ -47,7 +47,7 @@ class MailboxPromptServiceTest {
                 assistant = null,
                 userName = "我",
                 characterName = "林屿",
-                assembledContextText = "【最近聊天】\n我：旧车站那晚的雨还在。",
+                assembledContextText = "【近期剧情】\n我：旧车站那晚的雨还在。",
             ),
         )
 

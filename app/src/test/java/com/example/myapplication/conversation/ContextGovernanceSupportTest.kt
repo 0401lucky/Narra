@@ -220,7 +220,7 @@ class ContextGovernanceSupportTest {
             contextSections = requestMessages.map { message ->
                 ContextLogSection(
                     sourceType = ContextLogSourceType.CHAT_HISTORY,
-                    title = "聊天历史",
+                    title = "近期记录",
                     content = message.content,
                 )
             },

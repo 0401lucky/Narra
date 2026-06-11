@@ -1,4 +1,4 @@
-package com.example.myapplication.ui.screen.chat
+package com.example.myapplication.ui.component.modelpicker
 
 import com.example.myapplication.model.ModelInfo
 import com.example.myapplication.model.ProviderSettings
@@ -6,7 +6,7 @@ import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
-class ChatModelSheetsSearchTest {
+class ModelPickerSearchTest {
     @Test
     fun buildProviderSearchKeywords_containsProviderNameIdBaseUrlAndSelectedModel() {
         val provider = ProviderSettings(

@@ -391,6 +391,14 @@ private fun ImportPreviewCard(
                 enabled = false,
                 showArrow = false,
             )
+            if (preview.noticeMessages.isNotEmpty()) {
+                SettingsHintCard(
+                    title = "安全上限提示",
+                    body = preview.noticeMessages.joinToString("\n") { "• $it" },
+                    containerColor = palette.accentSoft,
+                    contentColor = palette.accent,
+                )
+            }
             if (preview.assistantCount > 0) {
                 SettingsListRow(
                     title = "角色卡",

@@ -9,7 +9,7 @@ enum class WorldBookScopeType(
 ) {
     GLOBAL("global", "全局"),
     ATTACHABLE("attachable", "可挂载"),
-    ASSISTANT("assistant", "助手"),
+    ASSISTANT("assistant", "角色"),
     CONVERSATION("conversation", "会话");
 
     companion object {

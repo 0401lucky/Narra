@@ -50,8 +50,8 @@ fun ChatSearchPickerSheet(
 ) {
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     val searchStatusMessage = when {
-        currentModel.isBlank() -> "请先选择聊天模型"
-        currentModelIsImageGeneration -> "当前是生图模型，搜索工具不可用"
+        currentModel.isBlank() -> "请先选择主会话模型"
+        currentModelIsImageGeneration -> "当前是生图模型，联网检索不可用"
         !currentModelSupportsTools -> "当前模型不支持工具调用，无法使用联网搜索"
         !searchAvailable -> "当前搜索源尚未配置完成，请先完成配置"
         else -> "搜索可用，会在模型调用 search_web 时接入当前默认搜索源"

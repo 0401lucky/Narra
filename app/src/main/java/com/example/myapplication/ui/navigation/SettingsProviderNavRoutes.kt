@@ -1,28 +1,25 @@
 package com.example.myapplication.ui.navigation
 
 import androidx.compose.runtime.getValue
-import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavGraphBuilder
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.composable
 import com.example.myapplication.model.ProviderFunction
-import com.example.myapplication.system.translation.ScreenTranslatorService
 import com.example.myapplication.ui.screen.settings.AppUpdateScreen
 import com.example.myapplication.ui.screen.settings.ProviderDetailScreen
 import com.example.myapplication.ui.screen.settings.ProviderSettingsScreen
-import com.example.myapplication.ui.screen.settings.ScreenTranslationSettingsScreen
-import com.example.myapplication.ui.screen.settings.SearchToolSettingsScreen
 import com.example.myapplication.ui.screen.settings.SettingsModelScreen
 import com.example.myapplication.viewmodel.AppUpdateViewModel
 import com.example.myapplication.viewmodel.SettingsViewModel
-import com.example.myapplication.viewmodel.selectSearchSource
 import com.example.myapplication.viewmodel.updateProviderChatSuggestionModel
 import com.example.myapplication.viewmodel.updateProviderChatSuggestionModelMode
 import com.example.myapplication.viewmodel.updateProviderGiftImageModel
 import com.example.myapplication.viewmodel.updateProviderGiftImageModelMode
 import com.example.myapplication.viewmodel.updateProviderMemoryModel
 import com.example.myapplication.viewmodel.updateProviderMemoryModelMode
+import com.example.myapplication.viewmodel.updateProviderMomentsModel
+import com.example.myapplication.viewmodel.updateProviderMomentsModelMode
 import com.example.myapplication.viewmodel.updateProviderPhoneSnapshotModel
 import com.example.myapplication.viewmodel.updateProviderPhoneSnapshotModelMode
 import com.example.myapplication.viewmodel.updateProviderSearchModel
@@ -31,19 +28,8 @@ import com.example.myapplication.viewmodel.updateProviderTitleSummaryModel
 import com.example.myapplication.viewmodel.updateProviderTitleSummaryModelMode
 import com.example.myapplication.viewmodel.updateProviderTranslationModel
 import com.example.myapplication.viewmodel.updateProviderTranslationModelMode
-import com.example.myapplication.viewmodel.updateScreenTranslationOverlayEnabled
-import com.example.myapplication.viewmodel.updateScreenTranslationSelectedTextEnabled
-import com.example.myapplication.viewmodel.updateScreenTranslationServiceEnabled
-import com.example.myapplication.viewmodel.updateScreenTranslationShowSourceText
-import com.example.myapplication.viewmodel.updateScreenTranslationTargetLanguage
-import com.example.myapplication.viewmodel.updateScreenTranslationVendorGuideDismissed
-import com.example.myapplication.viewmodel.updateSearchResultCount
-import com.example.myapplication.viewmodel.updateSearchSourceApiKey
-import com.example.myapplication.viewmodel.updateSearchSourceEnabled
-import com.example.myapplication.viewmodel.updateSearchSourceEngineId
-import com.example.myapplication.viewmodel.updateSearchSourceProviderId
 
-// 提供商、模型、搜索工具、屏幕翻译、应用更新
+// 提供商、模型和应用更新
 
 internal fun NavGraphBuilder.registerSettingsProviderRoutes(
     navController: NavHostController,
@@ -59,37 +45,6 @@ internal fun NavGraphBuilder.registerSettingsProviderRoutes(
             onStartDownload = appUpdateViewModel::startUpdateDownload,
             onInstallUpdate = appUpdateViewModel::installDownloadedUpdate,
             onConsumeMessage = appUpdateViewModel::consumeMessage,
-        )
-    }
-
-    composable(AppRoutes.SETTINGS_SCREEN_TRANSLATION) {
-        val context = LocalContext.current
-        val screenTranslationState by settingsViewModel.uiState.collectAsStateWithLifecycle()
-        ScreenTranslationSettingsScreen(
-            uiState = screenTranslationState,
-            onNavigateBack = {
-                settingsViewModel.saveSettings {}
-                navController.popBackStack()
-            },
-            onUpdateServiceEnabled = settingsViewModel::updateScreenTranslationServiceEnabled,
-            onUpdateOverlayEnabled = settingsViewModel::updateScreenTranslationOverlayEnabled,
-            onUpdateSelectedTextEnabled = settingsViewModel::updateScreenTranslationSelectedTextEnabled,
-            onUpdateShowSourceText = settingsViewModel::updateScreenTranslationShowSourceText,
-            onUpdateTargetLanguage = settingsViewModel::updateScreenTranslationTargetLanguage,
-            onUpdateVendorGuideDismissed = settingsViewModel::updateScreenTranslationVendorGuideDismissed,
-            onSaveChanges = { settingsViewModel.saveSettings {} },
-            onSaveAndStartService = {
-                settingsViewModel.updateScreenTranslationServiceEnabled(true)
-                settingsViewModel.saveSettings {
-                    ScreenTranslatorService.startService(context)
-                }
-            },
-            onSaveAndStopService = {
-                settingsViewModel.updateScreenTranslationServiceEnabled(false)
-                settingsViewModel.saveSettings {
-                    ScreenTranslatorService.stopService(context)
-                }
-            },
         )
     }
 
@@ -148,23 +103,6 @@ internal fun NavGraphBuilder.registerSettingsProviderRoutes(
         )
     }
 
-    composable(AppRoutes.SETTINGS_SEARCH_TOOLS) {
-        val providerSettingsState by settingsViewModel.uiState.collectAsStateWithLifecycle()
-        SearchToolSettingsScreen(
-            uiState = providerSettingsState,
-            onSelectSource = settingsViewModel::selectSearchSource,
-            onUpdateResultCount = settingsViewModel::updateSearchResultCount,
-            onUpdateSourceEnabled = settingsViewModel::updateSearchSourceEnabled,
-            onUpdateSourceApiKey = settingsViewModel::updateSearchSourceApiKey,
-            onUpdateSourceEngineId = settingsViewModel::updateSearchSourceEngineId,
-            onUpdateSourceProviderId = settingsViewModel::updateSearchSourceProviderId,
-            onNavigateBack = {
-                settingsViewModel.saveSettings {}
-                navController.popBackStack()
-            },
-        )
-    }
-
     composable(AppRoutes.SETTINGS_MODEL) {
         val providerSettingsState by settingsViewModel.uiState.collectAsStateWithLifecycle()
         SettingsModelScreen(
@@ -179,6 +117,7 @@ internal fun NavGraphBuilder.registerSettingsProviderRoutes(
                     ProviderFunction.MEMORY -> settingsViewModel.updateProviderMemoryModel(providerId, model)
                     ProviderFunction.TRANSLATION -> settingsViewModel.updateProviderTranslationModel(providerId, model)
                     ProviderFunction.PHONE_SNAPSHOT -> settingsViewModel.updateProviderPhoneSnapshotModel(providerId, model)
+                    ProviderFunction.MOMENTS -> settingsViewModel.updateProviderMomentsModel(providerId, model)
                     ProviderFunction.SEARCH -> settingsViewModel.updateProviderSearchModel(providerId, model)
                     ProviderFunction.GIFT_IMAGE -> settingsViewModel.updateProviderGiftImageModel(providerId, model)
                     else -> {}
@@ -191,6 +130,7 @@ internal fun NavGraphBuilder.registerSettingsProviderRoutes(
                     ProviderFunction.MEMORY -> settingsViewModel.updateProviderMemoryModelMode(providerId, mode)
                     ProviderFunction.TRANSLATION -> settingsViewModel.updateProviderTranslationModelMode(providerId, mode)
                     ProviderFunction.PHONE_SNAPSHOT -> settingsViewModel.updateProviderPhoneSnapshotModelMode(providerId, mode)
+                    ProviderFunction.MOMENTS -> settingsViewModel.updateProviderMomentsModelMode(providerId, mode)
                     ProviderFunction.SEARCH -> settingsViewModel.updateProviderSearchModelMode(providerId, mode)
                     ProviderFunction.GIFT_IMAGE -> settingsViewModel.updateProviderGiftImageModelMode(providerId, mode)
                     else -> {}

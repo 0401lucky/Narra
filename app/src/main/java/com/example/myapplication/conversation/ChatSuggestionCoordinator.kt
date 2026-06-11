@@ -25,7 +25,7 @@ class ChatSuggestionCoordinator(
         }
         val lastMessages = messages.takeLast(4)
         val summary = lastMessages.joinToString("\n") { msg ->
-            val role = if (msg.role == MessageRole.USER) "用户" else "助手"
+            val role = if (msg.role == MessageRole.USER) "用户" else "角色"
             "$role: ${msg.content.take(200)}"
         }
         val suggestions = aiPromptExtrasService.generateChatSuggestions(

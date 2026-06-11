@@ -63,6 +63,10 @@ internal class ChatImageGallerySaver(
         }.getOrElse { throwable ->
             return SaveImageResult.Failure(throwable.toUserMessage())
         }
+        runCatching { requireImageWithinLimit(loadedImage.bytes.size) }
+            .getOrElse { throwable ->
+                return SaveImageResult.Failure(throwable.toUserMessage())
+            }
         return galleryWriter.write(loadedImage)
     }
 
@@ -115,8 +119,10 @@ class AndroidChatImageSourceReader(
         if (!file.exists() || !file.isFile) {
             throw IllegalArgumentException("图片文件不存在或无法读取")
         }
+        requireImageLengthWithinLimit(file.length())
         val bytes = runCatching { file.readBytes() }
             .getOrElse { throw IllegalArgumentException("图片文件不存在或无法读取") }
+        requireImageWithinLimit(bytes.size)
         LoadedChatImage(
             bytes = bytes,
             mimeType = resolveImageMimeType(
@@ -131,7 +137,11 @@ class AndroidChatImageSourceReader(
         val contentUri = uri.toUri()
         val resolver = context.contentResolver
         val mimeType = runCatching { resolver.getType(contentUri) }.getOrNull().orEmpty()
-        val bytes = resolver.openInputStream(contentUri)?.use { input -> input.readBytes() }
+        val declaredSize = querySize(contentUri)
+        if (declaredSize > 0) {
+            requireImageLengthWithinLimit(declaredSize)
+        }
+        val bytes = resolver.openInputStream(contentUri)?.use(::readBytesWithImageLimit)
             ?: throw IllegalArgumentException("图片内容无法读取")
         LoadedChatImage(
             bytes = bytes,
@@ -150,7 +160,11 @@ class AndroidChatImageSourceReader(
                     throw IllegalStateException("HTTP ${response.code}")
                 }
                 val responseBody = response.body ?: throw IllegalStateException("响应体为空")
-                val bytes = responseBody.bytes()
+                val contentLength = responseBody.contentLength()
+                if (contentLength > 0) {
+                    requireImageLengthWithinLimit(contentLength)
+                }
+                val bytes = responseBody.byteStream().use(::readBytesWithImageLimit)
                 LoadedChatImage(
                     bytes = bytes,
                     mimeType = resolveImageMimeType(
@@ -177,6 +191,19 @@ class AndroidChatImageSourceReader(
                 }
         }.getOrNull()
     }
+
+    private fun querySize(uri: android.net.Uri): Long {
+        val resolver = context.contentResolver
+        return runCatching {
+            resolver.query(uri, arrayOf(android.provider.OpenableColumns.SIZE), null, null, null)
+                ?.use { cursor ->
+                    if (!cursor.moveToFirst()) {
+                        return@use 0L
+                    }
+                    cursor.getLong(cursor.getColumnIndexOrThrow(android.provider.OpenableColumns.SIZE))
+                } ?: 0L
+        }.getOrDefault(0L)
+    }
 }
 
 class AndroidChatImageGalleryWriter(
@@ -185,6 +212,7 @@ class AndroidChatImageGalleryWriter(
 ) : ChatImageGalleryWriter {
     override suspend fun write(image: LoadedChatImage): SaveImageResult = withContext(dispatcher) {
         runCatching {
+            requireImageWithinLimit(image.bytes.size)
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
                 writeWithMediaStore(image)
             } else {
@@ -271,11 +299,13 @@ private fun decodeDataImage(
         throw IllegalArgumentException("图片数据无效，无法保存")
     }
     val mimeType = header.substringAfter("data:", "").substringBefore(';').trim()
+    requireImageWithinLimit(estimateDecodedBase64Size(source.substring(commaIndex + 1)))
     val bytes = runCatching {
         Base64.decode(source.substring(commaIndex + 1))
     }.getOrElse {
         throw IllegalArgumentException("图片数据无效，无法保存")
     }
+    requireImageWithinLimit(bytes.size)
     return LoadedChatImage(
         bytes = bytes,
         mimeType = resolveImageMimeType(mimeType, bytes),

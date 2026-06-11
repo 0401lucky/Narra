@@ -21,7 +21,7 @@ enum class ContextLogSourceType(
     val label: String,
 ) {
     ROLE_CARD("角色卡"),
-    CHAT_HISTORY("聊天历史"),
+    CHAT_HISTORY("近期记录"),
     ROLE_EXTRAS("角色补充"),
     WORLD_BOOK("世界书"),
     LONG_MEMORY("长记忆"),

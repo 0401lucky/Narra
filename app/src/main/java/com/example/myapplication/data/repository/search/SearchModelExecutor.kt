@@ -52,7 +52,7 @@ class SearchModelExecutor(
         when (provider.resolvedApiProtocol()) {
             ProviderApiProtocol.OPENAI_COMPATIBLE -> {
                 require(provider.supportsLlmSearchSource()) {
-                    "LLM 搜索要求当前提供商使用 Responses API"
+                    "LLM 搜索要求当前提供商使用非 Google 的 Responses API"
                 }
                 searchWithResponses(
                     provider = provider,
@@ -64,7 +64,7 @@ class SearchModelExecutor(
 
             ProviderApiProtocol.ANTHROPIC -> {
                 require(provider.supportsLlmSearchSource()) {
-                    "LLM 搜索要求当前提供商使用 Anthropic 搜索工具"
+                    "LLM 搜索要求当前提供商使用 Anthropic 联网检索能力"
                 }
                 searchWithAnthropic(
                     provider = provider,

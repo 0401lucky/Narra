@@ -86,7 +86,7 @@ fun AssistantBasicScreen(
     Scaffold(
         topBar = {
             SettingsTopBar(
-                title = if (isNew) "新建助手" else "基础设定",
+                title = if (isNew) "新建角色" else "基础设定",
                 onNavigateBack = onNavigateBack,
             )
         },
@@ -324,7 +324,7 @@ fun AssistantBasicScreen(
                         )
                         if (!isNew && assistant != null) {
                             AnimatedSettingButton(
-                                text = "删除助手",
+                                text = "删除角色",
                                 onClick = {
                                     showDeleteDialog = true
                                 },
@@ -340,7 +340,7 @@ fun AssistantBasicScreen(
 
     if (showDeleteDialog && assistant != null) {
         AssistantDeleteConfirmDialog(
-            assistantName = assistant.name.ifBlank { "未命名助手" },
+            assistantName = assistant.name.ifBlank { "未命名角色" },
             onDismissRequest = { showDeleteDialog = false },
             onConfirm = {
                 showDeleteDialog = false

@@ -25,6 +25,8 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.Assignment
+import androidx.compose.material.icons.filled.ArrowDownward
+import androidx.compose.material.icons.filled.ArrowUpward
 import androidx.compose.material.icons.filled.AutoStories
 import androidx.compose.material.icons.filled.CardGiftcard
 import androidx.compose.material.icons.filled.Close
@@ -102,6 +104,8 @@ private val OnlineGiftAccent = Color(0xFFE77F93)
 private val OnlineTaskAccent = Color(0xFFD78B31)
 private val OnlinePunishAccent = Color(0xFFD55C73)
 private val OnlineVideoAccent = Color(0xFF6C84FF)
+private val OnlinePhoneJumpButtonSize = 42.dp
+private const val OnlinePhoneJumpButtonMessageThreshold = 4
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -345,6 +349,24 @@ internal fun RoleplayOnlinePhoneContent(
             }
         }
     }
+    val isAtTop by remember(listState, visibleMessages.size) {
+        derivedStateOf {
+            visibleMessages.isEmpty() ||
+                (listState.firstVisibleItemIndex == 0 && listState.firstVisibleItemScrollOffset <= 8)
+        }
+    }
+    val isAtBottomExact by remember(listState, visibleMessages.size) {
+        derivedStateOf {
+            val layoutInfo = listState.layoutInfo
+            val lastVisibleItem = layoutInfo.visibleItemsInfo.lastOrNull()
+            visibleMessages.isEmpty() || (
+                lastVisibleItem != null &&
+                    lastVisibleItem.index >= layoutInfo.totalItemsCount - 1 &&
+                    (lastVisibleItem.offset + lastVisibleItem.size) <= layoutInfo.viewportEndOffset + 8
+                )
+        }
+    }
+    val showJumpButtons = visibleMessages.size > OnlinePhoneJumpButtonMessageThreshold
 
     LaunchedEffect(
         visibleMessages.firstOrNull()?.sourceMessageId,
@@ -428,7 +450,7 @@ internal fun RoleplayOnlinePhoneContent(
                                 text = buildString {
                                     append(if (scenario.isGroupChat) "${groupParticipants.size} 位成员" else "线上模式")
                                     if (scenario.isGroupChat) append(" · ${scenario.groupReplyMode.displayName}")
-                                    if (contextStatus.isContinuingSession) append(" · 继续聊天")
+                                    if (contextStatus.isContinuingSession) append(" · 继续会话")
                                     if (isSending) append(" · 正在输入")
                                     contextStatus.summaryCoveredMessageCount.takeIf { it > 0 }?.let { count ->
                                         append(" · 摘要 $count")
@@ -471,7 +493,7 @@ internal fun RoleplayOnlinePhoneContent(
                             )
                             DropdownMenu(expanded = showMenu, onDismissRequest = { showMenu = false }) {
                                 DropdownMenuItem(
-                                    text = { Text("截图聊天") },
+                                    text = { Text("截取会话") },
                                     onClick = {
                                         showMenu = false
                                         onScreenshotChat()
@@ -575,6 +597,54 @@ internal fun RoleplayOnlinePhoneContent(
                         noBackgroundSkin = settings.roleplayNoBackgroundSkin,
                     )
                     }
+                }
+            }
+
+            if (showJumpButtons && !isAtTop) {
+                NarraIconButton(
+                    onClick = {
+                        scope.launch {
+                            listState.animateScrollToItem(0)
+                        }
+                    },
+                    modifier = Modifier
+                        .align(Alignment.TopEnd)
+                        .padding(top = 8.dp, end = 10.dp)
+                        .size(OnlinePhoneJumpButtonSize),
+                    colors = IconButtonDefaults.iconButtonColors(
+                        containerColor = colors.panelBackgroundStrong.copy(alpha = 0.92f),
+                        contentColor = colors.textPrimary,
+                    ),
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.ArrowUpward,
+                        contentDescription = "跳到顶部",
+                        modifier = Modifier.size(18.dp),
+                    )
+                }
+            }
+
+            if (showJumpButtons && !isAtBottomExact) {
+                NarraIconButton(
+                    onClick = {
+                        scope.launch {
+                            listState.animateScrollToItem(visibleMessages.lastIndex)
+                        }
+                    },
+                    modifier = Modifier
+                        .align(Alignment.BottomEnd)
+                        .padding(end = 10.dp, bottom = 12.dp)
+                        .size(OnlinePhoneJumpButtonSize),
+                    colors = IconButtonDefaults.iconButtonColors(
+                        containerColor = colors.characterAccent.copy(alpha = 0.88f),
+                        contentColor = Color.Black.copy(alpha = 0.88f),
+                    ),
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.ArrowDownward,
+                        contentDescription = "跳到底部",
+                        modifier = Modifier.size(20.dp),
+                    )
                 }
             }
 

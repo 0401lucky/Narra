@@ -143,6 +143,41 @@ class ChatImageGallerySaverTest {
             result,
         )
     }
+
+    @Test
+    fun save_rejectsLoadedImageAboveLimitWithoutWriting() = runBlocking {
+        val writer = FakeChatImageGalleryWriter()
+        val saver = ChatImageGallerySaver(
+            sourceReader = FakeChatImageSourceReader(
+                remoteResult = LoadedChatImage(
+                    bytes = ByteArray(MAX_IMAGE_BYTES + 1),
+                    mimeType = "image/png",
+                    fileName = "huge.png",
+                ),
+            ),
+            galleryWriter = writer,
+        )
+
+        val result = saver.save("https://cdn.example.com/huge.png")
+
+        assertEquals(SaveImageResult.Failure("图片过大，最大支持 20 MB"), result)
+        assertEquals(null, writer.lastSavedImage)
+    }
+
+    @Test
+    fun save_rejectsDataImageAboveLimit() = runBlocking {
+        val writer = FakeChatImageGalleryWriter()
+        val saver = ChatImageGallerySaver(
+            sourceReader = FakeChatImageSourceReader(),
+            galleryWriter = writer,
+        )
+        val oversizedPayload = "A".repeat(((MAX_IMAGE_BYTES + 1) / 3 + 1) * 4)
+
+        val result = saver.save("data:image/png;base64,$oversizedPayload")
+
+        assertEquals(SaveImageResult.Failure("图片过大，最大支持 20 MB"), result)
+        assertEquals(null, writer.lastSavedImage)
+    }
 }
 
 private class FakeChatImageSourceReader(

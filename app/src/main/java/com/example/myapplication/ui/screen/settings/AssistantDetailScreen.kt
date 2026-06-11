@@ -23,14 +23,17 @@ import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.automirrored.filled.MenuBook
 import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material.icons.filled.Face
+import androidx.compose.material.icons.filled.Forum
 import androidx.compose.material.icons.filled.Psychology
 import androidx.compose.material.icons.filled.Tune
+import androidx.compose.material.icons.outlined.Image
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
+import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -46,6 +49,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.example.myapplication.model.Assistant
+import com.example.myapplication.model.MomentAutoPostFrequency
+import com.example.myapplication.model.MomentCommentStyle
 import com.example.myapplication.model.Preset
 import com.example.myapplication.ui.component.AssistantAvatar
 
@@ -61,6 +66,7 @@ fun AssistantDetailScreen(
     onOpenPrompt: () -> Unit,
     onOpenExtensions: () -> Unit,
     onOpenMemory: () -> Unit,
+    onUpdateAssistant: (Assistant) -> Unit,
     onSelectPreset: (String) -> Unit,
     onOpenPresetManager: () -> Unit,
     onNavigateBack: () -> Unit,
@@ -74,7 +80,7 @@ fun AssistantDetailScreen(
     Scaffold(
         topBar = {
             SettingsTopBar(
-                title = assistant.name.ifBlank { "助手" },
+                title = assistant.name.ifBlank { "角色" },
                 onNavigateBack = onNavigateBack,
             )
         },
@@ -134,6 +140,65 @@ fun AssistantDetailScreen(
                         title = "记忆",
                         badge = if (assistant.memoryEnabled) "已启用" else "未启用",
                         onClick = onOpenMemory,
+                    )
+                }
+            }
+
+            item {
+                SettingsGroup {
+                    AssistantMomentSwitchRow(
+                        icon = { EntryGlyph(icon = { Icon(Icons.Default.Forum, null) }) },
+                        title = "主动评论朋友圈",
+                        supporting = "用户发朋友圈或评论后，角色会按人设参与互动",
+                        checked = assistant.momentAutoCommentEnabled,
+                        onCheckedChange = {
+                            onUpdateAssistant(assistant.copy(momentAutoCommentEnabled = it))
+                        },
+                    )
+                    SettingsGroupDivider()
+                    AssistantMomentSwitchRow(
+                        icon = { EntryGlyph(icon = { Icon(Icons.Default.AutoAwesome, null) }) },
+                        title = "主动发朋友圈",
+                        supporting = "后台定时生成角色自己的生活动态",
+                        checked = assistant.momentAutoPostEnabled,
+                        onCheckedChange = {
+                            onUpdateAssistant(assistant.copy(momentAutoPostEnabled = it))
+                        },
+                    )
+                    SettingsGroupDivider()
+                    AssistantMomentSwitchRow(
+                        icon = { EntryGlyph(icon = { Icon(Icons.Outlined.Image, null) }) },
+                        title = "主动朋友圈配图",
+                        supporting = "开启后角色发动态时可调用默认生图模型",
+                        checked = assistant.momentAutoImageEnabled,
+                        enabled = assistant.momentAutoPostEnabled,
+                        onCheckedChange = {
+                            onUpdateAssistant(assistant.copy(momentAutoImageEnabled = it))
+                        },
+                    )
+                    SettingsGroupDivider()
+                    AssistantMomentCycleRow(
+                        title = "发帖频率",
+                        value = assistant.momentAutoPostFrequency.label,
+                        onClick = {
+                            onUpdateAssistant(
+                                assistant.copy(
+                                    momentAutoPostFrequency = assistant.momentAutoPostFrequency.next(),
+                                ),
+                            )
+                        },
+                    )
+                    SettingsGroupDivider()
+                    AssistantMomentCycleRow(
+                        title = "评论风格",
+                        value = assistant.momentCommentStyle.label,
+                        onClick = {
+                            onUpdateAssistant(
+                                assistant.copy(
+                                    momentCommentStyle = assistant.momentCommentStyle.next(),
+                                ),
+                            )
+                        },
                     )
                 }
             }
@@ -257,7 +322,7 @@ private fun AssistantHeroPanel(
                 verticalArrangement = Arrangement.spacedBy(6.dp),
             ) {
                 Text(
-                    text = assistant.name.ifBlank { "未命名助手" },
+                    text = assistant.name.ifBlank { "未命名角色" },
                     style = MaterialTheme.typography.headlineSmall,
                     fontWeight = FontWeight.Bold,
                     color = palette.title,
@@ -374,4 +439,86 @@ private fun EntryGlyph(
             icon()
         }
     }
+}
+
+@Composable
+private fun AssistantMomentSwitchRow(
+    icon: @Composable () -> Unit,
+    title: String,
+    supporting: String,
+    checked: Boolean,
+    enabled: Boolean = true,
+    onCheckedChange: (Boolean) -> Unit,
+) {
+    val palette = rememberSettingsPalette()
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(enabled = enabled) { onCheckedChange(!checked) }
+            .padding(horizontal = 18.dp, vertical = 16.dp),
+        horizontalArrangement = Arrangement.spacedBy(14.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        icon()
+        Column(
+            modifier = Modifier.weight(1f),
+            verticalArrangement = Arrangement.spacedBy(5.dp),
+        ) {
+            Text(
+                text = title,
+                style = MaterialTheme.typography.titleSmall,
+                fontWeight = FontWeight.Bold,
+                color = if (enabled) palette.title else palette.body,
+            )
+            Text(
+                text = supporting,
+                style = MaterialTheme.typography.bodySmall,
+                color = palette.body,
+            )
+        }
+        Switch(
+            checked = checked,
+            onCheckedChange = onCheckedChange,
+            enabled = enabled,
+        )
+    }
+}
+
+@Composable
+private fun AssistantMomentCycleRow(
+    title: String,
+    value: String,
+    onClick: () -> Unit,
+) {
+    val palette = rememberSettingsPalette()
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onClick)
+            .padding(horizontal = 18.dp, vertical = 16.dp),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Text(
+            text = title,
+            style = MaterialTheme.typography.titleSmall,
+            fontWeight = FontWeight.Bold,
+            color = palette.title,
+        )
+        SettingsStatusPill(
+            text = value,
+            containerColor = palette.accentSoft,
+            contentColor = palette.accent,
+        )
+    }
+}
+
+private fun MomentAutoPostFrequency.next(): MomentAutoPostFrequency {
+    val values = MomentAutoPostFrequency.entries
+    return values[(ordinal + 1) % values.size]
+}
+
+private fun MomentCommentStyle.next(): MomentCommentStyle {
+    val values = MomentCommentStyle.entries
+    return values[(ordinal + 1) % values.size]
 }

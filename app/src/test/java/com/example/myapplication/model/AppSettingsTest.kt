@@ -61,6 +61,7 @@ class AppSettingsTest {
             titleSummaryModel = "title-model",
             chatSuggestionModel = "suggestion-model",
             phoneSnapshotModel = "phone-model",
+            momentsModel = "moments-model",
             searchModel = "search-model",
         )
 
@@ -68,6 +69,7 @@ class AppSettingsTest {
         assertEquals("title-model", provider.resolveFunctionModel(ProviderFunction.TITLE_SUMMARY))
         assertEquals("suggestion-model", provider.resolveFunctionModel(ProviderFunction.CHAT_SUGGESTION))
         assertEquals("phone-model", provider.resolveFunctionModel(ProviderFunction.PHONE_SNAPSHOT))
+        assertEquals("moments-model", provider.resolveFunctionModel(ProviderFunction.MOMENTS))
         assertEquals("search-model", provider.resolveFunctionModel(ProviderFunction.SEARCH))
     }
 
@@ -81,6 +83,7 @@ class AppSettingsTest {
         assertEquals("chat-model", provider.resolveFunctionModel(ProviderFunction.TITLE_SUMMARY))
         assertEquals("chat-model", provider.resolveFunctionModel(ProviderFunction.CHAT_SUGGESTION))
         assertEquals("chat-model", provider.resolveFunctionModel(ProviderFunction.PHONE_SNAPSHOT))
+        assertEquals("chat-model", provider.resolveFunctionModel(ProviderFunction.MOMENTS))
         assertEquals("chat-model", provider.resolveFunctionModel(ProviderFunction.SEARCH))
     }
 
@@ -174,6 +177,38 @@ class AppSettingsTest {
             selectedModel = "grok-4-fast",
             searchModel = "grok-4.20-reasoning",
             openAiTextApiMode = OpenAiTextApiMode.CHAT_COMPLETIONS,
+        )
+        val settings = AppSettings(
+            providers = listOf(provider),
+            selectedProviderId = provider.id,
+            searchSettings = SearchSettings(
+                sources = listOf(
+                    SearchSourceConfig(
+                        id = SearchSourceIds.LLM_SEARCH,
+                        type = SearchSourceType.LLM_SEARCH,
+                        name = "LLM 搜索",
+                        enabled = true,
+                        providerId = provider.id,
+                    ),
+                ),
+                selectedSourceId = SearchSourceIds.LLM_SEARCH,
+            ),
+        )
+
+        assertFalse(settings.hasConfiguredSearchSource(provider))
+    }
+
+    @Test
+    fun hasConfiguredSearchSource_rejectsLlmSearchForGoogleResponsesMode() {
+        val provider = ProviderSettings(
+            id = "provider-gemini-search",
+            name = "Gemini",
+            baseUrl = "https://generativelanguage.googleapis.com/v1beta/openai/",
+            apiKey = "search-key",
+            selectedModel = "gemini-3.5-flash",
+            searchModel = "gemini-3.5-flash",
+            type = ProviderType.GOOGLE,
+            openAiTextApiMode = OpenAiTextApiMode.RESPONSES,
         )
         val settings = AppSettings(
             providers = listOf(provider),
@@ -290,7 +325,7 @@ class AppSettingsTest {
     fun resolvedAssistants_prefersSavedOverrideForBuiltinAssistant() {
         val overrideAssistant = Assistant(
             id = DEFAULT_ASSISTANT_ID,
-            name = "默认助手",
+            name = "默认角色",
             systemPrompt = "新的系统提示词",
             creatorNotes = "新的备注",
             isBuiltin = false,
@@ -305,6 +340,24 @@ class AppSettingsTest {
         assertEquals("新的系统提示词", resolved.systemPrompt)
         assertEquals("新的备注", resolved.creatorNotes)
         assertTrue(resolved.isBuiltin)
+    }
+
+    @Test
+    fun resolvedAssistants_hidesDeprecatedGenericBuiltinAssistants() {
+        val settings = AppSettings(
+            assistants = listOf(
+                Assistant(id = "builtin-translator", name = "旧翻译"),
+                Assistant(id = "builtin-coder", name = "旧编程"),
+                Assistant(id = "builtin-writer", name = "旧写作"),
+            ),
+        )
+
+        val resolvedIds = settings.resolvedAssistants().map { it.id }
+
+        assertTrue(DEFAULT_ASSISTANT_ID in resolvedIds)
+        assertFalse("builtin-translator" in resolvedIds)
+        assertFalse("builtin-coder" in resolvedIds)
+        assertFalse("builtin-writer" in resolvedIds)
     }
 
     @Test

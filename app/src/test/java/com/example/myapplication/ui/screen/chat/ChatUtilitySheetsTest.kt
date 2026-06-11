@@ -33,7 +33,7 @@ class ChatUtilitySheetsTest {
             ),
         )
 
-        assertTrue(markdown.contains("## 助手 · gpt-4o-mini"))
+        assertTrue(markdown.contains("## 角色 · gpt-4o-mini"))
         assertTrue(markdown.contains("> 思考内容"))
         assertTrue(markdown.contains("先分析，再回答"))
     }
@@ -58,7 +58,7 @@ class ChatUtilitySheetsTest {
             ),
         )
 
-        assertTrue(plainText.contains("助手"))
+        assertTrue(plainText.contains("角色"))
         assertFalse(plainText.contains("gpt-4o-mini"))
         assertFalse(plainText.contains("思考内容"))
     }
@@ -227,7 +227,7 @@ class ChatUtilitySheetsTest {
         )
 
         assertNotNull(payload)
-        assertEquals("助手", payload?.title)
+        assertEquals("角色", payload?.title)
         assertEquals(1, payload?.initialIndex)
         assertEquals(
             listOf("file:///generated/1.png", "https://cdn.example.com/generated/2.png"),

@@ -16,9 +16,13 @@ class AppUpdateRepositoryTest {
     @Test
     fun checkForUpdates_returnsOptionalUpdateWhenRemoteVersionIsNewer() = runTest {
         val store = FakeAppUpdateStateStore()
+        var requestedUrl = ""
         val repository = AppUpdateRepository(
             stateStore = store,
-            metadataFetcher = { optionalUpdateJson() },
+            metadataFetcher = { url ->
+                requestedUrl = url
+                optionalUpdateJson()
+            },
             nowProvider = { 1_000L },
         )
 
@@ -31,6 +35,7 @@ class AppUpdateRepositoryTest {
         assertEquals(1_000L, outcome?.checkedAt)
         assertEquals(1_000L, store.currentState().lastCheckAt)
         assertTrue(store.currentState().cachedMetadataJson.isNotBlank())
+        assertEquals("https://0401lucky.github.io/Narra/updates/release.json", requestedUrl)
     }
 
     @Test
@@ -134,6 +139,106 @@ class AppUpdateRepositoryTest {
         assertEquals("更新元数据缺少 APK 校验信息", outcome?.errorMessage)
     }
 
+    @Test
+    fun checkForUpdates_rejectsHttpMetadataBaseUrlBeforeFetching() = runTest {
+        var fetchCount = 0
+        val repository = AppUpdateRepository(
+            stateStore = FakeAppUpdateStateStore(),
+            metadataFetcher = {
+                fetchCount++
+                optionalUpdateJson()
+            },
+            nowProvider = { 1_000L },
+        )
+
+        val outcome = repository.checkForUpdates(
+            environment = testEnvironment(metadataBaseUrl = "http://0401lucky.github.io/Narra/updates"),
+            manual = true,
+        )
+
+        assertEquals(AppUpdateAvailability.UNKNOWN, outcome?.availability)
+        assertEquals("更新元数据地址必须使用 https://", outcome?.errorMessage)
+        assertEquals(0, fetchCount)
+    }
+
+    @Test
+    fun checkForUpdates_rejectsUntrustedMetadataHostBeforeFetching() = runTest {
+        var fetchCount = 0
+        val repository = AppUpdateRepository(
+            stateStore = FakeAppUpdateStateStore(),
+            metadataFetcher = {
+                fetchCount++
+                optionalUpdateJson()
+            },
+            nowProvider = { 1_000L },
+        )
+
+        val outcome = repository.checkForUpdates(
+            environment = testEnvironment(metadataBaseUrl = "https://updates.example.com/Narra/updates"),
+            manual = true,
+        )
+
+        assertEquals(AppUpdateAvailability.UNKNOWN, outcome?.availability)
+        assertEquals("更新元数据地址不在可信来源中", outcome?.errorMessage)
+        assertEquals(0, fetchCount)
+    }
+
+    @Test
+    fun checkForUpdates_rejectsHttpApkUrl() = runTest {
+        val repository = AppUpdateRepository(
+            stateStore = FakeAppUpdateStateStore(),
+            metadataFetcher = {
+                optionalUpdateJson(apkUrl = "http://download.lsa1230.dpdns.org/release/Narra.apk")
+            },
+            nowProvider = { 1_000L },
+        )
+
+        val outcome = repository.checkForUpdates(
+            environment = testEnvironment(),
+            manual = true,
+        )
+
+        assertEquals(AppUpdateAvailability.UNKNOWN, outcome?.availability)
+        assertEquals("APK 下载地址必须使用 https://", outcome?.errorMessage)
+    }
+
+    @Test
+    fun checkForUpdates_rejectsUntrustedApkHost() = runTest {
+        val repository = AppUpdateRepository(
+            stateStore = FakeAppUpdateStateStore(),
+            metadataFetcher = {
+                optionalUpdateJson(apkUrl = "https://downloads.example.com/release/Narra.apk")
+            },
+            nowProvider = { 1_000L },
+        )
+
+        val outcome = repository.checkForUpdates(
+            environment = testEnvironment(),
+            manual = true,
+        )
+
+        assertEquals(AppUpdateAvailability.UNKNOWN, outcome?.availability)
+        assertEquals("APK 下载地址不在可信来源中", outcome?.errorMessage)
+    }
+
+    @Test
+    fun checkForUpdates_rejectsApkPathOutsideChannel() = runTest {
+        val repository = AppUpdateRepository(
+            stateStore = FakeAppUpdateStateStore(),
+            metadataFetcher = {
+                optionalUpdateJson(apkUrl = "https://download.lsa1230.dpdns.org/dev/Narra.apk")
+            },
+            nowProvider = { 1_000L },
+        )
+
+        val outcome = repository.checkForUpdates(
+            environment = testEnvironment(channel = "release"),
+            manual = true,
+        )
+
+        assertEquals(AppUpdateAvailability.UNKNOWN, outcome?.availability)
+        assertEquals("APK 下载路径与当前渠道不匹配", outcome?.errorMessage)
+    }
 
     @Test
     fun checkForUpdates_cachesUpToDateMetadataAndReusesItWithinThrottleWindow() = runTest {
@@ -166,18 +271,22 @@ class AppUpdateRepositoryTest {
 
     private fun testEnvironment(
         versionCode: Int = 10000,
-        metadataBaseUrl: String = "https://updates.example.com",
+        channel: String = "release",
+        metadataBaseUrl: String = "https://0401lucky.github.io/Narra/updates",
     ): AppUpdateEnvironment {
         return AppUpdateEnvironment(
             appId = "com.narra.app",
-            channel = "release",
+            channel = channel,
             versionName = "1.0.0",
             versionCode = versionCode,
             metadataBaseUrl = metadataBaseUrl,
         )
     }
 
-    private fun optionalUpdateJson(apkSha256: String = "abcdef"): String {
+    private fun optionalUpdateJson(
+        apkSha256: String = "abcdef",
+        apkUrl: String = "https://download.lsa1230.dpdns.org/release/Narra-v1.1.0-10100-release.apk?v=10100",
+    ): String {
         return """
             {
               "app_id": "com.narra.app",
@@ -185,7 +294,7 @@ class AppUpdateRepositoryTest {
               "latest_version_name": "1.1.0",
               "latest_version_code": 10100,
               "minimum_supported_version_code": 10000,
-              "apk_url": "https://downloads.example.com/Narra-v1.1.0-10100-release.apk",
+              "apk_url": "$apkUrl",
               "apk_sha256": "$apkSha256",
               "published_at": "2026-03-22T12:00:00+08:00",
               "release_notes": ["新增功能 A", "修复问题 B"]
@@ -201,7 +310,7 @@ class AppUpdateRepositoryTest {
               "latest_version_name": "1.1.0",
               "latest_version_code": 10100,
               "minimum_supported_version_code": 10001,
-              "apk_url": "https://downloads.example.com/Narra-v1.1.0-10100-release.apk",
+              "apk_url": "https://download.lsa1230.dpdns.org/release/Narra-v1.1.0-10100-release.apk",
               "apk_sha256": "abcdef",
               "published_at": "2026-03-22T12:00:00+08:00",
               "release_notes": ["新增功能 A", "修复问题 B"]

@@ -1,5 +1,15 @@
 package com.example.myapplication.data.repository.context
 
+import com.example.myapplication.model.CONTEXT_IMPORT_MAX_ASSISTANT_EXAMPLE_DIALOGUES
+import com.example.myapplication.model.CONTEXT_IMPORT_MAX_ASSISTANT_EXAMPLE_DIALOGUE_CHARS
+import com.example.myapplication.model.CONTEXT_IMPORT_MAX_ASSISTANT_NAME_CHARS
+import com.example.myapplication.model.CONTEXT_IMPORT_MAX_ASSISTANT_TAGS
+import com.example.myapplication.model.CONTEXT_IMPORT_MAX_ASSISTANT_TAG_CHARS
+import com.example.myapplication.model.CONTEXT_IMPORT_MAX_ASSISTANT_TEXT_CHARS
+import com.example.myapplication.model.CONTEXT_IMPORT_MAX_ASSISTANT_WORLD_BOOK_MAX_ENTRIES
+import com.example.myapplication.model.CONTEXT_IMPORT_MAX_WORLD_BOOK_CONTENT_CHARS
+import com.example.myapplication.model.CONTEXT_IMPORT_MAX_WORLD_BOOK_ENTRIES
+import com.example.myapplication.model.CONTEXT_IMPORT_MAX_WORLD_BOOK_TITLE_CHARS
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -125,5 +135,68 @@ class TavernCharacterAdapterTest {
         assertEquals("深港异闻录", worldBookEntries.single().sourceBookName)
         assertEquals(listOf("钟楼", "旧塔"), worldBookEntries.single().keywords)
         assertEquals(assistant.id, worldBookEntries.single().scopeId)
+    }
+
+    @Test
+    fun decodeAsBundle_limitsCharacterFieldsListsAndEmbeddedWorldBook() {
+        val longName = "名".repeat(CONTEXT_IMPORT_MAX_ASSISTANT_NAME_CHARS + 20)
+        val longText = "文".repeat(CONTEXT_IMPORT_MAX_ASSISTANT_TEXT_CHARS + 20)
+        val longDialogue = "对话".repeat(CONTEXT_IMPORT_MAX_ASSISTANT_EXAMPLE_DIALOGUE_CHARS)
+        val examples = (0 until CONTEXT_IMPORT_MAX_ASSISTANT_EXAMPLE_DIALOGUES + 2)
+            .joinToString("\n\n") { index -> "用户：$index\n助手：$longDialogue" }
+        val escapedExamples = examples
+            .replace("\\", "\\\\")
+            .replace("\"", "\\\"")
+            .replace("\n", "\\n")
+        val tags = (0 until CONTEXT_IMPORT_MAX_ASSISTANT_TAGS + 2)
+            .joinToString(",") { index -> """"标签$index${"长".repeat(CONTEXT_IMPORT_MAX_ASSISTANT_TAG_CHARS)}"""" }
+        val longTitle = "题".repeat(CONTEXT_IMPORT_MAX_WORLD_BOOK_TITLE_CHARS + 20)
+        val longContent = "设".repeat(CONTEXT_IMPORT_MAX_WORLD_BOOK_CONTENT_CHARS + 20)
+        val entries = (0 until CONTEXT_IMPORT_MAX_WORLD_BOOK_ENTRIES + 2)
+            .joinToString(",") { index ->
+                if (index == 0) {
+                    """{"id":$index,"name":"$longTitle","keys":["关键词"],"content":"$longContent"}"""
+                } else {
+                    """{"id":$index,"name":"条目$index","keys":["k$index"],"content":"正文$index"}"""
+                }
+            }
+        val rawJson = """
+            {
+              "spec": "chara_card_v2",
+              "data": {
+                "name": "$longName",
+                "description": "$longText",
+                "personality": "$longText",
+                "scenario": "$longText",
+                "first_mes": "$longText",
+                "mes_example": "$escapedExamples",
+                "creator_notes": "$longText",
+                "tags": [$tags],
+                "character_book": {
+                  "name": "超长角色世界书",
+                  "entries": [$entries]
+                }
+              }
+            }
+        """.trimIndent()
+
+        val bundle = adapter.decodeAsBundle(rawJson)!!
+        val assistant = bundle.assistants.single()
+        val firstEntry = bundle.worldBookEntries.first()
+
+        assertEquals(CONTEXT_IMPORT_MAX_ASSISTANT_NAME_CHARS, assistant.name.length)
+        assertEquals(CONTEXT_IMPORT_MAX_ASSISTANT_TEXT_CHARS, assistant.description.length)
+        assertEquals(CONTEXT_IMPORT_MAX_ASSISTANT_TEXT_CHARS, assistant.systemPrompt.length)
+        assertEquals(CONTEXT_IMPORT_MAX_ASSISTANT_TEXT_CHARS, assistant.scenario.length)
+        assertEquals(CONTEXT_IMPORT_MAX_ASSISTANT_TEXT_CHARS, assistant.greeting.length)
+        assertEquals(CONTEXT_IMPORT_MAX_ASSISTANT_TEXT_CHARS, assistant.creatorNotes.length)
+        assertEquals(CONTEXT_IMPORT_MAX_ASSISTANT_EXAMPLE_DIALOGUES, assistant.exampleDialogues.size)
+        assertTrue(assistant.exampleDialogues.all { it.length <= CONTEXT_IMPORT_MAX_ASSISTANT_EXAMPLE_DIALOGUE_CHARS })
+        assertEquals(CONTEXT_IMPORT_MAX_ASSISTANT_TAGS, assistant.tags.size)
+        assertTrue(assistant.tags.all { it.length <= CONTEXT_IMPORT_MAX_ASSISTANT_TAG_CHARS })
+        assertTrue(assistant.worldBookMaxEntries <= CONTEXT_IMPORT_MAX_ASSISTANT_WORLD_BOOK_MAX_ENTRIES)
+        assertEquals(CONTEXT_IMPORT_MAX_WORLD_BOOK_ENTRIES, bundle.worldBookEntries.size)
+        assertEquals(CONTEXT_IMPORT_MAX_WORLD_BOOK_TITLE_CHARS, firstEntry.title.length)
+        assertEquals(CONTEXT_IMPORT_MAX_WORLD_BOOK_CONTENT_CHARS, firstEntry.content.length)
     }
 }

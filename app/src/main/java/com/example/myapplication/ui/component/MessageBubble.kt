@@ -235,7 +235,7 @@ fun MessageBubble(
                 color = MaterialTheme.colorScheme.primary,
             )
         } else {
-            val assistantLabel = message.modelName.ifBlank { "助手" }
+            val assistantLabel = message.modelName.ifBlank { "角色" }
             Row(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(4.dp),

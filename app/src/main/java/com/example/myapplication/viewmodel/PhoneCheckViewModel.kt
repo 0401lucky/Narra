@@ -26,6 +26,7 @@ import com.example.myapplication.model.ChatMessage
 import com.example.myapplication.model.MessageRole
 import com.example.myapplication.model.ProviderFunction
 import com.example.myapplication.model.textMessagePart
+import com.example.myapplication.system.security.SensitiveTextRedactor
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
@@ -124,7 +125,7 @@ class PhoneCheckViewModel(
                 _uiState.update { current ->
                     current.copy(
                         isLoading = false,
-                        errorMessage = throwable.message ?: "读取手机快照失败",
+                        errorMessage = throwable.toPhoneUiError("读取手机快照失败"),
                     )
                 }
             }
@@ -182,7 +183,7 @@ class PhoneCheckViewModel(
                         generationRequestedSections = emptySet(),
                         generationCompletedSections = emptySet(),
                         generationStatusText = "",
-                        errorMessage = throwable.message ?: "手机内容生成失败",
+                        errorMessage = throwable.toPhoneUiError("手机内容生成失败"),
                     )
                 }
             }
@@ -246,7 +247,7 @@ class PhoneCheckViewModel(
                 }
             }.onFailure { throwable ->
                 failedSections += batch
-                lastErrorMessage = throwable.message.orEmpty()
+                lastErrorMessage = throwable.toPhoneUiError("手机内容生成失败")
             }
 
             updateGenerationProgress(
@@ -298,7 +299,7 @@ class PhoneCheckViewModel(
                                 }
                             }.onFailure { throwable ->
                                 failedSections += batch
-                                lastErrorMessage = throwable.message.orEmpty()
+                                lastErrorMessage = throwable.toPhoneUiError("手机内容生成失败")
                             }
 
                             settledBatches += batch
@@ -392,7 +393,7 @@ class PhoneCheckViewModel(
                 _uiState.update { current ->
                     current.copy(
                         loadingSearchEntryId = "",
-                        errorMessage = throwable.message ?: "搜索详情生成失败",
+                        errorMessage = throwable.toPhoneUiError("搜索详情生成失败"),
                     )
                 }
             }
@@ -764,6 +765,13 @@ class PhoneCheckViewModel(
                 PhoneSnapshotSection.SOCIAL_POSTS -> !socialPosts.isNullOrEmpty()
             }
         }
+    }
+
+    private fun Throwable.toPhoneUiError(fallback: String): String {
+        return SensitiveTextRedactor.throwableMessageForUi(
+            throwable = this,
+            fallback = fallback,
+        )
     }
 
     companion object {

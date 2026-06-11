@@ -7,11 +7,14 @@ const val REASONING_BUDGET_HIGH = 32_000
 data class ThinkingRequestConfig(
     val reasoningEffort: String? = null,
     val thinking: ThinkingConfigDto? = null,
+    val enableThinking: Boolean? = null,
+    val thinkingBudget: Int? = null,
 )
 
 private enum class ThinkingBudgetProtocol {
     OPENAI_REASONING_EFFORT,
     ANTHROPIC_THINKING,
+    QWEN_THINKING,
 }
 
 enum class ReasoningBudgetPreset(
@@ -47,19 +50,20 @@ fun reasoningBudgetSupportHint(
     provider: ProviderSettings,
     modelId: String = provider.selectedModel,
 ): String? {
-    if (modelId.isBlank() || ModelAbility.REASONING !in provider.resolveModelAbilities(modelId)) {
+    val normalizedModelId = normalizeKnownModelId(modelId)
+    if (normalizedModelId.isBlank() || ModelAbility.REASONING !in provider.resolveModelAbilities(normalizedModelId)) {
         return null
     }
 
-    val lower = modelId.lowercase()
+    val lower = normalizedModelId.lowercase()
     return when {
         provider.resolvedType() == ProviderType.GROK &&
-            hasModelFeature(modelId, ModelFeature.GROK_OPAQUE_REASONING) -> {
+            hasModelFeature(normalizedModelId, ModelFeature.GROK_OPAQUE_REASONING) -> {
             "该模型会内部思考，但 xAI 当前接口不返回明文推理轨迹，也不开放思考预算调节。"
         }
 
-        hasModelFeature(modelId, ModelFeature.ANTHROPIC_THINKING) &&
-            resolveThinkingBudgetProtocol(provider, modelId) == ThinkingBudgetProtocol.ANTHROPIC_THINKING -> {
+        hasModelFeature(normalizedModelId, ModelFeature.ANTHROPIC_THINKING) &&
+            resolveThinkingBudgetProtocol(provider, normalizedModelId) == ThinkingBudgetProtocol.ANTHROPIC_THINKING -> {
             "思考预算会映射为 Anthropic /messages 协议的 thinking.budget_tokens；选择“自动”时不会显式开启扩展思考，这类接口通常也不会返回完整明文思考轨迹。"
         }
 
@@ -67,7 +71,11 @@ fun reasoningBudgetSupportHint(
             "思考预算会映射为 Gemini OpenAI 兼容接口的 reasoning_effort；Gemini 3 的“标准”档会自动提升为 high。"
         }
 
-        resolveThinkingBudgetProtocol(provider, modelId) == ThinkingBudgetProtocol.OPENAI_REASONING_EFFORT -> {
+        resolveThinkingBudgetProtocol(provider, normalizedModelId) == ThinkingBudgetProtocol.QWEN_THINKING -> {
+            "思考预算会映射为 DashScope OpenAI 兼容接口的 enable_thinking 与 thinking_budget；选择“自动”时沿用模型默认思考模式。"
+        }
+
+        resolveThinkingBudgetProtocol(provider, normalizedModelId) == ThinkingBudgetProtocol.OPENAI_REASONING_EFFORT -> {
             "思考预算会映射为接口支持的 reasoning_effort。"
         }
 
@@ -92,7 +100,13 @@ fun mapThinkingBudgetToReasoningEffort(
     thinkingBudget: Int? = provider?.thinkingBudget,
 ): String? {
     val resolvedProvider = provider ?: return null
-    if (resolveThinkingBudgetProtocol(resolvedProvider, modelId) != ThinkingBudgetProtocol.OPENAI_REASONING_EFFORT) {
+    val normalizedModelId = normalizeKnownModelId(modelId)
+    if (
+        resolveThinkingBudgetProtocol(
+            resolvedProvider,
+            normalizedModelId,
+        ) != ThinkingBudgetProtocol.OPENAI_REASONING_EFFORT
+    ) {
         return null
     }
 
@@ -101,7 +115,7 @@ fun mapThinkingBudgetToReasoningEffort(
         return null
     }
 
-    val lower = modelId.lowercase()
+    val lower = normalizedModelId.lowercase()
     return when {
         resolvedBudget <= REASONING_BUDGET_LOW -> "low"
         isGeminiThreeReasoningModel(lower) -> "high"
@@ -116,12 +130,13 @@ fun buildThinkingRequestConfig(
     thinkingBudget: Int? = provider?.thinkingBudget,
 ): ThinkingRequestConfig {
     val resolvedProvider = provider ?: return ThinkingRequestConfig()
-    return when (resolveThinkingBudgetProtocol(resolvedProvider, modelId)) {
+    val normalizedModelId = normalizeKnownModelId(modelId)
+    return when (resolveThinkingBudgetProtocol(resolvedProvider, normalizedModelId)) {
         ThinkingBudgetProtocol.OPENAI_REASONING_EFFORT -> {
             ThinkingRequestConfig(
                 reasoningEffort = mapThinkingBudgetToReasoningEffort(
                     provider = resolvedProvider,
-                    modelId = modelId,
+                    modelId = normalizedModelId,
                     thinkingBudget = thinkingBudget,
                 ),
             )
@@ -134,6 +149,14 @@ fun buildThinkingRequestConfig(
             )
         }
 
+        ThinkingBudgetProtocol.QWEN_THINKING -> {
+            val budgetTokens = thinkingBudget?.takeIf { it > 0 }
+            ThinkingRequestConfig(
+                enableThinking = budgetTokens?.let { true },
+                thinkingBudget = budgetTokens,
+            )
+        }
+
         null -> ThinkingRequestConfig()
     }
 }
@@ -142,18 +165,19 @@ private fun resolveThinkingBudgetProtocol(
     provider: ProviderSettings,
     modelId: String = provider.selectedModel,
 ): ThinkingBudgetProtocol? {
-    if (modelId.isBlank() || ModelAbility.REASONING !in provider.resolveModelAbilities(modelId)) {
+    val normalizedModelId = normalizeKnownModelId(modelId)
+    if (normalizedModelId.isBlank() || ModelAbility.REASONING !in provider.resolveModelAbilities(normalizedModelId)) {
         return null
     }
 
     if (provider.resolvedType() == ProviderType.GROK &&
-        hasModelFeature(modelId, ModelFeature.GROK_OPAQUE_REASONING)
+        hasModelFeature(normalizedModelId, ModelFeature.GROK_OPAQUE_REASONING)
     ) {
         return null
     }
 
     return when {
-        hasModelFeature(modelId, ModelFeature.ANTHROPIC_THINKING) -> {
+        hasModelFeature(normalizedModelId, ModelFeature.ANTHROPIC_THINKING) -> {
             if (provider.resolvedApiProtocol() == ProviderApiProtocol.ANTHROPIC) {
                 ThinkingBudgetProtocol.ANTHROPIC_THINKING
             } else {
@@ -161,7 +185,12 @@ private fun resolveThinkingBudgetProtocol(
             }
         }
 
-        hasModelFeature(modelId, ModelFeature.OPENAI_REASONING_EFFORT) -> {
+        isDashScopeQwenThinkingControlProvider(provider) &&
+            isQwenHybridThinkingModel(normalizedModelId.lowercase()) -> {
+            ThinkingBudgetProtocol.QWEN_THINKING
+        }
+
+        hasModelFeature(normalizedModelId, ModelFeature.OPENAI_REASONING_EFFORT) -> {
             ThinkingBudgetProtocol.OPENAI_REASONING_EFFORT
         }
 
@@ -178,4 +207,19 @@ private fun isGeminiReasoningModel(lower: String): Boolean {
 
 private fun isGeminiThreeReasoningModel(lower: String): Boolean {
     return lower.startsWith("gemini-3")
+}
+
+private fun isDashScopeQwenThinkingControlProvider(provider: ProviderSettings): Boolean {
+    if (provider.resolvedApiProtocol() != ProviderApiProtocol.OPENAI_COMPATIBLE) {
+        return false
+    }
+    val lowerBaseUrl = provider.baseUrl.lowercase()
+    return provider.resolvedType() == ProviderType.QWEN ||
+        "dashscope" in lowerBaseUrl ||
+        "aliyuncs.com/compatible-mode" in lowerBaseUrl
+}
+
+private fun isQwenHybridThinkingModel(lower: String): Boolean {
+    return Regex("""\bqwen[-_.]?3(?:[-_.]?[567])?(?:$|[-_.])""").containsMatchIn(lower) ||
+        Regex("""\bqwen[-_.]?(?:max|plus|flash|turbo)(?:$|[-_.])""").containsMatchIn(lower)
 }

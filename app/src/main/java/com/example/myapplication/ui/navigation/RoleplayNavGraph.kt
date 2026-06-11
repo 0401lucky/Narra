@@ -201,13 +201,9 @@ internal fun NavGraphBuilder.registerRoleplayGraph(
                             )
                         }
                     },
-                    onOpenMoments = { scenarioId ->
-                        navigateToSessionFeature(scenarioId) { conversationId ->
-                            AppRoutes.moments(
-                                conversationId = conversationId,
-                                scenarioId = scenarioId,
-                                ownerType = PhoneSnapshotOwnerType.CHARACTER,
-                            )
+                    onOpenMoments = {
+                        navController.navigate(AppRoutes.moments()) {
+                            launchSingleTop = true
                         }
                     },
                     onOpenDiary = { scenarioId ->
@@ -391,17 +387,8 @@ internal fun NavGraphBuilder.registerRoleplayGraph(
                             }
                         },
                         onOpenMoments = {
-                            val conversationId = roleplayState.currentSession?.conversationId.orEmpty()
-                            if (conversationId.isNotBlank()) {
-                                navController.navigate(
-                                    AppRoutes.moments(
-                                        conversationId = conversationId,
-                                        scenarioId = scenarioId,
-                                        ownerType = PhoneSnapshotOwnerType.CHARACTER,
-                                    ),
-                                ) {
-                                    launchSingleTop = true
-                                }
+                            navController.navigate(AppRoutes.moments()) {
+                                launchSingleTop = true
                             }
                         },
                         onOpenVideoCall = {

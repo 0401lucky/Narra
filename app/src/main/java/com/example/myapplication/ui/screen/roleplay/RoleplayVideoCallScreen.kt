@@ -391,7 +391,7 @@ internal fun buildVideoCallPresentationState(
 
 private fun buildVideoCallEmptyHint(carryoverCount: Int): String {
     return if (carryoverCount > 0) {
-        "通话已接通，已承接前面的聊天内容，直接接着上一句继续聊。"
+        "通话已接通，已承接前面的会话内容，直接接着上一句继续聊。"
     } else {
         "通话已接通，你先发一句，TA 才会接着回你。"
     }
@@ -423,7 +423,7 @@ private fun VideoCallFloatingTranscript(
                     shape = RoundedCornerShape(999.dp),
                 ) {
                     Text(
-                        text = "已承接通话前 $carryoverCount 条聊天内容",
+                        text = "已承接通话前 $carryoverCount 条会话内容",
                         modifier = Modifier.padding(horizontal = 14.dp, vertical = 8.dp),
                         style = MaterialTheme.typography.labelMedium,
                         color = colors.textMuted,

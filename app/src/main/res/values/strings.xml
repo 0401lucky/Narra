@@ -1,8 +1,8 @@
 <resources>
     <string name="app_name">Narra</string>
-    <string name="screen_translation_accessibility_description">读取系统外选中文本并提供悬浮翻译入口</string>
+    <string name="screen_translation_accessibility_description">读取系统外选中文本并提供悬浮译文入口</string>
     <string name="default_user_name">用户</string>
-    <string name="default_assistant_name">助手</string>
+    <string name="default_assistant_name">角色</string>
     <string name="user_avatar_fallback_letter">用</string>
     <string name="avatar_content_description">%1$s头像</string>
     <string name="roleplay_speaking">说话中…</string>
@@ -24,7 +24,7 @@
     <string name="home_config_base_url">Base URL</string>
     <string name="home_config_api_key">API Key</string>
     <string name="home_config_model">模型</string>
-    <string name="home_open_chat">普通聊天</string>
+    <string name="home_open_chat">进入私人手机</string>
     <string name="home_open_settings">进入设置</string>
     <string name="home_open_roleplay">进入私人手机</string>
     <string name="home_config_hint">完成设置后即可直接开始对话</string>
@@ -85,7 +85,7 @@
     <string name="input_placeholder_image_and_file">补充说明，让 AI 结合图片和文件回答</string>
     <string name="input_placeholder_image">补充说明，让 AI 结合图片回答</string>
     <string name="input_placeholder_file">输入你的要求，让 AI 结合文件内容回答</string>
-    <string name="input_placeholder_default">输入消息，与 AI 聊天</string>
+    <string name="input_placeholder_default">输入消息，进入会话</string>
     <string name="input_expand_editor">展开输入编辑</string>
     <string name="input_add_attachment">添加附件</string>
     <string name="input_pick_image">选择图片</string>
@@ -93,7 +93,7 @@
     <string name="input_special_play">特殊玩法</string>
     <string name="input_cancel">取消</string>
     <string name="input_send">发送</string>
-    <string name="input_translate">翻译输入</string>
+    <string name="input_translate">转换输入</string>
     <string name="input_remove_attachment">移除附件</string>
     <string name="input_remove_image">移除图片</string>
     <string name="input_selected_image">已选择图片</string>
@@ -119,18 +119,18 @@
     <string name="settings_api_provider_desc">管理多个 API 提供商、密钥与模型</string>
     <string name="settings_model">模型管理</string>
     <string name="settings_model_desc">选择对话与各功能使用的模型</string>
-    <string name="settings_search_tools">搜索工具</string>
-    <string name="settings_search_tools_desc">配置联网搜索引擎与增强能力</string>
-    <string name="settings_assistant">助手配置</string>
-    <string name="settings_assistant_desc">创建和管理不同角色的 AI 助手</string>
+    <string name="settings_search_tools">联网检索</string>
+    <string name="settings_search_tools_desc">配置联网检索引擎与增强能力</string>
+    <string name="settings_assistant">角色配置</string>
+    <string name="settings_assistant_desc">创建和管理不同剧情角色</string>
     <string name="settings_world_book">世界书</string>
     <string name="settings_world_book_desc">创建角色和世界观词条</string>
     <string name="settings_memory">记忆管理</string>
     <string name="settings_memory_desc">查看和管理 AI 从对话中提取的记忆</string>
     <string name="settings_context_transfer">上下文导入导出</string>
     <string name="settings_context_transfer_desc">跨设备迁移或备份角色与世界书数据</string>
-    <string name="settings_screen_translation">屏幕翻译</string>
-    <string name="settings_screen_translation_desc">悬浮翻译、划词翻译和无障碍配置</string>
+    <string name="settings_screen_translation">屏幕译文</string>
+    <string name="settings_screen_translation_desc">悬浮译文、划词译文和无障碍配置</string>
     <string name="settings_app_update">应用更新</string>
     <string name="settings_app_update_desc">检查版本更新</string>
     <string name="settings_display_section">显示与行为</string>
@@ -150,7 +150,7 @@
     <string name="settings_color_mode">颜色模式</string>
     <string name="settings_display">显示设置</string>
     <string name="settings_version_update">版本与更新</string>
-    <string name="settings_assistant_label">助手</string>
+    <string name="settings_assistant_label">角色</string>
     <string name="settings_world_book_label">世界书</string>
     <string name="settings_memory_summary">记忆与摘要</string>
     <string name="settings_data_transfer">资料导入导出</string>
@@ -160,7 +160,7 @@
     <string name="settings_provider">提供商</string>
     <string name="settings_search_and_tools">搜索与工具</string>
     <string name="settings_current_label">当前</string>
-    <string name="settings_chat_label">聊天</string>
+    <string name="settings_chat_label">私人手机</string>
     <string name="settings_welcome_label">欢迎页</string>
     <string name="settings_text_scale_compact">紧凑</string>
     <string name="settings_text_scale_large">偏大</string>
@@ -184,7 +184,7 @@
     <string name="memory_filter_all">全部</string>
     <string name="memory_filter_global">全局</string>
     <string name="memory_scope_global">全局记忆</string>
-    <string name="memory_scope_assistant">助手记忆</string>
+    <string name="memory_scope_assistant">角色记忆</string>
     <string name="memory_scope_conversation">会话记忆</string>
     <string name="memory_pin">置顶</string>
     <string name="memory_unpin">取消置顶</string>
@@ -194,7 +194,7 @@
     <string name="memory_viewer_title">记忆查看器</string>
     <string name="memory_viewer_desc">按角色筛选核心记忆、情景记忆与剧情摘要，避免不同角色内容混在一起。</string>
     <string name="memory_summary_refresh_title">摘要刷新入口</string>
-    <string name="memory_summary_refresh_body">当前摘要支持手动刷新，但入口仍在对应聊天或沉浸式会话里的"上下文治理"面板，不在这个查看页内。</string>
+    <string name="memory_summary_refresh_body">当前摘要支持手动刷新，但入口仍在对应会话里的"上下文治理"面板，不在这个查看页内。</string>
     <string name="memory_select_role_label">选择角色：</string>
     <string name="memory_select_role_hint">请选择角色</string>
     <string name="memory_expand_role_list">展开角色列表</string>
@@ -208,7 +208,7 @@
     <string name="memory_section_summaries">剧情总结</string>
     <string name="memory_section_summaries_subtitle">会话摘要与阶段性回顾</string>
     <string name="memory_no_core_title">暂无核心记忆</string>
-    <string name="memory_no_core_body">当前角色还没有长期记忆或助手记忆。</string>
+    <string name="memory_no_core_body">当前角色还没有长期记忆或角色记忆。</string>
     <string name="memory_no_scene_title">暂无情景记忆</string>
     <string name="memory_no_scene_body">当前角色还没有会话级或场景级记忆。</string>
     <string name="memory_no_summary_title">暂无剧情总结</string>
@@ -244,14 +244,14 @@
     <string name="chat_error_export_msg_md_fail">导出消息 Markdown 失败</string>
     <string name="chat_search_unavail_no_conversation">当前会话尚未就绪</string>
     <string name="chat_search_unavail_no_config">请先完成模型与连接配置</string>
-    <string name="chat_search_unavail_no_model">请先选择聊天模型</string>
-    <string name="chat_search_unavail_image_model">生图模型不支持搜索工具</string>
+    <string name="chat_search_unavail_no_model">请先选择主会话模型</string>
+    <string name="chat_search_unavail_image_model">生图模型不支持联网检索</string>
     <string name="chat_search_unavail_no_tool">当前模型不支持工具调用</string>
     <string name="chat_search_unavail_no_provider">请先在搜索与工具里为 LLM 搜索选择搜索提供商</string>
     <string name="chat_search_unavail_provider_disabled">所选搜索提供商不可用，请检查是否已启用</string>
-    <string name="chat_search_unavail_need_responses">所选搜索提供商需要使用 Responses API 或 Anthropic 协议</string>
+    <string name="chat_search_unavail_need_responses">所选搜索提供商需要使用非 Google 的 Responses API 或 Anthropic 协议</string>
     <string name="chat_search_unavail_model_off">所选搜索提供商已关闭搜索模型，请先在模型页开启搜索模型</string>
-    <string name="chat_search_unavail_follow_chat">所选搜索提供商当前会跟随其聊天模型执行搜索</string>
+    <string name="chat_search_unavail_follow_chat">所选搜索提供商当前会跟随其主会话模型执行搜索</string>
     <string name="chat_search_unavail_model_builtin_unsupported">模型内置搜索需要使用 Google Gemini 的 Chat Completions 模式</string>
     <string name="chat_search_unavail_enable_source">请先在设置里启用可用搜索源</string>
     <string name="chat_search_unavail_configure_source">请先在设置里配置可用搜索源</string>
@@ -276,22 +276,22 @@
     <string name="chat_image_preview_zoom_hint">双击可切换放大，双指可缩放拖动</string>
 
     <!-- ── ChatDrawer ── -->
-    <string name="drawer_chat_history">聊天历史</string>
+    <string name="drawer_chat_history">会话历史</string>
     <string name="drawer_new_message">新消息</string>
-    <string name="drawer_no_history_title">尚无聊天记录</string>
-    <string name="drawer_no_history_body">新聊天会显示在这里</string>
+    <string name="drawer_no_history_title">尚无会话记录</string>
+    <string name="drawer_no_history_body">新会话会显示在这里</string>
     <string name="drawer_no_search_result_title">无匹配结果</string>
     <string name="drawer_no_search_result_body">请换个关键词试试</string>
     <string name="drawer_clear_conversation">清空当前会话</string>
-    <string name="drawer_open_translator">打开翻译</string>
+    <string name="drawer_open_translator">打开译文工具</string>
     <string name="drawer_immersive_roleplay">沉浸扮演</string>
     <string name="drawer_open_settings">打开设置</string>
-    <string name="drawer_default_assistant">默认助手</string>
+    <string name="drawer_default_assistant">默认角色</string>
     <string name="drawer_default_assistant_char">默</string>
-    <string name="drawer_select_assistant">选择助手</string>
+    <string name="drawer_select_assistant">选择角色</string>
     <string name="drawer_unnamed">未命名</string>
     <string name="drawer_edit_profile">编辑资料</string>
-    <string name="drawer_search_chat">搜索聊天</string>
+    <string name="drawer_search_chat">搜索会话</string>
     <string name="drawer_new_conversation">新对话</string>
     <string name="drawer_clear_conversation_menu">清空会话</string>
     <string name="drawer_confirm_clear_title">确认清空会话</string>
@@ -332,7 +332,7 @@
     <string name="export_attachments_label">附件与结构化内容：\n</string>
     <string name="export_citations_label">引用来源：\n</string>
     <string name="export_role_user">用户</string>
-    <string name="export_role_assistant">助手</string>
+    <string name="export_role_assistant">角色</string>
     <string name="export_step_fallback">步骤 %1$d</string>
     <string name="export_image_prefix">图片：%1$s</string>
     <string name="export_file_prefix">文件：%1$s</string>
@@ -367,7 +367,7 @@
     <!-- ── MomentsScreen ── -->
     <string name="moments_title">朋友圈</string>
     <string name="moments_empty_title">还没有朋友圈动态</string>
-    <string name="moments_empty_body">先去「查手机」生成这个聊天的手机内容</string>
+    <string name="moments_empty_body">先去「查手机」生成当前会话的手机内容</string>
     <string name="moments_preview_comment">%1$s：%2$s</string>
     <string name="moments_view_all_comments">查看全部 %1$d 条评论</string>
     <string name="moments_comments_count">%1$d 条评论</string>

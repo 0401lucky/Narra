@@ -4,6 +4,7 @@ import android.net.Uri
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavGraphBuilder
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.composable
@@ -11,11 +12,13 @@ import androidx.navigation.compose.navigation
 import com.example.myapplication.di.AppGraph
 import com.example.myapplication.ui.screen.settings.PresetEditScreen
 import com.example.myapplication.ui.screen.settings.PresetListScreen
+import com.example.myapplication.ui.screen.settings.RoleplayScriptLabScreen
 import com.example.myapplication.ui.screen.settings.SettingsScreen
 import com.example.myapplication.ui.screen.settings.UserPersonaMasksScreen
 import com.example.myapplication.ui.screen.settings.VoiceSynthesisSettingsScreen
 import com.example.myapplication.ui.screen.settings.copyPresetForUser
 import com.example.myapplication.viewmodel.AppUpdateViewModel
+import com.example.myapplication.viewmodel.RoleplayScriptLabViewModel
 import com.example.myapplication.viewmodel.SettingsViewModel
 import com.example.myapplication.viewmodel.updateAutoCollapseThinking
 import com.example.myapplication.viewmodel.updateAutoPreviewImages
@@ -52,8 +55,7 @@ internal fun NavGraphBuilder.registerSettingsNavGraph(
                 onSave = {
                     settingsViewModel.saveSettings {
                         if (draftHasRequiredConfig) {
-                            navController.navigate(AppRoutes.CHAT) {
-                                popUpTo(AppRoutes.CHAT) { inclusive = true }
+                            navController.navigate(AppRoutes.ROLEPLAY) {
                                 launchSingleTop = true
                             }
                         } else {
@@ -64,8 +66,8 @@ internal fun NavGraphBuilder.registerSettingsNavGraph(
                     }
                 },
                 onConsumeMessage = settingsViewModel::consumeMessage,
-                onOpenChat = {
-                    navController.navigate(AppRoutes.CHAT) {
+                onOpenRoleplay = {
+                    navController.navigate(AppRoutes.ROLEPLAY) {
                         launchSingleTop = true
                     }
                 },
@@ -81,11 +83,6 @@ internal fun NavGraphBuilder.registerSettingsNavGraph(
                 },
                 onOpenVoiceSynthesisSettings = {
                     navController.navigate(AppRoutes.SETTINGS_VOICE_SYNTHESIS) {
-                        launchSingleTop = true
-                    }
-                },
-                onOpenSearchToolSettings = {
-                    navController.navigate(AppRoutes.SETTINGS_SEARCH_TOOLS) {
                         launchSingleTop = true
                     }
                 },
@@ -124,8 +121,8 @@ internal fun NavGraphBuilder.registerSettingsNavGraph(
                         launchSingleTop = true
                     }
                 },
-                onOpenScreenTranslationSettings = {
-                    navController.navigate(AppRoutes.SETTINGS_SCREEN_TRANSLATION) {
+                onOpenRoleplayScripts = {
+                    navController.navigate(AppRoutes.SETTINGS_ROLEPLAY_SCRIPTS) {
                         launchSingleTop = true
                     }
                 },
@@ -251,14 +248,36 @@ internal fun NavGraphBuilder.registerSettingsNavGraph(
             )
         }
 
-        // ── 提供商、模型、搜索工具、翻译、更新 ──
+        composable(AppRoutes.SETTINGS_ROLEPLAY_SCRIPTS) {
+            val scriptLabViewModel: RoleplayScriptLabViewModel = viewModel(
+                factory = RoleplayScriptLabViewModel.factory(appGraph.roleplayScriptRepository),
+            )
+            val scriptLabState by scriptLabViewModel.uiState.collectAsStateWithLifecycle()
+            RoleplayScriptLabScreen(
+                uiState = scriptLabState,
+                onCreateScript = scriptLabViewModel::createScript,
+                onSelectScript = scriptLabViewModel::selectScript,
+                onUpdateName = scriptLabViewModel::updateName,
+                onUpdateScope = scriptLabViewModel::updateScope,
+                onUpdateOwnerId = scriptLabViewModel::updateOwnerId,
+                onUpdateSource = scriptLabViewModel::updateSource,
+                onUpdateEnabled = scriptLabViewModel::updateEnabled,
+                onTogglePermission = scriptLabViewModel::togglePermission,
+                onSaveScript = scriptLabViewModel::saveScript,
+                onDeleteSelectedScript = scriptLabViewModel::deleteSelectedScript,
+                onConsumeMessage = scriptLabViewModel::consumeMessage,
+                onNavigateBack = { navController.popBackStack() },
+            )
+        }
+
+        // ── 提供商、模型、更新 ──
         registerSettingsProviderRoutes(
             navController = navController,
             settingsViewModel = settingsViewModel,
             appUpdateViewModel = appUpdateViewModel,
         )
 
-        // ── 助手配置 ──
+        // ── 角色配置 ──
         registerSettingsAssistantRoutes(
             appGraph = appGraph,
             navController = navController,
