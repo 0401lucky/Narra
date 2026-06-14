@@ -1,17 +1,16 @@
 {
   "app_id": "com.narra.app.dev",
   "channel": "dev",
-  "latest_version_name": "2.0.5-dev",
-  "latest_version_code": 20005,
+  "latest_version_name": "2.0.6-dev",
+  "latest_version_code": 20006,
   "minimum_supported_version_code": 0,
-  "apk_url": "https://download.lsa1230.dpdns.org/dev/Narra-v2.0.5-dev-20005-dev.apk?v=20005-20260614203841",
-  "apk_sha256": "442571ad0fdd350517be4effada7c7da6734a2968520dc731b772cc7bd873298",
-  "published_at": "2026-06-14T20:38:41+08:00",
+  "apk_url": "https://download.lsa1230.dpdns.org/dev/Narra-v2.0.6-dev-20006-dev.apk?v=20006-20260614210558",
+  "apk_sha256": "9cbe685ace3a81f748b50071ff313b3bf48fdb5b242d7e93411e8b37f36ff491",
+  "published_at": "2026-06-14T21:05:58+08:00",
   "release_notes": [
-    "支持不同会话绑定不同用户面具，朋友圈发帖、评论和点赞会使用当前会话身份",
-    "保存用户朋友圈帖子与评论的身份快照，避免后续切换默认面具污染旧内容",
-    "新增主题色调选择，构建 Gemini 的抹茶、香草和海洋配色优化",
-    "澄清面具入口文案，区分默认面具和本会话用户面具",
+    "我页顶部资料卡会显示当前默认面具的头像和昵称",
+    "未单独绑定面具的会话会继续使用默认面具身份",
+    "没有默认面具时继续回退到全局个人资料",
     "继续通过 Cloudflare R2 分发 dev 渠道安装包"
   ]
 }

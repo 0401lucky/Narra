@@ -1892,9 +1892,17 @@ private fun ImmersiveProfilePage(
 ) {
     val masks = settings.normalizedUserPersonaMasks()
     val defaultMask = settings.resolvedDefaultUserPersonaMask()
+    val profileDisplayName = defaultMask?.name ?: settings.resolvedUserDisplayName()
+    val profileAvatarUri = defaultMask?.avatarUri ?: settings.userAvatarUri
+    val profileAvatarUrl = defaultMask?.avatarUrl ?: settings.userAvatarUrl
+    val profileScopeText = if (defaultMask != null) {
+        "默认面具 · $chatCount 个会话 · $assistantCount 位角色"
+    } else {
+        "$chatCount 个会话 · $assistantCount 位角色"
+    }
     val maskSummary = when {
-        masks.isEmpty() -> "还没有面具，先用全局个人资料"
-        defaultMask != null -> "默认：${defaultMask.name} · 共 ${masks.size} 个身份"
+        masks.isEmpty() -> "还没有默认面具，未单独绑定的会话会使用全局个人资料"
+        defaultMask != null -> "未单独绑定的会话会使用这个身份"
         else -> "${masks.size} 个身份，未设置默认"
     }
     var masksExpanded by rememberSaveable { mutableStateOf(false) }
@@ -1920,9 +1928,9 @@ private fun ImmersiveProfilePage(
                         contentAlignment = Alignment.Center,
                     ) {
                         UserProfileAvatar(
-                            displayName = settings.resolvedUserDisplayName(),
-                            avatarUri = settings.userAvatarUri,
-                            avatarUrl = settings.userAvatarUrl,
+                            displayName = profileDisplayName,
+                            avatarUri = profileAvatarUri,
+                            avatarUrl = profileAvatarUrl,
                             modifier = Modifier.fillMaxSize(),
                             containerColor = MaterialTheme.colorScheme.primaryContainer,
                             contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
@@ -1930,9 +1938,9 @@ private fun ImmersiveProfilePage(
                     }
                     Spacer(modifier = Modifier.width(14.dp))
                     Column(modifier = Modifier.weight(1f)) {
-                        Text(settings.resolvedUserDisplayName(), style = MaterialTheme.typography.titleLarge)
+                        Text(profileDisplayName, style = MaterialTheme.typography.titleLarge)
                         Text(
-                            text = "$chatCount 个会话 · $assistantCount 位角色",
+                            text = profileScopeText,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
                         Text(
