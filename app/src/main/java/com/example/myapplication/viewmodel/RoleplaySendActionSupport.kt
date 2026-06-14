@@ -1076,15 +1076,19 @@ internal class RoleplaySendActionSupport(
                     parts = emptyList(),
                 )
                 currentRawMessages.value = attemptTimeline + loadingForAttempt
+                val requestMessagesForTurn = buildGroupQuickReplyRequestMessages(
+                    timeline = attemptTimeline,
+                    session = session,
+                    member = member,
+                    turn = turn,
+                )
                 val outcome = roundTripExecutor.execute(
                     state = state,
                     scenario = speakerScenario,
                     session = session,
                     selectedModel = selectedModel,
                     assistant = speakerAssistant,
-                    requestMessages = attemptTimeline.filter {
-                        it.status == MessageStatus.COMPLETED && it.hasSendableContent()
-                    },
+                    requestMessages = requestMessagesForTurn,
                     cancelledMessages = attemptTimeline,
                     initialPersistence = if (attempt == 0) {
                         RoundTripInitialPersistence.Append(messages = listOf(loadingForAttempt))
@@ -1165,6 +1169,42 @@ internal class RoleplaySendActionSupport(
         )
         currentRawMessages.value = baseMessages + userMessage
         return userMessage
+    }
+
+    private fun buildGroupQuickReplyRequestMessages(
+        timeline: List<ChatMessage>,
+        session: com.example.myapplication.model.RoleplaySession,
+        member: RoleplayGroupMemberContext,
+        turn: RoleplayGroupReplyTurn,
+    ): List<ChatMessage> {
+        val sendableMessages = timeline.filter {
+            it.status == MessageStatus.COMPLETED && it.hasSendableContent()
+        }
+        if (sendableMessages.any { it.role == MessageRole.USER }) {
+            return sendableMessages
+        }
+        val createdAt = (sendableMessages.maxOfOrNull(ChatMessage::createdAt) ?: nowProvider()) + 1L
+        val openingInstruction = buildString {
+            append("【用户操作】用户点击了「")
+            append(member.displayName)
+            append("」快捷发言按钮，希望由该角色在当前群聊中自然接话。")
+            if (sendableMessages.isEmpty()) {
+                append("当前群聊还没有前置消息，请根据角色人设、关系和场景自然开启第一句。")
+            } else {
+                append("当前没有可引用的用户发言，请结合已有群聊内容自然回应或推进互动。")
+            }
+            append("不要复述“我被点名了”，也不要说明这是按钮触发。")
+        }
+        val requestOnlyUserMessage = ChatMessage(
+            id = "group-quick-reply-request-${turn.participantId}-$createdAt",
+            conversationId = session.conversationId,
+            role = MessageRole.USER,
+            content = openingInstruction,
+            status = MessageStatus.COMPLETED,
+            createdAt = createdAt,
+            parts = listOf(textMessagePart(openingInstruction)),
+        )
+        return sendableMessages + requestOnlyUserMessage
     }
 
     private fun String.mentionsGroupMember(displayName: String): Boolean {
