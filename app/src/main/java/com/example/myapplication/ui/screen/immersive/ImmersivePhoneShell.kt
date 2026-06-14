@@ -1977,7 +1977,7 @@ private fun ImmersiveMaskSwitcher(
 ) {
     val colorScheme = MaterialTheme.colorScheme
     val summary = when {
-        masks.isEmpty() -> "还没有面具，先创建不同对话里的“我”"
+        masks.isEmpty() -> "还没有默认面具，先创建不同对话里的“我”"
         defaultMask != null -> "默认：${defaultMask.name} · 共 ${masks.size} 个身份"
         else -> "${masks.size} 个身份，未设置默认"
     }
@@ -2009,7 +2009,7 @@ private fun ImmersiveMaskSwitcher(
                     }
                 }
                 Column(modifier = Modifier.weight(1f)) {
-                    Text("我的面具", fontWeight = FontWeight.SemiBold)
+                    Text("默认面具", fontWeight = FontWeight.SemiBold)
                     Text(
                         text = summary,
                         style = MaterialTheme.typography.bodyMedium,

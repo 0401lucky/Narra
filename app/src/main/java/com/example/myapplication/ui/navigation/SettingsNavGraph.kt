@@ -28,6 +28,7 @@ import com.example.myapplication.viewmodel.RoleplayScriptLabViewModel
 import com.example.myapplication.viewmodel.SettingsViewModel
 import com.example.myapplication.viewmodel.updateAutoCollapseThinking
 import com.example.myapplication.viewmodel.updateAutoPreviewImages
+import com.example.myapplication.viewmodel.updateAppColorTheme
 import com.example.myapplication.viewmodel.updateCodeBlockAutoCollapse
 import com.example.myapplication.viewmodel.updateCodeBlockAutoWrap
 import com.example.myapplication.viewmodel.updateMessageTextScale
@@ -133,6 +134,7 @@ internal fun NavGraphBuilder.registerSettingsNavGraph(
                     }
                 },
                 onUpdateThemeMode = settingsViewModel::updateThemeMode,
+                onUpdateAppColorTheme = settingsViewModel::updateAppColorTheme,
                 onUpdateMessageTextScale = settingsViewModel::updateMessageTextScale,
                 onUpdateReasoningExpandedByDefault = settingsViewModel::updateReasoningExpandedByDefault,
                 onUpdateShowThinkingContent = settingsViewModel::updateShowThinkingContent,

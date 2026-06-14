@@ -15,6 +15,7 @@ import androidx.navigation.compose.rememberNavController
 import com.example.myapplication.BuildConfig
 import com.example.myapplication.di.AppGraph
 import com.example.myapplication.model.AppUpdateEnvironment
+import com.example.myapplication.model.AppColorTheme
 import com.example.myapplication.model.ThemeMode
 import com.example.myapplication.ui.component.AppUpdateDialogHost
 import com.example.myapplication.ui.navigation.AppNavHost
@@ -70,6 +71,7 @@ fun AppRoot(
     }
 
     ChatAppTheme(
+        appColorTheme = appSettings?.let { settingsUiState.appColorTheme } ?: AppColorTheme.MATCHA,
         darkTheme = resolvedDarkTheme ?: androidx.compose.foundation.isSystemInDarkTheme(),
     ) {
         Surface(

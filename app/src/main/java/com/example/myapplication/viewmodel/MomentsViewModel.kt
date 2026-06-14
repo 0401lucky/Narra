@@ -6,18 +6,23 @@ import androidx.lifecycle.viewModelScope
 import com.example.myapplication.data.repository.ai.AiSettingsRepository
 import com.example.myapplication.data.repository.moments.MomentsGenerationCoordinator
 import com.example.myapplication.data.repository.moments.MomentsRepository
+import com.example.myapplication.data.repository.roleplay.RoleplayRepository
 import com.example.myapplication.model.AppSettings
 import com.example.myapplication.model.MomentAuthorType
 import com.example.myapplication.model.MomentComment
 import com.example.myapplication.model.MomentPost
+import com.example.myapplication.model.ResolvedUserPersona
+import com.example.myapplication.model.RoleplayScenario
 import com.example.myapplication.model.sanitizeMomentDisplayName
 import com.example.myapplication.system.security.SensitiveTextRedactor
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
@@ -35,9 +40,11 @@ data class MomentsUiState(
 )
 
 class MomentsViewModel(
+    private val scenarioId: String = "",
     private val settingsRepository: AiSettingsRepository,
     private val momentsRepository: MomentsRepository,
     private val momentsGenerationCoordinator: MomentsGenerationCoordinator,
+    private val roleplayRepository: RoleplayRepository,
     private val nowProvider: () -> Long = { System.currentTimeMillis() },
 ) : ViewModel() {
 
@@ -60,13 +67,18 @@ class MomentsViewModel(
             combine(
                 settingsRepository.settingsFlow,
                 momentsRepository.observeTimeline(),
-            ) { settings, posts ->
-                settings to posts.withResolvedAvatars(settings)
-            }.collect { (settings, posts) ->
+                observeCurrentScenario(),
+            ) { settings, posts, scenario ->
+                val userPersona = resolveMomentUserPersona(settings, scenario)
+                MomentsTimelineProjection(
+                    posts = posts.withResolvedAvatars(settings, userPersona),
+                    viewerName = userPersona.displayName,
+                )
+            }.collect { projection ->
                 _uiState.update {
                     it.copy(
-                        posts = posts,
-                        viewerName = settings.resolvedUserDisplayName(),
+                        posts = projection.posts,
+                        viewerName = projection.viewerName,
                         isLoading = false,
                     )
                 }
@@ -87,8 +99,14 @@ class MomentsViewModel(
         if (normalizedContent.isBlank() || _uiState.value.isPublishing) return
         _uiState.update { it.copy(isPublishing = true) }
         viewModelScope.launch {
+            var publishedUserPersona: ResolvedUserPersona? = null
             val createdPost = runCatching {
-                momentsGenerationCoordinator.publishUserPost(normalizedContent)
+                val userPersona = resolveCurrentMomentUserPersona()
+                publishedUserPersona = userPersona
+                momentsGenerationCoordinator.publishUserPost(
+                    content = normalizedContent,
+                    userPersona = userPersona,
+                )
             }.onFailure { throwable ->
                 _uiState.update {
                     it.copy(errorMessage = throwable.toMomentsUiError("朋友圈发布失败"))
@@ -104,6 +122,7 @@ class MomentsViewModel(
                         postId = createdPost.id,
                         triggerText = "用户刚发布了这条朋友圈。",
                         isUserCommentTrigger = false,
+                        userPersona = publishedUserPersona ?: resolveCurrentMomentUserPersona(),
                     )
                 }.onFailure { throwable ->
                     _uiState.update {
@@ -117,9 +136,7 @@ class MomentsViewModel(
 
     fun toggleLikePost(postId: String) {
         viewModelScope.launch {
-            val viewerName = _uiState.value.viewerName.ifBlank {
-                settingsRepository.settingsFlow.first().resolvedUserDisplayName()
-            }
+            val viewerName = resolveCurrentMomentUserPersona().displayName
             val post = momentsRepository.getPost(postId) ?: return@launch
             val updated = post.toggleLike(viewerName)
             momentsRepository.updatePostLikes(
@@ -154,7 +171,7 @@ class MomentsViewModel(
         _uiState.update { it.copy(isGeneratingReplies = true, replyingPostId = postId) }
         viewModelScope.launch {
             runCatching {
-                val settings = settingsRepository.settingsFlow.first()
+                val userPersona = resolveCurrentMomentUserPersona()
                 val post = momentsRepository.getPost(postId)
                 val replyTarget = post?.comments?.firstOrNull { it.id == replyToCommentId }
                 val displayText = if (replyTarget != null) {
@@ -167,9 +184,9 @@ class MomentsViewModel(
                         id = "user-comment-${UUID.randomUUID()}",
                         postId = postId,
                         authorType = MomentAuthorType.USER,
-                        authorId = "user",
-                        authorName = settings.resolvedUserDisplayName(),
-                        authorAvatarUri = settings.resolvedUserAvatar(),
+                        authorId = userPersona.toMomentUserAuthorId(),
+                        authorName = userPersona.displayName,
+                        authorAvatarUri = userPersona.resolvedMomentAvatar(),
                         text = displayText,
                         createdAt = nowProvider(),
                     ),
@@ -179,6 +196,7 @@ class MomentsViewModel(
                     triggerText = replyTarget?.let { target ->
                         "用户回复了 ${target.authorName} 的评论「${target.text.take(80)}」：$normalizedText"
                     } ?: normalizedText,
+                    userPersona = userPersona,
                 )
             }.onFailure { throwable ->
                 _uiState.update {
@@ -220,8 +238,34 @@ class MomentsViewModel(
         _uiState.update { it.copy(errorMessage = null) }
     }
 
-    private fun List<MomentPost>.withResolvedAvatars(settings: AppSettings): List<MomentPost> {
-        val userAvatar = settings.resolvedUserAvatar()
+    private fun observeCurrentScenario(): Flow<RoleplayScenario?> {
+        val normalizedScenarioId = scenarioId.trim()
+        if (normalizedScenarioId.isBlank()) {
+            return flowOf(null)
+        }
+        return roleplayRepository.observeScenario(normalizedScenarioId)
+    }
+
+    private suspend fun resolveCurrentMomentUserPersona(): ResolvedUserPersona {
+        val settings = settingsRepository.settingsFlow.first()
+        val scenario = scenarioId.trim()
+            .takeIf(String::isNotBlank)
+            ?.let { roleplayRepository.getScenario(it) }
+        return resolveMomentUserPersona(settings, scenario)
+    }
+
+    private fun resolveMomentUserPersona(
+        settings: AppSettings,
+        scenario: RoleplayScenario?,
+    ): ResolvedUserPersona {
+        return settings.resolveUserPersona(maskId = scenario?.userPersonaMaskId.orEmpty())
+    }
+
+    private fun List<MomentPost>.withResolvedAvatars(
+        settings: AppSettings,
+        userPersona: ResolvedUserPersona,
+    ): List<MomentPost> {
+        val userAvatar = userPersona.resolvedMomentAvatar()
         val assistantAvatars = settings.resolvedAssistants().associate { assistant ->
             assistant.id to assistant.avatarUri
         }
@@ -267,19 +311,37 @@ class MomentsViewModel(
         )
     }
 
+    private fun ResolvedUserPersona.toMomentUserAuthorId(): String {
+        val maskId = sourceMaskId.trim()
+        return if (maskId.isBlank()) "user" else "user-mask-$maskId"
+    }
+
+    private fun ResolvedUserPersona.resolvedMomentAvatar(): String {
+        return avatarUrl.trim().ifBlank { avatarUri.trim() }
+    }
+
     companion object {
         fun factory(
+            scenarioId: String = "",
             settingsRepository: AiSettingsRepository,
             momentsRepository: MomentsRepository,
             momentsGenerationCoordinator: MomentsGenerationCoordinator,
+            roleplayRepository: RoleplayRepository,
         ): ViewModelProvider.Factory {
             return typedViewModelFactory {
                 MomentsViewModel(
+                    scenarioId = scenarioId,
                     settingsRepository = settingsRepository,
                     momentsRepository = momentsRepository,
                     momentsGenerationCoordinator = momentsGenerationCoordinator,
+                    roleplayRepository = roleplayRepository,
                 )
             }
         }
     }
 }
+
+private data class MomentsTimelineProjection(
+    val posts: List<MomentPost>,
+    val viewerName: String,
+)

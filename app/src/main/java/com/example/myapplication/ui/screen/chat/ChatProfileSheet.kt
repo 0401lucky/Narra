@@ -113,7 +113,7 @@ internal fun ProfileEditorSheet(
         else -> "未设置头像时，会显示昵称首字。"
     }
     val maskSummary = when {
-        maskCount <= 0 -> "还没有面具，可以从这里创建不同对话里的“我”。"
+        maskCount <= 0 -> "还没有默认面具，可以从这里创建不同对话里的“我”。"
         defaultMaskName.isNotBlank() -> "默认：$defaultMaskName · 共 $maskCount 个身份"
         else -> "$maskCount 个身份，未设置默认面具"
     }
@@ -304,7 +304,7 @@ internal fun ProfileEditorSheet(
                         }
                         Column(modifier = Modifier.weight(1f)) {
                             Text(
-                                text = "我的面具",
+                                text = "默认面具",
                                 style = MaterialTheme.typography.titleSmall,
                                 color = colorScheme.onSecondaryContainer,
                             )

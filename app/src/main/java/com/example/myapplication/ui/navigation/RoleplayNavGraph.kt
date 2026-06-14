@@ -263,9 +263,19 @@ internal fun NavGraphBuilder.registerRoleplayGraph(
                             )
                         }
                     },
-                    onOpenMoments = {
-                        navController.navigate(AppRoutes.moments()) {
-                            launchSingleTop = true
+                    onOpenMoments = { scenarioId ->
+                        if (scenarioId.isBlank()) {
+                            navController.navigate(AppRoutes.moments()) {
+                                launchSingleTop = true
+                            }
+                        } else {
+                            navigateToSessionFeature(scenarioId) { conversationId ->
+                                AppRoutes.moments(
+                                    conversationId = conversationId,
+                                    scenarioId = scenarioId,
+                                    ownerType = PhoneSnapshotOwnerType.CHARACTER,
+                                )
+                            }
                         }
                     },
                     onOpenDiary = { scenarioId ->
@@ -450,8 +460,29 @@ internal fun NavGraphBuilder.registerRoleplayGraph(
                             }
                         },
                         onOpenMoments = {
-                            navController.navigate(AppRoutes.moments()) {
-                                launchSingleTop = true
+                            val conversationId = roleplayState.currentSession?.conversationId.orEmpty()
+                            if (conversationId.isNotBlank()) {
+                                navController.navigate(
+                                    AppRoutes.moments(
+                                        conversationId = conversationId,
+                                        scenarioId = scenarioId,
+                                        ownerType = PhoneSnapshotOwnerType.CHARACTER,
+                                    ),
+                                ) {
+                                    launchSingleTop = true
+                                }
+                            } else {
+                                roleplayViewModel.ensureScenarioSession(scenarioId) { readyConversationId ->
+                                    navController.navigate(
+                                        AppRoutes.moments(
+                                            conversationId = readyConversationId,
+                                            scenarioId = scenarioId,
+                                            ownerType = PhoneSnapshotOwnerType.CHARACTER,
+                                        ),
+                                    ) {
+                                        launchSingleTop = true
+                                    }
+                                }
                             }
                         },
                         onOpenVideoCall = {

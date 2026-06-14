@@ -316,7 +316,7 @@ internal fun RoleplaySettingsSidebarContent(
             item {
                 RoleplayShortcutCard(
                     backdropState = backdropState,
-                    title = "我的面具",
+                    title = "默认面具",
                     summary = roleplayMaskSummary(settings),
                     icon = Icons.Default.ManageAccounts,
                     onClick = onOpenUserMasks,
@@ -1052,7 +1052,7 @@ private fun roleplayMaskSummary(settings: AppSettings): String {
     val masks = settings.normalizedUserPersonaMasks()
     val defaultMask = settings.resolvedDefaultUserPersonaMask()
     return when {
-        masks.isEmpty() -> "还没有面具，点击创建不同对话里的“我”"
+        masks.isEmpty() -> "还没有默认面具，点击创建不同对话里的“我”"
         defaultMask != null -> "默认：${defaultMask.name} · 共 ${masks.size} 个身份"
         else -> "${masks.size} 个身份，未设置默认"
     }

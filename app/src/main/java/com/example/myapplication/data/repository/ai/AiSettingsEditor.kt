@@ -7,6 +7,7 @@ import com.example.myapplication.model.FunctionModelProviderIds
 import com.example.myapplication.model.MemoryInjectionPosition
 import com.example.myapplication.model.ScreenTranslationSettings
 import com.example.myapplication.model.SearchSettings
+import com.example.myapplication.model.AppColorTheme
 import com.example.myapplication.model.ThemeMode
 import com.example.myapplication.model.ProviderSettings
 import com.example.myapplication.model.RoleplayNoBackgroundSkinSettings
@@ -36,6 +37,7 @@ interface AiSettingsEditor {
 
     suspend fun saveDisplaySettings(
         themeMode: ThemeMode,
+        appColorTheme: AppColorTheme,
         messageTextScale: Float,
         reasoningExpandedByDefault: Boolean,
         showThinkingContent: Boolean,
@@ -129,9 +131,9 @@ class DefaultAiSettingsEditor(
             selectedAssistantId = selectedAssistantId,
         )
     }
-
     override suspend fun saveDisplaySettings(
         themeMode: ThemeMode,
+        appColorTheme: AppColorTheme,
         messageTextScale: Float,
         reasoningExpandedByDefault: Boolean,
         showThinkingContent: Boolean,
@@ -152,6 +154,7 @@ class DefaultAiSettingsEditor(
     ) {
         settingsStore.saveDisplaySettings(
             themeMode = themeMode,
+            appColorTheme = appColorTheme,
             messageTextScale = messageTextScale,
             reasoningExpandedByDefault = reasoningExpandedByDefault,
             showThinkingContent = showThinkingContent,

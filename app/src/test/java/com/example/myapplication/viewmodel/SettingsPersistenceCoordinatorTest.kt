@@ -1,6 +1,7 @@
 package com.example.myapplication.viewmodel
 
 import com.example.myapplication.data.repository.ai.AiSettingsEditor
+import com.example.myapplication.model.AppColorTheme
 import com.example.myapplication.model.AppSettings
 import com.example.myapplication.model.Assistant
 import com.example.myapplication.model.FunctionModelProviderIds
@@ -249,6 +250,7 @@ class SettingsPersistenceCoordinatorTest {
         var savedProviders: List<ProviderSettings> = emptyList()
         var savedSelectedProviderId: String = ""
         var savedThemeMode: ThemeMode = ThemeMode.SYSTEM
+        var savedAppColorTheme: AppColorTheme = AppColorTheme.MATCHA
         var savedMessageTextScale: Float = 1f
         var savedReasoningExpandedByDefault: Boolean = true
         var savedShowThinkingContent: Boolean = true
@@ -293,6 +295,7 @@ class SettingsPersistenceCoordinatorTest {
 
         override suspend fun saveDisplaySettings(
             themeMode: ThemeMode,
+            appColorTheme: AppColorTheme,
             messageTextScale: Float,
             reasoningExpandedByDefault: Boolean,
             showThinkingContent: Boolean,
@@ -312,6 +315,7 @@ class SettingsPersistenceCoordinatorTest {
             roleplayNoBackgroundSkin: RoleplayNoBackgroundSkinSettings,
         ) {
             savedThemeMode = themeMode
+            savedAppColorTheme = appColorTheme
             savedMessageTextScale = messageTextScale
             savedReasoningExpandedByDefault = reasoningExpandedByDefault
             savedShowThinkingContent = showThinkingContent

@@ -846,7 +846,7 @@ fun RoleplayScenarioEditScreen(
                 verticalArrangement = Arrangement.spacedBy(4.dp),
             ) {
                 Text(
-                    text = "选择用户面具",
+                    text = "选择本会话的用户面具",
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold,
                     color = palette.title,

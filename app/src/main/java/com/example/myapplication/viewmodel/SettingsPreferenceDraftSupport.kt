@@ -2,11 +2,16 @@ package com.example.myapplication.viewmodel
 
 import com.example.myapplication.model.ScreenTranslationSettings
 import com.example.myapplication.model.ThemeMode
+import com.example.myapplication.model.AppColorTheme
 import com.example.myapplication.model.RoleplayNoBackgroundSkinSettings
 
 object SettingsPreferenceDraftSupport {
     fun updateThemeMode(current: SettingsUiState, themeMode: ThemeMode): SettingsUiState {
         return current.copy(themeMode = themeMode, message = null)
+    }
+
+    fun updateAppColorTheme(current: SettingsUiState, appColorTheme: AppColorTheme): SettingsUiState {
+        return current.copy(appColorTheme = appColorTheme, message = null)
     }
 
     fun updateMessageTextScale(current: SettingsUiState, messageTextScale: Float): SettingsUiState {

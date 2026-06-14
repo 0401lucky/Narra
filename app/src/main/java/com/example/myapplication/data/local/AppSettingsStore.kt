@@ -39,6 +39,7 @@ import com.example.myapplication.system.json.AppJson
 import com.example.myapplication.system.logging.logFailure
 import com.example.myapplication.model.SearchSourceConfig
 import com.example.myapplication.model.ScreenTranslationSettings
+import com.example.myapplication.model.AppColorTheme
 import com.example.myapplication.model.ThemeMode
 import com.example.myapplication.model.TranslationHistoryEntry
 import com.example.myapplication.model.UserPersonaMask
@@ -73,6 +74,7 @@ interface SettingsStore {
 
     suspend fun saveDisplaySettings(
         themeMode: ThemeMode,
+        appColorTheme: AppColorTheme,
         messageTextScale: Float,
         reasoningExpandedByDefault: Boolean,
         showThinkingContent: Boolean,
@@ -211,6 +213,9 @@ class AppSettingsStore(
             functionModelProviderIds = functionModelProviderIds,
             themeMode = ThemeMode.fromStorageValue(
                 preferences[PreferencesKeys.themeMode].orEmpty(),
+            ),
+            appColorTheme = AppColorTheme.fromStorageValue(
+                preferences[PreferencesKeys.appColorTheme].orEmpty(),
             ),
             messageTextScale = preferences[PreferencesKeys.messageTextScale] ?: 1f,
             reasoningExpandedByDefault = preferences[PreferencesKeys.reasoningExpandedByDefault] ?: true,
@@ -393,9 +398,9 @@ class AppSettingsStore(
             )
         }
     }
-
     override suspend fun saveDisplaySettings(
         themeMode: ThemeMode,
+        appColorTheme: AppColorTheme,
         messageTextScale: Float,
         reasoningExpandedByDefault: Boolean,
         showThinkingContent: Boolean,
@@ -416,6 +421,7 @@ class AppSettingsStore(
     ) {
         context.dataStore.edit { preferences ->
             preferences[PreferencesKeys.themeMode] = themeMode.storageValue
+            preferences[PreferencesKeys.appColorTheme] = appColorTheme.storageValue
             preferences[PreferencesKeys.messageTextScale] = messageTextScale.coerceIn(0.85f, 1.25f)
             preferences[PreferencesKeys.reasoningExpandedByDefault] = reasoningExpandedByDefault
             preferences[PreferencesKeys.showThinkingContent] = showThinkingContent
@@ -1062,6 +1068,7 @@ class AppSettingsStore(
         val selectedProviderId = stringPreferencesKey("selected_provider_id")
         val functionModelProviderIdsJson = stringPreferencesKey("function_model_provider_ids_json")
         val themeMode = stringPreferencesKey("theme_mode")
+        val appColorTheme = stringPreferencesKey("app_color_theme")
         val messageTextScale = floatPreferencesKey("message_text_scale")
         val reasoningExpandedByDefault = booleanPreferencesKey("reasoning_expanded_by_default")
         val showThinkingContent = booleanPreferencesKey("show_thinking_content")

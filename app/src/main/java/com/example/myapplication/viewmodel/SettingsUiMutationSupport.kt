@@ -47,6 +47,7 @@ object SettingsUiMutationSupport {
             selectedProviderId = result.selectedProviderId,
             functionModelProviderIds = result.functionModelProviderIds ?: sourceState.functionModelProviderIds,
             themeMode = sourceState.themeMode,
+            appColorTheme = sourceState.appColorTheme,
             messageTextScale = sourceState.messageTextScale,
             reasoningExpandedByDefault = sourceState.reasoningExpandedByDefault,
             showThinkingContent = sourceState.showThinkingContent,

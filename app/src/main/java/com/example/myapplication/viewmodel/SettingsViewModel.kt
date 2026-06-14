@@ -9,6 +9,7 @@ import com.example.myapplication.data.repository.ai.AiSettingsRepository
 import com.example.myapplication.data.repository.VoiceCloneSampleStorage
 import com.example.myapplication.data.repository.tts.MimoTtsClient
 import com.example.myapplication.data.repository.tts.MimoTtsRequest
+import com.example.myapplication.model.AppColorTheme
 import com.example.myapplication.model.AppSettings
 import com.example.myapplication.model.Assistant
 import com.example.myapplication.model.ConnectionHealth
@@ -54,6 +55,7 @@ data class SettingsUiState(
     val pendingFetchedModels: List<ModelInfo> = emptyList(),
     val pendingFetchProviderId: String = "",
     val themeMode: ThemeMode = ThemeMode.SYSTEM,
+    val appColorTheme: AppColorTheme = AppColorTheme.MATCHA,
     val messageTextScale: Float = 1f,
     val reasoningExpandedByDefault: Boolean = true,
     val showThinkingContent: Boolean = true,
@@ -105,6 +107,7 @@ data class SettingsUiState(
             selectedProviderId != resolvedSavedProviderId ||
             functionModelProviderIds != savedSettings.functionModelProviderIds.normalized(savedProviders.map(ProviderSettings::id).toSet()) ||
             themeMode != savedSettings.themeMode ||
+            appColorTheme != savedSettings.appColorTheme ||
             messageTextScale != savedSettings.messageTextScale ||
             reasoningExpandedByDefault != savedSettings.reasoningExpandedByDefault ||
             showThinkingContent != savedSettings.showThinkingContent ||

@@ -1,6 +1,7 @@
 package com.example.myapplication.data.repository.ai
 
 import com.example.myapplication.data.remote.ApiServiceFactory
+import com.example.myapplication.model.AppColorTheme
 import com.example.myapplication.model.AppSettings
 import com.example.myapplication.model.Assistant
 import com.example.myapplication.model.CONTEXT_IMPORT_MAX_ASSISTANT_EXAMPLE_DIALOGUES
@@ -108,6 +109,7 @@ class AiSettingsServicesTest {
 
         editor.saveDisplaySettings(
             themeMode = ThemeMode.DARK,
+            appColorTheme = AppColorTheme.OCEAN,
             messageTextScale = 1.1f,
             reasoningExpandedByDefault = false,
             showThinkingContent = false,
@@ -166,6 +168,7 @@ class AiSettingsServicesTest {
 
         val saved = settingsStore.settingsFlow.first()
         assertEquals(ThemeMode.DARK, saved.themeMode)
+        assertEquals(AppColorTheme.OCEAN, saved.appColorTheme)
         assertEquals(1.1f, saved.messageTextScale)
         assertEquals(RoleplayImmersiveMode.HIDE_SYSTEM_BARS, saved.roleplayImmersiveMode)
         assertTrue(saved.roleplayHighContrast)

@@ -39,6 +39,7 @@ class SettingsPersistenceCoordinator(
         settingsEditor.saveFunctionModelProviderIds(normalizedFunctionModelProviderIds)
         settingsEditor.saveDisplaySettings(
             themeMode = currentState.themeMode,
+            appColorTheme = currentState.appColorTheme,
             messageTextScale = currentState.messageTextScale,
             reasoningExpandedByDefault = currentState.reasoningExpandedByDefault,
             showThinkingContent = currentState.showThinkingContent,

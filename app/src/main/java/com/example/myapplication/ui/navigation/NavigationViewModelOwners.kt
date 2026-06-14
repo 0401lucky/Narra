@@ -152,11 +152,18 @@ internal fun rememberMomentsViewModel(
     appGraph: AppGraph,
     backStackEntry: NavBackStackEntry,
 ): MomentsViewModel {
+    val rawConversationId = backStackEntry.arguments?.getString("conversationId").orEmpty()
+    val rawScenarioId = backStackEntry.arguments?.getString("scenarioId").orEmpty()
+    val conversationId = Uri.decode(rawConversationId)
+    val scenarioId = Uri.decode(rawScenarioId)
     return viewModel(
+        key = "moments-${scenarioId.ifBlank { "global" }}-${conversationId.ifBlank { "default" }}",
         factory = MomentsViewModel.factory(
+            scenarioId = scenarioId,
             settingsRepository = appGraph.aiSettingsRepository,
             momentsRepository = appGraph.momentsRepository,
             momentsGenerationCoordinator = appGraph.momentsGenerationCoordinator,
+            roleplayRepository = appGraph.roleplayRepository,
         ),
     )
 }

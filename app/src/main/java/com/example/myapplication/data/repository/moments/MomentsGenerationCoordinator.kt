@@ -17,6 +17,7 @@ import com.example.myapplication.model.MomentNpcFallbackNames
 import com.example.myapplication.model.MomentPost
 import com.example.myapplication.model.ProviderFunction
 import com.example.myapplication.model.ProviderSettings
+import com.example.myapplication.model.ResolvedUserPersona
 import com.example.myapplication.model.sanitizeMomentDisplayName
 import kotlinx.coroutines.TimeoutCancellationException
 import kotlinx.coroutines.flow.first
@@ -31,15 +32,19 @@ class MomentsGenerationCoordinator(
     private val imageSaver: suspend (String) -> SavedImageFile,
     private val nowProvider: () -> Long = { System.currentTimeMillis() },
 ) {
-    suspend fun publishUserPost(content: String): MomentPost {
+    suspend fun publishUserPost(
+        content: String,
+        userPersona: ResolvedUserPersona? = null,
+    ): MomentPost {
         val settings = settingsRepository.settingsFlow.first()
+        val resolvedUserPersona = userPersona ?: settings.resolveUserPersona()
         val now = nowProvider()
         val post = MomentPost(
             id = "user-moment-${UUID.randomUUID()}",
             authorType = MomentAuthorType.USER,
-            authorId = "user",
-            authorName = settings.resolvedUserDisplayName(),
-            authorAvatarUri = settings.resolvedUserAvatar(),
+            authorId = resolvedUserPersona.toMomentUserAuthorId(),
+            authorName = resolvedUserPersona.displayName,
+            authorAvatarUri = resolvedUserPersona.resolvedMomentAvatar(),
             authorLabel = "我",
             content = content.trim(),
             createdAt = now,
@@ -54,8 +59,10 @@ class MomentsGenerationCoordinator(
         triggerText: String,
         isUserCommentTrigger: Boolean = true,
         excludeAssistantIds: Set<String> = emptySet(),
+        userPersona: ResolvedUserPersona? = null,
     ): List<MomentComment> {
         val settings = settingsRepository.settingsFlow.first()
+        val resolvedUserPersona = userPersona ?: settings.resolveUserPersona()
         val post = momentsRepository.getPost(postId) ?: return emptyList()
         val provider = settings.resolveFunctionProvider(ProviderFunction.MOMENTS) ?: return emptyList()
         val modelId = settings.resolveFunctionModel(ProviderFunction.MOMENTS)
@@ -90,12 +97,13 @@ class MomentsGenerationCoordinator(
                 settings = settings,
                 assistants = assistants,
                 triggerText = triggerText,
+                userName = resolvedUserPersona.displayName,
             ),
             postAuthorName = post.authorName.sanitizedForMoment(post.authorId),
             postAuthorType = post.authorType,
             postContent = post.content,
             existingComments = existingComments,
-            userName = settings.resolvedUserDisplayName(),
+            userName = resolvedUserPersona.displayName,
             userComment = triggerText,
             isUserCommentTrigger = isUserCommentTrigger,
             baseUrl = provider.baseUrl,
@@ -196,10 +204,11 @@ class MomentsGenerationCoordinator(
             "${post.authorName.sanitizedForMoment(post.authorId)}：${post.content.take(60)}"
         }
         val assistantDisplayName = assistant.momentDisplayName()
+        val resolvedUserPersona = settings.resolveUserPersona()
         val draft = aiPromptExtrasService.generateMomentPost(
             assistantName = assistantDisplayName,
             assistantPersona = assistant.toMomentPersona(),
-            userName = settings.resolvedUserDisplayName(),
+            userName = resolvedUserPersona.displayName,
             recentMoments = recentMoments,
             baseUrl = provider.baseUrl,
             apiKey = provider.apiKey,
@@ -362,9 +371,10 @@ class MomentsGenerationCoordinator(
         settings: AppSettings,
         assistants: List<Assistant>,
         triggerText: String,
+        userName: String,
     ): List<String> {
         val usedNames = buildSet {
-            add(settings.resolvedUserDisplayName())
+            add(userName)
             add(post.authorName)
             post.comments.forEach { comment -> add(comment.authorName) }
             assistants.forEach { assistant -> add(assistant.momentDisplayName()) }
@@ -388,6 +398,15 @@ class MomentsGenerationCoordinator(
             name = this,
             stableKey = stableKey,
         )
+    }
+
+    private fun ResolvedUserPersona.toMomentUserAuthorId(): String {
+        val maskId = sourceMaskId.trim()
+        return if (maskId.isBlank()) "user" else "user-mask-$maskId"
+    }
+
+    private fun ResolvedUserPersona.resolvedMomentAvatar(): String {
+        return avatarUrl.trim().ifBlank { avatarUri.trim() }
     }
 
     private companion object {

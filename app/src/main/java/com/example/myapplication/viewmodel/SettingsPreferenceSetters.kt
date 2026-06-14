@@ -4,6 +4,7 @@ import com.example.myapplication.model.RoleplayImmersiveMode
 import com.example.myapplication.model.RoleplayLineHeightScale
 import com.example.myapplication.model.RoleplayNoBackgroundSkinSettings
 import com.example.myapplication.model.ThemeMode
+import com.example.myapplication.model.AppColorTheme
 
 /**
  * T7.4 — 从 SettingsViewModel 抽出的 20 个偏好 setter。
@@ -13,6 +14,9 @@ import com.example.myapplication.model.ThemeMode
  */
 fun SettingsViewModel.updateThemeMode(themeMode: ThemeMode) =
     updateUiState { SettingsPreferenceDraftSupport.updateThemeMode(it, themeMode) }
+
+fun SettingsViewModel.updateAppColorTheme(appColorTheme: AppColorTheme) =
+    updateUiState { SettingsPreferenceDraftSupport.updateAppColorTheme(it, appColorTheme) }
 
 fun SettingsViewModel.updateMessageTextScale(messageTextScale: Float) =
     updateUiState { SettingsPreferenceDraftSupport.updateMessageTextScale(it, messageTextScale) }

@@ -1,6 +1,7 @@
 package com.example.myapplication.viewmodel
 
 import com.example.myapplication.data.repository.ai.AiSettingsEditor
+import com.example.myapplication.model.AppColorTheme
 import com.example.myapplication.model.AppSettings
 import com.example.myapplication.model.Assistant
 import com.example.myapplication.model.DEFAULT_ASSISTANT_ID
@@ -163,6 +164,7 @@ class SettingsAssistantCoordinatorTest {
 
         override suspend fun saveDisplaySettings(
             themeMode: ThemeMode,
+            appColorTheme: AppColorTheme,
             messageTextScale: Float,
             reasoningExpandedByDefault: Boolean,
             showThinkingContent: Boolean,

@@ -8,6 +8,7 @@ data class AppSettings(
     val selectedProviderId: String = "",
     val functionModelProviderIds: FunctionModelProviderIds = FunctionModelProviderIds(),
     val themeMode: ThemeMode = ThemeMode.SYSTEM,
+    val appColorTheme: AppColorTheme = AppColorTheme.MATCHA,
     val messageTextScale: Float = 1f,
     val reasoningExpandedByDefault: Boolean = true,
     val showThinkingContent: Boolean = true,

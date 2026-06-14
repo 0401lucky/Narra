@@ -46,6 +46,7 @@ object SettingsDraftStateSupport {
                 functionModelProviderIds = resolvedFunctionModelProviderIds,
                 savedSettings = settings,
                 themeMode = settings.themeMode,
+                appColorTheme = settings.appColorTheme,
                 messageTextScale = settings.messageTextScale,
                 reasoningExpandedByDefault = settings.reasoningExpandedByDefault,
                 showThinkingContent = settings.showThinkingContent,

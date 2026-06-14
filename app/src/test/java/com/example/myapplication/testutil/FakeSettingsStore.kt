@@ -1,6 +1,7 @@
 package com.example.myapplication.testutil
 
 import com.example.myapplication.data.local.SettingsStore
+import com.example.myapplication.model.AppColorTheme
 import com.example.myapplication.model.AppSettings
 import com.example.myapplication.model.Assistant
 import com.example.myapplication.model.DEFAULT_ROLEPLAY_LONGFORM_TARGET_CHARS
@@ -91,6 +92,7 @@ class FakeSettingsStore(
 
     override suspend fun saveDisplaySettings(
         themeMode: ThemeMode,
+        appColorTheme: AppColorTheme,
         messageTextScale: Float,
         reasoningExpandedByDefault: Boolean,
         showThinkingContent: Boolean,
@@ -111,6 +113,7 @@ class FakeSettingsStore(
     ) {
         state.value = state.value.copy(
             themeMode = themeMode,
+            appColorTheme = appColorTheme,
             messageTextScale = messageTextScale,
             reasoningExpandedByDefault = reasoningExpandedByDefault,
             showThinkingContent = showThinkingContent,

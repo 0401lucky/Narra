@@ -1,5 +1,6 @@
 package com.example.myapplication.ui.screen.settings
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -14,6 +15,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Assignment
 import androidx.compose.material.icons.filled.AutoAwesome
+import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.DarkMode
 import androidx.compose.material.icons.filled.Extension
 import androidx.compose.material.icons.filled.Face
@@ -22,6 +24,7 @@ import androidx.compose.material.icons.filled.Image
 import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.LibraryBooks
 import androidx.compose.material.icons.filled.LightMode
+import androidx.compose.material.icons.filled.Palette
 import androidx.compose.material.icons.filled.Psychology
 import androidx.compose.material.icons.filled.RecordVoiceOver
 import androidx.compose.material.icons.filled.Settings
@@ -48,6 +51,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.example.myapplication.R
 import com.example.myapplication.model.ThemeMode
+import com.example.myapplication.model.AppColorTheme
 import com.example.myapplication.viewmodel.SettingsUiState
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -71,6 +75,7 @@ fun SettingsScreen(
     onOpenHome: () -> Unit,
     onNavigateBack: () -> Unit,
     onUpdateThemeMode: (ThemeMode) -> Unit,
+    onUpdateAppColorTheme: (AppColorTheme) -> Unit,
     onUpdateMessageTextScale: (Float) -> Unit,
     onUpdateReasoningExpandedByDefault: (Boolean) -> Unit,
     onUpdateShowThinkingContent: (Boolean) -> Unit,
@@ -87,6 +92,7 @@ fun SettingsScreen(
     val savedHasRequiredConfig = uiState.savedSettings.hasRequiredConfig()
     val canSave = !uiState.isSaving && uiState.hasDraftChanges()
     var showThemeModeSheet by rememberSaveable { mutableStateOf(false) }
+    var showAppColorThemeSheet by rememberSaveable { mutableStateOf(false) }
     var showDisplaySettingsSheet by rememberSaveable { mutableStateOf(false) }
 
     val providerSummary = uiState.currentProvider?.let { provider ->
@@ -174,6 +180,28 @@ fun SettingsScreen(
                     )
                     SettingsGroupDivider()
                     SettingsListRow(
+                        leadingContent = { Icon(Icons.Default.Palette, contentDescription = null, tint = palette.title) },
+                        title = "主题色调",
+                        supportingText = uiState.appColorTheme.label,
+                        onClick = { showAppColorThemeSheet = true },
+                        trailingContent = {
+                            Surface(
+                                shape = RoundedCornerShape(12.dp),
+                                color = palette.accentSoft,
+                            ) {
+                                Row(
+                                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+                                ) {
+                                    Text(uiState.appColorTheme.label, style = MaterialTheme.typography.labelMedium, color = palette.title)
+                                    Icon(Icons.Default.KeyboardArrowDown, contentDescription = null, modifier = Modifier.size(16.dp), tint = palette.title)
+                                }
+                            }
+                        }
+                    )
+                    SettingsGroupDivider()
+                    SettingsListRow(
                         leadingContent = { Icon(Icons.Default.Settings, contentDescription = null, tint = palette.title) },
                         title = stringResource(R.string.settings_display),
                         supportingText = displaySummary,
@@ -244,6 +272,17 @@ fun SettingsScreen(
                 onUpdateThemeMode(themeMode)
                 showThemeModeSheet = false
             },
+        )
+    }
+
+    if (showAppColorThemeSheet) {
+        AppColorThemeSheet(
+            selectedTheme = uiState.appColorTheme,
+            onDismissRequest = { showAppColorThemeSheet = false },
+            onSelectTheme = { appColorTheme ->
+                onUpdateAppColorTheme(appColorTheme)
+                showAppColorThemeSheet = false
+            }
         )
     }
 
@@ -443,5 +482,56 @@ private fun displayScaleLabel(scale: Float): String {
         scale <= 0.92f -> stringResource(R.string.settings_text_scale_compact)
         scale >= 1.12f -> stringResource(R.string.settings_text_scale_large)
         else -> stringResource(R.string.settings_text_scale_standard)
+    }
+}
+
+@androidx.compose.material3.ExperimentalMaterial3Api
+@Composable
+private fun AppColorThemeSheet(
+    selectedTheme: com.example.myapplication.model.AppColorTheme,
+    onDismissRequest: () -> Unit,
+    onSelectTheme: (com.example.myapplication.model.AppColorTheme) -> Unit,
+) {
+    androidx.compose.material3.ModalBottomSheet(
+        onDismissRequest = onDismissRequest,
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(bottom = 32.dp),
+        ) {
+            Text(
+                text = "选择主题色调",
+                style = MaterialTheme.typography.titleMedium,
+                modifier = Modifier.padding(horizontal = 24.dp, vertical = 16.dp),
+            )
+            com.example.myapplication.model.AppColorTheme.entries.forEach { appColorTheme ->
+                val icon = when (appColorTheme) {
+                    com.example.myapplication.model.AppColorTheme.MATCHA -> androidx.compose.material.icons.Icons.Default.Palette
+                    com.example.myapplication.model.AppColorTheme.VANILLA -> androidx.compose.material.icons.Icons.Default.Palette
+                    com.example.myapplication.model.AppColorTheme.OCEAN -> androidx.compose.material.icons.Icons.Default.Palette
+                }
+                androidx.compose.material3.ListItem(
+                    headlineContent = { Text(appColorTheme.label) },
+                    leadingContent = {
+                        androidx.compose.material3.Icon(
+                            icon,
+                            contentDescription = null,
+                            tint = if (appColorTheme == selectedTheme) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    },
+                    trailingContent = {
+                        if (appColorTheme == selectedTheme) {
+                            androidx.compose.material3.Icon(
+                                androidx.compose.material.icons.Icons.Default.Check,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.primary
+                            )
+                        }
+                    },
+                    modifier = Modifier.clickable { onSelectTheme(appColorTheme) }
+                )
+            }
+        }
     }
 }

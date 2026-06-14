@@ -2,6 +2,7 @@ package com.example.myapplication.viewmodel
 
 import com.example.myapplication.data.repository.ai.AiModelCatalogRepository
 import com.example.myapplication.data.repository.ai.AiSettingsEditor
+import com.example.myapplication.model.AppColorTheme
 import com.example.myapplication.model.Assistant
 import com.example.myapplication.model.ModelInfo
 import com.example.myapplication.model.ProviderSettings
@@ -112,6 +113,7 @@ class SettingsModelLoadCoordinatorTest {
 
         override suspend fun saveDisplaySettings(
             themeMode: ThemeMode,
+            appColorTheme: AppColorTheme,
             messageTextScale: Float,
             reasoningExpandedByDefault: Boolean,
             showThinkingContent: Boolean,
