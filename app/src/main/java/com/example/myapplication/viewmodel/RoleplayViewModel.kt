@@ -1270,6 +1270,12 @@ class RoleplayViewModel(
         }
     }
 
+    fun requestGroupParticipantReply(participantId: String) {
+        sendActionSupport.requestGroupParticipantReply(participantId)?.let { job ->
+            sendingJob = job
+        }
+    }
+
     private fun observeOnlineCompensation() {
         viewModelScope.launch {
             currentRawMessages.collectLatest {

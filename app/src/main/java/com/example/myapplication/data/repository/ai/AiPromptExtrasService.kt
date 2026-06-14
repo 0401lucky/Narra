@@ -187,6 +187,7 @@ interface AiPromptExtrasService {
 
     suspend fun generateMomentCommentReplies(
         assistants: List<MomentAssistantContext>,
+        npcNames: List<String> = emptyList(),
         postAuthorName: String,
         postAuthorType: MomentAuthorType = MomentAuthorType.ASSISTANT,
         postContent: String,
@@ -544,6 +545,7 @@ class DefaultAiPromptExtrasService internal constructor(
 
     override suspend fun generateMomentCommentReplies(
         assistants: List<MomentAssistantContext>,
+        npcNames: List<String>,
         postAuthorName: String,
         postAuthorType: MomentAuthorType,
         postContent: String,
@@ -558,6 +560,7 @@ class DefaultAiPromptExtrasService internal constructor(
         provider: ProviderSettings?,
     ): List<MomentCommentDraft> = phoneService.generateMomentCommentReplies(
         assistants = assistants,
+        npcNames = npcNames,
         postAuthorName = postAuthorName,
         postAuthorType = postAuthorType,
         postContent = postContent,

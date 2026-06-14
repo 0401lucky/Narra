@@ -12,6 +12,7 @@ import com.example.myapplication.data.repository.tts.MimoTtsRequest
 import com.example.myapplication.model.AppSettings
 import com.example.myapplication.model.Assistant
 import com.example.myapplication.model.ConnectionHealth
+import com.example.myapplication.model.DEFAULT_PRESET_ID
 import com.example.myapplication.model.DEFAULT_ROLEPLAY_LONGFORM_TARGET_CHARS
 import com.example.myapplication.model.FunctionModelProviderIds
 import com.example.myapplication.model.ModelInfo
@@ -600,7 +601,26 @@ class SettingsViewModel(
     fun saveDefaultPresetId(presetId: String) = launchPersistenceMutation(
         defaultErrorMessage = "默认预设设置失败",
         action = {
-            settingsEditor.saveDefaultPresetId(presetId)
+            val settings = storedSettings.value
+            val normalizedPresetId = presetId.trim().ifBlank { DEFAULT_PRESET_ID }
+            val currentGlobalPresetId = settings.defaultPresetId.trim().ifBlank { DEFAULT_PRESET_ID }
+            val shouldMigrateLegacyDefaultAssistants =
+                currentGlobalPresetId == DEFAULT_PRESET_ID && normalizedPresetId != DEFAULT_PRESET_ID
+            val migratedAssistants = if (shouldMigrateLegacyDefaultAssistants) {
+                settings.assistants.map { assistant ->
+                    if (assistant.defaultPresetId.trim() == DEFAULT_PRESET_ID) {
+                        assistant.copy(defaultPresetId = "")
+                    } else {
+                        assistant
+                    }
+                }
+            } else {
+                settings.assistants
+            }
+            settingsEditor.saveDefaultPresetId(normalizedPresetId)
+            if (migratedAssistants != settings.assistants) {
+                settingsEditor.saveAssistants(migratedAssistants, settings.selectedAssistantId)
+            }
             SettingsPersistenceResult(
                 message = "默认预设已更新",
             )

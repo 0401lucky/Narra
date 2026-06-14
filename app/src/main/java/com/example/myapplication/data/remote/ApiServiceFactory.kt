@@ -11,6 +11,7 @@ class ApiServiceFactory {
     private companion object {
         const val ANTHROPIC_VERSION = "2023-06-01"
         const val DEFAULT_READ_TIMEOUT_SECONDS = 120L
+        const val STREAM_READ_TIMEOUT_SECONDS = 600L
         // 非流式 extras（日记 / 摘要 / 记忆 / 标题 / 手机等）使用的长超时：
         // 思考模型 + 长上下文的首字节返回常常 >120s，120s 会触发 SocketTimeoutException
         // 而服务端仍在完成生成，API 后台看得到完整输出但客户端拿不到。
@@ -232,12 +233,13 @@ class ApiServiceFactory {
 
         val client = OkHttpClient.Builder()
             .connectTimeout(30, TimeUnit.SECONDS)
-            .readTimeout(DEFAULT_READ_TIMEOUT_SECONDS, TimeUnit.SECONDS)
+            .readTimeout(STREAM_READ_TIMEOUT_SECONDS, TimeUnit.SECONDS)
             .writeTimeout(30, TimeUnit.SECONDS)
             .addInterceptor { chain ->
                 val request = chain.request().newBuilder()
                     .addHeader("Authorization", "Bearer $trimmedKey")
                     .addHeader("Accept", "text/event-stream")
+                    .addHeader("Cache-Control", "no-cache")
                     .build()
                 chain.proceed(request)
             }
@@ -299,13 +301,14 @@ class ApiServiceFactory {
 
         val client = OkHttpClient.Builder()
             .connectTimeout(30, TimeUnit.SECONDS)
-            .readTimeout(DEFAULT_READ_TIMEOUT_SECONDS, TimeUnit.SECONDS)
+            .readTimeout(STREAM_READ_TIMEOUT_SECONDS, TimeUnit.SECONDS)
             .writeTimeout(30, TimeUnit.SECONDS)
             .addInterceptor { chain ->
                 val request = chain.request().newBuilder()
                     .addHeader("x-api-key", trimmedKey)
                     .addHeader("anthropic-version", ANTHROPIC_VERSION)
                     .addHeader("Accept", "text/event-stream")
+                    .addHeader("Cache-Control", "no-cache")
                     .build()
                 chain.proceed(request)
             }

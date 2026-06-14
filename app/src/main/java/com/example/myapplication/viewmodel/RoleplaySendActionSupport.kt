@@ -47,6 +47,7 @@ import com.example.myapplication.roleplay.RoleplayGroupDirector
 import com.example.myapplication.roleplay.RoleplayGroupDirectorRequest
 import com.example.myapplication.roleplay.RoleplayGroupMemberContext
 import com.example.myapplication.roleplay.RoleplayGroupReplyPlanner
+import com.example.myapplication.roleplay.RoleplayGroupReplyTurn
 import com.example.myapplication.roleplay.buildRoleplayGroupSpeakerDirectorNote
 import com.example.myapplication.roleplay.RoleplayMessageFormatSupport
 import com.example.myapplication.roleplay.RoleplayRoundTripSupport
@@ -408,8 +409,12 @@ internal class RoleplaySendActionSupport(
     }
 
     fun sendMessage(): Job? {
+        return sendMessageText(uiState().input)
+    }
+
+    fun sendMessageText(rawText: String): Job? {
         val state = uiState()
-        val text = state.input.trim()
+        val text = rawText.trim()
         val scenario = state.currentScenario
         if (text.isBlank()) {
             updateUiState { current ->
@@ -439,6 +444,91 @@ internal class RoleplaySendActionSupport(
             userParts = listOf(textMessagePart(text)),
             nextInput = "",
         )
+    }
+
+    fun requestGroupParticipantReply(participantId: String): Job? {
+        val state = uiState()
+        val scenario = state.currentScenario
+        if (participantId.isBlank()) {
+            return null
+        }
+        if (scenario == null) {
+            updateUiState { current ->
+                RoleplayStateSupport.applyErrorMessage(current, "当前场景不存在")
+            }
+            return null
+        }
+        if (!scenario.isGroupChat || scenario.interactionMode != RoleplayInteractionMode.ONLINE_PHONE) {
+            updateUiState { current ->
+                RoleplayStateSupport.applyErrorMessage(current, "快捷发言仅支持线上群聊")
+            }
+            return null
+        }
+        if (!state.settings.hasRequiredConfig()) {
+            updateUiState { current ->
+                RoleplayStateSupport.applyErrorMessage(current, "请先完成模型配置后再开始剧情互动")
+            }
+            return null
+        }
+        if (state.isSending) {
+            return null
+        }
+
+        val sendingRunId = beginSendingRun()
+        cancelSuggestionGeneration(false)
+        updateUiState { current ->
+            RoleplayStateSupport.beginSending(current, current.input)
+        }
+
+        return scope.launch {
+            try {
+                if (!isSendingRunActive(sendingRunId) || !isScenarioActive(scenario.id)) {
+                    return@launch
+                }
+                val startResult = if (state.currentSession == null) {
+                    roleplayRepository.startScenario(scenario.id)
+                } else {
+                    null
+                }
+                if (!isSendingRunActive(sendingRunId) || !isScenarioActive(scenario.id)) {
+                    return@launch
+                }
+                startResult?.let {
+                    scenarioActionSupport.applySessionStartResult(
+                        startResult = it,
+                        scenario = scenario,
+                    )
+                }
+                if (startResult?.assistantMismatch == true) {
+                    updateUiState { current ->
+                        RoleplayStateSupport.restoreInputAfterAssistantMismatch(current, current.input)
+                    }
+                    return@launch
+                }
+
+                val session = startResult?.session ?: state.currentSession
+                    ?: error("当前剧情会话不存在")
+                if (!isConversationActive(session.conversationId)) {
+                    return@launch
+                }
+                val selectedModel = RoleplayConversationSupport.resolveSelectedModelId(state.settings)
+                val baseMessages = startResult?.conversationMessages ?: RoleplayRoundTripSupport.currentConversationMessages(
+                    messages = currentRawMessages.value,
+                    conversationId = session.conversationId,
+                )
+                executeGroupParticipantQuickReply(
+                    state = state,
+                    scenario = scenario,
+                    session = session,
+                    selectedModel = selectedModel,
+                    baseMessages = baseMessages,
+                    participantId = participantId,
+                    sendingRunId = sendingRunId,
+                )
+            } finally {
+                onSendingFinished(sendingRunId)
+            }
+        }
     }
 
     private fun appendCharacterAvatarPokeToUser(
@@ -730,6 +820,75 @@ internal class RoleplaySendActionSupport(
         return listOf(textMessagePart(rewrittenText))
     }
 
+    private suspend fun loadGroupMemberContexts(
+        scenarioId: String,
+        assistants: List<Assistant>,
+    ): List<RoleplayGroupMemberContext> {
+        return roleplayRepository.listGroupParticipants(scenarioId)
+            .sortedWith(compareBy({ it.sortOrder }, { it.createdAt }))
+            .map { participant ->
+                RoleplayGroupMemberContext(
+                    participant = participant,
+                    assistant = assistants.firstOrNull { it.id == participant.assistantId },
+                )
+            }
+    }
+
+    private suspend fun executeGroupParticipantQuickReply(
+        state: RoleplayUiState,
+        scenario: com.example.myapplication.model.RoleplayScenario,
+        session: com.example.myapplication.model.RoleplaySession,
+        selectedModel: String,
+        baseMessages: List<ChatMessage>,
+        participantId: String,
+        sendingRunId: Long,
+    ) {
+        if (!isSendingRunActive(sendingRunId) || !isConversationActive(session.conversationId)) {
+            return
+        }
+        val members = loadGroupMemberContexts(
+            scenarioId = scenario.id,
+            assistants = state.settings.resolvedAssistants(),
+        )
+        val member = members.firstOrNull { it.participant.id == participantId }
+        if (member == null) {
+            updateUiState { current ->
+                RoleplayStateSupport.finishSending(
+                    RoleplayStateSupport.applyErrorMessage(current, "这个群成员不存在"),
+                    errorMessage = "这个群成员不存在",
+                )
+            }
+            return
+        }
+        if (member.participant.isMuted) {
+            updateUiState { current ->
+                RoleplayStateSupport.finishSending(
+                    RoleplayStateSupport.applyErrorMessage(current, "${member.displayName} 已禁言"),
+                    errorMessage = "${member.displayName} 已禁言",
+                )
+            }
+            return
+        }
+        val turn = RoleplayGroupReplyTurn(
+            participantId = member.participant.id,
+            assistantId = member.participant.assistantId,
+            displayName = member.displayName,
+            intent = "用户点击了「${member.displayName}」快捷发言按钮。请基于当前群聊上下文和你的人设自然接话：可以回应用户，也可以接其他角色刚才的话；不要复述“我被点名了”。",
+            reason = "用户希望指定群成员主动接当前群聊。",
+        )
+        executeGroupReplyTurns(
+            state = state,
+            scenario = scenario,
+            session = session,
+            selectedModel = selectedModel,
+            members = members,
+            turns = listOf(turn),
+            initialMessages = baseMessages,
+            emptyNotice = "这一轮暂时没有角色接话",
+            sendingRunId = sendingRunId,
+        )
+    }
+
     private suspend fun executeGroupRoleplaySend(
         state: RoleplayUiState,
         scenario: com.example.myapplication.model.RoleplayScenario,
@@ -756,14 +915,10 @@ internal class RoleplaySendActionSupport(
             return
         }
         val assistants = state.settings.resolvedAssistants()
-        val members = roleplayRepository.listGroupParticipants(scenario.id)
-            .sortedWith(compareBy({ it.sortOrder }, { it.createdAt }))
-            .map { participant ->
-                RoleplayGroupMemberContext(
-                    participant = participant,
-                    assistant = assistants.firstOrNull { it.id == participant.assistantId },
-                )
-            }
+        val members = loadGroupMemberContexts(
+            scenarioId = scenario.id,
+            assistants = assistants,
+        )
         if (members.isEmpty()) {
             val userMessage = persistGroupUserMessage(
                 scenario = scenario,
@@ -833,12 +988,37 @@ internal class RoleplaySendActionSupport(
             plan.turns.filter { turn -> userMessage.content.mentionsGroupMember(turn.displayName) }
                 .ifEmpty { plan.turns.take(1) }
         }
-        if (effectiveTurns.isEmpty()) {
+        executeGroupReplyTurns(
+            state = state,
+            scenario = scenario,
+            session = session,
+            selectedModel = selectedModel,
+            members = members,
+            turns = effectiveTurns,
+            initialMessages = messagesWithUser,
+            emptyNotice = plan.notice.ifBlank { "这一轮暂时没有角色接话" },
+            sendingRunId = sendingRunId,
+        )
+    }
+
+    private suspend fun executeGroupReplyTurns(
+        state: RoleplayUiState,
+        scenario: com.example.myapplication.model.RoleplayScenario,
+        session: com.example.myapplication.model.RoleplaySession,
+        selectedModel: String,
+        members: List<RoleplayGroupMemberContext>,
+        turns: List<RoleplayGroupReplyTurn>,
+        initialMessages: List<ChatMessage>,
+        emptyNotice: String,
+        sendingRunId: Long,
+    ) {
+        currentRawMessages.value = initialMessages
+        if (turns.isEmpty()) {
             updateUiState { current ->
                 RoleplayStateSupport.finishSending(
                     RoleplayStateSupport.applyNoticeMessage(
                         current,
-                        plan.notice.ifBlank { "这一轮暂时没有角色接话" },
+                        emptyNotice.ifBlank { "这一轮暂时没有角色接话" },
                     ),
                     errorMessage = null,
                 )
@@ -848,7 +1028,7 @@ internal class RoleplaySendActionSupport(
         var firstTurnError: String? = null
         var successfulTurnCount = 0
         val failedTurnNames = mutableListOf<String>()
-        for ((index, turn) in effectiveTurns.withIndex()) {
+        for ((index, turn) in turns.withIndex()) {
             if (!isSendingRunActive(sendingRunId) || !isConversationActive(session.conversationId)) {
                 return
             }
@@ -936,7 +1116,7 @@ internal class RoleplaySendActionSupport(
                 }
                 failedTurnNames += turn.displayName
             }
-            if (index < effectiveTurns.lastIndex) {
+            if (index < turns.lastIndex) {
                 updateUiState { current ->
                     current.copy(streamingContent = "")
                 }

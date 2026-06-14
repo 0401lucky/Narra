@@ -26,6 +26,7 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Send
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.OpenInFull
 import androidx.compose.material.icons.filled.Share
@@ -87,6 +88,10 @@ internal fun RoleplayInputBar(
     isSending: Boolean,
     onInputChange: (String) -> Unit,
     onSend: () -> Unit,
+    onRequestMentionCandidateReply: ((RoleplayMentionCandidate) -> Unit)? = null,
+    showAiHelperButton: Boolean = false,
+    aiHelperActive: Boolean = false,
+    onToggleAiHelper: (() -> Unit)? = null,
     onCancel: (() -> Unit)?,
     onOpenSpecialPlay: () -> Unit,
     quickActions: List<RoleplayInputQuickAction> = emptyList(),
@@ -179,6 +184,21 @@ internal fun RoleplayInputBar(
                         },
                     )
                 }
+            }
+
+            AnimatedVisibility(
+                visible = mentionCandidates.isNotEmpty() && onRequestMentionCandidateReply != null,
+                enter = expandVertically() + fadeIn(),
+                exit = shrinkVertically() + fadeOut(),
+            ) {
+                RoleplaySpeakerQuickActionRow(
+                    candidates = mentionCandidates,
+                    colors = colors,
+                    isSending = isSending,
+                    onSelect = { candidate ->
+                        onRequestMentionCandidateReply?.invoke(candidate)
+                    },
+                )
             }
 
             AnimatedVisibility(
@@ -332,6 +352,37 @@ internal fun RoleplayInputBar(
                         )
                     }
                 }
+                if (showAiHelperButton && onToggleAiHelper != null) {
+                    NarraIconButton(
+                        onClick = {
+                            showActionPanel = false
+                            view.performHapticFeedback(HapticFeedbackConstantsCompat.SEGMENT_FREQUENT_TICK)
+                            onToggleAiHelper()
+                        },
+                        enabled = !isSending,
+                        modifier = Modifier.size(RoleplayInteractiveIconButtonSize),
+                        colors = IconButtonDefaults.iconButtonColors(
+                            containerColor = if (aiHelperActive) {
+                                colors.characterAccent.copy(alpha = 0.18f)
+                            } else {
+                                colors.panelBackground
+                            },
+                            contentColor = if (aiHelperActive) {
+                                colors.characterAccent
+                            } else {
+                                colors.textPrimary
+                            },
+                            disabledContainerColor = colors.panelBackground.copy(alpha = 0.45f),
+                            disabledContentColor = colors.textMuted.copy(alpha = 0.55f),
+                        ),
+                    ) {
+                        Icon(
+                            Icons.Default.AutoAwesome,
+                            contentDescription = "AI 帮写",
+                            modifier = Modifier.size(17.dp),
+                        )
+                    }
+                }
                 if (isSending && onCancel != null) {
                     Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
                         CircularProgressIndicator(modifier = Modifier.size(16.dp), strokeWidth = 2.dp, color = colors.characterAccent)
@@ -388,6 +439,74 @@ internal fun RoleplayInputBar(
         contentColor = MaterialTheme.colorScheme.onSurface,
         accentColor = colors.characterAccent,
     )
+}
+
+@Composable
+private fun RoleplaySpeakerQuickActionRow(
+    candidates: List<RoleplayMentionCandidate>,
+    colors: ImmersiveRoleplayColors,
+    isSending: Boolean,
+    onSelect: (RoleplayMentionCandidate) -> Unit,
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .horizontalScroll(rememberScrollState()),
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        candidates.forEach { candidate ->
+            RoleplaySpeakerQuickActionChip(
+                candidate = candidate,
+                colors = colors,
+                enabled = !isSending && !candidate.muted,
+                onSelect = onSelect,
+            )
+        }
+    }
+}
+
+@Composable
+private fun RoleplaySpeakerQuickActionChip(
+    candidate: RoleplayMentionCandidate,
+    colors: ImmersiveRoleplayColors,
+    enabled: Boolean,
+    onSelect: (RoleplayMentionCandidate) -> Unit,
+) {
+    Surface(
+        modifier = if (enabled) {
+            Modifier.clickable { onSelect(candidate) }
+        } else {
+            Modifier
+        },
+        shape = RoundedCornerShape(999.dp),
+        color = if (enabled) {
+            colors.panelBackground.copy(alpha = 0.88f)
+        } else {
+            colors.panelBackground.copy(alpha = 0.46f)
+        },
+    ) {
+        Row(
+            modifier = Modifier.padding(start = 6.dp, top = 5.dp, end = 10.dp, bottom = 5.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(7.dp),
+        ) {
+            AssistantAvatar(
+                name = candidate.displayName,
+                iconName = candidate.iconName,
+                avatarUri = candidate.avatarUri,
+                size = 28.dp,
+                cornerRadius = 10.dp,
+            )
+            Text(
+                text = candidate.displayName,
+                style = MaterialTheme.typography.labelLarge,
+                color = if (enabled) colors.textPrimary else colors.textMuted,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
+        }
+    }
 }
 
 @Composable

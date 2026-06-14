@@ -3,6 +3,7 @@ package com.example.myapplication.model
 import java.util.UUID
 
 const val DEFAULT_PRESET_ID = "builtin-zh-roleplay"
+const val QWEN_COMPAT_PRESET_ID = "builtin-qwen-compatible-light"
 const val REASONING_OPTIMIZED_PRESET_ID = "builtin-reasoning-optimized"
 
 data class Preset(
@@ -464,6 +465,180 @@ val BUILTIN_PRESETS: List<Preset> = listOf(
         ),
         builtIn = true,
         version = 8,
+        createdAt = 1L,
+        updatedAt = 1L,
+    ),
+    Preset(
+        id = QWEN_COMPAT_PRESET_ID,
+        name = "Narra 轻量预设",
+        description = "面向 Qwen 等对复杂规则更敏感的模型；减少导演式约束，保留角色卡、关系和剧情活感。线上/线下格式由场景运行时提示分流。",
+        systemPrompt = """
+            你正在扮演 {{char}}，与 {{user}} 进行一段连续、自然、有人味的角色互动。
+            优先遵守角色卡、关系、场景、摘要、记忆和世界书；回复必须像 {{char}} 当下会说、会做、会回避或会靠近的反应。
+            不要退回通用助手口吻，不解释规则，不替 {{user}} 做决定。
+        """.trimIndent(),
+        contextTemplate = """
+            Narra 会按真实来源插入角色卡、用户身份、场景、摘要、世界书、长记忆、手机线索和近期记录。
+            当前是线上、线下对白还是长文，由发送前的运行时模式提示决定。
+        """.trimIndent(),
+        sampler = PresetSamplerConfig(
+            temperature = 0.78f,
+            topP = 0.9f,
+            presencePenalty = 0.1f,
+        ),
+        stopSequences = listOf("{{user}}:", "{{char}}:"),
+        renderConfig = PresetRenderConfig(
+            statusCardsEnabled = false,
+            hideStatusBlocksInBubble = true,
+        ),
+        entries = listOf(
+            PresetPromptEntry(
+                id = "qwen-light-core-roleplay",
+                title = "核心任务",
+                role = PresetPromptRole.SYSTEM,
+                kind = PresetPromptEntryKind.MAIN_PROMPT,
+                content = """
+                    你正在扮演 {{char}}，与 {{user}} 延续一段自然、有情绪、有关系张力的互动。
+
+                    每轮回复前，先让角色卡中至少两项设定影响本轮语气、边界、动作或选择。角色的年龄、身份、关系态度、说话习惯、欲望、禁忌和秘密都是真实约束，不要只读取角色名。
+
+                    回复要先接住 {{user}} 刚刚说的话，再给出 {{char}} 自己的反应。可以主动推进关系、信息或场景，但推进必须顺着角色动机发生，不要像通用助手一样问“有什么可以帮助你”。
+
+                    保留 {{user}} 的行动空间：不替 {{user}} 说话，不决定 {{user}} 的心理和动作。不要解释系统规则、不要自称 AI、不要总结“我会保持角色”。
+                """.trimIndent(),
+                order = 0,
+                locked = true,
+            ),
+            PresetPromptEntry(
+                id = "qwen-light-mode-bridge",
+                title = "交互模式适配",
+                role = PresetPromptRole.SYSTEM,
+                kind = PresetPromptEntryKind.CUSTOM,
+                content = """
+                    本预设只定义角色与文风底色，不固定最终输出格式。后续运行时提示会说明当前是线上手机聊天、线上群聊、视频通话、线下对白或线下长文；必须以后续运行时模式提示为准。
+
+                    线上模式：像真实聊天软件中的气泡，短句、停顿、试探和即时反应更重要，不写面对面小说段落。
+                    线下对白/长文：按线下场景的叙事与对白格式输出，允许动作、神态、心理和环境，但不要抢 {{user}} 视角。
+                """.trimIndent(),
+                order = 5,
+                locked = true,
+            ),
+            PresetPromptEntry(
+                id = "qwen-light-style",
+                title = "文风与推进",
+                role = PresetPromptRole.SYSTEM,
+                kind = PresetPromptEntryKind.CUSTOM,
+                content = """
+                    文风细腻但不要堆辞藻。用具体动作、停顿、语气、视线、措辞变化和潜台词表现情绪，少用抽象总结。
+
+                    如果输入很日常，可以短；如果情绪或剧情需要，可以多写。不要为了字数重复动作、解释设定或复述上一轮。
+
+                    每轮至少带来一个真实变化：新态度、新动作、新信息、新试探或关系细微变化。变化可以很小，但要像 {{char}} 自己做出的选择。
+                """.trimIndent(),
+                order = 8,
+                locked = true,
+            ),
+            PresetPromptEntry(
+                id = "qwen-light-char-description",
+                title = "角色描述",
+                role = PresetPromptRole.SYSTEM,
+                kind = PresetPromptEntryKind.CHARACTER_DESCRIPTION,
+                content = "{{description}}",
+                order = 20,
+                locked = true,
+            ),
+            PresetPromptEntry(
+                id = "qwen-light-char-prompt",
+                title = "角色补充",
+                role = PresetPromptRole.SYSTEM,
+                kind = PresetPromptEntryKind.CHARACTER_PROMPT,
+                content = "{{char_prompt}}",
+                order = 30,
+                locked = true,
+            ),
+            PresetPromptEntry(
+                id = "qwen-light-user-persona",
+                title = "玩家侧设定",
+                role = PresetPromptRole.SYSTEM,
+                kind = PresetPromptEntryKind.USER_PERSONA,
+                content = "{{persona}}",
+                order = 40,
+                locked = true,
+            ),
+            PresetPromptEntry(
+                id = "qwen-light-scenario",
+                title = "场景",
+                role = PresetPromptRole.SYSTEM,
+                kind = PresetPromptEntryKind.SCENARIO,
+                content = "{{scenario}}",
+                order = 50,
+                locked = true,
+            ),
+            PresetPromptEntry(
+                id = "qwen-light-examples",
+                title = "示例互动",
+                role = PresetPromptRole.SYSTEM,
+                kind = PresetPromptEntryKind.EXAMPLE_DIALOGUE,
+                content = "{{example_dialogue}}",
+                order = 60,
+                locked = true,
+            ),
+            PresetPromptEntry(
+                id = "qwen-light-summary",
+                title = "摘要",
+                role = PresetPromptRole.SYSTEM,
+                kind = PresetPromptEntryKind.SUMMARY,
+                content = "{{summary}}",
+                order = 70,
+                locked = true,
+            ),
+            PresetPromptEntry(
+                id = "qwen-light-world-info",
+                title = "世界书",
+                role = PresetPromptRole.SYSTEM,
+                kind = PresetPromptEntryKind.WORLD_INFO_BEFORE,
+                content = "{{world_info}}",
+                order = 80,
+                locked = true,
+            ),
+            PresetPromptEntry(
+                id = "qwen-light-long-memory",
+                title = "长记忆",
+                role = PresetPromptRole.SYSTEM,
+                kind = PresetPromptEntryKind.LONG_MEMORY,
+                content = "{{long_memory}}",
+                order = 90,
+                locked = true,
+            ),
+            PresetPromptEntry(
+                id = "qwen-light-phone-context",
+                title = "手机线索",
+                role = PresetPromptRole.SYSTEM,
+                kind = PresetPromptEntryKind.PHONE_CONTEXT,
+                content = "{{phone_context}}",
+                order = 100,
+                locked = true,
+            ),
+            PresetPromptEntry(
+                id = "qwen-light-chat-history",
+                title = "近期记录",
+                role = PresetPromptRole.SYSTEM,
+                kind = PresetPromptEntryKind.CHAT_HISTORY,
+                order = 110,
+                locked = true,
+            ),
+            PresetPromptEntry(
+                id = "qwen-light-post-history",
+                title = "收尾约束",
+                role = PresetPromptRole.SYSTEM,
+                kind = PresetPromptEntryKind.POST_HISTORY,
+                content = "直接回应最后一条用户消息，延续角色、人设、关系和当前模式；不要复述旧回复，不要退回通用助手口吻。",
+                order = 120,
+                locked = true,
+            ),
+        ),
+        builtIn = true,
+        version = 1,
         createdAt = 1L,
         updatedAt = 1L,
     ),

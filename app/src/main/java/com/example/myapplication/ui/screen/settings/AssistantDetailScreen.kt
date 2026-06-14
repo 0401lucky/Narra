@@ -52,6 +52,8 @@ import com.example.myapplication.model.Assistant
 import com.example.myapplication.model.MomentAutoPostFrequency
 import com.example.myapplication.model.MomentCommentStyle
 import com.example.myapplication.model.Preset
+import com.example.myapplication.model.isAssistantPresetFollowingGlobal
+import com.example.myapplication.model.resolveActivePresetId
 import com.example.myapplication.ui.component.AssistantAvatar
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -74,8 +76,20 @@ fun AssistantDetailScreen(
     val palette = rememberSettingsPalette()
     var showPresetSheet by rememberSaveable { mutableStateOf(false) }
     val normalizedPresets = presets.map(Preset::normalized)
-    val activePreset = normalizedPresets.firstOrNull { it.id == assistant.defaultPresetId }
-        ?: normalizedPresets.firstOrNull { it.id == globalDefaultPresetId }
+    val activePresetId = resolveActivePresetId(
+        globalDefaultPresetId = globalDefaultPresetId,
+        assistantDefaultPresetId = assistant.defaultPresetId,
+    )
+    val globalPresetId = resolveActivePresetId(
+        globalDefaultPresetId = globalDefaultPresetId,
+        assistantDefaultPresetId = null,
+    )
+    val followsGlobalPreset = isAssistantPresetFollowingGlobal(
+        globalDefaultPresetId = globalDefaultPresetId,
+        assistantDefaultPresetId = assistant.defaultPresetId,
+    )
+    val activePreset = normalizedPresets.firstOrNull { it.id == activePresetId }
+    val globalPreset = normalizedPresets.firstOrNull { it.id == globalPresetId }
 
     Scaffold(
         topBar = {
@@ -123,8 +137,12 @@ fun AssistantDetailScreen(
                     AssistantEntryRow(
                         icon = { EntryGlyph(icon = { Icon(Icons.Default.Tune, null) }) },
                         title = "默认预设",
-                        supporting = activePreset?.name ?: "跟随全局默认",
-                        badge = if (assistant.defaultPresetId == globalDefaultPresetId) "全局" else "角色",
+                        supporting = if (followsGlobalPreset) {
+                            activePreset?.name?.let { "$it · 跟随全局" } ?: "跟随全局默认"
+                        } else {
+                            activePreset?.name ?: "未找到预设"
+                        },
+                        badge = if (followsGlobalPreset) "全局" else "角色",
                         onClick = { showPresetSheet = true },
                     )
                     SettingsGroupDivider()
@@ -221,17 +239,35 @@ fun AssistantDetailScreen(
                     color = palette.title,
                 )
                 SettingsGroup {
+                    SettingsListRow(
+                        title = "跟随全局默认",
+                        supportingText = globalPreset?.name ?: "使用设置页选定的全局默认预设",
+                        highlighted = followsGlobalPreset,
+                        onClick = {
+                            onSelectPreset("")
+                            showPresetSheet = false
+                        },
+                        trailingContent = {
+                            if (followsGlobalPreset) {
+                                SettingsStatusPill("当前", palette.accentSoft, palette.accent)
+                            }
+                        },
+                    )
+                    if (normalizedPresets.isNotEmpty()) {
+                        SettingsGroupDivider()
+                    }
                     normalizedPresets.forEachIndexed { index, preset ->
+                        val presetSelected = !followsGlobalPreset && preset.id == activePresetId
                         SettingsListRow(
                             title = preset.name.ifBlank { "未命名预设" },
                             supportingText = if (preset.builtIn) "内置只读" else "我的预设",
-                            highlighted = preset.id == assistant.defaultPresetId,
+                            highlighted = presetSelected,
                             onClick = {
                                 onSelectPreset(preset.id)
                                 showPresetSheet = false
                             },
                             trailingContent = {
-                                if (preset.id == assistant.defaultPresetId) {
+                                if (presetSelected) {
                                     SettingsStatusPill("当前", palette.accentSoft, palette.accent)
                                 }
                             },

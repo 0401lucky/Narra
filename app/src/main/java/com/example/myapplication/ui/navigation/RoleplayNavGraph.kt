@@ -11,6 +11,7 @@ import androidx.compose.animation.slideOutVertically
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavGraphBuilder
@@ -18,7 +19,10 @@ import androidx.navigation.NavHostController
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.navigation
 import com.example.myapplication.di.AppGraph
+import com.example.myapplication.model.MailboxBox
 import com.example.myapplication.model.PhoneSnapshotOwnerType
+import com.example.myapplication.phone.RoleplayPhoneEcosystemSnapshot
+import com.example.myapplication.phone.buildRoleplayPhoneEcosystemSnapshot
 import com.example.myapplication.ui.screen.immersive.ImmersivePhoneCallbacks
 import com.example.myapplication.ui.screen.immersive.ImmersivePhoneShell
 import com.example.myapplication.ui.screen.roleplay.RoleplayReadingMode
@@ -48,6 +52,7 @@ import com.example.myapplication.viewmodel.updateShowOnlineRoleplayNarration
 import com.example.myapplication.viewmodel.updateShowRoleplayAiHelper
 import com.example.myapplication.viewmodel.updateShowRoleplayPresenceStrip
 import com.example.myapplication.viewmodel.updateShowRoleplayStatusStrip
+import kotlinx.coroutines.flow.first
 
 internal fun NavGraphBuilder.registerRoleplayGraph(
     appGraph: AppGraph,
@@ -65,6 +70,46 @@ internal fun NavGraphBuilder.registerRoleplayGraph(
                 backStackEntry = backStackEntry,
             )
             val roleplayState by roleplayViewModel.uiState.collectAsStateWithLifecycle()
+            val moments by appGraph.momentsRepository.observeTimeline().collectAsStateWithLifecycle(emptyList())
+            val phoneEcosystem by produceState(
+                initialValue = RoleplayPhoneEcosystemSnapshot(),
+                key1 = roleplayState.chatSummaries,
+                key2 = moments,
+            ) {
+                val mailboxCounts = mutableMapOf<String, Int>()
+                val latestMailboxLetters = mutableMapOf<String, com.example.myapplication.model.MailboxLetter>()
+                val latestDiaries = mutableMapOf<String, com.example.myapplication.model.RoleplayDiaryEntry>()
+                val onlineMetas = mutableMapOf<String, com.example.myapplication.model.RoleplayOnlineMeta>()
+                roleplayState.chatSummaries.forEach { summary ->
+                    val scenarioId = summary.scenario.id
+                    val conversationId = summary.session?.conversationId.orEmpty()
+                    mailboxCounts[scenarioId] = appGraph.mailboxRepository
+                        .observeUnreadCount(scenarioId)
+                        .first()
+                    appGraph.mailboxRepository
+                        .observeLetters(scenarioId, MailboxBox.INBOX)
+                        .first()
+                        .maxByOrNull { maxOf(it.sentAt, it.updatedAt, it.createdAt) }
+                        ?.let { latestMailboxLetters[scenarioId] = it }
+                    if (conversationId.isNotBlank()) {
+                        appGraph.roleplayRepository
+                            .listDiaryEntries(conversationId)
+                            .maxByOrNull { maxOf(it.updatedAt, it.createdAt) }
+                            ?.let { latestDiaries[conversationId] = it }
+                        appGraph.roleplayRepository
+                            .getOnlineMeta(conversationId)
+                            ?.let { onlineMetas[conversationId] = it }
+                    }
+                }
+                value = buildRoleplayPhoneEcosystemSnapshot(
+                    chatSummaries = roleplayState.chatSummaries,
+                    moments = moments,
+                    unreadMailboxCountsByScenarioId = mailboxCounts,
+                    latestMailboxLettersByScenarioId = latestMailboxLetters,
+                    latestDiaryByConversationId = latestDiaries,
+                    onlineMetaByConversationId = onlineMetas,
+                )
+            }
             fun navigateToRoleplayChat(scenarioId: String) {
                 navController.navigate(AppRoutes.roleplayPlay(scenarioId)) {
                     launchSingleTop = true
@@ -98,6 +143,7 @@ internal fun NavGraphBuilder.registerRoleplayGraph(
                 settings = roleplayState.settings,
                 assistants = roleplayState.settings.resolvedAssistants(),
                 chatSummaries = roleplayState.chatSummaries,
+                phoneEcosystem = phoneEcosystem,
                 noticeMessage = roleplayState.noticeMessage,
                 errorMessage = roleplayState.errorMessage,
                 onClearNoticeMessage = roleplayViewModel::clearNoticeMessage,
@@ -349,6 +395,7 @@ internal fun NavGraphBuilder.registerRoleplayGraph(
                     message = RoleplayMessageCallbacks(
                         onInputChange = roleplayViewModel::updateInput,
                         onSend = roleplayViewModel::sendMessage,
+                        onRequestGroupParticipantReply = roleplayViewModel::requestGroupParticipantReply,
                         onCancelSending = roleplayViewModel::cancelSending,
                         onRetryTurn = roleplayViewModel::retryTurn,
                         onEditUserMessage = roleplayViewModel::editUserMessage,

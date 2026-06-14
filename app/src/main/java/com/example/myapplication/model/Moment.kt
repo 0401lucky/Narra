@@ -66,6 +66,7 @@ data class MomentCommentDraft(
     val authorId: String = "",
     val authorName: String = "",
     val text: String = "",
+    val authorType: MomentAuthorType = MomentAuthorType.ASSISTANT,
 )
 
 data class MomentAssistantContext(
@@ -78,6 +79,7 @@ data class MomentAssistantContext(
 enum class MomentAuthorType(val storageValue: String) {
     USER("user"),
     ASSISTANT("assistant"),
+    NPC("npc"),
     SYSTEM("system");
 
     companion object {
@@ -126,3 +128,49 @@ enum class MomentCommentStyle(val storageValue: String, val label: String) {
         }
     }
 }
+
+val MomentNpcFallbackNames = listOf(
+    "林夏",
+    "陈琪",
+    "周屿",
+    "许安",
+    "姜禾",
+    "宋知予",
+    "沈念",
+    "顾南枝",
+    "叶棠",
+    "温梨",
+)
+
+fun sanitizeMomentDisplayName(
+    name: String,
+    stableKey: String = "",
+): String {
+    val normalized = name.trim()
+    return if (normalized.isPlaceholderMomentDisplayName()) {
+        stableMomentFallbackName(stableKey.ifBlank { normalized })
+    } else {
+        normalized
+    }
+}
+
+fun stableMomentFallbackName(stableKey: String): String {
+    val key = stableKey.trim().ifBlank { "moment" }
+    val index = (key.hashCode() and Int.MAX_VALUE) % MomentNpcFallbackNames.size
+    return MomentNpcFallbackNames[index]
+}
+
+fun String.isPlaceholderMomentDisplayName(): Boolean {
+    val normalized = trim()
+    if (normalized.isBlank()) return true
+    return normalized in MomentPlaceholderNames
+}
+
+private val MomentPlaceholderNames = setOf(
+    "默认角色",
+    "角色",
+    "NPC",
+    "npc",
+    "朋友A",
+    "路人A",
+)

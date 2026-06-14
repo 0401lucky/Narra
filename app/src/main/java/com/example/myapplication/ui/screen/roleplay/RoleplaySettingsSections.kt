@@ -33,8 +33,13 @@ import androidx.compose.material3.Slider
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
@@ -386,16 +391,28 @@ private fun OnlineReplyCountField(
     modifier: Modifier = Modifier,
     onValueChange: (Int) -> Unit,
 ) {
+    var draft by remember(value) { mutableStateOf(value) }
+    fun commitDraft() {
+        val committed = draft
+            .toIntOrNull()
+            ?.coerceIn(1, MAX_ONLINE_REPLY_COUNT)
+            ?: value.toIntOrNull()?.coerceIn(1, MAX_ONLINE_REPLY_COUNT)
+            ?: 1
+        draft = committed.toString()
+        if (committed.toString() != value) {
+            onValueChange(committed)
+        }
+    }
     OutlinedTextField(
-        value = value,
+        value = draft,
         onValueChange = { raw ->
-            raw.filter(Char::isDigit)
-                .take(2)
-                .toIntOrNull()
-                ?.coerceIn(1, MAX_ONLINE_REPLY_COUNT)
-                ?.let(onValueChange)
+            draft = raw.filter(Char::isDigit).take(2)
         },
-        modifier = modifier,
+        modifier = modifier.onFocusChanged { focusState ->
+            if (!focusState.isFocused) {
+                commitDraft()
+            }
+        },
         shape = RoundedCornerShape(18.dp),
         label = { Text(label) },
         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),

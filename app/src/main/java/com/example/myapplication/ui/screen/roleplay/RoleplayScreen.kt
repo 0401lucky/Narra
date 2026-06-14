@@ -89,6 +89,7 @@ fun RoleplayScreen(
     val onClearErrorMessage = callbacks.ui.onClearErrorMessage
     val onInputChange = callbacks.message.onInputChange
     val onSend = callbacks.message.onSend
+    val onRequestGroupParticipantReply = callbacks.message.onRequestGroupParticipantReply
     val onCancelSending = callbacks.message.onCancelSending
     val onRetryTurn = callbacks.message.onRetryTurn
     val onEditUserMessage = callbacks.message.onEditUserMessage
@@ -393,6 +394,7 @@ fun RoleplayScreen(
             },
             onConfirmTransferReceipt = onConfirmTransferReceipt,
             onSend = onSend,
+            onRequestGroupParticipantReply = onRequestGroupParticipantReply,
             onCancelSending = onCancelSending,
             onApprovePendingMemoryProposal = onApprovePendingMemoryProposal,
             onRejectPendingMemoryProposal = onRejectPendingMemoryProposal,

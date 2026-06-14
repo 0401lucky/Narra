@@ -6,6 +6,7 @@ import com.example.myapplication.model.AppSettings
 import com.example.myapplication.model.Assistant
 import com.example.myapplication.model.ConnectionHealth
 import com.example.myapplication.model.DEFAULT_ASSISTANT_ID
+import com.example.myapplication.model.DEFAULT_PRESET_ID
 import com.example.myapplication.model.ModelDto
 import com.example.myapplication.model.ModelAbility
 import com.example.myapplication.model.ModelInfo
@@ -651,6 +652,69 @@ class SettingsViewModelTest {
         assertEquals(DEFAULT_ASSISTANT_ID, stored.selectedAssistantId)
         assertTrue(stored.resolvedAssistants().any { it.id == DEFAULT_ASSISTANT_ID })
     }
+
+    @Test
+    fun saveDefaultPresetId_migratesLegacyDefaultAssistantsToFollowGlobal() =
+        runTest(mainDispatcherRule.dispatcher.scheduler) {
+            val legacyAssistant = Assistant(
+                id = "assistant-legacy",
+                name = "旧角色",
+                defaultPresetId = DEFAULT_PRESET_ID,
+            )
+            val explicitAssistant = Assistant(
+                id = "assistant-explicit",
+                name = "显式角色",
+                defaultPresetId = "explicit-preset",
+            )
+            val viewModel = createViewModel(
+                settings = AppSettings(
+                    assistants = listOf(legacyAssistant, explicitAssistant),
+                    defaultPresetId = DEFAULT_PRESET_ID,
+                ),
+            )
+
+            advanceUntilIdle()
+            viewModel.saveDefaultPresetId("tavo-preset")
+            advanceUntilIdle()
+
+            val stored = viewModel.storedSettings.value
+            assertEquals("tavo-preset", stored.defaultPresetId)
+            assertEquals(
+                "",
+                stored.assistants.first { it.id == legacyAssistant.id }.defaultPresetId,
+            )
+            assertEquals(
+                "explicit-preset",
+                stored.assistants.first { it.id == explicitAssistant.id }.defaultPresetId,
+            )
+        }
+
+    @Test
+    fun saveDefaultPresetId_preservesExplicitNarraPresetAfterGlobalWasCustomized() =
+        runTest(mainDispatcherRule.dispatcher.scheduler) {
+            val explicitNarraAssistant = Assistant(
+                id = "assistant-narra",
+                name = "固定 Narra 的角色",
+                defaultPresetId = DEFAULT_PRESET_ID,
+            )
+            val viewModel = createViewModel(
+                settings = AppSettings(
+                    assistants = listOf(explicitNarraAssistant),
+                    defaultPresetId = "tavo-preset",
+                ),
+            )
+
+            advanceUntilIdle()
+            viewModel.saveDefaultPresetId("other-preset")
+            advanceUntilIdle()
+
+            val stored = viewModel.storedSettings.value
+            assertEquals("other-preset", stored.defaultPresetId)
+            assertEquals(
+                DEFAULT_PRESET_ID,
+                stored.assistants.first { it.id == explicitNarraAssistant.id }.defaultPresetId,
+            )
+        }
 
     @Test
     fun updateProviderApiKey_clearsExistingConnectionHealthResult() = runTest(mainDispatcherRule.dispatcher.scheduler) {

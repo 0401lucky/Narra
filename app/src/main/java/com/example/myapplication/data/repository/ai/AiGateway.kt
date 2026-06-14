@@ -1498,6 +1498,8 @@ class DefaultAiGateway(
             return true
         }
 
+        openAiStreamErrorException(data)?.let { throw it }
+
         if (apiMode == OpenAiTextApiMode.RESPONSES) {
             when (val event = ResponseApiSupport.parseStreamEvent(data)) {
                 is ResponseApiStreamEvent.ContentDelta -> emit(ChatStreamEvent.ContentDelta(event.value))
@@ -1529,6 +1531,75 @@ class DefaultAiGateway(
             emit(ChatStreamEvent.ImageDelta(imagePart))
         }
         return false
+    }
+
+    private fun openAiStreamErrorException(data: String): IllegalStateException? {
+        val detail = extractOpenAiStreamErrorDetail(data) ?: return null
+        val guidance = PromptExtrasResponseSupport.contentSafetyGuidance(detail).orEmpty()
+        val redacted = AiErrorRedaction.redact(detail)
+        return IllegalStateException(
+            buildString {
+                append("聊天请求失败")
+                if (guidance.isNotBlank()) {
+                    append('（')
+                    append(guidance)
+                    append('）')
+                }
+                if (redacted.isNotBlank()) {
+                    append('：')
+                    append(redacted)
+                }
+            },
+        )
+    }
+
+    private fun extractOpenAiStreamErrorDetail(data: String): String? {
+        val root = runCatching { JsonParser.parseString(data).asJsonObject }.getOrNull()
+            ?: return null
+        val error = root.get("error")
+        val message = when {
+            error == null || error.isJsonNull -> ""
+            error.isJsonObject -> {
+                val obj = error.asJsonObject
+                listOfNotNull(
+                    obj.jsonString("message"),
+                    obj.jsonString("detail"),
+                    obj.jsonString("details"),
+                    obj.jsonString("code"),
+                    obj.jsonString("type"),
+                ).distinct().joinToString(separator = "\n")
+            }
+            error.isJsonPrimitive -> runCatching { error.asString }.getOrDefault("")
+            else -> error.toString()
+        }.ifBlank {
+            root.jsonString("detail")
+                ?: root.jsonString("message")
+                ?: root.jsonString("type")
+                ?: ""
+        }
+        if (message.isBlank()) {
+            return null
+        }
+        val requestId = root.jsonString("request_id")
+            ?: root.jsonString("request-id")
+            ?: root.jsonString("id")
+        return buildString {
+            append(message.trim())
+            if (!requestId.isNullOrBlank()) {
+                append("\nrequest-id: ")
+                append(requestId)
+            }
+        }.trim().takeIf { it.isNotBlank() }
+    }
+
+    private fun JsonObject.jsonString(name: String): String? {
+        val element = get(name) ?: return null
+        if (!element.isJsonPrimitive) {
+            return null
+        }
+        return runCatching { element.asString.trim() }
+            .getOrNull()
+            ?.takeIf { it.isNotBlank() }
     }
 
     private suspend fun FlowCollector<ChatStreamEvent>.emitContentDelta(

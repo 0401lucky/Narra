@@ -148,6 +148,7 @@ internal fun RoleplayOnlinePhoneContent(
     onOpenPunishPlay: () -> Unit,
     onConfirmTransferReceipt: (String) -> Unit,
     onSend: () -> Unit,
+    onRequestGroupParticipantReply: (String) -> Unit,
     onCancelSending: () -> Unit,
     onApprovePendingMemoryProposal: () -> Unit,
     onRejectPendingMemoryProposal: () -> Unit,
@@ -195,6 +196,7 @@ internal fun RoleplayOnlinePhoneContent(
     val listState = rememberLazyListState()
     val scope = rememberCoroutineScope()
     var showMenu by remember { mutableStateOf(false) }
+    var showAiHelperPanel by remember { mutableStateOf(false) }
     val quickActions = remember(
         onOpenVoiceMessage,
         onOpenDiary,
@@ -367,6 +369,11 @@ internal fun RoleplayOnlinePhoneContent(
         }
     }
     val showJumpButtons = visibleMessages.size > OnlinePhoneJumpButtonMessageThreshold
+    val hasAiHelperActivity = suggestions.isNotEmpty() ||
+        isGeneratingSuggestions ||
+        !suggestionErrorMessage.isNullOrBlank()
+    val showAiHelperEntry = settings.showRoleplayAiHelper
+    val showAiHelperContent = showAiHelperEntry && showAiHelperPanel
 
     LaunchedEffect(
         visibleMessages.firstOrNull()?.sourceMessageId,
@@ -656,7 +663,7 @@ internal fun RoleplayOnlinePhoneContent(
             )
             }
 
-        if (settings.showRoleplayAiHelper) {
+        if (showAiHelperContent) {
             RoleplayOnlineAiHelperBar(
                 modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
                 backdropState = backdropState,
@@ -667,7 +674,10 @@ internal fun RoleplayOnlinePhoneContent(
                 isSending = isSending,
                 onGenerateSuggestions = onGenerateSuggestions,
                 onApplySuggestion = onApplySuggestion,
-                onClearSuggestions = onClearSuggestions,
+                onClearSuggestions = {
+                    onClearSuggestions()
+                    showAiHelperPanel = false
+                },
             )
         }
 
@@ -732,6 +742,27 @@ internal fun RoleplayOnlinePhoneContent(
                 isSending = isSending,
                 onInputChange = onInputChange,
                 onSend = onSend,
+                onRequestMentionCandidateReply = if (scenario.isGroupChat) {
+                    { candidate -> onRequestGroupParticipantReply(candidate.id) }
+                } else {
+                    null
+                },
+                showAiHelperButton = showAiHelperEntry,
+                aiHelperActive = showAiHelperContent || hasAiHelperActivity,
+                onToggleAiHelper = if (showAiHelperEntry) {
+                    {
+                        if (showAiHelperPanel) {
+                            showAiHelperPanel = false
+                        } else {
+                            showAiHelperPanel = true
+                            if (!hasAiHelperActivity) {
+                                onGenerateSuggestions()
+                            }
+                        }
+                    }
+                } else {
+                    null
+                },
                 onCancel = onCancelSending,
                 onOpenSpecialPlay = onOpenTransferPlay,
                 quickActions = quickActions,

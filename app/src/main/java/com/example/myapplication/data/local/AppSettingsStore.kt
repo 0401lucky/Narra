@@ -1010,7 +1010,7 @@ class AppSettingsStore(
                 ?: DEFAULT_WORLD_BOOK_MAX_ENTRIES,
             worldBookScanDepth = assistant.worldBookScanDepth.takeIf { it >= 0 }
                 ?: DEFAULT_WORLD_BOOK_SCAN_DEPTH,
-            defaultPresetId = sanitizeText(assistant.defaultPresetId as String?).ifBlank { DEFAULT_PRESET_ID },
+            defaultPresetId = sanitizeText(assistant.defaultPresetId as String?),
             tags = sanitizeStringList(assistant.tags as? List<*>),
             momentAutoCommentEnabled = if (hasMomentAutoCommentEnabled) {
                 assistant.momentAutoCommentEnabled

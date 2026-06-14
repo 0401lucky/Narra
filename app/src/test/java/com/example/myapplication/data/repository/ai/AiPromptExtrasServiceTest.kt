@@ -1355,6 +1355,7 @@ class AiPromptExtrasServiceTest {
                     commentStyle = MomentCommentStyle.ACTIVE,
                 ),
             ),
+            npcNames = emptyList(),
             postAuthorName = "沈烬",
             postAuthorType = MomentAuthorType.ASSISTANT,
             postContent = "下雨天 适合静思\n泡了壶茶\n想你",
@@ -1424,6 +1425,7 @@ class AiPromptExtrasServiceTest {
                     persona = "直接利落",
                 ),
             ),
+            npcNames = emptyList(),
             postAuthorName = "沈烬",
             postAuthorType = MomentAuthorType.ASSISTANT,
             postContent = "下雨天 适合静思\n泡了壶茶\n想你",
@@ -1439,6 +1441,55 @@ class AiPromptExtrasServiceTest {
         assertEquals(1, replies.size)
         assertEquals("余罪", replies.single().authorName)
         assertEquals("又在想 lucky？茶别放凉。", replies.single().text)
+    }
+
+    @Test
+    fun generateMomentCommentReplies_allowsNamedNpcAndRejectsPlaceholderNpc() = runBlocking {
+        enqueueChatContent(
+            """
+            [
+              {
+                "author_type": "npc",
+                "author_id": "npc:林夏",
+                "author_name": "林夏",
+                "text": "你俩这评论区也太热闹了。"
+              },
+              {
+                "author_type": "npc",
+                "author_id": "npc:默认角色",
+                "author_name": "默认角色",
+                "text": "这个名字不该出现。"
+              }
+            ]
+            """.trimIndent(),
+        )
+        val service = createService()
+
+        val replies = service.generateMomentCommentReplies(
+            assistants = listOf(
+                MomentAssistantContext(
+                    id = "yanqing",
+                    name = "沈宴清",
+                    persona = "温和克制",
+                ),
+            ),
+            npcNames = listOf("林夏", "陈琪"),
+            postAuthorName = "沈宴清",
+            postAuthorType = MomentAuthorType.ASSISTANT,
+            postContent = "雨停了。",
+            existingComments = "",
+            userName = "lucky",
+            userComment = "其他角色看到了这条朋友圈。",
+            isUserCommentTrigger = false,
+            baseUrl = server.url("/v1/").toString(),
+            apiKey = "test-key",
+            modelId = "deepseek-chat",
+        )
+
+        assertEquals(1, replies.size)
+        assertEquals(MomentAuthorType.NPC, replies.single().authorType)
+        assertEquals("npc:林夏", replies.single().authorId)
+        assertEquals("林夏", replies.single().authorName)
     }
 
     private fun enqueueChatContent(content: String) {

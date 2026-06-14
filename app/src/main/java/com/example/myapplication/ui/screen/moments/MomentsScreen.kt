@@ -25,10 +25,15 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.Send
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.FavoriteBorder
+import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.outlined.Image
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -80,6 +85,7 @@ fun MomentsScreen(
     onNavigateBack: () -> Unit,
     onPublishPost: (String) -> Unit,
     onToggleLikePost: (String) -> Unit,
+    onDeletePost: (String) -> Unit,
     onAddComment: (String, String, String) -> Unit,
     onRetryImage: (String) -> Unit,
     onGenerateDueAssistantPosts: () -> Unit,
@@ -158,6 +164,7 @@ fun MomentsScreen(
                                 onPublishPost = onPublishPost,
                                 onOpenPost = { selectedPostId = it.id },
                                 onToggleLike = onToggleLikePost,
+                                onDeletePost = onDeletePost,
                                 onRetryImage = onRetryImage,
                                 onOpenPhoneCheck = onOpenPhoneCheck,
                             )
@@ -168,6 +175,10 @@ fun MomentsScreen(
                                 isGeneratingReplies = uiState.isGeneratingReplies && uiState.replyingPostId == post.id,
                                 isRetryingImage = uiState.retryingImagePostId == post.id,
                                 onToggleLike = { onToggleLikePost(post.id) },
+                                onDeletePost = {
+                                    onDeletePost(post.id)
+                                    selectedPostId = null
+                                },
                                 onAddComment = { text, replyToCommentId ->
                                     onAddComment(post.id, text, replyToCommentId)
                                 },
@@ -190,6 +201,7 @@ private fun MomentsTimelineContent(
     onPublishPost: (String) -> Unit,
     onOpenPost: (MomentPost) -> Unit,
     onToggleLike: (String) -> Unit,
+    onDeletePost: (String) -> Unit,
     onRetryImage: (String) -> Unit,
     onOpenPhoneCheck: (() -> Unit)?,
 ) {
@@ -216,6 +228,7 @@ private fun MomentsTimelineContent(
                     isRetryingImage = retryingImagePostId == post.id,
                     onOpenPost = { onOpenPost(post) },
                     onToggleLike = { onToggleLike(post.id) },
+                    onDeletePost = { onDeletePost(post.id) },
                     onRetryImage = { onRetryImage(post.id) },
                 )
             }
@@ -328,8 +341,22 @@ private fun MomentPostCard(
     isRetryingImage: Boolean,
     onOpenPost: () -> Unit,
     onToggleLike: () -> Unit,
+    onDeletePost: () -> Unit,
     onRetryImage: () -> Unit,
 ) {
+    var showMoreMenu by remember { mutableStateOf(false) }
+    var showDeleteDialog by remember { mutableStateOf(false) }
+
+    if (showDeleteDialog) {
+        MomentDeleteConfirmDialog(
+            onConfirm = {
+                showDeleteDialog = false
+                onDeletePost()
+            },
+            onDismiss = { showDeleteDialog = false },
+        )
+    }
+
     Surface(
         modifier = Modifier
             .fillMaxWidth()
@@ -341,7 +368,19 @@ private fun MomentPostCard(
             modifier = Modifier.padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(10.dp),
         ) {
-            MomentAuthorRow(post = post)
+            MomentAuthorRow(
+                post = post,
+                trailingContent = {
+                    MomentMoreMenuButton(
+                        expanded = showMoreMenu,
+                        onExpandedChange = { showMoreMenu = it },
+                        onDeleteClick = {
+                            showMoreMenu = false
+                            showDeleteDialog = true
+                        },
+                    )
+                },
+            )
             Text(
                 text = post.content,
                 style = MaterialTheme.typography.bodyMedium,
@@ -392,8 +431,10 @@ private fun MomentPostCard(
 @Composable
 private fun MomentAuthorRow(
     post: MomentPost,
+    trailingContent: (@Composable () -> Unit)? = null,
 ) {
     Row(
+        modifier = Modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.spacedBy(10.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
@@ -434,7 +475,62 @@ private fun MomentAuthorRow(
                 color = MomentsMutedText(),
             )
         }
+        trailingContent?.invoke()
     }
+}
+
+@Composable
+private fun MomentMoreMenuButton(
+    expanded: Boolean,
+    onExpandedChange: (Boolean) -> Unit,
+    onDeleteClick: () -> Unit,
+) {
+    Box {
+        NarraIconButton(onClick = { onExpandedChange(true) }) {
+            Icon(
+                imageVector = Icons.Default.MoreVert,
+                contentDescription = "更多操作",
+                tint = MomentsMutedText(),
+            )
+        }
+        DropdownMenu(
+            expanded = expanded,
+            onDismissRequest = { onExpandedChange(false) },
+        ) {
+            DropdownMenuItem(
+                text = { Text("删除") },
+                leadingIcon = {
+                    Icon(
+                        imageVector = Icons.Default.Delete,
+                        contentDescription = null,
+                    )
+                },
+                onClick = onDeleteClick,
+            )
+        }
+    }
+}
+
+@Composable
+private fun MomentDeleteConfirmDialog(
+    onConfirm: () -> Unit,
+    onDismiss: () -> Unit,
+) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("删除这条朋友圈？") },
+        text = { Text("删除后，这条动态下的评论和配图也会一起移除。") },
+        confirmButton = {
+            TextButton(onClick = onConfirm) {
+                Text("删除", color = MaterialTheme.colorScheme.error)
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text("取消")
+            }
+        },
+    )
 }
 
 @Composable
@@ -554,11 +650,24 @@ private fun MomentsDetailContent(
     isGeneratingReplies: Boolean,
     isRetryingImage: Boolean,
     onToggleLike: () -> Unit,
+    onDeletePost: () -> Unit,
     onAddComment: (String, String) -> Unit,
     onRetryImage: () -> Unit,
 ) {
     var commentInput by remember(post.id) { mutableStateOf("") }
     var replyTarget by remember(post.id) { mutableStateOf<MomentComment?>(null) }
+    var showMoreMenu by remember { mutableStateOf(false) }
+    var showDeleteDialog by remember { mutableStateOf(false) }
+
+    if (showDeleteDialog) {
+        MomentDeleteConfirmDialog(
+            onConfirm = {
+                showDeleteDialog = false
+                onDeletePost()
+            },
+            onDismiss = { showDeleteDialog = false },
+        )
+    }
 
     Column(modifier = Modifier.fillMaxSize()) {
         LazyColumn(
@@ -577,7 +686,19 @@ private fun MomentsDetailContent(
                             .padding(18.dp),
                         verticalArrangement = Arrangement.spacedBy(14.dp),
                     ) {
-                        MomentAuthorRow(post = post)
+                        MomentAuthorRow(
+                            post = post,
+                            trailingContent = {
+                                MomentMoreMenuButton(
+                                    expanded = showMoreMenu,
+                                    onExpandedChange = { showMoreMenu = it },
+                                    onDeleteClick = {
+                                        showMoreMenu = false
+                                        showDeleteDialog = true
+                                    },
+                                )
+                            },
+                        )
                         Text(
                             text = post.content,
                             style = MaterialTheme.typography.bodyLarge,

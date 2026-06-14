@@ -10,6 +10,7 @@ import com.example.myapplication.model.AppSettings
 import com.example.myapplication.model.MomentAuthorType
 import com.example.myapplication.model.MomentComment
 import com.example.myapplication.model.MomentPost
+import com.example.myapplication.model.sanitizeMomentDisplayName
 import com.example.myapplication.system.security.SensitiveTextRedactor
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -129,6 +130,19 @@ class MomentsViewModel(
         }
     }
 
+    fun deletePost(postId: String) {
+        if (postId.isBlank()) return
+        viewModelScope.launch {
+            runCatching {
+                momentsRepository.deletePost(postId)
+            }.onFailure { throwable ->
+                _uiState.update {
+                    it.copy(errorMessage = throwable.toMomentsUiError("朋友圈删除失败"))
+                }
+            }
+        }
+    }
+
     fun addCommentToPost(
         postId: String,
         commentText: String,
@@ -213,19 +227,23 @@ class MomentsViewModel(
         }
         return map { post ->
             post.copy(
+                authorName = post.authorName.sanitizedForMoment(post.authorId),
                 authorAvatarUri = post.authorAvatarUri.ifBlank {
                     when (post.authorType) {
                         MomentAuthorType.USER -> userAvatar
                         MomentAuthorType.ASSISTANT -> assistantAvatars[post.authorId].orEmpty()
+                        MomentAuthorType.NPC,
                         MomentAuthorType.SYSTEM -> ""
                     }
                 },
                 comments = post.comments.map { comment ->
                     comment.copy(
+                        authorName = comment.authorName.sanitizedForMoment(comment.authorId),
                         authorAvatarUri = comment.authorAvatarUri.ifBlank {
                             when (comment.authorType) {
                                 MomentAuthorType.USER -> userAvatar
                                 MomentAuthorType.ASSISTANT -> assistantAvatars[comment.authorId].orEmpty()
+                                MomentAuthorType.NPC,
                                 MomentAuthorType.SYSTEM -> ""
                             }
                         },
@@ -239,6 +257,13 @@ class MomentsViewModel(
         return SensitiveTextRedactor.throwableMessageForUi(
             throwable = this,
             fallback = fallback,
+        )
+    }
+
+    private fun String.sanitizedForMoment(stableKey: String): String {
+        return sanitizeMomentDisplayName(
+            name = this,
+            stableKey = stableKey,
         )
     }
 

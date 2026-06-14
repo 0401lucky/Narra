@@ -72,6 +72,7 @@ val BUILTIN_ASSISTANTS: List<Assistant> = listOf(
         iconName = "auto_stories",
         description = "用于快速开始 RP 会话的基础角色卡，可按剧情需要继续编辑。",
         systemPrompt = "你正在参与角色扮演。请保持当前角色口吻和关系边界，围绕剧情自然回应。",
+        defaultPresetId = "",
         isBuiltin = true,
         tags = listOf("RP"),
     ),

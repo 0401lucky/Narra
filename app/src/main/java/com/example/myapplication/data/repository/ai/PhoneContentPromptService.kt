@@ -89,6 +89,7 @@ internal class PhoneContentPromptService(
             append("\n- content 是动态正文，应像朋友圈真实文案：生活碎片、情感感悟、日常记录、暧昧暗示等，避免过于书面或模板化。")
             append("\n- like_count 是点赞总数，liked_by_names 是具体点赞人名列表，评论人可以和点赞人部分重叠。")
             append("\n- comments 是评论列表，每条包含评论人和正文，评论要自然口语化，像真实社交互动。")
+            append("\n- 朋友、同事、路人或 NPC 必须有真实姓名风格的名字，禁止使用“默认角色”“角色”“NPC”“朋友A”等占位名。")
             append("\n- 优先生成带关系痕迹、情绪暗示或戏剧性的动态，不要生成完全无关的鸡汤或广告。")
             append("\n- 动态数量建议 3-5 条。")
             append(phoneSnapshotOwnerRules(context))
@@ -245,6 +246,7 @@ internal class PhoneContentPromptService(
             appendLine("- 动态发布者 $postAuthorName 本人的回应")
             appendLine("- 手机主人 ${context.ownerName} 的反应")
             appendLine("- 其他 NPC/朋友的互动（吃醋、帮腔、打趣、隐晦暗示等）")
+            appendLine("- 如果出现 NPC/朋友，必须给出真实姓名风格的名字，禁止使用“默认角色”“角色”“NPC”“朋友A”等占位名")
             appendLine()
             appendLine("【强制约束 - 必须严格遵守】")
             appendLine("1. 每个角色的评论必须符合其在人设中的性格、说话习惯和对 ${context.viewerName} 的关系定位")
@@ -367,6 +369,7 @@ internal class PhoneContentPromptService(
 
     suspend fun generateMomentCommentReplies(
         assistants: List<MomentAssistantContext>,
+        npcNames: List<String> = emptyList(),
         postAuthorName: String,
         postAuthorType: MomentAuthorType = MomentAuthorType.ASSISTANT,
         postContent: String,
@@ -393,6 +396,17 @@ internal class PhoneContentPromptService(
                     appendLine("  人设：${assistant.persona.take(900)}")
                 }
             }
+            val availableNpcNames = npcNames
+                .map(String::trim)
+                .filter(String::isNotBlank)
+                .distinct()
+                .take(6)
+            if (availableNpcNames.isNotEmpty()) {
+                appendLine()
+                appendLine("【可选路人/NPC】")
+                appendLine(availableNpcNames.joinToString("、"))
+                appendLine("这些 NPC 只用于补充朋友圈互动氛围，可以点赞式打趣、帮腔、起哄或顺手接梗；必须像真实好友，有姓名，不得叫“默认角色”“角色”“NPC”“朋友A”。")
+            }
             appendLine()
             appendLine("【动态】")
             appendLine("发布者：$postAuthorName（${postAuthorType.toPromptLabel(userName)}）")
@@ -413,12 +427,14 @@ internal class PhoneContentPromptService(
             appendLine()
             appendLine("【要求】")
             appendLine("1. 生成 1-3 条回复，可以角色之间互相打趣、接话或隐晦较劲。")
-            appendLine("2. 只能使用上面列出的角色 id 和昵称。")
-            appendLine("3. 每条回复控制在 40 字以内，口语化。")
-            appendLine("4. 如果动态发布者不是 $userName，正文里的“你 / 想你 / 等你 / 陪你”默认指向 $userName，不是参与评论的其它角色。")
-            appendLine("5. 角色可以吃醋或调侃，但不得把自己写成动态发布者正在想念、等待或邀约的人；不要生成“我也想你”“只许想我”“等我过去”等角色对角色恋爱式回复。")
-            appendLine("6. 如果已有评论里有违背上述关系锚点的内容，不要模仿或延续。")
-            appendLine("7. 严格输出 JSON 数组：[{\"author_id\":\"...\",\"author_name\":\"...\",\"text\":\"...\"}]")
+            appendLine("2. 角色回复只能使用上面列出的角色 id 和昵称；NPC 回复只能使用可选路人/NPC名单里的姓名。")
+            appendLine("3. 优先保证至少 1 条来自角色；如气氛合适，可混入 0-1 条 NPC 评论，不要让 NPC 抢走主角戏份。")
+            appendLine("4. 每条回复控制在 40 字以内，口语化。")
+            appendLine("5. 如果动态发布者不是 $userName，正文里的“你 / 想你 / 等你 / 陪你”默认指向 $userName，不是参与评论的其它角色。")
+            appendLine("6. 角色可以吃醋或调侃，但不得把自己写成动态发布者正在想念、等待或邀约的人；不要生成“我也想你”“只许想我”“等我过去”等角色对角色恋爱式回复。")
+            appendLine("7. 如果已有评论里有违背上述关系锚点的内容，不要模仿或延续。")
+            appendLine("8. 严禁输出“默认角色”“角色”“NPC”“朋友A”等占位名。")
+            appendLine("9. 严格输出 JSON 数组：[{\"author_type\":\"assistant|npc\",\"author_id\":\"...\",\"author_name\":\"...\",\"text\":\"...\"}]")
         }
         val content = core.requestCompletionContent(
             baseUrl = baseUrl,
@@ -435,6 +451,12 @@ internal class PhoneContentPromptService(
             allowRoleplaySamplingFallback = true,
         )
         val allowedIds = assistants.map(MomentAssistantContext::id).toSet()
+        val assistantNamesById = assistants.associate { assistant -> assistant.id to assistant.name }
+        val allowedNpcNames = npcNames
+            .map(String::trim)
+            .filter(String::isNotBlank)
+            .distinct()
+            .toSet()
         return runCatching {
             val cleaned = content.trim()
                 .removePrefix("```json")
@@ -452,19 +474,32 @@ internal class PhoneContentPromptService(
             }
             array.mapNotNull { element ->
                 val obj = element.asJsonObjectOrNull() ?: return@mapNotNull null
+                val authorType = obj.stringValue("author_type").lowercase()
                 val authorId = obj.stringValue("author_id")
                 val authorName = obj.stringValue("author_name")
                 val text = obj.stringValue("text")
                 if (
                     authorId in allowedIds &&
-                    authorName.isNotBlank() &&
                     text.isNotBlank() &&
                     !text.isMisaddressedMomentReply(postAuthorType)
                 ) {
                     MomentCommentDraft(
                         authorId = authorId,
+                        authorName = assistantNamesById[authorId].orEmpty().ifBlank { authorName },
+                        text = text,
+                        authorType = MomentAuthorType.ASSISTANT,
+                    )
+                } else if (
+                    (authorType == "npc" || authorId.startsWith("npc:")) &&
+                    authorName in allowedNpcNames &&
+                    !authorName.isPlaceholderMomentName() &&
+                    text.isNotBlank()
+                ) {
+                    MomentCommentDraft(
+                        authorId = "npc:${authorName}",
                         authorName = authorName,
                         text = text,
+                        authorType = MomentAuthorType.NPC,
                     )
                 } else {
                     null
@@ -477,8 +512,15 @@ internal class PhoneContentPromptService(
         return when (this) {
             MomentAuthorType.USER -> "$userName / 用户本人"
             MomentAuthorType.ASSISTANT -> "角色，不是用户本人"
+            MomentAuthorType.NPC -> "路人/NPC"
             MomentAuthorType.SYSTEM -> "系统"
         }
+    }
+
+    private fun String.isPlaceholderMomentName(): Boolean {
+        val normalized = trim()
+        if (normalized.isBlank()) return true
+        return normalized in setOf("默认角色", "角色", "NPC", "npc", "朋友A", "路人A")
     }
 
     private fun String.isMisaddressedMomentReply(postAuthorType: MomentAuthorType): Boolean {

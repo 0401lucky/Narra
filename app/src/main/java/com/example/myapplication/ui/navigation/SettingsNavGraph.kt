@@ -2,6 +2,7 @@ package com.example.myapplication.ui.navigation
 
 import android.net.Uri
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -10,8 +11,13 @@ import androidx.navigation.NavHostController
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.navigation
 import com.example.myapplication.di.AppGraph
+import com.example.myapplication.model.AppSettings
+import com.example.myapplication.model.RoleplayScenario
+import com.example.myapplication.model.RoleplaySession
+import com.example.myapplication.roleplay.script.RoleplayScriptScope
 import com.example.myapplication.ui.screen.settings.PresetEditScreen
 import com.example.myapplication.ui.screen.settings.PresetListScreen
+import com.example.myapplication.ui.screen.settings.RoleplayScriptBindingOption
 import com.example.myapplication.ui.screen.settings.RoleplayScriptLabScreen
 import com.example.myapplication.ui.screen.settings.SettingsScreen
 import com.example.myapplication.ui.screen.settings.UserPersonaMasksScreen
@@ -250,19 +256,40 @@ internal fun NavGraphBuilder.registerSettingsNavGraph(
 
         composable(AppRoutes.SETTINGS_ROLEPLAY_SCRIPTS) {
             val scriptLabViewModel: RoleplayScriptLabViewModel = viewModel(
-                factory = RoleplayScriptLabViewModel.factory(appGraph.roleplayScriptRepository),
+                factory = RoleplayScriptLabViewModel.factory(
+                    scriptRepository = appGraph.roleplayScriptRepository,
+                    scriptEngine = appGraph.roleplayScriptEngine,
+                ),
             )
+            val storedSettings by settingsViewModel.storedSettings.collectAsStateWithLifecycle()
+            val scenarios by appGraph.roleplayRepository.observeScenarios().collectAsStateWithLifecycle(emptyList())
+            val sessions by appGraph.roleplayRepository.observeSessions().collectAsStateWithLifecycle(emptyList())
+            val bindingOptions = remember(storedSettings, scenarios, sessions) {
+                buildRoleplayScriptBindingOptions(
+                    settings = storedSettings,
+                    scenarios = scenarios,
+                    sessions = sessions,
+                )
+            }
             val scriptLabState by scriptLabViewModel.uiState.collectAsStateWithLifecycle()
             RoleplayScriptLabScreen(
                 uiState = scriptLabState,
+                bindingOptions = bindingOptions,
                 onCreateScript = scriptLabViewModel::createScript,
                 onSelectScript = scriptLabViewModel::selectScript,
+                onApplyTemplate = scriptLabViewModel::applyTemplate,
                 onUpdateName = scriptLabViewModel::updateName,
                 onUpdateScope = scriptLabViewModel::updateScope,
                 onUpdateOwnerId = scriptLabViewModel::updateOwnerId,
                 onUpdateSource = scriptLabViewModel::updateSource,
                 onUpdateEnabled = scriptLabViewModel::updateEnabled,
                 onTogglePermission = scriptLabViewModel::togglePermission,
+                onUpdateTestEvent = scriptLabViewModel::updateTestEvent,
+                onUpdateTestUserText = scriptLabViewModel::updateTestUserText,
+                onUpdateTestPromptText = scriptLabViewModel::updateTestPromptText,
+                onUpdateTestAssistantText = scriptLabViewModel::updateTestAssistantText,
+                onUpdateTestVariablesText = scriptLabViewModel::updateTestVariablesText,
+                onRunScriptTest = scriptLabViewModel::runScriptTest,
                 onSaveScript = scriptLabViewModel::saveScript,
                 onDeleteSelectedScript = scriptLabViewModel::deleteSelectedScript,
                 onConsumeMessage = scriptLabViewModel::consumeMessage,
@@ -291,4 +318,39 @@ internal fun NavGraphBuilder.registerSettingsNavGraph(
             settingsViewModel = settingsViewModel,
         )
     }
+}
+
+private fun buildRoleplayScriptBindingOptions(
+    settings: AppSettings,
+    scenarios: List<RoleplayScenario>,
+    sessions: List<RoleplaySession>,
+): List<RoleplayScriptBindingOption> {
+    val scenarioTitlesById = scenarios.associate { scenario ->
+        scenario.id to scenario.title.ifBlank { "未命名场景" }
+    }
+    val characterOptions = settings.resolvedAssistants().map { assistant ->
+        RoleplayScriptBindingOption(
+            scope = RoleplayScriptScope.CHARACTER,
+            id = assistant.id,
+            title = assistant.name.ifBlank { "未命名角色" },
+            subtitle = "角色 ID：${assistant.id}",
+        )
+    }
+    val scenarioOptions = scenarios.map { scenario ->
+        RoleplayScriptBindingOption(
+            scope = RoleplayScriptScope.SCENARIO,
+            id = scenario.id,
+            title = scenario.title.ifBlank { "未命名场景" },
+            subtitle = "场景 ID：${scenario.id}",
+        )
+    }
+    val sessionOptions = sessions.map { session ->
+        RoleplayScriptBindingOption(
+            scope = RoleplayScriptScope.SESSION,
+            id = session.id,
+            title = scenarioTitlesById[session.scenarioId] ?: "未命名会话",
+            subtitle = "会话 ID：${session.id}",
+        )
+    }
+    return characterOptions + scenarioOptions + sessionOptions
 }

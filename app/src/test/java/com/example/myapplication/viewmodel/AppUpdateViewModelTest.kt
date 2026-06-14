@@ -145,7 +145,7 @@ class AppUpdateViewModelTest {
             channel = "release",
             versionName = "1.0.0",
             versionCode = 10000,
-            metadataBaseUrl = "https://updates.example.com",
+            metadataBaseUrl = "https://0401lucky.github.io/Narra/updates",
         )
     }
 
@@ -157,7 +157,7 @@ class AppUpdateViewModelTest {
               "latest_version_name": "1.1.0",
               "latest_version_code": 10100,
               "minimum_supported_version_code": 10000,
-              "apk_url": "https://downloads.example.com/Narra-v1.1.0-10100-release.apk",
+              "apk_url": "https://download.lsa1230.dpdns.org/release/Narra-v1.1.0-10100-release.apk",
               "apk_sha256": "abcdef",
               "published_at": "2026-03-22T12:00:00+08:00",
               "release_notes": ["新增功能 A"]

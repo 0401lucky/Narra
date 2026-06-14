@@ -2468,6 +2468,44 @@ class AiGatewayTest {
     }
 
     @Test
+    fun sendMessageStream_throwsOnOpenAiSseErrorFrame() {
+        val sseBody = buildString {
+            append(
+                """
+                data: {"error":{"message":"Qwen upstream error code=codeadapter request_id=req-1 details=connection failed Authorization: Bearer sk-stream-secret","type":"upstream_error"}}
+                """.trimIndent(),
+            )
+            append("\n\n")
+            append("data: [DONE]\n\n")
+        }
+        server.enqueue(
+            MockResponse()
+                .setResponseCode(200)
+                .setHeader("Content-Type", "text/event-stream")
+                .setBody(sseBody),
+        )
+        val gateway = createGateway(
+            settings = AppSettings(
+                baseUrl = server.url("/v1/").toString(),
+                apiKey = "stream-key",
+                selectedModel = "qwen3-max",
+            ),
+        )
+
+        val error = assertThrows(IllegalStateException::class.java) {
+            runBlocking {
+                gateway.sendMessageStream(
+                    listOf(ChatMessage(id = "1", role = MessageRole.USER, content = "你好")),
+                ).toList()
+            }
+        }
+
+        assertTrue(error.message.orEmpty().contains("聊天请求失败"))
+        assertTrue(error.message.orEmpty().contains("connection failed"))
+        assertErrorMessageIsRedacted(error.message)
+    }
+
+    @Test
     fun sendMessageStream_redactsAnthropicSseErrorMessage() {
         val sseBody = buildString {
             append(

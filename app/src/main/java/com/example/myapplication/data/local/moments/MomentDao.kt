@@ -34,6 +34,9 @@ interface MomentDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun upsertPost(post: MomentPostEntity)
 
+    @Query("DELETE FROM moment_posts WHERE id = :postId")
+    suspend fun deletePost(postId: String)
+
     @Query("UPDATE moment_posts SET likedByNamesJson = :likedByNamesJson, updatedAt = :updatedAt WHERE id = :postId")
     suspend fun updatePostLikes(postId: String, likedByNamesJson: String, updatedAt: Long)
 

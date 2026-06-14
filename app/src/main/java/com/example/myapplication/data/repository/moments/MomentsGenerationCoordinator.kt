@@ -13,9 +13,11 @@ import com.example.myapplication.model.MomentComment
 import com.example.myapplication.model.MomentCommentDraft
 import com.example.myapplication.model.MomentMedia
 import com.example.myapplication.model.MomentMediaStatus
+import com.example.myapplication.model.MomentNpcFallbackNames
 import com.example.myapplication.model.MomentPost
 import com.example.myapplication.model.ProviderFunction
 import com.example.myapplication.model.ProviderSettings
+import com.example.myapplication.model.sanitizeMomentDisplayName
 import kotlinx.coroutines.TimeoutCancellationException
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.withTimeout
@@ -71,7 +73,7 @@ class MomentsGenerationCoordinator(
             .map { assistant ->
                 MomentAssistantContext(
                     id = assistant.id,
-                    name = assistant.name.ifBlank { "角色" },
+                    name = assistant.momentDisplayName(),
                     persona = assistant.toMomentPersona(),
                     commentStyle = assistant.momentCommentStyle,
                 )
@@ -79,11 +81,17 @@ class MomentsGenerationCoordinator(
         if (assistantContexts.isEmpty()) return emptyList()
 
         val existingComments = post.comments.joinToString("\n") { comment ->
-            "${comment.authorName}：${comment.text}"
+            "${comment.authorName.sanitizedForMoment(comment.authorId)}：${comment.text}"
         }
         val drafts = aiPromptExtrasService.generateMomentCommentReplies(
             assistants = assistantContexts,
-            postAuthorName = post.authorName,
+            npcNames = buildMomentNpcCandidates(
+                post = post,
+                settings = settings,
+                assistants = assistants,
+                triggerText = triggerText,
+            ),
+            postAuthorName = post.authorName.sanitizedForMoment(post.authorId),
             postAuthorType = post.authorType,
             postContent = post.content,
             existingComments = existingComments,
@@ -104,10 +112,14 @@ class MomentsGenerationCoordinator(
                 MomentComment(
                     id = "moment-comment-${UUID.randomUUID()}",
                     postId = post.id,
-                    authorType = MomentAuthorType.ASSISTANT,
+                    authorType = draft.authorType,
                     authorId = draft.authorId,
-                    authorName = draft.authorName,
-                    authorAvatarUri = assistantAvatarUris[draft.authorId].orEmpty(),
+                    authorName = draft.authorName.sanitizedForMoment(draft.authorId),
+                    authorAvatarUri = if (draft.authorType == MomentAuthorType.ASSISTANT) {
+                        assistantAvatarUris[draft.authorId].orEmpty()
+                    } else {
+                        ""
+                    },
                     text = draft.text,
                     createdAt = now + index,
                 )
@@ -181,10 +193,11 @@ class MomentsGenerationCoordinator(
         if (modelId.isBlank()) error("当前未配置朋友圈模型")
 
         val recentMoments = momentsRepository.listTimeline(8).joinToString("\n") { post ->
-            "${post.authorName}：${post.content.take(60)}"
+            "${post.authorName.sanitizedForMoment(post.authorId)}：${post.content.take(60)}"
         }
+        val assistantDisplayName = assistant.momentDisplayName()
         val draft = aiPromptExtrasService.generateMomentPost(
-            assistantName = assistant.name.ifBlank { "角色" },
+            assistantName = assistantDisplayName,
             assistantPersona = assistant.toMomentPersona(),
             userName = settings.resolvedUserDisplayName(),
             recentMoments = recentMoments,
@@ -202,7 +215,7 @@ class MomentsGenerationCoordinator(
                 postId = postId,
                 prompt = draft.imagePrompt.ifBlank {
                     buildFallbackImagePrompt(
-                        assistantName = assistant.name,
+                        assistantName = assistantDisplayName,
                         content = draft.content,
                         persona = assistant.toMomentPersona(),
                     )
@@ -218,7 +231,7 @@ class MomentsGenerationCoordinator(
             id = postId,
             authorType = MomentAuthorType.ASSISTANT,
             authorId = assistant.id,
-            authorName = assistant.name.ifBlank { "角色" },
+            authorName = assistantDisplayName,
             authorAvatarUri = assistant.avatarUri,
             authorLabel = "角色",
             content = draft.content.ifBlank { "今天也想留下一点生活的痕迹。" }.take(MaxMomentContentLength),
@@ -299,7 +312,7 @@ class MomentsGenerationCoordinator(
 
     private fun Assistant.toMomentPersona(): String {
         return buildString {
-            appendLine("姓名：${name.ifBlank { "角色" }}")
+            appendLine("姓名：${momentDisplayName()}")
             if (description.isNotBlank()) appendLine("简介：$description")
             if (systemPrompt.isNotBlank()) appendLine("人设：${systemPrompt.take(1200)}")
             if (scenario.isNotBlank()) appendLine("场景：${scenario.take(800)}")
@@ -341,7 +354,40 @@ class MomentsGenerationCoordinator(
     }
 
     private fun List<MomentCommentDraft>.dedupeByAuthorAndText(): List<MomentCommentDraft> {
-        return distinctBy { draft -> draft.authorId to draft.text.trim() }
+        return distinctBy { draft -> Triple(draft.authorType, draft.authorId, draft.text.trim()) }
+    }
+
+    private fun buildMomentNpcCandidates(
+        post: MomentPost,
+        settings: AppSettings,
+        assistants: List<Assistant>,
+        triggerText: String,
+    ): List<String> {
+        val usedNames = buildSet {
+            add(settings.resolvedUserDisplayName())
+            add(post.authorName)
+            post.comments.forEach { comment -> add(comment.authorName) }
+            assistants.forEach { assistant -> add(assistant.momentDisplayName()) }
+        }.map { name -> name.trim() }.filter { it.isNotBlank() }.toSet()
+        val seed = "${post.id}|${triggerText.take(80)}|${post.comments.size}"
+        return MomentNpcFallbackNames
+            .filterNot { it in usedNames }
+            .sortedBy { name -> "$seed|$name".hashCode() }
+            .take(4)
+    }
+
+    private fun Assistant.momentDisplayName(): String {
+        return sanitizeMomentDisplayName(
+            name = name,
+            stableKey = id,
+        )
+    }
+
+    private fun String.sanitizedForMoment(stableKey: String): String {
+        return sanitizeMomentDisplayName(
+            name = this,
+            stableKey = stableKey,
+        )
     }
 
     private companion object {

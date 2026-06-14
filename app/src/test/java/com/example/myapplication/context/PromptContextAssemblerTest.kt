@@ -18,6 +18,7 @@ import com.example.myapplication.model.PresetPromptEntry
 import com.example.myapplication.model.PresetPromptEntryKind
 import com.example.myapplication.model.PresetPromptRole
 import com.example.myapplication.model.PromptMode
+import com.example.myapplication.model.QWEN_COMPAT_PRESET_ID
 import com.example.myapplication.model.WorldBookEntry
 import com.example.myapplication.testutil.FakeConversationSummaryRepository
 import com.example.myapplication.testutil.FakePresetRepository
@@ -428,6 +429,67 @@ class PromptContextAssemblerTest {
                     section.content.contains("守夜人刚离开")
             },
         )
+    }
+
+    @Test
+    fun assemble_qwenLightPresetKeepsRoleContextAndModeBridge() = runBlocking {
+        val assembler = DefaultPromptContextAssembler(
+            presetRepository = FakePresetRepository(BUILTIN_PRESETS),
+        )
+
+        val result = assembler.assemble(
+            settings = AppSettings(defaultPresetId = QWEN_COMPAT_PRESET_ID),
+            assistant = Assistant(
+                id = "assistant-1",
+                name = "陆承渊",
+                defaultPresetId = "",
+                description = "年上的恋人，成熟克制，喜欢把关心藏在很轻的称呼里。",
+            ),
+            conversation = Conversation(id = "c1", createdAt = 1L, updatedAt = 1L),
+            userInputText = "daddy，早上好",
+            recentMessages = emptyList(),
+            promptMode = PromptMode.ROLEPLAY,
+        )
+
+        assertEquals(QWEN_COMPAT_PRESET_ID, result.activePresetId)
+        assertEquals("Narra 轻量预设", result.activePresetName)
+        assertTrue(result.systemPrompt.contains("不要像通用助手一样问"))
+        assertTrue(result.systemPrompt.contains("线上模式"))
+        assertTrue(result.systemPrompt.contains("线下对白/长文"))
+        assertTrue(result.systemPrompt.contains("年上的恋人"))
+        assertFalse(result.systemPrompt.contains("导演提示协作"))
+        assertFalse(result.systemPrompt.contains("状态规则"))
+        assertFalse(result.promptEnvelope.statusCardsEnabled)
+    }
+
+    @Test
+    fun assemble_blankAssistantPresetUsesGlobalDefaultPreset() = runBlocking {
+        val tavoPreset = Preset(
+            id = "tavo-preset",
+            name = "Tavo 预设",
+            systemPrompt = "Tavo 核心规则：保持角色身份回应 {{user}}。",
+        )
+        val assembler = DefaultPromptContextAssembler(
+            presetRepository = FakePresetRepository(listOf(tavoPreset)),
+        )
+
+        val result = assembler.assemble(
+            settings = AppSettings(defaultPresetId = tavoPreset.id),
+            assistant = Assistant(
+                id = "assistant-1",
+                name = "陆承渊",
+                defaultPresetId = "",
+            ),
+            conversation = Conversation(id = "c1", createdAt = 1L, updatedAt = 1L),
+            userInputText = "daddy，早上好",
+            recentMessages = emptyList(),
+            promptMode = PromptMode.ROLEPLAY,
+        )
+
+        assertEquals(tavoPreset.id, result.activePresetId)
+        assertEquals("Tavo 预设", result.activePresetName)
+        assertTrue(result.systemPrompt.contains("Tavo 核心规则"))
+        assertFalse(result.systemPrompt.contains("Narra 默认预设"))
     }
 
     @Test

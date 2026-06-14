@@ -2,8 +2,12 @@ package com.example.myapplication.viewmodel
 
 import com.example.myapplication.data.repository.roleplay.script.RoleplayScriptRepository
 import com.example.myapplication.roleplay.script.RoleplayScriptDefinition
+import com.example.myapplication.roleplay.script.RoleplayScriptEngine
+import com.example.myapplication.roleplay.script.RoleplayScriptExecutionRequest
+import com.example.myapplication.roleplay.script.RoleplayScriptExecutionResult
 import com.example.myapplication.roleplay.script.RoleplayScriptPermission
 import com.example.myapplication.roleplay.script.RoleplayScriptScope
+import com.example.myapplication.roleplay.script.RoleplayScriptUiDirective
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -36,7 +40,7 @@ class RoleplayScriptLabViewModelTest {
         viewModel.saveScript()
         advanceUntilIdle()
 
-        assertEquals("非全局脚本需要填写绑定 ID", viewModel.uiState.value.message)
+        assertEquals("非全局脚本需要选择或填写绑定目标", viewModel.uiState.value.message)
         assertEquals(emptyList<RoleplayScriptDefinition>(), repository.listScripts())
         job.cancel()
     }
@@ -103,6 +107,61 @@ class RoleplayScriptLabViewModelTest {
         assertTrue(viewModel.uiState.value.draft.id.startsWith("draft-"))
         job.cancel()
     }
+
+    @Test
+    fun applyTemplate_updatesDraftPermissionsAndTestEvent() = runTest(mainDispatcherRule.dispatcher.scheduler) {
+        val repository = FakeRoleplayScriptLabRepository()
+        val viewModel = RoleplayScriptLabViewModel(
+            scriptRepository = repository,
+            idProvider = { "script-1" },
+        )
+        val job = launch { viewModel.uiState.collect { } }
+
+        advanceUntilIdle()
+        viewModel.applyTemplate("send_rewrite")
+        advanceUntilIdle()
+
+        val state = viewModel.uiState.value
+        assertEquals("发送前改写", state.draft.name)
+        assertEquals(RoleplayScriptScope.GLOBAL, state.draft.scope)
+        assertTrue(RoleplayScriptPermission.MODIFY_OUTGOING_MESSAGE in state.draft.grantedPermissions)
+        assertTrue("beforeSend" in state.draft.source)
+        job.cancel()
+    }
+
+    @Test
+    fun runScriptTest_exposesExecutionResult() = runTest(mainDispatcherRule.dispatcher.scheduler) {
+        val repository = FakeRoleplayScriptLabRepository()
+        val engine = FakeRoleplayScriptLabEngine(
+            result = RoleplayScriptExecutionResult(
+                variables = mapOf("round" to "2"),
+                promptAdditions = listOf("追加提示"),
+                outgoingMessage = "改写后的文本",
+                uiDirectives = listOf(RoleplayScriptUiDirective("notice", "脚本生效")),
+            ),
+        )
+        val viewModel = RoleplayScriptLabViewModel(
+            scriptRepository = repository,
+            scriptEngine = engine,
+            idProvider = { "script-1" },
+        )
+        val job = launch { viewModel.uiState.collect { } }
+
+        advanceUntilIdle()
+        viewModel.updateSource("function beforePrompt() {}")
+        viewModel.updateTestVariablesText("round=1")
+        viewModel.runScriptTest()
+        advanceUntilIdle()
+
+        val result = viewModel.uiState.value.test.result
+        assertEquals(false, viewModel.uiState.value.test.isRunning)
+        assertEquals("追加提示", result?.promptAdditions?.single())
+        assertEquals("改写后的文本", result?.outgoingMessage)
+        assertEquals("2", result?.variables?.get("round"))
+        assertEquals("脚本生效", result?.uiDirectives?.single()?.payload)
+        assertEquals(mapOf("round" to "1"), engine.lastRequest?.input?.variables)
+        job.cancel()
+    }
 }
 
 private class FakeRoleplayScriptLabRepository(
@@ -142,4 +201,18 @@ private class FakeRoleplayScriptLabRepository(
     override suspend fun writeState(scriptId: String, values: Map<String, String>) = Unit
 
     override suspend fun deleteStateValue(scriptId: String, stateKey: String) = Unit
+}
+
+private class FakeRoleplayScriptLabEngine(
+    private val result: RoleplayScriptExecutionResult,
+) : RoleplayScriptEngine {
+    var lastRequest: RoleplayScriptExecutionRequest? = null
+        private set
+
+    override fun isAvailable(): Boolean = true
+
+    override suspend fun execute(request: RoleplayScriptExecutionRequest): RoleplayScriptExecutionResult {
+        lastRequest = request
+        return result
+    }
 }

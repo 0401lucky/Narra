@@ -20,6 +20,7 @@ interface MomentsRepository {
     suspend fun listTimeline(limit: Int = 30): List<MomentPost>
     suspend fun getPost(postId: String): MomentPost?
     suspend fun upsertPost(post: MomentPost)
+    suspend fun deletePost(postId: String)
     suspend fun updatePostLikes(postId: String, likedByNames: List<String>, updatedAt: Long)
     suspend fun addComment(comment: MomentComment)
     suspend fun addComments(comments: List<MomentComment>)
@@ -49,6 +50,10 @@ class RoomMomentsRepository(
     override suspend fun upsertPost(post: MomentPost) {
         dao.upsertPost(post.toEntity())
         post.media?.let { dao.upsertMedia(it.toEntity()) }
+    }
+
+    override suspend fun deletePost(postId: String) {
+        dao.deletePost(postId)
     }
 
     override suspend fun updatePostLikes(postId: String, likedByNames: List<String>, updatedAt: Long) {

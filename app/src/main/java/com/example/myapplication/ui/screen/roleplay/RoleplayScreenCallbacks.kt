@@ -22,6 +22,7 @@ data class RoleplayScreenCallbacks(
 data class RoleplayMessageCallbacks(
     val onInputChange: (String) -> Unit,
     val onSend: () -> Unit,
+    val onRequestGroupParticipantReply: (String) -> Unit,
     val onCancelSending: () -> Unit,
     val onRetryTurn: (String) -> Unit,
     val onEditUserMessage: (String) -> Unit,

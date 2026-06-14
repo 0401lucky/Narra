@@ -24,7 +24,7 @@ class ChatDatabaseMigrationTest {
     }
 
     @Test
-    fun migrateFrom1To14_preservesLegacyConversationData() {
+    fun migrateFrom1ToLatest_preservesLegacyConversationData() {
         createLegacyDatabase(version = 1) { db ->
             createVersion1Schema(db)
             db.execSQL(
@@ -44,6 +44,7 @@ class ChatDatabaseMigrationTest {
         migrateToLatest()
 
         openReadableDatabase().use { db ->
+            assertLatestSchemaShape(db)
             assertEquals("default-assistant", queryString(db, "SELECT assistantId FROM conversations WHERE id = 'c1'"))
             assertEquals("[]", queryString(db, "SELECT partsJson FROM messages WHERE id = 'm1'"))
             assertEquals("[]", queryString(db, "SELECT citationsJson FROM messages WHERE id = 'm1'"))
@@ -67,7 +68,7 @@ class ChatDatabaseMigrationTest {
     }
 
     @Test
-    fun migrateFrom9To14_createsRoleplayTablesWithLongformColumn() {
+    fun migrateFrom9ToLatest_createsRoleplayTablesWithLongformColumn() {
         createLegacyDatabase(version = 9) { db ->
             createVersion9Schema(db)
         }
@@ -85,7 +86,7 @@ class ChatDatabaseMigrationTest {
     }
 
     @Test
-    fun migrateFrom10To14_whenLongformAlreadyExists_keepsDataReadable() {
+    fun migrateFrom10ToLatest_whenLongformAlreadyExists_keepsDataReadable() {
         createLegacyDatabase(version = 10) { db ->
             createVersion10Schema(db, includeLongformColumn = true)
             db.execSQL(
@@ -118,7 +119,7 @@ class ChatDatabaseMigrationTest {
     }
 
     @Test
-    fun migrateFrom10To14_whenLongformMissing_addsDefaultColumn() {
+    fun migrateFrom10ToLatest_whenLongformMissing_addsDefaultColumn() {
         createLegacyDatabase(version = 10) { db ->
             createVersion10Schema(db, includeLongformColumn = false)
             db.execSQL(
@@ -151,7 +152,7 @@ class ChatDatabaseMigrationTest {
     }
 
     @Test
-    fun migrateFrom11To14_addsSearchCitationAndReasoningStepColumns() {
+    fun migrateFrom11ToLatest_addsSearchCitationAndReasoningStepColumns() {
         createLegacyDatabase(version = 11) { db ->
             createVersion11Schema(db)
             db.execSQL(
@@ -195,7 +196,7 @@ class ChatDatabaseMigrationTest {
     }
 
     @Test
-    fun migrateFrom13To14_backfillsLegacyReasoningSteps() {
+    fun migrateFrom13ToLatest_backfillsLegacyReasoningSteps() {
         createLegacyDatabase(version = 13) { db ->
             createVersion13Schema(db)
             db.execSQL(
@@ -223,6 +224,7 @@ class ChatDatabaseMigrationTest {
         migrateToLatest()
 
         openReadableDatabase().use { db ->
+            assertLatestSchemaShape(db)
             val reasoningStepsJson = queryString(db, "SELECT reasoningStepsJson FROM messages WHERE id = 'm13'")
             assertNotNull(reasoningStepsJson)
             assertTrue(reasoningStepsJson.contains("\"id\":\"legacy-m13-0\""))
@@ -234,6 +236,41 @@ class ChatDatabaseMigrationTest {
                 queryString(db, "SELECT roleplayInteractionMode FROM messages WHERE id = 'm13'"),
             )
         }
+    }
+
+    private fun assertLatestSchemaShape(db: SQLiteDatabase) {
+        assertEquals(ChatDatabase.CURRENT_VERSION.toLong(), queryLong(db, "PRAGMA user_version"))
+
+        assertTrue(hasTable(db, "roleplay_diary_entries"))
+        assertTrue(hasTable(db, "mailbox_letters"))
+        assertTrue(hasTable(db, "mailbox_settings"))
+        assertTrue(hasTable(db, "presets"))
+        assertTrue(hasTable(db, "roleplay_group_participants"))
+        assertTrue(hasTable(db, "conversation_summary_segments"))
+        assertTrue(hasTable(db, "roleplay_scripts"))
+        assertTrue(hasTable(db, "roleplay_script_state"))
+        assertTrue(hasTable(db, "moment_posts"))
+        assertTrue(hasTable(db, "moment_comments"))
+        assertTrue(hasTable(db, "moment_media"))
+
+        assertTrue(hasColumn(db, "worldbook_entries", "bookId"))
+        assertTrue(hasColumn(db, "worldbook_entries", "matchMode"))
+        assertTrue(hasColumn(db, "worldbook_entries", "extrasJson"))
+        assertTrue(hasColumn(db, "worldbook_entries", "probability"))
+        assertTrue(hasColumn(db, "memory_entries", "characterId"))
+        assertTrue(hasColumn(db, "messages", "speakerId"))
+        assertTrue(hasColumn(db, "messages", "speakerName"))
+        assertTrue(hasColumn(db, "roleplay_scenarios", "userPersonaMaskId"))
+        assertTrue(hasColumn(db, "roleplay_scenarios", "chatType"))
+        assertTrue(hasColumn(db, "roleplay_scenarios", "onlineReplyMinCount"))
+        assertTrue(hasColumn(db, "roleplay_scenarios", "enableOnlineProactiveReply"))
+        assertTrue(hasColumn(db, "roleplay_scripts", "grantedPermissionsJson"))
+        assertTrue(hasColumn(db, "roleplay_script_state", "stateValue"))
+        assertTrue(hasColumn(db, "moment_comments", "authorAvatarUri"))
+
+        assertTrue(hasIndex(db, "messages", "index_messages_conversationId_createdAt_id"))
+        assertTrue(hasIndex(db, "roleplay_scripts", "index_roleplay_scripts_scope_ownerId"))
+        assertTrue(hasIndex(db, "moment_media", "index_moment_media_postId"))
     }
 
     private fun migrateToLatest() {
@@ -492,6 +529,18 @@ class ChatDatabaseMigrationTest {
             }
         }
         return false
+    }
+
+    private fun hasTable(
+        db: SQLiteDatabase,
+        tableName: String,
+    ): Boolean {
+        db.rawQuery(
+            "SELECT name FROM sqlite_master WHERE type = 'table' AND name = ?",
+            arrayOf(tableName),
+        ).use { cursor ->
+            return cursor.moveToFirst()
+        }
     }
 
     private fun hasIndex(

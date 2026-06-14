@@ -29,6 +29,7 @@ import com.example.myapplication.model.PhoneSnapshotOwnerType
 import com.example.myapplication.model.PromptEnvelope
 import com.example.myapplication.model.PromptMode
 import com.example.myapplication.model.WorldBookEntry
+import com.example.myapplication.model.resolveActivePresetId
 import com.example.myapplication.model.toPlainText
 
 data class PromptContextResult(
@@ -247,10 +248,10 @@ class DefaultPromptContextAssembler(
             phoneSnapshotItems = phoneSnapshotItems,
             phoneObservation = phoneObservation.takeIf { shouldIncludePhoneObservation },
         )
-        val activePresetId = assistant?.defaultPresetId
-            ?.trim()
-            ?.takeIf { it.isNotBlank() }
-            ?: settings.defaultPresetId.trim().ifBlank { DEFAULT_PRESET_ID }
+        val activePresetId = resolveActivePresetId(
+            globalDefaultPresetId = settings.defaultPresetId,
+            assistantDefaultPresetId = assistant?.defaultPresetId,
+        )
         val activePreset = presetRepository.getPreset(activePresetId)
             ?: DEFAULT_PRESET_ID
                 .takeIf { activePresetId != it }

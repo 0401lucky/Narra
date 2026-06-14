@@ -8,6 +8,7 @@ import com.example.myapplication.model.Preset
 import com.example.myapplication.model.PresetPromptEntry
 import com.example.myapplication.model.PresetPromptEntryKind
 import com.example.myapplication.model.PresetSamplerConfig
+import com.example.myapplication.model.QWEN_COMPAT_PRESET_ID
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.test.runTest
@@ -29,6 +30,7 @@ class PresetRepositoryTest {
         assertEquals(BUILTIN_PRESETS.map { it.id }.sorted(), presets.map { it.id }.sorted())
         assertTrue(presets.all { it.builtIn })
         assertNotNull(repository.getPreset(DEFAULT_PRESET_ID))
+        assertNotNull(repository.getPreset(QWEN_COMPAT_PRESET_ID))
     }
 
     @Test

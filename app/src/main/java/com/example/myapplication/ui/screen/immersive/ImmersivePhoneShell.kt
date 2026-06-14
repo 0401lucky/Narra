@@ -127,6 +127,9 @@ import com.example.myapplication.model.RoleplayInteractionMode
 import com.example.myapplication.model.RoleplayScenario
 import com.example.myapplication.model.UserPersonaMask
 import com.example.myapplication.model.isGroupChat
+import com.example.myapplication.phone.RoleplayPhoneActivityItem
+import com.example.myapplication.phone.RoleplayPhoneActivityKind
+import com.example.myapplication.phone.RoleplayPhoneEcosystemSnapshot
 import com.example.myapplication.ui.component.AppSnackbarHost
 import com.example.myapplication.ui.component.AssistantAvatar
 import com.example.myapplication.ui.component.UserProfileAvatar
@@ -222,6 +225,7 @@ fun ImmersivePhoneShell(
     settings: AppSettings,
     assistants: List<Assistant>,
     chatSummaries: List<RoleplayChatSummary>,
+    phoneEcosystem: RoleplayPhoneEcosystemSnapshot = RoleplayPhoneEcosystemSnapshot(),
     noticeMessage: String?,
     errorMessage: String?,
     onClearNoticeMessage: () -> Unit,
@@ -234,6 +238,7 @@ fun ImmersivePhoneShell(
     var plusMenuExpanded by rememberSaveable { mutableStateOf(false) }
     var showNewChatSheet by rememberSaveable { mutableStateOf(false) }
     var showNewGroupChatSheet by rememberSaveable { mutableStateOf(false) }
+    var showPhoneEcosystemSheet by rememberSaveable { mutableStateOf(false) }
     var selectedContact by remember { mutableStateOf<Assistant?>(null) }
     var discoverTarget by remember { mutableStateOf<DiscoverTarget?>(null) }
 
@@ -255,6 +260,32 @@ fun ImmersivePhoneShell(
             compareByDescending<RoleplayChatSummary> { it.scenario.isPinned }
                 .thenByDescending { it.lastActiveAt },
         )
+    }
+    fun openPhoneActivity(activity: RoleplayPhoneActivityItem) {
+        when (activity.kind) {
+            RoleplayPhoneActivityKind.MOMENT -> callbacks.onOpenMoments(activity.scenarioId)
+            RoleplayPhoneActivityKind.MAILBOX -> {
+                if (activity.scenarioId.isBlank()) {
+                    discoverTarget = DiscoverTarget.Mailbox
+                } else {
+                    callbacks.onOpenMailbox(activity.scenarioId)
+                }
+            }
+            RoleplayPhoneActivityKind.DIARY -> {
+                if (activity.scenarioId.isBlank()) {
+                    discoverTarget = DiscoverTarget.Diary
+                } else {
+                    callbacks.onOpenDiary(activity.scenarioId)
+                }
+            }
+            RoleplayPhoneActivityKind.VIDEO_CALL -> {
+                if (activity.scenarioId.isBlank()) {
+                    discoverTarget = DiscoverTarget.VideoCall
+                } else {
+                    callbacks.onOpenVideoCall(activity.scenarioId)
+                }
+            }
+        }
     }
 
     Scaffold(
@@ -357,6 +388,8 @@ fun ImmersivePhoneShell(
                     )
 
                     ImmersiveTab.Discover -> ImmersiveDiscoverPage(
+                        phoneEcosystem = phoneEcosystem,
+                        onOpenEcosystem = { showPhoneEcosystemSheet = true },
                         onOpenTarget = { target ->
                             if (target == DiscoverTarget.Moments) {
                                 callbacks.onOpenMoments("")
@@ -384,6 +417,17 @@ fun ImmersivePhoneShell(
                 }
             }
         }
+    }
+
+    if (showPhoneEcosystemSheet) {
+        PhoneEcosystemSheet(
+            snapshot = phoneEcosystem,
+            onDismiss = { showPhoneEcosystemSheet = false },
+            onOpenActivity = { activity ->
+                showPhoneEcosystemSheet = false
+                openPhoneActivity(activity)
+            },
+        )
     }
 
     if (showNewChatSheet) {
@@ -1068,6 +1112,8 @@ private fun ContactRow(
 
 @Composable
 private fun ImmersiveDiscoverPage(
+    phoneEcosystem: RoleplayPhoneEcosystemSnapshot,
+    onOpenEcosystem: () -> Unit,
     onOpenTarget: (DiscoverTarget) -> Unit,
     bottomPadding: Dp,
 ) {
@@ -1075,6 +1121,12 @@ private fun ImmersiveDiscoverPage(
         modifier = Modifier.fillMaxSize(),
         contentPadding = PaddingValues(top = 14.dp, bottom = 14.dp + bottomPadding),
     ) {
+        item {
+            PhoneEcosystemEntry(
+                snapshot = phoneEcosystem,
+                onClick = onOpenEcosystem,
+            )
+        }
         items(DiscoverTarget.entries, key = { it.name }) { target ->
             FeatureRow(
                 title = target.title,
@@ -1084,6 +1136,265 @@ private fun ImmersiveDiscoverPage(
             )
         }
     }
+}
+
+@Composable
+private fun PhoneEcosystemEntry(
+    snapshot: RoleplayPhoneEcosystemSnapshot,
+    onClick: () -> Unit,
+) {
+    Surface(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp, vertical = 8.dp)
+            .clickable(onClick = onClick),
+        shape = RoundedCornerShape(8.dp),
+        color = MaterialTheme.colorScheme.surface,
+        tonalElevation = 2.dp,
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.45f)),
+    ) {
+        Column(modifier = Modifier.padding(vertical = 14.dp)) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 14.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Surface(
+                    modifier = Modifier.size(38.dp),
+                    shape = RoundedCornerShape(8.dp),
+                    color = MaterialTheme.colorScheme.primaryContainer,
+                    contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
+                ) {
+                    Box(contentAlignment = Alignment.Center) {
+                        Icon(Icons.Default.CloudSync, contentDescription = null)
+                    }
+                }
+                Spacer(modifier = Modifier.width(10.dp))
+                Column(modifier = Modifier.weight(1f)) {
+                    Text("今日动态", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
+                    Text(
+                        text = phoneEcosystemSummaryText(snapshot),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+                Text(
+                    text = "查看",
+                    style = MaterialTheme.typography.labelLarge,
+                    color = MaterialTheme.colorScheme.primary,
+                )
+            }
+            Spacer(modifier = Modifier.height(12.dp))
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 14.dp),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                PhoneEcosystemStat(
+                    label = "未读来信",
+                    value = snapshot.unreadMailboxCount.toString(),
+                    modifier = Modifier.weight(1f),
+                )
+                PhoneEcosystemStat(
+                    label = "角色动态",
+                    value = snapshot.latestMomentCount.toString(),
+                    modifier = Modifier.weight(1f),
+                )
+                PhoneEcosystemStat(
+                    label = "通话中",
+                    value = snapshot.activeVideoCallCount.toString(),
+                    modifier = Modifier.weight(1f),
+                )
+            }
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun PhoneEcosystemSheet(
+    snapshot: RoleplayPhoneEcosystemSnapshot,
+    onDismiss: () -> Unit,
+    onOpenActivity: (RoleplayPhoneActivityItem) -> Unit,
+) {
+    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+    ModalBottomSheet(onDismissRequest = onDismiss, sheetState = sheetState) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .heightIn(max = 560.dp)
+                .padding(bottom = 20.dp),
+        ) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 20.dp, vertical = 10.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Surface(
+                    modifier = Modifier.size(42.dp),
+                    shape = RoundedCornerShape(8.dp),
+                    color = MaterialTheme.colorScheme.primaryContainer,
+                    contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
+                ) {
+                    Box(contentAlignment = Alignment.Center) {
+                        Icon(Icons.Default.CloudSync, contentDescription = null)
+                    }
+                }
+                Spacer(modifier = Modifier.width(12.dp))
+                Column(modifier = Modifier.weight(1f)) {
+                    Text("今日动态", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
+                    Text(
+                        text = phoneEcosystemSummaryText(snapshot),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+                TextButton(onClick = onDismiss) {
+                    Text("关闭")
+                }
+            }
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 20.dp, vertical = 8.dp),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                PhoneEcosystemStat(
+                    label = "未读来信",
+                    value = snapshot.unreadMailboxCount.toString(),
+                    modifier = Modifier.weight(1f),
+                )
+                PhoneEcosystemStat(
+                    label = "角色动态",
+                    value = snapshot.latestMomentCount.toString(),
+                    modifier = Modifier.weight(1f),
+                )
+                PhoneEcosystemStat(
+                    label = "通话中",
+                    value = snapshot.activeVideoCallCount.toString(),
+                    modifier = Modifier.weight(1f),
+                )
+            }
+            Divider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
+            if (snapshot.items.isEmpty()) {
+                Text(
+                    text = "等角色写信、发朋友圈或留下日记后，这里会自动汇总。",
+                    modifier = Modifier.padding(horizontal = 20.dp, vertical = 18.dp),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            } else {
+                LazyColumn(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .weight(1f),
+                    contentPadding = PaddingValues(bottom = 12.dp),
+                ) {
+                    items(snapshot.items, key = { it.id }) { item ->
+                        PhoneEcosystemActivityRow(
+                            item = item,
+                            onClick = { onOpenActivity(item) },
+                        )
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun PhoneEcosystemStat(
+    label: String,
+    value: String,
+    modifier: Modifier = Modifier,
+) {
+    Surface(
+        modifier = modifier,
+        shape = RoundedCornerShape(8.dp),
+        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
+    ) {
+        Column(
+            modifier = Modifier.padding(horizontal = 10.dp, vertical = 8.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+        ) {
+            Text(value, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+            Text(
+                text = label,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+    }
+}
+
+@Composable
+private fun PhoneEcosystemActivityRow(
+    item: RoleplayPhoneActivityItem,
+    onClick: () -> Unit,
+) {
+    ListItem(
+        modifier = Modifier.clickable(onClick = onClick),
+        headlineContent = {
+            Text(
+                text = item.title,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+                fontWeight = FontWeight.SemiBold,
+            )
+        },
+        supportingContent = {
+            Text(
+                text = item.subtitle,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
+        },
+        leadingContent = {
+            Surface(
+                modifier = Modifier.size(36.dp),
+                shape = RoundedCornerShape(8.dp),
+                color = MaterialTheme.colorScheme.secondaryContainer,
+                contentColor = MaterialTheme.colorScheme.onSecondaryContainer,
+            ) {
+                Box(contentAlignment = Alignment.Center) {
+                    Icon(activityIcon(item.kind), contentDescription = null, modifier = Modifier.size(20.dp))
+                }
+            }
+        },
+        trailingContent = {
+            val timeText = formatMessageTime(item.timestamp)
+            if (timeText.isNotBlank()) {
+                Text(
+                    text = timeText,
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+        },
+    )
+}
+
+private fun activityIcon(kind: RoleplayPhoneActivityKind): ImageVector {
+    return when (kind) {
+        RoleplayPhoneActivityKind.MOMENT -> Icons.Default.Forum
+        RoleplayPhoneActivityKind.MAILBOX -> Icons.Default.Mail
+        RoleplayPhoneActivityKind.DIARY -> Icons.Default.Book
+        RoleplayPhoneActivityKind.VIDEO_CALL -> Icons.Default.Videocam
+    }
+}
+
+private fun phoneEcosystemSummaryText(snapshot: RoleplayPhoneEcosystemSnapshot): String {
+    val parts = buildList {
+        if (snapshot.unreadMailboxCount > 0) add("${snapshot.unreadMailboxCount} 封未读来信")
+        if (snapshot.latestMomentCount > 0) add("${snapshot.latestMomentCount} 条角色动态")
+        if (snapshot.activeVideoCallCount > 0) add("${snapshot.activeVideoCallCount} 个通话中")
+    }
+    return parts.joinToString(" · ").ifBlank { "暂时没有新的手机动态" }
 }
 
 @Composable
