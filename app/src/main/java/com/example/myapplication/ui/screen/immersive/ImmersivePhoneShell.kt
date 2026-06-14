@@ -631,7 +631,7 @@ private fun ImmersiveFloatingBottomBar(
                     .fillMaxHeight()
                     .onSizeChanged { indicatorWidthPx = it.width }
                     .clip(selectedShape)
-                    .background(Color(0xFFD8EFF9).copy(alpha = 0.92f)),
+                    .background(MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.92f)),
             )
             Row(
                 modifier = Modifier.fillMaxSize(),
@@ -659,8 +659,8 @@ private fun ImmersiveFloatingBottomBarItem(
     selectedShape: RoundedCornerShape,
     onClick: () -> Unit,
 ) {
-    val activeContentColor = Color(0xFF3F91B7)
-    val inactiveContentColor = Color(0xFF222832).copy(alpha = 0.82f)
+    val activeContentColor = MaterialTheme.colorScheme.onSecondaryContainer
+    val inactiveContentColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.82f)
     val contentColor by animateColorAsState(
         targetValue = if (selected) activeContentColor else inactiveContentColor,
         animationSpec = tween(220),

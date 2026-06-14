@@ -70,6 +70,19 @@ class ConversationRepository(
         return conversationStore.getConversation(conversationId)
     }
 
+    suspend fun updateConversationAssistantId(
+        conversationId: String,
+        assistantId: String,
+    ): Conversation? {
+        val current = conversationStore.getConversation(conversationId) ?: return null
+        val updated = current.copy(
+            assistantId = assistantId.trim().ifBlank { DEFAULT_ASSISTANT_ID },
+            updatedAt = nowProvider(),
+        )
+        conversationStore.upsertConversationMetadata(updated)
+        return updated
+    }
+
     suspend fun listMessages(conversationId: String): List<ChatMessage> {
         return conversationStore.listMessages(conversationId)
     }

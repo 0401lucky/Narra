@@ -613,6 +613,7 @@ internal fun NavGraphBuilder.registerRoleplayGraph(
                 onUpdateRoleplayLongformTargetChars = settingsViewModel::updateRoleplayLongformTargetChars,
                 onUpdateScenarioInteractionMode = roleplayViewModel::updateCurrentScenarioInteractionMode,
                 onUpdateScenarioOnlineReplyRange = roleplayViewModel::updateCurrentScenarioOnlineReplyRange,
+                onAddGroupParticipant = roleplayViewModel::addGroupParticipant,
                 onToggleGroupParticipantMuted = roleplayViewModel::toggleGroupParticipantMuted,
                 onRemoveGroupParticipant = roleplayViewModel::removeGroupParticipant,
                 onUpdateGroupReplyMode = roleplayViewModel::updateGroupReplyMode,

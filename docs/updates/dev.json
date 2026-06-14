@@ -1,16 +1,17 @@
 {
   "app_id": "com.narra.app.dev",
   "channel": "dev",
-  "latest_version_name": "2.0.6-dev",
-  "latest_version_code": 20006,
+  "latest_version_name": "2.0.7-dev",
+  "latest_version_code": 20007,
   "minimum_supported_version_code": 0,
-  "apk_url": "https://download.lsa1230.dpdns.org/dev/Narra-v2.0.6-dev-20006-dev.apk?v=20006-20260614210558",
-  "apk_sha256": "9cbe685ace3a81f748b50071ff313b3bf48fdb5b242d7e93411e8b37f36ff491",
-  "published_at": "2026-06-14T21:05:58+08:00",
+  "apk_url": "https://download.lsa1230.dpdns.org/dev/Narra-v2.0.7-dev-20007-dev.apk?v=20007-20260614230512",
+  "apk_sha256": "ce98a70902e89ac966db5d3df58c6916e78054893195201554aedc427862cfbc",
+  "published_at": "2026-06-14T23:05:12+08:00",
   "release_notes": [
-    "我页顶部资料卡会显示当前默认面具的头像和昵称",
-    "未单独绑定面具的会话会继续使用默认面具身份",
-    "没有默认面具时继续回退到全局个人资料",
+    "会话设置页顶部改为成员区，单聊和群聊都可以直接管理成员",
+    "单聊添加角色会自动转成群聊，群聊删到只剩一位角色会自动切回单聊",
+    "成员变化会同步会话归属，减少角色不一致提示",
+    "私人手机底部栏选中态跟随当前主题色板",
     "继续通过 Cloudflare R2 分发 dev 渠道安装包"
   ]
 }

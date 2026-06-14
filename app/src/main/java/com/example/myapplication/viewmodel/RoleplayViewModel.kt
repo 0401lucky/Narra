@@ -46,6 +46,7 @@ import com.example.myapplication.model.ChatMessagePart
 import com.example.myapplication.model.ChatSpecialPlayDraft
 import com.example.myapplication.model.ChatStreamEvent
 import com.example.myapplication.model.Conversation
+import com.example.myapplication.model.DEFAULT_ASSISTANT_ID
 import com.example.myapplication.model.GatewayToolingOptions
 import com.example.myapplication.model.MemoryEntry
 import com.example.myapplication.model.MemoryScopeType
@@ -67,8 +68,10 @@ import com.example.myapplication.model.TransferStatus
 import com.example.myapplication.model.RoleplayInteractionMode
 import com.example.myapplication.model.RoleplayScenario
 import com.example.myapplication.model.RoleplaySession
+import com.example.myapplication.model.conversationAssistantId
 import com.example.myapplication.model.VoiceMessageDraft
 import com.example.myapplication.model.imageMessagePart
+import com.example.myapplication.model.isGroupChat
 import com.example.myapplication.model.textMessagePart
 import com.example.myapplication.model.transferMessagePart
 import com.example.myapplication.model.toContentMirror
@@ -471,7 +474,7 @@ class RoleplayViewModel(
         onCreated: (String) -> Unit,
     ) {
         val scenarioId = UUID.randomUUID().toString()
-        val normalizedAssistantId = assistantId.trim().ifBlank { com.example.myapplication.model.DEFAULT_ASSISTANT_ID }
+        val normalizedAssistantId = assistantId.trim().ifBlank { DEFAULT_ASSISTANT_ID }
         upsertScenario(
             RoleplayScenario(
                 id = scenarioId,
@@ -558,6 +561,112 @@ class RoleplayViewModel(
         }
     }
 
+    fun addGroupParticipant(assistantId: String) {
+        val currentScenario = _uiState.value.currentScenario ?: return
+        val normalizedAssistantId = assistantId.trim()
+        if (normalizedAssistantId.isBlank()) return
+        viewModelScope.launch {
+            runCatching {
+                val settings = _uiState.value.settings
+                val assistants = settings.resolvedAssistants()
+                val targetAssistant = assistants.firstOrNull { it.id == normalizedAssistantId }
+                    ?: error("找不到要添加的角色")
+                val scenario = roleplayRepository.getScenario(currentScenario.id) ?: currentScenario
+                val existingParticipants = roleplayRepository
+                    .listGroupParticipants(scenario.id)
+                    .sortedWith(compareBy({ it.sortOrder }, { it.createdAt }))
+                val primaryAssistantId = scenario.assistantId.trim().ifBlank { DEFAULT_ASSISTANT_ID }
+                val existingAssistantIds = if (scenario.isGroupChat) {
+                    (existingParticipants.map { it.assistantId.trim() } + primaryAssistantId)
+                        .filter { it.isNotBlank() }
+                        .distinct()
+                } else {
+                    listOf(primaryAssistantId)
+                }
+                if (normalizedAssistantId in existingAssistantIds) {
+                    error("${targetAssistant.name.ifBlank { "这个角色" }} 已经在当前会话里")
+                }
+
+                val nextParticipants = if (scenario.isGroupChat) {
+                    val seededParticipants = existingParticipants.ifEmpty {
+                        listOf(
+                            RoleplayGroupParticipant(
+                                scenarioId = scenario.id,
+                                assistantId = primaryAssistantId,
+                                sortOrder = 0,
+                            ),
+                        )
+                    }
+                    seededParticipants + RoleplayGroupParticipant(
+                        scenarioId = scenario.id,
+                        assistantId = normalizedAssistantId,
+                        sortOrder = seededParticipants.size,
+                    )
+                } else {
+                    listOf(
+                        RoleplayGroupParticipant(
+                            scenarioId = scenario.id,
+                            assistantId = primaryAssistantId,
+                            displayNameOverride = scenario.characterDisplayNameOverride,
+                            avatarUriOverride = scenario.characterPortraitUri,
+                            sortOrder = 0,
+                        ),
+                        RoleplayGroupParticipant(
+                            scenarioId = scenario.id,
+                            assistantId = normalizedAssistantId,
+                            sortOrder = 1,
+                        ),
+                    )
+                }.mapIndexed { index, participant ->
+                    participant.copy(sortOrder = index)
+                }
+
+                val nextScenario = scenario.copy(
+                    title = scenario.title.ifBlank {
+                        buildGroupTitle(
+                            assistants = assistants,
+                            assistantIds = nextParticipants.map { it.assistantId },
+                        )
+                    },
+                    assistantId = nextParticipants.firstOrNull()?.assistantId ?: primaryAssistantId,
+                    chatType = RoleplayChatType.GROUP,
+                    interactionMode = RoleplayInteractionMode.ONLINE_PHONE,
+                    enableNarration = false,
+                    longformModeEnabled = false,
+                    enableRoleplayProtocol = true,
+                    groupReplyMode = if (scenario.isGroupChat) {
+                        scenario.groupReplyMode
+                    } else {
+                        RoleplayGroupReplyMode.NATURAL
+                    },
+                    enableGroupMentionAutoReply = true,
+                    maxGroupAutoReplies = scenario.maxGroupAutoReplies.coerceAtLeast(1),
+                )
+                roleplayRepository.upsertScenarioWithParticipants(nextScenario, nextParticipants)
+                syncScenarioConversationAssistantId(nextScenario)
+                if (scenario.isGroupChat) {
+                    "已添加 ${targetAssistant.name.ifBlank { "成员" }}"
+                } else {
+                    "已转换为群聊，并添加 ${targetAssistant.name.ifBlank { "成员" }}"
+                }
+            }.onSuccess { message ->
+                _uiState.update { current ->
+                    RoleplayStateSupport.applyNoticeMessage(current, message)
+                }
+            }.onFailure { throwable ->
+                _uiState.update { current ->
+                    RoleplayStateSupport.applyErrorMessage(
+                        current,
+                        SensitiveTextRedactor.throwableMessageForUi(
+                            throwable = throwable,
+                            fallback = "添加成员失败",
+                        ),
+                    )
+                }
+            }
+        }
+    }
+
     fun toggleGroupParticipantMuted(participantId: String) {
         val participant = _uiState.value.currentGroupParticipants.firstOrNull { it.id == participantId } ?: return
         viewModelScope.launch {
@@ -566,9 +675,112 @@ class RoleplayViewModel(
     }
 
     fun removeGroupParticipant(participantId: String) {
+        val currentScenario = _uiState.value.currentScenario ?: return
         viewModelScope.launch {
-            roleplayRepository.deleteGroupParticipant(participantId)
+            runCatching {
+                val scenario = roleplayRepository.getScenario(currentScenario.id) ?: currentScenario
+                val participants = roleplayRepository
+                    .listGroupParticipants(scenario.id)
+                    .sortedWith(compareBy({ it.sortOrder }, { it.createdAt }))
+                val target = participants.firstOrNull { it.id == participantId }
+                    ?: return@runCatching "成员已不在当前会话里"
+                val assistants = _uiState.value.settings.resolvedAssistants()
+                val targetName = target.displayNameOverride.trim()
+                    .ifBlank {
+                        assistants.firstOrNull { it.id == target.assistantId }
+                            ?.name
+                            ?.trim()
+                            .orEmpty()
+                    }
+                    .ifBlank { "成员" }
+                val remaining = participants
+                    .filterNot { it.id == participantId }
+                    .mapIndexed { index, participant -> participant.copy(sortOrder = index) }
+
+                if (!scenario.isGroupChat) {
+                    roleplayRepository.deleteGroupParticipant(participantId)
+                    return@runCatching "已移除 $targetName"
+                }
+
+                when {
+                    remaining.size >= 2 -> {
+                        val nextScenario = scenario.copy(
+                            assistantId = remaining.first().assistantId,
+                            chatType = RoleplayChatType.GROUP,
+                        )
+                        roleplayRepository.upsertScenarioWithParticipants(nextScenario, remaining)
+                        syncScenarioConversationAssistantId(nextScenario)
+                        "已移除 $targetName"
+                    }
+                    remaining.size == 1 -> {
+                        val survivor = remaining.first()
+                        val nextScenario = scenario.copy(
+                            title = "",
+                            assistantId = survivor.assistantId,
+                            characterDisplayNameOverride = survivor.displayNameOverride,
+                            characterPortraitUri = survivor.avatarUriOverride,
+                            characterPortraitUrl = "",
+                            chatType = RoleplayChatType.SINGLE,
+                        )
+                        roleplayRepository.upsertScenarioWithParticipants(nextScenario, emptyList())
+                        syncScenarioConversationAssistantId(nextScenario)
+                        "已切回单聊"
+                    }
+                    else -> {
+                        val nextScenario = scenario.copy(
+                            title = "",
+                            assistantId = scenario.assistantId.trim().ifBlank { DEFAULT_ASSISTANT_ID },
+                            chatType = RoleplayChatType.SINGLE,
+                        )
+                        roleplayRepository.upsertScenarioWithParticipants(nextScenario, emptyList())
+                        syncScenarioConversationAssistantId(nextScenario)
+                        "已切回单聊"
+                    }
+                }
+            }.onSuccess { message ->
+                _uiState.update { current ->
+                    RoleplayStateSupport.applyNoticeMessage(current, message)
+                }
+            }.onFailure { throwable ->
+                _uiState.update { current ->
+                    RoleplayStateSupport.applyErrorMessage(
+                        current,
+                        SensitiveTextRedactor.throwableMessageForUi(
+                            throwable = throwable,
+                            fallback = "移除成员失败",
+                        ),
+                    )
+                }
+            }
         }
+    }
+
+    private fun buildGroupTitle(
+        assistants: List<Assistant>,
+        assistantIds: List<String>,
+    ): String {
+        val names = assistantIds
+            .mapNotNull { assistantId ->
+                assistants.firstOrNull { it.id == assistantId }
+                    ?.name
+                    ?.trim()
+                    ?.takeIf { it.isNotBlank() }
+            }
+            .distinct()
+            .take(3)
+        return names.joinToString("、").ifBlank { "群聊" } + "的群聊"
+    }
+
+    private suspend fun syncScenarioConversationAssistantId(scenario: RoleplayScenario) {
+        val conversationId = _uiState.value.currentSession
+            ?.takeIf { it.scenarioId == scenario.id }
+            ?.conversationId
+            ?: roleplayRepository.getSessionByScenario(scenario.id)?.conversationId
+            ?: return
+        conversationRepository.updateConversationAssistantId(
+            conversationId = conversationId,
+            assistantId = scenario.conversationAssistantId(),
+        )
     }
 
     fun clearScenarioConversation(

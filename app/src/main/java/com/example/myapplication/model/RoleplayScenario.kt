@@ -74,6 +74,14 @@ fun RoleplayScenario.withRoleplayProtocol(enabled: Boolean): RoleplayScenario =
 val RoleplayScenario.isGroupChat: Boolean
     get() = chatType == RoleplayChatType.GROUP
 
+fun RoleplayScenario.conversationAssistantId(): String {
+    return if (isGroupChat) {
+        "$ROLEPLAY_GROUP_CONVERSATION_ASSISTANT_PREFIX$id"
+    } else {
+        assistantId.trim().ifBlank { DEFAULT_ASSISTANT_ID }
+    }
+}
+
 enum class RoleplayChatType(
     val storageValue: String,
     val displayName: String,
@@ -131,6 +139,7 @@ data class RoleplayGroupParticipant(
 
 const val DEFAULT_GROUP_AUTO_REPLIES = 3
 const val MAX_GROUP_AUTO_REPLIES = 6
+const val ROLEPLAY_GROUP_CONVERSATION_ASSISTANT_PREFIX = "roleplay-group:"
 const val DEFAULT_ONLINE_REPLY_MIN_COUNT = 1
 const val DEFAULT_ONLINE_REPLY_MAX_COUNT = 3
 const val MAX_ONLINE_REPLY_COUNT = 10

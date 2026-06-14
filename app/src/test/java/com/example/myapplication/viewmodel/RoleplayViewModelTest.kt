@@ -1442,6 +1442,138 @@ class RoleplayViewModelTest {
     }
 
     @Test
+    fun addGroupParticipant_singleChatConvertsToGroupAndSyncsConversationAssistant() =
+        runTest(mainDispatcherRule.dispatcher.scheduler) {
+            val assistantA = Assistant(id = "assistant-a", name = "沈烬")
+            val assistantB = Assistant(id = "assistant-b", name = "陆宴清")
+            val scenario = RoleplayScenario(
+                id = "single-scene",
+                assistantId = assistantA.id,
+                interactionMode = RoleplayInteractionMode.ONLINE_PHONE,
+                characterDisplayNameOverride = "沈烬",
+            )
+            val session = RoleplaySession(
+                id = "session-single",
+                scenarioId = scenario.id,
+                conversationId = "conv-single",
+                createdAt = 1L,
+                updatedAt = 2L,
+            )
+            val store = FakeConversationStore(
+                conversations = listOf(
+                    Conversation(
+                        id = session.conversationId,
+                        assistantId = assistantA.id,
+                        createdAt = 1L,
+                        updatedAt = 2L,
+                    ),
+                ),
+            )
+            val repository = FakeRoleplayRepository(
+                conversationStore = store,
+                scenarios = listOf(scenario),
+                sessions = listOf(session),
+            )
+            val viewModel = createViewModel(
+                store = store,
+                roleplayRepository = repository,
+                settings = AppSettings(
+                    assistants = listOf(assistantA, assistantB),
+                    selectedAssistantId = assistantA.id,
+                ),
+                promptContextAssembler = fixedPromptAssembler("提示词上下文"),
+            )
+
+            viewModel.enterScenario(scenario.id)
+            advanceUntilIdle()
+            viewModel.addGroupParticipant(assistantB.id)
+            advanceUntilIdle()
+
+            val updatedScenario = repository.getScenario(scenario.id)!!
+            val participants = repository.listGroupParticipants(scenario.id)
+            val conversation = store.getConversation(session.conversationId)!!
+            assertEquals(RoleplayChatType.GROUP, updatedScenario.chatType)
+            assertEquals(RoleplayInteractionMode.ONLINE_PHONE, updatedScenario.interactionMode)
+            assertEquals(listOf(assistantA.id, assistantB.id), participants.map { it.assistantId })
+            assertEquals("沈烬", participants.first().displayNameOverride)
+            assertEquals("roleplay-group:${scenario.id}", conversation.assistantId)
+        }
+
+    @Test
+    fun removeGroupParticipant_whenOnlyOneMemberRemainsConvertsToSingleChat() =
+        runTest(mainDispatcherRule.dispatcher.scheduler) {
+            val assistantA = Assistant(id = "assistant-a", name = "沈烬")
+            val assistantB = Assistant(id = "assistant-b", name = "陆宴清")
+            val scenario = RoleplayScenario(
+                id = "group-to-single",
+                title = "沈烬、陆宴清的群聊",
+                assistantId = assistantA.id,
+                interactionMode = RoleplayInteractionMode.ONLINE_PHONE,
+                chatType = RoleplayChatType.GROUP,
+            )
+            val session = RoleplaySession(
+                id = "session-group-to-single",
+                scenarioId = scenario.id,
+                conversationId = "conv-group-to-single",
+                createdAt = 1L,
+                updatedAt = 2L,
+            )
+            val participantA = RoleplayGroupParticipant(
+                id = "participant-a",
+                scenarioId = scenario.id,
+                assistantId = assistantA.id,
+                displayNameOverride = "沈烬",
+                sortOrder = 0,
+            )
+            val participantB = RoleplayGroupParticipant(
+                id = "participant-b",
+                scenarioId = scenario.id,
+                assistantId = assistantB.id,
+                sortOrder = 1,
+            )
+            val store = FakeConversationStore(
+                conversations = listOf(
+                    Conversation(
+                        id = session.conversationId,
+                        assistantId = "roleplay-group:${scenario.id}",
+                        createdAt = 1L,
+                        updatedAt = 2L,
+                    ),
+                ),
+            )
+            val repository = FakeRoleplayRepository(
+                conversationStore = store,
+                scenarios = listOf(scenario),
+                sessions = listOf(session),
+                groupParticipants = listOf(participantA, participantB),
+            )
+            val viewModel = createViewModel(
+                store = store,
+                roleplayRepository = repository,
+                settings = AppSettings(
+                    assistants = listOf(assistantA, assistantB),
+                    selectedAssistantId = assistantA.id,
+                ),
+                promptContextAssembler = fixedPromptAssembler("提示词上下文"),
+            )
+
+            viewModel.enterScenario(scenario.id)
+            advanceUntilIdle()
+            viewModel.removeGroupParticipant(participantB.id)
+            advanceUntilIdle()
+
+            val updatedScenario = repository.getScenario(scenario.id)!!
+            val participants = repository.listGroupParticipants(scenario.id)
+            val conversation = store.getConversation(session.conversationId)!!
+            assertEquals(RoleplayChatType.SINGLE, updatedScenario.chatType)
+            assertEquals(assistantA.id, updatedScenario.assistantId)
+            assertEquals("沈烬", updatedScenario.characterDisplayNameOverride)
+            assertEquals("", updatedScenario.title)
+            assertTrue(participants.isEmpty())
+            assertEquals(assistantA.id, conversation.assistantId)
+        }
+
+    @Test
     fun sendMessage_groupChatRetriesFailedTurnThenContinuesNextMember() = runTest(mainDispatcherRule.dispatcher.scheduler) {
         server.enqueue(
             MockResponse()
@@ -5384,6 +5516,21 @@ private class FakeRoleplayRepository(
 
     override suspend fun upsertScenario(scenario: RoleplayScenario) {
         scenariosState.value = scenariosState.value.filterNot { it.id == scenario.id } + scenario
+    }
+
+    override suspend fun upsertScenarioWithParticipants(
+        scenario: RoleplayScenario,
+        participants: List<RoleplayGroupParticipant>,
+    ) {
+        upsertScenario(scenario)
+        groupParticipantsState.value = groupParticipantsState.value
+            .filterNot { it.scenarioId == scenario.id } +
+            participants.mapIndexed { index, participant ->
+                participant.copy(
+                    scenarioId = scenario.id,
+                    sortOrder = index,
+                )
+            }
     }
 
     override suspend fun deleteScenario(scenarioId: String) {

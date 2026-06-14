@@ -21,6 +21,7 @@ import com.example.myapplication.model.RoleplayGroupReplyMode
 import com.example.myapplication.model.RoleplayInteractionMode
 import com.example.myapplication.model.RoleplayOnlineMeta
 import com.example.myapplication.model.RoleplayOutputFormat
+import com.example.myapplication.model.ROLEPLAY_GROUP_CONVERSATION_ASSISTANT_PREFIX
 import com.example.myapplication.model.RoleplayScenario
 import com.example.myapplication.model.RoleplaySession
 import com.example.myapplication.model.textMessagePart
@@ -760,7 +761,7 @@ class RoomRoleplayRepository(
 
     private fun resolveConversationAssistantId(scenario: RoleplayScenarioEntity): String {
         return if (RoleplayChatType.fromStorageValue(scenario.chatType) == RoleplayChatType.GROUP) {
-            "$GROUP_CONVERSATION_ASSISTANT_PREFIX${scenario.id}"
+            "$ROLEPLAY_GROUP_CONVERSATION_ASSISTANT_PREFIX${scenario.id}"
         } else {
             normalizeAssistantId(scenario.assistantId)
         }
@@ -781,7 +782,6 @@ class RoomRoleplayRepository(
 
 // 日记标签存储约定：; 分隔，每个标签已 trim；空标签被过滤。
 private const val DIARY_TAG_DELIMITER = ";"
-private const val GROUP_CONVERSATION_ASSISTANT_PREFIX = "roleplay-group:"
 
 private fun List<String>.joinDiaryTags(): String {
     return asSequence()
