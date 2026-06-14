@@ -6,6 +6,8 @@ import com.example.myapplication.data.remote.OpenAiCompatibleApi
 import com.example.myapplication.data.repository.RoleplayMemoryCondenseMode
 import com.example.myapplication.data.repository.StructuredMemoryExtractionResult
 import com.example.myapplication.conversation.PhoneGenerationContext
+import com.example.myapplication.model.Assistant
+import com.example.myapplication.model.CharacterShakeFilters
 import com.example.myapplication.model.PhoneSearchDetail
 import com.example.myapplication.model.PhoneSnapshot
 import com.example.myapplication.model.PhoneSnapshotSection
@@ -104,6 +106,15 @@ interface AiPromptExtrasService {
         apiProtocol: ProviderApiProtocol = ProviderApiProtocol.OPENAI_COMPATIBLE,
         provider: ProviderSettings? = null,
     ): List<RoleplayDiaryDraft> = emptyList()
+
+    suspend fun generateShakeAssistantCard(
+        filters: CharacterShakeFilters,
+        baseUrl: String,
+        apiKey: String,
+        modelId: String,
+        apiProtocol: ProviderApiProtocol = ProviderApiProtocol.OPENAI_COMPATIBLE,
+        provider: ProviderSettings? = null,
+    ): Assistant = Assistant()
 
     suspend fun generateGiftImagePrompt(
         giftName: String,
@@ -206,8 +217,8 @@ interface AiPromptExtrasService {
 /**
  * T6.8 — Thin facade：每个 override 只是把入参原样转发给对应的子服务。
  *
- * 主构造器接收 6 个子服务；便利构造器按原有 3 参数方式接入（测试代码和旧 AppGraph 用），
- * 内部自行实例化 [PromptExtrasCore] 与 6 个子服务，保留旧调用现场不破坏。
+ * 主构造器接收 7 个子服务；便利构造器按原有 3 参数方式接入（测试代码和旧 AppGraph 用），
+ * 内部自行实例化 [PromptExtrasCore] 与 7 个子服务，保留旧调用现场不破坏。
  *
  * 具体领域实现：
  * - [TitleAndChatSuggestionPromptService]（标题 / 聊天建议）
@@ -216,6 +227,7 @@ interface AiPromptExtrasService {
  * - [RoleplaySuggestionPromptService]（剧情建议）
  * - [RoleplayDiaryPromptService]（角色日记 / 礼物生图提示词）
  * - [PhoneContentPromptService]（手机快照 / 搜索详情 / 动态评论回复）
+ * - [CharacterShakePromptService]（发现页摇一摇角色卡）
  */
 class DefaultAiPromptExtrasService internal constructor(
     private val titleService: TitleAndChatSuggestionPromptService,
@@ -224,6 +236,7 @@ class DefaultAiPromptExtrasService internal constructor(
     private val suggestionService: RoleplaySuggestionPromptService,
     private val diaryService: RoleplayDiaryPromptService,
     private val phoneService: PhoneContentPromptService,
+    private val characterShakeService: CharacterShakePromptService,
 ) : AiPromptExtrasService {
 
     constructor(
@@ -255,6 +268,7 @@ class DefaultAiPromptExtrasService internal constructor(
         suggestionService = RoleplaySuggestionPromptService(core),
         diaryService = RoleplayDiaryPromptService(core),
         phoneService = PhoneContentPromptService(core),
+        characterShakeService = CharacterShakePromptService(core),
     )
 
     override suspend fun generateTitle(
@@ -404,6 +418,22 @@ class DefaultAiPromptExtrasService internal constructor(
         characterName = characterName,
         userName = userName,
         todayLabel = todayLabel,
+        baseUrl = baseUrl,
+        apiKey = apiKey,
+        modelId = modelId,
+        apiProtocol = apiProtocol,
+        provider = provider,
+    )
+
+    override suspend fun generateShakeAssistantCard(
+        filters: CharacterShakeFilters,
+        baseUrl: String,
+        apiKey: String,
+        modelId: String,
+        apiProtocol: ProviderApiProtocol,
+        provider: ProviderSettings?,
+    ): Assistant = characterShakeService.generateAssistantCard(
+        filters = filters,
         baseUrl = baseUrl,
         apiKey = apiKey,
         modelId = modelId,

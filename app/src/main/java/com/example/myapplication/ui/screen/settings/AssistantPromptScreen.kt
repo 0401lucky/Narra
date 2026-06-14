@@ -153,7 +153,7 @@ fun AssistantPromptScreen(
     Scaffold(
         topBar = {
             SettingsTopBar(
-                title = "提示词",
+                title = "角色人设",
                 subtitle = assistant.name.takeIf { it.isNotBlank() },
                 onNavigateBack = onNavigateBack,
                 actionLabel = if (savedFlashActive) "已保存 ✓" else "保存",
@@ -179,7 +179,7 @@ fun AssistantPromptScreen(
             // ── System Prompt ──
             item {
                 PromptSection(
-                    title = "系统提示词",
+                    title = "核心人设",
                     palette = palette,
                     trailingIcons = {
                         NarraIconButton(
@@ -206,6 +206,7 @@ fun AssistantPromptScreen(
                         modifier = Modifier
                             .fillMaxWidth()
                             .heightIn(min = 160.dp),
+                        label = { Text("角色核心人设") },
                         maxLines = 30,
                         shape = RoundedCornerShape(16.dp),
                         colors = outlineColors,
@@ -219,11 +220,11 @@ fun AssistantPromptScreen(
             // ── Scenario ──
             item {
                 PromptSection(
-                    title = "场景设定",
+                    title = "关系与场景",
                     palette = palette,
                 ) {
                     Text(
-                        text = "描述对话发生的场景、时间线和背景环境",
+                        text = "描述默认关系、时间线、相遇背景和互动起点。",
                         style = MaterialTheme.typography.bodySmall,
                         color = palette.body.copy(alpha = 0.6f),
                     )
@@ -244,7 +245,7 @@ fun AssistantPromptScreen(
             // ── Greeting with chat bubble preview ──
             item {
                 PromptSection(
-                    title = "预览",
+                    title = "开场预览",
                     palette = palette,
                 ) {
                     // Mini chat bubble preview — inspired by RikkaHub
@@ -337,11 +338,11 @@ fun AssistantPromptScreen(
             // ── Creator Notes ──
             item {
                 PromptSection(
-                    title = "作者备注",
+                    title = "创作备注",
                     palette = palette,
                 ) {
                     Text(
-                        text = "私密笔记，不会注入对话上下文。",
+                        text = "私密笔记，不会注入对话上下文，适合记录创作意图和玩法边界。",
                         style = MaterialTheme.typography.bodySmall,
                         color = palette.body.copy(alpha = 0.6f),
                     )

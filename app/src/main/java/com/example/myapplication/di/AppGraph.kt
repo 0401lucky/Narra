@@ -33,6 +33,7 @@ import com.example.myapplication.data.repository.ai.AiSettingsEditor
 import com.example.myapplication.data.repository.ai.AiSettingsRepository
 import com.example.myapplication.data.repository.ai.AiTranslationService
 import com.example.myapplication.data.repository.ai.ConversationSummaryPromptService
+import com.example.myapplication.data.repository.ai.CharacterShakePromptService
 import com.example.myapplication.data.repository.ai.DefaultAiGateway
 import com.example.myapplication.data.repository.ai.DefaultAiModelCatalogRepository
 import com.example.myapplication.data.repository.ai.DefaultAiPromptExtrasService
@@ -256,6 +257,10 @@ class AppGraph(
         MailboxPromptService(promptExtrasCore)
     }
 
+    internal val characterShakePromptService: CharacterShakePromptService by lazy {
+        CharacterShakePromptService(promptExtrasCore)
+    }
+
     val aiPromptExtrasService: AiPromptExtrasService by lazy {
         DefaultAiPromptExtrasService(
             titleService = titleAndChatSuggestionPromptService,
@@ -264,6 +269,7 @@ class AppGraph(
             suggestionService = roleplaySuggestionPromptService,
             diaryService = roleplayDiaryPromptService,
             phoneService = phoneContentPromptService,
+            characterShakeService = characterShakePromptService,
         )
     }
 

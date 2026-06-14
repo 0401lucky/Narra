@@ -30,6 +30,8 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -44,6 +46,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
@@ -52,9 +55,11 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Chat
 import androidx.compose.material.icons.automirrored.filled.LibraryBooks
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material.icons.filled.AutoStories
 import androidx.compose.material.icons.filled.Book
 import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.CloudSync
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
@@ -78,6 +83,7 @@ import androidx.compose.material.icons.filled.Videocam
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.AssistChip
 import androidx.compose.material3.Button
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Divider
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
@@ -113,6 +119,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.onSizeChanged
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -121,6 +128,7 @@ import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import com.example.myapplication.model.AppSettings
 import com.example.myapplication.model.Assistant
+import com.example.myapplication.model.CharacterShakeFilters
 import com.example.myapplication.model.MessageRole
 import com.example.myapplication.model.RoleplayChatSummary
 import com.example.myapplication.model.RoleplayInteractionMode
@@ -133,6 +141,7 @@ import com.example.myapplication.phone.RoleplayPhoneEcosystemSnapshot
 import com.example.myapplication.ui.component.AppSnackbarHost
 import com.example.myapplication.ui.component.AssistantAvatar
 import com.example.myapplication.ui.component.UserProfileAvatar
+import com.example.myapplication.viewmodel.CharacterShakeUiState
 import com.composables.icons.lucide.BookUser
 import com.composables.icons.lucide.CircleUserRound
 import com.composables.icons.lucide.Compass
@@ -201,6 +210,20 @@ private enum class DiscoverTarget(
     VideoCall("视频通话", "进入当前角色关系里的通话场景", Icons.Default.Videocam),
 }
 
+private data class CharacterShakeFilterGroup(
+    val key: String,
+    val title: String,
+    val options: List<String>,
+)
+
+private val CharacterShakeFilterGroups = listOf(
+    CharacterShakeFilterGroup("gender", "性别偏好", listOf("", "男生", "女生", "非二元")),
+    CharacterShakeFilterGroup("age", "年龄区间", listOf("", "18-22", "23-27", "28-32", "33+")),
+    CharacterShakeFilterGroup("personality", "性格特征", listOf("", "温柔", "理性", "活泼", "文艺", "技术")),
+    CharacterShakeFilterGroup("identity", "身份特点", listOf("", "学生", "职场新人", "自由职业", "创作者", "互联网从业")),
+    CharacterShakeFilterGroup("trait", "个人特征", listOf("", "同城", "高频聊天", "有边界感", "幽默感", "自律")),
+)
+
 private data class ModeOption(
     val title: String,
     val subtitle: String,
@@ -226,10 +249,16 @@ fun ImmersivePhoneShell(
     assistants: List<Assistant>,
     chatSummaries: List<RoleplayChatSummary>,
     phoneEcosystem: RoleplayPhoneEcosystemSnapshot = RoleplayPhoneEcosystemSnapshot(),
+    characterShakeState: CharacterShakeUiState = CharacterShakeUiState(),
     noticeMessage: String?,
     errorMessage: String?,
     onClearNoticeMessage: () -> Unit,
     onClearErrorMessage: () -> Unit,
+    onUpdateCharacterShakeFilters: (CharacterShakeFilters) -> Unit = {},
+    onResetCharacterShakeFilters: () -> Unit = {},
+    onGenerateCharacterShake: (CharacterShakeFilters) -> Unit = {},
+    onDismissGeneratedCharacter: () -> Unit = {},
+    onClearCharacterShakeMessages: () -> Unit = {},
     callbacks: ImmersivePhoneCallbacks,
 ) {
     val snackbarHostState = remember { SnackbarHostState() }
@@ -239,6 +268,7 @@ fun ImmersivePhoneShell(
     var showNewChatSheet by rememberSaveable { mutableStateOf(false) }
     var showNewGroupChatSheet by rememberSaveable { mutableStateOf(false) }
     var showPhoneEcosystemSheet by rememberSaveable { mutableStateOf(false) }
+    var showCharacterShakeSheet by rememberSaveable { mutableStateOf(false) }
     var selectedContact by remember { mutableStateOf<Assistant?>(null) }
     var discoverTarget by remember { mutableStateOf<DiscoverTarget?>(null) }
 
@@ -252,6 +282,18 @@ fun ImmersivePhoneShell(
         errorMessage?.let {
             snackbarHostState.showSnackbar(it)
             onClearErrorMessage()
+        }
+    }
+    LaunchedEffect(characterShakeState.message) {
+        characterShakeState.message?.let {
+            snackbarHostState.showSnackbar(it)
+            onClearCharacterShakeMessages()
+        }
+    }
+    LaunchedEffect(characterShakeState.errorMessage) {
+        characterShakeState.errorMessage?.let {
+            snackbarHostState.showSnackbar(it)
+            onClearCharacterShakeMessages()
         }
     }
 
@@ -390,6 +432,7 @@ fun ImmersivePhoneShell(
                     ImmersiveTab.Discover -> ImmersiveDiscoverPage(
                         phoneEcosystem = phoneEcosystem,
                         onOpenEcosystem = { showPhoneEcosystemSheet = true },
+                        onOpenCharacterShake = { showCharacterShakeSheet = true },
                         onOpenTarget = { target ->
                             if (target == DiscoverTarget.Moments) {
                                 callbacks.onOpenMoments("")
@@ -426,6 +469,21 @@ fun ImmersivePhoneShell(
             onOpenActivity = { activity ->
                 showPhoneEcosystemSheet = false
                 openPhoneActivity(activity)
+            },
+        )
+    }
+
+    if (showCharacterShakeSheet) {
+        CharacterShakeSheet(
+            uiState = characterShakeState,
+            onDismiss = { showCharacterShakeSheet = false },
+            onFiltersChange = onUpdateCharacterShakeFilters,
+            onResetFilters = onResetCharacterShakeFilters,
+            onGenerate = onGenerateCharacterShake,
+            onOpenContacts = {
+                showCharacterShakeSheet = false
+                currentTab = ImmersiveTab.Contacts
+                onDismissGeneratedCharacter()
             },
         )
     }
@@ -1114,6 +1172,7 @@ private fun ContactRow(
 private fun ImmersiveDiscoverPage(
     phoneEcosystem: RoleplayPhoneEcosystemSnapshot,
     onOpenEcosystem: () -> Unit,
+    onOpenCharacterShake: () -> Unit,
     onOpenTarget: (DiscoverTarget) -> Unit,
     bottomPadding: Dp,
 ) {
@@ -1126,6 +1185,9 @@ private fun ImmersiveDiscoverPage(
                 snapshot = phoneEcosystem,
                 onClick = onOpenEcosystem,
             )
+        }
+        item {
+            CharacterShakeEntry(onClick = onOpenCharacterShake)
         }
         items(DiscoverTarget.entries, key = { it.name }) { target ->
             FeatureRow(
@@ -1209,6 +1271,395 @@ private fun PhoneEcosystemEntry(
                 )
             }
         }
+    }
+}
+
+@Composable
+private fun CharacterShakeEntry(
+    onClick: () -> Unit,
+) {
+    Surface(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp, vertical = 8.dp)
+            .clickable(onClick = onClick),
+        shape = RoundedCornerShape(8.dp),
+        color = MaterialTheme.colorScheme.surface,
+        contentColor = MaterialTheme.colorScheme.onSurface,
+        tonalElevation = 2.dp,
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.28f)),
+    ) {
+        Row(
+            modifier = Modifier.padding(horizontal = 14.dp, vertical = 12.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
+        ) {
+            Surface(
+                modifier = Modifier.size(40.dp),
+                shape = RoundedCornerShape(8.dp),
+                color = MaterialTheme.colorScheme.primaryContainer,
+                contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
+            ) {
+                Box(contentAlignment = Alignment.Center) {
+                    Icon(
+                        imageVector = Icons.Default.AutoAwesome,
+                        contentDescription = null,
+                        modifier = Modifier.size(20.dp),
+                    )
+                }
+            }
+            Column(modifier = Modifier.weight(1f)) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                ) {
+                    Text("摇一摇", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                    Surface(
+                        shape = RoundedCornerShape(6.dp),
+                        color = MaterialTheme.colorScheme.primary.copy(alpha = 0.12f),
+                        contentColor = MaterialTheme.colorScheme.primary,
+                    ) {
+                        Text(
+                            text = "AI 角色卡",
+                            modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
+                            style = MaterialTheme.typography.labelSmall,
+                            maxLines = 1,
+                        )
+                    }
+                }
+                Text(
+                    text = "选择偏好或完全随机，生成后自动加入通讯录",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis,
+                )
+            }
+            Surface(
+                shape = RoundedCornerShape(8.dp),
+                color = MaterialTheme.colorScheme.primary,
+                contentColor = MaterialTheme.colorScheme.onPrimary,
+            ) {
+                Row(
+                    modifier = Modifier.padding(horizontal = 10.dp, vertical = 7.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(4.dp),
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.AutoAwesome,
+                        contentDescription = null,
+                        modifier = Modifier.size(16.dp),
+                    )
+                    Text("开摇", style = MaterialTheme.typography.labelMedium, maxLines = 1)
+                }
+            }
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
+@Composable
+private fun CharacterShakeSheet(
+    uiState: CharacterShakeUiState,
+    onDismiss: () -> Unit,
+    onFiltersChange: (CharacterShakeFilters) -> Unit,
+    onResetFilters: () -> Unit,
+    onGenerate: (CharacterShakeFilters) -> Unit,
+    onOpenContacts: () -> Unit,
+) {
+    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+    val sheetHeight = LocalConfiguration.current.screenHeightDp.dp * 0.9f
+    ModalBottomSheet(onDismissRequest = onDismiss, sheetState = sheetState) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .heightIn(max = sheetHeight)
+                .navigationBarsPadding(),
+        ) {
+            CharacterShakeSheetHeader(
+                uiState = uiState,
+                onDismiss = onDismiss,
+                onResetFilters = onResetFilters,
+            )
+            Divider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.55f))
+
+            LazyColumn(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .weight(1f),
+                contentPadding = PaddingValues(start = 20.dp, end = 20.dp, top = 14.dp, bottom = 14.dp),
+                verticalArrangement = Arrangement.spacedBy(12.dp),
+            ) {
+                uiState.generatedAssistant?.let { assistant ->
+                    item {
+                        GeneratedAssistantResultCard(
+                            assistant = assistant,
+                            onOpenContacts = onOpenContacts,
+                        )
+                    }
+                }
+
+                items(CharacterShakeFilterGroups, key = { it.key }) { group ->
+                    CharacterShakeFilterGroupCard(
+                        group = group,
+                        filters = uiState.filters,
+                        enabled = !uiState.isGenerating,
+                        onFiltersChange = onFiltersChange,
+                    )
+                }
+            }
+
+            Divider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.55f))
+            CharacterShakeSheetFooter(
+                uiState = uiState,
+                onGenerate = onGenerate,
+            )
+        }
+    }
+}
+
+@Composable
+private fun CharacterShakeSheetHeader(
+    uiState: CharacterShakeUiState,
+    onDismiss: () -> Unit,
+    onResetFilters: () -> Unit,
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(start = 20.dp, end = 12.dp, top = 4.dp, bottom = 12.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(12.dp),
+    ) {
+        Surface(
+            modifier = Modifier.size(42.dp),
+            shape = RoundedCornerShape(8.dp),
+            color = MaterialTheme.colorScheme.primaryContainer,
+            contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
+        ) {
+            Box(contentAlignment = Alignment.Center) {
+                Icon(Icons.Default.AutoAwesome, contentDescription = null)
+            }
+        }
+        Column(modifier = Modifier.weight(1f)) {
+            Text("摇一摇", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
+            Text(
+                text = uiState.filters.selectedSummary(),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
+        }
+        TextButton(
+            onClick = onResetFilters,
+            enabled = !uiState.isGenerating && uiState.filters.hasSelectedOption(),
+        ) {
+            Text("重置")
+        }
+        IconButton(onClick = onDismiss) {
+            Icon(Icons.Default.Close, contentDescription = "关闭")
+        }
+    }
+}
+
+@Composable
+private fun CharacterShakeSheetFooter(
+    uiState: CharacterShakeUiState,
+    onGenerate: (CharacterShakeFilters) -> Unit,
+) {
+    Surface(
+        color = MaterialTheme.colorScheme.surface,
+        tonalElevation = 3.dp,
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 20.dp, vertical = 14.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+            Text(
+                text = if (uiState.filters.hasSelectedOption()) {
+                    "当前：${uiState.filters.selectedSummary()}"
+                } else {
+                    "当前：完全随机"
+                },
+                style = MaterialTheme.typography.labelMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
+            Button(
+                onClick = { onGenerate(uiState.filters) },
+                enabled = !uiState.isGenerating,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(50.dp),
+                shape = RoundedCornerShape(8.dp),
+            ) {
+                if (uiState.isGenerating) {
+                    CircularProgressIndicator(
+                        modifier = Modifier.size(18.dp),
+                        strokeWidth = 2.dp,
+                        color = MaterialTheme.colorScheme.onPrimary,
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text("正在生成")
+                } else {
+                    Icon(Icons.Default.AutoAwesome, contentDescription = null, modifier = Modifier.size(18.dp))
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(if (uiState.filters.hasSelectedOption()) "按筛选摇出角色" else "完全随机摇出角色")
+                }
+            }
+        }
+    }
+}
+
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+private fun CharacterShakeFilterGroupCard(
+    group: CharacterShakeFilterGroup,
+    filters: CharacterShakeFilters,
+    enabled: Boolean,
+    onFiltersChange: (CharacterShakeFilters) -> Unit,
+) {
+    Surface(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(8.dp),
+        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.28f),
+        tonalElevation = 1.dp,
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.45f)),
+    ) {
+        Column(
+            modifier = Modifier.padding(horizontal = 14.dp, vertical = 12.dp),
+            verticalArrangement = Arrangement.spacedBy(10.dp),
+        ) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                Text(
+                    text = group.title,
+                    style = MaterialTheme.typography.titleSmall,
+                    fontWeight = FontWeight.SemiBold,
+                    modifier = Modifier.weight(1f),
+                )
+                Text(
+                    text = filters.valueForShakeGroup(group.key).ifBlank { "不限" },
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
+            }
+            FlowRow(
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                group.options.forEach { option ->
+                    val label = option.ifBlank { "不限" }
+                    val selected = filters.valueForShakeGroup(group.key) == option
+                    FilterChip(
+                        selected = selected,
+                        enabled = enabled,
+                        modifier = Modifier
+                            .height(38.dp)
+                            .widthIn(min = 86.dp),
+                        onClick = {
+                            onFiltersChange(filters.copyForShakeGroup(group.key, option))
+                        },
+                        label = { Text(label, maxLines = 1, overflow = TextOverflow.Ellipsis) },
+                        shape = RoundedCornerShape(8.dp),
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun GeneratedAssistantResultCard(
+    assistant: Assistant,
+    onOpenContacts: () -> Unit,
+) {
+    Surface(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(8.dp),
+        color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.62f),
+        contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.22f)),
+    ) {
+        Column(
+            modifier = Modifier.padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp),
+        ) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
+            ) {
+                AssistantAvatar(
+                    name = assistant.name,
+                    iconName = assistant.iconName,
+                    avatarUri = assistant.avatarUri,
+                    size = 52.dp,
+                    cornerRadius = 8.dp,
+                )
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = assistant.name.ifBlank { "未命名角色" },
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                    Text(
+                        text = "已加入通讯录，可直接开启会话",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.75f),
+                    )
+                }
+            }
+            if (assistant.description.isNotBlank()) {
+                Text(
+                    text = assistant.description,
+                    style = MaterialTheme.typography.bodyMedium,
+                    maxLines = 3,
+                    overflow = TextOverflow.Ellipsis,
+                )
+            }
+            TextButton(
+                onClick = onOpenContacts,
+                modifier = Modifier.align(Alignment.End),
+            ) {
+                Text("去通讯录")
+            }
+        }
+    }
+}
+
+private fun CharacterShakeFilters.valueForShakeGroup(key: String): String {
+    return when (key) {
+        "gender" -> gender
+        "age" -> ageRange
+        "personality" -> personality
+        "identity" -> identity
+        "trait" -> personalTrait
+        else -> ""
+    }
+}
+
+private fun CharacterShakeFilters.copyForShakeGroup(
+    key: String,
+    value: String,
+): CharacterShakeFilters {
+    return when (key) {
+        "gender" -> copy(gender = value)
+        "age" -> copy(ageRange = value)
+        "personality" -> copy(personality = value)
+        "identity" -> copy(identity = value)
+        "trait" -> copy(personalTrait = value)
+        else -> this
     }
 }
 

@@ -130,7 +130,7 @@ fun AssistantDetailScreen(
                     SettingsGroupDivider()
                     AssistantEntryRow(
                         icon = { EntryGlyph(icon = { Icon(Icons.Default.AutoAwesome, null) }) },
-                        title = "提示词",
+                        title = "角色人设",
                         onClick = onOpenPrompt,
                     )
                     SettingsGroupDivider()

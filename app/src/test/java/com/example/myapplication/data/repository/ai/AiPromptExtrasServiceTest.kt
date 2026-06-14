@@ -4,6 +4,7 @@ import com.example.myapplication.data.remote.ApiServiceFactory
 import com.example.myapplication.data.repository.RoleplayMemoryCondenseMode
 import com.example.myapplication.conversation.PhoneGenerationContext
 import com.example.myapplication.model.OpenAiTextApiMode
+import com.example.myapplication.model.CharacterShakeFilters
 import com.example.myapplication.model.MomentAssistantContext
 import com.example.myapplication.model.MomentAuthorType
 import com.example.myapplication.model.MomentCommentStyle
@@ -1278,6 +1279,54 @@ class AiPromptExtrasServiceTest {
             assertTrue(error.message.orEmpty().contains("格式不符合要求"))
             assertTrue(error.message.orEmpty().contains("JSON 对象"))
         }
+    }
+
+    @Test
+    fun generateShakeAssistantCard_buildsFilterPromptAndParsesAssistantJson() = runBlocking {
+        enqueueChatContent(
+            """
+            {
+              "name": "林澈",
+              "icon_name": "edit_note",
+              "description": "同城自由撰稿人，温柔但有边界感。",
+              "system_prompt": "林澈是 26 岁的自由撰稿人，说话温和，回复时会保持边界。",
+              "scenario": "用户和林澈在旧书店偶遇，后来开始线上聊天。",
+              "greeting": "刚从书店出来，雨好像停了。你到家了吗？",
+              "example_dialogues": ["用户：今天忙吗？\\n角色：还好，刚交完稿。"],
+              "creator_notes": "适合慢热日常。",
+              "tags": ["温柔", "同城", "慢热"],
+              "memory_enabled": true
+            }
+            """.trimIndent(),
+        )
+        val service = createService()
+
+        val assistant = service.generateShakeAssistantCard(
+            filters = CharacterShakeFilters(
+                gender = "女生",
+                ageRange = "23-27",
+                personality = "温柔",
+                identity = "自由职业",
+                personalTrait = "有边界感",
+            ),
+            baseUrl = server.url("/v1/").toString(),
+            apiKey = "test-key",
+            modelId = "deepseek-chat",
+        )
+
+        assertEquals("林澈", assistant.name)
+        assertEquals("edit_note", assistant.iconName)
+        assertEquals(true, assistant.memoryEnabled)
+        assertEquals(listOf("温柔", "同城", "慢热"), assistant.tags)
+        assertTrue(assistant.systemPrompt.contains("自由撰稿人"))
+        assertTrue(assistant.greeting.contains("你到家了吗"))
+
+        val requestBody = JsonParser.parseString(server.takeRequest().body.readUtf8()).asJsonObject
+        val prompt = requestBody.getAsJsonArray("messages")[0].asJsonObject["content"].asString
+        assertTrue(prompt.contains("性别偏好：女生"))
+        assertTrue(prompt.contains("年龄区间：23-27"))
+        assertTrue(prompt.contains("只输出一个 JSON 对象"))
+        assertTrue(requestBody.has("temperature"))
     }
 
     @Test

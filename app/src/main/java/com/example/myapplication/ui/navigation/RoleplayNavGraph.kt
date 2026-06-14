@@ -14,6 +14,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavGraphBuilder
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.composable
@@ -42,6 +43,7 @@ import com.example.myapplication.ui.screen.roleplay.RoleplaySettingsScreen
 import com.example.myapplication.ui.screen.roleplay.RoleplayVideoCallScreen
 import com.example.myapplication.ui.screen.roleplay.mailbox.MailboxCallbacks
 import com.example.myapplication.ui.screen.roleplay.mailbox.MailboxScreen
+import com.example.myapplication.viewmodel.CharacterShakeViewModel
 import com.example.myapplication.viewmodel.SettingsViewModel
 import com.example.myapplication.viewmodel.updateRoleplayHighContrast
 import com.example.myapplication.viewmodel.updateRoleplayImmersiveMode
@@ -69,7 +71,15 @@ internal fun NavGraphBuilder.registerRoleplayGraph(
                 appGraph = appGraph,
                 backStackEntry = backStackEntry,
             )
+            val characterShakeViewModel: CharacterShakeViewModel = viewModel(
+                factory = CharacterShakeViewModel.factory(
+                    settingsRepository = appGraph.aiSettingsRepository,
+                    settingsEditor = appGraph.aiSettingsEditor,
+                    aiPromptExtrasService = appGraph.aiPromptExtrasService,
+                ),
+            )
             val roleplayState by roleplayViewModel.uiState.collectAsStateWithLifecycle()
+            val characterShakeState by characterShakeViewModel.uiState.collectAsStateWithLifecycle()
             val moments by appGraph.momentsRepository.observeTimeline().collectAsStateWithLifecycle(emptyList())
             val phoneEcosystem by produceState(
                 initialValue = RoleplayPhoneEcosystemSnapshot(),
@@ -144,10 +154,16 @@ internal fun NavGraphBuilder.registerRoleplayGraph(
                 assistants = roleplayState.settings.resolvedAssistants(),
                 chatSummaries = roleplayState.chatSummaries,
                 phoneEcosystem = phoneEcosystem,
+                characterShakeState = characterShakeState,
                 noticeMessage = roleplayState.noticeMessage,
                 errorMessage = roleplayState.errorMessage,
                 onClearNoticeMessage = roleplayViewModel::clearNoticeMessage,
                 onClearErrorMessage = roleplayViewModel::clearErrorMessage,
+                onUpdateCharacterShakeFilters = characterShakeViewModel::updateFilters,
+                onResetCharacterShakeFilters = characterShakeViewModel::resetFilters,
+                onGenerateCharacterShake = characterShakeViewModel::generateAssistant,
+                onDismissGeneratedCharacter = characterShakeViewModel::dismissGeneratedAssistant,
+                onClearCharacterShakeMessages = characterShakeViewModel::clearMessages,
                 callbacks = ImmersivePhoneCallbacks(
                     onNavigateBack = { navController.popBackStack() },
                     onOpenChat = ::navigateToRoleplayChat,
