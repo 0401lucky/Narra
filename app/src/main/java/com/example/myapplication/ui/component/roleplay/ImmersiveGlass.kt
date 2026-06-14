@@ -235,9 +235,9 @@ fun ImmersiveBackdrop(
                     .background(
                         Brush.linearGradient(
                             colors = listOf(
-                                Color(0xFFEAF2F8),
-                                Color(0xFFF7F2E8),
-                                Color(0xFFE8F0EA),
+                                Color(0xFFF0F7F0), // Very light matcha
+                                Color(0xFFE8F2E8), // Light matcha
+                                Color(0xFFDFEADF), // Slightly darker matcha
                             ),
                         ),
                     ),
@@ -250,7 +250,7 @@ fun ImmersiveBackdrop(
                                 colors = listOf(
                                     Color.White.copy(alpha = 0.42f),
                                     Color.Transparent,
-                                    Color(0xFF9FAFC3).copy(alpha = 0.16f),
+                                    Color(0xFF8CC28A).copy(alpha = 0.16f), // Matcha green tint
                                 ),
                             ),
                         ),
@@ -261,9 +261,9 @@ fun ImmersiveBackdrop(
                         .background(
                             Brush.linearGradient(
                                 colors = listOf(
-                                    Color(0xFFB8C8D8).copy(alpha = 0.18f),
+                                    Color(0xFFA5D6A7).copy(alpha = 0.18f), // Secondary matcha
                                     Color.Transparent,
-                                    Color(0xFFD9CDBA).copy(alpha = 0.14f),
+                                    Color(0xFF8CC28A).copy(alpha = 0.14f), // Primary matcha
                                 ),
                             ),
                         ),
@@ -799,26 +799,26 @@ private fun fallbackImmersiveGlassPalette(
 ): ImmersiveGlassPalette {
     val panelAlpha = if (highContrast) 0.98f else 0.9f
     val strongPanelAlpha = if (highContrast) 0.99f else 0.96f
-    val primaryText = Color(0xFF243044)
-    val mutedText = Color(0xFF627086)
-    val characterAccent = lerp(Color(0xFF426F96), colorScheme.primary, 0.04f)
-    val userAccent = lerp(Color(0xFF6E7C63), colorScheme.secondary, 0.04f)
+    val primaryText = colorScheme.onSurface
+    val mutedText = colorScheme.onSurfaceVariant
+    val characterAccent = colorScheme.primary
+    val userAccent = colorScheme.secondary
     return ImmersiveGlassPalette(
-        panelTint = Color(0xFFF7FAFC).copy(alpha = panelAlpha),
-        panelTintStrong = Color.White.copy(alpha = strongPanelAlpha),
+        panelTint = colorScheme.surface.copy(alpha = panelAlpha),
+        panelTintStrong = colorScheme.surface.copy(alpha = strongPanelAlpha),
         panelHighlight = Color.White.copy(alpha = 0.5f),
-        panelBorder = Color(0xFF5D7286).copy(alpha = 0.18f),
-        shadowColor = Color(0xFF465568).copy(alpha = 0.16f),
+        panelBorder = colorScheme.outline.copy(alpha = 0.18f),
+        shadowColor = Color.Black.copy(alpha = 0.16f),
         scrimTop = Color.White.copy(alpha = 0.08f),
-        scrimBottom = Color(0xFF6F7D8C).copy(alpha = 0.12f),
+        scrimBottom = Color.Black.copy(alpha = 0.12f),
         onGlass = primaryText,
         onGlassMuted = mutedText.copy(alpha = 0.88f),
-        chipTint = Color(0xFFE3EDF5).copy(alpha = 0.92f),
-        chipText = Color(0xFF33465A).copy(alpha = 0.96f),
+        chipTint = colorScheme.surfaceVariant.copy(alpha = 0.92f),
+        chipText = colorScheme.onSurfaceVariant.copy(alpha = 0.96f),
         characterAccent = characterAccent,
         userAccent = userAccent,
-        thoughtText = Color(0xFF586A79).copy(alpha = 0.9f),
-        readingSurface = Color.White.copy(alpha = strongPanelAlpha),
+        thoughtText = mutedText.copy(alpha = 0.9f),
+        readingSurface = colorScheme.surface.copy(alpha = strongPanelAlpha),
         readingBorder = characterAccent.copy(alpha = 0.24f),
     )
 }

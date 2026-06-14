@@ -107,18 +107,18 @@ internal fun rememberSettingsPalette(): SettingsPalette {
             )
         } else {
             SettingsPalette(
-                background = Color(0xFFF7F3EE),
-                surface = Color(0xFFF0ECE7),
-                surfaceTint = Color(0xFFE8E2DA),
-                elevatedSurface = Color(0xFFF9F6F1),
-                border = Color(0xFFD7D0C8),
-                title = Color(0xFF2F2A24),
-                body = Color(0xFF6F675E),
-                accent = Color(0xFF7A6B5D),
-                accentSoft = Color(0xFFE7DED3),
-                accentOnStrong = Color(0xFF2F2A24),
-                subtleChip = Color(0xFFEAE3D9),
-                subtleChipContent = Color(0xFF5F554A),
+                background = colorScheme.background,
+                surface = colorScheme.surface,
+                surfaceTint = colorScheme.surfaceVariant,
+                elevatedSurface = colorScheme.surfaceContainerHigh,
+                border = colorScheme.outlineVariant.copy(alpha = 0.5f),
+                title = colorScheme.onSurface,
+                body = colorScheme.onSurfaceVariant,
+                accent = colorScheme.primary,
+                accentSoft = colorScheme.primaryContainer,
+                accentOnStrong = colorScheme.onPrimary,
+                subtleChip = colorScheme.secondaryContainer,
+                subtleChipContent = colorScheme.onSecondaryContainer,
             )
         }
     }

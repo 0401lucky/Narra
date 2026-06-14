@@ -1,17 +1,16 @@
 {
   "app_id": "com.narra.app.dev",
   "channel": "dev",
-  "latest_version_name": "2.0.3-dev",
-  "latest_version_code": 20003,
+  "latest_version_name": "2.0.4-dev",
+  "latest_version_code": 20004,
   "minimum_supported_version_code": 0,
-  "apk_url": "https://download.lsa1230.dpdns.org/dev/Narra-v2.0.3-dev-20003-dev.apk?v=20003-20260614164143",
-  "apk_sha256": "eb2688a637eb34a7ddb0007a51323883f54366fe8b3fb160b5bf9f713c425b3b",
-  "published_at": "2026-06-14T16:41:43+08:00",
+  "apk_url": "https://download.lsa1230.dpdns.org/dev/Narra-v2.0.4-dev-20004-dev.apk?v=20004-20260614180129",
+  "apk_sha256": "c8e4c3d85e0b379bcaa167cc351494c842a5e11b0b5568683a356981f5742c7d",
+  "published_at": "2026-06-14T18:01:29+08:00",
   "release_notes": [
-    "发现页新增“摇一摇”AI 角色卡生成，可按偏好筛选，也可完全随机生成",
-    "摇一摇生成结果会自动保存到通讯录，开启记忆并继承默认预设，可直接开始会话",
-    "优化摇一摇入口和二级面板，筛选区可独立滚动，底部生成按钮保持可见",
-    "角色配置页文案调整为“角色人设 / 核心人设 / 关系与场景 / 开场预览 / 创作备注”",
-    "修复空群聊首轮点击角色快捷发言时，Gemini 兼容站可能返回 400 的问题"
+    "优化 RP 手机界面和设置页的整体 UI 配色",
+    "调整玻璃面板、无背景皮肤、对话输入区和设置组件的色彩层级",
+    "重整浅色主题的主色、容器色、描边和辅助文字，让界面更协调",
+    "继续通过 Cloudflare R2 分发 dev 渠道安装包"
   ]
 }

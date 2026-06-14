@@ -123,15 +123,15 @@ internal fun rememberImmersiveRoleplayColors(
             characterAccent = palette.characterAccent,
             userAccent = palette.userAccent,
             thoughtText = palette.thoughtText,
-            panelBackground = Color(0xFFF2EEE8).copy(alpha = if (backdropState.hasImage) 0.22f else 0.92f),
-            panelBackgroundStrong = Color(0xFFF5F1EB).copy(alpha = if (backdropState.hasImage) 0.28f else 0.96f),
+            panelBackground = palette.panelTint.copy(alpha = if (backdropState.hasImage) 0.22f else 0.86f),
+            panelBackgroundStrong = palette.panelTintStrong.copy(alpha = if (backdropState.hasImage) 0.28f else 0.94f),
             panelBorder = palette.panelBorder.copy(alpha = 0.22f),
             errorText = errorText,
             errorBackground = errorText.copy(alpha = 0.18f),
             errorBackgroundStrong = errorText.copy(alpha = 0.26f),
-            userBubbleBackground = Color(0xFFE6DDD0).copy(alpha = if (backdropState.hasImage) 0.26f else 0.96f),
-            characterBubbleBackground = Color(0xFFF1ECE5).copy(alpha = if (backdropState.hasImage) 0.24f else 0.96f),
-            narrationBubbleBackground = Color(0xFFF4F0EA).copy(alpha = if (backdropState.hasImage) 0.2f else 0.94f),
+            userBubbleBackground = palette.panelTintStrong.copy(alpha = if (backdropState.hasImage) 0.26f else 0.92f),
+            characterBubbleBackground = palette.panelTint.copy(alpha = if (backdropState.hasImage) 0.24f else 0.88f),
+            narrationBubbleBackground = palette.panelTint.copy(alpha = if (backdropState.hasImage) 0.2f else 0.84f),
         )
     }
 }
