@@ -264,11 +264,25 @@ class RoomRoleplayRepository(
             if (existingConversation != null) {
                 val refreshedSession = existingSession.copy(updatedAt = timestamp)
                 roleplayDao.upsertSession(refreshedSession)
-                val historyMessages = cleanOrphanedLoadingMessages(
+                val cleanedMessages = cleanOrphanedLoadingMessages(
                     conversationId = existingSession.conversationId,
                     selectedModel = existingConversation.model,
                     messages = conversationRepository.listMessages(existingSession.conversationId),
                 )
+                val hasRealHistory = cleanedMessages.any {
+                    !it.isOpeningNarrationMessage(scenario.id) &&
+                        it.status != MessageStatus.LOADING
+                }
+                val historyMessages = if (hasRealHistory) {
+                    cleanedMessages
+                } else {
+                    ensureOpeningNarrationSeeded(
+                        conversationId = existingSession.conversationId,
+                        scenario = toScenarioDomain(scenario),
+                        existingMessages = cleanedMessages,
+                        selectedModel = existingConversation.model,
+                    )
+                }
                 return RoleplaySessionStartResult(
                     session = toSessionDomain(refreshedSession),
                     reusedExistingSession = true,
@@ -287,11 +301,10 @@ class RoomRoleplayRepository(
         val conversation = conversationRepository.createConversation(
             assistantId = resolveConversationAssistantId(scenario),
         )
-        seedOpeningNarrationIfNeeded(
+        val seededMessages = ensureOpeningNarrationSeeded(
             conversationId = conversation.id,
             scenario = toScenarioDomain(scenario),
         )
-        val seededMessages = conversationRepository.listMessages(conversation.id)
         val newSession = RoleplaySessionEntity(
             id = existingSession?.id ?: java.util.UUID.randomUUID().toString(),
             scenarioId = scenarioId,
@@ -324,11 +337,10 @@ class RoomRoleplayRepository(
         val conversation = conversationRepository.createConversation(
             assistantId = resolveConversationAssistantId(scenario),
         )
-        seedOpeningNarrationIfNeeded(
+        val seededMessages = ensureOpeningNarrationSeeded(
             conversationId = conversation.id,
             scenario = toScenarioDomain(scenario),
         )
-        val seededMessages = conversationRepository.listMessages(conversation.id)
         val restartedSession = RoleplaySessionEntity(
             id = existingSession?.id ?: UUID.randomUUID().toString(),
             scenarioId = scenarioId,
@@ -713,13 +725,19 @@ class RoomRoleplayRepository(
         )
     }
 
-    private suspend fun seedOpeningNarrationIfNeeded(
+    private suspend fun ensureOpeningNarrationSeeded(
         conversationId: String,
         scenario: RoleplayScenario,
-    ) {
+        existingMessages: List<ChatMessage>? = null,
+        selectedModel: String = "",
+    ): List<ChatMessage> {
+        val currentMessages = existingMessages ?: conversationRepository.listMessages(conversationId)
         val openingNarration = scenario.openingNarration.trim()
         if (openingNarration.isBlank()) {
-            return
+            return currentMessages
+        }
+        if (currentMessages.any { it.isOpeningNarrationMessage(scenario.id) }) {
+            return currentMessages
         }
         val timestamp = nowProvider()
         val outputFormat = RoleplayMessageFormatSupport.resolveScenarioOutputFormat(scenario)
@@ -751,8 +769,9 @@ class RoomRoleplayRepository(
                     roleplayInteractionMode = RoleplayMessageFormatSupport.resolveScenarioInteractionMode(scenario),
                 ),
             ),
-            selectedModel = "",
+            selectedModel = selectedModel,
         )
+        return conversationRepository.listMessages(conversationId)
     }
 
     private fun normalizeAssistantId(assistantId: String): String {

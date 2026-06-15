@@ -4077,6 +4077,80 @@ class RoleplayViewModelTest {
     }
 
     @Test
+    fun startVideoCall_immediatelyAfterEnterScenario_switchesOfflineScenarioAndConnects() =
+        runTest(mainDispatcherRule.dispatcher.scheduler) {
+            val assistant = Assistant(
+                id = "assistant-1",
+                name = "余罪",
+            )
+            val scenario = RoleplayScenario(
+                id = "scene-1",
+                title = "旧夜",
+                assistantId = assistant.id,
+                userDisplayNameOverride = "林晚",
+                characterDisplayNameOverride = "余罪",
+                interactionMode = RoleplayInteractionMode.OFFLINE_DIALOGUE,
+                enableNarration = true,
+                enableRoleplayProtocol = true,
+            )
+            val session = RoleplaySession(
+                id = "session-1",
+                scenarioId = scenario.id,
+                conversationId = "conv-1",
+                createdAt = 1L,
+                updatedAt = 2L,
+            )
+            val store = FakeConversationStore(
+                conversations = listOf(
+                    Conversation(
+                        id = session.conversationId,
+                        title = "旧夜",
+                        model = "",
+                        createdAt = 1L,
+                        updatedAt = 2L,
+                        assistantId = assistant.id,
+                    ),
+                ),
+            )
+            val repository = FakeRoleplayRepository(
+                conversationStore = store,
+                scenarios = listOf(scenario),
+                sessions = listOf(session),
+            )
+            var now = 1_000L
+            val viewModel = createViewModel(
+                store = store,
+                roleplayRepository = repository,
+                settings = AppSettings(
+                    assistants = listOf(assistant),
+                    selectedAssistantId = assistant.id,
+                ),
+                promptContextAssembler = fixedPromptAssembler("提示词上下文"),
+                nowProvider = {
+                    val value = now
+                    now += 1_000L
+                    value
+                },
+            )
+
+            viewModel.enterScenario(scenario.id)
+            viewModel.startVideoCall()
+            advanceUntilIdle()
+
+            val latestState = viewModel.uiState.value
+            val updatedScenario = repository.getScenario(scenario.id)!!
+            val conversationMessages = store.listMessages(session.conversationId)
+
+            assertTrue(latestState.isVideoCallActive)
+            assertEquals(RoleplayInteractionMode.ONLINE_PHONE, updatedScenario.interactionMode)
+            assertTrue(!updatedScenario.longformModeEnabled)
+            assertTrue(updatedScenario.enableRoleplayProtocol)
+            assertEquals(1, conversationMessages.size)
+            assertEquals(RoleplayOnlineEventKind.VIDEO_CALL_CONNECTED, conversationMessages.single().systemEventKind)
+            assertEquals("已接通视频通话", conversationMessages.single().content)
+        }
+
+    @Test
     fun sendMessage_duringVideoCallUsesVideoCallPrompt() = runTest(mainDispatcherRule.dispatcher.scheduler) {
         enqueueStreamResponse("<dialogue speaker=\"character\">看着我。</dialogue>")
 

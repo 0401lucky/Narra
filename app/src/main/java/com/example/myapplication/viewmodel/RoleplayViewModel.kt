@@ -921,15 +921,15 @@ class RoleplayViewModel(
     }
 
     fun startVideoCall() {
-        val state = _uiState.value
-        val scenario = state.currentScenario ?: return
-        if (scenario.interactionMode != RoleplayInteractionMode.ONLINE_PHONE) {
-            return
-        }
+        val initialState = _uiState.value
+        val requestedScenarioId = initialState.currentScenario?.id
+            ?: currentScenarioId.value
+            ?: return
         suggestionActionSupport.cancelSuggestionGeneration(resetState = false)
-        val requestedScenarioId = scenario.id
         viewModelScope.launch {
             try {
+                val scenario = resolveVideoCallScenario(requestedScenarioId) ?: return@launch
+                val state = _uiState.value
                 val session = ensureSessionForVideoCall(state, scenario) ?: return@launch
                 val selectedModel = RoleplayConversationSupport.resolveSelectedModelId(_uiState.value.settings)
                 val outcome = videoCallCoordinator.startCall(
@@ -949,7 +949,9 @@ class RoleplayViewModel(
                     )
                 }
             } catch (throwable: Throwable) {
-                if (_uiState.value.currentScenario?.id != requestedScenarioId) {
+                val activeScenarioId = _uiState.value.currentScenario?.id
+                    ?: currentScenarioId.value
+                if (activeScenarioId != requestedScenarioId) {
                     return@launch
                 }
                 _uiState.update { current ->
@@ -1804,11 +1806,46 @@ class RoleplayViewModel(
         return conversationId.isNotBlank() && _uiState.value.currentSession?.conversationId == conversationId
     }
 
+    private suspend fun resolveVideoCallScenario(scenarioId: String): RoleplayScenario? {
+        val scenario = _uiState.value.currentScenario?.takeIf { it.id == scenarioId }
+            ?: roleplayRepository.getScenario(scenarioId)
+            ?: return null
+        val videoCallScenario = if (
+            scenario.interactionMode == RoleplayInteractionMode.ONLINE_PHONE &&
+            !scenario.longformModeEnabled &&
+            scenario.enableRoleplayProtocol
+        ) {
+            scenario
+        } else {
+            scenario.copy(
+                interactionMode = RoleplayInteractionMode.ONLINE_PHONE,
+                longformModeEnabled = false,
+                enableRoleplayProtocol = true,
+            )
+        }
+        if (videoCallScenario != scenario) {
+            roleplayRepository.upsertScenario(videoCallScenario)
+        }
+        if (currentScenarioId.value == scenarioId) {
+            _uiState.update { current ->
+                RoleplayStateSupport.applyCurrentScenario(
+                    current = current,
+                    scenario = videoCallScenario,
+                    currentAssistant = RoleplayConversationSupport.resolveAssistant(
+                        current.settings,
+                        videoCallScenario.assistantId,
+                    ),
+                )
+            }
+        }
+        return videoCallScenario
+    }
+
     private suspend fun ensureSessionForVideoCall(
         state: RoleplayUiState,
         scenario: RoleplayScenario,
     ): RoleplaySession? {
-        val currentSession = state.currentSession
+        val currentSession = state.currentSession?.takeIf { it.scenarioId == scenario.id }
         if (currentSession != null) {
             return currentSession
         }

@@ -1,6 +1,6 @@
 package com.example.myapplication.ui.theme
 
-import androidx.compose.foundation.isSystemInDarkTheme
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.Color
 
@@ -59,11 +59,11 @@ val md_theme_dark_inverseOnSurface = Color(0xFF121411)
 val md_theme_dark_inverseSurface = Color(0xFFE2E3DD)
 val md_theme_dark_inversePrimary = Color(0xFF8CC28A)
 
-// ── Moments / PhoneCheck 模块共用色（亮暗自适应）──
+// ── Moments / PhoneCheck 模块共用色：跟随当前全局主题色板 ──
 
-@Composable fun MomentsBackground() = if (isSystemInDarkTheme()) Color(0xFF1A1C1A) else Color(0xFFF2F7F2)
-@Composable fun MomentsCardBackground() = if (isSystemInDarkTheme()) Color(0xFF222822) else Color.White
-@Composable fun MomentsAccent() = if (isSystemInDarkTheme()) Color(0xFFA5D6A7) else Color(0xFF8CC28A)
-@Composable fun MomentsAccentSoft() = if (isSystemInDarkTheme()) Color(0xFF2A362A) else Color(0xFFE8F2E8)
-@Composable fun MomentsMutedText() = if (isSystemInDarkTheme()) Color(0xFF889388) else Color(0xFF7A877A)
-@Composable fun MomentsLikeRed() = if (isSystemInDarkTheme()) Color(0xFFE57373) else Color(0xFFEF5350)
+@Composable fun MomentsBackground() = MaterialTheme.colorScheme.background
+@Composable fun MomentsCardBackground() = MaterialTheme.colorScheme.surfaceContainerLow
+@Composable fun MomentsAccent() = MaterialTheme.colorScheme.primary
+@Composable fun MomentsAccentSoft() = MaterialTheme.colorScheme.primaryContainer
+@Composable fun MomentsMutedText() = MaterialTheme.colorScheme.onSurfaceVariant
+@Composable fun MomentsLikeRed() = MaterialTheme.colorScheme.error

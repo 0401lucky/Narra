@@ -1,17 +1,17 @@
 {
   "app_id": "com.narra.app.dev",
   "channel": "dev",
-  "latest_version_name": "2.0.7-dev",
-  "latest_version_code": 20007,
+  "latest_version_name": "2.0.8-dev",
+  "latest_version_code": 20008,
   "minimum_supported_version_code": 0,
-  "apk_url": "https://download.lsa1230.dpdns.org/dev/Narra-v2.0.7-dev-20007-dev.apk?v=20007-20260614230512",
-  "apk_sha256": "ce98a70902e89ac966db5d3df58c6916e78054893195201554aedc427862cfbc",
-  "published_at": "2026-06-14T23:05:12+08:00",
+  "apk_url": "https://download.lsa1230.dpdns.org/dev/Narra-v2.0.8-dev-20008-dev.apk?v=20008-20260615222052",
+  "apk_sha256": "b9c7ed4fbec4c46699d7ed2493e5ab4f92033b341f91e1b0525b4ec3dd626f5a",
+  "published_at": "2026-06-15T22:20:52+08:00",
   "release_notes": [
-    "会话设置页顶部改为成员区，单聊和群聊都可以直接管理成员",
-    "单聊添加角色会自动转成群聊，群聊删到只剩一位角色会自动切回单聊",
-    "成员变化会同步会话归属，减少角色不一致提示",
-    "私人手机底部栏选中态跟随当前主题色板",
+    "修复角色配置了开场白时，空会话进入后看不到开场白的问题",
+    "修复发现页或角色页发起视频通话时可能一直停留在接通中的问题",
+    "视频通话入口会自动切换到线上电话模式，保证通话接通和后续对话上下文一致",
+    "朋友圈背景、卡片和强调色现在会跟随设置里的主题色调",
     "继续通过 Cloudflare R2 分发 dev 渠道安装包"
   ]
 }

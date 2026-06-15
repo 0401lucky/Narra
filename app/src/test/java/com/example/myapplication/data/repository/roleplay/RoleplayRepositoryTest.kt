@@ -138,6 +138,73 @@ class RoleplayRepositoryTest {
     }
 
     @Test
+    fun startScenario_reusedEmptySessionSeedsOpeningNarration() = runBlocking {
+        val conversation = Conversation(
+            id = "conversation-1",
+            title = "旧剧情",
+            model = "chat-model",
+            createdAt = 1L,
+            updatedAt = 1L,
+            assistantId = "assistant-1",
+        )
+        val dao = FakeRoleplayDao(
+            scenarios = listOf(
+                RoleplayScenarioEntity(
+                    id = "scene-1",
+                    title = "初遇",
+                    description = "",
+                    assistantId = "assistant-1",
+                    backgroundUri = "",
+                    userDisplayNameOverride = "",
+                    userPersonaOverride = "",
+                    userPortraitUri = "",
+                    userPortraitUrl = "",
+                    characterDisplayNameOverride = "",
+                    characterPortraitUri = "",
+                    characterPortraitUrl = "",
+                    openingNarration = "夜色渐深。",
+                    enableNarration = true,
+                    enableRoleplayProtocol = true,
+                    autoHighlightSpeaker = true,
+                    createdAt = 1L,
+                    updatedAt = 1L,
+                ),
+            ),
+            sessions = listOf(
+                RoleplaySessionEntity(
+                    id = "session-1",
+                    scenarioId = "scene-1",
+                    conversationId = conversation.id,
+                    createdAt = 1L,
+                    updatedAt = 1L,
+                ),
+            ),
+        )
+        val conversationStore = FakeConversationStore(
+            conversations = listOf(conversation),
+        )
+        val conversationRepository = ConversationRepository(
+            conversationStore = conversationStore,
+            nowProvider = { 10L },
+        )
+        val repository = RoomRoleplayRepository(
+            roleplayDao = dao,
+            conversationRepository = conversationRepository,
+            nowProvider = { 10L },
+        )
+
+        val startResult = repository.startScenario("scene-1")
+        val seededMessages = conversationStore.listMessages(conversation.id)
+
+        assertTrue(startResult.reusedExistingSession)
+        assertTrue(!startResult.hasHistory)
+        assertEquals(1, seededMessages.size)
+        assertTrue(seededMessages.single().id.startsWith("rp-opening-"))
+        assertTrue(seededMessages.single().content.contains("夜色渐深。"))
+        assertEquals(seededMessages, startResult.conversationMessages)
+    }
+
+    @Test
     fun startScenario_reusesExistingSessionAndCleansOrphanedLoadingMessages() = runBlocking {
         val conversation = Conversation(
             id = "conversation-1",
