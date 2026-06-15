@@ -1,17 +1,17 @@
 {
   "app_id": "com.narra.app.dev",
   "channel": "dev",
-  "latest_version_name": "2.0.8-dev",
-  "latest_version_code": 20008,
+  "latest_version_name": "2.0.9-dev",
+  "latest_version_code": 20009,
   "minimum_supported_version_code": 0,
-  "apk_url": "https://download.lsa1230.dpdns.org/dev/Narra-v2.0.8-dev-20008-dev.apk?v=20008-20260615222052",
-  "apk_sha256": "b9c7ed4fbec4c46699d7ed2493e5ab4f92033b341f91e1b0525b4ec3dd626f5a",
-  "published_at": "2026-06-15T22:20:52+08:00",
+  "apk_url": "https://download.lsa1230.dpdns.org/dev/Narra-v2.0.9-dev-20009-dev.apk?v=20009-20260616000749",
+  "apk_sha256": "5e6651f1a12771cd21dd908c863f26626f900f8f4574d9c1e8f0c119df85c57c",
+  "published_at": "2026-06-16T00:07:49+08:00",
   "release_notes": [
-    "修复角色配置了开场白时，空会话进入后看不到开场白的问题",
-    "修复发现页或角色页发起视频通话时可能一直停留在接通中的问题",
-    "视频通话入口会自动切换到线上电话模式，保证通话接通和后续对话上下文一致",
-    "朋友圈背景、卡片和强调色现在会跟随设置里的主题色调",
+    "修复从角色资料新建会话时没有继承角色开场白的问题",
+    "已有空白角色会话进入时会从角色资料补齐开场白",
+    "线上手机/Tavo 风格下，开场白现在会显示为角色左侧聊天气泡",
+    "发现页摇一摇新增关系定位筛选，可按恋人、同事、同学、邻居等关系生成角色",
     "继续通过 Cloudflare R2 分发 dev 渠道安装包"
   ]
 }

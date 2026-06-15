@@ -221,6 +221,7 @@ private val CharacterShakeFilterGroups = listOf(
     CharacterShakeFilterGroup("age", "年龄区间", listOf("", "18-22", "23-27", "28-32", "33+")),
     CharacterShakeFilterGroup("personality", "性格特征", listOf("", "温柔", "理性", "活泼", "文艺", "技术")),
     CharacterShakeFilterGroup("identity", "身份特点", listOf("", "学生", "职场新人", "自由职业", "创作者", "互联网从业")),
+    CharacterShakeFilterGroup("relationship", "关系定位", listOf("", "恋人", "暧昧对象", "同事", "同学", "邻居", "室友", "师生", "合作伙伴", "前任", "陌生偶遇")),
     CharacterShakeFilterGroup("trait", "个人特征", listOf("", "同城", "高频聊天", "有边界感", "幽默感", "自律")),
 )
 
@@ -1644,6 +1645,7 @@ private fun CharacterShakeFilters.valueForShakeGroup(key: String): String {
         "age" -> ageRange
         "personality" -> personality
         "identity" -> identity
+        "relationship" -> relationship
         "trait" -> personalTrait
         else -> ""
     }
@@ -1658,6 +1660,7 @@ private fun CharacterShakeFilters.copyForShakeGroup(
         "age" -> copy(ageRange = value)
         "personality" -> copy(personality = value)
         "identity" -> copy(identity = value)
+        "relationship" -> copy(relationship = value)
         "trait" -> copy(personalTrait = value)
         else -> this
     }

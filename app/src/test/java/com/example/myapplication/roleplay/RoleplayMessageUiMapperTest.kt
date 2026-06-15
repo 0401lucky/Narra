@@ -13,6 +13,7 @@ import com.example.myapplication.model.RoleplayInteractionMode
 import com.example.myapplication.model.RoleplayOnlineEventKind
 import com.example.myapplication.model.RoleplayOutputFormat
 import com.example.myapplication.model.RoleplayScenario
+import com.example.myapplication.model.RoleplaySpeaker
 import com.example.myapplication.model.TransferDirection
 import com.example.myapplication.model.TransferStatus
 import com.example.myapplication.model.inviteMessagePart
@@ -688,7 +689,7 @@ class RoleplayMessageUiMapperTest {
     }
 
     @Test
-    fun mapMessages_onlineOpeningNarrationStaysNarrationInsteadOfThought() {
+    fun mapMessages_onlineOpeningNarrationShowsAsCharacterDialogue() {
         val scenario = RoleplayScenario(
             id = "scene-1",
             title = "线上开场",
@@ -722,7 +723,9 @@ class RoleplayMessageUiMapperTest {
         )
 
         assertEquals(1, mapped.size)
-        assertEquals(RoleplayContentType.NARRATION, mapped.single().contentType)
+        assertEquals(RoleplayContentType.DIALOGUE, mapped.single().contentType)
+        assertEquals(RoleplaySpeaker.CHARACTER, mapped.single().speaker)
+        assertEquals("陆宴清", mapped.single().speakerName)
         assertEquals("夜色渐深，聊天框还停在昨晚那句没回完的话上。", mapped.single().content)
     }
 

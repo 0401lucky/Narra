@@ -7,6 +7,7 @@ import com.example.myapplication.data.repository.roleplay.RoleplaySessionStartRe
 import com.example.myapplication.model.Assistant
 import com.example.myapplication.model.ChatMessage
 import com.example.myapplication.model.RoleplayScenario
+import com.example.myapplication.model.isGroupChat
 import com.example.myapplication.roleplay.RoleplayConversationSupport
 import com.example.myapplication.system.security.SensitiveTextRedactor
 import kotlinx.coroutines.CancellationException
@@ -47,13 +48,17 @@ internal class RoleplayScenarioActionSupport(
             try {
                 val scenario = roleplayRepository.getScenario(scenarioId)
                     ?: error("场景不存在")
+                val scenarioForStart = scenario.withAssistantGreetingOpeningIfNeeded()
+                if (scenarioForStart != scenario) {
+                    roleplayRepository.upsertScenario(scenarioForStart)
+                }
                 val startResult = roleplayRepository.startScenario(scenarioId)
                 if (currentScenarioIdFlow.value != scenarioId) {
                     return@launch
                 }
                 applySessionStartResult(
                     startResult = startResult,
-                    scenario = scenario,
+                    scenario = scenarioForStart,
                 )
             } catch (cancellation: CancellationException) {
                 throw cancellation
@@ -75,6 +80,22 @@ internal class RoleplayScenarioActionSupport(
                     enterScenarioJob = null
                 }
             }
+        }
+    }
+
+    private fun RoleplayScenario.withAssistantGreetingOpeningIfNeeded(): RoleplayScenario {
+        if (openingNarration.isNotBlank() || isGroupChat) {
+            return this
+        }
+        val assistantGreeting = RoleplayConversationSupport
+            .resolveAssistant(uiState().settings, assistantId)
+            ?.greeting
+            .orEmpty()
+            .trim()
+        return if (assistantGreeting.isBlank()) {
+            this
+        } else {
+            copy(openingNarration = assistantGreeting)
         }
     }
 

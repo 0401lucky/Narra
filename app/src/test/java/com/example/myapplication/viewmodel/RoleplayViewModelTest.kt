@@ -121,6 +121,44 @@ class RoleplayViewModelTest {
     }
 
     @Test
+    fun createChatForAssistant_usesAssistantGreetingAsOpeningNarration() =
+        runTest(mainDispatcherRule.dispatcher.scheduler) {
+            val assistant = Assistant(
+                id = "assistant-1",
+                name = "Tavo",
+                greeting = "你好呀",
+            )
+            val store = FakeConversationStore()
+            val repository = FakeRoleplayRepository(
+                conversationStore = store,
+                scenarios = emptyList(),
+                sessions = emptyList(),
+            )
+            val viewModel = createViewModel(
+                store = store,
+                roleplayRepository = repository,
+                settings = AppSettings(
+                    assistants = listOf(assistant),
+                    selectedAssistantId = assistant.id,
+                ),
+                promptContextAssembler = DefaultPromptContextAssembler(),
+            )
+            runCurrent()
+
+            viewModel.createChatForAssistant(
+                assistantId = assistant.id,
+                interactionMode = RoleplayInteractionMode.ONLINE_PHONE,
+                enableNarration = false,
+                onCreated = {},
+            )
+            runCurrent()
+
+            val scenario = repository.listScenarios().single()
+            assertEquals("Tavo", scenario.title)
+            assertEquals("你好呀", scenario.openingNarration)
+        }
+
+    @Test
     fun generateSuggestions_updatesUiStateAndUsesSuggestionModel() = runTest(mainDispatcherRule.dispatcher.scheduler) {
         val assistant = Assistant(
             id = "assistant-1",

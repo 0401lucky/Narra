@@ -475,10 +475,14 @@ class RoleplayViewModel(
     ) {
         val scenarioId = UUID.randomUUID().toString()
         val normalizedAssistantId = assistantId.trim().ifBlank { DEFAULT_ASSISTANT_ID }
+        val assistant = _uiState.value.settings.resolvedAssistants()
+            .firstOrNull { it.id == normalizedAssistantId }
         upsertScenario(
             RoleplayScenario(
                 id = scenarioId,
                 assistantId = normalizedAssistantId,
+                title = assistant?.name.orEmpty().trim(),
+                openingNarration = assistant?.greeting.orEmpty().trim(),
                 interactionMode = interactionMode,
                 enableNarration = enableNarration,
                 longformModeEnabled = interactionMode == RoleplayInteractionMode.OFFLINE_LONGFORM,

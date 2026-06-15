@@ -5,6 +5,7 @@ data class CharacterShakeFilters(
     val ageRange: String = "",
     val personality: String = "",
     val identity: String = "",
+    val relationship: String = "",
     val personalTrait: String = "",
 ) {
     fun hasSelectedOption(): Boolean {
@@ -12,6 +13,7 @@ data class CharacterShakeFilters(
             ageRange.isNotBlank() ||
             personality.isNotBlank() ||
             identity.isNotBlank() ||
+            relationship.isNotBlank() ||
             personalTrait.isNotBlank()
     }
 
@@ -21,6 +23,7 @@ data class CharacterShakeFilters(
             if (ageRange.isNotBlank()) add(ageRange)
             if (personality.isNotBlank()) add(personality)
             if (identity.isNotBlank()) add(identity)
+            if (relationship.isNotBlank()) add(relationship)
             if (personalTrait.isNotBlank()) add(personalTrait)
         }
         return parts.joinToString(" · ").ifBlank { "完全随机" }

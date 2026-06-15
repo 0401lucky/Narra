@@ -1307,6 +1307,7 @@ class AiPromptExtrasServiceTest {
                 ageRange = "23-27",
                 personality = "温柔",
                 identity = "自由职业",
+                relationship = "恋人",
                 personalTrait = "有边界感",
             ),
             baseUrl = server.url("/v1/").toString(),
@@ -1325,6 +1326,7 @@ class AiPromptExtrasServiceTest {
         val prompt = requestBody.getAsJsonArray("messages")[0].asJsonObject["content"].asString
         assertTrue(prompt.contains("性别偏好：女生"))
         assertTrue(prompt.contains("年龄区间：23-27"))
+        assertTrue(prompt.contains("关系定位：恋人"))
         assertTrue(prompt.contains("只输出一个 JSON 对象"))
         assertTrue(requestBody.has("temperature"))
     }

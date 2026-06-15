@@ -993,9 +993,9 @@ object RoleplayMessageUiMapper {
         }
         if (RoleplayConversationSupport.isOpeningNarrationMessageId(sourceMessageId, scenarioId)) {
             return segment.copy(
-                contentType = RoleplayContentType.NARRATION,
-                speaker = RoleplaySpeaker.NARRATOR,
-                speakerName = "旁白",
+                contentType = RoleplayContentType.DIALOGUE,
+                speaker = RoleplaySpeaker.CHARACTER,
+                speakerName = characterName,
             )
         }
         return when (segment.contentType) {
