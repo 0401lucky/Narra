@@ -40,8 +40,9 @@ class GiftImageGenerationCoordinator(
         val finalPrompt = buildOptimizedPrompt(request)
         return runCatching {
             val imageResult = withTimeout(ImageGenerationTimeoutMs) {
-                aiGateway.generateImage(
+                aiGateway.generateImageWithProvider(
                     prompt = finalPrompt,
+                    provider = request.provider,
                     modelId = giftModelId,
                 ).firstOrNull() ?: error("生图接口未返回图片")
             }

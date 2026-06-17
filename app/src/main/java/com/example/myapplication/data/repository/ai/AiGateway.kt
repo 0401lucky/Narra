@@ -87,6 +87,15 @@ interface AiGateway {
         modelId: String = "",
     ): List<ImageGenerationResult>
 
+    suspend fun generateImageWithProvider(
+        prompt: String,
+        provider: ProviderSettings,
+        modelId: String = "",
+    ): List<ImageGenerationResult> = generateImage(
+        prompt = prompt,
+        modelId = modelId,
+    )
+
     suspend fun editImage(
         prompt: String,
         images: List<MessageAttachment>,
@@ -258,13 +267,47 @@ class DefaultAiGateway(
         if (activeProvider?.resolvedApiProtocol() == ProviderApiProtocol.ANTHROPIC) {
             throw IllegalStateException("Anthropic /messages 协议当前不支持图片生成")
         }
+        return requestImageGeneration(
+            baseUrl = baseUrl,
+            apiKey = apiKey,
+            selectedModel = selectedModel,
+            prompt = prompt,
+        )
+    }
 
+    override suspend fun generateImageWithProvider(
+        prompt: String,
+        provider: ProviderSettings,
+        modelId: String,
+    ): List<ImageGenerationResult> {
+        require(provider.hasBaseCredentials()) { "请先完成生图提供商的 Base URL 和 API Key" }
+        if (provider.resolvedApiProtocol() == ProviderApiProtocol.ANTHROPIC) {
+            throw IllegalStateException("Anthropic /messages 协议当前不支持图片生成")
+        }
+        val selectedModel = normalizeKnownModelId(
+            modelId.trim().ifBlank { provider.selectedModel.trim() },
+        )
+        require(selectedModel.isNotBlank()) { "请先选择生图模型" }
+        return requestImageGeneration(
+            baseUrl = provider.baseUrl,
+            apiKey = provider.apiKey,
+            selectedModel = selectedModel,
+            prompt = prompt,
+        )
+    }
+
+    private suspend fun requestImageGeneration(
+        baseUrl: String,
+        apiKey: String,
+        selectedModel: String,
+        prompt: String,
+    ): List<ImageGenerationResult> {
         val response = imageApiServiceProvider(baseUrl, apiKey).generateImage(
             ImageGenerationRequest(
                 model = selectedModel,
                 prompt = prompt,
                 n = 1,
-                responseFormat = "b64_json",
+                responseFormat = imageResponseFormatForModel(selectedModel),
             ),
         )
 
@@ -321,7 +364,7 @@ class DefaultAiGateway(
                     ImageEditInputImageDto(imageUrl = imageUrl)
                 },
                 n = 1,
-                responseFormat = "b64_json",
+                responseFormat = imageResponseFormatForModel(selectedModel),
             ),
         )
 
@@ -398,7 +441,11 @@ class DefaultAiGateway(
             .addFormDataPart("model", model)
             .addFormDataPart("prompt", prompt)
             .addFormDataPart("n", "1")
-            .addFormDataPart("response_format", "b64_json")
+            .apply {
+                imageResponseFormatForModel(model)?.let { responseFormat ->
+                    addFormDataPart("response_format", responseFormat)
+                }
+            }
             .apply {
                 images.forEach(::addPart)
             }
@@ -460,6 +507,15 @@ class DefaultAiGateway(
         val mediaType: okhttp3.MediaType,
         val defaultExtension: String,
     )
+
+    private fun imageResponseFormatForModel(modelId: String): String? {
+        val normalized = normalizeKnownModelId(modelId).lowercase()
+        return if ("gpt-image" in normalized || Regex("""\bgpt(?:[-_.]?\d+(?:\.\d+)*)?[-_.]image\b""").containsMatchIn(normalized)) {
+            null
+        } else {
+            "b64_json"
+        }
+    }
 
     override suspend fun sendMessage(
         messages: List<ChatMessage>,

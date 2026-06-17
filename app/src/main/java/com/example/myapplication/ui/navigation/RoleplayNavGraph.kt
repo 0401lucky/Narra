@@ -192,6 +192,14 @@ internal fun NavGraphBuilder.registerRoleplayGraph(
                             launchSingleTop = true
                         }
                     },
+                    onOpenCharacterArtStudio = {
+                        val assistantId = roleplayState.settings.activeAssistant()?.id
+                            ?: roleplayState.settings.resolvedAssistants().firstOrNull()?.id
+                            ?: com.example.myapplication.model.DEFAULT_ASSISTANT_ID
+                        navController.navigate(AppRoutes.settingsAssistantArtStudio(assistantId)) {
+                            launchSingleTop = true
+                        }
+                    },
                     onOpenAssistantDetail = { assistantId ->
                         navController.navigate(AppRoutes.settingsAssistantDetail(assistantId)) {
                             launchSingleTop = true

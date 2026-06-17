@@ -65,6 +65,7 @@ import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Forum
 import androidx.compose.material.icons.filled.Group
+import androidx.compose.material.icons.filled.Image
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.KeyboardArrowUp
@@ -166,6 +167,7 @@ data class ImmersivePhoneCallbacks(
     val onOpenSettings: () -> Unit,
     val onOpenUserMasks: () -> Unit,
     val onOpenAssistantSettings: () -> Unit,
+    val onOpenCharacterArtStudio: () -> Unit,
     val onOpenAssistantDetail: (String) -> Unit,
     val onOpenAssistantPrompt: (String) -> Unit,
     val onOpenAssistantMemory: (String) -> Unit,
@@ -434,6 +436,7 @@ fun ImmersivePhoneShell(
                         phoneEcosystem = phoneEcosystem,
                         onOpenEcosystem = { showPhoneEcosystemSheet = true },
                         onOpenCharacterShake = { showCharacterShakeSheet = true },
+                        onOpenCharacterArtStudio = callbacks.onOpenCharacterArtStudio,
                         onOpenTarget = { target ->
                             if (target == DiscoverTarget.Moments) {
                                 callbacks.onOpenMoments("")
@@ -1174,6 +1177,7 @@ private fun ImmersiveDiscoverPage(
     phoneEcosystem: RoleplayPhoneEcosystemSnapshot,
     onOpenEcosystem: () -> Unit,
     onOpenCharacterShake: () -> Unit,
+    onOpenCharacterArtStudio: () -> Unit,
     onOpenTarget: (DiscoverTarget) -> Unit,
     bottomPadding: Dp,
 ) {
@@ -1189,6 +1193,9 @@ private fun ImmersiveDiscoverPage(
         }
         item {
             CharacterShakeEntry(onClick = onOpenCharacterShake)
+        }
+        item {
+            CharacterArtStudioEntry(onClick = onOpenCharacterArtStudio)
         }
         items(DiscoverTarget.entries, key = { it.name }) { target ->
             FeatureRow(
@@ -1354,6 +1361,59 @@ private fun CharacterShakeEntry(
                     Text("开摇", style = MaterialTheme.typography.labelMedium, maxLines = 1)
                 }
             }
+        }
+    }
+}
+
+@Composable
+private fun CharacterArtStudioEntry(
+    onClick: () -> Unit,
+) {
+    Surface(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp, vertical = 8.dp)
+            .clickable(onClick = onClick),
+        shape = RoundedCornerShape(8.dp),
+        color = MaterialTheme.colorScheme.surface,
+        contentColor = MaterialTheme.colorScheme.onSurface,
+        tonalElevation = 2.dp,
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.secondary.copy(alpha = 0.26f)),
+    ) {
+        Row(
+            modifier = Modifier.padding(horizontal = 14.dp, vertical = 12.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
+        ) {
+            Surface(
+                modifier = Modifier.size(40.dp),
+                shape = RoundedCornerShape(8.dp),
+                color = MaterialTheme.colorScheme.secondaryContainer,
+                contentColor = MaterialTheme.colorScheme.onSecondaryContainer,
+            ) {
+                Box(contentAlignment = Alignment.Center) {
+                    Icon(
+                        imageVector = Icons.Default.Image,
+                        contentDescription = null,
+                        modifier = Modifier.size(20.dp),
+                    )
+                }
+            }
+            Column(modifier = Modifier.weight(1f)) {
+                Text("角色图工作台", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                Text(
+                    text = "选择角色，生成非真人风格头像图",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis,
+                )
+            }
+            Text(
+                text = "创作",
+                style = MaterialTheme.typography.labelLarge,
+                color = MaterialTheme.colorScheme.secondary,
+            )
         }
     }
 }

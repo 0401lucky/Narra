@@ -18,6 +18,7 @@ object AppRoutes {
     const val SETTINGS_ASSISTANTS = "settings/assistants"
     const val SETTINGS_ASSISTANT_DETAIL = "settings/assistants/{assistantId}"
     const val SETTINGS_ASSISTANT_BASIC = "settings/assistants/{assistantId}/basic"
+    const val SETTINGS_ASSISTANT_ART_STUDIO = "settings/assistants/{assistantId}/art-studio"
     const val SETTINGS_ASSISTANT_PROMPT = "settings/assistants/{assistantId}/prompt"
     const val SETTINGS_ASSISTANT_EXTENSIONS = "settings/assistants/{assistantId}/extensions"
     const val SETTINGS_ASSISTANT_MEMORY = "settings/assistants/{assistantId}/memory"
@@ -58,11 +59,15 @@ object AppRoutes {
     }
 
     fun settingsAssistantBasic(assistantId: String): String {
-        return "settings/assistants/$assistantId/basic"
+        return "settings/assistants/${Uri.encode(assistantId)}/basic"
+    }
+
+    fun settingsAssistantArtStudio(assistantId: String): String {
+        return "settings/assistants/${Uri.encode(assistantId)}/art-studio"
     }
 
     fun settingsAssistantPrompt(assistantId: String): String {
-        return "settings/assistants/$assistantId/prompt"
+        return "settings/assistants/${Uri.encode(assistantId)}/prompt"
     }
 
     fun settingsAssistantExtensions(assistantId: String): String {

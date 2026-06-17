@@ -2616,6 +2616,7 @@ class AiGatewayTest {
                     ): Response<ImageGenerationResponse> {
                         assertEquals("image-model", request.model)
                         assertEquals("一只猫", request.prompt)
+                        assertEquals("b64_json", request.responseFormat)
                         return Response.success(
                             ImageGenerationResponse(
                                 data = listOf(
@@ -2636,6 +2637,63 @@ class AiGatewayTest {
         assertEquals(listOf("https://image.example.com/v1/" to "img-key"), providerCalls)
         assertEquals("long-running-result", results.single().b64Data)
         assertEquals("长超时客户端返回", results.single().revisedPrompt)
+    }
+
+    @Test
+    fun generateImageWithProvider_usesProvidedProviderAndOmitsLegacyResponseFormatForGptImage() = runBlocking {
+        val activeProvider = ProviderSettings(
+            id = "provider-chat",
+            name = "Chat",
+            baseUrl = "https://chat.example.com/v1/",
+            apiKey = "chat-key",
+            selectedModel = "chat-model",
+        )
+        val imageProvider = ProviderSettings(
+            id = "provider-image",
+            name = "Image",
+            baseUrl = "https://image.example.com/v1/",
+            apiKey = "image-key",
+            selectedModel = "gpt-image-1",
+        )
+        val providerCalls = mutableListOf<Pair<String, String>>()
+        val gateway = createGateway(
+            settings = AppSettings(
+                providers = listOf(activeProvider, imageProvider),
+                selectedProviderId = activeProvider.id,
+            ),
+            imageApiServiceProvider = { baseUrl, apiKey ->
+                providerCalls += baseUrl to apiKey
+                object : TestOpenAiCompatibleApi() {
+                    override suspend fun generateImage(
+                        request: ImageGenerationRequest,
+                    ): Response<ImageGenerationResponse> {
+                        assertEquals("gpt-image-1", request.model)
+                        assertEquals("角色头像", request.prompt)
+                        assertEquals(null, request.responseFormat)
+                        return Response.success(
+                            ImageGenerationResponse(
+                                data = listOf(
+                                    ImageGenerationDataDto(
+                                        b64Json = "character-art",
+                                        revisedPrompt = "角色头像修订",
+                                    ),
+                                ),
+                            ),
+                        )
+                    }
+                }
+            },
+        )
+
+        val results = gateway.generateImageWithProvider(
+            prompt = "角色头像",
+            provider = imageProvider,
+            modelId = "gpt-image-1",
+        )
+
+        assertEquals(listOf("https://image.example.com/v1/" to "image-key"), providerCalls)
+        assertEquals("character-art", results.single().b64Data)
+        assertEquals("角色头像修订", results.single().revisedPrompt)
     }
 
     @Test

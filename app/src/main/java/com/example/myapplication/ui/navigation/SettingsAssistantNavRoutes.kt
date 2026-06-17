@@ -2,13 +2,16 @@ package com.example.myapplication.ui.navigation
 
 import android.net.Uri
 import androidx.compose.runtime.getValue
+import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavGraphBuilder
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.composable
+import com.example.myapplication.data.repository.ImageFileStorage
 import com.example.myapplication.di.AppGraph
 import com.example.myapplication.ui.screen.settings.AssistantBasicScreen
+import com.example.myapplication.ui.screen.settings.CharacterArtStudioScreen
 import com.example.myapplication.ui.screen.settings.AssistantDetailScreen
 import com.example.myapplication.ui.screen.settings.AssistantExtensionsScreen
 import com.example.myapplication.ui.screen.settings.AssistantListScreen
@@ -17,6 +20,7 @@ import com.example.myapplication.ui.screen.settings.AssistantPromptScreen
 import com.example.myapplication.ui.screen.settings.memory.SimpleMemoryEditorScreen
 import com.example.myapplication.ui.screen.settings.worldbook.buildWorldBookBooks
 import com.example.myapplication.viewmodel.SettingsViewModel
+import com.example.myapplication.viewmodel.CharacterArtStudioViewModel
 import com.example.myapplication.viewmodel.SimpleMemoryEditorViewModel
 
 // 角色列表、详情、基本信息、提示词、扩展、记忆
@@ -85,6 +89,11 @@ internal fun NavGraphBuilder.registerSettingsAssistantRoutes(
                     launchSingleTop = true
                 }
             },
+            onOpenArtStudio = {
+                navController.navigate(AppRoutes.settingsAssistantArtStudio(assistant.id)) {
+                    launchSingleTop = true
+                }
+            },
             onOpenPrompt = {
                 navController.navigate(AppRoutes.settingsAssistantPrompt(assistant.id)) {
                     launchSingleTop = true
@@ -112,6 +121,44 @@ internal fun NavGraphBuilder.registerSettingsAssistantRoutes(
             onNavigateBack = {
                 navController.popBackStack()
             },
+        )
+    }
+
+    composable(AppRoutes.SETTINGS_ASSISTANT_ART_STUDIO) { backStackEntry ->
+        val context = LocalContext.current
+        val assistantId = backStackEntry.arguments
+            ?.getString("assistantId")
+            ?.let(Uri::decode)
+            .orEmpty()
+        val viewModel: CharacterArtStudioViewModel = viewModel(
+            key = "character-art-studio-$assistantId",
+            factory = CharacterArtStudioViewModel.factory(
+                initialAssistantId = assistantId,
+                settingsRepository = appGraph.aiSettingsRepository,
+                settingsEditor = appGraph.aiSettingsEditor,
+                aiPromptExtrasService = appGraph.aiPromptExtrasService,
+                aiGateway = appGraph.aiGateway,
+                imageSaver = { b64Data ->
+                    ImageFileStorage.saveBase64Image(
+                        context = context,
+                        b64Data = b64Data,
+                    )
+                },
+            ),
+        )
+        val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+        CharacterArtStudioScreen(
+            uiState = uiState,
+            onSelectAssistant = viewModel::selectAssistant,
+            onSelectStyle = viewModel::selectStyle,
+            onPromptChange = viewModel::updateEditablePrompt,
+            onNegativePromptChange = viewModel::updateEditableNegativePrompt,
+            onRevisionInstructionChange = viewModel::updateRevisionInstruction,
+            onExtractPrompt = viewModel::extractPrompt,
+            onGenerateImage = viewModel::generateImage,
+            onApplyAvatar = viewModel::applyGeneratedImageAsAvatar,
+            onClearMessages = viewModel::clearMessages,
+            onNavigateBack = { navController.popBackStack() },
         )
     }
 

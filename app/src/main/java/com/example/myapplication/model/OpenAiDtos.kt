@@ -162,7 +162,7 @@ data class ImageGenerationRequest(
     val prompt: String,
     val n: Int = 1,
     @SerializedName("response_format")
-    val responseFormat: String = "b64_json",
+    val responseFormat: String? = "b64_json",
     val size: String = "1024x1024",
 )
 
@@ -172,7 +172,7 @@ data class ImageEditRequest(
     val images: List<ImageEditInputImageDto>,
     val n: Int = 1,
     @SerializedName("response_format")
-    val responseFormat: String = "b64_json",
+    val responseFormat: String? = "b64_json",
     val size: String = "1024x1024",
 )
 

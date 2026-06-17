@@ -1,17 +1,18 @@
 {
   "app_id": "com.narra.app.dev",
   "channel": "dev",
-  "latest_version_name": "2.0.9-dev",
-  "latest_version_code": 20009,
+  "latest_version_name": "2.1.0-dev",
+  "latest_version_code": 20100,
   "minimum_supported_version_code": 0,
-  "apk_url": "https://download.lsa1230.dpdns.org/dev/Narra-v2.0.9-dev-20009-dev.apk?v=20009-20260616000749",
-  "apk_sha256": "5e6651f1a12771cd21dd908c863f26626f900f8f4574d9c1e8f0c119df85c57c",
-  "published_at": "2026-06-16T00:07:49+08:00",
+  "apk_url": "https://download.lsa1230.dpdns.org/dev/Narra-v2.1.0-dev-20100-dev.apk?v=20100-20260617125516",
+  "apk_sha256": "b660573a9958a37573df197c2b583b402befe39352cfc97bb9505ae5442217af",
+  "published_at": "2026-06-17T12:55:16+08:00",
   "release_notes": [
-    "修复从角色资料新建会话时没有继承角色开场白的问题",
-    "已有空白角色会话进入时会从角色资料补齐开场白",
-    "线上手机/Tavo 风格下，开场白现在会显示为角色左侧聊天气泡",
-    "发现页摇一摇新增关系定位筛选，可按恋人、同事、同学、邻居等关系生成角色",
+    "设置页新增角色图工作台，可从现有角色提取人物特性并生成角色人物图",
+    "角色图支持点击放大预览，并可下载到系统相册供其它软件使用",
+    "生成结果满意后可直接设为角色头像，不满意也能继续修改提示词重新生成",
+    "角色图风格默认避开真人写实，提供韩式厚涂、二次元插画、国风立绘等风格方向",
+    "修复生图链路误用聊天供应商的问题，并提升 gpt-image 系列模型参数兼容性",
     "继续通过 Cloudflare R2 分发 dev 渠道安装包"
   ]
 }

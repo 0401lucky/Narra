@@ -261,8 +261,9 @@ class MomentsGenerationCoordinator(
             .ifBlank { return media.markFailed("默认生图模型未配置") }
         return runCatching {
             val result = withTimeout(ImageGenerationTimeoutMs) {
-                aiGateway.generateImage(
+                aiGateway.generateImageWithProvider(
                     prompt = media.prompt,
+                    provider = provider,
                     modelId = imageModelId,
                 ).firstOrNull() ?: error("生图接口未返回图片")
             }

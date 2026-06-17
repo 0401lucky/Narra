@@ -65,6 +65,7 @@ fun AssistantDetailScreen(
     linkedWorldBookCount: Int,
     assistantMemoryCount: Int,
     onOpenBasic: () -> Unit,
+    onOpenArtStudio: () -> Unit,
     onOpenPrompt: () -> Unit,
     onOpenExtensions: () -> Unit,
     onOpenMemory: () -> Unit,
@@ -126,6 +127,14 @@ fun AssistantDetailScreen(
                         icon = { EntryGlyph(icon = { Icon(Icons.Default.Face, null) }) },
                         title = "基础设定",
                         onClick = onOpenBasic,
+                    )
+                    SettingsGroupDivider()
+                    AssistantEntryRow(
+                        icon = { EntryGlyph(icon = { Icon(Icons.Outlined.Image, null) }) },
+                        title = "角色图工作台",
+                        supporting = "提取角色特性，生成非真人风格头像",
+                        badge = if (assistant.avatarUri.isNotBlank()) "已有头像" else "可生成",
+                        onClick = onOpenArtStudio,
                     )
                     SettingsGroupDivider()
                     AssistantEntryRow(
