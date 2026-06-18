@@ -120,6 +120,7 @@ fun MessageBubble(
     streamingReasoningSteps: List<ChatReasoningStep>? = null,
     streamingParts: List<ChatMessagePart>? = null,
     onRetry: ((String) -> Unit)? = null,
+    onRetryAiPhoto: ((String, String) -> Unit)? = null,
     onOpenMessageActions: ((String) -> Unit)? = null,
     onOpenImagePreview: ((ChatMessage, Int) -> Unit)? = null,
     onToggleMemory: ((String) -> Unit)? = null,
@@ -315,6 +316,9 @@ fun MessageBubble(
                         onOpenImagePreview = { imageIndex ->
                             onOpenImagePreview?.invoke(message, imageIndex)
                         },
+                        onRetryAiPhoto = { actionId ->
+                            onRetryAiPhoto?.invoke(message.id, actionId)
+                        },
                         onOpenCitation = { citation ->
                             if (onOpenUrlPreview != null) {
                                 onOpenUrlPreview(
@@ -355,6 +359,9 @@ fun MessageBubble(
                         onConfirmTransferReceipt = onConfirmTransferReceipt,
                         onOpenImagePreview = { imageIndex ->
                             onOpenImagePreview?.invoke(message, imageIndex)
+                        },
+                        onRetryAiPhoto = { actionId ->
+                            onRetryAiPhoto?.invoke(message.id, actionId)
                         },
                         onOpenCitation = { citation ->
                             if (onOpenUrlPreview != null) {

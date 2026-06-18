@@ -49,6 +49,13 @@ internal fun NavGraphBuilder.registerChatNavGraph(
                 imageSaver = { b64Data ->
                     ImageFileStorage.saveBase64Image(context, b64Data)
                 },
+                namedImageSaver = { b64Data, fileNamePrefix ->
+                    ImageFileStorage.saveBase64Image(
+                        context = context,
+                        b64Data = b64Data,
+                        fileNamePrefix = fileNamePrefix,
+                    )
+                },
             ),
         )
         val chatState by chatViewModel.uiState.collectAsStateWithLifecycle()
@@ -64,6 +71,7 @@ internal fun NavGraphBuilder.registerChatNavGraph(
                     onInputChange = chatViewModel::updateInput,
                     onSend = chatViewModel::sendMessage,
                     onRetryMessage = chatViewModel::retryMessage,
+                    onRetryAiPhoto = chatViewModel::retryAiPhoto,
                     onEditUserMessage = chatViewModel::editUserMessage,
                     onToggleMemoryMessage = chatViewModel::toggleMessageMemory,
                     onCancelSending = chatViewModel::cancelSending,

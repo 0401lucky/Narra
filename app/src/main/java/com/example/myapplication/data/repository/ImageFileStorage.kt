@@ -23,6 +23,7 @@ object ImageFileStorage {
     suspend fun saveBase64Image(
         context: Context,
         b64Data: String,
+        fileNamePrefix: String = UUID.randomUUID().toString(),
         dispatcher: CoroutineDispatcher = Dispatchers.IO,
     ): SavedImageFile = withContext(dispatcher) {
         val dir = File(context.filesDir, IMAGE_DIR)
@@ -35,7 +36,7 @@ object ImageFileStorage {
         requireImageWithinLimit(bytes.size)
         val detectedImageType = detectImageType(bytes)
             ?: throw IllegalArgumentException("图片数据无效，无法识别格式")
-        val fileName = "${UUID.randomUUID()}.${detectedImageType.extension}"
+        val fileName = "${sanitizeFileNamePrefix(fileNamePrefix)}.${detectedImageType.extension}"
         val file = File(dir, fileName)
         file.writeBytes(bytes)
 

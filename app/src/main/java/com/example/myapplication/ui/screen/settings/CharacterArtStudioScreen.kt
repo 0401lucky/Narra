@@ -4,6 +4,7 @@ import android.Manifest
 import android.os.Build
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -30,6 +31,8 @@ import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material.icons.filled.Download
 import androidx.compose.material.icons.filled.Face
 import androidx.compose.material.icons.filled.Image
+import androidx.compose.material.icons.filled.KeyboardArrowDown
+import androidx.compose.material.icons.filled.KeyboardArrowUp
 import androidx.compose.material.icons.filled.Palette
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material3.Button
@@ -49,6 +52,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -102,6 +106,7 @@ fun CharacterArtStudioScreen(
     }
     var previewImage by remember { mutableStateOf<ChatPreviewImageItem?>(null) }
     var pendingGalleryImage by remember { mutableStateOf<ChatPreviewImageItem?>(null) }
+    var negativePromptExpanded by rememberSaveable { mutableStateOf(false) }
     val legacyGalleryPermissionLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.RequestPermission(),
     ) { granted ->
@@ -206,7 +211,7 @@ fun CharacterArtStudioScreen(
 
             item {
                 AssistantSubsectionTitle(
-                    title = "角色与风格",
+                    title = "① 角色 & 风格",
                     subtitle = "先定角色，再选一套非真人绘制风格",
                 )
             }
@@ -231,7 +236,7 @@ fun CharacterArtStudioScreen(
 
             item {
                 AssistantSubsectionTitle(
-                    title = "视觉提示词",
+                    title = "② 视觉提示词",
                     subtitle = "可先让 AI 提取，也可以自己继续改",
                 )
             }
@@ -294,18 +299,32 @@ fun CharacterArtStudioScreen(
                             shape = RoundedCornerShape(18.dp),
                             enabled = !uiState.isGeneratingImage,
                         )
-                        OutlinedTextField(
-                            value = uiState.editableNegativePrompt,
-                            onValueChange = onNegativePromptChange,
-                            modifier = Modifier.fillMaxWidth(),
-                            label = { Text("避免元素") },
-                            minLines = 2,
-                            maxLines = 5,
-                            shape = RoundedCornerShape(18.dp),
-                            enabled = !uiState.isGeneratingImage,
+                        NegativePromptDisclosure(
+                            expanded = negativePromptExpanded,
+                            hasContent = uiState.editableNegativePrompt.isNotBlank(),
+                            onToggle = { negativePromptExpanded = !negativePromptExpanded },
                         )
+                        AnimatedVisibility(visible = negativePromptExpanded) {
+                            OutlinedTextField(
+                                value = uiState.editableNegativePrompt,
+                                onValueChange = onNegativePromptChange,
+                                modifier = Modifier.fillMaxWidth(),
+                                label = { Text("避免元素") },
+                                minLines = 2,
+                                maxLines = 5,
+                                shape = RoundedCornerShape(18.dp),
+                                enabled = !uiState.isGeneratingImage,
+                            )
+                        }
                     }
                 }
+            }
+
+            item {
+                AssistantSubsectionTitle(
+                    title = "③ 生成 & 应用",
+                    subtitle = "确认效果后，可一键设为角色头像",
+                )
             }
 
             item {
@@ -662,6 +681,37 @@ private fun CharacterArtStylePicker(
                 shape = RoundedCornerShape(14.dp),
             )
         }
+    }
+}
+
+@Composable
+private fun NegativePromptDisclosure(
+    expanded: Boolean,
+    hasContent: Boolean,
+    onToggle: () -> Unit,
+) {
+    val palette = rememberSettingsPalette()
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(12.dp))
+            .clickable(onClick = onToggle)
+            .padding(vertical = 4.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(6.dp),
+    ) {
+        Text(
+            text = if (hasContent) "避免元素（已填写）" else "避免元素（可选）",
+            style = MaterialTheme.typography.labelLarge,
+            color = palette.accent,
+            fontWeight = FontWeight.SemiBold,
+            modifier = Modifier.weight(1f),
+        )
+        Icon(
+            imageVector = if (expanded) Icons.Default.KeyboardArrowUp else Icons.Default.KeyboardArrowDown,
+            contentDescription = if (expanded) "收起" else "展开",
+            tint = palette.accent,
+        )
     }
 }
 

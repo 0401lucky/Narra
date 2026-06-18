@@ -92,6 +92,7 @@ fun RoleplayScreen(
     val onRequestGroupParticipantReply = callbacks.message.onRequestGroupParticipantReply
     val onCancelSending = callbacks.message.onCancelSending
     val onRetryTurn = callbacks.message.onRetryTurn
+    val onRetryAiPhoto = callbacks.message.onRetryAiPhoto
     val onEditUserMessage = callbacks.message.onEditUserMessage
     val onQuoteMessage = callbacks.message.onQuoteMessage
     val onPokeMessageAvatar = callbacks.message.onPokeMessageAvatar
@@ -364,6 +365,7 @@ fun RoleplayScreen(
             onApplySuggestion = onApplySuggestion,
             onClearSuggestions = onClearSuggestions,
             onRetryTurn = onRetryTurn,
+            onRetryAiPhoto = onRetryAiPhoto,
             onEditUserMessage = onEditUserMessage,
             onQuoteMessage = onQuoteMessage,
             onPokeMessageAvatar = onPokeMessageAvatar,
@@ -425,6 +427,7 @@ fun RoleplayScreen(
             onApplySuggestion = onApplySuggestion,
             onClearSuggestions = onClearSuggestions,
             onRetryTurn = onRetryTurn,
+            onRetryAiPhoto = onRetryAiPhoto,
             onEditUserMessage = onEditUserMessage,
             onOpenSpecialPlay = { showSpecialPlaySheet = true },
             quickActions = offlineQuickActions,

@@ -3,6 +3,7 @@ package com.example.myapplication.viewmodel
 import com.example.myapplication.conversation.AssistantRoundTripOutcome
 import com.example.myapplication.conversation.AssistantRoundTripRequest
 import com.example.myapplication.conversation.AssistantRoundTripResult
+import com.example.myapplication.conversation.AiPhotoGenerationRequest
 import com.example.myapplication.conversation.ConversationAssistantRoundTripRunner
 import com.example.myapplication.conversation.ContextGovernanceSupport
 import com.example.myapplication.conversation.ConversationMessageTransforms
@@ -88,6 +89,7 @@ internal class RoleplayRoundTripExecutor(
     private val canUpdateConversation: (String) -> Boolean = { true },
     private val launchGiftImageGeneration: (GiftImageGenerationRequest, (List<ChatMessage>) -> Unit) -> Unit,
     private val launchVoiceSynthesis: (VoiceSynthesisRequest, (List<ChatMessage>) -> Unit) -> Unit,
+    private val launchAiPhotoGeneration: (AiPhotoGenerationRequest, (List<ChatMessage>) -> Unit) -> Unit = { _, _ -> },
     private val launchConversationSummaryGeneration: (String, List<ChatMessage>, com.example.myapplication.model.AppSettings, Assistant?, com.example.myapplication.model.RoleplayScenario) -> Unit,
     private val launchAutomaticMemoryExtraction: (String, List<ChatMessage>, com.example.myapplication.model.AppSettings, Assistant?, com.example.myapplication.model.RoleplayScenario) -> Unit,
     private val contextLogStore: com.example.myapplication.data.repository.context.ContextLogStore,
@@ -557,6 +559,17 @@ internal class RoleplayRoundTripExecutor(
                             messages = postDirectiveMessages,
                             settings = state.settings,
                             fallbackAssistantId = scenario.assistantId,
+                        ),
+                        ::applyRawMessages,
+                    )
+                    launchAiPhotoGeneration(
+                        AiPhotoGenerationRequest(
+                            conversationId = session.conversationId,
+                            selectedModel = selectedModel,
+                            messages = postDirectiveMessages,
+                            settings = state.settings,
+                            assistant = assistant,
+                            scenario = scenario,
                         ),
                         ::applyRawMessages,
                     )

@@ -142,6 +142,19 @@ interface AiPromptExtrasService {
         provider: ProviderSettings? = null,
     ): String = ""
 
+    suspend fun generateAiPhotoImagePrompt(
+        photoDescription: String,
+        assistantName: String,
+        assistantPersona: String,
+        scenarioContext: String,
+        conversationExcerpt: String,
+        baseUrl: String,
+        apiKey: String,
+        modelId: String,
+        apiProtocol: ProviderApiProtocol = ProviderApiProtocol.OPENAI_COMPATIBLE,
+        provider: ProviderSettings? = null,
+    ): String = ""
+
     suspend fun condenseRoleplayMemories(
         memoryItems: List<String>,
         mode: RoleplayMemoryCondenseMode,
@@ -494,6 +507,30 @@ class DefaultAiPromptExtrasService internal constructor(
         userName = userName,
         assistantName = assistantName,
         contextExcerpt = contextExcerpt,
+        baseUrl = baseUrl,
+        apiKey = apiKey,
+        modelId = modelId,
+        apiProtocol = apiProtocol,
+        provider = provider,
+    )
+
+    override suspend fun generateAiPhotoImagePrompt(
+        photoDescription: String,
+        assistantName: String,
+        assistantPersona: String,
+        scenarioContext: String,
+        conversationExcerpt: String,
+        baseUrl: String,
+        apiKey: String,
+        modelId: String,
+        apiProtocol: ProviderApiProtocol,
+        provider: ProviderSettings?,
+    ): String = diaryService.generateAiPhotoImagePrompt(
+        photoDescription = photoDescription,
+        assistantName = assistantName,
+        assistantPersona = assistantPersona,
+        scenarioContext = scenarioContext,
+        conversationExcerpt = conversationExcerpt,
         baseUrl = baseUrl,
         apiKey = apiKey,
         modelId = modelId,

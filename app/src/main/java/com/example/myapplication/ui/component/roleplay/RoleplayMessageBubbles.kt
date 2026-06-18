@@ -54,6 +54,7 @@ internal fun RoleplayMessageItem(
     colors: ImmersiveRoleplayColors,
     backdropState: ImmersiveBackdropState,
     onRetryTurn: (String) -> Unit,
+    onRetryAiPhoto: (String, String) -> Unit,
     onEditUserMessage: (String) -> Unit,
     onQuoteMessage: ((String, String, String) -> Unit)? = null,
     onPokeMessageAvatar: ((RoleplayMessageUiModel) -> Unit)? = null,
@@ -72,6 +73,7 @@ internal fun RoleplayMessageItem(
             colors = colors,
             backdropState = backdropState,
             onRetryTurn = onRetryTurn,
+            onRetryAiPhoto = onRetryAiPhoto,
             onEditUserMessage = onEditUserMessage,
             onQuoteMessage = onQuoteMessage,
             onPokeMessageAvatar = onPokeMessageAvatar,
@@ -92,6 +94,7 @@ private fun RoleplayMessageItemContent(
     colors: ImmersiveRoleplayColors,
     backdropState: ImmersiveBackdropState,
     onRetryTurn: (String) -> Unit,
+    onRetryAiPhoto: (String, String) -> Unit,
     onEditUserMessage: (String) -> Unit,
     onQuoteMessage: ((String, String, String) -> Unit)? = null,
     onPokeMessageAvatar: ((RoleplayMessageUiModel) -> Unit)? = null,
@@ -442,6 +445,9 @@ private fun RoleplayMessageItemContent(
                                 actionPart = actionPart,
                                 colors = colors,
                                 backdropState = backdropState,
+                                onRetryAiPhoto = { actionId ->
+                                    onRetryAiPhoto(message.sourceMessageId, actionId)
+                                },
                                 onOpenVideoCall = if (actionPart.actionType == ChatActionType.VIDEO_CALL && !isUserMessage) {
                                     onOpenVideoCall
                                 } else {
@@ -477,6 +483,9 @@ private fun RoleplayMessageItemContent(
                             actionPart = actionPart,
                             colors = colors,
                             backdropState = backdropState,
+                            onRetryAiPhoto = { actionId ->
+                                onRetryAiPhoto(message.sourceMessageId, actionId)
+                            },
                             onOpenVideoCall = if (actionPart.actionType == ChatActionType.VIDEO_CALL && !isUserMessage) {
                                 onOpenVideoCall
                             } else {

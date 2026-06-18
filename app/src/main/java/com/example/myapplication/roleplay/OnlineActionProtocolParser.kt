@@ -6,6 +6,7 @@ import com.example.myapplication.model.ChatMessagePartType
 import com.example.myapplication.model.PunishIntensity
 import com.example.myapplication.model.aiPhotoMessagePart
 import com.example.myapplication.model.decodeOnlineThoughtText
+import com.example.myapplication.model.dedupeRepeatedAiPhotoParts
 import com.example.myapplication.model.emojiMessagePart
 import com.example.myapplication.model.giftMessagePart
 import com.example.myapplication.model.inviteMessagePart
@@ -337,7 +338,7 @@ internal object OnlineActionProtocolParser {
             }
         }
         return OnlineActionProtocolParseResult(
-            parts = normalizeChatMessageParts(parts),
+            parts = normalizeChatMessageParts(dedupeRepeatedAiPhotoParts(parts)),
             directives = directives.distinct(),
         )
     }

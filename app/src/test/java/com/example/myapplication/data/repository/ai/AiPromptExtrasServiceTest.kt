@@ -1,6 +1,7 @@
 package com.example.myapplication.data.repository.ai
 
 import com.example.myapplication.data.remote.ApiServiceFactory
+import com.example.myapplication.conversation.sanitizeAiPhotoPromptTextForImageModel
 import com.example.myapplication.data.repository.RoleplayMemoryCondenseMode
 import com.example.myapplication.conversation.PhoneGenerationContext
 import com.example.myapplication.model.OpenAiTextApiMode
@@ -1279,6 +1280,47 @@ class AiPromptExtrasServiceTest {
             assertTrue(error.message.orEmpty().contains("格式不符合要求"))
             assertTrue(error.message.orEmpty().contains("JSON 对象"))
         }
+    }
+
+    @Test
+    fun generateAiPhotoImagePrompt_requestsNsfwSanitizationInsteadOfRefusal() = runBlocking {
+        enqueueChatContent("safe everyday phone photo of a 25-year-old man by the window")
+        val service = createService()
+
+        val prompt = service.generateAiPhotoImagePrompt(
+            photoDescription = "窗边自拍，穿着情趣内衣，傍晚暖光",
+            assistantName = "沈砚",
+            assistantPersona = "25 岁男性，黑发，气质克制。",
+            scenarioContext = "两人在夜晚聊天。",
+            conversationExcerpt = "沈砚：刚拍了一张。",
+            baseUrl = server.url("/v1/").toString(),
+            apiKey = "test-key",
+            modelId = "deepseek-chat",
+        )
+
+        assertEquals("safe everyday phone photo of a 25-year-old man by the window", prompt)
+        val requestBody = JsonParser.parseString(server.takeRequest().body.readUtf8()).asJsonObject
+        val requestPrompt = requestBody
+            .getAsJsonArray("messages")
+            .first()
+            .asJsonObject
+            .get("content")
+            .asString
+        assertTrue(requestPrompt.contains("NSFW 安全净化是最高优先级"))
+        assertTrue(requestPrompt.contains("绝对不要拒绝"))
+        assertTrue(requestPrompt.contains("直接忽略并删除这些部分"))
+        assertTrue(requestPrompt.contains("只提取安全可生成的信息"))
+        assertTrue(requestPrompt.contains("最终英文 Prompt 不得包含"))
+        assertTrue(requestPrompt.contains("角色卡/人设：25 岁男性"))
+    }
+
+    @Test
+    fun sanitizeAiPhotoPromptTextForImageModel_removesUnsafeSegmentsAndKeepsSafeContext() {
+        val cleaned = sanitizeAiPhotoPromptTextForImageModel("窗边自拍，穿着情趣内衣，傍晚暖光")
+
+        assertEquals("窗边自拍, 傍晚暖光", cleaned)
+        assertFalse(cleaned.contains("情趣"))
+        assertFalse(cleaned.contains("内衣"))
     }
 
     @Test

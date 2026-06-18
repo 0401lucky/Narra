@@ -18,6 +18,7 @@ data class ChatMessageCallbacks(
     val onInputChange: (String) -> Unit,
     val onSend: () -> Unit,
     val onRetryMessage: (String) -> Unit,
+    val onRetryAiPhoto: (String, String) -> Unit,
     val onEditUserMessage: (String) -> Unit,
     val onToggleMemoryMessage: (String) -> Unit,
     val onCancelSending: () -> Unit,

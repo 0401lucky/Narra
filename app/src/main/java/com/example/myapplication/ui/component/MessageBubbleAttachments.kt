@@ -19,10 +19,12 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Description
 import androidx.compose.material.icons.filled.Image
+import androidx.compose.material.icons.filled.PhotoCamera
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -36,8 +38,15 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.core.net.toUri
 import coil3.compose.AsyncImage
+import com.example.myapplication.model.AiPhotoImageStatus
 import com.example.myapplication.model.AttachmentType
+import com.example.myapplication.model.ChatMessagePart
 import com.example.myapplication.model.MessageAttachment
+import com.example.myapplication.model.aiPhotoDescription
+import com.example.myapplication.model.aiPhotoImageErrorMessage
+import com.example.myapplication.model.aiPhotoImageFileName
+import com.example.myapplication.model.aiPhotoImageStatus
+import com.example.myapplication.model.aiPhotoImageUri
 import java.io.File
 
 private val UserUploadedImageThumbnailSize = 148.dp
@@ -65,6 +74,87 @@ internal fun LegacyAttachmentCard(
         attachment = attachment,
         contentColor = contentColor,
     )
+}
+
+@Composable
+internal fun AiPhotoActionCard(
+    part: ChatMessagePart,
+    autoPreviewImages: Boolean,
+    onOpenPreview: (() -> Unit)? = null,
+    onRetry: (() -> Unit)? = null,
+) {
+    val imageUri = part.aiPhotoImageUri()
+    val imageStatus = part.aiPhotoImageStatus()
+    if (imageStatus == AiPhotoImageStatus.READY && imageUri.isNotBlank()) {
+        GeneratedImageAttachment(
+            uri = imageUri,
+            fileName = part.aiPhotoImageFileName().ifBlank { "assistant-photo" },
+            autoPreviewImages = autoPreviewImages,
+            onOpenPreview = onOpenPreview,
+        )
+        return
+    }
+
+    val title = when (imageStatus) {
+        AiPhotoImageStatus.GENERATING -> "照片生成中"
+        AiPhotoImageStatus.FAILED -> "照片生成失败"
+        AiPhotoImageStatus.READY -> "照片不可用"
+        null -> "照片"
+    }
+    val supportingText = when (imageStatus) {
+        AiPhotoImageStatus.GENERATING -> part.aiPhotoDescription()
+            .ifBlank { "正在准备照片内容" }
+        AiPhotoImageStatus.FAILED -> part.aiPhotoImageErrorMessage()
+            .ifBlank { "稍后可重新生成本轮回复" }
+        AiPhotoImageStatus.READY -> "图片地址为空，无法预览"
+        null -> part.aiPhotoDescription().ifBlank { "角色想发送一张照片" }
+    }
+
+    Surface(
+        modifier = Modifier
+            .fillMaxWidth()
+            .heightIn(min = 118.dp),
+        shape = RoundedCornerShape(18.dp),
+        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.46f),
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 14.dp, vertical = 12.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(10.dp),
+            ) {
+                Icon(
+                    imageVector = PhotoCameraIcon,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.primary,
+                )
+                Text(
+                    text = title,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurface,
+                )
+            }
+            Text(
+                text = supportingText,
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                maxLines = 4,
+                overflow = TextOverflow.Ellipsis,
+            )
+            if (imageStatus == AiPhotoImageStatus.FAILED && onRetry != null) {
+                TextButton(
+                    onClick = onRetry,
+                    modifier = Modifier.align(Alignment.End),
+                ) {
+                    Text("重试照片")
+                }
+            }
+        }
+    }
 }
 
 @Composable
@@ -114,6 +204,8 @@ internal fun PartAttachmentCard(
         }
     }
 }
+
+private val PhotoCameraIcon = Icons.Default.PhotoCamera
 
 @Composable
 internal fun GeneratedImageAttachment(
@@ -212,7 +304,7 @@ internal fun GeneratedImageAttachment(
     }
 }
 
-private fun resolveImageModel(uri: String): Any {
+internal fun resolveImageModel(uri: String): Any {
     return when {
         uri.startsWith("http://", ignoreCase = true) ||
             uri.startsWith("https://", ignoreCase = true) ||

@@ -3,6 +3,8 @@ package com.example.myapplication.viewmodel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
+import com.example.myapplication.conversation.AiPhotoGenerationCoordinator
+import com.example.myapplication.conversation.AiPhotoGenerationRequest
 import com.example.myapplication.conversation.AssistantRoundTripOutcome
 import com.example.myapplication.conversation.AssistantRoundTripRequest
 import com.example.myapplication.conversation.AssistantRoundTripResult
@@ -142,6 +144,7 @@ class ChatViewModel(
     private val nowProvider: () -> Long = { System.currentTimeMillis() },
     private val messageIdProvider: () -> String = { UUID.randomUUID().toString() },
     private val imageSaver: suspend (String) -> SavedImageFile = { throw IllegalStateException("图片保存未配置") },
+    private val namedImageSaver: suspend (String, String) -> SavedImageFile = { b64Data, _ -> imageSaver(b64Data) },
 ) : ViewModel() {
     val settings: StateFlow<AppSettings> = settingsRepository.settingsFlow.stateIn(
         scope = viewModelScope,
@@ -195,6 +198,12 @@ class ChatViewModel(
         aiGateway = aiGateway,
         conversationRepository = conversationRepository,
         imageSaver = imageSaver,
+    )
+    private val aiPhotoGenerationCoordinator = AiPhotoGenerationCoordinator(
+        aiPromptExtrasService = aiPromptExtrasService,
+        aiGateway = aiGateway,
+        conversationRepository = conversationRepository,
+        imageSaver = namedImageSaver,
     )
 
     init {
@@ -550,6 +559,39 @@ class ChatViewModel(
                     )
                 }
             }
+        }
+    }
+
+    fun retryAiPhoto(
+        messageId: String,
+        actionId: String,
+    ) {
+        val state = _uiState.value
+        val conversationId = state.currentConversationId.takeIf { it.isNotBlank() } ?: return
+        if (messageId.isBlank() || actionId.isBlank()) {
+            return
+        }
+        viewModelScope.launch {
+            aiPhotoGenerationCoordinator.generate(
+                request = AiPhotoGenerationRequest(
+                    conversationId = conversationId,
+                    selectedModel = ChatConversationSupport.resolveSelectedModelId(state.settings),
+                    messages = state.messages,
+                    settings = state.settings,
+                    targetMessageId = messageId,
+                    targetActionId = actionId,
+                    assistant = state.currentAssistant ?: state.settings.activeAssistant(),
+                ),
+                onUpdated = { updatedMessages ->
+                    _uiState.update { current ->
+                        if (current.currentConversationId != conversationId) {
+                            current
+                        } else {
+                            current.copy(messages = updatedMessages)
+                        }
+                    }
+                },
+            )
         }
     }
 
@@ -981,6 +1023,7 @@ class ChatViewModel(
                 ) {
                     is AssistantRoundTripResult.Completed -> {
                         finishSending(result.messages, errorMessage = null)
+                        launchAiPhotoGeneration(conversationId, selectedModel, result.messages)
                         launchAiTitleGeneration(conversationId, result.messages)
                         launchChatSuggestions(conversationId, result.messages)
                         launchConversationSummaryGeneration(conversationId, result.messages)
@@ -1702,6 +1745,34 @@ class ChatViewModel(
         }
     }
 
+    private fun launchAiPhotoGeneration(
+        conversationId: String,
+        selectedModel: String,
+        messages: List<ChatMessage>,
+    ) {
+        viewModelScope.launch {
+            val state = _uiState.value
+            aiPhotoGenerationCoordinator.generate(
+                AiPhotoGenerationRequest(
+                    conversationId = conversationId,
+                    selectedModel = selectedModel,
+                    messages = messages,
+                    settings = state.settings,
+                    assistant = state.currentAssistant ?: state.settings.activeAssistant(),
+                ),
+                onUpdated = { updatedMessages ->
+                    _uiState.update { current ->
+                        if (current.currentConversationId != conversationId) {
+                            current
+                        } else {
+                            current.copy(messages = updatedMessages)
+                        }
+                    }
+                },
+            )
+        }
+    }
+
     private fun resolveImageReferenceAttachments(
         parts: List<ChatMessagePart>,
     ): List<MessageAttachment> {
@@ -1730,6 +1801,7 @@ class ChatViewModel(
             promptContextAssembler: PromptContextAssembler,
             contextLogStore: com.example.myapplication.data.repository.context.ContextLogStore,
             imageSaver: suspend (String) -> SavedImageFile = { throw IllegalStateException("图片保存未配置") },
+            namedImageSaver: suspend (String, String) -> SavedImageFile = { b64Data, _ -> imageSaver(b64Data) },
         ): ViewModelProvider.Factory {
             return typedViewModelFactory {
                 ChatViewModel(
@@ -1743,6 +1815,7 @@ class ChatViewModel(
                     promptContextAssembler,
                     contextLogStore,
                     imageSaver = imageSaver,
+                    namedImageSaver = namedImageSaver,
                 )
             }
         }

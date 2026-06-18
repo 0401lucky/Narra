@@ -210,6 +210,35 @@ class ConversationRepository(
         }
     }
 
+    suspend fun updateAiPhotoPart(
+        conversationId: String,
+        messageId: String,
+        actionId: String,
+        selectedModel: String,
+        transform: (ChatMessagePart) -> ChatMessagePart,
+    ): List<ChatMessage> {
+        if (conversationId.isBlank() || messageId.isBlank() || actionId.isBlank()) {
+            return conversationStore.listMessages(conversationId)
+        }
+        val currentConversation = requireConversation(conversationId)
+        val updatedConversation = buildUpdatedConversation(
+            currentConversation = currentConversation,
+            selectedModel = selectedModel,
+            title = currentConversation.title.ifBlank { DEFAULT_CONVERSATION_TITLE },
+        )
+        return conversationStore.updateConversationMessages(
+            conversation = updatedConversation,
+            conversationId = conversationId,
+        ) { existingMessages ->
+            ConversationMessageTransforms.applyAiPhotoUpdate(
+                messages = existingMessages,
+                messageId = messageId,
+                actionId = actionId,
+                transform = transform,
+            )
+        }
+    }
+
     suspend fun replaceConversationSnapshot(
         conversationId: String,
         messages: List<ChatMessage>,

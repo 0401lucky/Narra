@@ -38,6 +38,10 @@ import com.example.myapplication.model.AttachmentType
 import com.example.myapplication.model.ChatMessage
 import com.example.myapplication.model.ChatMessagePart
 import com.example.myapplication.model.ChatMessagePartType
+import com.example.myapplication.model.aiPhotoImageFileName
+import com.example.myapplication.model.aiPhotoImageMimeType
+import com.example.myapplication.model.aiPhotoImageUri
+import com.example.myapplication.model.hasReadyAiPhotoImage
 import com.example.myapplication.model.toActionCopyText
 import com.example.myapplication.model.MessageRole
 import com.example.myapplication.model.normalizeChatMessageParts
@@ -628,8 +632,13 @@ private fun resolveAttachmentSummaries(message: ChatMessage): List<String> {
 
 private fun resolveImageUris(message: ChatMessage): List<String> {
     val partUris = normalizeChatMessageParts(message.parts)
-        .filter { it.type == ChatMessagePartType.IMAGE && it.uri.isNotBlank() }
-        .map { it.uri }
+        .mapNotNull { part ->
+            when {
+                part.type == ChatMessagePartType.IMAGE && part.uri.isNotBlank() -> part.uri
+                part.hasReadyAiPhotoImage() -> part.aiPhotoImageUri()
+                else -> null
+            }
+        }
     if (partUris.isNotEmpty()) {
         return partUris
     }
@@ -642,12 +651,26 @@ internal fun resolvePreviewImages(
     message: ChatMessage,
 ): List<ChatPreviewImageItem> {
     val partImages = normalizeChatMessageParts(message.parts)
-        .filter { it.type == ChatMessagePartType.IMAGE && it.uri.isNotBlank() }
-        .mapIndexed { index, part ->
+        .mapNotNull { part ->
+            when {
+                part.type == ChatMessagePartType.IMAGE && part.uri.isNotBlank() -> Triple(
+                    part.uri,
+                    part.fileName,
+                    part.mimeType,
+                )
+                part.hasReadyAiPhotoImage() -> Triple(
+                    part.aiPhotoImageUri(),
+                    part.aiPhotoImageFileName(),
+                    part.aiPhotoImageMimeType(),
+                )
+                else -> null
+            }
+        }
+        .mapIndexed { index, image ->
             ChatPreviewImageItem(
-                source = part.uri,
-                fileName = part.fileName.ifBlank { "assistant-image-${index + 1}" },
-                mimeType = part.mimeType,
+                source = image.first,
+                fileName = image.second.ifBlank { "assistant-image-${index + 1}" },
+                mimeType = image.third,
             )
         }
     if (partImages.isNotEmpty()) {

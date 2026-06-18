@@ -1,18 +1,18 @@
 {
   "app_id": "com.narra.app.dev",
   "channel": "dev",
-  "latest_version_name": "2.1.0-dev",
-  "latest_version_code": 20100,
+  "latest_version_name": "2.1.1-dev",
+  "latest_version_code": 20101,
   "minimum_supported_version_code": 0,
-  "apk_url": "https://download.lsa1230.dpdns.org/dev/Narra-v2.1.0-dev-20100-dev.apk?v=20100-20260617125516",
-  "apk_sha256": "b660573a9958a37573df197c2b583b402befe39352cfc97bb9505ae5442217af",
-  "published_at": "2026-06-17T12:55:16+08:00",
+  "apk_url": "https://download.lsa1230.dpdns.org/dev/Narra-v2.1.1-dev-20101-dev.apk?v=20101-20260618194058",
+  "apk_sha256": "b3cc40cf4bddf7fafe2171947b7499d9ba55e42060aa72bdd88c46655876a32d",
+  "published_at": "2026-06-18T19:40:58+08:00",
   "release_notes": [
-    "设置页新增角色图工作台，可从现有角色提取人物特性并生成角色人物图",
-    "角色图支持点击放大预览，并可下载到系统相册供其它软件使用",
-    "生成结果满意后可直接设为角色头像，不满意也能继续修改提示词重新生成",
-    "角色图风格默认避开真人写实，提供韩式厚涂、二次元插画、国风立绘等风格方向",
-    "修复生图链路误用聊天供应商的问题，并提升 gpt-image 系列模型参数兼容性",
+    "普通聊天和角色扮演聊天中的 ai_photo 现在会异步生成真实图片",
+    "照片会在同一条 assistant 消息中展示生成中、成功或失败状态，并进入现有预览和保存流程",
+    "生图前会结合角色人设、性别、场景和最近对话润色英文提示词，降低人设跑偏概率",
+    "同一轮重复输出相同 ai_photo 时只生成一次，避免重复图片",
+    "识别到 NSFW 或擦边内容时会删除敏感部分并保留安全场景信息，不直接拒绝润色",
     "继续通过 Cloudflare R2 分发 dev 渠道安装包"
   ]
 }

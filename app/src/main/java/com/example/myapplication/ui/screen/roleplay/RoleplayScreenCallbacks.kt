@@ -25,6 +25,7 @@ data class RoleplayMessageCallbacks(
     val onRequestGroupParticipantReply: (String) -> Unit,
     val onCancelSending: () -> Unit,
     val onRetryTurn: (String) -> Unit,
+    val onRetryAiPhoto: (String, String) -> Unit,
     val onEditUserMessage: (String) -> Unit,
     val onQuoteMessage: (messageId: String, speakerName: String, preview: String) -> Unit,
     val onPokeMessageAvatar: (RoleplayMessageUiModel) -> Unit,

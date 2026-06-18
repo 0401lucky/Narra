@@ -432,6 +432,7 @@ internal fun NavGraphBuilder.registerRoleplayGraph(
                         onRequestGroupParticipantReply = roleplayViewModel::requestGroupParticipantReply,
                         onCancelSending = roleplayViewModel::cancelSending,
                         onRetryTurn = roleplayViewModel::retryTurn,
+                        onRetryAiPhoto = roleplayViewModel::retryAiPhoto,
                         onEditUserMessage = roleplayViewModel::editUserMessage,
                         onQuoteMessage = roleplayViewModel::quoteMessage,
                         onPokeMessageAvatar = roleplayViewModel::pokeMessageAvatar,

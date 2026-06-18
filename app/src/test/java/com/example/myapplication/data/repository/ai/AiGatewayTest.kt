@@ -18,6 +18,7 @@ import com.example.myapplication.data.repository.search.SearchResult
 import com.example.myapplication.data.repository.search.SearchResultItem
 import com.example.myapplication.model.AppSettings
 import com.example.myapplication.model.AttachmentType
+import com.example.myapplication.model.ChatActionType
 import com.example.myapplication.model.ChatCompletionRequest
 import com.example.myapplication.model.ChatCompletionResponse
 import com.example.myapplication.model.ChatMessage
@@ -48,6 +49,7 @@ import com.example.myapplication.model.SearchSourceType
 import com.example.myapplication.model.defaultSearchSources
 import com.example.myapplication.model.TransferDirection
 import com.example.myapplication.model.TransferStatus
+import com.example.myapplication.model.aiPhotoDescription
 import com.example.myapplication.model.specialMetadataValue
 import com.example.myapplication.model.fileMessagePart
 import com.example.myapplication.model.imageMessagePart
@@ -2893,6 +2895,38 @@ class AiGatewayTest {
         assertEquals("帮园汇报午餐内容，不许胡嗦。", parsed.parts.last().specialMetadataValue("objective"))
         assertEquals("晚上的惩罚豁免令", parsed.parts.last().specialMetadataValue("reward"))
         assertEquals("13:00", parsed.parts.last().specialMetadataValue("deadline"))
+    }
+
+    @Test
+    fun parseAssistantSpecialOutput_extractsAiPhotoProtocolAction() {
+        val gateway = createGateway(settings = AppSettings())
+
+        val parsed = gateway.parseAssistantSpecialOutput(
+            content = """[{"type":"ai_photo","description":"刚拍的窗外阳光"},"刚拍的"]""",
+            existingParts = emptyList(),
+        )
+
+        assertEquals(2, parsed.parts.size)
+        assertEquals(ChatMessagePartType.ACTION, parsed.parts.first().type)
+        assertEquals(ChatActionType.AI_PHOTO, parsed.parts.first().actionType)
+        assertEquals("刚拍的窗外阳光", parsed.parts.first().aiPhotoDescription())
+        assertEquals(ChatMessagePartType.TEXT, parsed.parts.last().type)
+        assertEquals("刚拍的", parsed.parts.last().text)
+    }
+
+    @Test
+    fun parseAssistantSpecialOutput_dedupesRepeatedAiPhotoProtocolActions() {
+        val gateway = createGateway(settings = AppSettings())
+
+        val parsed = gateway.parseAssistantSpecialOutput(
+            content = """[{"type":"ai_photo","description":"刚拍的窗边自拍"},"在路上了",{"type":"ai_photo","description":"刚拍的窗边自拍"}]""",
+            existingParts = emptyList(),
+        )
+
+        assertEquals(2, parsed.parts.size)
+        assertEquals(ChatActionType.AI_PHOTO, parsed.parts.first().actionType)
+        assertEquals("刚拍的窗边自拍", parsed.parts.first().aiPhotoDescription())
+        assertEquals("在路上了", parsed.parts.last().text)
     }
 
     @Test
