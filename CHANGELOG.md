@@ -19,6 +19,26 @@
 
 ---
 
+## [2.1.2-dev] - 2026-06-18
+
+### Fixed
+
+- 修复角色扮演线上模式下，同一条回复里的同一张 `ai_photo` 被两条解析路径各计一份、最终重复生成两张照片的问题。
+
+### Refactored
+
+- 将线上回合落库部件的合并逻辑抽取为 `resolveRoleplayCompletedParts`：照片统一由 JSON 动作协议负责，`<play>` 特殊玩法解析只补充卡片，不再重复并入照片。
+
+### Tests
+
+- 新增 `RoleplayCompletedPartsTest`，覆盖线上模式照片不重复、以及特殊玩法卡片不被误删两种情况。
+
+### Docs
+
+- `dev` 渠道构建版本推进到 `2.1.2-dev (20102)`，继续通过 Cloudflare R2 分发 APK。
+
+---
+
 ## [2.1.1-dev] - 2026-06-18
 
 ### Added

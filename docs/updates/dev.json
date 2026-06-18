@@ -1,18 +1,15 @@
 {
   "app_id": "com.narra.app.dev",
   "channel": "dev",
-  "latest_version_name": "2.1.1-dev",
-  "latest_version_code": 20101,
+  "latest_version_name": "2.1.2-dev",
+  "latest_version_code": 20102,
   "minimum_supported_version_code": 0,
-  "apk_url": "https://download.lsa1230.dpdns.org/dev/Narra-v2.1.1-dev-20101-dev.apk?v=20101-20260618194058",
-  "apk_sha256": "b3cc40cf4bddf7fafe2171947b7499d9ba55e42060aa72bdd88c46655876a32d",
-  "published_at": "2026-06-18T19:40:58+08:00",
+  "apk_url": "https://download.lsa1230.dpdns.org/dev/Narra-v2.1.2-dev-20102-dev.apk?v=20102-20260618214219",
+  "apk_sha256": "991c8cec7a5a6cc20cea1813b6e809fb7d55e1534b8866508f8124a18905926b",
+  "published_at": "2026-06-18T21:42:18+08:00",
   "release_notes": [
-    "普通聊天和角色扮演聊天中的 ai_photo 现在会异步生成真实图片",
-    "照片会在同一条 assistant 消息中展示生成中、成功或失败状态，并进入现有预览和保存流程",
-    "生图前会结合角色人设、性别、场景和最近对话润色英文提示词，降低人设跑偏概率",
-    "同一轮重复输出相同 ai_photo 时只生成一次，避免重复图片",
-    "识别到 NSFW 或擦边内容时会删除敏感部分并保留安全场景信息，不直接拒绝润色",
+    "修复角色扮演线上模式下，同一张 AI 照片被重复生成两张的问题",
+    "线上模式照片改为仅由一条解析路径负责，避免同一张照片触发两次生成",
     "继续通过 Cloudflare R2 分发 dev 渠道安装包"
   ]
 }
