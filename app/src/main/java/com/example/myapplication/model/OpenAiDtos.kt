@@ -60,7 +60,7 @@ data class ChatMessageDto(
     @SerializedName("tool_call_id")
     val toolCallId: String? = null,
     @SerializedName("tool_calls")
-    val toolCalls: List<ChatToolCallDto> = emptyList(),
+    val toolCalls: List<ChatToolCallDto>? = null,
 )
 
 data class ChatToolDto(
@@ -104,7 +104,7 @@ data class AssistantMessageDto(
     val reasoning: String? = null,
     val thinking: String? = null,
     @SerializedName("tool_calls")
-    val toolCalls: List<ChatToolCallDto> = emptyList(),
+    val toolCalls: List<ChatToolCallDto>? = null,
 )
 
 data class ChatToolCallDto(

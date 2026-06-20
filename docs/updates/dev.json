@@ -1,15 +1,15 @@
 {
   "app_id": "com.narra.app.dev",
   "channel": "dev",
-  "latest_version_name": "2.1.2-dev",
-  "latest_version_code": 20102,
+  "latest_version_name": "2.1.3-dev",
+  "latest_version_code": 20103,
   "minimum_supported_version_code": 0,
-  "apk_url": "https://download.lsa1230.dpdns.org/dev/Narra-v2.1.2-dev-20102-dev.apk?v=20102-20260618214219",
-  "apk_sha256": "991c8cec7a5a6cc20cea1813b6e809fb7d55e1534b8866508f8124a18905926b",
-  "published_at": "2026-06-18T21:42:18+08:00",
+  "apk_url": "https://download.lsa1230.dpdns.org/dev/Narra-v2.1.3-dev-20103-dev.apk?v=20103-20260620115707",
+  "apk_sha256": "c65c1b67b0c7d1f9a6e134a6e6a4585e4aa9c0e2cd6d7bf3ea60fa8b9099d80e",
+  "published_at": "2026-06-20T11:57:07+08:00",
   "release_notes": [
-    "修复角色扮演线上模式下，同一张 AI 照片被重复生成两张的问题",
-    "线上模式照片改为仅由一条解析路径负责，避免同一张照片触发两次生成",
+    "修复百炼/Qwen 兼容接口因空 tool_calls 字段触发 400 的问题",
+    "修复剧情长文线下模式偶发提示词或思维链泄漏导致异常气泡的问题",
     "继续通过 Cloudflare R2 分发 dev 渠道安装包"
   ]
 }

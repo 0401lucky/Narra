@@ -613,7 +613,7 @@ object RoleplayLongformMarkupParser {
     private fun sanitizeLongformArtifacts(
         rawContent: String,
     ): String {
-        return rawContent.replace("\r\n", "\n")
+        return RoleplayOutputLeakSanitizer.sanitize(rawContent, interactionMode = null)
             .replace(llmControlTagPattern, " ")
             .replace(llmControlWordPattern, " ")
             .replace(unsupportedProtocolTagRegex, " ")

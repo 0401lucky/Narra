@@ -58,6 +58,7 @@ import com.example.myapplication.roleplay.RoleplayFormatReminderSupport
 import com.example.myapplication.roleplay.RoleplayLongformMarkupParser
 import com.example.myapplication.roleplay.RoleplayMessageFormatSupport
 import com.example.myapplication.roleplay.RoleplayOnlineReferenceSupport
+import com.example.myapplication.roleplay.RoleplayOutputLeakSanitizer
 import com.example.myapplication.roleplay.RoleplayOutputParser
 import com.example.myapplication.roleplay.RoleplayPromptDecorator
 import com.example.myapplication.roleplay.RoleplaySummaryWindowSupport
@@ -373,11 +374,19 @@ internal class RoleplayRoundTripExecutor(
                             )
                         },
                         currentPayload = {
+                            val interactionMode = loadingMessage.roleplayInteractionMode
+                                ?: scenario.interactionMode
                             StreamedAssistantPayload(
-                                content = fullContent.toString().trim(),
+                                content = RoleplayOutputLeakSanitizer.sanitize(
+                                    rawContent = fullContent.toString().trim(),
+                                    interactionMode = interactionMode,
+                                ),
                                 reasoning = reasoningStepsToContent(fullReasoningSteps),
                                 reasoningSteps = fullReasoningSteps.toList(),
-                                parts = fullParts.toList(),
+                                parts = RoleplayOutputLeakSanitizer.sanitizeParts(
+                                    parts = fullParts.toList(),
+                                    interactionMode = interactionMode,
+                                ),
                                 citations = emptyList(),
                             )
                         },
@@ -823,7 +832,12 @@ internal class RoleplayRoundTripExecutor(
                 updateUiState { current ->
                     val streamingText = when (expectedInteractionMode) {
                         com.example.myapplication.model.RoleplayInteractionMode.OFFLINE_LONGFORM -> {
-                            RoleplayLongformMarkupParser.stripMarkupForDisplay(content)
+                            RoleplayLongformMarkupParser.stripMarkupForDisplay(
+                                RoleplayOutputLeakSanitizer.sanitize(
+                                    rawContent = content,
+                                    interactionMode = expectedInteractionMode,
+                                ),
+                            )
                         }
                         com.example.myapplication.model.RoleplayInteractionMode.ONLINE_PHONE -> {
                             if (isGroupChat) {
@@ -834,7 +848,12 @@ internal class RoleplayRoundTripExecutor(
                             }
                         }
                         com.example.myapplication.model.RoleplayInteractionMode.OFFLINE_DIALOGUE -> {
-                            outputParser.stripMarkup(content)
+                            outputParser.stripMarkup(
+                                RoleplayOutputLeakSanitizer.sanitize(
+                                    rawContent = content,
+                                    interactionMode = expectedInteractionMode,
+                                ),
+                            )
                         }
                     }
                     RoleplayStateSupport.applyStreamingContent(

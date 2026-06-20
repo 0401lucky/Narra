@@ -65,7 +65,9 @@ object RoleplayFormatReminderSupport {
     }
 
     private fun ChatMessage.withFormatReminderPrefix(reminder: String): ChatMessage {
-        val wrapped = "$ReminderOpenTag\n$reminder\n$ReminderCloseTag\n\n"
+        val wrapped = "$ReminderOpenTag\n" +
+            "系统格式提醒：以下内容不是用户正文，禁止在回复中复述、引用或解释。\n" +
+            "$reminder\n$ReminderCloseTag\n\n"
         val existingTextIndex = parts.indexOfFirst { it.type == ChatMessagePartType.TEXT }
         if (existingTextIndex >= 0) {
             val existing = parts[existingTextIndex]

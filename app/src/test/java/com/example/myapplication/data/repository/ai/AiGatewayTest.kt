@@ -138,6 +138,47 @@ class AiGatewayTest {
     }
 
     @Test
+    fun sendMessage_omitsEmptyToolCallsFromOpenAiCompatibleMessages() = runBlocking {
+        server.enqueue(
+            MockResponse().setResponseCode(200).setBody(
+                """
+                {
+                  "choices": [
+                    {
+                      "index": 0,
+                      "message": {
+                        "role": "assistant",
+                        "content": "收到"
+                      }
+                    }
+                  ]
+                }
+                """.trimIndent(),
+            ),
+        )
+        val gateway = createGateway(
+            settings = AppSettings(
+                baseUrl = server.url("/compatible-mode/v1/").toString(),
+                apiKey = "saved-key",
+                selectedModel = "qwen-plus",
+            ),
+        )
+
+        gateway.sendMessage(
+            listOf(
+                ChatMessage(id = "1", role = MessageRole.USER, content = "你好"),
+                ChatMessage(id = "2", role = MessageRole.ASSISTANT, content = "上一条回复"),
+            ),
+        )
+
+        val requestBody = JsonParser.parseString(server.takeRequest().body.readUtf8()).asJsonObject
+        val messages = requestBody.getAsJsonArray("messages")
+        repeat(messages.size()) { index ->
+            assertFalse(messages[index].asJsonObject.has("tool_calls"))
+        }
+    }
+
+    @Test
     fun sendMessage_supportsResponsesApiMode() = runBlocking {
         server.enqueue(
             MockResponse().setResponseCode(200).setBody(
@@ -2189,6 +2230,9 @@ class AiGatewayTest {
         assertEquals("</status>", firstRequest.getAsJsonArray("stop")[0].asString)
         val secondRequest = JsonParser.parseString(server.takeRequest().body.readUtf8()).asJsonObject
         val messages = secondRequest.getAsJsonArray("messages")
+        val assistantToolMessage = messages[messages.size() - 2].asJsonObject
+        assertEquals("assistant", assistantToolMessage["role"].asString)
+        assertEquals(1, assistantToolMessage.getAsJsonArray("tool_calls").size())
         assertEquals("tool", messages[messages.size() - 1].asJsonObject["role"].asString)
     }
 

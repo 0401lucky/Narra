@@ -395,6 +395,52 @@ class RoleplayMessageUiMapperTest {
     }
 
     @Test
+    fun mapMessages_inLongformModeStripsPromptLeakLines() {
+        val scenario = RoleplayScenario(
+            id = "scene-1",
+            title = "长文模式",
+            characterDisplayNameOverride = "苏清寒",
+            longformModeEnabled = true,
+        )
+        val mapped = RoleplayMessageUiMapper.mapMessages(
+            scenario = scenario,
+            assistant = Assistant(id = "assistant-1", name = "苏清寒"),
+            settings = AppSettings(),
+            rawMessages = listOf(
+                ChatMessage(
+                    id = "assistant-1",
+                    conversationId = "conv-1",
+                    role = MessageRole.ASSISTANT,
+                    content = """
+                        【避坑】严格遵守格式要求：台词必须用 <char>“...”</char> 包裹
+                        `包裹，心声必须用 <thought>（...）</thought> 包裹，叙述裸写，绝对禁止使用 Markdown`
+
+                        城市的灯贴在玻璃上。
+                        <char>“别回头。”</char>
+
+                        【推进点】展现她被关掉瞬间的身体反应
+                    """.trimIndent(),
+                    createdAt = 2L,
+                    status = MessageStatus.COMPLETED,
+                    roleplayOutputFormat = RoleplayOutputFormat.LONGFORM,
+                    roleplayInteractionMode = RoleplayInteractionMode.OFFLINE_LONGFORM,
+                ),
+            ),
+            streamingContent = null,
+            outputParser = RoleplayOutputParser(),
+            nowProvider = { 20L },
+        )
+
+        assertEquals(1, mapped.size)
+        assertEquals(RoleplayContentType.LONGFORM, mapped.single().contentType)
+        assertTrue(mapped.single().content.contains("城市的灯贴在玻璃上。"))
+        assertTrue(mapped.single().content.contains("“别回头。”"))
+        assertFalse(mapped.single().content.contains("避坑"))
+        assertFalse(mapped.single().content.contains("Markdown"))
+        assertFalse(mapped.single().content.contains("推进点"))
+    }
+
+    @Test
     fun mapMessages_stripsLeadingStatusBlockFromDialogueContent() {
         val scenario = RoleplayScenario(
             id = "scene-1",
