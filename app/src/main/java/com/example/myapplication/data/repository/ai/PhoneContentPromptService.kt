@@ -441,15 +441,16 @@ internal class PhoneContentPromptService(
             }
             appendLine()
             appendLine("【要求】")
-            appendLine("1. 生成 1-3 条回复，可以角色之间互相打趣、接话或隐晦较劲。")
+            appendLine("1. 生成 1-2 条克制的普通评论，优先评论动态内容本身；如果没有自然角度，可以少生成。")
             appendLine("2. 角色回复只能使用上面列出的角色 id 和昵称；NPC 回复只能使用可选路人/NPC名单里的姓名。")
-            appendLine("3. 优先保证至少 1 条来自角色；如气氛合适，可混入 0-1 条 NPC 评论，不要让 NPC 抢走主角戏份。")
+            appendLine("3. 尽量至少 1 条来自角色；如气氛合适，可混入 0-1 条 NPC 评论，不要让 NPC 抢走主角戏份。")
             appendLine("4. 每条回复控制在 40 字以内，口语化。")
             appendLine("5. 如果动态发布者不是 $userName，正文里的“你 / 想你 / 等你 / 陪你”默认指向 $userName，不是参与评论的其它角色。")
-            appendLine("6. 角色可以吃醋或调侃，但不得把自己写成动态发布者正在想念、等待或邀约的人；不要生成“我也想你”“只许想我”“等我过去”等角色对角色恋爱式回复。")
-            appendLine("7. 如果已有评论里有违背上述关系锚点的内容，不要模仿或延续。")
-            appendLine("8. 严禁输出“默认角色”“角色”“NPC”“朋友A”等占位名。")
-            appendLine("9. 严格输出 JSON 数组：[{\"author_type\":\"assistant|npc\",\"author_id\":\"...\",\"author_name\":\"...\",\"text\":\"...\"}]")
+            appendLine("6. 当动态发布者是角色、且不是由 $userName 的评论触发时，参与评论的角色默认只是普通联系人或浅层熟人；不要假设他们互相认识、暧昧、恋爱、吃醋、占有或有照顾义务。")
+            appendLine("7. 角色评论角色动态时，不要写亲密关心、命令式照顾或私聊口吻，例如“注意胃”“别太拼”“立刻去喝水”“心疼”“抱抱”“我陪你”“等我过去”。")
+            appendLine("8. 如果已有评论里有违背上述关系锚点的内容，不要模仿或延续。")
+            appendLine("9. 严禁输出“默认角色”“角色”“NPC”“朋友A”等占位名。")
+            appendLine("10. 严格输出 JSON 数组：[{\"author_type\":\"assistant|npc\",\"author_id\":\"...\",\"author_name\":\"...\",\"text\":\"...\"}]")
         }
         val content = core.requestCompletionContent(
             baseUrl = baseUrl,
@@ -496,7 +497,11 @@ internal class PhoneContentPromptService(
                 if (
                     authorId in allowedIds &&
                     text.isNotBlank() &&
-                    !text.isMisaddressedMomentReply(postAuthorType)
+                    !text.isMisaddressedMomentReply(postAuthorType) &&
+                    !text.isOverPersonalAssistantMomentReply(
+                        postAuthorType = postAuthorType,
+                        isUserCommentTrigger = isUserCommentTrigger,
+                    )
                 ) {
                     MomentCommentDraft(
                         authorId = authorId,
@@ -578,6 +583,19 @@ internal class PhoneContentPromptService(
         }
         val normalized = filterNot(Char::isWhitespace)
         return MisaddressedMomentReplyPatterns.any { pattern ->
+            pattern.containsMatchIn(normalized)
+        }
+    }
+
+    private fun String.isOverPersonalAssistantMomentReply(
+        postAuthorType: MomentAuthorType,
+        isUserCommentTrigger: Boolean,
+    ): Boolean {
+        if (postAuthorType != MomentAuthorType.ASSISTANT || isUserCommentTrigger) {
+            return false
+        }
+        val normalized = filterNot(Char::isWhitespace)
+        return OverPersonalAssistantMomentReplyPatterns.any { pattern ->
             pattern.containsMatchIn(normalized)
         }
     }
@@ -849,6 +867,13 @@ internal class PhoneContentPromptService(
             Regex("等着?我(过去|过来|去|来)"),
             Regex("我(现在|马上|一会儿|这就)?.*(过去|过来)"),
             Regex("(过来|来|到)我这"),
+        )
+        val OverPersonalAssistantMomentReplyPatterns = listOf(
+            Regex("注意(身体|休息|胃|腰|眼睛)?"),
+            Regex("别(太拼|硬撑|逞强|熬夜|喝咖啡|喝了|累着)"),
+            Regex("(少喝|别喝|少熬|早睡|早点睡|多休息|喝点水|多喝水|温水)"),
+            Regex("(立刻|马上|赶紧|现在就).*(喝水|休息|睡觉|停下|去医院)"),
+            Regex("(心疼|抱抱|我陪你|陪你|照顾好自己|照顾自己)"),
         )
     }
 }
