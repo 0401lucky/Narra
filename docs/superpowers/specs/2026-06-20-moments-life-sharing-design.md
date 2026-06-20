@@ -27,13 +27,18 @@
 1. 重写发帖 prompt，让内容**聚焦角色自己的生活**、有具体画面/细节/真实情绪，去掉"对用户说话"的引导。
 2. 发帖时**一次生成**完整一条：正文 + 虚构点赞 + 0~2 条虚构 NPC 种子评论，让新帖立刻"有人气、有生活感"。
 3. **完整保留**真实角色评论系统（`generateRepliesForPost` 及其防 OOC/防串戏/头像/跨帖逻辑）不变。
+4. 手动刷新行为改为：**随机挑一个开启了发帖的角色立刻发一条**（仿叙说"松开刷新生成"），不再受发帖间隔限制。
+
+> 本 spec 只含**生成逻辑**层。微信平铺流 UI、自选封面、独立发布页（配图/位置/身份）、下拉刷新手势属于
+> 配套的 **Spec 2（UI）**：`2026-06-20-moments-wechat-ui-design.md`。本 spec 先把随机刷新接到现有顶栏刷新按钮，使功能可独立交付。
 
 ## 非目标（YAGNI）
 
 - 不改动真实角色评论、防 OOC、防串戏、NPC 名单逻辑。
-- 不改朋友圈 UI，不新增设置项。
+- 微信平铺流 UI、自选封面、独立发布页、下拉刷新手势 → 归 **Spec 2**，本 spec 不做。
 - 不动"查手机玩法"里的 `social_posts` 生成（那是 `generatePhoneSnapshotSections`，与本次无关）。
 - 不合并/替换真实角色评论为纯虚构评论。
+- 不改后台自动发帖（due）逻辑与 `MomentsAutoGenerationWorker`。
 
 ## 设计
 
@@ -98,6 +103,20 @@ data class MomentPostDraft(
 - 输出例："现在是周六凌晨，深夜时段"之类的简短语境，仅供模型把握作息/节日氛围。
 - 用标准 `java.util.Calendar`/`LocalDateTime`，遵循项目既有时间处理风格（应用代码内可用系统时间）。
 
+### 组件 5：随机角色刷新
+
+文件：`MomentsGenerationCoordinator.kt` + `MomentsViewModel.kt`。
+
+- 新增 `MomentsGenerationCoordinator.generateRandomAssistantPost(): MomentPost?`：
+  - 从 `settings.resolvedAssistants().filter { it.momentAutoPostEnabled }` 中**随机挑一个**（忽略 `isAssistantDueToPost` 间隔限制）。
+  - 复用 `publishAssistantPost(settings, assistant)` 发帖，再调 `generateRepliesForPost(isUserCommentTrigger=false)`。
+  - 没有任何开启发帖的角色时返回 `null`（UI 给出"还没有角色开启发朋友圈"之类提示）。
+  - 随机选择需可测：通过构造器注入的随机源（如 `randomProvider: (Int) -> Int = { Random.nextInt(it) }`），测试可固定。
+- `MomentsViewModel` 新增 `refreshWithRandomPost()`：置 `isRefreshing` 态 → 调上面的方法 → 失败/无角色时走 `errorMessage`。
+  - 现有顶栏刷新按钮（`onGenerateDueAssistantPosts`）改接此方法（回调可重命名为 `onRefreshMoments`）。
+  - `warmUpAutoPosts()` 等后台 due 逻辑与 `MomentsAutoGenerationWorker` **保持不变**。
+
+
 ## 数据流
 
 ```
@@ -127,10 +146,11 @@ generateDueAssistantPosts
   - 发帖后 `MomentPost.likedByNames` = 净化后的 `draft.likedBy`。
   - 种子评论以 `authorType=NPC` 落库。
   - 真实角色评论流程仍被调用、不被破坏；种子昵称不与后续 NPC 撞名。
+  - `generateRandomAssistantPost`：固定随机源时挑中预期角色、忽略 due 间隔；无开启角色时返回 `null`。
 - 全部命令：`./gradlew.bat app:testDebugUnitTest`、`./gradlew.bat app:compileDebugKotlin`。
 
 ## 验证标准
 
 1. 新增/修改的单测全部通过。
 2. `app:compileDebugKotlin` 通过。
-3. 人工抽查：角色自动发的朋友圈正文聚焦角色自己生活、有画面细节、无"对用户说话"腔；新帖带 2-5 点赞与 0-2 条种子评论；真实角色评论仍正常出现。
+3. 人工抽查：角色自动发的朋友圈正文聚焦角色自己生活、有画面细节、无"对用户说话"腔；新帖带 2-5 点赞与 0-2 条种子评论；真实角色评论仍正常出现；点顶栏刷新会随机让一个开启发帖的角色立刻发一条。
