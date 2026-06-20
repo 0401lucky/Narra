@@ -1628,9 +1628,10 @@ class DefaultAiGateway(
             error.isJsonPrimitive -> runCatching { error.asString }.getOrDefault("")
             else -> error.toString()
         }.ifBlank {
+            val eventType = root.jsonString("type")
             root.jsonString("detail")
                 ?: root.jsonString("message")
-                ?: root.jsonString("type")
+                ?: eventType?.takeIf { it.contains("error", ignoreCase = true) }
                 ?: ""
         }
         if (message.isBlank()) {
