@@ -3,6 +3,7 @@ package com.example.myapplication.viewmodel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
+import com.example.myapplication.data.local.SettingsStore
 import com.example.myapplication.data.repository.ai.AiSettingsRepository
 import com.example.myapplication.data.repository.moments.MomentsGenerationCoordinator
 import com.example.myapplication.data.repository.moments.MomentsRepository
@@ -11,8 +12,10 @@ import com.example.myapplication.model.AppSettings
 import com.example.myapplication.model.MomentAuthorType
 import com.example.myapplication.model.MomentComment
 import com.example.myapplication.model.MomentPost
+import com.example.myapplication.model.MomentsSettings
 import com.example.myapplication.model.ResolvedUserPersona
 import com.example.myapplication.model.RoleplayScenario
+import com.example.myapplication.model.UserPersonaMask
 import com.example.myapplication.model.sanitizeMomentDisplayName
 import com.example.myapplication.system.security.SensitiveTextRedactor
 import kotlinx.coroutines.flow.Flow
@@ -33,15 +36,21 @@ data class MomentsUiState(
     val viewerName: String = "",
     val isLoading: Boolean = true,
     val isPublishing: Boolean = false,
+    val isRefreshing: Boolean = false,
     val isGeneratingReplies: Boolean = false,
     val replyingPostId: String = "",
     val retryingImagePostId: String = "",
+    val momentsSettings: MomentsSettings = MomentsSettings(),
+    val userPersonaMasks: List<UserPersonaMask> = emptyList(),
+    val selectedUserPersonaMaskId: String = "",
+    val viewerAvatarUri: String = "",
     val errorMessage: String? = null,
 )
 
 class MomentsViewModel(
     private val scenarioId: String = "",
     private val settingsRepository: AiSettingsRepository,
+    private val settingsStore: SettingsStore,
     private val momentsRepository: MomentsRepository,
     private val momentsGenerationCoordinator: MomentsGenerationCoordinator,
     private val roleplayRepository: RoleplayRepository,
@@ -73,12 +82,20 @@ class MomentsViewModel(
                 MomentsTimelineProjection(
                     posts = posts.withResolvedAvatars(settings, userPersona),
                     viewerName = userPersona.displayName,
+                    viewerAvatarUri = userPersona.resolvedMomentAvatar(),
+                    momentsSettings = settings.momentsSettings,
+                    userPersonaMasks = settings.normalizedUserPersonaMasks(),
+                    selectedUserPersonaMaskId = userPersona.sourceMaskId,
                 )
             }.collect { projection ->
                 _uiState.update {
                     it.copy(
                         posts = projection.posts,
                         viewerName = projection.viewerName,
+                        viewerAvatarUri = projection.viewerAvatarUri,
+                        momentsSettings = projection.momentsSettings,
+                        userPersonaMasks = projection.userPersonaMasks,
+                        selectedUserPersonaMaskId = projection.selectedUserPersonaMaskId,
                         isLoading = false,
                     )
                 }
@@ -94,17 +111,24 @@ class MomentsViewModel(
         }
     }
 
-    fun publishUserPost(content: String) {
+    fun publishUserPost(
+        content: String,
+        imageUri: String = "",
+        location: String = "",
+        userPersonaMaskId: String = "",
+    ) {
         val normalizedContent = content.trim()
         if (normalizedContent.isBlank() || _uiState.value.isPublishing) return
         _uiState.update { it.copy(isPublishing = true) }
         viewModelScope.launch {
             var publishedUserPersona: ResolvedUserPersona? = null
             val createdPost = runCatching {
-                val userPersona = resolveCurrentMomentUserPersona()
+                val userPersona = resolveCurrentMomentUserPersona(maskId = userPersonaMaskId)
                 publishedUserPersona = userPersona
                 momentsGenerationCoordinator.publishUserPost(
                     content = normalizedContent,
+                    imageUri = imageUri,
+                    location = location,
                     userPersona = userPersona,
                 )
             }.onFailure { throwable ->
@@ -234,6 +258,43 @@ class MomentsViewModel(
         }
     }
 
+    fun refreshWithRandomPost() {
+        if (_uiState.value.isRefreshing) return
+        _uiState.update { it.copy(isRefreshing = true) }
+        viewModelScope.launch {
+            runCatching {
+                momentsGenerationCoordinator.generateRandomAssistantPost()
+            }.onSuccess { post ->
+                if (post == null) {
+                    _uiState.update {
+                        it.copy(errorMessage = "还没有角色开启发朋友圈")
+                    }
+                }
+            }.onFailure { throwable ->
+                _uiState.update {
+                    it.copy(errorMessage = throwable.toMomentsUiError("朋友圈刷新失败"))
+                }
+            }
+            _uiState.update { it.copy(isRefreshing = false) }
+        }
+    }
+
+    fun updateCoverImage(uri: String) {
+        viewModelScope.launch {
+            val normalizedUri = uri.trim()
+            val currentSettings = settingsRepository.settingsFlow.first().momentsSettings
+            runCatching {
+                settingsStore.saveMomentsSettings(
+                    currentSettings.copy(coverImageUri = normalizedUri),
+                )
+            }.onFailure { throwable ->
+                _uiState.update {
+                    it.copy(errorMessage = throwable.toMomentsUiError("封面保存失败"))
+                }
+            }
+        }
+    }
+
     fun clearErrorMessage() {
         _uiState.update { it.copy(errorMessage = null) }
     }
@@ -246,8 +307,11 @@ class MomentsViewModel(
         return roleplayRepository.observeScenario(normalizedScenarioId)
     }
 
-    private suspend fun resolveCurrentMomentUserPersona(): ResolvedUserPersona {
+    private suspend fun resolveCurrentMomentUserPersona(maskId: String = ""): ResolvedUserPersona {
         val settings = settingsRepository.settingsFlow.first()
+        if (maskId.isNotBlank()) {
+            return settings.resolveUserPersona(maskId = maskId)
+        }
         val scenario = scenarioId.trim()
             .takeIf(String::isNotBlank)
             ?.let { roleplayRepository.getScenario(it) }
@@ -324,6 +388,7 @@ class MomentsViewModel(
         fun factory(
             scenarioId: String = "",
             settingsRepository: AiSettingsRepository,
+            settingsStore: SettingsStore,
             momentsRepository: MomentsRepository,
             momentsGenerationCoordinator: MomentsGenerationCoordinator,
             roleplayRepository: RoleplayRepository,
@@ -332,6 +397,7 @@ class MomentsViewModel(
                 MomentsViewModel(
                     scenarioId = scenarioId,
                     settingsRepository = settingsRepository,
+                    settingsStore = settingsStore,
                     momentsRepository = momentsRepository,
                     momentsGenerationCoordinator = momentsGenerationCoordinator,
                     roleplayRepository = roleplayRepository,
@@ -344,4 +410,8 @@ class MomentsViewModel(
 private data class MomentsTimelineProjection(
     val posts: List<MomentPost>,
     val viewerName: String,
+    val viewerAvatarUri: String,
+    val momentsSettings: MomentsSettings,
+    val userPersonaMasks: List<UserPersonaMask>,
+    val selectedUserPersonaMaskId: String,
 )

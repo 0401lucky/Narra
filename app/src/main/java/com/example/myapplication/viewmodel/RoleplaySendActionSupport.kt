@@ -1,6 +1,7 @@
 package com.example.myapplication.viewmodel
 
 import com.example.myapplication.conversation.GiftImageGenerationRequest
+import com.example.myapplication.conversation.ChatConversationSupport
 import com.example.myapplication.conversation.ConversationTransferCoordinator
 import com.example.myapplication.conversation.RoundTripInitialPersistence
 import com.example.myapplication.data.repository.ConversationRepository
@@ -409,16 +410,37 @@ internal class RoleplaySendActionSupport(
     }
 
     fun sendMessage(): Job? {
-        return sendMessageText(uiState().input)
+        return sendMessageWithParts(emptyList())
+    }
+
+    fun sendMessageWithParts(pendingParts: List<ChatMessagePart>): Job? {
+        return sendMessageParts(
+            rawText = uiState().input,
+            pendingParts = pendingParts,
+        )
     }
 
     fun sendMessageText(rawText: String): Job? {
+        return sendMessageParts(
+            rawText = rawText,
+            pendingParts = emptyList(),
+        )
+    }
+
+    private fun sendMessageParts(
+        rawText: String,
+        pendingParts: List<ChatMessagePart>,
+    ): Job? {
         val state = uiState()
         val text = rawText.trim()
+        val userParts = ChatConversationSupport.buildUserMessageParts(
+            text = text,
+            pendingParts = pendingParts,
+        )
         val scenario = state.currentScenario
-        if (text.isBlank()) {
+        if (userParts.isEmpty()) {
             updateUiState { current ->
-                RoleplayStateSupport.applyErrorMessage(current, "请输入剧情内容")
+                RoleplayStateSupport.applyErrorMessage(current, "请输入剧情内容或添加图片")
             }
             return null
         }
@@ -437,11 +459,20 @@ internal class RoleplaySendActionSupport(
         if (state.isSending) {
             return null
         }
+        ChatConversationSupport.validateOutgoingParts(
+            settings = state.settings,
+            userParts = userParts,
+        )?.let { validationMessage ->
+            updateUiState { current ->
+                RoleplayStateSupport.applyErrorMessage(current, validationMessage)
+            }
+            return null
+        }
 
         return startRoleplaySend(
             state = state,
             scenario = scenario,
-            userParts = listOf(textMessagePart(text)),
+            userParts = userParts,
             nextInput = "",
         )
     }

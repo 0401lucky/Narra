@@ -41,6 +41,7 @@ fun ChatScreen(
     val onInputChange = callbacks.message.onInputChange
     val onSend = callbacks.message.onSend
     val onRetryMessage = callbacks.message.onRetryMessage
+    val onRetryAiPhoto = callbacks.message.onRetryAiPhoto
     val onEditUserMessage = callbacks.message.onEditUserMessage
     val onToggleMemoryMessage = callbacks.message.onToggleMemoryMessage
     val onCancelSending = callbacks.message.onCancelSending
@@ -223,6 +224,7 @@ fun ChatScreen(
                     scope.launch { drawerState.open() }
                 },
                 onRetryMessage = onRetryMessage,
+                onRetryAiPhoto = onRetryAiPhoto,
                 onOpenMessageActions = { messageId ->
                     localState.setActiveMessageActionId(messageId)
                 },

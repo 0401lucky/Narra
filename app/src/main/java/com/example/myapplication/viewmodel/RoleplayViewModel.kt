@@ -3,6 +3,8 @@ package com.example.myapplication.viewmodel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
+import com.example.myapplication.conversation.AiPhotoGenerationCoordinator
+import com.example.myapplication.conversation.AiPhotoGenerationRequest
 import com.example.myapplication.conversation.AssistantRoundTripOutcome
 import com.example.myapplication.conversation.AssistantRoundTripRequest
 import com.example.myapplication.conversation.AssistantRoundTripResult
@@ -135,6 +137,7 @@ class RoleplayViewModel(
     private val nowProvider: () -> Long = { System.currentTimeMillis() },
     private val messageIdProvider: () -> String = { UUID.randomUUID().toString() },
     private val imageSaver: suspend (String) -> SavedImageFile = { throw IllegalStateException("图片保存未配置") },
+    private val namedImageSaver: suspend (String, String) -> SavedImageFile = { b64Data, _ -> imageSaver(b64Data) },
     private val voiceSynthesisCoordinator: VoiceSynthesisCoordinator? = null,
 ) : ViewModel() {
     val settings: StateFlow<AppSettings> = settingsRepository.settingsFlow.stateIn(
@@ -186,6 +189,12 @@ class RoleplayViewModel(
         aiGateway = aiGateway,
         conversationRepository = conversationRepository,
         imageSaver = imageSaver,
+    )
+    private val aiPhotoGenerationCoordinator = AiPhotoGenerationCoordinator(
+        aiPromptExtrasService = aiPromptExtrasService,
+        aiGateway = aiGateway,
+        conversationRepository = conversationRepository,
+        imageSaver = namedImageSaver,
     )
     private val videoCallCoordinator = RoleplayVideoCallCoordinator(
         conversationRepository = conversationRepository,
@@ -256,6 +265,14 @@ class RoleplayViewModel(
             viewModelScope.launch {
                 val updatedMessages = coordinator.generate(request) ?: return@launch
                 onUpdated(updatedMessages)
+            }
+        },
+        launchAiPhotoGeneration = { request, onUpdated ->
+            viewModelScope.launch {
+                aiPhotoGenerationCoordinator.generate(
+                    request = request,
+                    onUpdated = onUpdated,
+                )
             }
         },
         launchConversationSummaryGeneration = { conversationId, completedMessages, settings, assistant, scenario ->
@@ -890,6 +907,38 @@ class RoleplayViewModel(
         }
     }
 
+    fun retryAiPhoto(
+        messageId: String,
+        actionId: String,
+    ) {
+        val state = _uiState.value
+        val session = state.currentSession ?: return
+        if (messageId.isBlank() || actionId.isBlank()) {
+            return
+        }
+        viewModelScope.launch {
+            aiPhotoGenerationCoordinator.generate(
+                request = AiPhotoGenerationRequest(
+                    conversationId = session.conversationId,
+                    selectedModel = RoleplayConversationSupport.resolveSelectedModelId(state.settings),
+                    messages = currentRawMessages.value,
+                    settings = state.settings,
+                    targetMessageId = messageId,
+                    targetActionId = actionId,
+                    assistant = state.currentAssistant ?: state.currentScenario?.let { scenario ->
+                        RoleplayConversationSupport.resolveAssistant(state.settings, scenario.assistantId)
+                    },
+                    scenario = state.currentScenario,
+                ),
+                onUpdated = { updatedMessages ->
+                    if (_uiState.value.currentSession?.conversationId == session.conversationId) {
+                        currentRawMessages.value = updatedMessages
+                    }
+                },
+            )
+        }
+    }
+
     fun editUserMessage(sourceMessageId: String) {
         scenarioActionSupport.editUserMessage(sourceMessageId)
     }
@@ -1484,6 +1533,12 @@ class RoleplayViewModel(
 
     fun sendMessage() {
         sendActionSupport.sendMessage()?.let { job ->
+            sendingJob = job
+        }
+    }
+
+    fun sendMessageWithParts(pendingParts: List<ChatMessagePart>) {
+        sendActionSupport.sendMessageWithParts(pendingParts)?.let { job ->
             sendingJob = job
         }
     }
@@ -2140,6 +2195,7 @@ class RoleplayViewModel(
             memoryWriteService: MemoryWriteService,
             contextLogStore: com.example.myapplication.data.repository.context.ContextLogStore,
             imageSaver: suspend (String) -> SavedImageFile = { throw IllegalStateException("图片保存未配置") },
+            namedImageSaver: suspend (String, String) -> SavedImageFile = { b64Data, _ -> imageSaver(b64Data) },
             voiceSynthesisCoordinator: VoiceSynthesisCoordinator? = null,
         ): ViewModelProvider.Factory {
             return typedViewModelFactory {
@@ -2160,6 +2216,7 @@ class RoleplayViewModel(
                     memoryWriteService = memoryWriteService,
                     contextLogStore = contextLogStore,
                     imageSaver = imageSaver,
+                    namedImageSaver = namedImageSaver,
                     voiceSynthesisCoordinator = voiceSynthesisCoordinator,
                 )
             }

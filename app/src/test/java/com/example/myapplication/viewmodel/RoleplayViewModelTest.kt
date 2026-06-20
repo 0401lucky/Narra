@@ -30,6 +30,7 @@ import com.example.myapplication.model.ChatChoiceDto
 import com.example.myapplication.model.ChatActionType
 import com.example.myapplication.model.ChatMessage
 import com.example.myapplication.model.ChatMessagePart
+import com.example.myapplication.model.ChatMessagePartType
 import com.example.myapplication.model.Conversation
 import com.example.myapplication.model.ContextSummaryState
 import com.example.myapplication.model.GiftImageStatus
@@ -43,6 +44,8 @@ import com.example.myapplication.model.PunishPlayDraft
 import com.example.myapplication.model.MemoryEntry
 import com.example.myapplication.model.MessageRole
 import com.example.myapplication.model.MessageStatus
+import com.example.myapplication.model.ModelAbility
+import com.example.myapplication.model.ModelInfo
 import com.example.myapplication.model.ModelsResponse
 import com.example.myapplication.model.PendingMemoryProposal
 import com.example.myapplication.model.ProviderSettings
@@ -63,6 +66,7 @@ import com.example.myapplication.model.TransferDirection
 import com.example.myapplication.model.TransferStatus
 import com.example.myapplication.model.VoiceMessageDraft
 import com.example.myapplication.model.giftImageStatus
+import com.example.myapplication.model.imageMessagePart
 import com.example.myapplication.model.isTransferPart
 import com.example.myapplication.model.specialMetadataValue
 import com.example.myapplication.model.textMessagePart
@@ -5480,6 +5484,192 @@ class RoleplayViewModelTest {
         assertEquals("7", voiceMessage.actionPart?.actionMetadata?.get("duration_seconds"))
     }
 
+    @Test
+    fun sendMessageWithImage_blocksTextOnlyModel() = runTest(mainDispatcherRule.dispatcher.scheduler) {
+        val assistant = Assistant(id = "assistant-1", name = "陆宴清")
+        val scenario = RoleplayScenario(id = "scene-1", assistantId = assistant.id)
+        val session = RoleplaySession(
+            id = "session-1",
+            scenarioId = scenario.id,
+            conversationId = "conv-1",
+            createdAt = 1L,
+            updatedAt = 2L,
+        )
+        val provider = ProviderSettings(
+            id = "provider-1",
+            baseUrl = "https://example.com/v1/",
+            apiKey = "test-key",
+            selectedModel = "text-only-model",
+            models = listOf(
+                ModelInfo(
+                    modelId = "text-only-model",
+                    abilities = emptySet(),
+                    abilitiesCustomized = true,
+                ),
+            ),
+        )
+        val store = FakeConversationStore(
+            conversations = listOf(
+                Conversation(
+                    id = session.conversationId,
+                    title = "剧情",
+                    model = provider.selectedModel,
+                    createdAt = 1L,
+                    updatedAt = 2L,
+                    assistantId = assistant.id,
+                ),
+            ),
+        )
+        val viewModel = createViewModel(
+            store = store,
+            roleplayRepository = FakeRoleplayRepository(
+                conversationStore = store,
+                scenarios = listOf(scenario),
+                sessions = listOf(session),
+            ),
+            settings = AppSettings(
+                baseUrl = provider.baseUrl,
+                apiKey = provider.apiKey,
+                selectedModel = provider.selectedModel,
+                providers = listOf(provider),
+                selectedProviderId = provider.id,
+                assistants = listOf(assistant),
+                selectedAssistantId = assistant.id,
+            ),
+            promptContextAssembler = fixedPromptAssembler("提示词上下文"),
+        )
+
+        viewModel.enterScenario(scenario.id)
+        advanceUntilIdle()
+        viewModel.sendMessageWithParts(
+            listOf(
+                imageMessagePart(
+                    uri = "content://picked/image",
+                    mimeType = "image/png",
+                    fileName = "street.png",
+                ),
+            ),
+        )
+        advanceUntilIdle()
+
+        assertEquals("当前模型不支持图片理解，请切换到支持视觉的模型后再发送图片", viewModel.uiState.value.errorMessage)
+        assertTrue(store.listMessages(session.conversationId).isEmpty())
+    }
+
+    @Test
+    fun sendMessageWithImage_passesImagePartToVisionModel() = runTest(mainDispatcherRule.dispatcher.scheduler) {
+        val assistant = Assistant(id = "assistant-1", name = "陆宴清")
+        val scenario = RoleplayScenario(id = "scene-1", assistantId = assistant.id)
+        val session = RoleplaySession(
+            id = "session-1",
+            scenarioId = scenario.id,
+            conversationId = "conv-1",
+            createdAt = 1L,
+            updatedAt = 2L,
+        )
+        val provider = ProviderSettings(
+            id = "provider-1",
+            baseUrl = "https://example.com/v1/",
+            apiKey = "test-key",
+            selectedModel = "vision-model",
+            models = listOf(
+                ModelInfo(
+                    modelId = "vision-model",
+                    abilities = setOf(ModelAbility.VISION),
+                    abilitiesCustomized = true,
+                ),
+            ),
+        )
+        val store = FakeConversationStore(
+            conversations = listOf(
+                Conversation(
+                    id = session.conversationId,
+                    title = "剧情",
+                    model = provider.selectedModel,
+                    createdAt = 1L,
+                    updatedAt = 2L,
+                    assistantId = assistant.id,
+                ),
+            ),
+        )
+        var capturedRequestMessages: List<ChatMessage> = emptyList()
+        val gateway = object : AiGateway {
+            override suspend fun generateImage(prompt: String, modelId: String): List<ImageGenerationResult> {
+                return emptyList()
+            }
+
+            override suspend fun sendMessage(
+                messages: List<ChatMessage>,
+                systemPrompt: String,
+                promptEnvelope: com.example.myapplication.model.PromptEnvelope,
+                toolingOptions: GatewayToolingOptions,
+            ): AssistantReply {
+                error("不应调用非流式发送")
+            }
+
+            override fun sendMessageStream(
+                messages: List<ChatMessage>,
+                systemPrompt: String,
+                promptMode: com.example.myapplication.model.PromptMode,
+                promptEnvelope: com.example.myapplication.model.PromptEnvelope,
+                toolingOptions: GatewayToolingOptions,
+            ) = kotlinx.coroutines.flow.flow<com.example.myapplication.model.ChatStreamEvent> {
+                capturedRequestMessages = messages
+                emit(com.example.myapplication.model.ChatStreamEvent.ContentDelta("我看到了这张图。"))
+                emit(com.example.myapplication.model.ChatStreamEvent.Completed)
+            }
+
+            override fun parseAssistantSpecialOutput(
+                content: String,
+                existingParts: List<ChatMessagePart>,
+                statusCardsEnabled: Boolean,
+                hideStatusBlocksInBubble: Boolean,
+            ): ParsedAssistantSpecialOutput {
+                return ParsedAssistantSpecialOutput(content = content, parts = existingParts)
+            }
+        }
+        val viewModel = createViewModel(
+            store = store,
+            roleplayRepository = FakeRoleplayRepository(
+                conversationStore = store,
+                scenarios = listOf(scenario),
+                sessions = listOf(session),
+            ),
+            settings = AppSettings(
+                baseUrl = provider.baseUrl,
+                apiKey = provider.apiKey,
+                selectedModel = provider.selectedModel,
+                providers = listOf(provider),
+                selectedProviderId = provider.id,
+                assistants = listOf(assistant),
+                selectedAssistantId = assistant.id,
+            ),
+            promptContextAssembler = fixedPromptAssembler("提示词上下文"),
+            messageIdProvider = idProviderOf("user-image", "assistant-loading"),
+            aiGatewayOverride = gateway,
+        )
+
+        viewModel.enterScenario(scenario.id)
+        advanceUntilIdle()
+        viewModel.updateInput("帮我看看这张图")
+        viewModel.sendMessageWithParts(
+            listOf(
+                imageMessagePart(
+                    uri = "content://picked/image",
+                    mimeType = "image/png",
+                    fileName = "street.png",
+                ),
+            ),
+        )
+        advanceUntilIdle()
+
+        val userRequest = capturedRequestMessages.last { it.role == MessageRole.USER }
+        assertTrue(userRequest.parts.first { it.type == ChatMessagePartType.TEXT }.text.contains("帮我看看这张图"))
+        assertEquals("content://picked/image", userRequest.parts.first { it.type == ChatMessagePartType.IMAGE }.uri)
+        val savedUserMessage = store.listMessages(session.conversationId).first { it.role == MessageRole.USER }
+        assertTrue(savedUserMessage.parts.any { it.type == ChatMessagePartType.IMAGE })
+    }
+
     private fun createViewModel(
         store: FakeConversationStore,
         roleplayRepository: RoleplayRepository,
@@ -5493,6 +5683,7 @@ class RoleplayViewModelTest {
         imageSaver: suspend (String) -> SavedImageFile = { error("测试不应保存图片") },
         apiServiceProvider: ((String, String) -> OpenAiCompatibleApi)? = null,
         streamClientProvider: ((String, String) -> OkHttpClient)? = null,
+        aiGatewayOverride: AiGateway? = null,
     ): RoleplayViewModel {
         val resolvedApiServiceProvider = apiServiceProvider ?: { baseUrl, apiKey ->
             ApiServiceFactory().create(
@@ -5518,7 +5709,7 @@ class RoleplayViewModelTest {
         return RoleplayViewModel(
             settingsRepository = services.settingsRepository,
             settingsEditor = services.settingsEditor,
-            aiGateway = services.aiGateway,
+            aiGateway = aiGatewayOverride ?: services.aiGateway,
             aiPromptExtrasService = services.aiPromptExtrasService,
             conversationRepository = conversationRepository,
             roleplayRepository = roleplayRepository,

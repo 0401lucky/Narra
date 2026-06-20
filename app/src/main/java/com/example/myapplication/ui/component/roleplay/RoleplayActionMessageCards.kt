@@ -14,6 +14,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
@@ -30,6 +31,7 @@ import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
@@ -38,6 +40,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -47,10 +50,16 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import coil3.compose.AsyncImage
+import com.example.myapplication.model.AiPhotoImageStatus
 import com.example.myapplication.model.ChatActionType
 import com.example.myapplication.model.RoleplayMessageUiModel
 import com.example.myapplication.model.RoleplaySpeaker
 import com.example.myapplication.model.actionMetadataValue
+import com.example.myapplication.model.aiPhotoImageErrorMessage
+import com.example.myapplication.model.aiPhotoImageFileName
+import com.example.myapplication.model.aiPhotoImageStatus
+import com.example.myapplication.model.aiPhotoImageUri
 import com.example.myapplication.model.VoiceAudioStatus
 import com.example.myapplication.model.hasReadyVoiceAudio
 import com.example.myapplication.model.voiceAudioErrorMessage
@@ -59,6 +68,7 @@ import com.example.myapplication.model.voiceAudioStatus
 import com.example.myapplication.model.voiceMessageContent
 import com.example.myapplication.model.voiceMessageDurationLabel
 import com.example.myapplication.model.voiceMessageDurationSeconds
+import com.example.myapplication.ui.component.resolveImageModel
 import com.example.myapplication.system.security.SensitiveTextRedactor
 import kotlin.math.abs
 
@@ -68,6 +78,7 @@ internal fun RoleplayActionCard(
     actionPart: com.example.myapplication.model.ChatMessagePart,
     colors: ImmersiveRoleplayColors,
     backdropState: ImmersiveBackdropState,
+    onRetryAiPhoto: ((String) -> Unit)?,
     onOpenVideoCall: (() -> Unit)?,
 ) {
     val isUserMessage = message.speaker == RoleplaySpeaker.USER
@@ -88,6 +99,11 @@ internal fun RoleplayActionCard(
             colors = colors,
             backdropState = backdropState,
             isUserMessage = isUserMessage,
+            onRetry = if (!isUserMessage) {
+                { onRetryAiPhoto?.invoke(actionPart.actionId) }
+            } else {
+                null
+            },
         )
         return
     }
@@ -165,6 +181,7 @@ private fun RoleplayAiPhotoCard(
     colors: ImmersiveRoleplayColors,
     backdropState: ImmersiveBackdropState,
     isUserMessage: Boolean,
+    onRetry: (() -> Unit)?,
 ) {
     val description = actionPart.actionMetadataValue("description")
         .trim()
@@ -208,14 +225,19 @@ private fun RoleplayAiPhotoCard(
                     description = description,
                     accentColor = accentColor,
                     colors = colors,
+                    actionPart = actionPart,
+                    onRetry = onRetry,
                     modifier = Modifier
                         .fillMaxWidth()
                         .heightIn(min = 150.dp),
                 )
             } else {
                 RoleplayAiPhotoFront(
+                    actionPart = actionPart,
+                    description = description,
                     accentColor = accentColor,
                     colors = colors,
+                    onRetry = onRetry,
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(150.dp),
@@ -227,10 +249,50 @@ private fun RoleplayAiPhotoCard(
 
 @Composable
 private fun RoleplayAiPhotoFront(
+    actionPart: com.example.myapplication.model.ChatMessagePart,
+    description: String,
     accentColor: Color,
     colors: ImmersiveRoleplayColors,
+    onRetry: (() -> Unit)?,
     modifier: Modifier,
 ) {
+    val imageStatus = actionPart.aiPhotoImageStatus()
+    val imageUri = actionPart.aiPhotoImageUri()
+    if (imageStatus == AiPhotoImageStatus.READY && imageUri.isNotBlank()) {
+        val imageModel = remember(imageUri) { resolveImageModel(imageUri) }
+        Box(
+            modifier = modifier.background(
+                color = colors.panelBackgroundStrong.copy(alpha = 0.72f),
+                shape = RoundedCornerShape(18.dp),
+            ),
+            contentAlignment = Alignment.Center,
+        ) {
+            AsyncImage(
+                model = imageModel,
+                contentDescription = actionPart.aiPhotoImageFileName().ifBlank { "照片" },
+                modifier = Modifier
+                    .fillMaxSize()
+                    .clip(RoundedCornerShape(18.dp))
+                    .background(
+                        color = colors.panelBackgroundStrong.copy(alpha = 0.62f),
+                        shape = RoundedCornerShape(18.dp),
+                    ),
+                contentScale = androidx.compose.ui.layout.ContentScale.Crop,
+            )
+        }
+        return
+    }
+    val statusText = when (imageStatus) {
+        AiPhotoImageStatus.GENERATING -> "生成中"
+        AiPhotoImageStatus.FAILED -> "生成失败"
+        AiPhotoImageStatus.READY -> "照片不可用"
+        null -> "照片"
+    }
+    val bottomText = when (imageStatus) {
+        AiPhotoImageStatus.GENERATING -> "照片 · $statusText"
+        AiPhotoImageStatus.FAILED -> actionPart.aiPhotoImageErrorMessage().ifBlank { "照片 · $statusText" }
+        else -> "照片"
+    }.take(18)
     Box(
         modifier = modifier.background(
             brush = Brush.linearGradient(
@@ -250,7 +312,7 @@ private fun RoleplayAiPhotoFront(
             modifier = Modifier.size(34.dp),
         )
         Text(
-            text = "照片",
+            text = bottomText.ifBlank { description.take(18).ifBlank { "照片" } },
             style = MaterialTheme.typography.labelLarge,
             fontWeight = FontWeight.SemiBold,
             color = accentColor,
@@ -258,6 +320,16 @@ private fun RoleplayAiPhotoFront(
                 .align(Alignment.BottomStart)
                 .padding(start = 14.dp, bottom = 12.dp),
         )
+        if (imageStatus == AiPhotoImageStatus.FAILED && onRetry != null) {
+            TextButton(
+                onClick = onRetry,
+                modifier = Modifier
+                    .align(Alignment.BottomEnd)
+                    .padding(end = 8.dp, bottom = 4.dp),
+            ) {
+                Text("重试")
+            }
+        }
     }
 }
 
@@ -266,6 +338,8 @@ private fun RoleplayAiPhotoBack(
     description: String,
     accentColor: Color,
     colors: ImmersiveRoleplayColors,
+    actionPart: com.example.myapplication.model.ChatMessagePart,
+    onRetry: (() -> Unit)?,
     modifier: Modifier,
 ) {
     Box(
@@ -298,6 +372,11 @@ private fun RoleplayAiPhotoBack(
                 color = colors.textPrimary,
                 modifier = Modifier.padding(top = 8.dp),
             )
+            if (actionPart.aiPhotoImageStatus() == AiPhotoImageStatus.FAILED && onRetry != null) {
+                TextButton(onClick = onRetry) {
+                    Text("重试照片")
+                }
+            }
         }
     }
 }

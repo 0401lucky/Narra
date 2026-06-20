@@ -2,12 +2,14 @@ package com.example.myapplication.data.repository.ai
 
 import com.example.myapplication.data.repository.ParsedAssistantSpecialOutput
 import com.example.myapplication.data.repository.TransferUpdateDirective
+import com.example.myapplication.model.ChatActionType
 import com.example.myapplication.model.ChatMessage
 import com.example.myapplication.model.ChatMessagePart
 import com.example.myapplication.model.ChatMessagePartType
 import com.example.myapplication.model.ChatSpecialType
 import com.example.myapplication.model.TransferDirection
 import com.example.myapplication.model.TransferStatus
+import com.example.myapplication.model.dedupeRepeatedAiPhotoParts
 import com.example.myapplication.model.giftMessagePart
 import com.example.myapplication.model.inviteMessagePart
 import com.example.myapplication.model.isValidTransferPart
@@ -19,6 +21,7 @@ import com.example.myapplication.model.taskMessagePart
 import com.example.myapplication.model.textMessagePart
 import com.example.myapplication.model.toPlainText
 import com.example.myapplication.model.transferMessagePart
+import com.example.myapplication.roleplay.OnlineActionProtocolParser
 import java.util.UUID
 
 internal object GatewaySpecialPlaySupport {
@@ -129,6 +132,12 @@ internal object GatewaySpecialPlaySupport {
                 parts = preservedNonTextParts,
             )
         }
+        parseAiPhotoProtocolOutput(
+            content = content,
+            preservedNonTextParts = preservedNonTextParts,
+        )?.let { parsedOutput ->
+            return parsedOutput
+        }
 
         val renderedParts = mutableListOf<ChatMessagePart>()
         val transferUpdates = mutableListOf<TransferUpdateDirective>()
@@ -190,6 +199,30 @@ internal object GatewaySpecialPlaySupport {
             content = normalizedVisibleParts.toPlainText(),
             parts = normalizeChatMessageParts(normalizedVisibleParts + preservedNonTextParts),
             transferUpdates = transferUpdates,
+        )
+    }
+
+    private fun parseAiPhotoProtocolOutput(
+        content: String,
+        preservedNonTextParts: List<ChatMessagePart>,
+    ): ParsedAssistantSpecialOutput? {
+        val parsed = OnlineActionProtocolParser.parse(
+            rawContent = content,
+            characterName = "角色",
+        ) ?: return null
+        val visibleParts = parsed.parts.filter { part ->
+            part.type == ChatMessagePartType.TEXT ||
+                (part.type == ChatMessagePartType.ACTION && part.actionType == ChatActionType.AI_PHOTO)
+        }
+        if (visibleParts.none { part -> part.actionType == ChatActionType.AI_PHOTO }) {
+            return null
+        }
+        val normalizedVisibleParts = normalizeChatMessageParts(
+            dedupeRepeatedAiPhotoParts(visibleParts),
+        )
+        return ParsedAssistantSpecialOutput(
+            content = normalizedVisibleParts.toPlainText(),
+            parts = normalizeChatMessageParts(normalizedVisibleParts + preservedNonTextParts),
         )
     }
 

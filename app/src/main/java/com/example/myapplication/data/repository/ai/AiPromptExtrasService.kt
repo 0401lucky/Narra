@@ -142,6 +142,19 @@ interface AiPromptExtrasService {
         provider: ProviderSettings? = null,
     ): String = ""
 
+    suspend fun generateAiPhotoImagePrompt(
+        photoDescription: String,
+        assistantName: String,
+        assistantPersona: String,
+        scenarioContext: String,
+        conversationExcerpt: String,
+        baseUrl: String,
+        apiKey: String,
+        modelId: String,
+        apiProtocol: ProviderApiProtocol = ProviderApiProtocol.OPENAI_COMPATIBLE,
+        provider: ProviderSettings? = null,
+    ): String = ""
+
     suspend fun condenseRoleplayMemories(
         memoryItems: List<String>,
         mode: RoleplayMemoryCondenseMode,
@@ -201,6 +214,7 @@ interface AiPromptExtrasService {
         assistantName: String,
         assistantPersona: String,
         userName: String,
+        timeContext: String = "",
         recentMoments: String,
         baseUrl: String,
         apiKey: String,
@@ -501,6 +515,30 @@ class DefaultAiPromptExtrasService internal constructor(
         provider = provider,
     )
 
+    override suspend fun generateAiPhotoImagePrompt(
+        photoDescription: String,
+        assistantName: String,
+        assistantPersona: String,
+        scenarioContext: String,
+        conversationExcerpt: String,
+        baseUrl: String,
+        apiKey: String,
+        modelId: String,
+        apiProtocol: ProviderApiProtocol,
+        provider: ProviderSettings?,
+    ): String = diaryService.generateAiPhotoImagePrompt(
+        photoDescription = photoDescription,
+        assistantName = assistantName,
+        assistantPersona = assistantPersona,
+        scenarioContext = scenarioContext,
+        conversationExcerpt = conversationExcerpt,
+        baseUrl = baseUrl,
+        apiKey = apiKey,
+        modelId = modelId,
+        apiProtocol = apiProtocol,
+        provider = provider,
+    )
+
     override suspend fun condenseRoleplayMemories(
         memoryItems: List<String>,
         mode: RoleplayMemoryCondenseMode,
@@ -591,6 +629,7 @@ class DefaultAiPromptExtrasService internal constructor(
         assistantName: String,
         assistantPersona: String,
         userName: String,
+        timeContext: String,
         recentMoments: String,
         baseUrl: String,
         apiKey: String,
@@ -601,6 +640,7 @@ class DefaultAiPromptExtrasService internal constructor(
         assistantName = assistantName,
         assistantPersona = assistantPersona,
         userName = userName,
+        timeContext = timeContext,
         recentMoments = recentMoments,
         baseUrl = baseUrl,
         apiKey = apiKey,

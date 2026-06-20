@@ -308,6 +308,7 @@ internal class PhoneContentPromptService(
         assistantName: String,
         assistantPersona: String,
         userName: String,
+        timeContext: String,
         recentMoments: String,
         baseUrl: String,
         apiKey: String,
@@ -316,9 +317,16 @@ internal class PhoneContentPromptService(
         provider: ProviderSettings?,
     ): MomentPostDraft {
         val prompt = buildString {
-            appendLine("你正在为一个虚构角色生成一条微信朋友圈。")
+            appendLine("你就是「$assistantName」本人，正在发自己的微信朋友圈。")
+            appendLine("这条朋友圈是在记录或分享你生活里真实发生的一小块，不是在给用户发消息。")
             appendLine("发布者：$assistantName")
             appendLine("用户昵称：$userName")
+            if (timeContext.isNotBlank()) {
+                appendLine()
+                appendLine("【当前时间语境】")
+                appendLine(timeContext)
+                appendLine("请自然参考作息、昼夜、工作日/周末或节日氛围，但不要机械复述完整日期和具体时刻。")
+            }
             appendLine()
             appendLine("【角色设定】")
             appendLine(assistantPersona.ifBlank { "保持自然、真实、有生活感。" })
@@ -329,11 +337,15 @@ internal class PhoneContentPromptService(
             }
             appendLine()
             appendLine("【要求】")
-            appendLine("1. 文案像真实朋友圈：短、口语、带生活碎片或情绪，不要写成旁白。")
-            appendLine("2. 可以轻微暗示和用户的关系，但不要解释设定。")
-            appendLine("3. 不要使用 Markdown，不要带标题，不要写 hashtags。")
-            appendLine("4. image_prompt 用于可选配图：如果这条朋友圈适合配图，写一条具体画面提示词；不适合则留空。")
-            appendLine("5. 严格输出 JSON：{\"content\":\"...\",\"image_prompt\":\"...\"}")
+            appendLine("1. 内容来自发布者自己的日常：工作、饮食、独处、兴趣、见闻、路上瞬间、微小情绪等。")
+            appendLine("2. 不必和用户相关，更不要像在对用户说话、报备行程或解释人设。")
+            appendLine("3. 必须具体、有画面、有细节，情绪真实；避免空话套话、鸡汤、广告腔和旁白总结。")
+            appendLine("4. 从角色职业、性格、爱好、地区和生活环境里挖素材，让它像这个具体的人会发的。")
+            appendLine("5. 文案自然口语化，不要 Markdown、标题、hashtags。")
+            appendLine("6. image_prompt 用于可选配图：适合配图就写具体画面提示词，不适合则留空。")
+            appendLine("7. likes 生成 2-5 个虚构好友昵称，comments 生成 0-2 条虚构好友种子评论。")
+            appendLine("8. 评论要口语化、自然、15 字以内；昵称必须像真实朋友，禁止“默认角色”“角色”“NPC”“朋友A”等占位名。")
+            appendLine("9. 严格只输出 JSON：{\"content\":\"...\",\"image_prompt\":\"...\",\"likes\":[\"昵称\"],\"comments\":[{\"user\":\"昵称\",\"text\":\"评论\"}]}")
         }
         val content = core.requestCompletionContent(
             baseUrl = baseUrl,
@@ -355,6 +367,7 @@ internal class PhoneContentPromptService(
                 operation = "朋友圈生成失败",
             )
         }.getOrNull()
+        val seedComments = parsedJson?.parseMomentSeedComments().orEmpty()
         return MomentPostDraft(
             content = parsedJson?.stringValue("content").orEmpty().ifBlank {
                 content
@@ -364,6 +377,8 @@ internal class PhoneContentPromptService(
                     .trim()
             },
             imagePrompt = parsedJson?.stringValue("image_prompt").orEmpty(),
+            likedBy = parsedJson?.parseMomentLikes().orEmpty(),
+            seedComments = seedComments,
         )
     }
 
@@ -515,6 +530,40 @@ internal class PhoneContentPromptService(
             MomentAuthorType.NPC -> "路人/NPC"
             MomentAuthorType.SYSTEM -> "系统"
         }
+    }
+
+    private fun JsonObject.parseMomentLikes(): List<String> {
+        return getAsJsonArrayOrNull("likes")
+            ?.mapNotNull { element ->
+                runCatching { element.asString.trim() }.getOrNull()
+                    ?.takeIf { it.isNotBlank() && !it.isPlaceholderMomentName() }
+            }
+            .orEmpty()
+            .distinct()
+            .take(6)
+    }
+
+    private fun JsonObject.parseMomentSeedComments(): List<MomentCommentDraft> {
+        return getAsJsonArrayOrNull("comments")
+            ?.mapNotNull { element ->
+                val obj = element.asJsonObjectOrNull() ?: return@mapNotNull null
+                val authorName = obj.stringValue("user")
+                    .ifBlank { obj.stringValue("author_name") }
+                    .trim()
+                val text = obj.stringValue("text").trim()
+                if (authorName.isBlank() || authorName.isPlaceholderMomentName() || text.isBlank()) {
+                    return@mapNotNull null
+                }
+                MomentCommentDraft(
+                    authorId = "npc:$authorName",
+                    authorName = authorName,
+                    text = text.take(MaxSeedCommentLength),
+                    authorType = MomentAuthorType.NPC,
+                )
+            }
+            .orEmpty()
+            .distinctBy { draft -> draft.authorName to draft.text }
+            .take(2)
     }
 
     private fun String.isPlaceholderMomentName(): Boolean {
@@ -792,6 +841,7 @@ internal class PhoneContentPromptService(
     }
 
     private companion object {
+        const val MaxSeedCommentLength = 15
         val MisaddressedMomentReplyPatterns = listOf(
             Regex("我也.*想你"),
             Regex("也在想你"),

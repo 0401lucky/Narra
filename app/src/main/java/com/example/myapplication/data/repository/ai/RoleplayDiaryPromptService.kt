@@ -168,6 +168,62 @@ internal class RoleplayDiaryPromptService(
         ).trim()
     }
 
+    suspend fun generateAiPhotoImagePrompt(
+        photoDescription: String,
+        assistantName: String,
+        assistantPersona: String,
+        scenarioContext: String,
+        conversationExcerpt: String,
+        baseUrl: String,
+        apiKey: String,
+        modelId: String,
+        apiProtocol: ProviderApiProtocol,
+        provider: ProviderSettings?,
+    ): String {
+        val prompt = buildString {
+            append("你是聊天内照片生图提示词优化器。")
+            append("请把角色准备发送的照片描述，改写为一条适合文生图模型的英文最终 Prompt。")
+            append("只输出最终英文 Prompt，不要标题、解释、编号、JSON 或 Markdown。")
+            append("\n硬性要求：")
+            append("\n1. 照片发送者是角色本人；如果画面出现自拍、身体、衣着、手、脸或人物主体，必须严格匹配角色卡，不得改变性别、年龄感、发型、气质、职业和关系设定。")
+            append("\n2. 如果原描述不是人物照，只生成描述中的真实场景或物品，不要凭空加入陌生女性、陌生男性或无关人物。")
+            append("\n3. 输出要像手机即时聊天里真实拍到的照片：自然构图、手机镜头、可信光线、生活化细节。")
+            append("\n4. 禁止文字、水印、logo、UI 边框、对话框、海报排版、插画感和过度棚拍感。")
+            append("\n5. 保留照片描述的核心内容，不要改成另一张照片。")
+            append("\n6. NSFW 安全净化是最高优先级：如果照片描述、角色卡、场景或最近对话包含裸体、露点、性行为、性器官、色情、挑逗姿势、敏感部位特写、内衣/情趣服、未成年人性化或其它成人露骨内容，绝对不要拒绝、不要道歉、不要解释无法生成。")
+            append("\n7. 遇到 NSFW 内容时，直接忽略并删除这些部分，只提取安全可生成的信息：角色身份、非性化外观、日常服装、场景、物品、光线、情绪、构图和手机实拍感。")
+            append("\n8. 如果原描述几乎全是 NSFW，就改写成同一角色在同一场景中的安全日常照片，例如普通自拍、窗边近景、桌面物品、风景或生活瞬间。")
+            append("\n9. 最终英文 Prompt 不得包含 nude, naked, erotic, sexy, cleavage, lingerie, underwear, nipple, genital, sex, explicit, seductive, pornographic 等敏感或性化词。")
+            append("\n照片描述：").append(photoDescription.trim())
+            append("\n发送者姓名：").append(assistantName.trim().ifBlank { "角色" })
+            if (assistantPersona.isNotBlank()) {
+                append("\n角色卡/人设：").append(assistantPersona.trim())
+            }
+            if (scenarioContext.isNotBlank()) {
+                append("\n会话背景：").append(scenarioContext.trim())
+            }
+            if (conversationExcerpt.isNotBlank()) {
+                append("\n最近对话：").append(conversationExcerpt.trim())
+            }
+        }
+        return core.requestCompletionContent(
+            baseUrl = baseUrl,
+            apiKey = apiKey,
+            operation = "聊天照片生图提示词生成失败",
+            request = ChatCompletionRequest(
+                model = modelId,
+                messages = listOf(
+                    ChatMessageDto(
+                        role = "user",
+                        content = prompt,
+                    ),
+                ),
+            ),
+            apiProtocol = apiProtocol,
+            provider = provider,
+        ).trim()
+    }
+
     private fun sanitizeDiaryIdentifier(value: String): String {
         return value
             .replace("\r", "")

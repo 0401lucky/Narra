@@ -1,14 +1,19 @@
 package com.example.myapplication.conversation
 
 import com.example.myapplication.data.repository.TransferUpdateDirective
+import com.example.myapplication.model.AiPhotoImageStatus
 import com.example.myapplication.model.ChatMessage
 import com.example.myapplication.model.MessageRole
 import com.example.myapplication.model.TransferDirection
 import com.example.myapplication.model.TransferStatus
+import com.example.myapplication.model.aiPhotoImageStatus
+import com.example.myapplication.model.aiPhotoImageUri
+import com.example.myapplication.model.aiPhotoMessagePart
 import com.example.myapplication.model.giftMessagePart
 import com.example.myapplication.model.giftImageStatus
 import com.example.myapplication.model.GiftImageStatus
 import com.example.myapplication.model.transferMessagePart
+import com.example.myapplication.model.withAiPhotoImageSuccess
 import com.example.myapplication.model.withGiftImageGenerating
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertSame
@@ -131,6 +136,40 @@ class ConversationMessageTransformsTest {
         }
 
         assertEquals(GiftImageStatus.GENERATING, updated.single().parts.single().giftImageStatus())
+    }
+
+    @Test
+    fun applyAiPhotoUpdate_updatesMatchingPhotoAction() {
+        val original = listOf(
+            ChatMessage(
+                id = "m1",
+                conversationId = "c1",
+                role = MessageRole.ASSISTANT,
+                content = "照片",
+                parts = listOf(
+                    aiPhotoMessagePart(
+                        description = "窗边的阳光",
+                        id = "photo-1",
+                    ),
+                ),
+            ),
+        )
+
+        val updated = ConversationMessageTransforms.applyAiPhotoUpdate(
+            messages = original,
+            messageId = "m1",
+            actionId = "photo-1",
+        ) { part ->
+            part.withAiPhotoImageSuccess(
+                imageUri = "/tmp/photo.png",
+                mimeType = "image/png",
+                fileName = "photo.png",
+            )
+        }
+        val updatedPart = updated.single().parts.single()
+
+        assertEquals(AiPhotoImageStatus.READY, updatedPart.aiPhotoImageStatus())
+        assertEquals("/tmp/photo.png", updatedPart.aiPhotoImageUri())
     }
 
     @Test

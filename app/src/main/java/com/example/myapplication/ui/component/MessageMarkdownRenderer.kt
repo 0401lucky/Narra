@@ -46,9 +46,11 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.isSpecified
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.myapplication.model.ChatActionType
 import com.example.myapplication.model.ChatMessagePart
 import com.example.myapplication.model.ChatMessagePartType
 import com.example.myapplication.model.MessageCitation
+import com.example.myapplication.model.hasReadyAiPhotoImage
 import com.example.myapplication.model.toActionCopyText
 import com.example.myapplication.model.toMessageAttachmentOrNull
 import com.mikepenz.markdown.compose.components.MarkdownComponents
@@ -83,6 +85,7 @@ internal fun MessagePartsRenderer(
     performanceMode: ChatMessagePerformanceMode,
     onConfirmTransferReceipt: ((String) -> Unit)?,
     onOpenImagePreviewAtIndex: ((Int) -> Unit)? = null,
+    onRetryAiPhoto: ((String) -> Unit)? = null,
     citations: List<MessageCitation> = emptyList(),
     onOpenCitation: ((MessageCitation) -> Unit)? = null,
     fillTextWidth: Boolean = true,
@@ -135,19 +138,36 @@ internal fun MessagePartsRenderer(
             }
 
             ChatMessagePartType.ACTION -> {
-                RenderMessageText(
-                    text = part.toActionCopyText(),
-                    useMarkdown = false,
-                    contentColor = contentColor,
-                    assistantMarkdownTypography = markdownTypography,
-                    assistantMarkdownPadding = markdownPadding,
-                    plainTextStyle = plainTextStyle,
-                    codeBlockAutoWrap = codeBlockAutoWrap,
-                    codeBlockAutoCollapse = codeBlockAutoCollapse,
-                    performanceMode = performanceMode,
-                    fillWidth = fillTextWidth,
-                    fastPlainText = fastPlainText,
-                )
+                if (part.actionType == ChatActionType.AI_PHOTO) {
+                    val currentImageIndex = imageIndex
+                    if (part.hasReadyAiPhotoImage()) {
+                        imageIndex += 1
+                    }
+                    AiPhotoActionCard(
+                        part = part,
+                        autoPreviewImages = autoPreviewImages,
+                        onOpenPreview = {
+                            onOpenImagePreviewAtIndex?.invoke(currentImageIndex)
+                        },
+                        onRetry = {
+                            onRetryAiPhoto?.invoke(part.actionId)
+                        },
+                    )
+                } else {
+                    RenderMessageText(
+                        text = part.toActionCopyText(),
+                        useMarkdown = false,
+                        contentColor = contentColor,
+                        assistantMarkdownTypography = markdownTypography,
+                        assistantMarkdownPadding = markdownPadding,
+                        plainTextStyle = plainTextStyle,
+                        codeBlockAutoWrap = codeBlockAutoWrap,
+                        codeBlockAutoCollapse = codeBlockAutoCollapse,
+                        performanceMode = performanceMode,
+                        fillWidth = fillTextWidth,
+                        fastPlainText = fastPlainText,
+                    )
+                }
             }
 
             ChatMessagePartType.SPECIAL -> {

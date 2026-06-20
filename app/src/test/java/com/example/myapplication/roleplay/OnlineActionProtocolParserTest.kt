@@ -5,6 +5,7 @@ import com.example.myapplication.model.ChatMessagePartType
 import com.example.myapplication.model.ChatSpecialType
 import com.example.myapplication.model.TransferDirection
 import com.example.myapplication.model.TransferStatus
+import com.example.myapplication.model.aiPhotoDescription
 import com.example.myapplication.model.isOnlineThoughtPart
 import com.example.myapplication.model.onlineThoughtContent
 import com.example.myapplication.model.specialMetadataValue
@@ -67,6 +68,25 @@ class OnlineActionProtocolParserTest {
         assertEquals(ChatSpecialType.GIFT, result.parts[2].specialType)
         assertEquals(ChatSpecialType.TASK, result.parts[3].specialType)
         assertEquals(ChatSpecialType.PUNISH, result.parts[4].specialType)
+    }
+
+    @Test
+    fun parse_dedupesRepeatedAiPhotoDescriptions() {
+        val result = OnlineActionProtocolParser.parse(
+            rawContent = """
+                [
+                  {"type":"ai_photo","description":"刚拍的窗边自拍"},
+                  "在路上了",
+                  {"type":"ai_photo","description":"刚拍的窗边自拍"}
+                ]
+            """.trimIndent(),
+            characterName = "沈砚清",
+        )!!
+
+        assertEquals(2, result.parts.size)
+        assertEquals(ChatActionType.AI_PHOTO, result.parts.first().actionType)
+        assertEquals("刚拍的窗边自拍", result.parts.first().aiPhotoDescription())
+        assertEquals("在路上了", result.parts.last().text)
     }
 
     @Test

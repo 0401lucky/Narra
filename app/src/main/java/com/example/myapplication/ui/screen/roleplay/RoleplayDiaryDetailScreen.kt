@@ -19,6 +19,7 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowLeft
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.Mail
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
@@ -279,7 +280,13 @@ fun RoleplayDiaryDetailScreen(
                                     },
                                 )
                                 if (hasMaskedContent) {
-                                    NarraTextButton(onClick = { revealMasked = !revealMasked }) {
+                                    NarraTextButton(
+                                        onClick = { revealMasked = !revealMasked },
+                                        colors = ButtonDefaults.textButtonColors(
+                                            contentColor = palette.onGlass,
+                                            disabledContentColor = palette.onGlassMuted.copy(alpha = 0.58f),
+                                        ),
+                                    ) {
                                         Text(if (revealMasked) "隐藏涂黑" else "显示涂黑")
                                     }
                                 }
@@ -303,6 +310,10 @@ fun RoleplayDiaryDetailScreen(
                     NarraTextButton(
                         onClick = { if (currentIndex > 0) currentIndex -= 1 },
                         enabled = currentIndex > 0,
+                        colors = ButtonDefaults.textButtonColors(
+                            contentColor = palette.onGlass,
+                            disabledContentColor = palette.onGlassMuted.copy(alpha = 0.58f),
+                        ),
                     ) {
                         Icon(
                             imageVector = Icons.AutoMirrored.Filled.KeyboardArrowLeft,
@@ -317,6 +328,10 @@ fun RoleplayDiaryDetailScreen(
                             if (currentIndex < diaryEntries.lastIndex) currentIndex += 1
                         },
                         enabled = currentIndex < diaryEntries.lastIndex,
+                        colors = ButtonDefaults.textButtonColors(
+                            contentColor = palette.onGlass,
+                            disabledContentColor = palette.onGlassMuted.copy(alpha = 0.58f),
+                        ),
                     ) {
                         Text("下一篇")
                         Icon(

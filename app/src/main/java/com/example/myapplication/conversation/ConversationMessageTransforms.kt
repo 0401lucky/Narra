@@ -120,6 +120,46 @@ object ConversationMessageTransforms {
         return if (changed) updatedMessages else messages
     }
 
+    fun applyAiPhotoUpdate(
+        messages: List<ChatMessage>,
+        messageId: String,
+        actionId: String,
+        transform: (ChatMessagePart) -> ChatMessagePart,
+    ): List<ChatMessage> {
+        if (messageId.isBlank() || actionId.isBlank()) {
+            return messages
+        }
+
+        var changed = false
+        val updatedMessages = messages.map { message ->
+            if (message.id != messageId) {
+                return@map message
+            }
+            val updatedParts = message.parts.map { part ->
+                if (part.actionType != ChatActionType.AI_PHOTO || part.actionId != actionId) {
+                    return@map part
+                }
+                val updatedPart = transform(part)
+                if (updatedPart != part) {
+                    changed = true
+                }
+                updatedPart
+            }
+            if (updatedParts == message.parts) {
+                message
+            } else {
+                val normalizedUpdatedParts = normalizeChatMessageParts(updatedParts)
+                message.copy(
+                    parts = normalizedUpdatedParts,
+                    content = normalizedUpdatedParts.toContentMirror(
+                        specialFallback = "角色已回应",
+                    ).ifBlank { message.content },
+                )
+            }
+        }
+        return if (changed) updatedMessages else messages
+    }
+
     fun trimRequestMessagesWithSummary(
         requestMessages: List<ChatMessage>,
         completedMessageCount: Int,

@@ -40,6 +40,7 @@ import com.example.myapplication.R
 import com.example.myapplication.model.AppSettings
 import com.example.myapplication.model.Assistant
 import com.example.myapplication.model.ChatSpecialPlayDraft
+import com.example.myapplication.model.ChatMessagePart
 import com.example.myapplication.model.ChatSpecialType
 import com.example.myapplication.model.PendingMemoryProposal
 import com.example.myapplication.model.RoleplayImmersiveMode
@@ -84,9 +85,13 @@ internal fun RoleplaySceneContent(
     onApplySuggestion: (String) -> Unit,
     onClearSuggestions: () -> Unit,
     onRetryTurn: (String) -> Unit,
+    onRetryAiPhoto: (String, String) -> Unit,
     onEditUserMessage: (String) -> Unit,
     onOpenSpecialPlay: () -> Unit,
     quickActions: List<RoleplayInputQuickAction>,
+    pendingImageParts: List<ChatMessagePart>,
+    onPickImage: () -> Unit,
+    onRemovePendingImagePart: (ChatMessagePart) -> Unit,
     onOpenPhoneCheck: () -> Unit,
     onConfirmTransferReceipt: (String) -> Unit,
     onSend: () -> Unit,
@@ -259,9 +264,13 @@ internal fun RoleplaySceneContent(
                 onApplySuggestion = onApplySuggestion,
                 onClearSuggestions = onClearSuggestions,
                 onRetryTurn = onRetryTurn,
+                onRetryAiPhoto = onRetryAiPhoto,
                 onEditUserMessage = onEditUserMessage,
                 onOpenSpecialPlay = onOpenSpecialPlay,
                 quickActions = quickActions,
+                pendingImageParts = pendingImageParts,
+                onPickImage = onPickImage,
+                onRemovePendingImagePart = onRemovePendingImagePart,
                 onConfirmTransferReceipt = onConfirmTransferReceipt,
                 onSend = onSend,
                 onCancel = onCancelSending,

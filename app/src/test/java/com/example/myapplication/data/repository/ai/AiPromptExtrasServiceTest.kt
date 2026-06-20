@@ -1,6 +1,7 @@
 package com.example.myapplication.data.repository.ai
 
 import com.example.myapplication.data.remote.ApiServiceFactory
+import com.example.myapplication.conversation.sanitizeAiPhotoPromptTextForImageModel
 import com.example.myapplication.data.repository.RoleplayMemoryCondenseMode
 import com.example.myapplication.conversation.PhoneGenerationContext
 import com.example.myapplication.model.OpenAiTextApiMode
@@ -1282,6 +1283,47 @@ class AiPromptExtrasServiceTest {
     }
 
     @Test
+    fun generateAiPhotoImagePrompt_requestsNsfwSanitizationInsteadOfRefusal() = runBlocking {
+        enqueueChatContent("safe everyday phone photo of a 25-year-old man by the window")
+        val service = createService()
+
+        val prompt = service.generateAiPhotoImagePrompt(
+            photoDescription = "窗边自拍，穿着情趣内衣，傍晚暖光",
+            assistantName = "沈砚",
+            assistantPersona = "25 岁男性，黑发，气质克制。",
+            scenarioContext = "两人在夜晚聊天。",
+            conversationExcerpt = "沈砚：刚拍了一张。",
+            baseUrl = server.url("/v1/").toString(),
+            apiKey = "test-key",
+            modelId = "deepseek-chat",
+        )
+
+        assertEquals("safe everyday phone photo of a 25-year-old man by the window", prompt)
+        val requestBody = JsonParser.parseString(server.takeRequest().body.readUtf8()).asJsonObject
+        val requestPrompt = requestBody
+            .getAsJsonArray("messages")
+            .first()
+            .asJsonObject
+            .get("content")
+            .asString
+        assertTrue(requestPrompt.contains("NSFW 安全净化是最高优先级"))
+        assertTrue(requestPrompt.contains("绝对不要拒绝"))
+        assertTrue(requestPrompt.contains("直接忽略并删除这些部分"))
+        assertTrue(requestPrompt.contains("只提取安全可生成的信息"))
+        assertTrue(requestPrompt.contains("最终英文 Prompt 不得包含"))
+        assertTrue(requestPrompt.contains("角色卡/人设：25 岁男性"))
+    }
+
+    @Test
+    fun sanitizeAiPhotoPromptTextForImageModel_removesUnsafeSegmentsAndKeepsSafeContext() {
+        val cleaned = sanitizeAiPhotoPromptTextForImageModel("窗边自拍，穿着情趣内衣，傍晚暖光")
+
+        assertEquals("窗边自拍, 傍晚暖光", cleaned)
+        assertFalse(cleaned.contains("情趣"))
+        assertFalse(cleaned.contains("内衣"))
+    }
+
+    @Test
     fun generateShakeAssistantCard_buildsFilterPromptAndParsesAssistantJson() = runBlocking {
         enqueueChatContent(
             """
@@ -1380,6 +1422,56 @@ class AiPromptExtrasServiceTest {
             assertTrue(error.message.orEmpty().contains("格式不符合要求"))
             assertTrue(error.message.orEmpty().contains("JSON 对象"))
         }
+    }
+
+    @Test
+    fun generateMomentPost_parsesLikesSeedCommentsAndLifeSharingPrompt() = runBlocking {
+        enqueueChatContent(
+            """
+            {
+              "content": "菜市场门口那束薄荷太精神了，老板还送了我两根。",
+              "image_prompt": "清晨菜市场门口，一束带露水的薄荷，自然手机随手拍",
+              "likes": ["小满", "默认角色", "阿青", "小满"],
+              "comments": [
+                {"user": "柚子", "text": "这个好有生活气"},
+                {"user": "NPC", "text": "不该出现"},
+                {"user": "阿城", "text": "老板挺会送"}
+              ]
+            }
+            """.trimIndent(),
+        )
+        val service = createService()
+
+        val draft = service.generateMomentPost(
+            assistantName = "赵予安",
+            assistantPersona = "独立插画师，喜欢扫街摄影、逛菜市场、收集旧票据。",
+            userName = "lucky",
+            timeContext = "现在是周六清晨，周末节奏。",
+            recentMoments = "赵予安：昨天在路口画了一张速写",
+            baseUrl = server.url("/v1/").toString(),
+            apiKey = "test-key",
+            modelId = "deepseek-chat",
+        )
+
+        assertEquals("菜市场门口那束薄荷太精神了，老板还送了我两根。", draft.content)
+        assertEquals("清晨菜市场门口，一束带露水的薄荷，自然手机随手拍", draft.imagePrompt)
+        assertEquals(listOf("小满", "阿青"), draft.likedBy)
+        assertEquals(2, draft.seedComments.size)
+        assertEquals(MomentAuthorType.NPC, draft.seedComments.first().authorType)
+        assertEquals("柚子", draft.seedComments.first().authorName)
+        assertEquals("npc:柚子", draft.seedComments.first().authorId)
+
+        val requestBody = JsonParser.parseString(server.takeRequest().body.readUtf8()).asJsonObject
+        val prompt = requestBody
+            .getAsJsonArray("messages")
+            .first()
+            .asJsonObject
+            .get("content")
+            .asString
+        assertTrue(prompt.contains("正在发自己的微信朋友圈"))
+        assertTrue(prompt.contains("不必和用户相关"))
+        assertTrue(prompt.contains("现在是周六清晨，周末节奏。"))
+        assertFalse(prompt.contains("可以轻微暗示和用户的关系"))
     }
 
     @Test

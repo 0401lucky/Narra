@@ -10,6 +10,7 @@ data class MomentPost(
     val authorAvatarUri: String = "",
     val authorLabel: String = "",
     val content: String = "",
+    val location: String = "",
     val likedByNames: List<String> = emptyList(),
     val comments: List<MomentComment> = emptyList(),
     val media: MomentMedia? = null,
@@ -55,11 +56,14 @@ data class MomentMedia(
 
 data class MomentsSettings(
     val backgroundGenerationEnabled: Boolean = true,
+    val coverImageUri: String = "",
 )
 
 data class MomentPostDraft(
     val content: String = "",
     val imagePrompt: String = "",
+    val likedBy: List<String> = emptyList(),
+    val seedComments: List<MomentCommentDraft> = emptyList(),
 )
 
 data class MomentCommentDraft(

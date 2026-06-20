@@ -976,6 +976,16 @@ internal object ChatDbMigrations {
         }
     }
 
+    val MIGRATION_45_46 = object : Migration(45, 46) {
+        override fun migrate(db: SupportSQLiteDatabase) {
+            if (!hasColumn(db, "moment_posts", "location")) {
+                db.execSQL(
+                    "ALTER TABLE moment_posts ADD COLUMN location TEXT NOT NULL DEFAULT ''",
+                )
+            }
+        }
+    }
+
     /** 版本连续性由 `ChatDatabaseMigrationRegistryTest` 保证：`size == CURRENT_VERSION - 1`。 */
     val ALL: Array<Migration> = arrayOf(
         MIGRATION_1_2,
@@ -1022,6 +1032,7 @@ internal object ChatDbMigrations {
         MIGRATION_42_43,
         MIGRATION_43_44,
         MIGRATION_44_45,
+        MIGRATION_45_46,
     )
 
     /** 幂等列检查。子迁移在 `ALTER TABLE ADD COLUMN` 之前先探测，允许中间版本重复升级。 */

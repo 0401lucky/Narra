@@ -18,6 +18,7 @@ import com.example.myapplication.data.repository.search.SearchResult
 import com.example.myapplication.data.repository.search.SearchResultItem
 import com.example.myapplication.model.AppSettings
 import com.example.myapplication.model.AttachmentType
+import com.example.myapplication.model.ChatActionType
 import com.example.myapplication.model.ChatCompletionRequest
 import com.example.myapplication.model.ChatCompletionResponse
 import com.example.myapplication.model.ChatMessage
@@ -48,6 +49,7 @@ import com.example.myapplication.model.SearchSourceType
 import com.example.myapplication.model.defaultSearchSources
 import com.example.myapplication.model.TransferDirection
 import com.example.myapplication.model.TransferStatus
+import com.example.myapplication.model.aiPhotoDescription
 import com.example.myapplication.model.specialMetadataValue
 import com.example.myapplication.model.fileMessagePart
 import com.example.myapplication.model.imageMessagePart
@@ -133,6 +135,47 @@ class AiGatewayTest {
         assertFalse(messages[0].asJsonObject["content"].asString.contains("仅限聊天内展示的“转账”特殊玩法"))
         assertEquals("user", messages[1].asJsonObject["role"].asString)
         assertEquals("assistant", messages[2].asJsonObject["role"].asString)
+    }
+
+    @Test
+    fun sendMessage_omitsEmptyToolCallsFromOpenAiCompatibleMessages() = runBlocking {
+        server.enqueue(
+            MockResponse().setResponseCode(200).setBody(
+                """
+                {
+                  "choices": [
+                    {
+                      "index": 0,
+                      "message": {
+                        "role": "assistant",
+                        "content": "收到"
+                      }
+                    }
+                  ]
+                }
+                """.trimIndent(),
+            ),
+        )
+        val gateway = createGateway(
+            settings = AppSettings(
+                baseUrl = server.url("/compatible-mode/v1/").toString(),
+                apiKey = "saved-key",
+                selectedModel = "qwen-plus",
+            ),
+        )
+
+        gateway.sendMessage(
+            listOf(
+                ChatMessage(id = "1", role = MessageRole.USER, content = "你好"),
+                ChatMessage(id = "2", role = MessageRole.ASSISTANT, content = "上一条回复"),
+            ),
+        )
+
+        val requestBody = JsonParser.parseString(server.takeRequest().body.readUtf8()).asJsonObject
+        val messages = requestBody.getAsJsonArray("messages")
+        repeat(messages.size()) { index ->
+            assertFalse(messages[index].asJsonObject.has("tool_calls"))
+        }
     }
 
     @Test
@@ -2187,6 +2230,9 @@ class AiGatewayTest {
         assertEquals("</status>", firstRequest.getAsJsonArray("stop")[0].asString)
         val secondRequest = JsonParser.parseString(server.takeRequest().body.readUtf8()).asJsonObject
         val messages = secondRequest.getAsJsonArray("messages")
+        val assistantToolMessage = messages[messages.size() - 2].asJsonObject
+        assertEquals("assistant", assistantToolMessage["role"].asString)
+        assertEquals(1, assistantToolMessage.getAsJsonArray("tool_calls").size())
         assertEquals("tool", messages[messages.size() - 1].asJsonObject["role"].asString)
     }
 
@@ -2893,6 +2939,38 @@ class AiGatewayTest {
         assertEquals("帮园汇报午餐内容，不许胡嗦。", parsed.parts.last().specialMetadataValue("objective"))
         assertEquals("晚上的惩罚豁免令", parsed.parts.last().specialMetadataValue("reward"))
         assertEquals("13:00", parsed.parts.last().specialMetadataValue("deadline"))
+    }
+
+    @Test
+    fun parseAssistantSpecialOutput_extractsAiPhotoProtocolAction() {
+        val gateway = createGateway(settings = AppSettings())
+
+        val parsed = gateway.parseAssistantSpecialOutput(
+            content = """[{"type":"ai_photo","description":"刚拍的窗外阳光"},"刚拍的"]""",
+            existingParts = emptyList(),
+        )
+
+        assertEquals(2, parsed.parts.size)
+        assertEquals(ChatMessagePartType.ACTION, parsed.parts.first().type)
+        assertEquals(ChatActionType.AI_PHOTO, parsed.parts.first().actionType)
+        assertEquals("刚拍的窗外阳光", parsed.parts.first().aiPhotoDescription())
+        assertEquals(ChatMessagePartType.TEXT, parsed.parts.last().type)
+        assertEquals("刚拍的", parsed.parts.last().text)
+    }
+
+    @Test
+    fun parseAssistantSpecialOutput_dedupesRepeatedAiPhotoProtocolActions() {
+        val gateway = createGateway(settings = AppSettings())
+
+        val parsed = gateway.parseAssistantSpecialOutput(
+            content = """[{"type":"ai_photo","description":"刚拍的窗边自拍"},"在路上了",{"type":"ai_photo","description":"刚拍的窗边自拍"}]""",
+            existingParts = emptyList(),
+        )
+
+        assertEquals(2, parsed.parts.size)
+        assertEquals(ChatActionType.AI_PHOTO, parsed.parts.first().actionType)
+        assertEquals("刚拍的窗边自拍", parsed.parts.first().aiPhotoDescription())
+        assertEquals("在路上了", parsed.parts.last().text)
     }
 
     @Test

@@ -3,6 +3,7 @@ package com.example.myapplication.viewmodel
 import com.example.myapplication.conversation.AssistantRoundTripOutcome
 import com.example.myapplication.conversation.AssistantRoundTripRequest
 import com.example.myapplication.conversation.AssistantRoundTripResult
+import com.example.myapplication.conversation.AiPhotoGenerationRequest
 import com.example.myapplication.conversation.ConversationAssistantRoundTripRunner
 import com.example.myapplication.conversation.ContextGovernanceSupport
 import com.example.myapplication.conversation.ConversationMessageTransforms
@@ -11,6 +12,7 @@ import com.example.myapplication.conversation.RoundTripInitialPersistence
 import com.example.myapplication.conversation.StreamedAssistantPayload
 import com.example.myapplication.conversation.StreamingReplyBuffer
 import com.example.myapplication.conversation.VoiceSynthesisRequest
+import com.example.myapplication.data.repository.ParsedAssistantSpecialOutput
 import com.example.myapplication.data.repository.TransferUpdateDirective
 import com.example.myapplication.context.PromptContextAssembler
 import com.example.myapplication.data.repository.ConversationRepository
@@ -21,6 +23,7 @@ import com.example.myapplication.data.repository.roleplay.RoleplayRepository
 import com.example.myapplication.data.repository.roleplay.script.EmptyRoleplayScriptRepository
 import com.example.myapplication.data.repository.roleplay.script.RoleplayScriptRepository
 import com.example.myapplication.model.Assistant
+import com.example.myapplication.model.ChatActionType
 import com.example.myapplication.model.ChatMessage
 import com.example.myapplication.model.ChatMessagePart
 import com.example.myapplication.model.ChatMessagePartType
@@ -49,11 +52,13 @@ import com.example.myapplication.model.transferResultText
 import com.example.myapplication.roleplay.OnlineActionDirective
 import com.example.myapplication.roleplay.OnlineActionProtocolParseResult
 import com.example.myapplication.roleplay.OnlineActionProtocolParser
+import com.example.myapplication.roleplay.OnlineMessageReferenceCandidate
 import com.example.myapplication.roleplay.RoleplayConversationSupport
 import com.example.myapplication.roleplay.RoleplayFormatReminderSupport
 import com.example.myapplication.roleplay.RoleplayLongformMarkupParser
 import com.example.myapplication.roleplay.RoleplayMessageFormatSupport
 import com.example.myapplication.roleplay.RoleplayOnlineReferenceSupport
+import com.example.myapplication.roleplay.RoleplayOutputLeakSanitizer
 import com.example.myapplication.roleplay.RoleplayOutputParser
 import com.example.myapplication.roleplay.RoleplayPromptDecorator
 import com.example.myapplication.roleplay.RoleplaySummaryWindowSupport
@@ -88,6 +93,7 @@ internal class RoleplayRoundTripExecutor(
     private val canUpdateConversation: (String) -> Boolean = { true },
     private val launchGiftImageGeneration: (GiftImageGenerationRequest, (List<ChatMessage>) -> Unit) -> Unit,
     private val launchVoiceSynthesis: (VoiceSynthesisRequest, (List<ChatMessage>) -> Unit) -> Unit,
+    private val launchAiPhotoGeneration: (AiPhotoGenerationRequest, (List<ChatMessage>) -> Unit) -> Unit = { _, _ -> },
     private val launchConversationSummaryGeneration: (String, List<ChatMessage>, com.example.myapplication.model.AppSettings, Assistant?, com.example.myapplication.model.RoleplayScenario) -> Unit,
     private val launchAutomaticMemoryExtraction: (String, List<ChatMessage>, com.example.myapplication.model.AppSettings, Assistant?, com.example.myapplication.model.RoleplayScenario) -> Unit,
     private val contextLogStore: com.example.myapplication.data.repository.context.ContextLogStore,
@@ -368,11 +374,19 @@ internal class RoleplayRoundTripExecutor(
                             )
                         },
                         currentPayload = {
+                            val interactionMode = loadingMessage.roleplayInteractionMode
+                                ?: scenario.interactionMode
                             StreamedAssistantPayload(
-                                content = fullContent.toString().trim(),
+                                content = RoleplayOutputLeakSanitizer.sanitize(
+                                    rawContent = fullContent.toString().trim(),
+                                    interactionMode = interactionMode,
+                                ),
                                 reasoning = reasoningStepsToContent(fullReasoningSteps),
                                 reasoningSteps = fullReasoningSteps.toList(),
-                                parts = fullParts.toList(),
+                                parts = RoleplayOutputLeakSanitizer.sanitizeParts(
+                                    parts = fullParts.toList(),
+                                    interactionMode = interactionMode,
+                                ),
                                 citations = emptyList(),
                             )
                         },
@@ -397,31 +411,12 @@ internal class RoleplayRoundTripExecutor(
                                     )
                                 }
                             }
-                            val rawCompletedParts = if (onlineProtocolResult != null) {
-                                onlineProtocolResult
-                                    ?.parts
-                                    ?.let { onlineParts ->
-                                        normalizeChatMessageParts(
-                                            RoleplayOnlineReferenceSupport.resolveReplyTargets(
-                                                parts = onlineParts,
-                                                candidates = referenceCandidates,
-                                            ) + if (scenario.isGroupChat) {
-                                                emptyList()
-                                            } else {
-                                                parsedOutput.parts.filter { part ->
-                                                    part.type != ChatMessagePartType.TEXT
-                                                }
-                                            },
-                                        )
-                                    }
-                                    .orEmpty()
-                            } else if (scenario.interactionMode == com.example.myapplication.model.RoleplayInteractionMode.ONLINE_PHONE) {
-                                parsedOutput.parts.filter { part -> part.type != ChatMessagePartType.TEXT }
-                            } else if (scenario.isGroupChat) {
-                                parsedOutput.parts.filter { part -> part.type == ChatMessagePartType.TEXT }
-                            } else {
-                                parsedOutput.parts
-                            }
+                            val rawCompletedParts = resolveRoleplayCompletedParts(
+                                onlineProtocolResult = onlineProtocolResult,
+                                parsedOutput = parsedOutput,
+                                scenario = scenario,
+                                referenceCandidates = referenceCandidates,
+                            )
                             val completedParts = limitOnlineReplyParts(rawCompletedParts, scenario)
                             val resolvedContent = completedParts.toContentMirror(
                                 imageFallback = "角色返回了图片",
@@ -557,6 +552,17 @@ internal class RoleplayRoundTripExecutor(
                             messages = postDirectiveMessages,
                             settings = state.settings,
                             fallbackAssistantId = scenario.assistantId,
+                        ),
+                        ::applyRawMessages,
+                    )
+                    launchAiPhotoGeneration(
+                        AiPhotoGenerationRequest(
+                            conversationId = session.conversationId,
+                            selectedModel = selectedModel,
+                            messages = postDirectiveMessages,
+                            settings = state.settings,
+                            assistant = assistant,
+                            scenario = scenario,
                         ),
                         ::applyRawMessages,
                     )
@@ -826,7 +832,12 @@ internal class RoleplayRoundTripExecutor(
                 updateUiState { current ->
                     val streamingText = when (expectedInteractionMode) {
                         com.example.myapplication.model.RoleplayInteractionMode.OFFLINE_LONGFORM -> {
-                            RoleplayLongformMarkupParser.stripMarkupForDisplay(content)
+                            RoleplayLongformMarkupParser.stripMarkupForDisplay(
+                                RoleplayOutputLeakSanitizer.sanitize(
+                                    rawContent = content,
+                                    interactionMode = expectedInteractionMode,
+                                ),
+                            )
                         }
                         com.example.myapplication.model.RoleplayInteractionMode.ONLINE_PHONE -> {
                             if (isGroupChat) {
@@ -837,7 +848,12 @@ internal class RoleplayRoundTripExecutor(
                             }
                         }
                         com.example.myapplication.model.RoleplayInteractionMode.OFFLINE_DIALOGUE -> {
-                            outputParser.stripMarkup(content)
+                            outputParser.stripMarkup(
+                                RoleplayOutputLeakSanitizer.sanitize(
+                                    rawContent = content,
+                                    interactionMode = expectedInteractionMode,
+                                ),
+                            )
                         }
                     }
                     RoleplayStateSupport.applyStreamingContent(
@@ -1005,5 +1021,40 @@ internal class RoleplayRoundTripExecutor(
         private const val SCRIPT_NOTICE_MAX_LENGTH = 160
         private const val SUMMARY_TRIGGER_MESSAGE_COUNT = 12
         private const val SUMMARY_MIN_COVERED_MESSAGE_COUNT = 4
+    }
+}
+
+/**
+ * 汇总线上/线下扮演一轮回复最终落库的消息部件。
+ *
+ * 线上单聊场景下，可见文本与 ai_photo 由 [onlineProtocolResult]（JSON 动作协议）统一负责，
+ * [parsedOutput] 仅用于补齐 XML `<play>` 特殊玩法卡片，避免同一张照片被两条解析路径各计一份。
+ */
+internal fun resolveRoleplayCompletedParts(
+    onlineProtocolResult: OnlineActionProtocolParseResult?,
+    parsedOutput: ParsedAssistantSpecialOutput,
+    scenario: com.example.myapplication.model.RoleplayScenario,
+    referenceCandidates: List<OnlineMessageReferenceCandidate>,
+): List<ChatMessagePart> {
+    return if (onlineProtocolResult != null) {
+        normalizeChatMessageParts(
+            RoleplayOnlineReferenceSupport.resolveReplyTargets(
+                parts = onlineProtocolResult.parts,
+                candidates = referenceCandidates,
+            ) + if (scenario.isGroupChat) {
+                emptyList()
+            } else {
+                parsedOutput.parts.filter { part ->
+                    part.type != ChatMessagePartType.TEXT &&
+                        part.actionType != ChatActionType.AI_PHOTO
+                }
+            },
+        )
+    } else if (scenario.interactionMode == com.example.myapplication.model.RoleplayInteractionMode.ONLINE_PHONE) {
+        parsedOutput.parts.filter { part -> part.type != ChatMessagePartType.TEXT }
+    } else if (scenario.isGroupChat) {
+        parsedOutput.parts.filter { part -> part.type == ChatMessagePartType.TEXT }
+    } else {
+        parsedOutput.parts
     }
 }

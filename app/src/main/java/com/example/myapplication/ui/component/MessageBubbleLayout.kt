@@ -335,6 +335,7 @@ internal fun MessageBubbleContent(
     fastPlainText: Boolean,
     onConfirmTransferReceipt: ((String) -> Unit)?,
     onOpenImagePreview: ((Int) -> Unit)? = null,
+    onRetryAiPhoto: ((String) -> Unit)? = null,
     onOpenCitation: ((MessageCitation) -> Unit)?,
     modifier: Modifier = Modifier,
 ) {
@@ -394,6 +395,7 @@ internal fun MessageBubbleContent(
                 performanceMode = performanceMode,
                 onConfirmTransferReceipt = onConfirmTransferReceipt,
                 onOpenImagePreviewAtIndex = onOpenImagePreview,
+                onRetryAiPhoto = onRetryAiPhoto,
                 citations = message.citations,
                 onOpenCitation = onOpenCitation,
                 fillTextWidth = !isUser,

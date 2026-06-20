@@ -4,8 +4,10 @@ import com.example.myapplication.model.ChatMessage
 import com.example.myapplication.model.ChatReasoningStep
 import com.example.myapplication.model.MessageCitation
 import com.example.myapplication.model.MessageRole
+import com.example.myapplication.model.aiPhotoMessagePart
 import com.example.myapplication.model.imageMessagePart
 import com.example.myapplication.model.textMessagePart
+import com.example.myapplication.model.withAiPhotoImageSuccess
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
@@ -233,5 +235,32 @@ class ChatUtilitySheetsTest {
             listOf("file:///generated/1.png", "https://cdn.example.com/generated/2.png"),
             payload?.images?.map { it.source },
         )
+    }
+
+    @Test
+    fun resolvePreviewImages_includesReadyAiPhotoImage() {
+        val message = ChatMessage(
+            id = "m1",
+            conversationId = "c1",
+            role = MessageRole.ASSISTANT,
+            content = "照片",
+            parts = listOf(
+                aiPhotoMessagePart(
+                    description = "窗边的阳光",
+                    id = "photo-1",
+                ).withAiPhotoImageSuccess(
+                    imageUri = "/tmp/assistant-photo.png",
+                    mimeType = "image/png",
+                    fileName = "assistant-photo.png",
+                ),
+            ),
+        )
+
+        val images = resolvePreviewImages(message)
+
+        assertEquals(1, images.size)
+        assertEquals("/tmp/assistant-photo.png", images.single().source)
+        assertEquals("assistant-photo.png", images.single().fileName)
+        assertEquals("image/png", images.single().mimeType)
     }
 }

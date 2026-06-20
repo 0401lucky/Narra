@@ -99,7 +99,8 @@ fun AppNavHost(
                 onDeletePost = momentsViewModel::deletePost,
                 onAddComment = momentsViewModel::addCommentToPost,
                 onRetryImage = momentsViewModel::retryImage,
-                onGenerateDueAssistantPosts = momentsViewModel::generateDueAssistantPosts,
+                onRefreshMoments = momentsViewModel::refreshWithRandomPost,
+                onUpdateCoverImage = momentsViewModel::updateCoverImage,
                 onClearErrorMessage = momentsViewModel::clearErrorMessage,
             )
         }
@@ -124,7 +125,8 @@ fun AppNavHost(
                 onDeletePost = momentsViewModel::deletePost,
                 onAddComment = momentsViewModel::addCommentToPost,
                 onRetryImage = momentsViewModel::retryImage,
-                onGenerateDueAssistantPosts = momentsViewModel::generateDueAssistantPosts,
+                onRefreshMoments = momentsViewModel::refreshWithRandomPost,
+                onUpdateCoverImage = momentsViewModel::updateCoverImage,
                 onClearErrorMessage = momentsViewModel::clearErrorMessage,
                 onOpenPhoneCheck = if (conversationId.isNotBlank()) {
                     {

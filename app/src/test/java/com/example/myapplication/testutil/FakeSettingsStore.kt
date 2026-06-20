@@ -7,6 +7,7 @@ import com.example.myapplication.model.Assistant
 import com.example.myapplication.model.DEFAULT_ROLEPLAY_LONGFORM_TARGET_CHARS
 import com.example.myapplication.model.FunctionModelProviderIds
 import com.example.myapplication.model.MemoryInjectionPosition
+import com.example.myapplication.model.MomentsSettings
 import com.example.myapplication.model.ProviderSettings
 import com.example.myapplication.model.RoleplayImmersiveMode
 import com.example.myapplication.model.RoleplayLineHeightScale
@@ -87,6 +88,7 @@ class FakeSettingsStore(
             screenTranslationSettings = state.value.screenTranslationSettings,
             searchSettings = state.value.searchSettings,
             voiceSynthesisSettings = state.value.voiceSynthesisSettings,
+            momentsSettings = state.value.momentsSettings,
         )
     }
 
@@ -152,6 +154,14 @@ class FakeSettingsStore(
     override suspend fun saveVoiceSynthesisSettings(settings: VoiceSynthesisSettings) {
         state.value = state.value.copy(
             voiceSynthesisSettings = settings.normalized(),
+        )
+    }
+
+    override suspend fun saveMomentsSettings(settings: MomentsSettings) {
+        state.value = state.value.copy(
+            momentsSettings = settings.copy(
+                coverImageUri = settings.coverImageUri.trim(),
+            ),
         )
     }
 

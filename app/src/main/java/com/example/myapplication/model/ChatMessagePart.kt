@@ -105,6 +105,21 @@ enum class VoiceAudioStatus {
     }
 }
 
+enum class AiPhotoImageStatus {
+    GENERATING,
+    READY,
+    FAILED;
+
+    val storageValue: String
+        get() = name.lowercase()
+
+    companion object {
+        fun fromStorageValue(value: String): AiPhotoImageStatus? {
+            return entries.firstOrNull { it.storageValue == value.trim().lowercase() }
+        }
+    }
+}
+
 @Immutable
 data class ChatMessagePart(
     val type: ChatMessagePartType = ChatMessagePartType.TEXT,
@@ -844,6 +859,129 @@ fun ChatMessagePart.voiceMessageContent(): String {
     return actionMetadataValue(ACTION_CONTENT_KEY)
 }
 
+fun ChatMessagePart.aiPhotoDescription(): String {
+    return actionMetadataValue(ACTION_DESCRIPTION_KEY)
+}
+
+fun ChatMessagePart.aiPhotoImageStatus(): AiPhotoImageStatus? {
+    if (actionType != ChatActionType.AI_PHOTO) {
+        return null
+    }
+    return AiPhotoImageStatus.fromStorageValue(actionMetadataValue(AI_PHOTO_IMAGE_STATUS_KEY))
+}
+
+fun ChatMessagePart.aiPhotoImageUri(): String {
+    return actionMetadataValue(AI_PHOTO_IMAGE_URI_KEY)
+}
+
+fun ChatMessagePart.aiPhotoImageMimeType(): String {
+    return actionMetadataValue(AI_PHOTO_IMAGE_MIME_TYPE_KEY)
+}
+
+fun ChatMessagePart.aiPhotoImageFileName(): String {
+    return actionMetadataValue(AI_PHOTO_IMAGE_FILE_NAME_KEY)
+}
+
+fun ChatMessagePart.aiPhotoImageErrorMessage(): String {
+    return actionMetadataValue(AI_PHOTO_IMAGE_ERROR_KEY)
+}
+
+fun ChatMessagePart.hasReadyAiPhotoImage(): Boolean {
+    return actionType == ChatActionType.AI_PHOTO &&
+        aiPhotoImageStatus() == AiPhotoImageStatus.READY &&
+        aiPhotoImageUri().isNotBlank()
+}
+
+fun dedupeRepeatedAiPhotoParts(parts: List<ChatMessagePart>): List<ChatMessagePart> {
+    val seenPhotoKeys = mutableSetOf<String>()
+    var changed = false
+    val deduped = parts.filter { part ->
+        if (part.actionType != ChatActionType.AI_PHOTO) {
+            return@filter true
+        }
+        val key = part.aiPhotoDuplicateKey()
+        if (key.isBlank()) {
+            return@filter true
+        }
+        val keep = seenPhotoKeys.add(key)
+        if (!keep) {
+            changed = true
+        }
+        keep
+    }
+    return if (changed) deduped else parts
+}
+
+fun ChatMessagePart.aiPhotoDuplicateKey(): String {
+    return aiPhotoDescription()
+        .lowercase()
+        .replace(Regex("""\s+"""), "")
+        .trim()
+}
+
+fun ChatMessagePart.withAiPhotoImageGenerating(
+    model: String,
+): ChatMessagePart {
+    if (actionType != ChatActionType.AI_PHOTO) {
+        return this
+    }
+    return copy(
+        actionMetadata = normalizeActionMetadata(
+            actionMetadata +
+                mapOf(
+                    AI_PHOTO_IMAGE_STATUS_KEY to AiPhotoImageStatus.GENERATING.storageValue,
+                    AI_PHOTO_IMAGE_URI_KEY to "",
+                    AI_PHOTO_IMAGE_MIME_TYPE_KEY to "",
+                    AI_PHOTO_IMAGE_FILE_NAME_KEY to "",
+                    AI_PHOTO_IMAGE_ERROR_KEY to "",
+                    AI_PHOTO_MODEL_KEY to model,
+                ),
+        ),
+    )
+}
+
+fun ChatMessagePart.withAiPhotoImageSuccess(
+    imageUri: String,
+    mimeType: String,
+    fileName: String,
+): ChatMessagePart {
+    if (actionType != ChatActionType.AI_PHOTO) {
+        return this
+    }
+    return copy(
+        actionMetadata = normalizeActionMetadata(
+            actionMetadata +
+                mapOf(
+                    AI_PHOTO_IMAGE_STATUS_KEY to AiPhotoImageStatus.READY.storageValue,
+                    AI_PHOTO_IMAGE_URI_KEY to imageUri,
+                    AI_PHOTO_IMAGE_MIME_TYPE_KEY to mimeType,
+                    AI_PHOTO_IMAGE_FILE_NAME_KEY to fileName,
+                    AI_PHOTO_IMAGE_ERROR_KEY to "",
+                ),
+        ),
+    )
+}
+
+fun ChatMessagePart.withAiPhotoImageFailure(
+    errorMessage: String,
+): ChatMessagePart {
+    if (actionType != ChatActionType.AI_PHOTO) {
+        return this
+    }
+    return copy(
+        actionMetadata = normalizeActionMetadata(
+            actionMetadata +
+                mapOf(
+                    AI_PHOTO_IMAGE_STATUS_KEY to AiPhotoImageStatus.FAILED.storageValue,
+                    AI_PHOTO_IMAGE_URI_KEY to "",
+                    AI_PHOTO_IMAGE_MIME_TYPE_KEY to "",
+                    AI_PHOTO_IMAGE_FILE_NAME_KEY to "",
+                    AI_PHOTO_IMAGE_ERROR_KEY to errorMessage,
+                ),
+        ),
+    )
+}
+
 fun ChatMessagePart.voiceMessageDurationSeconds(): Int {
     if (actionType != ChatActionType.VOICE_MESSAGE) {
         return 0
@@ -1201,6 +1339,12 @@ private const val VOICE_TTS_MODEL_KEY = "tts_model"
 private const val VOICE_TTS_VOICE_MODE_KEY = "tts_voice_mode"
 private const val VOICE_TTS_VOICE_ID_KEY = "tts_voice_id"
 private const val VOICE_TTS_VOICE_PROMPT_HASH_KEY = "tts_voice_prompt_hash"
+private const val AI_PHOTO_IMAGE_STATUS_KEY = "image_status"
+private const val AI_PHOTO_IMAGE_URI_KEY = "image_uri"
+private const val AI_PHOTO_IMAGE_MIME_TYPE_KEY = "image_mime_type"
+private const val AI_PHOTO_IMAGE_FILE_NAME_KEY = "image_file_name"
+private const val AI_PHOTO_IMAGE_ERROR_KEY = "image_error"
+private const val AI_PHOTO_MODEL_KEY = "image_model"
 
 private fun buildPokeDisplayText(
     target: String,

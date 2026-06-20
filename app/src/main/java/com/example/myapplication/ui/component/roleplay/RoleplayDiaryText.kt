@@ -3,6 +3,7 @@ package com.example.myapplication.ui.component.roleplay
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.SpanStyle
@@ -21,10 +22,13 @@ internal fun rememberRoleplayDiaryAnnotatedString(
     primaryText: Color,
     accent: Color,
 ): AnnotatedString {
-    val isDark = primaryText.luminance() > 0.5f
-    val highlightBackground = accent.copy(alpha = if (isDark) 0.32f else 0.22f)
-    val underlineColor = accent
-    val emphasisColor = accent.copy(alpha = 0.92f)
+    val usesLightText = primaryText.luminance() > 0.5f
+    val readableAccent = remember(primaryText, accent) {
+        resolveDiaryReadableAccentColor(primaryText = primaryText, accent = accent)
+    }
+    val highlightBackground = readableAccent.copy(alpha = if (usesLightText) 0.30f else 0.18f)
+    val underlineColor = readableAccent
+    val emphasisColor = readableAccent
     val mutedHandwriting = primaryText.copy(alpha = 0.78f)
     val secretRevealBackground = primaryText.copy(alpha = 0.16f)
     val secretBlockColor = primaryText.copy(alpha = 0.55f)
@@ -41,6 +45,19 @@ internal fun rememberRoleplayDiaryAnnotatedString(
             secretBlockColor = secretBlockColor,
         )
     }
+}
+
+internal fun resolveDiaryReadableAccentColor(
+    primaryText: Color,
+    accent: Color,
+): Color {
+    val usesLightText = primaryText.luminance() > 0.5f
+    val blendFraction = if (usesLightText) {
+        0.58f
+    } else {
+        0.42f
+    }
+    return lerp(primaryText, accent, blendFraction).copy(alpha = 1f)
 }
 
 /**

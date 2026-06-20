@@ -120,6 +120,7 @@ class RoleplayFormatReminderSupportTest {
         assertEquals(messages[0], result[0])
         val injected = result[1]
         assertTrue(injected.content.startsWith("<format_reminder>"))
+        assertTrue(injected.content.contains("不是用户正文"))
         assertTrue(injected.content.contains("</format_reminder>"))
         assertTrue(injected.content.endsWith("你在想什么？"))
     }
@@ -147,6 +148,7 @@ class RoleplayFormatReminderSupportTest {
         val injected = result.single()
         assertEquals(2, injected.parts.size)
         assertTrue(injected.parts[0].text.startsWith("<format_reminder>"))
+        assertTrue(injected.parts[0].text.contains("禁止在回复中复述"))
         assertTrue(injected.parts[0].text.endsWith("第一段文本"))
         assertEquals("第二段文本", injected.parts[1].text)
         // content 不应被改（因为 parts 分支生效）
