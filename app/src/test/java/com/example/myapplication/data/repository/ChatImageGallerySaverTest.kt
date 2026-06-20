@@ -4,6 +4,7 @@ import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
+import java.io.File
 
 class ChatImageGallerySaverTest {
     @Test
@@ -21,11 +22,12 @@ class ChatImageGallerySaverTest {
             galleryWriter = writer,
             fileNamePrefixProvider = { "fallback-name" },
         )
+        val sourcePath = File("build/test-images/from-file.png").absolutePath
 
-        val result = saver.save("C:\\images\\from-file.png")
+        val result = saver.save(sourcePath)
 
         assertTrue(result is SaveImageResult.Success)
-        assertEquals(listOf("C:\\images\\from-file.png"), reader.fileRequests)
+        assertEquals(listOf(sourcePath), reader.fileRequests)
         assertEquals("from-file.png", writer.lastSavedImage?.fileName)
         assertEquals("image/png", writer.lastSavedImage?.mimeType)
     }
@@ -135,8 +137,9 @@ class ChatImageGallerySaverTest {
             ),
             fileNamePrefixProvider = { "unused" },
         )
+        val sourcePath = File("build/test-images/from-file.png").absolutePath
 
-        val result = saver.save("C:\\images\\from-file.png")
+        val result = saver.save(sourcePath)
 
         assertEquals(
             SaveImageResult.Failure("没有存储权限，无法保存到相册"),
