@@ -22,7 +22,10 @@ import com.example.myapplication.model.sanitizeMomentDisplayName
 import kotlinx.coroutines.TimeoutCancellationException
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.withTimeout
+import java.util.Calendar
+import java.util.Locale
 import java.util.UUID
+import kotlin.random.Random
 
 class MomentsGenerationCoordinator(
     private val momentsRepository: MomentsRepository,
@@ -31,22 +34,41 @@ class MomentsGenerationCoordinator(
     private val aiGateway: AiGateway,
     private val imageSaver: suspend (String) -> SavedImageFile,
     private val nowProvider: () -> Long = { System.currentTimeMillis() },
+    private val randomProvider: (Int) -> Int = { bound -> Random.nextInt(bound) },
 ) {
     suspend fun publishUserPost(
         content: String,
+        imageUri: String = "",
+        location: String = "",
         userPersona: ResolvedUserPersona? = null,
     ): MomentPost {
         val settings = settingsRepository.settingsFlow.first()
         val resolvedUserPersona = userPersona ?: settings.resolveUserPersona()
         val now = nowProvider()
+        val postId = "user-moment-${UUID.randomUUID()}"
+        val media = imageUri.trim().takeIf(String::isNotBlank)?.let { uri ->
+            MomentMedia(
+                id = "moment-media-${UUID.randomUUID()}",
+                postId = postId,
+                prompt = "",
+                imageUri = uri,
+                mimeType = "image/*",
+                fileName = uri.substringAfterLast('/').ifBlank { "moment-image" },
+                status = MomentMediaStatus.SUCCEEDED,
+                createdAt = now,
+                updatedAt = now,
+            )
+        }
         val post = MomentPost(
-            id = "user-moment-${UUID.randomUUID()}",
+            id = postId,
             authorType = MomentAuthorType.USER,
             authorId = resolvedUserPersona.toMomentUserAuthorId(),
             authorName = resolvedUserPersona.displayName,
             authorAvatarUri = resolvedUserPersona.resolvedMomentAvatar(),
             authorLabel = "我",
             content = content.trim(),
+            location = location.trim().take(MaxMomentLocationLength),
+            media = media,
             createdAt = now,
             updatedAt = now,
         )
@@ -163,6 +185,26 @@ class MomentsGenerationCoordinator(
         return generatedCount
     }
 
+    suspend fun generateRandomAssistantPost(): MomentPost? {
+        val settings = settingsRepository.settingsFlow.first()
+        val enabledAssistants = settings.resolvedAssistants()
+            .filter { it.momentAutoPostEnabled }
+        if (enabledAssistants.isEmpty()) {
+            return null
+        }
+        val selectedIndex = randomProvider(enabledAssistants.size)
+            .coerceIn(0, enabledAssistants.lastIndex)
+        val assistant = enabledAssistants[selectedIndex]
+        val post = publishAssistantPost(settings, assistant)
+        generateRepliesForPost(
+            postId = post.id,
+            triggerText = "其他角色看到了这条朋友圈。",
+            isUserCommentTrigger = false,
+            excludeAssistantIds = setOf(assistant.id),
+        )
+        return post
+    }
+
     suspend fun retryImage(postId: String): MomentMedia? {
         val settings = settingsRepository.settingsFlow.first()
         val post = momentsRepository.getPost(postId) ?: return null
@@ -209,6 +251,7 @@ class MomentsGenerationCoordinator(
             assistantName = assistantDisplayName,
             assistantPersona = assistant.toMomentPersona(),
             userName = resolvedUserPersona.displayName,
+            timeContext = buildMomentTimeContext(nowProvider()),
             recentMoments = recentMoments,
             baseUrl = provider.baseUrl,
             apiKey = provider.apiKey,
@@ -218,6 +261,33 @@ class MomentsGenerationCoordinator(
         )
         val now = nowProvider()
         val postId = "assistant-moment-${UUID.randomUUID()}"
+        val likedByNames = draft.likedBy
+            .map { name -> name.sanitizedForMoment("like-$postId-$name") }
+            .filter(String::isNotBlank)
+            .distinct()
+            .take(MaxMomentLikeFillCount)
+        val seedComments = draft.seedComments
+            .mapIndexedNotNull { index, draftComment ->
+                val authorName = draftComment.authorName
+                    .sanitizedForMoment("seed-$postId-${draftComment.authorName}")
+                val text = draftComment.text.trim().take(MaxMomentCommentLength)
+                if (authorName.isBlank() || text.isBlank()) {
+                    null
+                } else {
+                    MomentComment(
+                        id = "moment-comment-${UUID.randomUUID()}",
+                        postId = postId,
+                        authorType = MomentAuthorType.NPC,
+                        authorId = "npc:$authorName",
+                        authorName = authorName,
+                        authorAvatarUri = "",
+                        text = text,
+                        createdAt = now + index,
+                    )
+                }
+            }
+            .distinctBy { comment -> comment.authorName to comment.text }
+            .take(MaxMomentSeedCommentCount)
         val media = if (assistant.momentAutoImageEnabled) {
             MomentMedia(
                 id = "moment-media-${UUID.randomUUID()}",
@@ -244,11 +314,13 @@ class MomentsGenerationCoordinator(
             authorAvatarUri = assistant.avatarUri,
             authorLabel = "角色",
             content = draft.content.ifBlank { "今天也想留下一点生活的痕迹。" }.take(MaxMomentContentLength),
+            likedByNames = likedByNames,
             media = media,
             createdAt = now,
             updatedAt = now,
         )
         momentsRepository.upsertPost(post)
+        momentsRepository.addComments(seedComments)
         media?.let { generateImageForMedia(it) }
         return post
     }
@@ -377,6 +449,7 @@ class MomentsGenerationCoordinator(
         val usedNames = buildSet {
             add(userName)
             add(post.authorName)
+            post.likedByNames.forEach(::add)
             post.comments.forEach { comment -> add(comment.authorName) }
             assistants.forEach { assistant -> add(assistant.momentDisplayName()) }
         }.map { name -> name.trim() }.filter { it.isNotBlank() }.toSet()
@@ -410,9 +483,45 @@ class MomentsGenerationCoordinator(
         return avatarUrl.trim().ifBlank { avatarUri.trim() }
     }
 
+    private fun buildMomentTimeContext(now: Long): String {
+        val calendar = Calendar.getInstance(Locale.CHINA).apply {
+            timeInMillis = now
+        }
+        val weekday = when (calendar.get(Calendar.DAY_OF_WEEK)) {
+            Calendar.MONDAY -> "周一"
+            Calendar.TUESDAY -> "周二"
+            Calendar.WEDNESDAY -> "周三"
+            Calendar.THURSDAY -> "周四"
+            Calendar.FRIDAY -> "周五"
+            Calendar.SATURDAY -> "周六"
+            Calendar.SUNDAY -> "周日"
+            else -> ""
+        }
+        val hour = calendar.get(Calendar.HOUR_OF_DAY)
+        val dayPart = when (hour) {
+            in 0..4 -> "凌晨"
+            in 5..8 -> "清晨"
+            in 9..11 -> "上午"
+            in 12..13 -> "中午"
+            in 14..17 -> "下午"
+            in 18..21 -> "晚上"
+            else -> "深夜"
+        }
+        val rhythm = when (calendar.get(Calendar.DAY_OF_WEEK)) {
+            Calendar.SATURDAY,
+            Calendar.SUNDAY -> "周末节奏"
+            else -> "工作日节奏"
+        }
+        return "现在是$weekday$dayPart，$rhythm。"
+    }
+
     private companion object {
         const val MaxReplyAssistantCount = 6
         const val MaxMomentContentLength = 300
+        const val MaxMomentCommentLength = 40
+        const val MaxMomentLikeFillCount = 6
+        const val MaxMomentLocationLength = 40
+        const val MaxMomentSeedCommentCount = 2
         const val ImageGenerationTimeoutMs = 240_000L
     }
 }

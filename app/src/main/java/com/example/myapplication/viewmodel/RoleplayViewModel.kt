@@ -1537,6 +1537,12 @@ class RoleplayViewModel(
         }
     }
 
+    fun sendMessageWithParts(pendingParts: List<ChatMessagePart>) {
+        sendActionSupport.sendMessageWithParts(pendingParts)?.let { job ->
+            sendingJob = job
+        }
+    }
+
     fun requestGroupParticipantReply(participantId: String) {
         sendActionSupport.requestGroupParticipantReply(participantId)?.let { job ->
             sendingJob = job

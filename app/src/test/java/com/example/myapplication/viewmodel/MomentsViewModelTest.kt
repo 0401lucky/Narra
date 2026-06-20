@@ -6,7 +6,7 @@ import com.example.myapplication.data.repository.RoleplayMemoryCondenseMode
 import com.example.myapplication.data.repository.StructuredMemoryExtractionResult
 import com.example.myapplication.data.repository.ai.AiGateway
 import com.example.myapplication.data.repository.ai.AiPromptExtrasService
-import com.example.myapplication.data.repository.ai.AiSettingsRepository
+import com.example.myapplication.data.repository.ai.DefaultAiSettingsRepository
 import com.example.myapplication.data.repository.moments.MomentsGenerationCoordinator
 import com.example.myapplication.data.repository.moments.MomentsRepository
 import com.example.myapplication.data.repository.roleplay.RoleplayRepository
@@ -32,6 +32,8 @@ import com.example.myapplication.model.RoleplayScenario
 import com.example.myapplication.model.RoleplaySession
 import com.example.myapplication.model.RoleplaySuggestionUiModel
 import com.example.myapplication.model.UserPersonaMask
+import com.example.myapplication.testutil.FakeSettingsStore
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.emptyFlow
@@ -42,6 +44,7 @@ import org.junit.Assert.assertEquals
 import org.junit.Rule
 import org.junit.Test
 
+@OptIn(ExperimentalCoroutinesApi::class)
 class MomentsViewModelTest {
     @get:Rule
     val mainDispatcherRule = MainDispatcherRule()
@@ -93,11 +96,57 @@ class MomentsViewModelTest {
         assertEquals(listOf("纪念"), post.likedByNames)
     }
 
+    @Test
+    fun publishUserPost_acceptsComposerImageLocationAndSelectedMask() = runTest(mainDispatcherRule.dispatcher.scheduler) {
+        val momentsRepository = FakeMomentsRepository()
+        val viewModel = createViewModel(momentsRepository)
+
+        advanceUntilIdle()
+        viewModel.publishUserPost(
+            content = "今天在学校门口看到了晚霞",
+            imageUri = "content://picked/image",
+            location = "深圳大学",
+            userPersonaMaskId = "mask-a",
+        )
+        advanceUntilIdle()
+
+        val post = momentsRepository.posts.single()
+        assertEquals("纪善", post.authorName)
+        assertEquals("user-mask-mask-a", post.authorId)
+        assertEquals("深圳大学", post.location)
+        assertEquals("content://picked/image", post.media?.imageUri)
+    }
+
+    @Test
+    fun updateCoverImage_savesMomentsCoverUri() = runTest(mainDispatcherRule.dispatcher.scheduler) {
+        val momentsRepository = FakeMomentsRepository()
+        val viewModel = createViewModel(momentsRepository)
+
+        advanceUntilIdle()
+        viewModel.updateCoverImage(" content://cover/image ")
+        advanceUntilIdle()
+
+        assertEquals("content://cover/image", viewModel.uiState.value.momentsSettings.coverImageUri)
+    }
+
+    @Test
+    fun refreshWithRandomPost_withoutEnabledAssistantShowsHint() = runTest(mainDispatcherRule.dispatcher.scheduler) {
+        val momentsRepository = FakeMomentsRepository()
+        val viewModel = createViewModel(momentsRepository)
+
+        advanceUntilIdle()
+        viewModel.refreshWithRandomPost()
+        advanceUntilIdle()
+
+        assertEquals("还没有角色开启发朋友圈", viewModel.uiState.value.errorMessage)
+        assertEquals(false, viewModel.uiState.value.isRefreshing)
+    }
+
     private fun createViewModel(
         momentsRepository: FakeMomentsRepository,
     ): MomentsViewModel {
-        val settingsRepository = FakeMomentsSettingsRepository(
-            AppSettings(
+        val settingsStore = FakeSettingsStore(
+            settings = AppSettings(
                 userDisplayName = "全局用户",
                 userPersonaMasks = listOf(
                     UserPersonaMask(
@@ -114,6 +163,7 @@ class MomentsViewModelTest {
                 defaultUserPersonaMaskId = "mask-a",
             ),
         )
+        val settingsRepository = DefaultAiSettingsRepository(settingsStore)
         val coordinator = MomentsGenerationCoordinator(
             momentsRepository = momentsRepository,
             settingsRepository = settingsRepository,
@@ -125,6 +175,7 @@ class MomentsViewModelTest {
         return MomentsViewModel(
             scenarioId = "scene-1",
             settingsRepository = settingsRepository,
+            settingsStore = settingsStore,
             momentsRepository = momentsRepository,
             momentsGenerationCoordinator = coordinator,
             roleplayRepository = FakeMomentsRoleplayRepository(
@@ -137,12 +188,6 @@ class MomentsViewModelTest {
             nowProvider = { 100L },
         )
     }
-}
-
-private class FakeMomentsSettingsRepository(
-    initialSettings: AppSettings,
-) : AiSettingsRepository {
-    override val settingsFlow: Flow<AppSettings> = MutableStateFlow(initialSettings)
 }
 
 private class FakeMomentsRepository(

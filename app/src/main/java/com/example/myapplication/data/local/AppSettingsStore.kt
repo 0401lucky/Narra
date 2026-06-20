@@ -29,6 +29,7 @@ import com.example.myapplication.model.MEMORY_CAPACITY_MIN
 import com.example.myapplication.model.MemoryInjectionPosition
 import com.example.myapplication.model.MomentAutoPostFrequency
 import com.example.myapplication.model.MomentCommentStyle
+import com.example.myapplication.model.MomentsSettings
 import com.example.myapplication.model.ProviderFunctionModelMode
 import com.example.myapplication.model.ProviderSettings
 import com.example.myapplication.model.ProviderType
@@ -48,6 +49,7 @@ import com.example.myapplication.model.createDefaultProvider
 import com.example.myapplication.model.inferredModelInfo
 import com.example.myapplication.model.normalized
 import com.google.gson.Gson
+import com.google.gson.JsonParser
 import com.google.gson.reflect.TypeToken
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
@@ -102,6 +104,8 @@ interface SettingsStore {
 
     suspend fun saveVoiceSynthesisSettings(settings: VoiceSynthesisSettings)
 
+    suspend fun saveMomentsSettings(settings: MomentsSettings)
+
     suspend fun saveUserProfile(
         displayName: String,
         personaPrompt: String,
@@ -146,6 +150,7 @@ class AppSettingsStore(
     private val translationHistoryType = object : TypeToken<List<TranslationHistoryEntry>>() {}.type
     private val searchSettingsType = object : TypeToken<SearchSettings>() {}.type
     private val voiceSynthesisSettingsType = object : TypeToken<VoiceSynthesisSettings>() {}.type
+    private val momentsSettingsType = object : TypeToken<MomentsSettings>() {}.type
     private val secureValueStore = SecureValueStore(context)
 
     override val settingsFlow: Flow<AppSettings> = context.dataStore.data.map { preferences ->
@@ -276,6 +281,9 @@ class AppSettingsStore(
             ),
             searchSettings = searchSettings,
             voiceSynthesisSettings = voiceSynthesisSettings,
+            momentsSettings = decodeMomentsSettings(
+                preferences[PreferencesKeys.momentsSettingsJson].orEmpty(),
+            ),
             memoryAutoSummaryEvery = (preferences[PreferencesKeys.memoryAutoSummaryEvery]
                 ?: DEFAULT_MEMORY_AUTO_SUMMARY_EVERY)
                 .coerceIn(MEMORY_AUTO_SUMMARY_EVERY_MIN, MEMORY_AUTO_SUMMARY_EVERY_MAX),
@@ -482,6 +490,18 @@ class AppSettingsStore(
             preferences[PreferencesKeys.voiceSynthesisSettingsJson] = gson.toJson(
                 normalizedSettings.stripSensitiveFields(),
                 voiceSynthesisSettingsType,
+            )
+        }
+    }
+
+    override suspend fun saveMomentsSettings(settings: MomentsSettings) {
+        val normalizedSettings = settings.copy(
+            coverImageUri = settings.coverImageUri.trim(),
+        )
+        context.dataStore.edit { preferences ->
+            preferences[PreferencesKeys.momentsSettingsJson] = gson.toJson(
+                normalizedSettings,
+                momentsSettingsType,
             )
         }
     }
@@ -995,6 +1015,27 @@ class AppSettingsStore(
             .getOrDefault(emptyList())
     }
 
+    private fun decodeMomentsSettings(rawJson: String): MomentsSettings {
+        if (rawJson.isBlank()) {
+            return MomentsSettings()
+        }
+        return runCatching {
+            val obj = JsonParser.parseString(rawJson).asJsonObject
+            MomentsSettings(
+                backgroundGenerationEnabled = obj.get("backgroundGenerationEnabled")
+                    ?.takeIf { !it.isJsonNull }
+                    ?.asBoolean
+                    ?: true,
+                coverImageUri = obj.get("coverImageUri")
+                    ?.takeIf { !it.isJsonNull }
+                    ?.asString
+                    .orEmpty()
+                    .trim(),
+            )
+        }.logFailure(TAG) { "decodeMomentsSettings fromJson failed, raw.len=${rawJson.length}" }
+            .getOrDefault(MomentsSettings())
+    }
+
     private fun normalizeAssistant(
         assistant: Assistant,
         hasMomentAutoCommentEnabled: Boolean = true,
@@ -1107,6 +1148,7 @@ class AppSettingsStore(
         val screenTranslationVendorGuideDismissed = booleanPreferencesKey("screen_translation_vendor_guide_dismissed")
         val searchSettingsJson = stringPreferencesKey("search_settings_json")
         val voiceSynthesisSettingsJson = stringPreferencesKey("voice_synthesis_settings_json")
+        val momentsSettingsJson = stringPreferencesKey("moments_settings_json")
         val memoryAutoSummaryEvery = PreferencesKeysCompat.intPreferencesKey("memory_auto_summary_every")
         val memoryCapacity = PreferencesKeysCompat.intPreferencesKey("memory_capacity")
         val memoryExtractionPrompt = stringPreferencesKey("memory_extraction_prompt")

@@ -29,6 +29,7 @@ import androidx.compose.material.icons.filled.AutoStories
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Mail
 import androidx.compose.material.icons.filled.Search
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -283,6 +284,7 @@ fun RoleplayDiaryScreen(
                                 NarraTextButton(
                                     onClick = onGenerateDiary,
                                     enabled = !isGeneratingDiary,
+                                    colors = diaryTextButtonColors(palette),
                                 ) {
                                     if (isGeneratingDiary) {
                                         CircularProgressIndicator(
@@ -436,6 +438,7 @@ private fun EmptyDiaryPanel(
                 onClick = onGenerateDiary,
                 enabled = !isGeneratingDiary,
                 modifier = Modifier.fillMaxWidth(0.65f),
+                colors = diaryTextButtonColors(palette),
             ) {
                 if (isGeneratingDiary) {
                     CircularProgressIndicator(
@@ -569,11 +572,17 @@ private fun RoleplayDiaryEntryCard(
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 if (hasMaskedContent) {
-                    NarraTextButton(onClick = { revealMasked = !revealMasked }) {
+                    NarraTextButton(
+                        onClick = { revealMasked = !revealMasked },
+                        colors = diaryTextButtonColors(palette),
+                    ) {
                         Text(if (revealMasked) "隐藏涂黑" else "显示涂黑")
                     }
                 }
-                NarraTextButton(onClick = onClick) {
+                NarraTextButton(
+                    onClick = onClick,
+                    colors = diaryTextButtonColors(palette),
+                ) {
                     Text("阅读全文")
                 }
             }
@@ -605,6 +614,14 @@ private fun DiaryChip(
         )
     }
 }
+
+@Composable
+private fun diaryTextButtonColors(
+    palette: ImmersiveGlassPalette,
+) = ButtonDefaults.textButtonColors(
+    contentColor = palette.onGlass,
+    disabledContentColor = palette.onGlassMuted.copy(alpha = 0.58f),
+)
 
 @Composable
 private fun SearchEmptyDiaryPanel(

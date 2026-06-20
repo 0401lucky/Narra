@@ -168,6 +168,7 @@ internal fun rememberMomentsViewModel(
         factory = MomentsViewModel.factory(
             scenarioId = scenarioId,
             settingsRepository = appGraph.aiSettingsRepository,
+            settingsStore = appGraph.settingsStore,
             momentsRepository = appGraph.momentsRepository,
             momentsGenerationCoordinator = appGraph.momentsGenerationCoordinator,
             roleplayRepository = appGraph.roleplayRepository,

@@ -22,6 +22,7 @@ data class MomentPostEntity(
     val authorAvatarUri: String,
     val authorLabel: String,
     val content: String,
+    val location: String,
     val likedByNamesJson: String,
     val createdAt: Long,
     val updatedAt: Long,

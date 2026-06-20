@@ -71,6 +71,7 @@ import com.example.myapplication.model.MessageStatus
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import com.example.myapplication.model.RoleplayContentType
+import com.example.myapplication.model.ChatMessagePart
 import com.example.myapplication.model.RoleplayMessageUiModel
 import com.example.myapplication.model.RoleplayNoBackgroundSkinSettings
 import com.example.myapplication.model.RoleplaySpeaker
@@ -105,6 +106,9 @@ internal fun RoleplayDialoguePanel(
     onEditUserMessage: (String) -> Unit,
     onOpenSpecialPlay: () -> Unit,
     quickActions: List<RoleplayInputQuickAction> = emptyList(),
+    pendingImageParts: List<ChatMessagePart> = emptyList(),
+    onPickImage: (() -> Unit)? = null,
+    onRemovePendingImagePart: (ChatMessagePart) -> Unit = {},
     onConfirmTransferReceipt: (String) -> Unit,
     onSend: () -> Unit,
     modifier: Modifier = Modifier,
@@ -360,6 +364,9 @@ internal fun RoleplayDialoguePanel(
             onCancel = onCancel,
             onOpenSpecialPlay = onOpenSpecialPlay,
             quickActions = quickActions,
+            pendingImageParts = pendingImageParts,
+            onPickImage = onPickImage,
+            onRemovePendingImagePart = onRemovePendingImagePart,
         )
     }
 }

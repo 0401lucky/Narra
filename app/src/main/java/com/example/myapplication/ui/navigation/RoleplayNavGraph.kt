@@ -428,7 +428,7 @@ internal fun NavGraphBuilder.registerRoleplayGraph(
                 callbacks = RoleplayScreenCallbacks(
                     message = RoleplayMessageCallbacks(
                         onInputChange = roleplayViewModel::updateInput,
-                        onSend = roleplayViewModel::sendMessage,
+                        onSend = roleplayViewModel::sendMessageWithParts,
                         onRequestGroupParticipantReply = roleplayViewModel::requestGroupParticipantReply,
                         onCancelSending = roleplayViewModel::cancelSending,
                         onRetryTurn = roleplayViewModel::retryTurn,

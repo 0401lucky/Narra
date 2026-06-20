@@ -1,5 +1,10 @@
 package com.example.myapplication.ui.screen.roleplay
 
+import android.content.Intent
+import android.net.Uri
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.PickVisualMediaRequest
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Assignment
 import androidx.compose.material.icons.filled.AutoStories
@@ -20,6 +25,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -28,10 +34,13 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.Row
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import com.example.myapplication.R
 import com.example.myapplication.model.AppSettings
 import com.example.myapplication.model.Assistant
+import com.example.myapplication.model.AttachmentType
+import com.example.myapplication.model.ChatMessagePart
 import com.example.myapplication.model.ChatSpecialType
 import com.example.myapplication.model.GiftPlayDraft
 import com.example.myapplication.model.InvitePlayDraft
@@ -47,6 +56,7 @@ import com.example.myapplication.model.RoleplaySuggestionUiModel
 import com.example.myapplication.model.TaskPlayDraft
 import com.example.myapplication.model.TransferPlayDraft
 import com.example.myapplication.model.VoiceMessageDraft
+import com.example.myapplication.model.toChatMessagePart
 import com.example.myapplication.ui.component.NarraTextButton
 import com.example.myapplication.ui.component.roleplay.RoleplayInputQuickAction
 import com.example.myapplication.ui.component.rememberSystemHighTextContrastEnabled
@@ -56,6 +66,8 @@ import com.example.myapplication.ui.component.specialplay.InvitePlayDraftSaver
 import com.example.myapplication.ui.component.specialplay.PunishPlayDraftSaver
 import com.example.myapplication.ui.component.specialplay.TaskPlayDraftSaver
 import com.example.myapplication.ui.component.specialplay.TransferPlayDraftSaver
+import com.example.myapplication.ui.screen.chat.resolveSelectedAttachment
+import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -118,6 +130,51 @@ fun RoleplayScreen(
     val onRejectPendingMemoryProposal = callbacks.session.onRejectPendingMemoryProposal
 
     val snackbarHostState = remember { SnackbarHostState() }
+    val context = LocalContext.current
+    val coroutineScope = rememberCoroutineScope()
+    var pendingImageParts by remember { mutableStateOf<List<ChatMessagePart>>(emptyList()) }
+    var clearPendingImagesOnAcceptedSend by remember { mutableStateOf(false) }
+    val imagePickerLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.PickVisualMedia(),
+    ) { uri: Uri? ->
+        if (uri == null) return@rememberLauncherForActivityResult
+        runCatching {
+            context.contentResolver.takePersistableUriPermission(
+                uri,
+                Intent.FLAG_GRANT_READ_URI_PERMISSION,
+            )
+        }
+        val attachment = runCatching {
+            resolveSelectedAttachment(context, uri, AttachmentType.IMAGE)
+        }.getOrElse {
+            coroutineScope.launch {
+                snackbarHostState.showSnackbar("无法读取所选图片")
+            }
+            return@rememberLauncherForActivityResult
+        }
+        pendingImageParts = listOf(attachment.toChatMessagePart())
+    }
+    val pickRoleplayImage = {
+        imagePickerLauncher.launch(
+            PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly),
+        )
+    }
+    val sendCurrentInput = {
+        clearPendingImagesOnAcceptedSend = pendingImageParts.isNotEmpty()
+        onSend(pendingImageParts)
+    }
+
+    LaunchedEffect(scenario?.id) {
+        pendingImageParts = emptyList()
+        clearPendingImagesOnAcceptedSend = false
+    }
+
+    LaunchedEffect(isSending, clearPendingImagesOnAcceptedSend) {
+        if (clearPendingImagesOnAcceptedSend && isSending) {
+            pendingImageParts = emptyList()
+            clearPendingImagesOnAcceptedSend = false
+        }
+    }
 
     LaunchedEffect(noticeMessage) {
         noticeMessage?.let {
@@ -372,6 +429,12 @@ fun RoleplayScreen(
             onClearQuotedMessage = onClearQuotedMessage,
             onRecallMessage = onRecallMessage,
             onScreenshotChat = onCaptureOnlineChat,
+            pendingImageParts = pendingImageParts,
+            onPickImage = pickRoleplayImage,
+            onRemovePendingImagePart = { part ->
+                pendingImageParts = pendingImageParts.filterNot { it == part }
+                clearPendingImagesOnAcceptedSend = false
+            },
             onOpenDiary = onOpenDiary,
             onOpenVoiceMessage = { showVoiceMessageSheet = true },
             onOpenTransferPlay = {
@@ -395,7 +458,7 @@ fun RoleplayScreen(
                 activeSpecialPlayTypeName = ChatSpecialType.PUNISH.name
             },
             onConfirmTransferReceipt = onConfirmTransferReceipt,
-            onSend = onSend,
+            onSend = sendCurrentInput,
             onRequestGroupParticipantReply = onRequestGroupParticipantReply,
             onCancelSending = onCancelSending,
             onApprovePendingMemoryProposal = onApprovePendingMemoryProposal,
@@ -431,9 +494,15 @@ fun RoleplayScreen(
             onEditUserMessage = onEditUserMessage,
             onOpenSpecialPlay = { showSpecialPlaySheet = true },
             quickActions = offlineQuickActions,
+            pendingImageParts = pendingImageParts,
+            onPickImage = pickRoleplayImage,
+            onRemovePendingImagePart = { part ->
+                pendingImageParts = pendingImageParts.filterNot { it == part }
+                clearPendingImagesOnAcceptedSend = false
+            },
             onOpenPhoneCheck = { showPhoneOwnerPicker = true },
             onConfirmTransferReceipt = onConfirmTransferReceipt,
-            onSend = onSend,
+            onSend = sendCurrentInput,
             onCancelSending = onCancelSending,
             onApprovePendingMemoryProposal = onApprovePendingMemoryProposal,
             onRejectPendingMemoryProposal = onRejectPendingMemoryProposal,

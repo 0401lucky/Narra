@@ -70,6 +70,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.myapplication.model.AppSettings
 import com.example.myapplication.model.Assistant
+import com.example.myapplication.model.ChatMessagePart
 import com.example.myapplication.model.PendingMemoryProposal
 import com.example.myapplication.model.RoleplayContentType
 import com.example.myapplication.model.RoleplayContextStatus
@@ -149,6 +150,9 @@ internal fun RoleplayOnlinePhoneContent(
     onOpenPunishPlay: () -> Unit,
     onConfirmTransferReceipt: (String) -> Unit,
     onSend: () -> Unit,
+    pendingImageParts: List<ChatMessagePart> = emptyList(),
+    onPickImage: (() -> Unit)? = null,
+    onRemovePendingImagePart: (ChatMessagePart) -> Unit = {},
     onRequestGroupParticipantReply: (String) -> Unit,
     onCancelSending: () -> Unit,
     onApprovePendingMemoryProposal: () -> Unit,
@@ -769,6 +773,9 @@ internal fun RoleplayOnlinePhoneContent(
                 onOpenSpecialPlay = onOpenTransferPlay,
                 quickActions = quickActions,
                 mentionCandidates = groupMentionCandidates,
+                pendingImageParts = pendingImageParts,
+                onPickImage = onPickImage,
+                onRemovePendingImagePart = onRemovePendingImagePart,
             )
         }
     }

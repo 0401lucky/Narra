@@ -28,6 +28,7 @@ import androidx.compose.material.icons.automirrored.filled.Send
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Image
 import androidx.compose.material.icons.filled.OpenInFull
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material3.CircularProgressIndicator
@@ -67,6 +68,9 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.core.view.HapticFeedbackConstantsCompat
 import com.example.myapplication.R
+import com.example.myapplication.model.ChatMessagePart
+import com.example.myapplication.model.ChatMessagePartType
+import com.example.myapplication.model.toMessageAttachmentOrNull
 import com.example.myapplication.ui.component.AssistantAvatar
 import com.example.myapplication.ui.component.ExpandedDraftEditorDialog
 import com.example.myapplication.ui.component.NarraIconButton
@@ -95,11 +99,14 @@ internal fun RoleplayInputBar(
     onCancel: (() -> Unit)?,
     onOpenSpecialPlay: () -> Unit,
     quickActions: List<RoleplayInputQuickAction> = emptyList(),
+    pendingImageParts: List<ChatMessagePart> = emptyList(),
+    onPickImage: (() -> Unit)? = null,
+    onRemovePendingImagePart: (ChatMessagePart) -> Unit = {},
     mentionCandidates: List<RoleplayMentionCandidate> = emptyList(),
     showActionButton: Boolean = true,
     showExpandButton: Boolean = true,
 ) {
-    val canSend = input.isNotBlank() && !isSending
+    val canSend = (input.isNotBlank() || pendingImageParts.isNotEmpty()) && !isSending
     val hasQuickActions = quickActions.isNotEmpty()
     var showActionMenu by remember { mutableStateOf(false) }
     var showActionPanel by remember { mutableStateOf(false) }
@@ -222,6 +229,15 @@ internal fun RoleplayInputBar(
                 )
             }
 
+            pendingImageParts.forEach { part ->
+                RoleplayPendingImageBanner(
+                    part = part,
+                    colors = colors,
+                    enabled = !isSending,
+                    onRemove = { onRemovePendingImagePart(part) },
+                )
+            }
+
             Row(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(6.dp),
@@ -271,6 +287,28 @@ internal fun RoleplayInputBar(
                                 )
                             }
                         }
+                    }
+                }
+                if (onPickImage != null) {
+                    NarraIconButton(
+                        onClick = {
+                            showActionPanel = false
+                            onPickImage()
+                        },
+                        enabled = !isSending,
+                        modifier = Modifier.size(RoleplayInteractiveIconButtonSize),
+                        colors = IconButtonDefaults.iconButtonColors(
+                            containerColor = colors.panelBackground,
+                            contentColor = colors.textPrimary,
+                            disabledContainerColor = colors.panelBackground.copy(alpha = 0.45f),
+                            disabledContentColor = colors.textMuted.copy(alpha = 0.55f),
+                        ),
+                    ) {
+                        Icon(
+                            Icons.Default.Image,
+                            contentDescription = "添加图片",
+                            modifier = Modifier.size(17.dp),
+                        )
                     }
                 }
                 BasicTextField(
@@ -439,6 +477,73 @@ internal fun RoleplayInputBar(
         contentColor = MaterialTheme.colorScheme.onSurface,
         accentColor = colors.characterAccent,
     )
+}
+
+@Composable
+private fun RoleplayPendingImageBanner(
+    part: ChatMessagePart,
+    colors: ImmersiveRoleplayColors,
+    enabled: Boolean,
+    onRemove: () -> Unit,
+) {
+    val attachment = part.toMessageAttachmentOrNull()
+    Surface(
+        shape = RoundedCornerShape(16.dp),
+        color = colors.panelBackground,
+        contentColor = colors.textPrimary,
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 12.dp, vertical = 8.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(10.dp),
+        ) {
+            Icon(
+                imageVector = Icons.Default.Image,
+                contentDescription = null,
+                modifier = Modifier.size(18.dp),
+                tint = colors.characterAccent,
+            )
+            Column(
+                modifier = Modifier.weight(1f),
+                verticalArrangement = Arrangement.spacedBy(2.dp),
+            ) {
+                Text(
+                    text = attachment?.fileName?.ifBlank { "已选图片" } ?: "已选图片",
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = colors.textPrimary,
+                )
+                Text(
+                    text = when (part.type) {
+                        ChatMessagePartType.IMAGE -> "将随下一条剧情消息发送"
+                        else -> "待发送附件"
+                    },
+                    style = MaterialTheme.typography.labelMedium,
+                    color = colors.textMuted,
+                )
+            }
+            NarraIconButton(
+                onClick = onRemove,
+                enabled = enabled,
+                modifier = Modifier.size(28.dp),
+                colors = IconButtonDefaults.iconButtonColors(
+                    containerColor = colors.panelBackgroundStrong,
+                    contentColor = colors.textPrimary,
+                    disabledContainerColor = colors.panelBackground.copy(alpha = 0.45f),
+                    disabledContentColor = colors.textMuted.copy(alpha = 0.55f),
+                ),
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Close,
+                    contentDescription = "移除图片",
+                    modifier = Modifier.size(15.dp),
+                )
+            }
+        }
+    }
 }
 
 @Composable

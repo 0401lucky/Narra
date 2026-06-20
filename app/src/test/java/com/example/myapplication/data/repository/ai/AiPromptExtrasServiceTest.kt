@@ -1425,6 +1425,56 @@ class AiPromptExtrasServiceTest {
     }
 
     @Test
+    fun generateMomentPost_parsesLikesSeedCommentsAndLifeSharingPrompt() = runBlocking {
+        enqueueChatContent(
+            """
+            {
+              "content": "菜市场门口那束薄荷太精神了，老板还送了我两根。",
+              "image_prompt": "清晨菜市场门口，一束带露水的薄荷，自然手机随手拍",
+              "likes": ["小满", "默认角色", "阿青", "小满"],
+              "comments": [
+                {"user": "柚子", "text": "这个好有生活气"},
+                {"user": "NPC", "text": "不该出现"},
+                {"user": "阿城", "text": "老板挺会送"}
+              ]
+            }
+            """.trimIndent(),
+        )
+        val service = createService()
+
+        val draft = service.generateMomentPost(
+            assistantName = "赵予安",
+            assistantPersona = "独立插画师，喜欢扫街摄影、逛菜市场、收集旧票据。",
+            userName = "lucky",
+            timeContext = "现在是周六清晨，周末节奏。",
+            recentMoments = "赵予安：昨天在路口画了一张速写",
+            baseUrl = server.url("/v1/").toString(),
+            apiKey = "test-key",
+            modelId = "deepseek-chat",
+        )
+
+        assertEquals("菜市场门口那束薄荷太精神了，老板还送了我两根。", draft.content)
+        assertEquals("清晨菜市场门口，一束带露水的薄荷，自然手机随手拍", draft.imagePrompt)
+        assertEquals(listOf("小满", "阿青"), draft.likedBy)
+        assertEquals(2, draft.seedComments.size)
+        assertEquals(MomentAuthorType.NPC, draft.seedComments.first().authorType)
+        assertEquals("柚子", draft.seedComments.first().authorName)
+        assertEquals("npc:柚子", draft.seedComments.first().authorId)
+
+        val requestBody = JsonParser.parseString(server.takeRequest().body.readUtf8()).asJsonObject
+        val prompt = requestBody
+            .getAsJsonArray("messages")
+            .first()
+            .asJsonObject
+            .get("content")
+            .asString
+        assertTrue(prompt.contains("正在发自己的微信朋友圈"))
+        assertTrue(prompt.contains("不必和用户相关"))
+        assertTrue(prompt.contains("现在是周六清晨，周末节奏。"))
+        assertFalse(prompt.contains("可以轻微暗示和用户的关系"))
+    }
+
+    @Test
     fun generateMomentCommentReplies_marksAssistantPostSecondPersonAsUserAnchor() = runBlocking {
         enqueueChatContent(
             """

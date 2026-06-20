@@ -1,6 +1,7 @@
 package com.example.myapplication.ui.screen.roleplay
 
 import com.example.myapplication.model.ChatSpecialPlayDraft
+import com.example.myapplication.model.ChatMessagePart
 import com.example.myapplication.model.PhoneSnapshotOwnerType
 import com.example.myapplication.model.RoleplayGroupReplyMode
 import com.example.myapplication.model.RoleplayMessageUiModel
@@ -21,7 +22,7 @@ data class RoleplayScreenCallbacks(
 
 data class RoleplayMessageCallbacks(
     val onInputChange: (String) -> Unit,
-    val onSend: () -> Unit,
+    val onSend: (List<ChatMessagePart>) -> Unit,
     val onRequestGroupParticipantReply: (String) -> Unit,
     val onCancelSending: () -> Unit,
     val onRetryTurn: (String) -> Unit,

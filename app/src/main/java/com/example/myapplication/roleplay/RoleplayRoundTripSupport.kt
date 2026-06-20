@@ -98,7 +98,10 @@ object RoleplayRoundTripSupport {
         return buildMessage(
             conversationId = conversationId,
             role = MessageRole.USER,
-            content = parts.toContentMirror(specialFallback = "特殊玩法").ifBlank { "剧情互动" },
+            content = parts.toContentMirror(
+                imageFallback = "图片已发送",
+                specialFallback = "特殊玩法",
+            ).ifBlank { "剧情互动" },
             nowProvider = nowProvider,
             messageIdProvider = messageIdProvider,
             parts = parts,

@@ -95,6 +95,7 @@ class RoomMomentsRepository(
             authorAvatarUri = post.authorAvatarUri,
             authorLabel = post.authorLabel,
             content = post.content,
+            location = post.location,
             likedByNames = decodeStringList(post.likedByNamesJson),
             comments = row.comments
                 .map { it.toDomain() }
@@ -116,6 +117,7 @@ class RoomMomentsRepository(
             authorAvatarUri = authorAvatarUri,
             authorLabel = authorLabel,
             content = content,
+            location = location,
             likedByNamesJson = encodeStringList(likedByNames),
             createdAt = createdAt,
             updatedAt = updatedAt,
