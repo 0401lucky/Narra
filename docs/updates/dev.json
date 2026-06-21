@@ -1,16 +1,16 @@
 {
   "app_id": "com.narra.app.dev",
   "channel": "dev",
-  "latest_version_name": "2.1.4-dev",
-  "latest_version_code": 20104,
+  "latest_version_name": "2.1.6-dev",
+  "latest_version_code": 20106,
   "minimum_supported_version_code": 0,
-  "apk_url": "https://download.lsa1230.dpdns.org/dev/Narra-v2.1.4-dev-20104-dev.apk?v=20104-20260620150050",
-  "apk_sha256": "f595a129a3077901da2822a6ab4e1afcc2653b80a3a860b3b3ae2432a90f1a4f",
-  "published_at": "2026-06-20T15:07:25+08:00",
+  "apk_url": "https://download.lsa1230.dpdns.org/dev/Narra-v2.1.6-dev-20106-dev.apk?v=20106-20260621190337",
+  "apk_sha256": "8716c110b1ea272bbf999cf485302b1f85299dd36ea207c241dbda4104d0a882",
+  "published_at": "2026-06-21T19:03:37+08:00",
   "release_notes": [
-    "优化朋友圈生成与展示，角色动态更像真实生活分享，并支持封面、配图、位置和身份选择",
-    "角色扮演支持发送图片给视觉模型识别，非视觉模型会明确拦截提示",
-    "修复日记荧光绿强调色和按钮文字在浅色背景上看不清的问题",
+    "修复角色朋友圈自动评论无故围绕当前用户发言的问题，评论会优先围绕发布者人设和动态内容展开",
+    "朋友圈详情页不再重复显示评论摘要，评论统一在下方列表展示",
+    "角色扮演输入栏图片入口收进加号菜单，减少手机端输入框拥挤",
     "继续通过 Cloudflare R2 分发 dev 渠道安装包"
   ]
 }

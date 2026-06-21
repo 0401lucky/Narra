@@ -988,8 +988,9 @@ private fun MomentActionRow(
 @Composable
 private fun MomentEngagementBlock(
     post: MomentPost,
+    showCommentPreview: Boolean = true,
 ) {
-    if (post.likedByNames.isEmpty() && post.comments.isEmpty()) {
+    if (post.likedByNames.isEmpty() && (!showCommentPreview || post.comments.isEmpty())) {
         return
     }
     Surface(
@@ -1019,20 +1020,22 @@ private fun MomentEngagementBlock(
                     )
                 }
             }
-            post.comments.take(4).forEach { comment ->
-                Text(
-                    text = "${comment.authorName}：${comment.text}",
-                    style = MaterialTheme.typography.bodySmall,
-                    maxLines = 2,
-                    overflow = TextOverflow.Ellipsis,
-                )
-            }
-            if (post.comments.size > 4) {
-                Text(
-                    text = stringResource(R.string.moments_view_all_comments, post.comments.size),
-                    style = MaterialTheme.typography.labelSmall,
-                    color = MomentsAccent(),
-                )
+            if (showCommentPreview) {
+                post.comments.take(4).forEach { comment ->
+                    Text(
+                        text = "${comment.authorName}：${comment.text}",
+                        style = MaterialTheme.typography.bodySmall,
+                        maxLines = 2,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                }
+                if (post.comments.size > 4) {
+                    Text(
+                        text = stringResource(R.string.moments_view_all_comments, post.comments.size),
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MomentsAccent(),
+                    )
+                }
             }
         }
     }
@@ -1115,7 +1118,7 @@ private fun MomentsDetailContent(
                             viewerName = viewerName,
                             onToggleLike = onToggleLike,
                         )
-                        MomentEngagementBlock(post)
+                        MomentEngagementBlock(post = post, showCommentPreview = false)
                     }
                 }
             }

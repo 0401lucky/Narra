@@ -1475,7 +1475,7 @@ class AiPromptExtrasServiceTest {
     }
 
     @Test
-    fun generateMomentCommentReplies_marksAssistantPostSecondPersonAsUserAnchor() = runBlocking {
+    fun generateMomentCommentReplies_doesNotTreatAssistantPostSecondPersonAsUserAnchor() = runBlocking {
         enqueueChatContent(
             """
             [
@@ -1489,7 +1489,7 @@ class AiPromptExtrasServiceTest {
         )
         val service = createService()
 
-        service.generateMomentCommentReplies(
+        val replies = service.generateMomentCommentReplies(
             assistants = listOf(
                 MomentAssistantContext(
                     id = "junze",
@@ -1511,6 +1511,8 @@ class AiPromptExtrasServiceTest {
             modelId = "deepseek-chat",
         )
 
+        assertTrue(replies.isEmpty())
+
         val requestBody = JsonParser.parseString(server.takeRequest().body.readUtf8()).asJsonObject
         val prompt = requestBody
             .getAsJsonArray("messages")
@@ -1519,8 +1521,13 @@ class AiPromptExtrasServiceTest {
             .get("content")
             .asString
         assertTrue(prompt.contains("发布者：沈烬（角色，不是用户本人）"))
-        assertTrue(prompt.contains("lucky 是当前故事和关系的核心锚点"))
-        assertTrue(prompt.contains("正文里的“你 / 想你 / 等你 / 陪你”默认指向 lucky"))
+        assertTrue(prompt.contains("正文也没有明确点名 lucky"))
+        assertTrue(prompt.contains("只有用户本人是发布者、用户刚评论、或正文明确点名 lucky 时"))
+        assertFalse(prompt.contains("正文存在明确的二人称或用户指向时"))
+        assertFalse(prompt.contains("可以自然理解为指向 lucky"))
+        assertFalse(prompt.contains("只有动态正文、发布者或新评论明确关联 lucky 时"))
+        assertFalse(prompt.contains("lucky 是当前故事和关系的核心锚点"))
+        assertFalse(prompt.contains("正文里的“你 / 想你 / 等你 / 陪你”默认指向 lucky"))
         assertTrue(prompt.contains("【触发事件】"))
         assertFalse(prompt.contains("【lucky 刚发表的新评论】"))
     }
@@ -1543,7 +1550,7 @@ class AiPromptExtrasServiceTest {
               {
                 "author_id": "yuzui",
                 "author_name": "余罪",
-                "text": "又在想 lucky？茶别放凉。"
+                "text": "这壶茶看着还挺讲究。"
               }
             ]
             """.trimIndent(),
@@ -1583,7 +1590,75 @@ class AiPromptExtrasServiceTest {
 
         assertEquals(1, replies.size)
         assertEquals("余罪", replies.single().authorName)
-        assertEquals("又在想 lucky？茶别放凉。", replies.single().text)
+        assertEquals("这壶茶看着还挺讲究。", replies.single().text)
+    }
+
+    @Test
+    fun generateMomentCommentReplies_filtersUserTalkWhenAssistantPostHasNoUserAnchor() = runBlocking {
+        enqueueChatContent(
+            """
+            [
+              {
+                "author_id": "yanqing",
+                "author_name": "沈宴清",
+                "text": "七七下次别去这家了。"
+              },
+              {
+                "author_id": "junze",
+                "author_name": "君泽",
+                "text": "这老板也太离谱了。"
+              },
+              {
+                "author_type": "npc",
+                "author_id": "npc:林夏",
+                "author_name": "林夏",
+                "text": "七七看见估计也无语。"
+              }
+            ]
+            """.trimIndent(),
+        )
+        val service = createService()
+
+        val replies = service.generateMomentCommentReplies(
+            assistants = listOf(
+                MomentAssistantContext(
+                    id = "yanqing",
+                    name = "沈宴清",
+                    persona = "温和克制",
+                ),
+                MomentAssistantContext(
+                    id = "junze",
+                    name = "君泽",
+                    persona = "直来直去",
+                ),
+            ),
+            npcNames = listOf("林夏"),
+            postAuthorName = "向丹林",
+            postAuthorType = MomentAuthorType.ASSISTANT,
+            postContent = "刚在雍和宫附近修手机等了半天，出来碰上大风，顺手买了两刚出锅的肉龙。",
+            existingComments = "",
+            userName = "七七",
+            userComment = "其他角色看到了这条朋友圈。",
+            isUserCommentTrigger = false,
+            baseUrl = server.url("/v1/").toString(),
+            apiKey = "test-key",
+            modelId = "deepseek-chat",
+        )
+
+        assertEquals(1, replies.size)
+        assertEquals("君泽", replies.single().authorName)
+        assertEquals("这老板也太离谱了。", replies.single().text)
+
+        val requestBody = JsonParser.parseString(server.takeRequest().body.readUtf8()).asJsonObject
+        val prompt = requestBody
+            .getAsJsonArray("messages")
+            .first()
+            .asJsonObject
+            .get("content")
+            .asString
+        assertTrue(prompt.contains("正文也没有明确点名 七七"))
+        assertTrue(prompt.contains("不要无故提到 七七"))
+        assertFalse(prompt.contains("七七 是当前故事和关系的核心锚点"))
     }
 
     @Test

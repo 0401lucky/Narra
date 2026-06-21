@@ -399,10 +399,26 @@ internal class PhoneContentPromptService(
         provider: ProviderSettings?,
     ): List<MomentCommentDraft> {
         if (assistants.isEmpty()) return emptyList()
+        val hasUserAnchor = postAuthorType == MomentAuthorType.USER ||
+            isUserCommentTrigger ||
+            postContent.containsExplicitMomentUserName(userName)
         val prompt = buildString {
             appendLine("你正在模拟微信朋友圈评论区互动。")
             appendLine("所有回复都必须符合各自角色人设，像真实社交评论，不要写旁白。")
-            appendLine("$userName 是当前故事和关系的核心锚点，角色之间的互动不能抢走或改写角色对 $userName 的情感指向。")
+            when {
+                postAuthorType == MomentAuthorType.USER -> {
+                    appendLine("$userName 是这条动态的发布者，评论可以自然回应 $userName 的内容。")
+                }
+                isUserCommentTrigger -> {
+                    appendLine("$userName 刚参与了这条动态的评论，回复可以回应这条新评论，但仍要围绕动态本身。")
+                }
+                postContent.containsExplicitMomentUserName(userName) -> {
+                    appendLine("正文明确点名了 $userName，可以自然回应这层关系；除此之外评论仍要围绕发布者和正文事件。")
+                }
+                else -> {
+                    appendLine("这条动态不是 $userName 发的，正文也没有明确点名 $userName；评论必须围绕发布者 $postAuthorName、参与角色的人设和正文事件，不要无故提到 $userName 或说得像和 $userName 有关系。")
+                }
+            }
             appendLine()
             appendLine("【可参与角色】")
             assistants.forEach { assistant ->
@@ -445,7 +461,7 @@ internal class PhoneContentPromptService(
             appendLine("2. 角色回复只能使用上面列出的角色 id 和昵称；NPC 回复只能使用可选路人/NPC名单里的姓名。")
             appendLine("3. 优先保证至少 1 条来自角色；如气氛合适，可混入 0-1 条 NPC 评论，不要让 NPC 抢走主角戏份。")
             appendLine("4. 每条回复控制在 40 字以内，口语化。")
-            appendLine("5. 如果动态发布者不是 $userName，正文里的“你 / 想你 / 等你 / 陪你”默认指向 $userName，不是参与评论的其它角色。")
+            appendLine("5. 只有用户本人是发布者、用户刚评论、或正文明确点名 $userName 时，评论才可以提到 $userName；否则不要把话题强行拉到 $userName 身上。")
             appendLine("6. 角色可以吃醋或调侃，但不得把自己写成动态发布者正在想念、等待或邀约的人；不要生成“我也想你”“只许想我”“等我过去”等角色对角色恋爱式回复。")
             appendLine("7. 如果已有评论里有违背上述关系锚点的内容，不要模仿或延续。")
             appendLine("8. 严禁输出“默认角色”“角色”“NPC”“朋友A”等占位名。")
@@ -496,7 +512,11 @@ internal class PhoneContentPromptService(
                 if (
                     authorId in allowedIds &&
                     text.isNotBlank() &&
-                    !text.isMisaddressedMomentReply(postAuthorType)
+                    !text.isMisaddressedMomentReply(
+                        postAuthorType = postAuthorType,
+                        userName = userName,
+                        hasUserAnchor = hasUserAnchor,
+                    )
                 ) {
                     MomentCommentDraft(
                         authorId = authorId,
@@ -508,7 +528,12 @@ internal class PhoneContentPromptService(
                     (authorType == "npc" || authorId.startsWith("npc:")) &&
                     authorName in allowedNpcNames &&
                     !authorName.isPlaceholderMomentName() &&
-                    text.isNotBlank()
+                    text.isNotBlank() &&
+                    !text.isMisaddressedMomentReply(
+                        postAuthorType = postAuthorType,
+                        userName = userName,
+                        hasUserAnchor = hasUserAnchor,
+                    )
                 ) {
                     MomentCommentDraft(
                         authorId = "npc:${authorName}",
@@ -572,14 +597,34 @@ internal class PhoneContentPromptService(
         return normalized in setOf("默认角色", "角色", "NPC", "npc", "朋友A", "路人A")
     }
 
-    private fun String.isMisaddressedMomentReply(postAuthorType: MomentAuthorType): Boolean {
+    private fun String.isMisaddressedMomentReply(
+        postAuthorType: MomentAuthorType,
+        userName: String,
+        hasUserAnchor: Boolean,
+    ): Boolean {
         if (postAuthorType == MomentAuthorType.USER) {
             return false
         }
         val normalized = filterNot(Char::isWhitespace)
+        if (!hasUserAnchor && normalized.containsExplicitMomentUserName(userName)) {
+            return true
+        }
         return MisaddressedMomentReplyPatterns.any { pattern ->
             pattern.containsMatchIn(normalized)
         }
+    }
+
+    private fun String.containsExplicitMomentUserName(userName: String): Boolean {
+        val normalizedUserName = userName
+            .trim()
+            .filterNot(Char::isWhitespace)
+        if (
+            normalizedUserName.length < 2 ||
+            normalizedUserName in setOf("用户", "玩家", "我", "你")
+        ) {
+            return false
+        }
+        return contains(normalizedUserName)
     }
 
     private fun buildPhoneSnapshotReference(

@@ -110,6 +110,21 @@ internal fun RoleplayInputBar(
     val hasQuickActions = quickActions.isNotEmpty()
     var showActionMenu by remember { mutableStateOf(false) }
     var showActionPanel by remember { mutableStateOf(false) }
+    val quickPanelActions = remember(quickActions, onPickImage, colors.characterAccent) {
+        if (onPickImage == null) {
+            quickActions
+        } else {
+            quickActions + RoleplayInputQuickAction(
+                label = "添加图片",
+                icon = Icons.Default.Image,
+                accentColor = colors.characterAccent,
+                onClick = {
+                    showActionPanel = false
+                    onPickImage()
+                },
+            )
+        }
+    }
     var showExpandedEditor by rememberSaveable { mutableStateOf(false) }
     var allowNextInlineNewline by remember { mutableStateOf(false) }
     var dismissedMentionAnchor by remember { mutableStateOf<Int?>(null) }
@@ -182,7 +197,7 @@ internal fun RoleplayInputBar(
                     exit = shrinkVertically() + fadeOut(),
                 ) {
                     RoleplayQuickActionPanel(
-                        actions = quickActions,
+                        actions = quickPanelActions,
                         textColor = colors.textPrimary,
                         mutedTextColor = colors.textMuted,
                         onActionClick = { action ->
@@ -280,6 +295,17 @@ internal fun RoleplayInputBar(
                         }
                         if (!hasQuickActions) {
                             DropdownMenu(expanded = showActionMenu, onDismissRequest = { showActionMenu = false }) {
+                                if (onPickImage != null) {
+                                    DropdownMenuItem(
+                                        text = { Text("添加图片") },
+                                        leadingIcon = { Icon(Icons.Default.Image, contentDescription = null) },
+                                        onClick = {
+                                            showActionMenu = false
+                                            showActionPanel = false
+                                            onPickImage()
+                                        },
+                                    )
+                                }
                                 DropdownMenuItem(
                                     text = { Text(stringResource(id = R.string.roleplay_special_play)) },
                                     leadingIcon = { Icon(Icons.Default.Share, contentDescription = null) },
@@ -287,28 +313,6 @@ internal fun RoleplayInputBar(
                                 )
                             }
                         }
-                    }
-                }
-                if (onPickImage != null) {
-                    NarraIconButton(
-                        onClick = {
-                            showActionPanel = false
-                            onPickImage()
-                        },
-                        enabled = !isSending,
-                        modifier = Modifier.size(RoleplayInteractiveIconButtonSize),
-                        colors = IconButtonDefaults.iconButtonColors(
-                            containerColor = colors.panelBackground,
-                            contentColor = colors.textPrimary,
-                            disabledContainerColor = colors.panelBackground.copy(alpha = 0.45f),
-                            disabledContentColor = colors.textMuted.copy(alpha = 0.55f),
-                        ),
-                    ) {
-                        Icon(
-                            Icons.Default.Image,
-                            contentDescription = "添加图片",
-                            modifier = Modifier.size(17.dp),
-                        )
                     }
                 }
                 BasicTextField(
