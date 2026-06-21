@@ -1523,6 +1523,8 @@ class AiPromptExtrasServiceTest {
         assertTrue(prompt.contains("发布者：沈烬（角色，不是用户本人）"))
         assertTrue(prompt.contains("正文也没有明确点名 lucky"))
         assertTrue(prompt.contains("只有用户本人是发布者、用户刚评论、或正文明确点名 lucky 时"))
+        assertTrue(prompt.contains("普通联系人或浅层熟人"))
+        assertTrue(prompt.contains("不要写亲密关心、命令式照顾或私聊口吻"))
         assertFalse(prompt.contains("正文存在明确的二人称或用户指向时"))
         assertFalse(prompt.contains("可以自然理解为指向 lucky"))
         assertFalse(prompt.contains("只有动态正文、发布者或新评论明确关联 lucky 时"))
@@ -1659,6 +1661,67 @@ class AiPromptExtrasServiceTest {
         assertTrue(prompt.contains("正文也没有明确点名 七七"))
         assertTrue(prompt.contains("不要无故提到 七七"))
         assertFalse(prompt.contains("七七 是当前故事和关系的核心锚点"))
+    }
+
+    @Test
+    fun generateMomentCommentReplies_filtersOverPersonalAssistantToAssistantReplies() = runBlocking {
+        enqueueChatContent(
+            """
+            [
+              {
+                "author_id": "yanqing",
+                "author_name": "沈宴清",
+                "text": "三杯美式太多了，注意胃，别太拼。"
+              },
+              {
+                "author_id": "junze",
+                "author_name": "君泽",
+                "text": "别喝咖啡了，立刻去喝杯温水。"
+              },
+              {
+                "author_id": "yuzui",
+                "author_name": "余罪",
+                "text": "这段像在调试语感。"
+              }
+            ]
+            """.trimIndent(),
+        )
+        val service = createService()
+
+        val replies = service.generateMomentCommentReplies(
+            assistants = listOf(
+                MomentAssistantContext(
+                    id = "yanqing",
+                    name = "沈宴清",
+                    persona = "温和克制",
+                ),
+                MomentAssistantContext(
+                    id = "junze",
+                    name = "君泽",
+                    persona = "直接利落",
+                ),
+                MomentAssistantContext(
+                    id = "yuzui",
+                    name = "余罪",
+                    persona = "观察力强",
+                ),
+            ),
+            npcNames = emptyList(),
+            postAuthorName = "陆骁",
+            postAuthorType = MomentAuthorType.ASSISTANT,
+            postContent = "周六下午的第三杯美式。刚校对完一段译稿。",
+            existingComments = "",
+            userName = "lucky",
+            userComment = "其他角色看到了这条朋友圈。",
+            isUserCommentTrigger = false,
+            baseUrl = server.url("/v1/").toString(),
+            apiKey = "test-key",
+            modelId = "deepseek-chat",
+        )
+
+        assertEquals(1, replies.size)
+        assertEquals("余罪", replies.single().authorName)
+        assertEquals("这段像在调试语感。", replies.single().text)
     }
 
     @Test

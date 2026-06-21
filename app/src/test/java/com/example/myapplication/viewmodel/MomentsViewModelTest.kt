@@ -12,6 +12,7 @@ import com.example.myapplication.data.repository.moments.MomentsRepository
 import com.example.myapplication.data.repository.roleplay.RoleplayRepository
 import com.example.myapplication.data.repository.roleplay.RoleplaySessionStartResult
 import com.example.myapplication.model.AppSettings
+import com.example.myapplication.model.Assistant
 import com.example.myapplication.model.AssistantReply
 import com.example.myapplication.model.ChatMessage
 import com.example.myapplication.model.ChatMessagePart
@@ -41,6 +42,7 @@ import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
 
@@ -142,26 +144,47 @@ class MomentsViewModelTest {
         assertEquals(false, viewModel.uiState.value.isRefreshing)
     }
 
-    private fun createViewModel(
-        momentsRepository: FakeMomentsRepository,
-    ): MomentsViewModel {
-        val settingsStore = FakeSettingsStore(
-            settings = AppSettings(
-                userDisplayName = "全局用户",
-                userPersonaMasks = listOf(
-                    UserPersonaMask(
-                        id = "mask-a",
-                        name = "纪善",
-                        avatarUri = "mask-a-avatar",
-                    ),
-                    UserPersonaMask(
-                        id = "mask-b",
-                        name = "纪念",
-                        avatarUri = "mask-b-avatar",
+    @Test
+    fun init_doesNotWarmUpAssistantPostUntilManualRefresh() = runTest(mainDispatcherRule.dispatcher.scheduler) {
+        val momentsRepository = FakeMomentsRepository()
+        val provider = ProviderSettings(
+            id = "provider-1",
+            baseUrl = "https://example.com/v1/",
+            apiKey = "test-key",
+            selectedModel = "moments-model",
+        )
+        val viewModel = createViewModel(
+            momentsRepository = momentsRepository,
+            settings = defaultMomentsTestSettings().copy(
+                providers = listOf(provider),
+                selectedProviderId = provider.id,
+                assistants = listOf(
+                    Assistant(
+                        id = "assistant-1",
+                        name = "陆骁",
+                        momentAutoPostEnabled = true,
                     ),
                 ),
-                defaultUserPersonaMaskId = "mask-a",
             ),
+        )
+
+        advanceUntilIdle()
+
+        assertTrue(momentsRepository.posts.isEmpty())
+
+        viewModel.refreshWithRandomPost()
+        advanceUntilIdle()
+
+        assertEquals(1, momentsRepository.posts.size)
+        assertEquals("陆骁", momentsRepository.posts.single().authorName)
+    }
+
+    private fun createViewModel(
+        momentsRepository: FakeMomentsRepository,
+        settings: AppSettings = defaultMomentsTestSettings(),
+    ): MomentsViewModel {
+        val settingsStore = FakeSettingsStore(
+            settings = settings,
         )
         val settingsRepository = DefaultAiSettingsRepository(settingsStore)
         val coordinator = MomentsGenerationCoordinator(
@@ -188,6 +211,25 @@ class MomentsViewModelTest {
             nowProvider = { 100L },
         )
     }
+}
+
+private fun defaultMomentsTestSettings(): AppSettings {
+    return AppSettings(
+        userDisplayName = "全局用户",
+        userPersonaMasks = listOf(
+            UserPersonaMask(
+                id = "mask-a",
+                name = "纪善",
+                avatarUri = "mask-a-avatar",
+            ),
+            UserPersonaMask(
+                id = "mask-b",
+                name = "纪念",
+                avatarUri = "mask-b-avatar",
+            ),
+        ),
+        defaultUserPersonaMaskId = "mask-a",
+    )
 }
 
 private class FakeMomentsRepository(

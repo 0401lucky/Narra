@@ -68,7 +68,6 @@ class MomentsViewModel(
 
     init {
         observeTimeline()
-        warmUpAutoPosts()
     }
 
     private fun observeTimeline() {
@@ -99,14 +98,6 @@ class MomentsViewModel(
                         isLoading = false,
                     )
                 }
-            }
-        }
-    }
-
-    private fun warmUpAutoPosts() {
-        viewModelScope.launch {
-            runCatching {
-                momentsGenerationCoordinator.generateDueAssistantPosts(maxPosts = 1)
             }
         }
     }

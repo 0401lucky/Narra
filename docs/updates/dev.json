@@ -4,9 +4,9 @@
   "latest_version_name": "2.1.6-dev",
   "latest_version_code": 20106,
   "minimum_supported_version_code": 0,
-  "apk_url": "https://download.lsa1230.dpdns.org/dev/Narra-v2.1.6-dev-20106-dev.apk?v=20106-20260621190337",
-  "apk_sha256": "8716c110b1ea272bbf999cf485302b1f85299dd36ea207c241dbda4104d0a882",
-  "published_at": "2026-06-21T19:03:37+08:00",
+  "apk_url": "https://download.lsa1230.dpdns.org/dev/2.1.6/Narra-v2.1.6-dev-20106-dev.apk?v=20106-20260621194141",
+  "apk_sha256": "23db92326cf3ee4a57fe805df4f831faf4ff91aef9e5e8169e33e36802ec1acf",
+  "published_at": "2026-06-21T19:41:41+08:00",
   "release_notes": [
     "修复角色朋友圈自动评论无故围绕当前用户发言的问题，评论会优先围绕发布者人设和动态内容展开",
     "朋友圈详情页不再重复显示评论摘要，评论统一在下方列表展示",
