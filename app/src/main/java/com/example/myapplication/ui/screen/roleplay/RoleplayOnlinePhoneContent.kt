@@ -25,6 +25,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.Assignment
+import androidx.compose.material.icons.filled.AccountBalanceWallet
 import androidx.compose.material.icons.filled.ArrowDownward
 import androidx.compose.material.icons.filled.ArrowUpward
 import androidx.compose.material.icons.filled.AutoStories
@@ -161,6 +162,7 @@ internal fun RoleplayOnlinePhoneContent(
     onOpenMoments: () -> Unit,
     onOpenVideoCall: () -> Unit,
     onOpenMailbox: () -> Unit,
+    onOpenWallet: () -> Unit,
     onOpenSettings: () -> Unit,
     onNavigateBack: () -> Unit,
 ) {
@@ -214,6 +216,7 @@ internal fun RoleplayOnlinePhoneContent(
         onOpenMoments,
         onOpenVideoCall,
         onOpenMailbox,
+        onOpenWallet,
     ) {
         buildList {
             add(
@@ -294,6 +297,14 @@ internal fun RoleplayOnlinePhoneContent(
                     icon = Icons.Default.Mail,
                     accentColor = Color(0xFF2E8068),
                     onClick = onOpenMailbox,
+                ),
+            )
+            add(
+                RoleplayInputQuickAction(
+                    label = "钱包",
+                    icon = Icons.Default.AccountBalanceWallet,
+                    accentColor = Color(0xFF2E8068),
+                    onClick = onOpenWallet,
                 ),
             )
             add(

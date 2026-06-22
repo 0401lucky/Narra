@@ -10,6 +10,8 @@ import com.example.myapplication.model.ChatMessage
 import com.example.myapplication.model.ChatMessagePart
 import com.example.myapplication.model.ChatMessagePartType
 import com.example.myapplication.model.Assistant
+import com.example.myapplication.model.EconomyFailureReason
+import com.example.myapplication.model.EconomyOperationResult
 import com.example.myapplication.model.GiftPlayDraft
 import com.example.myapplication.model.InvitePlayDraft
 import com.example.myapplication.model.MAX_GROUP_AUTO_REPLIES
@@ -30,6 +32,7 @@ import com.example.myapplication.model.MessageRole
 import com.example.myapplication.model.MessageStatus
 import com.example.myapplication.model.isGiftPart
 import com.example.myapplication.model.normalizeChatMessageParts
+import com.example.myapplication.model.parseMoneyToCents
 import com.example.myapplication.model.ProviderFunction
 import com.example.myapplication.model.pokeMessagePart
 import com.example.myapplication.model.punishMessagePart
@@ -74,6 +77,9 @@ internal class RoleplaySendActionSupport(
     private val beginSendingRun: () -> Long,
     private val isSendingRunActive: (Long) -> Boolean,
     private val onSendingFinished: (Long) -> Unit,
+    private val holdUserTransfer: suspend (scenarioId: String, referenceId: String, amountCents: Long, note: String) -> EconomyOperationResult<Unit> = { _, _, _, _ ->
+        EconomyOperationResult.Success(Unit)
+    },
 ) {
     fun retryTurn(sourceMessageId: String): Job? {
         val state = uiState()
@@ -162,6 +168,12 @@ internal class RoleplaySendActionSupport(
                 if (normalizedAmount.isBlank()) {
                     updateUiState { current ->
                         RoleplayStateSupport.applyErrorMessage(current, "请输入转账金额")
+                    }
+                    return null
+                }
+                if (parseMoneyToCents(normalizedAmount) == null) {
+                    updateUiState { current ->
+                        RoleplayStateSupport.applyErrorMessage(current, "金额有点不对，先重新填一下")
                     }
                     return null
                 }
@@ -736,6 +748,47 @@ internal class RoleplaySendActionSupport(
                     assistant = assistant,
                     userParts = resolvedUserParts,
                 )
+                val transferPart = normalizeChatMessageParts(scriptAdjustedUserParts).firstOrNull { part ->
+                    part.specialType == com.example.myapplication.model.ChatSpecialType.TRANSFER &&
+                        part.specialDirection == TransferDirection.USER_TO_ASSISTANT &&
+                        part.specialStatus == TransferStatus.PENDING
+                }
+                if (transferPart != null) {
+                    val amountCents = parseMoneyToCents(transferPart.specialAmount)
+                    if (amountCents == null || amountCents <= 0L) {
+                        updateUiState { current ->
+                            RoleplayStateSupport.finishSending(
+                                RoleplayStateSupport.applyErrorMessage(current, "金额有点不对，先重新填一下"),
+                                errorMessage = "金额有点不对，先重新填一下",
+                            )
+                        }
+                        return@launch
+                    }
+                    when (
+                        val holdResult = holdUserTransfer(
+                            scenario.id,
+                            transferPart.specialId,
+                            amountCents,
+                            transferPart.specialNote,
+                        )
+                    ) {
+                        is EconomyOperationResult.Success -> Unit
+                        is EconomyOperationResult.Failure -> {
+                            val message = if (holdResult.reason == EconomyFailureReason.INSUFFICIENT_FUNDS) {
+                                "最近手头有点紧，这笔先缓一缓吧。"
+                            } else {
+                                "这笔钱暂时没递出去，稍后再试。"
+                            }
+                            updateUiState { current ->
+                                RoleplayStateSupport.finishSending(
+                                    RoleplayStateSupport.applyErrorMessage(current, message),
+                                    errorMessage = message,
+                                )
+                            }
+                            return@launch
+                        }
+                    }
+                }
                 if (scenario.isGroupChat) {
                     executeGroupRoleplaySend(
                         state = state,

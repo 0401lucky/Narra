@@ -14,8 +14,12 @@ import com.example.myapplication.model.CHARACTER_ART_STYLES
 import com.example.myapplication.model.CharacterArtPromptDraft
 import com.example.myapplication.model.CharacterArtStyle
 import com.example.myapplication.model.DEFAULT_ASSISTANT_ICON
+import com.example.myapplication.model.ImagePromptPolishRequest
+import com.example.myapplication.model.ImagePromptPurpose
 import com.example.myapplication.model.ProviderFunction
+import com.example.myapplication.model.ProviderSettings
 import com.example.myapplication.model.characterArtStyleById
+import com.example.myapplication.model.fallbackPolishResult
 import com.example.myapplication.system.security.SensitiveTextRedactor
 import kotlinx.coroutines.TimeoutCancellationException
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -228,14 +232,19 @@ class CharacterArtStudioViewModel(
                     ?: throw IllegalStateException("请先在模型设置里配置默认生图模型")
                 val imageModelId = settings.resolveFunctionModel(ProviderFunction.GIFT_IMAGE)
                     .ifBlank { throw IllegalStateException("请先在模型设置里配置默认生图模型") }
+                val finalPrompt = buildPolishedCharacterPrompt(
+                    state = state,
+                    basePrompt = prompt,
+                    imageProvider = provider,
+                )
                 val result = withTimeout(ImageTimeoutMs) {
                     aiGateway.generateImageWithProvider(
-                        prompt = prompt,
+                        prompt = finalPrompt,
                         provider = provider,
                         modelId = imageModelId,
                     ).firstOrNull() ?: error("生图接口未返回图片")
                 }
-                persistImage(result, prompt)
+                persistImage(result, finalPrompt)
             }.onSuccess { image ->
                 _uiState.update {
                     it.copy(
@@ -312,6 +321,58 @@ class CharacterArtStudioViewModel(
             negativePrompt = state.editableNegativePrompt,
         )
         return draft.finalPrompt(state.selectedStyle)
+    }
+
+    private suspend fun buildPolishedCharacterPrompt(
+        state: CharacterArtStudioUiState,
+        basePrompt: String,
+        imageProvider: ProviderSettings,
+    ): String {
+        val assistant = state.selectedAssistant
+        val promptProvider = settingsRepository.settingsFlow.first().activeProvider()
+            ?: imageProvider
+        val promptModelId = promptProvider.resolveFunctionModel(ProviderFunction.CHAT)
+            .ifBlank { promptProvider.selectedModel }
+            .trim()
+        val polishRequest = ImagePromptPolishRequest(
+            purpose = ImagePromptPurpose.CHARACTER_ART,
+            basePrompt = basePrompt,
+            subject = assistant?.name.orEmpty(),
+            styleHint = state.selectedStyle.promptHint,
+            roleContext = assistant?.let(::buildAssistantVisualContext).orEmpty(),
+            negativePrompt = state.editableNegativePrompt,
+        )
+        if (promptModelId.isBlank()) {
+            return polishRequest.fallbackPolishResult().finalPrompt()
+        }
+        return runCatching {
+            withTimeout(PromptTimeoutMs) {
+                aiPromptExtrasService.polishImagePrompt(
+                    request = polishRequest,
+                    baseUrl = promptProvider.baseUrl,
+                    apiKey = promptProvider.apiKey,
+                    modelId = promptModelId,
+                    apiProtocol = promptProvider.resolvedApiProtocol(),
+                    provider = promptProvider,
+                ).finalPrompt()
+            }
+        }.getOrElse {
+            polishRequest.fallbackPolishResult().finalPrompt()
+        }
+    }
+
+    private fun buildAssistantVisualContext(assistant: Assistant): String {
+        return listOf(
+            assistant.description,
+            assistant.systemPrompt,
+            assistant.scenario,
+            assistant.creatorNotes,
+            assistant.tags.joinToString(separator = "、"),
+        )
+            .map { it.replace("\r\n", "\n").trim() }
+            .filter { it.isNotBlank() }
+            .joinToString(separator = "\n")
+            .take(1200)
     }
 
     private suspend fun persistImage(

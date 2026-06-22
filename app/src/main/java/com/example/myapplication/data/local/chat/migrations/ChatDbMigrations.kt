@@ -986,6 +986,132 @@ internal object ChatDbMigrations {
         }
     }
 
+    val MIGRATION_46_47 = object : Migration(46, 47) {
+        override fun migrate(db: SupportSQLiteDatabase) {
+            db.execSQL(
+                """
+                CREATE TABLE IF NOT EXISTS wallet_accounts (
+                    id TEXT NOT NULL PRIMARY KEY,
+                    scenarioId TEXT NOT NULL,
+                    conversationId TEXT NOT NULL,
+                    ownerType TEXT NOT NULL,
+                    ownerId TEXT NOT NULL,
+                    displayName TEXT NOT NULL,
+                    balanceCents INTEGER NOT NULL,
+                    frozenCents INTEGER NOT NULL,
+                    createdAt INTEGER NOT NULL,
+                    updatedAt INTEGER NOT NULL
+                )
+                """.trimIndent(),
+            )
+            db.execSQL("CREATE INDEX IF NOT EXISTS index_wallet_accounts_scenarioId ON wallet_accounts (scenarioId)")
+            db.execSQL(
+                """
+                CREATE UNIQUE INDEX IF NOT EXISTS index_wallet_accounts_scenarioId_ownerType_ownerId
+                ON wallet_accounts (scenarioId, ownerType, ownerId)
+                """.trimIndent(),
+            )
+            db.execSQL(
+                """
+                CREATE TABLE IF NOT EXISTS wallet_ledger_entries (
+                    id TEXT NOT NULL PRIMARY KEY,
+                    scenarioId TEXT NOT NULL,
+                    accountId TEXT NOT NULL,
+                    type TEXT NOT NULL,
+                    amountCents INTEGER NOT NULL,
+                    balanceAfterCents INTEGER NOT NULL,
+                    frozenAfterCents INTEGER NOT NULL,
+                    relatedAccountId TEXT NOT NULL,
+                    relatedShopItemId TEXT NOT NULL,
+                    relatedInventoryItemId TEXT NOT NULL,
+                    referenceId TEXT NOT NULL,
+                    note TEXT NOT NULL,
+                    failureReason TEXT NOT NULL,
+                    createdAt INTEGER NOT NULL
+                )
+                """.trimIndent(),
+            )
+            db.execSQL("CREATE INDEX IF NOT EXISTS index_wallet_ledger_entries_scenarioId ON wallet_ledger_entries (scenarioId)")
+            db.execSQL("CREATE INDEX IF NOT EXISTS index_wallet_ledger_entries_accountId ON wallet_ledger_entries (accountId)")
+            db.execSQL("CREATE INDEX IF NOT EXISTS index_wallet_ledger_entries_createdAt ON wallet_ledger_entries (createdAt)")
+            db.execSQL("CREATE INDEX IF NOT EXISTS index_wallet_ledger_entries_referenceId ON wallet_ledger_entries (referenceId)")
+            db.execSQL(
+                """
+                CREATE TABLE IF NOT EXISTS shop_batches (
+                    id TEXT NOT NULL PRIMARY KEY,
+                    scenarioId TEXT NOT NULL,
+                    conversationId TEXT NOT NULL,
+                    style TEXT NOT NULL,
+                    promptContext TEXT NOT NULL,
+                    createdAt INTEGER NOT NULL
+                )
+                """.trimIndent(),
+            )
+            db.execSQL("CREATE INDEX IF NOT EXISTS index_shop_batches_scenarioId ON shop_batches (scenarioId)")
+            db.execSQL("CREATE INDEX IF NOT EXISTS index_shop_batches_createdAt ON shop_batches (createdAt)")
+            db.execSQL(
+                """
+                CREATE TABLE IF NOT EXISTS shop_items (
+                    id TEXT NOT NULL PRIMARY KEY,
+                    batchId TEXT NOT NULL,
+                    scenarioId TEXT NOT NULL,
+                    name TEXT NOT NULL,
+                    description TEXT NOT NULL,
+                    priceCents INTEGER NOT NULL,
+                    category TEXT NOT NULL,
+                    rarity TEXT NOT NULL,
+                    effectPrompt TEXT NOT NULL,
+                    imageStyle TEXT NOT NULL,
+                    imagePrompt TEXT NOT NULL,
+                    imageNegativePrompt TEXT NOT NULL,
+                    imageStatus TEXT NOT NULL,
+                    imageUri TEXT NOT NULL,
+                    imageMimeType TEXT NOT NULL,
+                    imageFileName TEXT NOT NULL,
+                    imageError TEXT NOT NULL,
+                    status TEXT NOT NULL,
+                    sortOrder INTEGER NOT NULL,
+                    createdAt INTEGER NOT NULL,
+                    updatedAt INTEGER NOT NULL
+                )
+                """.trimIndent(),
+            )
+            db.execSQL("CREATE INDEX IF NOT EXISTS index_shop_items_batchId ON shop_items (batchId)")
+            db.execSQL("CREATE INDEX IF NOT EXISTS index_shop_items_scenarioId ON shop_items (scenarioId)")
+            db.execSQL("CREATE INDEX IF NOT EXISTS index_shop_items_status ON shop_items (status)")
+            db.execSQL("CREATE INDEX IF NOT EXISTS index_shop_items_imageStatus ON shop_items (imageStatus)")
+            db.execSQL(
+                """
+                CREATE TABLE IF NOT EXISTS inventory_items (
+                    id TEXT NOT NULL PRIMARY KEY,
+                    scenarioId TEXT NOT NULL,
+                    ownerType TEXT NOT NULL,
+                    ownerId TEXT NOT NULL,
+                    sourceShopItemId TEXT NOT NULL,
+                    name TEXT NOT NULL,
+                    description TEXT NOT NULL,
+                    effectPrompt TEXT NOT NULL,
+                    imageUri TEXT NOT NULL,
+                    imageMimeType TEXT NOT NULL,
+                    imageFileName TEXT NOT NULL,
+                    status TEXT NOT NULL,
+                    createdAt INTEGER NOT NULL,
+                    updatedAt INTEGER NOT NULL
+                )
+                """.trimIndent(),
+            )
+            db.execSQL("CREATE INDEX IF NOT EXISTS index_inventory_items_scenarioId ON inventory_items (scenarioId)")
+            db.execSQL(
+                """
+                CREATE INDEX IF NOT EXISTS index_inventory_items_scenarioId_ownerType_ownerId
+                ON inventory_items (scenarioId, ownerType, ownerId)
+                """.trimIndent(),
+            )
+            db.execSQL("CREATE INDEX IF NOT EXISTS index_inventory_items_sourceShopItemId ON inventory_items (sourceShopItemId)")
+            db.execSQL("CREATE INDEX IF NOT EXISTS index_inventory_items_status ON inventory_items (status)")
+        }
+    }
+
     /** 版本连续性由 `ChatDatabaseMigrationRegistryTest` 保证：`size == CURRENT_VERSION - 1`。 */
     val ALL: Array<Migration> = arrayOf(
         MIGRATION_1_2,
@@ -1033,6 +1159,7 @@ internal object ChatDbMigrations {
         MIGRATION_43_44,
         MIGRATION_44_45,
         MIGRATION_45_46,
+        MIGRATION_46_47,
     )
 
     /** 幂等列检查。子迁移在 `ALTER TABLE ADD COLUMN` 之前先探测，允许中间版本重复升级。 */

@@ -6,8 +6,11 @@ import com.example.myapplication.data.repository.SavedImageFile
 import com.example.myapplication.data.repository.ai.AiGateway
 import com.example.myapplication.data.repository.ai.AiPromptExtrasService
 import com.example.myapplication.model.ChatMessage
+import com.example.myapplication.model.ImagePromptPolishRequest
+import com.example.myapplication.model.ImagePromptPurpose
 import com.example.myapplication.model.ProviderFunction
 import com.example.myapplication.model.ProviderSettings
+import com.example.myapplication.model.fallbackPolishResult
 import com.example.myapplication.model.withGiftImageFailure
 import com.example.myapplication.model.withGiftImageSuccess
 import kotlinx.coroutines.TimeoutCancellationException
@@ -75,11 +78,9 @@ class GiftImageGenerationCoordinator(
         val promptModelId = request.provider.resolveFunctionModel(ProviderFunction.CHAT)
             .ifBlank { request.selectedModel }
             .trim()
-        if (promptModelId.isBlank()) {
-            return buildFallbackPrompt(request)
-        }
-
-        val optimizedPrompt = runCatching {
+        val optimizedPrompt = if (promptModelId.isBlank()) {
+            null
+        } else runCatching {
             withTimeout(PromptOptimizationTimeoutMs) {
                 aiPromptExtrasService.generateGiftImagePrompt(
                     giftName = request.giftName,
@@ -96,10 +97,46 @@ class GiftImageGenerationCoordinator(
             }
         }.getOrNull()
 
-        return optimizedPrompt.takeIf { !it.isNullOrBlank() }
+        val basePrompt = optimizedPrompt.takeIf { !it.isNullOrBlank() }
             ?.trim()
             .orEmpty()
             .ifBlank { buildFallbackPrompt(request) }
+        return polishPrompt(
+            request = request,
+            basePrompt = basePrompt,
+            promptModelId = promptModelId,
+        )
+    }
+
+    private suspend fun polishPrompt(
+        request: GiftImageGenerationRequest,
+        basePrompt: String,
+        promptModelId: String,
+    ): String {
+        val polishRequest = ImagePromptPolishRequest(
+            purpose = ImagePromptPurpose.GIFT,
+            basePrompt = basePrompt,
+            subject = request.giftName,
+            styleHint = "premium gift object rendering, refined materials, warm emotional atmosphere",
+            sceneContext = request.contextExcerpt.take(MaxContextLength),
+        )
+        if (promptModelId.isBlank()) {
+            return polishRequest.fallbackPolishResult().finalPrompt()
+        }
+        return runCatching {
+            withTimeout(PromptOptimizationTimeoutMs) {
+                aiPromptExtrasService.polishImagePrompt(
+                    request = polishRequest,
+                    baseUrl = request.provider.baseUrl,
+                    apiKey = request.provider.apiKey,
+                    modelId = promptModelId,
+                    apiProtocol = request.provider.resolvedApiProtocol(),
+                    provider = request.provider,
+                ).finalPrompt()
+            }
+        }.getOrElse {
+            polishRequest.fallbackPolishResult().finalPrompt()
+        }
     }
 
     private suspend fun persistImage(

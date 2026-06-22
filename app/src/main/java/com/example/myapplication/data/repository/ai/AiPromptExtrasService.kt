@@ -10,6 +10,9 @@ import com.example.myapplication.model.Assistant
 import com.example.myapplication.model.CharacterArtPromptDraft
 import com.example.myapplication.model.CharacterArtStyle
 import com.example.myapplication.model.CharacterShakeFilters
+import com.example.myapplication.model.EconomyImageStyle
+import com.example.myapplication.model.ImagePromptPolishRequest
+import com.example.myapplication.model.ImagePromptPolishResult
 import com.example.myapplication.model.PhoneSearchDetail
 import com.example.myapplication.model.PhoneSnapshot
 import com.example.myapplication.model.PhoneSnapshotSection
@@ -22,6 +25,8 @@ import com.example.myapplication.model.ProviderApiProtocol
 import com.example.myapplication.model.ProviderSettings
 import com.example.myapplication.model.RoleplayDiaryDraft
 import com.example.myapplication.model.RoleplaySuggestionUiModel
+import com.example.myapplication.model.ShopItemDraft
+import com.example.myapplication.model.fallbackPolishResult
 
 interface AiPromptExtrasService {
     suspend fun generateTitle(
@@ -155,6 +160,32 @@ interface AiPromptExtrasService {
         provider: ProviderSettings? = null,
     ): String = ""
 
+    suspend fun polishImagePrompt(
+        request: ImagePromptPolishRequest,
+        baseUrl: String,
+        apiKey: String,
+        modelId: String,
+        apiProtocol: ProviderApiProtocol = ProviderApiProtocol.OPENAI_COMPATIBLE,
+        provider: ProviderSettings? = null,
+    ): ImagePromptPolishResult = request.fallbackPolishResult()
+
+    suspend fun generateRoleplayShopItems(
+        characterName: String,
+        userName: String,
+        characterPersona: String,
+        userPersona: String,
+        scenarioContext: String,
+        conversationExcerpt: String,
+        memoryContext: String,
+        economyContext: String,
+        imageStyle: EconomyImageStyle,
+        baseUrl: String,
+        apiKey: String,
+        modelId: String,
+        apiProtocol: ProviderApiProtocol = ProviderApiProtocol.OPENAI_COMPATIBLE,
+        provider: ProviderSettings? = null,
+    ): List<ShopItemDraft> = emptyList()
+
     suspend fun condenseRoleplayMemories(
         memoryItems: List<String>,
         mode: RoleplayMemoryCondenseMode,
@@ -256,6 +287,7 @@ interface AiPromptExtrasService {
  * - [PhoneContentPromptService]（手机快照 / 搜索详情 / 动态评论回复）
  * - [CharacterShakePromptService]（发现页摇一摇角色卡）
  * - [CharacterArtPromptService]（角色图工作台提示词）
+ * - [ImagePromptPolishService]（全局生图提示词润色）
  */
 class DefaultAiPromptExtrasService internal constructor(
     private val titleService: TitleAndChatSuggestionPromptService,
@@ -266,6 +298,8 @@ class DefaultAiPromptExtrasService internal constructor(
     private val phoneService: PhoneContentPromptService,
     private val characterShakeService: CharacterShakePromptService,
     private val characterArtService: CharacterArtPromptService,
+    private val imagePromptPolishService: ImagePromptPolishService,
+    private val roleplayShopPromptService: RoleplayShopPromptService,
 ) : AiPromptExtrasService {
 
     constructor(
@@ -299,6 +333,8 @@ class DefaultAiPromptExtrasService internal constructor(
         phoneService = PhoneContentPromptService(core),
         characterShakeService = CharacterShakePromptService(core),
         characterArtService = CharacterArtPromptService(core),
+        imagePromptPolishService = ImagePromptPolishService(core),
+        roleplayShopPromptService = RoleplayShopPromptService(core),
     )
 
     override suspend fun generateTitle(
@@ -538,6 +574,66 @@ class DefaultAiPromptExtrasService internal constructor(
         apiProtocol = apiProtocol,
         provider = provider,
     )
+
+    override suspend fun polishImagePrompt(
+        request: ImagePromptPolishRequest,
+        baseUrl: String,
+        apiKey: String,
+        modelId: String,
+        apiProtocol: ProviderApiProtocol,
+        provider: ProviderSettings?,
+    ): ImagePromptPolishResult = runCatching {
+        imagePromptPolishService.polishImagePrompt(
+            request = request,
+            baseUrl = baseUrl,
+            apiKey = apiKey,
+            modelId = modelId,
+            apiProtocol = apiProtocol,
+            provider = provider,
+        )
+    }.getOrElse {
+        request.fallbackPolishResult()
+    }
+
+    override suspend fun generateRoleplayShopItems(
+        characterName: String,
+        userName: String,
+        characterPersona: String,
+        userPersona: String,
+        scenarioContext: String,
+        conversationExcerpt: String,
+        memoryContext: String,
+        economyContext: String,
+        imageStyle: EconomyImageStyle,
+        baseUrl: String,
+        apiKey: String,
+        modelId: String,
+        apiProtocol: ProviderApiProtocol,
+        provider: ProviderSettings?,
+    ): List<ShopItemDraft> = runCatching {
+        roleplayShopPromptService.generateRoleplayShopItems(
+            characterName = characterName,
+            userName = userName,
+            characterPersona = characterPersona,
+            userPersona = userPersona,
+            scenarioContext = scenarioContext,
+            conversationExcerpt = conversationExcerpt,
+            memoryContext = memoryContext,
+            economyContext = economyContext,
+            imageStyle = imageStyle,
+            baseUrl = baseUrl,
+            apiKey = apiKey,
+            modelId = modelId,
+            apiProtocol = apiProtocol,
+            provider = provider,
+        )
+    }.getOrElse {
+        roleplayShopPromptService.fallbackShopItems(
+            characterName = characterName,
+            scenarioContext = scenarioContext,
+            imageStyle = imageStyle,
+        )
+    }
 
     override suspend fun condenseRoleplayMemories(
         memoryItems: List<String>,

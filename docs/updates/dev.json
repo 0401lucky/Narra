@@ -1,16 +1,18 @@
 {
   "app_id": "com.narra.app.dev",
   "channel": "dev",
-  "latest_version_name": "2.1.6-dev",
-  "latest_version_code": 20106,
+  "latest_version_name": "2.1.7-dev",
+  "latest_version_code": 20107,
   "minimum_supported_version_code": 0,
-  "apk_url": "https://download.lsa1230.dpdns.org/dev/2.1.6/Narra-v2.1.6-dev-20106-dev.apk?v=20106-20260621194141",
-  "apk_sha256": "23db92326cf3ee4a57fe805df4f831faf4ff91aef9e5e8169e33e36802ec1acf",
-  "published_at": "2026-06-21T19:41:41+08:00",
+  "apk_url": "https://download.lsa1230.dpdns.org/dev/2.1.7/Narra-v2.1.7-dev-20107-dev.apk?v=20107-20260622085623",
+  "apk_sha256": "49ad385741daa35ba2a34a1fab9e3285d4b75fa437c94059ec370290bb0d1207",
+  "published_at": "2026-06-22T08:56:23+08:00",
   "release_notes": [
-    "修复角色朋友圈自动评论无故围绕当前用户发言的问题，评论会优先围绕发布者人设和动态内容展开",
-    "朋友圈详情页不再重复显示评论摘要，评论统一在下方列表展示",
-    "角色扮演输入栏图片入口收进加号菜单，减少手机端输入框拥挤",
+    "新增角色扮演钱包、商店、库存和流水，道具可购买、赠送、使用并作用到后续剧情",
+    "AI 商店会结合角色人设、用户人设、近期剧情和记忆生成可用商品，并支持插画/真实/不配图",
+    "商品图失败后支持只重试失败图片，不再整批重跑",
+    "全局生图润色覆盖礼物、朋友圈、聊天照片、角色图、商品图和普通文生图",
+    "钱包相关失败文案改为角色扮演语气，手头紧时自然表达为先缓一缓",
     "继续通过 Cloudflare R2 分发 dev 渠道安装包"
   ]
 }

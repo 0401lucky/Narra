@@ -50,6 +50,7 @@ data class RoleplayNavigationCallbacks(
     val onOpenMoments: () -> Unit,
     val onOpenVideoCall: () -> Unit,
     val onOpenMailbox: () -> Unit,
+    val onOpenWallet: () -> Unit,
     val onOpenReadingMode: () -> Unit,
     val onOpenSettings: () -> Unit,
     val onNavigateBack: () -> Unit,

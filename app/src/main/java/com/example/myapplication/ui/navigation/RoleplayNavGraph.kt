@@ -41,9 +41,12 @@ import com.example.myapplication.ui.screen.roleplay.RoleplayGroupCallbacks
 import com.example.myapplication.ui.screen.roleplay.RoleplayUiCallbacks
 import com.example.myapplication.ui.screen.roleplay.RoleplaySettingsScreen
 import com.example.myapplication.ui.screen.roleplay.RoleplayVideoCallScreen
+import com.example.myapplication.ui.screen.roleplay.RoleplayWalletCallbacks
+import com.example.myapplication.ui.screen.roleplay.RoleplayWalletScreen
 import com.example.myapplication.ui.screen.roleplay.mailbox.MailboxCallbacks
 import com.example.myapplication.ui.screen.roleplay.mailbox.MailboxScreen
 import com.example.myapplication.viewmodel.CharacterShakeViewModel
+import com.example.myapplication.viewmodel.RoleplayWalletViewModel
 import com.example.myapplication.viewmodel.SettingsViewModel
 import com.example.myapplication.viewmodel.updateRoleplayHighContrast
 import com.example.myapplication.viewmodel.updateRoleplayImmersiveMode
@@ -301,6 +304,11 @@ internal fun NavGraphBuilder.registerRoleplayGraph(
                             launchSingleTop = true
                         }
                     },
+                    onOpenWallet = { scenarioId ->
+                        navController.navigate(AppRoutes.roleplayWallet(scenarioId)) {
+                            launchSingleTop = true
+                        }
+                    },
                 ),
             )
         }
@@ -501,6 +509,11 @@ internal fun NavGraphBuilder.registerRoleplayGraph(
                         },
                         onOpenMailbox = {
                             navController.navigate(AppRoutes.roleplayMailbox(scenarioId)) {
+                                launchSingleTop = true
+                            }
+                        },
+                        onOpenWallet = {
+                            navController.navigate(AppRoutes.roleplayWallet(scenarioId)) {
                                 launchSingleTop = true
                             }
                         },
@@ -857,6 +870,44 @@ internal fun NavGraphBuilder.registerRoleplayGraph(
                     roleplayViewModel.hangupVideoCall()
                     navController.popBackStack()
                 },
+            )
+        }
+
+        composable(AppRoutes.ROLEPLAY_WALLET) { backStackEntry ->
+            val rawScenarioId = backStackEntry.arguments?.getString("scenarioId").orEmpty()
+            val scenarioId = Uri.decode(rawScenarioId)
+            val walletViewModel: RoleplayWalletViewModel = viewModel(
+                factory = RoleplayWalletViewModel.factory(
+                    scenarioId = scenarioId,
+                    roleplayRepository = appGraph.roleplayRepository,
+                    economyRepository = appGraph.roleplayEconomyRepository,
+                    settingsRepository = appGraph.aiSettingsRepository,
+                    aiPromptExtrasService = appGraph.aiPromptExtrasService,
+                    aiGateway = appGraph.aiGateway,
+                    memoryRepository = appGraph.memoryRepository,
+                    conversationSummaryRepository = appGraph.conversationSummaryRepository,
+                    imageSaver = { b64Data ->
+                        appGraph.saveBase64Image(
+                            b64Data = b64Data,
+                            fileNamePrefix = "shop-item",
+                        )
+                    },
+                ),
+            )
+            val walletState by walletViewModel.uiState.collectAsStateWithLifecycle()
+            RoleplayWalletScreen(
+                uiState = walletState,
+                callbacks = RoleplayWalletCallbacks(
+                    onAddPocketMoney = walletViewModel::addPocketMoney,
+                    onGenerateShop = walletViewModel::generateShop,
+                    onRetryFailedImage = walletViewModel::retryFailedImage,
+                    onPurchaseItem = walletViewModel::purchaseItem,
+                    onGiftInventoryItem = walletViewModel::markGifted,
+                    onUseInventoryItem = walletViewModel::markUsed,
+                    onClearNoticeMessage = walletViewModel::clearNoticeMessage,
+                    onClearErrorMessage = walletViewModel::clearErrorMessage,
+                ),
+                onNavigateBack = { navController.popBackStack() },
             )
         }
 

@@ -3,6 +3,7 @@ package com.example.myapplication.ui.component.specialplay
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Assignment
+import androidx.compose.material.icons.filled.AccountBalanceWallet
 import androidx.compose.material.icons.filled.CardGiftcard
 import androidx.compose.material.icons.filled.Event
 import androidx.compose.material.icons.filled.Forum
@@ -51,6 +52,7 @@ internal val GiftRose = Color(0xFFE46074)
 internal val TaskAmber = Color(0xFFD78B31)
 internal val PunishCrimson = Color(0xFFD54F63)
 internal val PhoneBlue = Color(0xFF4A86D9)
+internal val WalletGreen = Color(0xFF2E8068)
 
 @Composable
 internal fun specialPlayOptions(): List<SpecialPlayOption> {
@@ -112,6 +114,21 @@ internal fun phoneCheckOption(): SpecialPlayOption {
             icon = Icons.Default.Visibility,
             iconTint = PhoneBlue,
             iconBackground = if (dark) Color(0xFF1E2A3E) else Color(0xFFEAF2FF),
+        )
+    }
+}
+
+@Composable
+internal fun walletOption(): SpecialPlayOption {
+    val dark = isSystemInDarkTheme()
+    return remember(dark) {
+        SpecialPlayOption(
+            type = ChatSpecialType.TRANSFER,
+            title = "钱包",
+            description = "进入钱包、商店和库存页，购买能参与剧情的道具。",
+            icon = Icons.Default.AccountBalanceWallet,
+            iconTint = WalletGreen,
+            iconBackground = if (dark) Color(0xFF173027) else Color(0xFFE8F5EF),
         )
     }
 }

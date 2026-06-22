@@ -1,0 +1,706 @@
+@file:OptIn(androidx.compose.material3.ExperimentalMaterial3Api::class)
+
+package com.example.myapplication.ui.screen.roleplay
+
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.aspectRatio
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.navigationBarsPadding
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.AccountBalanceWallet
+import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.AutoAwesome
+import androidx.compose.material.icons.filled.CardGiftcard
+import androidx.compose.material.icons.filled.Image
+import androidx.compose.material.icons.filled.Refresh
+import androidx.compose.material.icons.filled.ShoppingCart
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.AssistChip
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.LinearProgressIndicator
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Tab
+import androidx.compose.material3.TabRow
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.dp
+import coil3.compose.AsyncImage
+import com.example.myapplication.model.EconomyImageStyle
+import com.example.myapplication.model.GiftImageStatus
+import com.example.myapplication.model.InventoryItem
+import com.example.myapplication.model.InventoryItemStatus
+import com.example.myapplication.model.RoleplayEconomyState
+import com.example.myapplication.model.ShopItem
+import com.example.myapplication.model.ShopItemStatus
+import com.example.myapplication.model.WalletAccount
+import com.example.myapplication.model.WalletLedgerEntry
+import com.example.myapplication.model.formatMoneyLabel
+import com.example.myapplication.ui.component.AppSnackbarHost
+import com.example.myapplication.ui.component.NarraButton
+import com.example.myapplication.ui.component.NarraOutlinedButton
+import com.example.myapplication.ui.component.NarraTextButton
+import com.example.myapplication.viewmodel.RoleplayWalletUiState
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
+
+data class RoleplayWalletCallbacks(
+    val onAddPocketMoney: () -> Unit,
+    val onGenerateShop: (EconomyImageStyle) -> Unit,
+    val onRetryFailedImage: (String) -> Unit,
+    val onPurchaseItem: (String) -> Unit,
+    val onGiftInventoryItem: (String) -> Unit,
+    val onUseInventoryItem: (String) -> Unit,
+    val onClearNoticeMessage: () -> Unit,
+    val onClearErrorMessage: () -> Unit,
+)
+
+@Composable
+fun RoleplayWalletScreen(
+    uiState: RoleplayWalletUiState,
+    callbacks: RoleplayWalletCallbacks,
+    onNavigateBack: () -> Unit,
+) {
+    val snackbarHostState = remember { SnackbarHostState() }
+    var selectedTab by rememberSaveable { mutableIntStateOf(0) }
+    var showStyleDialog by rememberSaveable { mutableStateOf(false) }
+
+    LaunchedEffect(uiState.noticeMessage) {
+        uiState.noticeMessage?.let {
+            snackbarHostState.showSnackbar(it)
+            callbacks.onClearNoticeMessage()
+        }
+    }
+    LaunchedEffect(uiState.errorMessage) {
+        uiState.errorMessage?.let {
+            snackbarHostState.showSnackbar(it)
+            callbacks.onClearErrorMessage()
+        }
+    }
+
+    Scaffold(
+        snackbarHost = { AppSnackbarHost(hostState = snackbarHostState) },
+        topBar = {
+            RoleplayWalletTopBar(
+                title = uiState.scenario?.title?.ifBlank { "钱包" } ?: "钱包",
+                onNavigateBack = onNavigateBack,
+            )
+        },
+    ) { paddingValues ->
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(MaterialTheme.colorScheme.background)
+                .padding(paddingValues)
+                .navigationBarsPadding(),
+        ) {
+            if (uiState.isBootstrapping) {
+                LinearProgressIndicator(modifier = Modifier.fillMaxWidth())
+            }
+            TabRow(selectedTabIndex = selectedTab) {
+                listOf("钱包", "商店", "库存", "流水").forEachIndexed { index, title ->
+                    Tab(
+                        selected = selectedTab == index,
+                        onClick = { selectedTab = index },
+                        text = { Text(title) },
+                    )
+                }
+            }
+            when (selectedTab) {
+                0 -> WalletTab(
+                    state = uiState.economyState,
+                    onAddPocketMoney = callbacks.onAddPocketMoney,
+                )
+
+                1 -> ShopTab(
+                    items = uiState.economyState.shopItems,
+                    isGeneratingShop = uiState.isGeneratingShop,
+                    generatingImageItemIds = uiState.generatingImageItemIds,
+                    onOpenStyleDialog = { showStyleDialog = true },
+                    onPurchaseItem = callbacks.onPurchaseItem,
+                    onRetryFailedImage = callbacks.onRetryFailedImage,
+                )
+
+                2 -> InventoryTab(
+                    items = uiState.userInventory,
+                    onGift = callbacks.onGiftInventoryItem,
+                    onUse = callbacks.onUseInventoryItem,
+                )
+
+                3 -> LedgerTab(
+                    state = uiState.economyState,
+                )
+            }
+        }
+    }
+
+    if (showStyleDialog) {
+        ShopStyleDialog(
+            isGenerating = uiState.isGeneratingShop,
+            onDismiss = { showStyleDialog = false },
+            onSelect = { style ->
+                showStyleDialog = false
+                callbacks.onGenerateShop(style)
+            },
+        )
+    }
+}
+
+@Composable
+private fun RoleplayWalletTopBar(
+    title: String,
+    onNavigateBack: () -> Unit,
+) {
+    Surface(
+        tonalElevation = 2.dp,
+        shadowElevation = 1.dp,
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 10.dp, vertical = 8.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+            IconButton(onClick = onNavigateBack) {
+                Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "返回")
+            }
+            Icon(Icons.Default.AccountBalanceWallet, contentDescription = null)
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = "钱包与商店",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.SemiBold,
+                )
+                Text(
+                    text = title,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun WalletTab(
+    state: RoleplayEconomyState,
+    onAddPocketMoney: () -> Unit,
+) {
+    LazyColumn(
+        modifier = Modifier.fillMaxSize(),
+        contentPadding = PaddingValues(16.dp),
+        verticalArrangement = Arrangement.spacedBy(12.dp),
+    ) {
+        item {
+            Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                AccountCard(
+                    account = state.userAccount,
+                    fallbackName = "我",
+                    modifier = Modifier.weight(1f),
+                )
+                AccountCard(
+                    account = state.characterAccount,
+                    fallbackName = "角色",
+                    modifier = Modifier.weight(1f),
+                )
+            }
+        }
+        item {
+            NarraButton(onClick = onAddPocketMoney, modifier = Modifier.fillMaxWidth()) {
+                Icon(Icons.Default.Add, contentDescription = null, modifier = Modifier.size(18.dp))
+                Text("补一点零花")
+            }
+        }
+        item {
+            Text(
+                text = "最近可用道具会进入角色上下文，购买、赠送和使用都会影响后续剧情反应。",
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+    }
+}
+
+@Composable
+private fun AccountCard(
+    account: WalletAccount?,
+    fallbackName: String,
+    modifier: Modifier = Modifier,
+) {
+    Card(
+        modifier = modifier,
+        shape = RoundedCornerShape(8.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainer),
+    ) {
+        Column(
+            modifier = Modifier.padding(14.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+            Text(
+                text = account?.displayName?.ifBlank { fallbackName } ?: fallbackName,
+                style = MaterialTheme.typography.labelLarge,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            Text(
+                text = account?.availableCents?.formatMoneyLabel() ?: "¥0.00",
+                style = MaterialTheme.typography.headlineSmall,
+                fontWeight = FontWeight.Bold,
+            )
+            if ((account?.frozenCents ?: 0L) > 0L) {
+                Text(
+                    text = "待确认 ${account!!.frozenCents.formatMoneyLabel()}",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.primary,
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun ShopTab(
+    items: List<ShopItem>,
+    isGeneratingShop: Boolean,
+    generatingImageItemIds: Set<String>,
+    onOpenStyleDialog: () -> Unit,
+    onPurchaseItem: (String) -> Unit,
+    onRetryFailedImage: (String) -> Unit,
+) {
+    LazyColumn(
+        modifier = Modifier.fillMaxSize(),
+        contentPadding = PaddingValues(16.dp),
+        verticalArrangement = Arrangement.spacedBy(12.dp),
+    ) {
+        item {
+            NarraButton(
+                onClick = onOpenStyleDialog,
+                enabled = !isGeneratingShop,
+                modifier = Modifier.fillMaxWidth(),
+            ) {
+                if (isGeneratingShop) {
+                    CircularProgressIndicator(
+                        modifier = Modifier.size(18.dp),
+                        strokeWidth = 2.dp,
+                        color = MaterialTheme.colorScheme.onPrimary,
+                    )
+                } else {
+                    Icon(Icons.Default.AutoAwesome, contentDescription = null, modifier = Modifier.size(18.dp))
+                }
+                Text(if (isGeneratingShop) "正在生成商品" else "生成今日商店")
+            }
+        }
+        if (items.isEmpty()) {
+            item { EmptyHint("还没有商品，先生成今日商店。") }
+        } else {
+            items(items, key = { it.id }) { item ->
+                ShopItemCard(
+                    item = item,
+                    isGeneratingImage = item.id in generatingImageItemIds,
+                    onPurchase = { onPurchaseItem(item.id) },
+                    onRetryImage = { onRetryFailedImage(item.id) },
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun ShopItemCard(
+    item: ShopItem,
+    isGeneratingImage: Boolean,
+    onPurchase: () -> Unit,
+    onRetryImage: () -> Unit,
+) {
+    Card(
+        shape = RoundedCornerShape(8.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainer),
+    ) {
+        Column(
+            modifier = Modifier.padding(12.dp),
+            verticalArrangement = Arrangement.spacedBy(10.dp),
+        ) {
+            Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                ItemImageBox(
+                    item = item,
+                    isGeneratingImage = isGeneratingImage,
+                    onRetry = onRetryImage,
+                    modifier = Modifier.size(108.dp),
+                )
+                Column(
+                    modifier = Modifier.weight(1f),
+                    verticalArrangement = Arrangement.spacedBy(6.dp),
+                ) {
+                    Text(
+                        text = item.name,
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.SemiBold,
+                        maxLines = 2,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        if (item.category.isNotBlank()) LabelChip(item.category)
+                        if (item.rarity.isNotBlank()) LabelChip(item.rarity)
+                    }
+                    Text(
+                        text = item.description.ifBlank { "暂时没有描述。" },
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        maxLines = 3,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                }
+            }
+            if (item.effectPrompt.isNotBlank()) {
+                Text(
+                    text = item.effectPrompt,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.primary,
+                )
+            }
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(10.dp),
+            ) {
+                Text(
+                    text = item.priceCents.formatMoneyLabel(),
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                    modifier = Modifier.weight(1f),
+                )
+                NarraOutlinedButton(
+                    onClick = onPurchase,
+                    enabled = item.status == ShopItemStatus.AVAILABLE,
+                ) {
+                    Icon(Icons.Default.ShoppingCart, contentDescription = null, modifier = Modifier.size(18.dp))
+                    Text(if (item.status == ShopItemStatus.PURCHASED) "已购买" else "购买")
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun ItemImageBox(
+    item: ShopItem,
+    isGeneratingImage: Boolean,
+    onRetry: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    Box(
+        modifier = modifier
+            .clip(RoundedCornerShape(8.dp))
+            .background(MaterialTheme.colorScheme.surfaceVariant),
+        contentAlignment = Alignment.Center,
+    ) {
+        if (item.imageStatus == GiftImageStatus.SUCCEEDED && item.imageUri.isNotBlank()) {
+            AsyncImage(
+                model = item.imageUri,
+                contentDescription = item.name,
+                contentScale = ContentScale.Crop,
+                modifier = Modifier.fillMaxSize(),
+            )
+        } else if (item.imageStatus == GiftImageStatus.GENERATING || isGeneratingImage) {
+            CircularProgressIndicator(modifier = Modifier.size(24.dp), strokeWidth = 2.dp)
+        } else if (item.imageStatus == GiftImageStatus.FAILED) {
+            Column(
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.spacedBy(6.dp),
+                modifier = Modifier.padding(8.dp),
+            ) {
+                Icon(Icons.Default.Image, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
+                NarraTextButton(onClick = onRetry, contentPadding = PaddingValues(horizontal = 8.dp, vertical = 2.dp)) {
+                    Icon(Icons.Default.Refresh, contentDescription = null, modifier = Modifier.size(16.dp))
+                    Text("重试")
+                }
+            }
+        } else {
+            Icon(Icons.Default.Image, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
+        }
+    }
+}
+
+@Composable
+private fun InventoryTab(
+    items: List<InventoryItem>,
+    onGift: (String) -> Unit,
+    onUse: (String) -> Unit,
+) {
+    LazyColumn(
+        modifier = Modifier.fillMaxSize(),
+        contentPadding = PaddingValues(16.dp),
+        verticalArrangement = Arrangement.spacedBy(12.dp),
+    ) {
+        if (items.isEmpty()) {
+            item { EmptyHint("库存还是空的。买下商品后会出现在这里。") }
+        } else {
+            items(items, key = { it.id }) { item ->
+                InventoryItemCard(
+                    item = item,
+                    onGift = { onGift(item.id) },
+                    onUse = { onUse(item.id) },
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun InventoryItemCard(
+    item: InventoryItem,
+    onGift: () -> Unit,
+    onUse: () -> Unit,
+) {
+    Card(
+        shape = RoundedCornerShape(8.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainer),
+    ) {
+        Column(
+            modifier = Modifier.padding(12.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+            Row(horizontalArrangement = Arrangement.spacedBy(12.dp), verticalAlignment = Alignment.Top) {
+                if (item.imageUri.isNotBlank()) {
+                    AsyncImage(
+                        model = item.imageUri,
+                        contentDescription = item.name,
+                        contentScale = ContentScale.Crop,
+                        modifier = Modifier
+                            .size(72.dp)
+                            .clip(RoundedCornerShape(8.dp)),
+                    )
+                } else {
+                    Box(
+                        modifier = Modifier
+                            .size(72.dp)
+                            .clip(RoundedCornerShape(8.dp))
+                            .background(MaterialTheme.colorScheme.surfaceVariant),
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        Icon(Icons.Default.CardGiftcard, contentDescription = null)
+                    }
+                }
+                Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                    Text(item.name, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
+                    Text(
+                        item.description.ifBlank { "没有额外描述。" },
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                    if (item.effectPrompt.isNotBlank()) {
+                        Text(
+                            item.effectPrompt,
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.primary,
+                        )
+                    }
+                }
+            }
+            Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                LabelChip(item.status.displayName)
+                Spacer(modifier = Modifier.weight(1f))
+                NarraTextButton(
+                    onClick = onGift,
+                    enabled = item.status == InventoryItemStatus.AVAILABLE,
+                ) {
+                    Text("赠送")
+                }
+                NarraOutlinedButton(
+                    onClick = onUse,
+                    enabled = item.status == InventoryItemStatus.AVAILABLE,
+                ) {
+                    Text("使用")
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun LedgerTab(state: RoleplayEconomyState) {
+    val accountsById = remember(state.accounts) { state.accounts.associateBy { it.id } }
+    LazyColumn(
+        modifier = Modifier.fillMaxSize(),
+        contentPadding = PaddingValues(16.dp),
+        verticalArrangement = Arrangement.spacedBy(10.dp),
+    ) {
+        if (state.ledgerEntries.isEmpty()) {
+            item { EmptyHint("还没有流水。") }
+        } else {
+            items(state.ledgerEntries, key = { it.id }) { entry ->
+                LedgerEntryRow(
+                    entry = entry,
+                    accountName = accountsById[entry.accountId]?.displayName.orEmpty(),
+                )
+                HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
+            }
+        }
+    }
+}
+
+@Composable
+private fun LedgerEntryRow(
+    entry: WalletLedgerEntry,
+    accountName: String,
+) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(12.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+            Text(
+                text = entry.note.ifBlank { entry.type.displayName },
+                style = MaterialTheme.typography.bodyLarge,
+                fontWeight = FontWeight.Medium,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
+            Text(
+                text = listOf(accountName, formatLedgerTime(entry.createdAt))
+                    .filter(String::isNotBlank)
+                    .joinToString(" · "),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+        Text(
+            text = entry.amountCents.formatMoneyLabel(),
+            style = MaterialTheme.typography.bodyLarge,
+            fontWeight = FontWeight.SemiBold,
+            color = if (entry.amountCents >= 0) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.error,
+        )
+    }
+}
+
+@Composable
+private fun ShopStyleDialog(
+    isGenerating: Boolean,
+    onDismiss: () -> Unit,
+    onSelect: (EconomyImageStyle) -> Unit,
+) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("选择商品图片风格") },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                StyleOption(
+                    title = "插画质感",
+                    description = "更适合礼物和道具，画面会更干净精致。",
+                    enabled = !isGenerating,
+                    onClick = { onSelect(EconomyImageStyle.ILLUSTRATED) },
+                )
+                StyleOption(
+                    title = "真实质感",
+                    description = "保留真实摄影风格，适合偏写实的剧情。",
+                    enabled = !isGenerating,
+                    onClick = { onSelect(EconomyImageStyle.REALISTIC) },
+                )
+                StyleOption(
+                    title = "不配图",
+                    description = "只生成商品文字，速度最快。",
+                    enabled = !isGenerating,
+                    onClick = { onSelect(EconomyImageStyle.NONE) },
+                )
+            }
+        },
+        confirmButton = {},
+        dismissButton = {
+            NarraTextButton(onClick = onDismiss) {
+                Text("取消")
+            }
+        },
+    )
+}
+
+@Composable
+private fun StyleOption(
+    title: String,
+    description: String,
+    enabled: Boolean,
+    onClick: () -> Unit,
+) {
+    NarraOutlinedButton(
+        onClick = onClick,
+        enabled = enabled,
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(8.dp),
+        contentPadding = PaddingValues(12.dp),
+    ) {
+        Column(modifier = Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(3.dp)) {
+            Text(title, fontWeight = FontWeight.SemiBold)
+            Text(
+                description,
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+    }
+}
+
+@Composable
+private fun LabelChip(text: String) {
+    AssistChip(
+        onClick = {},
+        label = { Text(text, maxLines = 1, overflow = TextOverflow.Ellipsis) },
+    )
+}
+
+@Composable
+private fun EmptyHint(text: String) {
+    Surface(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(8.dp),
+        color = MaterialTheme.colorScheme.surfaceContainer,
+    ) {
+        Text(
+            text = text,
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.padding(18.dp),
+        )
+    }
+}
+
+private fun formatLedgerTime(timestamp: Long): String {
+    if (timestamp <= 0L) return ""
+    return SimpleDateFormat("MM-dd HH:mm", Locale.CHINA).format(Date(timestamp))
+}

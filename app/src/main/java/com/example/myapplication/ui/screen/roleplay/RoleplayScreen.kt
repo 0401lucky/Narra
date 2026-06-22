@@ -7,6 +7,7 @@ import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Assignment
+import androidx.compose.material.icons.filled.AccountBalanceWallet
 import androidx.compose.material.icons.filled.AutoStories
 import androidx.compose.material.icons.filled.CardGiftcard
 import androidx.compose.material.icons.filled.Event
@@ -122,6 +123,7 @@ fun RoleplayScreen(
     val onOpenMoments = callbacks.navigation.onOpenMoments
     val onOpenVideoCall = callbacks.navigation.onOpenVideoCall
     val onOpenMailbox = callbacks.navigation.onOpenMailbox
+    val onOpenWallet = callbacks.navigation.onOpenWallet
     val onOpenSettings = callbacks.navigation.onOpenSettings
     val onNavigateBack = callbacks.navigation.onNavigateBack
     val onRestartSession = callbacks.session.onRestartSession
@@ -289,6 +291,7 @@ fun RoleplayScreen(
         onOpenMoments,
         onOpenVideoCall,
         onOpenMailbox,
+        onOpenWallet,
     ) {
         buildList {
             add(
@@ -388,6 +391,14 @@ fun RoleplayScreen(
             )
             add(
                 RoleplayInputQuickAction(
+                    label = "钱包",
+                    icon = Icons.Default.AccountBalanceWallet,
+                    accentColor = Color(0xFF2E8068),
+                    onClick = onOpenWallet,
+                ),
+            )
+            add(
+                RoleplayInputQuickAction(
                     label = "视频",
                     icon = Icons.Default.Videocam,
                     accentColor = Color(0xFF6C84FF),
@@ -467,6 +478,7 @@ fun RoleplayScreen(
             onOpenMoments = onOpenMoments,
             onOpenVideoCall = onOpenVideoCall,
             onOpenMailbox = onOpenMailbox,
+            onOpenWallet = onOpenWallet,
             onOpenSettings = onOpenSettings,
             onNavigateBack = onNavigateBack,
         )
@@ -501,6 +513,7 @@ fun RoleplayScreen(
                 clearPendingImagesOnAcceptedSend = false
             },
             onOpenPhoneCheck = { showPhoneOwnerPicker = true },
+            onOpenWallet = onOpenWallet,
             onConfirmTransferReceipt = onConfirmTransferReceipt,
             onSend = sendCurrentInput,
             onCancelSending = onCancelSending,
@@ -587,6 +600,7 @@ fun RoleplayScreen(
             onOpenPhoneCheck = { showPhoneOwnerPicker = true },
             onOpenVideoCall = onOpenVideoCall,
             onOpenMoments = onOpenMoments,
+            onOpenWallet = onOpenWallet,
             onDismissSpecialPlayEditor = { activeSpecialPlayTypeName = null },
             onSpecialPlayDraftChange = { draft ->
                 when (draft) {

@@ -49,6 +49,7 @@ import com.example.myapplication.model.ChatSpecialPlayDraft
 import com.example.myapplication.model.ChatStreamEvent
 import com.example.myapplication.model.Conversation
 import com.example.myapplication.model.DEFAULT_ASSISTANT_ID
+import com.example.myapplication.model.EconomyOperationResult
 import com.example.myapplication.model.GatewayToolingOptions
 import com.example.myapplication.model.MemoryEntry
 import com.example.myapplication.model.MemoryScopeType
@@ -131,6 +132,7 @@ class RoleplayViewModel(
     private val conversationSummaryRepository: ConversationSummaryRepository,
     private val pendingMemoryProposalRepository: PendingMemoryProposalRepository,
     private val phoneSnapshotRepository: PhoneSnapshotRepository,
+    private val buildEconomyPromptContext: suspend (String) -> String = { "" },
     private val memoryWriteService: MemoryWriteService,
     private val contextLogStore: com.example.myapplication.data.repository.context.ContextLogStore,
     private val outputParser: RoleplayOutputParser = RoleplayOutputParser(),
@@ -139,6 +141,11 @@ class RoleplayViewModel(
     private val imageSaver: suspend (String) -> SavedImageFile = { throw IllegalStateException("图片保存未配置") },
     private val namedImageSaver: suspend (String, String) -> SavedImageFile = { b64Data, _ -> imageSaver(b64Data) },
     private val voiceSynthesisCoordinator: VoiceSynthesisCoordinator? = null,
+    private val holdUserTransfer: suspend (scenarioId: String, referenceId: String, amountCents: Long, note: String) -> EconomyOperationResult<Unit> = { _, _, _, _ ->
+        EconomyOperationResult.Success(Unit)
+    },
+    private val settleTransfer: suspend (String) -> Unit = {},
+    private val releaseTransfer: suspend (String) -> Unit = {},
 ) : ViewModel() {
     val settings: StateFlow<AppSettings> = settingsRepository.settingsFlow.stateIn(
         scope = viewModelScope,
@@ -301,6 +308,9 @@ class RoleplayViewModel(
             )
         },
         contextLogStore = contextLogStore,
+        buildEconomyPromptContext = buildEconomyPromptContext,
+        settleTransfer = settleTransfer,
+        releaseTransfer = releaseTransfer,
     )
     private val scriptEventCoordinator = RoleplayScriptEventCoordinator(
         scriptRepository = roleplayScriptRepository,
@@ -323,6 +333,7 @@ class RoleplayViewModel(
         beginSendingRun = ::beginSendingRun,
         isSendingRunActive = ::isSendingRunActive,
         onSendingFinished = ::finishSendingRun,
+        holdUserTransfer = holdUserTransfer,
     )
 
     init {
@@ -2192,11 +2203,17 @@ class RoleplayViewModel(
             conversationSummaryRepository: ConversationSummaryRepository,
             pendingMemoryProposalRepository: PendingMemoryProposalRepository,
             phoneSnapshotRepository: PhoneSnapshotRepository,
+            buildEconomyPromptContext: suspend (String) -> String = { "" },
             memoryWriteService: MemoryWriteService,
             contextLogStore: com.example.myapplication.data.repository.context.ContextLogStore,
             imageSaver: suspend (String) -> SavedImageFile = { throw IllegalStateException("图片保存未配置") },
             namedImageSaver: suspend (String, String) -> SavedImageFile = { b64Data, _ -> imageSaver(b64Data) },
             voiceSynthesisCoordinator: VoiceSynthesisCoordinator? = null,
+            holdUserTransfer: suspend (scenarioId: String, referenceId: String, amountCents: Long, note: String) -> EconomyOperationResult<Unit> = { _, _, _, _ ->
+                EconomyOperationResult.Success(Unit)
+            },
+            settleTransfer: suspend (String) -> Unit = {},
+            releaseTransfer: suspend (String) -> Unit = {},
         ): ViewModelProvider.Factory {
             return typedViewModelFactory {
                 RoleplayViewModel(
@@ -2213,11 +2230,15 @@ class RoleplayViewModel(
                     conversationSummaryRepository = conversationSummaryRepository,
                     pendingMemoryProposalRepository = pendingMemoryProposalRepository,
                     phoneSnapshotRepository = phoneSnapshotRepository,
+                    buildEconomyPromptContext = buildEconomyPromptContext,
                     memoryWriteService = memoryWriteService,
                     contextLogStore = contextLogStore,
                     imageSaver = imageSaver,
                     namedImageSaver = namedImageSaver,
                     voiceSynthesisCoordinator = voiceSynthesisCoordinator,
+                    holdUserTransfer = holdUserTransfer,
+                    settleTransfer = settleTransfer,
+                    releaseTransfer = releaseTransfer,
                 )
             }
         }

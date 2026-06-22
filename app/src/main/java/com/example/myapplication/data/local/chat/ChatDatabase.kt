@@ -3,6 +3,12 @@ package com.example.myapplication.data.local.chat
 import androidx.room.Database
 import androidx.room.RoomDatabase
 import com.example.myapplication.data.local.chat.migrations.ChatDbMigrations
+import com.example.myapplication.data.local.economy.InventoryItemEntity
+import com.example.myapplication.data.local.economy.RoleplayEconomyDao
+import com.example.myapplication.data.local.economy.ShopBatchEntity
+import com.example.myapplication.data.local.economy.ShopItemEntity
+import com.example.myapplication.data.local.economy.WalletAccountEntity
+import com.example.myapplication.data.local.economy.WalletLedgerEntryEntity
 import com.example.myapplication.data.local.mailbox.MailboxDao
 import com.example.myapplication.data.local.mailbox.MailboxLetterEntity
 import com.example.myapplication.data.local.mailbox.MailboxSettingsEntity
@@ -54,6 +60,11 @@ import com.example.myapplication.data.local.worldbook.WorldBookEntryEntity
         MomentPostEntity::class,
         MomentCommentEntity::class,
         MomentMediaEntity::class,
+        WalletAccountEntity::class,
+        WalletLedgerEntryEntity::class,
+        ShopBatchEntity::class,
+        ShopItemEntity::class,
+        InventoryItemEntity::class,
     ],
     version = ChatDatabase.CURRENT_VERSION,
     exportSchema = true,
@@ -68,9 +79,10 @@ abstract class ChatDatabase : RoomDatabase() {
     abstract fun presetDao(): PresetDao
     abstract fun roleplayScriptDao(): RoleplayScriptDao
     abstract fun momentDao(): MomentDao
+    abstract fun roleplayEconomyDao(): RoleplayEconomyDao
 
     companion object {
-        const val CURRENT_VERSION = 46
+        const val CURRENT_VERSION = 47
 
         /**
          * 所有 Room 迁移。具体 DDL 在 [ChatDbMigrations]，这里只暴露注册表给 `AppGraph` 和测试。

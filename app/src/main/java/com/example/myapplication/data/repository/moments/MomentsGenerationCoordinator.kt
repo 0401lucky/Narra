@@ -7,6 +7,8 @@ import com.example.myapplication.data.repository.ai.AiPromptExtrasService
 import com.example.myapplication.data.repository.ai.AiSettingsRepository
 import com.example.myapplication.model.AppSettings
 import com.example.myapplication.model.Assistant
+import com.example.myapplication.model.ImagePromptPolishRequest
+import com.example.myapplication.model.ImagePromptPurpose
 import com.example.myapplication.model.MomentAssistantContext
 import com.example.myapplication.model.MomentAuthorType
 import com.example.myapplication.model.MomentComment
@@ -18,6 +20,7 @@ import com.example.myapplication.model.MomentPost
 import com.example.myapplication.model.ProviderFunction
 import com.example.myapplication.model.ProviderSettings
 import com.example.myapplication.model.ResolvedUserPersona
+import com.example.myapplication.model.fallbackPolishResult
 import com.example.myapplication.model.sanitizeMomentDisplayName
 import kotlinx.coroutines.TimeoutCancellationException
 import kotlinx.coroutines.flow.first
@@ -332,9 +335,14 @@ class MomentsGenerationCoordinator(
         val imageModelId = settings.resolveFunctionModel(ProviderFunction.GIFT_IMAGE)
             .ifBlank { return media.markFailed("默认生图模型未配置") }
         return runCatching {
+            val finalPrompt = buildPolishedMediaPrompt(
+                media = media,
+                settings = settings,
+                imageProvider = provider,
+            )
             val result = withTimeout(ImageGenerationTimeoutMs) {
                 aiGateway.generateImageWithProvider(
-                    prompt = media.prompt,
+                    prompt = finalPrompt,
                     provider = provider,
                     modelId = imageModelId,
                 ).firstOrNull() ?: error("生图接口未返回图片")
@@ -352,6 +360,57 @@ class MomentsGenerationCoordinator(
             succeeded
         }.getOrElse { throwable ->
             media.markFailed(buildImageErrorMessage(throwable))
+        }
+    }
+
+    private suspend fun buildPolishedMediaPrompt(
+        media: MomentMedia,
+        settings: AppSettings,
+        imageProvider: ProviderSettings,
+    ): String {
+        val post = momentsRepository.getPost(media.postId)
+        val promptProvider = settings.resolveFunctionProvider(ProviderFunction.MOMENTS)
+            ?: settings.activeProvider()
+            ?: imageProvider
+        val promptModelId = promptProvider.resolveFunctionModel(ProviderFunction.MOMENTS)
+            .ifBlank { promptProvider.resolveFunctionModel(ProviderFunction.CHAT) }
+            .ifBlank { promptProvider.selectedModel }
+            .trim()
+        val polishRequest = ImagePromptPolishRequest(
+            purpose = ImagePromptPurpose.MOMENT,
+            basePrompt = media.prompt,
+            subject = post?.content.orEmpty().take(MaxMomentContentLength),
+            styleHint = "natural social media phone photo, daily-life composition, believable lighting",
+            roleContext = post?.authorName.orEmpty(),
+            sceneContext = post?.let { moment ->
+                buildString {
+                    append("作者：")
+                    append(moment.authorName)
+                    append("。文案：")
+                    append(moment.content.take(MaxMomentContentLength))
+                    if (moment.location.isNotBlank()) {
+                        append("。地点：")
+                        append(moment.location)
+                    }
+                }
+            }.orEmpty(),
+        )
+        if (promptModelId.isBlank()) {
+            return polishRequest.fallbackPolishResult().finalPrompt()
+        }
+        return runCatching {
+            withTimeout(PromptOptimizationTimeoutMs) {
+                aiPromptExtrasService.polishImagePrompt(
+                    request = polishRequest,
+                    baseUrl = promptProvider.baseUrl,
+                    apiKey = promptProvider.apiKey,
+                    modelId = promptModelId,
+                    apiProtocol = promptProvider.resolvedApiProtocol(),
+                    provider = promptProvider,
+                ).finalPrompt()
+            }
+        }.getOrElse {
+            polishRequest.fallbackPolishResult().finalPrompt()
         }
     }
 
@@ -523,5 +582,6 @@ class MomentsGenerationCoordinator(
         const val MaxMomentLocationLength = 40
         const val MaxMomentSeedCommentCount = 2
         const val ImageGenerationTimeoutMs = 240_000L
+        const val PromptOptimizationTimeoutMs = 15_000L
     }
 }

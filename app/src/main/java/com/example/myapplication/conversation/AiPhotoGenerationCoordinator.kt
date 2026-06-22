@@ -11,6 +11,8 @@ import com.example.myapplication.model.Assistant
 import com.example.myapplication.model.ChatActionType
 import com.example.myapplication.model.ChatMessage
 import com.example.myapplication.model.ChatMessagePart
+import com.example.myapplication.model.ImagePromptPolishRequest
+import com.example.myapplication.model.ImagePromptPurpose
 import com.example.myapplication.model.MessageRole
 import com.example.myapplication.model.MessageStatus
 import com.example.myapplication.model.ProviderFunction
@@ -18,6 +20,7 @@ import com.example.myapplication.model.RoleplayScenario
 import com.example.myapplication.model.aiPhotoDuplicateKey
 import com.example.myapplication.model.aiPhotoDescription
 import com.example.myapplication.model.aiPhotoImageStatus
+import com.example.myapplication.model.fallbackPolishResult
 import com.example.myapplication.model.toContentMirror
 import com.example.myapplication.model.withAiPhotoImageFailure
 import com.example.myapplication.model.withAiPhotoImageGenerating
@@ -188,10 +191,9 @@ class AiPhotoGenerationCoordinator(
         val promptModelId = provider.resolveFunctionModel(ProviderFunction.CHAT)
             .ifBlank { request.selectedModel }
             .trim()
-        if (promptModelId.isBlank()) {
-            return buildFallbackPrompt(request, message, part)
-        }
-        val optimizedPrompt = runCatching {
+        val optimizedPrompt = if (promptModelId.isBlank()) {
+            null
+        } else runCatching {
             withTimeout(PromptOptimizationTimeoutMs) {
                 aiPromptExtrasService.generateAiPhotoImagePrompt(
                     photoDescription = part.aiPhotoDescription(),
@@ -207,11 +209,59 @@ class AiPhotoGenerationCoordinator(
                 )
             }
         }.getOrNull()
-        return optimizedPrompt
+        val basePrompt = optimizedPrompt
             ?.trim()
             .orEmpty()
             .let(::sanitizeAiPhotoPromptTextForImageModel)
             .ifBlank { buildFallbackPrompt(request, message, part) }
+        return polishPrompt(
+            request = request,
+            message = message,
+            part = part,
+            provider = provider,
+            basePrompt = basePrompt,
+            promptModelId = promptModelId,
+        )
+    }
+
+    private suspend fun polishPrompt(
+        request: AiPhotoGenerationRequest,
+        message: ChatMessage,
+        part: ChatMessagePart,
+        provider: com.example.myapplication.model.ProviderSettings,
+        basePrompt: String,
+        promptModelId: String,
+    ): String {
+        val persona = sanitizeAiPhotoPromptTextForImageModel(buildAssistantPersona(request))
+        val scenario = sanitizeAiPhotoPromptTextForImageModel(buildScenarioContext(request))
+        val polishRequest = ImagePromptPolishRequest(
+            purpose = ImagePromptPurpose.AI_PHOTO,
+            basePrompt = basePrompt,
+            subject = sanitizeAiPhotoPromptTextForImageModel(part.aiPhotoDescription()),
+            styleHint = "realistic in-chat phone photo, natural camera framing, believable daily-life lighting",
+            roleContext = persona,
+            sceneContext = listOf(
+                scenario,
+                buildConversationExcerpt(request, message),
+            ).filter(String::isNotBlank).joinToString(separator = "\n").take(MaxConversationExcerptLength),
+        )
+        if (promptModelId.isBlank()) {
+            return polishRequest.fallbackPolishResult().finalPrompt()
+        }
+        return runCatching {
+            withTimeout(PromptOptimizationTimeoutMs) {
+                aiPromptExtrasService.polishImagePrompt(
+                    request = polishRequest,
+                    baseUrl = provider.baseUrl,
+                    apiKey = provider.apiKey,
+                    modelId = promptModelId,
+                    apiProtocol = provider.resolvedApiProtocol(),
+                    provider = provider,
+                ).finalPrompt()
+            }
+        }.getOrElse {
+            polishRequest.fallbackPolishResult().finalPrompt()
+        }
     }
 
     private suspend fun persistImage(

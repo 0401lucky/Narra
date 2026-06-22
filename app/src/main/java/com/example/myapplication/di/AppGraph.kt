@@ -17,6 +17,7 @@ import com.example.myapplication.data.repository.AudioFileStorage
 import com.example.myapplication.data.repository.ConversationRepository
 import com.example.myapplication.data.repository.FileAttachmentResolver
 import com.example.myapplication.data.repository.ImageAttachmentResolver
+import com.example.myapplication.data.repository.SavedImageFile
 import com.example.myapplication.data.repository.LocalImageStore
 import com.example.myapplication.data.repository.context.ConversationSummaryRepository
 import com.example.myapplication.data.repository.context.ContextLogStore
@@ -26,6 +27,8 @@ import com.example.myapplication.data.repository.context.RoomPresetRepository
 import com.example.myapplication.data.repository.context.RoomMemoryRepository
 import com.example.myapplication.data.repository.context.RoomWorldBookRepository
 import com.example.myapplication.data.repository.context.WorldBookRepository
+import com.example.myapplication.data.repository.economy.RoleplayEconomyRepository
+import com.example.myapplication.data.repository.economy.RoomRoleplayEconomyRepository
 import com.example.myapplication.data.repository.ai.AiGateway
 import com.example.myapplication.data.repository.ai.AiModelCatalogRepository
 import com.example.myapplication.data.repository.ai.AiPromptExtrasService
@@ -41,11 +44,13 @@ import com.example.myapplication.data.repository.ai.DefaultAiPromptExtrasService
 import com.example.myapplication.data.repository.ai.DefaultAiSettingsEditor
 import com.example.myapplication.data.repository.ai.DefaultAiSettingsRepository
 import com.example.myapplication.data.repository.ai.DefaultAiTranslationService
+import com.example.myapplication.data.repository.ai.ImagePromptPolishService
 import com.example.myapplication.data.repository.ai.MemoryProposalPromptService
 import com.example.myapplication.data.repository.ai.MailboxPromptService
 import com.example.myapplication.data.repository.ai.PhoneContentPromptService
 import com.example.myapplication.data.repository.ai.PromptExtrasCore
 import com.example.myapplication.data.repository.ai.RoleplayDiaryPromptService
+import com.example.myapplication.data.repository.ai.RoleplayShopPromptService
 import com.example.myapplication.data.repository.ai.RoleplaySuggestionPromptService
 import com.example.myapplication.data.repository.ai.TitleAndChatSuggestionPromptService
 import com.example.myapplication.data.repository.tts.MimoTtsClient
@@ -126,6 +131,10 @@ class AppGraph(
 
     val momentsRepository: MomentsRepository by lazy {
         RoomMomentsRepository(database.momentDao())
+    }
+
+    val roleplayEconomyRepository: RoleplayEconomyRepository by lazy {
+        RoomRoleplayEconomyRepository(database)
     }
 
     val momentsGenerationCoordinator: MomentsGenerationCoordinator by lazy {
@@ -266,6 +275,14 @@ class AppGraph(
         CharacterArtPromptService(promptExtrasCore)
     }
 
+    internal val imagePromptPolishService: ImagePromptPolishService by lazy {
+        ImagePromptPolishService(promptExtrasCore)
+    }
+
+    internal val roleplayShopPromptService: RoleplayShopPromptService by lazy {
+        RoleplayShopPromptService(promptExtrasCore)
+    }
+
     val aiPromptExtrasService: AiPromptExtrasService by lazy {
         DefaultAiPromptExtrasService(
             titleService = titleAndChatSuggestionPromptService,
@@ -276,6 +293,8 @@ class AppGraph(
             phoneService = phoneContentPromptService,
             characterShakeService = characterShakePromptService,
             characterArtService = characterArtPromptService,
+            imagePromptPolishService = imagePromptPolishService,
+            roleplayShopPromptService = roleplayShopPromptService,
         )
     }
 
@@ -330,6 +349,7 @@ class AppGraph(
             conversationRepository = conversationRepository,
             imageFileCleaner = localImageStore::deleteIfLocalAsync,
             mailboxCleanup = mailboxRepository::deleteScenarioData,
+            economyCleanup = roleplayEconomyRepository::deleteScenarioData,
         )
     }
 
@@ -375,6 +395,17 @@ class AppGraph(
         database.withTransaction {
             block()
         }
+    }
+
+    suspend fun saveBase64Image(
+        b64Data: String,
+        fileNamePrefix: String = java.util.UUID.randomUUID().toString(),
+    ): SavedImageFile {
+        return ImageFileStorage.saveBase64Image(
+            context = application,
+            b64Data = b64Data,
+            fileNamePrefix = fileNamePrefix,
+        )
     }
 
     fun launchStartupTasks() {

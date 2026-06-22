@@ -120,6 +120,7 @@ class RoomRoleplayRepository(
     private val nowProvider: () -> Long = { System.currentTimeMillis() },
     private val imageFileCleaner: suspend (String?) -> Boolean = { false },
     private val mailboxCleanup: suspend (String, String) -> Unit = { _, _ -> },
+    private val economyCleanup: suspend (String) -> Unit = {},
 ) : RoleplayRepository {
     private val onlineMetaMutex = Mutex()
 
@@ -246,6 +247,7 @@ class RoomRoleplayRepository(
             roleplayDao.deleteDiaryEntriesForConversation(session.conversationId)
         }
         mailboxCleanup(scenarioId, session?.conversationId.orEmpty())
+        economyCleanup(scenarioId)
         roleplayDao.deleteScenario(scenarioId)
         scenarioEntity?.let {
             imageFileCleaner(it.backgroundUri)
@@ -333,6 +335,7 @@ class RoomRoleplayRepository(
             roleplayDao.deleteOnlineMeta(session.conversationId)
             roleplayDao.deleteDiaryEntriesForConversation(session.conversationId)
             mailboxCleanup(scenarioId, session.conversationId)
+            economyCleanup(scenarioId)
         }
         val conversation = conversationRepository.createConversation(
             assistantId = resolveConversationAssistantId(scenario),

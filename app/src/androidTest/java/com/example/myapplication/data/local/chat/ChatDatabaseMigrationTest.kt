@@ -252,6 +252,11 @@ class ChatDatabaseMigrationTest {
         assertTrue(hasTable(db, "moment_posts"))
         assertTrue(hasTable(db, "moment_comments"))
         assertTrue(hasTable(db, "moment_media"))
+        assertTrue(hasTable(db, "wallet_accounts"))
+        assertTrue(hasTable(db, "wallet_ledger_entries"))
+        assertTrue(hasTable(db, "shop_batches"))
+        assertTrue(hasTable(db, "shop_items"))
+        assertTrue(hasTable(db, "inventory_items"))
 
         assertTrue(hasColumn(db, "worldbook_entries", "bookId"))
         assertTrue(hasColumn(db, "worldbook_entries", "matchMode"))
@@ -271,6 +276,9 @@ class ChatDatabaseMigrationTest {
         assertTrue(hasIndex(db, "messages", "index_messages_conversationId_createdAt_id"))
         assertTrue(hasIndex(db, "roleplay_scripts", "index_roleplay_scripts_scope_ownerId"))
         assertTrue(hasIndex(db, "moment_media", "index_moment_media_postId"))
+        assertTrue(hasIndex(db, "wallet_accounts", "index_wallet_accounts_scenarioId_ownerType_ownerId"))
+        assertTrue(hasIndex(db, "shop_items", "index_shop_items_scenarioId"))
+        assertTrue(hasIndex(db, "inventory_items", "index_inventory_items_scenarioId_ownerType_ownerId"))
     }
 
     private fun migrateToLatest() {

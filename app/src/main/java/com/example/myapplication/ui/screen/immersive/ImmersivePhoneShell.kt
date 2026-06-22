@@ -59,6 +59,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Chat
 import androidx.compose.material.icons.automirrored.filled.LibraryBooks
+import androidx.compose.material.icons.filled.AccountBalanceWallet
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material.icons.filled.AutoStories
@@ -195,6 +196,7 @@ data class ImmersivePhoneCallbacks(
     val onOpenDiary: (String) -> Unit,
     val onOpenVideoCall: (String) -> Unit,
     val onOpenMailbox: (String) -> Unit,
+    val onOpenWallet: (String) -> Unit,
 )
 
 private enum class ImmersiveTab(
@@ -215,6 +217,7 @@ private enum class DiscoverTarget(
     PhoneCheck("查手机", Icons.Default.PhoneAndroid),
     Diary("日记本", Icons.Default.Book),
     Mailbox("信箱", Icons.Default.Mail),
+    Wallet("钱包", Icons.Default.AccountBalanceWallet),
     VideoCall("视频通话", Icons.Default.Videocam),
 }
 
@@ -566,6 +569,10 @@ fun ImmersivePhoneShell(
                 selectedContact = null
                 callbacks.onOpenMailbox(scenarioId)
             },
+            onOpenWallet = { scenarioId ->
+                selectedContact = null
+                callbacks.onOpenWallet(scenarioId)
+            },
             onOpenVideoCall = { scenarioId ->
                 selectedContact = null
                 callbacks.onOpenVideoCall(scenarioId)
@@ -585,6 +592,7 @@ fun ImmersivePhoneShell(
                     DiscoverTarget.PhoneCheck -> callbacks.onOpenPhoneCheck(scenarioId)
                     DiscoverTarget.Diary -> callbacks.onOpenDiary(scenarioId)
                     DiscoverTarget.Mailbox -> callbacks.onOpenMailbox(scenarioId)
+                    DiscoverTarget.Wallet -> callbacks.onOpenWallet(scenarioId)
                     DiscoverTarget.VideoCall -> callbacks.onOpenVideoCall(scenarioId)
                     DiscoverTarget.Moments -> callbacks.onOpenMoments("")
                 }
@@ -2535,6 +2543,7 @@ private fun ContactCardSheet(
     onOpenMoments: (String) -> Unit,
     onOpenDiary: (String) -> Unit,
     onOpenMailbox: (String) -> Unit,
+    onOpenWallet: (String) -> Unit,
     onOpenVideoCall: (String) -> Unit,
 ) {
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
@@ -2675,6 +2684,7 @@ private fun ContactCardSheet(
                         ContactActionChip("查手机", Icons.Default.PhoneAndroid) { onOpenPhoneCheck(summary.scenario.id) }
                         ContactActionChip("朋友圈", Icons.Default.Forum) { onOpenMoments(summary.scenario.id) }
                         ContactActionChip("日记", Icons.Default.Book) { onOpenDiary(summary.scenario.id) }
+                        ContactActionChip("钱包", Icons.Default.AccountBalanceWallet) { onOpenWallet(summary.scenario.id) }
                         ContactActionChip("视频通话", Icons.Default.Videocam) { onOpenVideoCall(summary.scenario.id) }
                     }
                 }

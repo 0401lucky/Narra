@@ -42,6 +42,7 @@ object AppRoutes {
     const val ROLEPLAY_DIARY_DETAIL = "roleplay/play/{scenarioId}/diary/{entryId}"
     const val ROLEPLAY_VIDEO_CALL = "roleplay/play/{scenarioId}/video-call"
     const val ROLEPLAY_MAILBOX = "roleplay/play/{scenarioId}/mailbox"
+    const val ROLEPLAY_WALLET = "roleplay/play/{scenarioId}/wallet"
     const val PHONE_CHECK = "phone-check/{conversationId}?scenarioId={scenarioId}&ownerType={ownerType}"
     const val MOMENTS_GLOBAL = "moments"
     const val MOMENTS = "moments/{conversationId}?scenarioId={scenarioId}&ownerType={ownerType}"
@@ -126,6 +127,10 @@ object AppRoutes {
 
     fun roleplayMailbox(scenarioId: String): String {
         return "roleplay/play/${Uri.encode(scenarioId)}/mailbox"
+    }
+
+    fun roleplayWallet(scenarioId: String): String {
+        return "roleplay/play/${Uri.encode(scenarioId)}/wallet"
     }
 
     fun phoneCheck(

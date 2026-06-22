@@ -93,6 +93,7 @@ internal fun RoleplaySceneContent(
     onPickImage: () -> Unit,
     onRemovePendingImagePart: (ChatMessagePart) -> Unit,
     onOpenPhoneCheck: () -> Unit,
+    onOpenWallet: () -> Unit,
     onConfirmTransferReceipt: (String) -> Unit,
     onSend: () -> Unit,
     onCancelSending: () -> Unit,
@@ -297,6 +298,7 @@ internal fun RoleplaySceneContent(
         onDismissSpecialPlay = onDismissSpecialPlay,
         onOpenSpecialPlayEditor = onOpenSpecialPlayEditor,
         onOpenPhoneCheck = onOpenPhoneCheck,
+        onOpenWallet = onOpenWallet,
         onDismissSpecialPlayEditor = onDismissSpecialPlayEditor,
         onSpecialPlayDraftChange = onSpecialPlayDraftChange,
         onSpecialPlayConfirm = onSpecialPlayConfirm,
@@ -510,6 +512,7 @@ internal fun RoleplaySpecialPlayOverlays(
     onOpenPhoneCheck: () -> Unit,
     onOpenVideoCall: (() -> Unit)? = null,
     onOpenMoments: (() -> Unit)? = null,
+    onOpenWallet: (() -> Unit)? = null,
     onDismissSpecialPlayEditor: () -> Unit,
     onSpecialPlayDraftChange: (ChatSpecialPlayDraft) -> Unit,
     onSpecialPlayConfirm: () -> Unit,
@@ -521,6 +524,7 @@ internal fun RoleplaySpecialPlayOverlays(
             onOpenPhoneCheck = onOpenPhoneCheck,
             onOpenVideoCall = onOpenVideoCall,
             onOpenMoments = onOpenMoments,
+            onOpenWallet = onOpenWallet,
         )
     }
 

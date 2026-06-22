@@ -48,6 +48,8 @@ import com.example.myapplication.model.ContextGovernanceSnapshot
 import com.example.myapplication.model.DEFAULT_ASSISTANT_ID
 import com.example.myapplication.model.DEFAULT_CONVERSATION_TITLE
 import com.example.myapplication.model.GatewayToolingOptions
+import com.example.myapplication.model.ImagePromptPolishRequest
+import com.example.myapplication.model.ImagePromptPurpose
 import com.example.myapplication.model.MemoryEntry
 import com.example.myapplication.model.MemoryScopeType
 import com.example.myapplication.model.MessageRole
@@ -56,6 +58,7 @@ import com.example.myapplication.model.MessageStatus
 import com.example.myapplication.model.ProviderFunction
 import com.example.myapplication.model.PromptEnvelope
 import com.example.myapplication.model.PromptMode
+import com.example.myapplication.model.fallbackPolishResult
 import com.example.myapplication.model.isGiftPart
 import com.example.myapplication.model.isTransferPart
 import com.example.myapplication.model.normalizeChatMessageParts
@@ -81,6 +84,7 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
+import kotlinx.coroutines.withTimeout
 import java.util.UUID
 
 data class ChatUiState(
@@ -534,6 +538,8 @@ class ChatViewModel(
                         prompt = retryResolution.retryPrompt,
                         referenceImages = retryResolution.retryImageAttachments,
                         selectedModel = selectedModel,
+                        settings = state.settings,
+                        assistant = state.currentAssistant,
                         initialPersistence = retryResolution.initialPersistence,
                         buildFinalMessages = retryResolution::buildFinalMessages,
                     )
@@ -804,6 +810,8 @@ class ChatViewModel(
         prompt: String,
         referenceImages: List<MessageAttachment> = emptyList(),
         selectedModel: String,
+        settings: AppSettings,
+        assistant: Assistant?,
         initialPersistence: RoundTripInitialPersistence,
         buildFinalMessages: (ChatMessage) -> List<ChatMessage>,
     ) {
@@ -815,17 +823,23 @@ class ChatViewModel(
             )
 
             try {
+                val finalPrompt = buildPolishedGeneralImagePrompt(
+                    settings = settings,
+                    assistant = assistant,
+                    prompt = prompt,
+                    referenceImages = referenceImages,
+                )
                 val completedAssistant = imageGenerationSupport.buildCompletedAssistant(
                     loadingMessage = loadingMessage,
                     results = if (referenceImages.isNotEmpty()) {
                         aiGateway.editImage(
-                            prompt = prompt,
+                            prompt = finalPrompt,
                             images = referenceImages,
                             modelId = selectedModel,
                         )
                     } else {
                         aiGateway.generateImage(
-                            prompt = prompt,
+                            prompt = finalPrompt,
                             modelId = selectedModel,
                         )
                     },
@@ -1695,6 +1709,8 @@ class ChatViewModel(
                 prompt = imageGenerationPrompt,
                 referenceImages = imageReferenceAttachments,
                 selectedModel = selectedModel,
+                settings = state.settings,
+                assistant = state.currentAssistant,
                 initialPersistence = RoundTripInitialPersistence.Append(
                     messages = listOf(preparedRoundTrip.userMessage, preparedRoundTrip.loadingMessage),
                 ),
@@ -1783,7 +1799,64 @@ class ChatViewModel(
             }
     }
 
+    private suspend fun buildPolishedGeneralImagePrompt(
+        settings: AppSettings,
+        assistant: Assistant?,
+        prompt: String,
+        referenceImages: List<MessageAttachment>,
+    ): String {
+        val trimmedPrompt = prompt.trim()
+        if (trimmedPrompt.isBlank() || referenceImages.isNotEmpty()) {
+            return prompt
+        }
+        val request = ImagePromptPolishRequest(
+            purpose = ImagePromptPurpose.GENERAL,
+            basePrompt = trimmedPrompt,
+            styleHint = "high quality, detailed, polished rendering, clean composition, cinematic lighting",
+            roleContext = assistant?.let(::buildAssistantImageContext).orEmpty(),
+            userInstruction = "Preserve the user's original subject, style intent and composition. Only enhance image-generation quality.",
+        )
+        val promptProvider = settings.resolveFunctionProvider(ProviderFunction.CHAT)
+            ?: settings.activeProvider()
+            ?: return request.fallbackPolishResult().finalPrompt()
+        val promptModelId = promptProvider.resolveFunctionModel(ProviderFunction.CHAT)
+            .ifBlank { promptProvider.selectedModel }
+            .trim()
+        if (promptModelId.isBlank()) {
+            return request.fallbackPolishResult().finalPrompt()
+        }
+        return runCatching {
+            withTimeout(GeneralImagePromptPolishTimeoutMs) {
+                aiPromptExtrasService.polishImagePrompt(
+                    request = request,
+                    baseUrl = promptProvider.baseUrl,
+                    apiKey = promptProvider.apiKey,
+                    modelId = promptModelId,
+                    apiProtocol = promptProvider.resolvedApiProtocol(),
+                    provider = promptProvider,
+                ).finalPrompt()
+            }
+        }.getOrElse {
+            request.fallbackPolishResult().finalPrompt()
+        }
+    }
+
+    private fun buildAssistantImageContext(assistant: Assistant): String {
+        return listOf(
+            assistant.description,
+            assistant.systemPrompt,
+            assistant.scenario,
+            assistant.creatorNotes,
+            assistant.tags.joinToString(separator = "、"),
+        )
+            .map { it.replace("\r\n", "\n").trim() }
+            .filter(String::isNotBlank)
+            .joinToString(separator = "\n")
+            .take(1200)
+    }
+
     companion object {
+        private const val GeneralImagePromptPolishTimeoutMs = 15_000L
         private const val SUMMARY_TRIGGER_MESSAGE_COUNT = 20
         private const val SUMMARY_MIN_COVERED_MESSAGE_COUNT = 8
         private const val SUMMARY_RECENT_MESSAGE_WINDOW = 12

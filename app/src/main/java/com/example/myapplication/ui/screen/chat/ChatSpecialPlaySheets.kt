@@ -52,11 +52,13 @@ fun SpecialPlaySheet(
     onOpenPhoneCheck: () -> Unit,
     onOpenVideoCall: (() -> Unit)? = null,
     onOpenMoments: (() -> Unit)? = null,
+    onOpenWallet: (() -> Unit)? = null,
 ) {
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     val phoneCheck = phoneCheckOption()
     val videoCall = if (onOpenVideoCall != null) videoCallOption() else null
     val moments = if (onOpenMoments != null) momentsOption() else null
+    val wallet = if (onOpenWallet != null) walletOption() else null
     val standaloneEntries = buildList {
         add(
             SpecialPlayModuleEntry(
@@ -77,6 +79,14 @@ fun SpecialPlaySheet(
                 SpecialPlayModuleEntry(
                     option = moments!!,
                     onClick = openMoments,
+                ),
+            )
+        }
+        onOpenWallet?.let { openWallet ->
+            add(
+                SpecialPlayModuleEntry(
+                    option = wallet!!,
+                    onClick = openWallet,
                 ),
             )
         }

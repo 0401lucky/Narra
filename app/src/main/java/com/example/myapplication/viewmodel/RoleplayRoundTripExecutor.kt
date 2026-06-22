@@ -97,6 +97,9 @@ internal class RoleplayRoundTripExecutor(
     private val launchConversationSummaryGeneration: (String, List<ChatMessage>, com.example.myapplication.model.AppSettings, Assistant?, com.example.myapplication.model.RoleplayScenario) -> Unit,
     private val launchAutomaticMemoryExtraction: (String, List<ChatMessage>, com.example.myapplication.model.AppSettings, Assistant?, com.example.myapplication.model.RoleplayScenario) -> Unit,
     private val contextLogStore: com.example.myapplication.data.repository.context.ContextLogStore,
+    private val buildEconomyPromptContext: suspend (String) -> String = { "" },
+    private val settleTransfer: suspend (String) -> Unit = {},
+    private val releaseTransfer: suspend (String) -> Unit = {},
 ) {
     private val memoryExtractionGate = MemoryExtractionGate()
     private val scriptEventCoordinator = RoleplayScriptEventCoordinator(
@@ -218,6 +221,9 @@ internal class RoleplayRoundTripExecutor(
                 ),
             )
             val scriptDirectorNote = formatScriptPromptAdditions(beforePromptScriptResult.promptAdditions)
+            val economyDirectorNote = runCatching {
+                buildEconomyPromptContext(scenario.id)
+            }.getOrDefault("")
             val generationPromptEnvelope = if (scenario.isGroupChat) {
                 promptContext.promptEnvelope.copy(
                     statusCardsEnabled = false,
@@ -253,6 +259,12 @@ internal class RoleplayRoundTripExecutor(
                     append(note)
                 }
                 scriptDirectorNote.takeIf { it.isNotBlank() }?.let { note ->
+                    if (isNotBlank()) {
+                        append("\n\n")
+                    }
+                    append(note)
+                }
+                economyDirectorNote.takeIf { it.isNotBlank() }?.let { note ->
                     if (isNotBlank()) {
                         append("\n\n")
                     }
@@ -979,6 +991,11 @@ internal class RoleplayRoundTripExecutor(
                     ),
                     selectedModel = selectedModel,
                 )
+                when (directive.status) {
+                    TransferStatus.RECEIVED -> settleTransfer(targetTransferId)
+                    TransferStatus.REJECTED -> releaseTransfer(targetTransferId)
+                    TransferStatus.PENDING -> Unit
+                }
             }
         return updatedMessages
     }

@@ -45,6 +45,7 @@ internal fun rememberRoleplayViewModel(
             conversationSummaryRepository = appGraph.conversationSummaryRepository,
             pendingMemoryProposalRepository = appGraph.pendingMemoryProposalRepository,
             phoneSnapshotRepository = appGraph.phoneSnapshotRepository,
+            buildEconomyPromptContext = appGraph.roleplayEconomyRepository::buildPromptContext,
             memoryWriteService = appGraph.memoryWriteService,
             contextLogStore = appGraph.contextLogStore,
             imageSaver = { b64Data ->
@@ -58,6 +59,40 @@ internal fun rememberRoleplayViewModel(
                 )
             },
             voiceSynthesisCoordinator = appGraph.voiceSynthesisCoordinator,
+            holdUserTransfer = { scenarioId, referenceId, amountCents, note ->
+                val session = appGraph.roleplayRepository.getSessionByScenario(scenarioId)
+                appGraph.roleplayEconomyRepository.ensureDefaultAccounts(
+                    scenarioId = scenarioId,
+                    conversationId = session?.conversationId.orEmpty(),
+                    userName = "我",
+                    characterName = "角色",
+                )
+                when (
+                    val result = appGraph.roleplayEconomyRepository.startTransferHold(
+                        scenarioId = scenarioId,
+                        fromOwnerType = com.example.myapplication.model.EconomyOwnerType.USER,
+                        fromOwnerId = com.example.myapplication.data.repository.economy.DEFAULT_USER_OWNER_ID,
+                        toOwnerType = com.example.myapplication.model.EconomyOwnerType.CHARACTER,
+                        toOwnerId = com.example.myapplication.data.repository.economy.DEFAULT_CHARACTER_OWNER_ID,
+                        amountCents = amountCents,
+                        referenceId = referenceId,
+                        note = note.ifBlank { "转账" },
+                    )
+                ) {
+                    is com.example.myapplication.model.EconomyOperationResult.Success -> {
+                        com.example.myapplication.model.EconomyOperationResult.Success(Unit)
+                    }
+                    is com.example.myapplication.model.EconomyOperationResult.Failure -> {
+                        result
+                    }
+                }
+            },
+            settleTransfer = { referenceId ->
+                appGraph.roleplayEconomyRepository.settleTransfer(referenceId)
+            },
+            releaseTransfer = { referenceId ->
+                appGraph.roleplayEconomyRepository.releaseTransfer(referenceId)
+            },
         ),
     )
 }
