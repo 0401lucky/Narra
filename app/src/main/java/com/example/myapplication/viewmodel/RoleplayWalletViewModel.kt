@@ -3,6 +3,7 @@ package com.example.myapplication.viewmodel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
+import com.example.myapplication.context.MemoryScopeSupport
 import com.example.myapplication.data.repository.ImageGenerationResult
 import com.example.myapplication.data.repository.SavedImageFile
 import com.example.myapplication.data.repository.ai.AiGateway
@@ -16,6 +17,7 @@ import com.example.myapplication.data.repository.roleplay.RoleplayRepository
 import com.example.myapplication.model.AppSettings
 import com.example.myapplication.model.Assistant
 import com.example.myapplication.model.ChatMessage
+import com.example.myapplication.model.Conversation
 import com.example.myapplication.model.EconomyFailureReason
 import com.example.myapplication.model.EconomyImageStyle
 import com.example.myapplication.model.EconomyOperationResult
@@ -26,7 +28,6 @@ import com.example.myapplication.model.ImagePromptPolishResult
 import com.example.myapplication.model.ImagePromptPurpose
 import com.example.myapplication.model.InventoryItem
 import com.example.myapplication.model.InventoryItemStatus
-import com.example.myapplication.model.MemoryScopeType
 import com.example.myapplication.model.MessageRole
 import com.example.myapplication.model.ProviderFunction
 import com.example.myapplication.model.ProviderSettings
@@ -259,7 +260,7 @@ class RoleplayWalletViewModel(
         val conversationExcerpt = buildConversationExcerpt(messages)
         val summary = conversationSummaryRepository.getSummary(session.conversationId)?.summary.orEmpty()
         val memoryContext = buildMemoryContext(
-            assistantId = assistant?.id.orEmpty(),
+            assistant = assistant,
             conversationId = session.conversationId,
         )
         val economyContext = economyRepository.buildPromptContext(scenarioId)
@@ -283,10 +284,10 @@ class RoleplayWalletViewModel(
             promptContext = listOf(
                 "角色：$characterName",
                 "用户：$userName",
-                scenarioContext,
-                conversationExcerpt,
-                memoryContext,
-                economyContext,
+                scenarioContext.takeIf(String::isNotBlank)?.let { "当前剧情/场景：\n$it" }.orEmpty(),
+                conversationExcerpt.takeIf(String::isNotBlank)?.let { "近期互动：\n$it" }.orEmpty(),
+                memoryContext.takeIf(String::isNotBlank)?.let { "记忆线索：\n$it" }.orEmpty(),
+                economyContext.takeIf(String::isNotBlank)?.let { "钱包与库存状态：\n$it" }.orEmpty(),
             ).filter(String::isNotBlank).joinToString(separator = "\n").take(4000),
         )
     }
@@ -445,27 +446,24 @@ class RoleplayWalletViewModel(
     }
 
     private suspend fun buildMemoryContext(
-        assistantId: String,
+        assistant: Assistant?,
         conversationId: String,
     ): String {
-        return memoryRepository.listEntries()
-            .filter { entry ->
-                entry.scopeType == MemoryScopeType.GLOBAL ||
-                    (entry.scopeType == MemoryScopeType.ASSISTANT && entry.resolvedScopeId() == assistantId) ||
-                    (entry.scopeType == MemoryScopeType.CONVERSATION && entry.resolvedScopeId() == conversationId) ||
-                    entry.characterId == assistantId
-            }
-            .sortedWith(
-                compareByDescending<com.example.myapplication.model.MemoryEntry> { it.pinned }
-                    .thenByDescending { it.importance }
-                    .thenByDescending { it.updatedAt },
-            )
-            .take(8)
-            .joinToString(separator = "\n") { "- ${it.content.take(120)}" }
+        val conversation = conversationId
+            .takeIf(String::isNotBlank)
+            ?.let { Conversation(id = it, createdAt = 0L, updatedAt = 0L) }
+        val accessibleEntries = MemoryScopeSupport.filterAccessibleEntries(
+            entries = memoryRepository.listEntries(),
+            assistant = assistant,
+            conversation = conversation,
+        )
+        return MemoryScopeSupport.sortByPriority(accessibleEntries)
+            .take(12)
+            .joinToString(separator = "\n") { "- ${it.content.take(180)}" }
     }
 
     private fun buildConversationExcerpt(messages: List<ChatMessage>): String {
-        return messages.takeLast(10).mapNotNull { message ->
+        return messages.takeLast(16).mapNotNull { message ->
             val content = message.parts.toContentMirror(
                 imageFallback = "图片",
                 specialFallback = "特殊玩法",
@@ -477,9 +475,9 @@ class RoleplayWalletViewModel(
                     MessageRole.USER -> "用户"
                     MessageRole.ASSISTANT -> message.speakerName.ifBlank { "角色" }
                 }
-                "$role：${content.take(180)}"
+                "$role：${content.take(240)}"
             }
-        }.joinToString(separator = "\n").take(1600)
+        }.joinToString(separator = "\n").take(2800)
     }
 
     private fun buildScenarioContext(

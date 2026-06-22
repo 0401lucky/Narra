@@ -19,6 +19,29 @@
 
 ---
 
+## [2.1.8-dev] - 2026-06-22
+
+### Changed
+
+- 角色扮演商店生成提示词改为强绑定角色人设、用户人设、近期互动和记忆线索，减少通用商品池结果。
+- 商店生成上下文扩大近期互动和记忆取样，并要求商品能直接服务后续剧情钩子。
+
+### Fixed
+
+- 修复钱包与商店页顶部栏在 edge-to-edge 系统栏下被状态栏遮挡的问题。
+- 修复商店生成读取记忆时可能串入其它角色全局记忆的问题，改为复用角色隔离规则。
+
+### Tests
+
+- 已通过 `.\gradlew.bat :app:testDebugUnitTest --tests "com.example.myapplication.data.repository.ai.RoleplayShopPromptServiceTest" --console=plain`。
+- 已通过 `.\gradlew.bat assembleDebug --console=plain`。
+
+### Docs
+
+- `dev` 渠道构建版本推进到 `2.1.8-dev (20108)`，继续通过 Cloudflare R2 分发 APK。
+
+---
+
 ## [2.1.7-dev] - 2026-06-22
 
 ### Added
