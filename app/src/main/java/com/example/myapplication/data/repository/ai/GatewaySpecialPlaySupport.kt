@@ -21,7 +21,6 @@ import com.example.myapplication.model.taskMessagePart
 import com.example.myapplication.model.textMessagePart
 import com.example.myapplication.model.toPlainText
 import com.example.myapplication.model.transferMessagePart
-import com.example.myapplication.model.transferResultText
 import com.example.myapplication.roleplay.OnlineActionProtocolParser
 import java.util.UUID
 
@@ -248,7 +247,7 @@ internal object GatewaySpecialPlaySupport {
         val match = looseTransferUpdateRegex.matchEntire(content.trim()) ?: return null
         val status = match.groupValues[2].toTransferStatusOrNull() ?: return null
         return ParsedAssistantSpecialOutput(
-            content = status.transferResultText(),
+            content = "",
             parts = preservedNonTextParts,
             transferUpdates = listOf(
                 TransferUpdateDirective(

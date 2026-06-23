@@ -18,6 +18,7 @@ import com.example.myapplication.viewmodel.MomentsViewModel
 import com.example.myapplication.viewmodel.PhoneCheckViewModel
 import com.example.myapplication.viewmodel.RoleplayViewModel
 import com.example.myapplication.viewmodel.WorldBookViewModel
+import kotlinx.coroutines.flow.first
 
 @Composable
 internal fun rememberRoleplayViewModel(
@@ -61,11 +62,23 @@ internal fun rememberRoleplayViewModel(
             voiceSynthesisCoordinator = appGraph.voiceSynthesisCoordinator,
             holdUserTransfer = { scenarioId, referenceId, amountCents, note ->
                 val session = appGraph.roleplayRepository.getSessionByScenario(scenarioId)
+                val scenario = appGraph.roleplayRepository.getScenario(scenarioId)
+                val settings = appGraph.aiSettingsRepository.settingsFlow.first()
+                val assistant = scenario?.assistantId?.let { assistantId ->
+                    settings.resolvedAssistants().firstOrNull { it.id == assistantId }
+                } ?: settings.activeAssistant()
+                val userPersona = scenario?.let {
+                    com.example.myapplication.roleplay.RoleplayConversationSupport.resolveUserPersona(it, settings)
+                }
+                val characterName = scenario?.characterDisplayNameOverride.orEmpty().trim()
+                    .ifBlank { assistant?.name?.trim().orEmpty() }
+                    .ifBlank { "角色" }
                 appGraph.roleplayEconomyRepository.ensureDefaultAccounts(
                     scenarioId = scenarioId,
                     conversationId = session?.conversationId.orEmpty(),
-                    userName = "我",
-                    characterName = "角色",
+                    userName = userPersona?.displayName?.ifBlank { "我" } ?: "我",
+                    characterName = characterName,
+                    characterInitialBalanceCents = assistant?.initialWalletBalanceCents ?: 0L,
                 )
                 when (
                     val result = appGraph.roleplayEconomyRepository.startTransferHold(

@@ -1057,6 +1057,7 @@ class AppSettingsStore(
                 ?: DEFAULT_WORLD_BOOK_MAX_ENTRIES,
             worldBookScanDepth = assistant.worldBookScanDepth.takeIf { it >= 0 }
                 ?: DEFAULT_WORLD_BOOK_SCAN_DEPTH,
+            initialWalletBalanceCents = assistant.initialWalletBalanceCents.coerceAtLeast(0L),
             defaultPresetId = sanitizeText(assistant.defaultPresetId as String?),
             tags = sanitizeStringList(assistant.tags as? List<*>),
             momentAutoCommentEnabled = if (hasMomentAutoCommentEnabled) {

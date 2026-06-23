@@ -241,6 +241,7 @@ class RoleplayWalletViewModel(
                 conversationId = session.conversationId,
                 userName = userPersona.displayName.ifBlank { "我" },
                 characterName = resolveCharacterName(scenario, assistant),
+                characterInitialBalanceCents = assistant?.initialWalletBalanceCents ?: 0L,
             )
         }.onFailure { throwable ->
             fail(buildFriendlyError(throwable, "钱包初始化失败"))

@@ -24,6 +24,7 @@ import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Close
@@ -57,11 +58,14 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.platform.LocalClipboard
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.myapplication.model.Assistant
+import com.example.myapplication.model.formatMoneyLabel
+import com.example.myapplication.model.parseMoneyToCents
 import com.example.myapplication.ui.component.AssistantAvatar
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -83,6 +87,9 @@ fun AssistantPromptScreen(
     var scenario by rememberSaveable(assistant.id) { mutableStateOf(assistant.scenario) }
     var greeting by rememberSaveable(assistant.id) { mutableStateOf(assistant.greeting) }
     var creatorNotes by rememberSaveable(assistant.id) { mutableStateOf(assistant.creatorNotes) }
+    var initialWalletBalanceText by rememberSaveable(assistant.id) {
+        mutableStateOf(assistant.initialWalletBalanceCents.toMoneyInputText())
+    }
     var contextMessageSizeText by rememberSaveable(assistant.id) {
         mutableStateOf(
             assistant.contextMessageSize
@@ -111,6 +118,7 @@ fun AssistantPromptScreen(
                 greeting = greeting,
                 exampleDialogues = exampleDialogues.toList(),
                 creatorNotes = creatorNotes,
+                initialWalletBalanceText = initialWalletBalanceText,
                 contextMessageSizeText = contextMessageSizeText,
             )
         }
@@ -362,6 +370,41 @@ fun AssistantPromptScreen(
 
             item {
                 PromptSection(
+                    title = "钱包设定",
+                    palette = palette,
+                ) {
+                    Text(
+                        text = "设置角色首次进入场景钱包时的余额。留空使用默认 ${DEFAULT_ROLE_WALLET_BALANCE_LABEL}，已有钱包不会被自动覆盖。",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = palette.body.copy(alpha = 0.6f),
+                    )
+                    Spacer(Modifier.height(8.dp))
+                    OutlinedTextField(
+                        value = initialWalletBalanceText,
+                        onValueChange = { raw ->
+                            initialWalletBalanceText = raw
+                                .filter { it.isDigit() || it == '.' || it == '¥' || it == '￥' || it == ',' }
+                                .take(18)
+                        },
+                        modifier = Modifier.fillMaxWidth(),
+                        singleLine = true,
+                        label = { Text("角色初始钱包余额") },
+                        placeholder = { Text("例如 52000 或 520.00") },
+                        supportingText = {
+                            Text(
+                                initialWalletBalanceText.toWalletBalancePreview()
+                                    ?: "留空：使用默认 ${DEFAULT_ROLE_WALLET_BALANCE_LABEL}",
+                            )
+                        },
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+                        shape = RoundedCornerShape(16.dp),
+                        colors = outlineColors,
+                    )
+                }
+            }
+
+            item {
+                PromptSection(
                     title = "最近消息窗口",
                     palette = palette,
                 ) {
@@ -569,7 +612,7 @@ private fun ExampleDialogueItem(
 }
 
 /**
- * 提示词页的表单快照：承载 6 个可编辑字段，用于脏检查避免没有真实改动时仍调用 onSave。
+ * 提示词页的表单快照：承载可编辑字段，用于脏检查避免没有真实改动时仍调用 onSave。
  */
 @Immutable
 private data class AssistantPromptDraft(
@@ -578,6 +621,7 @@ private data class AssistantPromptDraft(
     val greeting: String,
     val exampleDialogues: List<String>,
     val creatorNotes: String,
+    val initialWalletBalanceText: String,
     val contextMessageSizeText: String,
 )
 
@@ -587,6 +631,7 @@ private fun Assistant.toPromptDraft(): AssistantPromptDraft = AssistantPromptDra
     greeting = greeting,
     exampleDialogues = exampleDialogues.toList(),
     creatorNotes = creatorNotes,
+    initialWalletBalanceText = initialWalletBalanceCents.toMoneyInputText(),
     contextMessageSizeText = contextMessageSize.takeIf { it > 0 }?.toString().orEmpty(),
 )
 
@@ -596,5 +641,32 @@ private fun AssistantPromptDraft.applyTo(base: Assistant): Assistant = base.copy
     greeting = greeting.trim(),
     exampleDialogues = exampleDialogues.map { it.trim() }.filter { it.isNotBlank() },
     creatorNotes = creatorNotes.trim(),
+    initialWalletBalanceCents = initialWalletBalanceText.toWalletBalanceCents(),
     contextMessageSize = contextMessageSizeText.toIntOrNull()?.coerceIn(0, 30) ?: 0,
 )
+
+private fun Long.toMoneyInputText(): String {
+    if (this <= 0L) return ""
+    val yuan = this / 100
+    val cents = this % 100
+    return if (cents == 0L) {
+        yuan.toString()
+    } else {
+        "$yuan.${cents.toString().padStart(2, '0')}"
+    }
+}
+
+private fun String.toWalletBalanceCents(): Long {
+    val normalized = trim()
+    if (normalized.isBlank()) return 0L
+    return parseMoneyToCents(normalized)?.coerceAtLeast(0L) ?: 0L
+}
+
+private fun String.toWalletBalancePreview(): String? {
+    val normalized = trim()
+    if (normalized.isBlank()) return null
+    val cents = parseMoneyToCents(normalized)?.takeIf { it >= 0L } ?: return "金额格式不对，保存时会使用默认余额"
+    return "保存为 ${cents.formatMoneyLabel()}"
+}
+
+private const val DEFAULT_ROLE_WALLET_BALANCE_LABEL = "¥300.00"

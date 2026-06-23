@@ -52,6 +52,7 @@ import com.example.myapplication.model.Assistant
 import com.example.myapplication.model.MomentAutoPostFrequency
 import com.example.myapplication.model.MomentCommentStyle
 import com.example.myapplication.model.Preset
+import com.example.myapplication.model.formatMoneyLabel
 import com.example.myapplication.model.isAssistantPresetFollowingGlobal
 import com.example.myapplication.model.resolveActivePresetId
 import com.example.myapplication.ui.component.AssistantAvatar
@@ -140,6 +141,10 @@ fun AssistantDetailScreen(
                     AssistantEntryRow(
                         icon = { EntryGlyph(icon = { Icon(Icons.Default.AutoAwesome, null) }) },
                         title = "角色人设",
+                        supporting = assistant.initialWalletBalanceCents
+                            .takeIf { it > 0L }
+                            ?.let { "钱包余额 ${it.formatMoneyLabel()}" }
+                            ?: "核心人设、场景和钱包余额",
                         onClick = onOpenPrompt,
                     )
                     SettingsGroupDivider()

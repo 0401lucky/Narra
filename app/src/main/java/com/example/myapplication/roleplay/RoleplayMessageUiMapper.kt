@@ -602,6 +602,9 @@ object RoleplayMessageUiMapper {
         messageStatus: MessageStatus,
         canRetry: Boolean,
     ): Boolean {
+        if (OnlineActionProtocolParser.isProtocolResidualText(rawContent)) {
+            return true
+        }
         val statusSplitParts = ChatStatusBlockParser.extract(
             text = rawContent,
             hideStatusBlocksInBubble = true,

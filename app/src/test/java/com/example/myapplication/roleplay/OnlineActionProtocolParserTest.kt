@@ -154,6 +154,15 @@ class OnlineActionProtocolParserTest {
     }
 
     @Test
+    fun isProtocolResidualText_treatsLooseTransferReceiptAsResidual() {
+        assertTrue(
+            OnlineActionProtocolParser.isProtocolResidualText(
+                "8e9a258c-80f7-405e-9d1f-d7e101029e6b received",
+            ),
+        )
+    }
+
+    @Test
     fun parse_invalidJsonReturnsNull() {
         val result = OnlineActionProtocolParser.parse(
             rawContent = """{"type":"emoji"}""",

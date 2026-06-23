@@ -336,6 +336,13 @@ internal object OnlineActionProtocolParser {
     }
 
     fun isProtocolResidualText(rawContent: String): Boolean {
+        val collapsed = rawContent.replace(Regex("""\s+"""), " ").trim()
+        if (collapsed.isNotBlank()) {
+            val looseTransferMatch = looseTransferUpdatePattern.matchEntire(collapsed)
+            if (looseTransferMatch != null && looseTransferMatch.groupValues[2].toLooseTransferStatusOrNull() != null) {
+                return true
+            }
+        }
         val normalized = sanitizeProtocolResidualText(rawContent)
         return normalized.isBlank() && rawContent.trim().isNotBlank()
     }

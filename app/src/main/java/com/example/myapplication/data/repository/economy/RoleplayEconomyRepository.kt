@@ -38,6 +38,7 @@ interface RoleplayEconomyRepository {
         conversationId: String,
         userName: String,
         characterName: String,
+        characterInitialBalanceCents: Long = 0L,
     ): List<WalletAccount>
 
     suspend fun adjustBalance(
@@ -133,9 +134,13 @@ class RoomRoleplayEconomyRepository(
         conversationId: String,
         userName: String,
         characterName: String,
+        characterInitialBalanceCents: Long,
     ): List<WalletAccount> {
         if (scenarioId.isBlank()) return emptyList()
         val now = nowProvider()
+        val resolvedCharacterBalance = characterInitialBalanceCents
+            .takeIf { it > 0L }
+            ?: DEFAULT_CHARACTER_BALANCE_CENTS
         val accounts = database.withTransaction {
             val existing = dao.listAccounts(scenarioId)
             val next = mutableListOf<WalletAccountEntity>()
@@ -153,20 +158,33 @@ class RoomRoleplayEconomyRepository(
                 createdAt = now,
                 updatedAt = now,
             ).also(next::add)
-            val character = existing.firstOrNull {
+            val existingCharacter = existing.firstOrNull {
                 it.ownerType == EconomyOwnerType.CHARACTER.storageValue && it.ownerId == DEFAULT_CHARACTER_OWNER_ID
-            } ?: WalletAccountEntity(
-                id = UUID.randomUUID().toString(),
-                scenarioId = scenarioId,
-                conversationId = conversationId,
-                ownerType = EconomyOwnerType.CHARACTER.storageValue,
-                ownerId = DEFAULT_CHARACTER_OWNER_ID,
-                displayName = characterName.trim().ifBlank { "角色" },
-                balanceCents = DEFAULT_CHARACTER_BALANCE_CENTS,
-                frozenCents = 0L,
-                createdAt = now,
-                updatedAt = now,
-            ).also(next::add)
+            }
+            val character = when {
+                existingCharacter == null -> WalletAccountEntity(
+                    id = UUID.randomUUID().toString(),
+                    scenarioId = scenarioId,
+                    conversationId = conversationId,
+                    ownerType = EconomyOwnerType.CHARACTER.storageValue,
+                    ownerId = DEFAULT_CHARACTER_OWNER_ID,
+                    displayName = characterName.trim().ifBlank { "角色" },
+                    balanceCents = resolvedCharacterBalance,
+                    frozenCents = 0L,
+                    createdAt = now,
+                    updatedAt = now,
+                ).also(next::add)
+
+                existingCharacter.canApplyInitialCharacterBalance(
+                    scenarioLedger = dao.listLedgerEntries(scenarioId),
+                    resolvedCharacterBalance = resolvedCharacterBalance,
+                ) -> existingCharacter.copy(
+                    balanceCents = resolvedCharacterBalance,
+                    updatedAt = now,
+                ).also(next::add)
+
+                else -> existingCharacter
+            }
             if (next.isNotEmpty()) {
                 dao.upsertAccounts(next)
             }
@@ -618,6 +636,19 @@ class RoomRoleplayEconomyRepository(
     override suspend fun deleteScenarioData(scenarioId: String) {
         if (scenarioId.isBlank()) return
         dao.deleteScenarioData(scenarioId)
+    }
+
+    private fun WalletAccountEntity.canApplyInitialCharacterBalance(
+        scenarioLedger: List<WalletLedgerEntryEntity>,
+        resolvedCharacterBalance: Long,
+    ): Boolean {
+        if (resolvedCharacterBalance <= 0L || balanceCents == resolvedCharacterBalance || frozenCents != 0L) {
+            return false
+        }
+        if (balanceCents != DEFAULT_CHARACTER_BALANCE_CENTS) {
+            return false
+        }
+        return scenarioLedger.none { it.accountId == id }
     }
 
     private suspend fun updateInventoryStatus(

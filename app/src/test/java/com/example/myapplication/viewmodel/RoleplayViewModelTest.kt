@@ -2452,10 +2452,7 @@ class RoleplayViewModelTest {
             .first()
         assertEquals(TransferStatus.RECEIVED, updatedTransfer.specialStatus)
         assertEquals(listOf("transfer-1"), settledTransferIds)
-        assertEquals(
-            "已收款",
-            savedMessages.last { it.role == MessageRole.ASSISTANT && it.status == MessageStatus.COMPLETED }.content,
-        )
+        assertTrue(savedMessages.none { it.role == MessageRole.ASSISTANT && it.status == MessageStatus.COMPLETED })
     }
 
     @Test

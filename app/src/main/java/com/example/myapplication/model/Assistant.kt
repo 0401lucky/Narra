@@ -23,6 +23,7 @@ data class Assistant(
     val temperature: Float? = null,
     val topP: Float? = null,
     val contextMessageSize: Int = 0,
+    val initialWalletBalanceCents: Long = 0L,
     val defaultPresetId: String = DEFAULT_PRESET_ID,
     val tags: List<String> = emptyList(),
     val momentAutoCommentEnabled: Boolean = true,

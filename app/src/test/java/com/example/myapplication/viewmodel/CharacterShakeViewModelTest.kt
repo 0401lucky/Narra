@@ -54,6 +54,8 @@ class CharacterShakeViewModelTest {
                 ageRange = "28-32",
                 personality = "理性",
                 identity = "自由职业",
+                zodiacSign = "天蝎座",
+                mbti = "INTJ",
             )
             viewModel.generateAssistant(filters)
             advanceUntilIdle()
@@ -74,6 +76,9 @@ class CharacterShakeViewModelTest {
                 url: String,
                 request: ChatCompletionRequest,
             ): Response<ChatCompletionResponse> {
+                val prompt = request.messages.single().content.toString()
+                assertTrue(prompt.contains("天蝎座"))
+                assertTrue(prompt.contains("INTJ"))
                 return Response.success(
                     ChatCompletionResponse(
                         choices = listOf(

@@ -2899,7 +2899,7 @@ class AiGatewayTest {
             existingParts = emptyList(),
         )
 
-        assertEquals("已收款", parsed.content)
+        assertEquals("", parsed.content)
         assertTrue(parsed.parts.isEmpty())
         assertEquals(1, parsed.transferUpdates.size)
         assertEquals("8e9a258c-80f7-405e-9d1f-d7e101029e6b", parsed.transferUpdates.first().refId)

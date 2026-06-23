@@ -42,13 +42,13 @@ import com.example.myapplication.model.RoleplayInteractionMode
 import com.example.myapplication.model.RoleplayOutputFormat
 import com.example.myapplication.model.TransferDirection
 import com.example.myapplication.model.TransferStatus
+import com.example.myapplication.model.hasSendableContent
 import com.example.myapplication.model.isOnlineThoughtPart
 import com.example.myapplication.model.isGroupChat
 import com.example.myapplication.model.normalizeChatMessageParts
 import com.example.myapplication.model.normalizedOnlineReplyRange
 import com.example.myapplication.model.reasoningStepsToContent
 import com.example.myapplication.model.toContentMirror
-import com.example.myapplication.model.transferResultText
 import com.example.myapplication.roleplay.OnlineActionDirective
 import com.example.myapplication.roleplay.OnlineActionProtocolParseResult
 import com.example.myapplication.roleplay.OnlineActionProtocolParser
@@ -438,28 +438,33 @@ internal class RoleplayRoundTripExecutor(
                             )
                             val protocolDirectiveContent = onlineProtocolResult
                                 ?.directives
-                                ?.toDirectiveResultText()
+                                ?.toVisibleDirectiveResultText()
                                 .orEmpty()
+                            val hasTransferUpdateDirective = parsedOutput.transferUpdates.isNotEmpty() ||
+                                onlineProtocolResult?.directives.orEmpty()
+                                    .any { it is OnlineActionDirective.UpdateTransferStatus }
                             val shouldUseParsedTextContent = parsedOutput.content.isNotBlank() &&
                                 onlineProtocolResult == null &&
                                 scenario.interactionMode != com.example.myapplication.model.RoleplayInteractionMode.ONLINE_PHONE
                             val hasResolvedAssistantContent = completedParts.isNotEmpty() ||
                                 shouldUseParsedTextContent ||
-                                parsedOutput.transferUpdates.isNotEmpty() ||
                                 protocolDirectiveContent.isNotBlank()
+                            val isControlOnlyTransferUpdate = !hasResolvedAssistantContent && hasTransferUpdateDirective
                             val isEmptyCompensationOpening = !hasResolvedAssistantContent &&
                                 loading.systemEventKind == com.example.myapplication.model.RoleplayOnlineEventKind.COMPENSATION_OPENING
                             loading.copy(
                                 content = if (isEmptyCompensationOpening) {
                                     ""
+                                } else if (isControlOnlyTransferUpdate) {
+                                    ""
                                 } else {
                                     parsedOutput.content.takeIf { shouldUseParsedTextContent }
-                                        ?: parsedOutput.transferUpdates.lastOrNull()?.status?.transferResultText()
                                         ?: protocolDirectiveContent.takeIf { it.isNotBlank() }
                                         ?: resolvedContent.ifBlank { "模型未返回有效内容" }
                                 },
                                 status = when {
                                     hasResolvedAssistantContent -> MessageStatus.COMPLETED
+                                    isControlOnlyTransferUpdate -> MessageStatus.COMPLETED
                                     isEmptyCompensationOpening -> MessageStatus.COMPLETED
                                     else -> MessageStatus.ERROR
                                 },
@@ -528,11 +533,27 @@ internal class RoleplayRoundTripExecutor(
                         updates = parsedTransferUpdates,
                         handledTransferUpdates = handledTransferUpdates,
                     )
+                    val directiveSourceMessages = if (
+                        shouldDropControlOnlyAssistantMessage(
+                            messages = result.messages,
+                            loadingMessage = loadingMessage,
+                            onlineProtocolResult = onlineProtocolResult,
+                            parsedTransferUpdates = parsedTransferUpdates,
+                        )
+                    ) {
+                        removeStaleAssistantMessage(
+                            conversationId = session.conversationId,
+                            loadingMessage = loadingMessage,
+                            selectedModel = selectedModel,
+                        )
+                    } else {
+                        result.messages
+                    }
                     val postDirectiveMessages = applyOnlineProtocolDirectivesIfNeeded(
                         conversationId = session.conversationId,
                         selectedModel = selectedModel,
-                        messages = result.messages,
-                        completedAssistantId = result.messages.lastOrNull {
+                        messages = directiveSourceMessages,
+                        completedAssistantId = directiveSourceMessages.lastOrNull {
                             it.role == MessageRole.ASSISTANT && it.status == MessageStatus.COMPLETED
                         }?.id.orEmpty(),
                         protocolResult = onlineProtocolResult,
@@ -1048,11 +1069,25 @@ internal class RoleplayRoundTripExecutor(
             .orEmpty()
     }
 
-    private fun List<OnlineActionDirective>.toDirectiveResultText(): String {
+    private fun shouldDropControlOnlyAssistantMessage(
+        messages: List<ChatMessage>,
+        loadingMessage: ChatMessage,
+        onlineProtocolResult: OnlineActionProtocolParseResult?,
+        parsedTransferUpdates: List<TransferUpdateDirective>,
+    ): Boolean {
+        val completedAssistant = messages.lastOrNull { it.id == loadingMessage.id } ?: return false
+        if (completedAssistant.status != MessageStatus.COMPLETED || completedAssistant.hasSendableContent()) {
+            return false
+        }
+        return parsedTransferUpdates.isNotEmpty() ||
+            onlineProtocolResult?.directives.orEmpty().any { it is OnlineActionDirective.UpdateTransferStatus }
+    }
+
+    private fun List<OnlineActionDirective>.toVisibleDirectiveResultText(): String {
         return mapNotNull { directive ->
             when (directive) {
                 OnlineActionDirective.RecallPreviousAssistant -> "已撤回上一条回复"
-                is OnlineActionDirective.UpdateTransferStatus -> directive.status.transferResultText()
+                is OnlineActionDirective.UpdateTransferStatus -> null
             }
         }.distinct()
             .joinToString(separator = "\n")
