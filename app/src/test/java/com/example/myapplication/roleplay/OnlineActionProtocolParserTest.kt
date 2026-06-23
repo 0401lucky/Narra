@@ -135,6 +135,25 @@ class OnlineActionProtocolParserTest {
     }
 
     @Test
+    fun parse_looseTransferReceiptTextProducesDirective() {
+        val result = OnlineActionProtocolParser.parse(
+            rawContent = "transfer-1 received",
+            characterName = "沈砚清",
+        )!!
+
+        assertTrue(result.parts.isEmpty())
+        assertEquals(
+            listOf(
+                OnlineActionDirective.UpdateTransferStatus(
+                    status = TransferStatus.RECEIVED,
+                    refId = "transfer-1",
+                ),
+            ),
+            result.directives,
+        )
+    }
+
+    @Test
     fun parse_invalidJsonReturnsNull() {
         val result = OnlineActionProtocolParser.parse(
             rawContent = """{"type":"emoji"}""",

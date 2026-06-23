@@ -2356,6 +2356,109 @@ class RoleplayViewModelTest {
     }
 
     @Test
+    fun sendMessage_inOnlineModeSettlesLooseTransferReceiptText() = runTest(mainDispatcherRule.dispatcher.scheduler) {
+        enqueueStreamResponse("transfer-1 received")
+
+        val assistant = Assistant(
+            id = "assistant-1",
+            name = "陆宴清",
+        )
+        val scenario = RoleplayScenario(
+            id = "scene-1",
+            assistantId = assistant.id,
+            userDisplayNameOverride = "林晚",
+            characterDisplayNameOverride = "陆宴清",
+            interactionMode = RoleplayInteractionMode.ONLINE_PHONE,
+            enableNarration = true,
+        )
+        val session = RoleplaySession(
+            id = "session-1",
+            scenarioId = scenario.id,
+            conversationId = "conv-1",
+            createdAt = 1L,
+            updatedAt = 2L,
+        )
+        val pendingTransfer = transferMessagePart(
+            id = "transfer-1",
+            direction = TransferDirection.USER_TO_ASSISTANT,
+            status = TransferStatus.PENDING,
+            counterparty = "陆宴清",
+            amount = "88.00",
+            note = "晚饭钱",
+        )
+        val store = FakeConversationStore(
+            conversations = listOf(
+                Conversation(
+                    id = session.conversationId,
+                    title = "剧情",
+                    model = "chat-model",
+                    createdAt = 1L,
+                    updatedAt = 2L,
+                    assistantId = assistant.id,
+                ),
+            ),
+            messagesByConversation = mapOf(
+                session.conversationId to listOf(
+                    ChatMessage(
+                        id = "transfer-message",
+                        conversationId = session.conversationId,
+                        role = MessageRole.USER,
+                        content = "转账",
+                        createdAt = 10L,
+                        parts = listOf(pendingTransfer),
+                    ),
+                ),
+            ),
+        )
+        val provider = ProviderSettings(
+            id = "provider-1",
+            name = "测试 Provider",
+            baseUrl = server.url("/v1/").toString(),
+            apiKey = "test-key",
+            selectedModel = "chat-model",
+        )
+        val settledTransferIds = mutableListOf<String>()
+        val viewModel = createViewModel(
+            store = store,
+            roleplayRepository = FakeRoleplayRepository(
+                conversationStore = store,
+                scenarios = listOf(scenario),
+                sessions = listOf(session),
+            ),
+            settings = AppSettings(
+                baseUrl = provider.baseUrl,
+                apiKey = provider.apiKey,
+                selectedModel = provider.selectedModel,
+                providers = listOf(provider),
+                selectedProviderId = provider.id,
+                assistants = listOf(assistant),
+                selectedAssistantId = assistant.id,
+                showOnlineRoleplayNarration = true,
+            ),
+            promptContextAssembler = fixedPromptAssembler("提示词上下文"),
+            settleTransfer = { referenceId -> settledTransferIds += referenceId },
+        )
+
+        viewModel.enterScenario(scenario.id)
+        advanceUntilIdle()
+        viewModel.updateInput("你收到了吗")
+        viewModel.sendMessage()
+        advanceUntilIdle()
+
+        val savedMessages = store.listMessages(session.conversationId)
+        val updatedTransfer = savedMessages
+            .first { it.id == "transfer-message" }
+            .parts
+            .first()
+        assertEquals(TransferStatus.RECEIVED, updatedTransfer.specialStatus)
+        assertEquals(listOf("transfer-1"), settledTransferIds)
+        assertEquals(
+            "已收款",
+            savedMessages.last { it.role == MessageRole.ASSISTANT && it.status == MessageStatus.COMPLETED }.content,
+        )
+    }
+
+    @Test
     fun confirmTransferReceipt_updatesPendingTransferStatus() = runTest(mainDispatcherRule.dispatcher.scheduler) {
         val assistant = Assistant(
             id = "assistant-1",
@@ -5684,6 +5787,8 @@ class RoleplayViewModelTest {
         apiServiceProvider: ((String, String) -> OpenAiCompatibleApi)? = null,
         streamClientProvider: ((String, String) -> OkHttpClient)? = null,
         aiGatewayOverride: AiGateway? = null,
+        settleTransfer: suspend (String) -> Unit = {},
+        releaseTransfer: suspend (String) -> Unit = {},
     ): RoleplayViewModel {
         val resolvedApiServiceProvider = apiServiceProvider ?: { baseUrl, apiKey ->
             ApiServiceFactory().create(
@@ -5728,6 +5833,8 @@ class RoleplayViewModelTest {
             nowProvider = nowProvider,
             messageIdProvider = messageIdProvider,
             imageSaver = imageSaver,
+            settleTransfer = settleTransfer,
+            releaseTransfer = releaseTransfer,
         )
     }
 

@@ -48,6 +48,10 @@ internal sealed class OnlineActionDirective {
 
 internal object OnlineActionProtocolParser {
     private val specialPlayTagPattern = Regex("""(?is)<play(?:-update)?\b[^>]*?/>""")
+    private val looseTransferUpdatePattern = Regex(
+        pattern = """^\s*([A-Za-z0-9][A-Za-z0-9_-]{5,}|[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12})\s+([A-Za-z_]+|收下|收款|退回|拒绝|不收)\s*[。.!！]?\s*$""",
+        option = RegexOption.IGNORE_CASE,
+    )
     private val protocolAttributeNames = listOf(
         "id",
         "type",
@@ -132,7 +136,10 @@ internal object OnlineActionProtocolParser {
                 ).takeIf { it.parts.isNotEmpty() || it.directives.isNotEmpty() }
             }
         }
-        return trySingleJsonObject(rawContent, characterName)
+        trySingleJsonObject(rawContent, characterName)?.let { result ->
+            return result
+        }
+        return parseLooseTransferUpdate(rawContent)
     }
 
     /**
@@ -205,6 +212,32 @@ internal object OnlineActionProtocolParser {
         val wrappedArray = JsonArray().apply { add(parsedObject) }
         val result = parseArray(wrappedArray, characterName)
         return result.takeIf { it.parts.isNotEmpty() || it.directives.isNotEmpty() }
+    }
+
+    private fun parseLooseTransferUpdate(rawContent: String): OnlineActionProtocolParseResult? {
+        val match = looseTransferUpdatePattern.matchEntire(
+            stripMarkdownCodeFence(rawContent).trim(),
+        ) ?: return null
+        val status = match.groupValues[2].toLooseTransferStatusOrNull() ?: return null
+        return OnlineActionProtocolParseResult(
+            parts = emptyList(),
+            directives = listOf(
+                OnlineActionDirective.UpdateTransferStatus(
+                    status = status,
+                    refId = match.groupValues[1],
+                ),
+            ),
+        )
+    }
+
+    private fun String.toLooseTransferStatusOrNull(): TransferStatus? {
+        return when (trim().lowercase()) {
+            "accept", "accepted", "receive", "received", "收下", "收款" -> TransferStatus.RECEIVED
+            "reject", "rejected", "return", "returned", "refuse", "refused", "退回", "不收", "拒绝" -> {
+                TransferStatus.REJECTED
+            }
+            else -> null
+        }
     }
 
     /**

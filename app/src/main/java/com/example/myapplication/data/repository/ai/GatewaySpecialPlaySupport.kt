@@ -21,6 +21,7 @@ import com.example.myapplication.model.taskMessagePart
 import com.example.myapplication.model.textMessagePart
 import com.example.myapplication.model.toPlainText
 import com.example.myapplication.model.transferMessagePart
+import com.example.myapplication.model.transferResultText
 import com.example.myapplication.roleplay.OnlineActionProtocolParser
 import java.util.UUID
 
@@ -48,6 +49,10 @@ internal object GatewaySpecialPlaySupport {
     private val playTagRegex = Regex("""<play\s+([^>]+)/>""")
     private val playUpdateTagRegex = Regex("""<play-update\s+([^>]+)/>""")
     private val xmlAttributeRegex = Regex("""(\w+)\s*=\s*(["'])(.*?)\2""")
+    private val looseTransferUpdateRegex = Regex(
+        pattern = """^\s*([A-Za-z0-9][A-Za-z0-9_-]{5,}|[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12})\s+([A-Za-z_]+|收下|收款|退回|拒绝|不收)\s*[。.!！]?\s*$""",
+        option = RegexOption.IGNORE_CASE,
+    )
 
     fun shouldInjectSpecialPlayPrompt(messages: List<ChatMessage>): Boolean {
         return messages.any { it.hasAnySpecialPlayPart() }
@@ -136,6 +141,9 @@ internal object GatewaySpecialPlaySupport {
             content = content,
             preservedNonTextParts = preservedNonTextParts,
         )?.let { parsedOutput ->
+            return parsedOutput
+        }
+        parseLooseTransferUpdate(content, preservedNonTextParts)?.let { parsedOutput ->
             return parsedOutput
         }
 
@@ -231,6 +239,34 @@ internal object GatewaySpecialPlaySupport {
             .associate { match ->
                 match.groupValues[1] to match.groupValues[3]
             }
+    }
+
+    private fun parseLooseTransferUpdate(
+        content: String,
+        preservedNonTextParts: List<ChatMessagePart>,
+    ): ParsedAssistantSpecialOutput? {
+        val match = looseTransferUpdateRegex.matchEntire(content.trim()) ?: return null
+        val status = match.groupValues[2].toTransferStatusOrNull() ?: return null
+        return ParsedAssistantSpecialOutput(
+            content = status.transferResultText(),
+            parts = preservedNonTextParts,
+            transferUpdates = listOf(
+                TransferUpdateDirective(
+                    refId = match.groupValues[1],
+                    status = status,
+                ),
+            ),
+        )
+    }
+
+    private fun String.toTransferStatusOrNull(): TransferStatus? {
+        return when (trim().lowercase()) {
+            "accept", "accepted", "receive", "received", "收下", "收款" -> TransferStatus.RECEIVED
+            "reject", "rejected", "return", "returned", "refuse", "refused", "退回", "不收", "拒绝" -> {
+                TransferStatus.REJECTED
+            }
+            else -> null
+        }
     }
 
     private fun String.escapeXmlAttribute(): String {

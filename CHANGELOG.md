@@ -30,10 +30,12 @@
 
 - 修复钱包与商店页顶部栏在 edge-to-edge 系统栏下被状态栏遮挡的问题。
 - 修复商店生成读取记忆时可能串入其它角色全局记忆的问题，改为复用角色隔离规则。
+- 修复角色已回复 `转账ID received` 后，聊天转账卡仍停留在待收款、钱包待确认金额未结算的问题。
 
 ### Tests
 
 - 已通过 `.\gradlew.bat :app:testDebugUnitTest --tests "com.example.myapplication.data.repository.ai.RoleplayShopPromptServiceTest" --console=plain`。
+- 已通过 `.\gradlew.bat testDebugUnitTest --tests "com.example.myapplication.data.repository.ai.AiGatewayTest.parseAssistantSpecialOutput_acceptsLooseTransferReceiptText" --tests "com.example.myapplication.roleplay.OnlineActionProtocolParserTest.parse_looseTransferReceiptTextProducesDirective" --tests "com.example.myapplication.viewmodel.RoleplayViewModelTest.sendMessage_inOnlineModeSettlesLooseTransferReceiptText" --console=plain`。
 - 已通过 `.\gradlew.bat assembleDebug --console=plain`。
 
 ### Docs

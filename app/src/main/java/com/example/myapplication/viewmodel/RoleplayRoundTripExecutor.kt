@@ -358,6 +358,7 @@ internal class RoleplayRoundTripExecutor(
             val fullParts = mutableListOf<ChatMessagePart>()
             val fullReasoningSteps = mutableListOf<ChatReasoningStep>()
             var onlineProtocolResult: OnlineActionProtocolParseResult? = null
+            var parsedTransferUpdates: List<TransferUpdateDirective> = emptyList()
 
             when (
                 val result = assistantRoundTripRunner.execute(
@@ -404,6 +405,7 @@ internal class RoleplayRoundTripExecutor(
                         },
                         canPersistResult = ::canApplyUiUpdate,
                         onCompleted = { payload, parsedOutput, loading ->
+                            parsedTransferUpdates = parsedOutput.transferUpdates
                             onlineProtocolResult = scenario.takeIf {
                                 it.interactionMode == com.example.myapplication.model.RoleplayInteractionMode.ONLINE_PHONE
                             }?.let {
@@ -521,6 +523,11 @@ internal class RoleplayRoundTripExecutor(
                         applyRawMessages(cleanedMessages)
                         return RoleplayRoundTripExecutionOutcome(errorMessage = completionError)
                     }
+                    val handledTransferUpdates = mutableSetOf<Pair<String, TransferStatus>>()
+                    settleParsedTransferUpdatesIfNeeded(
+                        updates = parsedTransferUpdates,
+                        handledTransferUpdates = handledTransferUpdates,
+                    )
                     val postDirectiveMessages = applyOnlineProtocolDirectivesIfNeeded(
                         conversationId = session.conversationId,
                         selectedModel = selectedModel,
@@ -529,6 +536,7 @@ internal class RoleplayRoundTripExecutor(
                             it.role == MessageRole.ASSISTANT && it.status == MessageStatus.COMPLETED
                         }?.id.orEmpty(),
                         protocolResult = onlineProtocolResult,
+                        handledTransferUpdates = handledTransferUpdates,
                     )
                     applyActiveRawMessages(postDirectiveMessages)
                     val completedAssistantMessage = postDirectiveMessages.lastOrNull {
@@ -960,6 +968,7 @@ internal class RoleplayRoundTripExecutor(
         messages: List<ChatMessage>,
         completedAssistantId: String,
         protocolResult: OnlineActionProtocolParseResult?,
+        handledTransferUpdates: MutableSet<Pair<String, TransferStatus>> = mutableSetOf(),
     ): List<ChatMessage> {
         val directives = protocolResult?.directives.orEmpty()
         if (directives.isEmpty()) {
@@ -992,12 +1001,37 @@ internal class RoleplayRoundTripExecutor(
                     selectedModel = selectedModel,
                 )
                 when (directive.status) {
-                    TransferStatus.RECEIVED -> settleTransfer(targetTransferId)
-                    TransferStatus.REJECTED -> releaseTransfer(targetTransferId)
+                    TransferStatus.RECEIVED -> if (handledTransferUpdates.add(targetTransferId to directive.status)) {
+                        settleTransfer(targetTransferId)
+                    }
+                    TransferStatus.REJECTED -> if (handledTransferUpdates.add(targetTransferId to directive.status)) {
+                        releaseTransfer(targetTransferId)
+                    }
                     TransferStatus.PENDING -> Unit
                 }
             }
         return updatedMessages
+    }
+
+    private suspend fun settleParsedTransferUpdatesIfNeeded(
+        updates: List<TransferUpdateDirective>,
+        handledTransferUpdates: MutableSet<Pair<String, TransferStatus>>,
+    ) {
+        updates.forEach { update ->
+            val refId = update.refId.trim()
+            if (refId.isBlank()) {
+                return@forEach
+            }
+            when (update.status) {
+                TransferStatus.RECEIVED -> if (handledTransferUpdates.add(refId to update.status)) {
+                    settleTransfer(refId)
+                }
+                TransferStatus.REJECTED -> if (handledTransferUpdates.add(refId to update.status)) {
+                    releaseTransfer(refId)
+                }
+                TransferStatus.PENDING -> Unit
+            }
+        }
     }
 
     private fun findLatestPendingIncomingTransferId(
