@@ -3,6 +3,7 @@
 package com.example.myapplication.ui.screen.roleplay
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -40,6 +41,7 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Surface
@@ -102,6 +104,7 @@ fun RoleplayWalletScreen(
     val snackbarHostState = remember { SnackbarHostState() }
     var selectedTab by rememberSaveable { mutableIntStateOf(0) }
     var showStyleDialog by rememberSaveable { mutableStateOf(false) }
+    var detailItemId by rememberSaveable { mutableStateOf<String?>(null) }
 
     LaunchedEffect(uiState.noticeMessage) {
         uiState.noticeMessage?.let {
@@ -156,6 +159,7 @@ fun RoleplayWalletScreen(
                     isGeneratingShop = uiState.isGeneratingShop,
                     generatingImageItemIds = uiState.generatingImageItemIds,
                     onOpenStyleDialog = { showStyleDialog = true },
+                    onOpenDetail = { detailItemId = it },
                     onPurchaseItem = callbacks.onPurchaseItem,
                     onRetryFailedImage = callbacks.onRetryFailedImage,
                 )
@@ -182,6 +186,20 @@ fun RoleplayWalletScreen(
                 callbacks.onGenerateShop(style)
             },
         )
+    }
+
+    detailItemId?.let { id ->
+        uiState.economyState.shopItems.firstOrNull { it.id == id }?.let { item ->
+            ShopItemDetailSheet(
+                item = item,
+                affordable = (uiState.economyState.userAccount?.availableCents ?: 0L) >= item.priceCents,
+                onPurchase = {
+                    callbacks.onPurchaseItem(item.id)
+                    detailItemId = null
+                },
+                onDismiss = { detailItemId = null },
+            )
+        }
     }
 }
 
@@ -307,6 +325,7 @@ private fun ShopTab(
     isGeneratingShop: Boolean,
     generatingImageItemIds: Set<String>,
     onOpenStyleDialog: () -> Unit,
+    onOpenDetail: (String) -> Unit,
     onPurchaseItem: (String) -> Unit,
     onRetryFailedImage: (String) -> Unit,
 ) {
@@ -359,6 +378,7 @@ private fun ShopTab(
                     item = item,
                     affordable = userAvailableCents >= item.priceCents,
                     isGeneratingImage = item.id in generatingImageItemIds,
+                    onClick = { onOpenDetail(item.id) },
                     onPurchase = { onPurchaseItem(item.id) },
                     onRetryImage = { onRetryFailedImage(item.id) },
                 )
@@ -372,10 +392,12 @@ private fun ShopItemCard(
     item: ShopItem,
     affordable: Boolean,
     isGeneratingImage: Boolean,
+    onClick: () -> Unit,
     onPurchase: () -> Unit,
     onRetryImage: () -> Unit,
 ) {
     Card(
+        modifier = Modifier.clickable(onClick = onClick),
         shape = RoundedCornerShape(8.dp),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainer),
     ) {
@@ -731,6 +753,72 @@ private fun EmptyHint(text: String) {
 private fun formatLedgerTime(timestamp: Long): String {
     if (timestamp <= 0L) return ""
     return SimpleDateFormat("MM-dd HH:mm", Locale.CHINA).format(Date(timestamp))
+}
+
+@Composable
+private fun ShopItemDetailSheet(
+    item: ShopItem,
+    affordable: Boolean,
+    onPurchase: () -> Unit,
+    onDismiss: () -> Unit,
+) {
+    ModalBottomSheet(onDismissRequest = onDismiss) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 20.dp)
+                .padding(bottom = 24.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp),
+        ) {
+            if (item.imageStatus == GiftImageStatus.SUCCEEDED && item.imageUri.isNotBlank()) {
+                AsyncImage(
+                    model = item.imageUri,
+                    contentDescription = item.name,
+                    contentScale = ContentScale.Crop,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .aspectRatio(1.6f)
+                        .clip(RoundedCornerShape(12.dp)),
+                )
+            }
+            Text(
+                text = item.name,
+                style = MaterialTheme.typography.headlineSmall,
+                fontWeight = FontWeight.Bold,
+            )
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
+                if (item.category.isNotBlank()) LabelChip(item.category)
+                if (item.rarity.isNotBlank()) RarityBadge(item.rarity)
+            }
+            Text(
+                text = item.description.ifBlank { "暂时没有描述。" },
+                style = MaterialTheme.typography.bodyLarge,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                Text(
+                    text = item.priceCents.formatMoneyLabel(),
+                    style = MaterialTheme.typography.headlineSmall,
+                    fontWeight = FontWeight.Bold,
+                    color = if (affordable) LocalContentColor.current else MaterialTheme.colorScheme.error,
+                    modifier = Modifier.weight(1f),
+                )
+                NarraButton(
+                    onClick = onPurchase,
+                    enabled = item.status == ShopItemStatus.AVAILABLE && affordable,
+                ) {
+                    Icon(Icons.Default.ShoppingCart, contentDescription = null, modifier = Modifier.size(18.dp))
+                    Text(
+                        when {
+                            item.status == ShopItemStatus.PURCHASED -> "已购买"
+                            !affordable -> "余额不足"
+                            else -> "购买"
+                        },
+                    )
+                }
+            }
+        }
+    }
 }
 
 private data class RarityVisual(
