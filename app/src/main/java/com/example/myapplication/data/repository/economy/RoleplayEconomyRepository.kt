@@ -576,13 +576,13 @@ class RoomRoleplayEconomyRepository(
                 .filter { it.status == InventoryItemStatus.AVAILABLE }
                 .take(5)
             if (inventory.isNotEmpty()) {
-                appendLine("可用道具：")
+                appendLine("可用道具（在合适时机主动把它们织进叙事，而不是当摆设）：")
                 inventory.forEach { item ->
                     append("- ")
                     append(item.name)
                     if (item.effectPrompt.isNotBlank()) {
                         append("：")
-                        append(item.effectPrompt.take(80))
+                        append(item.effectPrompt.take(120))
                     }
                     appendLine()
                 }
