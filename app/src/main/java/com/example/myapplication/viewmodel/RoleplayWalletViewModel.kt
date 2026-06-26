@@ -12,6 +12,9 @@ import com.example.myapplication.data.repository.ai.AiSettingsRepository
 import com.example.myapplication.data.repository.context.ConversationSummaryRepository
 import com.example.myapplication.data.repository.context.MemoryRepository
 import com.example.myapplication.data.repository.economy.DEFAULT_USER_OWNER_ID
+import com.example.myapplication.data.repository.economy.RoleplayEconomyEvent
+import com.example.myapplication.data.repository.economy.RoleplayEconomyEventBus
+import com.example.myapplication.data.repository.economy.RoleplayEconomyEventType
 import com.example.myapplication.data.repository.economy.RoleplayEconomyRepository
 import com.example.myapplication.data.repository.roleplay.RoleplayRepository
 import com.example.myapplication.model.AppSettings
@@ -78,6 +81,7 @@ class RoleplayWalletViewModel(
     private val aiGateway: AiGateway,
     private val memoryRepository: MemoryRepository,
     private val conversationSummaryRepository: ConversationSummaryRepository,
+    private val economyEventBus: RoleplayEconomyEventBus,
     private val imageSaver: suspend (String) -> SavedImageFile,
 ) : ViewModel() {
     private val _uiState = MutableStateFlow(RoleplayWalletUiState(scenarioId = scenarioId))
@@ -193,7 +197,17 @@ class RoleplayWalletViewModel(
     fun purchaseItem(itemId: String) {
         viewModelScope.launch {
             when (val result = economyRepository.purchaseItem(scenarioId = scenarioId, itemId = itemId)) {
-                is EconomyOperationResult.Success -> notice("${result.value.name} 已放入库存")
+                is EconomyOperationResult.Success -> {
+                    economyEventBus.post(
+                        scenarioId = scenarioId,
+                        event = RoleplayEconomyEvent(
+                            type = RoleplayEconomyEventType.PURCHASED,
+                            itemName = result.value.name,
+                            effectPrompt = result.value.effectPrompt,
+                        ),
+                    )
+                    notice("${result.value.name} 已放入库存")
+                }
                 is EconomyOperationResult.Failure -> fail(purchaseFailureMessage(result.reason))
             }
         }
@@ -202,6 +216,7 @@ class RoleplayWalletViewModel(
     fun markGifted(inventoryItemId: String) {
         updateInventory(
             inventoryItemId = inventoryItemId,
+            eventType = RoleplayEconomyEventType.GIFTED,
             successMessage = { "${it.name} 已送出" },
             update = economyRepository::markInventoryGifted,
         )
@@ -210,6 +225,7 @@ class RoleplayWalletViewModel(
     fun markUsed(inventoryItemId: String) {
         updateInventory(
             inventoryItemId = inventoryItemId,
+            eventType = RoleplayEconomyEventType.USED,
             successMessage = { "${it.name} 已使用" },
             update = economyRepository::markInventoryUsed,
         )
@@ -217,12 +233,23 @@ class RoleplayWalletViewModel(
 
     private fun updateInventory(
         inventoryItemId: String,
+        eventType: RoleplayEconomyEventType,
         successMessage: (InventoryItem) -> String,
         update: suspend (String) -> EconomyOperationResult<InventoryItem>,
     ) {
         viewModelScope.launch {
             when (val result = update(inventoryItemId)) {
-                is EconomyOperationResult.Success -> notice(successMessage(result.value))
+                is EconomyOperationResult.Success -> {
+                    economyEventBus.post(
+                        scenarioId = scenarioId,
+                        event = RoleplayEconomyEvent(
+                            type = eventType,
+                            itemName = result.value.name,
+                            effectPrompt = result.value.effectPrompt,
+                        ),
+                    )
+                    notice(successMessage(result.value))
+                }
                 is EconomyOperationResult.Failure -> fail(result.message.ifBlank { "道具状态暂时没改成" })
             }
         }
@@ -639,6 +666,7 @@ class RoleplayWalletViewModel(
             aiGateway: AiGateway,
             memoryRepository: MemoryRepository,
             conversationSummaryRepository: ConversationSummaryRepository,
+            economyEventBus: RoleplayEconomyEventBus,
             imageSaver: suspend (String) -> SavedImageFile,
         ): ViewModelProvider.Factory {
             return typedViewModelFactory {
@@ -651,6 +679,7 @@ class RoleplayWalletViewModel(
                     aiGateway = aiGateway,
                     memoryRepository = memoryRepository,
                     conversationSummaryRepository = conversationSummaryRepository,
+                    economyEventBus = economyEventBus,
                     imageSaver = imageSaver,
                 )
             }

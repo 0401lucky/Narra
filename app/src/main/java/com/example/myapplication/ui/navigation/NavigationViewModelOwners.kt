@@ -9,6 +9,7 @@ import androidx.navigation.NavHostController
 import android.net.Uri
 import com.example.myapplication.conversation.PhoneContextBuilder
 import com.example.myapplication.data.repository.ImageFileStorage
+import com.example.myapplication.data.repository.economy.formatEconomyEventNote
 import com.example.myapplication.di.AppGraph
 import com.example.myapplication.model.PhoneSnapshotOwnerType
 import com.example.myapplication.viewmodel.ContextTransferViewModel
@@ -46,7 +47,11 @@ internal fun rememberRoleplayViewModel(
             conversationSummaryRepository = appGraph.conversationSummaryRepository,
             pendingMemoryProposalRepository = appGraph.pendingMemoryProposalRepository,
             phoneSnapshotRepository = appGraph.phoneSnapshotRepository,
-            buildEconomyPromptContext = appGraph.roleplayEconomyRepository::buildPromptContext,
+            buildEconomyPromptContext = { scenarioId ->
+                val eventNote = formatEconomyEventNote(appGraph.roleplayEconomyEventBus.consume(scenarioId))
+                val baseContext = appGraph.roleplayEconomyRepository.buildPromptContext(scenarioId)
+                listOf(eventNote, baseContext).filter(String::isNotBlank).joinToString("\n\n")
+            },
             memoryWriteService = appGraph.memoryWriteService,
             contextLogStore = appGraph.contextLogStore,
             imageSaver = { b64Data ->

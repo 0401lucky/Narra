@@ -886,6 +886,7 @@ internal fun NavGraphBuilder.registerRoleplayGraph(
                     aiGateway = appGraph.aiGateway,
                     memoryRepository = appGraph.memoryRepository,
                     conversationSummaryRepository = appGraph.conversationSummaryRepository,
+                    economyEventBus = appGraph.roleplayEconomyEventBus,
                     imageSaver = { b64Data ->
                         appGraph.saveBase64Image(
                             b64Data = b64Data,

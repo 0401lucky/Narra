@@ -27,6 +27,7 @@ import com.example.myapplication.data.repository.context.RoomPresetRepository
 import com.example.myapplication.data.repository.context.RoomMemoryRepository
 import com.example.myapplication.data.repository.context.RoomWorldBookRepository
 import com.example.myapplication.data.repository.context.WorldBookRepository
+import com.example.myapplication.data.repository.economy.RoleplayEconomyEventBus
 import com.example.myapplication.data.repository.economy.RoleplayEconomyRepository
 import com.example.myapplication.data.repository.economy.RoomRoleplayEconomyRepository
 import com.example.myapplication.data.repository.ai.AiGateway
@@ -135,6 +136,10 @@ class AppGraph(
 
     val roleplayEconomyRepository: RoleplayEconomyRepository by lazy {
         RoomRoleplayEconomyRepository(database)
+    }
+
+    val roleplayEconomyEventBus: RoleplayEconomyEventBus by lazy {
+        RoleplayEconomyEventBus()
     }
 
     val momentsGenerationCoordinator: MomentsGenerationCoordinator by lazy {
