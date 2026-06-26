@@ -378,9 +378,12 @@ private fun ShopItemCard(
                         maxLines = 2,
                         overflow = TextOverflow.Ellipsis,
                     )
-                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Row(
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
                         if (item.category.isNotBlank()) LabelChip(item.category)
-                        if (item.rarity.isNotBlank()) LabelChip(item.rarity)
+                        if (item.rarity.isNotBlank()) RarityBadge(item.rarity)
                     }
                     Text(
                         text = item.description.ifBlank { "暂时没有描述。" },
@@ -390,13 +393,6 @@ private fun ShopItemCard(
                         overflow = TextOverflow.Ellipsis,
                     )
                 }
-            }
-            if (item.effectPrompt.isNotBlank()) {
-                Text(
-                    text = item.effectPrompt,
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.primary,
-                )
             }
             Row(
                 verticalAlignment = Alignment.CenterVertically,
@@ -705,4 +701,41 @@ private fun EmptyHint(text: String) {
 private fun formatLedgerTime(timestamp: Long): String {
     if (timestamp <= 0L) return ""
     return SimpleDateFormat("MM-dd HH:mm", Locale.CHINA).format(Date(timestamp))
+}
+
+private data class RarityVisual(
+    val container: Color,
+    val content: Color,
+)
+
+@Composable
+private fun rarityVisual(rarity: String): RarityVisual {
+    val scheme = MaterialTheme.colorScheme
+    val normalized = rarity.trim()
+    return when {
+        normalized.contains("珍") || normalized.contains("史诗") || normalized.contains("传说") ->
+            RarityVisual(container = Color(0xFFF6E3B4), content = Color(0xFF6B4E00))
+        normalized.contains("稀") || normalized.contains("罕") ->
+            RarityVisual(container = Color(0xFFCDE3F5), content = Color(0xFF0B4A6F))
+        else -> RarityVisual(container = scheme.surfaceVariant, content = scheme.onSurfaceVariant)
+    }
+}
+
+@Composable
+private fun RarityBadge(rarity: String) {
+    val visual = rarityVisual(rarity)
+    Surface(
+        shape = RoundedCornerShape(6.dp),
+        color = visual.container,
+        contentColor = visual.content,
+    ) {
+        Text(
+            text = rarity,
+            style = MaterialTheme.typography.labelSmall,
+            fontWeight = FontWeight.SemiBold,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+            modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp),
+        )
+    }
 }
