@@ -105,6 +105,10 @@ fun RoleplayWalletScreen(
     var selectedTab by rememberSaveable { mutableIntStateOf(0) }
     var showStyleDialog by rememberSaveable { mutableStateOf(false) }
     var detailItemId by rememberSaveable { mutableStateOf<String?>(null) }
+    var rememberedStyle by rememberSaveable { mutableStateOf<EconomyImageStyle?>(null) }
+    val effectiveStyle = rememberedStyle
+        ?: uiState.economyState.shopItems.firstOrNull()?.imageStyle
+        ?: EconomyImageStyle.ILLUSTRATED
 
     LaunchedEffect(uiState.noticeMessage) {
         uiState.noticeMessage?.let {
@@ -158,6 +162,8 @@ fun RoleplayWalletScreen(
                     userAvailableCents = uiState.economyState.userAccount?.availableCents ?: 0L,
                     isGeneratingShop = uiState.isGeneratingShop,
                     generatingImageItemIds = uiState.generatingImageItemIds,
+                    effectiveStyle = effectiveStyle,
+                    onGenerateOneTap = { callbacks.onGenerateShop(effectiveStyle) },
                     onOpenStyleDialog = { showStyleDialog = true },
                     onOpenDetail = { detailItemId = it },
                     onPurchaseItem = callbacks.onPurchaseItem,
@@ -183,6 +189,7 @@ fun RoleplayWalletScreen(
             onDismiss = { showStyleDialog = false },
             onSelect = { style ->
                 showStyleDialog = false
+                rememberedStyle = style
                 callbacks.onGenerateShop(style)
             },
         )
@@ -324,6 +331,8 @@ private fun ShopTab(
     userAvailableCents: Long,
     isGeneratingShop: Boolean,
     generatingImageItemIds: Set<String>,
+    effectiveStyle: EconomyImageStyle,
+    onGenerateOneTap: () -> Unit,
     onOpenStyleDialog: () -> Unit,
     onOpenDetail: (String) -> Unit,
     onPurchaseItem: (String) -> Unit,
@@ -353,21 +362,30 @@ private fun ShopTab(
             }
         }
         item {
-            NarraButton(
-                onClick = onOpenStyleDialog,
-                enabled = !isGeneratingShop,
+            Row(
                 modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalAlignment = Alignment.CenterVertically,
             ) {
-                if (isGeneratingShop) {
-                    CircularProgressIndicator(
-                        modifier = Modifier.size(18.dp),
-                        strokeWidth = 2.dp,
-                        color = MaterialTheme.colorScheme.onPrimary,
-                    )
-                } else {
-                    Icon(Icons.Default.AutoAwesome, contentDescription = null, modifier = Modifier.size(18.dp))
+                NarraButton(
+                    onClick = onGenerateOneTap,
+                    enabled = !isGeneratingShop,
+                    modifier = Modifier.weight(1f),
+                ) {
+                    if (isGeneratingShop) {
+                        CircularProgressIndicator(
+                            modifier = Modifier.size(18.dp),
+                            strokeWidth = 2.dp,
+                            color = MaterialTheme.colorScheme.onPrimary,
+                        )
+                    } else {
+                        Icon(Icons.Default.AutoAwesome, contentDescription = null, modifier = Modifier.size(18.dp))
+                    }
+                    Text(if (isGeneratingShop) "正在生成商品" else "生成今日商店（${effectiveStyle.displayName}）")
                 }
-                Text(if (isGeneratingShop) "正在生成商品" else "生成今日商店")
+                IconButton(onClick = onOpenStyleDialog, enabled = !isGeneratingShop) {
+                    Icon(Icons.Default.Image, contentDescription = "选择图片风格")
+                }
             }
         }
         if (items.isEmpty()) {
