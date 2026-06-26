@@ -38,6 +38,7 @@ import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
+import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHostState
@@ -151,6 +152,7 @@ fun RoleplayWalletScreen(
 
                 1 -> ShopTab(
                     items = uiState.economyState.shopItems,
+                    userAvailableCents = uiState.economyState.userAccount?.availableCents ?: 0L,
                     isGeneratingShop = uiState.isGeneratingShop,
                     generatingImageItemIds = uiState.generatingImageItemIds,
                     onOpenStyleDialog = { showStyleDialog = true },
@@ -301,6 +303,7 @@ private fun AccountCard(
 @Composable
 private fun ShopTab(
     items: List<ShopItem>,
+    userAvailableCents: Long,
     isGeneratingShop: Boolean,
     generatingImageItemIds: Set<String>,
     onOpenStyleDialog: () -> Unit,
@@ -312,6 +315,24 @@ private fun ShopTab(
         contentPadding = PaddingValues(16.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
+        item {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Text(
+                    text = "我的余额 ${userAvailableCents.formatMoneyLabel()}",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                )
+                Text(
+                    text = "共 ${items.count { it.status == ShopItemStatus.AVAILABLE }} 件在售",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+        }
         item {
             NarraButton(
                 onClick = onOpenStyleDialog,
@@ -336,6 +357,7 @@ private fun ShopTab(
             items(items, key = { it.id }) { item ->
                 ShopItemCard(
                     item = item,
+                    affordable = userAvailableCents >= item.priceCents,
                     isGeneratingImage = item.id in generatingImageItemIds,
                     onPurchase = { onPurchaseItem(item.id) },
                     onRetryImage = { onRetryFailedImage(item.id) },
@@ -348,6 +370,7 @@ private fun ShopTab(
 @Composable
 private fun ShopItemCard(
     item: ShopItem,
+    affordable: Boolean,
     isGeneratingImage: Boolean,
     onPurchase: () -> Unit,
     onRetryImage: () -> Unit,
@@ -402,14 +425,21 @@ private fun ShopItemCard(
                     text = item.priceCents.formatMoneyLabel(),
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold,
+                    color = if (affordable) LocalContentColor.current else MaterialTheme.colorScheme.error,
                     modifier = Modifier.weight(1f),
                 )
                 NarraOutlinedButton(
                     onClick = onPurchase,
-                    enabled = item.status == ShopItemStatus.AVAILABLE,
+                    enabled = item.status == ShopItemStatus.AVAILABLE && affordable,
                 ) {
                     Icon(Icons.Default.ShoppingCart, contentDescription = null, modifier = Modifier.size(18.dp))
-                    Text(if (item.status == ShopItemStatus.PURCHASED) "已购买" else "购买")
+                    Text(
+                        when {
+                            item.status == ShopItemStatus.PURCHASED -> "已购买"
+                            !affordable -> "余额不足"
+                            else -> "购买"
+                        },
+                    )
                 }
             }
         }
