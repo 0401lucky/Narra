@@ -52,7 +52,6 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withTimeout
-import java.util.UUID
 
 data class RoleplayWalletUiState(
     val scenarioId: String = "",
@@ -144,22 +143,33 @@ class RoleplayWalletViewModel(
             }
             runCatching {
                 val context = buildShopGenerationContext(style)
-                val drafts = generateShopDrafts(context)
+                val draftResult = generateShopDrafts(context)
                 val items = economyRepository.replaceShopBatch(
                     scenarioId = scenarioId,
                     conversationId = context.session.conversationId,
                     style = style,
                     promptContext = context.promptContext,
-                    drafts = drafts,
+                    drafts = draftResult.drafts,
                 )
+                val successNotice = if (draftResult.usedFallback) {
+                    draftResult.fallbackReason
+                } else {
+                    "商店已经换新"
+                }
                 if (style == EconomyImageStyle.NONE) {
-                    notice("商店已经换新")
+                    notice(successNotice)
                 } else {
                     generateImagesForItems(
                         items = items,
                         context = context,
                     )
-                    notice("商店已经换新，失败图片可单独重试")
+                    notice(
+                        if (draftResult.usedFallback) {
+                            successNotice
+                        } else {
+                            "商店已经换新，失败图片可单独重试"
+                        },
+                    )
                 }
             }.onFailure { throwable ->
                 fail(buildFriendlyError(throwable, "商店生成失败"))
@@ -320,14 +330,21 @@ class RoleplayWalletViewModel(
         )
     }
 
-    private suspend fun generateShopDrafts(context: ShopGenerationContext): List<ShopItemDraft> {
+    private suspend fun generateShopDrafts(context: ShopGenerationContext): ShopDraftResult {
         val provider = context.settings.resolveFunctionProvider(ProviderFunction.CHAT)
             ?: context.settings.activeProvider()
         val modelId = provider?.resolveFunctionModel(ProviderFunction.CHAT)
             ?.ifBlank { provider.selectedModel }
             ?.trim()
             .orEmpty()
-        val aiDrafts = if (provider != null && modelId.isNotBlank()) {
+        if (provider == null || modelId.isBlank()) {
+            return ShopDraftResult(
+                drafts = fallbackShopDrafts(context),
+                usedFallback = true,
+                fallbackReason = "还没配置生成模型，先放了备用商品",
+            )
+        }
+        val aiDrafts = runCatching {
             withTimeout(ShopPromptTimeoutMs) {
                 aiPromptExtrasService.generateRoleplayShopItems(
                     characterName = context.characterName,
@@ -346,10 +363,17 @@ class RoleplayWalletViewModel(
                     provider = provider,
                 )
             }
-        } else {
-            emptyList()
-        }
-        return aiDrafts.ifEmpty { fallbackShopDrafts(context) }
+        }.getOrElse { emptyList() }
+        val distinct = aiDrafts.distinctBy { it.name.trim() }
+        val qualityInsufficient = distinct.size < MIN_QUALITY_ITEMS
+        val filled = (distinct + fallbackShopDrafts(context))
+            .distinctBy { it.name.trim() }
+            .take(TARGET_SHOP_ITEMS)
+        return ShopDraftResult(
+            drafts = filled,
+            usedFallback = qualityInsufficient,
+            fallbackReason = if (qualityInsufficient) "这次没凑齐合适的商品，补了几件备用的，可重试" else "",
+        )
     }
 
     private suspend fun generateImagesForItems(
@@ -537,62 +561,61 @@ class RoleplayWalletViewModel(
     }
 
     private fun fallbackShopDrafts(context: ShopGenerationContext): List<ShopItemDraft> {
-        val seed = context.scenario.title.ifBlank { context.characterName }
-        val suffix = UUID.nameUUIDFromBytes(seed.toByteArray()).toString().take(4)
+        val owner = context.characterName.trim().ifBlank { "角色" }
         return listOf(
             ShopItemDraft(
-                name = "口袋便签 $suffix",
-                description = "几张折得很小的便签，适合写下只给对方看的话。",
-                priceCents = 800L,
+                name = "手写便签本",
+                description = "薄薄一本便签，适合写下只想给${owner}看的话。",
+                priceCents = 1_200L,
                 category = "日常",
                 rarity = "普通",
-                effectPrompt = "可以触发一次私下留言、道歉或临时约定。",
-                imagePrompt = "small folded pocket notes, warm paper texture, intimate everyday prop",
+                effectPrompt = "可触发一次私下留言、约定或临时心意的剧情。",
+                imagePrompt = "a small handwritten note pad, warm paper texture, intimate everyday prop",
             ),
             ShopItemDraft(
-                name = "备用创可贴",
-                description = "小盒创可贴和消毒棉片，像一次提前准备好的关心。",
-                priceCents = 1_500L,
+                name = "常温热可可粉",
+                description = "随手就能冲一杯的热可可，像一份不张扬的照顾。",
+                priceCents = 1_800L,
                 category = "补给",
                 rarity = "普通",
-                effectPrompt = "适合受伤、照顾、夜归或笨拙关心的剧情。",
-                imagePrompt = "small bandage box and cotton pads, clean practical daily-life item",
+                effectPrompt = "适合夜谈、降温、照顾或缓和气氛的剧情。",
+                imagePrompt = "a packet of hot cocoa powder, cozy warm tone, simple daily-life item",
             ),
             ShopItemDraft(
-                name = "旧照片夹",
-                description = "透明相片夹里还能塞下一张新的拍立得。",
+                name = "旧照片冲洗券",
+                description = "一张能把手机里的合影洗成实物的券。",
                 priceCents = 2_600L,
                 category = "纪念",
                 rarity = "稀有",
-                effectPrompt = "可以引出合照、回忆、保留证据或关系确认。",
-                imagePrompt = "transparent photo holder with one empty slot, nostalgic keepsake",
+                effectPrompt = "可引出合照、回忆或一次想被记住的瞬间。",
+                imagePrompt = "a photo printing voucher, nostalgic keepsake, soft lighting",
             ),
             ShopItemDraft(
-                name = "热饮兑换券",
-                description = "一张可以换热饮的小券，边缘被捏得有些皱。",
-                priceCents = 1_200L,
+                name = "${owner}熟悉的那家点心",
+                description = "据说是${owner}常去那家店，点心还带着体温。",
+                priceCents = 2_200L,
                 category = "约定",
-                rarity = "普通",
-                effectPrompt = "可以自然推进一次见面、等人或雨天同行。",
-                imagePrompt = "warm drink voucher, slightly creased paper, cozy cafe mood",
+                rarity = "稀有",
+                effectPrompt = "可自然推进一次见面、等待或并肩同行。",
+                imagePrompt = "a box of warm pastries from a familiar shop, gentle inviting mood",
             ),
             ShopItemDraft(
-                name = "没有署名的钥匙",
-                description = "一把没有标签的钥匙，像是迟早会被问起来源。",
-                priceCents = 5_800L,
+                name = "读到一半的小说",
+                description = "书签停在某一页，像有人迟早会问起后续。",
+                priceCents = 3_200L,
                 category = "线索",
                 rarity = "珍贵",
-                effectPrompt = "可以引出秘密房间、保管、同居或信任试探。",
-                imagePrompt = "unlabeled metal key, mysterious personal prop, dramatic soft lighting",
+                effectPrompt = "可揭开一段未说出口的心事、共同话题或旧约定。",
+                imagePrompt = "a half-read novel with a bookmark, quiet personal prop, dramatic soft light",
             ),
             ShopItemDraft(
-                name = "干净围巾",
-                description = "一条柔软围巾，带着淡淡洗衣液味道。",
-                priceCents = 4_200L,
-                category = "服饰",
-                rarity = "稀有",
-                effectPrompt = "适合降温、借用、送还、靠近和留下气味记忆。",
-                imagePrompt = "soft clean scarf, folded fabric texture, intimate winter prop",
+                name = "随行保温杯",
+                description = "杯身有轻微使用痕迹，像被人天天带在身边。",
+                priceCents = 3_800L,
+                category = "随身",
+                rarity = "普通",
+                effectPrompt = "可用于递水、借用、留物或制造短暂靠近的机会。",
+                imagePrompt = "a well-used insulated travel mug, intimate daily companion object",
             ),
         )
     }
@@ -635,6 +658,12 @@ class RoleplayWalletViewModel(
         _uiState.update { it.copy(errorMessage = message, noticeMessage = null) }
     }
 
+    private data class ShopDraftResult(
+        val drafts: List<ShopItemDraft>,
+        val usedFallback: Boolean,
+        val fallbackReason: String = "",
+    )
+
     private data class ShopGenerationContext(
         val scenario: RoleplayScenario,
         val session: RoleplaySession,
@@ -656,6 +685,8 @@ class RoleplayWalletViewModel(
         private const val ShopPromptTimeoutMs = 45_000L
         private const val ImagePromptPolishTimeoutMs = 15_000L
         private const val ImageTimeoutMs = 240_000L
+        private const val MIN_QUALITY_ITEMS = 3
+        private const val TARGET_SHOP_ITEMS = 6
 
         fun factory(
             scenarioId: String,

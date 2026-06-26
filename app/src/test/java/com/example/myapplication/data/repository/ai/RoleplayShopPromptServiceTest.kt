@@ -25,5 +25,7 @@ class RoleplayShopPromptServiceTest {
         assertTrue(prompt.contains("旧车站"))
         assertTrue(prompt.contains("除非上下文明示出现，否则不要使用钥匙扣"))
         assertTrue(prompt.contains("\"items\""))
+        assertTrue(prompt.contains("宁可贴着上文少编"))
+        assertTrue(prompt.contains("name 必须互不相同"))
     }
 }

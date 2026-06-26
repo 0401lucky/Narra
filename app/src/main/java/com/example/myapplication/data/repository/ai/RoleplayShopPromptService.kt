@@ -64,6 +64,7 @@ internal fun buildRoleplayShopItemsPrompt(
     appendLine("4. 如果上下文信息存在张力，以近期互动和记忆优先，不要只按角色标签生成。")
     appendLine()
     appendLine("【生成要求】")
+    appendLine("（硬性原则：宁可贴着上文少编，也不要凭空生成与人物/剧情无关的道具。）")
     appendLine("1. 6 个商品里至少 4 个必须能从【近期互动】或【记忆线索】找到直接来源；其余也必须贴合角色人设。")
     appendLine("2. 每个商品都要围绕一个具体剧情钩子生成，description 要让用户看出它和当前故事有关。")
     appendLine("3. effect_prompt 写给后续 AI 使用，要说明这个道具会自然触发哪段关系、记忆、事件或角色反应，不要写成系统命令。")
@@ -71,7 +72,8 @@ internal fun buildRoleplayShopItemsPrompt(
     appendLine("5. 价格必须符合沉浸感，单位为人民币元，可用小数；不要全都很贵，也不要全都很便宜。")
     appendLine("6. 商品应贴合当前角色和用户关系，不要泛泛生成现代商城常见商品。")
     appendLine("7. image_prompt 用英文，描述单个商品主体、材质、构图、光影和氛围；不要人物正脸、文字、水印、logo、UI。")
-    appendLine("8. 严格输出 JSON 对象，不要 Markdown，不要解释。格式：")
+    appendLine("8. 6 个商品的 name 必须互不相同，不得重复或近似同名。")
+    appendLine("9. 严格输出 JSON 对象，不要 Markdown，不要解释。格式：")
     appendLine(
         """
         {
