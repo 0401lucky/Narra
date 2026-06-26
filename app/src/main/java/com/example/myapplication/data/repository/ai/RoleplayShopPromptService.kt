@@ -143,77 +143,6 @@ internal class RoleplayShopPromptService(
         return items
     }
 
-    fun fallbackShopItems(
-        characterName: String,
-        scenarioContext: String,
-        imageStyle: EconomyImageStyle,
-    ): List<ShopItemDraft> {
-        val scene = scenarioContext
-            .replace("\r\n", "\n")
-            .lineSequence()
-            .map(String::trim)
-            .firstOrNull(String::isNotBlank)
-            .orEmpty()
-            .take(40)
-        val owner = characterName.trim().ifBlank { "角色" }
-        return listOf(
-            ShopItemDraft(
-                name = "旧票根夹",
-                description = "一本能收纳约定、车票和便签的小夹子，边角有轻微磨痕。",
-                priceCents = 1_200L,
-                category = "纪念",
-                rarity = "普通",
-                effectPrompt = "可作为回忆触发物，引出一次关于过去约定或错过瞬间的剧情。",
-                imagePrompt = buildImagePrompt("a worn ticket holder with folded notes", imageStyle, scene, owner),
-            ),
-            ShopItemDraft(
-                name = "静音钥匙扣",
-                description = "一枚不会发出响声的金属钥匙扣，表面刻着只有两个人懂的记号。",
-                priceCents = 2_800L,
-                category = "随身",
-                rarity = "稀有",
-                effectPrompt = "可用来开启一次私下见面、借宿、保管钥匙或秘密通行的剧情。",
-                imagePrompt = buildImagePrompt("a quiet metal keychain with a small secret mark", imageStyle, scene, owner),
-            ),
-            ShopItemDraft(
-                name = "薄荷糖铁盒",
-                description = "小巧的铁盒里装着薄荷糖，也适合藏一张折起来的字条。",
-                priceCents = 900L,
-                category = "日常",
-                rarity = "普通",
-                effectPrompt = "可用于缓和尴尬、递东西、藏纸条或制造短暂靠近的机会。",
-                imagePrompt = buildImagePrompt("a small mint candy tin with folded paper inside", imageStyle, scene, owner),
-            ),
-            ShopItemDraft(
-                name = "深夜便利店袋",
-                description = "装着热饮、创可贴和临时买来的小零食，像一次不太坦率的照顾。",
-                priceCents = 3_600L,
-                category = "补给",
-                rarity = "普通",
-                effectPrompt = "可触发照顾、生病、夜归、道歉或别扭关心相关剧情。",
-                imagePrompt = buildImagePrompt("a late-night convenience store bag with warm drink and bandages", imageStyle, scene, owner),
-            ),
-            ShopItemDraft(
-                name = "未寄出的明信片",
-                description = "背面写了一半又划掉的明信片，照片角落被手指捏得发白。",
-                priceCents = 1_800L,
-                category = "线索",
-                rarity = "稀有",
-                effectPrompt = "可揭开一次没说出口的话、旧地点、旅行计划或隐藏心事。",
-                imagePrompt = buildImagePrompt("an unsent postcard with crossed-out handwriting", imageStyle, scene, owner),
-            ),
-            ShopItemDraft(
-                name = "备用围巾",
-                description = "柔软但不新的围巾，带着淡淡洗衣液气味，像被临时塞进包里的备用物。",
-                priceCents = 4_200L,
-                category = "服饰",
-                rarity = "珍贵",
-                effectPrompt = "可用于降温、送还、借用衣物、靠近或留下气味记忆的剧情。",
-                imagePrompt = buildImagePrompt("a soft spare scarf with subtle used texture", imageStyle, scene, owner),
-            ),
-        )
-    }
-
     private fun parseShopItems(rawContent: String): List<ShopItemDraft> {
         val cleaned = core.stripMarkdownCodeFence(rawContent)
         val root = core.extractStructuredJsonObject(cleaned)
@@ -284,21 +213,6 @@ internal class RoleplayShopPromptService(
                 ?.takeIf { it.isJsonPrimitive }
                 ?.asLongOrNull()
         return cents?.coerceAtLeast(1L) ?: 0L
-    }
-
-    private fun buildImagePrompt(
-        subject: String,
-        imageStyle: EconomyImageStyle,
-        scene: String,
-        owner: String,
-    ): String {
-        return listOf(
-            imageStyle.promptHint,
-            subject,
-            "single prop object, refined materials, clean background, soft diffuse lighting, depth of field",
-            scene.takeIf(String::isNotBlank)?.let { "story context: $it" }.orEmpty(),
-            "inspired by $owner's personal belongings",
-        ).filter(String::isNotBlank).joinToString(separator = ", ")
     }
 }
 

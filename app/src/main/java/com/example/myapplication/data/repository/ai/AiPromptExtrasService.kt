@@ -610,30 +610,22 @@ class DefaultAiPromptExtrasService internal constructor(
         modelId: String,
         apiProtocol: ProviderApiProtocol,
         provider: ProviderSettings?,
-    ): List<ShopItemDraft> = runCatching {
-        roleplayShopPromptService.generateRoleplayShopItems(
-            characterName = characterName,
-            userName = userName,
-            characterPersona = characterPersona,
-            userPersona = userPersona,
-            scenarioContext = scenarioContext,
-            conversationExcerpt = conversationExcerpt,
-            memoryContext = memoryContext,
-            economyContext = economyContext,
-            imageStyle = imageStyle,
-            baseUrl = baseUrl,
-            apiKey = apiKey,
-            modelId = modelId,
-            apiProtocol = apiProtocol,
-            provider = provider,
-        )
-    }.getOrElse {
-        roleplayShopPromptService.fallbackShopItems(
-            characterName = characterName,
-            scenarioContext = scenarioContext,
-            imageStyle = imageStyle,
-        )
-    }
+    ): List<ShopItemDraft> = roleplayShopPromptService.generateRoleplayShopItems(
+        characterName = characterName,
+        userName = userName,
+        characterPersona = characterPersona,
+        userPersona = userPersona,
+        scenarioContext = scenarioContext,
+        conversationExcerpt = conversationExcerpt,
+        memoryContext = memoryContext,
+        economyContext = economyContext,
+        imageStyle = imageStyle,
+        baseUrl = baseUrl,
+        apiKey = apiKey,
+        modelId = modelId,
+        apiProtocol = apiProtocol,
+        provider = provider,
+    )
 
     override suspend fun condenseRoleplayMemories(
         memoryItems: List<String>,
