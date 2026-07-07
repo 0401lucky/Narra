@@ -1,19 +1,15 @@
 {
   "app_id": "com.narra.app.dev",
   "channel": "dev",
-  "latest_version_name": "2.2.0-dev",
-  "latest_version_code": 20200,
+  "latest_version_name": "2.2.1-dev",
+  "latest_version_code": 20201,
   "minimum_supported_version_code": 0,
-  "apk_url": "https://download.lsa1230.dpdns.org/dev/2.2.0/Narra-v2.2.0-dev-20200-dev.apk?v=20200-20260626175302",
-  "apk_sha256": "eefcf513cfaec23bd6cda8f0f331a9d2acceaa9f151f66723b127e8f34a68c27",
-  "published_at": "2026-06-26T17:53:02+08:00",
+  "apk_url": "https://0401lucky.github.io/Narra/downloads/dev/Narra-v2.2.1-dev-20201-dev.apk?v=20201-20260707161128",
+  "apk_sha256": "7c63987fdb4163cb620aca4edbe64346169488d7241520642fb209c0cf2e94b7",
+  "published_at": "2026-07-07T16:11:28+08:00",
   "release_notes": [
-    "角色商店：买下、赠送或使用道具后，下一轮对话角色会主动当场承接并作出符合人设的反应，让道具真正参与剧情",
-    "商品卡稀有度按普通／稀有／珍贵分级上色，点商品可打开详情底部弹层查看完整描述与价格",
-    "商店顶部常驻显示我的余额与在售件数，买不起的商品会事前置灰提示",
-    "商店支持记忆上次图片风格并一键生成，风格选择收进独立入口",
-    "导演注记会鼓励角色主动把可用道具织进叙事，商品卡不再向用户暴露面向 AI 的机关说明",
-    "修复商店 AI 生成失败时静默回退到被禁通用道具且界面假装成功的问题，现在会改用备用商品并明确提示可重试",
-    "商店商品去重后数量不足时自动补齐，避免货架半空"
+    "修复视频通话页把角色心声当成普通对白展示的问题",
+    "朋友圈支持选择多条动态后一键删除",
+    "朋友圈支持清空全部动态"
   ]
 }

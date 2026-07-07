@@ -41,6 +41,8 @@ import androidx.compose.material.icons.filled.PhotoCamera
 import androidx.compose.material.icons.filled.Place
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
+import androidx.compose.material3.Checkbox
+import androidx.compose.material3.CheckboxDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
@@ -103,6 +105,8 @@ fun MomentsScreen(
     onPublishPost: (String, String, String, String) -> Unit,
     onToggleLikePost: (String) -> Unit,
     onDeletePost: (String) -> Unit,
+    onDeletePosts: (List<String>) -> Unit,
+    onClearMoments: () -> Unit,
     onAddComment: (String, String, String) -> Unit,
     onRetryImage: (String) -> Unit,
     onRefreshMoments: () -> Unit,
@@ -113,6 +117,11 @@ fun MomentsScreen(
     val snackbarHostState = remember { SnackbarHostState() }
     var selectedPostId by remember { mutableStateOf<String?>(null) }
     var showComposer by remember { mutableStateOf(false) }
+    var showTimelineMenu by remember { mutableStateOf(false) }
+    var selectionMode by remember { mutableStateOf(false) }
+    var selectedPostIds by remember { mutableStateOf<Set<String>>(emptySet()) }
+    var showClearMomentsDialog by remember { mutableStateOf(false) }
+    var showDeleteSelectedDialog by remember { mutableStateOf(false) }
     var composerSubmitPending by remember { mutableStateOf(false) }
     var composerSawPublishing by remember { mutableStateOf(false) }
 
@@ -141,12 +150,52 @@ fun MomentsScreen(
         }
     }
 
+    LaunchedEffect(uiState.posts) {
+        val existingIds = uiState.posts.map(MomentPost::id).toSet()
+        selectedPostIds = selectedPostIds.intersect(existingIds)
+        if (uiState.posts.isEmpty()) {
+            selectionMode = false
+            showTimelineMenu = false
+        }
+    }
+
+    if (showClearMomentsDialog) {
+        MomentsClearConfirmDialog(
+            postCount = uiState.posts.size,
+            onConfirm = {
+                showClearMomentsDialog = false
+                selectionMode = false
+                selectedPostIds = emptySet()
+                onClearMoments()
+            },
+            onDismiss = { showClearMomentsDialog = false },
+        )
+    }
+
+    if (showDeleteSelectedDialog) {
+        MomentsDeleteSelectedConfirmDialog(
+            selectedCount = selectedPostIds.size,
+            onConfirm = {
+                val ids = selectedPostIds.toList()
+                showDeleteSelectedDialog = false
+                selectionMode = false
+                selectedPostIds = emptySet()
+                onDeletePosts(ids)
+            },
+            onDismiss = { showDeleteSelectedDialog = false },
+        )
+    }
+
     Scaffold(
         topBar = {
             TopAppBar(
                 title = {
                     Text(
-                        text = if (showComposer) "发表朋友圈" else stringResource(R.string.moments_title),
+                        text = when {
+                            showComposer -> "发表朋友圈"
+                            selectionMode -> "已选 ${selectedPostIds.size} 条"
+                            else -> stringResource(R.string.moments_title)
+                        },
                         fontWeight = FontWeight.Bold,
                     )
                 },
@@ -155,6 +204,10 @@ fun MomentsScreen(
                         onClick = {
                             when {
                                 showComposer -> showComposer = false
+                                selectionMode -> {
+                                    selectionMode = false
+                                    selectedPostIds = emptySet()
+                                }
                                 selectedPostId != null -> selectedPostId = null
                                 else -> onNavigateBack()
                             }
@@ -167,9 +220,80 @@ fun MomentsScreen(
                     }
                 },
                 actions = {
-                    if (!showComposer && selectedPostId == null) {
-                        NarraIconButton(onClick = { showComposer = true }) {
+                    if (selectionMode) {
+                        val allSelected = uiState.posts.isNotEmpty() &&
+                            selectedPostIds.size == uiState.posts.size
+                        TextButton(
+                            onClick = {
+                                selectedPostIds = if (allSelected) {
+                                    emptySet()
+                                } else {
+                                    uiState.posts.map(MomentPost::id).toSet()
+                                }
+                            },
+                            enabled = uiState.posts.isNotEmpty() && !uiState.isDeletingMoments,
+                        ) {
+                            Text(if (allSelected) "取消全选" else "全选")
+                        }
+                        NarraIconButton(
+                            onClick = { showDeleteSelectedDialog = true },
+                            enabled = selectedPostIds.isNotEmpty() && !uiState.isDeletingMoments,
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Delete,
+                                contentDescription = "删除选中朋友圈",
+                                tint = if (selectedPostIds.isNotEmpty()) {
+                                    MaterialTheme.colorScheme.error
+                                } else {
+                                    MomentsMutedText()
+                                },
+                            )
+                        }
+                    } else if (!showComposer && selectedPostId == null) {
+                        NarraIconButton(
+                            onClick = { showComposer = true },
+                            enabled = !uiState.isDeletingMoments,
+                        ) {
                             Icon(Icons.Default.PhotoCamera, contentDescription = "发表朋友圈")
+                        }
+                        if (uiState.posts.isNotEmpty()) {
+                            Box {
+                                NarraIconButton(
+                                    onClick = { showTimelineMenu = true },
+                                    enabled = !uiState.isDeletingMoments,
+                                ) {
+                                    Icon(Icons.Default.MoreVert, contentDescription = "朋友圈更多操作")
+                                }
+                                DropdownMenu(
+                                    expanded = showTimelineMenu,
+                                    onDismissRequest = { showTimelineMenu = false },
+                                ) {
+                                    DropdownMenuItem(
+                                        text = { Text("选择删除") },
+                                        leadingIcon = {
+                                            Icon(Icons.Default.Delete, contentDescription = null)
+                                        },
+                                        onClick = {
+                                            showTimelineMenu = false
+                                            selectionMode = true
+                                            selectedPostIds = emptySet()
+                                        },
+                                    )
+                                    DropdownMenuItem(
+                                        text = { Text("清空朋友圈") },
+                                        leadingIcon = {
+                                            Icon(
+                                                imageVector = Icons.Default.Delete,
+                                                contentDescription = null,
+                                            )
+                                        },
+                                        onClick = {
+                                            showTimelineMenu = false
+                                            showClearMomentsDialog = true
+                                        },
+                                    )
+                                }
+                            }
                         }
                     }
                 },
@@ -224,10 +348,16 @@ fun MomentsScreen(
                                 viewerAvatarUri = uiState.viewerAvatarUri,
                                 coverImageUri = uiState.momentsSettings.coverImageUri,
                                 isRefreshing = uiState.isRefreshing,
+                                isDeletingMoments = uiState.isDeletingMoments,
+                                selectionMode = selectionMode,
+                                selectedPostIds = selectedPostIds,
                                 retryingImagePostId = uiState.retryingImagePostId,
                                 onRefresh = onRefreshMoments,
                                 onUpdateCoverImage = onUpdateCoverImage,
                                 onOpenPost = { selectedPostId = it.id },
+                                onTogglePostSelected = { postId ->
+                                    selectedPostIds = selectedPostIds.toggle(postId)
+                                },
                                 onToggleLike = onToggleLikePost,
                                 onDeletePost = onDeletePost,
                                 onRetryImage = onRetryImage,
@@ -265,10 +395,14 @@ private fun MomentsTimelineContent(
     viewerAvatarUri: String,
     coverImageUri: String,
     isRefreshing: Boolean,
+    isDeletingMoments: Boolean,
+    selectionMode: Boolean,
+    selectedPostIds: Set<String>,
     retryingImagePostId: String,
     onRefresh: () -> Unit,
     onUpdateCoverImage: (String) -> Unit,
     onOpenPost: (MomentPost) -> Unit,
+    onTogglePostSelected: (String) -> Unit,
     onToggleLike: (String) -> Unit,
     onDeletePost: (String) -> Unit,
     onRetryImage: (String) -> Unit,
@@ -289,7 +423,11 @@ private fun MomentsTimelineContent(
 
     PullToRefreshBox(
         isRefreshing = isRefreshing,
-        onRefresh = onRefresh,
+        onRefresh = {
+            if (!selectionMode && !isDeletingMoments) {
+                onRefresh()
+            }
+        },
         modifier = Modifier.fillMaxSize(),
     ) {
         LazyColumn(
@@ -317,8 +455,11 @@ private fun MomentsTimelineContent(
                     MomentPostTimelineItem(
                         post = post,
                         viewerName = viewerName,
+                        selectionMode = selectionMode,
+                        selected = post.id in selectedPostIds,
                         isRetryingImage = retryingImagePostId == post.id,
                         onOpenPost = { onOpenPost(post) },
+                        onToggleSelection = { onTogglePostSelected(post.id) },
                         onToggleLike = { onToggleLike(post.id) },
                         onDeletePost = { onDeletePost(post.id) },
                         onRetryImage = { onRetryImage(post.id) },
@@ -717,8 +858,11 @@ private fun EmptyMomentsPanel(
 private fun MomentPostTimelineItem(
     post: MomentPost,
     viewerName: String,
+    selectionMode: Boolean,
+    selected: Boolean,
     isRetryingImage: Boolean,
     onOpenPost: () -> Unit,
+    onToggleSelection: () -> Unit,
     onToggleLike: () -> Unit,
     onDeletePost: () -> Unit,
     onRetryImage: () -> Unit,
@@ -740,10 +884,26 @@ private fun MomentPostTimelineItem(
         modifier = Modifier
             .fillMaxWidth()
             .background(MomentsCardBackground())
-            .clickable(onClick = onOpenPost)
+            .clickable {
+                if (selectionMode) {
+                    onToggleSelection()
+                } else {
+                    onOpenPost()
+                }
+            }
             .padding(horizontal = 14.dp, vertical = 14.dp),
         horizontalArrangement = Arrangement.spacedBy(10.dp),
     ) {
+        if (selectionMode) {
+            Checkbox(
+                checked = selected,
+                onCheckedChange = { onToggleSelection() },
+                colors = CheckboxDefaults.colors(
+                    checkedColor = MomentsAccent(),
+                    uncheckedColor = MomentsMutedText(),
+                ),
+            )
+        }
         MomentAvatar(
             name = post.authorName,
             avatarUri = post.authorAvatarUri,
@@ -768,14 +928,16 @@ private fun MomentPostTimelineItem(
                     overflow = TextOverflow.Ellipsis,
                     modifier = Modifier.weight(1f),
                 )
-                MomentMoreMenuButton(
-                    expanded = showMoreMenu,
-                    onExpandedChange = { showMoreMenu = it },
-                    onDeleteClick = {
-                        showMoreMenu = false
-                        showDeleteDialog = true
-                    },
-                )
+                if (!selectionMode) {
+                    MomentMoreMenuButton(
+                        expanded = showMoreMenu,
+                        onExpandedChange = { showMoreMenu = it },
+                        onDeleteClick = {
+                            showMoreMenu = false
+                            showDeleteDialog = true
+                        },
+                    )
+                }
             }
             Text(
                 text = post.content,
@@ -819,7 +981,13 @@ private fun MomentPostTimelineItem(
                 MomentActionRow(
                     post = post,
                     viewerName = viewerName,
-                    onToggleLike = onToggleLike,
+                    onToggleLike = {
+                        if (selectionMode) {
+                            onToggleSelection()
+                        } else {
+                            onToggleLike()
+                        }
+                    },
                 )
             }
             MomentEngagementBlock(post = post)
@@ -877,6 +1045,52 @@ private fun MomentDeleteConfirmDialog(
         confirmButton = {
             TextButton(onClick = onConfirm) {
                 Text("删除", color = MaterialTheme.colorScheme.error)
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text("取消")
+            }
+        },
+    )
+}
+
+@Composable
+private fun MomentsClearConfirmDialog(
+    postCount: Int,
+    onConfirm: () -> Unit,
+    onDismiss: () -> Unit,
+) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("清空朋友圈？") },
+        text = { Text("将删除当前朋友圈里的 $postCount 条动态，评论和配图也会一起移除。") },
+        confirmButton = {
+            TextButton(onClick = onConfirm) {
+                Text("清空", color = MaterialTheme.colorScheme.error)
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text("取消")
+            }
+        },
+    )
+}
+
+@Composable
+private fun MomentsDeleteSelectedConfirmDialog(
+    selectedCount: Int,
+    onConfirm: () -> Unit,
+    onDismiss: () -> Unit,
+) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("删除选中的朋友圈？") },
+        text = { Text("将删除已选中的 $selectedCount 条动态，评论和配图也会一起移除。") },
+        confirmButton = {
+            TextButton(onClick = onConfirm) {
+                Text("删除选中", color = MaterialTheme.colorScheme.error)
             }
         },
         dismissButton = {
@@ -1352,6 +1566,14 @@ private fun MomentAvatar(
 private fun formatMomentTime(timestamp: Long): String {
     if (timestamp <= 0L) return "刚刚"
     return SimpleDateFormat("M月d日 HH:mm", Locale.getDefault()).format(Date(timestamp))
+}
+
+private fun Set<String>.toggle(value: String): Set<String> {
+    return if (value in this) {
+        this - value
+    } else {
+        this + value
+    }
 }
 
 private const val MOMENT_COVER_IMAGE_SCOPE = "moments_cover"

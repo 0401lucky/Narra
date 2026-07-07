@@ -53,6 +53,38 @@ class RoleplayVideoCallScreenTest {
         assertTrue(state.visibleMessages.isEmpty())
     }
 
+    @Test
+    fun resolveVideoCallSpeakerLabel_marksThoughtAsInnerVoice() {
+        val label = resolveVideoCallSpeakerLabel(
+            message(
+                id = "thought-1",
+                createdAt = 300L,
+                content = "其实已经想了很久。",
+                speaker = RoleplaySpeaker.CHARACTER,
+                contentType = RoleplayContentType.THOUGHT,
+                speakerName = "陆宴清",
+            ),
+        )
+
+        assertEquals("陆宴清心声", label)
+    }
+
+    @Test
+    fun resolveVideoCallSpeakerLabel_keepsExistingInnerVoiceSuffix() {
+        val label = resolveVideoCallSpeakerLabel(
+            message(
+                id = "thought-2",
+                createdAt = 300L,
+                content = "这句话不该说出口。",
+                speaker = RoleplaySpeaker.CHARACTER,
+                contentType = RoleplayContentType.THOUGHT,
+                speakerName = "陆宴清心声",
+            ),
+        )
+
+        assertEquals("陆宴清心声", label)
+    }
+
     private fun message(
         id: String,
         createdAt: Long,
@@ -60,12 +92,13 @@ class RoleplayVideoCallScreenTest {
         speaker: RoleplaySpeaker,
         contentType: RoleplayContentType = RoleplayContentType.DIALOGUE,
         eventKind: RoleplayOnlineEventKind = RoleplayOnlineEventKind.NONE,
+        speakerName: String = "",
     ): RoleplayMessageUiModel {
         return RoleplayMessageUiModel(
             sourceMessageId = id,
             contentType = contentType,
             speaker = speaker,
-            speakerName = "",
+            speakerName = speakerName,
             content = content,
             systemEventKind = eventKind,
             createdAt = createdAt,

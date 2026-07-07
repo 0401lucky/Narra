@@ -38,6 +38,7 @@ data class MomentsUiState(
     val isPublishing: Boolean = false,
     val isRefreshing: Boolean = false,
     val isGeneratingReplies: Boolean = false,
+    val isDeletingMoments: Boolean = false,
     val replyingPostId: String = "",
     val retryingImagePostId: String = "",
     val momentsSettings: MomentsSettings = MomentsSettings(),
@@ -172,6 +173,37 @@ class MomentsViewModel(
                     it.copy(errorMessage = throwable.toMomentsUiError("朋友圈删除失败"))
                 }
             }
+        }
+    }
+
+    fun deletePosts(postIds: List<String>) {
+        val normalizedIds = postIds.map(String::trim).filter(String::isNotBlank).distinct()
+        if (normalizedIds.isEmpty() || _uiState.value.isDeletingMoments) return
+        _uiState.update { it.copy(isDeletingMoments = true) }
+        viewModelScope.launch {
+            runCatching {
+                momentsRepository.deletePosts(normalizedIds)
+            }.onFailure { throwable ->
+                _uiState.update {
+                    it.copy(errorMessage = throwable.toMomentsUiError("朋友圈删除失败"))
+                }
+            }
+            _uiState.update { it.copy(isDeletingMoments = false) }
+        }
+    }
+
+    fun clearMoments() {
+        if (_uiState.value.posts.isEmpty() || _uiState.value.isDeletingMoments) return
+        _uiState.update { it.copy(isDeletingMoments = true) }
+        viewModelScope.launch {
+            runCatching {
+                momentsRepository.deleteAllPosts()
+            }.onFailure { throwable ->
+                _uiState.update {
+                    it.copy(errorMessage = throwable.toMomentsUiError("朋友圈删除失败"))
+                }
+            }
+            _uiState.update { it.copy(isDeletingMoments = false) }
         }
     }
 

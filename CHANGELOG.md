@@ -19,7 +19,26 @@
 
 ---
 
-## [Unreleased]
+## [2.2.1-dev] - 2026-07-07
+
+### Added
+
+- 朋友圈新增“选择删除”，可勾选多条动态后一键删除选中项。
+- 朋友圈新增“清空朋友圈”，可一次删除当前朋友圈时间线中的全部动态。
+
+### Fixed
+
+- 修复视频通话页把角色心声当成普通对白展示的问题；通话中会以“角色名心声”和弱化样式区分内心活动。
+
+### Tests
+
+- 新增朋友圈批量删除、清空朋友圈和视频通话心声标签回归测试。
+- 已通过 `.\gradlew.bat assembleDebug --console=plain`。
+- `MomentsViewModelTest` 与 `RoleplayVideoCallScreenTest` 按 60 秒上限执行时未跑完，未拿到断言失败输出。
+
+### Docs
+
+- `dev` 渠道构建版本推进到 `2.2.1-dev (20201)`；本次内置更新先通过 GitHub Pages 兜底分发 APK。
 
 ---
 

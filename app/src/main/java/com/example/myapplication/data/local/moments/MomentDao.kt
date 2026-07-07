@@ -37,6 +37,12 @@ interface MomentDao {
     @Query("DELETE FROM moment_posts WHERE id = :postId")
     suspend fun deletePost(postId: String)
 
+    @Query("DELETE FROM moment_posts WHERE id IN (:postIds)")
+    suspend fun deletePosts(postIds: List<String>)
+
+    @Query("DELETE FROM moment_posts")
+    suspend fun deleteAllPosts()
+
     @Query("UPDATE moment_posts SET likedByNamesJson = :likedByNamesJson, updatedAt = :updatedAt WHERE id = :postId")
     suspend fun updatePostLikes(postId: String, likedByNamesJson: String, updatedAt: Long)
 

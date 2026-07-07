@@ -179,6 +179,43 @@ class MomentsViewModelTest {
         assertEquals("陆骁", momentsRepository.posts.single().authorName)
     }
 
+    @Test
+    fun deletePosts_removesSelectedMomentsOnly() = runTest(mainDispatcherRule.dispatcher.scheduler) {
+        val momentsRepository = FakeMomentsRepository(
+            initialPosts = listOf(
+                momentPost(id = "post-1", createdAt = 1L),
+                momentPost(id = "post-2", createdAt = 2L),
+                momentPost(id = "post-3", createdAt = 3L),
+            ),
+        )
+        val viewModel = createViewModel(momentsRepository)
+
+        advanceUntilIdle()
+        viewModel.deletePosts(listOf("post-1", "post-3", "post-3", " "))
+        advanceUntilIdle()
+
+        assertEquals(listOf("post-2"), momentsRepository.posts.map(MomentPost::id))
+        assertEquals(false, viewModel.uiState.value.isDeletingMoments)
+    }
+
+    @Test
+    fun clearMoments_removesEveryMoment() = runTest(mainDispatcherRule.dispatcher.scheduler) {
+        val momentsRepository = FakeMomentsRepository(
+            initialPosts = listOf(
+                momentPost(id = "post-1", createdAt = 1L),
+                momentPost(id = "post-2", createdAt = 2L),
+            ),
+        )
+        val viewModel = createViewModel(momentsRepository)
+
+        advanceUntilIdle()
+        viewModel.clearMoments()
+        advanceUntilIdle()
+
+        assertTrue(momentsRepository.posts.isEmpty())
+        assertEquals(false, viewModel.uiState.value.isDeletingMoments)
+    }
+
     private fun createViewModel(
         momentsRepository: FakeMomentsRepository,
         settings: AppSettings = defaultMomentsTestSettings(),
@@ -211,6 +248,21 @@ class MomentsViewModelTest {
             nowProvider = { 100L },
         )
     }
+}
+
+private fun momentPost(
+    id: String,
+    createdAt: Long,
+): MomentPost {
+    return MomentPost(
+        id = id,
+        authorType = MomentAuthorType.ASSISTANT,
+        authorId = "assistant-1",
+        authorName = "角色",
+        content = "朋友圈 $id",
+        createdAt = createdAt,
+        updatedAt = createdAt,
+    )
 }
 
 private fun defaultMomentsTestSettings(): AppSettings {
@@ -261,6 +313,16 @@ private class FakeMomentsRepository(
 
     override suspend fun deletePost(postId: String) {
         postStore.remove(postId)
+        emitTimeline()
+    }
+
+    override suspend fun deletePosts(postIds: List<String>) {
+        postIds.forEach(postStore::remove)
+        emitTimeline()
+    }
+
+    override suspend fun deleteAllPosts() {
+        postStore.clear()
         emitTimeline()
     }
 

@@ -49,6 +49,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextOverflow
@@ -451,17 +452,41 @@ private fun VideoCallFloatingMessageCard(
     colors: ImmersiveRoleplayColors,
     backdropState: ImmersiveBackdropState,
 ) {
-    val speakerLabel = remember(message.speaker, message.speakerName) {
+    val isThought = message.contentType == RoleplayContentType.THOUGHT
+    val speakerLabel = remember(message.speaker, message.speakerName, message.contentType) {
         resolveVideoCallSpeakerLabel(message)
     }
-    val cardWidthFraction = if (isLatest) 0.92f else 0.84f
-    val bubbleAlpha = if (isLatest) 0.88f else 0.70f
-    val horizontalArrangement = when (message.speaker) {
-        RoleplaySpeaker.USER -> Arrangement.End
-        RoleplaySpeaker.CHARACTER -> Arrangement.Start
-        RoleplaySpeaker.NARRATOR,
-        RoleplaySpeaker.SYSTEM,
-        -> Arrangement.Center
+    val cardWidthFraction = when {
+        isThought -> 0.76f
+        isLatest -> 0.92f
+        else -> 0.84f
+    }
+    val bubbleAlpha = when {
+        isThought -> 0.76f
+        isLatest -> 0.88f
+        else -> 0.70f
+    }
+    val horizontalArrangement = when {
+        isThought -> Arrangement.Center
+        message.speaker == RoleplaySpeaker.USER -> Arrangement.End
+        message.speaker == RoleplaySpeaker.CHARACTER -> Arrangement.Start
+        else -> Arrangement.Center
+    }
+    val bodyStyle = (if (isLatest) {
+        MaterialTheme.typography.bodyLarge
+    } else {
+        MaterialTheme.typography.bodyMedium
+    }).let { baseStyle ->
+        if (isThought) {
+            baseStyle.copy(fontStyle = FontStyle.Italic)
+        } else {
+            baseStyle
+        }
+    }
+    val bodyColor = if (isThought) {
+        colors.thoughtText
+    } else {
+        colors.textPrimary
     }
     Row(
         modifier = Modifier.fillMaxWidth(),
@@ -482,25 +507,35 @@ private fun VideoCallFloatingMessageCard(
                     Text(
                         text = speakerLabel,
                         style = MaterialTheme.typography.labelMedium,
-                        color = colors.textMuted,
+                        color = if (isThought) colors.thoughtText else colors.textMuted,
                     )
                 }
                 Text(
                     text = message.content.trim().ifBlank { message.copyText.trim() },
-                    style = if (isLatest) {
-                        MaterialTheme.typography.bodyLarge
-                    } else {
-                        MaterialTheme.typography.bodyMedium
-                    },
-                    color = colors.textPrimary,
+                    style = bodyStyle,
+                    color = bodyColor,
                 )
             }
         }
     }
 }
 
-private fun resolveVideoCallSpeakerLabel(message: RoleplayMessageUiModel): String {
+internal fun resolveVideoCallSpeakerLabel(message: RoleplayMessageUiModel): String {
     val explicitName = message.speakerName.trim()
+    if (message.contentType == RoleplayContentType.THOUGHT) {
+        val ownerName = explicitName.ifBlank {
+            when (message.speaker) {
+                RoleplaySpeaker.USER -> "你"
+                RoleplaySpeaker.CHARACTER -> "TA"
+                RoleplaySpeaker.NARRATOR -> "画面"
+                RoleplaySpeaker.SYSTEM -> ""
+            }
+        }
+        return ownerName
+            .takeIf { it.isNotBlank() }
+            ?.let { name -> if (name.endsWith("心声")) name else "${name}心声" }
+            .orEmpty()
+    }
     if (explicitName.isNotBlank()) {
         return explicitName
     }

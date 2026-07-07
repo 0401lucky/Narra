@@ -21,6 +21,8 @@ interface MomentsRepository {
     suspend fun getPost(postId: String): MomentPost?
     suspend fun upsertPost(post: MomentPost)
     suspend fun deletePost(postId: String)
+    suspend fun deletePosts(postIds: List<String>)
+    suspend fun deleteAllPosts()
     suspend fun updatePostLikes(postId: String, likedByNames: List<String>, updatedAt: Long)
     suspend fun addComment(comment: MomentComment)
     suspend fun addComments(comments: List<MomentComment>)
@@ -54,6 +56,16 @@ class RoomMomentsRepository(
 
     override suspend fun deletePost(postId: String) {
         dao.deletePost(postId)
+    }
+
+    override suspend fun deletePosts(postIds: List<String>) {
+        val normalizedIds = postIds.map(String::trim).filter(String::isNotBlank).distinct()
+        if (normalizedIds.isEmpty()) return
+        dao.deletePosts(normalizedIds)
+    }
+
+    override suspend fun deleteAllPosts() {
+        dao.deleteAllPosts()
     }
 
     override suspend fun updatePostLikes(postId: String, likedByNames: List<String>, updatedAt: Long) {
