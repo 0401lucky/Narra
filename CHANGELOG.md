@@ -38,7 +38,7 @@
 
 ### Docs
 
-- `dev` 渠道构建版本推进到 `2.2.1-dev (20201)`；本次内置更新先通过 GitHub Pages 兜底分发 APK。
+- `dev` 渠道构建版本推进到 `2.2.1-dev (20201)`，继续通过 Cloudflare R2 分发 APK。
 
 ---
 
