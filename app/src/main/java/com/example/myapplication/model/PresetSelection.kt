@@ -1,18 +1,35 @@
 package com.example.myapplication.model
 
+/**
+ * 返回解析候选链：会话 → 角色默认 → 全局默认 → 内置。
+ * 调用方若需「存在性回退」，应按此顺序查找第一个可用预设。
+ */
+fun resolveActivePresetIdChain(
+    globalDefaultPresetId: String,
+    assistantDefaultPresetId: String?,
+    scenarioPresetId: String? = null,
+): List<String> {
+    val globalPresetId = globalDefaultPresetId.trim().ifBlank { DEFAULT_PRESET_ID }
+    return buildList {
+        scenarioPresetId?.trim()?.takeIf { it.isNotEmpty() }?.let(::add)
+        assistantDefaultPresetId?.trim()?.takeIf { it.isNotEmpty() }?.let(::add)
+        add(globalPresetId)
+        if (globalPresetId != DEFAULT_PRESET_ID) {
+            add(DEFAULT_PRESET_ID)
+        }
+    }.distinct()
+}
+
 fun resolveActivePresetId(
     globalDefaultPresetId: String,
     assistantDefaultPresetId: String?,
     scenarioPresetId: String? = null,
 ): String {
-    val globalPresetId = globalDefaultPresetId.trim().ifBlank { DEFAULT_PRESET_ID }
-    val scenarioId = scenarioPresetId?.trim().orEmpty()
-    if (scenarioId.isNotEmpty()) return scenarioId
-    val assistantPresetId = assistantDefaultPresetId?.trim().orEmpty()
-    return when {
-        assistantPresetId.isBlank() -> globalPresetId
-        else -> assistantPresetId
-    }
+    return resolveActivePresetIdChain(
+        globalDefaultPresetId = globalDefaultPresetId,
+        assistantDefaultPresetId = assistantDefaultPresetId,
+        scenarioPresetId = scenarioPresetId,
+    ).first()
 }
 
 fun isAssistantPresetFollowingGlobal(
@@ -37,12 +54,6 @@ fun scenarioPresetSummary(
     globalDefaultPresetId: String,
     presets: List<Preset>,
 ): String {
-    val activeId = resolveActivePresetId(
-        globalDefaultPresetId = globalDefaultPresetId,
-        assistantDefaultPresetId = assistantDefaultPresetId,
-        scenarioPresetId = scenarioPresetId,
-    )
-    val activeName = presets.firstOrNull { it.id == activeId }?.name?.trim().orEmpty()
     val scenarioId = scenarioPresetId?.trim().orEmpty()
     if (scenarioId.isNotEmpty()) {
         val scenarioPreset = presets.firstOrNull { it.id == scenarioId }
@@ -52,6 +63,12 @@ fun scenarioPresetSummary(
             "已失效，回退默认"
         }
     }
+    val activeId = resolveActivePresetId(
+        globalDefaultPresetId = globalDefaultPresetId,
+        assistantDefaultPresetId = assistantDefaultPresetId,
+        scenarioPresetId = null,
+    )
+    val activeName = presets.firstOrNull { it.id == activeId }?.name?.trim().orEmpty()
     val source = if (
         isAssistantPresetFollowingGlobal(
             globalDefaultPresetId = globalDefaultPresetId,

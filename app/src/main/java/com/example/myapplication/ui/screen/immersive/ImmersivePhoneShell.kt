@@ -211,14 +211,15 @@ private enum class ImmersiveTab(
 
 private enum class DiscoverTarget(
     val title: String,
+    val subtitle: String,
     val icon: ImageVector,
 ) {
-    Moments("朋友圈", Icons.Default.Forum),
-    PhoneCheck("查手机", Icons.Default.PhoneAndroid),
-    Diary("日记本", Icons.Default.Book),
-    Mailbox("信箱", Icons.Default.Mail),
-    Wallet("钱包", Icons.Default.AccountBalanceWallet),
-    VideoCall("视频通话", Icons.Default.Videocam),
+    Moments("朋友圈", "生活动态与互动", Icons.Default.Forum),
+    PhoneCheck("查手机", "偷看角色手机", Icons.Default.PhoneAndroid),
+    Diary("日记本", "角色私下记录", Icons.Default.Book),
+    Mailbox("信箱", "来信与回信", Icons.Default.Mail),
+    Wallet("钱包", "余额与商店", Icons.Default.AccountBalanceWallet),
+    VideoCall("视频通话", "面对面连线", Icons.Default.Videocam),
 }
 
 private data class CharacterShakeFilterGroup(
@@ -1178,46 +1179,96 @@ private fun ImmersiveDiscoverPage(
     onOpenTarget: (DiscoverTarget) -> Unit,
     bottomPadding: Dp,
 ) {
+    val colorScheme = MaterialTheme.colorScheme
     LazyColumn(
-        modifier = Modifier.fillMaxSize(),
+        modifier = Modifier
+            .fillMaxSize()
+            .background(
+                Brush.verticalGradient(
+                    listOf(
+                        colorScheme.primaryContainer.copy(alpha = 0.22f),
+                        colorScheme.background,
+                        colorScheme.background,
+                    ),
+                ),
+            ),
         contentPadding = PaddingValues(
             start = 16.dp,
             end = 16.dp,
-            top = 16.dp,
-            bottom = 20.dp + bottomPadding,
+            top = 12.dp,
+            bottom = 24.dp + bottomPadding,
         ),
-        verticalArrangement = Arrangement.spacedBy(20.dp),
+        verticalArrangement = Arrangement.spacedBy(22.dp),
     ) {
         item {
-            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                DiscoverSectionHeader(icon = Icons.Default.AutoAwesome, title = "AI 创作")
-                Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                    DiscoverAiTile(
-                        modifier = Modifier.weight(1f),
-                        icon = Icons.Default.Casino,
-                        title = "摇一摇",
-                        subtitle = "摇出新角色，自动入通讯录",
-                        container = MaterialTheme.colorScheme.primaryContainer,
-                        onContainer = MaterialTheme.colorScheme.onPrimaryContainer,
-                        accent = MaterialTheme.colorScheme.primary,
-                        onClick = onOpenCharacterShake,
-                    )
-                    DiscoverAiTile(
-                        modifier = Modifier.weight(1f),
-                        icon = Icons.Default.Image,
-                        title = "角色图工作台",
-                        subtitle = "生成非真人风格头像图",
-                        container = MaterialTheme.colorScheme.secondaryContainer,
-                        onContainer = MaterialTheme.colorScheme.onSecondaryContainer,
-                        accent = MaterialTheme.colorScheme.secondary,
-                        onClick = onOpenCharacterArtStudio,
-                    )
+            Surface(
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(24.dp),
+                color = colorScheme.surface.copy(alpha = 0.92f),
+                tonalElevation = 1.dp,
+                border = BorderStroke(1.dp, colorScheme.primary.copy(alpha = 0.12f)),
+            ) {
+                Box(
+                    modifier = Modifier.background(
+                        Brush.linearGradient(
+                            listOf(
+                                colorScheme.primaryContainer.copy(alpha = 0.55f),
+                                colorScheme.tertiaryContainer.copy(alpha = 0.28f),
+                                Color.Transparent,
+                            ),
+                        ),
+                    ),
+                ) {
+                    Column(
+                        modifier = Modifier.padding(horizontal = 18.dp, vertical = 18.dp),
+                        verticalArrangement = Arrangement.spacedBy(6.dp),
+                    ) {
+                        Text(
+                            text = "发现",
+                            style = MaterialTheme.typography.headlineSmall,
+                            fontWeight = FontWeight.Bold,
+                        )
+                        Text(
+                            text = "创作角色，或潜入他们的日常空间",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = colorScheme.onSurfaceVariant,
+                        )
+                    }
                 }
             }
         }
         item {
             Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                DiscoverSectionHeader(icon = Icons.Default.Smartphone, title = "角色空间")
+                DiscoverSectionHeader(icon = Icons.Default.AutoAwesome, title = "AI 创作", caption = "快速长出新角色与形象")
+                DiscoverAiTile(
+                    modifier = Modifier.fillMaxWidth(),
+                    icon = Icons.Default.Casino,
+                    title = "摇一摇",
+                    subtitle = "按偏好摇出新角色，自动加入通讯录",
+                    badge = "推荐",
+                    container = colorScheme.primaryContainer,
+                    onContainer = colorScheme.onPrimaryContainer,
+                    accent = colorScheme.primary,
+                    onClick = onOpenCharacterShake,
+                    featured = true,
+                )
+                DiscoverAiTile(
+                    modifier = Modifier.fillMaxWidth(),
+                    icon = Icons.Default.Image,
+                    title = "角色图工作台",
+                    subtitle = "提取特征，生成非真人风格头像",
+                    badge = null,
+                    container = colorScheme.secondaryContainer,
+                    onContainer = colorScheme.onSecondaryContainer,
+                    accent = colorScheme.secondary,
+                    onClick = onOpenCharacterArtStudio,
+                    featured = false,
+                )
+            }
+        }
+        item {
+            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                DiscoverSectionHeader(icon = Icons.Default.Smartphone, title = "角色空间", caption = "沉浸日常的六块入口")
                 DiscoverSpaceGrid(
                     targets = DiscoverTarget.entries,
                     onOpenTarget = onOpenTarget,
@@ -1231,24 +1282,36 @@ private fun ImmersiveDiscoverPage(
 private fun DiscoverSectionHeader(
     icon: ImageVector,
     title: String,
+    caption: String,
 ) {
     Row(
-        modifier = Modifier.padding(start = 4.dp),
+        modifier = Modifier.padding(horizontal = 2.dp),
         verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        horizontalArrangement = Arrangement.spacedBy(10.dp),
     ) {
-        Icon(
-            imageVector = icon,
-            contentDescription = null,
-            modifier = Modifier.size(18.dp),
-            tint = MaterialTheme.colorScheme.primary,
-        )
-        Text(
-            text = title,
-            style = MaterialTheme.typography.titleSmall,
-            fontWeight = FontWeight.Bold,
-            color = MaterialTheme.colorScheme.onSurface,
-        )
+        Surface(
+            modifier = Modifier.size(30.dp),
+            shape = RoundedCornerShape(10.dp),
+            color = MaterialTheme.colorScheme.primaryContainer,
+            contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
+        ) {
+            Box(contentAlignment = Alignment.Center) {
+                Icon(icon, contentDescription = null, modifier = Modifier.size(16.dp))
+            }
+        }
+        Column(modifier = Modifier.weight(1f)) {
+            Text(
+                text = title,
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.onSurface,
+            )
+            Text(
+                text = caption,
+                style = MaterialTheme.typography.labelMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
     }
 }
 
@@ -1257,21 +1320,23 @@ private fun DiscoverAiTile(
     icon: ImageVector,
     title: String,
     subtitle: String,
+    badge: String?,
     container: Color,
     onContainer: Color,
     accent: Color,
     onClick: () -> Unit,
+    featured: Boolean,
     modifier: Modifier = Modifier,
 ) {
     val interactionSource = remember { MutableInteractionSource() }
     val pressed by interactionSource.collectIsPressedAsState()
     val scale by animateFloatAsState(
-        targetValue = if (pressed) 0.97f else 1f,
+        targetValue = if (pressed) 0.98f else 1f,
         label = "discover_ai_tile_scale",
     )
     Surface(
         modifier = modifier
-            .height(140.dp)
+            .height(if (featured) 112.dp else 96.dp)
             .graphicsLayer {
                 scaleX = scale
                 scaleY = scale
@@ -1284,43 +1349,67 @@ private fun DiscoverAiTile(
             ),
         shape = RoundedCornerShape(22.dp),
         color = MaterialTheme.colorScheme.surface,
-        tonalElevation = 2.dp,
-        border = BorderStroke(1.dp, accent.copy(alpha = 0.26f)),
+        tonalElevation = if (featured) 3.dp else 1.dp,
+        border = BorderStroke(1.dp, accent.copy(alpha = if (featured) 0.28f else 0.16f)),
     ) {
         Box(
             modifier = Modifier.background(
-                Brush.verticalGradient(
+                Brush.horizontalGradient(
                     listOf(
-                        container.copy(alpha = 0.55f),
+                        container.copy(alpha = 0.62f),
+                        container.copy(alpha = 0.18f),
                         Color.Transparent,
                     ),
                 ),
             ),
         ) {
-            Column(
+            Row(
                 modifier = Modifier
                     .fillMaxSize()
-                    .padding(16.dp),
-                verticalArrangement = Arrangement.SpaceBetween,
+                    .padding(horizontal = 16.dp, vertical = 14.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(14.dp),
             ) {
                 Surface(
-                    modifier = Modifier.size(44.dp),
-                    shape = RoundedCornerShape(14.dp),
+                    modifier = Modifier.size(if (featured) 52.dp else 46.dp),
+                    shape = RoundedCornerShape(16.dp),
                     color = container,
                     contentColor = onContainer,
                 ) {
                     Box(contentAlignment = Alignment.Center) {
-                        Icon(icon, contentDescription = null, modifier = Modifier.size(22.dp))
+                        Icon(icon, contentDescription = null, modifier = Modifier.size(24.dp))
                     }
                 }
-                Column(verticalArrangement = Arrangement.spacedBy(3.dp)) {
-                    Text(
-                        text = title,
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Bold,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
-                    )
+                Column(
+                    modifier = Modifier.weight(1f),
+                    verticalArrangement = Arrangement.spacedBy(4.dp),
+                ) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    ) {
+                        Text(
+                            text = title,
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Bold,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                        )
+                        if (!badge.isNullOrBlank()) {
+                            Surface(
+                                shape = RoundedCornerShape(999.dp),
+                                color = accent.copy(alpha = 0.14f),
+                                contentColor = accent,
+                            ) {
+                                Text(
+                                    text = badge,
+                                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp),
+                                    style = MaterialTheme.typography.labelSmall,
+                                    fontWeight = FontWeight.SemiBold,
+                                )
+                            }
+                        }
+                    }
                     Text(
                         text = subtitle,
                         style = MaterialTheme.typography.bodySmall,
@@ -1329,6 +1418,11 @@ private fun DiscoverAiTile(
                         overflow = TextOverflow.Ellipsis,
                     )
                 }
+                Icon(
+                    imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
+                )
             }
         }
     }
@@ -1339,17 +1433,30 @@ private fun DiscoverSpaceGrid(
     targets: List<DiscoverTarget>,
     onOpenTarget: (DiscoverTarget) -> Unit,
 ) {
-    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-        targets.chunked(3).forEach { rowTargets ->
-            Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                rowTargets.forEach { target ->
+    val scheme = MaterialTheme.colorScheme
+    val palette = listOf(
+        scheme.primaryContainer to scheme.onPrimaryContainer,
+        scheme.secondaryContainer to scheme.onSecondaryContainer,
+        scheme.tertiaryContainer to scheme.onTertiaryContainer,
+        scheme.primaryContainer.copy(alpha = 0.72f) to scheme.onPrimaryContainer,
+        scheme.secondaryContainer.copy(alpha = 0.72f) to scheme.onSecondaryContainer,
+        scheme.tertiaryContainer.copy(alpha = 0.72f) to scheme.onTertiaryContainer,
+    )
+    Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+        targets.chunked(2).forEachIndexed { rowIndex, rowTargets ->
+            Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                rowTargets.forEachIndexed { colIndex, target ->
+                    val colorIndex = rowIndex * 2 + colIndex
+                    val (container, onContainer) = palette[colorIndex % palette.size]
                     DiscoverSpaceTile(
                         modifier = Modifier.weight(1f),
                         target = target,
+                        container = container,
+                        onContainer = onContainer,
                         onClick = { onOpenTarget(target) },
                     )
                 }
-                repeat(3 - rowTargets.size) {
+                if (rowTargets.size == 1) {
                     Spacer(modifier = Modifier.weight(1f))
                 }
             }
@@ -1360,6 +1467,8 @@ private fun DiscoverSpaceGrid(
 @Composable
 private fun DiscoverSpaceTile(
     target: DiscoverTarget,
+    container: Color,
+    onContainer: Color,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -1371,7 +1480,7 @@ private fun DiscoverSpaceTile(
     )
     Surface(
         modifier = modifier
-            .height(98.dp)
+            .height(92.dp)
             .graphicsLayer {
                 scaleX = scale
                 scaleY = scale
@@ -1385,32 +1494,44 @@ private fun DiscoverSpaceTile(
         shape = RoundedCornerShape(20.dp),
         color = MaterialTheme.colorScheme.surface,
         tonalElevation = 1.dp,
-        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f)),
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f)),
     ) {
-        Column(
+        Row(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(horizontal = 8.dp, vertical = 12.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
+                .padding(horizontal = 14.dp, vertical = 12.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
         ) {
             Surface(
-                modifier = Modifier.size(40.dp),
-                shape = RoundedCornerShape(13.dp),
-                color = MaterialTheme.colorScheme.secondaryContainer,
-                contentColor = MaterialTheme.colorScheme.onSecondaryContainer,
+                modifier = Modifier.size(42.dp),
+                shape = RoundedCornerShape(14.dp),
+                color = container,
+                contentColor = onContainer,
             ) {
                 Box(contentAlignment = Alignment.Center) {
-                    Icon(target.icon, contentDescription = null, modifier = Modifier.size(20.dp))
+                    Icon(target.icon, contentDescription = null, modifier = Modifier.size(22.dp))
                 }
             }
-            Text(
-                text = target.title,
-                style = MaterialTheme.typography.labelMedium,
-                fontWeight = FontWeight.Medium,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-            )
+            Column(
+                modifier = Modifier.weight(1f),
+                verticalArrangement = Arrangement.spacedBy(2.dp),
+            ) {
+                Text(
+                    text = target.title,
+                    style = MaterialTheme.typography.titleSmall,
+                    fontWeight = FontWeight.SemiBold,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
+                Text(
+                    text = target.subtitle,
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
+            }
         }
     }
 }

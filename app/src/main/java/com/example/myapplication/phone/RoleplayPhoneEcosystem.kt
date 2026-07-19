@@ -1,5 +1,7 @@
 package com.example.myapplication.phone
 
+// 发现页「今日动态」入口已在 2.2.2 移除；本模块保留为数据汇总能力，供后续角标/推送复用，暂不删除。
+
 import com.example.myapplication.model.MailboxLetter
 import com.example.myapplication.model.MomentAuthorType
 import com.example.myapplication.model.MomentPost

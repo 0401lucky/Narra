@@ -132,8 +132,10 @@ private fun roleplayScreenCallbacks(
         message = RoleplayMessageCallbacks(
             onInputChange = {},
             onSend = {},
+            onRequestGroupParticipantReply = {},
             onCancelSending = {},
             onRetryTurn = {},
+            onRetryAiPhoto = { _, _ -> },
             onEditUserMessage = {},
             onQuoteMessage = { _, _, _ -> },
             onPokeMessageAvatar = {},
@@ -155,6 +157,7 @@ private fun roleplayScreenCallbacks(
             onOpenMoments = onOpenMoments,
             onOpenVideoCall = onOpenVideoCall,
             onOpenMailbox = {},
+            onOpenWallet = {},
             onOpenReadingMode = {},
             onOpenSettings = {},
             onNavigateBack = {},

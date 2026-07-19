@@ -43,6 +43,27 @@ class PresetSelectionTest {
     }
 
     @Test
+    fun resolveChain_includesFallbackLevelsForMissingPresetLookup() {
+        assertEquals(
+            listOf("deleted-session", "assistant-preset", "global-preset", DEFAULT_PRESET_ID),
+            resolveActivePresetIdChain(
+                globalDefaultPresetId = "global-preset",
+                assistantDefaultPresetId = "assistant-preset",
+                scenarioPresetId = "deleted-session",
+            ),
+        )
+        // 全局已是内置时不重复追加
+        assertEquals(
+            listOf("assistant-preset", DEFAULT_PRESET_ID),
+            resolveActivePresetIdChain(
+                globalDefaultPresetId = DEFAULT_PRESET_ID,
+                assistantDefaultPresetId = "assistant-preset",
+                scenarioPresetId = null,
+            ),
+        )
+    }
+
+    @Test
     fun isScenarioPresetFollowingAssistant_whenBlank() {
         assertTrue(isScenarioPresetFollowingAssistant(""))
         assertTrue(isScenarioPresetFollowingAssistant(null))

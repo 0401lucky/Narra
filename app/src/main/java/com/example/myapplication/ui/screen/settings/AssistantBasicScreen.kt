@@ -65,9 +65,8 @@ fun AssistantBasicScreen(
     var avatarUri by rememberSaveable { mutableStateOf(assistant?.avatarUri ?: "") }
     var name by rememberSaveable { mutableStateOf(assistant?.name ?: "") }
     var description by rememberSaveable { mutableStateOf(assistant?.description ?: "") }
-    var corePersona by rememberSaveable {
-        mutableStateOf(if (isNew) "" else assistant?.systemPrompt.orEmpty())
-    }
+    // 仅新建页使用；编辑页不把整段 systemPrompt 塞进 saveable Bundle。
+    var corePersona by rememberSaveable { mutableStateOf("") }
     var tagsText by rememberSaveable {
         mutableStateOf(assistant?.tags?.joinToString(", ") ?: "")
     }

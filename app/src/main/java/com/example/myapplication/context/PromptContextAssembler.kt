@@ -29,7 +29,7 @@ import com.example.myapplication.model.PhoneSnapshotOwnerType
 import com.example.myapplication.model.PromptEnvelope
 import com.example.myapplication.model.PromptMode
 import com.example.myapplication.model.WorldBookEntry
-import com.example.myapplication.model.resolveActivePresetId
+import com.example.myapplication.model.resolveActivePresetIdChain
 import com.example.myapplication.model.toPlainText
 
 data class PromptContextResult(
@@ -250,15 +250,15 @@ class DefaultPromptContextAssembler(
             phoneSnapshotItems = phoneSnapshotItems,
             phoneObservation = phoneObservation.takeIf { shouldIncludePhoneObservation },
         )
-        val activePresetId = resolveActivePresetId(
+        // 按会话 → 角色 → 全局 → 内置依次取第一个真实存在的预设，避免悬空 id 跳过中间层级。
+        val activePreset = resolveActivePresetIdChain(
             globalDefaultPresetId = settings.defaultPresetId,
             assistantDefaultPresetId = assistant?.defaultPresetId,
             scenarioPresetId = scenarioPresetId,
-        )
-        val activePreset = presetRepository.getPreset(activePresetId)
-            ?: DEFAULT_PRESET_ID
-                .takeIf { activePresetId != it }
-                ?.let { presetRepository.getPreset(it) }
+        ).firstNotNullOfOrNull { candidateId ->
+            presetRepository.getPreset(candidateId)
+        }
+        val activePresetId = activePreset?.id.orEmpty().ifBlank { DEFAULT_PRESET_ID }
         val renderedPreset = activePreset?.let { preset ->
             presetPromptRenderer.render(
                 PresetPromptRenderInput(

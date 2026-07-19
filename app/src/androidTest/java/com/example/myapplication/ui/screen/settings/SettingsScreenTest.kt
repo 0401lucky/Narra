@@ -48,6 +48,7 @@ class SettingsScreenTest {
                     onOpenHome = { openHomeCalls++ },
                     onNavigateBack = {},
                     onUpdateThemeMode = {},
+                    onUpdateAppColorTheme = {},
                     onUpdateMessageTextScale = {},
                     onUpdateReasoningExpandedByDefault = {},
                     onUpdateShowThinkingContent = {},

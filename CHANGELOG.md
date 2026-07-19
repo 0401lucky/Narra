@@ -19,6 +19,32 @@
 
 ---
 
+## [2.2.3-dev] - 2026-07-19
+
+### Fixed
+
+- 本会话预设 Sheet 支持滚动，预设较多时也能选到底部项。
+- 侧栏背景与立绘恢复 URL 链接输入；视觉保存改为只更新视觉字段，避免相册 IO 期间整行覆盖竞态。
+- 会话预设已删除时按「会话 → 角色 → 全局 → 内置」级联回退，不再直接跳到内置。
+- 设置页在 `currentScenario` 尚未就绪时，仍可按 `currentScenarioId` 回落列表写入预设。
+- 补齐 `RoleplaySettingsScreenTest` 等 androidTest 缺参，修复测试源集编译。
+
+### Changed
+
+- 发现页重排：Hero 引导、通栏 AI 创作卡、双列角色空间入口与分色图标。
+- 会话设定「高级选项」默认折叠，减轻首屏开销。
+
+### Docs
+
+- `dev` 渠道构建版本推进到 `2.2.3-dev (20203)`，继续通过 Cloudflare R2 分发 APK。
+
+### Release
+
+- 已构建 `Narra-v2.2.3-dev-20203-dev.apk`，SHA-256 `4ba474aa28873e2442fa6a8c5cfee2648d4b4ff245eeaf7556bea7ea5122e573`。
+- 已上传 Cloudflare R2 `narra-updates/dev/2.2.3/`，公开下载与内置更新元数据已同步。
+
+---
+
 ## [2.2.2-dev] - 2026-07-19
 
 ### Changed

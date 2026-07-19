@@ -1208,12 +1208,46 @@ class RoleplayViewModel(
     }
 
     fun updateCurrentScenarioPresetId(presetId: String) {
-        val scenario = _uiState.value.currentScenario ?: return
+        val scenario = resolveWorkingScenario() ?: return
         upsertScenario(scenario.copy(presetId = presetId.trim()))
     }
 
+    /**
+     * 只覆盖视觉字段；始终基于当前最新 scenario 做 copy，避免相册 IO 期间整行快照 last-writer-wins。
+     */
+    fun updateCurrentScenarioVisual(
+        backgroundUri: String,
+        userPortraitUri: String,
+        userPortraitUrl: String,
+        characterPortraitUri: String,
+        characterPortraitUrl: String,
+    ) {
+        val scenario = resolveWorkingScenario() ?: return
+        upsertScenario(
+            scenario.copy(
+                backgroundUri = backgroundUri.trim(),
+                userPortraitUri = userPortraitUri.trim(),
+                userPortraitUrl = userPortraitUrl.trim(),
+                characterPortraitUri = characterPortraitUri.trim(),
+                characterPortraitUrl = characterPortraitUrl.trim(),
+            ),
+        )
+    }
+
+    /**
+     * 设置页可能先用 scenarios 列表渲染 routeScenario，而 currentScenario 尚未 enter 完成。
+     * 优先 currentScenario，否则按 currentScenarioId 回落到 scenarios 列表。
+     */
+    private fun resolveWorkingScenario(): RoleplayScenario? {
+        val state = _uiState.value
+        state.currentScenario?.let { return it }
+        val scenarioId = currentScenarioId.value?.trim().orEmpty()
+        if (scenarioId.isBlank()) return null
+        return state.scenarios.firstOrNull { it.id == scenarioId }
+    }
+
     fun updateCurrentScenarioNarrationEnabled(enabled: Boolean) {
-        val scenario = _uiState.value.currentScenario ?: return
+        val scenario = resolveWorkingScenario() ?: return
         upsertScenario(scenario.copy(enableNarration = enabled))
     }
 

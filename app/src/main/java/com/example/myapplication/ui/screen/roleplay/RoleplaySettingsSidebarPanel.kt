@@ -170,7 +170,13 @@ internal fun RoleplaySettingsSidebarContent(
     onUpdateScenarioInteractionMode: (RoleplayInteractionMode) -> Unit,
     onUpdateScenarioOnlineReplyRange: (Int, Int) -> Unit,
     onUpdateScenarioPresetId: (String) -> Unit,
-    onUpdateScenarioVisual: (RoleplayScenario) -> Unit,
+    onUpdateScenarioVisual: (
+        backgroundUri: String,
+        userPortraitUri: String,
+        userPortraitUrl: String,
+        characterPortraitUri: String,
+        characterPortraitUrl: String,
+    ) -> Unit,
     onAddGroupParticipant: (String) -> Unit,
     onToggleGroupParticipantMuted: (String) -> Unit,
     onRemoveGroupParticipant: (String) -> Unit,
@@ -485,11 +491,21 @@ internal fun RoleplaySettingsSidebarContent(
     }
 }
 
+private const val SCENARIO_BACKGROUND_SCOPE = "scenarioBackground"
+private const val SCENARIO_USER_PORTRAIT_SCOPE = "scenarioUserPortrait"
+private const val SCENARIO_CHARACTER_PORTRAIT_SCOPE = "scenarioCharacterPortrait"
+
 @Composable
 private fun RoleplaySettingsVisualPanel(
     scenario: RoleplayScenario?,
     backdropState: ImmersiveBackdropState,
-    onUpdateScenarioVisual: (RoleplayScenario) -> Unit,
+    onUpdateScenarioVisual: (
+        backgroundUri: String,
+        userPortraitUri: String,
+        userPortraitUrl: String,
+        characterPortraitUri: String,
+        characterPortraitUrl: String,
+    ) -> Unit,
 ) {
     val localImageStore = com.example.myapplication.ui.LocalImagePersister.current
     val coroutineScope = androidx.compose.runtime.rememberCoroutineScope()
@@ -515,20 +531,35 @@ private fun RoleplaySettingsVisualPanel(
         }
         return
     }
-    var backgroundUri by rememberSaveable(scenario.id, scenario.backgroundUri) {
+    var backgroundUri by rememberSaveable(scenario.id) {
         mutableStateOf(scenario.backgroundUri)
     }
-    var userPortraitUri by rememberSaveable(scenario.id, scenario.userPortraitUri) {
+    var userPortraitUri by rememberSaveable(scenario.id) {
         mutableStateOf(scenario.userPortraitUri)
     }
-    var userPortraitUrl by rememberSaveable(scenario.id, scenario.userPortraitUrl) {
+    var userPortraitUrl by rememberSaveable(scenario.id) {
         mutableStateOf(scenario.userPortraitUrl)
     }
-    var characterPortraitUri by rememberSaveable(scenario.id, scenario.characterPortraitUri) {
+    var characterPortraitUri by rememberSaveable(scenario.id) {
         mutableStateOf(scenario.characterPortraitUri)
     }
-    var characterPortraitUrl by rememberSaveable(scenario.id, scenario.characterPortraitUrl) {
+    var characterPortraitUrl by rememberSaveable(scenario.id) {
         mutableStateOf(scenario.characterPortraitUrl)
+    }
+    // 外部 scenario 更新（例如并发 upsert）时同步本地草稿，避免 UI 与库不一致。
+    androidx.compose.runtime.LaunchedEffect(
+        scenario.id,
+        scenario.backgroundUri,
+        scenario.userPortraitUri,
+        scenario.userPortraitUrl,
+        scenario.characterPortraitUri,
+        scenario.characterPortraitUrl,
+    ) {
+        backgroundUri = scenario.backgroundUri
+        userPortraitUri = scenario.userPortraitUri
+        userPortraitUrl = scenario.userPortraitUrl
+        characterPortraitUri = scenario.characterPortraitUri
+        characterPortraitUrl = scenario.characterPortraitUrl
     }
     fun persistVisual(
         nextBackground: String = backgroundUri,
@@ -542,14 +573,13 @@ private fun RoleplaySettingsVisualPanel(
         userPortraitUrl = nextUserUrl
         characterPortraitUri = nextCharUri
         characterPortraitUrl = nextCharUrl
+        // 只提交视觉字段；VM 侧会用最新 scenario 合并，避免整行快照竞态。
         onUpdateScenarioVisual(
-            scenario.copy(
-                backgroundUri = nextBackground.trim(),
-                userPortraitUri = nextUserUri.trim(),
-                userPortraitUrl = nextUserUrl.trim(),
-                characterPortraitUri = nextCharUri.trim(),
-                characterPortraitUrl = nextCharUrl.trim(),
-            ),
+            nextBackground.trim(),
+            nextUserUri.trim(),
+            nextUserUrl.trim(),
+            nextCharUri.trim(),
+            nextCharUrl.trim(),
         )
     }
     val backgroundLauncher = androidx.activity.compose.rememberLauncherForActivityResult(
@@ -557,7 +587,7 @@ private fun RoleplaySettingsVisualPanel(
     ) { uri ->
         if (uri == null) return@rememberLauncherForActivityResult
         coroutineScope.launch {
-            localImageStore.copyToAppStorage(uri, "roleplay_background")?.let {
+            localImageStore.copyToAppStorage(uri, SCENARIO_BACKGROUND_SCOPE)?.let {
                 persistVisual(nextBackground = it)
             }
         }
@@ -567,7 +597,7 @@ private fun RoleplaySettingsVisualPanel(
     ) { uri ->
         if (uri == null) return@rememberLauncherForActivityResult
         coroutineScope.launch {
-            localImageStore.copyToAppStorage(uri, "roleplay_user_portrait")?.let {
+            localImageStore.copyToAppStorage(uri, SCENARIO_USER_PORTRAIT_SCOPE)?.let {
                 persistVisual(nextUserUri = it, nextUserUrl = "")
             }
         }
@@ -577,7 +607,7 @@ private fun RoleplaySettingsVisualPanel(
     ) { uri ->
         if (uri == null) return@rememberLauncherForActivityResult
         coroutineScope.launch {
-            localImageStore.copyToAppStorage(uri, "roleplay_character_portrait")?.let {
+            localImageStore.copyToAppStorage(uri, SCENARIO_CHARACTER_PORTRAIT_SCOPE)?.let {
                 persistVisual(nextCharUri = it, nextCharUrl = "")
             }
         }
@@ -598,7 +628,7 @@ private fun RoleplaySettingsVisualPanel(
             DetailIntroCard(
                 backdropState = backdropState,
                 title = "背景与立绘",
-                summary = "背景用于列表封面与剧情氛围；立绘可覆盖默认头像。",
+                summary = "背景用于列表封面与剧情氛围；立绘可本地选图或填写 http(s) 链接。",
             )
         }
         item {
@@ -619,6 +649,8 @@ private fun RoleplaySettingsVisualPanel(
                 VisualFieldRow(
                     title = "用户立绘",
                     value = userPortraitUri.ifBlank { userPortraitUrl },
+                    urlValue = userPortraitUrl,
+                    onUrlChange = { next -> persistVisual(nextUserUrl = next, nextUserUri = if (next.isNotBlank()) "" else userPortraitUri) },
                     onPick = {
                         userPortraitLauncher.launch(
                             androidx.activity.result.PickVisualMediaRequest(
@@ -632,6 +664,8 @@ private fun RoleplaySettingsVisualPanel(
                 VisualFieldRow(
                     title = "角色立绘",
                     value = characterPortraitUri.ifBlank { characterPortraitUrl },
+                    urlValue = characterPortraitUrl,
+                    onUrlChange = { next -> persistVisual(nextCharUrl = next, nextCharUri = if (next.isNotBlank()) "" else characterPortraitUri) },
                     onPick = {
                         characterPortraitLauncher.launch(
                             androidx.activity.result.PickVisualMediaRequest(
@@ -652,25 +686,41 @@ private fun VisualFieldRow(
     value: String,
     onPick: () -> Unit,
     onClear: () -> Unit,
+    urlValue: String? = null,
+    onUrlChange: ((String) -> Unit)? = null,
 ) {
-    Row(
+    Column(
         modifier = Modifier
             .fillMaxWidth()
             .padding(horizontal = 14.dp, vertical = 12.dp),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(12.dp),
+        verticalArrangement = Arrangement.spacedBy(10.dp),
     ) {
-        Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
-            Text(title, fontWeight = FontWeight.SemiBold, color = RoleplaySettingsPanelTitleColor)
-            Text(
-                text = if (value.isBlank()) "未设置" else "已设置",
-                style = MaterialTheme.typography.bodySmall,
-                color = RoleplaySettingsPanelBodyColor,
-            )
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
+        ) {
+            Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                Text(title, fontWeight = FontWeight.SemiBold, color = RoleplaySettingsPanelTitleColor)
+                Text(
+                    text = if (value.isBlank()) "未设置" else "已设置",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = RoleplaySettingsPanelBodyColor,
+                )
+            }
+            TextButton(onClick = onPick) { Text("选择") }
+            if (value.isNotBlank()) {
+                TextButton(onClick = onClear) { Text("清除") }
+            }
         }
-        TextButton(onClick = onPick) { Text("选择") }
-        if (value.isNotBlank()) {
-            TextButton(onClick = onClear) { Text("清除") }
+        if (onUrlChange != null) {
+            androidx.compose.material3.OutlinedTextField(
+                value = urlValue.orEmpty(),
+                onValueChange = onUrlChange,
+                modifier = Modifier.fillMaxWidth(),
+                singleLine = true,
+                label = { Text("图片链接（可选）") },
+                placeholder = { Text("https://…") },
+            )
         }
     }
 }
@@ -748,7 +798,8 @@ private fun RoleplaySettingsMainPanel(
         .resolveUserPersona(scenario, settings)
         .displayName
     val isGroupChat = scenario?.isGroupChat == true
-    var advancedExpanded by rememberSaveable { mutableStateOf(true) }
+    // 默认折叠高级区，减少首屏组合开销（审查 #7/#8）。
+    var advancedExpanded by rememberSaveable { mutableStateOf(false) }
     var showPresetSheet by rememberSaveable { mutableStateOf(false) }
     val haptic = LocalHapticFeedback.current
     val presetSummary = scenarioPresetSummary(
@@ -984,6 +1035,7 @@ private fun RoleplaySettingsMainPanel(
             assistantDefaultPresetId = assistant?.defaultPresetId,
             scenarioPresetId = scenario?.presetId,
         )
+        val sheetMaxHeight = androidx.compose.ui.platform.LocalConfiguration.current.screenHeightDp.dp * 0.72f
         ModalBottomSheet(
             onDismissRequest = { showPresetSheet = false },
             sheetState = sheetState,
@@ -991,7 +1043,8 @@ private fun RoleplaySettingsMainPanel(
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(bottom = 28.dp),
+                    .heightIn(max = sheetMaxHeight)
+                    .padding(bottom = 12.dp),
             ) {
                 Text(
                     text = "本会话预设",
@@ -1005,37 +1058,50 @@ private fun RoleplaySettingsMainPanel(
                     color = RoleplaySettingsPanelBodyColor,
                     modifier = Modifier.padding(horizontal = 20.dp, vertical = 4.dp),
                 )
-                ScenarioPresetPickRow(
-                    title = "跟随角色默认",
-                    summary = if (
-                        isAssistantPresetFollowingGlobal(
-                            globalDefaultPresetId = settings.defaultPresetId,
-                            assistantDefaultPresetId = assistant?.defaultPresetId,
+                LazyColumn(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .weight(1f, fill = false),
+                    contentPadding = PaddingValues(bottom = 8.dp),
+                ) {
+                    item(key = "follow_role") {
+                        ScenarioPresetPickRow(
+                            title = "跟随角色默认",
+                            summary = if (
+                                isAssistantPresetFollowingGlobal(
+                                    globalDefaultPresetId = settings.defaultPresetId,
+                                    assistantDefaultPresetId = assistant?.defaultPresetId,
+                                )
+                            ) {
+                                "实际跟随全局默认"
+                            } else {
+                                "使用角色绑定的默认预设"
+                            },
+                            selected = followingAssistant,
+                            onClick = {
+                                haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                                onUpdateScenarioPresetId("")
+                                showPresetSheet = false
+                            },
                         )
-                    ) {
-                        "实际跟随全局默认"
-                    } else {
-                        "使用角色绑定的默认预设"
-                    },
-                    selected = followingAssistant,
-                    onClick = {
-                        haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                        onUpdateScenarioPresetId("")
-                        showPresetSheet = false
-                    },
-                )
-                HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.45f))
-                presets.forEach { preset ->
-                    ScenarioPresetPickRow(
-                        title = preset.name.ifBlank { "未命名预设" },
-                        summary = if (preset.id == activeId && !followingAssistant) "当前本会话" else preset.description,
-                        selected = !followingAssistant && scenario?.presetId?.trim() == preset.id,
-                        onClick = {
-                            haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                            onUpdateScenarioPresetId(preset.id)
-                            showPresetSheet = false
-                        },
-                    )
+                        HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.45f))
+                    }
+                    items(presets, key = { it.id }) { preset ->
+                        ScenarioPresetPickRow(
+                            title = preset.name.ifBlank { "未命名预设" },
+                            summary = if (preset.id == activeId && !followingAssistant) {
+                                "当前本会话"
+                            } else {
+                                preset.description
+                            },
+                            selected = !followingAssistant && scenario?.presetId?.trim() == preset.id,
+                            onClick = {
+                                haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                                onUpdateScenarioPresetId(preset.id)
+                                showPresetSheet = false
+                            },
+                        )
+                    }
                 }
                 TextButton(
                     onClick = {
