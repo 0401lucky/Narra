@@ -62,7 +62,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - `data/repository/phone/PhoneSnapshotRepository.kt`：手机快照/观察状态。
 - `data/repository/search/`：联网搜索。
 - `data/local/AppSettingsStore.kt`：DataStore Preferences 持久化 `AppSettings`（含 provider 列表、assistant 列表、translation 历史、search 配置、敏感值通过 `SecureValueStore` 单独加密）。
-- `data/local/chat/ChatDatabase.kt`：Room v27，11 张实体；迁移全部集中在该文件里（见 T5 拆分计划）。
+- `data/local/chat/ChatDatabase.kt`：Room 当前版本以 `ChatDatabase.CURRENT_VERSION` 为准（2026-07 为 48）；迁移定义在 `data/local/chat/migrations/ChatDbMigrations.kt`，经 `ALL_MIGRATIONS` 注册，须连续不可跳版。
 - `data/remote/ApiServiceFactory.kt`：Retrofit 客户端工厂；调用方不要重复拼接 `/`，交给 `normalizeBaseUrl()`。
 
 ### ViewModel 状态流

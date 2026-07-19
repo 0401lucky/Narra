@@ -36,6 +36,7 @@ import com.example.myapplication.model.AppSettings
 import com.example.myapplication.model.Assistant
 import com.example.myapplication.model.ContextGovernanceSnapshot
 import com.example.myapplication.model.MemoryProposalHistoryItem
+import com.example.myapplication.model.Preset
 import com.example.myapplication.model.ProviderSettings
 import com.example.myapplication.model.RoleplayContextStatus
 import com.example.myapplication.model.RoleplayGroupParticipant
@@ -60,6 +61,7 @@ internal fun RoleplaySettingsContent(
     scenario: RoleplayScenario?,
     assistant: Assistant?,
     settings: AppSettings,
+    presets: List<Preset> = emptyList(),
     contextStatus: RoleplayContextStatus,
     groupParticipants: List<RoleplayGroupParticipant>,
     currentModel: String,
@@ -89,6 +91,8 @@ internal fun RoleplaySettingsContent(
     onUpdateRoleplayLongformTargetChars: (Int) -> Unit,
     onUpdateScenarioInteractionMode: (RoleplayInteractionMode) -> Unit,
     onUpdateScenarioOnlineReplyRange: (Int, Int) -> Unit,
+    onUpdateScenarioPresetId: (String) -> Unit = {},
+    onUpdateScenarioVisual: (RoleplayScenario) -> Unit = {},
     onAddGroupParticipant: (String) -> Unit,
     onToggleGroupParticipantMuted: (String) -> Unit,
     onRemoveGroupParticipant: (String) -> Unit,
@@ -104,6 +108,7 @@ internal fun RoleplaySettingsContent(
     onOpenUserMasks: () -> Unit,
     onOpenWorldBookSettings: () -> Unit,
     onOpenLongMemorySettings: () -> Unit,
+    onOpenPresetLibrary: () -> Unit = {},
     onUpdateAssistantMemoryEnabled: (Boolean) -> Unit,
     onRefreshConversationSummary: () -> Unit,
     onShowRestartDialog: () -> Unit,
@@ -114,6 +119,7 @@ internal fun RoleplaySettingsContent(
         scenario = scenario,
         assistant = assistant,
         settings = settings,
+        presets = presets,
         contextStatus = contextStatus,
         groupParticipants = groupParticipants,
         currentModel = currentModel,
@@ -143,6 +149,8 @@ internal fun RoleplaySettingsContent(
         onUpdateRoleplayLongformTargetChars = onUpdateRoleplayLongformTargetChars,
         onUpdateScenarioInteractionMode = onUpdateScenarioInteractionMode,
         onUpdateScenarioOnlineReplyRange = onUpdateScenarioOnlineReplyRange,
+        onUpdateScenarioPresetId = onUpdateScenarioPresetId,
+        onUpdateScenarioVisual = onUpdateScenarioVisual,
         onAddGroupParticipant = onAddGroupParticipant,
         onToggleGroupParticipantMuted = onToggleGroupParticipantMuted,
         onRemoveGroupParticipant = onRemoveGroupParticipant,
@@ -158,6 +166,7 @@ internal fun RoleplaySettingsContent(
         onOpenUserMasks = onOpenUserMasks,
         onOpenWorldBookSettings = onOpenWorldBookSettings,
         onOpenLongMemorySettings = onOpenLongMemorySettings,
+        onOpenPresetLibrary = onOpenPresetLibrary,
         onUpdateAssistantMemoryEnabled = onUpdateAssistantMemoryEnabled,
         onRefreshConversationSummary = onRefreshConversationSummary,
         onShowRestartDialog = onShowRestartDialog,

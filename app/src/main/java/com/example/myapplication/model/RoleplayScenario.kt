@@ -8,6 +8,8 @@ data class RoleplayScenario(
     val description: String = "",
     val descriptionPromptEnabled: Boolean = false,
     val assistantId: String = DEFAULT_ASSISTANT_ID,
+    /** 空字符串 = 跟随角色默认预设 → 再回退全局默认。 */
+    val presetId: String = "",
     val backgroundUri: String = "",
     val userDisplayNameOverride: String = "",
     val userPersonaMaskId: String = "",

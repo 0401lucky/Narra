@@ -194,37 +194,6 @@ fun RoleplayScenarioEditScreen(
         enableRoleplayProtocol = next.enableRoleplayProtocol
     }
 
-    val backgroundLauncher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.PickVisualMedia(),
-    ) { uri: Uri? ->
-        if (uri == null) return@rememberLauncherForActivityResult
-        coroutineScope.launch {
-            localImageStore.copyToAppStorage(uri, SCENARIO_BACKGROUND_SCOPE)?.let { backgroundUri = it }
-        }
-    }
-    val userPortraitLauncher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.PickVisualMedia(),
-    ) { uri: Uri? ->
-        if (uri == null) return@rememberLauncherForActivityResult
-        coroutineScope.launch {
-            localImageStore.copyToAppStorage(uri, SCENARIO_USER_PORTRAIT_SCOPE)?.let {
-                userPortraitUri = it
-                userPortraitUrl = ""
-            }
-        }
-    }
-    val characterPortraitLauncher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.PickVisualMedia(),
-    ) { uri: Uri? ->
-        if (uri == null) return@rememberLauncherForActivityResult
-        coroutineScope.launch {
-            localImageStore.copyToAppStorage(uri, SCENARIO_CHARACTER_PORTRAIT_SCOPE)?.let {
-                characterPortraitUri = it
-                characterPortraitUrl = ""
-            }
-        }
-    }
-
     Scaffold(
         topBar = {
             SettingsTopBar(
@@ -487,69 +456,8 @@ fun RoleplayScenarioEditScreen(
 
             item {
                 SettingsSectionHeader(
-                    title = "视觉资源",
-                    description = "背景用于烘托会话氛围，用户与角色立绘可以覆盖默认头像。",
-                )
-            }
-            item {
-                SettingsGroup {
-                    Column(
-                        modifier = Modifier.padding(horizontal = 18.dp, vertical = 16.dp),
-                        verticalArrangement = Arrangement.spacedBy(18.dp),
-                    ) {
-                        ScenarioImagePickerCard(
-                            title = "背景图",
-                            subtitle = "用于列表卡片封面与剧情内场景背景。",
-                            value = backgroundUri,
-                            onPick = {
-                                backgroundLauncher.launch(
-                                    PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly),
-                                )
-                            },
-                            onClear = { backgroundUri = "" },
-                        )
-                        ScenarioImagePickerCard(
-                            title = "用户立绘",
-                            subtitle = "本地图片优先；填写 http/https 链接时使用链接图片。",
-                            value = userPortraitUri.ifBlank { userPortraitUrl },
-                            onPick = {
-                                userPortraitLauncher.launch(
-                                    PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly),
-                                )
-                            },
-                            onClear = {
-                                userPortraitUri = ""
-                                userPortraitUrl = ""
-                            },
-                            urlValue = userPortraitUrl,
-                            onUrlChange = { userPortraitUrl = it },
-                            outlineColors = outlineColors,
-                        )
-                        ScenarioImagePickerCard(
-                            title = "角色立绘",
-                            subtitle = "本地图片优先；填写 http/https 链接时使用链接图片。",
-                            value = characterPortraitUri.ifBlank { characterPortraitUrl },
-                            onPick = {
-                                characterPortraitLauncher.launch(
-                                    PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly),
-                                )
-                            },
-                            onClear = {
-                                characterPortraitUri = ""
-                                characterPortraitUrl = ""
-                            },
-                            urlValue = characterPortraitUrl,
-                            onUrlChange = { characterPortraitUrl = it },
-                            outlineColors = outlineColors,
-                        )
-                    }
-                }
-            }
-
-            item {
-                SettingsSectionHeader(
                     title = "显示名与开场",
-                    description = "显示名只影响 RP 界面，不会改动原角色卡。",
+                    description = "显示名只影响 RP 界面，不会改动原角色卡。背景与立绘请在会话设定侧栏中修改。",
                 )
             }
             item {

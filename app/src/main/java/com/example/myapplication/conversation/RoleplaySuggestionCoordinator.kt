@@ -90,6 +90,7 @@ class RoleplaySuggestionCoordinator(
             recentMessages = sanitizedRecentMessages,
             promptMode = PromptMode.ROLEPLAY,
             markUsage = false,
+            scenarioPresetId = request.scenario.presetId,
         )
         val directorNote = request.buildDynamicDirectorNote(
             sanitizedRecentMessages,

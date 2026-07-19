@@ -11,7 +11,6 @@ import androidx.compose.animation.slideOutVertically
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -20,10 +19,7 @@ import androidx.navigation.NavHostController
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.navigation
 import com.example.myapplication.di.AppGraph
-import com.example.myapplication.model.MailboxBox
 import com.example.myapplication.model.PhoneSnapshotOwnerType
-import com.example.myapplication.phone.RoleplayPhoneEcosystemSnapshot
-import com.example.myapplication.phone.buildRoleplayPhoneEcosystemSnapshot
 import com.example.myapplication.ui.screen.immersive.ImmersivePhoneCallbacks
 import com.example.myapplication.ui.screen.immersive.ImmersivePhoneShell
 import com.example.myapplication.ui.screen.roleplay.RoleplayReadingMode
@@ -57,7 +53,6 @@ import com.example.myapplication.viewmodel.updateShowOnlineRoleplayNarration
 import com.example.myapplication.viewmodel.updateShowRoleplayAiHelper
 import com.example.myapplication.viewmodel.updateShowRoleplayPresenceStrip
 import com.example.myapplication.viewmodel.updateShowRoleplayStatusStrip
-import kotlinx.coroutines.flow.first
 
 internal fun NavGraphBuilder.registerRoleplayGraph(
     appGraph: AppGraph,
@@ -83,46 +78,6 @@ internal fun NavGraphBuilder.registerRoleplayGraph(
             )
             val roleplayState by roleplayViewModel.uiState.collectAsStateWithLifecycle()
             val characterShakeState by characterShakeViewModel.uiState.collectAsStateWithLifecycle()
-            val moments by appGraph.momentsRepository.observeTimeline().collectAsStateWithLifecycle(emptyList())
-            val phoneEcosystem by produceState(
-                initialValue = RoleplayPhoneEcosystemSnapshot(),
-                key1 = roleplayState.chatSummaries,
-                key2 = moments,
-            ) {
-                val mailboxCounts = mutableMapOf<String, Int>()
-                val latestMailboxLetters = mutableMapOf<String, com.example.myapplication.model.MailboxLetter>()
-                val latestDiaries = mutableMapOf<String, com.example.myapplication.model.RoleplayDiaryEntry>()
-                val onlineMetas = mutableMapOf<String, com.example.myapplication.model.RoleplayOnlineMeta>()
-                roleplayState.chatSummaries.forEach { summary ->
-                    val scenarioId = summary.scenario.id
-                    val conversationId = summary.session?.conversationId.orEmpty()
-                    mailboxCounts[scenarioId] = appGraph.mailboxRepository
-                        .observeUnreadCount(scenarioId)
-                        .first()
-                    appGraph.mailboxRepository
-                        .observeLetters(scenarioId, MailboxBox.INBOX)
-                        .first()
-                        .maxByOrNull { maxOf(it.sentAt, it.updatedAt, it.createdAt) }
-                        ?.let { latestMailboxLetters[scenarioId] = it }
-                    if (conversationId.isNotBlank()) {
-                        appGraph.roleplayRepository
-                            .listDiaryEntries(conversationId)
-                            .maxByOrNull { maxOf(it.updatedAt, it.createdAt) }
-                            ?.let { latestDiaries[conversationId] = it }
-                        appGraph.roleplayRepository
-                            .getOnlineMeta(conversationId)
-                            ?.let { onlineMetas[conversationId] = it }
-                    }
-                }
-                value = buildRoleplayPhoneEcosystemSnapshot(
-                    chatSummaries = roleplayState.chatSummaries,
-                    moments = moments,
-                    unreadMailboxCountsByScenarioId = mailboxCounts,
-                    latestMailboxLettersByScenarioId = latestMailboxLetters,
-                    latestDiaryByConversationId = latestDiaries,
-                    onlineMetaByConversationId = onlineMetas,
-                )
-            }
             fun navigateToRoleplayChat(scenarioId: String) {
                 navController.navigate(AppRoutes.roleplayPlay(scenarioId)) {
                     launchSingleTop = true
@@ -156,7 +111,6 @@ internal fun NavGraphBuilder.registerRoleplayGraph(
                 settings = roleplayState.settings,
                 assistants = roleplayState.settings.resolvedAssistants(),
                 chatSummaries = roleplayState.chatSummaries,
-                phoneEcosystem = phoneEcosystem,
                 characterShakeState = characterShakeState,
                 noticeMessage = roleplayState.noticeMessage,
                 errorMessage = roleplayState.errorMessage,
@@ -235,6 +189,11 @@ internal fun NavGraphBuilder.registerRoleplayGraph(
                     },
                     onOpenContextTransferSettings = {
                         navController.navigate(AppRoutes.SETTINGS_CONTEXT_TRANSFER) {
+                            launchSingleTop = true
+                        }
+                    },
+                    onOpenPresetLibrary = {
+                        navController.navigate(AppRoutes.SETTINGS_PRESETS) {
                             launchSingleTop = true
                         }
                     },
@@ -589,6 +548,8 @@ internal fun NavGraphBuilder.registerRoleplayGraph(
                     roleplayViewModel.enterScenario(scenarioId)
                 }
             }
+            val presets by appGraph.presetRepository.observePresets()
+                .collectAsStateWithLifecycle(emptyList())
             RoleplaySettingsScreen(
                 scenario = routeScenario,
                 assistant = routeAssistant,
@@ -603,6 +564,7 @@ internal fun NavGraphBuilder.registerRoleplayGraph(
                     roleplayLineHeightScale = settingsUiState.roleplayLineHeightScale,
                     roleplayNoBackgroundSkin = settingsUiState.roleplayNoBackgroundSkin,
                 ),
+                presets = presets,
                 contextStatus = roleplayState.contextStatus,
                 groupParticipants = roleplayState.currentGroupParticipants,
                 currentModel = roleplayState.currentModel,
@@ -635,6 +597,8 @@ internal fun NavGraphBuilder.registerRoleplayGraph(
                 onUpdateRoleplayLongformTargetChars = settingsViewModel::updateRoleplayLongformTargetChars,
                 onUpdateScenarioInteractionMode = roleplayViewModel::updateCurrentScenarioInteractionMode,
                 onUpdateScenarioOnlineReplyRange = roleplayViewModel::updateCurrentScenarioOnlineReplyRange,
+                onUpdateScenarioPresetId = roleplayViewModel::updateCurrentScenarioPresetId,
+                onUpdateScenarioVisual = roleplayViewModel::upsertScenario,
                 onAddGroupParticipant = roleplayViewModel::addGroupParticipant,
                 onToggleGroupParticipantMuted = roleplayViewModel::toggleGroupParticipantMuted,
                 onRemoveGroupParticipant = roleplayViewModel::removeGroupParticipant,
@@ -677,6 +641,11 @@ internal fun NavGraphBuilder.registerRoleplayGraph(
                         navController.navigate(AppRoutes.SETTINGS_WORLD_BOOKS) {
                             launchSingleTop = true
                         }
+                    }
+                },
+                onOpenPresetLibrary = {
+                    navController.navigate(AppRoutes.SETTINGS_PRESETS) {
+                        launchSingleTop = true
                     }
                 },
                 onOpenLongMemorySettings = {

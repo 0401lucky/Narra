@@ -19,6 +19,7 @@ interface RoleplayDao {
             s.description AS description,
             s.descriptionPromptEnabled AS descriptionPromptEnabled,
             s.assistantId AS assistantId,
+            s.presetId AS presetId,
             s.backgroundUri AS backgroundUri,
             s.userDisplayNameOverride AS userDisplayNameOverride,
             s.userPersonaMaskId AS userPersonaMaskId,

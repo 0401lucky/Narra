@@ -5007,6 +5007,7 @@ class RoleplayViewModelTest {
                 promptMode: com.example.myapplication.model.PromptMode,
                 includePhoneSnapshot: Boolean,
                 markUsage: Boolean,
+                scenarioPresetId: String?,
             ): PromptContextResult {
                 return PromptContextResult(
                     systemPrompt = systemPrompt,

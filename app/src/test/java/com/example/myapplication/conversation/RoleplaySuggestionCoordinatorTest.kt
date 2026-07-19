@@ -85,6 +85,7 @@ class RoleplaySuggestionCoordinatorTest {
                     promptMode: com.example.myapplication.model.PromptMode,
                     includePhoneSnapshot: Boolean,
                     markUsage: Boolean,
+                    scenarioPresetId: String?,
                 ): PromptContextResult {
                     return PromptContextResult(systemPrompt = "【对话摘要】正在互相试探")
                 }

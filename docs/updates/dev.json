@@ -1,15 +1,16 @@
 {
   "app_id": "com.narra.app.dev",
   "channel": "dev",
-  "latest_version_name": "2.2.1-dev",
-  "latest_version_code": 20201,
+  "latest_version_name": "2.2.2-dev",
+  "latest_version_code": 20202,
   "minimum_supported_version_code": 0,
-  "apk_url": "https://download.lsa1230.dpdns.org/dev/2.2.1/Narra-v2.2.1-dev-20201-dev.apk?v=20201-20260707161128",
-  "apk_sha256": "7c63987fdb4163cb620aca4edbe64346169488d7241520642fb209c0cf2e94b7",
-  "published_at": "2026-07-07T16:11:28+08:00",
+  "apk_url": "https://download.lsa1230.dpdns.org/dev/2.2.2/Narra-v2.2.2-dev-20202-dev.apk?v=20202-20260719153214",
+  "apk_sha256": "51893956e83c8749370ec1af93eeabd235b2604833767dbb234c9ac891248ccf",
+  "published_at": "2026-07-19T15:32:14+08:00",
   "release_notes": [
-    "修复视频通话页把角色心声当成普通对白展示的问题",
-    "朋友圈支持选择多条动态后一键删除",
-    "朋友圈支持清空全部动态"
+    "消息列表去掉三点菜单，会话配置收进侧栏",
+    "发现页移除今日动态大卡",
+    "支持本会话级预设切换，预设库入口收口到「我」",
+    "背景与立绘迁入会话设定，新建角色改为最小必填"
   ]
 }

@@ -28,6 +28,8 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.gestures.Orientation
 import androidx.compose.foundation.gestures.draggable
 import androidx.compose.foundation.gestures.rememberDraggableState
@@ -67,18 +69,18 @@ import androidx.compose.material.icons.filled.Book
 import androidx.compose.material.icons.filled.Casino
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Close
-import androidx.compose.material.icons.filled.CloudSync
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Forum
 import androidx.compose.material.icons.filled.Group
 import androidx.compose.material.icons.filled.Image
+import androidx.compose.material.icons.filled.ImportExport
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.KeyboardArrowDown
+import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.KeyboardArrowUp
 import androidx.compose.material.icons.filled.Mail
 import androidx.compose.material.icons.filled.ManageAccounts
-import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.NotificationsOff
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.PersonAdd
@@ -144,9 +146,6 @@ import com.example.myapplication.model.RoleplayInteractionMode
 import com.example.myapplication.model.RoleplayScenario
 import com.example.myapplication.model.UserPersonaMask
 import com.example.myapplication.model.isGroupChat
-import com.example.myapplication.phone.RoleplayPhoneActivityItem
-import com.example.myapplication.phone.RoleplayPhoneActivityKind
-import com.example.myapplication.phone.RoleplayPhoneEcosystemSnapshot
 import com.example.myapplication.ui.component.AppSnackbarHost
 import com.example.myapplication.ui.component.AssistantAvatar
 import com.example.myapplication.ui.component.UserProfileAvatar
@@ -183,6 +182,7 @@ data class ImmersivePhoneCallbacks(
     val onOpenWorldBookSettings: () -> Unit,
     val onOpenMemorySettings: () -> Unit,
     val onOpenContextTransferSettings: () -> Unit,
+    val onOpenPresetLibrary: () -> Unit,
     val onSetDefaultUserPersonaMask: (String) -> Unit,
     val onOpenAssistantCreate: () -> Unit,
     val onCreateChat: (String, RoleplayInteractionMode, Boolean) -> Unit,
@@ -262,7 +262,6 @@ fun ImmersivePhoneShell(
     settings: AppSettings,
     assistants: List<Assistant>,
     chatSummaries: List<RoleplayChatSummary>,
-    phoneEcosystem: RoleplayPhoneEcosystemSnapshot = RoleplayPhoneEcosystemSnapshot(),
     characterShakeState: CharacterShakeUiState = CharacterShakeUiState(),
     noticeMessage: String?,
     errorMessage: String?,
@@ -281,7 +280,6 @@ fun ImmersivePhoneShell(
     var plusMenuExpanded by rememberSaveable { mutableStateOf(false) }
     var showNewChatSheet by rememberSaveable { mutableStateOf(false) }
     var showNewGroupChatSheet by rememberSaveable { mutableStateOf(false) }
-    var showPhoneEcosystemSheet by rememberSaveable { mutableStateOf(false) }
     var showCharacterShakeSheet by rememberSaveable { mutableStateOf(false) }
     var selectedContact by remember { mutableStateOf<Assistant?>(null) }
     var discoverTarget by remember { mutableStateOf<DiscoverTarget?>(null) }
@@ -316,32 +314,6 @@ fun ImmersivePhoneShell(
             compareByDescending<RoleplayChatSummary> { it.scenario.isPinned }
                 .thenByDescending { it.lastActiveAt },
         )
-    }
-    fun openPhoneActivity(activity: RoleplayPhoneActivityItem) {
-        when (activity.kind) {
-            RoleplayPhoneActivityKind.MOMENT -> callbacks.onOpenMoments(activity.scenarioId)
-            RoleplayPhoneActivityKind.MAILBOX -> {
-                if (activity.scenarioId.isBlank()) {
-                    discoverTarget = DiscoverTarget.Mailbox
-                } else {
-                    callbacks.onOpenMailbox(activity.scenarioId)
-                }
-            }
-            RoleplayPhoneActivityKind.DIARY -> {
-                if (activity.scenarioId.isBlank()) {
-                    discoverTarget = DiscoverTarget.Diary
-                } else {
-                    callbacks.onOpenDiary(activity.scenarioId)
-                }
-            }
-            RoleplayPhoneActivityKind.VIDEO_CALL -> {
-                if (activity.scenarioId.isBlank()) {
-                    discoverTarget = DiscoverTarget.VideoCall
-                } else {
-                    callbacks.onOpenVideoCall(activity.scenarioId)
-                }
-            }
-        }
     }
 
     Scaffold(
@@ -444,8 +416,6 @@ fun ImmersivePhoneShell(
                     )
 
                     ImmersiveTab.Discover -> ImmersiveDiscoverPage(
-                        phoneEcosystem = phoneEcosystem,
-                        onOpenEcosystem = { showPhoneEcosystemSheet = true },
                         onOpenCharacterShake = { showCharacterShakeSheet = true },
                         onOpenCharacterArtStudio = callbacks.onOpenCharacterArtStudio,
                         onOpenTarget = { target ->
@@ -468,6 +438,7 @@ fun ImmersivePhoneShell(
                         onOpenWorldBookSettings = callbacks.onOpenWorldBookSettings,
                         onOpenMemorySettings = callbacks.onOpenMemorySettings,
                         onOpenContextTransferSettings = callbacks.onOpenContextTransferSettings,
+                        onOpenPresetLibrary = callbacks.onOpenPresetLibrary,
                         onSetDefaultUserPersonaMask = callbacks.onSetDefaultUserPersonaMask,
                         onOpenSettings = callbacks.onOpenSettings,
                         bottomPadding = bottomPadding,
@@ -475,17 +446,6 @@ fun ImmersivePhoneShell(
                 }
             }
         }
-    }
-
-    if (showPhoneEcosystemSheet) {
-        PhoneEcosystemSheet(
-            snapshot = phoneEcosystem,
-            onDismiss = { showPhoneEcosystemSheet = false },
-            onOpenActivity = { activity ->
-                showPhoneEcosystemSheet = false
-                openPhoneActivity(activity)
-            },
-        )
     }
 
     if (showCharacterShakeSheet) {
@@ -904,13 +864,6 @@ private fun ImmersiveMessagesPage(
                             callbacks.onOpenChat(summary.scenario.id)
                         }
                     },
-                    onEdit = {
-                        if (isRevealed) {
-                            closeSwipe()
-                        } else {
-                            callbacks.onOpenChatEdit(summary.scenario.id)
-                        }
-                    },
                     dragged = isRevealed,
                 )
             }
@@ -927,6 +880,11 @@ private fun SwipeActions(
     onClear: () -> Unit,
     onDelete: () -> Unit,
 ) {
+    val haptic = LocalHapticFeedback.current
+    fun runWithHaptic(action: () -> Unit) {
+        haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+        action()
+    }
     Box(
         modifier = modifier
             .fillMaxSize()
@@ -942,20 +900,27 @@ private fun SwipeActions(
         ) {
             SwipeActionButton(
                 label = if (scenario.isPinned) "取消置顶" else "置顶",
-                onClick = onPin,
+                containerColor = MaterialTheme.colorScheme.primary,
+                contentColor = MaterialTheme.colorScheme.onPrimary,
+                onClick = { runWithHaptic(onPin) },
             )
             SwipeActionButton(
                 label = if (scenario.isMuted) "取消免扰" else "免打扰",
-                onClick = onMute,
+                containerColor = MaterialTheme.colorScheme.tertiary,
+                contentColor = MaterialTheme.colorScheme.onTertiary,
+                onClick = { runWithHaptic(onMute) },
             )
             SwipeActionButton(
                 label = "清空",
-                onClick = onClear,
+                containerColor = MaterialTheme.colorScheme.outline,
+                contentColor = MaterialTheme.colorScheme.surface,
+                onClick = { runWithHaptic(onClear) },
             )
             SwipeActionButton(
                 label = "删除",
-                color = MaterialTheme.colorScheme.error,
-                onClick = onDelete,
+                containerColor = MaterialTheme.colorScheme.error,
+                contentColor = MaterialTheme.colorScheme.onError,
+                onClick = { runWithHaptic(onDelete) },
             )
             Spacer(modifier = Modifier.width(8.dp))
         }
@@ -965,20 +930,25 @@ private fun SwipeActions(
 @Composable
 private fun SwipeActionButton(
     label: String,
-    color: Color = MaterialTheme.colorScheme.onSurfaceVariant,
+    containerColor: Color,
+    contentColor: Color,
     onClick: () -> Unit,
 ) {
     Box(
         modifier = Modifier
             .width(ChatSwipeActionButtonWidth)
             .fillMaxSize()
+            .padding(vertical = 10.dp, horizontal = 2.dp)
+            .clip(RoundedCornerShape(12.dp))
+            .background(containerColor)
             .clickable(onClick = onClick),
         contentAlignment = Alignment.Center,
     ) {
         Text(
             text = label,
-            color = color,
+            color = contentColor,
             style = MaterialTheme.typography.labelSmall,
+            fontWeight = FontWeight.SemiBold,
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,
         )
@@ -991,7 +961,6 @@ private fun ChatSummaryRow(
     summary: RoleplayChatSummary,
     assistant: Assistant?,
     onOpen: () -> Unit,
-    onEdit: () -> Unit,
     dragged: Boolean,
 ) {
     val scenario = summary.scenario
@@ -1009,11 +978,25 @@ private fun ChatSummaryRow(
         if (summary.hasSession) "最近没有消息" else "还没有开始会话"
     }
     val latest = if (isGroupChat) "群聊 · $latestContent" else latestContent
+    val interactionSource = remember { MutableInteractionSource() }
+    val pressed by interactionSource.collectIsPressedAsState()
+    val rowColor by animateColorAsState(
+        targetValue = when {
+            dragged -> MaterialTheme.colorScheme.surfaceVariant
+            pressed -> MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.72f)
+            else -> MaterialTheme.colorScheme.surface
+        },
+        label = "chat_row_bg",
+    )
     Surface(
         modifier = modifier
             .fillMaxWidth()
-            .clickable(onClick = onOpen),
-        color = if (dragged) MaterialTheme.colorScheme.surfaceVariant else MaterialTheme.colorScheme.surface,
+            .clickable(
+                interactionSource = interactionSource,
+                indication = null,
+                onClick = onOpen,
+            ),
+        color = rowColor,
     ) {
         Row(
             modifier = Modifier
@@ -1058,7 +1041,10 @@ private fun ChatSummaryRow(
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                 }
-                Row(verticalAlignment = Alignment.CenterVertically) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(4.dp),
+                ) {
                     Text(
                         text = latest,
                         style = MaterialTheme.typography.bodyMedium,
@@ -1074,9 +1060,6 @@ private fun ChatSummaryRow(
                         Icon(Icons.Default.NotificationsOff, contentDescription = "免打扰", modifier = Modifier.size(16.dp))
                     }
                 }
-            }
-            IconButton(onClick = onEdit) {
-                Icon(Icons.Default.MoreVert, contentDescription = "会话资料")
             }
         }
     }
@@ -1190,8 +1173,6 @@ private fun ContactRow(
 
 @Composable
 private fun ImmersiveDiscoverPage(
-    phoneEcosystem: RoleplayPhoneEcosystemSnapshot,
-    onOpenEcosystem: () -> Unit,
     onOpenCharacterShake: () -> Unit,
     onOpenCharacterArtStudio: () -> Unit,
     onOpenTarget: (DiscoverTarget) -> Unit,
@@ -1208,18 +1189,12 @@ private fun ImmersiveDiscoverPage(
         verticalArrangement = Arrangement.spacedBy(20.dp),
     ) {
         item {
-            PhoneEcosystemEntry(
-                snapshot = phoneEcosystem,
-                onClick = onOpenEcosystem,
-            )
-        }
-        item {
             Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                 DiscoverSectionHeader(icon = Icons.Default.AutoAwesome, title = "AI 创作")
                 Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                     DiscoverAiTile(
                         modifier = Modifier.weight(1f),
-                        icon = Icons.Default.AutoAwesome,
+                        icon = Icons.Default.Casino,
                         title = "摇一摇",
                         subtitle = "摇出新角色，自动入通讯录",
                         container = MaterialTheme.colorScheme.primaryContainer,
@@ -1247,91 +1222,6 @@ private fun ImmersiveDiscoverPage(
                     targets = DiscoverTarget.entries,
                     onOpenTarget = onOpenTarget,
                 )
-            }
-        }
-    }
-}
-
-@Composable
-private fun PhoneEcosystemEntry(
-    snapshot: RoleplayPhoneEcosystemSnapshot,
-    onClick: () -> Unit,
-) {
-    Surface(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clip(RoundedCornerShape(24.dp))
-            .clickable(onClick = onClick),
-        shape = RoundedCornerShape(24.dp),
-        color = MaterialTheme.colorScheme.surface,
-        tonalElevation = 2.dp,
-        border = BorderStroke(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.18f)),
-    ) {
-        Box(
-            modifier = Modifier.background(
-                Brush.verticalGradient(
-                    listOf(
-                        MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.42f),
-                        Color.Transparent,
-                    ),
-                ),
-            ),
-        ) {
-            Column(modifier = Modifier.padding(vertical = 16.dp)) {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 16.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    Surface(
-                        modifier = Modifier.size(40.dp),
-                        shape = RoundedCornerShape(14.dp),
-                        color = MaterialTheme.colorScheme.primaryContainer,
-                        contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
-                    ) {
-                        Box(contentAlignment = Alignment.Center) {
-                            Icon(Icons.Default.CloudSync, contentDescription = null)
-                        }
-                    }
-                    Spacer(modifier = Modifier.width(12.dp))
-                    Column(modifier = Modifier.weight(1f)) {
-                        Text("今日动态", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
-                        Text(
-                            text = phoneEcosystemSummaryText(snapshot),
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        )
-                    }
-                    Text(
-                        text = "查看",
-                        style = MaterialTheme.typography.labelLarge,
-                        color = MaterialTheme.colorScheme.primary,
-                    )
-                }
-                Spacer(modifier = Modifier.height(14.dp))
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 16.dp),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                ) {
-                    PhoneEcosystemStat(
-                        label = "未读来信",
-                        value = snapshot.unreadMailboxCount.toString(),
-                        modifier = Modifier.weight(1f),
-                    )
-                    PhoneEcosystemStat(
-                        label = "角色动态",
-                        value = snapshot.latestMomentCount.toString(),
-                        modifier = Modifier.weight(1f),
-                    )
-                    PhoneEcosystemStat(
-                        label = "通话中",
-                        value = snapshot.activeVideoCallCount.toString(),
-                        modifier = Modifier.weight(1f),
-                    )
-                }
             }
         }
     }
@@ -1373,11 +1263,25 @@ private fun DiscoverAiTile(
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    val interactionSource = remember { MutableInteractionSource() }
+    val pressed by interactionSource.collectIsPressedAsState()
+    val scale by animateFloatAsState(
+        targetValue = if (pressed) 0.97f else 1f,
+        label = "discover_ai_tile_scale",
+    )
     Surface(
         modifier = modifier
             .height(140.dp)
+            .graphicsLayer {
+                scaleX = scale
+                scaleY = scale
+            }
             .clip(RoundedCornerShape(22.dp))
-            .clickable(onClick = onClick),
+            .clickable(
+                interactionSource = interactionSource,
+                indication = null,
+                onClick = onClick,
+            ),
         shape = RoundedCornerShape(22.dp),
         color = MaterialTheme.colorScheme.surface,
         tonalElevation = 2.dp,
@@ -1459,11 +1363,25 @@ private fun DiscoverSpaceTile(
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    val interactionSource = remember { MutableInteractionSource() }
+    val pressed by interactionSource.collectIsPressedAsState()
+    val scale by animateFloatAsState(
+        targetValue = if (pressed) 0.97f else 1f,
+        label = "discover_space_tile_scale",
+    )
     Surface(
         modifier = modifier
             .height(98.dp)
+            .graphicsLayer {
+                scaleX = scale
+                scaleY = scale
+            }
             .clip(RoundedCornerShape(20.dp))
-            .clickable(onClick = onClick),
+            .clickable(
+                interactionSource = interactionSource,
+                indication = null,
+                onClick = onClick,
+            ),
         shape = RoundedCornerShape(20.dp),
         color = MaterialTheme.colorScheme.surface,
         tonalElevation = 1.dp,
@@ -1849,216 +1767,77 @@ private fun CharacterShakeFilters.copyForShakeGroup(
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun PhoneEcosystemSheet(
-    snapshot: RoleplayPhoneEcosystemSnapshot,
-    onDismiss: () -> Unit,
-    onOpenActivity: (RoleplayPhoneActivityItem) -> Unit,
-) {
-    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
-    ModalBottomSheet(onDismissRequest = onDismiss, sheetState = sheetState) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .heightIn(max = 560.dp)
-                .padding(bottom = 20.dp),
-        ) {
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 20.dp, vertical = 10.dp),
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                Surface(
-                    modifier = Modifier.size(42.dp),
-                    shape = RoundedCornerShape(8.dp),
-                    color = MaterialTheme.colorScheme.primaryContainer,
-                    contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
-                ) {
-                    Box(contentAlignment = Alignment.Center) {
-                        Icon(Icons.Default.CloudSync, contentDescription = null)
-                    }
-                }
-                Spacer(modifier = Modifier.width(12.dp))
-                Column(modifier = Modifier.weight(1f)) {
-                    Text("今日动态", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
-                    Text(
-                        text = phoneEcosystemSummaryText(snapshot),
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                }
-                TextButton(onClick = onDismiss) {
-                    Text("关闭")
-                }
-            }
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 20.dp, vertical = 8.dp),
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-            ) {
-                PhoneEcosystemStat(
-                    label = "未读来信",
-                    value = snapshot.unreadMailboxCount.toString(),
-                    modifier = Modifier.weight(1f),
-                )
-                PhoneEcosystemStat(
-                    label = "角色动态",
-                    value = snapshot.latestMomentCount.toString(),
-                    modifier = Modifier.weight(1f),
-                )
-                PhoneEcosystemStat(
-                    label = "通话中",
-                    value = snapshot.activeVideoCallCount.toString(),
-                    modifier = Modifier.weight(1f),
-                )
-            }
-            Divider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
-            if (snapshot.items.isEmpty()) {
-                Text(
-                    text = "等角色写信、发朋友圈或留下日记后，这里会自动汇总。",
-                    modifier = Modifier.padding(horizontal = 20.dp, vertical = 18.dp),
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-            } else {
-                LazyColumn(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .weight(1f),
-                    contentPadding = PaddingValues(bottom = 12.dp),
-                ) {
-                    items(snapshot.items, key = { it.id }) { item ->
-                        PhoneEcosystemActivityRow(
-                            item = item,
-                            onClick = { onOpenActivity(item) },
-                        )
-                    }
-                }
-            }
-        }
-    }
-}
-
-@Composable
-private fun PhoneEcosystemStat(
-    label: String,
-    value: String,
-    modifier: Modifier = Modifier,
-) {
-    Surface(
-        modifier = modifier,
-        shape = RoundedCornerShape(12.dp),
-        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
-    ) {
-        Column(
-            modifier = Modifier.padding(horizontal = 10.dp, vertical = 8.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
-        ) {
-            Text(value, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
-            Text(
-                text = label,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-                style = MaterialTheme.typography.labelSmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-        }
-    }
-}
-
-@Composable
-private fun PhoneEcosystemActivityRow(
-    item: RoleplayPhoneActivityItem,
-    onClick: () -> Unit,
-) {
-    ListItem(
-        modifier = Modifier.clickable(onClick = onClick),
-        headlineContent = {
-            Text(
-                text = item.title,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-                fontWeight = FontWeight.SemiBold,
-            )
-        },
-        supportingContent = {
-            Text(
-                text = item.subtitle,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-            )
-        },
-        leadingContent = {
-            Surface(
-                modifier = Modifier.size(36.dp),
-                shape = RoundedCornerShape(8.dp),
-                color = MaterialTheme.colorScheme.secondaryContainer,
-                contentColor = MaterialTheme.colorScheme.onSecondaryContainer,
-            ) {
-                Box(contentAlignment = Alignment.Center) {
-                    Icon(activityIcon(item.kind), contentDescription = null, modifier = Modifier.size(20.dp))
-                }
-            }
-        },
-        trailingContent = {
-            val timeText = formatMessageTime(item.timestamp)
-            if (timeText.isNotBlank()) {
-                Text(
-                    text = timeText,
-                    style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-            }
-        },
-    )
-}
-
-private fun activityIcon(kind: RoleplayPhoneActivityKind): ImageVector {
-    return when (kind) {
-        RoleplayPhoneActivityKind.MOMENT -> Icons.Default.Forum
-        RoleplayPhoneActivityKind.MAILBOX -> Icons.Default.Mail
-        RoleplayPhoneActivityKind.DIARY -> Icons.Default.Book
-        RoleplayPhoneActivityKind.VIDEO_CALL -> Icons.Default.Videocam
-    }
-}
-
-private fun phoneEcosystemSummaryText(snapshot: RoleplayPhoneEcosystemSnapshot): String {
-    val parts = buildList {
-        if (snapshot.unreadMailboxCount > 0) add("${snapshot.unreadMailboxCount} 封未读来信")
-        if (snapshot.latestMomentCount > 0) add("${snapshot.latestMomentCount} 条角色动态")
-        if (snapshot.activeVideoCallCount > 0) add("${snapshot.activeVideoCallCount} 个通话中")
-    }
-    return parts.joinToString(" · ").ifBlank { "暂时没有新的手机动态" }
-}
-
-@Composable
-private fun FeatureRow(
+private fun ProfileLibraryRow(
     title: String,
     subtitle: String,
     icon: ImageVector,
+    containerColor: Color,
+    contentColor: Color,
     onClick: () -> Unit,
+    showDivider: Boolean,
 ) {
-    ListItem(
-        modifier = Modifier.clickable(onClick = onClick),
-        headlineContent = { Text(title, fontWeight = FontWeight.SemiBold) },
-        supportingContent = { Text(subtitle) },
-        leadingContent = {
+    Column {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clickable(onClick = onClick)
+                .padding(horizontal = 16.dp, vertical = 14.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
+        ) {
             Surface(
                 modifier = Modifier.size(44.dp),
                 shape = RoundedCornerShape(12.dp),
-                color = MaterialTheme.colorScheme.secondaryContainer,
-                contentColor = MaterialTheme.colorScheme.onSecondaryContainer,
+                color = containerColor,
+                contentColor = contentColor,
             ) {
                 Box(contentAlignment = Alignment.Center) {
-                    Icon(icon, contentDescription = null)
+                    Icon(icon, contentDescription = null, modifier = Modifier.size(22.dp))
                 }
             }
-        },
-    )
-    Divider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
+            Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                Text(title, fontWeight = FontWeight.SemiBold, style = MaterialTheme.typography.titleSmall)
+                Text(
+                    text = subtitle,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
+            }
+            Icon(
+                imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.72f),
+            )
+        }
+        if (showDivider) {
+            Divider(
+                modifier = Modifier.padding(start = 72.dp),
+                color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.45f),
+            )
+        }
+    }
+}
+
+@Composable
+private fun ProfileSectionCard(
+    modifier: Modifier = Modifier,
+    content: @Composable () -> Unit,
+) {
+    Surface(
+        modifier = modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp, vertical = 6.dp),
+        shape = RoundedCornerShape(18.dp),
+        color = MaterialTheme.colorScheme.surface,
+        tonalElevation = 2.dp,
+    ) {
+        Column(modifier = Modifier.fillMaxWidth()) {
+            content()
+        }
+    }
 }
 
 @Composable
@@ -2072,6 +1851,7 @@ private fun ImmersiveProfilePage(
     onOpenWorldBookSettings: () -> Unit,
     onOpenMemorySettings: () -> Unit,
     onOpenContextTransferSettings: () -> Unit,
+    onOpenPresetLibrary: () -> Unit,
     onSetDefaultUserPersonaMask: (String) -> Unit,
     onOpenSettings: () -> Unit,
     bottomPadding: Dp,
@@ -2091,6 +1871,10 @@ private fun ImmersiveProfilePage(
         defaultMask != null -> "未单独绑定的会话会使用这个身份"
         else -> "${masks.size} 个身份，未设置默认"
     }
+    val libraryContainer = MaterialTheme.colorScheme.secondaryContainer
+    val libraryContent = MaterialTheme.colorScheme.onSecondaryContainer
+    val appContainer = MaterialTheme.colorScheme.surfaceVariant
+    val appContent = MaterialTheme.colorScheme.onSurfaceVariant
     var masksExpanded by rememberSaveable { mutableStateOf(false) }
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
@@ -2150,13 +1934,104 @@ private fun ImmersiveProfilePage(
                 onOpenUserMasks = onOpenUserMasks,
             )
         }
-        item { FeatureRow("会话管理", "查看、编辑和删除会话资料", Icons.AutoMirrored.Filled.Chat, onOpenChatManage) }
-        item { FeatureRow("角色资料", "管理角色卡、提示词和扩展能力", Icons.Default.Person, onOpenAssistantSettings) }
-        item { FeatureRow("世界书", "维护角色关系会用到的设定资料", Icons.AutoMirrored.Filled.LibraryBooks, onOpenWorldBookSettings) }
-        item { FeatureRow("记忆档案", "查看长期记忆、摘要和关系线索", Icons.Default.AutoStories, onOpenMemorySettings) }
-        item { FeatureRow("资料导入导出", "备份和迁移会话、角色与上下文资料", Icons.Default.CloudSync, onOpenContextTransferSettings) }
-        item { FeatureRow("设置", "模型、显示、工具和应用更新", Icons.Default.Settings, onOpenSettings) }
-        item { FeatureRow("关于", "Narra 角色手机", Icons.Default.Info) {} }
+        item {
+            Text(
+                text = "资料库",
+                modifier = Modifier.padding(horizontal = 28.dp, vertical = 8.dp),
+                style = MaterialTheme.typography.labelLarge,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                fontWeight = FontWeight.SemiBold,
+            )
+        }
+        item {
+            ProfileSectionCard {
+                ProfileLibraryRow(
+                    title = "会话管理",
+                    subtitle = "查看、编辑和删除会话资料",
+                    icon = Icons.AutoMirrored.Filled.Chat,
+                    containerColor = libraryContainer,
+                    contentColor = libraryContent,
+                    onClick = onOpenChatManage,
+                    showDivider = true,
+                )
+                ProfileLibraryRow(
+                    title = "角色资料",
+                    subtitle = "管理角色卡、提示词和扩展能力",
+                    icon = Icons.Default.Person,
+                    containerColor = libraryContainer,
+                    contentColor = libraryContent,
+                    onClick = onOpenAssistantSettings,
+                    showDivider = true,
+                )
+                ProfileLibraryRow(
+                    title = "世界书",
+                    subtitle = "维护角色关系会用到的设定资料",
+                    icon = Icons.AutoMirrored.Filled.LibraryBooks,
+                    containerColor = libraryContainer,
+                    contentColor = libraryContent,
+                    onClick = onOpenWorldBookSettings,
+                    showDivider = true,
+                )
+                ProfileLibraryRow(
+                    title = "记忆档案",
+                    subtitle = "查看长期记忆、摘要和关系线索",
+                    icon = Icons.Default.AutoStories,
+                    containerColor = libraryContainer,
+                    contentColor = libraryContent,
+                    onClick = onOpenMemorySettings,
+                    showDivider = true,
+                )
+                ProfileLibraryRow(
+                    title = "预设库",
+                    subtitle = "Prompt Manager、条目顺序与默认预设",
+                    icon = Icons.AutoMirrored.Filled.LibraryBooks,
+                    containerColor = libraryContainer,
+                    contentColor = libraryContent,
+                    onClick = onOpenPresetLibrary,
+                    showDivider = true,
+                )
+                ProfileLibraryRow(
+                    title = "资料导入导出",
+                    subtitle = "备份和迁移会话、角色与上下文资料",
+                    icon = Icons.Default.ImportExport,
+                    containerColor = libraryContainer,
+                    contentColor = libraryContent,
+                    onClick = onOpenContextTransferSettings,
+                    showDivider = false,
+                )
+            }
+        }
+        item {
+            Text(
+                text = "应用",
+                modifier = Modifier.padding(horizontal = 28.dp, vertical = 8.dp),
+                style = MaterialTheme.typography.labelLarge,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                fontWeight = FontWeight.SemiBold,
+            )
+        }
+        item {
+            ProfileSectionCard {
+                ProfileLibraryRow(
+                    title = "设置",
+                    subtitle = "模型、显示、工具和应用更新",
+                    icon = Icons.Default.Settings,
+                    containerColor = appContainer,
+                    contentColor = appContent,
+                    onClick = onOpenSettings,
+                    showDivider = true,
+                )
+                ProfileLibraryRow(
+                    title = "关于",
+                    subtitle = "Narra 角色手机",
+                    icon = Icons.Default.Info,
+                    containerColor = appContainer,
+                    contentColor = appContent,
+                    onClick = {},
+                    showDivider = false,
+                )
+            }
+        }
     }
 }
 

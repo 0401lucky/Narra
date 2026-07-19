@@ -58,6 +58,7 @@ interface PromptContextAssembler {
         promptMode: PromptMode = PromptMode.CHAT,
         includePhoneSnapshot: Boolean = true,
         markUsage: Boolean = true,
+        scenarioPresetId: String? = null,
     ): PromptContextResult
 }
 
@@ -81,6 +82,7 @@ class DefaultPromptContextAssembler(
         promptMode: PromptMode,
         includePhoneSnapshot: Boolean,
         markUsage: Boolean,
+        scenarioPresetId: String?,
     ): PromptContextResult {
         val resolvedUserName = settings.resolvedUserDisplayName()
         val resolvedCharacterName = assistant?.name?.trim().orEmpty().ifBlank { "角色" }
@@ -251,6 +253,7 @@ class DefaultPromptContextAssembler(
         val activePresetId = resolveActivePresetId(
             globalDefaultPresetId = settings.defaultPresetId,
             assistantDefaultPresetId = assistant?.defaultPresetId,
+            scenarioPresetId = scenarioPresetId,
         )
         val activePreset = presetRepository.getPreset(activePresetId)
             ?: DEFAULT_PRESET_ID

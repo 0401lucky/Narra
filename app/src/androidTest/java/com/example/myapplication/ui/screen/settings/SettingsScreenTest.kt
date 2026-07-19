@@ -36,7 +36,6 @@ class SettingsScreenTest {
                     onConsumeMessage = {},
                     onOpenRoleplay = { openRoleplayCalls++ },
                     onOpenProviderSettings = {},
-                    onOpenPresetSettings = {},
                     onOpenVoiceSynthesisSettings = {},
                     onOpenUpdateSettings = {},
                     onOpenUserMasks = {},

@@ -83,11 +83,6 @@ internal fun NavGraphBuilder.registerSettingsNavGraph(
                         launchSingleTop = true
                     }
                 },
-                onOpenPresetSettings = {
-                    navController.navigate(AppRoutes.SETTINGS_PRESETS) {
-                        launchSingleTop = true
-                    }
-                },
                 onOpenVoiceSynthesisSettings = {
                     navController.navigate(AppRoutes.SETTINGS_VOICE_SYNTHESIS) {
                         launchSingleTop = true

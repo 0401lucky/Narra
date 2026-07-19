@@ -14,6 +14,7 @@ data class RoleplayScenarioEntity(
     val description: String,
     val descriptionPromptEnabled: Boolean = false,
     val assistantId: String,
+    val presetId: String = "",
     val backgroundUri: String,
     val userDisplayNameOverride: String,
     val userPersonaMaskId: String = "",

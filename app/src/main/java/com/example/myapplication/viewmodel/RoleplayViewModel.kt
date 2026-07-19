@@ -1207,6 +1207,11 @@ class RoleplayViewModel(
         )
     }
 
+    fun updateCurrentScenarioPresetId(presetId: String) {
+        val scenario = _uiState.value.currentScenario ?: return
+        upsertScenario(scenario.copy(presetId = presetId.trim()))
+    }
+
     fun updateCurrentScenarioNarrationEnabled(enabled: Boolean) {
         val scenario = _uiState.value.currentScenario ?: return
         upsertScenario(scenario.copy(enableNarration = enabled))
@@ -1306,6 +1311,7 @@ class RoleplayViewModel(
                     recentMessages = requestMessages,
                     promptMode = PromptMode.ROLEPLAY,
                     markUsage = false,
+                    scenarioPresetId = scenario.presetId,
                 )
                 val diaryDrafts = aiPromptExtrasService.generateRoleplayDiaries(
                     characterContext = this@RoleplayViewModel.buildDiaryCharacterContext(
@@ -1760,6 +1766,7 @@ class RoleplayViewModel(
             recentMessages = effectiveRequestMessages,
             promptMode = PromptMode.ROLEPLAY,
             markUsage = false,
+            scenarioPresetId = scenario.presetId,
         )
         val directorNote = RoleplayConversationSupport.buildDynamicDirectorNote(
             messages = effectiveRequestMessages,

@@ -209,6 +209,7 @@ internal class RoleplayRoundTripExecutor(
                 userInputText = latestUserInputText,
                 recentMessages = requestMessagesForModel,
                 promptMode = PromptMode.ROLEPLAY,
+                scenarioPresetId = scenario.presetId,
             )
             val beforePromptScriptResult = scriptEventCoordinator.execute(
                 RoleplayScriptEventRequest(

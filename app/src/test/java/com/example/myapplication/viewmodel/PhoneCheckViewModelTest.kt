@@ -119,6 +119,7 @@ class PhoneCheckViewModelTest {
                         promptMode: PromptMode,
                         includePhoneSnapshot: Boolean,
                         markUsage: Boolean,
+                        scenarioPresetId: String?,
                     ): PromptContextResult {
                         return PromptContextResult(systemPrompt = "")
                     }
@@ -768,6 +769,7 @@ private fun createPhoneCheckViewModel(
                     promptMode: PromptMode,
                     includePhoneSnapshot: Boolean,
                     markUsage: Boolean,
+                    scenarioPresetId: String?,
                 ): PromptContextResult {
                     return PromptContextResult(systemPrompt = "")
                 }

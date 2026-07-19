@@ -37,6 +37,7 @@ import com.example.myapplication.model.AppSettings
 import com.example.myapplication.model.Assistant
 import com.example.myapplication.model.ContextGovernanceSnapshot
 import com.example.myapplication.model.MemoryProposalHistoryItem
+import com.example.myapplication.model.Preset
 import com.example.myapplication.model.ProviderSettings
 import com.example.myapplication.model.RoleplayContextStatus
 import com.example.myapplication.model.RoleplayGroupParticipant
@@ -58,6 +59,7 @@ fun RoleplaySettingsScreen(
     scenario: RoleplayScenario?,
     assistant: Assistant?,
     settings: AppSettings,
+    presets: List<Preset>,
     contextStatus: RoleplayContextStatus,
     groupParticipants: List<RoleplayGroupParticipant>,
     currentModel: String,
@@ -84,6 +86,8 @@ fun RoleplaySettingsScreen(
     onUpdateRoleplayLongformTargetChars: (Int) -> Unit,
     onUpdateScenarioInteractionMode: (RoleplayInteractionMode) -> Unit,
     onUpdateScenarioOnlineReplyRange: (Int, Int) -> Unit,
+    onUpdateScenarioPresetId: (String) -> Unit,
+    onUpdateScenarioVisual: (RoleplayScenario) -> Unit,
     onAddGroupParticipant: (String) -> Unit,
     onToggleGroupParticipantMuted: (String) -> Unit,
     onRemoveGroupParticipant: (String) -> Unit,
@@ -100,6 +104,7 @@ fun RoleplaySettingsScreen(
     onOpenUserMasks: () -> Unit,
     onOpenWorldBookSettings: () -> Unit,
     onOpenLongMemorySettings: () -> Unit,
+    onOpenPresetLibrary: () -> Unit,
     onUpdateAssistantMemoryEnabled: (Boolean) -> Unit,
     onRefreshConversationSummary: () -> Unit,
     onOpenContextLog: () -> Unit,
@@ -200,6 +205,7 @@ fun RoleplaySettingsScreen(
                                             RoleplaySettingsPanelPage.GROUP -> "群聊设置"
                                             RoleplaySettingsPanelPage.THEME -> "主题"
                                             RoleplaySettingsPanelPage.QUICK -> "快捷切换"
+                                            RoleplaySettingsPanelPage.VISUAL -> "背景与立绘"
                                             RoleplaySettingsPanelPage.REGEX -> "正则"
                                         },
                                         style = MaterialTheme.typography.titleLarge,
@@ -226,6 +232,7 @@ fun RoleplaySettingsScreen(
                             scenario = scenario,
                             assistant = assistant,
                             settings = settings,
+                            presets = presets,
                             contextStatus = contextStatus,
                             groupParticipants = groupParticipants,
                             currentModel = currentModel,
@@ -261,6 +268,8 @@ fun RoleplaySettingsScreen(
                             onUpdateRoleplayLongformTargetChars = onUpdateRoleplayLongformTargetChars,
                             onUpdateScenarioInteractionMode = onUpdateScenarioInteractionMode,
                             onUpdateScenarioOnlineReplyRange = onUpdateScenarioOnlineReplyRange,
+                            onUpdateScenarioPresetId = onUpdateScenarioPresetId,
+                            onUpdateScenarioVisual = onUpdateScenarioVisual,
                             onAddGroupParticipant = onAddGroupParticipant,
                             onToggleGroupParticipantMuted = onToggleGroupParticipantMuted,
                             onRemoveGroupParticipant = onRemoveGroupParticipant,
@@ -276,6 +285,7 @@ fun RoleplaySettingsScreen(
                             onOpenUserMasks = onOpenUserMasks,
                             onOpenWorldBookSettings = onOpenWorldBookSettings,
                             onOpenLongMemorySettings = onOpenLongMemorySettings,
+                            onOpenPresetLibrary = onOpenPresetLibrary,
                             onUpdateAssistantMemoryEnabled = onUpdateAssistantMemoryEnabled,
                             onRefreshConversationSummary = onRefreshConversationSummary,
                             onShowRestartDialog = { showConfirmRestartDialog = true },

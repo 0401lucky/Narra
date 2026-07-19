@@ -71,6 +71,7 @@ class PhoneContextBuilder(
             promptMode = promptMode,
             includePhoneSnapshot = false,
             markUsage = false,
+            scenarioPresetId = scenario?.presetId,
         )
         return if (scenario != null) {
             val userName = RoleplayConversationSupport.resolveUserPersona(scenario, settings).displayName

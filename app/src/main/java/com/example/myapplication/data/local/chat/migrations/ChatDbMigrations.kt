@@ -986,6 +986,16 @@ internal object ChatDbMigrations {
         }
     }
 
+    val MIGRATION_47_48 = object : Migration(47, 48) {
+        override fun migrate(db: SupportSQLiteDatabase) {
+            if (!hasColumn(db, "roleplay_scenarios", "presetId")) {
+                db.execSQL(
+                    "ALTER TABLE roleplay_scenarios ADD COLUMN presetId TEXT NOT NULL DEFAULT ''",
+                )
+            }
+        }
+    }
+
     val MIGRATION_46_47 = object : Migration(46, 47) {
         override fun migrate(db: SupportSQLiteDatabase) {
             db.execSQL(
@@ -1160,6 +1170,7 @@ internal object ChatDbMigrations {
         MIGRATION_44_45,
         MIGRATION_45_46,
         MIGRATION_46_47,
+        MIGRATION_47_48,
     )
 
     /** 幂等列检查。子迁移在 `ALTER TABLE ADD COLUMN` 之前先探测，允许中间版本重复升级。 */

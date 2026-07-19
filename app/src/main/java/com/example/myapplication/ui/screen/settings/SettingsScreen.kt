@@ -22,7 +22,6 @@ import androidx.compose.material.icons.filled.Face
 import androidx.compose.material.icons.filled.Handshake
 import androidx.compose.material.icons.filled.Image
 import androidx.compose.material.icons.filled.KeyboardArrowDown
-import androidx.compose.material.icons.filled.LibraryBooks
 import androidx.compose.material.icons.filled.LightMode
 import androidx.compose.material.icons.filled.Palette
 import androidx.compose.material.icons.filled.Psychology
@@ -62,7 +61,6 @@ fun SettingsScreen(
     onConsumeMessage: () -> Unit,
     onOpenRoleplay: () -> Unit,
     onOpenProviderSettings: () -> Unit,
-    onOpenPresetSettings: () -> Unit,
     onOpenVoiceSynthesisSettings: () -> Unit,
     onOpenUpdateSettings: () -> Unit,
     onOpenUserMasks: () -> Unit,
@@ -237,13 +235,6 @@ fun SettingsScreen(
                         title = stringResource(R.string.settings_provider),
                         supportingText = providerSummary,
                         onClick = onOpenProviderSettings,
-                    )
-                    SettingsGroupDivider()
-                    SettingsListRow(
-                        leadingContent = { Icon(Icons.Default.LibraryBooks, contentDescription = null, tint = palette.title) },
-                        title = "预设管理",
-                        supportingText = "Prompt Manager、条目顺序与默认预设",
-                        onClick = onOpenPresetSettings,
                     )
                     SettingsGroupDivider()
                     SettingsListRow(

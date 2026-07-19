@@ -65,6 +65,9 @@ fun AssistantBasicScreen(
     var avatarUri by rememberSaveable { mutableStateOf(assistant?.avatarUri ?: "") }
     var name by rememberSaveable { mutableStateOf(assistant?.name ?: "") }
     var description by rememberSaveable { mutableStateOf(assistant?.description ?: "") }
+    var corePersona by rememberSaveable {
+        mutableStateOf(if (isNew) "" else assistant?.systemPrompt.orEmpty())
+    }
     var tagsText by rememberSaveable {
         mutableStateOf(assistant?.tags?.joinToString(", ") ?: "")
     }
@@ -107,7 +110,7 @@ fun AssistantBasicScreen(
             item {
                 AssistantSubPageHeader(
                     assistant = assistant ?: Assistant(name = name, description = description),
-                    overline = "基础设定",
+                    overline = if (isNew) "新建角色" else "基础设定",
                 )
             }
 
@@ -278,22 +281,39 @@ fun AssistantBasicScreen(
                         OutlinedTextField(
                             value = description,
                             onValueChange = { description = it },
-                            label = { Text("描述") },
+                            label = { Text(if (isNew) "简介（可选）" else "描述") },
                             modifier = Modifier.fillMaxWidth(),
                             shape = RoundedCornerShape(18.dp),
                             colors = outlineColors,
                             maxLines = 4,
                         )
-                        OutlinedTextField(
-                            value = tagsText,
-                            onValueChange = { tagsText = it },
-                            label = { Text("标签") },
-                            modifier = Modifier.fillMaxWidth(),
-                            singleLine = true,
-                            shape = RoundedCornerShape(18.dp),
-                            colors = outlineColors,
-                            placeholder = { Text("例如：推理, 悬疑") },
-                        )
+                        if (isNew) {
+                            OutlinedTextField(
+                                value = corePersona,
+                                onValueChange = { corePersona = it },
+                                label = { Text("核心人设（可选）") },
+                                modifier = Modifier.fillMaxWidth(),
+                                shape = RoundedCornerShape(18.dp),
+                                colors = outlineColors,
+                                minLines = 3,
+                                maxLines = 6,
+                                supportingText = {
+                                    Text("可稍后在角色人设页继续完善；创建后即可开始对话。")
+                                },
+                            )
+                        }
+                        if (!isNew) {
+                            OutlinedTextField(
+                                value = tagsText,
+                                onValueChange = { tagsText = it },
+                                label = { Text("标签") },
+                                modifier = Modifier.fillMaxWidth(),
+                                singleLine = true,
+                                shape = RoundedCornerShape(18.dp),
+                                colors = outlineColors,
+                                placeholder = { Text("例如：推理, 悬疑") },
+                            )
+                        }
                     }
                 }
             }
@@ -305,9 +325,10 @@ fun AssistantBasicScreen(
                         verticalArrangement = Arrangement.spacedBy(10.dp),
                     ) {
                         AnimatedSettingButton(
-                            text = "保存基础设定",
+                            text = if (isNew) "创建" else "保存基础设定",
                             onClick = {
-                                val result = (assistant ?: Assistant()).copy(
+                                val base = assistant ?: Assistant()
+                                val result = base.copy(
                                     iconName = iconName.ifBlank { DEFAULT_ASSISTANT_ICON },
                                     avatarUri = avatarUri,
                                     name = name.trim(),
@@ -315,6 +336,11 @@ fun AssistantBasicScreen(
                                     tags = tagsText.split(",", "，")
                                         .map { it.trim() }
                                         .filter { it.isNotBlank() },
+                                    systemPrompt = if (isNew) {
+                                        corePersona.trim()
+                                    } else {
+                                        base.systemPrompt
+                                    },
                                 )
                                 onSave(result)
                                 onNavigateBack()
