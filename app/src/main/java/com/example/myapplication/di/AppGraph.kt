@@ -9,6 +9,8 @@ import com.example.myapplication.context.PromptContextAssembler
 import com.example.myapplication.context.WorldBookMatcher
 import com.example.myapplication.data.local.AppSettingsStore
 import com.example.myapplication.data.local.AppUpdateStore
+import com.example.myapplication.data.local.ComplianceConsentRepository
+import com.example.myapplication.data.local.ComplianceConsentStore
 import com.example.myapplication.data.local.RoomConversationStore
 import com.example.myapplication.data.local.chat.ChatDatabase
 import com.example.myapplication.data.remote.ApiServiceFactory
@@ -112,6 +114,10 @@ class AppGraph(
 
     val appUpdateStore: AppUpdateStore by lazy {
         AppUpdateStore(application)
+    }
+
+    val complianceConsentStore: ComplianceConsentRepository by lazy {
+        ComplianceConsentStore(application)
     }
 
     val apiServiceFactory: ApiServiceFactory by lazy {
@@ -429,6 +435,10 @@ class AppGraph(
                     contextLogStore.setCapacity(capacity)
                 }
         }
+    }
+
+    fun scheduleConsentDependentTasks() {
+        com.example.myapplication.system.moments.MomentsAutoGenerationWorker.schedule(application)
     }
 
     private companion object {

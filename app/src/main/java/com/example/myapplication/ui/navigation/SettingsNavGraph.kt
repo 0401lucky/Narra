@@ -20,10 +20,13 @@ import com.example.myapplication.ui.screen.settings.PresetListScreen
 import com.example.myapplication.ui.screen.settings.RoleplayScriptBindingOption
 import com.example.myapplication.ui.screen.settings.RoleplayScriptLabScreen
 import com.example.myapplication.ui.screen.settings.SettingsScreen
+import com.example.myapplication.ui.screen.compliance.ComplianceScreen
+import com.example.myapplication.ui.screen.compliance.ComplianceScreenMode
 import com.example.myapplication.ui.screen.settings.UserPersonaMasksScreen
 import com.example.myapplication.ui.screen.settings.VoiceSynthesisSettingsScreen
 import com.example.myapplication.ui.screen.settings.copyPresetForUser
 import com.example.myapplication.viewmodel.AppUpdateViewModel
+import com.example.myapplication.viewmodel.ComplianceViewModel
 import com.example.myapplication.viewmodel.RoleplayScriptLabViewModel
 import com.example.myapplication.viewmodel.SettingsViewModel
 import com.example.myapplication.viewmodel.updateAutoCollapseThinking
@@ -42,6 +45,7 @@ internal fun NavGraphBuilder.registerSettingsNavGraph(
     navController: NavHostController,
     settingsViewModel: SettingsViewModel,
     appUpdateViewModel: AppUpdateViewModel,
+    complianceViewModel: ComplianceViewModel,
 ) {
     navigation(
         startDestination = AppRoutes.SETTINGS,
@@ -90,6 +94,11 @@ internal fun NavGraphBuilder.registerSettingsNavGraph(
                 },
                 onOpenUpdateSettings = {
                     navController.navigate(AppRoutes.SETTINGS_UPDATES) {
+                        launchSingleTop = true
+                    }
+                },
+                onOpenComplianceSettings = {
+                    navController.navigate(AppRoutes.SETTINGS_COMPLIANCE) {
                         launchSingleTop = true
                     }
                 },
@@ -146,6 +155,15 @@ internal fun NavGraphBuilder.registerSettingsNavGraph(
                     settingsViewModel.saveSettings {}
                     navController.popBackStack()
                 },
+            )
+        }
+
+        composable(AppRoutes.SETTINGS_COMPLIANCE) {
+            val complianceUiState by complianceViewModel.uiState.collectAsStateWithLifecycle()
+            ComplianceScreen(
+                uiState = complianceUiState,
+                mode = ComplianceScreenMode.VIEW_ONLY,
+                onNavigateBack = { navController.popBackStack() },
             )
         }
 

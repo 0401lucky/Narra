@@ -1,16 +1,16 @@
 {
   "app_id": "com.narra.app.dev",
   "channel": "dev",
-  "latest_version_name": "2.2.3-dev",
-  "latest_version_code": 20203,
+  "latest_version_name": "2.2.4-dev",
+  "latest_version_code": 20204,
   "minimum_supported_version_code": 0,
-  "apk_url": "https://download.lsa1230.dpdns.org/dev/2.2.3/Narra-v2.2.3-dev-20203-dev.apk?v=20203-20260719163537",
-  "apk_sha256": "4ba474aa28873e2442fa6a8c5cfee2648d4b4ff245eeaf7556bea7ea5122e573",
-  "published_at": "2026-07-19T16:35:37+08:00",
+  "apk_url": "https://download.lsa1230.dpdns.org/dev/2.2.4/Narra-v2.2.4-dev-20204-dev.apk?v=20204-20260722122931",
+  "apk_sha256": "0321c41bbb240f95c196450bf9e5abea3ff589a9f28a6b8cd060a15e752ed835",
+  "published_at": "2026-07-22T12:29:31+08:00",
   "release_notes": [
-    "修复本会话预设 Sheet 不可滚动、URL 立绘丢失",
-    "悬空预设按角色/全局级联回退，视觉保存竞态修复",
-    "发现页重排：Hero、通栏创作卡、双列角色空间",
-    "补齐 androidTest 缺参，高级选项默认折叠"
+    "新增首次启动 AI 使用须知与统一 18+ 年龄门槛",
+    "条款必须阅读到末尾并完成双重确认，版本升级后重新确认",
+    "设置页新增使用条款与年龄限制查看入口",
+    "未确认条款时暂停更新检查和 AI 动态自动生成"
   ]
 }

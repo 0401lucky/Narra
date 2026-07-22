@@ -9,6 +9,7 @@ import androidx.work.PeriodicWorkRequestBuilder
 import androidx.work.WorkManager
 import androidx.work.WorkerParameters
 import com.example.myapplication.ChatApplication
+import com.example.myapplication.compliance.CompliancePolicy
 import java.util.concurrent.TimeUnit
 
 class MomentsAutoGenerationWorker(
@@ -19,6 +20,9 @@ class MomentsAutoGenerationWorker(
     override suspend fun doWork(): Result {
         val app = applicationContext as? ChatApplication ?: return Result.failure()
         return runCatching {
+            if (!app.appGraph.complianceConsentStore.isAccepted(CompliancePolicy.CURRENT_VERSION)) {
+                return@runCatching Result.success()
+            }
             app.appGraph.momentsGenerationCoordinator.generateDueAssistantPosts(maxPosts = 2)
             Result.success()
         }.getOrElse {

@@ -21,6 +21,7 @@ import androidx.compose.material.icons.filled.Extension
 import androidx.compose.material.icons.filled.Face
 import androidx.compose.material.icons.filled.Handshake
 import androidx.compose.material.icons.filled.Image
+import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.LightMode
 import androidx.compose.material.icons.filled.Palette
@@ -63,6 +64,7 @@ fun SettingsScreen(
     onOpenProviderSettings: () -> Unit,
     onOpenVoiceSynthesisSettings: () -> Unit,
     onOpenUpdateSettings: () -> Unit,
+    onOpenComplianceSettings: () -> Unit = {},
     onOpenUserMasks: () -> Unit,
     onOpenModelSettings: () -> Unit,
     onOpenAssistantSettings: () -> Unit,
@@ -210,6 +212,13 @@ fun SettingsScreen(
                         leadingContent = { Icon(Icons.AutoMirrored.Filled.Assignment, contentDescription = null, tint = palette.title) },
                         title = stringResource(R.string.settings_version_update),
                         onClick = onOpenUpdateSettings,
+                    )
+                    SettingsGroupDivider()
+                    SettingsListRow(
+                        leadingContent = { Icon(Icons.Default.Info, contentDescription = null, tint = palette.title) },
+                        title = "使用条款与年龄限制",
+                        supportingText = "查看当前 AI 风险提示和 18+ 使用条件",
+                        onClick = onOpenComplianceSettings,
                     )
                     SettingsGroupDivider()
                     SettingsListRow(

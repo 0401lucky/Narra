@@ -13,7 +13,10 @@ class MainActivity : ComponentActivity() {
 
         val app = application as ChatApplication
         setContent {
-            AppRoot(appGraph = app.appGraph)
+            AppRoot(
+                appGraph = app.appGraph,
+                onExit = { finishAndRemoveTask() },
+            )
         }
     }
 }

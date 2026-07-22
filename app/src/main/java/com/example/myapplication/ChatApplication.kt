@@ -13,7 +13,6 @@ import com.example.myapplication.data.repository.context.PresetRepository
 import com.example.myapplication.data.repository.context.WorldBookRepository
 import com.example.myapplication.data.repository.roleplay.RoleplayRepository
 import com.example.myapplication.di.AppGraph
-import com.example.myapplication.system.moments.MomentsAutoGenerationWorker
 import com.example.myapplication.system.update.AppUpdateDownloadController
 
 class ChatApplication : Application() {
@@ -46,6 +45,5 @@ class ChatApplication : Application() {
     override fun onCreate() {
         super.onCreate()
         appGraph.launchStartupTasks()
-        MomentsAutoGenerationWorker.schedule(this)
     }
 }

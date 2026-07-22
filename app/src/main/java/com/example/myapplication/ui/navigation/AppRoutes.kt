@@ -12,6 +12,7 @@ object AppRoutes {
     const val SETTINGS_PRESET_EDIT = "settings/presets/{presetId}"
     const val SETTINGS_PROVIDERS = "settings/providers"
     const val SETTINGS_UPDATES = "settings/updates"
+    const val SETTINGS_COMPLIANCE = "settings/compliance"
     const val SETTINGS_USER_MASKS = "settings/user-masks"
     const val SETTINGS_ROLEPLAY_SCRIPTS = "settings/roleplay-scripts"
     const val SETTINGS_PROVIDER_DETAIL = "settings/providers/{providerId}"

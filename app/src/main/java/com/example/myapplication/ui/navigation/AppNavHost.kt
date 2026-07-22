@@ -13,6 +13,7 @@ import com.example.myapplication.ui.screen.home.HomeScreen
 import com.example.myapplication.ui.screen.moments.MomentsScreen
 import com.example.myapplication.ui.screen.phone.PhoneCheckScreen
 import com.example.myapplication.viewmodel.AppUpdateViewModel
+import com.example.myapplication.viewmodel.ComplianceViewModel
 import com.example.myapplication.viewmodel.SettingsViewModel
 
 @Composable
@@ -21,6 +22,7 @@ fun AppNavHost(
     navController: NavHostController,
     settingsViewModel: SettingsViewModel,
     appUpdateViewModel: AppUpdateViewModel,
+    complianceViewModel: ComplianceViewModel,
     startDestination: String,
 ) {
     NavHost(
@@ -55,6 +57,7 @@ fun AppNavHost(
             navController = navController,
             settingsViewModel = settingsViewModel,
             appUpdateViewModel = appUpdateViewModel,
+            complianceViewModel = complianceViewModel,
         )
 
         composable(AppRoutes.PHONE_CHECK) { backStackEntry ->
