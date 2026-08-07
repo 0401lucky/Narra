@@ -4,6 +4,8 @@ import androidx.compose.runtime.Composable
 import com.example.myapplication.model.ChatSpecialPlayDraft
 import com.example.myapplication.model.ChatSpecialType
 import com.example.myapplication.model.ChatMessage
+import com.example.myapplication.model.MessageStatus
+import com.example.myapplication.ui.component.NarraAlertDialog
 import com.example.myapplication.ui.component.modelpicker.ModelPickerSheet
 import com.example.myapplication.ui.component.modelpicker.ReasoningBudgetSheet
 import com.example.myapplication.ui.component.specialplay.SpecialPlayEditorSheet
@@ -84,6 +86,11 @@ internal fun ChatScreenOverlays(
     onShareMessage: (ChatMessage) -> Unit,
     onEditUserMessage: (ChatMessage) -> Unit,
     onRetryMessage: (ChatMessage) -> Unit,
+    messageDeletionEnabled: Boolean,
+    onRequestDeleteMessage: (ChatMessage) -> Unit,
+    pendingDeleteMessage: ChatMessage?,
+    onDismissDeleteMessage: () -> Unit,
+    onConfirmDeleteMessage: (ChatMessage) -> Unit,
     onTranslateMessage: (ChatMessage) -> Unit,
     onToggleMemoryMessage: (ChatMessage) -> Unit,
     messageSelectionPayload: ChatMessageSelectionPayload?,
@@ -257,8 +264,20 @@ internal fun ChatScreenOverlays(
             } else {
                 null
             },
+            onDeleteMessage = if (messageDeletionEnabled && message.status != MessageStatus.LOADING) {
+                { onRequestDeleteMessage(message) }
+            } else {
+                null
+            },
         )
     }
+
+    ChatMessageDeleteConfirmationDialog(
+        message = pendingDeleteMessage,
+        messageDeletionEnabled = messageDeletionEnabled,
+        onDismiss = onDismissDeleteMessage,
+        onConfirm = onConfirmDeleteMessage,
+    )
 
     messageSelectionPayload?.let { payload ->
         ChatMessageSelectionSheet(
@@ -289,4 +308,23 @@ internal fun ChatScreenOverlays(
             onOpenUrlPreview = onOpenUrlPreview,
         )
     }
+}
+
+@Composable
+internal fun ChatMessageDeleteConfirmationDialog(
+    message: ChatMessage?,
+    messageDeletionEnabled: Boolean,
+    onDismiss: () -> Unit,
+    onConfirm: (ChatMessage) -> Unit,
+) {
+    message ?: return
+    NarraAlertDialog(
+        title = "删除这条消息？",
+        message = "此操作不可撤销，相关引用、记忆和摘要也会一并清理。",
+        confirmLabel = "删除",
+        isDestructive = true,
+        confirmEnabled = messageDeletionEnabled && message.status != MessageStatus.LOADING,
+        onDismiss = onDismiss,
+        onConfirm = { onConfirm(message) },
+    )
 }

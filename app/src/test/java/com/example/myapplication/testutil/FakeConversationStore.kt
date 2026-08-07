@@ -1,5 +1,7 @@
 package com.example.myapplication.testutil
 
+import com.example.myapplication.conversation.ConversationMessageTransforms
+import com.example.myapplication.conversation.MessageDeletionResult
 import com.example.myapplication.data.local.ConversationStore
 import com.example.myapplication.model.ChatMessage
 import com.example.myapplication.model.Conversation
@@ -18,6 +20,12 @@ class FakeConversationStore(
     var replaceConversationSnapshotCount: Int = 0
         private set
     var updateConversationMessagesCount: Int = 0
+        private set
+    var deleteMessageWithAssociationsCount: Int = 0
+        private set
+    var lastDeletedConversationId: String? = null
+        private set
+    var lastDeletedMessageId: String? = null
         private set
     var upsertConversationWithMessagesCount: Int = 0
         private set
@@ -86,6 +94,32 @@ class FakeConversationStore(
             },
         )
         return updatedMessages
+    }
+
+    override suspend fun deleteMessageWithAssociations(
+        conversation: Conversation,
+        conversationId: String,
+        messageId: String,
+    ): MessageDeletionResult {
+        deleteMessageWithAssociationsCount += 1
+        lastDeletedConversationId = conversationId
+        lastDeletedMessageId = messageId
+        val existingMessages = messagesState.value[conversationId].orEmpty().sortedForConversation()
+        return when (
+            val deletionResult = ConversationMessageTransforms.deleteMessageAndClearReferences(
+                messages = existingMessages,
+                targetMessageId = messageId,
+            )
+        ) {
+            MessageDeletionResult.NotFound -> MessageDeletionResult.NotFound
+            is MessageDeletionResult.Deleted -> {
+                upsertConversationMetadata(conversation)
+                messagesState.value = messagesState.value.toMutableMap().apply {
+                    this[conversationId] = deletionResult.updatedMessages.sortedForConversation()
+                }
+                deletionResult
+            }
+        }
     }
 
     override suspend fun upsertConversationWithMessages(

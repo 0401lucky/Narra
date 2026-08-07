@@ -1,10 +1,13 @@
 package com.example.myapplication.data.local
 
 import androidx.room.withTransaction
+import com.example.myapplication.conversation.ConversationMessageTransforms
+import com.example.myapplication.conversation.MessageDeletionResult
 import com.example.myapplication.data.local.chat.ConversationDao
 import com.example.myapplication.data.local.chat.ChatDatabase
 import com.example.myapplication.data.local.chat.ConversationEntity
 import com.example.myapplication.data.local.chat.MessageEntity
+import com.example.myapplication.data.local.memory.MemoryDao
 import com.example.myapplication.model.ChatMessage
 import com.example.myapplication.model.ChatMessagePart
 import com.example.myapplication.model.ChatReasoningStep
@@ -31,6 +34,7 @@ class RoomConversationStore(
     private val database: ChatDatabase,
 ) : ConversationStore {
     private val conversationDao: ConversationDao = database.conversationDao()
+    private val memoryDao: MemoryDao = database.memoryDao()
     private val gson = AppJson.gson
     private val attachmentListType = object : TypeToken<List<MessageAttachment>>() {}.type
     private val partListType = object : TypeToken<List<ChatMessagePart>>() {}.type
@@ -103,6 +107,41 @@ class RoomConversationStore(
                 conversationDao.insertMessages(changedMessages.map { it.toEntity() })
             }
             updatedMessages
+        }
+    }
+
+    override suspend fun deleteMessageWithAssociations(
+        conversation: Conversation,
+        conversationId: String,
+        messageId: String,
+    ): MessageDeletionResult {
+        return database.withTransaction {
+            val existingMessages = conversationDao.listMessages(conversationId).map { it.toDomain() }
+            when (
+                val deletionResult = ConversationMessageTransforms.deleteMessageAndClearReferences(
+                    messages = existingMessages,
+                    targetMessageId = messageId,
+                )
+            ) {
+                MessageDeletionResult.NotFound -> MessageDeletionResult.NotFound
+                is MessageDeletionResult.Deleted -> {
+                    val changedMessages = resolveMessagesToUpsert(
+                        existingMessages = existingMessages,
+                        nextMessages = deletionResult.updatedMessages,
+                    )
+                    if (changedMessages.isNotEmpty()) {
+                        conversationDao.insertMessages(changedMessages.map { it.toEntity() })
+                    }
+                    check(conversationDao.deleteMessage(conversationId, messageId) == 1) {
+                        "消息删除事务未命中目标"
+                    }
+                    memoryDao.deleteMemoryEntriesBySourceMessageId(messageId)
+                    memoryDao.deleteConversationSummary(conversationId)
+                    memoryDao.deleteConversationSummarySegments(conversationId)
+                    conversationDao.upsertConversationEntity(conversation.toEntity())
+                    deletionResult
+                }
+            }
         }
     }
 

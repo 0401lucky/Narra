@@ -58,6 +58,8 @@ internal data class ChatScreenLocalState(
     val setDraftUserAvatarUrl: (String) -> Unit,
     val activeMessageActionId: String?,
     val setActiveMessageActionId: (String?) -> Unit,
+    val pendingDeleteMessageId: String?,
+    val setPendingDeleteMessageId: (String?) -> Unit,
     val messageSelectionPayload: ChatMessageSelectionPayload?,
     val setMessageSelectionPayload: (ChatMessageSelectionPayload?) -> Unit,
     val messagePreviewPayload: ChatMessagePreviewPayload?,
@@ -126,6 +128,7 @@ internal fun rememberChatScreenLocalState(
     var draftUserAvatarUri by rememberSaveable { mutableStateOf("") }
     var draftUserAvatarUrl by rememberSaveable { mutableStateOf("") }
     var activeMessageActionId by remember { mutableStateOf<String?>(null) }
+    var pendingDeleteMessageId by remember { mutableStateOf<String?>(null) }
     var messageSelectionPayload by remember { mutableStateOf<ChatMessageSelectionPayload?>(null) }
     var messagePreviewPayload by remember { mutableStateOf<ChatMessagePreviewPayload?>(null) }
     var imagePreviewPayload by remember { mutableStateOf<ChatImagePreviewPayload?>(null) }
@@ -169,6 +172,8 @@ internal fun rememberChatScreenLocalState(
         setDraftUserAvatarUrl = { draftUserAvatarUrl = it },
         activeMessageActionId = activeMessageActionId,
         setActiveMessageActionId = { activeMessageActionId = it },
+        pendingDeleteMessageId = pendingDeleteMessageId,
+        setPendingDeleteMessageId = { pendingDeleteMessageId = it },
         messageSelectionPayload = messageSelectionPayload,
         setMessageSelectionPayload = { messageSelectionPayload = it },
         messagePreviewPayload = messagePreviewPayload,

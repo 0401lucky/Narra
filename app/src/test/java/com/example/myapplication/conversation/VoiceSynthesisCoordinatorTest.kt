@@ -436,6 +436,26 @@ private class InMemoryConversationStore(
         return messages
     }
 
+    override suspend fun deleteMessageWithAssociations(
+        conversation: Conversation,
+        conversationId: String,
+        messageId: String,
+    ): MessageDeletionResult {
+        return when (
+            val deletionResult = ConversationMessageTransforms.deleteMessageAndClearReferences(
+                messages = messages,
+                targetMessageId = messageId,
+            )
+        ) {
+            MessageDeletionResult.NotFound -> MessageDeletionResult.NotFound
+            is MessageDeletionResult.Deleted -> {
+                upsertConversationMetadata(conversation)
+                messages = deletionResult.updatedMessages
+                deletionResult
+            }
+        }
+    }
+
     override suspend fun upsertConversationWithMessages(
         conversation: Conversation,
         messages: List<ChatMessage>,

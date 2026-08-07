@@ -66,13 +66,23 @@ import com.example.myapplication.roleplay.script.DisabledRoleplayScriptEngine
 import com.example.myapplication.roleplay.script.RoleplayScriptEngine
 import com.example.myapplication.roleplay.script.RoleplayScriptEvent
 import com.example.myapplication.roleplay.script.RoleplayScriptExecutionResult
+import com.example.myapplication.system.logging.AppLogger
 import com.example.myapplication.system.security.SensitiveTextRedactor
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.withContext
+import kotlinx.coroutines.sync.Mutex
 
 internal data class RoleplayRoundTripExecutionOutcome(
     val errorMessage: String? = null,
+    val noticeMessage: String? = null,
+)
+
+internal data class RoleplayRoundTripDiagnostics(
+    val participantId: String = "",
+    val assistantId: String = "",
+    val turnIndex: Int? = null,
+    val attempt: Int? = null,
 )
 
 internal class RoleplayRoundTripExecutor(
@@ -101,6 +111,7 @@ internal class RoleplayRoundTripExecutor(
     private val settleTransfer: suspend (String) -> Unit = {},
     private val releaseTransfer: suspend (String) -> Unit = {},
 ) {
+    private val messageSnapshotMutationMutex = Mutex()
     private val memoryExtractionGate = MemoryExtractionGate()
     private val scriptEventCoordinator = RoleplayScriptEventCoordinator(
         scriptRepository = roleplayScriptRepository,
@@ -121,6 +132,7 @@ internal class RoleplayRoundTripExecutor(
         giftImageRequest: GiftImageGenerationRequest? = null,
         extraDirectorNote: String = "",
         finishSendingOnCompletion: Boolean = true,
+        diagnostics: RoleplayRoundTripDiagnostics = RoleplayRoundTripDiagnostics(),
         isRoundTripActive: () -> Boolean = { true },
     ): RoleplayRoundTripExecutionOutcome {
         fun canApplyUiUpdate(): Boolean {
@@ -139,30 +151,35 @@ internal class RoleplayRoundTripExecutor(
             }
         }
 
+        var generationCommitted = false
+        var committedMessages: List<ChatMessage> = emptyList()
+
         try {
-            when (initialPersistence) {
-                is RoundTripInitialPersistence.Append -> {
-                    conversationRepository.appendMessages(
-                        conversationId = session.conversationId,
-                        messages = initialPersistence.messages,
-                        selectedModel = selectedModel,
-                    )
-                }
+            withMessageSnapshotMutationLock {
+                when (initialPersistence) {
+                    is RoundTripInitialPersistence.Append -> {
+                        conversationRepository.appendMessages(
+                            conversationId = session.conversationId,
+                            messages = initialPersistence.messages,
+                            selectedModel = selectedModel,
+                        )
+                    }
 
-                is RoundTripInitialPersistence.Upsert -> {
-                    conversationRepository.upsertMessages(
-                        conversationId = session.conversationId,
-                        messages = initialPersistence.messages,
-                        selectedModel = selectedModel,
-                    )
-                }
+                    is RoundTripInitialPersistence.Upsert -> {
+                        conversationRepository.upsertMessages(
+                            conversationId = session.conversationId,
+                            messages = initialPersistence.messages,
+                            selectedModel = selectedModel,
+                        )
+                    }
 
-                is RoundTripInitialPersistence.ReplaceSnapshot -> {
-                    conversationRepository.replaceConversationSnapshot(
-                        conversationId = session.conversationId,
-                        messages = initialPersistence.messages,
-                        selectedModel = selectedModel,
-                    )
+                    is RoundTripInitialPersistence.ReplaceSnapshot -> {
+                        conversationRepository.replaceConversationSnapshot(
+                            conversationId = session.conversationId,
+                            messages = initialPersistence.messages,
+                            selectedModel = selectedModel,
+                        )
+                    }
                 }
             }
             giftImageRequest?.let { request ->
@@ -360,6 +377,7 @@ internal class RoleplayRoundTripExecutor(
             val fullReasoningSteps = mutableListOf<ChatReasoningStep>()
             var onlineProtocolResult: OnlineActionProtocolParseResult? = null
             var parsedTransferUpdates: List<TransferUpdateDirective> = emptyList()
+            var postCommitFailure: Throwable? = null
 
             when (
                 val result = assistantRoundTripRunner.execute(
@@ -474,6 +492,9 @@ internal class RoleplayRoundTripExecutor(
                                 parts = if (isEmptyCompensationOpening) emptyList() else completedParts,
                             )
                         },
+                        onPostCommitFailure = { throwable ->
+                            postCommitFailure = throwable
+                        },
                         onCancelled = { payload, loading ->
                             val partialContent = payload.content.trim()
                             if (partialContent.isBlank() && payload.parts.isEmpty()) {
@@ -529,98 +550,223 @@ internal class RoleplayRoundTripExecutor(
                         applyRawMessages(cleanedMessages)
                         return RoleplayRoundTripExecutionOutcome(errorMessage = completionError)
                     }
-                    val handledTransferUpdates = mutableSetOf<Pair<String, TransferStatus>>()
-                    settleParsedTransferUpdatesIfNeeded(
-                        updates = parsedTransferUpdates,
-                        handledTransferUpdates = handledTransferUpdates,
-                    )
-                    val directiveSourceMessages = if (
-                        shouldDropControlOnlyAssistantMessage(
-                            messages = result.messages,
-                            loadingMessage = loadingMessage,
-                            onlineProtocolResult = onlineProtocolResult,
-                            parsedTransferUpdates = parsedTransferUpdates,
-                        )
-                    ) {
-                        removeStaleAssistantMessage(
-                            conversationId = session.conversationId,
-                            loadingMessage = loadingMessage,
-                            selectedModel = selectedModel,
-                        )
-                    } else {
-                        result.messages
+                    if (!completionError.isNullOrBlank()) {
+                        applyActiveRawMessages(result.messages)
+                        if (finishSendingOnCompletion && canApplyUiUpdate()) {
+                            updateUiState { current ->
+                                RoleplayStateSupport.finishSending(current, errorMessage = completionError)
+                            }
+                        }
+                        return RoleplayRoundTripExecutionOutcome(errorMessage = completionError)
                     }
-                    val postDirectiveMessages = applyOnlineProtocolDirectivesIfNeeded(
-                        conversationId = session.conversationId,
-                        selectedModel = selectedModel,
-                        messages = directiveSourceMessages,
-                        completedAssistantId = directiveSourceMessages.lastOrNull {
-                            it.role == MessageRole.ASSISTANT && it.status == MessageStatus.COMPLETED
-                        }?.id.orEmpty(),
-                        protocolResult = onlineProtocolResult,
-                        handledTransferUpdates = handledTransferUpdates,
+
+                    generationCommitted = true
+                    committedMessages = result.messages
+                    val resolvedDiagnostics = diagnostics.withAssistantFallback(
+                        assistant?.id ?: scenario.assistantId,
                     )
+                    var hasPostProcessFailure = false
+
+                    fun recordPostProcessFailure(stage: String, throwable: Throwable) {
+                        hasPostProcessFailure = true
+                        AppLogger.w(
+                            ROUND_TRIP_LOG_TAG,
+                            resolvedDiagnostics.logMessage(
+                                stage = stage,
+                                event = "failed",
+                                errorCategory = throwable.safeErrorCategory(),
+                            ),
+                        )
+                    }
+
+                    suspend fun <T> runPostProcessStage(
+                        stage: String,
+                        fallback: suspend () -> T,
+                        block: suspend () -> T,
+                    ): T {
+                        return try {
+                            block()
+                        } catch (cancellation: CancellationException) {
+                            throw cancellation
+                        } catch (throwable: Throwable) {
+                            recordPostProcessFailure(stage, throwable)
+                            fallback()
+                        }
+                    }
+
+                    suspend fun loadStableMessages(fallback: List<ChatMessage>): List<ChatMessage> {
+                        return runPostProcessStage(
+                            stage = "reload",
+                            fallback = { fallback },
+                            block = { conversationRepository.listMessages(session.conversationId) },
+                        )
+                    }
+
+                    postCommitFailure?.let { throwable ->
+                        recordPostProcessFailure("post-commit", throwable)
+                    }
+                    val handledTransferUpdates = mutableSetOf<Pair<String, TransferStatus>>()
+                    runPostProcessStage(
+                        stage = "transfer",
+                        fallback = {},
+                    ) {
+                        if (postCommitFailure == null && canApplyUiUpdate()) {
+                            settleParsedTransferUpdatesIfNeeded(
+                                updates = parsedTransferUpdates,
+                                handledTransferUpdates = handledTransferUpdates,
+                            )
+                        }
+                    }
+                    val directiveSourceMessages = runPostProcessStage(
+                        stage = "protocol-prepare",
+                        fallback = { result.messages },
+                    ) {
+                        if (
+                            canApplyUiUpdate() &&
+                            shouldDropControlOnlyAssistantMessage(
+                                messages = result.messages,
+                                loadingMessage = loadingMessage,
+                                onlineProtocolResult = onlineProtocolResult,
+                                parsedTransferUpdates = parsedTransferUpdates,
+                            )
+                        ) {
+                            removeStaleAssistantMessage(
+                                conversationId = session.conversationId,
+                                loadingMessage = loadingMessage,
+                                selectedModel = selectedModel,
+                            )
+                        } else {
+                            result.messages
+                        }
+                    }
+                    val postDirectiveMessages = runPostProcessStage(
+                        stage = "protocol",
+                        fallback = { loadStableMessages(directiveSourceMessages) },
+                    ) {
+                        if (!canApplyUiUpdate()) {
+                            directiveSourceMessages
+                        } else {
+                            applyOnlineProtocolDirectivesIfNeeded(
+                                conversationId = session.conversationId,
+                                selectedModel = selectedModel,
+                                messages = directiveSourceMessages,
+                                completedAssistantId = directiveSourceMessages.lastOrNull {
+                                    it.role == MessageRole.ASSISTANT && it.status == MessageStatus.COMPLETED
+                                }?.id.orEmpty(),
+                                protocolResult = onlineProtocolResult,
+                                handledTransferUpdates = handledTransferUpdates,
+                            )
+                        }
+                    }
+                    committedMessages = postDirectiveMessages
                     applyActiveRawMessages(postDirectiveMessages)
                     val completedAssistantMessage = postDirectiveMessages.lastOrNull {
                         it.role == MessageRole.ASSISTANT && it.status == MessageStatus.COMPLETED
                     }
-                    executeAfterAssistantScripts(
-                        session = session,
-                        scenario = scenario,
-                        assistant = assistant,
-                        userText = latestUserInputText,
-                        assistantMessage = completedAssistantMessage,
-                    )
-                    markPhoneObservationConsumedIfNeeded(
-                        conversationId = session.conversationId,
-                        assistantMessage = completedAssistantMessage,
-                    )
-                    if (finishSendingOnCompletion && canApplyUiUpdate()) {
-                        updateUiState { current ->
-                            RoleplayStateSupport.finishSending(current, errorMessage = null)
-                        }
-                    }
-                    launchConversationSummaryGeneration(
-                        session.conversationId,
-                        postDirectiveMessages,
-                        state.settings,
-                        assistant,
-                        scenario,
-                    )
-                    launchVoiceSynthesis(
-                        VoiceSynthesisRequest(
-                            conversationId = session.conversationId,
-                            selectedModel = selectedModel,
-                            messages = postDirectiveMessages,
-                            settings = state.settings,
-                            fallbackAssistantId = scenario.assistantId,
-                        ),
-                        ::applyRawMessages,
-                    )
-                    launchAiPhotoGeneration(
-                        AiPhotoGenerationRequest(
-                            conversationId = session.conversationId,
-                            selectedModel = selectedModel,
-                            messages = postDirectiveMessages,
-                            settings = state.settings,
-                            assistant = assistant,
+                    runPostProcessStage(stage = "script", fallback = {}) {
+                        executeAfterAssistantScripts(
+                            session = session,
                             scenario = scenario,
-                        ),
-                        ::applyRawMessages,
-                    )
-                    val completedCount = postDirectiveMessages.count { it.status == MessageStatus.COMPLETED }
-                    val memoryWindow = state.settings.memoryAutoSummaryEvery
-                    // 累计水位线：自上次提取以来新增 completed ≥ window 即触发，避免计数跳变跨过倍数点时永久丢失窗口
-                    if (memoryExtractionGate.shouldExtract(session.conversationId, completedCount, memoryWindow)) {
-                        launchAutomaticMemoryExtraction(
-                            session.conversationId,
-                            postDirectiveMessages,
-                            state.settings,
-                            assistant,
-                            scenario,
+                            assistant = assistant,
+                            userText = latestUserInputText,
+                            assistantMessage = completedAssistantMessage,
+                            canApplyUiUpdate = ::canApplyUiUpdate,
                         )
                     }
-                    return RoleplayRoundTripExecutionOutcome(errorMessage = completionError)
+                    runPostProcessStage(stage = "observation", fallback = {}) {
+                        if (canApplyUiUpdate()) {
+                            markPhoneObservationConsumedIfNeeded(
+                                conversationId = session.conversationId,
+                                assistantMessage = completedAssistantMessage,
+                            )
+                        }
+                    }
+                    runPostProcessStage(stage = "summary", fallback = {}) {
+                        if (canApplyUiUpdate()) {
+                            launchConversationSummaryGeneration(
+                                session.conversationId,
+                                postDirectiveMessages,
+                                state.settings,
+                                assistant,
+                                scenario,
+                            )
+                        }
+                    }
+                    runPostProcessStage(stage = "voice", fallback = {}) {
+                        if (canApplyUiUpdate()) {
+                            launchVoiceSynthesis(
+                                VoiceSynthesisRequest(
+                                    conversationId = session.conversationId,
+                                    selectedModel = selectedModel,
+                                    messages = postDirectiveMessages,
+                                    settings = state.settings,
+                                    fallbackAssistantId = scenario.assistantId,
+                                ),
+                                ::applyRawMessages,
+                            )
+                        }
+                    }
+                    runPostProcessStage(stage = "photo", fallback = {}) {
+                        if (canApplyUiUpdate()) {
+                            launchAiPhotoGeneration(
+                                AiPhotoGenerationRequest(
+                                    conversationId = session.conversationId,
+                                    selectedModel = selectedModel,
+                                    messages = postDirectiveMessages,
+                                    settings = state.settings,
+                                    assistant = assistant,
+                                    scenario = scenario,
+                                ),
+                                ::applyRawMessages,
+                            )
+                        }
+                    }
+                    runPostProcessStage(stage = "memory", fallback = {}) {
+                        if (canApplyUiUpdate()) {
+                            val completedCount = postDirectiveMessages.count {
+                                it.status == MessageStatus.COMPLETED
+                            }
+                            val memoryWindow = state.settings.memoryAutoSummaryEvery
+                            // 累计水位线：自上次提取以来新增 completed ≥ window 即触发，避免计数跳变跨过倍数点时永久丢失窗口
+                            if (
+                                memoryExtractionGate.shouldExtract(
+                                    session.conversationId,
+                                    completedCount,
+                                    memoryWindow,
+                                )
+                            ) {
+                                launchAutomaticMemoryExtraction(
+                                    session.conversationId,
+                                    postDirectiveMessages,
+                                    state.settings,
+                                    assistant,
+                                    scenario,
+                                )
+                            }
+                        }
+                    }
+                    if (canApplyUiUpdate()) {
+                        updateUiState { current ->
+                            val finished = if (finishSendingOnCompletion) {
+                                RoleplayStateSupport.finishSending(current, errorMessage = null)
+                            } else {
+                                current
+                            }
+                            if (hasPostProcessFailure) {
+                                RoleplayStateSupport.applyNoticeMessage(
+                                    finished,
+                                    ROLEPLAY_POST_PROCESS_FAILURE_NOTICE,
+                                )
+                            } else {
+                                finished
+                            }
+                        }
+                    }
+                    return RoleplayRoundTripExecutionOutcome(
+                        noticeMessage = ROLEPLAY_POST_PROCESS_FAILURE_NOTICE.takeIf {
+                            hasPostProcessFailure
+                        },
+                    )
                 }
 
                 is AssistantRoundTripResult.Cancelled -> {
@@ -659,6 +805,32 @@ internal class RoleplayRoundTripExecutor(
                 }
             }
         } catch (cancellation: CancellationException) {
+            if (generationCommitted) {
+                val latestMessages = withContext(NonCancellable) {
+                    try {
+                        conversationRepository.listMessages(session.conversationId)
+                    } catch (throwable: Throwable) {
+                        AppLogger.w(
+                            ROUND_TRIP_LOG_TAG,
+                            diagnostics.withAssistantFallback(
+                                assistant?.id ?: scenario.assistantId,
+                            ).logMessage(
+                                stage = "cancel-reload",
+                                event = "failed",
+                                errorCategory = throwable.safeErrorCategory(),
+                            ),
+                        )
+                        committedMessages
+                    }
+                }
+                applyRawMessages(latestMessages)
+                if (finishSendingOnCompletion && canApplyUiUpdate() && currentUiState().isSending) {
+                    updateUiState { current ->
+                        RoleplayStateSupport.finishSending(current, errorMessage = null)
+                    }
+                }
+                throw cancellation
+            }
             val cancelledSnapshot = resolveCancellationSnapshot(
                 conversationId = session.conversationId,
                 loadingMessage = loadingMessage,
@@ -673,6 +845,51 @@ internal class RoleplayRoundTripExecutor(
             }
             throw cancellation
         } catch (throwable: Throwable) {
+            if (generationCommitted) {
+                val resolvedDiagnostics = diagnostics.withAssistantFallback(
+                    assistant?.id ?: scenario.assistantId,
+                )
+                AppLogger.w(
+                    ROUND_TRIP_LOG_TAG,
+                    resolvedDiagnostics.logMessage(
+                        stage = "post-process-unhandled",
+                        event = "failed",
+                        errorCategory = throwable.safeErrorCategory(),
+                    ),
+                )
+                val latestMessages = withContext(NonCancellable) {
+                    try {
+                        conversationRepository.listMessages(session.conversationId)
+                    } catch (reloadFailure: Throwable) {
+                        AppLogger.w(
+                            ROUND_TRIP_LOG_TAG,
+                            resolvedDiagnostics.logMessage(
+                                stage = "reload",
+                                event = "failed",
+                                errorCategory = reloadFailure.safeErrorCategory(),
+                            ),
+                        )
+                        committedMessages
+                    }
+                }
+                applyActiveRawMessages(latestMessages)
+                if (canApplyUiUpdate()) {
+                    updateUiState { current ->
+                        val finished = if (finishSendingOnCompletion) {
+                            RoleplayStateSupport.finishSending(current, errorMessage = null)
+                        } else {
+                            current
+                        }
+                        RoleplayStateSupport.applyNoticeMessage(
+                            finished,
+                            ROLEPLAY_POST_PROCESS_FAILURE_NOTICE,
+                        )
+                    }
+                }
+                return RoleplayRoundTripExecutionOutcome(
+                    noticeMessage = ROLEPLAY_POST_PROCESS_FAILURE_NOTICE,
+                )
+            }
             val errorText = SensitiveTextRedactor.throwableMessageForUi(
                 throwable = throwable,
                 fallback = ROLEPLAY_SEND_FAILURE_MESSAGE,
@@ -732,11 +949,22 @@ internal class RoleplayRoundTripExecutor(
             ?: text
     }
 
+    internal suspend fun <T> withMessageSnapshotMutationLock(
+        block: suspend () -> T,
+    ): T {
+        messageSnapshotMutationMutex.lock()
+        return try {
+            block()
+        } finally {
+            messageSnapshotMutationMutex.unlock()
+        }
+    }
+
     private suspend fun removeStaleAssistantMessage(
         conversationId: String,
         loadingMessage: ChatMessage,
         selectedModel: String,
-    ): List<ChatMessage> {
+    ): List<ChatMessage> = withMessageSnapshotMutationLock {
         val cleanedMessages = conversationRepository.listMessages(conversationId)
             .filterNot { it.id == loadingMessage.id }
         conversationRepository.replaceConversationSnapshot(
@@ -744,7 +972,7 @@ internal class RoleplayRoundTripExecutor(
             messages = cleanedMessages,
             selectedModel = selectedModel,
         )
-        return cleanedMessages
+        cleanedMessages
     }
 
     private suspend fun resolveCancellationSnapshot(
@@ -753,28 +981,30 @@ internal class RoleplayRoundTripExecutor(
         cancelledMessages: List<ChatMessage>,
         selectedModel: String,
     ): List<ChatMessage> = withContext(NonCancellable) {
-        // 该函数在已取消的协程里被调用：真实 Room 的挂起点在取消态会抛 CancellationException，
-        // 导致清理（读取 + 落库）半途中断、loading 占位永久残留。用 NonCancellable 保证清理跑完。
-        val persistedMessages = conversationRepository.listMessages(conversationId)
-        val loadingExists = persistedMessages.any { it.id == loadingMessage.id }
-        if (!loadingExists) {
-            return@withContext persistedMessages.ifEmpty { cancelledMessages }
+        withMessageSnapshotMutationLock {
+            // 该函数在已取消的协程里被调用：真实 Room 的挂起点在取消态会抛 CancellationException，
+            // 导致清理（读取 + 落库）半途中断、loading 占位永久残留。用 NonCancellable 保证清理跑完。
+            val persistedMessages = conversationRepository.listMessages(conversationId)
+            val loadingIndex = persistedMessages.indexOfFirst { it.id == loadingMessage.id }
+            if (loadingIndex < 0) {
+                return@withMessageSnapshotMutationLock persistedMessages
+            }
+            val cancelledAssistant = cancelledMessages.firstOrNull { message ->
+                message.id == loadingMessage.id && message.status != MessageStatus.LOADING
+            }
+            val snapshot = persistedMessages.toMutableList().apply {
+                removeAt(loadingIndex)
+                if (cancelledAssistant != null) {
+                    add(loadingIndex.coerceAtMost(size), cancelledAssistant)
+                }
+            }
+            conversationRepository.replaceConversationSnapshot(
+                conversationId = conversationId,
+                messages = snapshot,
+                selectedModel = selectedModel,
+            )
+            snapshot
         }
-        val cancelledMessageIds = cancelledMessages.mapTo(linkedSetOf()) { it.id }
-        val hasNewerExternalMessages = persistedMessages.any { message ->
-            message.id != loadingMessage.id && message.id !in cancelledMessageIds
-        }
-        val snapshot = if (hasNewerExternalMessages) {
-            persistedMessages.filterNot { it.id == loadingMessage.id }
-        } else {
-            cancelledMessages
-        }
-        conversationRepository.replaceConversationSnapshot(
-            conversationId = conversationId,
-            messages = snapshot,
-            selectedModel = selectedModel,
-        )
-        snapshot
     }
 
     private fun List<ChatMessage>.assistantMessageError(loadingMessageId: String): String? {
@@ -948,7 +1178,11 @@ internal class RoleplayRoundTripExecutor(
         assistant: Assistant?,
         userText: String,
         assistantMessage: ChatMessage?,
+        canApplyUiUpdate: () -> Boolean,
     ) {
+        if (!canApplyUiUpdate()) {
+            return
+        }
         val assistantText = assistantMessage?.content?.trim().orEmpty()
         if (assistantText.isBlank()) {
             return
@@ -961,15 +1195,28 @@ internal class RoleplayRoundTripExecutor(
             userText = userText,
             assistantText = assistantText,
         )
-        applyScriptUiDirectives(scriptEventCoordinator.execute(request))
         applyScriptUiDirectives(
-            scriptEventCoordinator.execute(
+            result = scriptEventCoordinator.execute(request),
+            canApplyUiUpdate = canApplyUiUpdate,
+        )
+        if (!canApplyUiUpdate()) {
+            return
+        }
+        applyScriptUiDirectives(
+            result = scriptEventCoordinator.execute(
                 request.copy(event = RoleplayScriptEvent.RENDER_STATE),
             ),
+            canApplyUiUpdate = canApplyUiUpdate,
         )
     }
 
-    private fun applyScriptUiDirectives(result: RoleplayScriptExecutionResult) {
+    private fun applyScriptUiDirectives(
+        result: RoleplayScriptExecutionResult,
+        canApplyUiUpdate: () -> Boolean,
+    ) {
+        if (!canApplyUiUpdate()) {
+            return
+        }
         val message = result.uiDirectives
             .firstOrNull { directive ->
                 directive.type.lowercase() in setOf("notice", "status", "toast")
@@ -1105,10 +1352,45 @@ internal class RoleplayRoundTripExecutor(
 
     private companion object {
         private const val ROLEPLAY_SEND_FAILURE_MESSAGE = "发送失败，请检查网络或模型配置后重试"
+        private const val ROLEPLAY_POST_PROCESS_FAILURE_NOTICE = "回复已生成，但部分后续处理未完成"
+        private const val ROUND_TRIP_LOG_TAG = "RoleplayRoundTrip"
         private const val SCRIPT_NOTICE_MAX_LENGTH = 160
         private const val SUMMARY_TRIGGER_MESSAGE_COUNT = 12
         private const val SUMMARY_MIN_COVERED_MESSAGE_COUNT = 4
     }
+}
+
+private fun RoleplayRoundTripDiagnostics.withAssistantFallback(
+    fallbackAssistantId: String,
+): RoleplayRoundTripDiagnostics {
+    return if (assistantId.isBlank()) copy(assistantId = fallbackAssistantId) else this
+}
+
+private fun RoleplayRoundTripDiagnostics.logMessage(
+    stage: String,
+    event: String,
+    errorCategory: String = "none",
+): String {
+    return buildString {
+        append("stage=")
+        append(stage)
+        append(" event=")
+        append(event)
+        append(" participantId=")
+        append(participantId.ifBlank { "none" })
+        append(" assistantId=")
+        append(assistantId.ifBlank { "none" })
+        append(" turn=")
+        append(turnIndex ?: 0)
+        append(" attempt=")
+        append(attempt ?: 0)
+        append(" category=")
+        append(errorCategory)
+    }
+}
+
+private fun Throwable.safeErrorCategory(): String {
+    return javaClass.simpleName.take(64).ifBlank { "Throwable" }
 }
 
 /**

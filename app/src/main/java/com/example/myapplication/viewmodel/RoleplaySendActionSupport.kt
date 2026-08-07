@@ -55,10 +55,14 @@ import com.example.myapplication.roleplay.RoleplayGroupReplyTurn
 import com.example.myapplication.roleplay.buildRoleplayGroupSpeakerDirectorNote
 import com.example.myapplication.roleplay.RoleplayMessageFormatSupport
 import com.example.myapplication.roleplay.RoleplayRoundTripSupport
+import com.example.myapplication.system.logging.AppLogger
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 internal class RoleplaySendActionSupport(
     private val scope: CoroutineScope,
@@ -518,6 +522,9 @@ internal class RoleplaySendActionSupport(
         }
 
         val sendingRunId = beginSendingRun()
+        val selectedModel = RoleplayConversationSupport.resolveSelectedModelId(state.settings)
+        val activeLoadingMessageIds = linkedSetOf<String>()
+        var groupConversationId = state.currentSession?.conversationId.orEmpty()
         cancelSuggestionGeneration(false)
         updateUiState { current ->
             RoleplayStateSupport.beginSending(current, current.input)
@@ -551,10 +558,10 @@ internal class RoleplaySendActionSupport(
 
                 val session = startResult?.session ?: state.currentSession
                     ?: error("当前剧情会话不存在")
+                groupConversationId = session.conversationId
                 if (!isConversationActive(session.conversationId)) {
                     return@launch
                 }
-                val selectedModel = RoleplayConversationSupport.resolveSelectedModelId(state.settings)
                 val baseMessages = startResult?.conversationMessages ?: RoleplayRoundTripSupport.currentConversationMessages(
                     messages = currentRawMessages.value,
                     conversationId = session.conversationId,
@@ -567,6 +574,25 @@ internal class RoleplaySendActionSupport(
                     baseMessages = baseMessages,
                     participantId = participantId,
                     sendingRunId = sendingRunId,
+                    activeLoadingMessageIds = activeLoadingMessageIds,
+                )
+            } catch (cancellation: CancellationException) {
+                handleGroupSendCancellation(
+                    scenario = scenario,
+                    conversationId = groupConversationId,
+                    selectedModel = selectedModel,
+                    sendingRunId = sendingRunId,
+                    activeLoadingMessageIds = activeLoadingMessageIds,
+                )
+                throw cancellation
+            } catch (throwable: Throwable) {
+                handleGroupSendFailure(
+                    scenario = scenario,
+                    conversationId = groupConversationId,
+                    selectedModel = selectedModel,
+                    sendingRunId = sendingRunId,
+                    activeLoadingMessageIds = activeLoadingMessageIds,
+                    throwable = throwable,
                 )
             } finally {
                 onSendingFinished(sendingRunId)
@@ -693,6 +719,9 @@ internal class RoleplaySendActionSupport(
         } else {
             userParts
         }
+        val selectedModel = RoleplayConversationSupport.resolveSelectedModelId(state.settings)
+        val activeLoadingMessageIds = linkedSetOf<String>()
+        var groupConversationId = state.currentSession?.conversationId.orEmpty()
         cancelSuggestionGeneration(false)
         updateUiState { current ->
             RoleplayStateSupport.beginSending(current, nextInput).let { updated ->
@@ -733,10 +762,10 @@ internal class RoleplaySendActionSupport(
 
                 val session = startResult?.session ?: state.currentSession
                     ?: error("当前剧情会话不存在")
+                groupConversationId = session.conversationId
                 if (!isConversationActive(session.conversationId)) {
                     return@launch
                 }
-                val selectedModel = RoleplayConversationSupport.resolveSelectedModelId(state.settings)
                 val assistant = RoleplayConversationSupport.resolveAssistant(state.settings, scenario.assistantId)
                 val baseMessages = startResult?.conversationMessages ?: RoleplayRoundTripSupport.currentConversationMessages(
                     messages = currentRawMessages.value,
@@ -802,6 +831,7 @@ internal class RoleplaySendActionSupport(
                         replyToPreview = state.replyToPreview,
                         replyToSpeakerName = state.replyToSpeakerName,
                         sendingRunId = sendingRunId,
+                        activeLoadingMessageIds = activeLoadingMessageIds,
                     )
                     return@launch
                 }
@@ -872,6 +902,29 @@ internal class RoleplaySendActionSupport(
                     giftImageRequest = giftImageRequest,
                     isRoundTripActive = { isSendingRunActive(sendingRunId) },
                 )
+            } catch (cancellation: CancellationException) {
+                if (scenario.isGroupChat) {
+                    handleGroupSendCancellation(
+                        scenario = scenario,
+                        conversationId = groupConversationId,
+                        selectedModel = selectedModel,
+                        sendingRunId = sendingRunId,
+                        activeLoadingMessageIds = activeLoadingMessageIds,
+                    )
+                }
+                throw cancellation
+            } catch (throwable: Throwable) {
+                if (!scenario.isGroupChat) {
+                    throw throwable
+                }
+                handleGroupSendFailure(
+                    scenario = scenario,
+                    conversationId = groupConversationId,
+                    selectedModel = selectedModel,
+                    sendingRunId = sendingRunId,
+                    activeLoadingMessageIds = activeLoadingMessageIds,
+                    throwable = throwable,
+                )
             } finally {
                 onSendingFinished(sendingRunId)
             }
@@ -904,6 +957,113 @@ internal class RoleplaySendActionSupport(
         return listOf(textMessagePart(rewrittenText))
     }
 
+    private suspend fun handleGroupSendCancellation(
+        scenario: com.example.myapplication.model.RoleplayScenario,
+        conversationId: String,
+        selectedModel: String,
+        sendingRunId: Long,
+        activeLoadingMessageIds: Set<String>,
+    ) {
+        AppLogger.d(
+            GROUP_SEND_LOG_TAG,
+            "stage=finalize event=cancelled assistantId=${scenario.assistantId} category=none",
+        )
+        if (!canFinalizeGroupRun(sendingRunId, scenario.id, conversationId)) {
+            return
+        }
+        val cleanedMessages = cleanupGroupLoadingMessages(
+            conversationId = conversationId,
+            selectedModel = selectedModel,
+            activeLoadingMessageIds = activeLoadingMessageIds,
+        )
+        if (!canFinalizeGroupRun(sendingRunId, scenario.id, conversationId)) {
+            return
+        }
+        currentRawMessages.value = cleanedMessages
+        updateUiState { current ->
+            RoleplayStateSupport.finishSending(current, errorMessage = null)
+        }
+    }
+
+    private suspend fun handleGroupSendFailure(
+        scenario: com.example.myapplication.model.RoleplayScenario,
+        conversationId: String,
+        selectedModel: String,
+        sendingRunId: Long,
+        activeLoadingMessageIds: Set<String>,
+        throwable: Throwable,
+    ) {
+        AppLogger.e(
+            GROUP_SEND_LOG_TAG,
+            "stage=finalize event=failed assistantId=${scenario.assistantId} " +
+                "category=${throwable.groupSafeErrorCategory()}",
+        )
+        if (!canFinalizeGroupRun(sendingRunId, scenario.id, conversationId)) {
+            return
+        }
+        val cleanedMessages = cleanupGroupLoadingMessages(
+            conversationId = conversationId,
+            selectedModel = selectedModel,
+            activeLoadingMessageIds = activeLoadingMessageIds,
+        )
+        if (!canFinalizeGroupRun(sendingRunId, scenario.id, conversationId)) {
+            return
+        }
+        currentRawMessages.value = cleanedMessages
+        updateUiState { current ->
+            RoleplayStateSupport.finishSending(current, errorMessage = GROUP_SEND_FAILURE_MESSAGE)
+        }
+    }
+
+    private suspend fun cleanupGroupLoadingMessages(
+        conversationId: String,
+        selectedModel: String,
+        activeLoadingMessageIds: Set<String>,
+    ): List<ChatMessage> = withContext(NonCancellable) {
+        roundTripExecutor.withMessageSnapshotMutationLock {
+            if (conversationId.isBlank() || activeLoadingMessageIds.isEmpty()) {
+                return@withMessageSnapshotMutationLock currentRawMessages.value
+            }
+            val inMemoryMessages = removeGroupRunLoadingMessages(
+                messages = currentRawMessages.value,
+                conversationId = conversationId,
+                activeLoadingMessageIds = activeLoadingMessageIds,
+            )
+            try {
+                val persistedMessages = conversationRepository.listMessages(conversationId)
+                val cleanedMessages = removeGroupRunLoadingMessages(
+                    messages = persistedMessages,
+                    conversationId = conversationId,
+                    activeLoadingMessageIds = activeLoadingMessageIds,
+                )
+                if (cleanedMessages != persistedMessages) {
+                    conversationRepository.replaceConversationSnapshot(
+                        conversationId = conversationId,
+                        messages = cleanedMessages,
+                        selectedModel = selectedModel,
+                    )
+                }
+                cleanedMessages
+            } catch (throwable: Throwable) {
+                AppLogger.w(
+                    GROUP_SEND_LOG_TAG,
+                    "stage=finalize event=cleanup-failed category=${throwable.groupSafeErrorCategory()}",
+                )
+                inMemoryMessages
+            }
+        }
+    }
+
+    private fun canFinalizeGroupRun(
+        sendingRunId: Long,
+        scenarioId: String,
+        conversationId: String,
+    ): Boolean {
+        return isSendingRunActive(sendingRunId) &&
+            isScenarioActive(scenarioId) &&
+            (conversationId.isBlank() || isConversationActive(conversationId))
+    }
+
     private suspend fun loadGroupMemberContexts(
         scenarioId: String,
         assistants: List<Assistant>,
@@ -926,6 +1086,7 @@ internal class RoleplaySendActionSupport(
         baseMessages: List<ChatMessage>,
         participantId: String,
         sendingRunId: Long,
+        activeLoadingMessageIds: MutableSet<String>,
     ) {
         if (!isSendingRunActive(sendingRunId) || !isConversationActive(session.conversationId)) {
             return
@@ -970,6 +1131,7 @@ internal class RoleplaySendActionSupport(
             initialMessages = baseMessages,
             emptyNotice = "这一轮暂时没有角色接话",
             sendingRunId = sendingRunId,
+            activeLoadingMessageIds = activeLoadingMessageIds,
         )
     }
 
@@ -985,6 +1147,7 @@ internal class RoleplaySendActionSupport(
         replyToPreview: String,
         replyToSpeakerName: String,
         sendingRunId: Long,
+        activeLoadingMessageIds: MutableSet<String>,
     ) {
         if (!isSendingRunActive(sendingRunId) || !isConversationActive(session.conversationId)) {
             return
@@ -1014,7 +1177,6 @@ internal class RoleplaySendActionSupport(
                 replyToPreview = replyToPreview,
                 replyToSpeakerName = replyToSpeakerName,
             )
-            currentRawMessages.value = baseMessages + userMessage
             updateUiState { current ->
                 RoleplayStateSupport.finishSending(
                     RoleplayStateSupport.applyErrorMessage(current, "请先给群聊添加角色"),
@@ -1033,8 +1195,7 @@ internal class RoleplaySendActionSupport(
             replyToPreview = replyToPreview,
             replyToSpeakerName = replyToSpeakerName,
         )
-        val messagesWithUser = baseMessages + userMessage
-        currentRawMessages.value = messagesWithUser
+        val messagesWithUser = currentRawMessages.value
         val mutedMention = members.firstOrNull { member ->
             member.participant.isMuted && userMessage.content.mentionsGroupMember(member.displayName)
         }
@@ -1082,6 +1243,7 @@ internal class RoleplaySendActionSupport(
             initialMessages = messagesWithUser,
             emptyNotice = plan.notice.ifBlank { "这一轮暂时没有角色接话" },
             sendingRunId = sendingRunId,
+            activeLoadingMessageIds = activeLoadingMessageIds,
         )
     }
 
@@ -1095,6 +1257,7 @@ internal class RoleplaySendActionSupport(
         initialMessages: List<ChatMessage>,
         emptyNotice: String,
         sendingRunId: Long,
+        activeLoadingMessageIds: MutableSet<String>,
     ) {
         currentRawMessages.value = initialMessages
         if (turns.isEmpty()) {
@@ -1112,6 +1275,7 @@ internal class RoleplaySendActionSupport(
         var firstTurnError: String? = null
         var successfulTurnCount = 0
         val failedTurnNames = mutableListOf<String>()
+        val nonBlockingNotices = linkedSetOf<String>()
         for ((index, turn) in turns.withIndex()) {
             if (!isSendingRunActive(sendingRunId) || !isConversationActive(session.conversationId)) {
                 return
@@ -1125,10 +1289,8 @@ internal class RoleplaySendActionSupport(
                 characterPortraitUri = member.avatarUri,
                 characterPortraitUrl = "",
             )
-            val timeline = RoleplayRoundTripSupport.currentConversationMessages(
-                messages = currentRawMessages.value,
-                conversationId = session.conversationId,
-            )
+            val timeline = loadStableGroupTimeline(session.conversationId)
+            currentRawMessages.value = timeline
             val loadingMessage = RoleplayRoundTripSupport.buildAssistantLoadingMessage(
                 conversationId = session.conversationId,
                 nowProvider = nowProvider,
@@ -1148,10 +1310,23 @@ internal class RoleplaySendActionSupport(
                 isSendingRunActive(sendingRunId) &&
                 isConversationActive(session.conversationId)
             ) {
-                val attemptTimeline = RoleplayRoundTripSupport.currentConversationMessages(
-                    messages = currentRawMessages.value,
-                    conversationId = session.conversationId,
-                ).filterNot { it.id == loadingMessage.id }
+                val attemptNumber = attempt + 1
+                val diagnostics = RoleplayRoundTripDiagnostics(
+                    participantId = turn.participantId,
+                    assistantId = turn.assistantId,
+                    turnIndex = index + 1,
+                    attempt = attemptNumber,
+                )
+                AppLogger.d(
+                    GROUP_SEND_LOG_TAG,
+                    groupTurnLogMessage(
+                        diagnostics = diagnostics,
+                        stage = "prepare",
+                        event = "attempt",
+                    ),
+                )
+                val attemptTimeline = loadStableGroupTimeline(session.conversationId)
+                    .filterNot { it.id == loadingMessage.id }
                 val loadingForAttempt = loadingMessage.copy(
                     content = "",
                     status = MessageStatus.LOADING,
@@ -1159,6 +1334,7 @@ internal class RoleplaySendActionSupport(
                     reasoningSteps = emptyList(),
                     parts = emptyList(),
                 )
+                activeLoadingMessageIds += loadingForAttempt.id
                 currentRawMessages.value = attemptTimeline + loadingForAttempt
                 val requestMessagesForTurn = buildGroupQuickReplyRequestMessages(
                     timeline = attemptTimeline,
@@ -1189,14 +1365,48 @@ internal class RoleplaySendActionSupport(
                         recentMessages = attemptTimeline,
                     ),
                     finishSendingOnCompletion = false,
+                    diagnostics = diagnostics,
                     isRoundTripActive = { isSendingRunActive(sendingRunId) },
                 )
+                activeLoadingMessageIds -= loadingForAttempt.id
+                outcome.noticeMessage
+                    ?.takeIf(String::isNotBlank)
+                    ?.let(nonBlockingNotices::add)
                 turnError = outcome.errorMessage
                 if (turnError.isNullOrBlank()) {
+                    AppLogger.d(
+                        GROUP_SEND_LOG_TAG,
+                        groupTurnLogMessage(
+                            diagnostics = diagnostics,
+                            stage = "commit",
+                            event = "success",
+                        ),
+                    )
                     successfulTurnCount += 1
                     break
                 }
                 attempt += 1
+                if (attempt < GROUP_TURN_MAX_ATTEMPTS) {
+                    AppLogger.w(
+                        GROUP_SEND_LOG_TAG,
+                        groupTurnLogMessage(
+                            diagnostics = diagnostics,
+                            stage = "stream",
+                            event = "retry",
+                            errorCategory = "generation_failed",
+                        ),
+                    )
+                } else {
+                    AppLogger.e(
+                        GROUP_SEND_LOG_TAG,
+                        groupTurnLogMessage(
+                            diagnostics = diagnostics,
+                            stage = "stream",
+                            event = "final-failure",
+                            errorCategory = "generation_failed",
+                        ),
+                    )
+                }
             }
             if (!turnError.isNullOrBlank()) {
                 if (firstTurnError == null) {
@@ -1214,10 +1424,17 @@ internal class RoleplaySendActionSupport(
             updateUiState { current ->
                 val errorMessage = if (successfulTurnCount == 0) firstTurnError else null
                 val finished = RoleplayStateSupport.finishSending(current, errorMessage = errorMessage)
-                if (failedTurnNames.isNotEmpty() && successfulTurnCount > 0) {
+                val partialFailureNotice = if (failedTurnNames.isNotEmpty() && successfulTurnCount > 0) {
+                    "${failedTurnNames.joinToString("、")} 回复失败，已继续其他角色"
+                } else {
+                    null
+                }
+                val finalNotice = (nonBlockingNotices + listOfNotNull(partialFailureNotice))
+                    .joinToString(separator = "；")
+                if (finalNotice.isNotBlank()) {
                     RoleplayStateSupport.applyNoticeMessage(
                         finished,
-                        "${failedTurnNames.joinToString("、")} 回复失败，已继续其他角色",
+                        finalNotice,
                     )
                 } else {
                     finished
@@ -1246,13 +1463,28 @@ internal class RoleplaySendActionSupport(
             nowProvider = nowProvider,
             messageIdProvider = messageIdProvider,
         )
-        conversationRepository.appendMessages(
-            conversationId = session.conversationId,
-            messages = listOf(userMessage),
-            selectedModel = selectedModel,
-        )
-        currentRawMessages.value = baseMessages + userMessage
+        roundTripExecutor.withMessageSnapshotMutationLock {
+            val persistedBaseMessages = conversationRepository.listMessages(session.conversationId)
+            val stableBaseMessages = persistedBaseMessages.ifEmpty { baseMessages }
+            conversationRepository.appendMessages(
+                conversationId = session.conversationId,
+                messages = listOf(userMessage),
+                selectedModel = selectedModel,
+            )
+            currentRawMessages.value = stableBaseMessages.filterNot { it.id == userMessage.id } + userMessage
+        }
         return userMessage
+    }
+
+    private suspend fun loadStableGroupTimeline(
+        conversationId: String,
+    ): List<ChatMessage> {
+        return roundTripExecutor.withMessageSnapshotMutationLock {
+            RoleplayRoundTripSupport.currentConversationMessages(
+                messages = conversationRepository.listMessages(conversationId),
+                conversationId = conversationId,
+            )
+        }
     }
 
     private fun buildGroupQuickReplyRequestMessages(
@@ -1300,6 +1532,17 @@ internal class RoleplaySendActionSupport(
             contains(normalizedName, ignoreCase = true)
     }
 
+    private fun groupTurnLogMessage(
+        diagnostics: RoleplayRoundTripDiagnostics,
+        stage: String,
+        event: String,
+        errorCategory: String = "none",
+    ): String {
+        return "stage=$stage event=$event participantId=${diagnostics.participantId} " +
+            "assistantId=${diagnostics.assistantId} turn=${diagnostics.turnIndex ?: 0} " +
+            "attempt=${diagnostics.attempt ?: 0} category=$errorCategory"
+    }
+
     private fun isScenarioActive(scenarioId: String): Boolean {
         return uiState().currentScenario?.id == scenarioId
     }
@@ -1315,4 +1558,25 @@ private data class AvatarPokeActor(
     val avatarUri: String,
 )
 
+private fun Throwable.groupSafeErrorCategory(): String {
+    return javaClass.simpleName.take(64).ifBlank { "Throwable" }
+}
+
+internal fun removeGroupRunLoadingMessages(
+    messages: List<ChatMessage>,
+    conversationId: String,
+    activeLoadingMessageIds: Set<String>,
+): List<ChatMessage> {
+    if (conversationId.isBlank() || activeLoadingMessageIds.isEmpty()) {
+        return messages
+    }
+    return messages.filterNot { message ->
+        message.conversationId == conversationId &&
+            message.id in activeLoadingMessageIds &&
+            message.status == MessageStatus.LOADING
+    }
+}
+
 private const val GROUP_TURN_MAX_ATTEMPTS = 2
+private const val GROUP_SEND_LOG_TAG = "RoleplayGroupSend"
+private const val GROUP_SEND_FAILURE_MESSAGE = "群聊发送失败，请稍后重试"

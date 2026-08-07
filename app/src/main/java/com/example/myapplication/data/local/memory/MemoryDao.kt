@@ -76,6 +76,9 @@ interface MemoryDao {
     @Query("DELETE FROM memory_entries WHERE id = :entryId")
     suspend fun deleteMemoryEntry(entryId: String)
 
+    @Query("DELETE FROM memory_entries WHERE sourceMessageId = :sourceMessageId")
+    suspend fun deleteMemoryEntriesBySourceMessageId(sourceMessageId: String)
+
     @Query(
         """
         DELETE FROM memory_entries

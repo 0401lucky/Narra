@@ -2,6 +2,8 @@ package com.example.myapplication.viewmodel
 
 import com.example.myapplication.context.DefaultPromptContextAssembler
 import com.example.myapplication.context.PromptContextAssembler
+import com.example.myapplication.conversation.MessageDeletionResult
+import com.example.myapplication.data.local.ConversationStore
 import com.example.myapplication.data.remote.ApiServiceFactory
 import com.example.myapplication.data.remote.OpenAiCompatibleApi
 import com.example.myapplication.data.repository.ConversationRepository
@@ -46,10 +48,12 @@ import com.example.myapplication.testutil.FakeConversationSummaryRepository
 import com.example.myapplication.testutil.FakeMemoryRepository
 import com.example.myapplication.testutil.createTestAiServices
 import com.google.gson.JsonParser
+import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.TestDispatcher
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.resetMain
+import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
 import okhttp3.MediaType.Companion.toMediaType
@@ -406,6 +410,183 @@ class ChatViewModelTest {
         assertEquals(2, store.listMessages("c1").size)
         assertEquals(null, conversationSummaryRepository.getSummary("c1"))
         assertEquals("已回退到这条用户消息，可修改后重新发送", state.noticeMessage)
+    }
+
+    @Test
+    fun deleteMessage_completedMessageRemovesTargetAndUpdatesObservedList() = runTest(mainDispatcherRule.dispatcher.scheduler) {
+        val store = FakeConversationStore(
+            conversations = listOf(
+                Conversation(id = "c1", title = "会话", createdAt = 1L, updatedAt = 2L),
+            ),
+            messagesByConversation = mapOf(
+                "c1" to listOf(
+                    ChatMessage(
+                        id = "m1",
+                        conversationId = "c1",
+                        role = MessageRole.USER,
+                        content = "删除我",
+                        createdAt = 1L,
+                    ),
+                    ChatMessage(
+                        id = "m2",
+                        conversationId = "c1",
+                        role = MessageRole.ASSISTANT,
+                        content = "保留我",
+                        createdAt = 2L,
+                    ),
+                ),
+            ),
+        )
+        val viewModel = createViewModel(store = store, settings = AppSettings())
+
+        advanceUntilIdle()
+        viewModel.deleteMessage("m1")
+        advanceUntilIdle()
+
+        assertEquals(1, store.deleteMessageWithAssociationsCount)
+        assertEquals("c1", store.lastDeletedConversationId)
+        assertEquals("m1", store.lastDeletedMessageId)
+        assertEquals(listOf("m2"), viewModel.uiState.value.messages.map { it.id })
+        assertEquals(listOf("m2"), store.listMessages("c1").map { it.id })
+        assertEquals("消息已删除", viewModel.uiState.value.noticeMessage)
+    }
+
+    @Test
+    fun deleteMessage_loadingMessageIsRejectedBeforeRepositoryCall() = runTest(mainDispatcherRule.dispatcher.scheduler) {
+        val store = FakeConversationStore(
+            conversations = listOf(Conversation(id = "c1", createdAt = 1L, updatedAt = 1L)),
+            messagesByConversation = mapOf(
+                "c1" to listOf(
+                    ChatMessage(
+                        id = "loading",
+                        conversationId = "c1",
+                        role = MessageRole.ASSISTANT,
+                        content = "",
+                        status = MessageStatus.LOADING,
+                        createdAt = 1L,
+                    ),
+                ),
+            ),
+        )
+        val viewModel = createViewModel(store = store, settings = AppSettings())
+
+        advanceUntilIdle()
+        viewModel.deleteMessage("loading")
+        advanceUntilIdle()
+
+        assertEquals(0, store.deleteMessageWithAssociationsCount)
+        assertEquals("loading", viewModel.uiState.value.messages.single().id)
+    }
+
+    @Test
+    fun deleteMessage_inProgressBlocksSendRetryAndEditUntilCommit() =
+        runTest(mainDispatcherRule.dispatcher.scheduler) {
+            val store = FakeConversationStore(
+                conversations = listOf(Conversation(id = "c1", title = "会话", createdAt = 1L, updatedAt = 2L)),
+                messagesByConversation = mapOf(
+                    "c1" to listOf(
+                        ChatMessage(
+                            id = "editable",
+                            conversationId = "c1",
+                            role = MessageRole.USER,
+                            content = "旧输入",
+                            createdAt = 1L,
+                        ),
+                        ChatMessage(
+                            id = "target",
+                            conversationId = "c1",
+                            role = MessageRole.ASSISTANT,
+                            content = "待删除回复",
+                            createdAt = 2L,
+                        ),
+                    ),
+                ),
+            )
+            val deleteStarted = CompletableDeferred<Unit>()
+            val releaseDelete = CompletableDeferred<Unit>()
+            val blockingStore = object : ConversationStore by store {
+                override suspend fun deleteMessageWithAssociations(
+                    conversation: Conversation,
+                    conversationId: String,
+                    messageId: String,
+                ): MessageDeletionResult {
+                    deleteStarted.complete(Unit)
+                    releaseDelete.await()
+                    return store.deleteMessageWithAssociations(conversation, conversationId, messageId)
+                }
+            }
+            val viewModel = createViewModel(
+                store = store,
+                conversationStoreOverride = blockingStore,
+                settings = AppSettings(
+                    baseUrl = server.url("/v1/").toString(),
+                    apiKey = "key",
+                    selectedModel = "chat-model",
+                ),
+            )
+
+            advanceUntilIdle()
+            viewModel.deleteMessage("target")
+            runCurrent()
+            assertTrue(deleteStarted.isCompleted)
+
+            viewModel.updateInput("新消息")
+            viewModel.sendMessage()
+            viewModel.retryMessage("target")
+            viewModel.editUserMessage("editable")
+            runCurrent()
+
+            assertFalse(viewModel.uiState.value.isSending)
+            assertEquals("新消息", viewModel.uiState.value.input)
+            assertEquals(0, store.upsertConversationWithMessagesCount)
+            assertEquals(0, store.replaceConversationSnapshotCount)
+
+            releaseDelete.complete(Unit)
+            advanceUntilIdle()
+
+            assertTrue(store.listMessages("c1").none { it.id == "target" })
+            assertTrue(store.listMessages("c1").any { it.id == "editable" })
+        }
+
+    @Test
+    fun deleteMessage_repositoryFailureKeepsMessageAndUsesSafeError() = runTest(mainDispatcherRule.dispatcher.scheduler) {
+        val store = FakeConversationStore(
+            conversations = listOf(Conversation(id = "c1", createdAt = 1L, updatedAt = 1L)),
+            messagesByConversation = mapOf(
+                "c1" to listOf(
+                    ChatMessage(
+                        id = "m1",
+                        conversationId = "c1",
+                        role = MessageRole.USER,
+                        content = "保留我",
+                        createdAt = 1L,
+                    ),
+                ),
+            ),
+        )
+        val failingStore = object : ConversationStore by store {
+            override suspend fun deleteMessageWithAssociations(
+                conversation: Conversation,
+                conversationId: String,
+                messageId: String,
+            ): MessageDeletionResult {
+                error("secret-token /data/user/0/chat.db")
+            }
+        }
+        val viewModel = createViewModel(
+            store = store,
+            conversationStoreOverride = failingStore,
+            settings = AppSettings(),
+        )
+
+        advanceUntilIdle()
+        viewModel.deleteMessage("m1")
+        advanceUntilIdle()
+
+        assertEquals(1, viewModel.uiState.value.messages.size)
+        assertTrue(viewModel.uiState.value.errorMessage.orEmpty().isNotBlank())
+        assertFalse(viewModel.uiState.value.errorMessage.orEmpty().contains("secret-token"))
+        assertFalse(viewModel.uiState.value.errorMessage.orEmpty().contains("/data/user"))
     }
 
     @Test
@@ -2063,6 +2244,7 @@ class ChatViewModelTest {
     private fun createViewModel(
         store: FakeConversationStore,
         settings: AppSettings,
+        conversationStoreOverride: ConversationStore = store,
         memoryRepository: com.example.myapplication.data.repository.context.MemoryRepository = EmptyMemoryRepository,
         conversationSummaryRepository: com.example.myapplication.data.repository.context.ConversationSummaryRepository = EmptyConversationSummaryRepository,
         promptContextAssembler: PromptContextAssembler = DefaultPromptContextAssembler(),
@@ -2107,7 +2289,7 @@ class ChatViewModelTest {
             imagePayloadResolver = imagePayloadResolver,
         )
         val conversationRepository = ConversationRepository(
-            conversationStore = store,
+            conversationStore = conversationStoreOverride,
             nowProvider = nowProvider,
         )
         return ChatViewModel(

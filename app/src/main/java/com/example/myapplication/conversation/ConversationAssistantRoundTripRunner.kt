@@ -56,6 +56,8 @@ data class AssistantRoundTripRequest(
         parsedOutput: ParsedAssistantSpecialOutput,
         loadingMessage: ChatMessage,
     ) -> ChatMessage,
+    /** 完成消息提交后，附加副作用失败时仅报告诊断，不改变已提交消息状态。 */
+    val onPostCommitFailure: (Throwable) -> Unit = {},
     val onCancelled: (
         payload: StreamedAssistantPayload,
         loadingMessage: ChatMessage,
@@ -101,14 +103,21 @@ class ConversationAssistantRoundTripRunner(
                     request.buildFinalMessages(completedAssistant),
                 )
             }
-            val completedMessages = if (parsedOutput.transferUpdates.isEmpty()) {
+            val completedMessages = try {
+                if (parsedOutput.transferUpdates.isEmpty()) {
+                    request.buildFinalMessages(completedAssistant)
+                } else {
+                    conversationRepository.applyTransferUpdates(
+                        conversationId = request.conversationId,
+                        updates = parsedOutput.transferUpdates,
+                        selectedModel = request.selectedModel,
+                    )
+                }
+            } catch (cancellation: CancellationException) {
+                throw cancellation
+            } catch (throwable: Throwable) {
+                request.onPostCommitFailure(throwable)
                 request.buildFinalMessages(completedAssistant)
-            } else {
-                conversationRepository.applyTransferUpdates(
-                    conversationId = request.conversationId,
-                    updates = parsedOutput.transferUpdates,
-                    selectedModel = request.selectedModel,
-                )
             }
             return AssistantRoundTripResult.Completed(completedMessages)
         } catch (cancellation: CancellationException) {

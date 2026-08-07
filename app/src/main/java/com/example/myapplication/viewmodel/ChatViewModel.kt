@@ -21,6 +21,7 @@ import com.example.myapplication.conversation.ConversationTitleCoordinator
 import com.example.myapplication.conversation.ConversationTransferCoordinator
 import com.example.myapplication.conversation.GiftImageGenerationCoordinator
 import com.example.myapplication.conversation.GiftImageGenerationRequest
+import com.example.myapplication.conversation.MessageDeletionResult
 import com.example.myapplication.conversation.RoundTripInitialPersistence
 import com.example.myapplication.conversation.StreamingReplyBuffer
 import com.example.myapplication.conversation.SummaryGenerationConfig
@@ -68,6 +69,7 @@ import com.example.myapplication.model.toMessageAttachmentOrNull
 import com.example.myapplication.model.toPlainText
 import com.example.myapplication.model.transferResultText
 import com.example.myapplication.model.withGiftImageGenerating
+import com.example.myapplication.system.security.SensitiveTextRedactor
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.Job
@@ -165,6 +167,7 @@ class ChatViewModel(
     val streamingState: StateFlow<ChatStreamingState> = _streamingState.asStateFlow()
 
     private var sendingJob: Job? = null
+    private var isMessageDeletionInProgress: Boolean = false
     /** 确保后台 API 请求（摘要/记忆提取）串行执行，避免并发触发 429。 */
     private val backgroundApiMutex = Mutex()
     private val assistantRoundTripRunner = ConversationAssistantRoundTripRunner(
@@ -498,7 +501,7 @@ class ChatViewModel(
 
     fun retryMessage(messageId: String) {
         val state = _uiState.value
-        if (state.isSending || messageId.isBlank()) {
+        if (state.isSending || isMessageDeletionInProgress || messageId.isBlank()) {
             return
         }
 
@@ -604,7 +607,7 @@ class ChatViewModel(
     fun editUserMessage(messageId: String) {
         val state = _uiState.value
         val conversationId = state.currentConversationId.takeIf { it.isNotBlank() } ?: return
-        if (state.isSending || messageId.isBlank()) {
+        if (state.isSending || isMessageDeletionInProgress || messageId.isBlank()) {
             return
         }
 
@@ -633,6 +636,81 @@ class ChatViewModel(
                 )
             }
             _streamingState.value = ChatStreamingState()
+        }
+    }
+
+    fun deleteMessage(messageId: String) {
+        val initialState = _uiState.value
+        val initialConversationId = initialState.currentConversationId.takeIf { it.isNotBlank() } ?: return
+        if (
+            messageId.isBlank() ||
+            isMessageDeletionInProgress ||
+            initialState.isSending ||
+            _streamingState.value.streamingMessageId.isNotBlank()
+        ) {
+            return
+        }
+        val initialTarget = ChatConversationSupport.currentConversationMessages(
+            messages = initialState.messages,
+            conversationId = initialConversationId,
+        ).firstOrNull { it.id == messageId }
+        if (initialTarget == null || initialTarget.status == MessageStatus.LOADING) {
+            return
+        }
+
+        isMessageDeletionInProgress = true
+        viewModelScope.launch {
+            try {
+                val currentState = _uiState.value
+                val conversationId = currentState.currentConversationId.takeIf { it.isNotBlank() } ?: return@launch
+                if (
+                    conversationId != initialConversationId ||
+                    currentState.isSending ||
+                    _streamingState.value.streamingMessageId.isNotBlank()
+                ) {
+                    return@launch
+                }
+                val currentTarget = ChatConversationSupport.currentConversationMessages(
+                    messages = currentState.messages,
+                    conversationId = conversationId,
+                ).firstOrNull { it.id == messageId }
+                if (currentTarget == null || currentTarget.status == MessageStatus.LOADING) {
+                    return@launch
+                }
+
+                when (
+                    conversationRepository.deleteMessage(
+                        conversationId = conversationId,
+                        messageId = messageId,
+                    )
+                ) {
+                    is MessageDeletionResult.Deleted -> {
+                        if (_uiState.value.currentConversationId == conversationId) {
+                            _uiState.update { current ->
+                                ChatStateSupport.applyNoticeMessage(current, "消息已删除")
+                            }
+                        }
+                    }
+
+                    MessageDeletionResult.NotFound -> Unit
+                }
+            } catch (cancellation: CancellationException) {
+                throw cancellation
+            } catch (throwable: Throwable) {
+                if (_uiState.value.currentConversationId == initialConversationId) {
+                    _uiState.update { current ->
+                        ChatStateSupport.applyErrorMessage(
+                            current,
+                            SensitiveTextRedactor.throwableMessageForUi(
+                                throwable = throwable,
+                                fallback = "删除消息失败，请稍后重试",
+                            ),
+                        )
+                    }
+                }
+            } finally {
+                isMessageDeletionInProgress = false
+            }
         }
     }
 
@@ -1628,6 +1706,9 @@ class ChatViewModel(
         imageGenerationPrompt: String = "",
         forceChatRoundTrip: Boolean,
     ) {
+        if (isMessageDeletionInProgress) {
+            return
+        }
         val conversationId = validateAndGetConversationId(state) ?: return
         val selectedModel = ChatConversationSupport.resolveSelectedModelId(state.settings)
         val baseMessages = ChatConversationSupport.currentConversationMessages(state.messages, conversationId)

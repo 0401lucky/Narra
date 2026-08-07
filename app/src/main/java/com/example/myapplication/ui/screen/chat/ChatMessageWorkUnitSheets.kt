@@ -29,6 +29,7 @@ import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Code
 import androidx.compose.material.icons.filled.ContentCopy
 import androidx.compose.material.icons.filled.Description
+import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Search
@@ -91,6 +92,7 @@ internal fun ChatMessageActionSheet(
     onShareMessage: () -> Unit,
     onEditUserMessage: (() -> Unit)?,
     onRegenerate: (() -> Unit)?,
+    onDeleteMessage: (() -> Unit)?,
 ) {
     ModalBottomSheet(
         onDismissRequest = onDismissRequest,
@@ -220,6 +222,18 @@ internal fun ChatMessageActionSheet(
                     onClick = {
                         onDismissRequest()
                         onRetry()
+                    },
+                )
+            }
+
+            onDeleteMessage?.let { onDelete ->
+                MessageActionCard(
+                    title = "删除消息",
+                    icon = Icons.Default.Delete,
+                    isDestructive = true,
+                    onClick = {
+                        onDismissRequest()
+                        onDelete()
                     },
                 )
             }
@@ -358,6 +372,7 @@ internal fun ChatSearchResultPreviewSheet(
 private fun MessageActionCard(
     title: String,
     icon: androidx.compose.ui.graphics.vector.ImageVector,
+    isDestructive: Boolean = false,
     onClick: () -> Unit,
 ) {
     Card(
@@ -373,10 +388,20 @@ private fun MessageActionCard(
             Icon(
                 imageVector = icon,
                 contentDescription = null,
+                tint = if (isDestructive) {
+                    MaterialTheme.colorScheme.error
+                } else {
+                    MaterialTheme.colorScheme.onSurface
+                },
             )
             Text(
                 text = title,
                 style = MaterialTheme.typography.titleMedium,
+                color = if (isDestructive) {
+                    MaterialTheme.colorScheme.error
+                } else {
+                    MaterialTheme.colorScheme.onSurface
+                },
             )
         }
     }

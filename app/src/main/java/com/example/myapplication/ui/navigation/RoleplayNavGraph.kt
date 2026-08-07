@@ -404,6 +404,7 @@ internal fun NavGraphBuilder.registerRoleplayGraph(
                         onQuoteMessage = roleplayViewModel::quoteMessage,
                         onPokeMessageAvatar = roleplayViewModel::pokeMessageAvatar,
                         onClearQuotedMessage = roleplayViewModel::clearQuotedMessage,
+                        onDeleteMessage = roleplayViewModel::deleteMessage,
                         onRecallMessage = roleplayViewModel::recallMessage,
                         onCaptureOnlineChat = roleplayViewModel::captureOnlineChat,
                         onSendSpecialPlay = roleplayViewModel::sendSpecialPlay,

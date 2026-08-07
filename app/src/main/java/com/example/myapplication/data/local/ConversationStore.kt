@@ -1,5 +1,6 @@
 package com.example.myapplication.data.local
 
+import com.example.myapplication.conversation.MessageDeletionResult
 import com.example.myapplication.model.ChatMessage
 import com.example.myapplication.model.Conversation
 import kotlinx.coroutines.flow.Flow
@@ -30,6 +31,12 @@ interface ConversationStore {
         conversationId: String,
         transform: (List<ChatMessage>) -> List<ChatMessage>,
     ): List<ChatMessage>
+
+    suspend fun deleteMessageWithAssociations(
+        conversation: Conversation,
+        conversationId: String,
+        messageId: String,
+    ): MessageDeletionResult
 
     suspend fun upsertConversationWithMessages(
         conversation: Conversation,

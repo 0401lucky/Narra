@@ -73,6 +73,7 @@ internal fun NavGraphBuilder.registerChatNavGraph(
                     onRetryMessage = chatViewModel::retryMessage,
                     onRetryAiPhoto = chatViewModel::retryAiPhoto,
                     onEditUserMessage = chatViewModel::editUserMessage,
+                    onDeleteMessage = chatViewModel::deleteMessage,
                     onToggleMemoryMessage = chatViewModel::toggleMessageMemory,
                     onCancelSending = chatViewModel::cancelSending,
                     onAddPendingParts = chatViewModel::addPendingParts,

@@ -141,6 +141,7 @@ internal fun RoleplayOnlinePhoneContent(
     onPokeMessageAvatar: (RoleplayMessageUiModel) -> Unit,
     onClearQuotedMessage: () -> Unit,
     onRecallMessage: (String) -> Unit,
+    onDeleteMessage: ((String) -> Unit)? = null,
     onScreenshotChat: () -> Unit,
     onOpenDiary: () -> Unit,
     onOpenVoiceMessage: () -> Unit,
@@ -607,6 +608,7 @@ internal fun RoleplayOnlinePhoneContent(
                         onQuoteMessage = onQuoteMessage,
                         onPokeMessageAvatar = onPokeMessageAvatar,
                         onRecallMessage = onRecallMessage,
+                        onDeleteMessage = onDeleteMessage,
                         onOpenQuotedMessage = { quotedMessageId ->
                             val targetIndex = visibleMessages.indexOfFirst { it.sourceMessageId == quotedMessageId }
                             if (targetIndex >= 0) {

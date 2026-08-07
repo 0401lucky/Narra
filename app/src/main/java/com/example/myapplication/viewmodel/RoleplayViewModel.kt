@@ -16,6 +16,7 @@ import com.example.myapplication.conversation.ConversationMessageTransforms
 import com.example.myapplication.conversation.ConversationSummaryCoordinator
 import com.example.myapplication.conversation.ContextGovernanceSupport
 import com.example.myapplication.conversation.GiftImageGenerationCoordinator
+import com.example.myapplication.conversation.MessageDeletionResult
 import com.example.myapplication.conversation.RoundTripInitialPersistence
 import com.example.myapplication.conversation.RoleplaySuggestionCoordinator
 import com.example.myapplication.conversation.RoleplayVideoCallCoordinator
@@ -94,6 +95,7 @@ import com.example.myapplication.roleplay.script.RoleplayScriptEngine
 import com.example.myapplication.roleplay.script.RoleplayScriptEvent
 import com.example.myapplication.roleplay.script.RoleplayScriptExecutionResult
 import com.example.myapplication.system.security.SensitiveTextRedactor
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.cancelAndJoin
@@ -160,6 +162,7 @@ class RoleplayViewModel(
     val uiState: StateFlow<RoleplayUiState> = _uiState.asStateFlow()
 
     private var sendingJob: Job? = null
+    private var isMessageDeletionInProgress: Boolean = false
     private var compensationJob: Job? = null
     private var diaryJob: Job? = null
     private var activeSendingRunId: Long = 0L
@@ -913,6 +916,9 @@ class RoleplayViewModel(
     }
 
     fun retryTurn(sourceMessageId: String) {
+        if (isMessageDeletionInProgress) {
+            return
+        }
         sendActionSupport.retryTurn(sourceMessageId)?.let { job ->
             sendingJob = job
         }
@@ -951,16 +957,25 @@ class RoleplayViewModel(
     }
 
     fun editUserMessage(sourceMessageId: String) {
+        if (isMessageDeletionInProgress) {
+            return
+        }
         scenarioActionSupport.editUserMessage(sourceMessageId)
     }
 
     fun sendSpecialPlay(draft: ChatSpecialPlayDraft) {
+        if (isMessageDeletionInProgress) {
+            return
+        }
         sendActionSupport.sendSpecialPlay(draft)?.let { job ->
             sendingJob = job
         }
     }
 
     fun sendVoiceMessage(draft: VoiceMessageDraft) {
+        if (isMessageDeletionInProgress) {
+            return
+        }
         sendActionSupport.sendVoiceMessage(draft)?.let { job ->
             sendingJob = job
         }
@@ -1097,6 +1112,9 @@ class RoleplayViewModel(
     }
 
     fun pokeMessageAvatar(message: RoleplayMessageUiModel) {
+        if (isMessageDeletionInProgress) {
+            return
+        }
         sendActionSupport.sendAvatarPoke(message)?.let { job ->
             sendingJob = job
         }
@@ -1112,7 +1130,104 @@ class RoleplayViewModel(
         }
     }
 
+    fun deleteMessage(sourceMessageId: String) {
+        val initialState = _uiState.value
+        val initialSession = initialState.currentSession ?: return
+        if (
+            sourceMessageId.isBlank() ||
+            isMessageDeletionInProgress ||
+            initialState.isSending ||
+            initialState.streamingContent.isNotBlank() ||
+            sendingJob?.isActive == true ||
+            compensationJob?.isActive == true
+        ) {
+            return
+        }
+        val initialTarget = currentRawMessages.value.firstOrNull {
+            it.id == sourceMessageId && it.conversationId == initialSession.conversationId
+        }
+        if (initialTarget == null || initialTarget.status == MessageStatus.LOADING) {
+            return
+        }
+
+        isMessageDeletionInProgress = true
+        viewModelScope.launch {
+            try {
+                val currentState = _uiState.value
+                val currentSession = currentState.currentSession ?: return@launch
+                if (
+                    currentSession.conversationId != initialSession.conversationId ||
+                    currentState.isSending ||
+                    currentState.streamingContent.isNotBlank() ||
+                    sendingJob?.isActive == true ||
+                    compensationJob?.isActive == true
+                ) {
+                    return@launch
+                }
+                val currentTarget = currentRawMessages.value.firstOrNull {
+                    it.id == sourceMessageId && it.conversationId == currentSession.conversationId
+                }
+                if (currentTarget == null || currentTarget.status == MessageStatus.LOADING) {
+                    return@launch
+                }
+
+                when (
+                    val result = roundTripExecutor.withMessageSnapshotMutationLock {
+                        conversationRepository.deleteMessage(
+                            conversationId = currentSession.conversationId,
+                            messageId = sourceMessageId,
+                        )
+                    }
+                ) {
+                    is MessageDeletionResult.Deleted -> {
+                        if (isCurrentConversation(currentSession.conversationId)) {
+                            currentRawMessages.value = result.updatedMessages
+                            val isContinuingSession = _uiState.value.contextStatus.isContinuingSession
+                            _uiState.update { current ->
+                                val withoutDeletedQuote = if (current.replyToMessageId == sourceMessageId) {
+                                    current.copy(
+                                        replyToMessageId = "",
+                                        replyToPreview = "",
+                                        replyToSpeakerName = "",
+                                    )
+                                } else {
+                                    current
+                                }
+                                RoleplayStateSupport.applyNoticeMessage(withoutDeletedQuote, "消息已删除")
+                            }
+                            contextUpdateSupport.refreshContextStatus(
+                                conversationId = currentSession.conversationId,
+                                isContinuingSession = isContinuingSession,
+                            )
+                        }
+                    }
+
+                    MessageDeletionResult.NotFound -> Unit
+                }
+            } catch (cancellation: CancellationException) {
+                throw cancellation
+            } catch (throwable: Throwable) {
+                if (isCurrentConversation(initialSession.conversationId)) {
+                    _uiState.update { current ->
+                        RoleplayStateSupport.applyErrorMessage(
+                            current,
+                            SensitiveTextRedactor.throwableMessageForUi(
+                                throwable = throwable,
+                                fallback = "删除消息失败，请稍后重试",
+                            ),
+                        )
+                    }
+                }
+            } finally {
+                isMessageDeletionInProgress = false
+            }
+        }
+    }
+
     fun recallMessage(sourceMessageId: String) {
+        if (isMessageDeletionInProgress) {
+            return
+        }
         val state = _uiState.value
         val session = state.currentSession ?: return
         if (state.currentScenario?.interactionMode != RoleplayInteractionMode.ONLINE_PHONE) {
@@ -1583,18 +1698,27 @@ class RoleplayViewModel(
     }
 
     fun sendMessage() {
+        if (isMessageDeletionInProgress) {
+            return
+        }
         sendActionSupport.sendMessage()?.let { job ->
             sendingJob = job
         }
     }
 
     fun sendMessageWithParts(pendingParts: List<ChatMessagePart>) {
+        if (isMessageDeletionInProgress) {
+            return
+        }
         sendActionSupport.sendMessageWithParts(pendingParts)?.let { job ->
             sendingJob = job
         }
     }
 
     fun requestGroupParticipantReply(participantId: String) {
+        if (isMessageDeletionInProgress) {
+            return
+        }
         sendActionSupport.requestGroupParticipantReply(participantId)?.let { job ->
             sendingJob = job
         }
@@ -1609,6 +1733,9 @@ class RoleplayViewModel(
     }
 
     private suspend fun maybeTriggerOnlineCompensation() {
+        if (isMessageDeletionInProgress) {
+            return
+        }
         val state = _uiState.value
         val scenario = state.currentScenario ?: return
         val session = state.currentSession ?: return

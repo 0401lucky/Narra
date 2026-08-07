@@ -1,5 +1,7 @@
 package com.example.myapplication.data.repository
 
+import com.example.myapplication.conversation.MessageDeletionResult
+import com.example.myapplication.data.local.ConversationStore
 import com.example.myapplication.data.repository.phone.PhoneSnapshotRepository
 import com.example.myapplication.model.PhoneObservationState
 import com.example.myapplication.model.ChatMessage
@@ -15,12 +17,163 @@ import com.example.myapplication.model.transferMessagePart
 import com.example.myapplication.testutil.FakeConversationStore
 import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertSame
+import org.junit.Assert.assertThrows
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flowOf
 
 class ConversationRepositoryTest {
+    @Test
+    fun deleteMessage_deletesThroughAtomicStoreAndPreservesConversationMetadata() = runBlocking {
+        val conversation = Conversation(
+            id = "c1",
+            title = "保留标题",
+            model = "keep-model",
+            createdAt = 1L,
+            updatedAt = 2L,
+            assistantId = "assistant-1",
+            searchEnabled = true,
+        )
+        val target = ChatMessage(
+            id = "target",
+            conversationId = conversation.id,
+            role = MessageRole.USER,
+            content = "删除目标",
+            createdAt = 10L,
+        )
+        val reply = ChatMessage(
+            id = "reply",
+            conversationId = conversation.id,
+            role = MessageRole.ASSISTANT,
+            content = "保留消息",
+            replyToMessageId = target.id,
+            replyToPreview = "预览",
+            replyToSpeakerName = "用户",
+            createdAt = 11L,
+        )
+        val store = FakeConversationStore(
+            conversations = listOf(conversation),
+            messagesByConversation = mapOf(conversation.id to listOf(target, reply)),
+        )
+        val repository = ConversationRepository(
+            conversationStore = store,
+            nowProvider = { 900L },
+        )
+
+        val result = repository.deleteMessage(
+            conversationId = conversation.id,
+            messageId = target.id,
+        )
+
+        val deleted = result as MessageDeletionResult.Deleted
+        assertEquals(listOf("reply"), deleted.updatedMessages.map(ChatMessage::id))
+        assertEquals("", deleted.updatedMessages.single().replyToMessageId)
+        assertEquals(1, store.deleteMessageWithAssociationsCount)
+        assertEquals(conversation.id, store.lastDeletedConversationId)
+        assertEquals(target.id, store.lastDeletedMessageId)
+        assertEquals(
+            conversation.copy(updatedAt = 900L),
+            store.listConversations().single(),
+        )
+    }
+
+    @Test
+    fun deleteMessage_returnsNotFoundWithoutUpdatingConversationWhenTargetIsMissing() = runBlocking {
+        val conversation = Conversation(
+            id = "c1",
+            title = "保留标题",
+            model = "keep-model",
+            createdAt = 1L,
+            updatedAt = 2L,
+        )
+        val store = FakeConversationStore(
+            conversations = listOf(conversation),
+            messagesByConversation = mapOf(
+                conversation.id to listOf(
+                    ChatMessage(
+                        id = "m1",
+                        conversationId = conversation.id,
+                        role = MessageRole.USER,
+                        content = "保留",
+                    ),
+                ),
+            ),
+        )
+        val repository = ConversationRepository(
+            conversationStore = store,
+            nowProvider = { 900L },
+        )
+
+        val result = repository.deleteMessage(
+            conversationId = conversation.id,
+            messageId = "missing",
+        )
+
+        assertSame(MessageDeletionResult.NotFound, result)
+        assertEquals(1, store.deleteMessageWithAssociationsCount)
+        assertEquals(conversation, store.listConversations().single())
+        assertEquals(listOf("m1"), store.listMessages(conversation.id).map(ChatMessage::id))
+    }
+
+    @Test
+    fun deleteMessage_returnsNotFoundWithoutCallingStoreWhenConversationIsMissing() = runBlocking {
+        val store = FakeConversationStore()
+        val repository = ConversationRepository(
+            conversationStore = store,
+            nowProvider = { 900L },
+        )
+
+        val result = repository.deleteMessage(
+            conversationId = "missing-conversation",
+            messageId = "missing-message",
+        )
+
+        assertSame(MessageDeletionResult.NotFound, result)
+        assertEquals(0, store.deleteMessageWithAssociationsCount)
+    }
+
+    @Test
+    fun deleteMessage_propagatesAtomicStoreFailure() {
+        val failure = IllegalStateException("数据库写入失败")
+        val backingStore = FakeConversationStore(
+            conversations = listOf(
+                Conversation(
+                    id = "c1",
+                    title = "会话",
+                    model = "model",
+                    createdAt = 1L,
+                    updatedAt = 2L,
+                ),
+            ),
+        )
+        val failingStore = object : ConversationStore by backingStore {
+            override suspend fun deleteMessageWithAssociations(
+                conversation: Conversation,
+                conversationId: String,
+                messageId: String,
+            ): MessageDeletionResult {
+                throw failure
+            }
+        }
+        val repository = ConversationRepository(
+            conversationStore = failingStore,
+            nowProvider = { 900L },
+        )
+
+        val thrown = assertThrows(IllegalStateException::class.java) {
+            runBlocking {
+                repository.deleteMessage(
+                    conversationId = "c1",
+                    messageId = "m1",
+                )
+            }
+        }
+
+        assertSame(failure, thrown)
+    }
+
     @Test
     fun ensureActiveConversation_createsDefaultConversationWhenStoreIsEmpty() = runBlocking {
         val store = FakeConversationStore()

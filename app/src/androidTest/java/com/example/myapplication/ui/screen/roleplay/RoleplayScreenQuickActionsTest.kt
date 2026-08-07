@@ -140,6 +140,7 @@ private fun roleplayScreenCallbacks(
             onQuoteMessage = { _, _, _ -> },
             onPokeMessageAvatar = {},
             onClearQuotedMessage = {},
+            onDeleteMessage = {},
             onRecallMessage = {},
             onCaptureOnlineChat = {},
             onSendSpecialPlay = {},

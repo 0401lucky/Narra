@@ -43,6 +43,7 @@ fun ChatScreen(
     val onRetryMessage = callbacks.message.onRetryMessage
     val onRetryAiPhoto = callbacks.message.onRetryAiPhoto
     val onEditUserMessage = callbacks.message.onEditUserMessage
+    val onDeleteMessage = callbacks.message.onDeleteMessage
     val onToggleMemoryMessage = callbacks.message.onToggleMemoryMessage
     val onCancelSending = callbacks.message.onCancelSending
     val onAddPendingParts = callbacks.message.onAddPendingParts
@@ -452,6 +453,19 @@ fun ChatScreen(
         onRetryMessage = { message ->
             onRetryMessage(message.id)
             localState.setActiveMessageActionId(null)
+        },
+        messageDeletionEnabled = !uiState.isSending && streamingState.streamingMessageId.isBlank(),
+        onRequestDeleteMessage = { message ->
+            localState.setPendingDeleteMessageId(message.id)
+            localState.setActiveMessageActionId(null)
+        },
+        pendingDeleteMessage = localState.pendingDeleteMessageId?.let { messageId ->
+            uiState.messages.firstOrNull { it.id == messageId }
+        },
+        onDismissDeleteMessage = { localState.setPendingDeleteMessageId(null) },
+        onConfirmDeleteMessage = { message ->
+            localState.setPendingDeleteMessageId(null)
+            onDeleteMessage(message.id)
         },
         onTranslateMessage = { message ->
             onTranslateMessage(message.id)

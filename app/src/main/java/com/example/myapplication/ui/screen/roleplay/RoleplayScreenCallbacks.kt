@@ -31,6 +31,7 @@ data class RoleplayMessageCallbacks(
     val onQuoteMessage: (messageId: String, speakerName: String, preview: String) -> Unit,
     val onPokeMessageAvatar: (RoleplayMessageUiModel) -> Unit,
     val onClearQuotedMessage: () -> Unit,
+    val onDeleteMessage: (String) -> Unit,
     val onRecallMessage: (String) -> Unit,
     val onCaptureOnlineChat: () -> Unit,
     val onSendSpecialPlay: (ChatSpecialPlayDraft) -> Unit,

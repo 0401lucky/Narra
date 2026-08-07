@@ -45,6 +45,7 @@ import com.example.myapplication.model.ChatMessagePart
 import com.example.myapplication.model.ChatSpecialType
 import com.example.myapplication.model.GiftPlayDraft
 import com.example.myapplication.model.InvitePlayDraft
+import com.example.myapplication.model.MessageStatus
 import com.example.myapplication.model.PhoneSnapshotOwnerType
 import com.example.myapplication.model.PendingMemoryProposal
 import com.example.myapplication.model.PunishPlayDraft
@@ -58,6 +59,7 @@ import com.example.myapplication.model.TaskPlayDraft
 import com.example.myapplication.model.TransferPlayDraft
 import com.example.myapplication.model.VoiceMessageDraft
 import com.example.myapplication.model.toChatMessagePart
+import com.example.myapplication.ui.component.NarraAlertDialog
 import com.example.myapplication.ui.component.NarraTextButton
 import com.example.myapplication.ui.component.roleplay.RoleplayInputQuickAction
 import com.example.myapplication.ui.component.rememberSystemHighTextContrastEnabled
@@ -110,6 +112,7 @@ fun RoleplayScreen(
     val onQuoteMessage = callbacks.message.onQuoteMessage
     val onPokeMessageAvatar = callbacks.message.onPokeMessageAvatar
     val onClearQuotedMessage = callbacks.message.onClearQuotedMessage
+    val onDeleteMessage = callbacks.message.onDeleteMessage
     val onRecallMessage = callbacks.message.onRecallMessage
     val onCaptureOnlineChat = callbacks.message.onCaptureOnlineChat
     val onSendSpecialPlay = callbacks.message.onSendSpecialPlay
@@ -202,6 +205,13 @@ fun RoleplayScreen(
             )
         }
         return
+    }
+
+    var pendingDeleteMessageId by remember(scenario.id) { mutableStateOf<String?>(null) }
+    val onRequestDeleteMessage: ((String) -> Unit)? = if (isSending) {
+        null
+    } else {
+        { sourceMessageId -> pendingDeleteMessageId = sourceMessageId }
     }
 
     val characterName = scenario.characterDisplayNameOverride.trim()
@@ -439,6 +449,7 @@ fun RoleplayScreen(
             onPokeMessageAvatar = onPokeMessageAvatar,
             onClearQuotedMessage = onClearQuotedMessage,
             onRecallMessage = onRecallMessage,
+            onDeleteMessage = onRequestDeleteMessage,
             onScreenshotChat = onCaptureOnlineChat,
             pendingImageParts = pendingImageParts,
             onPickImage = pickRoleplayImage,
@@ -504,6 +515,7 @@ fun RoleplayScreen(
             onRetryTurn = onRetryTurn,
             onRetryAiPhoto = onRetryAiPhoto,
             onEditUserMessage = onEditUserMessage,
+            onDeleteMessage = onRequestDeleteMessage,
             onOpenSpecialPlay = { showSpecialPlaySheet = true },
             quickActions = offlineQuickActions,
             pendingImageParts = pendingImageParts,
@@ -556,6 +568,17 @@ fun RoleplayScreen(
         currentAssistantName = currentAssistantName,
         onRestartSession = onRestartSession,
         onDismissAssistantMismatch = onDismissAssistantMismatch,
+    )
+
+    RoleplayMessageDeleteConfirmationDialog(
+        sourceMessageId = pendingDeleteMessageId,
+        messages = messages,
+        isSending = isSending,
+        onDismiss = { pendingDeleteMessageId = null },
+        onConfirm = { confirmedSourceMessageId ->
+            pendingDeleteMessageId = null
+            onDeleteMessage(confirmedSourceMessageId)
+        },
     )
 
     if (showPhoneOwnerPicker) {
@@ -638,4 +661,30 @@ fun RoleplayScreen(
             },
         )
     }
+}
+
+@Composable
+internal fun RoleplayMessageDeleteConfirmationDialog(
+    sourceMessageId: String?,
+    messages: List<RoleplayMessageUiModel>,
+    isSending: Boolean,
+    onDismiss: () -> Unit,
+    onConfirm: (String) -> Unit,
+) {
+    val targetId = sourceMessageId?.takeIf { it.isNotBlank() } ?: return
+    val targetMessages = messages.filter { it.sourceMessageId == targetId }
+    if (targetMessages.isEmpty()) {
+        return
+    }
+    NarraAlertDialog(
+        title = "确认删除消息",
+        message = "删除后无法恢复；同一条底层消息产生的相关内容会一并移除。",
+        confirmLabel = "确认删除",
+        isDestructive = true,
+        confirmEnabled = !isSending && targetMessages.none {
+            it.isStreaming || it.messageStatus == MessageStatus.LOADING
+        },
+        onDismiss = onDismiss,
+        onConfirm = { onConfirm(targetId) },
+    )
 }

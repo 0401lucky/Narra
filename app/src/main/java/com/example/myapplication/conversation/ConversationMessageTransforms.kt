@@ -9,7 +9,47 @@ import com.example.myapplication.model.isTransferPart
 import com.example.myapplication.model.normalizeChatMessageParts
 import com.example.myapplication.model.toContentMirror
 
+sealed interface MessageDeletionResult {
+    data class Deleted(
+        val updatedMessages: List<ChatMessage>,
+    ) : MessageDeletionResult
+
+    data object NotFound : MessageDeletionResult
+}
+
 object ConversationMessageTransforms {
+    fun deleteMessageAndClearReferences(
+        messages: List<ChatMessage>,
+        targetMessageId: String,
+    ): MessageDeletionResult {
+        if (targetMessageId.isBlank() || messages.none { it.id == targetMessageId }) {
+            return MessageDeletionResult.NotFound
+        }
+
+        val updatedMessages = messages.mapNotNull { message ->
+            if (message.id == targetMessageId) {
+                return@mapNotNull null
+            }
+
+            val clearsTopLevelReference = message.replyToMessageId == targetMessageId
+            val updatedParts = clearPartReferences(
+                parts = message.parts,
+                targetMessageId = targetMessageId,
+            )
+            if (!clearsTopLevelReference && updatedParts === message.parts) {
+                return@mapNotNull message
+            }
+
+            message.copy(
+                parts = updatedParts,
+                replyToMessageId = if (clearsTopLevelReference) "" else message.replyToMessageId,
+                replyToPreview = if (clearsTopLevelReference) "" else message.replyToPreview,
+                replyToSpeakerName = if (clearsTopLevelReference) "" else message.replyToSpeakerName,
+            )
+        }
+        return MessageDeletionResult.Deleted(updatedMessages)
+    }
+
     fun applyTransferUpdates(
         messages: List<ChatMessage>,
         updates: List<TransferUpdateDirective>,
@@ -187,5 +227,27 @@ object ConversationMessageTransforms {
         }
         val olderCompletedMessageCount = (completedMessageCount - recentWindow).coerceAtLeast(0)
         return summaryCoveredMessageCount >= olderCompletedMessageCount
+    }
+
+    private fun clearPartReferences(
+        parts: List<ChatMessagePart>,
+        targetMessageId: String,
+    ): List<ChatMessagePart> {
+        if (parts.none { it.replyToMessageId == targetMessageId }) {
+            return parts
+        }
+        return normalizeChatMessageParts(
+            parts.map { part ->
+                if (part.replyToMessageId != targetMessageId) {
+                    part
+                } else {
+                    part.copy(
+                        replyToMessageId = "",
+                        replyToPreview = "",
+                        replyToSpeakerName = "",
+                    )
+                }
+            },
+        )
     }
 }

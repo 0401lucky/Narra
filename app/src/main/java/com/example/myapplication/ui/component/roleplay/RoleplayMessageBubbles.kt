@@ -15,6 +15,7 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.ContentCopy
+import androidx.compose.material.icons.outlined.Delete
 import androidx.compose.material.icons.outlined.Edit
 import androidx.compose.material.icons.outlined.Refresh
 import androidx.compose.material3.DropdownMenu
@@ -59,6 +60,7 @@ internal fun RoleplayMessageItem(
     onQuoteMessage: ((String, String, String) -> Unit)? = null,
     onPokeMessageAvatar: ((RoleplayMessageUiModel) -> Unit)? = null,
     onRecallMessage: ((String) -> Unit)? = null,
+    onDeleteMessage: ((String) -> Unit)? = null,
     onOpenQuotedMessage: ((String) -> Unit)? = null,
     onConfirmTransferReceipt: (String) -> Unit,
     onOpenVideoCall: (() -> Unit)? = null,
@@ -78,6 +80,7 @@ internal fun RoleplayMessageItem(
             onQuoteMessage = onQuoteMessage,
             onPokeMessageAvatar = onPokeMessageAvatar,
             onRecallMessage = onRecallMessage,
+            onDeleteMessage = onDeleteMessage,
             onOpenQuotedMessage = onOpenQuotedMessage,
             onConfirmTransferReceipt = onConfirmTransferReceipt,
             onOpenVideoCall = onOpenVideoCall,
@@ -99,6 +102,7 @@ private fun RoleplayMessageItemContent(
     onQuoteMessage: ((String, String, String) -> Unit)? = null,
     onPokeMessageAvatar: ((RoleplayMessageUiModel) -> Unit)? = null,
     onRecallMessage: ((String) -> Unit)? = null,
+    onDeleteMessage: ((String) -> Unit)? = null,
     onOpenQuotedMessage: ((String) -> Unit)? = null,
     onConfirmTransferReceipt: (String) -> Unit,
     onOpenVideoCall: (() -> Unit)? = null,
@@ -112,7 +116,7 @@ private fun RoleplayMessageItemContent(
         bubbleMode = bubbleMode,
     )
     when (message.contentType) {
-        RoleplayContentType.NARRATION -> RoleplayMessageMenuWrapper(message, onRetryTurn, onEditUserMessage, onQuoteMessage = onQuoteMessage, onRecallMessage = onRecallMessage) {
+        RoleplayContentType.NARRATION -> RoleplayMessageMenuWrapper(message, onRetryTurn, onEditUserMessage, onQuoteMessage = onQuoteMessage, onRecallMessage = onRecallMessage, onDeleteMessage = onDeleteMessage) {
             if (bubbleMode == RoleplayMessageBubbleMode.ONLINE_PHONE) {
                 OnlinePhoneNarrationBubble(
                     message = message,
@@ -160,7 +164,7 @@ private fun RoleplayMessageItemContent(
             }
         }
 
-        RoleplayContentType.THOUGHT -> RoleplayMessageMenuWrapper(message, onRetryTurn, onEditUserMessage, onQuoteMessage = onQuoteMessage, onRecallMessage = onRecallMessage) {
+        RoleplayContentType.THOUGHT -> RoleplayMessageMenuWrapper(message, onRetryTurn, onEditUserMessage, onQuoteMessage = onQuoteMessage, onRecallMessage = onRecallMessage, onDeleteMessage = onDeleteMessage) {
             if (bubbleMode == RoleplayMessageBubbleMode.ONLINE_PHONE) {
                 OnlinePhoneThoughtBubble(
                     message = message,
@@ -239,6 +243,7 @@ private fun RoleplayMessageItemContent(
                                     onEditUserMessage = onEditUserMessage,
                                     onQuoteMessage = onQuoteMessage,
                                     onRecallMessage = onRecallMessage,
+                                    onDeleteMessage = onDeleteMessage,
                                 ) {
                                     UserDialogueBubbleContent(
                                         message = message,
@@ -271,6 +276,7 @@ private fun RoleplayMessageItemContent(
                                 onEditUserMessage = onEditUserMessage,
                                 onQuoteMessage = onQuoteMessage,
                                 onRecallMessage = onRecallMessage,
+                                onDeleteMessage = onDeleteMessage,
                             ) {
                                 UserDialogueBubbleContent(
                                     message = message,
@@ -322,6 +328,7 @@ private fun RoleplayMessageItemContent(
                                     onEditUserMessage = onEditUserMessage,
                                     onQuoteMessage = onQuoteMessage,
                                     onRecallMessage = onRecallMessage,
+                                    onDeleteMessage = onDeleteMessage,
                                 ) {
                                     CharacterDialogueBubbleContent(
                                         message = message,
@@ -349,6 +356,7 @@ private fun RoleplayMessageItemContent(
                                 onEditUserMessage = onEditUserMessage,
                                 onQuoteMessage = onQuoteMessage,
                                 onRecallMessage = onRecallMessage,
+                                onDeleteMessage = onDeleteMessage,
                             ) {
                                 CharacterDialogueBubbleContent(
                                     message = message,
@@ -378,7 +386,7 @@ private fun RoleplayMessageItemContent(
                     message = message,
                     isUser = message.speaker == RoleplaySpeaker.USER,
                 )
-                RoleplayMessageMenuWrapper(message, onRetryTurn, onEditUserMessage, onQuoteMessage = onQuoteMessage, onRecallMessage = onRecallMessage) {
+                RoleplayMessageMenuWrapper(message, onRetryTurn, onEditUserMessage, onQuoteMessage = onQuoteMessage, onRecallMessage = onRecallMessage, onDeleteMessage = onDeleteMessage) {
                     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                         if (isError) {
                             FailedTurnHint(colors = colors)
@@ -412,10 +420,17 @@ private fun RoleplayMessageItemContent(
             val actionPart = message.actionPart ?: return
             val isUserMessage = message.speaker == RoleplaySpeaker.USER
             if (actionPart.actionType == ChatActionType.POKE) {
-                RoleplayPokeSystemMessage(
+                RoleplayMessageMenuWrapper(
                     message = message,
-                    colors = colors,
-                )
+                    onRetryTurn = onRetryTurn,
+                    onEditUserMessage = onEditUserMessage,
+                    onDeleteMessage = onDeleteMessage,
+                ) {
+                    RoleplayPokeSystemMessage(
+                        message = message,
+                        colors = colors,
+                    )
+                }
             } else if (bubbleMode == RoleplayMessageBubbleMode.ONLINE_PHONE) {
                 BoxWithConstraints(modifier = Modifier.fillMaxWidth()) {
                     val messageMaxWidth = maxWidth
@@ -439,6 +454,7 @@ private fun RoleplayMessageItemContent(
                             modifier = Modifier.widthIn(max = messageMaxWidth * if (isUserMessage) 0.82f else 0.84f),
                             onQuoteMessage = onQuoteMessage,
                             onRecallMessage = onRecallMessage,
+                            onDeleteMessage = onDeleteMessage,
                         ) {
                             RoleplayActionCard(
                                 message = message,
@@ -477,6 +493,7 @@ private fun RoleplayMessageItemContent(
                         modifier = if (isUserMessage) Modifier.fillMaxWidth(0.82f) else Modifier.fillMaxWidth(0.92f),
                         onQuoteMessage = onQuoteMessage,
                         onRecallMessage = onRecallMessage,
+                        onDeleteMessage = onDeleteMessage,
                     ) {
                         RoleplayActionCard(
                             message = message,
@@ -523,6 +540,7 @@ private fun RoleplayMessageItemContent(
                             modifier = Modifier.widthIn(max = messageMaxWidth * 0.82f),
                             onQuoteMessage = onQuoteMessage,
                             onRecallMessage = onRecallMessage,
+                            onDeleteMessage = onDeleteMessage,
                         ) {
                             SpecialPlayCard(
                                 part = specialPart,
@@ -552,6 +570,7 @@ private fun RoleplayMessageItemContent(
                         modifier = if (isUserMessage) Modifier.fillMaxWidth(0.82f) else Modifier.fillMaxWidth(0.82f),
                         onQuoteMessage = onQuoteMessage,
                         onRecallMessage = onRecallMessage,
+                        onDeleteMessage = onDeleteMessage,
                     ) {
                         SpecialPlayCard(
                             part = specialPart,
@@ -650,6 +669,7 @@ internal fun RoleplayMessageMenuWrapper(
     modifier: Modifier = Modifier,
     onQuoteMessage: ((String, String, String) -> Unit)? = null,
     onRecallMessage: ((String) -> Unit)? = null,
+    onDeleteMessage: ((String) -> Unit)? = null,
     content: @Composable () -> Unit,
 ) {
     val clipboard = LocalClipboard.current
@@ -673,12 +693,22 @@ internal fun RoleplayMessageMenuWrapper(
         message.speaker == RoleplaySpeaker.USER &&
         message.contentType == RoleplayContentType.DIALOGUE &&
         !message.isRecalled
-    var showMenu by remember(message.sourceMessageId, message.copyText, message.canRetry, canEditUserMessage) {
+    val canDeleteMessage = onDeleteMessage != null &&
+        message.sourceMessageId.isNotBlank() &&
+        !message.isStreaming &&
+        message.messageStatus != MessageStatus.LOADING
+    var showMenu by remember(
+        message.sourceMessageId,
+        message.copyText,
+        message.canRetry,
+        canEditUserMessage,
+        canDeleteMessage,
+    ) {
         mutableStateOf(false)
     }
     Box(
         modifier = modifier.combinedClickable(
-            enabled = canCopy || message.canRetry || canEditUserMessage || canQuoteMessage || canRecallMessage,
+            enabled = canCopy || message.canRetry || canEditUserMessage || canQuoteMessage || canRecallMessage || canDeleteMessage,
             onClick = {},
             onLongClick = { showMenu = true },
         ),
@@ -726,6 +756,27 @@ internal fun RoleplayMessageMenuWrapper(
                     leadingIcon = { Icon(Icons.Outlined.Refresh, contentDescription = null) },
                     onClick = {
                         onRecallMessage?.invoke(message.sourceMessageId)
+                        showMenu = false
+                    },
+                )
+            }
+            if (canDeleteMessage) {
+                DropdownMenuItem(
+                    text = {
+                        Text(
+                            text = "删除消息",
+                            color = MaterialTheme.colorScheme.error,
+                        )
+                    },
+                    leadingIcon = {
+                        Icon(
+                            Icons.Outlined.Delete,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.error,
+                        )
+                    },
+                    onClick = {
+                        onDeleteMessage?.invoke(message.sourceMessageId)
                         showMenu = false
                     },
                 )

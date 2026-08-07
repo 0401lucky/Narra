@@ -5,12 +5,14 @@ import com.example.myapplication.context.PromptContextResult
 import com.example.myapplication.context.DefaultPromptContextAssembler
 import com.example.myapplication.conversation.ConversationAssistantRoundTripRunner
 import com.example.myapplication.conversation.RoundTripInitialPersistence
+import com.example.myapplication.data.local.ConversationStore
 import com.example.myapplication.data.remote.ApiServiceFactory
 import com.example.myapplication.data.remote.OpenAiCompatibleApi
 import com.example.myapplication.data.repository.ConversationRepository
 import com.example.myapplication.data.repository.ImageGenerationResult
 import com.example.myapplication.data.repository.ParsedAssistantSpecialOutput
 import com.example.myapplication.data.repository.SavedImageFile
+import com.example.myapplication.data.repository.TransferUpdateDirective
 import com.example.myapplication.data.repository.ai.AiGateway
 import com.example.myapplication.data.repository.ai.tooling.DefaultMemoryWriteService
 import com.example.myapplication.data.repository.context.ConversationSummaryRepository
@@ -76,8 +78,12 @@ import com.example.myapplication.testutil.FakeConversationSummaryRepository
 import com.example.myapplication.testutil.FakeMemoryRepository
 import com.example.myapplication.testutil.FakeWorldBookRepository
 import com.example.myapplication.testutil.createTestAiServices
+import com.example.myapplication.system.logging.AppLogger
 import com.google.gson.JsonParser
+import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.NonCancellable
+import kotlinx.coroutines.awaitCancellation
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -105,6 +111,7 @@ import retrofit2.Response
 import java.util.concurrent.TimeUnit
 import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class RoleplayViewModelTest {
@@ -1484,6 +1491,218 @@ class RoleplayViewModelTest {
     }
 
     @Test
+    fun deleteMessage_removesAllDerivedBubblesAndClearsMatchingQuote() =
+        runTest(mainDispatcherRule.dispatcher.scheduler) {
+            val fixture = createRoleplayDeletionFixture(
+                messages = listOf(
+                    ChatMessage(
+                        id = "target",
+                        conversationId = "unused",
+                        role = MessageRole.USER,
+                        content = "第一段\n第二段",
+                        parts = listOf(
+                            textMessagePart("第一段"),
+                            textMessagePart("第二段"),
+                        ),
+                        status = MessageStatus.COMPLETED,
+                        createdAt = 1L,
+                        roleplayOutputFormat = RoleplayOutputFormat.PROTOCOL,
+                        roleplayInteractionMode = RoleplayInteractionMode.ONLINE_PHONE,
+                    ),
+                    ChatMessage(
+                        id = "keep",
+                        conversationId = "unused",
+                        role = MessageRole.ASSISTANT,
+                        content = "保留消息",
+                        status = MessageStatus.COMPLETED,
+                        createdAt = 2L,
+                    ),
+                ),
+            )
+
+            fixture.viewModel.enterScenario(fixture.scenario.id)
+            advanceUntilIdle()
+            assertEquals(
+                2,
+                fixture.viewModel.uiState.value.messages.count { it.sourceMessageId == "target" },
+            )
+            fixture.viewModel.quoteMessage("target", "我", "第一段")
+
+            fixture.viewModel.deleteMessage("target")
+            advanceUntilIdle()
+
+            assertEquals(1, fixture.store.deleteMessageWithAssociationsCount)
+            assertTrue(fixture.viewModel.uiState.value.messages.none { it.sourceMessageId == "target" })
+            assertTrue(fixture.viewModel.uiState.value.messages.any { it.sourceMessageId == "keep" })
+            assertEquals("", fixture.viewModel.uiState.value.replyToMessageId)
+            assertEquals("消息已删除", fixture.viewModel.uiState.value.noticeMessage)
+        }
+
+    @Test
+    fun deleteMessage_otherTargetKeepsCurrentQuote() = runTest(mainDispatcherRule.dispatcher.scheduler) {
+        val fixture = createRoleplayDeletionFixture(
+            messages = listOf(
+                ChatMessage(
+                    id = "quoted",
+                    conversationId = "unused",
+                    role = MessageRole.ASSISTANT,
+                    content = "引用目标",
+                    status = MessageStatus.COMPLETED,
+                    createdAt = 1L,
+                ),
+                ChatMessage(
+                    id = "delete",
+                    conversationId = "unused",
+                    role = MessageRole.USER,
+                    content = "删除目标",
+                    status = MessageStatus.COMPLETED,
+                    createdAt = 2L,
+                ),
+            ),
+        )
+
+        fixture.viewModel.enterScenario(fixture.scenario.id)
+        advanceUntilIdle()
+        fixture.viewModel.quoteMessage("quoted", "角色", "引用目标")
+        fixture.viewModel.deleteMessage("delete")
+        advanceUntilIdle()
+
+        assertEquals("quoted", fixture.viewModel.uiState.value.replyToMessageId)
+        assertTrue(fixture.viewModel.uiState.value.messages.none { it.sourceMessageId == "delete" })
+    }
+
+    @Test
+    fun deleteMessage_loadingMessageIsRejectedBeforeRepositoryCall() =
+        runTest(mainDispatcherRule.dispatcher.scheduler) {
+            val fixture = createRoleplayDeletionFixture(
+                messages = listOf(
+                    ChatMessage(
+                        id = "loading",
+                        conversationId = "unused",
+                        role = MessageRole.ASSISTANT,
+                        content = "",
+                        status = MessageStatus.LOADING,
+                        createdAt = 1L,
+                    ),
+                ),
+            )
+
+            fixture.viewModel.enterScenario(fixture.scenario.id)
+            advanceUntilIdle()
+            fixture.viewModel.deleteMessage("loading")
+            advanceUntilIdle()
+
+            assertEquals(0, fixture.store.deleteMessageWithAssociationsCount)
+            assertEquals("loading", fixture.store.listMessages(fixture.session.conversationId).single().id)
+        }
+
+    @Test
+    fun deleteMessage_repositoryFailureKeepsMessageAndUsesSafeError() =
+        runTest(mainDispatcherRule.dispatcher.scheduler) {
+            val fixture = createRoleplayDeletionFixture(
+                messages = listOf(
+                    ChatMessage(
+                        id = "target",
+                        conversationId = "unused",
+                        role = MessageRole.USER,
+                        content = "保留我",
+                        status = MessageStatus.COMPLETED,
+                        createdAt = 1L,
+                    ),
+                ),
+                wrapConversationStore = { store ->
+                    object : ConversationStore by store {
+                        override suspend fun deleteMessageWithAssociations(
+                            conversation: Conversation,
+                            conversationId: String,
+                            messageId: String,
+                        ): com.example.myapplication.conversation.MessageDeletionResult {
+                            error("Authorization: Bearer sk-secret /data/user/0/chat.db")
+                        }
+                    }
+                },
+            )
+
+            fixture.viewModel.enterScenario(fixture.scenario.id)
+            advanceUntilIdle()
+            fixture.viewModel.deleteMessage("target")
+            advanceUntilIdle()
+
+            assertTrue(fixture.store.listMessages(fixture.session.conversationId).any { it.id == "target" })
+            val errorMessage = fixture.viewModel.uiState.value.errorMessage.orEmpty()
+            assertTrue(errorMessage.isNotBlank())
+            assertFalse(errorMessage.contains("sk-secret"))
+            assertFalse(errorMessage.contains("/data/user"))
+        }
+
+    @Test
+    fun deleteMessage_inProgressBlocksSendRetryEditAndRecallUntilCommit() =
+        runTest(mainDispatcherRule.dispatcher.scheduler) {
+            val deleteStarted = CompletableDeferred<Unit>()
+            val releaseDelete = CompletableDeferred<Unit>()
+            val fixture = createRoleplayDeletionFixture(
+                messages = listOf(
+                    ChatMessage(
+                        id = "editable",
+                        conversationId = "unused",
+                        role = MessageRole.USER,
+                        content = "旧输入",
+                        status = MessageStatus.COMPLETED,
+                        createdAt = 1L,
+                    ),
+                    ChatMessage(
+                        id = "target",
+                        conversationId = "unused",
+                        role = MessageRole.ASSISTANT,
+                        content = "待删除回复",
+                        status = MessageStatus.COMPLETED,
+                        createdAt = 2L,
+                    ),
+                ),
+                wrapConversationStore = { store ->
+                    object : ConversationStore by store {
+                        override suspend fun deleteMessageWithAssociations(
+                            conversation: Conversation,
+                            conversationId: String,
+                            messageId: String,
+                        ): com.example.myapplication.conversation.MessageDeletionResult {
+                            deleteStarted.complete(Unit)
+                            releaseDelete.await()
+                            return store.deleteMessageWithAssociations(conversation, conversationId, messageId)
+                        }
+                    }
+                },
+            )
+
+            fixture.viewModel.enterScenario(fixture.scenario.id)
+            advanceUntilIdle()
+            fixture.viewModel.deleteMessage("target")
+            runCurrent()
+            assertTrue(deleteStarted.isCompleted)
+
+            fixture.viewModel.updateInput("新消息")
+            fixture.viewModel.sendMessage()
+            fixture.viewModel.retryTurn("target")
+            fixture.viewModel.editUserMessage("editable")
+            fixture.viewModel.recallMessage("editable")
+            runCurrent()
+
+            assertFalse(fixture.viewModel.uiState.value.isSending)
+            assertEquals("新消息", fixture.viewModel.uiState.value.input)
+            assertTrue(fixture.viewModel.uiState.value.errorMessage.isNullOrBlank())
+            assertEquals(0, fixture.store.replaceConversationSnapshotCount)
+            assertEquals(0, fixture.store.updateConversationMessagesCount)
+            assertEquals(0, fixture.store.upsertConversationWithMessagesCount)
+
+            releaseDelete.complete(Unit)
+            advanceUntilIdle()
+
+            val persistedMessages = fixture.store.listMessages(fixture.session.conversationId)
+            assertTrue(persistedMessages.none { it.id == "target" })
+            assertTrue(persistedMessages.any { it.id == "editable" })
+        }
+
+    @Test
     fun addGroupParticipant_singleChatConvertsToGroupAndSyncsConversationAssistant() =
         runTest(mainDispatcherRule.dispatcher.scheduler) {
             val assistantA = Assistant(id = "assistant-a", name = "沈烬")
@@ -1723,6 +1942,582 @@ class RoleplayViewModelTest {
             },
         )
     }
+
+    @Test
+    fun sendMessage_groupChatMiddleTurnFailureContinuesRemainingMember() =
+        runTest(mainDispatcherRule.dispatcher.scheduler) {
+            enqueueStreamResponse("""["第一位完成"]""")
+            repeat(2) {
+                server.enqueue(
+                    MockResponse()
+                        .setResponseCode(500)
+                        .setBody("""{"error":{"message":"中间角色失败"}}"""),
+                )
+            }
+            enqueueStreamResponse("""["第三位继续"]""")
+            val assistants = listOf(
+                Assistant(id = "assistant-a", name = "陆宴清"),
+                Assistant(id = "assistant-b", name = "沈今"),
+                Assistant(id = "assistant-c", name = "林晚"),
+            )
+            val fixture = createAllMembersGroupFixture(
+                scenarioId = "group-middle-failure",
+                assistants = assistants,
+                messageIds = listOf(
+                    "user-middle-failure",
+                    "assistant-a-loading",
+                    "assistant-b-loading",
+                    "assistant-c-loading",
+                ),
+            )
+
+            fixture.viewModel.enterScenario(fixture.scenario.id)
+            advanceUntilIdle()
+            fixture.viewModel.updateInput("大家依次说说")
+            fixture.viewModel.sendMessage()
+            advanceUntilIdle()
+
+            val state = fixture.viewModel.uiState.value
+            val savedMessages = fixture.store.listMessages(fixture.session.conversationId)
+            assertFalse(state.isSending)
+            assertTrue(state.errorMessage.isNullOrBlank())
+            assertTrue(state.noticeMessage.orEmpty().contains(assistants[1].name))
+            assertTrue(state.noticeMessage.orEmpty().contains("已继续其他角色"))
+            assertEquals(4, server.requestCount)
+            assertEquals(
+                listOf(MessageStatus.COMPLETED, MessageStatus.ERROR, MessageStatus.COMPLETED),
+                listOf("assistant-a-loading", "assistant-b-loading", "assistant-c-loading")
+                    .map { messageId -> savedMessages.single { it.id == messageId }.status },
+            )
+            assertEquals(1, savedMessages.count { it.id == "assistant-b-loading" })
+            assertTrue(savedMessages.none { it.status == MessageStatus.LOADING })
+        }
+
+    @Test
+    fun sendMessage_groupChatAllTurnsFailFinishesWithErrorWithoutLoading() =
+        runTest(mainDispatcherRule.dispatcher.scheduler) {
+            repeat(4) {
+                server.enqueue(
+                    MockResponse()
+                        .setResponseCode(500)
+                        .setBody("""{"error":{"message":"全部失败 Authorization: Bearer sk-group-secret"}}"""),
+                )
+            }
+            val assistants = listOf(
+                Assistant(id = "assistant-a", name = "陆宴清"),
+                Assistant(id = "assistant-b", name = "沈今"),
+            )
+            val fixture = createAllMembersGroupFixture(
+                scenarioId = "group-all-failure",
+                assistants = assistants,
+                messageIds = listOf(
+                    "user-all-failure",
+                    "assistant-a-failure",
+                    "assistant-b-failure",
+                ),
+            )
+
+            fixture.viewModel.enterScenario(fixture.scenario.id)
+            advanceUntilIdle()
+            fixture.viewModel.updateInput("都试着回复")
+            fixture.viewModel.sendMessage()
+            advanceUntilIdle()
+
+            val state = fixture.viewModel.uiState.value
+            val savedMessages = fixture.store.listMessages(fixture.session.conversationId)
+            assertFalse(state.isSending)
+            assertEquals("", state.streamingContent)
+            assertTrue(state.errorMessage.orEmpty().isNotBlank())
+            assertFalse(state.errorMessage.orEmpty().contains("sk-group-secret"))
+            assertEquals(4, server.requestCount)
+            assertEquals(
+                2,
+                savedMessages.count {
+                    it.role == MessageRole.ASSISTANT && it.status == MessageStatus.ERROR
+                },
+            )
+            assertTrue(savedMessages.none { it.status == MessageStatus.LOADING })
+        }
+
+    @Test
+    fun removeGroupRunLoadingMessages_onlyRemovesTrackedLoading() {
+        val conversationId = "conv-selective-cleanup"
+        val messages = listOf(
+            ChatMessage(
+                id = "old-run-loading",
+                conversationId = conversationId,
+                role = MessageRole.ASSISTANT,
+                content = "",
+                status = MessageStatus.LOADING,
+                createdAt = 1L,
+            ),
+            ChatMessage(
+                id = "new-run-loading",
+                conversationId = conversationId,
+                role = MessageRole.ASSISTANT,
+                content = "",
+                status = MessageStatus.LOADING,
+                createdAt = 2L,
+            ),
+            ChatMessage(
+                id = "old-run-completed",
+                conversationId = conversationId,
+                role = MessageRole.ASSISTANT,
+                content = "已完成",
+                status = MessageStatus.COMPLETED,
+                createdAt = 3L,
+            ),
+        )
+
+        val cleaned = removeGroupRunLoadingMessages(
+            messages = messages,
+            conversationId = conversationId,
+            activeLoadingMessageIds = setOf("old-run-loading", "old-run-completed"),
+        )
+
+        assertEquals(listOf("new-run-loading", "old-run-completed"), cleaned.map(ChatMessage::id))
+    }
+
+    @Test
+    fun sendMessage_groupChatPostProcessFailureKeepsCompletedReplyWithoutRetry() =
+        runTest(mainDispatcherRule.dispatcher.scheduler) {
+            val assistant = Assistant(id = "assistant-a", name = "陆宴清")
+            val scenario = RoleplayScenario(
+                id = "group-scene-post-process",
+                title = "群聊后处理",
+                assistantId = assistant.id,
+                interactionMode = RoleplayInteractionMode.ONLINE_PHONE,
+                chatType = RoleplayChatType.GROUP,
+                groupReplyMode = RoleplayGroupReplyMode.ALL_MEMBERS,
+                maxGroupAutoReplies = 1,
+            )
+            val session = RoleplaySession(
+                id = "session-group-post-process",
+                scenarioId = scenario.id,
+                conversationId = "conv-group-post-process",
+                createdAt = 1L,
+                updatedAt = 2L,
+            )
+            val store = FakeConversationStore(
+                conversations = listOf(
+                    Conversation(
+                        id = session.conversationId,
+                        title = scenario.title,
+                        model = "chat-model",
+                        createdAt = 1L,
+                        updatedAt = 2L,
+                        assistantId = "roleplay-group:${scenario.id}",
+                    ),
+                ),
+            )
+            val failingTransferStore = object : ConversationStore by store {
+                override suspend fun updateConversationMessages(
+                    conversation: Conversation,
+                    conversationId: String,
+                    transform: (List<ChatMessage>) -> List<ChatMessage>,
+                ): List<ChatMessage> {
+                    error("转账状态落库失败 api-key=post-commit-secret")
+                }
+            }
+            var requestCount = 0
+            val settledTransferIds = mutableListOf<String>()
+            val gateway = object : AiGateway {
+                override suspend fun generateImage(prompt: String, modelId: String): List<ImageGenerationResult> {
+                    return emptyList()
+                }
+
+                override suspend fun sendMessage(
+                    messages: List<ChatMessage>,
+                    systemPrompt: String,
+                    promptEnvelope: com.example.myapplication.model.PromptEnvelope,
+                    toolingOptions: GatewayToolingOptions,
+                ): AssistantReply {
+                    error("不应调用非流式发送")
+                }
+
+                override fun sendMessageStream(
+                    messages: List<ChatMessage>,
+                    systemPrompt: String,
+                    promptMode: com.example.myapplication.model.PromptMode,
+                    promptEnvelope: com.example.myapplication.model.PromptEnvelope,
+                    toolingOptions: GatewayToolingOptions,
+                ) = kotlinx.coroutines.flow.flow<com.example.myapplication.model.ChatStreamEvent> {
+                    requestCount += 1
+                    emit(com.example.myapplication.model.ChatStreamEvent.ContentDelta("""["已完成正文"]"""))
+                    emit(com.example.myapplication.model.ChatStreamEvent.Completed)
+                }
+
+                override fun parseAssistantSpecialOutput(
+                    content: String,
+                    existingParts: List<ChatMessagePart>,
+                    statusCardsEnabled: Boolean,
+                    hideStatusBlocksInBubble: Boolean,
+                ): ParsedAssistantSpecialOutput {
+                    return ParsedAssistantSpecialOutput(
+                        content = content,
+                        parts = existingParts,
+                        transferUpdates = listOf(
+                            TransferUpdateDirective(
+                                refId = "transfer-post-commit",
+                                status = TransferStatus.RECEIVED,
+                            ),
+                        ),
+                    )
+                }
+            }
+            val failingObservationRepository = object :
+                com.example.myapplication.data.repository.phone.PhoneSnapshotRepository by EmptyPhoneSnapshotRepository {
+                override suspend fun getObservation(
+                    conversationId: String,
+                ): com.example.myapplication.model.PhoneObservationState? {
+                    error("观察后处理失败 Authorization: Bearer sk-post-process-secret")
+                }
+            }
+            val viewModel = createViewModel(
+                store = store,
+                conversationStoreOverride = failingTransferStore,
+                roleplayRepository = FakeRoleplayRepository(
+                    conversationStore = store,
+                    scenarios = listOf(scenario),
+                    sessions = listOf(session),
+                    groupParticipants = listOf(
+                        RoleplayGroupParticipant(
+                            id = "participant-a",
+                            scenarioId = scenario.id,
+                            assistantId = assistant.id,
+                            sortOrder = 0,
+                        ),
+                    ),
+                ),
+                settings = AppSettings(
+                    baseUrl = "https://example.com/v1/",
+                    apiKey = "test-key",
+                    selectedModel = "chat-model",
+                    assistants = listOf(assistant),
+                    selectedAssistantId = assistant.id,
+                ),
+                promptContextAssembler = fixedPromptAssembler("提示词上下文"),
+                messageIdProvider = idProviderOf("user-post-process", "assistant-post-process"),
+                aiGatewayOverride = gateway,
+                phoneSnapshotRepository = failingObservationRepository,
+                settleTransfer = settledTransferIds::add,
+            )
+            val logEntries = mutableListOf<String>()
+            val originalLogSink = AppLogger.sink
+            AppLogger.sink = AppLogger.Sink { _, tag, message, throwable ->
+                logEntries += "$tag $message ${throwable?.message.orEmpty()}"
+            }
+
+            try {
+                viewModel.enterScenario(scenario.id)
+                advanceUntilIdle()
+                viewModel.updateInput("日志里不能出现这段正文")
+                viewModel.sendMessage()
+                advanceUntilIdle()
+            } finally {
+                AppLogger.sink = originalLogSink
+            }
+
+            val state = viewModel.uiState.value
+            val assistantMessage = store.listMessages(session.conversationId)
+                .single { it.id == "assistant-post-process" }
+            val combinedLogs = logEntries.joinToString(separator = "\n")
+            assertFalse(state.isSending)
+            assertTrue(state.errorMessage.isNullOrBlank())
+            assertTrue(state.noticeMessage.orEmpty().contains("后续处理"))
+            assertEquals(1, requestCount)
+            assertEquals(MessageStatus.COMPLETED, assistantMessage.status)
+            assertTrue(assistantMessage.content.contains("已完成正文"))
+            assertTrue(settledTransferIds.isEmpty())
+            assertTrue(combinedLogs.contains("stage=post-commit"))
+            assertTrue(combinedLogs.contains("stage=observation"))
+            assertTrue(combinedLogs.contains("participantId=participant-a"))
+            assertTrue(combinedLogs.contains("assistantId=assistant-a"))
+            assertTrue(combinedLogs.contains("turn=1"))
+            assertTrue(combinedLogs.contains("attempt=1"))
+            assertFalse(combinedLogs.contains("日志里不能出现这段正文"))
+            assertFalse(combinedLogs.contains("sk-post-process-secret"))
+            assertFalse(combinedLogs.contains("post-commit-secret"))
+        }
+
+    @Test
+    fun sendMessage_groupMemberReadFailureRestoresSendingState() =
+        runTest(mainDispatcherRule.dispatcher.scheduler) {
+            val assistant = Assistant(id = "assistant-a", name = "陆宴清")
+            val scenario = RoleplayScenario(
+                id = "group-scene-member-read-failure",
+                assistantId = assistant.id,
+                interactionMode = RoleplayInteractionMode.ONLINE_PHONE,
+                chatType = RoleplayChatType.GROUP,
+                groupReplyMode = RoleplayGroupReplyMode.ALL_MEMBERS,
+            )
+            val session = RoleplaySession(
+                id = "session-group-member-read-failure",
+                scenarioId = scenario.id,
+                conversationId = "conv-group-member-read-failure",
+                createdAt = 1L,
+                updatedAt = 2L,
+            )
+            val store = FakeConversationStore(
+                conversations = listOf(
+                    Conversation(
+                        id = session.conversationId,
+                        model = "chat-model",
+                        createdAt = 1L,
+                        updatedAt = 2L,
+                        assistantId = "roleplay-group:${scenario.id}",
+                    ),
+                ),
+            )
+            val viewModel = createViewModel(
+                store = store,
+                roleplayRepository = FakeRoleplayRepository(
+                    conversationStore = store,
+                    scenarios = listOf(scenario),
+                    sessions = listOf(session),
+                    listGroupParticipantsFailure = IllegalStateException(
+                        "成员读取失败 Authorization: Bearer sk-member-secret",
+                    ),
+                ),
+                settings = AppSettings(
+                    baseUrl = "https://example.com/v1/",
+                    apiKey = "test-key",
+                    selectedModel = "chat-model",
+                    assistants = listOf(assistant),
+                    selectedAssistantId = assistant.id,
+                ),
+                promptContextAssembler = fixedPromptAssembler("提示词上下文"),
+            )
+
+            viewModel.enterScenario(scenario.id)
+            advanceUntilIdle()
+            viewModel.updateInput("大家好")
+            viewModel.sendMessage()
+            advanceUntilIdle()
+
+            val state = viewModel.uiState.value
+            assertFalse(state.isSending)
+            assertEquals("", state.streamingContent)
+            assertTrue(state.errorMessage.orEmpty().isNotBlank())
+            assertFalse(state.errorMessage.orEmpty().contains("sk-member-secret"))
+            assertTrue(store.listMessages(session.conversationId).none { it.status == MessageStatus.LOADING })
+        }
+
+    @Test
+    fun sendMessage_groupUserPersistenceFailureRestoresSendingState() =
+        runTest(mainDispatcherRule.dispatcher.scheduler) {
+            val assistant = Assistant(id = "assistant-a", name = "陆宴清")
+            val scenario = RoleplayScenario(
+                id = "group-scene-user-write-failure",
+                assistantId = assistant.id,
+                interactionMode = RoleplayInteractionMode.ONLINE_PHONE,
+                chatType = RoleplayChatType.GROUP,
+                groupReplyMode = RoleplayGroupReplyMode.ALL_MEMBERS,
+            )
+            val session = RoleplaySession(
+                id = "session-group-user-write-failure",
+                scenarioId = scenario.id,
+                conversationId = "conv-group-user-write-failure",
+                createdAt = 1L,
+                updatedAt = 2L,
+            )
+            val store = FakeConversationStore(
+                conversations = listOf(
+                    Conversation(
+                        id = session.conversationId,
+                        model = "chat-model",
+                        createdAt = 1L,
+                        updatedAt = 2L,
+                        assistantId = "roleplay-group:${scenario.id}",
+                    ),
+                ),
+            )
+            val failingStore = FailingConversationWriteStore(
+                delegate = store,
+                failure = IllegalStateException("用户消息写入失败 api-key=write-secret"),
+            )
+            val viewModel = createViewModel(
+                store = store,
+                conversationStoreOverride = failingStore,
+                roleplayRepository = FakeRoleplayRepository(
+                    conversationStore = store,
+                    scenarios = listOf(scenario),
+                    sessions = listOf(session),
+                    groupParticipants = listOf(
+                        RoleplayGroupParticipant(
+                            id = "participant-a",
+                            scenarioId = scenario.id,
+                            assistantId = assistant.id,
+                            sortOrder = 0,
+                        ),
+                    ),
+                ),
+                settings = AppSettings(
+                    baseUrl = "https://example.com/v1/",
+                    apiKey = "test-key",
+                    selectedModel = "chat-model",
+                    assistants = listOf(assistant),
+                    selectedAssistantId = assistant.id,
+                ),
+                promptContextAssembler = fixedPromptAssembler("提示词上下文"),
+                messageIdProvider = idProviderOf("user-write-failure"),
+            )
+
+            viewModel.enterScenario(scenario.id)
+            advanceUntilIdle()
+            viewModel.updateInput("这条消息会写入失败")
+            viewModel.sendMessage()
+            advanceUntilIdle()
+
+            val state = viewModel.uiState.value
+            assertFalse(state.isSending)
+            assertEquals("", state.streamingContent)
+            assertTrue(state.errorMessage.orEmpty().isNotBlank())
+            assertFalse(state.errorMessage.orEmpty().contains("write-secret"))
+            assertTrue(store.listMessages(session.conversationId).none { it.status == MessageStatus.LOADING })
+        }
+
+    @Test
+    fun cancelSending_oldGroupRunDoesNotRemoveNewRunLoading() =
+        runTest(mainDispatcherRule.dispatcher.scheduler) {
+            val assistant = Assistant(id = "assistant-a", name = "陆宴清")
+            val scenario = RoleplayScenario(
+                id = "group-overlapping-run",
+                title = "群聊竞态",
+                assistantId = assistant.id,
+                interactionMode = RoleplayInteractionMode.ONLINE_PHONE,
+                chatType = RoleplayChatType.GROUP,
+                groupReplyMode = RoleplayGroupReplyMode.ALL_MEMBERS,
+                maxGroupAutoReplies = 1,
+            )
+            val session = RoleplaySession(
+                id = "session-group-overlapping-run",
+                scenarioId = scenario.id,
+                conversationId = "conv-group-overlapping-run",
+                createdAt = 1L,
+                updatedAt = 2L,
+            )
+            val participant = RoleplayGroupParticipant(
+                id = "participant-a",
+                scenarioId = scenario.id,
+                assistantId = assistant.id,
+                sortOrder = 0,
+            )
+            val store = FakeConversationStore(
+                conversations = listOf(
+                    Conversation(
+                        id = session.conversationId,
+                        title = scenario.title,
+                        model = "chat-model",
+                        createdAt = 1L,
+                        updatedAt = 2L,
+                        assistantId = "roleplay-group:${scenario.id}",
+                    ),
+                ),
+            )
+            val blockingStore = BlockingSnapshotConversationStore(store)
+            val roleplayRepository = FakeRoleplayRepository(
+                conversationStore = store,
+                scenarios = listOf(scenario),
+                sessions = listOf(session),
+                groupParticipants = listOf(participant),
+            )
+            val firstStreamStarted = CompletableDeferred<Unit>()
+            val secondStreamStarted = CompletableDeferred<Unit>()
+            var streamCount = 0
+            val hangingGateway = object : AiGateway {
+                override suspend fun generateImage(prompt: String, modelId: String): List<ImageGenerationResult> {
+                    return emptyList()
+                }
+
+                override suspend fun sendMessage(
+                    messages: List<ChatMessage>,
+                    systemPrompt: String,
+                    promptEnvelope: com.example.myapplication.model.PromptEnvelope,
+                    toolingOptions: GatewayToolingOptions,
+                ): AssistantReply {
+                    error("不应调用非流式发送")
+                }
+
+                override fun sendMessageStream(
+                    messages: List<ChatMessage>,
+                    systemPrompt: String,
+                    promptMode: com.example.myapplication.model.PromptMode,
+                    promptEnvelope: com.example.myapplication.model.PromptEnvelope,
+                    toolingOptions: GatewayToolingOptions,
+                ) = kotlinx.coroutines.flow.flow<com.example.myapplication.model.ChatStreamEvent> {
+                    streamCount += 1
+                    if (streamCount == 1) {
+                        firstStreamStarted.complete(Unit)
+                    } else {
+                        secondStreamStarted.complete(Unit)
+                    }
+                    awaitCancellation()
+                }
+
+                override fun parseAssistantSpecialOutput(
+                    content: String,
+                    existingParts: List<ChatMessagePart>,
+                    statusCardsEnabled: Boolean,
+                    hideStatusBlocksInBubble: Boolean,
+                ): ParsedAssistantSpecialOutput {
+                    return ParsedAssistantSpecialOutput(content = content, parts = existingParts)
+                }
+            }
+            val viewModel = createViewModel(
+                store = store,
+                conversationStoreOverride = blockingStore,
+                roleplayRepository = roleplayRepository,
+                settings = AppSettings(
+                    baseUrl = "https://example.com/v1/",
+                    apiKey = "test-key",
+                    selectedModel = "chat-model",
+                    assistants = listOf(assistant),
+                    selectedAssistantId = assistant.id,
+                ),
+                promptContextAssembler = fixedPromptAssembler("提示词上下文"),
+                messageIdProvider = idProviderOf(
+                    "user-first-run",
+                    "assistant-first-run",
+                    "user-second-run",
+                    "assistant-second-run",
+                ),
+                aiGatewayOverride = hangingGateway,
+            )
+
+            viewModel.enterScenario(scenario.id)
+            advanceUntilIdle()
+            viewModel.updateInput("第一轮")
+            viewModel.sendMessage()
+            firstStreamStarted.await()
+
+            blockingStore.blockNextReplace = true
+            viewModel.cancelSending()
+            blockingStore.replaceStarted.await()
+
+            viewModel.updateInput("第二轮")
+            viewModel.sendMessage()
+            runCurrent()
+            assertFalse(secondStreamStarted.isCompleted)
+
+            blockingStore.releaseReplace.complete(Unit)
+            secondStreamStarted.await()
+
+            assertTrue(viewModel.uiState.value.isSending)
+            assertTrue(
+                store.listMessages(session.conversationId).any {
+                    it.id == "assistant-second-run" && it.status == MessageStatus.LOADING
+                },
+            )
+
+            viewModel.cancelSending()
+            advanceUntilIdle()
+            val finalMessages = store.listMessages(session.conversationId)
+            assertTrue(
+                "取消后仍有 Loading：${finalMessages.map { "${it.id}:${it.status}" }}",
+                finalMessages.none { it.status == MessageStatus.LOADING },
+            )
+        }
 
     @Test
     fun cancelSending_removesLoadingAssistantMessage() = runTest(mainDispatcherRule.dispatcher.scheduler) {
@@ -2208,6 +3003,27 @@ class RoleplayViewModelTest {
             messages: List<ChatMessage>,
         ) {
             kotlinx.coroutines.yield()
+            delegate.replaceConversationSnapshot(conversation, conversationId, messages)
+        }
+    }
+
+    private class BlockingSnapshotConversationStore(
+        private val delegate: ConversationStore,
+    ) : ConversationStore by delegate {
+        var blockNextReplace: Boolean = false
+        val replaceStarted = CompletableDeferred<Unit>()
+        val releaseReplace = CompletableDeferred<Unit>()
+
+        override suspend fun replaceConversationSnapshot(
+            conversation: Conversation,
+            conversationId: String,
+            messages: List<ChatMessage>,
+        ) {
+            if (blockNextReplace) {
+                blockNextReplace = false
+                replaceStarted.complete(Unit)
+                releaseReplace.await()
+            }
             delegate.replaceConversationSnapshot(conversation, conversationId, messages)
         }
     }
@@ -5771,11 +6587,143 @@ class RoleplayViewModelTest {
         assertTrue(savedUserMessage.parts.any { it.type == ChatMessagePartType.IMAGE })
     }
 
+    private fun createAllMembersGroupFixture(
+        scenarioId: String,
+        assistants: List<Assistant>,
+        messageIds: List<String>,
+    ): GroupChatTestFixture {
+        val scenario = RoleplayScenario(
+            id = scenarioId,
+            title = "群聊测试",
+            assistantId = assistants.first().id,
+            interactionMode = RoleplayInteractionMode.ONLINE_PHONE,
+            chatType = RoleplayChatType.GROUP,
+            groupReplyMode = RoleplayGroupReplyMode.ALL_MEMBERS,
+            maxGroupAutoReplies = assistants.size,
+        )
+        val session = RoleplaySession(
+            id = "session-$scenarioId",
+            scenarioId = scenario.id,
+            conversationId = "conv-$scenarioId",
+            createdAt = 1L,
+            updatedAt = 2L,
+        )
+        val store = FakeConversationStore(
+            conversations = listOf(
+                Conversation(
+                    id = session.conversationId,
+                    title = scenario.title,
+                    model = "chat-model",
+                    createdAt = 1L,
+                    updatedAt = 2L,
+                    assistantId = "roleplay-group:${scenario.id}",
+                ),
+            ),
+        )
+        val provider = ProviderSettings(
+            id = "provider-$scenarioId",
+            name = "测试 Provider",
+            baseUrl = server.url("/v1/").toString(),
+            apiKey = "test-key",
+            selectedModel = "chat-model",
+        )
+        val viewModel = createViewModel(
+            store = store,
+            roleplayRepository = FakeRoleplayRepository(
+                conversationStore = store,
+                scenarios = listOf(scenario),
+                sessions = listOf(session),
+                groupParticipants = assistants.mapIndexed { index, assistant ->
+                    RoleplayGroupParticipant(
+                        id = "participant-${assistant.id}",
+                        scenarioId = scenario.id,
+                        assistantId = assistant.id,
+                        sortOrder = index,
+                    )
+                },
+            ),
+            settings = AppSettings(
+                baseUrl = provider.baseUrl,
+                apiKey = provider.apiKey,
+                selectedModel = provider.selectedModel,
+                providers = listOf(provider),
+                selectedProviderId = provider.id,
+                assistants = assistants,
+                selectedAssistantId = assistants.first().id,
+            ),
+            promptContextAssembler = fixedPromptAssembler("提示词上下文"),
+            messageIdProvider = idProviderOf(*messageIds.toTypedArray()),
+        )
+        return GroupChatTestFixture(
+            viewModel = viewModel,
+            store = store,
+            scenario = scenario,
+            session = session,
+        )
+    }
+
+    private fun createRoleplayDeletionFixture(
+        messages: List<ChatMessage>,
+        wrapConversationStore: (FakeConversationStore) -> ConversationStore = { it },
+    ): RoleplayDeletionTestFixture {
+        val assistant = Assistant(id = "assistant-delete", name = "测试角色")
+        val scenario = RoleplayScenario(
+            id = "scene-delete",
+            title = "删除测试",
+            assistantId = assistant.id,
+            interactionMode = RoleplayInteractionMode.ONLINE_PHONE,
+        )
+        val session = RoleplaySession(
+            id = "session-delete",
+            scenarioId = scenario.id,
+            conversationId = "conv-delete",
+            createdAt = 1L,
+            updatedAt = 2L,
+        )
+        val store = FakeConversationStore(
+            conversations = listOf(
+                Conversation(
+                    id = session.conversationId,
+                    title = scenario.title,
+                    model = "chat-model",
+                    createdAt = 1L,
+                    updatedAt = 2L,
+                    assistantId = assistant.id,
+                ),
+            ),
+            messagesByConversation = mapOf(
+                session.conversationId to messages.map { it.copy(conversationId = session.conversationId) },
+            ),
+        )
+        val viewModel = createViewModel(
+            store = store,
+            conversationStoreOverride = wrapConversationStore(store),
+            roleplayRepository = FakeRoleplayRepository(
+                conversationStore = store,
+                scenarios = listOf(scenario),
+                sessions = listOf(session),
+            ),
+            settings = AppSettings(
+                selectedModel = "chat-model",
+                assistants = listOf(assistant),
+                selectedAssistantId = assistant.id,
+            ),
+            promptContextAssembler = fixedPromptAssembler("提示词上下文"),
+        )
+        return RoleplayDeletionTestFixture(
+            viewModel = viewModel,
+            store = store,
+            scenario = scenario,
+            session = session,
+        )
+    }
+
     private fun createViewModel(
         store: FakeConversationStore,
         roleplayRepository: RoleplayRepository,
         settings: AppSettings,
         promptContextAssembler: PromptContextAssembler,
+        conversationStoreOverride: ConversationStore = store,
         memoryRepository: MemoryRepository = FakeMemoryRepository(),
         conversationSummaryRepository: ConversationSummaryRepository = FakeConversationSummaryRepository(),
         pendingMemoryProposalRepository: PendingMemoryProposalRepository = InMemoryPendingMemoryProposalRepository(),
@@ -5785,6 +6733,8 @@ class RoleplayViewModelTest {
         apiServiceProvider: ((String, String) -> OpenAiCompatibleApi)? = null,
         streamClientProvider: ((String, String) -> OkHttpClient)? = null,
         aiGatewayOverride: AiGateway? = null,
+        phoneSnapshotRepository: com.example.myapplication.data.repository.phone.PhoneSnapshotRepository =
+            EmptyPhoneSnapshotRepository,
         settleTransfer: suspend (String) -> Unit = {},
         releaseTransfer: suspend (String) -> Unit = {},
     ): RoleplayViewModel {
@@ -5806,7 +6756,7 @@ class RoleplayViewModelTest {
             pendingMemoryProposalRepository = pendingMemoryProposalRepository,
         )
         val conversationRepository = ConversationRepository(
-            conversationStore = store,
+            conversationStore = conversationStoreOverride,
             nowProvider = nowProvider,
         )
         return RoleplayViewModel(
@@ -5820,7 +6770,7 @@ class RoleplayViewModelTest {
             memoryRepository = memoryRepository,
             conversationSummaryRepository = conversationSummaryRepository,
             pendingMemoryProposalRepository = pendingMemoryProposalRepository,
-            phoneSnapshotRepository = EmptyPhoneSnapshotRepository,
+            phoneSnapshotRepository = phoneSnapshotRepository,
             memoryWriteService = DefaultMemoryWriteService(
                 settingsStore = services.settingsStore,
                 memoryRepository = memoryRepository,
@@ -5852,6 +6802,20 @@ class RoleplayViewModelTest {
     }
 }
 
+private data class GroupChatTestFixture(
+    val viewModel: RoleplayViewModel,
+    val store: FakeConversationStore,
+    val scenario: RoleplayScenario,
+    val session: RoleplaySession,
+)
+
+private data class RoleplayDeletionTestFixture(
+    val viewModel: RoleplayViewModel,
+    val store: FakeConversationStore,
+    val scenario: RoleplayScenario,
+    val session: RoleplaySession,
+)
+
 @OptIn(ExperimentalCoroutinesApi::class)
 private class FakeRoleplayRepository(
     private val conversationStore: FakeConversationStore,
@@ -5859,6 +6823,7 @@ private class FakeRoleplayRepository(
     sessions: List<RoleplaySession>,
     groupParticipants: List<RoleplayGroupParticipant> = emptyList(),
     onlineMetaByConversation: Map<String, com.example.myapplication.model.RoleplayOnlineMeta> = emptyMap(),
+    private val listGroupParticipantsFailure: Throwable? = null,
 ) : RoleplayRepository {
     private val scenariosState = MutableStateFlow(scenarios)
     private val sessionsState = MutableStateFlow(sessions)
@@ -5974,6 +6939,7 @@ private class FakeRoleplayRepository(
     }
 
     override suspend fun listGroupParticipants(scenarioId: String): List<RoleplayGroupParticipant> {
+        listGroupParticipantsFailure?.let { throw it }
         return groupParticipantsState.value
             .filter { it.scenarioId == scenarioId }
             .sortedWith(compareBy({ it.sortOrder }, { it.createdAt }))
@@ -6017,6 +6983,18 @@ private class FakeRoleplayRepository(
     }
 
     override suspend fun deleteDiaryEntriesForConversation(conversationId: String) = Unit
+}
+
+private class FailingConversationWriteStore(
+    private val delegate: ConversationStore,
+    private val failure: Throwable,
+) : ConversationStore by delegate {
+    override suspend fun upsertConversationWithMessages(
+        conversation: Conversation,
+        messages: List<ChatMessage>,
+    ) {
+        throw failure
+    }
 }
 
 @OptIn(ExperimentalCoroutinesApi::class)

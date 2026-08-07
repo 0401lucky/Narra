@@ -1,6 +1,7 @@
 package com.example.myapplication.data.repository
 
 import com.example.myapplication.conversation.ConversationMessageTransforms
+import com.example.myapplication.conversation.MessageDeletionResult
 import com.example.myapplication.data.local.ConversationStore
 import com.example.myapplication.data.repository.phone.EmptyPhoneSnapshotRepository
 import com.example.myapplication.data.repository.phone.PhoneSnapshotRepository
@@ -85,6 +86,22 @@ class ConversationRepository(
 
     suspend fun listMessages(conversationId: String): List<ChatMessage> {
         return conversationStore.listMessages(conversationId)
+    }
+
+    suspend fun deleteMessage(
+        conversationId: String,
+        messageId: String,
+    ): MessageDeletionResult {
+        if (conversationId.isBlank() || messageId.isBlank()) {
+            return MessageDeletionResult.NotFound
+        }
+        val currentConversation = conversationStore.getConversation(conversationId)
+            ?: return MessageDeletionResult.NotFound
+        return conversationStore.deleteMessageWithAssociations(
+            conversation = currentConversation.copy(updatedAt = nowProvider()),
+            conversationId = conversationId,
+            messageId = messageId,
+        )
     }
 
     suspend fun appendMessages(

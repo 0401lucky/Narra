@@ -3,6 +3,7 @@ package com.example.myapplication.conversation
 import com.example.myapplication.data.repository.ConversationRepository
 import com.example.myapplication.data.repository.ImageGenerationResult
 import com.example.myapplication.data.repository.ParsedAssistantSpecialOutput
+import com.example.myapplication.data.repository.TransferUpdateDirective
 import com.example.myapplication.data.repository.ai.AiGateway
 import com.example.myapplication.model.AssistantReply
 import com.example.myapplication.model.ChatMessage
@@ -14,6 +15,7 @@ import com.example.myapplication.model.MessageRole
 import com.example.myapplication.model.MessageStatus
 import com.example.myapplication.model.PromptEnvelope
 import com.example.myapplication.model.PromptMode
+import com.example.myapplication.model.TransferStatus
 import com.example.myapplication.testutil.FakeConversationStore
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.emptyFlow
@@ -184,7 +186,110 @@ class ConversationAssistantRoundTripRunnerTest {
         assertFalse(failed.errorMessage.contains("Users"))
     }
 
-    private fun completedGateway(): AiGateway {
+    @Test
+    fun execute_postCommitTransferFailureKeepsCompletedMessage() = runTest {
+        val conversationId = "conv-post-commit"
+        val userMessage = ChatMessage(
+            id = "user-post-commit",
+            conversationId = conversationId,
+            role = MessageRole.USER,
+            content = "收下转账",
+            createdAt = 1L,
+        )
+        val loadingMessage = ChatMessage(
+            id = "assistant-post-commit",
+            conversationId = conversationId,
+            role = MessageRole.ASSISTANT,
+            content = "",
+            status = MessageStatus.LOADING,
+            createdAt = 2L,
+        )
+        val store = FakeConversationStore(
+            conversations = listOf(
+                Conversation(
+                    id = conversationId,
+                    title = "剧情",
+                    model = "chat-model",
+                    createdAt = 1L,
+                    updatedAt = 2L,
+                ),
+            ),
+            messagesByConversation = mapOf(
+                conversationId to listOf(userMessage, loadingMessage),
+            ),
+        )
+        val failingStore = object : com.example.myapplication.data.local.ConversationStore by store {
+            override suspend fun updateConversationMessages(
+                conversation: Conversation,
+                conversationId: String,
+                transform: (List<ChatMessage>) -> List<ChatMessage>,
+            ): List<ChatMessage> {
+                error("转账状态更新失败")
+            }
+        }
+        var postCommitFailure: Throwable? = null
+        val runner = ConversationAssistantRoundTripRunner(
+            conversationRepository = ConversationRepository(failingStore),
+            aiGateway = completedGateway(
+                ParsedAssistantSpecialOutput(
+                    content = "已完成正文",
+                    parts = emptyList(),
+                    transferUpdates = listOf(
+                        TransferUpdateDirective(
+                            refId = "transfer-1",
+                            status = TransferStatus.RECEIVED,
+                        ),
+                    ),
+                ),
+            ),
+        )
+
+        val result = runner.execute(
+            AssistantRoundTripRequest(
+                conversationId = conversationId,
+                selectedModel = "chat-model",
+                requestMessages = listOf(userMessage),
+                loadingMessage = loadingMessage,
+                buildFinalMessages = { completedAssistant -> listOf(userMessage, completedAssistant) },
+                systemPrompt = "系统提示",
+                streamReply = { _, _ -> },
+                currentPayload = {
+                    StreamedAssistantPayload(
+                        content = "已完成正文",
+                        reasoning = "",
+                        reasoningSteps = emptyList(),
+                        parts = emptyList(),
+                        citations = emptyList(),
+                    )
+                },
+                onCompleted = { payload, _, loading ->
+                    loading.copy(
+                        content = payload.content,
+                        status = MessageStatus.COMPLETED,
+                    )
+                },
+                onPostCommitFailure = { throwable ->
+                    postCommitFailure = throwable
+                },
+                onCancelled = { _, _ -> null },
+                onFailed = { _, _, _ -> error("完成提交后不应进入生成失败路径") },
+            ),
+        )
+
+        assertTrue(result is AssistantRoundTripResult.Completed)
+        assertTrue(postCommitFailure is IllegalStateException)
+        val savedAssistant = store.listMessages(conversationId)
+            .single { it.id == loadingMessage.id }
+        assertEquals(MessageStatus.COMPLETED, savedAssistant.status)
+        assertEquals("已完成正文", savedAssistant.content)
+    }
+
+    private fun completedGateway(
+        parsedOutput: ParsedAssistantSpecialOutput = ParsedAssistantSpecialOutput(
+            content = "",
+            parts = emptyList(),
+        ),
+    ): AiGateway {
         return object : AiGateway {
             override suspend fun generateImage(prompt: String, modelId: String): List<ImageGenerationResult> {
                 return emptyList()
@@ -215,9 +320,9 @@ class ConversationAssistantRoundTripRunnerTest {
                 statusCardsEnabled: Boolean,
                 hideStatusBlocksInBubble: Boolean,
             ): ParsedAssistantSpecialOutput {
-                return ParsedAssistantSpecialOutput(
-                    content = content,
-                    parts = existingParts,
+                return parsedOutput.copy(
+                    content = parsedOutput.content.ifBlank { content },
+                    parts = parsedOutput.parts.ifEmpty { existingParts },
                 )
             }
         }
