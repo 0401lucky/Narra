@@ -1,0 +1,10 @@
+{"file":".trellis/spec/backend/index.md","reason":"Android 工程依赖方向与开发前规范索引"}
+{"file":".trellis/spec/backend/directory-structure.md","reason":"三个子任务的模块、分层和新代码放置边界"}
+{"file":".trellis/spec/backend/ui-state-guidelines.md","reason":"Compose、ViewModel、发送状态和破坏性操作反馈规范"}
+{"file":".trellis/spec/backend/network-guidelines.md","reason":"群聊流式协议、取消、重试和网络错误边界"}
+{"file":".trellis/spec/backend/database-guidelines.md","reason":"单条删除的事务、逻辑关联清理和无 schema 变更边界"}
+{"file":".trellis/spec/backend/error-handling.md","reason":"取消、失败恢复、安全提示和异步状态收口规范"}
+{"file":".trellis/spec/backend/logging-guidelines.md","reason":"群聊与删除流程的脱敏诊断要求"}
+{"file":".trellis/spec/backend/quality-guidelines.md","reason":"测试矩阵、设备测试、Lint 和 debug 构建门禁"}
+{"file":".trellis/spec/guides/cross-layer-thinking-guide.md","reason":"跨 UI、状态、仓储、Room 与网络的数据流审查"}
+{"file":".trellis/spec/guides/code-reuse-thinking-guide.md","reason":"共享删除 Coordinator 与现有消息变换能力复用"}

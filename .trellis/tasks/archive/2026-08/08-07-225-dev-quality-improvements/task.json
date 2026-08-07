@@ -1,0 +1,32 @@
+{
+  "id": "225-dev-quality-improvements",
+  "name": "225-dev-quality-improvements",
+  "title": "2.2.5-dev 稳定性与可用性修复",
+  "description": "交付群聊可靠性、角色音色 Sheet 滚动和普通聊天/RP 单条消息删除。",
+  "status": "completed",
+  "dev_type": null,
+  "scope": null,
+  "package": null,
+  "priority": "P2",
+  "creator": "lucky",
+  "assignee": "lucky",
+  "createdAt": "2026-08-07",
+  "completedAt": "2026-08-07",
+  "branch": null,
+  "base_branch": "main",
+  "worktree_path": null,
+  "commit": null,
+  "pr_url": null,
+  "subtasks": [],
+  "children": [
+    "08-07-group-chat-reply-reliability",
+    "08-07-voice-profile-sheet-scroll",
+    "08-07-single-message-delete"
+  ],
+  "parent": null,
+  "relatedFiles": [],
+  "notes": "",
+  "meta": {
+    "release_version": "2.2.5-dev"
+  }
+}

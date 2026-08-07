@@ -1,0 +1,7 @@
+{"file":".trellis/spec/backend/quality-guidelines.md","reason":"父任务最终质量门禁与验证命令"}
+{"file":".trellis/spec/backend/ui-state-guidelines.md","reason":"跨页面状态、局部状态和破坏性操作反馈审查"}
+{"file":".trellis/spec/backend/network-guidelines.md","reason":"流式请求、重试、取消和协议兼容回归审查"}
+{"file":".trellis/spec/backend/database-guidelines.md","reason":"删除事务、关联清理和迁移边界审查"}
+{"file":".trellis/spec/backend/error-handling.md","reason":"异常、取消、脱敏和状态恢复审查"}
+{"file":".trellis/spec/backend/logging-guidelines.md","reason":"日志范围与敏感信息审查"}
+{"file":".trellis/spec/guides/cross-layer-thinking-guide.md","reason":"三个子任务集成后的端到端数据流审查"}
