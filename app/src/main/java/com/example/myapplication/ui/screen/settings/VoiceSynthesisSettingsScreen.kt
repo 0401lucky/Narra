@@ -4,6 +4,7 @@ import android.media.MediaPlayer
 import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -12,11 +13,14 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.imePadding
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.verticalScroll
 import androidx.activity.compose.BackHandler
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.GraphicEq
@@ -48,6 +52,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.text.font.FontWeight
@@ -712,10 +717,11 @@ private fun DefaultVoiceModelSheet(
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun AssistantVoiceProfileSheet(
+internal fun AssistantVoiceProfileSheet(
     assistant: Assistant,
     voiceSynthesisSettings: VoiceSynthesisSettings,
     initialProfile: VoiceProfile,
+    initialVoiceCloneImportError: String = "",
     isTesting: Boolean,
     onDismissRequest: () -> Unit,
     onTestProfile: (VoiceProfile) -> Unit,
@@ -723,6 +729,7 @@ private fun AssistantVoiceProfileSheet(
 ) {
     val context = LocalContext.current
     val coroutineScope = rememberCoroutineScope()
+    val scrollState = rememberScrollState()
     var mode by rememberSaveable(assistant.id) { mutableStateOf(initialProfile.mode) }
     var presetVoiceId by rememberSaveable(assistant.id) {
         mutableStateOf(initialProfile.presetVoiceId.ifBlank { MIMO_DEFAULT_VOICE_ID })
@@ -742,7 +749,9 @@ private fun AssistantVoiceProfileSheet(
     var voiceCloneSampleSizeBytes by rememberSaveable(assistant.id) {
         mutableStateOf(initialProfile.voiceCloneSampleSizeBytes)
     }
-    var voiceCloneImportError by rememberSaveable(assistant.id) { mutableStateOf("") }
+    var voiceCloneImportError by rememberSaveable(assistant.id) {
+        mutableStateOf(initialVoiceCloneImportError)
+    }
     var showPresetVoiceSheet by rememberSaveable(assistant.id) { mutableStateOf(false) }
     val voiceCloneSampleLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.OpenDocument(),
@@ -786,7 +795,15 @@ private fun AssistantVoiceProfileSheet(
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 20.dp, vertical = 8.dp),
+                .verticalScroll(scrollState)
+                .navigationBarsPadding()
+                .imePadding()
+                .padding(
+                    start = 20.dp,
+                    top = 8.dp,
+                    end = 20.dp,
+                    bottom = 24.dp,
+                ),
             verticalArrangement = Arrangement.spacedBy(14.dp),
         ) {
             Text(
@@ -797,6 +814,9 @@ private fun AssistantVoiceProfileSheet(
             SettingsGroup {
                 VoiceProfileMode.entries.forEachIndexed { index, option ->
                     SettingsListRow(
+                        modifier = Modifier.testTag(
+                            "assistant_voice_profile_mode_${option.storageValue}",
+                        ),
                         leadingContent = {
                             Icon(
                                 imageVector = Icons.Default.Tune,
@@ -823,6 +843,7 @@ private fun AssistantVoiceProfileSheet(
             if (mode == VoiceProfileMode.PRESET) {
                 SettingsGroup {
                     SettingsListRow(
+                        modifier = Modifier.testTag(ASSISTANT_VOICE_PRESET_SELECTOR_TAG),
                         title = "预置音色",
                         supportingText = presetVoiceId,
                         onClick = { showPresetVoiceSheet = true },
@@ -917,7 +938,9 @@ private fun AssistantVoiceProfileSheet(
                     OutlinedTextField(
                         value = voiceDesignPrompt,
                         onValueChange = { voiceDesignPrompt = it },
-                        modifier = Modifier.fillMaxWidth(),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .testTag(ASSISTANT_VOICE_DESIGN_PROMPT_TAG),
                         label = { Text("VoiceDesign Prompt") },
                         minLines = 3,
                         supportingText = {
@@ -942,6 +965,7 @@ private fun AssistantVoiceProfileSheet(
                     Text("取消")
                 }
                 TextButton(
+                    modifier = Modifier.testTag(ASSISTANT_VOICE_PROFILE_SAVE_TAG),
                     onClick = {
                         onSaveProfile(currentDraftProfile())
                     },
@@ -975,6 +999,9 @@ private fun formatVoiceCloneSampleSize(sizeBytes: Long): String {
 }
 
 private const val MIMO_PRESET_PREVIEW_CACHE_DIR = "mimo_preset_voice_previews"
+internal const val ASSISTANT_VOICE_PROFILE_SAVE_TAG = "assistant_voice_profile_save"
+internal const val ASSISTANT_VOICE_PRESET_SELECTOR_TAG = "assistant_voice_preset_selector"
+internal const val ASSISTANT_VOICE_DESIGN_PROMPT_TAG = "assistant_voice_design_prompt"
 
 private fun buildPresetVoicePreviewText(voice: MimoPresetVoice): String {
     return if (voice.language.contains("英文")) {
