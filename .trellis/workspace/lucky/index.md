@@ -8,8 +8,8 @@
 
 <!-- @@@auto:current-status -->
 - **Active File**: `journal-1.md`
-- **Total Sessions**: 1
-- **Last Active**: 2026-07-22
+- **Total Sessions**: 2
+- **Last Active**: 2026-08-07
 <!-- @@@/auto:current-status -->
 
 ---
@@ -19,7 +19,7 @@
 <!-- @@@auto:active-documents -->
 | File | Lines | Status |
 |------|-------|--------|
-| `journal-1.md` | ~42 | Active |
+| `journal-1.md` | ~67 | Active |
 <!-- @@@/auto:active-documents -->
 
 ---
@@ -29,6 +29,7 @@
 <!-- @@@auto:session-history -->
 | # | Date | Title | Commits | Branch |
 |---|------|-------|---------|--------|
+| 2 | 2026-08-07 | 2.2.5-dev 稳定性与可用性修复 | `c193510f`, `bbd02982`, `860c3408`, `83bb7167`, `59844460` | `main` |
 | 1 | 2026-07-22 | 2.2.4-dev 首次启动合规门禁与发布收尾 | `08bc26b1`, `c6a37984`, `f7a016d2` | `main` |
 <!-- @@@/auto:session-history -->
 

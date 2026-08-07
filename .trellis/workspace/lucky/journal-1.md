@@ -40,3 +40,28 @@
 ### Next Steps
 
 - None - task complete
+
+
+## Session 2: 2.2.5-dev 稳定性与可用性修复
+
+**Date**: 2026-08-07
+**Task**: 2.2.5-dev 稳定性与可用性修复
+**Branch**: `main`
+
+### Summary
+
+完成群聊多角色回复可靠性、角色音色弹窗滚动、普通聊天与 RP 单条消息删除；通过全量测试、Lint 与 Debug 构建，并发布 2.2.5-dev 到 R2 和内置更新。
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `c193510f` | (see git log) |
+| `bbd02982` | (see git log) |
+| `860c3408` | (see git log) |
+| `83bb7167` | (see git log) |
+| `59844460` | (see git log) |
+
+### Status
+
+[OK] **Completed**
