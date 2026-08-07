@@ -42,7 +42,7 @@
 ### Release
 
 - 已构建 `Narra-v2.2.5-dev-20205-dev.apk`，SHA-256 `fa4eb32cb97ee9a721dd13618062bb04dee6f8ea058b650b7cf646dc9a718ef5`。
-- 本轮未上传 Cloudflare R2，`docs/updates/dev.json` 继续保留已验证的 `2.2.4-dev` 更新元数据。
+- 已上传 Cloudflare R2 `narra-updates/dev/2.2.5/`，远端对象哈希一致，公开下载 HEAD 200，内置更新元数据已同步。
 
 ---
 

@@ -1,16 +1,16 @@
 {
   "app_id": "com.narra.app.dev",
   "channel": "dev",
-  "latest_version_name": "2.2.4-dev",
-  "latest_version_code": 20204,
+  "latest_version_name": "2.2.5-dev",
+  "latest_version_code": 20205,
   "minimum_supported_version_code": 0,
-  "apk_url": "https://download.lsa1230.dpdns.org/dev/2.2.4/Narra-v2.2.4-dev-20204-dev.apk?v=20204-20260722122931",
-  "apk_sha256": "0321c41bbb240f95c196450bf9e5abea3ff589a9f28a6b8cd060a15e752ed835",
-  "published_at": "2026-07-22T12:29:31+08:00",
+  "apk_url": "https://download.lsa1230.dpdns.org/dev/2.2.5/Narra-v2.2.5-dev-20205-dev.apk?v=20205-20260807134354",
+  "apk_sha256": "fa4eb32cb97ee9a721dd13618062bb04dee6f8ea058b650b7cf646dc9a718ef5",
+  "published_at": "2026-08-07T13:43:54+08:00",
   "release_notes": [
-    "新增首次启动 AI 使用须知与统一 18+ 年龄门槛",
-    "条款必须阅读到末尾并完成双重确认，版本升级后重新确认",
-    "设置页新增使用条款与年龄限制查看入口",
-    "未确认条款时暂停更新检查和 AI 动态自动生成"
+    "提升群聊多角色回复可靠性，失败、取消和会话切换后会正确收口状态",
+    "角色音色配置弹窗支持滚动，小屏、长内容和输入法场景下仍可保存",
+    "普通聊天与角色扮演新增单条消息删除，并保留角色扮演撤回能力",
+    "删除消息会同步清理关联引用、来源记忆和会话摘要，但不会删除本地附件文件"
   ]
 }
