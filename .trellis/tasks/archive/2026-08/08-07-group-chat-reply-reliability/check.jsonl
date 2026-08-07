@@ -1,0 +1,8 @@
+{"file":".trellis/spec/backend/quality-guidelines.md","reason":"群聊窄测、全量单测、Lint 和构建审查"}
+{"file":".trellis/spec/backend/ui-state-guidelines.md","reason":"isSending、Loading、取消及跨会话隔离审查"}
+{"file":".trellis/spec/backend/network-guidelines.md","reason":"重试边界、流式协议和取消资源清理审查"}
+{"file":".trellis/spec/backend/database-guidelines.md","reason":"完成/错误消息持久化一致性审查"}
+{"file":".trellis/spec/backend/error-handling.md","reason":"提交边界、后处理隔离和异常终态审查"}
+{"file":".trellis/spec/backend/logging-guidelines.md","reason":"阶段日志与敏感数据泄漏审查"}
+{"file":".trellis/spec/guides/cross-layer-thinking-guide.md","reason":"端到端发送数据流和状态回流审查"}
+{"file":".trellis/tasks/08-07-group-chat-reply-reliability/research/repository-evidence.md","reason":"修复范围、风险路径和测试矩阵依据"}

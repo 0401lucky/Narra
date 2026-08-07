@@ -1,0 +1,28 @@
+{
+  "id": "group-chat-reply-reliability",
+  "name": "group-chat-reply-reliability",
+  "title": "群聊多角色回复可靠性修复",
+  "description": "修复 2.2.5-dev 群聊中部分角色回复失败、加载状态残留及后续角色无法稳定继续的问题。",
+  "status": "completed",
+  "dev_type": null,
+  "scope": null,
+  "package": null,
+  "priority": "P2",
+  "creator": "lucky",
+  "assignee": "lucky",
+  "createdAt": "2026-08-07",
+  "completedAt": "2026-08-07",
+  "branch": null,
+  "base_branch": "main",
+  "worktree_path": null,
+  "commit": null,
+  "pr_url": null,
+  "subtasks": [],
+  "children": [],
+  "parent": "08-07-225-dev-quality-improvements",
+  "relatedFiles": [],
+  "notes": "",
+  "meta": {
+    "release_version": "2.2.5-dev"
+  }
+}

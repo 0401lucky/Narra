@@ -1,0 +1,10 @@
+{"file":".trellis/spec/backend/index.md","reason":"Android 应用依赖方向与群聊开发规范入口"}
+{"file":".trellis/spec/backend/directory-structure.md","reason":"Support、Coordinator、Repository 与 ViewModel 的职责边界"}
+{"file":".trellis/spec/backend/ui-state-guidelines.md","reason":"发送 run、流式状态、取消和会话切换规范"}
+{"file":".trellis/spec/backend/network-guidelines.md","reason":"流式协议、有界重试、取消和 Provider 兼容边界"}
+{"file":".trellis/spec/backend/database-guidelines.md","reason":"消息状态持久化、事务和无 schema 变更约束"}
+{"file":".trellis/spec/backend/error-handling.md","reason":"生成失败、后处理失败、取消与终态恢复规范"}
+{"file":".trellis/spec/backend/logging-guidelines.md","reason":"分阶段脱敏诊断和敏感信息禁止项"}
+{"file":".trellis/spec/backend/quality-guidelines.md","reason":"失败矩阵测试、Lint 与构建门禁"}
+{"file":".trellis/spec/guides/cross-layer-thinking-guide.md","reason":"群聊从 UI 到网络、持久化和回流的完整数据流审查"}
+{"file":".trellis/tasks/08-07-group-chat-reply-reliability/research/repository-evidence.md","reason":"现有串行回合、结构性缺口和测试空白的源码证据"}
