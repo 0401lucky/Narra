@@ -1,0 +1,28 @@
+{
+  "id": "voice-profile-sheet-scroll",
+  "name": "voice-profile-sheet-scroll",
+  "title": "角色音色配置滚动修复",
+  "description": "修复 2.2.5-dev 角色文本设计音色弹窗在小屏和长内容下无法滚动、保存按钮不可达的问题。",
+  "status": "completed",
+  "dev_type": null,
+  "scope": null,
+  "package": null,
+  "priority": "P2",
+  "creator": "lucky",
+  "assignee": "lucky",
+  "createdAt": "2026-08-07",
+  "completedAt": "2026-08-07",
+  "branch": null,
+  "base_branch": "main",
+  "worktree_path": null,
+  "commit": null,
+  "pr_url": null,
+  "subtasks": [],
+  "children": [],
+  "parent": "08-07-225-dev-quality-improvements",
+  "relatedFiles": [],
+  "notes": "",
+  "meta": {
+    "release_version": "2.2.5-dev"
+  }
+}

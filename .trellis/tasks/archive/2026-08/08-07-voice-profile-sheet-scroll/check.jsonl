@@ -1,0 +1,4 @@
+{"file":".trellis/spec/backend/quality-guidelines.md","reason":"Compose 设备测试与交付门禁"}
+{"file":".trellis/spec/backend/ui-state-guidelines.md","reason":"滚动状态、草稿状态和回调行为审查"}
+{"file":".trellis/spec/backend/error-handling.md","reason":"错误提示和输入法交互回归审查"}
+{"file":".trellis/tasks/08-07-voice-profile-sheet-scroll/research/repository-evidence.md","reason":"实现边界、测试缺口和验证重点"}

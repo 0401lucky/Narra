@@ -1,0 +1,6 @@
+{"file":".trellis/spec/backend/index.md","reason":"Android UI 任务的规范入口与开发前检查清单"}
+{"file":".trellis/spec/backend/directory-structure.md","reason":"设置页 Composable 与测试的目录和职责边界"}
+{"file":".trellis/spec/backend/ui-state-guidelines.md","reason":"Compose 局部状态、回调、Sheet 和测试约定"}
+{"file":".trellis/spec/backend/error-handling.md","reason":"声音克隆错误提示与现有状态语义保持要求"}
+{"file":".trellis/spec/backend/quality-guidelines.md","reason":"Compose 设备测试、Lint 和构建门禁"}
+{"file":".trellis/tasks/08-07-voice-profile-sheet-scroll/research/repository-evidence.md","reason":"不可滚动容器、保存按钮位置和测试缺口的仓库证据"}
