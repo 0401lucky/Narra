@@ -1,0 +1,8 @@
+{"file":".trellis/spec/backend/quality-guidelines.md","reason":"删除功能的全层测试与项目门禁"}
+{"file":".trellis/spec/backend/ui-state-guidelines.md","reason":"确认弹窗、发送门禁、引用草稿和错误反馈审查"}
+{"file":".trellis/spec/backend/database-guidelines.md","reason":"物理删除、原子回滚、Flow 重观察和 schema 边界审查"}
+{"file":".trellis/spec/backend/error-handling.md","reason":"NotFound 幂等、异常传播和安全提示审查"}
+{"file":".trellis/spec/backend/logging-guidelines.md","reason":"日志脱敏和附件路径泄漏审查"}
+{"file":".trellis/spec/guides/cross-layer-thinking-guide.md","reason":"普通聊天与 RP 两条端到端删除链路审查"}
+{"file":".trellis/spec/guides/code-reuse-thinking-guide.md","reason":"共享规则单一所有者与重复实现审查"}
+{"file":".trellis/tasks/08-07-single-message-delete/research/repository-evidence.md","reason":"实现影响面、事务不变量和验证重点"}

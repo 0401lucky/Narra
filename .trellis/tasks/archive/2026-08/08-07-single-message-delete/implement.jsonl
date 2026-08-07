@@ -1,0 +1,10 @@
+{"file":".trellis/spec/backend/index.md","reason":"Android 应用分层与删除功能开发规范入口"}
+{"file":".trellis/spec/backend/directory-structure.md","reason":"UI、ViewModel、Repository、Store 和 DAO 的职责边界"}
+{"file":".trellis/spec/backend/ui-state-guidelines.md","reason":"破坏性确认、发送状态门禁和一次性错误反馈规范"}
+{"file":".trellis/spec/backend/database-guidelines.md","reason":"Room 原子事务、逻辑关联清理和无 schema 变更约束"}
+{"file":".trellis/spec/backend/error-handling.md","reason":"幂等结果、事务异常、取消和脱敏提示规范"}
+{"file":".trellis/spec/backend/logging-guidelines.md","reason":"删除失败诊断与聊天内容、路径等敏感信息禁止项"}
+{"file":".trellis/spec/backend/quality-guidelines.md","reason":"纯逻辑、Repository、Room、ViewModel 和 Compose 测试门禁"}
+{"file":".trellis/spec/guides/cross-layer-thinking-guide.md","reason":"删除动作跨 UI、状态、仓储、Room 和 Flow 回流的审查"}
+{"file":".trellis/spec/guides/code-reuse-thinking-guide.md","reason":"复用消息变换并收敛普通聊天与 RP 的共享删除契约"}
+{"file":".trellis/tasks/08-07-single-message-delete/research/repository-evidence.md","reason":"双入口、底层消息单位、关联数据和现有 Store 缺口的源码证据"}

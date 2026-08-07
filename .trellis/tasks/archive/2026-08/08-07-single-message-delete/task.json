@@ -1,0 +1,28 @@
+{
+  "id": "single-message-delete",
+  "name": "single-message-delete",
+  "title": "单条消息删除功能",
+  "description": "为 2.2.5-dev 增加单条消息删除入口、确认流程、持久化删除与关联状态清理。",
+  "status": "completed",
+  "dev_type": null,
+  "scope": null,
+  "package": null,
+  "priority": "P2",
+  "creator": "lucky",
+  "assignee": "lucky",
+  "createdAt": "2026-08-07",
+  "completedAt": "2026-08-07",
+  "branch": null,
+  "base_branch": "main",
+  "worktree_path": null,
+  "commit": null,
+  "pr_url": null,
+  "subtasks": [],
+  "children": [],
+  "parent": "08-07-225-dev-quality-improvements",
+  "relatedFiles": [],
+  "notes": "",
+  "meta": {
+    "release_version": "2.2.5-dev"
+  }
+}
