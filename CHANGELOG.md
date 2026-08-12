@@ -19,6 +19,57 @@
 
 ---
 
+## [2.2.6-dev] - 2026-08-12
+
+### Added
+
+- 增加 baseline-only 确定性 fixture、强 ready、性能场景归档和本地脱敏退出诊断。
+- 接通 F3 baseline-only RP 离线流式重放：固定 100 条消息、约 48 ms chunk、起止 ready、
+  四段 RP Trace，以及 fail-closed Provider 依赖与违规追踪门禁。
+- 增加用户主动诊断导出，不自动联网或上传。
+
+### Changed
+
+- Compose Compiler 报告改为 debug / baseline 独立正式归档。
+- 生成并校验包含 Narra 应用规则的 Baseline Profile。
+- 应用设置改为应用级共享读取：安全值读取和 JSON 解析在后台执行，同一存储 emission 只解析
+  一次，并向所有消费者重放最新快照。
+- 根主题只订阅主题模式与色板的窄状态，SettingsViewModel 合并为单一设置同步链路；保留设置页
+  未保存主题草稿的即时预览，Provider、loading、message 等无关变化不再触发根主题刷新。
+- RP 普通对话、在线手机和阅读模式统一使用稳定消息 identity 与 Lazy `contentType`；流式贴底
+  增加合并、用户离底保护和场景切换重置。
+- 流式光标不再随闪烁帧重建完整正文；语音卡改用异步播放器状态机，静止状态不再常驻无限
+  波形动画。
+
+### Fixed
+
+- 启动时的敏感数据迁移、内置预设确保和 ContextLog 设置观察改为独立命名任务与局部异常边界；
+  单个任务失败不阻断其它启动任务，协程取消原样传播，失败任务留待下次启动重试。
+- DataStore 读取发生 `IOException` 时先提供安全默认设置并重新订阅恢复；非 IO 故障保持不可用
+  诊断，不再伪装成成功设置快照。
+
+### Tests
+
+- JVM 性能合约测试、诊断测试、Compose 报告、Profile 生成、Lint 和 debug / baseline 构建通过。
+- 全量 JVM 测试共 1449 个，0 failures、0 errors、0 skipped；AndroidTest 与 baseline 源码编译、
+  基准契约漂移检查、Lint 和 Debug 构建均通过，Lint 为 0 errors、41 warnings、4 hints。
+- RP 性能相关 10 个 JVM 测试类共 93 项通过；F3 API 36 模拟器三条正向 / 负向合约 smoke
+  全部通过。
+- F3 全链路已接线；当前缺少的是固定物理设备上优化前后各 5 次 FrameTiming / Perfetto 原始
+  证据，因此不声明帧阈值、性能改善百分比或崩溃率改善。
+- N1 设置、RP 快捷设置与阅读页导航的 5 次迭代场景及必要 Trace 门禁已接线；尚未取得固定
+  物理设备上同环境优化前后的 FrameTiming / Perfetto 原始结果，因此不声明 P95、jank、帧阈值
+  或改善百分比。
+
+### Release
+
+- 已构建 `Narra-v2.2.6-dev-20206-dev.apk`，SHA-256
+  `4ddfa794e66c73a1d3296c00a3439983b6692615e7cfd6924e10fb0c14f4c10a`。
+- 已上传 Cloudflare R2 `narra-updates/dev/2.2.6/`，远端回拉哈希一致，公开下载 HEAD 200，
+  内置更新元数据已同步。
+
+---
+
 ## [2.2.5-dev] - 2026-08-07
 
 ### Added

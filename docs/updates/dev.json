@@ -1,16 +1,16 @@
 {
   "app_id": "com.narra.app.dev",
   "channel": "dev",
-  "latest_version_name": "2.2.5-dev",
-  "latest_version_code": 20205,
+  "latest_version_name": "2.2.6-dev",
+  "latest_version_code": 20206,
   "minimum_supported_version_code": 0,
-  "apk_url": "https://download.lsa1230.dpdns.org/dev/2.2.5/Narra-v2.2.5-dev-20205-dev.apk?v=20205-20260807134354",
-  "apk_sha256": "fa4eb32cb97ee9a721dd13618062bb04dee6f8ea058b650b7cf646dc9a718ef5",
-  "published_at": "2026-08-07T13:43:54+08:00",
+  "apk_url": "https://download.lsa1230.dpdns.org/dev/2.2.6/Narra-v2.2.6-dev-20206-dev.apk?v=20206-20260812181651",
+  "apk_sha256": "4ddfa794e66c73a1d3296c00a3439983b6692615e7cfd6924e10fb0c14f4c10a",
+  "published_at": "2026-08-12T18:16:51+08:00",
   "release_notes": [
-    "提升群聊多角色回复可靠性，失败、取消和会话切换后会正确收口状态",
-    "角色音色配置弹窗支持滚动，小屏、长内容和输入法场景下仍可保存",
-    "普通聊天与角色扮演新增单条消息删除，并保留角色扮演撤回能力",
-    "删除消息会同步清理关联引用、来源记忆和会话摘要，但不会删除本地附件文件"
+    "优化应用启动与设置读取，单项启动任务失败不再影响其它任务",
+    "应用设置改为后台共享解析，减少重复安全存储读取和界面无关刷新",
+    "优化角色扮演长列表、流式贴底、光标和语音卡动画，降低切换与流式展示负担",
+    "增加本地脱敏退出诊断与性能基准基础设施；本版本更新仍为可选更新"
   ]
 }
