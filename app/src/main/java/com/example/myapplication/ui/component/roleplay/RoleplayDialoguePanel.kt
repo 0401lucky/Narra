@@ -3,6 +3,7 @@ package com.example.myapplication.ui.component.roleplay
 import com.example.myapplication.ui.component.*
 
 import android.widget.Toast
+import com.example.myapplication.BuildConfig
 import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.infiniteRepeatable
@@ -39,7 +40,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -77,17 +77,25 @@ import com.example.myapplication.model.RoleplayNoBackgroundSkinSettings
 import com.example.myapplication.model.RoleplaySpeaker
 import com.example.myapplication.model.RoleplaySuggestionUiModel
 import com.example.myapplication.R
+import com.example.myapplication.system.performance.BenchmarkActionIds
+import com.example.myapplication.system.performance.BenchmarkOfflineReplaySpec
+import com.example.myapplication.system.performance.BenchmarkReadyIds
+import com.example.myapplication.system.performance.BenchmarkContract
+import com.example.myapplication.system.performance.BenchmarkScenarioId
+import com.example.myapplication.ui.performance.LocalBenchmarkRuntimePolicy
+import com.example.myapplication.ui.performance.benchmarkActionTag
+import com.example.myapplication.ui.performance.benchmarkReadyTag
 import com.example.myapplication.ui.component.TransferPlayCard
+import com.example.myapplication.viewmodel.RoleplayOfflineReplayPhase
 
 private enum class RoleplayJumpIndicator {
     TOP,
     BOTTOM,
 }
 
-private const val RoleplayStreamingScrollWindowMillis = 64L
-
 @Composable
 internal fun RoleplayDialoguePanel(
+    conversationIdentity: String,
     backdropState: ImmersiveBackdropState,
     messages: List<RoleplayMessageUiModel>,
     suggestions: List<RoleplaySuggestionUiModel>,
@@ -114,6 +122,9 @@ internal fun RoleplayDialoguePanel(
     onSend: () -> Unit,
     modifier: Modifier = Modifier,
     onCancel: (() -> Unit)? = null,
+    offlineReplayPhase: RoleplayOfflineReplayPhase = RoleplayOfflineReplayPhase.DISABLED,
+    isOfflineReplayFixtureReady: Boolean = false,
+    onStartOfflineReplay: (() -> Unit)? = null,
     lineHeightScale: Float = 1.0f,
     noBackgroundSkin: RoleplayNoBackgroundSkinSettings = RoleplayNoBackgroundSkinSettings(),
     onToggleTopBar: () -> Unit = {},
@@ -121,25 +132,46 @@ internal fun RoleplayDialoguePanel(
     val colors = rememberImmersiveRoleplayColors(backdropState, noBackgroundSkin)
     val storyMessages = messages.filter { it.contentType != RoleplayContentType.SYSTEM }
     val listState = rememberLazyListState()
-    LaunchedEffect(
-        storyMessages.firstOrNull()?.sourceMessageId,
-        storyMessages.firstOrNull()?.createdAt,
+    val autoScrollState = rememberRoleplayStreamingAutoScrollState(conversationIdentity)
+    val lastStoryMessage = storyMessages.lastOrNull()
+    RoleplayStreamingAutoScrollEffect(
+        state = autoScrollState,
+        listState = listState,
+        conversationIdentity = conversationIdentity,
+        signal = RoleplayStreamingScrollSignal(
+            lastUiItemId = lastStoryMessage?.uiItemId,
+            itemCount = storyMessages.size,
+            isStreaming = lastStoryMessage?.isStreaming == true,
+            contentVersion = lastStoryMessage?.content?.length ?: 0,
+        ),
+    )
+    val offlineReplaySpec = BenchmarkOfflineReplaySpec.DEFAULT
+    val isOfflineReplayActionInstalled =
+        isOfflineReplayFixtureReady &&
+            offlineReplayPhase == RoleplayOfflineReplayPhase.READY &&
+            onStartOfflineReplay != null
+    val benchmarkRuntimePolicy = if (
+        BuildConfig.APP_CHANNEL == BenchmarkContract.BASELINE_CHANNEL
     ) {
-        if (storyMessages.isNotEmpty()) {
-            listState.scrollToItem(storyMessages.lastIndex)
-        }
+        LocalBenchmarkRuntimePolicy.current
+    } else {
+        null
     }
-    val shouldStickToBottom by remember(listState, storyMessages.size) {
-        derivedStateOf {
-            val layoutInfo = listState.layoutInfo
-            if (storyMessages.isEmpty()) {
-                true
-            } else {
-                val lastVisibleIndex = layoutInfo.visibleItemsInfo.lastOrNull()?.index ?: -1
-                lastVisibleIndex >= layoutInfo.totalItemsCount - 2
-            }
-        }
+    val benchmarkSourceMessageCount = if (
+        benchmarkRuntimePolicy?.scenarioId == BenchmarkScenarioId.F2_ROLEPLAY_SCROLL
+    ) {
+        storyMessages.asSequence()
+            .map { message -> message.sourceMessageId }
+            .filter(String::isNotBlank)
+            .distinct()
+            .count()
+    } else {
+        0
     }
+    val isRoleplayScrollFixtureReady =
+        benchmarkRuntimePolicy?.scenarioId == BenchmarkScenarioId.F2_ROLEPLAY_SCROLL &&
+            benchmarkSourceMessageCount ==
+            BenchmarkScenarioId.F2_ROLEPLAY_SCROLL.fixtureId.roleplayMessageCount
     val isAtTop by remember(listState, storyMessages.size) {
         derivedStateOf {
             storyMessages.isEmpty() ||
@@ -153,23 +185,53 @@ internal fun RoleplayDialoguePanel(
             storyMessages.isEmpty() || (
                 lastVisibleItem != null &&
                     lastVisibleItem.index >= layoutInfo.totalItemsCount - 1 &&
+                    !listState.canScrollForward &&
                     (lastVisibleItem.offset + lastVisibleItem.size) <= layoutInfo.viewportEndOffset + 8
                 )
         }
     }
+    val isLastStoryMessageVisible by remember(listState, storyMessages.size) {
+        derivedStateOf {
+            val layoutInfo = listState.layoutInfo
+            val lastIndex = storyMessages.lastIndex
+            lastIndex >= 0 && layoutInfo.visibleItemsInfo.any { item ->
+                item.index == lastIndex &&
+                    item.offset < layoutInfo.viewportEndOffset &&
+                    item.offset + item.size > layoutInfo.viewportStartOffset
+            }
+        }
+    }
+    val isOfflineReplayViewportReady = isRoleplayOfflineReplayViewportReady(
+        isLastStoryMessageVisible = isLastStoryMessageVisible,
+        canScrollForward = listState.canScrollForward,
+        isScrollInProgress = listState.isScrollInProgress,
+    )
+    val isOfflineReplayInitialReady =
+        isOfflineReplayActionInstalled &&
+            lastStoryMessage?.isStreaming == true &&
+            lastStoryMessage.messageStatus == MessageStatus.LOADING &&
+            offlineReplaySpec.isInitialContent(lastStoryMessage.content) &&
+            isOfflineReplayViewportReady
+    val isOfflineReplayCompleteReady =
+        isOfflineReplayFixtureReady &&
+            offlineReplayPhase == RoleplayOfflineReplayPhase.COMPLETED &&
+            !isOfflineReplayActionInstalled &&
+            // 当前观察层在回放完成后仍保留末尾流式预览，最终状态由后续收口统一清理。
+            lastStoryMessage?.isStreaming == true &&
+            lastStoryMessage.messageStatus == MessageStatus.LOADING &&
+            offlineReplaySpec.isCompletedContent(lastStoryMessage.content) &&
+            isOfflineReplayViewportReady
     var jumpIndicator by remember(listState, storyMessages.size) {
         mutableStateOf<RoleplayJumpIndicator?>(null)
     }
     LaunchedEffect(storyMessages.firstOrNull()?.sourceMessageId, storyMessages.firstOrNull()?.createdAt, storyMessages.size) {
         jumpIndicator = null
     }
-    var lastStreamingFollowAtMillis by remember(listState, storyMessages.size) {
-        mutableLongStateOf(0L)
-    }
     val scrollHintConnection = remember(storyMessages.size, isAtTop, isAtBottomExact) {
         object : NestedScrollConnection {
             override fun onPreScroll(available: Offset, source: NestedScrollSource): Offset {
                 if (source == NestedScrollSource.UserInput && storyMessages.isNotEmpty()) {
+                    autoScrollState.pauseForUser()
                     jumpIndicator = when {
                         available.y > 1f && !isAtTop -> RoleplayJumpIndicator.TOP
                         available.y < -1f && !isAtBottomExact -> RoleplayJumpIndicator.BOTTOM
@@ -188,24 +250,21 @@ internal fun RoleplayDialoguePanel(
             }
         }
     }
-    LaunchedEffect(storyMessages.size, storyMessages.lastOrNull()?.content?.length, storyMessages.lastOrNull()?.isStreaming) {
-        if (storyMessages.isEmpty() || !shouldStickToBottom) {
-            return@LaunchedEffect
-        }
-        val lastMessage = storyMessages.last()
-        if (lastMessage.isStreaming) {
-            val now = System.currentTimeMillis()
-            if (now - lastStreamingFollowAtMillis >= RoleplayStreamingScrollWindowMillis) {
-                lastStreamingFollowAtMillis = now
-                listState.scrollToItem(storyMessages.lastIndex)
-            }
-        } else {
-            listState.animateScrollToItem(storyMessages.lastIndex)
+    LaunchedEffect(isOfflineReplayActionInstalled, lastStoryMessage?.uiItemId) {
+        if (isOfflineReplayActionInstalled && storyMessages.isNotEmpty()) {
+            // READY 操作条会压缩列表视口；仅在基准控制条安装时重新确定性贴底一次。
+            autoScrollState.scrollToEnd(
+                listState = listState,
+                lastIndex = storyMessages.lastIndex,
+                animated = false,
+                resumeAutoFollow = true,
+            )
         }
     }
     val scrollScope = rememberCoroutineScope()
     Column(
-        modifier = modifier.fillMaxWidth()
+        modifier = modifier
+            .fillMaxWidth()
             .padding(start = 14.dp, top = 0.dp, end = 14.dp, bottom = 10.dp),
         verticalArrangement = Arrangement.spacedBy(6.dp),
     ) {
@@ -231,7 +290,15 @@ internal fun RoleplayDialoguePanel(
                 modifier = Modifier
                     .fillMaxWidth()
                     .weight(1f, fill = true)
-                    .nestedScroll(scrollHintConnection),
+                    .nestedScroll(scrollHintConnection)
+                    .benchmarkReadyTag(
+                        readyId = BenchmarkReadyIds.ROLEPLAY_LIST_TOP_READY,
+                        ready = isRoleplayScrollFixtureReady && isAtTop,
+                    )
+                    .benchmarkReadyTag(
+                        readyId = BenchmarkReadyIds.ROLEPLAY_LIST_BOTTOM_READY,
+                        ready = isRoleplayScrollFixtureReady && isAtBottomExact,
+                    ),
             ) {
                 LazyColumn(
                     state = listState,
@@ -241,9 +308,8 @@ internal fun RoleplayDialoguePanel(
                 ) {
                     itemsIndexed(
                         items = storyMessages,
-                        key = { index, item ->
-                            buildRoleplayDialogueMessageListKey(item, index)
-                        },
+                        key = { _, message -> message.uiItemId },
+                        contentType = { _, message -> roleplayLazyContentType(message) },
                     ) { _, message ->
                         RoleplayMessageItem(
                             message = message,
@@ -288,7 +354,12 @@ internal fun RoleplayDialoguePanel(
                     NarraIconButton(
                         onClick = {
                             scrollScope.launch {
-                                listState.animateScrollToItem(storyMessages.lastIndex)
+                                autoScrollState.scrollToEnd(
+                                    listState = listState,
+                                    lastIndex = storyMessages.lastIndex,
+                                    animated = true,
+                                    resumeAutoFollow = true,
+                                )
                             }
                         },
                         modifier = Modifier
@@ -322,7 +393,7 @@ internal fun RoleplayDialoguePanel(
                 onClearSuggestions = onClearSuggestions,
             )
         }
-        if (isSending && onCancel != null) {
+        if (isOfflineReplayActionInstalled || (isSending && onCancel != null)) {
             ImmersiveGlassSurface(
                 backdropState = backdropState,
                 modifier = Modifier.fillMaxWidth(),
@@ -341,16 +412,47 @@ internal fun RoleplayDialoguePanel(
                         color = colors.characterAccent,
                     )
                     Text(
-                        text = stringResource(id = R.string.roleplay_sending),
+                        text = if (isOfflineReplayActionInstalled) {
+                            "离线流式重放已就绪"
+                        } else {
+                            stringResource(id = R.string.roleplay_sending)
+                        },
                         color = colors.textMuted,
                         style = MaterialTheme.typography.bodySmall,
-                        modifier = Modifier.weight(1f),
+                        modifier = Modifier
+                            .weight(1f)
+                            .benchmarkReadyTag(
+                                readyId = BenchmarkReadyIds.ROLEPLAY_STREAM_READY,
+                                ready = isOfflineReplayInitialReady,
+                            )
+                            .benchmarkReadyTag(
+                                readyId = BenchmarkReadyIds.ROLEPLAY_STREAM_COMPLETE_READY,
+                                ready = isOfflineReplayCompleteReady,
+                            ),
                     )
-                    NarraTextButton(onClick = onCancel) {
-                        Text(
-                            text = stringResource(id = R.string.common_cancel),
-                            color = colors.errorText,
-                        )
+                    if (isOfflineReplayActionInstalled) {
+                        onStartOfflineReplay?.let { startOfflineReplay ->
+                            NarraTextButton(
+                                onClick = startOfflineReplay,
+                                modifier = Modifier.benchmarkActionTag(
+                                    BenchmarkActionIds.START_OFFLINE_REPLAY,
+                                ),
+                            ) {
+                                Text(
+                                    text = "开始离线重放",
+                                    color = colors.characterAccent,
+                                )
+                            }
+                        }
+                    } else {
+                        onCancel?.let { cancel ->
+                            NarraTextButton(onClick = cancel) {
+                                Text(
+                                    text = stringResource(id = R.string.common_cancel),
+                                    color = colors.errorText,
+                                )
+                            }
+                        }
                     }
                 }
             }
@@ -373,21 +475,11 @@ internal fun RoleplayDialoguePanel(
     }
 }
 
-private fun buildRoleplayDialogueMessageListKey(
-    message: RoleplayMessageUiModel,
-    index: Int,
-): String {
-    val partId = message.actionPart?.actionId
-        ?: message.specialPart?.actionId
-        ?: message.replyToMessageId
-        ?: ""
-    return listOf(
-        message.sourceMessageId,
-        message.contentType.name,
-        partId,
-        message.createdAt.toString(),
-        message.content.hashCode().toString(),
-        index.toString(),
-    ).joinToString("|")
+internal fun isRoleplayOfflineReplayViewportReady(
+    isLastStoryMessageVisible: Boolean,
+    canScrollForward: Boolean,
+    isScrollInProgress: Boolean,
+): Boolean {
+    return isLastStoryMessageVisible && !canScrollForward && !isScrollInProgress
 }
 

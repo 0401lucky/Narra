@@ -1,29 +1,51 @@
 package com.example.myapplication.ui.screen.roleplay
 
-import com.example.myapplication.model.RoleplayContentType
-import com.example.myapplication.model.RoleplayMessageUiModel
-import com.example.myapplication.model.RoleplaySpeaker
-import org.junit.Assert.assertNotEquals
+import java.io.File
+import org.junit.Assert.assertFalse
+import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class RoleplayOnlinePhoneMessageListKeyTest {
+    @Test
+    fun roleplayLazyLists_useUiItemIdAndStableContentType() {
+        val sourceFiles = listOf(
+            "ui/component/roleplay/RoleplayDialoguePanel.kt",
+            "ui/screen/roleplay/RoleplayOnlinePhoneContent.kt",
+            "ui/screen/roleplay/RoleplayReadingMode.kt",
+        ).map(::resolveMainSource)
+
+        sourceFiles.forEach { sourceFile ->
+            val source = sourceFile.readText()
+            assertTrue(
+                "${sourceFile.name} 必须只用 uiItemId 作为 Lazy key",
+                source.contains("key = { _, message -> message.uiItemId }"),
+            )
+            assertTrue(
+                "${sourceFile.name} 必须声明稳定 contentType",
+                source.contains(
+                    "contentType = { _, message -> roleplayLazyContentType(message) }",
+                ),
+            )
+            assertFalse(
+                "${sourceFile.name} 的 Lazy identity 不得包含正文哈希",
+                source.contains("content.hashCode()"),
+            )
+        }
+    }
 
     @Test
-    fun buildOnlinePhoneMessageListKey_sameMessageDifferentIndex_producesDistinctKeys() {
-        // 同一条 assistant 消息拆出的多个气泡：sourceMessageId / contentType / createdAt /
-        // content / partId(="") 完全相同，仅在列表中的位置不同。
-        val message = RoleplayMessageUiModel(
-            sourceMessageId = "assistant-1",
-            contentType = RoleplayContentType.DIALOGUE,
-            speaker = RoleplaySpeaker.CHARACTER,
-            speakerName = "角色",
-            content = "嗯。",
-            createdAt = 1_000L,
-        )
+    fun onlinePhoneList_doesNotRetainLegacyIndexKeyBuilder() {
+        val source = resolveMainSource(
+            "ui/screen/roleplay/RoleplayOnlinePhoneContent.kt",
+        ).readText()
 
-        val keyAtZero = buildOnlinePhoneMessageListKey(message, 0)
-        val keyAtOne = buildOnlinePhoneMessageListKey(message, 1)
+        assertFalse(source.contains("buildOnlinePhoneMessageListKey"))
+    }
 
-        assertNotEquals(keyAtZero, keyAtOne)
+    private fun resolveMainSource(relativePath: String): File {
+        return sequenceOf(
+            File("src/main/java/com/example/myapplication", relativePath),
+            File("app/src/main/java/com/example/myapplication", relativePath),
+        ).first { file -> file.exists() }
     }
 }

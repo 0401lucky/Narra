@@ -11,6 +11,8 @@ import com.example.myapplication.model.RoleplaySession
 import com.example.myapplication.roleplay.RoleplayConversationSupport
 import com.example.myapplication.roleplay.RoleplayMessageUiMapper
 import com.example.myapplication.roleplay.RoleplayOutputParser
+import com.example.myapplication.system.performance.PerformanceTraceContract
+import com.example.myapplication.system.performance.trace
 import com.example.myapplication.system.security.SensitiveTextRedactor
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -30,7 +32,6 @@ internal object RoleplayObservationSupport {
         val currentScenario: RoleplayScenario?,
         val currentAssistant: Assistant?,
         val streamingContent: String?,
-        val isSending: Boolean,
     )
 
     fun observeSettings(
@@ -226,22 +227,36 @@ internal object RoleplayObservationSupport {
                 MapperInputs(
                     currentScenario = state.currentScenario,
                     currentAssistant = state.currentAssistant,
-                    streamingContent = state.streamingContent.takeIf { state.isSending },
-                    isSending = state.isSending,
+                    streamingContent = state.streamingContent.takeIf {
+                        state.isSending || when (state.offlineReplayPhase) {
+                            RoleplayOfflineReplayPhase.READY,
+                            RoleplayOfflineReplayPhase.RUNNING,
+                            RoleplayOfflineReplayPhase.COMPLETED,
+                            -> true
+
+                            RoleplayOfflineReplayPhase.DISABLED,
+                            RoleplayOfflineReplayPhase.FAILED,
+                            -> false
+                        }
+                    },
                 )
             }.distinctUntilChanged()
             combine(currentRawMessages, settings, mapperInputs) { rawMessages, settingsState, inputs ->
                 Triple(rawMessages, settingsState, inputs)
             }.collect { (rawMessages, settingsState, inputs) ->
                 val mappedMessages = runCatching {
-                    RoleplayMessageUiMapper.mapMessages(
-                        scenario = inputs.currentScenario,
-                        assistant = inputs.currentAssistant,
-                        settings = settingsState,
-                        rawMessages = rawMessages,
-                        streamingContent = inputs.streamingContent.takeIf { inputs.isSending },
-                        outputParser = outputParser,
-                        nowProvider = nowProvider,
+                    PerformanceTraceContract.ROLEPLAY_MAP_MESSAGES.trace(
+                        block = {
+                            RoleplayMessageUiMapper.mapMessages(
+                                scenario = inputs.currentScenario,
+                                assistant = inputs.currentAssistant,
+                                settings = settingsState,
+                                rawMessages = rawMessages,
+                                streamingContent = inputs.streamingContent,
+                                outputParser = outputParser,
+                                nowProvider = nowProvider,
+                            )
+                        },
                     )
                 }.getOrElse { throwable ->
                     uiState.update { current ->
@@ -258,8 +273,10 @@ internal object RoleplayObservationSupport {
                     }
                     emptyList()
                 }
-                uiState.update { current ->
-                    RoleplayStateSupport.applyMappedMessages(current, mappedMessages)
+                PerformanceTraceContract.ROLEPLAY_APPLY_MAPPED_MESSAGES.trace {
+                    uiState.update { current ->
+                        RoleplayStateSupport.applyMappedMessages(current, mappedMessages)
+                    }
                 }
             }
         }

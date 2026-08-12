@@ -34,6 +34,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.myapplication.R
+import com.example.myapplication.BuildConfig
 import com.example.myapplication.model.RoleplayContentType
 import com.example.myapplication.model.RoleplayMessageUiModel
 import com.example.myapplication.model.RoleplaySpeaker
@@ -52,6 +53,11 @@ import com.example.myapplication.ui.component.roleplay.buildQuotedDialogueAnnota
 import com.example.myapplication.ui.component.roleplay.calculateImmersiveBackdropAmbientLuminance
 import com.example.myapplication.ui.component.roleplay.rememberImmersiveBackdropState
 import com.example.myapplication.ui.component.roleplay.resolveImmersiveReadingScrimAlpha
+import com.example.myapplication.ui.component.roleplay.roleplayLazyContentType
+import com.example.myapplication.system.performance.BenchmarkReadyIds
+import com.example.myapplication.system.performance.BenchmarkContract
+import com.example.myapplication.ui.performance.LocalBenchmarkRuntimePolicy
+import com.example.myapplication.ui.performance.benchmarkReadyTag
 
 @Composable
 fun RoleplayReadingMode(
@@ -63,6 +69,16 @@ fun RoleplayReadingMode(
     onDismiss: () -> Unit,
 ) {
     val effectiveHighContrast = highContrast || rememberSystemHighTextContrastEnabled()
+    val benchmarkExpectedMessageCount = if (
+        BuildConfig.APP_CHANNEL == BenchmarkContract.BASELINE_CHANNEL
+    ) {
+        LocalBenchmarkRuntimePolicy.current
+            ?.scenarioId
+            ?.fixtureId
+            ?.roleplayMessageCount
+    } else {
+        null
+    }
     val backdropState = rememberImmersiveBackdropState(
         backgroundUri = backgroundUri,
         highContrast = effectiveHighContrast,
@@ -93,7 +109,12 @@ fun RoleplayReadingMode(
         modifier = Modifier
             .fillMaxSize()
             .statusBarsPadding()
-            .navigationBarsPadding(),
+            .navigationBarsPadding()
+            .benchmarkReadyTag(
+                readyId = BenchmarkReadyIds.READING_READY,
+                ready = scenarioTitle.isNotBlank() &&
+                    messages.size == benchmarkExpectedMessageCount,
+            ),
     ) {
         RoleplaySceneBackground(
             backdropState = backdropState,
@@ -190,9 +211,8 @@ fun RoleplayReadingMode(
 
                     itemsIndexed(
                         items = messages,
-                        key = { index, item ->
-                            "${item.sourceMessageId}-${item.createdAt}-${item.content.hashCode()}-$index"
-                        },
+                        key = { _, message -> message.uiItemId },
+                        contentType = { _, message -> roleplayLazyContentType(message) },
                     ) { _, message ->
                         when (message.contentType) {
                             RoleplayContentType.NARRATION -> NarrationReadingBlock(

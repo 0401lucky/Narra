@@ -95,6 +95,7 @@ class RoleplayVideoCallScreenTest {
         speakerName: String = "",
     ): RoleplayMessageUiModel {
         return RoleplayMessageUiModel(
+            uiItemId = "$id:dialogue:0",
             sourceMessageId = id,
             contentType = contentType,
             speaker = speaker,

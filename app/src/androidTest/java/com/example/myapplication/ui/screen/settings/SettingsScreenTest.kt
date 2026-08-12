@@ -4,12 +4,14 @@ import androidx.activity.ComponentActivity
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performScrollTo
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.example.myapplication.R
 import com.example.myapplication.model.AppSettings
 import com.example.myapplication.model.ThemeMode
 import com.example.myapplication.ui.theme.ChatAppTheme
 import com.example.myapplication.viewmodel.SettingsUiState
+import org.junit.Assert.assertEquals
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -67,6 +69,50 @@ class SettingsScreenTest {
             check(saveCalls == 1)
             check(openRoleplayCalls == 0)
             check(openHomeCalls == 0)
+        }
+    }
+
+    @Test
+    fun localDiagnosticsEntry_callsDedicatedNavigationCallback() {
+        var diagnosticsCalls = 0
+        composeRule.setContent {
+            ChatAppTheme {
+                SettingsScreen(
+                    uiState = SettingsUiState(),
+                    onSave = {},
+                    onConsumeMessage = {},
+                    onOpenRoleplay = {},
+                    onOpenProviderSettings = {},
+                    onOpenVoiceSynthesisSettings = {},
+                    onOpenUpdateSettings = {},
+                    onOpenDiagnostics = { diagnosticsCalls++ },
+                    onOpenUserMasks = {},
+                    onOpenModelSettings = {},
+                    onOpenAssistantSettings = {},
+                    onOpenWorldBookSettings = {},
+                    onOpenMemorySettings = {},
+                    onOpenContextTransferSettings = {},
+                    onOpenRoleplayScripts = {},
+                    onOpenHome = {},
+                    onNavigateBack = {},
+                    onUpdateThemeMode = {},
+                    onUpdateAppColorTheme = {},
+                    onUpdateMessageTextScale = {},
+                    onUpdateReasoningExpandedByDefault = {},
+                    onUpdateShowThinkingContent = {},
+                    onUpdateAutoCollapseThinking = {},
+                    onUpdateAutoPreviewImages = {},
+                    onUpdateCodeBlockAutoWrap = {},
+                    onUpdateCodeBlockAutoCollapse = {},
+                )
+            }
+        }
+
+        composeRule.onNodeWithText("本地诊断")
+            .performScrollTo()
+            .performClick()
+        composeRule.runOnIdle {
+            assertEquals(1, diagnosticsCalls)
         }
     }
 }

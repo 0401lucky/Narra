@@ -2,6 +2,7 @@ package com.example.myapplication.ui.screen.roleplay
 
 import android.content.Intent
 import android.net.Uri
+import com.example.myapplication.BuildConfig
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
@@ -59,6 +60,12 @@ import com.example.myapplication.model.TaskPlayDraft
 import com.example.myapplication.model.TransferPlayDraft
 import com.example.myapplication.model.VoiceMessageDraft
 import com.example.myapplication.model.toChatMessagePart
+import com.example.myapplication.system.performance.BenchmarkActionIds
+import com.example.myapplication.system.performance.BenchmarkContract
+import com.example.myapplication.system.performance.BenchmarkFixtureIds
+import com.example.myapplication.system.performance.BenchmarkOfflineReplaySpec
+import com.example.myapplication.system.performance.BenchmarkReadyIds
+import com.example.myapplication.system.performance.BenchmarkScenarioId
 import com.example.myapplication.ui.component.NarraAlertDialog
 import com.example.myapplication.ui.component.NarraTextButton
 import com.example.myapplication.ui.component.roleplay.RoleplayInputQuickAction
@@ -70,6 +77,9 @@ import com.example.myapplication.ui.component.specialplay.PunishPlayDraftSaver
 import com.example.myapplication.ui.component.specialplay.TaskPlayDraftSaver
 import com.example.myapplication.ui.component.specialplay.TransferPlayDraftSaver
 import com.example.myapplication.ui.screen.chat.resolveSelectedAttachment
+import com.example.myapplication.ui.performance.LocalBenchmarkRuntimePolicy
+import com.example.myapplication.ui.performance.benchmarkReadyTag
+import com.example.myapplication.viewmodel.RoleplayOfflineReplayPhase
 import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -90,6 +100,9 @@ fun RoleplayScreen(
     isSending: Boolean,
     isGeneratingSuggestions: Boolean,
     isScenarioLoading: Boolean,
+    hasActiveSession: Boolean = false,
+    isOfflineReplayFixtureSession: Boolean = false,
+    offlineReplayPhase: RoleplayOfflineReplayPhase = RoleplayOfflineReplayPhase.DISABLED,
     showAssistantMismatchDialog: Boolean,
     previousAssistantName: String,
     currentAssistantName: String,
@@ -128,13 +141,86 @@ fun RoleplayScreen(
     val onOpenMailbox = callbacks.navigation.onOpenMailbox
     val onOpenWallet = callbacks.navigation.onOpenWallet
     val onOpenSettings = callbacks.navigation.onOpenSettings
+    val onOpenVoiceSynthesisSettings = callbacks.navigation.onOpenVoiceSynthesisSettings
     val onNavigateBack = callbacks.navigation.onNavigateBack
     val onRestartSession = callbacks.session.onRestartSession
     val onDismissAssistantMismatch = callbacks.session.onDismissAssistantMismatch
     val onApprovePendingMemoryProposal = callbacks.session.onApprovePendingMemoryProposal
     val onRejectPendingMemoryProposal = callbacks.session.onRejectPendingMemoryProposal
+    val onStartOfflineReplay = callbacks.session.onStartOfflineReplay
 
     val snackbarHostState = remember { SnackbarHostState() }
+    val benchmarkRuntimePolicy = if (
+        BuildConfig.APP_CHANNEL == BenchmarkContract.BASELINE_CHANNEL
+    ) {
+        LocalBenchmarkRuntimePolicy.current
+    } else {
+        null
+    }
+    val benchmarkScenarioId = benchmarkRuntimePolicy
+        ?.takeIf { it.isBenchmarkSessionActive }
+        ?.scenarioId
+    val benchmarkReturningScenario = when (benchmarkScenarioId) {
+        BenchmarkScenarioId.S1_RETURNING_CORE_STARTUP,
+        BenchmarkScenarioId.S2_POPULATED_STARTUP,
+        BenchmarkScenarioId.S3_UPGRADE_STARTUP,
+        BenchmarkScenarioId.N1_HEAVY_NAVIGATION,
+        BenchmarkScenarioId.P1_BASELINE_PROFILE,
+        -> true
+
+        else -> false
+    }
+    val benchmarkSourceMessageCount = if (benchmarkReturningScenario) {
+        messages.asSequence()
+            .map { message -> message.sourceMessageId }
+            .filter(String::isNotBlank)
+            .distinct()
+            .count()
+    } else {
+        0
+    }
+    val benchmarkReturningReady = benchmarkReturningScenario &&
+        scenario?.id == BenchmarkFixtureIds.ROLEPLAY_SCENARIO_ID &&
+        assistant != null &&
+        hasActiveSession &&
+        groupParticipants.isNotEmpty() &&
+        benchmarkSourceMessageCount == benchmarkScenarioId?.fixtureId?.roleplayMessageCount &&
+        !isScenarioLoading
+    val hasLoadedOfflineReplayFixture =
+        isOfflineReplayFixtureSession &&
+            scenario?.id == BenchmarkFixtureIds.ROLEPLAY_SCENARIO_ID &&
+            assistant != null &&
+            hasActiveSession &&
+            groupParticipants.isNotEmpty() &&
+            !isScenarioLoading
+    val isOfflineReplayFixtureReady = remember(
+        hasLoadedOfflineReplayFixture,
+        isOfflineReplayFixtureSession,
+        offlineReplayPhase,
+        messages,
+    ) {
+        hasLoadedOfflineReplayFixture &&
+            when (offlineReplayPhase) {
+                RoleplayOfflineReplayPhase.READY,
+                RoleplayOfflineReplayPhase.COMPLETED,
+                -> hasExpectedOfflineReplayFixtureSources(messages)
+
+                RoleplayOfflineReplayPhase.DISABLED,
+                RoleplayOfflineReplayPhase.RUNNING,
+                RoleplayOfflineReplayPhase.FAILED,
+                -> false
+            }
+    }
+    val benchmarkRoleplaySettingsVisited = if (
+        benchmarkScenarioId == BenchmarkScenarioId.P1_BASELINE_PROFILE
+    ) {
+        rememberSaveable(
+            benchmarkRuntimePolicy?.sessionId,
+            scenario?.id,
+        ) { mutableStateOf(false) }
+    } else {
+        null
+    }
     val context = LocalContext.current
     val coroutineScope = rememberCoroutineScope()
     var pendingImageParts by remember { mutableStateOf<List<ChatMessagePart>>(emptyList()) }
@@ -494,7 +580,34 @@ fun RoleplayScreen(
             onNavigateBack = onNavigateBack,
         )
     } else {
+        val benchmarkBackActionId = if (
+            benchmarkScenarioId == BenchmarkScenarioId.P1_BASELINE_PROFILE
+        ) {
+            BenchmarkActionIds.OPEN_CHAT_HISTORY
+        } else {
+            null
+        }
+        val benchmarkSettingsActionId = when {
+            benchmarkScenarioId == BenchmarkScenarioId.N1_HEAVY_NAVIGATION -> {
+                BenchmarkActionIds.OPEN_SETTINGS
+            }
+
+            benchmarkScenarioId == BenchmarkScenarioId.P1_BASELINE_PROFILE &&
+                benchmarkRoleplaySettingsVisited?.value != true -> {
+                BenchmarkActionIds.OPEN_SETTINGS
+            }
+
+            benchmarkScenarioId == BenchmarkScenarioId.P1_BASELINE_PROFILE -> {
+                BenchmarkActionIds.OPEN_VOICE_SYNTHESIS
+            }
+
+            else -> null
+        }
         RoleplaySceneContent(
+            modifier = Modifier.benchmarkReadyTag(
+                readyId = BenchmarkReadyIds.RETURNING_ROLEPLAY_READY,
+                ready = benchmarkReturningReady,
+            ),
             scenario = scenario,
             assistant = assistant,
             settings = settings,
@@ -529,10 +642,27 @@ fun RoleplayScreen(
             onConfirmTransferReceipt = onConfirmTransferReceipt,
             onSend = sendCurrentInput,
             onCancelSending = onCancelSending,
+            offlineReplayPhase = offlineReplayPhase,
+            isOfflineReplayFixtureReady = isOfflineReplayFixtureReady,
+            onStartOfflineReplay = onStartOfflineReplay,
             onApprovePendingMemoryProposal = onApprovePendingMemoryProposal,
             onRejectPendingMemoryProposal = onRejectPendingMemoryProposal,
-            onOpenSettings = onOpenSettings,
+            onOpenSettings = {
+                if (
+                    benchmarkScenarioId == BenchmarkScenarioId.P1_BASELINE_PROFILE &&
+                    benchmarkRoleplaySettingsVisited?.value == true
+                ) {
+                    onOpenVoiceSynthesisSettings()
+                } else {
+                    if (benchmarkScenarioId == BenchmarkScenarioId.P1_BASELINE_PROFILE) {
+                        benchmarkRoleplaySettingsVisited?.value = true
+                    }
+                    onOpenSettings()
+                }
+            },
             onNavigateBack = onNavigateBack,
+            benchmarkBackActionId = benchmarkBackActionId,
+            benchmarkSettingsActionId = benchmarkSettingsActionId,
             showSpecialPlaySheet = showSpecialPlaySheet,
             activeSpecialPlayDraft = activeSpecialPlayDraft,
             onDismissSpecialPlay = { showSpecialPlaySheet = false },
@@ -661,6 +791,27 @@ fun RoleplayScreen(
             },
         )
     }
+}
+
+private fun hasExpectedOfflineReplayFixtureSources(
+    messages: List<RoleplayMessageUiModel>,
+): Boolean {
+    val replaySpec = BenchmarkOfflineReplaySpec.DEFAULT
+    val streamingMessageCount = messages.count { message -> message.isStreaming }
+    val persistedMessageCount = replaySpec.persistedMessageCount(
+        totalMessageCount = messages.size,
+        streamingMessageCount = streamingMessageCount,
+    )
+    if (!replaySpec.hasExpectedPersistedMessageCount(persistedMessageCount)) {
+        return false
+    }
+    val persistedSourceIds = messages.asSequence()
+        .filterNot { message -> message.isStreaming }
+        .map { message -> message.sourceMessageId }
+        .distinct()
+        .toList()
+    return persistedSourceIds.size == persistedMessageCount &&
+        persistedSourceIds.all(BenchmarkFixtureIds::isRoleplayMessageId)
 }
 
 @Composable

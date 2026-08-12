@@ -64,9 +64,12 @@ import com.example.myapplication.roleplay.RoleplaySceneMoodState
 import com.example.myapplication.roleplay.resolveRoleplaySceneMood
 import com.example.myapplication.ui.component.specialplay.SpecialPlayEditorSheet
 import com.example.myapplication.ui.component.specialplay.SpecialPlaySheet
+import com.example.myapplication.ui.performance.benchmarkActionTag
+import com.example.myapplication.viewmodel.RoleplayOfflineReplayPhase
 
 @Composable
 internal fun RoleplaySceneContent(
+    modifier: Modifier = Modifier,
     scenario: RoleplayScenario,
     assistant: Assistant?,
     settings: AppSettings,
@@ -98,10 +101,15 @@ internal fun RoleplaySceneContent(
     onConfirmTransferReceipt: (String) -> Unit,
     onSend: () -> Unit,
     onCancelSending: () -> Unit,
+    offlineReplayPhase: RoleplayOfflineReplayPhase = RoleplayOfflineReplayPhase.DISABLED,
+    isOfflineReplayFixtureReady: Boolean = false,
+    onStartOfflineReplay: (() -> Unit)? = null,
     onApprovePendingMemoryProposal: () -> Unit,
     onRejectPendingMemoryProposal: () -> Unit,
     onOpenSettings: () -> Unit,
     onNavigateBack: () -> Unit,
+    benchmarkBackActionId: String? = null,
+    benchmarkSettingsActionId: String? = null,
     showSpecialPlaySheet: Boolean,
     activeSpecialPlayDraft: ChatSpecialPlayDraft?,
     onDismissSpecialPlay: () -> Unit,
@@ -158,7 +166,7 @@ internal fun RoleplaySceneContent(
         immersiveMode = immersiveMode,
     )
 
-    Box(modifier = Modifier.fillMaxSize()) {
+    Box(modifier = modifier.fillMaxSize()) {
         RoleplaySceneBackground(
             backdropState = backdropState,
             modifier = Modifier.fillMaxSize(),
@@ -211,6 +219,8 @@ internal fun RoleplaySceneContent(
                         onOpenSettings = onOpenSettings,
                         onNavigateBack = onNavigateBack,
                         onToggleChrome = { chromeVisible = false },
+                        benchmarkBackActionId = benchmarkBackActionId,
+                        benchmarkSettingsActionId = benchmarkSettingsActionId,
                     )
 
                     if (settings.showRoleplayPresenceStrip) {
@@ -252,6 +262,7 @@ internal fun RoleplaySceneContent(
             }
 
             RoleplayDialoguePanel(
+                conversationIdentity = scenario.id,
                 backdropState = backdropState,
                 messages = messages,
                 suggestions = suggestions,
@@ -277,6 +288,9 @@ internal fun RoleplaySceneContent(
                 onConfirmTransferReceipt = onConfirmTransferReceipt,
                 onSend = onSend,
                 onCancel = onCancelSending,
+                offlineReplayPhase = offlineReplayPhase,
+                isOfflineReplayFixtureReady = isOfflineReplayFixtureReady,
+                onStartOfflineReplay = onStartOfflineReplay,
                 lineHeightScale = settings.roleplayLineHeightScale.scaleFactor,
                 noBackgroundSkin = settings.roleplayNoBackgroundSkin,
                 onToggleTopBar = { chromeVisible = !chromeVisible },
@@ -374,6 +388,8 @@ private fun RoleplaySceneTopBar(
     onOpenSettings: () -> Unit,
     onNavigateBack: () -> Unit,
     onToggleChrome: () -> Unit,
+    benchmarkBackActionId: String?,
+    benchmarkSettingsActionId: String?,
 ) {
     val palette = backdropState.palette
     ImmersiveGlassSurface(
@@ -393,7 +409,12 @@ private fun RoleplaySceneTopBar(
                 .padding(horizontal = 10.dp, vertical = 10.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            NarraIconButton(onClick = onNavigateBack) {
+            NarraIconButton(
+                onClick = onNavigateBack,
+                modifier = benchmarkBackActionId?.let { actionId ->
+                    Modifier.benchmarkActionTag(actionId)
+                } ?: Modifier,
+            ) {
                 Icon(
                     Icons.AutoMirrored.Filled.ArrowBack,
                     contentDescription = stringResource(id = R.string.common_back),
@@ -434,7 +455,12 @@ private fun RoleplaySceneTopBar(
                 }
             }
 
-            NarraIconButton(onClick = onOpenSettings) {
+            NarraIconButton(
+                onClick = onOpenSettings,
+                modifier = benchmarkSettingsActionId?.let { actionId ->
+                    Modifier.benchmarkActionTag(actionId)
+                } ?: Modifier,
+            ) {
                 Icon(
                     Icons.Default.MoreVert,
                     contentDescription = stringResource(id = R.string.roleplay_settings_button),

@@ -1,3 +1,11 @@
+import groovy.json.JsonOutput
+import groovy.json.JsonSlurper
+import java.security.MessageDigest
+import java.time.LocalDateTime
+import java.time.format.DateTimeFormatter
+import java.util.zip.ZipEntry
+import java.util.zip.ZipOutputStream
+
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.baselineprofile)
@@ -120,6 +128,14 @@ android {
             resValue "string", "app_name", "${appDisplayName} Baseline"
             buildConfigField "String", "APP_CHANNEL", "\"${baselineChannelName}\""
         }
+        benchmarkRelease {
+            initWith(baseline)
+            matchingFallbacks = ['baseline']
+        }
+        nonMinifiedRelease {
+            initWith(baseline)
+            matchingFallbacks = ['baseline']
+        }
     }
 
     compileOptions {
@@ -134,13 +150,284 @@ android {
     }
 }
 
-// Compose Compiler metrics / stability reports。
-// 生成路径：app/build/compose_reports/*-classes.txt 与 *-composables.txt。
-// 用法：跑一次 `./gradlew.bat :app:compileDebugKotlin`（或 assembleDebug），
-//      再用 grep/Read 定位 unstable 参数热点。
+def requestedComposeArchiveVariants = gradle.startParameter.taskNames.collectMany { taskName ->
+    def normalizedName = taskName.toLowerCase(Locale.ROOT)
+    if (normalizedName.contains("generatedebugcomposecompilerreportarchive")) {
+        return ["debug"]
+    }
+    if (normalizedName.contains("generatebaselinecomposecompilerreportarchive")) {
+        return ["baseline"]
+    }
+    return []
+}.unique()
+
+if (requestedComposeArchiveVariants.size() > 1) {
+    throw new GradleException("Compose Compiler 正式报告请按变体分别运行，避免两个全量编译共享中间产物。")
+}
+
+def taskRequestedComposeArchiveVariant = requestedComposeArchiveVariants.find()
+def explicitComposeArchiveVariant = providers.gradleProperty("narraComposeReportVariant").orNull
+if (explicitComposeArchiveVariant != null &&
+        taskRequestedComposeArchiveVariant != null &&
+        explicitComposeArchiveVariant != taskRequestedComposeArchiveVariant) {
+    throw new GradleException(
+            "Compose Compiler 报告变体冲突：任务要求 ${taskRequestedComposeArchiveVariant}，" +
+                    "但 narraComposeReportVariant=${explicitComposeArchiveVariant}",
+    )
+}
+def requestedComposeArchiveVariant = explicitComposeArchiveVariant ?: taskRequestedComposeArchiveVariant
+if (requestedComposeArchiveVariant != null && !(requestedComposeArchiveVariant in ["debug", "baseline"])) {
+    throw new GradleException("不支持的 Compose Compiler 报告变体：${requestedComposeArchiveVariant}")
+}
+
+def defaultComposeReportRunId = "${LocalDateTime.now().format(DateTimeFormatter.ofPattern('yyyyMMdd-HHmmss-SSS'))}-${UUID.randomUUID().toString().take(8)}"
+def explicitComposeArchiveRunId = providers.gradleProperty("narraComposeReportRunId").orNull
+if (explicitComposeArchiveRunId != null && requestedComposeArchiveVariant == null) {
+    throw new GradleException("指定 narraComposeReportRunId 时必须同时运行正式报告任务或指定报告变体。")
+}
+def requestedComposeArchiveRunId = explicitComposeArchiveRunId ?:
+        (requestedComposeArchiveVariant == null ? null : defaultComposeReportRunId)
+def composeReportRunIdPattern = ~/^[A-Za-z0-9][A-Za-z0-9._-]{0,79}$/
+if (requestedComposeArchiveRunId != null && !(requestedComposeArchiveRunId ==~ composeReportRunIdPattern)) {
+    throw new GradleException("Compose Compiler 报告 runId 只能包含字母、数字、点、下划线和连字符。")
+}
+
+def sharedComposeReportsDirectory = layout.buildDirectory.dir("compose_reports")
+def officialComposeReportRunDirectory = requestedComposeArchiveVariant == null ? null :
+        layout.buildDirectory.dir("compose_report_archives/${requestedComposeArchiveVariant}/${requestedComposeArchiveRunId}")
+def activeComposeReportsDirectory = officialComposeReportRunDirectory == null ?
+        sharedComposeReportsDirectory :
+        officialComposeReportRunDirectory.map { it.dir("raw") }
+
+// 日常增量编译仍写共享目录；正式任务使用唯一目录，避免被测试或其它变体覆盖。
 composeCompiler {
-    reportsDestination = layout.buildDirectory.dir("compose_reports")
-    metricsDestination = layout.buildDirectory.dir("compose_reports")
+    reportsDestination = activeComposeReportsDirectory
+    metricsDestination = activeComposeReportsDirectory
+}
+
+def sha256Of = { File file ->
+    def digest = MessageDigest.getInstance("SHA-256")
+    file.withInputStream { input ->
+        byte[] buffer = new byte[16 * 1024]
+        int read
+        while ((read = input.read(buffer)) >= 0) {
+            if (read > 0) {
+                digest.update(buffer, 0, read)
+            }
+        }
+    }
+    digest.digest().collect { String.format("%02x", it & 0xff) }.join()
+}
+
+def writeComposeReportZip = { File zipFile, File reportRoot, File manifestFile ->
+    zipFile.parentFile.mkdirs()
+    new ZipOutputStream(new BufferedOutputStream(new FileOutputStream(zipFile))).withCloseable { zip ->
+        def files = reportRoot.listFiles()?.findAll { it.isFile() } ?: []
+        reportRoot.eachFileRecurse { candidate ->
+            if (candidate.isFile() && !files.contains(candidate)) {
+                files.add(candidate)
+            }
+        }
+        files.sort { left, right ->
+            reportRoot.toPath().relativize(left.toPath()).toString() <=>
+                    reportRoot.toPath().relativize(right.toPath()).toString()
+        }.each { source ->
+            def relativePath = reportRoot.toPath().relativize(source.toPath()).toString().replace('\\', '/')
+            def entry = new ZipEntry("raw/${relativePath}")
+            entry.time = 0L
+            zip.putNextEntry(entry)
+            source.withInputStream { input -> input.transferTo(zip) }
+            zip.closeEntry()
+        }
+        def manifestEntry = new ZipEntry("manifest.json")
+        manifestEntry.time = 0L
+        zip.putNextEntry(manifestEntry)
+        manifestFile.withInputStream { input -> input.transferTo(zip) }
+        zip.closeEntry()
+    }
+}
+
+def registerComposeCompilerReportArchive = { String variantName ->
+    def capitalizedVariant = variantName.capitalize()
+    def prepareTaskName = "prepare${capitalizedVariant}ComposeCompilerReportArchiveInternal"
+    def archiveTaskName = "archive${capitalizedVariant}ComposeCompilerReportInternal"
+    def generateTaskName = "generate${capitalizedVariant}ComposeCompilerReportArchive"
+    def compileTaskName = "compile${capitalizedVariant}Kotlin"
+
+    def prepareTask = tasks.register(prepareTaskName) {
+        group = "verification"
+        description = "准备 ${variantName} Compose Compiler 正式报告的唯一输出目录。"
+        notCompatibleWithConfigurationCache("正式报告每次运行都必须生成唯一 runId。")
+        onlyIf { requestedComposeArchiveVariant == variantName }
+        doLast {
+            def runDirectory = officialComposeReportRunDirectory.get().asFile
+            if (runDirectory.exists()) {
+                throw new GradleException("Compose Compiler 正式报告目录已存在，拒绝覆盖：${requestedComposeArchiveRunId}")
+            }
+            if (!new File(runDirectory, "raw").mkdirs()) {
+                throw new GradleException("无法创建 Compose Compiler 正式报告目录。")
+            }
+        }
+    }
+
+    tasks.configureEach { compileTask ->
+        if (compileTask.name == compileTaskName && requestedComposeArchiveVariant == variantName) {
+            dependsOn(prepareTask)
+            outputs.upToDateWhen { false }
+            outputs.cacheIf { false }
+            if (compileTask.metaClass.hasProperty(compileTask, "incremental")) {
+                compileTask.incremental = false
+            }
+        }
+    }
+
+    def archiveTask = tasks.register(archiveTaskName) {
+        group = "verification"
+        description = "校验并归档 ${variantName} Compose Compiler 正式报告。"
+        notCompatibleWithConfigurationCache("正式报告会写入带唯一 runId 的归档索引。")
+        dependsOn(compileTaskName)
+        onlyIf { requestedComposeArchiveVariant == variantName }
+        doLast {
+            def runDirectory = officialComposeReportRunDirectory.get().asFile
+            def rawDirectory = new File(runDirectory, "raw")
+            def reportFiles = []
+            rawDirectory.eachFileRecurse { candidate ->
+                if (candidate.isFile()) {
+                    reportFiles.add(candidate)
+                }
+            }
+
+            def classesFile = reportFiles.find { it.name.endsWith("-classes.txt") }
+            def composablesTextFile = reportFiles.find { it.name.endsWith("-composables.txt") }
+            def composablesCsvFile = reportFiles.find { it.name.endsWith("-composables.csv") }
+            def moduleMetricsFile = reportFiles.find { it.name.endsWith("-module.json") }
+            [
+                    "classes": classesFile,
+                    "composables": composablesTextFile,
+                    "skippabilityCsv": composablesCsvFile,
+                    "moduleMetrics": moduleMetricsFile,
+            ].each { label, file ->
+                if (file == null || file.length() == 0L) {
+                    throw new GradleException("Compose Compiler 正式报告缺少有效 ${label} 文件。")
+                }
+            }
+
+            def csvLines = composablesCsvFile.readLines("UTF-8")
+            if (csvLines.size() <= 1) {
+                throw new GradleException("Compose Compiler composables CSV 只有表头，拒绝归档。")
+            }
+
+            def composablesText = composablesTextFile.getText("UTF-8")
+            def requiredSentinels = ["fun AppRoot(", "fun ChatScreen(", "fun RoleplayScreen(", "fun SettingsScreen("]
+            def missingSentinels = requiredSentinels.findAll { !composablesText.contains(it) }
+            if (!missingSentinels.isEmpty()) {
+                throw new GradleException("Compose Compiler 正式报告缺少主源码哨兵：${missingSentinels.join(', ')}")
+            }
+
+            def sortedFiles = reportFiles.sort { left, right ->
+                rawDirectory.toPath().relativize(left.toPath()).toString() <=>
+                        rawDirectory.toPath().relativize(right.toPath()).toString()
+            }
+            def fileEntries = sortedFiles.collect { file ->
+                [
+                        path: rawDirectory.toPath().relativize(file.toPath()).toString().replace('\\', '/'),
+                        sizeBytes: file.length(),
+                        sha256: sha256Of(file),
+                ]
+            }
+            def gitCommit = "unknown"
+            try {
+                def process = new ProcessBuilder("git", "rev-parse", "HEAD")
+                        .directory(rootProject.rootDir)
+                        .redirectErrorStream(true)
+                        .start()
+                def output = process.inputStream.getText("UTF-8").trim()
+                if (process.waitFor() == 0 && output) {
+                    gitCommit = output
+                }
+            } catch (Exception ignored) {
+                // 无 Git 元数据时保留 unknown，不影响报告内容校验。
+            }
+
+            def moduleMetrics = new JsonSlurper().parse(moduleMetricsFile)
+            def manifest = [
+                    schemaVersion: 1,
+                    variant: variantName,
+                    runId: requestedComposeArchiveRunId,
+                    generatedAtEpochMillis: System.currentTimeMillis(),
+                    commit: gitCommit,
+                    toolchain: [
+                            gradle: gradle.gradleVersion,
+                            jdk: System.getProperty("java.version"),
+                            agp: libs.versions.agp.get(),
+                            composeCompiler: libs.versions.composeCompiler.get(),
+                    ],
+                    sentinels: requiredSentinels,
+                    metrics: moduleMetrics,
+                    files: fileEntries,
+            ]
+            def manifestFile = new File(runDirectory, "manifest.json")
+            manifestFile.setText(JsonOutput.prettyPrint(JsonOutput.toJson(manifest)) + System.lineSeparator(), "UTF-8")
+
+            def zipFile = new File(runDirectory, "compose-compiler-${variantName}-${requestedComposeArchiveRunId}.zip")
+            writeComposeReportZip(zipFile, rawDirectory, manifestFile)
+            def latestFile = new File(runDirectory.parentFile, "latest.json")
+            def latest = [
+                    schemaVersion: 1,
+                    variant: variantName,
+                    runId: requestedComposeArchiveRunId,
+                    manifestRelativePath: "${requestedComposeArchiveRunId}/manifest.json",
+                    manifestSha256: sha256Of(manifestFile),
+                    archiveRelativePath: "${requestedComposeArchiveRunId}/${zipFile.name}",
+                    archiveSha256: sha256Of(zipFile),
+            ]
+            latestFile.setText(JsonOutput.prettyPrint(JsonOutput.toJson(latest)) + System.lineSeparator(), "UTF-8")
+            logger.lifecycle("Compose Compiler ${variantName} 正式报告已归档：${runDirectory}")
+        }
+    }
+
+    tasks.register(generateTaskName) {
+        group = "verification"
+        description = "全量编译、校验并归档 ${variantName} production Compose Compiler 报告。"
+        notCompatibleWithConfigurationCache("正式报告每次运行都必须重新计算唯一 runId。")
+        dependsOn(archiveTask)
+    }
+}
+
+registerComposeCompilerReportArchive("debug")
+registerComposeCompilerReportArchive("baseline")
+
+tasks.register("verifyComposeCompilerReportArchives") {
+    group = "verification"
+    description = "复核 debug / baseline 最新 Compose Compiler 归档及 SHA-256。"
+    notCompatibleWithConfigurationCache("校验任务在执行期读取正式归档索引与文件哈希。")
+    doLast {
+        ["debug", "baseline"].each { variantName ->
+            def variantDirectory = layout.buildDirectory.dir("compose_report_archives/${variantName}").get().asFile
+            def latestFile = new File(variantDirectory, "latest.json")
+            if (!latestFile.isFile()) {
+                throw new GradleException("缺少 ${variantName} Compose Compiler 最新归档索引。")
+            }
+            def latest = new JsonSlurper().parse(latestFile)
+            if (latest.variant != variantName || !latest.runId) {
+                throw new GradleException("${variantName} Compose Compiler 最新归档索引无效。")
+            }
+            def manifestFile = new File(variantDirectory, latest.manifestRelativePath.toString())
+            def archiveFile = new File(variantDirectory, latest.archiveRelativePath.toString())
+            if (!manifestFile.isFile() || sha256Of(manifestFile) != latest.manifestSha256) {
+                throw new GradleException("${variantName} Compose Compiler manifest 缺失或哈希不匹配。")
+            }
+            if (!archiveFile.isFile() || sha256Of(archiveFile) != latest.archiveSha256) {
+                throw new GradleException("${variantName} Compose Compiler ZIP 缺失或哈希不匹配。")
+            }
+            def manifest = new JsonSlurper().parse(manifestFile)
+            if (manifest.variant != variantName || manifest.runId != latest.runId ||
+                    !(manifest.files instanceof List) || manifest.files.isEmpty()) {
+                throw new GradleException("${variantName} Compose Compiler manifest 内容无效。")
+            }
+        }
+        logger.lifecycle("debug / baseline Compose Compiler 正式归档校验通过。")
+    }
 }
 
 ksp {
@@ -148,6 +435,19 @@ ksp {
 }
 
 androidComponents {
+    finalizeDsl { extension ->
+        // Baseline Profile 插件会在自己的 finalizeDsl 中复制 release 源集，需在其后恢复 baseline-only 入口。
+        ["benchmarkRelease", "nonMinifiedRelease"].each { buildTypeName ->
+            def sourceSet = extension.sourceSets.getByName(buildTypeName)
+            sourceSet.java.setSrcDirs(["src/baseline/java"])
+            // 项目 Kotlin 源码沿用 java 目录；显式加入，避免 synthetic 变体只合并 Manifest 却漏编 Provider。
+            sourceSet.kotlin.setSrcDirs(["src/baseline/java", "src/baseline/kotlin"])
+            sourceSet.assets.setSrcDirs(["src/baseline/assets"])
+            sourceSet.res.setSrcDirs(["src/baseline/res"])
+            sourceSet.manifest.srcFile("src/baseline/AndroidManifest.xml")
+        }
+    }
+
     onVariants(selector().all()) { variant ->
         variant.outputs.each { output ->
             def channelName
@@ -158,6 +458,8 @@ androidComponents {
                     normalizedVersionName = "${appVersionName}-dev"
                     break
                 case "baseline":
+                case "benchmarkRelease":
+                case "nonMinifiedRelease":
                     channelName = baselineChannelName
                     normalizedVersionName = "${appVersionName}-baseline"
                     break
@@ -176,6 +478,75 @@ baselineProfile {
     saveInSrc = true
     mergeIntoMain = true
     automaticGenerationDuringBuild = false
+}
+
+def narraProfileVerificationRequested = gradle.startParameter.taskNames.any { taskName ->
+    taskName.toLowerCase(Locale.ROOT).contains("verifynarrabaselineprofile")
+}
+def narraProfileVerificationStartedAt = System.currentTimeMillis()
+tasks.configureEach { candidate ->
+    if (candidate.name == "compileBaselineArtProfile" && narraProfileVerificationRequested) {
+        candidate.outputs.upToDateWhen { false }
+        candidate.outputs.cacheIf { false }
+    }
+}
+
+tasks.register("verifyNarraBaselineProfile") {
+    group = "verification"
+    description = "验证当前源码与本次 baseline 构建的 Profile 均包含 Narra 应用规则。"
+    notCompatibleWithConfigurationCache("验证必须比较本次任务开始时间与当前合并产物。")
+    dependsOn("compileBaselineArtProfile")
+    doLast {
+        def sourceDirectory = file("src/main/generated/baselineProfiles")
+        def sourceProfiles = sourceDirectory.exists() ?
+                fileTree(sourceDirectory) { include("**/*.txt") }.files.findAll { it.isFile() && it.length() > 0L } : []
+        if (sourceProfiles.isEmpty()) {
+            throw new GradleException("未找到当前源码 Baseline Profile；请在固定物理设备上运行 app:generateBaselineProfile。")
+        }
+        def sourceRulePresent = sourceProfiles.any { profile ->
+            profile.readLines("UTF-8").any { line -> line.contains("Lcom/example/myapplication/") }
+        }
+        if (!sourceRulePresent) {
+            throw new GradleException("源码 Baseline Profile 不包含 Narra 应用命名空间规则。")
+        }
+
+        def mergedProfile = layout.buildDirectory.file(
+                "intermediates/combined_art_profile/baseline/compileBaselineArtProfile/baseline-prof.txt",
+        ).get().asFile
+        if (!mergedProfile.isFile() || mergedProfile.length() == 0L) {
+            throw new GradleException("本次 baseline 构建未生成可验证的合并 Profile。")
+        }
+        if (mergedProfile.lastModified() + 5_000L < narraProfileVerificationStartedAt) {
+            throw new GradleException("合并 Profile 不是本次验证任务生成的当前产物，拒绝读取旧 intermediate。")
+        }
+        def mergedRulePresent = mergedProfile.readLines("UTF-8").any { line ->
+            line.contains("Lcom/example/myapplication/")
+        }
+        if (!mergedRulePresent) {
+            throw new GradleException("本次合并 Baseline Profile 不包含 Narra 应用命名空间规则。")
+        }
+
+        def reportDirectory = layout.buildDirectory.dir("reports/baseline-profile").get().asFile
+        reportDirectory.mkdirs()
+        def reportFile = new File(reportDirectory, "verification.json")
+        def report = [
+                schemaVersion: 1,
+                verifiedAtEpochMillis: System.currentTimeMillis(),
+                sourceProfiles: sourceProfiles.sort { it.name }.collect { profile ->
+                    [
+                            path: projectDir.toPath().relativize(profile.toPath()).toString().replace('\\', '/'),
+                            sha256: sha256Of(profile),
+                    ]
+                },
+                mergedProfile: [
+                        path: buildDir.toPath().relativize(mergedProfile.toPath()).toString().replace('\\', '/'),
+                        sha256: sha256Of(mergedProfile),
+                ],
+                namespace: "Lcom/example/myapplication/",
+            ]
+        reportFile.setText(JsonOutput.prettyPrint(JsonOutput.toJson(report)) + System.lineSeparator(), "UTF-8")
+        logger.lifecycle("Narra Baseline Profile 源码与当前合并产物校验通过。")
+    }
 }
 
 def registerAnnotationProcessorListWorkaround = { String variantName ->

@@ -38,6 +38,11 @@ import com.example.myapplication.ui.component.MessageInputBar
 import com.example.myapplication.ui.component.NarraFilledTonalIconButton
 import com.example.myapplication.viewmodel.ChatStreamingState
 import com.example.myapplication.viewmodel.ChatUiState
+import com.example.myapplication.system.performance.BenchmarkFixtureIds
+import com.example.myapplication.system.performance.BenchmarkReadyIds
+import com.example.myapplication.system.performance.BenchmarkScenarioId
+import com.example.myapplication.ui.performance.LocalBenchmarkRuntimePolicy
+import com.example.myapplication.ui.performance.benchmarkReadyTag
 import kotlinx.coroutines.launch
 
 private val ChatScreenPadding = 20.dp
@@ -278,12 +283,46 @@ private fun ColumnScope.ChatMessageListPane(
             listState.firstVisibleItemIndex == 0 && listState.firstVisibleItemScrollOffset <= 4
         }
     }
+    val benchmarkRuntimePolicy = LocalBenchmarkRuntimePolicy.current
+    val benchmarkScenarioId = benchmarkRuntimePolicy?.scenarioId
+    val isAtBottomExact = if (benchmarkScenarioId == BenchmarkScenarioId.F1_CHAT_SCROLL) {
+        val derivedBottom by remember(listState, uiState.messages.size) {
+            derivedStateOf {
+                val layoutInfo = listState.layoutInfo
+                val lastVisibleItem = layoutInfo.visibleItemsInfo.lastOrNull()
+                lastVisibleItem != null &&
+                    lastVisibleItem.index >= layoutInfo.totalItemsCount - 1 &&
+                    (lastVisibleItem.offset + lastVisibleItem.size) <= layoutInfo.viewportEndOffset + 4
+            }
+        }
+        derivedBottom
+    } else {
+        false
+    }
+    val isChatFixtureReady = uiState.isConversationReady &&
+        uiState.displayedConversationId == BenchmarkFixtureIds.CHAT_CONVERSATION_ID &&
+        uiState.messages.size == benchmarkScenarioId?.fixtureId?.chatMessageCount
     val showJumpButtons = uiState.messages.size > ChatJumpButtonMessageThreshold &&
         (!isAtTop || !isNearBottom)
     Box(
         modifier = Modifier
             .fillMaxWidth()
-            .weight(1f),
+            .weight(1f)
+            .benchmarkReadyTag(
+                readyId = BenchmarkReadyIds.CHAT_LIST_READY,
+                ready = benchmarkScenarioId == BenchmarkScenarioId.P1_BASELINE_PROFILE &&
+                    isChatFixtureReady,
+            )
+            .benchmarkReadyTag(
+                readyId = BenchmarkReadyIds.CHAT_LIST_TOP_READY,
+                ready = benchmarkScenarioId == BenchmarkScenarioId.F1_CHAT_SCROLL &&
+                    isChatFixtureReady && isAtTop,
+            )
+            .benchmarkReadyTag(
+                readyId = BenchmarkReadyIds.CHAT_LIST_BOTTOM_READY,
+                ready = benchmarkScenarioId == BenchmarkScenarioId.F1_CHAT_SCROLL &&
+                    isChatFixtureReady && isAtBottomExact,
+            ),
     ) {
         LazyColumn(
             state = listState,

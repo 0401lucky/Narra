@@ -1,6 +1,7 @@
 package com.example.myapplication.ui.navigation
 
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -26,6 +27,10 @@ import com.example.myapplication.viewmodel.SettingsViewModel
 import com.example.myapplication.viewmodel.TranslationViewModel
 import com.example.myapplication.viewmodel.selectSearchSource
 import com.example.myapplication.viewmodel.updateSearchResultCount
+import com.example.myapplication.system.performance.BenchmarkFixtureIds
+import com.example.myapplication.system.performance.BenchmarkScenarioId
+import com.example.myapplication.system.performance.BenchmarkUiNavigationContract
+import com.example.myapplication.ui.performance.LocalBenchmarkRuntimePolicy
 
 internal fun NavGraphBuilder.registerChatNavGraph(
     appGraph: AppGraph,
@@ -60,6 +65,28 @@ internal fun NavGraphBuilder.registerChatNavGraph(
         )
         val chatState by chatViewModel.uiState.collectAsStateWithLifecycle()
         val chatStreamingState by chatViewModel.streamingState.collectAsStateWithLifecycle()
+        val benchmarkRuntimePolicy = LocalBenchmarkRuntimePolicy.current
+        val shouldSelectBenchmarkConversation =
+            BenchmarkUiNavigationContract.shouldSelectFixedChatConversation(
+                benchmarkRuntimePolicy?.scenarioId,
+            )
+        val benchmarkConversationExists = chatState.conversations.any { conversation ->
+            conversation.id == BenchmarkFixtureIds.CHAT_CONVERSATION_ID
+        }
+        LaunchedEffect(
+            benchmarkRuntimePolicy?.sessionId,
+            shouldSelectBenchmarkConversation,
+            benchmarkConversationExists,
+            chatState.currentConversationId,
+        ) {
+            if (
+                shouldSelectBenchmarkConversation &&
+                benchmarkConversationExists &&
+                chatState.currentConversationId != BenchmarkFixtureIds.CHAT_CONVERSATION_ID
+            ) {
+                chatViewModel.selectConversation(BenchmarkFixtureIds.CHAT_CONVERSATION_ID)
+            }
+        }
         ChatScreen(
             uiState = chatState,
             streamingState = chatStreamingState,

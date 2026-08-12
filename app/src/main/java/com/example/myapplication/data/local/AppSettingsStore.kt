@@ -1,27 +1,29 @@
 package com.example.myapplication.data.local
 
 import android.content.Context
+import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
+import androidx.datastore.preferences.core.emptyPreferences
 import androidx.datastore.preferences.core.floatPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
+import com.example.myapplication.model.AppColorTheme
 import com.example.myapplication.model.AppSettings
 import com.example.myapplication.model.Assistant
+import com.example.myapplication.model.CONTEXT_LOG_CAPACITY_MAX
+import com.example.myapplication.model.CONTEXT_LOG_CAPACITY_MIN
 import com.example.myapplication.model.DEFAULT_ASSISTANT_ICON
 import com.example.myapplication.model.DEFAULT_CONTEXT_LOG_CAPACITY
 import com.example.myapplication.model.DEFAULT_MEMORY_AUTO_SUMMARY_EVERY
 import com.example.myapplication.model.DEFAULT_MEMORY_CAPACITY
 import com.example.myapplication.model.DEFAULT_MEMORY_MAX_ITEMS
 import com.example.myapplication.model.DEFAULT_PRESET_ID
-import com.example.myapplication.model.OpenAiTextApiMode
 import com.example.myapplication.model.DEFAULT_ROLEPLAY_LONGFORM_TARGET_CHARS
 import com.example.myapplication.model.DEFAULT_WORLD_BOOK_MAX_ENTRIES
 import com.example.myapplication.model.DEFAULT_WORLD_BOOK_SCAN_DEPTH
 import com.example.myapplication.model.FunctionModelProviderIds
-import com.example.myapplication.model.CONTEXT_LOG_CAPACITY_MAX
-import com.example.myapplication.model.CONTEXT_LOG_CAPACITY_MIN
 import com.example.myapplication.model.MEMORY_AUTO_SUMMARY_EVERY_MAX
 import com.example.myapplication.model.MEMORY_AUTO_SUMMARY_EVERY_MIN
 import com.example.myapplication.model.MEMORY_CAPACITY_MAX
@@ -30,17 +32,15 @@ import com.example.myapplication.model.MemoryInjectionPosition
 import com.example.myapplication.model.MomentAutoPostFrequency
 import com.example.myapplication.model.MomentCommentStyle
 import com.example.myapplication.model.MomentsSettings
+import com.example.myapplication.model.OpenAiTextApiMode
 import com.example.myapplication.model.ProviderFunctionModelMode
 import com.example.myapplication.model.ProviderSettings
 import com.example.myapplication.model.ProviderType
 import com.example.myapplication.model.RoleplayNoBackgroundSkinPreset
 import com.example.myapplication.model.RoleplayNoBackgroundSkinSettings
-import com.example.myapplication.model.SearchSettings
-import com.example.myapplication.system.json.AppJson
-import com.example.myapplication.system.logging.logFailure
-import com.example.myapplication.model.SearchSourceConfig
 import com.example.myapplication.model.ScreenTranslationSettings
-import com.example.myapplication.model.AppColorTheme
+import com.example.myapplication.model.SearchSourceConfig
+import com.example.myapplication.model.SearchSettings
 import com.example.myapplication.model.ThemeMode
 import com.example.myapplication.model.TranslationHistoryEntry
 import com.example.myapplication.model.UserPersonaMask
@@ -48,11 +48,30 @@ import com.example.myapplication.model.VoiceSynthesisSettings
 import com.example.myapplication.model.createDefaultProvider
 import com.example.myapplication.model.inferredModelInfo
 import com.example.myapplication.model.normalized
+import com.example.myapplication.system.json.AppJson
+import com.example.myapplication.system.logging.AppLogger
+import com.example.myapplication.system.logging.logFailure
+import com.example.myapplication.system.performance.PerformanceTraceContract
+import com.example.myapplication.system.performance.trace
 import com.google.gson.Gson
 import com.google.gson.JsonParser
 import com.google.gson.reflect.TypeToken
+import java.io.IOException
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.catch
+import kotlinx.coroutines.flow.emitAll
+import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.retryWhen
+import kotlinx.coroutines.flow.shareIn
 
 private val Context.dataStore by preferencesDataStore(name = "app_settings")
 
@@ -140,9 +159,59 @@ interface SettingsStore {
 
 private const val TAG = "AppSettingsStore"
 
-class AppSettingsStore(
-    private val context: Context,
+internal interface SettingsSecureValueStore {
+    fun getString(key: String): String
+
+    fun putString(key: String, value: String)
+
+    fun getStringMap(key: String): Map<String, String>
+
+    fun putStringMap(key: String, values: Map<String, String>)
+}
+
+private class AndroidSettingsSecureValueStore(
+    context: Context,
+) : SettingsSecureValueStore {
+    private val delegate = SecureValueStore(context)
+
+    override fun getString(key: String): String = delegate.getString(key)
+
+    override fun putString(key: String, value: String) = delegate.putString(key, value)
+
+    override fun getStringMap(key: String): Map<String, String> = delegate.getStringMap(key)
+
+    override fun putStringMap(key: String, values: Map<String, String>) {
+        delegate.putStringMap(key, values)
+    }
+}
+
+private data class SecureSettingsSnapshot(
+    val legacyApiKey: String,
+    val providerApiKeys: Map<String, String>,
+    val searchApiKeys: Map<String, String>,
+    val voiceApiKey: String,
+)
+
+class AppSettingsStore internal constructor(
+    private val dataStore: DataStore<Preferences>,
+    private val secureValueStore: SettingsSecureValueStore,
+    sharingScope: CoroutineScope,
+    private val settingsDispatcher: CoroutineDispatcher,
+    private val parseObserver: ((threadName: String) -> Unit)? = null,
+    private val unavailableObserver: ((throwable: Throwable) -> Unit)? = null,
+    private val readRetryDelayMillis: Long = 1_000L,
 ) : SettingsStore {
+    constructor(context: Context) : this(
+        dataStore = context.dataStore,
+        secureValueStore = AndroidSettingsSecureValueStore(context),
+        sharingScope = CoroutineScope(SupervisorJob() + Dispatchers.IO),
+        settingsDispatcher = Dispatchers.IO,
+    )
+
+    init {
+        require(readRetryDelayMillis >= 0L) { "设置读取重试间隔不能为负数" }
+    }
+
     private val gson = AppJson.gson
     private val providerListType = object : TypeToken<List<ProviderSettings>>() {}.type
     private val assistantListType = object : TypeToken<List<Assistant>>() {}.type
@@ -151,16 +220,24 @@ class AppSettingsStore(
     private val searchSettingsType = object : TypeToken<SearchSettings>() {}.type
     private val voiceSynthesisSettingsType = object : TypeToken<VoiceSynthesisSettings>() {}.type
     private val momentsSettingsType = object : TypeToken<MomentsSettings>() {}.type
-    private val secureValueStore = SecureValueStore(context)
-
-    override val settingsFlow: Flow<AppSettings> = context.dataStore.data.map { preferences ->
-        val legacyBaseUrl = preferences[PreferencesKeys.baseUrl].orEmpty()
-        val legacyApiKey = secureValueStore.getString(SecureKeys.legacyApiKey)
-            .ifBlank { preferences[PreferencesKeys.apiKey].orEmpty() }
-        val legacySelectedModel = preferences[PreferencesKeys.selectedModel].orEmpty()
-        val secureProviderApiKeys = secureValueStore.getStringMap(SecureKeys.providerApiKeys)
-        val secureSearchApiKeys = secureValueStore.getStringMap(SecureKeys.searchSourceApiKeys)
-        val secureVoiceApiKey = secureValueStore.getString(SecureKeys.voiceSynthesisApiKey)
+    override val settingsFlow: Flow<AppSettings> = recoverablePreferencesFlow()
+        .map { preferences ->
+            PerformanceTraceContract.SETTINGS_DECODE.trace {
+                val legacyBaseUrl = preferences[PreferencesKeys.baseUrl].orEmpty()
+                val secureSettings = PerformanceTraceContract.SETTINGS_SECURE_READ.trace {
+                    SecureSettingsSnapshot(
+                        legacyApiKey = secureValueStore.getString(SecureKeys.legacyApiKey)
+                            .ifBlank { preferences[PreferencesKeys.apiKey].orEmpty() },
+                        providerApiKeys = secureValueStore.getStringMap(SecureKeys.providerApiKeys),
+                        searchApiKeys = secureValueStore.getStringMap(SecureKeys.searchSourceApiKeys),
+                        voiceApiKey = secureValueStore.getString(SecureKeys.voiceSynthesisApiKey),
+                    )
+                }
+                val legacyApiKey = secureSettings.legacyApiKey
+                val legacySelectedModel = preferences[PreferencesKeys.selectedModel].orEmpty()
+                val secureProviderApiKeys = secureSettings.providerApiKeys
+                val secureSearchApiKeys = secureSettings.searchApiKeys
+                val secureVoiceApiKey = secureSettings.voiceApiKey
         val storedProviders = decodeProviders(preferences[PreferencesKeys.providersJson].orEmpty())
             .map { provider ->
                 normalizeProviderFields(provider).copy(
@@ -209,19 +286,19 @@ class AppSettingsStore(
             },
         ).normalized()
 
-        AppSettings(
-            baseUrl = effectiveActiveProvider?.baseUrl ?: legacyBaseUrl,
-            apiKey = effectiveActiveProvider?.apiKey ?: legacyApiKey,
-            selectedModel = effectiveActiveProvider?.selectedModel ?: legacySelectedModel,
-            providers = resolvedProviders,
-            selectedProviderId = resolvedSelectedProviderId,
-            functionModelProviderIds = functionModelProviderIds,
-            themeMode = ThemeMode.fromStorageValue(
-                preferences[PreferencesKeys.themeMode].orEmpty(),
-            ),
-            appColorTheme = AppColorTheme.fromStorageValue(
-                preferences[PreferencesKeys.appColorTheme].orEmpty(),
-            ),
+                val settings = AppSettings(
+                    baseUrl = effectiveActiveProvider?.baseUrl ?: legacyBaseUrl,
+                    apiKey = effectiveActiveProvider?.apiKey ?: legacyApiKey,
+                    selectedModel = effectiveActiveProvider?.selectedModel ?: legacySelectedModel,
+                    providers = resolvedProviders,
+                    selectedProviderId = resolvedSelectedProviderId,
+                    functionModelProviderIds = functionModelProviderIds,
+                    themeMode = ThemeMode.fromStorageValue(
+                        preferences[PreferencesKeys.themeMode].orEmpty(),
+                    ),
+                    appColorTheme = AppColorTheme.fromStorageValue(
+                        preferences[PreferencesKeys.appColorTheme].orEmpty(),
+                    ),
             messageTextScale = preferences[PreferencesKeys.messageTextScale] ?: 1f,
             reasoningExpandedByDefault = preferences[PreferencesKeys.reasoningExpandedByDefault] ?: true,
             showThinkingContent = preferences[PreferencesKeys.showThinkingContent] ?: true,
@@ -298,15 +375,54 @@ class AppSettingsStore(
             contextLogCapacity = (preferences[PreferencesKeys.contextLogCapacity]
                 ?: DEFAULT_CONTEXT_LOG_CAPACITY)
                 .coerceIn(CONTEXT_LOG_CAPACITY_MIN, CONTEXT_LOG_CAPACITY_MAX),
+                )
+                parseObserver?.invoke(Thread.currentThread().name)
+                settings
+            }
+        }
+        .flowOn(settingsDispatcher)
+        .catch { throwable ->
+            if (throwable is CancellationException) {
+                throw throwable
+            }
+            AppLogger.e(TAG, "应用设置读取或解析管线不可用", throwable)
+            unavailableObserver?.invoke(throwable)
+        }
+        .shareIn(
+            scope = sharingScope,
+            started = SharingStarted.Eagerly,
+            replay = 1,
         )
+
+    private fun recoverablePreferencesFlow(): Flow<Preferences> = flow {
+        // 每次 retry 都重新获取 DataStore.data，避免永久重收集同一个失败 Flow。
+        emitAll(dataStore.data)
     }
+        .retryWhen { throwable, attempt ->
+            if (throwable is CancellationException) {
+                throw throwable
+            }
+            if (throwable is IOException) {
+                AppLogger.w(TAG, "读取应用设置失败，将使用安全默认值", throwable)
+                if (attempt == 0L) {
+                    emit(emptyPreferences())
+                }
+                if (readRetryDelayMillis > 0L) {
+                    val multiplier = 1L shl attempt.coerceAtMost(5L).toInt()
+                    delay((readRetryDelayMillis * multiplier).coerceAtMost(30_000L))
+                }
+                true
+            } else {
+                false
+            }
+        }
 
     override suspend fun saveSettings(
         baseUrl: String,
         apiKey: String,
         selectedModel: String,
     ) {
-        context.dataStore.edit { preferences ->
+        dataStore.edit { preferences ->
             val secureProviderApiKeys = secureValueStore.getStringMap(SecureKeys.providerApiKeys)
             val currentProviders = decodeProviders(
                 preferences[PreferencesKeys.providersJson].orEmpty(),
@@ -383,7 +499,7 @@ class AppSettingsStore(
             selectedProviderId = selectedProvider?.id.orEmpty(),
         )
 
-        context.dataStore.edit { preferences ->
+        dataStore.edit { preferences ->
             preferences[PreferencesKeys.baseUrl] = effectiveActiveProvider?.baseUrl.orEmpty()
             preferences[PreferencesKeys.apiKey] = ""
             preferences[PreferencesKeys.selectedModel] = effectiveActiveProvider?.selectedModel.orEmpty()
@@ -398,7 +514,7 @@ class AppSettingsStore(
     override suspend fun saveFunctionModelProviderIds(
         functionModelProviderIds: FunctionModelProviderIds,
     ) {
-        context.dataStore.edit { preferences ->
+        dataStore.edit { preferences ->
             val currentProviders = decodeProviders(preferences[PreferencesKeys.providersJson].orEmpty())
             preferences[PreferencesKeys.functionModelProviderIdsJson] = gson.toJson(
                 functionModelProviderIds.normalized(currentProviders.map(ProviderSettings::id).toSet()),
@@ -427,7 +543,7 @@ class AppSettingsStore(
         roleplayLineHeightScale: com.example.myapplication.model.RoleplayLineHeightScale,
         roleplayNoBackgroundSkin: RoleplayNoBackgroundSkinSettings,
     ) {
-        context.dataStore.edit { preferences ->
+        dataStore.edit { preferences ->
             preferences[PreferencesKeys.themeMode] = themeMode.storageValue
             preferences[PreferencesKeys.appColorTheme] = appColorTheme.storageValue
             preferences[PreferencesKeys.messageTextScale] = messageTextScale.coerceIn(0.85f, 1.25f)
@@ -455,7 +571,7 @@ class AppSettingsStore(
     override suspend fun saveScreenTranslationSettings(
         settings: ScreenTranslationSettings,
     ) {
-        context.dataStore.edit { preferences ->
+        dataStore.edit { preferences ->
             preferences[PreferencesKeys.screenTranslationServiceEnabled] = settings.serviceEnabled
             preferences[PreferencesKeys.screenTranslationOverlayEnabled] = settings.overlayEnabled
             preferences[PreferencesKeys.screenTranslationOverlayOffsetX] = settings.overlayOffsetX
@@ -470,7 +586,7 @@ class AppSettingsStore(
     override suspend fun saveSearchSettings(settings: SearchSettings) {
         val normalizedSettings = settings.normalized()
         persistSecureSearchApiKeys(normalizedSettings.sources)
-        context.dataStore.edit { preferences ->
+        dataStore.edit { preferences ->
             preferences[PreferencesKeys.searchSettingsJson] = gson.toJson(
                 normalizedSettings.copy(
                     sources = normalizedSettings.sources.map(::stripSensitiveSearchFields),
@@ -486,7 +602,7 @@ class AppSettingsStore(
             SecureKeys.voiceSynthesisApiKey,
             normalizedSettings.apiKey,
         )
-        context.dataStore.edit { preferences ->
+        dataStore.edit { preferences ->
             preferences[PreferencesKeys.voiceSynthesisSettingsJson] = gson.toJson(
                 normalizedSettings.stripSensitiveFields(),
                 voiceSynthesisSettingsType,
@@ -498,7 +614,7 @@ class AppSettingsStore(
         val normalizedSettings = settings.copy(
             coverImageUri = settings.coverImageUri.trim(),
         )
-        context.dataStore.edit { preferences ->
+        dataStore.edit { preferences ->
             preferences[PreferencesKeys.momentsSettingsJson] = gson.toJson(
                 normalizedSettings,
                 momentsSettingsType,
@@ -512,7 +628,7 @@ class AppSettingsStore(
         avatarUri: String,
         avatarUrl: String,
     ) {
-        context.dataStore.edit { preferences ->
+        dataStore.edit { preferences ->
             preferences[PreferencesKeys.userDisplayName] = displayName
                 .trim()
                 .ifBlank { com.example.myapplication.model.DEFAULT_USER_DISPLAY_NAME }
@@ -534,7 +650,7 @@ class AppSettingsStore(
         val resolvedDefaultMaskId = defaultMaskId.trim()
             .takeIf { id -> normalizedMasks.any { it.id == id } }
             ?: normalizedMasks.firstOrNull()?.id.orEmpty()
-        context.dataStore.edit { preferences ->
+        dataStore.edit { preferences ->
             preferences[PreferencesKeys.userPersonaMasksJson] = gson.toJson(
                 normalizedMasks,
                 userPersonaMaskListType,
@@ -547,20 +663,20 @@ class AppSettingsStore(
         assistants: List<Assistant>,
         selectedAssistantId: String,
     ) {
-        context.dataStore.edit { preferences ->
+        dataStore.edit { preferences ->
             preferences[PreferencesKeys.assistantsJson] = gson.toJson(assistants, assistantListType)
             preferences[PreferencesKeys.selectedAssistantId] = selectedAssistantId
         }
     }
 
     override suspend fun saveDefaultPresetId(presetId: String) {
-        context.dataStore.edit { preferences ->
+        dataStore.edit { preferences ->
             preferences[PreferencesKeys.defaultPresetId] = presetId.trim().ifBlank { DEFAULT_PRESET_ID }
         }
     }
 
     override suspend fun saveTranslationHistory(history: List<TranslationHistoryEntry>) {
-        context.dataStore.edit { preferences ->
+        dataStore.edit { preferences ->
             preferences[PreferencesKeys.translationHistoryJson] = gson.toJson(
                 history.sortedByDescending(TranslationHistoryEntry::createdAt).take(MAX_TRANSLATION_HISTORY),
                 translationHistoryType,
@@ -569,13 +685,13 @@ class AppSettingsStore(
     }
 
     override suspend fun saveRoleplayAssistantMismatchDialogPreference(suppressed: Boolean) {
-        context.dataStore.edit { preferences ->
+        dataStore.edit { preferences ->
             preferences[PreferencesKeys.suppressRoleplayAssistantMismatchDialog] = suppressed
         }
     }
 
     override suspend fun saveMemorySettings(autoSummaryEvery: Int, capacity: Int) {
-        context.dataStore.edit { preferences ->
+        dataStore.edit { preferences ->
             preferences[PreferencesKeys.memoryAutoSummaryEvery] =
                 autoSummaryEvery.coerceIn(MEMORY_AUTO_SUMMARY_EVERY_MIN, MEMORY_AUTO_SUMMARY_EVERY_MAX)
             preferences[PreferencesKeys.memoryCapacity] =
@@ -584,20 +700,20 @@ class AppSettingsStore(
     }
 
     override suspend fun saveMemoryPromptSettings(extractionPrompt: String, injectionPrompt: String) {
-        context.dataStore.edit { preferences ->
+        dataStore.edit { preferences ->
             preferences[PreferencesKeys.memoryExtractionPrompt] = extractionPrompt
             preferences[PreferencesKeys.memoryInjectionPrompt] = injectionPrompt
         }
     }
 
     override suspend fun saveMemoryInjectionPosition(position: MemoryInjectionPosition) {
-        context.dataStore.edit { preferences ->
+        dataStore.edit { preferences ->
             preferences[PreferencesKeys.memoryInjectionPosition] = position.storageValue
         }
     }
 
     override suspend fun saveContextLogSettings(enabled: Boolean, capacity: Int) {
-        context.dataStore.edit { preferences ->
+        dataStore.edit { preferences ->
             preferences[PreferencesKeys.contextLogEnabled] = enabled
             preferences[PreferencesKeys.contextLogCapacity] =
                 capacity.coerceIn(CONTEXT_LOG_CAPACITY_MIN, CONTEXT_LOG_CAPACITY_MAX)
@@ -605,7 +721,7 @@ class AppSettingsStore(
     }
 
     suspend fun migrateSensitiveData() {
-        context.dataStore.edit { preferences ->
+        dataStore.edit { preferences ->
             val currentSecureProviderApiKeys = secureValueStore.getStringMap(SecureKeys.providerApiKeys).toMutableMap()
             val currentSecureSearchApiKeys = secureValueStore.getStringMap(SecureKeys.searchSourceApiKeys)
             val legacyPlainApiKey = preferences[PreferencesKeys.apiKey].orEmpty()

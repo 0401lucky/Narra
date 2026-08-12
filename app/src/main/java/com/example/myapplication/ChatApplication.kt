@@ -13,9 +13,41 @@ import com.example.myapplication.data.repository.context.PresetRepository
 import com.example.myapplication.data.repository.context.WorldBookRepository
 import com.example.myapplication.data.repository.roleplay.RoleplayRepository
 import com.example.myapplication.di.AppGraph
+import com.example.myapplication.system.diagnostics.DiagnosticsAppVersion
+import com.example.myapplication.system.diagnostics.ExitDiagnosticsOperations
+import com.example.myapplication.system.diagnostics.LocalExitDiagnostics
+import com.example.myapplication.system.performance.BenchmarkContract
+import com.example.myapplication.system.performance.BenchmarkProcessNameResolver
+import com.example.myapplication.system.performance.BenchmarkProcessPolicy
+import com.example.myapplication.system.performance.BenchmarkRuntimePolicyResolver
 import com.example.myapplication.system.update.AppUpdateDownloadController
 
 class ChatApplication : Application() {
+    @Volatile
+    private var requestedBenchmarkSessionId: String? = null
+
+    private val benchmarkRuntimePolicyResolver by lazy {
+        BenchmarkRuntimePolicyResolver(
+            context = this,
+            appChannel = BuildConfig.APP_CHANNEL,
+        )
+    }
+
+    val exitDiagnostics: ExitDiagnosticsOperations by lazy {
+        LocalExitDiagnostics.createOrNoOp(
+            context = this,
+            appVersion = DiagnosticsAppVersion(
+                versionName = BuildConfig.VERSION_NAME,
+                versionCode = BuildConfig.VERSION_CODE.toLong(),
+            ),
+            shouldSkipCollection = {
+                BuildConfig.APP_CHANNEL == BenchmarkContract.BASELINE_CHANNEL &&
+                    benchmarkRuntimePolicyResolver
+                        .resolve(requestedBenchmarkSessionId)
+                        .skipExitDiagnostics
+            },
+        )
+    }
     val appGraph: AppGraph by lazy { AppGraph(this) }
     val conversationRepository: ConversationRepository
         get() = appGraph.conversationRepository
@@ -44,6 +76,19 @@ class ChatApplication : Application() {
 
     override fun onCreate() {
         super.onCreate()
+        if (
+            BuildConfig.APP_CHANNEL == BenchmarkContract.BASELINE_CHANNEL &&
+            BenchmarkProcessPolicy.isBenchmarkFixtureProcess(
+                applicationId = packageName,
+                processName = BenchmarkProcessNameResolver.current(this),
+            )
+        ) {
+            return
+        }
         appGraph.launchStartupTasks()
+    }
+
+    fun configureDiagnosticsBenchmarkSession(sessionId: String?) {
+        requestedBenchmarkSessionId = sessionId
     }
 }

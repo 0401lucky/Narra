@@ -13,6 +13,7 @@ class RoleplaySceneMoodTest {
         val moodState = resolveRoleplaySceneMood(
             listOf(
                 RoleplayMessageUiModel(
+                    uiItemId = "a1:dialogue:0",
                     sourceMessageId = "a1",
                     contentType = RoleplayContentType.DIALOGUE,
                     speaker = RoleplaySpeaker.CHARACTER,
@@ -33,6 +34,7 @@ class RoleplaySceneMoodTest {
         val moodState = resolveRoleplaySceneMood(
             listOf(
                 RoleplayMessageUiModel(
+                    uiItemId = "a1:dialogue:0",
                     sourceMessageId = "a1",
                     contentType = RoleplayContentType.DIALOGUE,
                     speaker = RoleplaySpeaker.CHARACTER,

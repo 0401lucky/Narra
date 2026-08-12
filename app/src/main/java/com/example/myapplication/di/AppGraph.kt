@@ -86,19 +86,95 @@ import com.example.myapplication.data.repository.roleplay.script.RoleplayScriptR
 import com.example.myapplication.data.repository.roleplay.script.RoomRoleplayScriptRepository
 import com.example.myapplication.roleplay.script.AndroidRoleplayScriptEngine
 import com.example.myapplication.roleplay.script.RoleplayScriptEngine
+import com.example.myapplication.system.logging.AppLogger
+import com.example.myapplication.system.performance.PerformanceTraceContract
+import com.example.myapplication.system.performance.traceAsync
 import com.example.myapplication.system.update.AndroidAppUpdateController
 import com.example.myapplication.system.update.AppUpdateDownloadController
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 
+internal enum class AppStartupTask(
+    val taskName: String,
+    val traceSectionName: String,
+) {
+    SENSITIVE_MIGRATION(
+        taskName = "SensitiveMigration",
+        traceSectionName = PerformanceTraceContract.STARTUP_SENSITIVE_MIGRATION,
+    ),
+    ENSURE_PRESETS(
+        taskName = "EnsurePresets",
+        traceSectionName = PerformanceTraceContract.STARTUP_ENSURE_PRESETS,
+    ),
+    CONTEXT_LOG_SETTINGS(
+        taskName = "ContextLogSettings",
+        traceSectionName = PerformanceTraceContract.STARTUP_CONTEXT_LOG_SETTINGS,
+    ),
+}
+
+internal fun interface AppStartupTraceRunner {
+    suspend fun trace(
+        sectionName: String,
+        block: suspend () -> Unit,
+    )
+}
+
+internal class AppStartupTaskScheduler(
+    private val scope: CoroutineScope,
+    private val traceRunner: AppStartupTraceRunner = AppStartupTraceRunner { sectionName, block ->
+        PerformanceTraceContract.APP_GRAPH.traceAsync {
+            sectionName.traceAsync(block)
+        }
+    },
+    private val failureReporter: (AppStartupTask, Throwable) -> Unit = { task, throwable ->
+        AppLogger.w(
+            tag = APP_STARTUP_LOG_TAG,
+            message = "Startup task failed: ${task.taskName}",
+            throwable = throwable,
+        )
+    },
+) {
+    fun schedule(
+        task: AppStartupTask,
+        traceTaskLifetime: Boolean = true,
+        block: suspend () -> Unit,
+    ): Job {
+        return scope.launch {
+            try {
+                if (traceTaskLifetime) {
+                    trace(task, block)
+                } else {
+                    block()
+                }
+            } catch (cancellation: CancellationException) {
+                throw cancellation
+            } catch (throwable: Throwable) {
+                failureReporter(task, throwable)
+            }
+        }
+    }
+
+    suspend fun trace(
+        task: AppStartupTask,
+        block: suspend () -> Unit,
+    ) {
+        traceRunner.trace(task.traceSectionName, block)
+    }
+}
+
+private const val APP_STARTUP_LOG_TAG = "AppGraph"
+
 class AppGraph(
     private val application: Application,
 ) {
     private val startupScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+    private val startupTaskScheduler = AppStartupTaskScheduler(startupScope)
 
     val database: ChatDatabase by lazy {
         Room.databaseBuilder(
@@ -398,10 +474,6 @@ class AppGraph(
         AndroidAppUpdateController(application)
     }
 
-    fun scheduleStartup(block: suspend CoroutineScope.() -> Unit) {
-        startupScope.launch(block = block)
-    }
-
     suspend fun runDatabaseTransaction(block: suspend () -> Unit) {
         database.withTransaction {
             block()
@@ -420,19 +492,24 @@ class AppGraph(
     }
 
     fun launchStartupTasks() {
-        scheduleStartup {
+        startupTaskScheduler.schedule(AppStartupTask.SENSITIVE_MIGRATION) {
             settingsStore.migrateSensitiveData()
         }
-        scheduleStartup {
+        startupTaskScheduler.schedule(AppStartupTask.ENSURE_PRESETS) {
             presetRepository.ensureBuiltInPresets()
         }
-        scheduleStartup {
+        startupTaskScheduler.schedule(
+            task = AppStartupTask.CONTEXT_LOG_SETTINGS,
+            traceTaskLifetime = false,
+        ) {
             settingsStore.settingsFlow
                 .map { it.contextLogEnabled to it.contextLogCapacity }
                 .distinctUntilChanged()
                 .collect { (enabled, capacity) ->
-                    contextLogStore.setEnabled(enabled)
-                    contextLogStore.setCapacity(capacity)
+                    startupTaskScheduler.trace(AppStartupTask.CONTEXT_LOG_SETTINGS) {
+                        contextLogStore.setEnabled(enabled)
+                        contextLogStore.setCapacity(capacity)
+                    }
                 }
         }
     }

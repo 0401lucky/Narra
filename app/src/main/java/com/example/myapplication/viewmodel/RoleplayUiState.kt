@@ -38,6 +38,7 @@ data class RoleplayUiState(
     val latestPromptDebugDump: String = "",
     val contextGovernance: ContextGovernanceSnapshot? = null,
     val streamingContent: String = "",
+    val offlineReplayPhase: RoleplayOfflineReplayPhase = RoleplayOfflineReplayPhase.DISABLED,
     val suggestionErrorMessage: String? = null,
     val pendingMemoryProposal: PendingMemoryProposal? = null,
     val recentMemoryProposalHistory: List<MemoryProposalHistoryItem> = emptyList(),
@@ -57,4 +58,7 @@ data class RoleplayUiState(
 ) {
     val isVideoCallActive: Boolean
         get() = activeVideoCallSessionId.isNotBlank() && activeVideoCallStartedAt > 0L
+
+    val isOfflineRoleplayReplayActive: Boolean
+        get() = offlineReplayPhase == RoleplayOfflineReplayPhase.RUNNING
 }

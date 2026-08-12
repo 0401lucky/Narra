@@ -19,6 +19,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.compose.rememberNavController
 import com.example.myapplication.BuildConfig
 import com.example.myapplication.di.AppGraph
+import com.example.myapplication.data.repository.ai.ThemeSettings
 import com.example.myapplication.model.AppUpdateEnvironment
 import com.example.myapplication.model.AppColorTheme
 import com.example.myapplication.model.ThemeMode
@@ -44,11 +45,11 @@ fun AppRoot(
         ),
     )
     val complianceUiState by complianceViewModel.uiState.collectAsStateWithLifecycle()
-    val appSettings by produceState<com.example.myapplication.model.AppSettings?>(
+    val persistedThemeSettings by produceState<ThemeSettings?>(
         initialValue = null,
         appGraph.aiSettingsRepository,
     ) {
-        appGraph.aiSettingsRepository.settingsFlow.collect { value = it }
+        appGraph.aiSettingsRepository.themeSettingsFlow.collect { value = it }
     }
     val settingsViewModel: SettingsViewModel = viewModel(
         factory = SettingsViewModel.factory(
@@ -73,9 +74,21 @@ fun AppRoot(
         ),
     )
     val appUpdateState by appUpdateViewModel.uiState.collectAsStateWithLifecycle()
-    val settingsUiState by settingsViewModel.uiState.collectAsStateWithLifecycle()
+    val themeSettings by produceState(
+        initialValue = persistedThemeSettings,
+        persistedThemeSettings,
+        settingsViewModel,
+    ) {
+        if (persistedThemeSettings == null) {
+            value = null
+            return@produceState
+        }
+        settingsViewModel.themePreviewFlow.collect { preview ->
+            value = preview ?: persistedThemeSettings
+        }
+    }
 
-    val resolvedDarkTheme = when ((appSettings?.let { settingsUiState.themeMode } ?: ThemeMode.SYSTEM)) {
+    val resolvedDarkTheme = when (themeSettings?.themeMode ?: ThemeMode.SYSTEM) {
         ThemeMode.SYSTEM -> null
         ThemeMode.LIGHT -> false
         ThemeMode.DARK -> true
@@ -89,7 +102,7 @@ fun AppRoot(
     }
 
     ChatAppTheme(
-        appColorTheme = appSettings?.let { settingsUiState.appColorTheme } ?: AppColorTheme.MATCHA,
+        appColorTheme = themeSettings?.appColorTheme ?: AppColorTheme.MATCHA,
         darkTheme = resolvedDarkTheme ?: androidx.compose.foundation.isSystemInDarkTheme(),
     ) {
         Surface(
@@ -117,7 +130,7 @@ fun AppRoot(
                     )
                 }
 
-                appSettings == null -> {
+                themeSettings == null -> {
                     Box(
                         modifier = Modifier.fillMaxSize(),
                         contentAlignment = Alignment.Center,

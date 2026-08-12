@@ -22,6 +22,7 @@ enum class RoleplaySpeaker {
 
 @Immutable
 data class RoleplayMessageUiModel(
+    val uiItemId: String,
     val sourceMessageId: String,
     val contentType: RoleplayContentType,
     val speaker: RoleplaySpeaker,

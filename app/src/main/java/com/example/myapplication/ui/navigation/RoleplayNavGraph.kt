@@ -1,6 +1,7 @@
 package com.example.myapplication.ui.navigation
 
 import android.net.Uri
+import com.example.myapplication.BuildConfig
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -20,6 +21,11 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.navigation
 import com.example.myapplication.di.AppGraph
 import com.example.myapplication.model.PhoneSnapshotOwnerType
+import com.example.myapplication.system.performance.BenchmarkOfflineReplaySpec
+import com.example.myapplication.system.performance.BenchmarkFixtureIds
+import com.example.myapplication.system.performance.BenchmarkContract
+import com.example.myapplication.system.performance.BenchmarkScenarioId
+import com.example.myapplication.ui.performance.LocalBenchmarkRuntimePolicy
 import com.example.myapplication.ui.screen.immersive.ImmersivePhoneCallbacks
 import com.example.myapplication.ui.screen.immersive.ImmersivePhoneShell
 import com.example.myapplication.ui.screen.roleplay.RoleplayReadingMode
@@ -78,6 +84,65 @@ internal fun NavGraphBuilder.registerRoleplayGraph(
             )
             val roleplayState by roleplayViewModel.uiState.collectAsStateWithLifecycle()
             val characterShakeState by characterShakeViewModel.uiState.collectAsStateWithLifecycle()
+            val benchmarkScenarioId = (if (
+                BuildConfig.APP_CHANNEL == BenchmarkContract.BASELINE_CHANNEL
+            ) {
+                LocalBenchmarkRuntimePolicy.current
+            } else {
+                null
+            })
+                ?.takeIf { it.isBenchmarkSessionActive }
+                ?.scenarioId
+            val benchmarkRequiresRoleplayFixture = when (benchmarkScenarioId) {
+                BenchmarkScenarioId.S1_RETURNING_CORE_STARTUP,
+                BenchmarkScenarioId.S2_POPULATED_STARTUP,
+                BenchmarkScenarioId.S3_UPGRADE_STARTUP,
+                BenchmarkScenarioId.F2_ROLEPLAY_SCROLL,
+                BenchmarkScenarioId.F3_ROLEPLAY_STREAM_REPLAY,
+                BenchmarkScenarioId.N1_HEAVY_NAVIGATION,
+                BenchmarkScenarioId.P1_BASELINE_PROFILE,
+                -> true
+
+                BenchmarkScenarioId.S0_FIRST_RUN_STARTUP,
+                BenchmarkScenarioId.F1_CHAT_SCROLL,
+                null,
+                -> false
+            }
+            val benchmarkRoleplayFixtureReady = benchmarkRequiresRoleplayFixture &&
+                roleplayState.scenarios.any { scenario ->
+                    scenario.id == BenchmarkFixtureIds.ROLEPLAY_SCENARIO_ID
+                } && BenchmarkFixtureIds.ROLEPLAY_SCENARIO_ID in roleplayState.scenarioSessionIds
+            if (benchmarkScenarioId != null) {
+                LaunchedEffect(benchmarkScenarioId, benchmarkRoleplayFixtureReady) {
+                    when (benchmarkScenarioId) {
+                        BenchmarkScenarioId.F1_CHAT_SCROLL -> {
+                            navController.navigate(AppRoutes.CHAT) {
+                                launchSingleTop = true
+                                popUpTo(AppRoutes.ROLEPLAY_GRAPH) {
+                                    inclusive = true
+                                }
+                            }
+                        }
+
+                        BenchmarkScenarioId.S1_RETURNING_CORE_STARTUP,
+                        BenchmarkScenarioId.S2_POPULATED_STARTUP,
+                        BenchmarkScenarioId.S3_UPGRADE_STARTUP,
+                        BenchmarkScenarioId.F2_ROLEPLAY_SCROLL,
+                        BenchmarkScenarioId.F3_ROLEPLAY_STREAM_REPLAY,
+                        BenchmarkScenarioId.N1_HEAVY_NAVIGATION,
+                        BenchmarkScenarioId.P1_BASELINE_PROFILE,
+                        -> if (benchmarkRoleplayFixtureReady) {
+                            navController.navigate(
+                                AppRoutes.roleplayPlay(BenchmarkFixtureIds.ROLEPLAY_SCENARIO_ID),
+                            ) {
+                                launchSingleTop = true
+                            }
+                        }
+
+                        BenchmarkScenarioId.S0_FIRST_RUN_STARTUP -> Unit
+                    }
+                }
+            }
             fun navigateToRoleplayChat(scenarioId: String) {
                 navController.navigate(AppRoutes.roleplayPlay(scenarioId)) {
                     launchSingleTop = true
@@ -353,6 +418,13 @@ internal fun NavGraphBuilder.registerRoleplayGraph(
                 backStackEntry = backStackEntry,
             )
             val roleplayState by roleplayViewModel.uiState.collectAsStateWithLifecycle()
+            val benchmarkRuntimePolicy = if (
+                BuildConfig.APP_CHANNEL == BenchmarkContract.BASELINE_CHANNEL
+            ) {
+                LocalBenchmarkRuntimePolicy.current
+            } else {
+                null
+            }
             val rawScenarioId = backStackEntry.arguments?.getString("scenarioId").orEmpty()
             val scenarioId = Uri.decode(rawScenarioId)
             val routeScenario = roleplayState.currentScenario?.takeIf { it.id == scenarioId }
@@ -363,10 +435,30 @@ internal fun NavGraphBuilder.registerRoleplayGraph(
             val providerOptions = remember(roleplayState.settings) {
                 roleplayState.settings.providers.filter { it.enabled }
             }
+            val offlineReplaySpec = BenchmarkOfflineReplaySpec.DEFAULT
+            val isOfflineReplayFixtureSession =
+                benchmarkRuntimePolicy?.useOfflineRoleplayReplay == true &&
+                    roleplayState.currentSession?.id == BenchmarkFixtureIds.ROLEPLAY_SESSION_ID &&
+                    offlineReplaySpec.matchesFixedFixture(
+                        scenarioId = scenarioId,
+                        conversationId = roleplayState.currentSession?.conversationId,
+                    )
             LaunchedEffect(scenarioId) {
                 // 仅在场景尚未加载或会话缺失时才进入，避免从设置页返回时重置消息列表
                 if (roleplayState.currentScenario?.id != scenarioId || roleplayState.currentSession == null) {
                     roleplayViewModel.enterScenario(scenarioId)
+                }
+            }
+            LaunchedEffect(
+                scenarioId,
+                roleplayState.currentSession?.id,
+                roleplayState.currentSession?.conversationId,
+                roleplayState.messages.size,
+                roleplayState.offlineReplayPhase,
+                isOfflineReplayFixtureSession,
+            ) {
+                if (isOfflineReplayFixtureSession) {
+                    roleplayViewModel.prepareOfflineReplay()
                 }
             }
             RoleplayScreen(
@@ -385,6 +477,9 @@ internal fun NavGraphBuilder.registerRoleplayGraph(
                 isSending = roleplayState.isSending,
                 isGeneratingSuggestions = roleplayState.isGeneratingSuggestions,
                 isScenarioLoading = roleplayState.isScenarioLoading,
+                hasActiveSession = roleplayState.currentSession?.scenarioId == scenarioId,
+                isOfflineReplayFixtureSession = isOfflineReplayFixtureSession,
+                offlineReplayPhase = roleplayState.offlineReplayPhase,
                 showAssistantMismatchDialog = roleplayState.showAssistantMismatchDialog,
                 previousAssistantName = roleplayState.previousAssistantName,
                 currentAssistantName = roleplayState.currentAssistantName,
@@ -487,9 +582,26 @@ internal fun NavGraphBuilder.registerRoleplayGraph(
                                 launchSingleTop = true
                             }
                         },
+                        onOpenVoiceSynthesisSettings = {
+                            navController.navigate(AppRoutes.SETTINGS) {
+                                launchSingleTop = true
+                            }
+                            navController.navigate(AppRoutes.SETTINGS_VOICE_SYNTHESIS) {
+                                launchSingleTop = true
+                            }
+                        },
                         onNavigateBack = {
-                            roleplayViewModel.leaveScenario()
-                            navController.popBackStack()
+                            if (
+                                benchmarkRuntimePolicy?.scenarioId ==
+                                BenchmarkScenarioId.P1_BASELINE_PROFILE
+                            ) {
+                                navController.navigate(AppRoutes.CHAT) {
+                                    launchSingleTop = true
+                                }
+                            } else {
+                                roleplayViewModel.leaveScenario()
+                                navController.popBackStack()
+                            }
                         },
                     ),
                     session = RoleplaySessionCallbacks(
@@ -497,6 +609,7 @@ internal fun NavGraphBuilder.registerRoleplayGraph(
                         onDismissAssistantMismatch = roleplayViewModel::dismissAssistantMismatchDialog,
                         onApprovePendingMemoryProposal = roleplayViewModel::approvePendingMemoryProposal,
                         onRejectPendingMemoryProposal = roleplayViewModel::rejectPendingMemoryProposal,
+                        onStartOfflineReplay = roleplayViewModel::startOfflineReplay,
                     ),
                     group = RoleplayGroupCallbacks(
                         onToggleParticipantMuted = roleplayViewModel::toggleGroupParticipantMuted,
@@ -682,6 +795,8 @@ internal fun NavGraphBuilder.registerRoleplayGraph(
                         navController.popBackStack()
                     }
                 },
+                isBenchmarkSessionReady = routeScenario != null &&
+                    roleplayState.currentSession?.scenarioId == scenarioId,
             )
         }
 

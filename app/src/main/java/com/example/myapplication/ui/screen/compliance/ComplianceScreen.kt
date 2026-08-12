@@ -49,6 +49,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.example.myapplication.compliance.CompliancePolicy
 import com.example.myapplication.viewmodel.ComplianceUiState
+import com.example.myapplication.system.performance.BenchmarkReadyIds
+import com.example.myapplication.ui.performance.benchmarkReadyTag
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -91,6 +93,10 @@ fun ComplianceScreen(
     }
 
     Scaffold(
+        modifier = Modifier.benchmarkReadyTag(
+            readyId = BenchmarkReadyIds.FIRST_RUN_CONSENT_READY,
+            ready = isGate && !uiState.isLoading && !uiState.isAccepted,
+        ),
         topBar = {
             TopAppBar(
                 title = {

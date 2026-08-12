@@ -27,18 +27,23 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.drawWithContent
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.SpanStyle
-import androidx.compose.ui.text.buildAnnotatedString
+import androidx.compose.ui.semantics.clearAndSetSemantics
+import androidx.compose.ui.semantics.text
+import androidx.compose.ui.text.AnnotatedString
+import androidx.compose.ui.text.TextLayoutResult
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.view.HapticFeedbackConstantsCompat
@@ -404,9 +409,10 @@ internal fun StreamingLogText(
     textColor: Color,
     accentColor: Color,
     lineHeightScale: Float = 1.0f,
+    modifier: Modifier = Modifier,
 ) {
     val infiniteTransition = rememberInfiniteTransition(label = "roleplay_log_cursor")
-    val cursorAlpha by infiniteTransition.animateFloat(
+    val cursorAlpha = infiniteTransition.animateFloat(
         initialValue = 1f,
         targetValue = 0f,
         animationSpec = infiniteRepeatable(
@@ -415,21 +421,47 @@ internal fun StreamingLogText(
         ),
         label = "roleplay_log_cursor_alpha",
     )
+    val layoutText = remember(content) {
+        AnnotatedString(content + RoleplayStreamingCursorLayoutPlaceholder)
+    }
+    val textLayoutResult = remember { mutableStateOf<TextLayoutResult?>(null) }
     Text(
-        text = buildAnnotatedString {
-            append(content)
-            withStyle(SpanStyle(color = accentColor.copy(alpha = cursorAlpha), fontWeight = FontWeight.Bold)) {
-                append(" \u258C")
+        text = layoutText,
+        modifier = modifier
+            .clearAndSetSemantics {
+                text = AnnotatedString(content)
             }
-        },
+            .drawWithContent {
+                drawContent()
+                val cursorRect = textLayoutResult.value
+                    ?.getCursorRect(content.length + RoleplayStreamingCursorGapLength)
+                    ?: return@drawWithContent
+                val cursorHeight = 16.sp.toPx()
+                drawRect(
+                    color = accentColor,
+                    topLeft = Offset(
+                        x = cursorRect.left,
+                        y = cursorRect.top + ((cursorRect.height - cursorHeight) / 2f).coerceAtLeast(0f),
+                    ),
+                    size = Size(
+                        width = 6.sp.toPx(),
+                        height = cursorHeight.coerceAtMost(cursorRect.height),
+                    ),
+                    alpha = cursorAlpha.value,
+                )
+            },
         style = MaterialTheme.typography.bodyLarge.copy(
             fontSize = 16.sp,
             lineHeight = 26.sp * lineHeightScale,
             letterSpacing = 0.6.sp,
         ),
         color = textColor,
+        onTextLayout = { textLayoutResult.value = it },
     )
 }
+
+private const val RoleplayStreamingCursorLayoutPlaceholder = "\u00A0\u2007"
+private const val RoleplayStreamingCursorGapLength = 1
 
 private fun com.example.myapplication.model.RoleplaySuggestionAxis.toReadableLabel(): String {
     return when (this) {

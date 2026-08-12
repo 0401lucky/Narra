@@ -113,6 +113,50 @@ class RoleplayStateSupportTest {
     }
 
     @Test
+    fun prepareOfflineReplay_installsNonBlankSeedAndReadyPhase() {
+        val updated = RoleplayStateSupport.prepareOfflineReplay(
+            current = RoleplayUiState(),
+            seedContent = "这",
+        )
+
+        assertTrue(updated.isSending)
+        assertEquals("这", updated.streamingContent)
+        assertEquals(RoleplayOfflineReplayPhase.READY, updated.offlineReplayPhase)
+    }
+
+    @Test
+    fun publishOfflineReplayContent_lastChunkCompletesAndKeepsFinalContent() {
+        val updated = RoleplayStateSupport.publishOfflineReplayContent(
+            current = RoleplayUiState(
+                isSending = true,
+                streamingContent = "这",
+                offlineReplayPhase = RoleplayOfflineReplayPhase.RUNNING,
+            ),
+            content = "这是固定离线流式重放内容。",
+            completed = true,
+        )
+
+        assertTrue(updated.isSending)
+        assertEquals("这是固定离线流式重放内容。", updated.streamingContent)
+        assertEquals(RoleplayOfflineReplayPhase.COMPLETED, updated.offlineReplayPhase)
+    }
+
+    @Test
+    fun leaveScenario_disablesOfflineReplay() {
+        val updated = RoleplayStateSupport.leaveScenario(
+            RoleplayUiState(
+                isSending = true,
+                streamingContent = "离线重放",
+                offlineReplayPhase = RoleplayOfflineReplayPhase.RUNNING,
+            ),
+        )
+
+        assertFalse(updated.isSending)
+        assertEquals("", updated.streamingContent)
+        assertEquals(RoleplayOfflineReplayPhase.DISABLED, updated.offlineReplayPhase)
+    }
+
+    @Test
     fun applySuggestionDraft_setsInputAndClearsSuggestionState() {
         val updated = RoleplayStateSupport.applySuggestionDraft(
             current = RoleplayUiState(

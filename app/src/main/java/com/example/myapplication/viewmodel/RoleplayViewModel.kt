@@ -94,11 +94,14 @@ import com.example.myapplication.roleplay.script.DisabledRoleplayScriptEngine
 import com.example.myapplication.roleplay.script.RoleplayScriptEngine
 import com.example.myapplication.roleplay.script.RoleplayScriptEvent
 import com.example.myapplication.roleplay.script.RoleplayScriptExecutionResult
+import com.example.myapplication.system.performance.BenchmarkOfflineReplaySpec
+import com.example.myapplication.system.performance.BenchmarkAiViolationTracker
 import com.example.myapplication.system.security.SensitiveTextRedactor
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.cancelAndJoin
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
@@ -148,6 +151,9 @@ class RoleplayViewModel(
     },
     private val settleTransfer: suspend (String) -> Unit = {},
     private val releaseTransfer: suspend (String) -> Unit = {},
+    private val offlineReplaySpec: BenchmarkOfflineReplaySpec? = null,
+    private val benchmarkAiViolationTracker: BenchmarkAiViolationTracker? = null,
+    private val offlineReplayDelay: suspend (Long) -> Unit = { delay(it) },
 ) : ViewModel() {
     val settings: StateFlow<AppSettings> = settingsRepository.settingsFlow.stateIn(
         scope = viewModelScope,
@@ -338,6 +344,21 @@ class RoleplayViewModel(
         onSendingFinished = ::finishSendingRun,
         holdUserTransfer = holdUserTransfer,
     )
+    private val offlineReplaySupport = RoleplayOfflineReplaySupport(
+        scope = viewModelScope,
+        offlineReplaySpec = offlineReplaySpec,
+        currentUiState = { _uiState.value },
+        currentRawMessages = { currentRawMessages.value },
+        updateUiState = { reducer -> _uiState.update(reducer) },
+        activeSendingJob = { sendingJob },
+        installSendingJob = { job -> sendingJob = job },
+        beginSendingRun = ::beginSendingRun,
+        isSendingRunActive = ::isSendingRunActive,
+        finishSendingRun = ::finishSendingRun,
+        isCurrentConversation = ::isCurrentConversation,
+        delayChunk = offlineReplayDelay,
+        aiViolationTracker = benchmarkAiViolationTracker,
+    )
 
     init {
         RoleplayObservationSupport.observeSettings(
@@ -428,6 +449,19 @@ class RoleplayViewModel(
         suggestionActionSupport.cancelSuggestionGeneration(resetState = false)
         cancelActiveGenerationSilently()
         scenarioActionSupport.enterScenario(scenarioId)
+    }
+
+    fun prepareOfflineReplay() {
+        offlineReplaySupport.prepare()
+    }
+
+    fun startOfflineReplay() {
+        offlineReplaySupport.start()
+    }
+
+    override fun onCleared() {
+        offlineReplaySupport.dispose()
+        super.onCleared()
     }
 
     fun leaveScenario() {
@@ -1564,6 +1598,7 @@ class RoleplayViewModel(
             current.copy(
                 isSending = false,
                 streamingContent = "",
+                offlineReplayPhase = RoleplayOfflineReplayPhase.DISABLED,
                 errorMessage = null,
                 noticeMessage = "已停止生成",
             )
@@ -2382,6 +2417,8 @@ class RoleplayViewModel(
             },
             settleTransfer: suspend (String) -> Unit = {},
             releaseTransfer: suspend (String) -> Unit = {},
+            offlineReplaySpec: BenchmarkOfflineReplaySpec? = null,
+            benchmarkAiViolationTracker: BenchmarkAiViolationTracker? = null,
         ): ViewModelProvider.Factory {
             return typedViewModelFactory {
                 RoleplayViewModel(
@@ -2407,6 +2444,8 @@ class RoleplayViewModel(
                     holdUserTransfer = holdUserTransfer,
                     settleTransfer = settleTransfer,
                     releaseTransfer = releaseTransfer,
+                    offlineReplaySpec = offlineReplaySpec,
+                    benchmarkAiViolationTracker = benchmarkAiViolationTracker,
                 )
             }
         }

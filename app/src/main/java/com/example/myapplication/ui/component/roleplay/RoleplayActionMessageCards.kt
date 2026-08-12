@@ -389,19 +389,40 @@ private fun RoleplayVoiceMessageCard(
     backdropState: ImmersiveBackdropState,
     isUserMessage: Boolean,
 ) {
-    var isPlaying by rememberSaveable(message.sourceMessageId, actionPart.actionId) { mutableStateOf(false) }
     var isExpanded by rememberSaveable(message.sourceMessageId, actionPart.actionId) { mutableStateOf(false) }
-    var playbackError by rememberSaveable(message.sourceMessageId, actionPart.actionId) { mutableStateOf("") }
-    var mediaPlayer by remember(message.sourceMessageId, actionPart.actionId) { mutableStateOf<MediaPlayer?>(null) }
     val voiceContent = actionPart.voiceMessageContent()
     val durationSeconds = actionPart.voiceMessageDurationSeconds()
     val audioStatus = actionPart.voiceAudioStatus()
+    val audioPath = actionPart.voiceAudioPath()
     val canPlayAudio = actionPart.hasReadyVoiceAudio()
-    val statusLabel = when (audioStatus) {
-        VoiceAudioStatus.GENERATING -> "生成中"
-        VoiceAudioStatus.READY -> if (canPlayAudio) "可播放" else "音频缺失"
-        VoiceAudioStatus.FAILED -> "生成失败"
-        null -> if (isUserMessage) "文字语音" else "文字兜底"
+    var playbackState by remember(message.uiItemId, actionPart.actionId, audioPath, audioStatus) {
+        mutableStateOf<RoleplayVoicePlaybackState>(RoleplayVoicePlaybackState.Idle)
+    }
+    var playbackError by remember(message.uiItemId, actionPart.actionId, audioPath, audioStatus) {
+        mutableStateOf("")
+    }
+    val playbackController = remember(message.uiItemId, actionPart.actionId, audioPath, audioStatus) {
+        RoleplayVoicePlaybackController(
+            playerFactory = AndroidRoleplayVoicePlayerFactory,
+            onStateChanged = { nextState ->
+                playbackState = nextState
+                if (nextState is RoleplayVoicePlaybackState.Error) {
+                    isExpanded = true
+                    playbackError = roleplayVoicePlaybackErrorMessage(nextState.cause)
+                }
+            },
+        )
+    }
+    val statusLabel = when (playbackState) {
+        RoleplayVoicePlaybackState.Preparing -> "准备中"
+        RoleplayVoicePlaybackState.Playing -> "播放中"
+        is RoleplayVoicePlaybackState.Error -> "播放失败"
+        RoleplayVoicePlaybackState.Idle -> when (audioStatus) {
+            VoiceAudioStatus.GENERATING -> "生成中"
+            VoiceAudioStatus.READY -> if (canPlayAudio) "可播放" else "音频缺失"
+            VoiceAudioStatus.FAILED -> "生成失败"
+            null -> if (isUserMessage) "文字语音" else "文字兜底"
+        }
     }
     val waveform = remember(actionPart.actionId, voiceContent) {
         buildVoiceWaveformSeed(
@@ -409,33 +430,10 @@ private fun RoleplayVoiceMessageCard(
             count = 12,
         )
     }
-    val infiniteTransition = rememberInfiniteTransition(label = "roleplay_voice_wave")
-    val animatedWavePulses = List(waveform.size) { index ->
-        infiniteTransition.animateFloat(
-            initialValue = 0.82f,
-            targetValue = 1.18f,
-            animationSpec = infiniteRepeatable(
-                animation = tween(
-                    durationMillis = 420 + index * 45,
-                    delayMillis = index * 50,
-                ),
-                repeatMode = RepeatMode.Reverse,
-            ),
-            label = "roleplay_voice_wave_$index",
-        ).value
-    }
-
-    fun stopPlayback() {
-        mediaPlayer?.let { player ->
-            runCatching {
-                if (player.isPlaying) {
-                    player.stop()
-                }
-            }
-            player.release()
-        }
-        mediaPlayer = null
-        isPlaying = false
+    val displayedWaveform = if (playbackState == RoleplayVoicePlaybackState.Playing) {
+        rememberPlayingVoiceWaveform(waveform)
+    } else {
+        waveform
     }
 
     fun togglePlayback() {
@@ -452,50 +450,13 @@ private fun RoleplayVoiceMessageCard(
             }
             return
         }
-        if (isPlaying) {
-            stopPlayback()
-            return
-        }
         playbackError = ""
-        runCatching {
-            val player = MediaPlayer()
-            player.setDataSource(actionPart.voiceAudioPath())
-            player.setOnCompletionListener {
-                it.release()
-                if (mediaPlayer === it) {
-                    mediaPlayer = null
-                }
-                isPlaying = false
-            }
-            player.setOnErrorListener { failedPlayer, _, _ ->
-                failedPlayer.release()
-                if (mediaPlayer === failedPlayer) {
-                    mediaPlayer = null
-                }
-                isPlaying = false
-                isExpanded = true
-                playbackError = "语音播放失败，已保留文字内容"
-                true
-            }
-            player.prepare()
-            player.start()
-            mediaPlayer = player
-            isPlaying = true
-        }.onFailure { throwable ->
-            mediaPlayer?.release()
-            mediaPlayer = null
-            isPlaying = false
-            isExpanded = true
-            playbackError = SensitiveTextRedactor.throwableMessageForUi(
-                throwable = throwable,
-                fallback = "语音播放失败",
-            )
-        }
+        playbackController.toggle(audioPath)
     }
 
-    DisposableEffect(message.sourceMessageId, actionPart.actionId) {
+    DisposableEffect(playbackController) {
         onDispose {
-            stopPlayback()
+            playbackController.dispose()
         }
     }
 
@@ -531,9 +492,15 @@ private fun RoleplayVoiceMessageCard(
                         ) { togglePlayback() },
                     contentAlignment = Alignment.Center,
                 ) {
+                    val isPlaybackActive = playbackState == RoleplayVoicePlaybackState.Preparing ||
+                        playbackState == RoleplayVoicePlaybackState.Playing
                     Icon(
-                        imageVector = if (isPlaying) Icons.Default.Pause else Icons.Default.PlayArrow,
-                        contentDescription = if (isPlaying) "\u6682\u505C\u8BED\u97F3" else "\u64AD\u653E\u8BED\u97F3",
+                        imageVector = if (isPlaybackActive) Icons.Default.Pause else Icons.Default.PlayArrow,
+                        contentDescription = when (playbackState) {
+                            RoleplayVoicePlaybackState.Preparing -> "取消语音准备"
+                            RoleplayVoicePlaybackState.Playing -> "停止语音"
+                            else -> "播放语音"
+                        },
                         tint = Color.White,
                         modifier = Modifier.size(18.dp),
                     )
@@ -543,12 +510,7 @@ private fun RoleplayVoiceMessageCard(
                     horizontalArrangement = Arrangement.spacedBy(3.dp),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
-                    waveform.forEachIndexed { index, baseHeight ->
-                        val animatedHeight = if (isPlaying) {
-                            baseHeight * animatedWavePulses[index]
-                        } else {
-                            baseHeight
-                        }
+                    displayedWaveform.forEach { animatedHeight ->
                         Box(
                             modifier = Modifier
                                 .width(3.dp)
@@ -602,6 +564,78 @@ private fun RoleplayVoiceMessageCard(
             }
         }
     }
+}
+
+@Composable
+private fun rememberPlayingVoiceWaveform(waveform: List<Float>): List<Float> {
+    val infiniteTransition = rememberInfiniteTransition(label = "roleplay_voice_wave")
+    return List(waveform.size) { index ->
+        waveform[index] * infiniteTransition.animateFloat(
+            initialValue = 0.82f,
+            targetValue = 1.18f,
+            animationSpec = infiniteRepeatable(
+                animation = tween(
+                    durationMillis = 420 + index * 45,
+                    delayMillis = index * 50,
+                ),
+                repeatMode = RepeatMode.Reverse,
+            ),
+            label = "roleplay_voice_wave_$index",
+        ).value
+    }
+}
+
+private object AndroidRoleplayVoicePlayerFactory : RoleplayVoicePlayerFactory {
+    override fun create(): RoleplayVoicePlayer {
+        return AndroidRoleplayVoicePlayer(MediaPlayer())
+    }
+}
+
+private class AndroidRoleplayVoicePlayer(
+    private val mediaPlayer: MediaPlayer,
+) : RoleplayVoicePlayer {
+    override fun setDataSource(path: String) {
+        mediaPlayer.setDataSource(path)
+    }
+
+    override fun setOnPreparedListener(listener: () -> Unit) {
+        mediaPlayer.setOnPreparedListener { listener() }
+    }
+
+    override fun setOnCompletionListener(listener: () -> Unit) {
+        mediaPlayer.setOnCompletionListener { listener() }
+    }
+
+    override fun setOnErrorListener(listener: () -> Boolean) {
+        mediaPlayer.setOnErrorListener { _, _, _ -> listener() }
+    }
+
+    override fun prepareAsync() {
+        mediaPlayer.prepareAsync()
+    }
+
+    override fun start() {
+        mediaPlayer.start()
+    }
+
+    override fun clearListeners() {
+        mediaPlayer.setOnPreparedListener(null)
+        mediaPlayer.setOnCompletionListener(null)
+        mediaPlayer.setOnErrorListener(null)
+    }
+
+    override fun release() {
+        mediaPlayer.release()
+    }
+}
+
+private fun roleplayVoicePlaybackErrorMessage(cause: Throwable?): String {
+    return cause?.let { throwable ->
+        SensitiveTextRedactor.throwableMessageForUi(
+            throwable = throwable,
+            fallback = "语音播放失败，已保留文字内容",
+        )
+    } ?: "语音播放失败，已保留文字内容"
 }
 
 private fun buildVoiceWaveformSeed(

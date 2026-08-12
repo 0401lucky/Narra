@@ -2,6 +2,8 @@ package com.example.myapplication.viewmodel
 
 import com.example.myapplication.data.remote.OpenAiCompatibleApi
 import com.example.myapplication.data.repository.ai.AiSettingsEditor
+import com.example.myapplication.data.repository.ai.AiSettingsRepository
+import com.example.myapplication.model.AppColorTheme
 import com.example.myapplication.model.AppSettings
 import com.example.myapplication.model.Assistant
 import com.example.myapplication.model.ConnectionHealth
@@ -24,10 +26,14 @@ import com.example.myapplication.model.ResponseApiResponse
 import com.example.myapplication.model.ThemeMode
 import com.example.myapplication.testutil.createTestAiServices
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
 import okhttp3.OkHttpClient
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
+import org.junit.Assert.assertSame
 import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
@@ -37,6 +43,68 @@ import retrofit2.Response
 class SettingsViewModelTest {
     @get:Rule
     val mainDispatcherRule = MainDispatcherRule()
+
+    @Test
+    fun initialization_usesSingleSettingsSubscriptionAndSyncsThemePreview() =
+        runTest(mainDispatcherRule.dispatcher.scheduler) {
+            val services = createTestAiServices(
+                settings = AppSettings(),
+                dispatcher = mainDispatcherRule.dispatcher,
+            )
+            val upstream = MutableSharedFlow<AppSettings>(replay = 1)
+            val repository = CountingSettingsRepository(upstream)
+            val viewModel = SettingsViewModel(
+                settingsRepository = repository,
+                settingsEditor = services.settingsEditor,
+                modelCatalogRepository = services.modelCatalogRepository,
+            )
+            advanceUntilIdle()
+
+            assertEquals(1, upstream.subscriptionCount.value)
+            assertEquals(null, viewModel.themePreviewFlow.value)
+            assertFalse(viewModel.uiState.value.hasDraftChanges())
+
+            val provider = ProviderSettings(
+                id = "provider-a",
+                name = "Provider A",
+                selectedModel = "model-a",
+            )
+            upstream.emit(
+                AppSettings(
+                    providers = listOf(provider),
+                    selectedProviderId = provider.id,
+                    themeMode = ThemeMode.DARK,
+                    appColorTheme = com.example.myapplication.model.AppColorTheme.OCEAN,
+                ),
+            )
+            advanceUntilIdle()
+
+            assertEquals(1, upstream.subscriptionCount.value)
+            assertEquals(ThemeMode.DARK, viewModel.storedSettings.value.themeMode)
+            assertEquals(ThemeMode.DARK, viewModel.uiState.value.themeMode)
+            assertEquals(ThemeMode.DARK, viewModel.themePreviewFlow.value?.themeMode)
+            assertEquals(AppColorTheme.OCEAN, viewModel.themePreviewFlow.value?.appColorTheme)
+            assertFalse(viewModel.uiState.value.hasDraftChanges())
+
+            val initialPreview = viewModel.themePreviewFlow.value
+            viewModel.updateSelectedModel("model-b")
+            assertSame(initialPreview, viewModel.themePreviewFlow.value)
+            assertTrue(viewModel.uiState.value.hasDraftChanges())
+
+            viewModel.updateUiState { current ->
+                current.copy(
+                    isLoadingModels = true,
+                    message = "测试消息",
+                )
+            }
+            assertSame(initialPreview, viewModel.themePreviewFlow.value)
+
+            viewModel.updateThemeMode(ThemeMode.LIGHT)
+            assertEquals(ThemeMode.LIGHT, viewModel.themePreviewFlow.value?.themeMode)
+
+            viewModel.updateAppColorTheme(AppColorTheme.MATCHA)
+            assertEquals(AppColorTheme.MATCHA, viewModel.themePreviewFlow.value?.appColorTheme)
+        }
 
     @Test
     fun initializesDraftProvidersFromPersistedSettings() = runTest(mainDispatcherRule.dispatcher.scheduler) {
@@ -817,3 +885,7 @@ class SettingsViewModelTest {
         )
     }
 }
+
+private class CountingSettingsRepository(
+    override val settingsFlow: Flow<AppSettings>,
+) : AiSettingsRepository

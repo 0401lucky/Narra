@@ -52,7 +52,6 @@ import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -64,6 +63,7 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -95,7 +95,12 @@ import com.example.myapplication.ui.component.roleplay.RoleplayInputBar
 import com.example.myapplication.ui.component.roleplay.RoleplayMentionCandidate
 import com.example.myapplication.ui.component.roleplay.RoleplayMessageItem
 import com.example.myapplication.ui.component.roleplay.RoleplayMessageBubbleMode
+import com.example.myapplication.ui.component.roleplay.RoleplayStreamingAutoScrollEffect
+import com.example.myapplication.ui.component.roleplay.RoleplayStreamingScrollSignal
 import com.example.myapplication.ui.component.roleplay.rememberRoleplayNoBackgroundSkinSpec
+import com.example.myapplication.ui.component.roleplay.rememberRoleplayAutoFollowScrollConnection
+import com.example.myapplication.ui.component.roleplay.rememberRoleplayStreamingAutoScrollState
+import com.example.myapplication.ui.component.roleplay.roleplayLazyContentType
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -202,6 +207,8 @@ internal fun RoleplayOnlinePhoneContent(
         )
     }
     val listState = rememberLazyListState()
+    val autoScrollState = rememberRoleplayStreamingAutoScrollState(scenario.id)
+    val autoFollowScrollConnection = rememberRoleplayAutoFollowScrollConnection(autoScrollState)
     val scope = rememberCoroutineScope()
     var showMenu by remember { mutableStateOf(false) }
     var showAiHelperPanel by remember { mutableStateOf(false) }
@@ -357,17 +364,18 @@ internal fun RoleplayOnlinePhoneContent(
                     message.contentType != RoleplayContentType.THOUGHT
                 )
     }
-    val shouldStickToBottom by remember(listState, visibleMessages.size) {
-        derivedStateOf {
-            val layoutInfo = listState.layoutInfo
-            if (visibleMessages.isEmpty()) {
-                true
-            } else {
-                val lastVisibleIndex = layoutInfo.visibleItemsInfo.lastOrNull()?.index ?: -1
-                lastVisibleIndex >= layoutInfo.totalItemsCount - 2
-            }
-        }
-    }
+    val lastVisibleMessage = visibleMessages.lastOrNull()
+    RoleplayStreamingAutoScrollEffect(
+        state = autoScrollState,
+        listState = listState,
+        conversationIdentity = scenario.id,
+        signal = RoleplayStreamingScrollSignal(
+            lastUiItemId = lastVisibleMessage?.uiItemId,
+            itemCount = visibleMessages.size,
+            isStreaming = lastVisibleMessage?.isStreaming == true,
+            contentVersion = lastVisibleMessage?.content?.length ?: 0,
+        ),
+    )
     val isAtTop by remember(listState, visibleMessages.size) {
         derivedStateOf {
             visibleMessages.isEmpty() ||
@@ -381,6 +389,7 @@ internal fun RoleplayOnlinePhoneContent(
             visibleMessages.isEmpty() || (
                 lastVisibleItem != null &&
                     lastVisibleItem.index >= layoutInfo.totalItemsCount - 1 &&
+                    !listState.canScrollForward &&
                     (lastVisibleItem.offset + lastVisibleItem.size) <= layoutInfo.viewportEndOffset + 8
                 )
         }
@@ -391,24 +400,6 @@ internal fun RoleplayOnlinePhoneContent(
         !suggestionErrorMessage.isNullOrBlank()
     val showAiHelperEntry = settings.showRoleplayAiHelper
     val showAiHelperContent = showAiHelperEntry && showAiHelperPanel
-
-    LaunchedEffect(
-        visibleMessages.firstOrNull()?.sourceMessageId,
-        visibleMessages.firstOrNull()?.createdAt,
-    ) {
-        if (visibleMessages.isNotEmpty()) {
-            listState.scrollToItem(visibleMessages.lastIndex)
-        }
-    }
-    LaunchedEffect(
-        visibleMessages.size,
-        visibleMessages.lastOrNull()?.content?.length,
-        visibleMessages.lastOrNull()?.isStreaming,
-    ) {
-        if (visibleMessages.isNotEmpty() && shouldStickToBottom) {
-            listState.animateScrollToItem(visibleMessages.lastIndex)
-        }
-    }
 
     Box(
         modifier = Modifier
@@ -565,15 +556,16 @@ internal fun RoleplayOnlinePhoneContent(
         ) {
             LazyColumn(
                 state = listState,
-                modifier = Modifier.fillMaxSize(),
+                modifier = Modifier
+                    .fillMaxSize()
+                    .nestedScroll(autoFollowScrollConnection),
                 contentPadding = PaddingValues(horizontal = 12.dp, vertical = 14.dp),
                 verticalArrangement = Arrangement.spacedBy(10.dp),
             ) {
                 itemsIndexed(
                     items = visibleMessages,
-                    key = { index, item ->
-                        buildOnlinePhoneMessageListKey(item, index)
-                    },
+                    key = { _, message -> message.uiItemId },
+                    contentType = { _, message -> roleplayLazyContentType(message) },
                 ) { index, message ->
                     Column(
                         modifier = Modifier
@@ -654,7 +646,12 @@ internal fun RoleplayOnlinePhoneContent(
                 NarraIconButton(
                     onClick = {
                         scope.launch {
-                            listState.animateScrollToItem(visibleMessages.lastIndex)
+                            autoScrollState.scrollToEnd(
+                                listState = listState,
+                                lastIndex = visibleMessages.lastIndex,
+                                animated = true,
+                                resumeAutoFollow = true,
+                            )
                         }
                     },
                     modifier = Modifier
@@ -795,24 +792,6 @@ internal fun RoleplayOnlinePhoneContent(
 
 }
 
-}
-
-internal fun buildOnlinePhoneMessageListKey(
-    message: com.example.myapplication.model.RoleplayMessageUiModel,
-    index: Int,
-): String {
-    val partId = message.actionPart?.actionId
-        ?: message.specialPart?.actionId
-        ?: message.replyToMessageId
-        ?: ""
-    return listOf(
-        message.sourceMessageId,
-        message.contentType.name,
-        partId,
-        message.createdAt.toString(),
-        message.content.hashCode().toString(),
-        index.toString(),
-    ).joinToString("|")
 }
 
 @Composable

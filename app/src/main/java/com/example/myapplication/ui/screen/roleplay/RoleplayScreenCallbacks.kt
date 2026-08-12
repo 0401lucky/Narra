@@ -54,6 +54,7 @@ data class RoleplayNavigationCallbacks(
     val onOpenWallet: () -> Unit,
     val onOpenReadingMode: () -> Unit,
     val onOpenSettings: () -> Unit,
+    val onOpenVoiceSynthesisSettings: () -> Unit = {},
     val onNavigateBack: () -> Unit,
 )
 
@@ -62,6 +63,7 @@ data class RoleplaySessionCallbacks(
     val onDismissAssistantMismatch: (keepCurrent: Boolean) -> Unit,
     val onApprovePendingMemoryProposal: () -> Unit,
     val onRejectPendingMemoryProposal: () -> Unit,
+    val onStartOfflineReplay: () -> Unit = {},
 )
 
 data class RoleplayGroupCallbacks(

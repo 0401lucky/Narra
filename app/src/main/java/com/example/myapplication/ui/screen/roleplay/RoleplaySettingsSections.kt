@@ -59,6 +59,7 @@ import com.example.myapplication.model.RoleplayNoBackgroundSkinPreset
 import com.example.myapplication.model.RoleplayNoBackgroundSkinSettings
 import com.example.myapplication.model.RoleplayScenario
 import com.example.myapplication.model.normalizedOnlineReplyRange
+import com.example.myapplication.system.performance.BenchmarkActionIds
 import com.example.myapplication.ui.component.roleplay.ImmersiveBackdropState
 import com.example.myapplication.ui.component.roleplay.ImmersiveGlassPalette
 import com.example.myapplication.ui.component.roleplay.ImmersiveTabRow
@@ -68,6 +69,7 @@ import com.example.myapplication.ui.component.roleplay.shape
 import com.example.myapplication.ui.screen.settings.AnimatedSettingButton
 import com.example.myapplication.ui.screen.settings.SettingsListRow
 import com.example.myapplication.ui.screen.settings.SettingsStatusPill
+import com.example.myapplication.ui.performance.benchmarkActionTag
 import kotlin.math.roundToInt
 
 /**
@@ -928,6 +930,7 @@ internal fun RoleplaySettingsActionsSection(
     val palette = backdropState.palette
     ImmersiveSettingsCard(backdropState) {
         SettingsListRow(
+            modifier = Modifier.benchmarkActionTag(BenchmarkActionIds.OPEN_READING),
             leadingContent = {
                 Icon(
                     imageVector = Icons.Default.AutoStories,

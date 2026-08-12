@@ -1,3 +1,10 @@
+import groovy.json.JsonOutput
+import groovy.json.JsonSlurper
+import java.nio.file.Files
+import java.nio.file.StandardCopyOption
+import java.security.MessageDigest
+import java.util.UUID
+
 plugins {
     alias(libs.plugins.android.test)
     alias(libs.plugins.baselineprofile)
@@ -5,6 +12,345 @@ plugins {
 
 def appApplicationId = (project.findProperty("narraApplicationId") ?: "com.narra.app").toString()
 def baselineTargetAppId = "${appApplicationId}.baseline"
+def benchmarkFixtureVersion = 'narra-fixture-v1'
+def resolveGitCommit = {
+    def headFile = rootProject.file('.git/HEAD')
+    if (!headFile.isFile()) {
+        return 'unknown'
+    }
+    def head = headFile.getText('UTF-8').trim()
+    if (!head.startsWith('ref: ')) {
+        return head ?: 'unknown'
+    }
+    def refName = head.substring('ref: '.length())
+    def refFile = rootProject.file(".git/${refName}")
+    if (refFile.isFile()) {
+        return refFile.getText('UTF-8').trim() ?: 'unknown'
+    }
+    def packedRefs = rootProject.file('.git/packed-refs')
+    if (!packedRefs.isFile()) {
+        return 'unknown'
+    }
+    def packedLine = packedRefs.readLines('UTF-8').find { line -> line.endsWith(" ${refName}") }
+    return packedLine?.split(' ', 2)?.first() ?: 'unknown'
+}
+def benchmarkRunId = providers.gradleProperty('narraBenchmarkRunId')
+        .orElse("run-${System.currentTimeMillis()}-${UUID.randomUUID().toString().replace('-', '').substring(0, 12)}")
+        .get()
+def benchmarkRunIdPattern = ~/^[A-Za-z0-9][A-Za-z0-9._-]{7,95}$/
+if (!(benchmarkRunId ==~ benchmarkRunIdPattern)) {
+    throw new GradleException(
+            'narraBenchmarkRunId 必须为 8~96 位，且只能包含字母、数字、点、下划线和连字符。',
+    )
+}
+def benchmarkCommit = providers.gradleProperty('narraBenchmarkCommit')
+        .orElse(resolveGitCommit())
+        .get()
+def sha256Of = { file ->
+    def digest = MessageDigest.getInstance('SHA-256')
+    file.withInputStream { input ->
+        byte[] buffer = new byte[8192]
+        int read
+        while ((read = input.read(buffer)) >= 0) {
+            if (read > 0) {
+                digest.update(buffer, 0, read)
+            }
+        }
+    }
+    return digest.digest().encodeHex().toString()
+}
+def percentileOf = { values, percentile ->
+    if (values == null || values.isEmpty()) {
+        return null
+    }
+    def sorted = values.collect { (it as Number).doubleValue() }.sort()
+    def boundedPercentile = Math.max(0, Math.min(100, (percentile as Number).intValue()))
+    def idealIndex = (boundedPercentile / 100.0d) * (sorted.size() - 1)
+    int firstIndex = (int) idealIndex
+    int secondIndex = Math.min(firstIndex + 1, sorted.size() - 1)
+    def ratio = idealIndex - firstIndex
+    return sorted[firstIndex] * (1.0d - ratio) + sorted[secondIndex] * ratio
+}
+
+def benchmarkTraceCatalog = [
+        APP_GRAPH             : [
+                sectionName: 'narra.startup.app_graph',
+                metricLabel: 'traceStartupAppGraph',
+        ],
+        STARTUP_SENSITIVE_MIGRATION: [
+                sectionName: 'narra.startup.sensitive_migration',
+                metricLabel: 'traceStartupSensitiveMigration',
+        ],
+        STARTUP_ENSURE_PRESETS: [
+                sectionName: 'narra.startup.ensure_presets',
+                metricLabel: 'traceStartupEnsurePresets',
+        ],
+        STARTUP_CONTEXT_LOG_SETTINGS: [
+                sectionName: 'narra.startup.context_log_settings',
+                metricLabel: 'traceStartupContextLogSettings',
+        ],
+        ROOM_OPEN             : [
+                sectionName: 'narra.startup.room_open',
+                metricLabel: 'traceStartupRoomOpen',
+        ],
+        SETTINGS_DECODE       : [
+                sectionName: 'narra.settings.decode',
+                metricLabel: 'traceSettingsDecode',
+        ],
+        SETTINGS_SECURE_READ  : [
+                sectionName: 'narra.settings.secure_read',
+                metricLabel: 'traceSettingsSecureRead',
+        ],
+        SETTINGS_THEME_PROJECT: [
+                sectionName: 'narra.settings.project_theme',
+                metricLabel: 'traceSettingsProjectTheme',
+        ],
+        SETTINGS_VIEW_MODEL_SYNC: [
+                sectionName: 'narra.settings.sync_view_model',
+                metricLabel: 'traceSettingsSyncViewModel',
+        ],
+        FIRST_MESSAGE_MAP     : [
+                sectionName: 'narra.messages.first_map',
+                metricLabel: 'traceMessagesFirstMap',
+        ],
+        ROLEPLAY_MAP_MESSAGES : [
+                sectionName: 'narra.roleplay.map_messages',
+                metricLabel: 'traceRoleplayMapMessages',
+        ],
+        ROLEPLAY_APPLY_MAPPED_MESSAGES: [
+                sectionName: 'narra.roleplay.apply_mapped',
+                metricLabel: 'traceRoleplayApplyMappedMessages',
+        ],
+        ROLEPLAY_AUTO_SCROLL  : [
+                sectionName: 'narra.roleplay.auto_scroll',
+                metricLabel: 'traceRoleplayAutoScroll',
+        ],
+        ROLEPLAY_REPLAY_PUMP  : [
+                sectionName: 'narra.roleplay.replay_pump',
+                metricLabel: 'traceRoleplayReplayPump',
+        ],
+]
+def startupTraceKeys = [
+        'APP_GRAPH',
+        'STARTUP_SENSITIVE_MIGRATION',
+        'STARTUP_ENSURE_PRESETS',
+        'STARTUP_CONTEXT_LOG_SETTINGS',
+        'ROOM_OPEN',
+        'SETTINGS_DECODE',
+        'SETTINGS_SECURE_READ',
+]
+def returningStartupTraceKeys = startupTraceKeys + [
+        'FIRST_MESSAGE_MAP',
+        'ROLEPLAY_MAP_MESSAGES',
+]
+def benchmarkScenarioMatrix = [
+        [
+                enumName       : 'S0_FIRST_RUN_STARTUP',
+                scenarioId     : 's0-first-run-startup',
+                fixtureEnum    : 'S0_FIRST_RUN',
+                fixtureId      : 's0-first-run',
+                chatCount      : 0,
+                roleplayCount  : 0,
+                phaseEnum      : 'MEASURE',
+                phaseId        : 'measure',
+                initialReady   : 'FIRST_RUN_CONSENT_READY',
+                traceKeys      : startupTraceKeys,
+                benchmarkCases : [
+                        [
+                                benchmarkName : 's0FirstRun_compilationNone',
+                                iterations    : 10,
+                                compilationMode: 'none',
+                                primaryMetrics: ['timeToInitialDisplayMs'],
+                        ],
+                        [
+                                benchmarkName : 's0FirstRun_requireBaselineProfile',
+                                iterations    : 10,
+                                compilationMode: 'partial-require-baseline',
+                                primaryMetrics: ['timeToInitialDisplayMs'],
+                        ],
+                ],
+        ],
+        [
+                enumName       : 'S1_RETURNING_CORE_STARTUP',
+                scenarioId     : 's1-returning-core-startup',
+                fixtureEnum    : 'S1_RETURNING_CORE',
+                fixtureId      : 's1-returning-core',
+                chatCount      : 12,
+                roleplayCount  : 12,
+                phaseEnum      : 'MEASURE',
+                phaseId        : 'measure',
+                initialReady   : 'RETURNING_ROLEPLAY_READY',
+                traceKeys      : returningStartupTraceKeys,
+                benchmarkCases : [
+                        [
+                                benchmarkName : 's1ReturningCore_compilationNone',
+                                iterations    : 10,
+                                compilationMode: 'none',
+                                primaryMetrics: ['timeToInitialDisplayMs'],
+                        ],
+                        [
+                                benchmarkName : 's1ReturningCore_requireBaselineProfile',
+                                iterations    : 10,
+                                compilationMode: 'partial-require-baseline',
+                                primaryMetrics: ['timeToInitialDisplayMs'],
+                        ],
+                ],
+        ],
+        [
+                enumName       : 'S2_POPULATED_STARTUP',
+                scenarioId     : 's2-populated-startup',
+                fixtureEnum    : 'S2_POPULATED',
+                fixtureId      : 's2-populated',
+                chatCount      : 100,
+                roleplayCount  : 100,
+                phaseEnum      : 'MEASURE',
+                phaseId        : 'measure',
+                initialReady   : 'RETURNING_ROLEPLAY_READY',
+                traceKeys      : returningStartupTraceKeys,
+                benchmarkCases : [
+                        [
+                                benchmarkName : 's2Populated_compilationNone',
+                                iterations    : 10,
+                                compilationMode: 'none',
+                                primaryMetrics: ['timeToInitialDisplayMs'],
+                        ],
+                        [
+                                benchmarkName : 's2Populated_requireBaselineProfile',
+                                iterations    : 10,
+                                compilationMode: 'partial-require-baseline',
+                                primaryMetrics: ['timeToInitialDisplayMs'],
+                        ],
+                ],
+        ],
+        [
+                enumName       : 'S3_UPGRADE_STARTUP',
+                scenarioId     : 's3-upgrade-startup',
+                fixtureEnum    : 'S3_SUPPORTED_UPGRADE',
+                fixtureId      : 's3-supported-upgrade',
+                chatCount      : 12,
+                roleplayCount  : 12,
+                phaseEnum      : 'MEASURE',
+                phaseId        : 'measure',
+                initialReady   : 'RETURNING_ROLEPLAY_READY',
+                traceKeys      : returningStartupTraceKeys,
+                benchmarkCases : [
+                        [
+                                benchmarkName : 's3SupportedUpgrade_compilationNone',
+                                iterations    : 10,
+                                compilationMode: 'none',
+                                primaryMetrics: ['timeToInitialDisplayMs'],
+                        ],
+                        [
+                                benchmarkName : 's3SupportedUpgrade_requireBaselineProfile',
+                                iterations    : 10,
+                                compilationMode: 'partial-require-baseline',
+                                primaryMetrics: ['timeToInitialDisplayMs'],
+                        ],
+                ],
+        ],
+        [
+                enumName       : 'F1_CHAT_SCROLL',
+                scenarioId     : 'f1-chat-scroll',
+                fixtureEnum    : 'S2_POPULATED',
+                fixtureId      : 's2-populated',
+                chatCount      : 100,
+                roleplayCount  : 100,
+                phaseEnum      : 'MEASURE',
+                phaseId        : 'measure',
+                initialReady   : 'CHAT_LIST_BOTTOM_READY',
+                traceKeys      : [],
+                benchmarkCases : [[
+                        benchmarkName : 'f1ChatScroll',
+                        iterations    : 5,
+                        compilationMode: 'partial-require-baseline',
+                        primaryMetrics: ['frameDurationCpuMs', 'frameOverrunMs'],
+                ]],
+        ],
+        [
+                enumName       : 'F2_ROLEPLAY_SCROLL',
+                scenarioId     : 'f2-roleplay-scroll',
+                fixtureEnum    : 'S2_POPULATED',
+                fixtureId      : 's2-populated',
+                chatCount      : 100,
+                roleplayCount  : 100,
+                phaseEnum      : 'MEASURE',
+                phaseId        : 'measure',
+                initialReady   : 'ROLEPLAY_LIST_BOTTOM_READY',
+                traceKeys      : [],
+                benchmarkCases : [[
+                        benchmarkName : 'f2RoleplayScroll',
+                        iterations    : 5,
+                        compilationMode: 'partial-require-baseline',
+                        primaryMetrics: ['frameDurationCpuMs', 'frameOverrunMs'],
+                ]],
+        ],
+        [
+                enumName       : 'F3_ROLEPLAY_STREAM_REPLAY',
+                scenarioId     : 'f3-roleplay-stream-replay',
+                fixtureEnum    : 'S2_POPULATED',
+                fixtureId      : 's2-populated',
+                chatCount      : 100,
+                roleplayCount  : 100,
+                phaseEnum      : 'MEASURE',
+                phaseId        : 'measure',
+                initialReady   : 'ROLEPLAY_STREAM_READY',
+                traceKeys      : [
+                        'ROLEPLAY_MAP_MESSAGES',
+                        'ROLEPLAY_APPLY_MAPPED_MESSAGES',
+                        'ROLEPLAY_AUTO_SCROLL',
+                        'ROLEPLAY_REPLAY_PUMP',
+                ],
+                benchmarkCases : [[
+                        benchmarkName : 'f3RoleplayOfflineStreamReplay',
+                        iterations    : 5,
+                        compilationMode: 'partial-require-baseline',
+                        primaryMetrics: ['frameDurationCpuMs', 'frameOverrunMs'],
+                ]],
+        ],
+        [
+                enumName       : 'N1_HEAVY_NAVIGATION',
+                scenarioId     : 'n1-heavy-navigation',
+                fixtureEnum    : 'S2_POPULATED',
+                fixtureId      : 's2-populated',
+                chatCount      : 100,
+                roleplayCount  : 100,
+                phaseEnum      : 'MEASURE',
+                phaseId        : 'measure',
+                initialReady   : 'RETURNING_ROLEPLAY_READY',
+                traceKeys      : [
+                        'SETTINGS_DECODE',
+                        'SETTINGS_THEME_PROJECT',
+                        'SETTINGS_VIEW_MODEL_SYNC',
+                        'ROLEPLAY_MAP_MESSAGES',
+                ],
+                benchmarkCases : [[
+                        benchmarkName : 'n1SettingsAndReadingNavigation',
+                        iterations    : 5,
+                        compilationMode: 'partial-require-baseline',
+                        primaryMetrics: ['frameDurationCpuMs', 'frameOverrunMs'],
+                ]],
+        ],
+        [
+                enumName       : 'P1_BASELINE_PROFILE',
+                scenarioId     : 'p1-baseline-profile',
+                fixtureEnum    : 'S2_POPULATED',
+                fixtureId      : 's2-populated',
+                chatCount      : 100,
+                roleplayCount  : 100,
+                phaseEnum      : 'PROFILE',
+                phaseId        : 'profile',
+                initialReady   : 'RETURNING_ROLEPLAY_READY',
+                traceKeys      : [
+                        'SETTINGS_DECODE',
+                        'FIRST_MESSAGE_MAP',
+                        'ROLEPLAY_MAP_MESSAGES',
+                ],
+                benchmarkCases : [],
+        ],
+]
+def macroBenchmarkCases = benchmarkScenarioMatrix.collectMany { scenario ->
+    scenario.benchmarkCases.collect { benchmarkCase -> benchmarkCase + [scenario: scenario] }
+}
 
 android {
     namespace 'com.example.myapplication.baselineprofile'
@@ -18,7 +364,18 @@ android {
         minSdk 28
         targetSdk 36
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
-        testInstrumentationRunnerArguments targetAppId: baselineTargetAppId
+        testInstrumentationRunnerArguments targetAppId: baselineTargetAppId,
+                narraBenchmarkRunId: benchmarkRunId,
+                narraBenchmarkCommit: benchmarkCommit,
+                narraBenchmarkAgpVersion: libs.versions.agp.get(),
+                narraBenchmarkGradleVersion: gradle.gradleVersion,
+                narraBenchmarkJdkVersion: System.getProperty('java.version', 'unknown')
+        testInstrumentationRunnerArguments['androidx.benchmark.output.enable'] = 'true'
+        testInstrumentationRunnerArguments['androidx.benchmark.output.payload.narraRunId'] = benchmarkRunId
+        testInstrumentationRunnerArguments['androidx.benchmark.output.payload.commit'] = benchmarkCommit
+        manifestPlaceholders = [
+                benchmarkControlPermission: "${baselineTargetAppId}.permission.BENCHMARK_CONTROL",
+        ]
     }
 
     compileOptions {
@@ -38,4 +395,1197 @@ dependencies {
     implementation libs.androidx.espresso.core
     implementation libs.androidx.uiautomator
     implementation libs.androidx.benchmark.macro.junit4
+}
+
+def verifyBenchmarkArchiveRules = tasks.register('verifyNarraBenchmarkArchiveRules') {
+    group = 'verification'
+    description = '自验证 Narra benchmark 场景矩阵、迭代、指标和 Trace 归档规则。'
+    doLast {
+        def expectedScenarioNames = [
+                'S0_FIRST_RUN_STARTUP',
+                'S1_RETURNING_CORE_STARTUP',
+                'S2_POPULATED_STARTUP',
+                'S3_UPGRADE_STARTUP',
+                'F1_CHAT_SCROLL',
+                'F2_ROLEPLAY_SCROLL',
+                'F3_ROLEPLAY_STREAM_REPLAY',
+                'N1_HEAVY_NAVIGATION',
+                'P1_BASELINE_PROFILE',
+        ]
+        def actualScenarioNames = benchmarkScenarioMatrix.collect { it.enumName }
+        if (actualScenarioNames != expectedScenarioNames) {
+            throw new GradleException("benchmark 场景矩阵不完整或顺序漂移：${actualScenarioNames}")
+        }
+        def benchmarkNames = macroBenchmarkCases.collect { it.benchmarkName }
+        if (benchmarkNames.size() != 12 || benchmarkNames.toSet().size() != benchmarkNames.size()) {
+            throw new GradleException("宏基准 case 必须唯一且精确为 12 个：${benchmarkNames}")
+        }
+        def startupCases = macroBenchmarkCases.findAll {
+            it.primaryMetrics == ['timeToInitialDisplayMs']
+        }
+        if (startupCases.size() != 8 || startupCases.any { it.iterations != 10 }) {
+            throw new GradleException('S0～S3 的 None/Require 启动基准必须各运行 10 次')
+        }
+        def frameCases = macroBenchmarkCases - startupCases
+        if (frameCases.size() != 4 || frameCases.any {
+            it.iterations != 5 || it.primaryMetrics != ['frameDurationCpuMs', 'frameOverrunMs']
+        }) {
+            throw new GradleException('F1～F3/N1 必须各运行 5 次并同时输出两项帧指标')
+        }
+        def p1 = benchmarkScenarioMatrix.find { it.enumName == 'P1_BASELINE_PROFILE' }
+        def expectedP1Traces = [
+                'SETTINGS_DECODE',
+                'FIRST_MESSAGE_MAP',
+                'ROLEPLAY_MAP_MESSAGES',
+        ]
+        if (p1 == null || p1.phaseId != 'profile' || p1.traceKeys != expectedP1Traces) {
+            throw new GradleException('P1 必须保持 profile phase 与三项必需 Trace 合约')
+        }
+        def f3 = benchmarkScenarioMatrix.find { it.enumName == 'F3_ROLEPLAY_STREAM_REPLAY' }
+        if (f3?.traceKeys != [
+                'ROLEPLAY_MAP_MESSAGES',
+                'ROLEPLAY_APPLY_MAPPED_MESSAGES',
+                'ROLEPLAY_AUTO_SCROLL',
+                'ROLEPLAY_REPLAY_PUMP',
+        ]) {
+            throw new GradleException('F3 必须消费 RP 映射、状态回写、自动贴底与 replay pump Trace')
+        }
+        def unknownTraceKeys = benchmarkScenarioMatrix.collectMany { it.traceKeys }.toSet() -
+                benchmarkTraceCatalog.keySet()
+        if (!unknownTraceKeys.isEmpty()) {
+            throw new GradleException("场景引用了未登记 Trace：${unknownTraceKeys}")
+        }
+        def metricLabels = benchmarkTraceCatalog.values().collect { it.metricLabel }
+        if (metricLabels.toSet().size() != metricLabels.size()) {
+            throw new GradleException('Trace metric label 必须唯一')
+        }
+    }
+}
+
+def verifyBenchmarkContractDrift = tasks.register('verifyNarraBenchmarkContractDrift') {
+    group = 'verification'
+    description = '校验 S0～P1 session/fixture/ready/Trace 镜像没有偏离 app 唯一合约。'
+    dependsOn(verifyBenchmarkArchiveRules)
+    def appBenchmarkContract = rootProject.file(
+            'app/src/main/java/com/example/myapplication/system/performance/BenchmarkContract.kt',
+    )
+    def appTraceContract = rootProject.file(
+            'app/src/main/java/com/example/myapplication/system/performance/PerformanceTraceContract.kt',
+    )
+    def appReadyContract = rootProject.file(
+            'app/src/main/java/com/example/myapplication/system/performance/BenchmarkReadyContract.kt',
+    )
+    def appSessionCodec = rootProject.file(
+            'app/src/main/java/com/example/myapplication/system/performance/BenchmarkSessionCodec.kt',
+    )
+    def appFixtureProtocol = rootProject.file(
+            'app/src/baseline/java/com/example/myapplication/system/performance/BenchmarkFixtureProtocol.kt',
+    )
+    def baselineContract = file(
+            'src/main/java/com/example/myapplication/baselineprofile/BenchmarkScenarioContract.kt',
+    )
+    def baselineFixtureClient = file(
+            'src/main/java/com/example/myapplication/baselineprofile/BenchmarkFixtureClient.kt',
+    )
+    def baselineReadyAssertions = file(
+            'src/main/java/com/example/myapplication/baselineprofile/ReadyAssertions.kt',
+    )
+    inputs.files(
+            appBenchmarkContract,
+            appTraceContract,
+            appReadyContract,
+            appSessionCodec,
+            appFixtureProtocol,
+            baselineContract,
+            baselineFixtureClient,
+            baselineReadyAssertions,
+    )
+    doLast {
+        def readConst = { source, name ->
+            def matcher = source =~ /const val ${java.util.regex.Pattern.quote(name)}\s*=\s*"([^"]+)"/
+            if (!matcher.find()) {
+                throw new GradleException("未找到合约常量 ${name}")
+            }
+            return matcher.group(1)
+        }
+        def readNumericConst = { source, name ->
+            def matcher = source =~ /const val ${java.util.regex.Pattern.quote(name)}\s*=\s*([^\r\n]+)/
+            if (!matcher.find()) {
+                throw new GradleException("未找到数值合约常量 ${name}")
+            }
+            def expression = matcher.group(1).trim()
+            if (!(expression ==~ /[0-9_L\s*]+/)) {
+                throw new GradleException("数值合约常量 ${name} 使用了不受支持的表达式：${expression}")
+            }
+            return expression
+                    .replace('_', '')
+                    .replace('L', '')
+                    .split(/\*/)
+                    .collect { factor -> factor.trim().toLong() }
+                    .inject(1L) { product, factor -> product * factor }
+        }
+        def readEnumWireId = { source, name ->
+            def matcher = source =~ /(?m)^\s*${java.util.regex.Pattern.quote(name)}\("([^"]+)"\)[,;]?\s*$/
+            if (!matcher.find()) {
+                throw new GradleException("未找到枚举 wireId：${name}")
+            }
+            return matcher.group(1)
+        }
+        def appBenchmarkSource = appBenchmarkContract.getText('UTF-8')
+        def appTraceSource = appTraceContract.getText('UTF-8')
+        def appReadySource = appReadyContract.getText('UTF-8')
+        def appSessionCodecSource = appSessionCodec.getText('UTF-8')
+        def appFixtureProtocolSource = appFixtureProtocol.getText('UTF-8')
+        def baselineSource = baselineContract.getText('UTF-8')
+        def baselineFixtureClientSource = baselineFixtureClient.getText('UTF-8')
+        // 统一源码行尾，避免 Windows core.autocrlf 将精确多行门禁误判为合约漂移。
+        def baselineReadyAssertionsSource = baselineReadyAssertions.getText('UTF-8')
+                .replace('\r\n', '\n')
+                .replace('\r', '\n')
+        if ((baselineReadyAssertionsSource =~ /if\s*\(\s*!device\.pressBack\(\)\s*\)/).find()) {
+            throw new GradleException('benchmark 返回操作不得依赖 UiDevice.pressBack() 的不可靠布尔值')
+        }
+        if (!(baselineReadyAssertionsSource =~ /device\.pressBack\(\)\s*waitForReadyOrThrow\(readyId\)/).find()) {
+            throw new GradleException('benchmark 返回操作必须以目标 ready 作为结果断言')
+        }
+        if (!baselineReadyAssertionsSource.contains('bounds.top >= topClickGuardPx') ||
+                !baselineReadyAssertionsSource.contains('bounds.bottom <= safeBottom')) {
+            throw new GradleException('benchmark 点击安全区必须同时避开顶部状态栏与底部导航栏')
+        }
+        if (baselineReadyAssertionsSource.contains('if (clickCurrentSafeTarget(selector))')) {
+            throw new GradleException('benchmark action deadline 到达后不得再点击目标控件')
+        }
+        if (!baselineReadyAssertionsSource.contains('val actionDeadline = SystemClock.uptimeMillis() + DEFAULT_ACTION_TIMEOUT_MILLIS') ||
+                !baselineReadyAssertionsSource.contains('findAndClickOrThrow(\n            selector = actionSelector,\n            safeLabel = actionId,\n            deadline = actionDeadline,') ||
+                !baselineReadyAssertionsSource.contains('clickCurrentSafeTarget(actionSelector, actionDeadline)')) {
+            throw new GradleException('benchmark 首次点击、宽限等待与重试必须共享同一 action deadline')
+        }
+        if ((baselineReadyAssertionsSource =~ /clickCurrentSafeTarget\(actionSelector\s*\)/).find()) {
+            throw new GradleException('benchmark 重试点击不得绕过 action deadline')
+        }
+        if (!(baselineReadyAssertionsSource =~ /(?s)private fun clickTargetIfSafe\(.*?deadline: Long,.*?remainingMillis\(deadline\) <= 0L.*?target\.click\(\)/).find()) {
+            throw new GradleException('benchmark 必须在 UiObject2.click() 前最后检查 action deadline')
+        }
+        if (!baselineReadyAssertionsSource.contains('截止后只采样当前语义树用于错误信息，不再点击或滚动')) {
+            throw new GradleException('benchmark action deadline 必须保留只读失败路径')
+        }
+        if (readConst(appBenchmarkSource, 'FIXTURE_VERSION') != readConst(baselineSource, 'FIXTURE_VERSION')) {
+            throw new GradleException('baselineprofile FIXTURE_VERSION 已偏离 app BenchmarkContract')
+        }
+        ['SCHEMA_VERSION', 'DEFAULT_TTL_MILLIS', 'MAX_TTL_MILLIS'].each { name ->
+            def expected = readNumericConst(appBenchmarkSource, name)
+            def actual = readNumericConst(baselineFixtureClientSource, name)
+            if (actual != expected) {
+                throw new GradleException("benchmark 会话数值合约漂移：${name}=${actual}, expected=${expected}")
+            }
+        }
+        ['MEASURE', 'PROFILE'].each { name ->
+            def expected = readEnumWireId(appBenchmarkSource, name)
+            def actual = readEnumWireId(baselineSource, name)
+            if (actual != expected) {
+                throw new GradleException("benchmark phase wireId 漂移：${name}=${actual}, expected=${expected}")
+            }
+        }
+        if (
+                readConst(appBenchmarkSource, 'SESSION_ID_INTENT_EXTRA') !=
+                        readConst(baselineReadyAssertionsSource, 'SESSION_ID_INTENT_EXTRA')
+        ) {
+            throw new GradleException('benchmark session Intent extra 已偏离 app BenchmarkContract')
+        }
+        if (
+                readConst(appFixtureProtocolSource, 'AUTHORITY_SUFFIX') !=
+                        readConst(baselineFixtureClientSource, 'AUTHORITY_SUFFIX')
+        ) {
+            throw new GradleException('benchmark Provider authority 已在 app/client 间漂移')
+        }
+        ['METHOD_PREPARE', 'METHOD_CLEAR_SESSION'].each { name ->
+            def expected = readConst(appFixtureProtocolSource, name)
+            def actual = readConst(baselineFixtureClientSource, name)
+            if (actual != expected) {
+                throw new GradleException("benchmark Provider 方法合约漂移：${name}=${actual}, expected=${expected}")
+            }
+        }
+        [
+                'KEY_SESSION_DESCRIPTOR',
+                'KEY_SUCCESS',
+                'KEY_ERROR_CODE',
+                'KEY_ERROR_MESSAGE',
+                'KEY_FIXTURE_ID',
+                'KEY_CHAT_MESSAGE_COUNT',
+                'KEY_ROLEPLAY_MESSAGE_COUNT',
+                'KEY_SAFE_SHA256',
+        ].each { name ->
+            def expected = readConst(appFixtureProtocolSource, name)
+            def actual = readConst(baselineFixtureClientSource, name)
+            if (actual != expected) {
+                throw new GradleException("benchmark Provider Bundle 合约漂移：${name}=${actual}, expected=${expected}")
+            }
+        }
+        [
+                'SCHEMA_VERSION',
+                'SESSION_ID',
+                'SCENARIO_ID',
+                'FIXTURE_VERSION',
+                'PHASE',
+                'CREATED_AT',
+                'TTL',
+        ].each { suffix ->
+            def expected = readConst(appSessionCodecSource, "KEY_${suffix}")
+            def actual = readConst(baselineFixtureClientSource, "DESCRIPTOR_KEY_${suffix}")
+            if (actual != expected) {
+                throw new GradleException(
+                        "benchmark session descriptor 字段漂移：${suffix}=${actual}, expected=${expected}",
+                )
+            }
+        }
+        benchmarkTraceCatalog.each { traceName, traceSpec ->
+            def expected = readConst(appTraceSource, traceName)
+            def actual = readConst(baselineSource, "TRACE_${traceName}")
+            if (actual != expected) {
+                throw new GradleException("Trace 合约漂移：${traceName}=${actual}, expected=${expected}")
+            }
+            if (actual != traceSpec.sectionName) {
+                throw new GradleException("Gradle Trace 目录漂移：${traceName}=${actual}")
+            }
+        }
+
+        def enumBlock = { source, startMarker, endMarker ->
+            int start = source.indexOf(startMarker)
+            int end = source.indexOf(endMarker, start + startMarker.length())
+            if (start < 0 || end < 0) {
+                throw new GradleException("无法定位 Kotlin enum：${startMarker}")
+            }
+            return source.substring(start, end)
+        }
+        def entryNames = { block ->
+            def matcher = block =~ /(?m)^\s{4}([A-Z][A-Z0-9_]+)\(/
+            return matcher.collect { match -> match[1] }
+        }
+        def enumEntry = { block, name, nextName ->
+            int start = block.indexOf("\n    ${name}(")
+            if (start < 0) {
+                throw new GradleException("未找到场景/fixture enum：${name}")
+            }
+            int end = nextName == null ? block.length() : block.indexOf("\n    ${nextName}(", start + 1)
+            if (end < 0) {
+                throw new GradleException("无法确定 enum ${name} 的结束位置")
+            }
+            return block.substring(start, end)
+        }
+        def requireFragment = { entry, fragment, context ->
+            if (!entry.contains(fragment)) {
+                throw new GradleException("${context} 漂移，缺少：${fragment}")
+            }
+        }
+
+        def appFixtureBlock = enumBlock(
+                appBenchmarkSource,
+                'enum class BenchmarkFixtureId(',
+                'enum class BenchmarkScenarioId(',
+        )
+        def fixtureSpecs = benchmarkScenarioMatrix.collectEntries { scenario ->
+            [(scenario.fixtureEnum): scenario]
+        }
+        def fixtureNames = fixtureSpecs.keySet().toList()
+        fixtureNames.eachWithIndex { fixtureName, index ->
+            def spec = fixtureSpecs[fixtureName]
+            def nextName = index + 1 < fixtureNames.size() ? fixtureNames[index + 1] : null
+            def entry = enumEntry(appFixtureBlock, fixtureName, nextName)
+            requireFragment(entry, "wireId = \"${spec.fixtureId}\"", "app fixture ${fixtureName}")
+            requireFragment(entry, "chatMessageCount = ${spec.chatCount}", "app fixture ${fixtureName}")
+            requireFragment(entry, "roleplayMessageCount = ${spec.roleplayCount}", "app fixture ${fixtureName}")
+        }
+
+        def expectedScenarioNames = benchmarkScenarioMatrix.collect { it.enumName }
+        def appScenarioBlock = enumBlock(
+                appBenchmarkSource,
+                'enum class BenchmarkScenarioId(',
+                'enum class BenchmarkPhase(',
+        )
+        def baselineScenarioBlock = enumBlock(
+                baselineSource,
+                'internal enum class BenchmarkScenario(',
+                'internal object BenchmarkTraceSections',
+        )
+        if (entryNames(appScenarioBlock) != expectedScenarioNames) {
+            throw new GradleException("app 场景矩阵漂移：${entryNames(appScenarioBlock)}")
+        }
+        if (entryNames(baselineScenarioBlock) != expectedScenarioNames) {
+            throw new GradleException("baselineprofile 场景矩阵漂移：${entryNames(baselineScenarioBlock)}")
+        }
+
+        def returningTraceMatcher = baselineSource =~
+                /(?s)val RETURNING_STARTUP\s*=\s*listOf\((.*?)\)/
+        if (!returningTraceMatcher.find()) {
+            throw new GradleException('baselineprofile 缺少 RETURNING_STARTUP Trace 列表')
+        }
+        def returningTraceKeys = (returningTraceMatcher.group(1) =~
+                /\b([A-Z][A-Z0-9_]+)\b/).collect { match -> match[1] }
+                .findAll { benchmarkTraceCatalog.containsKey(it) }
+        if (returningTraceKeys != returningStartupTraceKeys) {
+            throw new GradleException("RETURNING_STARTUP Trace 漂移：${returningTraceKeys}")
+        }
+
+        def appRequiredBlockStart = appTraceSource.indexOf('fun requiredSections(')
+        def appRequiredBlockEnd = appTraceSource.indexOf('fun evaluate(', appRequiredBlockStart)
+        if (appRequiredBlockStart < 0 || appRequiredBlockEnd < 0) {
+            throw new GradleException('无法定位 PerformanceTraceContract.requiredSections')
+        }
+        def appRequiredBlock = appTraceSource.substring(appRequiredBlockStart, appRequiredBlockEnd)
+        def appTraceMatrix = [:]
+        def clauseMatcher = appRequiredBlock =~
+                /(?s)((?:\s*BenchmarkScenarioId\.[A-Z0-9_]+\s*,?)+)\s*->\s*(emptySet\(\)|setOf\((.*?)\))/
+        clauseMatcher.each { match ->
+            def scenarioMatcher = match[1] =~ /BenchmarkScenarioId\.([A-Z0-9_]+)/
+            def traceMatcher = match[2] =~ /\b([A-Z][A-Z0-9_]+)\b/
+            def traceKeys = traceMatcher.collect { traceMatch -> traceMatch[1] }
+                    .findAll { benchmarkTraceCatalog.containsKey(it) }
+            scenarioMatcher.each { scenarioMatch ->
+                def scenarioName = scenarioMatch[1]
+                if (appTraceMatrix.containsKey(scenarioName)) {
+                    throw new GradleException("requiredSections 重复声明场景：${scenarioName}")
+                }
+                appTraceMatrix[scenarioName] = traceKeys
+            }
+        }
+        if (appTraceMatrix.keySet().toList() != expectedScenarioNames) {
+            throw new GradleException("app requiredSections 场景不完整：${appTraceMatrix.keySet()}")
+        }
+
+        benchmarkScenarioMatrix.eachWithIndex { scenario, index ->
+            def nextName = index + 1 < benchmarkScenarioMatrix.size()
+                    ? benchmarkScenarioMatrix[index + 1].enumName
+                    : null
+            def appEntry = enumEntry(appScenarioBlock, scenario.enumName, nextName)
+            requireFragment(appEntry, "wireId = \"${scenario.scenarioId}\"", "app ${scenario.enumName}")
+            requireFragment(
+                    appEntry,
+                    "fixtureId = BenchmarkFixtureId.${scenario.fixtureEnum}",
+                    "app ${scenario.enumName}",
+            )
+            requireFragment(
+                    appEntry,
+                    "initialReadyId = BenchmarkReadyIds.${scenario.initialReady}",
+                    "app ${scenario.enumName}",
+            )
+
+            def baselineEntry = enumEntry(baselineScenarioBlock, scenario.enumName, nextName)
+            requireFragment(
+                    baselineEntry,
+                    "wireId = \"${scenario.scenarioId}\"",
+                    "baselineprofile ${scenario.enumName}",
+            )
+            requireFragment(
+                    baselineEntry,
+                    "fixtureId = \"${scenario.fixtureId}\"",
+                    "baselineprofile ${scenario.enumName}",
+            )
+            requireFragment(
+                    baselineEntry,
+                    "expectedChatMessageCount = ${scenario.chatCount}",
+                    "baselineprofile ${scenario.enumName}",
+            )
+            requireFragment(
+                    baselineEntry,
+                    "expectedRoleplayMessageCount = ${scenario.roleplayCount}",
+                    "baselineprofile ${scenario.enumName}",
+            )
+            requireFragment(
+                    baselineEntry,
+                    "phase = BenchmarkPhase.${scenario.phaseEnum}",
+                    "baselineprofile ${scenario.enumName}",
+            )
+            requireFragment(
+                    baselineEntry,
+                    "initialReadyId = BenchmarkReadyIds.${scenario.initialReady}",
+                    "baselineprofile ${scenario.enumName}",
+            )
+            def baselineTraceKeys = (baselineEntry =~
+                    /BenchmarkTraceSections\.([A-Z0-9_]+)/).collect { match -> match[1] }
+            if (baselineTraceKeys == ['RETURNING_STARTUP']) {
+                baselineTraceKeys = returningTraceKeys
+            }
+            if (baselineTraceKeys != scenario.traceKeys) {
+                throw new GradleException(
+                        "baselineprofile ${scenario.enumName} Trace 漂移：${baselineTraceKeys}, " +
+                                "expected=${scenario.traceKeys}",
+                )
+            }
+            if (appTraceMatrix[scenario.enumName] != scenario.traceKeys) {
+                throw new GradleException(
+                        "app ${scenario.enumName} requiredSections 漂移：" +
+                                "${appTraceMatrix[scenario.enumName]}, expected=${scenario.traceKeys}",
+                )
+            }
+        }
+
+        benchmarkTraceCatalog.each { traceName, traceSpec ->
+            def metricMatcher = baselineSource =~
+                    /(?s)val ${traceName}\s*=\s*BenchmarkTraceSection\(\s*BenchmarkWireContract\.TRACE_${traceName},\s*"([^"]+)"/
+            if (!metricMatcher.find() || metricMatcher.group(1) != traceSpec.metricLabel) {
+                throw new GradleException("Trace metric label 漂移：${traceName}")
+            }
+        }
+
+        def readyAndActionNames = [
+                'FIRST_RUN_CONSENT_READY',
+                'RETURNING_ROLEPLAY_READY',
+                'CHAT_LIST_READY',
+                'CHAT_LIST_TOP_READY',
+                'CHAT_LIST_BOTTOM_READY',
+                'ROLEPLAY_LIST_READY',
+                'ROLEPLAY_LIST_TOP_READY',
+                'ROLEPLAY_LIST_BOTTOM_READY',
+                'ROLEPLAY_STREAM_READY',
+                'ROLEPLAY_STREAM_COMPLETE_READY',
+                'SETTINGS_READY',
+                'ROLEPLAY_QUICK_SETTINGS_READY',
+                'READING_READY',
+                'VOICE_SYNTHESIS_READY',
+                'VOICE_PROFILE_READY',
+                'OPEN_CHAT_HISTORY',
+                'OPEN_SETTINGS',
+                'OPEN_ROLEPLAY_QUICK_SETTINGS',
+                'OPEN_READING',
+                'OPEN_VOICE_SYNTHESIS',
+                'OPEN_VOICE_PROFILE',
+                'CLOSE_VOICE_PROFILE',
+                'START_OFFLINE_REPLAY',
+        ]
+        readyAndActionNames.each { name ->
+            def expected = readConst(appReadySource, name)
+            def actual = readConst(baselineSource, name)
+            if (actual != expected) {
+                throw new GradleException("ready/action 合约漂移：${name}=${actual}, expected=${expected}")
+            }
+        }
+    }
+}
+
+def verifyF3Integration = tasks.register('verifyNarraF3BenchmarkIntegration') {
+    group = 'verification'
+    description = '确认 F3 离线重放、强 ready、Trace 与零 Provider 门禁已实际接线。'
+    def appMainSources = rootProject.fileTree('app/src/main/java') {
+        include '**/*.kt'
+        exclude '**/system/performance/BenchmarkReadyContract.kt'
+        exclude '**/system/performance/BenchmarkSessionDescriptor.kt'
+        exclude '**/system/performance/PerformanceTraceContract.kt'
+    }
+    def roleplayDialoguePanel = rootProject.file(
+            'app/src/main/java/com/example/myapplication/ui/component/roleplay/RoleplayDialoguePanel.kt',
+    )
+    def roleplayAutoScroll = rootProject.file(
+            'app/src/main/java/com/example/myapplication/ui/component/roleplay/RoleplayStreamingAutoScroll.kt',
+    )
+    def navigationViewModelOwners = rootProject.file(
+            'app/src/main/java/com/example/myapplication/ui/navigation/NavigationViewModelOwners.kt',
+    )
+    def roleplayObservationSupport = rootProject.file(
+            'app/src/main/java/com/example/myapplication/viewmodel/RoleplayObservationSupport.kt',
+    )
+    def roleplayOfflineReplaySupport = rootProject.file(
+            'app/src/main/java/com/example/myapplication/viewmodel/RoleplayOfflineReplaySupport.kt',
+    )
+    def roleplayViewModel = rootProject.file(
+            'app/src/main/java/com/example/myapplication/viewmodel/RoleplayViewModel.kt',
+    )
+    def f3AiDependencyPolicy = rootProject.file(
+            'app/src/main/java/com/example/myapplication/system/performance/F3BenchmarkAiDependencyPolicy.kt',
+    )
+    def frameBenchmarks = file(
+            'src/main/java/com/example/myapplication/baselineprofile/FrameBenchmarks.kt',
+    )
+    def f3ContractSmoke = file(
+            'src/main/java/com/example/myapplication/baselineprofile/F3BenchmarkContractSmokeTest.kt',
+    )
+    inputs.files(
+            appMainSources,
+            roleplayDialoguePanel,
+            roleplayAutoScroll,
+            navigationViewModelOwners,
+            roleplayObservationSupport,
+            roleplayOfflineReplaySupport,
+            roleplayViewModel,
+            f3AiDependencyPolicy,
+            frameBenchmarks,
+            f3ContractSmoke,
+    )
+    doLast {
+        def normalizedSource = { sourceFile ->
+            if (!sourceFile.isFile()) {
+                throw new GradleException("F3 接线文件缺失：${sourceFile}")
+            }
+            return sourceFile.getText('UTF-8')
+                    .replace('\r\n', '\n')
+                    .replace('\r', '\n')
+        }
+        def dialoguePanelSource = normalizedSource(roleplayDialoguePanel)
+        def autoScrollSource = normalizedSource(roleplayAutoScroll)
+        def navigationOwnerSource = normalizedSource(navigationViewModelOwners)
+        def observationSource = normalizedSource(roleplayObservationSupport)
+        def offlineReplaySource = normalizedSource(roleplayOfflineReplaySupport)
+        def roleplayViewModelSource = normalizedSource(roleplayViewModel)
+        def aiPolicySource = normalizedSource(f3AiDependencyPolicy)
+        def frameBenchmarkSource = normalizedSource(frameBenchmarks)
+        def f3SmokeSource = normalizedSource(f3ContractSmoke)
+        def requirements = [
+                'START_OFFLINE_REPLAY 动作标签'             :
+                        dialoguePanelSource.contains('START_OFFLINE_REPLAY') &&
+                                dialoguePanelSource.contains('benchmarkActionTag'),
+                'ROLEPLAY_STREAM_READY 初始强 ready'         :
+                        dialoguePanelSource.contains('isOfflineReplayInitialReady') &&
+                                dialoguePanelSource.contains('ROLEPLAY_STREAM_READY') &&
+                                dialoguePanelSource.contains('benchmarkReadyTag'),
+                'ROLEPLAY_STREAM_COMPLETE_READY 结束强 ready':
+                        dialoguePanelSource.contains('isOfflineReplayCompleteReady') &&
+                                dialoguePanelSource.contains('ROLEPLAY_STREAM_COMPLETE_READY') &&
+                                dialoguePanelSource.contains('benchmarkReadyTag'),
+                'F3 宏基准在测量区间等待结束 ready'            :
+                        frameBenchmarkSource.contains(
+                                'benchmark(BenchmarkScenario.F3_ROLEPLAY_STREAM_REPLAY)',
+                        ) &&
+                                frameBenchmarkSource.contains(
+                                        'readyId = BenchmarkReadyIds.ROLEPLAY_STREAM_COMPLETE_READY',
+                                ),
+                'F3 正向 smoke 强等待首次与结束 ready'         :
+                        f3SmokeSource.contains(
+                                'waitForReadyOrThrow(BenchmarkReadyIds.ROLEPLAY_STREAM_READY)',
+                        ) &&
+                                f3SmokeSource.contains(
+                                        'assertNodePresent(BenchmarkActionIds.START_OFFLINE_REPLAY)',
+                                ) &&
+                                f3SmokeSource.contains(
+                                        'readyId = BenchmarkReadyIds.ROLEPLAY_STREAM_COMPLETE_READY',
+                                ),
+                'F3 runtime policy 选择固定离线重放'          :
+                        navigationOwnerSource.contains(
+                                'benchmarkRuntimePolicy?.useOfflineRoleplayReplay == true',
+                        ) &&
+                                navigationOwnerSource.contains(
+                                        'BenchmarkOfflineReplaySpec.DEFAULT.takeIf',
+                                ),
+                'F3 fail-closed AI 依赖策略'                  :
+                        aiPolicySource.contains('aiGateway = FailClosedF3AiGateway(tracker)') &&
+                                aiPolicySource.contains(
+                                        'aiPromptExtrasService = createFailClosedPromptExtrasService(tracker)',
+                                ) &&
+                                aiPolicySource.contains(
+                                        'tracker.block(BenchmarkForbiddenAiOperation.AI_GATEWAY)',
+                                ) &&
+                                aiPolicySource.contains(
+                                        'tracker.block(BenchmarkForbiddenAiOperation.AI_PROMPT_EXTRAS_SERVICE)',
+                                ),
+                'F3 fail-closed AI 依赖注入 RoleplayViewModel':
+                        navigationOwnerSource.contains('F3BenchmarkAiDependencyPolicy.resolve(') &&
+                                navigationOwnerSource.contains(
+                                        'aiGateway = roleplayAiDependencies.aiGateway',
+                                ) &&
+                                navigationOwnerSource.contains(
+                                        'aiPromptExtrasService = roleplayAiDependencies.aiPromptExtrasService',
+                                ) &&
+                                navigationOwnerSource.contains(
+                                        'benchmarkAiViolationTracker = roleplayAiDependencies.violationTracker',
+                                ),
+                'F3 Provider 违规追踪器传入 replay support'    :
+                        roleplayViewModelSource.contains(
+                                'aiViolationTracker = benchmarkAiViolationTracker',
+                        ) &&
+                                offlineReplaySource.contains(
+                                        'aiViolationTracker?.addViolationListener',
+                                ) &&
+                                offlineReplaySource.contains('hasNoAiViolations') &&
+                                offlineReplaySource.contains('failClosedIfActive()'),
+                'ROLEPLAY_MAP_MESSAGES Trace 发射'            :
+                        observationSource.contains('ROLEPLAY_MAP_MESSAGES') &&
+                                observationSource.contains('.trace('),
+                'ROLEPLAY_APPLY_MAPPED_MESSAGES Trace 发射'   :
+                        observationSource.contains('ROLEPLAY_APPLY_MAPPED_MESSAGES') &&
+                                observationSource.contains('.trace {'),
+                'ROLEPLAY_AUTO_SCROLL Trace 发射'             :
+                        autoScrollSource.contains('ROLEPLAY_AUTO_SCROLL') &&
+                                autoScrollSource.contains('.traceAsync {'),
+                'ROLEPLAY_REPLAY_PUMP Trace 发射'             :
+                        offlineReplaySource.contains('ROLEPLAY_REPLAY_PUMP') &&
+                                offlineReplaySource.contains('.trace(block)'),
+        ]
+        def missing = requirements.findAll { label, wired -> !wired }.keySet()
+        if (!missing.isEmpty()) {
+            throw new GradleException(
+                    "F3 离线流式重放依赖未接线，禁止产出伪基准：${missing.join('、')}",
+            )
+        }
+    }
+}
+
+tasks.configureEach { task ->
+    if (task.name in ['compileBaselineKotlin', 'compileBenchmarkReleaseKotlin', 'compileNonMinifiedReleaseKotlin']) {
+        task.dependsOn(verifyBenchmarkContractDrift)
+    }
+}
+
+tasks.register('compileBaselineKotlin') {
+    group = 'build'
+    description = '编译实际用于 baseline 宏基准的 benchmarkRelease Kotlin 源码。'
+    dependsOn('compileBenchmarkReleaseKotlin')
+}
+
+def benchmarkStartFile = layout.buildDirectory.file(
+        "intermediates/narra-benchmark-runs/${benchmarkRunId}/run-start.properties",
+)
+def prepareBenchmarkRun = tasks.register('prepareNarraBenchmarkRun') {
+    group = 'benchmark'
+    description = '创建不可覆盖的 Narra benchmark run 标识。'
+    outputs.file(benchmarkStartFile)
+    outputs.upToDateWhen { false }
+    notCompatibleWithConfigurationCache('每次执行都必须生成新的默认 benchmark runId')
+    doLast {
+        def startFile = benchmarkStartFile.get().asFile
+        startFile.parentFile.mkdirs()
+        if (startFile.exists()) {
+            throw new GradleException("benchmark runId 已存在，拒绝覆盖：${benchmarkRunId}")
+        }
+        startFile.setText(
+                "runId=${benchmarkRunId}\nstartedAtEpochMillis=${System.currentTimeMillis()}\n",
+                'UTF-8',
+        )
+    }
+}
+
+tasks.configureEach { task ->
+    if (task.name in ['connectedBaselineAndroidTest', 'connectedBenchmarkReleaseAndroidTest']) {
+        task.dependsOn(prepareBenchmarkRun)
+    }
+}
+
+tasks.register('connectedBaselineAndroidTest') {
+    group = 'verification'
+    description = '在连接设备上运行实际 benchmarkRelease 宏基准。'
+    dependsOn('connectedBenchmarkReleaseAndroidTest')
+}
+
+def parseBenchmarkJson = { File file, String label ->
+    try {
+        return new JsonSlurper().parse(file)
+    } catch (Exception exception) {
+        throw new GradleException("${label} JSON 无法解析：${file.name}", exception)
+    }
+}
+def metricRuns = { benchmark, metricName ->
+    def metrics = benchmark?.metrics
+    if (!(metrics instanceof Map)) {
+        return null
+    }
+    def metric = metrics[metricName]
+    if (!(metric instanceof Map) || !(metric.runs instanceof List)) {
+        return null
+    }
+    if (metric.runs.any { !(it instanceof Number) || !Double.isFinite((it as Number).doubleValue()) }) {
+        return null
+    }
+    return metric.runs.collect { (it as Number).doubleValue() }
+}
+def evaluateBenchmarkEvidence = { benchmarkJsons, environmentManifests, availableFiles, expectedRunId ->
+    def issues = []
+    def missingBenchmarkCases = []
+    def missingEnvironmentManifests = []
+    def duplicateBenchmarkCases = []
+    def duplicateEnvironmentManifests = []
+    def invalidMetrics = []
+    def missingPerfettoTraces = []
+    def missingSections = []
+    def traceOwners = [:].withDefault { [] }
+
+    benchmarkJsons.each { entry ->
+        if (entry.data?.context?.payload?.narraRunId != expectedRunId) {
+            issues.add("benchmark JSON runId 不匹配：${entry.file.name}")
+        }
+        if (!(entry.data?.benchmarks instanceof List)) {
+            issues.add("benchmark JSON 缺少 benchmarks：${entry.file.name}")
+        }
+    }
+    environmentManifests.each { entry ->
+        if (entry.data?.runId != expectedRunId) {
+            issues.add("环境 manifest runId 不匹配：${entry.file.name}")
+        }
+    }
+
+    def benchmarkRecords = benchmarkJsons.collectMany { entry ->
+        (entry.data?.benchmarks instanceof List ? entry.data.benchmarks : []).collect { benchmark ->
+            [file: entry.file, benchmark: benchmark]
+        }
+    }
+    def environmentByName = environmentManifests.groupBy { entry -> entry.data?.benchmarkName as String }
+    def scenarioSummaries = macroBenchmarkCases.collect { benchmarkCase ->
+        def scenario = benchmarkCase.scenario
+        def benchmarkMatches = benchmarkRecords.findAll { record ->
+            def actualName = record.benchmark?.name as String
+            actualName != null && (
+                    actualName == benchmarkCase.benchmarkName ||
+                            actualName.endsWith(benchmarkCase.benchmarkName)
+            )
+        }
+        def manifestMatches = environmentByName[benchmarkCase.benchmarkName] ?: []
+        if (benchmarkMatches.isEmpty()) {
+            missingBenchmarkCases.add(benchmarkCase.benchmarkName)
+        } else if (benchmarkMatches.size() != 1) {
+            duplicateBenchmarkCases.add("${benchmarkCase.benchmarkName}:${benchmarkMatches.size()}")
+        }
+        if (manifestMatches.isEmpty()) {
+            missingEnvironmentManifests.add(benchmarkCase.benchmarkName)
+        } else if (manifestMatches.size() != 1) {
+            duplicateEnvironmentManifests.add("${benchmarkCase.benchmarkName}:${manifestMatches.size()}")
+        }
+
+        def benchmarkRecord = benchmarkMatches.size() == 1 ? benchmarkMatches[0] : null
+        def benchmark = benchmarkRecord?.benchmark
+        def manifestEntry = manifestMatches.size() == 1 ? manifestMatches[0] : null
+        def manifest = manifestEntry?.data
+        if (manifest != null) {
+            def expectedManifestValues = [
+                    schemaVersion           : 1,
+                    runId                   : expectedRunId,
+                    benchmarkName           : benchmarkCase.benchmarkName,
+                    scenarioId              : scenario.scenarioId,
+                    phase                   : scenario.phaseId,
+                    fixtureVersion          : benchmarkFixtureVersion,
+                    iterations              : benchmarkCase.iterations,
+                    compilationMode         : benchmarkCase.compilationMode,
+                    buildMode               : 'baseline',
+                    commit                  : benchmarkCommit,
+                    androidxBenchmarkVersion: libs.versions.benchmarkMacroJunit4.get(),
+                    agpVersion              : libs.versions.agp.get(),
+                    gradleVersion           : gradle.gradleVersion,
+                    jdkVersion              : System.getProperty('java.version', 'unknown'),
+            ]
+            expectedManifestValues.each { field, expected ->
+                if (manifest[field] != expected) {
+                    issues.add(
+                            "${benchmarkCase.benchmarkName} 环境 manifest ${field}=" +
+                                    "${manifest[field]}, expected=${expected}",
+                    )
+                }
+            }
+            if (!(manifest.createdAtEpochMillis instanceof Number) || manifest.createdAtEpochMillis <= 0L) {
+                issues.add("${benchmarkCase.benchmarkName} 缺少有效 createdAtEpochMillis")
+            }
+            if (!(manifest.appVersionName instanceof String) || manifest.appVersionName.trim().isEmpty()) {
+                issues.add("${benchmarkCase.benchmarkName} 缺少 appVersionName")
+            }
+            if (!(manifest.appVersionCode instanceof Number) || manifest.appVersionCode <= 0L) {
+                issues.add("${benchmarkCase.benchmarkName} 缺少有效 appVersionCode")
+            }
+            def environment = manifest.environment
+            if (!(environment instanceof Map)) {
+                issues.add("${benchmarkCase.benchmarkName} 缺少设备环境字段")
+            } else {
+                ['manufacturer', 'model', 'buildFingerprint'].each { field ->
+                    if (!(environment[field] instanceof String) || environment[field].trim().isEmpty()) {
+                        issues.add("${benchmarkCase.benchmarkName} 设备环境缺少 ${field}")
+                    }
+                }
+                if (!(environment.apiLevel instanceof Number) || environment.apiLevel < 28) {
+                    issues.add("${benchmarkCase.benchmarkName} 设备 API 无效")
+                }
+                if (!(environment.refreshRateHz instanceof Number) || environment.refreshRateHz <= 0.0d) {
+                    issues.add("${benchmarkCase.benchmarkName} 刷新率无效")
+                }
+                ['windowAnimationScale', 'transitionAnimationScale', 'animatorDurationScale'].each { field ->
+                    if (!(environment[field] instanceof Number)) {
+                        issues.add("${benchmarkCase.benchmarkName} 动画缩放缺少 ${field}")
+                    }
+                }
+                if (!(environment.batteryPercent instanceof Number) ||
+                        environment.batteryPercent < 0 || environment.batteryPercent > 100) {
+                    issues.add("${benchmarkCase.benchmarkName} 电量记录无效")
+                }
+                if (environment.apiLevel instanceof Number && environment.apiLevel >= 29 &&
+                        !(environment.thermalStatus instanceof Number)) {
+                    issues.add("${benchmarkCase.benchmarkName} 温控状态缺失")
+                }
+            }
+
+            def expectedTraceManifest = scenario.traceKeys.collect { traceKey ->
+                def traceSpec = benchmarkTraceCatalog[traceKey]
+                [
+                        sectionName        : traceSpec.sectionName,
+                        presenceMetric     : "${traceSpec.metricLabel}PresenceFirstMs",
+                        countMetric        : "${traceSpec.metricLabel}Count",
+                        totalDurationMetric: "${traceSpec.metricLabel}TotalDurationSumMs",
+                ]
+            }
+            def actualTraceManifest = manifest.requiredTraceSections
+            if (!(actualTraceManifest instanceof List) || actualTraceManifest != expectedTraceManifest) {
+                issues.add(
+                        "${benchmarkCase.benchmarkName} requiredTraceSections 漂移：" +
+                                "${actualTraceManifest}, expected=${expectedTraceManifest}",
+                )
+            }
+        }
+
+        def primaryMetricSummaries = benchmarkCase.primaryMetrics.collect { metricName ->
+            def runs = metricRuns(benchmark, metricName)
+            def valid = runs != null && runs.size() == benchmarkCase.iterations
+            if (!valid) {
+                invalidMetrics.add(
+                        "${benchmarkCase.benchmarkName}:${metricName}:" +
+                                "${runs == null ? 'missing' : runs.size()}/${benchmarkCase.iterations}",
+                )
+            }
+            return [
+                    metricName: metricName,
+                    valid     : valid,
+                    runs      : runs ?: [],
+                    p50       : valid ? percentileOf(runs, 50) : null,
+                    p90       : valid ? percentileOf(runs, 90) : null,
+                    p95       : valid ? percentileOf(runs, 95) : null,
+            ]
+        }
+        def sectionSummaries = scenario.traceKeys.collect { traceKey ->
+            def traceSpec = benchmarkTraceCatalog[traceKey]
+            def presenceMetric = "${traceSpec.metricLabel}PresenceFirstMs"
+            def countMetric = "${traceSpec.metricLabel}Count"
+            def durationMetric = "${traceSpec.metricLabel}TotalDurationSumMs"
+            def presenceRuns = metricRuns(benchmark, presenceMetric)
+            def countRuns = metricRuns(benchmark, countMetric)
+            def durationRuns = metricRuns(benchmark, durationMetric)
+            def metricShapeValid = [presenceRuns, countRuns, durationRuns].every { runs ->
+                runs != null && runs.size() == benchmarkCase.iterations
+            }
+            if (!metricShapeValid) {
+                invalidMetrics.add("${benchmarkCase.benchmarkName}:${traceSpec.sectionName}:TraceMetricShape")
+            }
+            def present = metricShapeValid && countRuns.every { it > 0.0d }
+            if (!present) {
+                missingSections.add("${scenario.scenarioId}:${traceSpec.sectionName}")
+            }
+            return [
+                    sectionName        : traceSpec.sectionName,
+                    present            : present,
+                    expectedIterations : benchmarkCase.iterations,
+                    presenceRuns       : presenceRuns ?: [],
+                    countRuns          : countRuns ?: [],
+                    totalDurationRunsMs: durationRuns ?: [],
+                    count              : countRuns?.sum(0.0d) ?: 0.0d,
+                    totalDurationMs    : durationRuns?.sum(0.0d) ?: 0.0d,
+                    p50DurationMs      : metricShapeValid ? percentileOf(durationRuns, 50) : null,
+                    p90DurationMs      : metricShapeValid ? percentileOf(durationRuns, 90) : null,
+                    p95DurationMs      : metricShapeValid ? percentileOf(durationRuns, 95) : null,
+            ]
+        }
+
+        def profilerOutputs = benchmark?.profilerOutputs instanceof List ? benchmark.profilerOutputs : []
+        def traceNames = profilerOutputs.findAll { output -> output?.type == 'PerfettoTrace' }
+                .collect { output -> output?.filename as String }
+                .findAll { name -> name != null && !name.trim().isEmpty() }
+        if (traceNames.isEmpty()) {
+            missingPerfettoTraces.add("${benchmarkCase.benchmarkName}:unreferenced")
+        }
+        traceNames.each { traceName ->
+            def matches = availableFiles.findAll { file -> file.name == new File(traceName).name }
+            if (matches.size() != 1 || matches[0].length() <= 0L) {
+                missingPerfettoTraces.add("${benchmarkCase.benchmarkName}:${traceName}:${matches.size()}")
+            } else {
+                traceOwners[traceName].add(benchmarkCase.benchmarkName)
+            }
+        }
+        return [
+                benchmarkName           : benchmarkCase.benchmarkName,
+                scenarioId              : scenario.scenarioId,
+                expectedIterations      : benchmarkCase.iterations,
+                benchmarkRecordCount    : benchmarkMatches.size(),
+                environmentManifestCount: manifestMatches.size(),
+                benchmarkJson           : benchmarkRecord?.file?.name,
+                primaryMetrics          : primaryMetricSummaries,
+                sections                : sectionSummaries,
+                perfettoTraces          : traceNames,
+        ]
+    }
+    traceOwners.findAll { traceName, owners -> owners.toSet().size() != 1 }.each { traceName, owners ->
+        missingPerfettoTraces.add("shared:${traceName}:${owners.unique().sort()}")
+    }
+    issues.addAll(missingBenchmarkCases.collect { "缺少 benchmark case：${it}" })
+    issues.addAll(missingEnvironmentManifests.collect { "缺少环境 manifest：${it}" })
+    issues.addAll(duplicateBenchmarkCases.collect { "benchmark case 不唯一：${it}" })
+    issues.addAll(duplicateEnvironmentManifests.collect { "环境 manifest 不唯一：${it}" })
+    issues.addAll(invalidMetrics.collect { "指标缺失或迭代错误：${it}" })
+    issues.addAll(missingPerfettoTraces.collect { "Perfetto 缺失或不唯一：${it}" })
+    issues.addAll(missingSections.collect { "必需 Trace 未发射：${it}" })
+    def normalizedIssues = issues.unique().sort()
+    return [
+            schemaVersion                : 2,
+            runId                        : expectedRunId,
+            decidable                    : normalizedIssues.isEmpty(),
+            issues                       : normalizedIssues,
+            missingBenchmarkCases        : missingBenchmarkCases.unique().sort(),
+            missingEnvironmentManifests  : missingEnvironmentManifests.unique().sort(),
+            duplicateBenchmarkCases      : duplicateBenchmarkCases.unique().sort(),
+            duplicateEnvironmentManifests: duplicateEnvironmentManifests.unique().sort(),
+            invalidMetrics               : invalidMetrics.unique().sort(),
+            missingPerfettoTraces        : missingPerfettoTraces.unique().sort(),
+            missingSections              : missingSections.unique().sort(),
+            scenarios                    : scenarioSummaries,
+    ]
+}
+
+def archiveBenchmarkResults = tasks.register('archiveNarraBenchmarkResults') {
+    group = 'benchmark'
+    description = '归档并逐 case 校验 Macrobenchmark JSON、Perfetto、环境与 Trace 证据。'
+    dependsOn(verifyBenchmarkContractDrift, prepareBenchmarkRun)
+    def outputDir = layout.buildDirectory.dir("outputs/narra-benchmark-runs/${benchmarkRunId}")
+    outputs.dir(outputDir)
+    outputs.upToDateWhen { false }
+    notCompatibleWithConfigurationCache('归档必须消费本次运行的动态 runId 与设备输出')
+    doLast {
+        def configuredSource = providers.gradleProperty('narraBenchmarkSourceDir').orNull
+        def sourceRoots = configuredSource != null
+                ? [rootProject.file(configuredSource)]
+                : [
+                    layout.buildDirectory.dir('outputs/connected_android_test_additional_output').get().asFile,
+                    layout.buildDirectory.dir('outputs/managed_device_android_test_additional_output').get().asFile,
+                    layout.buildDirectory.dir('outputs/androidTest-results').get().asFile,
+                ]
+        sourceRoots = sourceRoots.findAll { it.isDirectory() }
+        if (sourceRoots.isEmpty()) {
+            throw new GradleException('未找到 AndroidTest additional output；无法归档 AC4 原始结果')
+        }
+        def sourceFiles = sourceRoots.collectMany { root ->
+            fileTree(root).matching { include '**/*' }.files.findAll { it.isFile() }
+        }.unique { it.absolutePath }
+        def benchmarkJsonCandidates = sourceFiles.findAll { it.name.endsWith('-benchmarkData.json') }
+        def benchmarkJsons = benchmarkJsonCandidates.collect { file ->
+            [file: file, data: parseBenchmarkJson(file, 'Macrobenchmark')]
+        }.findAll { entry -> entry.data?.context?.payload?.narraRunId == benchmarkRunId }
+        if (benchmarkJsons.isEmpty()) {
+            throw new GradleException("未找到 runId=${benchmarkRunId} 的原始 Macrobenchmark JSON")
+        }
+        def environmentManifests = sourceFiles.findAll { file ->
+            file.name.startsWith("narra-environment-${benchmarkRunId}-") && file.name.endsWith('.json')
+        }.collect { file ->
+            [file: file, data: parseBenchmarkJson(file, '环境 manifest')]
+        }
+        if (environmentManifests.isEmpty()) {
+            throw new GradleException("未找到 runId=${benchmarkRunId} 的设备环境 manifest")
+        }
+        def evidenceSummary = evaluateBenchmarkEvidence(
+                benchmarkJsons,
+                environmentManifests,
+                sourceFiles,
+                benchmarkRunId,
+        )
+        def referencedTraceNames = benchmarkJsons.collectMany { entry ->
+            (entry.data?.benchmarks instanceof List ? entry.data.benchmarks : []).collectMany { benchmark ->
+                (benchmark?.profilerOutputs instanceof List ? benchmark.profilerOutputs : [])
+                        .findAll { output -> output?.type == 'PerfettoTrace' }
+                        .collect { output -> output?.filename as String }
+                        .findAll { name -> name != null && !name.trim().isEmpty() }
+                        .collect { name -> new File(name).name }
+            }
+        }.findAll { it != null && !it.trim().isEmpty() }.unique()
+        def perfettoFiles = referencedTraceNames.collectMany { traceName ->
+            def matches = sourceFiles.findAll { file -> file.name == traceName }
+            return matches.size() == 1 ? matches : []
+        }.unique { it.absolutePath }
+
+        def runDir = outputDir.get().asFile
+        if (runDir.exists() && (runDir.listFiles()?.length ?: 0) > 0) {
+            throw new GradleException("benchmark 归档目录已存在，拒绝覆盖：${runDir}")
+        }
+        def copyCategory = { files, category ->
+            def duplicateNames = files.groupBy { it.name }.findAll { name, matches -> matches.size() != 1 }
+            if (!duplicateNames.isEmpty()) {
+                throw new GradleException("${category} 归档文件名不唯一：${duplicateNames.keySet()}")
+            }
+            files.each { source ->
+                def destination = new File(runDir, "${category}/${source.name}")
+                destination.parentFile.mkdirs()
+                if (destination.exists()) {
+                    throw new GradleException("归档文件名冲突：${destination.name}")
+                }
+                Files.copy(source.toPath(), destination.toPath(), StandardCopyOption.COPY_ATTRIBUTES)
+            }
+        }
+        copyCategory(benchmarkJsons.collect { it.file }, 'raw/benchmark')
+        copyCategory(perfettoFiles, 'raw/perfetto')
+        copyCategory(environmentManifests.collect { it.file }, 'environment')
+
+        def summaryFile = new File(runDir, 'benchmark-summary.json')
+        summaryFile.setText(JsonOutput.prettyPrint(JsonOutput.toJson(evidenceSummary)), 'UTF-8')
+        def evidenceFiles = fileTree(runDir).files.findAll { it.isFile() }.sort { it.path }
+        def fileEntries = evidenceFiles.collect { file ->
+            [
+                    path  : runDir.toPath().relativize(file.toPath()).toString().replace('\\', '/'),
+                    bytes : file.length(),
+                    sha256: sha256Of(file),
+            ]
+        }
+        def runManifest = [
+                schemaVersion                   : 2,
+                runId                           : benchmarkRunId,
+                commit                          : benchmarkCommit,
+                fixtureVersion                  : benchmarkFixtureVersion,
+                androidxBenchmarkVersion        : libs.versions.benchmarkMacroJunit4.get(),
+                archivedAtEpochMillis           : System.currentTimeMillis(),
+                expectedBenchmarkCaseCount      : macroBenchmarkCases.size(),
+                rawBenchmarkJsonCount           : benchmarkJsons.size(),
+                perfettoTraceCount              : perfettoFiles.size(),
+                environmentManifestCount        : environmentManifests.size(),
+                benchmarkSummaryDecidable       : evidenceSummary.decidable,
+                evidenceIssues                  : evidenceSummary.issues,
+                missingBenchmarkCases           : evidenceSummary.missingBenchmarkCases,
+                missingEnvironmentManifests     : evidenceSummary.missingEnvironmentManifests,
+                duplicateBenchmarkCases         : evidenceSummary.duplicateBenchmarkCases,
+                duplicateEnvironmentManifests   : evidenceSummary.duplicateEnvironmentManifests,
+                invalidMetrics                  : evidenceSummary.invalidMetrics,
+                missingPerfettoTraces           : evidenceSummary.missingPerfettoTraces,
+                missingSections                 : evidenceSummary.missingSections,
+                files                           : fileEntries,
+        ]
+        def runManifestFile = new File(runDir, 'run-manifest.json')
+        runManifestFile.setText(JsonOutput.prettyPrint(JsonOutput.toJson(runManifest)), 'UTF-8')
+        def checksumFiles = fileTree(runDir).files.findAll {
+            it.isFile() && it.name != 'sha256sums.txt'
+        }.sort { it.path }
+        def checksumText = checksumFiles.collect { file ->
+            def relative = runDir.toPath().relativize(file.toPath()).toString().replace('\\', '/')
+            "${sha256Of(file)}  ${relative}"
+        }.join('\n') + '\n'
+        new File(runDir, 'sha256sums.txt').setText(checksumText, 'UTF-8')
+        logger.lifecycle("Narra benchmark 证据已归档：${runDir}")
+    }
+}
+
+archiveBenchmarkResults.configure {
+    mustRunAfter('connectedBenchmarkReleaseAndroidTest')
+}
+
+def verifyBenchmarkArchive = tasks.register('verifyNarraBenchmarkArchive') {
+    group = 'verification'
+    description = '重新解析并严格验证逐 case 证据、Trace presence 与全部 SHA-256。'
+    dependsOn(verifyF3Integration, archiveBenchmarkResults)
+    doLast {
+        def runDir = layout.buildDirectory.dir("outputs/narra-benchmark-runs/${benchmarkRunId}").get().asFile
+        def requiredFiles = [
+                new File(runDir, 'benchmark-summary.json'),
+                new File(runDir, 'run-manifest.json'),
+                new File(runDir, 'sha256sums.txt'),
+        ]
+        requiredFiles.each { file ->
+            if (!file.isFile() || file.length() <= 0L) {
+                throw new GradleException("benchmark 归档缺少必需文件：${file.name}")
+            }
+        }
+        def archivedBenchmarkFiles = fileTree(new File(runDir, 'raw/benchmark')).files.findAll { it.isFile() }
+        def archivedEnvironmentFiles = fileTree(new File(runDir, 'environment')).files.findAll { it.isFile() }
+        def archivedPerfettoFiles = fileTree(new File(runDir, 'raw/perfetto')).files.findAll { it.isFile() }
+        def archivedBenchmarkJsons = archivedBenchmarkFiles.collect { file ->
+            [file: file, data: parseBenchmarkJson(file, '归档 Macrobenchmark')]
+        }
+        def archivedEnvironmentManifests = archivedEnvironmentFiles.collect { file ->
+            [file: file, data: parseBenchmarkJson(file, '归档环境 manifest')]
+        }
+        def evaluated = evaluateBenchmarkEvidence(
+                archivedBenchmarkJsons,
+                archivedEnvironmentManifests,
+                archivedPerfettoFiles,
+                benchmarkRunId,
+        )
+        def summary = parseBenchmarkJson(new File(runDir, 'benchmark-summary.json'), 'benchmark summary')
+        def normalizedEvaluated = new JsonSlurper().parseText(JsonOutput.toJson(evaluated))
+        if (summary != normalizedEvaluated) {
+            throw new GradleException('benchmark-summary.json 与归档原始证据重新计算结果不一致')
+        }
+        def runManifest = parseBenchmarkJson(new File(runDir, 'run-manifest.json'), 'run manifest')
+        def expectedManifestFields = [
+                schemaVersion             : 2,
+                runId                     : benchmarkRunId,
+                commit                    : benchmarkCommit,
+                fixtureVersion            : benchmarkFixtureVersion,
+                androidxBenchmarkVersion  : libs.versions.benchmarkMacroJunit4.get(),
+                expectedBenchmarkCaseCount: macroBenchmarkCases.size(),
+                rawBenchmarkJsonCount     : archivedBenchmarkJsons.size(),
+                perfettoTraceCount         : archivedPerfettoFiles.size(),
+                environmentManifestCount  : archivedEnvironmentManifests.size(),
+                benchmarkSummaryDecidable : evaluated.decidable,
+                evidenceIssues            : evaluated.issues,
+                missingBenchmarkCases     : evaluated.missingBenchmarkCases,
+                missingEnvironmentManifests: evaluated.missingEnvironmentManifests,
+                duplicateBenchmarkCases   : evaluated.duplicateBenchmarkCases,
+                duplicateEnvironmentManifests: evaluated.duplicateEnvironmentManifests,
+                invalidMetrics            : evaluated.invalidMetrics,
+                missingPerfettoTraces     : evaluated.missingPerfettoTraces,
+                missingSections           : evaluated.missingSections,
+        ]
+        expectedManifestFields.each { field, expected ->
+            if (runManifest[field] != expected) {
+                throw new GradleException("run-manifest ${field} 不匹配：${runManifest[field]}")
+            }
+        }
+        if (!(runManifest.archivedAtEpochMillis instanceof Number) || runManifest.archivedAtEpochMillis <= 0L) {
+            throw new GradleException('run-manifest 缺少有效 archivedAtEpochMillis')
+        }
+        def manifestFiles = runManifest.files
+        if (!(manifestFiles instanceof List) || manifestFiles.isEmpty()) {
+            throw new GradleException('run-manifest 缺少文件清单')
+        }
+        def manifestPaths = manifestFiles.collect { entry -> entry.path as String }
+        if (manifestPaths.toSet().size() != manifestPaths.size()) {
+            throw new GradleException('run-manifest 文件路径不唯一')
+        }
+        def expectedManifestPaths = fileTree(runDir).files.findAll { file ->
+            file.isFile() && !(file.name in ['run-manifest.json', 'sha256sums.txt'])
+        }.collect { file ->
+            runDir.toPath().relativize(file.toPath()).toString().replace('\\', '/')
+        }.sort()
+        if (manifestPaths.sort() != expectedManifestPaths) {
+            throw new GradleException('run-manifest 文件清单未完整覆盖原始证据')
+        }
+        manifestFiles.each { entry ->
+            def relativePath = entry.path as String
+            def resolved = new File(runDir, relativePath).canonicalFile
+            if (!resolved.toPath().startsWith(runDir.canonicalFile.toPath()) || !resolved.isFile()) {
+                throw new GradleException("run-manifest 文件路径越界或缺失：${relativePath}")
+            }
+            if (resolved.length() != (entry.bytes as Number).longValue() || sha256Of(resolved) != entry.sha256) {
+                throw new GradleException("run-manifest 文件元数据不匹配：${relativePath}")
+            }
+        }
+
+        def checksumFile = new File(runDir, 'sha256sums.txt')
+        def checksumLines = checksumFile.readLines('UTF-8').findAll { !it.trim().isEmpty() }
+        def checksumEntries = checksumLines.collect { line ->
+            def matcher = line =~ /^([a-f0-9]{64})  ([^\r\n]+)$/
+            if (!matcher.matches()) {
+                throw new GradleException("无效 SHA-256 行：${line}")
+            }
+            return [sha256: matcher.group(1), path: matcher.group(2)]
+        }
+        def checksumPaths = checksumEntries.collect { it.path }
+        if (checksumPaths.toSet().size() != checksumPaths.size()) {
+            throw new GradleException('sha256sums.txt 存在重复路径')
+        }
+        def expectedChecksumPaths = fileTree(runDir).files.findAll {
+            it.isFile() && it.name != 'sha256sums.txt'
+        }.collect { file ->
+            runDir.toPath().relativize(file.toPath()).toString().replace('\\', '/')
+        }.sort()
+        if (checksumPaths.sort() != expectedChecksumPaths) {
+            throw new GradleException('sha256sums.txt 未完整覆盖归档文件')
+        }
+        checksumEntries.each { entry ->
+            def file = new File(runDir, entry.path).canonicalFile
+            if (!file.toPath().startsWith(runDir.canonicalFile.toPath()) ||
+                    !file.isFile() || sha256Of(file) != entry.sha256) {
+                throw new GradleException("SHA-256 校验失败：${entry.path}")
+            }
+        }
+        if (!evaluated.decidable) {
+            throw new GradleException("benchmark 结果不可判定：${evaluated.issues.join('；')}")
+        }
+    }
+}
+
+tasks.register('runAndArchiveNarraBenchmarks') {
+    group = 'benchmark'
+    description = '运行完整 baseline 宏基准，并仅在 F3 接线及逐 case 证据完整时通过。'
+    dependsOn(verifyF3Integration, 'connectedBenchmarkReleaseAndroidTest', verifyBenchmarkArchive)
 }

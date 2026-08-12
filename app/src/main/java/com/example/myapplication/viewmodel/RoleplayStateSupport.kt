@@ -181,6 +181,7 @@ object RoleplayStateSupport {
             isGeneratingSuggestions = false,
             errorMessage = null,
             streamingContent = "",
+            offlineReplayPhase = RoleplayOfflineReplayPhase.DISABLED,
             suggestionErrorMessage = null,
             replyToMessageId = "",
             replyToPreview = "",
@@ -350,6 +351,54 @@ object RoleplayStateSupport {
         return current.copy(streamingContent = content)
     }
 
+    fun prepareOfflineReplay(
+        current: RoleplayUiState,
+        seedContent: String,
+    ): RoleplayUiState {
+        require(seedContent.isNotBlank()) { "离线重放 seed 不能为空" }
+        return current.copy(
+            isSending = true,
+            streamingContent = seedContent,
+            offlineReplayPhase = RoleplayOfflineReplayPhase.READY,
+            errorMessage = null,
+            noticeMessage = null,
+        )
+    }
+
+    fun beginOfflineReplay(current: RoleplayUiState): RoleplayUiState {
+        return current.copy(
+            isSending = true,
+            offlineReplayPhase = RoleplayOfflineReplayPhase.RUNNING,
+            errorMessage = null,
+        )
+    }
+
+    fun publishOfflineReplayContent(
+        current: RoleplayUiState,
+        content: String,
+        completed: Boolean,
+    ): RoleplayUiState {
+        return current.copy(
+            isSending = true,
+            streamingContent = content,
+            offlineReplayPhase = if (completed) {
+                RoleplayOfflineReplayPhase.COMPLETED
+            } else {
+                RoleplayOfflineReplayPhase.RUNNING
+            },
+            errorMessage = null,
+        )
+    }
+
+    fun failOfflineReplay(current: RoleplayUiState): RoleplayUiState {
+        return current.copy(
+            isSending = false,
+            streamingContent = "",
+            offlineReplayPhase = RoleplayOfflineReplayPhase.FAILED,
+            errorMessage = "离线流式重放失败",
+        )
+    }
+
     fun updateScenarioSessionIds(
         current: RoleplayUiState,
         scenarioSessionIds: Set<String>,
@@ -371,6 +420,7 @@ object RoleplayStateSupport {
         return current.copy(
             isSending = false,
             streamingContent = "",
+            offlineReplayPhase = RoleplayOfflineReplayPhase.DISABLED,
             errorMessage = errorMessage,
         )
     }
@@ -500,6 +550,7 @@ object RoleplayStateSupport {
             messages = emptyList(),
             suggestions = emptyList(),
             streamingContent = "",
+            offlineReplayPhase = RoleplayOfflineReplayPhase.DISABLED,
             latestPromptDebugDump = "",
             isGeneratingSuggestions = false,
             suggestionErrorMessage = null,

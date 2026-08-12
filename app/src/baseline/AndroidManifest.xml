@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <permission
+        android:name="${applicationId}.permission.BENCHMARK_CONTROL"
+        android:protectionLevel="signature" />
+
+    <application>
+        <provider
+            android:name=".system.performance.BenchmarkFixtureProvider"
+            android:authorities="${applicationId}.benchmark.fixture"
+            android:exported="true"
+            android:grantUriPermissions="false"
+            android:permission="${applicationId}.permission.BENCHMARK_CONTROL"
+            android:process=":benchmark_fixture" />
+    </application>
+
+</manifest>

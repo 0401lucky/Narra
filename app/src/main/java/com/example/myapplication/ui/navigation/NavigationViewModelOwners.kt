@@ -7,11 +7,16 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavBackStackEntry
 import androidx.navigation.NavHostController
 import android.net.Uri
+import com.example.myapplication.BuildConfig
 import com.example.myapplication.conversation.PhoneContextBuilder
 import com.example.myapplication.data.repository.ImageFileStorage
 import com.example.myapplication.data.repository.economy.formatEconomyEventNote
 import com.example.myapplication.di.AppGraph
 import com.example.myapplication.model.PhoneSnapshotOwnerType
+import com.example.myapplication.system.performance.BenchmarkContract
+import com.example.myapplication.system.performance.F3BenchmarkAiDependencyPolicy
+import com.example.myapplication.system.performance.BenchmarkOfflineReplaySpec
+import com.example.myapplication.ui.performance.LocalBenchmarkRuntimePolicy
 import com.example.myapplication.viewmodel.ContextTransferViewModel
 import com.example.myapplication.viewmodel.MemoryManagementViewModel
 import com.example.myapplication.viewmodel.MailboxViewModel
@@ -28,6 +33,27 @@ internal fun rememberRoleplayViewModel(
     backStackEntry: NavBackStackEntry,
 ): RoleplayViewModel {
     val context = LocalContext.current
+    val benchmarkRuntimePolicy = if (
+        BuildConfig.APP_CHANNEL == BenchmarkContract.BASELINE_CHANNEL
+    ) {
+        LocalBenchmarkRuntimePolicy.current
+    } else {
+        null
+    }
+    val offlineReplaySpec = BenchmarkOfflineReplaySpec.DEFAULT.takeIf {
+        benchmarkRuntimePolicy?.useOfflineRoleplayReplay == true
+    }
+    val roleplayAiDependencies = remember(
+        benchmarkRuntimePolicy?.sessionId,
+        benchmarkRuntimePolicy?.useOfflineRoleplayReplay,
+        appGraph,
+    ) {
+        F3BenchmarkAiDependencyPolicy.resolve(
+            runtimePolicy = benchmarkRuntimePolicy,
+            aiGatewayProvider = { appGraph.aiGateway },
+            aiPromptExtrasServiceProvider = { appGraph.aiPromptExtrasService },
+        )
+    }
     val parentEntry = remember(backStackEntry) {
         navController.getBackStackEntry(AppRoutes.ROLEPLAY_GRAPH)
     }
@@ -36,8 +62,8 @@ internal fun rememberRoleplayViewModel(
         factory = RoleplayViewModel.factory(
             settingsRepository = appGraph.aiSettingsRepository,
             settingsEditor = appGraph.aiSettingsEditor,
-            aiGateway = appGraph.aiGateway,
-            aiPromptExtrasService = appGraph.aiPromptExtrasService,
+            aiGateway = roleplayAiDependencies.aiGateway,
+            aiPromptExtrasService = roleplayAiDependencies.aiPromptExtrasService,
             conversationRepository = appGraph.conversationRepository,
             roleplayRepository = appGraph.roleplayRepository,
             roleplayScriptRepository = appGraph.roleplayScriptRepository,
@@ -111,6 +137,8 @@ internal fun rememberRoleplayViewModel(
             releaseTransfer = { referenceId ->
                 appGraph.roleplayEconomyRepository.releaseTransfer(referenceId)
             },
+            offlineReplaySpec = offlineReplaySpec,
+            benchmarkAiViolationTracker = roleplayAiDependencies.violationTracker,
         ),
     )
 }

@@ -125,6 +125,20 @@ interface AiGateway {
     ): ParsedAssistantSpecialOutput
 }
 
+internal fun parseAssistantSpecialOutputLocally(
+    content: String,
+    existingParts: List<ChatMessagePart>,
+    statusCardsEnabled: Boolean = true,
+    hideStatusBlocksInBubble: Boolean = true,
+): ParsedAssistantSpecialOutput {
+    return GatewaySpecialPlaySupport.parseAssistantSpecialOutput(
+        content = content,
+        existingParts = existingParts,
+        statusCardsEnabled = statusCardsEnabled,
+        hideStatusBlocksInBubble = hideStatusBlocksInBubble,
+    )
+}
+
 class DefaultAiGateway(
     private val settingsStore: SettingsStore,
     private val apiServiceFactory: ApiServiceFactory,
@@ -666,7 +680,7 @@ class DefaultAiGateway(
         statusCardsEnabled: Boolean,
         hideStatusBlocksInBubble: Boolean,
     ): ParsedAssistantSpecialOutput {
-        return GatewaySpecialPlaySupport.parseAssistantSpecialOutput(
+        return parseAssistantSpecialOutputLocally(
             content = content,
             existingParts = existingParts,
             statusCardsEnabled = statusCardsEnabled,

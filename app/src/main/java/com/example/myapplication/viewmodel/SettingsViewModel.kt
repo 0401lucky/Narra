@@ -3,10 +3,11 @@ package com.example.myapplication.viewmodel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
+import com.example.myapplication.data.repository.VoiceCloneSampleStorage
 import com.example.myapplication.data.repository.ai.AiModelCatalogRepository
 import com.example.myapplication.data.repository.ai.AiSettingsEditor
 import com.example.myapplication.data.repository.ai.AiSettingsRepository
-import com.example.myapplication.data.repository.VoiceCloneSampleStorage
+import com.example.myapplication.data.repository.ai.ThemeSettings
 import com.example.myapplication.data.repository.tts.MimoTtsClient
 import com.example.myapplication.data.repository.tts.MimoTtsRequest
 import com.example.myapplication.model.AppColorTheme
@@ -30,13 +31,16 @@ import com.example.myapplication.model.UserPersonaMask
 import com.example.myapplication.model.VoiceSynthesisSettings
 import com.example.myapplication.model.VoiceProfileMode
 import com.example.myapplication.model.normalized
+import com.example.myapplication.system.performance.PerformanceTraceContract
+import com.example.myapplication.system.performance.trace
 import com.example.myapplication.system.security.SensitiveTextRedactor
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.stateIn
-import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.flow.updateAndGet
 import kotlinx.coroutines.launch
 import java.io.File
 import java.util.Base64
@@ -131,6 +135,13 @@ data class SettingsUiState(
     }
 }
 
+private fun SettingsUiState.toThemeSettings(): ThemeSettings {
+    return ThemeSettings(
+        themeMode = themeMode,
+        appColorTheme = appColorTheme,
+    )
+}
+
 class SettingsViewModel(
     private val settingsRepository: AiSettingsRepository,
     private val settingsEditor: AiSettingsEditor,
@@ -138,14 +149,29 @@ class SettingsViewModel(
     private val imageFileCleaner: suspend (String?) -> Boolean = { false },
     private val mimoTtsClient: MimoTtsClient? = null,
 ) : ViewModel() {
-    val storedSettings: StateFlow<AppSettings> = settingsRepository.settingsFlow.stateIn(
-        scope = viewModelScope,
-        started = SharingStarted.Eagerly,
-        initialValue = AppSettings(),
-    )
-
     private val _uiState = MutableStateFlow(SettingsUiState())
     val uiState: StateFlow<SettingsUiState> = _uiState.asStateFlow()
+    private val _themePreviewFlow = MutableStateFlow<ThemeSettings?>(null)
+    val themePreviewFlow: StateFlow<ThemeSettings?> = _themePreviewFlow.asStateFlow()
+
+    val storedSettings: StateFlow<AppSettings> = settingsRepository.settingsFlow
+        .onEach { settings ->
+            PerformanceTraceContract.SETTINGS_VIEW_MODEL_SYNC.trace {
+                val updatedState = _uiState.updateAndGet { current ->
+                    SettingsDraftStateSupport.syncStoredSettings(
+                        current = current,
+                        settings = settings,
+                    )
+                }
+                _themePreviewFlow.value = updatedState.toThemeSettings()
+            }
+        }
+        .stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.Eagerly,
+            initialValue = AppSettings(),
+        )
+
     private val persistenceCoordinator = SettingsPersistenceCoordinator(settingsEditor)
     private val modelLoadCoordinator = SettingsModelLoadCoordinator(
         modelCatalogRepository = modelCatalogRepository,
@@ -153,21 +179,6 @@ class SettingsViewModel(
     )
     private val assistantCoordinator = SettingsAssistantCoordinator(settingsEditor, imageFileCleaner)
     private val healthCoordinator = SettingsHealthCoordinator(modelCatalogRepository)
-
-    init {
-        viewModelScope.launch {
-            // 这里直接订阅仓库真实设置流，避免 stateIn 初始空值先生成默认草稿，
-            // 后续真实设置到达时又被误判成“已有未保存改动”。
-            settingsRepository.settingsFlow.collect { settings ->
-                _uiState.update { current ->
-                    SettingsDraftStateSupport.syncStoredSettings(
-                        current = current,
-                        settings = settings,
-                    )
-                }
-            }
-        }
-    }
 
     fun updateSelectedModel(value: String) = updateCurrentProvider { provider ->
         provider.copy(
@@ -768,7 +779,17 @@ class SettingsViewModel(
 
     /** 供同包扩展函数更新 [SettingsUiState]。 */
     internal fun updateUiState(transform: (SettingsUiState) -> SettingsUiState) {
-        _uiState.update(transform)
+        var previousThemeSettings: ThemeSettings? = null
+        val updatedState = _uiState.updateAndGet { current ->
+            previousThemeSettings = current.toThemeSettings()
+            transform(current)
+        }
+        if (
+            _themePreviewFlow.value != null &&
+            previousThemeSettings != updatedState.toThemeSettings()
+        ) {
+            _themePreviewFlow.value = updatedState.toThemeSettings()
+        }
     }
 
     /** 供同包扩展函数更新单个提供商草稿。 */

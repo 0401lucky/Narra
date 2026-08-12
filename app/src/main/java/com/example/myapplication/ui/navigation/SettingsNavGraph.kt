@@ -1,6 +1,7 @@
 package com.example.myapplication.ui.navigation
 
 import android.net.Uri
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -11,6 +12,7 @@ import androidx.navigation.NavHostController
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.navigation
 import com.example.myapplication.di.AppGraph
+import com.example.myapplication.ChatApplication
 import com.example.myapplication.model.AppSettings
 import com.example.myapplication.model.RoleplayScenario
 import com.example.myapplication.model.RoleplaySession
@@ -20,6 +22,7 @@ import com.example.myapplication.ui.screen.settings.PresetListScreen
 import com.example.myapplication.ui.screen.settings.RoleplayScriptBindingOption
 import com.example.myapplication.ui.screen.settings.RoleplayScriptLabScreen
 import com.example.myapplication.ui.screen.settings.SettingsScreen
+import com.example.myapplication.ui.screen.diagnostics.DiagnosticsScreenHost
 import com.example.myapplication.ui.screen.compliance.ComplianceScreen
 import com.example.myapplication.ui.screen.compliance.ComplianceScreenMode
 import com.example.myapplication.ui.screen.settings.UserPersonaMasksScreen
@@ -27,6 +30,7 @@ import com.example.myapplication.ui.screen.settings.VoiceSynthesisSettingsScreen
 import com.example.myapplication.ui.screen.settings.copyPresetForUser
 import com.example.myapplication.viewmodel.AppUpdateViewModel
 import com.example.myapplication.viewmodel.ComplianceViewModel
+import com.example.myapplication.viewmodel.DiagnosticsViewModel
 import com.example.myapplication.viewmodel.RoleplayScriptLabViewModel
 import com.example.myapplication.viewmodel.SettingsViewModel
 import com.example.myapplication.viewmodel.updateAutoCollapseThinking
@@ -102,6 +106,11 @@ internal fun NavGraphBuilder.registerSettingsNavGraph(
                         launchSingleTop = true
                     }
                 },
+                onOpenDiagnostics = {
+                    navController.navigate(AppRoutes.SETTINGS_DIAGNOSTICS) {
+                        launchSingleTop = true
+                    }
+                },
                 onOpenUserMasks = {
                     navController.navigate(AppRoutes.SETTINGS_USER_MASKS) {
                         launchSingleTop = true
@@ -163,6 +172,20 @@ internal fun NavGraphBuilder.registerSettingsNavGraph(
             ComplianceScreen(
                 uiState = complianceUiState,
                 mode = ComplianceScreenMode.VIEW_ONLY,
+                onNavigateBack = { navController.popBackStack() },
+            )
+        }
+
+        composable(AppRoutes.SETTINGS_DIAGNOSTICS) {
+            val application = LocalContext.current.applicationContext as ChatApplication
+            val diagnosticsViewModel: DiagnosticsViewModel = viewModel(
+                factory = DiagnosticsViewModel.factory(application.exitDiagnostics),
+            )
+            val diagnosticsUiState by diagnosticsViewModel.uiState.collectAsStateWithLifecycle()
+            DiagnosticsScreenHost(
+                uiState = diagnosticsUiState,
+                onExportDocumentSelected = diagnosticsViewModel::onExportDocumentSelected,
+                onConsumeMessage = diagnosticsViewModel::consumeMessage,
                 onNavigateBack = { navController.popBackStack() },
             )
         }

@@ -54,11 +54,13 @@ object RoleplayMessageUiMapper {
 
         return buildList {
             rawMessages.forEach { message ->
+                val identityScope = RoleplayMessageUiIdentityScope.forMessage(message)
                 when (message.role) {
                     MessageRole.USER -> {
                         appendRoleplayUserMessages(
                             target = this,
                             message = message,
+                            identityScope = identityScope,
                             userName = userName,
                             userAvatarUri = userPersona.avatarUri,
                             userAvatarUrl = userPersona.avatarUrl,
@@ -78,6 +80,7 @@ object RoleplayMessageUiMapper {
                         appendRoleplayAssistantMessages(
                             target = this,
                             message = message,
+                            identityScope = identityScope,
                             scenario = scenario,
                             userName = userName,
                             characterName = messageCharacterName,
@@ -114,6 +117,9 @@ object RoleplayMessageUiMapper {
                 )
                 add(
                     RoleplayMessageUiModel(
+                        uiItemId = RoleplayMessageUiIdentityScope
+                            .forStreaming(loadingMessage?.id)
+                            .streamingPreview(),
                         sourceMessageId = "streaming",
                         contentType = when {
                             streamingInteractionMode == RoleplayInteractionMode.OFFLINE_LONGFORM -> {
@@ -184,6 +190,7 @@ object RoleplayMessageUiMapper {
     private fun appendRoleplayUserMessages(
         target: MutableList<RoleplayMessageUiModel>,
         message: ChatMessage,
+        identityScope: RoleplayMessageUiIdentityScope,
         userName: String,
         userAvatarUri: String,
         userAvatarUrl: String,
@@ -192,6 +199,7 @@ object RoleplayMessageUiMapper {
         val initialSize = target.size
         if (message.isRecalled) {
             target += RoleplayMessageUiModel(
+                uiItemId = identityScope.nextNamed("recalled"),
                 sourceMessageId = message.id,
                 contentType = RoleplayContentType.NARRATION,
                 speaker = RoleplaySpeaker.SYSTEM,
@@ -208,6 +216,7 @@ object RoleplayMessageUiMapper {
         if (normalizedParts.isEmpty()) {
             val content = message.content.trim().ifBlank { "（无文本内容）" }
             target += RoleplayMessageUiModel(
+                uiItemId = identityScope.next(RoleplayContentType.DIALOGUE),
                 sourceMessageId = message.id,
                 contentType = RoleplayContentType.DIALOGUE,
                 speaker = RoleplaySpeaker.USER,
@@ -232,6 +241,7 @@ object RoleplayMessageUiMapper {
                 part.isActionPart() -> {
                     target += part.toRoleplayActionUiModel(
                         sourceMessageId = message.id,
+                        identityScope = identityScope,
                         speaker = RoleplaySpeaker.USER,
                         speakerName = userName,
                         speakerAvatarUri = userAvatarUri,
@@ -243,6 +253,7 @@ object RoleplayMessageUiMapper {
 
                 part.isSpecialPlayPart() -> {
                     target += RoleplayMessageUiModel(
+                        uiItemId = identityScope.special(part),
                         sourceMessageId = message.id,
                         contentType = RoleplayContentType.SPECIAL_PLAY,
                         speaker = RoleplaySpeaker.USER,
@@ -260,6 +271,7 @@ object RoleplayMessageUiMapper {
                 part.text.isNotBlank() -> {
                     val content = part.text.trim()
                     target += RoleplayMessageUiModel(
+                        uiItemId = identityScope.next(RoleplayContentType.DIALOGUE),
                         sourceMessageId = message.id,
                         contentType = RoleplayContentType.DIALOGUE,
                         speaker = RoleplaySpeaker.USER,
@@ -282,6 +294,7 @@ object RoleplayMessageUiMapper {
         if (target.size == initialSize && message.content.isNotBlank()) {
             val content = message.content.trim()
             target += RoleplayMessageUiModel(
+                uiItemId = identityScope.next(RoleplayContentType.DIALOGUE),
                 sourceMessageId = message.id,
                 contentType = RoleplayContentType.DIALOGUE,
                 speaker = RoleplaySpeaker.USER,
@@ -304,6 +317,7 @@ object RoleplayMessageUiMapper {
     private fun appendRoleplayAssistantMessages(
         target: MutableList<RoleplayMessageUiModel>,
         message: ChatMessage,
+        identityScope: RoleplayMessageUiIdentityScope,
         scenario: RoleplayScenario,
         userName: String,
         characterName: String,
@@ -330,6 +344,7 @@ object RoleplayMessageUiMapper {
             appendAssistantErrorMessage(
                 target = target,
                 message = message,
+                identityScope = identityScope,
                 characterName = characterName,
                 speakerAvatarUri = speakerAvatarUri,
                 speakerAvatarUrl = speakerAvatarUrl,
@@ -345,6 +360,7 @@ object RoleplayMessageUiMapper {
             normalizedParts.filter { it.isActionPart() }.forEach { part ->
                 target += part.toRoleplayActionUiModel(
                     sourceMessageId = message.id,
+                    identityScope = identityScope,
                     speaker = RoleplaySpeaker.CHARACTER,
                     speakerName = characterName,
                     speakerAvatarUri = speakerAvatarUri,
@@ -358,6 +374,7 @@ object RoleplayMessageUiMapper {
             val specialParts = normalizedParts.filter { it.isSpecialPlayPart() }
             specialParts.forEach { part ->
                 target += RoleplayMessageUiModel(
+                    uiItemId = identityScope.special(part),
                     sourceMessageId = message.id,
                     contentType = RoleplayContentType.SPECIAL_PLAY,
                     speaker = RoleplaySpeaker.CHARACTER,
@@ -382,6 +399,7 @@ object RoleplayMessageUiMapper {
                             appendLongformTextUiModel(
                                 target = target,
                                 sourceMessageId = message.id,
+                                identityScope = identityScope,
                                 characterName = characterName,
                                 speakerAvatarUri = speakerAvatarUri,
                                 speakerAvatarUrl = speakerAvatarUrl,
@@ -400,6 +418,7 @@ object RoleplayMessageUiMapper {
                 appendLongformTextUiModel(
                     target = target,
                     sourceMessageId = message.id,
+                    identityScope = identityScope,
                     characterName = characterName,
                     speakerAvatarUri = speakerAvatarUri,
                     speakerAvatarUrl = speakerAvatarUrl,
@@ -423,6 +442,7 @@ object RoleplayMessageUiMapper {
                 appendOnlineProtocolAssistantMessages(
                     target = target,
                     sourceMessageId = message.id,
+                    identityScope = identityScope,
                     rawContent = content,
                     characterName = characterName,
                     speakerAvatarUri = speakerAvatarUri,
@@ -438,6 +458,7 @@ object RoleplayMessageUiMapper {
             appendAssistantTextSegments(
                 target = target,
                 sourceMessageId = message.id,
+                identityScope = identityScope,
                 scenarioId = scenario.id,
                 rawContent = content,
                 userName = userName,
@@ -462,6 +483,7 @@ object RoleplayMessageUiMapper {
                 part.isActionPart() -> {
                     target += part.toRoleplayActionUiModel(
                         sourceMessageId = message.id,
+                        identityScope = identityScope,
                         speaker = RoleplaySpeaker.CHARACTER,
                         speakerName = characterName,
                         speakerAvatarUri = speakerAvatarUri,
@@ -475,6 +497,7 @@ object RoleplayMessageUiMapper {
 
                 part.isSpecialPlayPart() -> {
                     target += RoleplayMessageUiModel(
+                        uiItemId = identityScope.special(part),
                         sourceMessageId = message.id,
                         contentType = RoleplayContentType.SPECIAL_PLAY,
                         speaker = RoleplaySpeaker.CHARACTER,
@@ -494,6 +517,7 @@ object RoleplayMessageUiMapper {
                 part.text.isNotBlank() -> {
                     if (part.isOnlineThoughtPart()) {
                         target += RoleplayMessageUiModel(
+                            uiItemId = identityScope.next(RoleplayContentType.THOUGHT),
                             sourceMessageId = message.id,
                             contentType = RoleplayContentType.THOUGHT,
                             speaker = RoleplaySpeaker.CHARACTER,
@@ -515,6 +539,7 @@ object RoleplayMessageUiMapper {
                         appendOnlineProtocolAssistantMessages(
                             target = target,
                             sourceMessageId = message.id,
+                            identityScope = identityScope,
                             rawContent = part.text,
                             characterName = characterName,
                             speakerAvatarUri = speakerAvatarUri,
@@ -530,6 +555,7 @@ object RoleplayMessageUiMapper {
                     appendAssistantTextSegments(
                         target = target,
                         sourceMessageId = message.id,
+                        identityScope = identityScope,
                         scenarioId = scenario.id,
                         rawContent = part.text,
                         userName = userName,
@@ -556,6 +582,7 @@ object RoleplayMessageUiMapper {
                 appendOnlineProtocolAssistantMessages(
                     target = target,
                     sourceMessageId = message.id,
+                    identityScope = identityScope,
                     rawContent = message.content,
                     characterName = characterName,
                     speakerAvatarUri = speakerAvatarUri,
@@ -571,6 +598,7 @@ object RoleplayMessageUiMapper {
             appendAssistantTextSegments(
                 target = target,
                 sourceMessageId = message.id,
+                identityScope = identityScope,
                 scenarioId = scenario.id,
                 rawContent = message.content,
                 userName = userName,
@@ -593,6 +621,7 @@ object RoleplayMessageUiMapper {
     private fun appendOnlineProtocolAssistantMessages(
         target: MutableList<RoleplayMessageUiModel>,
         sourceMessageId: String,
+        identityScope: RoleplayMessageUiIdentityScope,
         rawContent: String,
         characterName: String,
         speakerAvatarUri: String,
@@ -617,6 +646,7 @@ object RoleplayMessageUiMapper {
                             !appendOnlineProtocolAssistantMessages(
                                 target = target,
                                 sourceMessageId = sourceMessageId,
+                                identityScope = identityScope,
                                 rawContent = part.text,
                                 characterName = characterName,
                                 speakerAvatarUri = speakerAvatarUri,
@@ -630,6 +660,7 @@ object RoleplayMessageUiMapper {
                             appendOnlineTextPartUiModel(
                                 target = target,
                                 sourceMessageId = sourceMessageId,
+                                identityScope = identityScope,
                                 part = part,
                                 characterName = characterName,
                                 speakerAvatarUri = speakerAvatarUri,
@@ -656,6 +687,7 @@ object RoleplayMessageUiMapper {
                 part.isActionPart() -> {
                     target += part.toRoleplayActionUiModel(
                         sourceMessageId = sourceMessageId,
+                        identityScope = identityScope,
                         speaker = RoleplaySpeaker.CHARACTER,
                         speakerName = characterName,
                         speakerAvatarUri = speakerAvatarUri,
@@ -669,6 +701,7 @@ object RoleplayMessageUiMapper {
 
                 part.isSpecialPlayPart() -> {
                     target += RoleplayMessageUiModel(
+                        uiItemId = identityScope.special(part),
                         sourceMessageId = sourceMessageId,
                         contentType = RoleplayContentType.SPECIAL_PLAY,
                         speaker = RoleplaySpeaker.CHARACTER,
@@ -689,6 +722,7 @@ object RoleplayMessageUiMapper {
                     appendOnlineTextPartUiModel(
                         target = target,
                         sourceMessageId = sourceMessageId,
+                        identityScope = identityScope,
                         part = part,
                         characterName = characterName,
                         speakerAvatarUri = speakerAvatarUri,
@@ -707,6 +741,7 @@ object RoleplayMessageUiMapper {
     private fun appendOnlineTextPartUiModel(
         target: MutableList<RoleplayMessageUiModel>,
         sourceMessageId: String,
+        identityScope: RoleplayMessageUiIdentityScope,
         part: ChatMessagePart,
         characterName: String,
         speakerAvatarUri: String,
@@ -719,6 +754,7 @@ object RoleplayMessageUiMapper {
         if (part.isOnlineThoughtPart()) {
             val thoughtContent = part.onlineThoughtContent()
             target += RoleplayMessageUiModel(
+                uiItemId = identityScope.next(RoleplayContentType.THOUGHT),
                 sourceMessageId = sourceMessageId,
                 contentType = RoleplayContentType.THOUGHT,
                 speaker = RoleplaySpeaker.CHARACTER,
@@ -741,6 +777,7 @@ object RoleplayMessageUiMapper {
         val narrationContent = extractOnlineNarrationContent(content)
         if (narrationContent != null) {
             target += RoleplayMessageUiModel(
+                uiItemId = identityScope.next(RoleplayContentType.NARRATION),
                 sourceMessageId = sourceMessageId,
                 contentType = RoleplayContentType.NARRATION,
                 speaker = RoleplaySpeaker.NARRATOR,
@@ -753,6 +790,7 @@ object RoleplayMessageUiMapper {
             )
         } else {
             target += RoleplayMessageUiModel(
+                uiItemId = identityScope.next(RoleplayContentType.DIALOGUE),
                 sourceMessageId = sourceMessageId,
                 contentType = RoleplayContentType.DIALOGUE,
                 speaker = RoleplaySpeaker.CHARACTER,
@@ -775,6 +813,7 @@ object RoleplayMessageUiMapper {
     private fun appendAssistantErrorMessage(
         target: MutableList<RoleplayMessageUiModel>,
         message: ChatMessage,
+        identityScope: RoleplayMessageUiIdentityScope,
         characterName: String,
         speakerAvatarUri: String,
         speakerAvatarUrl: String,
@@ -798,6 +837,7 @@ object RoleplayMessageUiMapper {
             message.content.trim().ifBlank { "发送失败" }
         }
         target += RoleplayMessageUiModel(
+            uiItemId = identityScope.nextNamed("error"),
             sourceMessageId = message.id,
             contentType = RoleplayContentType.DIALOGUE,
             speaker = RoleplaySpeaker.CHARACTER,
@@ -881,6 +921,7 @@ object RoleplayMessageUiMapper {
     private fun appendAssistantTextSegments(
         target: MutableList<RoleplayMessageUiModel>,
         sourceMessageId: String,
+        identityScope: RoleplayMessageUiIdentityScope,
         scenarioId: String,
         rawContent: String,
         userName: String,
@@ -912,6 +953,7 @@ object RoleplayMessageUiMapper {
                         appendAssistantTextSegments(
                             target = target,
                             sourceMessageId = sourceMessageId,
+                            identityScope = identityScope,
                             scenarioId = scenarioId,
                             rawContent = part.text,
                             userName = userName,
@@ -949,6 +991,7 @@ object RoleplayMessageUiMapper {
                 characterName = characterName,
             )
             target += RoleplayMessageUiModel(
+                uiItemId = identityScope.next(segment.contentType),
                 sourceMessageId = sourceMessageId,
                 contentType = segment.contentType,
                 speaker = segment.speaker,
@@ -1014,6 +1057,7 @@ object RoleplayMessageUiMapper {
     private fun appendLongformTextUiModel(
         target: MutableList<RoleplayMessageUiModel>,
         sourceMessageId: String,
+        identityScope: RoleplayMessageUiIdentityScope,
         characterName: String,
         speakerAvatarUri: String,
         speakerAvatarUrl: String,
@@ -1031,6 +1075,7 @@ object RoleplayMessageUiMapper {
             return
         }
         target += RoleplayMessageUiModel(
+            uiItemId = identityScope.next(RoleplayContentType.LONGFORM),
             sourceMessageId = sourceMessageId,
             contentType = RoleplayContentType.LONGFORM,
             speaker = RoleplaySpeaker.CHARACTER,
@@ -1055,6 +1100,7 @@ object RoleplayMessageUiMapper {
 
     private fun ChatMessagePart.toRoleplayActionUiModel(
         sourceMessageId: String,
+        identityScope: RoleplayMessageUiIdentityScope,
         speaker: RoleplaySpeaker,
         speakerName: String,
         speakerAvatarUri: String = "",
@@ -1065,6 +1111,7 @@ object RoleplayMessageUiMapper {
         canRetry: Boolean = false,
     ): RoleplayMessageUiModel {
         return RoleplayMessageUiModel(
+            uiItemId = identityScope.action(this),
             sourceMessageId = sourceMessageId,
             contentType = RoleplayContentType.ACTION,
             speaker = speaker,

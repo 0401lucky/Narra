@@ -30,6 +30,7 @@ object AppRoutes {
     const val SETTINGS_MEMORY = "settings/memory"
     const val SETTINGS_CONTEXT_TRANSFER = "settings/context-transfer"
     const val SETTINGS_CONTEXT_LOG = "settings/context-log"
+    const val SETTINGS_DIAGNOSTICS = "settings/diagnostics"
     const val CHAT = "chat"
     const val TRANSLATOR = "translator"
     const val ROLEPLAY_GRAPH = "roleplay_graph"

@@ -52,6 +52,8 @@ import com.example.myapplication.ui.component.roleplay.RoleplaySceneBackground
 import com.example.myapplication.ui.component.roleplay.rememberRoleplayNoBackgroundSkinSpec
 import com.example.myapplication.ui.component.roleplay.rememberImmersiveBackdropState
 import com.example.myapplication.ui.screen.settings.SettingsScreenPadding
+import com.example.myapplication.system.performance.BenchmarkReadyIds
+import com.example.myapplication.ui.performance.benchmarkReadyTag
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -117,6 +119,7 @@ fun RoleplaySettingsScreen(
     onRestartSession: (() -> Unit) -> Unit,
     onResetSession: (() -> Unit) -> Unit,
     onNavigateBack: () -> Unit,
+    isBenchmarkSessionReady: Boolean = false,
 ) {
     val systemHighContrastEnabled = rememberSystemHighTextContrastEnabled()
     val effectiveHighContrast = settings.roleplayHighContrast || systemHighContrastEnabled
@@ -134,7 +137,14 @@ fun RoleplaySettingsScreen(
     val scenarioTitle = scenario?.title?.trim().orEmpty().ifBlank { "沉浸扮演" }
     val palette = backdropState.palette
     val noBackgroundSkinSpec = rememberRoleplayNoBackgroundSkinSpec(settings.roleplayNoBackgroundSkin)
-    Box(modifier = Modifier.fillMaxSize()) {
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .benchmarkReadyTag(
+                readyId = BenchmarkReadyIds.SETTINGS_READY,
+                ready = isBenchmarkSessionReady,
+            ),
+    ) {
         RoleplaySceneBackground(
             backdropState = backdropState,
             modifier = Modifier.fillMaxSize(),

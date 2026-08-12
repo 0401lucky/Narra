@@ -96,9 +96,13 @@ import com.example.myapplication.model.isScenarioPresetFollowingAssistant
 import com.example.myapplication.model.resolveActivePresetId
 import com.example.myapplication.model.scenarioPresetSummary
 import com.example.myapplication.roleplay.RoleplayConversationSupport
+import com.example.myapplication.system.performance.BenchmarkActionIds
+import com.example.myapplication.system.performance.BenchmarkReadyIds
 import com.example.myapplication.ui.component.AssistantAvatar
 import com.example.myapplication.ui.component.roleplay.ImmersiveBackdropState
 import com.example.myapplication.ui.component.roleplay.ImmersiveGlassSurface
+import com.example.myapplication.ui.performance.benchmarkActionTag
+import com.example.myapplication.ui.performance.benchmarkReadyTag
 import com.example.myapplication.ui.screen.settings.SettingsScreenPadding
 import java.net.URI
 import kotlinx.coroutines.launch
@@ -434,15 +438,24 @@ internal fun RoleplaySettingsSidebarContent(
                 )
             }
             item {
-                RoleplaySettingsActionsSection(
-                    backdropState = backdropState,
-                    currentModel = currentModel,
-                    contextGovernance = contextGovernance,
-                    latestPromptDebugDump = latestPromptDebugDump,
-                    onOpenReadingMode = onOpenReadingMode,
-                    onOpenModelPicker = onOpenModelPicker,
-                    onOpenContextLog = onOpenContextLog,
-                )
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .benchmarkReadyTag(
+                            readyId = BenchmarkReadyIds.ROLEPLAY_QUICK_SETTINGS_READY,
+                            ready = true,
+                        ),
+                ) {
+                    RoleplaySettingsActionsSection(
+                        backdropState = backdropState,
+                        currentModel = currentModel,
+                        contextGovernance = contextGovernance,
+                        latestPromptDebugDump = latestPromptDebugDump,
+                        onOpenReadingMode = onOpenReadingMode,
+                        onOpenModelPicker = onOpenModelPicker,
+                        onOpenContextLog = onOpenContextLog,
+                    )
+                }
             }
             if (recentMemoryProposalHistory.isNotEmpty()) {
                 item {
@@ -897,6 +910,9 @@ private fun RoleplaySettingsMainPanel(
                     title = "快捷切换",
                     summary = currentModel.ifBlank { "阅读模式 / 当前模型" },
                     icon = Icons.Default.SyncAlt,
+                    modifier = Modifier.benchmarkActionTag(
+                        BenchmarkActionIds.OPEN_ROLEPLAY_QUICK_SETTINGS,
+                    ),
                     onClick = { onNavigateToPage(RoleplaySettingsPanelPage.QUICK) },
                 )
             }
@@ -1885,6 +1901,7 @@ private fun SummaryLinkRow(
     title: String,
     summary: String,
     icon: androidx.compose.ui.graphics.vector.ImageVector,
+    modifier: Modifier = Modifier,
     onClick: () -> Unit,
     enabled: Boolean = true,
     loading: Boolean = false,
@@ -1892,7 +1909,7 @@ private fun SummaryLinkRow(
     supportingColor: Color = MaterialTheme.colorScheme.onSurfaceVariant,
 ) {
     Row(
-        modifier = Modifier
+        modifier = modifier
             .fillMaxWidth()
             .clickable(enabled = enabled, onClick = onClick)
             .padding(horizontal = 18.dp, vertical = 16.dp),

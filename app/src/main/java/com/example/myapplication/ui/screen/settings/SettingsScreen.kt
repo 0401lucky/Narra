@@ -15,6 +15,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Assignment
 import androidx.compose.material.icons.filled.AutoAwesome
+import androidx.compose.material.icons.filled.BugReport
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.DarkMode
 import androidx.compose.material.icons.filled.Extension
@@ -53,6 +54,10 @@ import com.example.myapplication.R
 import com.example.myapplication.model.ThemeMode
 import com.example.myapplication.model.AppColorTheme
 import com.example.myapplication.viewmodel.SettingsUiState
+import com.example.myapplication.system.performance.BenchmarkActionIds
+import com.example.myapplication.system.performance.BenchmarkReadyIds
+import com.example.myapplication.ui.performance.benchmarkActionTag
+import com.example.myapplication.ui.performance.benchmarkReadyTag
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -65,6 +70,7 @@ fun SettingsScreen(
     onOpenVoiceSynthesisSettings: () -> Unit,
     onOpenUpdateSettings: () -> Unit,
     onOpenComplianceSettings: () -> Unit = {},
+    onOpenDiagnostics: () -> Unit = {},
     onOpenUserMasks: () -> Unit,
     onOpenModelSettings: () -> Unit,
     onOpenAssistantSettings: () -> Unit,
@@ -120,6 +126,10 @@ fun SettingsScreen(
     }
 
     Scaffold(
+        modifier = Modifier.benchmarkReadyTag(
+            readyId = BenchmarkReadyIds.SETTINGS_READY,
+            ready = isSettingsBenchmarkReady(uiState),
+        ),
         topBar = {
             SettingsTopBar(
                 title = stringResource(R.string.settings_title),
@@ -222,6 +232,13 @@ fun SettingsScreen(
                     )
                     SettingsGroupDivider()
                     SettingsListRow(
+                        leadingContent = { Icon(Icons.Default.BugReport, contentDescription = null, tint = palette.title) },
+                        title = "本地诊断",
+                        supportingText = "查看并主动导出有限的异常退出摘要",
+                        onClick = onOpenDiagnostics,
+                    )
+                    SettingsGroupDivider()
+                    SettingsListRow(
                         leadingContent = { Icon(Icons.Default.Extension, contentDescription = null, tint = palette.title) },
                         title = "脚本实验室",
                         supportingText = "角色、场景和会话 JS 脚本",
@@ -247,6 +264,9 @@ fun SettingsScreen(
                     )
                     SettingsGroupDivider()
                     SettingsListRow(
+                        modifier = Modifier.benchmarkActionTag(
+                            BenchmarkActionIds.OPEN_VOICE_SYNTHESIS,
+                        ),
                         leadingContent = { Icon(Icons.Default.RecordVoiceOver, contentDescription = null, tint = palette.title) },
                         title = "MiMo 语音合成",
                         supportingText = voiceSummary,
@@ -305,6 +325,12 @@ fun SettingsScreen(
             onCodeBlockAutoCollapseChange = onUpdateCodeBlockAutoCollapse,
         )
     }
+}
+
+internal fun isSettingsBenchmarkReady(uiState: SettingsUiState): Boolean {
+    val selectedProviderId = uiState.selectedProviderId
+    return selectedProviderId.isNotBlank() &&
+        uiState.providers.any { provider -> provider.id == selectedProviderId }
 }
 
 @androidx.compose.material3.ExperimentalMaterial3Api

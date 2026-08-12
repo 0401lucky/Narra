@@ -15,6 +15,9 @@ import com.example.myapplication.ui.screen.phone.PhoneCheckScreen
 import com.example.myapplication.viewmodel.AppUpdateViewModel
 import com.example.myapplication.viewmodel.ComplianceViewModel
 import com.example.myapplication.viewmodel.SettingsViewModel
+import com.example.myapplication.ui.performance.LocalBenchmarkRuntimePolicy
+import com.example.myapplication.BuildConfig
+import com.example.myapplication.system.performance.BenchmarkContract
 
 @Composable
 fun AppNavHost(
@@ -25,6 +28,13 @@ fun AppNavHost(
     complianceViewModel: ComplianceViewModel,
     startDestination: String,
 ) {
+    val benchmarkRuntimePolicy = if (
+        BuildConfig.APP_CHANNEL == BenchmarkContract.BASELINE_CHANNEL
+    ) {
+        LocalBenchmarkRuntimePolicy.current
+    } else {
+        null
+    }
     NavHost(
         navController = navController,
         startDestination = startDestination,
@@ -51,6 +61,14 @@ fun AppNavHost(
             navController = navController,
             settingsViewModel = settingsViewModel,
         )
+
+        if (benchmarkRuntimePolicy?.isBenchmarkSessionActive == true) {
+            registerChatNavGraph(
+                appGraph = appGraph,
+                navController = navController,
+                settingsViewModel = settingsViewModel,
+            )
+        }
 
         registerSettingsNavGraph(
             appGraph = appGraph,

@@ -75,6 +75,11 @@ import com.example.myapplication.model.VoiceSynthesisSettings
 import com.example.myapplication.model.buildVoiceDesignPromptFromAssistant
 import com.example.myapplication.model.resolveMimoChatCompletionsEndpoint
 import com.example.myapplication.ui.component.NarraButton
+import com.example.myapplication.system.performance.BenchmarkActionIds
+import com.example.myapplication.system.performance.BenchmarkReadyIds
+import com.example.myapplication.ui.performance.benchmarkActionTag
+import com.example.myapplication.ui.performance.benchmarkResourceIdHost
+import com.example.myapplication.ui.performance.benchmarkReadyTag
 import kotlinx.coroutines.launch
 import java.io.File
 
@@ -106,6 +111,10 @@ fun VoiceSynthesisSettingsScreen(
     }
 
     Scaffold(
+        modifier = Modifier.benchmarkReadyTag(
+            readyId = BenchmarkReadyIds.VOICE_SYNTHESIS_READY,
+            ready = assistants.isNotEmpty() && selectedAssistant == null,
+        ),
         topBar = {
             SettingsTopBar(
                 title = "MiMo 语音",
@@ -361,6 +370,11 @@ fun VoiceSynthesisSettingsScreen(
                     val profile = normalizedSettings.assistantProfiles[assistant.id]
                     SettingsGroup {
                         SettingsListRow(
+                            modifier = if (assistant.id == assistants.firstOrNull()?.id) {
+                                Modifier.benchmarkActionTag(BenchmarkActionIds.OPEN_VOICE_PROFILE)
+                            } else {
+                                Modifier
+                            },
                             leadingContent = {
                                 Icon(
                                     imageVector = Icons.Default.RecordVoiceOver,
@@ -791,10 +805,13 @@ internal fun AssistantVoiceProfileSheet(
         )
     }
 
-    ModalBottomSheet(onDismissRequest = onDismissRequest) {
+    ModalBottomSheet(
+        onDismissRequest = onDismissRequest,
+    ) {
         Column(
             modifier = Modifier
                 .fillMaxWidth()
+                .benchmarkResourceIdHost()
                 .verticalScroll(scrollState)
                 .navigationBarsPadding()
                 .imePadding()
@@ -808,6 +825,10 @@ internal fun AssistantVoiceProfileSheet(
         ) {
             Text(
                 text = assistant.name.ifBlank { "角色音色" },
+                modifier = Modifier.benchmarkReadyTag(
+                    readyId = BenchmarkReadyIds.VOICE_PROFILE_READY,
+                    ready = true,
+                ),
                 style = MaterialTheme.typography.titleLarge,
                 fontWeight = FontWeight.Bold,
             )
@@ -961,7 +982,12 @@ internal fun AssistantVoiceProfileSheet(
                 horizontalArrangement = Arrangement.End,
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                TextButton(onClick = onDismissRequest) {
+                TextButton(
+                    onClick = onDismissRequest,
+                    modifier = Modifier.benchmarkActionTag(
+                        BenchmarkActionIds.CLOSE_VOICE_PROFILE,
+                    ),
+                ) {
                     Text("取消")
                 }
                 TextButton(

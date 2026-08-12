@@ -36,6 +36,7 @@ class RoleplayMessageDeletionUiTest {
     @Test
     fun dialogueMenu_keepsRecallAndDeleteIndependentWithConfirmation() {
         val message = RoleplayMessageUiModel(
+            uiItemId = "roleplay-message-1:dialogue:0",
             sourceMessageId = "roleplay-message-1",
             contentType = RoleplayContentType.DIALOGUE,
             speaker = RoleplaySpeaker.USER,
@@ -105,6 +106,7 @@ class RoleplayMessageDeletionUiTest {
     @Test
     fun pokeMessage_menuCanDeleteUnderlyingSourceMessage() {
         val message = RoleplayMessageUiModel(
+            uiItemId = "poke-source-message:action:0",
             sourceMessageId = "poke-source-message",
             contentType = RoleplayContentType.ACTION,
             speaker = RoleplaySpeaker.SYSTEM,
