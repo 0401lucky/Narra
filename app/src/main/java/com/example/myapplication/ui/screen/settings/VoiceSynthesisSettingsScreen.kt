@@ -2,6 +2,7 @@ package com.example.myapplication.ui.screen.settings
 
 import android.media.MediaPlayer
 import android.net.Uri
+import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.rememberScrollState
@@ -21,7 +22,6 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.verticalScroll
-import androidx.activity.compose.BackHandler
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.GraphicEq
 import androidx.compose.material.icons.filled.PlayArrow
@@ -44,6 +44,7 @@ import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -58,6 +59,7 @@ import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.example.myapplication.data.repository.AudioFileStorage
+import com.example.myapplication.data.repository.SavedAudioFile
 import com.example.myapplication.data.repository.VoiceCloneSampleStorage
 import com.example.myapplication.data.repository.tts.MimoTtsClient
 import com.example.myapplication.data.repository.tts.MimoTtsRequest
@@ -74,14 +76,21 @@ import com.example.myapplication.model.VoiceProfileMode
 import com.example.myapplication.model.VoiceSynthesisSettings
 import com.example.myapplication.model.buildVoiceDesignPromptFromAssistant
 import com.example.myapplication.model.resolveMimoChatCompletionsEndpoint
+import com.example.myapplication.ui.component.NarraAlertDialog
 import com.example.myapplication.ui.component.NarraButton
 import com.example.myapplication.system.performance.BenchmarkActionIds
 import com.example.myapplication.system.performance.BenchmarkReadyIds
+import com.example.myapplication.system.security.SensitiveTextRedactor
 import com.example.myapplication.ui.performance.benchmarkActionTag
 import com.example.myapplication.ui.performance.benchmarkResourceIdHost
 import com.example.myapplication.ui.performance.benchmarkReadyTag
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.currentCoroutineContext
+import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.launch
 import java.io.File
+import java.util.UUID
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -92,6 +101,7 @@ fun VoiceSynthesisSettingsScreen(
     isTesting: Boolean,
     onUpdateSettings: (VoiceSynthesisSettings) -> Unit,
     onTestSettings: (VoiceSynthesisSettings) -> Unit,
+    onPreviewProfile: (suspend (VoiceSynthesisSettings, VoiceProfile, String) -> SavedAudioFile)? = null,
     onSaveChanges: () -> Unit,
     onNavigateBack: () -> Unit,
 ) {
@@ -441,6 +451,7 @@ fun VoiceSynthesisSettingsScreen(
                     ),
                 )
             },
+            onPreviewProfile = onPreviewProfile,
             onSaveProfile = { profile ->
                 val updatedProfiles = if (profile.mode == VoiceProfileMode.INHERIT) {
                     normalizedSettings.assistantProfiles - selectedAssistant.id
@@ -509,6 +520,7 @@ private fun PresetVoiceSheet(
     var previewMessage by rememberSaveable { mutableStateOf("") }
     var previewFilePath by rememberSaveable { mutableStateOf("") }
     var mediaPlayer by remember { mutableStateOf<MediaPlayer?>(null) }
+    var previewJob by remember { mutableStateOf<Job?>(null) }
 
     fun deletePreviewFile(path: String) {
         val previewDir = File(context.cacheDir, MIMO_PRESET_PREVIEW_CACHE_DIR)
@@ -519,6 +531,8 @@ private fun PresetVoiceSheet(
     }
 
     fun stopPreview(clearMessage: Boolean = true) {
+        previewJob?.cancel()
+        previewJob = null
         mediaPlayer?.let { player ->
             runCatching {
                 if (player.isPlaying) {
@@ -570,7 +584,7 @@ private fun PresetVoiceSheet(
         }.onFailure { throwable ->
             deletePreviewFile(filePath)
             previewingVoiceId = ""
-            previewMessage = throwable.message?.takeIf { it.isNotBlank() } ?: "试听播放失败"
+            previewMessage = voiceSynthesisErrorMessage(throwable, "试听播放失败")
         }
     }
 
@@ -605,8 +619,9 @@ private fun PresetVoiceSheet(
 
         previewingVoiceId = voiceId
         previewMessage = "正在合成 $voiceId 的试听音频..."
-        coroutineScope.launch {
-            runCatching {
+        previewJob = coroutineScope.launch {
+            var generatedPreviewPath = ""
+            try {
                 val result = MimoTtsClient().synthesize(
                     apiKey = apiKey,
                     request = MimoTtsRequest.preset(
@@ -615,23 +630,34 @@ private fun PresetVoiceSheet(
                     ),
                     baseUrl = normalizedSettings.baseUrl,
                 )
-                AudioFileStorage.saveBase64AudioToDirectory(
+                val savedAudio = AudioFileStorage.saveBase64AudioToDirectory(
                     directory = previewDir,
                     b64Data = result.b64Audio,
                     fileNamePrefix = buildPresetVoicePreviewCachePrefix(previewCacheKey),
                 )
-            }.onSuccess { savedAudio ->
-                previewFilePath = savedAudio.path
+                generatedPreviewPath = savedAudio.path
+                currentCoroutineContext().ensureActive()
                 if (previewingVoiceId == voiceId) {
+                    previewFilePath = savedAudio.path
                     playPreviewFile(
                         voiceId = voiceId,
                         filePath = savedAudio.path,
                     )
+                } else {
+                    deletePreviewFile(savedAudio.path)
                 }
-            }.onFailure { throwable ->
+            } catch (cancellation: CancellationException) {
+                generatedPreviewPath.takeIf { it.isNotBlank() }?.let(::deletePreviewFile)
+                throw cancellation
+            } catch (throwable: Throwable) {
+                generatedPreviewPath.takeIf { it.isNotBlank() }?.let(::deletePreviewFile)
                 if (previewingVoiceId == voiceId) {
                     previewingVoiceId = ""
-                    previewMessage = "试听失败：${throwable.message ?: "未知错误"}"
+                    previewMessage = "试听失败：${voiceSynthesisErrorMessage(throwable, "未知错误")}"
+                }
+            } finally {
+                if (previewJob === currentCoroutineContext()[Job]) {
+                    previewJob = null
                 }
             }
         }
@@ -639,6 +665,7 @@ private fun PresetVoiceSheet(
 
     DisposableEffect(Unit) {
         onDispose {
+            previewJob?.cancel()
             stopPreview()
         }
     }
@@ -739,6 +766,8 @@ internal fun AssistantVoiceProfileSheet(
     isTesting: Boolean,
     onDismissRequest: () -> Unit,
     onTestProfile: (VoiceProfile) -> Unit,
+    onPreviewProfile: (suspend (VoiceSynthesisSettings, VoiceProfile, String) -> SavedAudioFile)? = null,
+    previewPlaybackFactory: VoicePreviewPlaybackFactory = AndroidVoicePreviewPlaybackFactory,
     onSaveProfile: (VoiceProfile) -> Unit,
 ) {
     val context = LocalContext.current
@@ -761,35 +790,71 @@ internal fun AssistantVoiceProfileSheet(
         mutableStateOf(initialProfile.voiceCloneSampleFileName)
     }
     var voiceCloneSampleSizeBytes by rememberSaveable(assistant.id) {
-        mutableStateOf(initialProfile.voiceCloneSampleSizeBytes)
+        mutableLongStateOf(initialProfile.voiceCloneSampleSizeBytes)
     }
     var voiceCloneImportError by rememberSaveable(assistant.id) {
         mutableStateOf(initialVoiceCloneImportError)
     }
     var showPresetVoiceSheet by rememberSaveable(assistant.id) { mutableStateOf(false) }
+    var isPreviewTesting by remember(assistant.id) { mutableStateOf(false) }
+    var isPreviewPlaybackActive by remember(assistant.id) { mutableStateOf(false) }
+    var previewStatus by remember(assistant.id) { mutableStateOf("") }
+    var previewAudio by remember(assistant.id) { mutableStateOf<SavedAudioFile?>(null) }
+    var previewPlayback by remember(assistant.id) { mutableStateOf<VoicePreviewPlayback?>(null) }
+    var showPreviewResultDialog by remember(assistant.id) { mutableStateOf(false) }
+    var previewDialogTitle by remember(assistant.id) { mutableStateOf("") }
+    var previewDialogMessage by remember(assistant.id) { mutableStateOf("") }
+    var isFixingPreviewVoice by remember(assistant.id) { mutableStateOf(false) }
+    var previewReadyForFix by remember(assistant.id) { mutableStateOf(false) }
+    var isLatestPreviewFixed by remember(assistant.id) { mutableStateOf(false) }
+    var pendingFixedSamplePath by remember(assistant.id) { mutableStateOf("") }
+    var profileAccepted by remember(assistant.id) { mutableStateOf(false) }
+    var previewJob by remember(assistant.id) { mutableStateOf<Job?>(null) }
+    var fixingJob by remember(assistant.id) { mutableStateOf<Job?>(null) }
+    var previewGeneration by remember(assistant.id) { mutableLongStateOf(0L) }
+    var fixingGeneration by remember(assistant.id) { mutableLongStateOf(0L) }
+
+    suspend fun ensureCurrentFixingTask(generation: Long) {
+        currentCoroutineContext().ensureActive()
+        if (generation != fixingGeneration) {
+            throw CancellationException("固定音色任务已失效")
+        }
+    }
+
     val voiceCloneSampleLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.OpenDocument(),
     ) { uri: Uri? ->
         if (uri == null) return@rememberLauncherForActivityResult
         coroutineScope.launch {
             voiceCloneImportError = ""
-            runCatching {
-                VoiceCloneSampleStorage.copyToAppStorage(
+            var copiedSamplePath = ""
+            try {
+                val sample = VoiceCloneSampleStorage.copyToAppStorage(
                     context = context,
                     uri = uri,
                     scope = "assistant-${assistant.id}",
                 )
-            }.onSuccess { sample ->
+                copiedSamplePath = sample.path
+                currentCoroutineContext().ensureActive()
                 val previousPath = voiceCloneSamplePath
                 voiceCloneSamplePath = sample.path
                 voiceCloneSampleMimeType = sample.mimeType
                 voiceCloneSampleFileName = sample.fileName
                 voiceCloneSampleSizeBytes = sample.sizeBytes
+                copiedSamplePath = ""
                 if (previousPath.isNotBlank() && previousPath != sample.path) {
                     VoiceCloneSampleStorage.deleteIfLocal(context, previousPath)
                 }
-            }.onFailure { throwable ->
-                voiceCloneImportError = throwable.message ?: "声音样本导入失败"
+            } catch (cancellation: CancellationException) {
+                copiedSamplePath.takeIf { it.isNotBlank() }?.let { path ->
+                    VoiceCloneSampleStorage.deleteIfLocal(context, path)
+                }
+                throw cancellation
+            } catch (throwable: Throwable) {
+                copiedSamplePath.takeIf { it.isNotBlank() }?.let { path ->
+                    VoiceCloneSampleStorage.deleteIfLocal(context, path)
+                }
+                voiceCloneImportError = voiceSynthesisErrorMessage(throwable, "声音样本导入失败")
             }
         }
     }
@@ -805,8 +870,264 @@ internal fun AssistantVoiceProfileSheet(
         )
     }
 
+    fun deletePreviewFile(path: String) {
+        val previewDir = File(context.cacheDir, MIMO_VOICE_DESIGN_PREVIEW_CACHE_DIR)
+        val previewFile = File(path)
+        if (previewFile.isFile && previewFile.parentFile?.absolutePath == previewDir.absolutePath) {
+            runCatching { previewFile.delete() }
+        }
+    }
+
+    fun discardPreviewAudio(deleteFile: Boolean = true) {
+        val path = previewAudio?.path
+        previewAudio = null
+        previewReadyForFix = false
+        isLatestPreviewFixed = false
+        if (deleteFile) {
+            path?.let(::deletePreviewFile)
+        }
+    }
+
+    fun stopPreviewPlayback() {
+        val activePlayback = previewPlayback
+        previewPlayback = null
+        isPreviewPlaybackActive = false
+        runCatching { activePlayback?.release() }
+    }
+
+    fun showPreviewFailure(
+        title: String,
+        message: String,
+    ) {
+        isPreviewTesting = false
+        isPreviewPlaybackActive = false
+        previewReadyForFix = false
+        previewStatus = message
+        previewDialogTitle = title
+        previewDialogMessage = message
+        showPreviewResultDialog = true
+    }
+
+    fun playPreviewAudio(audio: SavedAudioFile) {
+        stopPreviewPlayback()
+        previewStatus = "正在准备试听语音..."
+        isPreviewPlaybackActive = true
+        val playback = try {
+            previewPlaybackFactory.create()
+        } catch (throwable: Throwable) {
+            discardPreviewAudio()
+            showPreviewFailure(
+                title = "音色测试失败",
+                message = voiceSynthesisErrorMessage(throwable, "试听播放失败"),
+            )
+            return
+        }
+        previewPlayback = playback
+        try {
+            playback.prepareAndPlay(
+                path = audio.path,
+                onStarted = {
+                    if (previewPlayback !== playback) return@prepareAndPlay
+                    previewStatus = "正在播放试听语音"
+                    previewReadyForFix = true
+                    previewDialogTitle = "音色测试成功"
+                    previewDialogMessage = "试听语音已经开始播放。MiMo 文本设计没有可复用音色 ID；保存后会用这次试听样本进行声音克隆，近似保持当前音色。"
+                    showPreviewResultDialog = true
+                },
+                onCompleted = {
+                    if (previewPlayback !== playback) return@prepareAndPlay
+                    previewPlayback = null
+                    isPreviewPlaybackActive = false
+                    previewStatus = "试听播放完成"
+                },
+                onError = { throwable ->
+                    if (previewPlayback !== playback) return@prepareAndPlay
+                    stopPreviewPlayback()
+                    discardPreviewAudio()
+                    showPreviewFailure(
+                        title = "音色测试失败",
+                        message = throwable?.let {
+                            voiceSynthesisErrorMessage(it, "试听播放失败，请检查设备音量或音频文件。")
+                        } ?: "试听播放失败，请检查设备音量或音频文件。",
+                    )
+                },
+            )
+        } catch (throwable: Throwable) {
+            if (previewPlayback === playback) {
+                stopPreviewPlayback()
+            }
+            discardPreviewAudio()
+            showPreviewFailure(
+                title = "音色测试失败",
+                message = voiceSynthesisErrorMessage(throwable, "试听播放失败"),
+            )
+        }
+    }
+
+    fun fixPreviewVoice() {
+        val audio = previewAudio ?: return
+        if (isFixingPreviewVoice) return
+        val taskGeneration = fixingGeneration + 1L
+        fixingGeneration = taskGeneration
+        stopPreviewPlayback()
+        isFixingPreviewVoice = true
+        previewStatus = "正在保存试听样本..."
+        fixingJob = coroutineScope.launch(
+            block = {
+                var copiedSamplePath = ""
+                var completed = false
+                try {
+                    ensureCurrentFixingTask(taskGeneration)
+                    val sample = VoiceCloneSampleStorage.copyLocalFileToAppStorage(
+                        context = context,
+                        sourcePath = audio.path,
+                        scope = "assistant-${assistant.id}",
+                        displayName = "voice-design-snapshot",
+                    )
+                    copiedSamplePath = sample.path
+                    ensureCurrentFixingTask(taskGeneration)
+                    val previousPendingPath = pendingFixedSamplePath
+                    mode = VoiceProfileMode.VOICE_CLONE
+                    voiceCloneSamplePath = sample.path
+                    voiceCloneSampleMimeType = sample.mimeType
+                    voiceCloneSampleFileName = sample.fileName
+                    voiceCloneSampleSizeBytes = sample.sizeBytes
+                    pendingFixedSamplePath = sample.path
+                    isLatestPreviewFixed = true
+                    previewReadyForFix = false
+                    previewAudio = null
+                    deletePreviewFile(audio.path)
+                    if (previousPendingPath.isNotBlank() && previousPendingPath != sample.path) {
+                        VoiceCloneSampleStorage.deleteIfLocal(context, previousPendingPath)
+                    }
+                    copiedSamplePath = ""
+                    completed = true
+                    previewStatus = "已保存试听样本，点击底部“保存”后将用声音克隆近似保持音色。"
+                    previewDialogTitle = "固定音色已保存"
+                    previewDialogMessage = "最近一次试听已保存为声音克隆样本。点击底部“保存”后生效；后续音色会尽量接近本次试听，但 MiMo 不保证完全一致。"
+                    showPreviewResultDialog = true
+                } catch (cancellation: CancellationException) {
+                    copiedSamplePath.takeIf { it.isNotBlank() }?.let { path ->
+                        VoiceCloneSampleStorage.deleteIfLocal(context, path)
+                    }
+                    throw cancellation
+                } catch (throwable: Throwable) {
+                    copiedSamplePath.takeIf { it.isNotBlank() }?.let { path ->
+                        VoiceCloneSampleStorage.deleteIfLocal(context, path)
+                    }
+                    if (taskGeneration != fixingGeneration) {
+                        deletePreviewFile(audio.path)
+                        return@launch
+                    }
+                    previewStatus = "固定音色保存失败"
+                    previewDialogTitle = "固定音色保存失败"
+                    previewDialogMessage = voiceSynthesisErrorMessage(throwable, "固定音色失败")
+                    showPreviewResultDialog = true
+                } finally {
+                    if (completed || taskGeneration != fixingGeneration) {
+                        deletePreviewFile(audio.path)
+                    }
+                    if (taskGeneration == fixingGeneration) {
+                        isFixingPreviewVoice = false
+                        fixingJob = null
+                    }
+                }
+            },
+        )
+    }
+
+    fun cancelVoiceDesignPreview() {
+        previewGeneration += 1L
+        previewJob?.cancel()
+        previewJob = null
+        isPreviewTesting = false
+        stopPreviewPlayback()
+        discardPreviewAudio(deleteFile = fixingJob == null)
+        showPreviewResultDialog = false
+    }
+
+    fun dismissAssistantVoiceProfile() {
+        fixingGeneration += 1L
+        cancelVoiceDesignPreview()
+        fixingJob?.cancel()
+        fixingJob = null
+        isFixingPreviewVoice = false
+        if (!profileAccepted && pendingFixedSamplePath.isNotBlank()) {
+            VoiceCloneSampleStorage.deleteIfLocal(context, pendingFixedSamplePath)
+            pendingFixedSamplePath = ""
+        }
+        onDismissRequest()
+    }
+
+    fun testVoiceDesignProfile() {
+        val profile = currentDraftProfile().normalized()
+        if (voiceSynthesisSettings.apiKey.trim().isBlank()) {
+            showPreviewFailure(
+                title = "音色测试失败",
+                message = "请先填写 MiMo API Key 后再测试音色",
+            )
+            return
+        }
+        if (profile.voiceDesignPrompt.isBlank()) {
+            showPreviewFailure(
+                title = "音色测试失败",
+                message = "文本设计音色需要先填写音色描述",
+            )
+            return
+        }
+        val previewHandler = onPreviewProfile
+        if (previewHandler == null) {
+            onTestProfile(profile)
+            return
+        }
+        cancelVoiceDesignPreview()
+        val taskGeneration = previewGeneration
+        isPreviewTesting = true
+        previewReadyForFix = false
+        isLatestPreviewFixed = false
+        previewStatus = "正在合成试听语音..."
+        previewDialogMessage = ""
+        previewJob = coroutineScope.launch(
+            block = {
+                var generatedAudio: SavedAudioFile? = null
+                try {
+                    val audio = previewHandler(voiceSynthesisSettings, profile, assistant.id)
+                    generatedAudio = audio
+                    currentCoroutineContext().ensureActive()
+                    if (taskGeneration != previewGeneration) {
+                        throw CancellationException("试听任务已失效")
+                    }
+                    if (audio.path.isBlank() || !File(audio.path).isFile || File(audio.path).length() <= 0L) {
+                        throw IllegalStateException("试听音频保存失败")
+                    }
+                    previewAudio = audio
+                    generatedAudio = null
+                    isPreviewTesting = false
+                    playPreviewAudio(audio)
+                } catch (cancellation: CancellationException) {
+                    generatedAudio?.path?.let(::deletePreviewFile)
+                    throw cancellation
+                } catch (throwable: Throwable) {
+                    generatedAudio?.path?.let(::deletePreviewFile)
+                    if (taskGeneration != previewGeneration) {
+                        return@launch
+                    }
+                    showPreviewFailure(
+                        title = "音色测试失败",
+                        message = voiceSynthesisErrorMessage(throwable, "音色测试失败"),
+                    )
+                } finally {
+                    if (taskGeneration == previewGeneration) {
+                        isPreviewTesting = false
+                        previewJob = null
+                    }
+                }
+            },
+        )
+    }
+
     ModalBottomSheet(
-        onDismissRequest = onDismissRequest,
+        onDismissRequest = ::dismissAssistantVoiceProfile,
     ) {
         Column(
             modifier = Modifier
@@ -853,7 +1174,14 @@ internal fun AssistantVoiceProfileSheet(
                             VoiceProfileMode.DISABLED -> "这个角色不自动生成语音"
                         },
                         highlighted = mode == option,
-                        onClick = { mode = option },
+                        onClick = {
+                            if (!isFixingPreviewVoice) {
+                                if (mode == VoiceProfileMode.VOICE_DESIGN && option != mode) {
+                                    cancelVoiceDesignPreview()
+                                }
+                                mode = option
+                            }
+                        },
                         showArrow = false,
                     )
                     if (index < VoiceProfileMode.entries.lastIndex) {
@@ -872,6 +1200,16 @@ internal fun AssistantVoiceProfileSheet(
                 }
             }
             if (mode == VoiceProfileMode.VOICE_CLONE) {
+                if (pendingFixedSamplePath.isNotBlank() &&
+                    pendingFixedSamplePath == voiceCloneSamplePath
+                ) {
+                    SettingsNoticeCard(
+                        title = "固定音色草稿",
+                        body = "已保存最近一次文本设计试听样本。点击底部“保存”后，该角色会改用声音克隆近似保持音色。",
+                        containerColor = MaterialTheme.colorScheme.secondaryContainer,
+                        contentColor = MaterialTheme.colorScheme.onSecondaryContainer,
+                    )
+                }
                 SettingsNoticeCard(
                     title = "声音克隆",
                     body = "请选择你有权使用的 wav/mp3 样本。每次合成时，样本会随请求发送给当前 MiMo 或第三方中转接口；Base64 后不能超过 10 MB。",
@@ -970,10 +1308,45 @@ internal fun AssistantVoiceProfileSheet(
                         colors = rememberSettingsOutlineColors(),
                     )
                     NarraButton(
-                        onClick = { onTestProfile(currentDraftProfile()) },
-                        enabled = !isTesting && voiceDesignPrompt.isNotBlank(),
+                        onClick = { testVoiceDesignProfile() },
+                        modifier = Modifier.testTag(ASSISTANT_VOICE_DESIGN_TEST_TAG),
+                        enabled = !isTesting &&
+                            !isPreviewTesting &&
+                            !isPreviewPlaybackActive &&
+                            !isFixingPreviewVoice &&
+                            voiceDesignPrompt.isNotBlank(),
                     ) {
-                        Text(if (isTesting) "测试中..." else "测试音色")
+                        Text(
+                            when {
+                                isTesting || isPreviewTesting -> "测试中..."
+                                isPreviewPlaybackActive -> "正在播放..."
+                                else -> "测试音色"
+                            },
+                        )
+                    }
+                    Text(
+                        text = "MiMo 文本设计不会返回可复用音色 ID；固定功能会保存最近一次试听样本，并用声音克隆近似保持。",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                    if (previewStatus.isNotBlank()) {
+                        Text(
+                            text = previewStatus,
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = if (previewStatus.contains("失败")) {
+                                MaterialTheme.colorScheme.error
+                            } else {
+                                MaterialTheme.colorScheme.onSurfaceVariant
+                            },
+                        )
+                    }
+                    if (previewAudio != null && previewReadyForFix && !isLatestPreviewFixed) {
+                        TextButton(
+                            enabled = !isFixingPreviewVoice,
+                            onClick = { fixPreviewVoice() },
+                        ) {
+                            Text(if (isFixingPreviewVoice) "正在保存..." else "保存最近试听为固定音色")
+                        }
                     }
                 }
             }
@@ -983,7 +1356,7 @@ internal fun AssistantVoiceProfileSheet(
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 TextButton(
-                    onClick = onDismissRequest,
+                    onClick = ::dismissAssistantVoiceProfile,
                     modifier = Modifier.benchmarkActionTag(
                         BenchmarkActionIds.CLOSE_VOICE_PROFILE,
                     ),
@@ -992,8 +1365,18 @@ internal fun AssistantVoiceProfileSheet(
                 }
                 TextButton(
                     modifier = Modifier.testTag(ASSISTANT_VOICE_PROFILE_SAVE_TAG),
+                    enabled = !isPreviewTesting && !isFixingPreviewVoice,
                     onClick = {
-                        onSaveProfile(currentDraftProfile())
+                        val profile = currentDraftProfile()
+                        if (pendingFixedSamplePath.isNotBlank() &&
+                            (profile.mode != VoiceProfileMode.VOICE_CLONE ||
+                                profile.voiceCloneSamplePath != pendingFixedSamplePath)
+                        ) {
+                            VoiceCloneSampleStorage.deleteIfLocal(context, pendingFixedSamplePath)
+                            pendingFixedSamplePath = ""
+                        }
+                        profileAccepted = true
+                        onSaveProfile(profile)
                     },
                 ) {
                     Text("保存")
@@ -1013,6 +1396,49 @@ internal fun AssistantVoiceProfileSheet(
             },
         )
     }
+
+    DisposableEffect(assistant.id) {
+        onDispose {
+            previewGeneration += 1L
+            fixingGeneration += 1L
+            previewJob?.cancel()
+            fixingJob?.cancel()
+            stopPreviewPlayback()
+            if (fixingJob == null) {
+                previewAudio?.path?.let(::deletePreviewFile)
+            }
+            if (!profileAccepted && pendingFixedSamplePath.isNotBlank()) {
+                VoiceCloneSampleStorage.deleteIfLocal(context, pendingFixedSamplePath)
+            }
+        }
+    }
+
+    if (showPreviewResultDialog) {
+        val canFixPreviewVoice =
+            previewAudio != null &&
+            previewReadyForFix &&
+            !isLatestPreviewFixed
+        NarraAlertDialog(
+            title = previewDialogTitle,
+            message = previewDialogMessage,
+            onDismiss = { showPreviewResultDialog = false },
+            onConfirm = {
+                if (canFixPreviewVoice) {
+                    fixPreviewVoice()
+                } else {
+                    showPreviewResultDialog = false
+                }
+            },
+            confirmLabel = when {
+                isFixingPreviewVoice -> "正在保存..."
+                canFixPreviewVoice && previewDialogTitle == "固定音色保存失败" -> "重新保存"
+                canFixPreviewVoice -> "保存为固定音色"
+                else -> "知道了"
+            },
+            dismissLabel = if (canFixPreviewVoice) "稍后" else null,
+            confirmEnabled = !isFixingPreviewVoice,
+        )
+    }
 }
 
 private fun formatVoiceCloneSampleSize(sizeBytes: Long): String {
@@ -1025,9 +1451,30 @@ private fun formatVoiceCloneSampleSize(sizeBytes: Long): String {
 }
 
 private const val MIMO_PRESET_PREVIEW_CACHE_DIR = "mimo_preset_voice_previews"
+internal const val MIMO_VOICE_DESIGN_PREVIEW_CACHE_DIR = "mimo_voice_design_previews"
 internal const val ASSISTANT_VOICE_PROFILE_SAVE_TAG = "assistant_voice_profile_save"
 internal const val ASSISTANT_VOICE_PRESET_SELECTOR_TAG = "assistant_voice_preset_selector"
 internal const val ASSISTANT_VOICE_DESIGN_PROMPT_TAG = "assistant_voice_design_prompt"
+internal const val ASSISTANT_VOICE_DESIGN_TEST_TAG = "assistant_voice_design_test"
+
+internal fun buildVoiceDesignPreviewFilePrefix(assistantId: String): String {
+    val safeAssistantId = assistantId
+        .trim()
+        .replace(Regex("[^A-Za-z0-9_-]"), "_")
+        .take(64)
+        .ifBlank { "assistant" }
+    return "voice-design-$safeAssistantId-${UUID.randomUUID()}"
+}
+
+private fun voiceSynthesisErrorMessage(
+    throwable: Throwable,
+    fallback: String,
+): String {
+    return SensitiveTextRedactor.throwableMessageForUi(
+        throwable = throwable,
+        fallback = fallback,
+    )
+}
 
 private fun buildPresetVoicePreviewText(voice: MimoPresetVoice): String {
     return if (voice.language.contains("英文")) {

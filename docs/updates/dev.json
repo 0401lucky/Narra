@@ -1,16 +1,15 @@
 {
   "app_id": "com.narra.app.dev",
   "channel": "dev",
-  "latest_version_name": "2.2.6-dev",
-  "latest_version_code": 20206,
+  "latest_version_name": "2.2.7-dev",
+  "latest_version_code": 20207,
   "minimum_supported_version_code": 0,
-  "apk_url": "https://download.lsa1230.dpdns.org/dev/2.2.6/Narra-v2.2.6-dev-20206-dev.apk?v=20206-20260812181651",
-  "apk_sha256": "4ddfa794e66c73a1d3296c00a3439983b6692615e7cfd6924e10fb0c14f4c10a",
-  "published_at": "2026-08-12T18:16:51+08:00",
+  "apk_url": "https://download.lsa1230.dpdns.org/dev/2.2.7/Narra-v2.2.7-dev-20207-dev.apk?v=20207-20260819012436",
+  "apk_sha256": "3075db0cb3ffec24b9e942aabaea7a340d601a0041b9982e95afe15939cfd398",
+  "published_at": "2026-08-19T01:24:36+08:00",
   "release_notes": [
-    "优化应用启动与设置读取，单项启动任务失败不再影响其它任务",
-    "应用设置改为后台共享解析，减少重复安全存储读取和界面无关刷新",
-    "优化角色扮演长列表、流式贴底、光标和语音卡动画，降低切换与流式展示负担",
-    "增加本地脱敏退出诊断与性能基准基础设施；本版本更新仍为可选更新"
+    "角色文本设计音色测试现在会合成并播放真实试听语音，开始播放后在当前弹层即时反馈结果",
+    "新增将最近一次试听保存为声音克隆固定音色，后续合成尽量保持本次试听音色",
+    "完善试听取消、播放器和临时文件清理，以及响应体和音频大小边界保护；本版本更新仍为可选更新"
   ]
 }

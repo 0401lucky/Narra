@@ -21,6 +21,7 @@ import com.example.myapplication.data.repository.FileAttachmentResolver
 import com.example.myapplication.data.repository.ImageAttachmentResolver
 import com.example.myapplication.data.repository.SavedImageFile
 import com.example.myapplication.data.repository.LocalImageStore
+import com.example.myapplication.data.repository.VoiceCloneSampleStorage
 import com.example.myapplication.data.repository.context.ConversationSummaryRepository
 import com.example.myapplication.data.repository.context.ContextLogStore
 import com.example.myapplication.data.repository.context.MemoryRepository
@@ -202,6 +203,10 @@ class AppGraph(
 
     val localImageStore: LocalImageStore by lazy {
         LocalImageStore(application)
+    }
+
+    val voiceCloneSampleCleaner: suspend (String?) -> Boolean = { path ->
+        VoiceCloneSampleStorage.deleteIfLocal(application, path)
     }
 
     val phoneSnapshotRepository: PhoneSnapshotRepository by lazy {

@@ -3,6 +3,7 @@ package com.example.myapplication.data.repository
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertArrayEquals
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertThrows
 import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
@@ -60,5 +61,22 @@ class AudioFileStorageTest {
         }.exceptionOrNull()
 
         assertTrue(failure is IllegalArgumentException)
+    }
+
+    @Test
+    fun normalizeBase64AudioData_acceptsLimitMinusOneAndExactLimit() {
+        val limit = 8
+
+        assertEquals(limit - 1, normalizeBase64AudioData("A".repeat(limit - 1), limit).length)
+        assertEquals(limit, normalizeBase64AudioData("A".repeat(limit), limit).length)
+    }
+
+    @Test
+    fun normalizeBase64AudioData_rejectsLimitPlusOne() {
+        val error = assertThrows(IllegalArgumentException::class.java) {
+            normalizeBase64AudioData("A".repeat(9), maxChars = 8)
+        }
+
+        assertTrue(error.message.orEmpty().contains("Base64 数据过大"))
     }
 }

@@ -57,6 +57,7 @@ fun AppRoot(
             settingsEditor = appGraph.aiSettingsEditor,
             modelCatalogRepository = appGraph.aiModelCatalogRepository,
             imageFileCleaner = appGraph.localImageStore::deleteIfLocalAsync,
+            voiceCloneSampleCleaner = appGraph.voiceCloneSampleCleaner,
             mimoTtsClient = appGraph.mimoTtsClient,
         ),
     )

@@ -24,6 +24,9 @@ import com.example.myapplication.model.ImageGenerationResponse
 import com.example.myapplication.model.ResponseApiRequest
 import com.example.myapplication.model.ResponseApiResponse
 import com.example.myapplication.model.ThemeMode
+import com.example.myapplication.model.VoiceProfile
+import com.example.myapplication.model.VoiceProfileMode
+import com.example.myapplication.model.VoiceSynthesisSettings
 import com.example.myapplication.testutil.createTestAiServices
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
@@ -560,6 +563,47 @@ class SettingsViewModelTest {
     }
 
     @Test
+    fun saveSettings_cleansReplacedVoiceCloneSampleOnlyAfterPersistenceSucceeds() =
+        runTest(mainDispatcherRule.dispatcher.scheduler) {
+            val oldPath = "/data/user/0/com.example.myapplication/files/voice_clone_samples/old.wav"
+            val newPath = "/data/user/0/com.example.myapplication/files/voice_clone_samples/new.wav"
+            val initialVoiceSettings = VoiceSynthesisSettings(
+                assistantProfiles = mapOf(
+                    "assistant-1" to VoiceProfile(
+                        mode = VoiceProfileMode.VOICE_CLONE,
+                        voiceCloneSamplePath = oldPath,
+                    ),
+                ),
+            )
+            val cleanedPaths = mutableListOf<String?>()
+            val viewModel = createViewModel(
+                settings = AppSettings(voiceSynthesisSettings = initialVoiceSettings),
+                voiceCloneSampleCleaner = { path ->
+                    cleanedPaths += path
+                    true
+                },
+            )
+
+            advanceUntilIdle()
+            viewModel.updateVoiceSynthesisSettings(
+                initialVoiceSettings.copy(
+                    assistantProfiles = mapOf(
+                        "assistant-1" to VoiceProfile(
+                            mode = VoiceProfileMode.VOICE_CLONE,
+                            voiceCloneSamplePath = newPath,
+                        ),
+                    ),
+                ),
+            )
+            viewModel.saveSettings {}
+            advanceUntilIdle()
+
+            assertEquals(listOf(oldPath), cleanedPaths)
+            assertEquals(newPath, viewModel.storedSettings.value.voiceSynthesisSettings
+                .assistantProfiles["assistant-1"]?.voiceCloneSamplePath)
+        }
+
+    @Test
     fun saveSettings_persistsRoleplayAiHelperVisibility() = runTest(mainDispatcherRule.dispatcher.scheduler) {
         val provider = ProviderSettings(
             id = "provider-a",
@@ -872,6 +916,7 @@ class SettingsViewModelTest {
         settings: AppSettings,
         settingsEditor: AiSettingsEditor? = null,
         apiServiceProvider: ((String, String) -> OpenAiCompatibleApi)? = null,
+        voiceCloneSampleCleaner: suspend (String?) -> Boolean = { false },
     ): SettingsViewModel {
         val services = createTestAiServices(
             settings = settings,
@@ -882,6 +927,7 @@ class SettingsViewModelTest {
             settingsRepository = services.settingsRepository,
             settingsEditor = settingsEditor ?: services.settingsEditor,
             modelCatalogRepository = services.modelCatalogRepository,
+            voiceCloneSampleCleaner = voiceCloneSampleCleaner,
         )
     }
 }

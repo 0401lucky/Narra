@@ -12,13 +12,22 @@ import com.example.myapplication.system.security.SensitiveTextRedactor
 import com.google.gson.Gson
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.currentCoroutineContext
+import kotlinx.coroutines.ensureActive
+import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.withContext
 import okhttp3.MediaType.Companion.toMediaType
+import okhttp3.Call
+import okhttp3.Callback
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.RequestBody.Companion.toRequestBody
+import okhttp3.Response
+import java.io.ByteArrayOutputStream
 import java.io.IOException
 import java.util.concurrent.TimeUnit
+import kotlin.coroutines.resume
+import kotlin.coroutines.resumeWithException
 
 data class MimoTtsRequest(
     val model: String,
@@ -126,7 +135,15 @@ class MimoTtsClient(
     private val httpClient: OkHttpClient = defaultHttpClient(),
     private val gson: Gson = AppJson.gson,
     private val dispatcher: CoroutineDispatcher = Dispatchers.IO,
+    private val maxResponseBodyBytes: Long = MAX_RESPONSE_BODY_BYTES,
 ) {
+    init {
+        require(maxResponseBodyBytes > 0) { "MiMo TTS 响应体上限必须大于 0" }
+        require(maxResponseBodyBytes <= Int.MAX_VALUE) {
+            "MiMo TTS 响应体上限不能超过 Int 最大值"
+        }
+    }
+
     suspend fun synthesize(
         apiKey: String,
         request: MimoTtsRequest,
@@ -155,13 +172,13 @@ class MimoTtsClient(
             .post(body)
             .build()
 
-        httpClient.newCall(httpRequest).execute().use { response ->
-            val responseBody = response.body?.string().orEmpty()
+        try {
+            val response = executeCancellable(httpRequest)
             if (!response.isSuccessful) {
-                throw IOException(buildHttpErrorMessage(response.code, responseBody))
+                throw IOException(buildHttpErrorMessage(response.code, response.body))
             }
-            val audioData = runCatching {
-                gson.fromJson(responseBody, MimoTtsResponse::class.java)
+            val audioData = try {
+                gson.fromJson(response.body, MimoTtsResponse::class.java)
                     ?.choices
                     ?.firstOrNull()
                     ?.message
@@ -169,12 +186,86 @@ class MimoTtsClient(
                     ?.data
                     .orEmpty()
                     .trim()
-            }.getOrDefault("")
+            } catch (throwable: Throwable) {
+                currentCoroutineContext().ensureActive()
+                ""
+            }
             if (audioData.isBlank()) {
                 throw IOException("MiMo 未返回音频数据")
             }
             MimoTtsResult(b64Audio = audioData)
+        } catch (throwable: Throwable) {
+            currentCoroutineContext().ensureActive()
+            throw throwable
         }
+    }
+
+    private suspend fun executeCancellable(request: Request): MimoHttpResponse {
+        return suspendCancellableCoroutine { continuation ->
+            val call = httpClient.newCall(request)
+            continuation.invokeOnCancellation {
+                call.cancel()
+            }
+            try {
+                call.enqueue(
+                    object : Callback {
+                        override fun onFailure(call: Call, e: IOException) {
+                            if (continuation.isActive) {
+                                continuation.resumeWithException(e)
+                            }
+                        }
+
+                        override fun onResponse(call: Call, response: Response) {
+                            try {
+                                val responseBody = response.use { readResponseBody(it) }
+                                if (continuation.isActive) {
+                                    continuation.resume(
+                                        MimoHttpResponse(
+                                            code = response.code,
+                                            isSuccessful = response.isSuccessful,
+                                            body = responseBody,
+                                        ),
+                                    )
+                                }
+                            } catch (throwable: Throwable) {
+                                if (continuation.isActive) {
+                                    continuation.resumeWithException(throwable)
+                                }
+                            }
+                        }
+                    },
+                )
+            } catch (throwable: Throwable) {
+                if (continuation.isActive) {
+                    continuation.resumeWithException(throwable)
+                }
+            }
+        }
+    }
+
+    private fun readResponseBody(response: okhttp3.Response): String {
+        val body = response.body ?: return ""
+        val declaredLength = body.contentLength()
+        if (declaredLength > maxResponseBodyBytes) {
+            throw IOException("MiMo TTS 响应体过大")
+        }
+        val output = ByteArrayOutputStream(
+            minOf(maxResponseBodyBytes, INITIAL_RESPONSE_BUFFER_BYTES.toLong()).toInt(),
+        )
+        body.byteStream().use { input ->
+            val buffer = ByteArray(RESPONSE_READ_BUFFER_BYTES)
+            var total = 0L
+            while (true) {
+                val read = input.read(buffer)
+                if (read < 0) break
+                total += read
+                if (total > maxResponseBodyBytes) {
+                    throw IOException("MiMo TTS 响应体过大")
+                }
+                output.write(buffer, 0, read)
+            }
+        }
+        return output.toByteArray().toString(Charsets.UTF_8)
     }
 
     private fun normalizeApiKey(apiKey: String): String {
@@ -201,6 +292,9 @@ class MimoTtsClient(
 
     companion object {
         const val DEFAULT_BASE_URL = MIMO_DEFAULT_BASE_URL
+        const val MAX_RESPONSE_BODY_BYTES = 16L * 1024L * 1024L
+        private const val INITIAL_RESPONSE_BUFFER_BYTES = 8 * 1024
+        private const val RESPONSE_READ_BUFFER_BYTES = 8 * 1024
         private val JSON_MEDIA_TYPE = "application/json; charset=utf-8".toMediaType()
 
         fun defaultHttpClient(): OkHttpClient {
@@ -212,3 +306,9 @@ class MimoTtsClient(
         }
     }
 }
+
+private data class MimoHttpResponse(
+    val code: Int,
+    val isSuccessful: Boolean,
+    val body: String,
+)

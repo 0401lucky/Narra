@@ -18,7 +18,7 @@ data class SavedVoiceCloneSample(
 )
 
 object VoiceCloneSampleStorage {
-    const val MAX_BASE64_CHARS = 10 * 1024 * 1024
+    const val MAX_BASE64_CHARS = MAX_AUDIO_BASE64_CHARS
     private const val ROOT_DIR = "voice_clone_samples"
     private const val DEFAULT_SCOPE = "general"
     private const val MAX_RAW_BYTES = (MAX_BASE64_CHARS / 4) * 3
@@ -56,6 +56,57 @@ object VoiceCloneSampleStorage {
             fileName = displayName,
         ) ?: throw IllegalArgumentException("仅支持 wav 或 mp3 音频样本")
 
+        saveBytesToAppStorage(
+            context = context,
+            bytes = bytes,
+            detectedType = detectedType,
+            displayName = displayName,
+            scope = scope,
+        )
+    }
+
+    suspend fun copyLocalFileToAppStorage(
+        context: Context,
+        sourcePath: String,
+        scope: String = DEFAULT_SCOPE,
+        displayName: String = "voice-design-preview.wav",
+        dispatcher: CoroutineDispatcher = Dispatchers.IO,
+    ): SavedVoiceCloneSample = withContext(dispatcher) {
+        val sourceFile = File(sourcePath.trim())
+        if (!sourceFile.isFile) {
+            throw IllegalArgumentException("试听音频文件不存在")
+        }
+        if (sourceFile.length() > MAX_RAW_BYTES) {
+            throw IllegalArgumentException("音频样本太大，Base64 后不能超过 10 MB")
+        }
+        val bytes = sourceFile.readBytes()
+        if (bytes.isEmpty()) {
+            throw IllegalArgumentException("试听音频文件为空")
+        }
+        val resolvedDisplayName = displayName.trim().ifBlank { sourceFile.name }
+        val detectedType = detectVoiceCloneAudioType(
+            bytes = bytes,
+            mimeType = null,
+            fileName = "",
+        ) ?: throw IllegalArgumentException("试听音频不是可识别的 wav 或 mp3")
+
+        saveBytesToAppStorage(
+            context = context,
+            bytes = bytes,
+            detectedType = detectedType,
+            displayName = resolvedDisplayName,
+            scope = scope,
+        )
+    }
+
+    private fun saveBytesToAppStorage(
+        context: Context,
+        bytes: ByteArray,
+        detectedType: VoiceCloneAudioType,
+        displayName: String,
+        scope: String,
+    ): SavedVoiceCloneSample {
+
         val directory = File(context.filesDir, "$ROOT_DIR/${sanitizeScope(scope)}")
         if (!directory.exists() && !directory.mkdirs() && !directory.isDirectory) {
             throw IOException("无法创建声音克隆样本目录")
@@ -65,7 +116,7 @@ object VoiceCloneSampleStorage {
         val target = File(directory, "${safeBaseName}-${UUID.randomUUID()}.${detectedType.extension}")
         target.writeBytes(bytes)
 
-        SavedVoiceCloneSample(
+        return SavedVoiceCloneSample(
             path = target.absolutePath,
             mimeType = detectedType.mimeType,
             fileName = target.name,

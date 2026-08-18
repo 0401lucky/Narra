@@ -1,32 +1,37 @@
 package com.example.myapplication.ui.navigation
 
 import android.net.Uri
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavGraphBuilder
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.navigation
-import com.example.myapplication.di.AppGraph
 import com.example.myapplication.ChatApplication
+import com.example.myapplication.data.repository.AudioFileStorage
+import com.example.myapplication.data.repository.tts.MimoTtsRequest
+import com.example.myapplication.di.AppGraph
 import com.example.myapplication.model.AppSettings
 import com.example.myapplication.model.RoleplayScenario
 import com.example.myapplication.model.RoleplaySession
+import com.example.myapplication.model.VoiceProfileMode
 import com.example.myapplication.roleplay.script.RoleplayScriptScope
+import com.example.myapplication.ui.screen.compliance.ComplianceScreen
+import com.example.myapplication.ui.screen.compliance.ComplianceScreenMode
+import com.example.myapplication.ui.screen.diagnostics.DiagnosticsScreenHost
+import com.example.myapplication.ui.screen.settings.MIMO_VOICE_DESIGN_PREVIEW_CACHE_DIR
 import com.example.myapplication.ui.screen.settings.PresetEditScreen
 import com.example.myapplication.ui.screen.settings.PresetListScreen
 import com.example.myapplication.ui.screen.settings.RoleplayScriptBindingOption
 import com.example.myapplication.ui.screen.settings.RoleplayScriptLabScreen
 import com.example.myapplication.ui.screen.settings.SettingsScreen
-import com.example.myapplication.ui.screen.diagnostics.DiagnosticsScreenHost
-import com.example.myapplication.ui.screen.compliance.ComplianceScreen
-import com.example.myapplication.ui.screen.compliance.ComplianceScreenMode
 import com.example.myapplication.ui.screen.settings.UserPersonaMasksScreen
 import com.example.myapplication.ui.screen.settings.VoiceSynthesisSettingsScreen
+import com.example.myapplication.ui.screen.settings.buildVoiceDesignPreviewFilePrefix
 import com.example.myapplication.ui.screen.settings.copyPresetForUser
 import com.example.myapplication.viewmodel.AppUpdateViewModel
 import com.example.myapplication.viewmodel.ComplianceViewModel
@@ -43,6 +48,10 @@ import com.example.myapplication.viewmodel.updateReasoningExpandedByDefault
 import com.example.myapplication.viewmodel.updateShowThinkingContent
 import com.example.myapplication.viewmodel.updateThemeMode
 import kotlinx.coroutines.launch
+import java.io.File
+
+private const val MIMO_VOICE_DESIGN_PREVIEW_TEXT =
+    "你好，我正在进行角色音色试听。请听听这段声音的音高、语速、清晰度和情绪是否符合角色设定。"
 
 internal fun NavGraphBuilder.registerSettingsNavGraph(
     appGraph: AppGraph,
@@ -280,6 +289,7 @@ internal fun NavGraphBuilder.registerSettingsNavGraph(
 
         composable(AppRoutes.SETTINGS_VOICE_SYNTHESIS) {
             val settingsUiState by settingsViewModel.uiState.collectAsStateWithLifecycle()
+            val context = LocalContext.current.applicationContext
             VoiceSynthesisSettingsScreen(
                 settings = settingsUiState.voiceSynthesisSettings,
                 assistants = settingsUiState.savedSettings.resolvedAssistants(),
@@ -287,6 +297,32 @@ internal fun NavGraphBuilder.registerSettingsNavGraph(
                 isTesting = settingsUiState.isTestingVoiceSynthesis,
                 onUpdateSettings = settingsViewModel::updateVoiceSynthesisSettings,
                 onTestSettings = settingsViewModel::testVoiceSynthesis,
+                onPreviewProfile = { settings, profile, assistantId ->
+                    if (profile.mode != VoiceProfileMode.VOICE_DESIGN) {
+                        throw IllegalArgumentException("只有文本设计音色支持试听")
+                    }
+                    val prompt = profile.voiceDesignPrompt.trim()
+                    if (prompt.isBlank()) {
+                        throw IllegalArgumentException("文本设计音色需要先填写音色描述")
+                    }
+                    val normalizedSettings = settings.normalized()
+                    val result = appGraph.mimoTtsClient.synthesize(
+                        apiKey = normalizedSettings.apiKey,
+                        request = MimoTtsRequest.voiceDesign(
+                            text = MIMO_VOICE_DESIGN_PREVIEW_TEXT,
+                            prompt = prompt,
+                        ),
+                        baseUrl = normalizedSettings.baseUrl,
+                    )
+                    AudioFileStorage.saveBase64AudioToDirectory(
+                        directory = File(
+                            context.cacheDir,
+                            MIMO_VOICE_DESIGN_PREVIEW_CACHE_DIR,
+                        ),
+                        b64Data = result.b64Audio,
+                        fileNamePrefix = buildVoiceDesignPreviewFilePrefix(assistantId),
+                    )
+                },
                 onSaveChanges = { settingsViewModel.saveSettings {} },
                 onNavigateBack = { navController.popBackStack() },
             )

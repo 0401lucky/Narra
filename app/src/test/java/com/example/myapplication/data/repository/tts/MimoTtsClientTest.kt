@@ -4,7 +4,14 @@ import com.example.myapplication.model.MIMO_TTS_MODEL_PRESET
 import com.example.myapplication.model.MIMO_TTS_MODEL_VOICE_CLONE
 import com.example.myapplication.model.MIMO_TTS_MODEL_VOICE_DESIGN
 import com.google.gson.JsonParser
+import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.runTest
+import kotlinx.coroutines.withTimeout
+import okhttp3.Call
+import okhttp3.EventListener
+import okhttp3.OkHttpClient
 import okhttp3.mockwebserver.MockResponse
 import okhttp3.mockwebserver.MockWebServer
 import org.junit.After
@@ -13,6 +20,9 @@ import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
+import java.io.IOException
+import java.util.concurrent.CountDownLatch
+import java.util.concurrent.TimeUnit
 
 class MimoTtsClientTest {
     private lateinit var server: MockWebServer
@@ -254,5 +264,69 @@ class MimoTtsClientTest {
         assertFalse(message.contains("mimo-secret"))
         assertFalse(message.contains("UklGRgAAAAAA"))
         assertTrue(message.contains("[REDACTED]"))
+    }
+
+    @Test
+    fun synthesize_rejectsResponseBodyAboveConfiguredLimit() = runTest {
+        server.enqueue(
+            MockResponse()
+                .setResponseCode(200)
+                .setBody("x".repeat(17)),
+        )
+        val client = MimoTtsClient(
+            baseUrl = server.url("/v1/").toString(),
+            maxResponseBodyBytes = 16,
+        )
+
+        val failure = runCatching {
+            client.synthesize(
+                apiKey = "test-key",
+                request = MimoTtsRequest.preset("测试响应体上限。", "冰糖"),
+            )
+        }.exceptionOrNull()
+
+        assertTrue(failure?.message.orEmpty().contains("响应体过大"))
+    }
+
+    @Test
+    fun synthesize_cancellationCancelsOkHttpCallDuringBodyRead() = runTest {
+        val bodyStarted = CountDownLatch(1)
+        val callFailure = CompletableDeferred<IOException>()
+        val httpClient = OkHttpClient.Builder()
+            .readTimeout(30, TimeUnit.SECONDS)
+            .eventListener(object : EventListener() {
+                override fun responseBodyStart(call: Call) {
+                    bodyStarted.countDown()
+                }
+
+                override fun callFailed(call: Call, ioe: IOException) {
+                    callFailure.complete(ioe)
+                }
+            })
+            .build()
+        server.enqueue(
+            MockResponse()
+                .setResponseCode(200)
+                .setBody("x".repeat(64 * 1024))
+                .throttleBody(1, 100, TimeUnit.MILLISECONDS),
+        )
+        val client = MimoTtsClient(
+            baseUrl = server.url("/v1/").toString(),
+            httpClient = httpClient,
+        )
+        val job = launch(Dispatchers.Default) {
+            client.synthesize(
+                apiKey = "test-key",
+                request = MimoTtsRequest.preset("取消试听。", "冰糖"),
+            )
+        }
+
+        server.takeRequest()
+        assertTrue(bodyStarted.await(5, TimeUnit.SECONDS))
+        job.cancel()
+        job.join()
+
+        val failure = withTimeout(5_000) { callFailure.await() }
+        assertTrue(failure.message.orEmpty().isNotBlank())
     }
 }

@@ -41,6 +41,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.updateAndGet
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.launch
 import java.io.File
 import java.util.Base64
@@ -135,6 +136,16 @@ data class SettingsUiState(
     }
 }
 
+private fun VoiceSynthesisSettings.voiceCloneSamplePaths(): Set<String> {
+    return buildSet {
+        listOf(defaultProfile)
+            .plus(assistantProfiles.values)
+            .map { it.voiceCloneSamplePath.trim() }
+            .filter(String::isNotBlank)
+            .forEach(::add)
+    }
+}
+
 private fun SettingsUiState.toThemeSettings(): ThemeSettings {
     return ThemeSettings(
         themeMode = themeMode,
@@ -147,6 +158,7 @@ class SettingsViewModel(
     private val settingsEditor: AiSettingsEditor,
     private val modelCatalogRepository: AiModelCatalogRepository,
     private val imageFileCleaner: suspend (String?) -> Boolean = { false },
+    private val voiceCloneSampleCleaner: suspend (String?) -> Boolean = { false },
     private val mimoTtsClient: MimoTtsClient? = null,
 ) : ViewModel() {
     private val _uiState = MutableStateFlow(SettingsUiState())
@@ -355,10 +367,14 @@ class SettingsViewModel(
     fun saveSettings(onSaved: () -> Unit) {
         viewModelScope.launch {
             val currentState = _uiState.value
+            val previousSettings = storedSettings.value
             updateUiState { SettingsUiMutationSupport.beginSaving(it) }
-            runCatching {
-                persistenceCoordinator.saveSettings(currentState = currentState)
-            }.onSuccess { result ->
+            try {
+                val result = persistenceCoordinator.saveSettings(currentState = currentState)
+                cleanupReplacedVoiceCloneSamples(
+                    previousSettings = previousSettings,
+                    currentSettings = currentState.voiceSynthesisSettings,
+                )
                 updateUiState { current ->
                     SettingsUiMutationSupport.applySaveSuccess(
                         current = current,
@@ -367,7 +383,9 @@ class SettingsViewModel(
                     )
                 }
                 onSaved()
-            }.onFailure { throwable ->
+            } catch (cancellation: CancellationException) {
+                throw cancellation
+            } catch (throwable: Throwable) {
                 updateUiState { current ->
                     SettingsUiMutationSupport.applySaveFailure(
                         current = current,
@@ -693,6 +711,17 @@ class SettingsViewModel(
         }
     }
 
+    private suspend fun cleanupReplacedVoiceCloneSamples(
+        previousSettings: AppSettings,
+        currentSettings: VoiceSynthesisSettings,
+    ) {
+        val previousPaths = previousSettings.voiceSynthesisSettings.voiceCloneSamplePaths()
+        val currentPaths = currentSettings.voiceCloneSamplePaths()
+        (previousPaths - currentPaths).forEach { path ->
+            voiceCloneSampleCleaner(path)
+        }
+    }
+
     // ── 记忆与上下文日志：直接落库（子页面无"保存"按钮，操作即时反馈） ──
 
     fun updateMemoryAutoSummaryEvery(value: Int) {
@@ -997,6 +1026,7 @@ class SettingsViewModel(
             settingsEditor: AiSettingsEditor,
             modelCatalogRepository: AiModelCatalogRepository,
             imageFileCleaner: suspend (String?) -> Boolean = { false },
+            voiceCloneSampleCleaner: suspend (String?) -> Boolean = { false },
             mimoTtsClient: MimoTtsClient? = null,
         ): ViewModelProvider.Factory {
             return typedViewModelFactory {
@@ -1005,6 +1035,7 @@ class SettingsViewModel(
                     settingsEditor = settingsEditor,
                     modelCatalogRepository = modelCatalogRepository,
                     imageFileCleaner = imageFileCleaner,
+                    voiceCloneSampleCleaner = voiceCloneSampleCleaner,
                     mimoTtsClient = mimoTtsClient,
                 )
             }

@@ -15,10 +15,10 @@ data class SavedAudioFile(
     val fileName: String,
 )
 
+internal const val MAX_AUDIO_BASE64_CHARS = 10 * 1024 * 1024
+
 object AudioFileStorage {
     private const val AUDIO_DIR = "generated_voice_messages"
-    private const val DATA_URI_BASE64_MARKER = ";base64,"
-    private val BASE64_WHITESPACE = Regex("""\s+""")
 
     suspend fun saveBase64Audio(
         context: Context,
@@ -89,10 +89,7 @@ object AudioFileStorage {
     }
 
     private fun decodeBase64Audio(b64Data: String): ByteArray {
-        val normalizedData = b64Data
-            .trim()
-            .removeDataUriPrefix()
-            .replace(BASE64_WHITESPACE, "")
+        val normalizedData = normalizeBase64AudioData(b64Data)
         if (
             normalizedData.isBlank() ||
             normalizedData.length % 4 == 1
@@ -105,15 +102,6 @@ object AudioFileStorage {
             throw IllegalArgumentException("音频 Base64 数据为空")
         }
         return bytes
-    }
-
-    private fun String.removeDataUriPrefix(): String {
-        val markerIndex = indexOf(DATA_URI_BASE64_MARKER, ignoreCase = true)
-        return if (markerIndex >= 0) {
-            substring(markerIndex + DATA_URI_BASE64_MARKER.length)
-        } else {
-            this
-        }
     }
 
     private fun sanitizeFileNamePrefix(rawValue: String): String {
@@ -145,6 +133,26 @@ object AudioFileStorage {
         }
         return null
     }
+}
+
+internal fun normalizeBase64AudioData(
+    b64Data: String,
+    maxChars: Int = MAX_AUDIO_BASE64_CHARS,
+): String {
+    require(maxChars > 0) { "音频 Base64 长度上限必须大于 0" }
+    val marker = ";base64,"
+    val markerIndex = b64Data.indexOf(marker, ignoreCase = true)
+    val startIndex = if (markerIndex >= 0) markerIndex + marker.length else 0
+    val normalized = StringBuilder(minOf(maxChars, b64Data.length - startIndex))
+    for (index in startIndex until b64Data.length) {
+        val character = b64Data[index]
+        if (character.isWhitespace()) continue
+        if (normalized.length >= maxChars) {
+            throw IllegalArgumentException("音频 Base64 数据过大，最大支持 10 MB")
+        }
+        normalized.append(character)
+    }
+    return normalized.toString()
 }
 
 private enum class AudioType(
