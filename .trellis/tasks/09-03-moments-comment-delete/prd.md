@@ -17,6 +17,12 @@
 4. 删除范围不区分作者：用户评论与 AI 评论都允许删除。
 5. 删除后时间线自动刷新（依赖既有 `observeTimeline()` Flow，不手工改本地 state）。
 6. 失败时通过既有 `errorMessage` 通道提示，文案为简体中文。
+7. **时间线卡片上的评论预览行也支持长按删除**（2026-09-03 追加）：
+   - `MomentEngagementBlock` 中 `post.comments.take(4)` 渲染的每一行都可单独长按删除，
+     复用与详情页相同的触感反馈与确认框；
+   - 预览行原本依赖父 `Row` 的点击进入帖子详情，加长按手势会抢掉该点击，
+     因此必须给预览行显式接回「打开帖子」的单击行为，交互不得退化；
+   - 第 5 条及之后的评论不在预览中渲染，仍只能进详情页删除，这是可接受的。
 
 ## Constraints
 
@@ -30,6 +36,7 @@
 - [ ] `MomentsRepository` 接口与实现新增 `deleteComment(commentId)`。
 - [ ] `MomentsViewModel.deleteComment(commentId)` 可用；单测断言删除后 `observeTimeline()` 输出的对应帖子中不再包含该评论，且同帖其他评论与其他帖子不受影响。
 - [ ] 朋友圈页长按任一评论 → 出现确认框 → 确认后该评论消失，取消后不变。
+- [ ] 时间线卡片的评论预览行长按可删除；**单击该预览行仍能打开帖子详情**（手势不得互相抢占）。
 - [ ] `./gradlew.bat app:testDebugUnitTest` 与 `./gradlew.bat app:compileDebugKotlin` 通过。
 - [ ] Room 版本号（`ChatDatabase.CURRENT_VERSION`）未变化。
 

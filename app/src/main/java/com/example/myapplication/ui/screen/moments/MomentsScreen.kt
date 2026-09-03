@@ -364,6 +364,7 @@ fun MomentsScreen(
                                 },
                                 onToggleLike = onToggleLikePost,
                                 onDeletePost = onDeletePost,
+                                onDeleteComment = onDeleteComment,
                                 onRetryImage = onRetryImage,
                                 onOpenPhoneCheck = onOpenPhoneCheck,
                             )
@@ -410,6 +411,7 @@ private fun MomentsTimelineContent(
     onTogglePostSelected: (String) -> Unit,
     onToggleLike: (String) -> Unit,
     onDeletePost: (String) -> Unit,
+    onDeleteComment: (String) -> Unit,
     onRetryImage: (String) -> Unit,
     onOpenPhoneCheck: (() -> Unit)?,
 ) {
@@ -425,6 +427,19 @@ private fun MomentsTimelineContent(
             }
         },
     )
+    // 评论预览行分散在各卡片里，确认框状态统一由时间线持有，避免每张卡片重复一份
+    var pendingDeleteComment by remember { mutableStateOf<MomentComment?>(null) }
+
+    pendingDeleteComment?.let { comment ->
+        MomentCommentDeleteConfirmDialog(
+            comment = comment,
+            onConfirm = {
+                pendingDeleteComment = null
+                onDeleteComment(comment.id)
+            },
+            onDismiss = { pendingDeleteComment = null },
+        )
+    }
 
     PullToRefreshBox(
         isRefreshing = isRefreshing,
@@ -467,6 +482,7 @@ private fun MomentsTimelineContent(
                         onToggleSelection = { onTogglePostSelected(post.id) },
                         onToggleLike = { onToggleLike(post.id) },
                         onDeletePost = { onDeletePost(post.id) },
+                        onRequestDeleteComment = { pendingDeleteComment = it },
                         onRetryImage = { onRetryImage(post.id) },
                     )
                 }
@@ -870,6 +886,7 @@ private fun MomentPostTimelineItem(
     onToggleSelection: () -> Unit,
     onToggleLike: () -> Unit,
     onDeletePost: () -> Unit,
+    onRequestDeleteComment: (MomentComment) -> Unit,
     onRetryImage: () -> Unit,
 ) {
     var showMoreMenu by remember { mutableStateOf(false) }
@@ -995,7 +1012,18 @@ private fun MomentPostTimelineItem(
                     },
                 )
             }
-            MomentEngagementBlock(post = post)
+            MomentEngagementBlock(
+                post = post,
+                // 预览行自己接管单击，否则 combinedClickable 会吃掉父 Row 的「打开帖子」点击
+                onCommentPreviewClick = {
+                    if (selectionMode) {
+                        onToggleSelection()
+                    } else {
+                        onOpenPost()
+                    }
+                },
+                onCommentPreviewLongClick = if (selectionMode) null else onRequestDeleteComment,
+            )
         }
     }
     Box(
@@ -1231,6 +1259,8 @@ private fun MomentActionRow(
 private fun MomentEngagementBlock(
     post: MomentPost,
     showCommentPreview: Boolean = true,
+    onCommentPreviewClick: (() -> Unit)? = null,
+    onCommentPreviewLongClick: ((MomentComment) -> Unit)? = null,
 ) {
     if (post.likedByNames.isEmpty() && (!showCommentPreview || post.comments.isEmpty())) {
         return
@@ -1263,12 +1293,29 @@ private fun MomentEngagementBlock(
                 }
             }
             if (showCommentPreview) {
+                val haptic = LocalHapticFeedback.current
                 post.comments.take(4).forEach { comment ->
+                    val previewModifier = if (onCommentPreviewClick == null && onCommentPreviewLongClick == null) {
+                        Modifier.fillMaxWidth()
+                    } else {
+                        Modifier
+                            .fillMaxWidth()
+                            .combinedClickable(
+                                onClick = { onCommentPreviewClick?.invoke() },
+                                onLongClick = onCommentPreviewLongClick?.let { requestDelete ->
+                                    {
+                                        haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                                        requestDelete(comment)
+                                    }
+                                },
+                            )
+                    }
                     Text(
                         text = "${comment.authorName}：${comment.text}",
                         style = MaterialTheme.typography.bodySmall,
                         maxLines = 2,
                         overflow = TextOverflow.Ellipsis,
+                        modifier = previewModifier,
                     )
                 }
                 if (post.comments.size > 4) {
