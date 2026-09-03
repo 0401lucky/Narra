@@ -67,6 +67,10 @@ class ConversationRepository(
         return conversation
     }
 
+    suspend fun listConversationIds(): Set<String> {
+        return conversationStore.listConversations().map { it.id }.toSet()
+    }
+
     suspend fun getConversation(conversationId: String): Conversation? {
         return conversationStore.getConversation(conversationId)
     }

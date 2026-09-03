@@ -203,6 +203,7 @@ internal fun rememberContextTransferViewModel(
                 ).path
             },
             dataImportTransaction = appGraph::runDatabaseTransaction,
+            existingConversationIdsProvider = { appGraph.conversationRepository.listConversationIds() },
         ),
     )
 }

@@ -101,6 +101,7 @@ class ContextTransferViewModel(
     private val tavernPresetAdapter: TavernPresetAdapter = TavernPresetAdapter(),
     private val importedAssistantAvatarSaver: suspend (AssistantAvatarImport) -> String? = { null },
     private val dataImportTransaction: suspend (suspend () -> Unit) -> Unit = { block -> block() },
+    private val existingConversationIdsProvider: suspend () -> Set<String>? = { null },
 ) : ViewModel() {
     val settings = settingsRepository.settingsFlow.stateIn(
         scope = viewModelScope,
@@ -255,7 +256,7 @@ class ContextTransferViewModel(
     }
 
     private suspend fun mergeImportedData(bundle: ContextDataBundle) {
-        val normalizedBundle = bundle.normalizedForContextImport()
+        val normalizedBundle = dropOrphanSummarySegments(bundle.normalizedForContextImport())
         val currentSettings = settings.value
         val mergedAssistants = mergeAssistants(
             currentAssistants = currentSettings.assistants,
@@ -286,6 +287,28 @@ class ContextTransferViewModel(
                 assistants = mergedAssistants,
             ),
         )
+    }
+
+    /**
+     * 摘要分段表对 conversations 有外键约束，而数据包不携带会话本身。
+     * 若分段所属会话在本机不存在（换设备、清过数据、会话已删除），直接写入会触发
+     * FOREIGN KEY constraint failed 并回滚整个导入事务，因此这里先剔除这些孤儿分段。
+     */
+    private suspend fun dropOrphanSummarySegments(bundle: ContextDataBundle): ContextDataBundle {
+        if (bundle.conversationSummarySegments.isEmpty()) {
+            return bundle
+        }
+        val existingConversationIds = existingConversationIdsProvider() ?: return bundle
+        return bundle.copy(
+            conversationSummarySegments = bundle.conversationSummarySegments.filter { segment ->
+                segment.conversationId in existingConversationIds
+            },
+        )
+    }
+
+    private suspend fun countOrphanSummarySegments(bundle: ContextDataBundle): Int {
+        return bundle.conversationSummarySegments.size -
+            dropOrphanSummarySegments(bundle).conversationSummarySegments.size
     }
 
     private suspend fun refreshCounts() {
@@ -411,13 +434,17 @@ class ContextTransferViewModel(
         )
     }
 
-    private fun buildImportNoticeMessages(bundle: ContextDataBundle): List<String> {
+    private suspend fun buildImportNoticeMessages(bundle: ContextDataBundle): List<String> {
         return buildList {
             if (bundle.assistants.size >= CONTEXT_IMPORT_MAX_ASSISTANTS) {
                 add("角色卡数量已达到安全上限（最多 ${CONTEXT_IMPORT_MAX_ASSISTANTS} 条），超出部分不会导入。")
             }
             if (bundle.worldBookEntries.size >= CONTEXT_IMPORT_MAX_WORLD_BOOK_ENTRIES) {
                 add("世界书数量已达到安全上限（最多 ${CONTEXT_IMPORT_MAX_WORLD_BOOK_ENTRIES} 条），超出部分不会导入。")
+            }
+            val orphanSegmentCount = countOrphanSummarySegments(bundle)
+            if (orphanSegmentCount > 0) {
+                add("有 $orphanSegmentCount 条摘要分段所属的会话在本机不存在，将跳过这部分内容。")
             }
         }
     }
@@ -671,6 +698,7 @@ class ContextTransferViewModel(
             presetRepository: PresetRepository = EmptyPresetRepository,
             importedAssistantAvatarSaver: suspend (AssistantAvatarImport) -> String? = { null },
             dataImportTransaction: suspend (suspend () -> Unit) -> Unit = { block -> block() },
+            existingConversationIdsProvider: suspend () -> Set<String>? = { null },
         ): ViewModelProvider.Factory {
             return typedViewModelFactory {
                 ContextTransferViewModel(
@@ -682,6 +710,7 @@ class ContextTransferViewModel(
                     presetRepository = presetRepository,
                     importedAssistantAvatarSaver = importedAssistantAvatarSaver,
                     dataImportTransaction = dataImportTransaction,
+                    existingConversationIdsProvider = existingConversationIdsProvider,
                 )
             }
         }

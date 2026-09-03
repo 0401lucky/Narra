@@ -141,6 +141,67 @@ class ContextTransferViewModelTest {
     }
 
     @Test
+    fun importBundleJson_skipsSummarySegmentsWithMissingConversation() = runTest(mainDispatcherRule.dispatcher.scheduler) {
+        val services = createTestAiServices(
+            settings = AppSettings(),
+            dispatcher = mainDispatcherRule.dispatcher,
+        )
+        val memoryRepository = FakeMemoryRepository()
+        val summaryRepository = FakeConversationSummaryRepository()
+        val viewModel = createContextTransferViewModel(
+            services = services,
+            worldBookRepository = FakeWorldBookRepository(),
+            memoryRepository = memoryRepository,
+            conversationSummaryRepository = summaryRepository,
+            existingConversationIdsProvider = { setOf("c-existing") },
+        )
+
+        advanceUntilIdle()
+
+        val rawJson = ContextTransferCodec().encode(
+            com.example.myapplication.model.ContextDataBundle(
+                memoryEntries = listOf(
+                    MemoryEntry(
+                        id = "memory-1",
+                        scopeType = MemoryScopeType.GLOBAL,
+                        content = "用户喜欢短句回复",
+                    ),
+                ),
+                conversationSummarySegments = listOf(
+                    ConversationSummarySegment(
+                        id = "segment-kept",
+                        conversationId = "c-existing",
+                        startMessageId = "m1",
+                        endMessageId = "m2",
+                        summary = "保留的分段。",
+                    ),
+                    ConversationSummarySegment(
+                        id = "segment-orphan",
+                        conversationId = "c-missing",
+                        startMessageId = "m3",
+                        endMessageId = "m4",
+                        summary = "孤儿分段。",
+                    ),
+                ),
+            ),
+        )
+
+        viewModel.previewImportJson(rawJson, ContextTransferSection.MEMORY)
+        advanceUntilIdle()
+        assertTrue(
+            viewModel.uiState.value.importPreview?.noticeMessages.orEmpty()
+                .any { it.contains("1 条摘要分段") },
+        )
+
+        viewModel.confirmImport()
+        advanceUntilIdle()
+
+        assertEquals("segment-kept", summaryRepository.listAllSummarySegments().single().id)
+        assertEquals("用户喜欢短句回复", memoryRepository.currentEntries().single().content)
+        assertEquals("上下文数据已合并导入", viewModel.uiState.value.message)
+    }
+
+    @Test
     fun importBundleJson_normalizesNarraBackupBeforePersisting() = runTest(mainDispatcherRule.dispatcher.scheduler) {
         val services = createTestAiServices(
             settings = AppSettings(),
@@ -892,6 +953,7 @@ class ContextTransferViewModelTest {
         conversationSummaryRepository: FakeConversationSummaryRepository,
         presetRepository: FakePresetRepository = FakePresetRepository(),
         importedAssistantAvatarSaver: suspend (AssistantAvatarImport) -> String? = { null },
+        existingConversationIdsProvider: suspend () -> Set<String>? = { null },
     ): ContextTransferViewModel {
         return ContextTransferViewModel(
             settingsRepository = services.settingsRepository,
@@ -901,6 +963,7 @@ class ContextTransferViewModelTest {
             conversationSummaryRepository = conversationSummaryRepository,
             presetRepository = presetRepository,
             importedAssistantAvatarSaver = importedAssistantAvatarSaver,
+            existingConversationIdsProvider = existingConversationIdsProvider,
         )
     }
 
