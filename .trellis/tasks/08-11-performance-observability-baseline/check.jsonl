@@ -1,0 +1,11 @@
+{"file":".trellis/spec/backend/index.md","reason":"按 Android 规范索引复核本任务涉及的模块、日志、错误、UI、持久化和质量要求。"}
+{"file":".trellis/spec/backend/directory-structure.md","reason":"检查 baselineprofile、baseline-only 源集、system 诊断和设置 UI 是否越过架构边界。"}
+{"file":".trellis/spec/backend/quality-guidelines.md","reason":"执行单测、设备测试、Profile、Lint、构建和任务范围审查。"}
+{"file":".trellis/spec/backend/logging-guidelines.md","reason":"检查诊断、Trace 和导出路径没有密钥、正文、Base64、路径或 SQL 泄漏。"}
+{"file":".trellis/spec/backend/error-handling.md","reason":"检查查询、解析、轮转、导出失败及取消不会导致启动崩溃或错误提示泄漏。"}
+{"file":".trellis/spec/backend/database-guidelines.md","reason":"检查 fixture / 旧快照没有破坏 Room、DataStore、Keystore 和敏感值边界。"}
+{"file":".trellis/spec/backend/compliance-guidelines.md","reason":"验证 first-run / returning fixture、更新和 Worker 隔离未绕过合规门禁。"}
+{"file":".trellis/spec/backend/ui-state-guidelines.md","reason":"检查 ready、诊断页面状态、生命周期收集和主动导出交互。"}
+{"file":".trellis/spec/guides/cross-layer-thinking-guide.md","reason":"做 fixture→UI→基准结果与退出信息→存储→导出的端到端数据流审查。"}
+{"file":".trellis/tasks/08-07-app-performance-optimization/research/build-baseline-observability-scan.md","reason":"对照已发现的静默等待、空应用 Profile、共享 Compose 报告和无诊断闭环问题逐项验收。"}
+{"file":".trellis/tasks/08-07-app-performance-optimization/research/repository-evidence.md","reason":"核对父专项范围、证据优先原则、跨子任务所有权和设备结果限制。"}

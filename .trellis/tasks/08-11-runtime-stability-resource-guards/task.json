@@ -1,0 +1,28 @@
+{
+  "id": "runtime-stability-resource-guards",
+  "name": "runtime-stability-resource-guards",
+  "title": "运行时异常、取消与资源边界",
+  "description": "修复取消和旧任务覆盖，移出主线程 IO，并为 TTS、Base64 与系统资源增加边界。",
+  "status": "planning",
+  "dev_type": null,
+  "scope": null,
+  "package": null,
+  "priority": "P0",
+  "creator": "lucky",
+  "assignee": "lucky",
+  "createdAt": "2026-08-11",
+  "completedAt": null,
+  "branch": null,
+  "base_branch": "main",
+  "worktree_path": null,
+  "commit": null,
+  "pr_url": null,
+  "subtasks": [],
+  "children": [],
+  "parent": "08-07-app-performance-optimization",
+  "relatedFiles": [],
+  "notes": "",
+  "meta": {
+    "release_version": "2.2.6-dev"
+  }
+}

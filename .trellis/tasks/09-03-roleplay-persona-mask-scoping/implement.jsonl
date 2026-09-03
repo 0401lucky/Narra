@@ -1,0 +1,4 @@
+{"file": ".trellis/spec/backend/ui-state-guidelines.md", "reason": "ViewModel 状态流与 scenario 局部更新的约定"}
+{"file": ".trellis/spec/backend/database-guidelines.md", "reason": "确认复用既有 userPersonaMaskId 列、禁止升版本"}
+{"file": ".trellis/spec/backend/quality-guidelines.md", "reason": "构建与单测验证要求"}
+{"file": ".trellis/spec/guides/cross-layer-thinking-guide.md", "reason": "侧边栏 UI→RoleplayViewModel→RoleplayRepository 端到端检查"}

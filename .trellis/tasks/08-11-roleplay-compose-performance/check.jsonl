@@ -1,0 +1,8 @@
+{"file":".trellis/spec/backend/ui-state-guidelines.md","reason":"稳定 key、contentType、高频状态范围、贴底副作用和播放器生命周期审查"}
+{"file":".trellis/spec/backend/error-handling.md","reason":"异步 prepare 的失败、重复点击、取消与释放路径审查"}
+{"file":".trellis/spec/backend/quality-guidelines.md","reason":"identity 边界测试、Compose 测试、宏基准、Lint 和构建门禁审查"}
+{"file":".trellis/spec/guides/cross-layer-thinking-guide.md","reason":"离线 fixture 到状态发布、列表渲染和播放器资源的完整链路审查"}
+{"file":".trellis/spec/guides/code-reuse-thinking-guide.md","reason":"核对普通聊天滚动策略复用与 feature 专属抽象边界"}
+{"file":".trellis/tasks/08-07-app-performance-optimization/research/ui-compose-performance-scan.md","reason":"已确认热点、现有测试缺口、普通聊天对照和误报排除依据"}
+{"file":".trellis/tasks/08-07-app-performance-optimization/research/repository-evidence.md","reason":"父专项范围、Trace 条件、性能阈值和设备限制核对"}
+

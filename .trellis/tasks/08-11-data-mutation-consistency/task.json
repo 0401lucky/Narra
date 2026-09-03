@@ -1,0 +1,28 @@
+{
+  "id": "data-mutation-consistency",
+  "name": "data-mutation-consistency",
+  "title": "会话 mutation 与跨表一致性",
+  "description": "串行化编辑删除重试发送，并让剧情删除重启等数据库操作原子提交。",
+  "status": "planning",
+  "dev_type": null,
+  "scope": null,
+  "package": null,
+  "priority": "P1",
+  "creator": "lucky",
+  "assignee": "lucky",
+  "createdAt": "2026-08-11",
+  "completedAt": null,
+  "branch": null,
+  "base_branch": "main",
+  "worktree_path": null,
+  "commit": null,
+  "pr_url": null,
+  "subtasks": [],
+  "children": [],
+  "parent": "08-07-app-performance-optimization",
+  "relatedFiles": [],
+  "notes": "",
+  "meta": {
+    "release_version": "2.2.6-dev"
+  }
+}

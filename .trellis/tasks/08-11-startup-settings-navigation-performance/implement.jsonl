@@ -1,0 +1,15 @@
+{"file":".trellis/spec/backend/index.md","reason":"Android 应用依赖方向与本子任务开发规范入口"}
+{"file":".trellis/spec/backend/directory-structure.md","reason":"AppGraph、Store、Repository、ViewModel 与 AppRoot 的职责边界"}
+{"file":".trellis/spec/backend/ui-state-guidelines.md","reason":"StateFlow、生命周期感知收集、根级窄状态与 ViewModel 状态所有权"}
+{"file":".trellis/spec/backend/database-guidelines.md","reason":"DataStore、Keystore、敏感值迁移与设置持久化安全边界"}
+{"file":".trellis/spec/backend/error-handling.md","reason":"IOException 精确降级、非 IO 异常传播与 CancellationException 合同"}
+{"file":".trellis/spec/backend/logging-guidelines.md","reason":"启动失败与设置解析 Trace/日志的脱敏要求"}
+{"file":".trellis/spec/backend/compliance-guidelines.md","reason":"AppRoot 合规门禁、导航创建与更新/Worker 调度顺序必须保持"}
+{"file":".trellis/spec/backend/quality-guidelines.md","reason":"协程测试、Compose/设备验证、Lint、构建与 60 秒测试超时门禁"}
+{"file":".trellis/spec/guides/cross-layer-thinking-guide.md","reason":"DataStore 到共享设置、ViewModel、AppRoot 与导航的完整跨层数据流审查"}
+{"file":".trellis/spec/guides/code-reuse-thinking-guide.md","reason":"复用 AppGraph、AppLogger、SecureValueStore 与单一设置解析所有者"}
+{"file":".trellis/tasks/08-07-app-performance-optimization/research/ui-compose-performance-scan.md","reason":"设置冷流重复解析、AppRoot 订阅过宽与导航待测热点的源码证据"}
+{"file":".trellis/tasks/08-07-app-performance-optimization/research/runtime-crash-concurrency-scan.md","reason":"AppGraph 根协程异常与 DataStore IOException 未捕获通道证据"}
+{"file":".trellis/tasks/08-07-app-performance-optimization/research/build-baseline-observability-scan.md","reason":"启动污染源、Trace/N1 前置基线、设备依赖与不可宣称边界"}
+{"file":".trellis/tasks/08-07-app-performance-optimization/research/repository-evidence.md","reason":"父专项确认缺陷、优先级、范围排除与验证限制汇总"}
+

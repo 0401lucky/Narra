@@ -1,0 +1,8 @@
+{"file":".trellis/spec/backend/error-handling.md","reason":"取消原样传播、用户动作异常边界和资源清理契约"}
+{"file":".trellis/spec/backend/ui-state-guidelines.md","reason":"Job 所有权、旧任务不得写新状态和 ViewModel 状态恢复"}
+{"file":".trellis/spec/backend/network-guidelines.md","reason":"流式取消、响应读取、Call 关闭和敏感错误边界"}
+{"file":".trellis/spec/backend/logging-guidelines.md","reason":"AppLogger 与敏感信息脱敏要求"}
+{"file":".trellis/spec/backend/quality-guidelines.md","reason":"协程、MockWebServer、边界和构建验证要求"}
+{"file":".trellis/spec/guides/cross-layer-thinking-guide.md","reason":"UI、Coordinator、网络、文件和系统资源的端到端检查"}
+{"file":".trellis/tasks/08-07-app-performance-optimization/research/runtime-crash-concurrency-scan.md","reason":"取消竞态、主线程 IO、OOM 和系统资源的完整证据"}
+{"file":".trellis/tasks/08-07-app-performance-optimization/research/repository-evidence.md","reason":"父专项范围、优先级和排除项"}

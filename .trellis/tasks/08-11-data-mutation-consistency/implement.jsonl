@@ -1,0 +1,8 @@
+{"file":".trellis/spec/backend/conversation-message-mutation-guidelines.md","reason":"单条删除、旧快照、Loading 清理和 mutation 串行化的项目契约"}
+{"file":".trellis/spec/backend/database-guidelines.md","reason":"Room withTransaction、跨表原子性和文件存储边界"}
+{"file":".trellis/spec/backend/error-handling.md","reason":"取消、事务异常、UI 状态恢复和脱敏错误"}
+{"file":".trellis/spec/backend/ui-state-guidelines.md","reason":"ViewModel Job、进行中状态和跨会话旧任务写入约束"}
+{"file":".trellis/spec/backend/quality-guidelines.md","reason":"并发、Room、设备测试和构建验证要求"}
+{"file":".trellis/spec/guides/cross-layer-thinking-guide.md","reason":"UI、ViewModel、Repository、Store、Room 和文件副作用端到端检查"}
+{"file":".trellis/tasks/08-07-app-performance-optimization/research/runtime-crash-concurrency-scan.md","reason":"旧快照覆盖和跨表非原子操作的源码证据"}
+{"file":".trellis/tasks/08-07-app-performance-optimization/research/repository-evidence.md","reason":"父专项范围、优先级和排除项"}

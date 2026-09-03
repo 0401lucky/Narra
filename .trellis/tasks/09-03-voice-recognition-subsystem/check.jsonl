@@ -1,0 +1,6 @@
+{"file": ".trellis/spec/backend/network-guidelines.md", "reason": "OkHttp 客户端、超时、multipart 与错误映射约定"}
+{"file": ".trellis/spec/backend/error-handling.md", "reason": "取消传播、脱敏与中文错误文案"}
+{"file": ".trellis/spec/backend/ui-state-guidelines.md", "reason": "控制器状态机与 Compose 订阅规范"}
+{"file": ".trellis/spec/backend/logging-guidelines.md", "reason": "禁止记录 apiKey 与音频内容"}
+{"file": ".trellis/spec/backend/directory-structure.md", "reason": "新增 asr 包与设置页的目录归属"}
+{"file": ".trellis/spec/backend/quality-guidelines.md", "reason": "构建、lint、单测与设备验证要求"}

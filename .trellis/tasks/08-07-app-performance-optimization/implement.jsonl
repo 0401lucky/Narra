@@ -1,0 +1,16 @@
+{"file":".trellis/spec/backend/index.md","reason":"Android 应用性能与稳定性专项的规范入口"}
+{"file":".trellis/spec/backend/directory-structure.md","reason":"baselineprofile、AppGraph、UI、数据和系统组件的模块边界"}
+{"file":".trellis/spec/backend/ui-state-guidelines.md","reason":"Compose 高频状态、稳定列表 identity、流式状态和取消语义"}
+{"file":".trellis/spec/backend/error-handling.md","reason":"根协程异常、DataStore 故障、取消传播和资源清理契约"}
+{"file":".trellis/spec/backend/logging-guidelines.md","reason":"脱敏日志、崩溃诊断和不可把日志当业务状态的约束"}
+{"file":".trellis/spec/backend/database-guidelines.md","reason":"固定 fixture、跨表事务、故障注入和无 schema 变更边界"}
+{"file":".trellis/spec/backend/network-guidelines.md","reason":"流式网络取消、响应大小门禁和无真实网络基准要求"}
+{"file":".trellis/spec/backend/conversation-message-mutation-guidelines.md","reason":"编辑、删除、发送串行化和旧快照不得覆盖新 run"}
+{"file":".trellis/spec/backend/compliance-guidelines.md","reason":"合规门禁、更新检查和 Worker 的启动与基准隔离边界"}
+{"file":".trellis/spec/backend/quality-guidelines.md","reason":"Macrobenchmark、设备测试、Compose 报告、Lint 与构建门禁"}
+{"file":".trellis/spec/guides/cross-layer-thinking-guide.md","reason":"启动、设置、Room、ViewModel、Compose 和系统资源的端到端审查"}
+{"file":".trellis/spec/guides/code-reuse-thinking-guide.md","reason":"复用普通聊天流式与滚动策略，避免重复实现"}
+{"file":".trellis/tasks/08-07-app-performance-optimization/research/repository-evidence.md","reason":"三路扫描的分级证据、排除项和实施优先级汇总"}
+{"file":".trellis/tasks/08-07-app-performance-optimization/research/ui-compose-performance-scan.md","reason":"RP、设置、导航与 Compose 性能的完整源码证据"}
+{"file":".trellis/tasks/08-07-app-performance-optimization/research/runtime-crash-concurrency-scan.md","reason":"根协程、取消、主线程 IO、OOM、Room 与并发稳定性证据"}
+{"file":".trellis/tasks/08-07-app-performance-optimization/research/build-baseline-observability-scan.md","reason":"基准、Profile、启动、构建与崩溃可观测性证据"}

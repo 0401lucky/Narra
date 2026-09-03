@@ -1,0 +1,28 @@
+{
+  "id": "roleplay-compose-performance",
+  "name": "roleplay-compose-performance",
+  "title": "RP Compose 与流式帧性能",
+  "description": "稳定 RP 列表 identity，优化流式状态、自动贴底、光标和语音卡动画。",
+  "status": "in_progress",
+  "dev_type": null,
+  "scope": null,
+  "package": null,
+  "priority": "P0",
+  "creator": "lucky",
+  "assignee": "lucky",
+  "createdAt": "2026-08-11",
+  "completedAt": null,
+  "branch": null,
+  "base_branch": "main",
+  "worktree_path": null,
+  "commit": null,
+  "pr_url": null,
+  "subtasks": [],
+  "children": [],
+  "parent": "08-07-app-performance-optimization",
+  "relatedFiles": [],
+  "notes": "",
+  "meta": {
+    "release_version": "2.2.6-dev"
+  }
+}

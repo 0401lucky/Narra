@@ -1,0 +1,14 @@
+{"file":".trellis/spec/backend/index.md","reason":"质量审查时核对 Android 应用分层与规范索引"}
+{"file":".trellis/spec/backend/directory-structure.md","reason":"确认改动只落在约定入口、Store、Repository、ViewModel 与根 UI 边界"}
+{"file":".trellis/spec/backend/ui-state-guidelines.md","reason":"检查共享 Flow、生命周期、根级重组范围与草稿状态同步"}
+{"file":".trellis/spec/backend/database-guidelines.md","reason":"检查 DataStore IOException、Keystore 明文边界与迁移兼容"}
+{"file":".trellis/spec/backend/error-handling.md","reason":"检查逐任务失败策略、取消传播、非 IO 异常未被静默吞掉"}
+{"file":".trellis/spec/backend/logging-guidelines.md","reason":"检查启动日志和 trace section 不泄漏密钥、JSON、用户文本或路径"}
+{"file":".trellis/spec/backend/compliance-guidelines.md","reason":"检查 AppRoot 合规前后导航、更新和 Worker 时序无回归"}
+{"file":".trellis/spec/backend/quality-guidelines.md","reason":"执行定向测试、全量单测、AndroidTest 编译、Lint、构建与性能结果审查"}
+{"file":".trellis/spec/guides/cross-layer-thinking-guide.md","reason":"检查设置 emission 从存储到根主题的线程、失败、所有者与回流完整性"}
+{"file":".trellis/tasks/08-07-app-performance-optimization/research/ui-compose-performance-scan.md","reason":"复核 AppRoot 过宽订阅、SettingsViewModel 双订阅和导航性能证据"}
+{"file":".trellis/tasks/08-07-app-performance-optimization/research/runtime-crash-concurrency-scan.md","reason":"复核根协程与 DataStore 异常通道是否真正被阻断"}
+{"file":".trellis/tasks/08-07-app-performance-optimization/research/build-baseline-observability-scan.md","reason":"复核 Trace、同设备 N1 对比和缺设备时的结论边界"}
+{"file":".trellis/tasks/08-07-app-performance-optimization/research/repository-evidence.md","reason":"父专项范围、优先级和跨子任务回归的最终证据对照"}
+

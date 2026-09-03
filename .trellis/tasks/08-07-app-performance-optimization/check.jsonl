@@ -1,0 +1,14 @@
+{"file":".trellis/spec/backend/quality-guidelines.md","reason":"性能原始结果、设备依赖、测试和常规质量门禁审查"}
+{"file":".trellis/spec/backend/ui-state-guidelines.md","reason":"稳定 key、重组范围、贴底、流式状态与取消回归审查"}
+{"file":".trellis/spec/backend/error-handling.md","reason":"根协程异常、DataStore IOException、取消与资源释放审查"}
+{"file":".trellis/spec/backend/logging-guidelines.md","reason":"本地或远程诊断的脱敏、失败隔离和隐私边界审查"}
+{"file":".trellis/spec/backend/database-guidelines.md","reason":"fixture 幂等性、跨表事务、故障回滚和 schema 不变审查"}
+{"file":".trellis/spec/backend/network-guidelines.md","reason":"无真实网络基准、流式取消和 TTS 响应边界审查"}
+{"file":".trellis/spec/backend/conversation-message-mutation-guidelines.md","reason":"编辑删除发送交错、旧快照覆盖和会话级串行化审查"}
+{"file":".trellis/spec/backend/compliance-guidelines.md","reason":"合规、更新检查和 Worker 不污染基准的审查"}
+{"file":".trellis/spec/guides/cross-layer-thinking-guide.md","reason":"从 fixture 到 UI、数据、异常与资源回收的端到端审查"}
+{"file":".trellis/spec/guides/code-reuse-thinking-guide.md","reason":"是否复用现有聊天滚动与流式模式且避免重复实现"}
+{"file":".trellis/tasks/08-07-app-performance-optimization/research/repository-evidence.md","reason":"已确认缺陷、待测热点、排除项与阈值的统一核对依据"}
+{"file":".trellis/tasks/08-07-app-performance-optimization/research/ui-compose-performance-scan.md","reason":"UI / Compose 修复与误报排除依据"}
+{"file":".trellis/tasks/08-07-app-performance-optimization/research/runtime-crash-concurrency-scan.md","reason":"运行时稳定性、并发、IO 和资源边界审查依据"}
+{"file":".trellis/tasks/08-07-app-performance-optimization/research/build-baseline-observability-scan.md","reason":"基准有效性、Profile、构建与可观测性审查依据"}

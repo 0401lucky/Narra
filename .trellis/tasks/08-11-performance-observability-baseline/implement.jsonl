@@ -1,0 +1,12 @@
+{"file":".trellis/spec/backend/index.md","reason":"确认 Android 应用层规范入口、必读专题和 baseline / 设备验证门禁。"}
+{"file":".trellis/spec/backend/directory-structure.md","reason":"约束 app、baselineprofile、system、UI 与测试源码的模块职责和依赖方向。"}
+{"file":".trellis/spec/backend/quality-guidelines.md","reason":"落实 JVM、Compose、设备、Baseline Profile、Lint、构建和 60 秒单测超时要求。"}
+{"file":".trellis/spec/backend/logging-guidelines.md","reason":"本地退出诊断、导出失败与 Trace 日志必须复用 AppLogger 并避免敏感数据。"}
+{"file":".trellis/spec/backend/error-handling.md","reason":"约束诊断 fail-open、文件异常、用户取消、协程取消和安全中文错误反馈。"}
+{"file":".trellis/spec/backend/database-guidelines.md","reason":"确定 fixture 使用 Room / DataStore / Keystore 的边界、旧快照与敏感值隔离规则。"}
+{"file":".trellis/spec/backend/compliance-guidelines.md","reason":"S0 / S1 fixture 和 benchmark 后台隔离必须保持首次门禁及 Worker 当前版本守卫。"}
+{"file":".trellis/spec/backend/ui-state-guidelines.md","reason":"ready 标记、设置诊断页面、ViewModel 与 CreateDocument 交互需遵守 Compose 状态边界。"}
+{"file":".trellis/spec/guides/cross-layer-thinking-guide.md","reason":"fixture、ready、Trace、ApplicationExitInfo、文件导出跨 UI / 系统 / 存储，需核对线程、失败和测试闭环。"}
+{"file":".trellis/spec/guides/code-reuse-thinking-guide.md","reason":"复用 AppGraph 所有权、AppJson、AppLogger、SensitiveTextRedactor、现有导出 launcher 和测试辅助。"}
+{"file":".trellis/tasks/08-07-app-performance-optimization/research/build-baseline-observability-scan.md","reason":"提供现有 benchmark/Profile/Compose 报告缺陷、场景矩阵、工具冻结与本地诊断边界证据。"}
+{"file":".trellis/tasks/08-07-app-performance-optimization/research/repository-evidence.md","reason":"提供父专项已确认风险、优先级、不可归类项和真实设备验证限制。"}

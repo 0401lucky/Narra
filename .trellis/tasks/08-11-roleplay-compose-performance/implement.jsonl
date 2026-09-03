@@ -1,0 +1,10 @@
+{"file":".trellis/spec/backend/index.md","reason":"Android 模块边界、开发前规范入口与质量检查总览"}
+{"file":".trellis/spec/backend/directory-structure.md","reason":"RP model、roleplay、viewmodel、Compose 与 baselineprofile 的职责边界"}
+{"file":".trellis/spec/backend/ui-state-guidelines.md","reason":"高频流式状态、稳定列表 identity、Compose 副作用与播放器释放规范"}
+{"file":".trellis/spec/backend/error-handling.md","reason":"MediaPlayer 异步失败、取消、状态恢复和幂等资源释放契约"}
+{"file":".trellis/spec/backend/quality-guidelines.md","reason":"JVM、Compose、设备、宏基准、Lint 与构建验证要求"}
+{"file":".trellis/spec/guides/cross-layer-thinking-guide.md","reason":"离线重放、ViewModel 状态、Compose 展示与 Android 播放器的端到端数据流检查"}
+{"file":".trellis/spec/guides/code-reuse-thinking-guide.md","reason":"复用普通聊天贴底与流式模式，避免新增第二套无必要抽象"}
+{"file":".trellis/tasks/08-07-app-performance-optimization/research/ui-compose-performance-scan.md","reason":"RP identity、滚动、光标、语音卡和流式状态的完整源码证据"}
+{"file":".trellis/tasks/08-07-app-performance-optimization/research/repository-evidence.md","reason":"父专项优先级、Trace 闸门、排除项和设备验证限制"}
+

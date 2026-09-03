@@ -1,0 +1,4 @@
+{"file": ".trellis/spec/backend/database-guidelines.md", "reason": "Room DAO 新增查询、事务与不升版本的约束"}
+{"file": ".trellis/spec/backend/ui-state-guidelines.md", "reason": "ViewModel 状态与 Flow 驱动刷新的约定"}
+{"file": ".trellis/spec/backend/error-handling.md", "reason": "删除失败的错误通道与脱敏中文提示"}
+{"file": ".trellis/spec/backend/quality-guidelines.md", "reason": "构建与单测验证要求"}
