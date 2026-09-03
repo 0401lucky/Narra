@@ -26,6 +26,7 @@ interface MomentsRepository {
     suspend fun updatePostLikes(postId: String, likedByNames: List<String>, updatedAt: Long)
     suspend fun addComment(comment: MomentComment)
     suspend fun addComments(comments: List<MomentComment>)
+    suspend fun deleteComment(commentId: String)
     suspend fun upsertMedia(media: MomentMedia)
     suspend fun getMediaByPostId(postId: String): MomentMedia?
     suspend fun latestAssistantPostCreatedAt(assistantId: String): Long?
@@ -83,6 +84,10 @@ class RoomMomentsRepository(
     override suspend fun addComments(comments: List<MomentComment>) {
         if (comments.isEmpty()) return
         dao.upsertComments(comments.map { it.toEntity() })
+    }
+
+    override suspend fun deleteComment(commentId: String) {
+        dao.deleteComment(commentId)
     }
 
     override suspend fun upsertMedia(media: MomentMedia) {

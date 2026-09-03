@@ -8,6 +8,7 @@ import androidx.compose.animation.Crossfade
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -70,7 +71,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -108,6 +111,7 @@ fun MomentsScreen(
     onDeletePosts: (List<String>) -> Unit,
     onClearMoments: () -> Unit,
     onAddComment: (String, String, String) -> Unit,
+    onDeleteComment: (String) -> Unit,
     onRetryImage: (String) -> Unit,
     onRefreshMoments: () -> Unit,
     onUpdateCoverImage: (String) -> Unit,
@@ -377,6 +381,7 @@ fun MomentsScreen(
                                 onAddComment = { text, replyToCommentId ->
                                     onAddComment(post.id, text, replyToCommentId)
                                 },
+                                onDeleteComment = onDeleteComment,
                                 onRetryImage = { onRetryImage(post.id) },
                             )
                         }
@@ -1056,6 +1061,29 @@ private fun MomentDeleteConfirmDialog(
 }
 
 @Composable
+private fun MomentCommentDeleteConfirmDialog(
+    comment: MomentComment,
+    onConfirm: () -> Unit,
+    onDismiss: () -> Unit,
+) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("删除这条回复？") },
+        text = { Text("将删除 ${comment.authorName} 的这条回复，删除后无法恢复。") },
+        confirmButton = {
+            TextButton(onClick = onConfirm) {
+                Text("删除", color = MaterialTheme.colorScheme.error)
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text("取消")
+            }
+        },
+    )
+}
+
+@Composable
 private fun MomentsClearConfirmDialog(
     postCount: Int,
     onConfirm: () -> Unit,
@@ -1264,10 +1292,13 @@ private fun MomentsDetailContent(
     onToggleLike: () -> Unit,
     onDeletePost: () -> Unit,
     onAddComment: (String, String) -> Unit,
+    onDeleteComment: (String) -> Unit,
     onRetryImage: () -> Unit,
 ) {
+    val haptic = LocalHapticFeedback.current
     var commentInput by remember(post.id) { mutableStateOf("") }
     var replyTarget by remember(post.id) { mutableStateOf<MomentComment?>(null) }
+    var pendingDeleteComment by remember(post.id) { mutableStateOf<MomentComment?>(null) }
     var showMoreMenu by remember { mutableStateOf(false) }
     var showDeleteDialog by remember { mutableStateOf(false) }
 
@@ -1278,6 +1309,20 @@ private fun MomentsDetailContent(
                 onDeletePost()
             },
             onDismiss = { showDeleteDialog = false },
+        )
+    }
+
+    pendingDeleteComment?.let { comment ->
+        MomentCommentDeleteConfirmDialog(
+            comment = comment,
+            onConfirm = {
+                pendingDeleteComment = null
+                if (replyTarget?.id == comment.id) {
+                    replyTarget = null
+                }
+                onDeleteComment(comment.id)
+            },
+            onDismiss = { pendingDeleteComment = null },
         )
     }
 
@@ -1350,7 +1395,13 @@ private fun MomentsDetailContent(
 
             items(post.comments, key = { it.id }) { comment ->
                 Surface(
-                    modifier = Modifier.clickable { replyTarget = comment },
+                    modifier = Modifier.combinedClickable(
+                        onClick = { replyTarget = comment },
+                        onLongClick = {
+                            haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                            pendingDeleteComment = comment
+                        },
+                    ),
                     shape = RoundedCornerShape(8.dp),
                     color = MomentsCardBackground(),
                 ) {

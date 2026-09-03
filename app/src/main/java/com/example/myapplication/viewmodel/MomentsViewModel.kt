@@ -254,6 +254,20 @@ class MomentsViewModel(
         }
     }
 
+    fun deleteComment(commentId: String) {
+        val normalizedId = commentId.trim()
+        if (normalizedId.isBlank()) return
+        viewModelScope.launch {
+            runCatching {
+                momentsRepository.deleteComment(normalizedId)
+            }.onFailure { throwable ->
+                _uiState.update {
+                    it.copy(errorMessage = throwable.toMomentsUiError("回复删除失败"))
+                }
+            }
+        }
+    }
+
     fun retryImage(postId: String) {
         if (_uiState.value.retryingImagePostId.isNotBlank()) return
         _uiState.update { it.copy(retryingImagePostId = postId) }

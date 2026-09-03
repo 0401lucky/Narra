@@ -42,6 +42,7 @@ import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
@@ -216,6 +217,46 @@ class MomentsViewModelTest {
         assertEquals(false, viewModel.uiState.value.isDeletingMoments)
     }
 
+    @Test
+    fun deleteComment_removesOnlyTargetCommentFromTimeline() = runTest(mainDispatcherRule.dispatcher.scheduler) {
+        val momentsRepository = FakeMomentsRepository(
+            initialPosts = listOf(
+                momentPost(
+                    id = "post-1",
+                    createdAt = 1L,
+                    comments = listOf(
+                        momentComment(id = "comment-1", postId = "post-1", createdAt = 11L),
+                        momentComment(id = "comment-2", postId = "post-1", createdAt = 12L),
+                    ),
+                ),
+                momentPost(
+                    id = "post-2",
+                    createdAt = 2L,
+                    comments = listOf(
+                        momentComment(id = "comment-3", postId = "post-2", createdAt = 13L),
+                    ),
+                ),
+            ),
+        )
+        val viewModel = createViewModel(momentsRepository)
+
+        advanceUntilIdle()
+        viewModel.deleteComment("comment-1")
+        advanceUntilIdle()
+
+        val timelinePosts = viewModel.uiState.value.posts
+        assertEquals(listOf("post-2", "post-1"), timelinePosts.map(MomentPost::id))
+        assertEquals(
+            listOf("comment-2"),
+            timelinePosts.first { it.id == "post-1" }.comments.map(MomentComment::id),
+        )
+        assertEquals(
+            listOf("comment-3"),
+            timelinePosts.first { it.id == "post-2" }.comments.map(MomentComment::id),
+        )
+        assertNull(viewModel.uiState.value.errorMessage)
+    }
+
     private fun createViewModel(
         momentsRepository: FakeMomentsRepository,
         settings: AppSettings = defaultMomentsTestSettings(),
@@ -253,6 +294,7 @@ class MomentsViewModelTest {
 private fun momentPost(
     id: String,
     createdAt: Long,
+    comments: List<MomentComment> = emptyList(),
 ): MomentPost {
     return MomentPost(
         id = id,
@@ -260,8 +302,25 @@ private fun momentPost(
         authorId = "assistant-1",
         authorName = "角色",
         content = "朋友圈 $id",
+        comments = comments,
         createdAt = createdAt,
         updatedAt = createdAt,
+    )
+}
+
+private fun momentComment(
+    id: String,
+    postId: String,
+    createdAt: Long,
+): MomentComment {
+    return MomentComment(
+        id = id,
+        postId = postId,
+        authorType = MomentAuthorType.ASSISTANT,
+        authorId = "assistant-1",
+        authorName = "角色",
+        text = "回复 $id",
+        createdAt = createdAt,
     )
 }
 
@@ -350,6 +409,16 @@ private class FakeMomentsRepository(
 
     override suspend fun addComments(comments: List<MomentComment>) {
         comments.forEach { addComment(it) }
+    }
+
+    override suspend fun deleteComment(commentId: String) {
+        val post = postStore.values.firstOrNull { post ->
+            post.comments.any { it.id == commentId }
+        } ?: return
+        postStore[post.id] = post.copy(
+            comments = post.comments.filterNot { it.id == commentId },
+        )
+        emitTimeline()
     }
 
     override suspend fun upsertMedia(media: com.example.myapplication.model.MomentMedia) = Unit

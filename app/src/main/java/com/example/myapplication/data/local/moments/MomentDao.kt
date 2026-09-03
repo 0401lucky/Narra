@@ -52,6 +52,9 @@ interface MomentDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun upsertComments(comments: List<MomentCommentEntity>)
 
+    @Query("DELETE FROM moment_comments WHERE id = :commentId")
+    suspend fun deleteComment(commentId: String)
+
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun upsertMedia(media: MomentMediaEntity)
 
