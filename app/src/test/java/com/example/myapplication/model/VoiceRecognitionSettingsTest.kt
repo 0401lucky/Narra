@@ -107,6 +107,42 @@ class VoiceRecognitionSettingsTest {
     }
 
     @Test
+    fun resolveChatCompletionsEndpointForAsr_appendsPathOnlyWhenMissing() {
+        assertEquals(
+            "https://api.example.com/v1/chat/completions",
+            resolveChatCompletionsEndpointForAsr("https://api.example.com/v1"),
+        )
+        assertEquals(
+            "https://api.example.com/v1/chat/completions",
+            resolveChatCompletionsEndpointForAsr("https://api.example.com/v1/chat/completions"),
+        )
+    }
+
+    @Test
+    fun resolveAsrEndpoint_followsSelectedProtocol() {
+        assertEquals(
+            "https://api.example.com/v1/audio/transcriptions",
+            resolveAsrEndpoint("https://api.example.com/v1", TranscriptionProtocol.TRANSCRIPTION_ENDPOINT),
+        )
+        assertEquals(
+            "https://api.example.com/v1/chat/completions",
+            resolveAsrEndpoint("https://api.example.com/v1", TranscriptionProtocol.CHAT_MULTIMODAL),
+        )
+    }
+
+    @Test
+    fun protocolFromStorageValue_isCaseInsensitiveAndFallsBackToTranscription() {
+        assertEquals(
+            TranscriptionProtocol.CHAT_MULTIMODAL,
+            TranscriptionProtocol.fromStorageValue("  CHAT_MULTIMODAL  "),
+        )
+        assertEquals(
+            TranscriptionProtocol.TRANSCRIPTION_ENDPOINT,
+            TranscriptionProtocol.fromStorageValue("不认识的值"),
+        )
+    }
+
+    @Test
     fun resolveTranscriptionEndpoint_appendsPathOnlyWhenMissing() {
         assertEquals(
             "https://api.example.com/v1/audio/transcriptions",

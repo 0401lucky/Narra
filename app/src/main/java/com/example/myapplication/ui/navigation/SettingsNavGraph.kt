@@ -319,8 +319,13 @@ internal fun NavGraphBuilder.registerSettingsNavGraph(
             VoiceRecognitionApiScreen(
                 settings = settingsUiState.voiceRecognitionSettings,
                 isTesting = settingsUiState.isTestingVoiceRecognition,
+                uiMessage = settingsUiState.message,
+                isLoadingModels = settingsUiState.isLoadingVoiceRecognitionModels,
+                availableModels = settingsUiState.voiceRecognitionModels,
                 onUpdateSettings = settingsViewModel::updateVoiceRecognitionSettings,
                 onTestConnection = settingsViewModel::testVoiceRecognition,
+                onFetchModels = settingsViewModel::fetchVoiceRecognitionModels,
+                onDismissModels = settingsViewModel::clearVoiceRecognitionModels,
                 onSaveChanges = { settingsViewModel.saveSettings {} },
                 onNavigateBack = { navController.popBackStack() },
             )

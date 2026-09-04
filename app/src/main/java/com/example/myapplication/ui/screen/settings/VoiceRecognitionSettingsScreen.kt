@@ -194,7 +194,7 @@ private fun apiSummary(settings: VoiceRecognitionSettings): String {
         return "未配置：填写 Base URL 与 API Key 后才能使用大模型识别"
     }
     val language = settings.language.ifBlank { "自动" }
-    return "已配置 · ${settings.model} · $language"
+    return "已配置 · ${settings.protocol.label} · ${settings.model} · $language"
 }
 
 /** 大模型通道的凭据是否齐备，与当前选中的引擎无关。 */

@@ -86,6 +86,8 @@ data class SettingsUiState(
     val voiceRecognitionSettings: VoiceRecognitionSettings = VoiceRecognitionSettings(),
     val isTestingVoiceSynthesis: Boolean = false,
     val isTestingVoiceRecognition: Boolean = false,
+    val isLoadingVoiceRecognitionModels: Boolean = false,
+    val voiceRecognitionModels: List<String> = emptyList(),
 ) {
     val currentProvider: ProviderSettings?
         get() = providers.firstOrNull { it.id == selectedProviderId } ?: providers.firstOrNull()
@@ -765,6 +767,61 @@ class SettingsViewModel(
                 )
             }
         }
+    }
+
+    /**
+     * 拉取语音识别服务商的模型列表。复用 Provider 页那套 /models 查询，
+     * 不为语音识别再造一条网络路径。
+     */
+    fun fetchVoiceRecognitionModels(
+        settings: VoiceRecognitionSettings = _uiState.value.voiceRecognitionSettings,
+    ) {
+        if (_uiState.value.isLoadingVoiceRecognitionModels) return
+        val normalizedSettings = settings.normalized()
+        if (normalizedSettings.baseUrl.isBlank() || normalizedSettings.apiKey.isBlank()) {
+            updateUiState {
+                it.copy(message = "请先填写 Base URL 与 API Key 再获取模型")
+            }
+            return
+        }
+        viewModelScope.launch {
+            updateUiState {
+                it.copy(isLoadingVoiceRecognitionModels = true, message = null)
+            }
+            runCatching {
+                modelCatalogRepository.fetchModels(
+                    baseUrl = normalizedSettings.baseUrl,
+                    apiKey = normalizedSettings.apiKey,
+                )
+            }.onSuccess { models ->
+                updateUiState {
+                    it.copy(
+                        isLoadingVoiceRecognitionModels = false,
+                        voiceRecognitionModels = models,
+                        message = if (models.isEmpty()) {
+                            "该服务商没有返回任何模型"
+                        } else {
+                            "已获取 ${models.size} 个模型，注意其中只有部分支持语音"
+                        },
+                    )
+                }
+            }.onFailure { throwable ->
+                if (throwable is CancellationException) throw throwable
+                val safeMessage = throwable.message
+                    ?.let { SensitiveTextRedactor.redact(it, maxLength = 160) }
+                    ?: "未知错误"
+                updateUiState {
+                    it.copy(
+                        isLoadingVoiceRecognitionModels = false,
+                        message = "获取模型失败：$safeMessage",
+                    )
+                }
+            }
+        }
+    }
+
+    fun clearVoiceRecognitionModels() = updateUiState { current ->
+        current.copy(voiceRecognitionModels = emptyList())
     }
 
     private suspend fun cleanupReplacedVoiceCloneSamples(

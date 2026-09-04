@@ -1,12 +1,17 @@
 package com.example.myapplication.data.repository.asr
 
+import com.example.myapplication.model.TranscriptionProtocol
 import com.example.myapplication.model.VoiceRecognitionSettings
+import com.example.myapplication.model.resolveAsrEndpoint
+import com.example.myapplication.model.resolveChatCompletionsEndpointForAsr
 import com.example.myapplication.model.resolveTranscriptionEndpoint
 import com.example.myapplication.system.json.AppJson
 import com.example.myapplication.system.security.SensitiveTextRedactor
 import com.google.gson.Gson
+import com.google.gson.annotations.SerializedName
 import java.io.File
 import java.io.IOException
+import java.util.Base64
 import java.util.concurrent.TimeUnit
 import kotlin.coroutines.resume
 import kotlin.coroutines.resumeWithException
@@ -26,11 +31,47 @@ import okhttp3.MultipartBody
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.RequestBody.Companion.asRequestBody
+import okhttp3.RequestBody.Companion.toRequestBody
 import okhttp3.Response
 
 /** OpenAI 兼容的转写响应体，只关心 text 字段。 */
 private data class TranscriptionResponse(
     val text: String = "",
+)
+
+/** 多模态对话请求：把音频作为 content part 发给 /chat/completions。 */
+private data class ChatTranscriptionRequest(
+    val model: String,
+    val messages: List<ChatTranscriptionMessage>,
+    val temperature: Double = 0.0,
+)
+
+private data class ChatTranscriptionMessage(
+    val role: String,
+    val content: List<ChatTranscriptionPart>,
+)
+
+private data class ChatTranscriptionPart(
+    val type: String,
+    val text: String? = null,
+    @SerializedName("input_audio") val inputAudio: ChatTranscriptionAudio? = null,
+)
+
+private data class ChatTranscriptionAudio(
+    val data: String,
+    val format: String,
+)
+
+private data class ChatTranscriptionResponse(
+    val choices: List<ChatTranscriptionChoice> = emptyList(),
+)
+
+private data class ChatTranscriptionChoice(
+    val message: ChatTranscriptionResponseMessage? = null,
+)
+
+private data class ChatTranscriptionResponseMessage(
+    val content: String = "",
 )
 
 /**
@@ -66,6 +107,19 @@ class RemoteSpeechRecognitionService(
         if (settings.apiKey.isBlank()) {
             return RecognitionEvent.Failed("请先填写语音识别 API Key")
         }
+        return when (settings.protocol) {
+            TranscriptionProtocol.TRANSCRIPTION_ENDPOINT ->
+                transcribeViaTranscriptionEndpoint(audioFile, settings)
+
+            TranscriptionProtocol.CHAT_MULTIMODAL ->
+                transcribeViaChatCompletions(audioFile, settings)
+        }
+    }
+
+    private suspend fun transcribeViaTranscriptionEndpoint(
+        audioFile: File,
+        settings: VoiceRecognitionSettings,
+    ): RecognitionEvent {
         val endpoint = runCatching { resolveTranscriptionEndpoint(settings.baseUrl) }
             .getOrElse { throwable ->
                 return RecognitionEvent.Failed(
@@ -97,10 +151,10 @@ class RemoteSpeechRecognitionService(
             val response = executeCancellable(httpRequest)
             if (!response.isSuccessful) {
                 return RecognitionEvent.Failed(
-                    buildHttpErrorMessage(response.code, response.body),
+                    buildHttpErrorMessage(response.code, response.body, settings.protocol),
                 )
             }
-            val text = parseText(response.body)
+            val text = parseTranscriptionText(response.body)
             if (text.isBlank()) {
                 RecognitionEvent.Failed("识别服务没有返回文本内容")
             } else {
@@ -110,6 +164,78 @@ class RemoteSpeechRecognitionService(
             currentCoroutineContext().ensureActive()
             RecognitionEvent.Failed(buildNetworkErrorMessage(throwable))
         }
+    }
+
+    private suspend fun transcribeViaChatCompletions(
+        audioFile: File,
+        settings: VoiceRecognitionSettings,
+    ): RecognitionEvent {
+        val endpoint = runCatching { resolveChatCompletionsEndpointForAsr(settings.baseUrl) }
+            .getOrElse { throwable ->
+                return RecognitionEvent.Failed(
+                    throwable.message?.takeIf { it.isNotBlank() } ?: "语音识别 Base URL 无效",
+                )
+            }
+        if (audioFile.length() > MAX_MULTIMODAL_AUDIO_BYTES) {
+            return RecognitionEvent.Failed("录音过长，多模态识别单次上限约 1 分钟")
+        }
+        val base64Audio = runCatching {
+            Base64.getEncoder().encodeToString(audioFile.readBytes())
+        }.getOrElse {
+            return RecognitionEvent.Failed("读取录音文件失败")
+        }
+
+        val request = ChatTranscriptionRequest(
+            model = settings.model,
+            messages = listOf(
+                ChatTranscriptionMessage(
+                    role = "user",
+                    content = listOf(
+                        ChatTranscriptionPart(
+                            type = "text",
+                            text = buildTranscriptionInstruction(settings.language),
+                        ),
+                        ChatTranscriptionPart(
+                            type = "input_audio",
+                            inputAudio = ChatTranscriptionAudio(
+                                data = base64Audio,
+                                format = audioFile.extension.lowercase().ifBlank { "m4a" },
+                            ),
+                        ),
+                    ),
+                ),
+            ),
+        )
+        val httpRequest = Request.Builder()
+            .url(endpoint)
+            .addHeader("Authorization", "Bearer ${settings.apiKey}")
+            .addHeader("Content-Type", "application/json")
+            .post(gson.toJson(request).toRequestBody(JSON_MEDIA_TYPE))
+            .build()
+
+        return try {
+            val response = executeCancellable(httpRequest)
+            if (!response.isSuccessful) {
+                return RecognitionEvent.Failed(
+                    buildHttpErrorMessage(response.code, response.body, settings.protocol),
+                )
+            }
+            val text = parseChatText(response.body)
+            if (text.isBlank()) {
+                RecognitionEvent.Failed("识别服务没有返回文本内容")
+            } else {
+                RecognitionEvent.Final(text)
+            }
+        } catch (throwable: Throwable) {
+            currentCoroutineContext().ensureActive()
+            RecognitionEvent.Failed(buildNetworkErrorMessage(throwable))
+        }
+    }
+
+    private fun buildTranscriptionInstruction(language: String): String {
+        val languageHint = if (language.isBlank()) "" else "音频语言是 $language。"
+        return "请把这段音频逐字转写成文本。$languageHint" +
+            "只输出转写结果本身，不要加引号、解释、翻译或任何前后缀。"
     }
 
     /**
@@ -124,23 +250,38 @@ class RemoteSpeechRecognitionService(
         if (normalized.apiKey.isBlank()) {
             return Result.failure(IllegalArgumentException("请先填写语音识别 API Key"))
         }
-        val endpoint = runCatching { resolveTranscriptionEndpoint(normalized.baseUrl) }
-            .getOrElse { throwable ->
-                return Result.failure(
-                    IllegalArgumentException(
-                        throwable.message?.takeIf { it.isNotBlank() } ?: "语音识别 Base URL 无效",
-                    ),
-                )
-            }
-        val probeBody = MultipartBody.Builder()
-            .setType(MultipartBody.FORM)
-            .addFormDataPart("model", normalized.model)
-            .build()
-        val httpRequest = Request.Builder()
+        val endpoint = runCatching {
+            resolveAsrEndpoint(normalized.baseUrl, normalized.protocol)
+        }.getOrElse { throwable ->
+            return Result.failure(
+                IllegalArgumentException(
+                    throwable.message?.takeIf { it.isNotBlank() } ?: "语音识别 Base URL 无效",
+                ),
+            )
+        }
+        // 两条协议都发一个刻意缺内容的请求：能拿到 400/422 就说明端点存在且鉴权通过
+        val probeRequest = Request.Builder()
             .url(endpoint)
             .addHeader("Authorization", "Bearer ${normalized.apiKey}")
-            .post(probeBody)
-            .build()
+        val httpRequest = when (normalized.protocol) {
+            TranscriptionProtocol.TRANSCRIPTION_ENDPOINT -> probeRequest.post(
+                MultipartBody.Builder()
+                    .setType(MultipartBody.FORM)
+                    .addFormDataPart("model", normalized.model)
+                    .build(),
+            )
+
+            TranscriptionProtocol.CHAT_MULTIMODAL -> probeRequest
+                .addHeader("Content-Type", "application/json")
+                .post(
+                    gson.toJson(
+                        ChatTranscriptionRequest(
+                            model = normalized.model,
+                            messages = emptyList(),
+                        ),
+                    ).toRequestBody(JSON_MEDIA_TYPE),
+                )
+        }.build()
 
         return withContext(dispatcher) {
             runCatching { executeCancellable(httpRequest) }.fold(
@@ -158,7 +299,11 @@ class RemoteSpeechRecognitionService(
 
                         else -> Result.failure(
                             IllegalStateException(
-                                buildHttpErrorMessage(response.code, response.body),
+                                buildHttpErrorMessage(
+                                    response.code,
+                                    response.body,
+                                    normalized.protocol,
+                                ),
                             ),
                         )
                     }
@@ -171,9 +316,24 @@ class RemoteSpeechRecognitionService(
         }
     }
 
-    private suspend fun parseText(body: String): String {
+    private suspend fun parseTranscriptionText(body: String): String {
         return try {
             gson.fromJson(body, TranscriptionResponse::class.java)?.text?.trim().orEmpty()
+        } catch (throwable: Throwable) {
+            currentCoroutineContext().ensureActive()
+            ""
+        }
+    }
+
+    private suspend fun parseChatText(body: String): String {
+        return try {
+            gson.fromJson(body, ChatTranscriptionResponse::class.java)
+                ?.choices
+                ?.firstOrNull()
+                ?.message
+                ?.content
+                ?.trim()
+                .orEmpty()
         } catch (throwable: Throwable) {
             currentCoroutineContext().ensureActive()
             ""
@@ -221,7 +381,11 @@ class RemoteSpeechRecognitionService(
         }
     }
 
-    private fun buildHttpErrorMessage(code: Int, responseBody: String): String {
+    private fun buildHttpErrorMessage(
+        code: Int,
+        responseBody: String,
+        protocol: TranscriptionProtocol,
+    ): String {
         val prefix = when (code) {
             401, 403 -> "语音识别鉴权失败，请检查 API Key"
             404 -> "语音识别地址不存在，请检查 Base URL"
@@ -231,7 +395,31 @@ class RemoteSpeechRecognitionService(
             else -> "语音识别请求失败（HTTP $code）"
         }
         val excerpt = SensitiveTextRedactor.redact(responseBody.trim(), maxLength = 160)
-        return if (excerpt.isBlank()) prefix else "$prefix：$excerpt"
+        val hint = protocolHint(responseBody, protocol)
+        return listOf(prefix, excerpt, hint)
+            .filter { it.isNotBlank() }
+            .joinToString("：")
+    }
+
+    /**
+     * 针对「协议选错」这一最常见的失败给出可行动的提示。
+     *
+     * 中转把 OpenAI 转写请求转成上游格式失败时（典型如 gemini 没有转写端点），
+     * 会返回 not implemented / convert_request_failed，光看 HTTP 500 无从下手。
+     */
+    private fun protocolHint(responseBody: String, protocol: TranscriptionProtocol): String {
+        val lowered = responseBody.lowercase()
+        val looksUnsupported = lowered.contains("not implemented") ||
+            lowered.contains("convert_request_failed") ||
+            lowered.contains("unsupported")
+        if (!looksUnsupported) return ""
+        return when (protocol) {
+            TranscriptionProtocol.TRANSCRIPTION_ENDPOINT ->
+                "该模型可能没有转写接口，试试把转写协议改成「多模态对话」"
+
+            TranscriptionProtocol.CHAT_MULTIMODAL ->
+                "该模型可能不接受音频输入，或服务商不支持 m4a 格式"
+        }
     }
 
     private fun buildNetworkErrorMessage(throwable: Throwable): String {
@@ -249,6 +437,10 @@ class RemoteSpeechRecognitionService(
 
     companion object {
         private val AUDIO_MEDIA_TYPE = "audio/mp4".toMediaType()
+        private val JSON_MEDIA_TYPE = "application/json; charset=utf-8".toMediaType()
+
+        /** 多模态通道要把音频整体 base64 塞进 JSON，留出足够余量但不放任无限大。 */
+        private const val MAX_MULTIMODAL_AUDIO_BYTES = 8L * 1024L * 1024L
 
         fun defaultHttpClient(): OkHttpClient {
             return OkHttpClient.Builder()

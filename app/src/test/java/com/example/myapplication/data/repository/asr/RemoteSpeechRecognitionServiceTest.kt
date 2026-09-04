@@ -1,5 +1,6 @@
 package com.example.myapplication.data.repository.asr
 
+import com.example.myapplication.model.TranscriptionProtocol
 import com.example.myapplication.model.VoiceRecognitionEngine
 import com.example.myapplication.model.VoiceRecognitionSettings
 import java.io.File
@@ -254,6 +255,91 @@ class RemoteSpeechRecognitionServiceTest {
     }
 
     @Test
+    fun multimodalProtocol_postsAudioToChatCompletionsAndParsesContent() = runTest {
+        server.enqueue(
+            MockResponse()
+                .setResponseCode(200)
+                .setBody("""{"choices":[{"message":{"content":"  今天天气不错  "}}]}"""),
+        )
+        val service = createService()
+
+        val event = service
+            .recognize(createAudioFile(), multimodalSettings())
+            .first()
+
+        assertEquals(RecognitionEvent.Final("今天天气不错"), event)
+
+        val recorded = server.takeRequest()
+        assertEquals("/v1/chat/completions", recorded.path)
+        assertEquals("Bearer sk-test-key", recorded.getHeader("Authorization"))
+        val body = recorded.body.readUtf8()
+        assertTrue(body.contains("\"model\":\"gemini-3-flash\""))
+        assertTrue(body.contains("input_audio"))
+        assertTrue("音频应以 base64 内联", body.contains("\"data\""))
+        assertTrue("应带转写指令", body.contains("转写"))
+    }
+
+    @Test
+    fun multimodalProtocol_emptyContentIsTreatedAsFailure() = runTest {
+        server.enqueue(
+            MockResponse()
+                .setResponseCode(200)
+                .setBody("""{"choices":[{"message":{"content":""}}]}"""),
+        )
+
+        val event = createService()
+            .recognize(createAudioFile(), multimodalSettings())
+            .first()
+
+        assertEquals(RecognitionEvent.Failed("识别服务没有返回文本内容"), event)
+    }
+
+    @Test
+    fun transcriptionProtocol_notImplementedSuggestsSwitchingToMultimodal() = runTest {
+        // 真实场景：中转无法把转写请求转成 gemini 格式，返回 not implemented
+        server.enqueue(
+            MockResponse()
+                .setResponseCode(500)
+                .setBody("""{"error":{"message":"not implemented","code":"convert_request_failed"}}"""),
+        )
+
+        val event = createService()
+            .recognize(createAudioFile(), remoteSettings())
+            .first()
+
+        val message = (event as RecognitionEvent.Failed).message
+        assertTrue("应提示切换到多模态对话，实际：$message", message.contains("多模态对话"))
+    }
+
+    @Test
+    fun multimodalProtocol_unsupportedResponseHintsAudioOrFormatProblem() = runTest {
+        server.enqueue(
+            MockResponse()
+                .setResponseCode(400)
+                .setBody("""{"error":{"message":"unsupported content type"}}"""),
+        )
+
+        val event = createService()
+            .recognize(createAudioFile(), multimodalSettings())
+            .first()
+
+        val message = (event as RecognitionEvent.Failed).message
+        assertTrue("应提示音频或格式问题，实际：$message", message.contains("m4a"))
+    }
+
+    @Test
+    fun testConnection_multimodalProtocolProbesChatCompletions() = runTest {
+        server.enqueue(MockResponse().setResponseCode(400).setBody(""))
+
+        val result = createService().testConnection(multimodalSettings())
+
+        assertTrue(result.isSuccess)
+        val recorded = server.takeRequest()
+        assertEquals("/v1/chat/completions", recorded.path)
+        assertFalse("探测请求不应带音频", recorded.body.readUtf8().contains("input_audio"))
+    }
+
+    @Test
     fun isAvailable_followsCredentialCompleteness() {
         val service = createService()
 
@@ -280,6 +366,13 @@ class RemoteSpeechRecognitionServiceTest {
             apiKey = apiKey,
             baseUrl = baseUrl,
             language = language,
+        )
+    }
+
+    private fun multimodalSettings(): VoiceRecognitionSettings {
+        return remoteSettings().copy(
+            model = "gemini-3-flash",
+            protocol = TranscriptionProtocol.CHAT_MULTIMODAL,
         )
     }
 

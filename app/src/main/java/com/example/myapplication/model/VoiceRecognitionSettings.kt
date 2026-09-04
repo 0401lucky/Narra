@@ -6,6 +6,29 @@ import com.example.myapplication.system.network.normalizeSecureHttpBaseUrl
 const val DEFAULT_TRANSCRIPTION_MODEL = "whisper-1"
 const val DEFAULT_TRANSCRIPTION_LANGUAGE = "zh"
 const val TRANSCRIPTIONS_PATH = "/audio/transcriptions"
+const val CHAT_COMPLETIONS_PATH = "/chat/completions"
+
+/**
+ * 转写协议。两者报文结构完全不同，无法可靠自动识别，因此由用户显式选择。
+ *
+ * - [TRANSCRIPTION_ENDPOINT]：whisper 等专用转写模型走 /audio/transcriptions
+ * - [CHAT_MULTIMODAL]：gemini、gpt-4o-audio 等多模态模型没有转写端点，
+ *   需要把音频作为 content part 发给 /chat/completions
+ */
+enum class TranscriptionProtocol(
+    val storageValue: String,
+    val label: String,
+) {
+    TRANSCRIPTION_ENDPOINT("transcription_endpoint", "转写接口"),
+    CHAT_MULTIMODAL("chat_multimodal", "多模态对话");
+
+    companion object {
+        fun fromStorageValue(value: String): TranscriptionProtocol {
+            return entries.firstOrNull { it.storageValue == value.trim().lowercase() }
+                ?: TRANSCRIPTION_ENDPOINT
+        }
+    }
+}
 
 /** 语音识别通道。系统通道离线免配置，大模型通道质量更好但需要联网与凭据。 */
 enum class VoiceRecognitionEngine(
@@ -30,6 +53,7 @@ data class VoiceRecognitionSettings(
     val baseUrl: String = "",
     val model: String = DEFAULT_TRANSCRIPTION_MODEL,
     val language: String = DEFAULT_TRANSCRIPTION_LANGUAGE,
+    val protocol: TranscriptionProtocol = TranscriptionProtocol.TRANSCRIPTION_ENDPOINT,
 ) {
     fun normalized(): VoiceRecognitionSettings {
         return copy(
@@ -68,6 +92,26 @@ fun requireSecureVoiceRecognitionBaseUrl(baseUrl: String): String {
         schemeMessage = "语音识别 Base URL 必须以 http:// 或 https:// 开头",
         secureMessage = "语音识别 Base URL 必须使用 https://，本机调试地址除外",
     ).trimEnd('/')
+}
+
+/**
+ * 解析多模态对话端点。与转写端点同样做幂等拼接。
+ */
+fun resolveChatCompletionsEndpointForAsr(baseUrl: String): String {
+    val normalized = requireSecureVoiceRecognitionBaseUrl(baseUrl)
+    return if (normalized.endsWith(CHAT_COMPLETIONS_PATH, ignoreCase = true)) {
+        normalized
+    } else {
+        normalized + CHAT_COMPLETIONS_PATH
+    }
+}
+
+/** 按协议给出实际会请求的地址，供设置页预览。 */
+fun resolveAsrEndpoint(baseUrl: String, protocol: TranscriptionProtocol): String {
+    return when (protocol) {
+        TranscriptionProtocol.TRANSCRIPTION_ENDPOINT -> resolveTranscriptionEndpoint(baseUrl)
+        TranscriptionProtocol.CHAT_MULTIMODAL -> resolveChatCompletionsEndpointForAsr(baseUrl)
+    }
 }
 
 /**
