@@ -1,15 +1,16 @@
 {
   "app_id": "com.narra.app.dev",
   "channel": "dev",
-  "latest_version_name": "2.2.7-dev",
-  "latest_version_code": 20207,
+  "latest_version_name": "2.2.8-dev",
+  "latest_version_code": 20208,
   "minimum_supported_version_code": 0,
-  "apk_url": "https://download.lsa1230.dpdns.org/dev/2.2.7/Narra-v2.2.7-dev-20207-dev.apk?v=20207-20260819012436",
-  "apk_sha256": "3075db0cb3ffec24b9e942aabaea7a340d601a0041b9982e95afe15939cfd398",
-  "published_at": "2026-08-19T01:24:36+08:00",
+  "apk_url": "https://download.lsa1230.dpdns.org/dev/2.2.8/Narra-v2.2.8-dev-20208-dev.apk?v=20208-20260904162411",
+  "apk_sha256": "da7736707717431de72ed8507cdb175d4c0c062b71ad6b8a0c6062c6be250759",
+  "published_at": "2026-09-04T16:24:11+08:00",
   "release_notes": [
-    "角色文本设计音色测试现在会合成并播放真实试听语音，开始播放后在当前弹层即时反馈结果",
-    "新增将最近一次试听保存为声音克隆固定音色，后续合成尽量保持本次试听音色",
-    "完善试听取消、播放器和临时文件清理，以及响应体和音频大小边界保护；本版本更新仍为可选更新"
+    "新增语音识别：可选系统识别或大模型识别，在设置 → 语音识别中开关与配置 API",
+    "角色扮演、朋友圈发布与评论输入框新增麦克风按钮，按住说话、松手识别、上滑取消",
+    "朋友圈评论支持长按删除单条回复",
+    "修复切换用户面具会影响其他所有角色的问题，面具现在按角色独立绑定；本版本更新仍为可选更新"
   ]
 }
