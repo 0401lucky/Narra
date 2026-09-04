@@ -59,6 +59,7 @@ fun AppRoot(
             imageFileCleaner = appGraph.localImageStore::deleteIfLocalAsync,
             voiceCloneSampleCleaner = appGraph.voiceCloneSampleCleaner,
             mimoTtsClient = appGraph.mimoTtsClient,
+            remoteSpeechRecognitionService = appGraph.remoteSpeechRecognitionService,
         ),
     )
     val appUpdateViewModel: AppUpdateViewModel = viewModel(

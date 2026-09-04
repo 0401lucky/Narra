@@ -186,6 +186,74 @@ class RemoteSpeechRecognitionServiceTest {
     }
 
     @Test
+    fun testConnection_treatsMissingFileRejectionAsReachableEndpoint() = runTest {
+        // 400/422 说明端点存在且鉴权通过，只是缺音频文件——这正是探测想要的信号
+        listOf(400, 422).forEach { code ->
+            server.enqueue(MockResponse().setResponseCode(code).setBody("""{"error":"no file"}"""))
+            val result = createService().testConnection(remoteSettings())
+
+            assertTrue("HTTP $code 应判为可达", result.isSuccess)
+            assertTrue(result.getOrThrow().contains("鉴权通过"))
+        }
+    }
+
+    @Test
+    fun testConnection_successfulResponseIsAlsoReachable() = runTest {
+        server.enqueue(MockResponse().setResponseCode(200).setBody("""{"text":""}"""))
+
+        val result = createService().testConnection(remoteSettings())
+
+        assertTrue(result.isSuccess)
+    }
+
+    @Test
+    fun testConnection_unauthorizedAndNotFoundAreDistinguished() = runTest {
+        server.enqueue(MockResponse().setResponseCode(401).setBody(""))
+        val unauthorized = createService().testConnection(remoteSettings())
+        assertEquals("鉴权失败，请检查 API Key", unauthorized.exceptionOrNull()?.message)
+
+        server.enqueue(MockResponse().setResponseCode(404).setBody(""))
+        val notFound = createService().testConnection(remoteSettings())
+        assertEquals("地址不存在，请检查 Base URL", notFound.exceptionOrNull()?.message)
+    }
+
+    @Test
+    fun testConnection_serverErrorSurfacesHttpDetail() = runTest {
+        server.enqueue(MockResponse().setResponseCode(503).setBody("upstream down"))
+
+        val result = createService().testConnection(remoteSettings())
+
+        val message = result.exceptionOrNull()?.message.orEmpty()
+        assertTrue(message.startsWith("语音识别服务异常（HTTP 503）"))
+    }
+
+    @Test
+    fun testConnection_blankKeyOrInvalidUrlFailsBeforeAnyRequest() = runTest {
+        val service = createService()
+
+        val blankKey = service.testConnection(remoteSettings(apiKey = "  "))
+        assertEquals("请先填写语音识别 API Key", blankKey.exceptionOrNull()?.message)
+
+        val insecure = service.testConnection(remoteSettings(baseUrl = "http://api.example.com/v1"))
+        assertEquals(
+            "语音识别 Base URL 必须使用 https://，本机调试地址除外",
+            insecure.exceptionOrNull()?.message,
+        )
+        assertEquals(0, server.requestCount)
+    }
+
+    @Test
+    fun testConnection_neverUploadsAudioFile() = runTest {
+        server.enqueue(MockResponse().setResponseCode(400).setBody(""))
+
+        createService().testConnection(remoteSettings())
+
+        val body = server.takeRequest().body.readUtf8()
+        assertTrue(body.contains("name=\"model\""))
+        assertFalse("探测请求不应带音频", body.contains("name=\"file\""))
+    }
+
+    @Test
     fun isAvailable_followsCredentialCompleteness() {
         val service = createService()
 

@@ -218,7 +218,8 @@ class AppGraph(
         SystemSpeechRecognitionService(application)
     }
 
-    val remoteSpeechRecognitionService: SpeechRecognitionService by lazy {
+    // 声明为具体类型：远程通道额外提供 testConnection，设置页的「测试连接」要用
+    val remoteSpeechRecognitionService: RemoteSpeechRecognitionService by lazy {
         RemoteSpeechRecognitionService()
     }
 

@@ -27,6 +27,7 @@ import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.LightMode
 import androidx.compose.material.icons.filled.Palette
 import androidx.compose.material.icons.filled.Psychology
+import androidx.compose.material.icons.filled.Mic
 import androidx.compose.material.icons.filled.RecordVoiceOver
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Share
@@ -68,6 +69,7 @@ fun SettingsScreen(
     onOpenRoleplay: () -> Unit,
     onOpenProviderSettings: () -> Unit,
     onOpenVoiceSynthesisSettings: () -> Unit,
+    onOpenVoiceRecognitionSettings: () -> Unit,
     onOpenUpdateSettings: () -> Unit,
     onOpenComplianceSettings: () -> Unit = {},
     onOpenDiagnostics: () -> Unit = {},
@@ -116,6 +118,13 @@ fun SettingsScreen(
         "已启用 · ${profile.storageLabel()} · ${voiceSettings.baseUrl.ifBlank { "默认入口" }}"
     } else {
         "未启用 · 文字兜底可用"
+    }
+    val voiceRecognitionSummary = with(uiState.voiceRecognitionSettings.normalized()) {
+        when {
+            !enabled -> "未启用"
+            !hasUsableCredential() -> "已启用 · ${engine.label} · 凭据未填全"
+            else -> "已启用 · ${engine.label}"
+        }
     }
     val displaySummary = buildString {
         append(displayScaleLabel(uiState.messageTextScale))
@@ -271,6 +280,13 @@ fun SettingsScreen(
                         title = "MiMo 语音合成",
                         supportingText = voiceSummary,
                         onClick = onOpenVoiceSynthesisSettings,
+                    )
+                    SettingsGroupDivider()
+                    SettingsListRow(
+                        leadingContent = { Icon(Icons.Default.Mic, contentDescription = null, tint = palette.title) },
+                        title = "语音识别",
+                        supportingText = voiceRecognitionSummary,
+                        onClick = onOpenVoiceRecognitionSettings,
                     )
                 }
             }

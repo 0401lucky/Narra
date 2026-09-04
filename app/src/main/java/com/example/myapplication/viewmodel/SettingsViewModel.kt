@@ -8,6 +8,7 @@ import com.example.myapplication.data.repository.ai.AiModelCatalogRepository
 import com.example.myapplication.data.repository.ai.AiSettingsEditor
 import com.example.myapplication.data.repository.ai.AiSettingsRepository
 import com.example.myapplication.data.repository.ai.ThemeSettings
+import com.example.myapplication.data.repository.asr.RemoteSpeechRecognitionService
 import com.example.myapplication.data.repository.tts.MimoTtsClient
 import com.example.myapplication.data.repository.tts.MimoTtsRequest
 import com.example.myapplication.model.AppColorTheme
@@ -84,6 +85,7 @@ data class SettingsUiState(
     val voiceSynthesisSettings: VoiceSynthesisSettings = VoiceSynthesisSettings(),
     val voiceRecognitionSettings: VoiceRecognitionSettings = VoiceRecognitionSettings(),
     val isTestingVoiceSynthesis: Boolean = false,
+    val isTestingVoiceRecognition: Boolean = false,
 ) {
     val currentProvider: ProviderSettings?
         get() = providers.firstOrNull { it.id == selectedProviderId } ?: providers.firstOrNull()
@@ -163,6 +165,7 @@ class SettingsViewModel(
     private val imageFileCleaner: suspend (String?) -> Boolean = { false },
     private val voiceCloneSampleCleaner: suspend (String?) -> Boolean = { false },
     private val mimoTtsClient: MimoTtsClient? = null,
+    private val remoteSpeechRecognitionService: RemoteSpeechRecognitionService? = null,
 ) : ViewModel() {
     private val _uiState = MutableStateFlow(SettingsUiState())
     val uiState: StateFlow<SettingsUiState> = _uiState.asStateFlow()
@@ -721,6 +724,49 @@ class SettingsViewModel(
         }
     }
 
+    /**
+     * 测试语音识别 API 的连通性与鉴权。
+     *
+     * 只探测端点，不做真实转写；因此无法验证模型名是否可用，UI 需要说明这一点。
+     */
+    fun testVoiceRecognition(
+        settings: VoiceRecognitionSettings = _uiState.value.voiceRecognitionSettings,
+    ) {
+        if (_uiState.value.isTestingVoiceRecognition) return
+        val normalizedSettings = settings.normalized()
+        viewModelScope.launch {
+            updateUiState {
+                it.copy(
+                    isTestingVoiceRecognition = true,
+                    message = null,
+                )
+            }
+            val service = remoteSpeechRecognitionService ?: RemoteSpeechRecognitionService()
+            val result = try {
+                service.testConnection(normalizedSettings)
+            } catch (cancellation: CancellationException) {
+                throw cancellation
+            } catch (throwable: Throwable) {
+                Result.failure(throwable)
+            }
+            val message = result.fold(
+                onSuccess = { detail -> "语音识别测试成功：$detail" },
+                onFailure = { throwable ->
+                    val safeMessage = throwable.message
+                        ?.let { SensitiveTextRedactor.redact(it, maxLength = 160) }
+                        ?: "未知错误"
+                    "语音识别测试失败：$safeMessage"
+                },
+            )
+            updateUiState {
+                it.copy(
+                    isTestingVoiceRecognition = false,
+                    message = message,
+                )
+            }
+        }
+    }
+
     private suspend fun cleanupReplacedVoiceCloneSamples(
         previousSettings: AppSettings,
         currentSettings: VoiceSynthesisSettings,
@@ -1038,6 +1084,7 @@ class SettingsViewModel(
             imageFileCleaner: suspend (String?) -> Boolean = { false },
             voiceCloneSampleCleaner: suspend (String?) -> Boolean = { false },
             mimoTtsClient: MimoTtsClient? = null,
+            remoteSpeechRecognitionService: RemoteSpeechRecognitionService? = null,
         ): ViewModelProvider.Factory {
             return typedViewModelFactory {
                 SettingsViewModel(
@@ -1047,6 +1094,7 @@ class SettingsViewModel(
                     imageFileCleaner = imageFileCleaner,
                     voiceCloneSampleCleaner = voiceCloneSampleCleaner,
                     mimoTtsClient = mimoTtsClient,
+                    remoteSpeechRecognitionService = remoteSpeechRecognitionService,
                 )
             }
         }

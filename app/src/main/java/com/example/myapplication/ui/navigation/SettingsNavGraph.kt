@@ -30,6 +30,8 @@ import com.example.myapplication.ui.screen.settings.RoleplayScriptBindingOption
 import com.example.myapplication.ui.screen.settings.RoleplayScriptLabScreen
 import com.example.myapplication.ui.screen.settings.SettingsScreen
 import com.example.myapplication.ui.screen.settings.UserPersonaMasksScreen
+import com.example.myapplication.ui.screen.settings.VoiceRecognitionApiScreen
+import com.example.myapplication.ui.screen.settings.VoiceRecognitionSettingsScreen
 import com.example.myapplication.ui.screen.settings.VoiceSynthesisSettingsScreen
 import com.example.myapplication.ui.screen.settings.buildVoiceDesignPreviewFilePrefix
 import com.example.myapplication.ui.screen.settings.copyPresetForUser
@@ -102,6 +104,11 @@ internal fun NavGraphBuilder.registerSettingsNavGraph(
                 },
                 onOpenVoiceSynthesisSettings = {
                     navController.navigate(AppRoutes.SETTINGS_VOICE_SYNTHESIS) {
+                        launchSingleTop = true
+                    }
+                },
+                onOpenVoiceRecognitionSettings = {
+                    navController.navigate(AppRoutes.SETTINGS_VOICE_RECOGNITION) {
                         launchSingleTop = true
                     }
                 },
@@ -283,6 +290,38 @@ internal fun NavGraphBuilder.registerSettingsNavGraph(
                 onUpsertMask = settingsViewModel::upsertUserPersonaMask,
                 onDeleteMask = settingsViewModel::deleteUserPersonaMask,
                 onSetDefaultMask = settingsViewModel::setDefaultUserPersonaMask,
+                onNavigateBack = { navController.popBackStack() },
+            )
+        }
+
+        composable(AppRoutes.SETTINGS_VOICE_RECOGNITION) {
+            val settingsUiState by settingsViewModel.uiState.collectAsStateWithLifecycle()
+            val context = LocalContext.current.applicationContext
+            val systemRecognitionAvailable = remember(context) {
+                android.speech.SpeechRecognizer.isRecognitionAvailable(context)
+            }
+            VoiceRecognitionSettingsScreen(
+                settings = settingsUiState.voiceRecognitionSettings,
+                systemRecognitionAvailable = systemRecognitionAvailable,
+                onUpdateSettings = settingsViewModel::updateVoiceRecognitionSettings,
+                onOpenApiSettings = {
+                    navController.navigate(AppRoutes.SETTINGS_VOICE_RECOGNITION_API) {
+                        launchSingleTop = true
+                    }
+                },
+                onSaveChanges = { settingsViewModel.saveSettings {} },
+                onNavigateBack = { navController.popBackStack() },
+            )
+        }
+
+        composable(AppRoutes.SETTINGS_VOICE_RECOGNITION_API) {
+            val settingsUiState by settingsViewModel.uiState.collectAsStateWithLifecycle()
+            VoiceRecognitionApiScreen(
+                settings = settingsUiState.voiceRecognitionSettings,
+                isTesting = settingsUiState.isTestingVoiceRecognition,
+                onUpdateSettings = settingsViewModel::updateVoiceRecognitionSettings,
+                onTestConnection = settingsViewModel::testVoiceRecognition,
+                onSaveChanges = { settingsViewModel.saveSettings {} },
                 onNavigateBack = { navController.popBackStack() },
             )
         }
