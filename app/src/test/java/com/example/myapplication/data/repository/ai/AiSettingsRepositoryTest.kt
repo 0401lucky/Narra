@@ -104,6 +104,10 @@ private class ThemeTestSettingsStore : SettingsStore {
         settings: com.example.myapplication.model.VoiceSynthesisSettings,
     ) = unsupported()
 
+    override suspend fun saveVoiceRecognitionSettings(
+        settings: com.example.myapplication.model.VoiceRecognitionSettings,
+    ) = unsupported()
+
     override suspend fun saveMomentsSettings(settings: com.example.myapplication.model.MomentsSettings) =
         unsupported()
 

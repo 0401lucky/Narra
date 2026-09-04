@@ -67,6 +67,7 @@ object SettingsDraftStateSupport {
                 screenTranslationSettings = settings.screenTranslationSettings,
                 searchSettings = settings.resolvedSearchSettings(),
                 voiceSynthesisSettings = settings.voiceSynthesisSettings.normalized(),
+                voiceRecognitionSettings = settings.voiceRecognitionSettings.normalized(),
             )
         }
     }

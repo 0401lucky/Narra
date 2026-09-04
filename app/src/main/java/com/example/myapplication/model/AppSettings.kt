@@ -40,6 +40,7 @@ data class AppSettings(
     val screenTranslationSettings: ScreenTranslationSettings = ScreenTranslationSettings(),
     val searchSettings: SearchSettings = SearchSettings(),
     val voiceSynthesisSettings: VoiceSynthesisSettings = VoiceSynthesisSettings(),
+    val voiceRecognitionSettings: VoiceRecognitionSettings = VoiceRecognitionSettings(),
     val momentsSettings: MomentsSettings = MomentsSettings(),
     val memoryAutoSummaryEvery: Int = DEFAULT_MEMORY_AUTO_SUMMARY_EVERY,
     val memoryCapacity: Int = DEFAULT_MEMORY_CAPACITY,

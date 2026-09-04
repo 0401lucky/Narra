@@ -67,6 +67,9 @@ class SettingsPersistenceCoordinator(
         settingsEditor.saveVoiceSynthesisSettings(
             currentState.voiceSynthesisSettings,
         )
+        settingsEditor.saveVoiceRecognitionSettings(
+            currentState.voiceRecognitionSettings,
+        )
         return SettingsPersistenceResult(
             providers = normalizedProviders,
             selectedProviderId = resolvedSelectedProviderId,

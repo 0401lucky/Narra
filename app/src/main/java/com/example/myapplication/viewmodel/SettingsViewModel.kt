@@ -28,6 +28,7 @@ import com.example.myapplication.model.ScreenTranslationSettings
 import com.example.myapplication.model.SearchSettings
 import com.example.myapplication.model.ThemeMode
 import com.example.myapplication.model.UserPersonaMask
+import com.example.myapplication.model.VoiceRecognitionSettings
 import com.example.myapplication.model.VoiceSynthesisSettings
 import com.example.myapplication.model.VoiceProfileMode
 import com.example.myapplication.model.normalized
@@ -81,6 +82,7 @@ data class SettingsUiState(
     val screenTranslationSettings: ScreenTranslationSettings = ScreenTranslationSettings(),
     val searchSettings: SearchSettings = SearchSettings(),
     val voiceSynthesisSettings: VoiceSynthesisSettings = VoiceSynthesisSettings(),
+    val voiceRecognitionSettings: VoiceRecognitionSettings = VoiceRecognitionSettings(),
     val isTestingVoiceSynthesis: Boolean = false,
 ) {
     val currentProvider: ProviderSettings?
@@ -132,7 +134,8 @@ data class SettingsUiState(
             roleplayNoBackgroundSkin != savedSettings.roleplayNoBackgroundSkin ||
             screenTranslationSettings != savedSettings.screenTranslationSettings ||
             searchSettings != savedSettings.resolvedSearchSettings() ||
-            voiceSynthesisSettings != savedSettings.voiceSynthesisSettings.normalized()
+            voiceSynthesisSettings != savedSettings.voiceSynthesisSettings.normalized() ||
+            voiceRecognitionSettings != savedSettings.voiceRecognitionSettings.normalized()
     }
 }
 
@@ -662,6 +665,13 @@ class SettingsViewModel(
     fun updateVoiceSynthesisSettings(settings: VoiceSynthesisSettings) = updateUiState { current ->
         current.copy(
             voiceSynthesisSettings = settings.normalized(),
+            message = null,
+        )
+    }
+
+    fun updateVoiceRecognitionSettings(settings: VoiceRecognitionSettings) = updateUiState { current ->
+        current.copy(
+            voiceRecognitionSettings = settings.normalized(),
             message = null,
         )
     }

@@ -157,6 +157,12 @@ class FakeSettingsStore(
         )
     }
 
+    override suspend fun saveVoiceRecognitionSettings(settings: com.example.myapplication.model.VoiceRecognitionSettings) {
+        state.value = state.value.copy(
+            voiceRecognitionSettings = settings.normalized(),
+        )
+    }
+
     override suspend fun saveMomentsSettings(settings: MomentsSettings) {
         state.value = state.value.copy(
             momentsSettings = settings.copy(

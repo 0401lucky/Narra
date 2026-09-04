@@ -44,6 +44,7 @@ import com.example.myapplication.model.SearchSettings
 import com.example.myapplication.model.ThemeMode
 import com.example.myapplication.model.TranslationHistoryEntry
 import com.example.myapplication.model.UserPersonaMask
+import com.example.myapplication.model.VoiceRecognitionSettings
 import com.example.myapplication.model.VoiceSynthesisSettings
 import com.example.myapplication.model.createDefaultProvider
 import com.example.myapplication.model.inferredModelInfo
@@ -123,6 +124,8 @@ interface SettingsStore {
 
     suspend fun saveVoiceSynthesisSettings(settings: VoiceSynthesisSettings)
 
+    suspend fun saveVoiceRecognitionSettings(settings: VoiceRecognitionSettings)
+
     suspend fun saveMomentsSettings(settings: MomentsSettings)
 
     suspend fun saveUserProfile(
@@ -190,6 +193,7 @@ private data class SecureSettingsSnapshot(
     val providerApiKeys: Map<String, String>,
     val searchApiKeys: Map<String, String>,
     val voiceApiKey: String,
+    val voiceRecognitionApiKey: String,
 )
 
 class AppSettingsStore internal constructor(
@@ -219,6 +223,7 @@ class AppSettingsStore internal constructor(
     private val translationHistoryType = object : TypeToken<List<TranslationHistoryEntry>>() {}.type
     private val searchSettingsType = object : TypeToken<SearchSettings>() {}.type
     private val voiceSynthesisSettingsType = object : TypeToken<VoiceSynthesisSettings>() {}.type
+    private val voiceRecognitionSettingsType = object : TypeToken<VoiceRecognitionSettings>() {}.type
     private val momentsSettingsType = object : TypeToken<MomentsSettings>() {}.type
     override val settingsFlow: Flow<AppSettings> = recoverablePreferencesFlow()
         .map { preferences ->
@@ -231,6 +236,7 @@ class AppSettingsStore internal constructor(
                         providerApiKeys = secureValueStore.getStringMap(SecureKeys.providerApiKeys),
                         searchApiKeys = secureValueStore.getStringMap(SecureKeys.searchSourceApiKeys),
                         voiceApiKey = secureValueStore.getString(SecureKeys.voiceSynthesisApiKey),
+                        voiceRecognitionApiKey = secureValueStore.getString(SecureKeys.voiceRecognitionApiKey),
                     )
                 }
                 val legacyApiKey = secureSettings.legacyApiKey
@@ -238,6 +244,7 @@ class AppSettingsStore internal constructor(
                 val secureProviderApiKeys = secureSettings.providerApiKeys
                 val secureSearchApiKeys = secureSettings.searchApiKeys
                 val secureVoiceApiKey = secureSettings.voiceApiKey
+                val secureVoiceRecognitionApiKey = secureSettings.voiceRecognitionApiKey
         val storedProviders = decodeProviders(preferences[PreferencesKeys.providersJson].orEmpty())
             .map { provider ->
                 normalizeProviderFields(provider).copy(
@@ -283,6 +290,14 @@ class AppSettingsStore internal constructor(
         val voiceSynthesisSettings = storedVoiceSynthesisSettings.copy(
             apiKey = secureVoiceApiKey.ifBlank {
                 storedVoiceSynthesisSettings.apiKey
+            },
+        ).normalized()
+        val storedVoiceRecognitionSettings = decodeVoiceRecognitionSettings(
+            preferences[PreferencesKeys.voiceRecognitionSettingsJson].orEmpty(),
+        )
+        val voiceRecognitionSettings = storedVoiceRecognitionSettings.copy(
+            apiKey = secureVoiceRecognitionApiKey.ifBlank {
+                storedVoiceRecognitionSettings.apiKey
             },
         ).normalized()
 
@@ -358,6 +373,7 @@ class AppSettingsStore internal constructor(
             ),
             searchSettings = searchSettings,
             voiceSynthesisSettings = voiceSynthesisSettings,
+            voiceRecognitionSettings = voiceRecognitionSettings,
             momentsSettings = decodeMomentsSettings(
                 preferences[PreferencesKeys.momentsSettingsJson].orEmpty(),
             ),
@@ -610,6 +626,20 @@ class AppSettingsStore internal constructor(
         }
     }
 
+    override suspend fun saveVoiceRecognitionSettings(settings: VoiceRecognitionSettings) {
+        val normalizedSettings = settings.normalized()
+        secureValueStore.putString(
+            SecureKeys.voiceRecognitionApiKey,
+            normalizedSettings.apiKey,
+        )
+        dataStore.edit { preferences ->
+            preferences[PreferencesKeys.voiceRecognitionSettingsJson] = gson.toJson(
+                normalizedSettings.stripSensitiveFields(),
+                voiceRecognitionSettingsType,
+            )
+        }
+    }
+
     override suspend fun saveMomentsSettings(settings: MomentsSettings) {
         val normalizedSettings = settings.copy(
             coverImageUri = settings.coverImageUri.trim(),
@@ -840,6 +870,18 @@ class AppSettingsStore internal constructor(
                 ?: VoiceSynthesisSettings()
         }.logFailure(TAG) { "decodeVoiceSynthesisSettings fromJson failed, raw.len=${rawJson.length}" }
             .getOrDefault(VoiceSynthesisSettings())
+    }
+
+    private fun decodeVoiceRecognitionSettings(rawJson: String): VoiceRecognitionSettings {
+        if (rawJson.isBlank()) {
+            return VoiceRecognitionSettings()
+        }
+        return runCatching {
+            gson.fromJson<VoiceRecognitionSettings>(rawJson, voiceRecognitionSettingsType)
+                ?.normalized()
+                ?: VoiceRecognitionSettings()
+        }.logFailure(TAG) { "decodeVoiceRecognitionSettings fromJson failed, raw.len=${rawJson.length}" }
+            .getOrDefault(VoiceRecognitionSettings())
     }
 
     private fun decodeFunctionModelProviderIds(rawJson: String): FunctionModelProviderIds {
@@ -1265,6 +1307,7 @@ class AppSettingsStore internal constructor(
         val screenTranslationVendorGuideDismissed = booleanPreferencesKey("screen_translation_vendor_guide_dismissed")
         val searchSettingsJson = stringPreferencesKey("search_settings_json")
         val voiceSynthesisSettingsJson = stringPreferencesKey("voice_synthesis_settings_json")
+        val voiceRecognitionSettingsJson = stringPreferencesKey("voice_recognition_settings_json")
         val momentsSettingsJson = stringPreferencesKey("moments_settings_json")
         val memoryAutoSummaryEvery = PreferencesKeysCompat.intPreferencesKey("memory_auto_summary_every")
         val memoryCapacity = PreferencesKeysCompat.intPreferencesKey("memory_capacity")
@@ -1280,6 +1323,7 @@ class AppSettingsStore internal constructor(
         const val providerApiKeys = "provider_api_keys"
         const val searchSourceApiKeys = "search_source_api_keys"
         const val voiceSynthesisApiKey = "voice_synthesis_api_key"
+        const val voiceRecognitionApiKey = "voice_recognition_api_key"
     }
 
     private companion object {

@@ -68,6 +68,7 @@ object SettingsUiMutationSupport {
             screenTranslationSettings = sourceState.screenTranslationSettings,
             searchSettings = sourceState.searchSettings,
             voiceSynthesisSettings = sourceState.voiceSynthesisSettings.normalized(),
+            voiceRecognitionSettings = sourceState.voiceRecognitionSettings.normalized(),
             isSaving = false,
             message = result.message,
         )

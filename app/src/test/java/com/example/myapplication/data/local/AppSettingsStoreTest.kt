@@ -32,6 +32,11 @@ import org.junit.Test
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class AppSettingsStoreTest {
+    private companion object {
+        /** 单次 Preferences emission 触发的安全存储读取次数；新增加密字段时同步更新。 */
+        const val SECURE_READS_PER_EMISSION = 5
+    }
+
     @Test
     fun settingsFlow_multipleCollectorsParseEachEmissionOnceAndReplayLatest() = runTest {
         val dataStore = MutablePreferencesDataStore(replay = 1)
@@ -67,13 +72,16 @@ class AppSettingsStoreTest {
             assertEquals(2, firstEmissions.size)
             assertEquals(2, secondEmissions.size)
             assertEquals(2, parseCount)
-            assertEquals(8, secureStore.readCount)
+            // 安全读次数只随 emission 增长，不随 collector 数量倍增。
+            // 每次 emission 读 5 处：legacy key、provider keys、search keys、语音合成 key、语音识别 key。
+            val expectedSecureReads = 2 * SECURE_READS_PER_EMISSION
+            assertEquals(expectedSecureReads, secureStore.readCount)
             val replayReads = List(3) {
                 store.settingsFlow.first().themeMode.storageValue
             }
             assertEquals(listOf("dark", "dark", "dark"), replayReads)
             assertEquals(2, parseCount)
-            assertEquals(8, secureStore.readCount)
+            assertEquals(expectedSecureReads, secureStore.readCount)
             firstCollector.join()
             secondCollector.join()
         } finally {
