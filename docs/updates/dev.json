@@ -1,16 +1,16 @@
 {
   "app_id": "com.narra.app.dev",
   "channel": "dev",
-  "latest_version_name": "2.2.8-dev",
-  "latest_version_code": 20208,
+  "latest_version_name": "2.2.9-dev",
+  "latest_version_code": 20209,
   "minimum_supported_version_code": 0,
-  "apk_url": "https://download.lsa1230.dpdns.org/dev/2.2.8/Narra-v2.2.8-dev-20208-dev.apk?v=20208-20260904162411",
-  "apk_sha256": "da7736707717431de72ed8507cdb175d4c0c062b71ad6b8a0c6062c6be250759",
-  "published_at": "2026-09-04T16:24:11+08:00",
+  "apk_url": "https://download.lsa1230.dpdns.org/dev/2.2.9/Narra-v2.2.9-dev-20209-dev.apk?v=20209-20260904190252",
+  "apk_sha256": "7012070ad7bcfc02408d3e91533c3fe4b21a5a1d1d6aeb8ab3db1f4900db71cf",
+  "published_at": "2026-09-04T19:02:52+08:00",
   "release_notes": [
-    "新增语音识别：可选系统识别或大模型识别，在设置 → 语音识别中开关与配置 API",
-    "角色扮演、朋友圈发布与评论输入框新增麦克风按钮，按住说话、松手识别、上滑取消",
-    "朋友圈评论支持长按删除单条回复",
-    "修复切换用户面具会影响其他所有角色的问题，面具现在按角色独立绑定；本版本更新仍为可选更新"
+    "语音识别新增「转写协议」选择：gemini 等多模态模型改走多模态对话，不再报 not implemented",
+    "语音识别 API 页新增模型列表获取，可直接从服务商模型中选择",
+    "修复「测试连接」结果不显示的问题，成功与失败现在都会给出反馈",
+    "转写失败时给出可行动提示，例如提示改用多模态对话；本版本更新仍为可选更新"
   ]
 }
