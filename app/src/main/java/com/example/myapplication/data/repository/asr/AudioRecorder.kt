@@ -18,18 +18,37 @@ private const val CHANNEL_COUNT = 1
 private const val ENCODING_BIT_RATE = 32_000
 
 /**
+ * 录音采集的最小契约，抽出来是为了让 VoiceInputController 可以在 JVM 单测里替换实现。
+ */
+interface AudioRecording {
+    val isRecording: Boolean
+
+    /** 开始录音，返回将写入的文件；失败抛异常，由调用方转成中文提示。 */
+    fun start(): File
+
+    /** 停止并返回音频文件；没在录音或文件不可用时返回 null。 */
+    fun stop(): File?
+
+    /** 放弃本次录音并删除文件。 */
+    fun cancel()
+
+    /** 当前振幅，归一化到 0f..1f。 */
+    fun amplitude(): Float
+}
+
+/**
  * 录音采集。写 cacheDir，识别结束后由调用方删除。
  *
  * 采样率与声道数按转写模型的通行输入规格（16kHz 单声道）设定，体积远小于 WAV。
- * 非线程安全：只允许单个 [VoiceInputController] 持有并串行调用。
+ * 非线程安全：只允许单个 VoiceInputController 持有并串行调用。
  */
 class AudioRecorder(
     private val context: Context,
-) {
+) : AudioRecording {
     private var recorder: MediaRecorder? = null
     private var outputFile: File? = null
 
-    val isRecording: Boolean
+    override val isRecording: Boolean
         get() = recorder != null
 
     /**
@@ -37,7 +56,7 @@ class AudioRecorder(
      *
      * @return 录音将写入的文件；失败抛出异常，调用方负责转成中文提示。
      */
-    fun start(): File {
+    override fun start(): File {
         check(recorder == null) { "上一次录音尚未结束" }
         val directory = File(context.cacheDir, RECORDING_DIR).apply { mkdirs() }
         val target = File(directory, "asr_${UUID.randomUUID()}.m4a")
@@ -74,7 +93,7 @@ class AudioRecorder(
      *
      * 即便 stop 抛异常也会释放 recorder，避免麦克风被一直占用。
      */
-    fun stop(): File? {
+    override fun stop(): File? {
         val active = recorder ?: return null
         val target = outputFile
         recorder = null
@@ -89,7 +108,7 @@ class AudioRecorder(
     }
 
     /** 放弃本次录音并删除文件，用于上滑取消。 */
-    fun cancel() {
+    override fun cancel() {
         val active = recorder
         val target = outputFile
         recorder = null
@@ -102,7 +121,7 @@ class AudioRecorder(
     }
 
     /** 当前振幅，归一化到 0f..1f，用于驱动波形动画。未在录音时返回 0f。 */
-    fun amplitude(): Float {
+    override fun amplitude(): Float {
         val active = recorder ?: return 0f
         val raw = runCatching { active.maxAmplitude }.getOrDefault(0)
         if (raw <= 0) return 0f

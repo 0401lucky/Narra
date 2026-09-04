@@ -50,6 +50,7 @@ class RemoteSpeechRecognitionService(
     override fun recognize(
         audioFile: File?,
         settings: VoiceRecognitionSettings,
+        releaseSignal: Flow<Unit>?,
     ): Flow<RecognitionEvent> = flow {
         emit(transcribe(audioFile, settings.normalized()))
     }.flowOn(dispatcher)

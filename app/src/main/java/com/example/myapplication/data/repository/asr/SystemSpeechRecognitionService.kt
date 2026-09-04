@@ -9,6 +9,8 @@ import android.speech.SpeechRecognizer
 import com.example.myapplication.model.VoiceRecognitionSettings
 import java.io.File
 import kotlinx.coroutines.channels.awaitClose
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow
 import kotlinx.coroutines.flow.flowOn
@@ -31,6 +33,7 @@ class SystemSpeechRecognitionService(
     override fun recognize(
         audioFile: File?,
         settings: VoiceRecognitionSettings,
+        releaseSignal: Flow<Unit>?,
     ): Flow<RecognitionEvent> = callbackFlow {
         if (!SpeechRecognizer.isRecognitionAvailable(context)) {
             trySend(RecognitionEvent.Failed("这台设备没有可用的系统语音识别，建议改用大模型识别"))
@@ -44,7 +47,9 @@ class SystemSpeechRecognitionService(
 
             override fun onBeginningOfSpeech() = Unit
 
-            override fun onRmsChanged(rmsdB: Float) = Unit
+            override fun onRmsChanged(rmsdB: Float) {
+                trySend(RecognitionEvent.Level(normalizeRmsDb(rmsdB)))
+            }
 
             override fun onBufferReceived(buffer: ByteArray?) = Unit
 
@@ -88,6 +93,15 @@ class SystemSpeechRecognitionService(
             close()
         }
 
+        // 用户松手：让识别器收音并给出最终结果。这里不能直接 close()，
+        // 否则 awaitClose 会先销毁识别器，最终结果就永远拿不到了。
+        if (releaseSignal != null) {
+            launch {
+                releaseSignal.first()
+                runCatching { recognizer.stopListening() }
+            }
+        }
+
         awaitClose {
             runCatching { recognizer.stopListening() }
             runCatching { recognizer.cancel() }
@@ -102,6 +116,13 @@ private fun Bundle?.firstRecognizedText(): String {
         ?.firstOrNull()
         ?.trim()
         .orEmpty()
+}
+
+/**
+ * onRmsChanged 给出的是分贝值，实测大致落在 -2..10 之间，归一化到 0f..1f 驱动波形。
+ */
+internal fun normalizeRmsDb(rmsdB: Float): Float {
+    return ((rmsdB + 2f) / 12f).coerceIn(0f, 1f)
 }
 
 /** 把 SpeechRecognizer 的错误码翻成能直接展示的中文。 */

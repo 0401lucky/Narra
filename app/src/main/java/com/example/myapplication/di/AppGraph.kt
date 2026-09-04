@@ -58,6 +58,7 @@ import com.example.myapplication.data.repository.ai.RoleplayShopPromptService
 import com.example.myapplication.data.repository.ai.RoleplaySuggestionPromptService
 import com.example.myapplication.data.repository.ai.TitleAndChatSuggestionPromptService
 import com.example.myapplication.data.repository.asr.AudioRecorder
+import com.example.myapplication.data.repository.asr.AudioRecording
 import com.example.myapplication.data.repository.asr.RemoteSpeechRecognitionService
 import com.example.myapplication.data.repository.asr.SpeechRecognitionService
 import com.example.myapplication.data.repository.asr.SystemSpeechRecognitionService
@@ -222,7 +223,7 @@ class AppGraph(
     }
 
     /** 录音器非线程安全，按使用点各建一个，不共享单例。 */
-    val audioRecorderFactory: () -> AudioRecorder = { AudioRecorder(application) }
+    val audioRecorderFactory: () -> AudioRecording = { AudioRecorder(application) }
 
     val phoneSnapshotRepository: PhoneSnapshotRepository by lazy {
         RoomPhoneSnapshotRepository(database.phoneSnapshotDao())

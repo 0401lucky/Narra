@@ -9,6 +9,9 @@ sealed interface RecognitionEvent {
     /** 中间结果，只有系统通道会发；用于输入框上方的实时预览。 */
     data class Partial(val text: String) : RecognitionEvent
 
+    /** 实时音量，归一化到 0f..1f，用于驱动波形动画。只有系统通道会发。 */
+    data class Level(val level: Float) : RecognitionEvent
+
     /** 最终结果。text 为空表示没听到有效内容。 */
     data class Final(val text: String) : RecognitionEvent
 
@@ -25,8 +28,13 @@ interface SpeechRecognitionService {
     /** 当前设备/配置下该通道是否可用。 */
     fun isAvailable(settings: VoiceRecognitionSettings): Boolean
 
+    /**
+     * @param releaseSignal 用户松手信号。系统通道据此让识别器收音并给出最终结果；
+     *   远程通道忽略它——上传本来就发生在松手之后。
+     */
     fun recognize(
         audioFile: File?,
         settings: VoiceRecognitionSettings,
+        releaseSignal: Flow<Unit>? = null,
     ): Flow<RecognitionEvent>
 }
