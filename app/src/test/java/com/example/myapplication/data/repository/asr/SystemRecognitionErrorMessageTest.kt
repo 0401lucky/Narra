@@ -26,12 +26,30 @@ class SystemRecognitionErrorMessageTest {
         )
         assertEquals("录音出错，请检查麦克风", systemRecognitionErrorMessage(SpeechRecognizer.ERROR_AUDIO))
         assertEquals(
-            "未获得录音权限",
-            systemRecognitionErrorMessage(SpeechRecognizer.ERROR_INSUFFICIENT_PERMISSIONS),
-        )
-        assertEquals(
             "识别服务正忙，稍后再试",
             systemRecognitionErrorMessage(SpeechRecognizer.ERROR_RECOGNIZER_BUSY),
+        )
+    }
+
+    @Test
+    fun insufficientPermissions_distinguishesAppPermissionFromServiceRefusal() {
+        // 应用自己没权限：指向系统设置是对的
+        val appMissing = systemRecognitionErrorMessage(
+            error = SpeechRecognizer.ERROR_INSUFFICIENT_PERMISSIONS,
+            appHasRecordPermission = false,
+        )
+        assertTrue(appMissing.contains("系统设置"))
+
+        // 应用已授权却仍被拒：不能再让用户去检查已经给过的开关
+        val serviceRefused = systemRecognitionErrorMessage(
+            error = SpeechRecognizer.ERROR_INSUFFICIENT_PERMISSIONS,
+            appHasRecordPermission = true,
+        )
+        assertTrue(serviceRefused.contains("已获得麦克风权限"))
+        assertTrue(serviceRefused.contains("大模型识别"))
+        assertFalse(
+            "已授权时不应提示去系统设置开权限",
+            serviceRefused.contains("请在系统设置中开启"),
         )
     }
 

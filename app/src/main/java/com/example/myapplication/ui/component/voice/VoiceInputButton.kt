@@ -26,7 +26,6 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
-import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -71,23 +70,13 @@ fun VoiceInputButton(
 
     val context = LocalContext.current
     val haptic = LocalHapticFeedback.current
-    var permissionRequestCount by remember { mutableIntStateOf(0) }
     var dragOffsetY by remember { mutableFloatStateOf(0f) }
     val cancelThresholdPx = with(LocalDensity.current) { CANCEL_THRESHOLD_DP.toPx() }
     val willCancel = dragOffsetY < -cancelThresholdPx
 
-    // 以申请次数为 key 重算：授权成功后重组即可拿到最新权限状态
-    val hasPermission = remember(permissionRequestCount) {
-        ContextCompat.checkSelfPermission(
-            context,
-            Manifest.permission.RECORD_AUDIO,
-        ) == PackageManager.PERMISSION_GRANTED
-    }
-
     val permissionLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.RequestPermission(),
     ) { granted ->
-        permissionRequestCount += 1
         if (!granted) {
             onShowMessage("需要录音权限才能语音输入，可在系统设置中开启")
         }
@@ -148,16 +137,22 @@ fun VoiceInputButton(
                     enabled = state.enabled,
                     scale = scale,
                     willCancel = willCancel,
-                    modifier = Modifier.pointerInput(state.enabled, hasPermission) {
+                    modifier = Modifier.pointerInput(state.enabled) {
                         awaitEachGesture {
                             val down = awaitFirstDown(requireUnconsumed = false)
+                            // 每次按下都实时查一遍：用户可能刚在系统设置里授权，
+                            // 缓存到组合期会让应用一直以为没有权限。
+                            val granted = ContextCompat.checkSelfPermission(
+                                context,
+                                Manifest.permission.RECORD_AUDIO,
+                            ) == PackageManager.PERMISSION_GRANTED
                             val accepted = when {
                                 !state.enabled -> {
                                     onShowMessage("请先在设置 → 语音识别中开启并完成配置")
                                     false
                                 }
 
-                                !hasPermission -> {
+                                !granted -> {
                                     permissionLauncher.launch(Manifest.permission.RECORD_AUDIO)
                                     false
                                 }

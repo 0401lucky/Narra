@@ -37,6 +37,7 @@ import com.example.myapplication.model.VoiceRecognitionSettings
 fun VoiceRecognitionSettingsScreen(
     settings: VoiceRecognitionSettings,
     systemRecognitionAvailable: Boolean,
+    systemRecognitionProviders: List<String>,
     onUpdateSettings: (VoiceRecognitionSettings) -> Unit,
     onOpenApiSettings: () -> Unit,
     onSaveChanges: () -> Unit,
@@ -148,11 +149,10 @@ fun VoiceRecognitionSettingsScreen(
                                     )
                                 },
                                 title = "这台设备的系统识别",
-                                supportingText = if (systemRecognitionAvailable) {
-                                    "可用"
-                                } else {
-                                    "不可用：没有找到系统识别服务，建议改用大模型识别"
-                                },
+                                supportingText = systemRecognitionSummary(
+                                    available = systemRecognitionAvailable,
+                                    providers = systemRecognitionProviders,
+                                ),
                             )
                         }
                     }
@@ -177,6 +177,23 @@ fun VoiceRecognitionSettingsScreen(
             }
         }
     }
+}
+
+/**
+ * 把系统识别的可用性讲清楚。可用只代表「有服务声明」，不代表该服务愿意为三方应用录音——
+ * 部分 ROM 会在已授权麦克风的情况下仍然返回权限不足，所以这里把提供方包名一并显示。
+ */
+private fun systemRecognitionSummary(
+    available: Boolean,
+    providers: List<String>,
+): String {
+    if (!available) {
+        return "不可用：没有找到系统识别服务，建议改用大模型识别"
+    }
+    if (providers.isEmpty()) {
+        return "已声明可用，但查不到提供方；若实际无法录音请改用大模型识别"
+    }
+    return "可用 · 提供方：${providers.joinToString("、")}"
 }
 
 private fun engineDescription(engine: VoiceRecognitionEngine): String {

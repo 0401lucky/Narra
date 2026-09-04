@@ -13,6 +13,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.navigation
 import com.example.myapplication.ChatApplication
 import com.example.myapplication.data.repository.AudioFileStorage
+import com.example.myapplication.data.repository.asr.resolveRecognitionServicePackages
 import com.example.myapplication.data.repository.tts.MimoTtsRequest
 import com.example.myapplication.di.AppGraph
 import com.example.myapplication.model.AppSettings
@@ -300,9 +301,13 @@ internal fun NavGraphBuilder.registerSettingsNavGraph(
             val systemRecognitionAvailable = remember(context) {
                 android.speech.SpeechRecognizer.isRecognitionAvailable(context)
             }
+            val systemRecognitionProviders = remember(context) {
+                resolveRecognitionServicePackages(context)
+            }
             VoiceRecognitionSettingsScreen(
                 settings = settingsUiState.voiceRecognitionSettings,
                 systemRecognitionAvailable = systemRecognitionAvailable,
+                systemRecognitionProviders = systemRecognitionProviders,
                 onUpdateSettings = settingsViewModel::updateVoiceRecognitionSettings,
                 onOpenApiSettings = {
                     navController.navigate(AppRoutes.SETTINGS_VOICE_RECOGNITION_API) {
