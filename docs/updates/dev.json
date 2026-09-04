@@ -1,16 +1,15 @@
 {
   "app_id": "com.narra.app.dev",
   "channel": "dev",
-  "latest_version_name": "2.2.9-dev",
-  "latest_version_code": 20209,
+  "latest_version_name": "2.2.10-dev",
+  "latest_version_code": 20210,
   "minimum_supported_version_code": 0,
-  "apk_url": "https://download.lsa1230.dpdns.org/dev/2.2.9/Narra-v2.2.9-dev-20209-dev.apk?v=20209-20260904190252",
-  "apk_sha256": "7012070ad7bcfc02408d3e91533c3fe4b21a5a1d1d6aeb8ab3db1f4900db71cf",
-  "published_at": "2026-09-04T19:02:52+08:00",
+  "apk_url": "https://download.lsa1230.dpdns.org/dev/2.2.10/Narra-v2.2.10-dev-20210-dev.apk?v=20210-20260904202056",
+  "apk_sha256": "85b6de158ac6b156691adff6696d73c9172b947bf4b0eea60204a670714db7ce",
+  "published_at": "2026-09-04T20:20:56+08:00",
   "release_notes": [
-    "语音识别新增「转写协议」选择：gemini 等多模态模型改走多模态对话，不再报 not implemented",
-    "语音识别 API 页新增模型列表获取，可直接从服务商模型中选择",
-    "修复「测试连接」结果不显示的问题，成功与失败现在都会给出反馈",
-    "转写失败时给出可行动提示，例如提示改用多模态对话；本版本更新仍为可选更新"
+    "修复已授予麦克风权限却仍提示「未获得录音权限」的问题，失败原因现在会说准",
+    "修复从系统设置授予麦克风权限后应用仍认为没有权限的问题",
+    "设置 → 语音识别现在会显示系统识别服务的提供方，便于排查该服务是否可用；本版本更新仍为可选更新"
   ]
 }
