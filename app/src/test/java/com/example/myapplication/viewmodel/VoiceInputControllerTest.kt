@@ -295,6 +295,29 @@ class VoiceInputControllerTest {
         assertEquals(1, recorder.startCount)
     }
 
+    @Test
+    fun appendRecognizedText_appendsWithoutSeparatorForChinese() {
+        assertEquals("今天天气不错", appendRecognizedText("今天", "天气不错"))
+        assertEquals("今天天气不错", appendRecognizedText("今天", "  天气不错  "))
+    }
+
+    @Test
+    fun appendRecognizedText_insertsSpaceOnlyBetweenAsciiWords() {
+        assertEquals("hello world", appendRecognizedText("hello", "world"))
+        assertEquals("abc 123", appendRecognizedText("abc", "123"))
+        // 标点或中文相邻时不该补空格
+        assertEquals("hello,world", appendRecognizedText("hello,", "world"))
+        assertEquals("你好world", appendRecognizedText("你好", "world"))
+        assertEquals("hello你好", appendRecognizedText("hello", "你好"))
+    }
+
+    @Test
+    fun appendRecognizedText_respectsExistingTrailingWhitespaceAndEmptyInputs() {
+        assertEquals("今天 天气", appendRecognizedText("今天 ", "天气"))
+        assertEquals("天气", appendRecognizedText("", "天气"))
+        assertEquals("今天", appendRecognizedText("今天", "   "))
+    }
+
     private fun kotlinx.coroutines.test.TestScope.createController(
         recorder: AudioRecording = FakeAudioRecorder(temporaryFolder.newFile("default.m4a")),
         systemService: SpeechRecognitionService = FakeService(emptyList()),

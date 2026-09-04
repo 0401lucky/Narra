@@ -74,6 +74,8 @@ import com.example.myapplication.model.toMessageAttachmentOrNull
 import com.example.myapplication.ui.component.AssistantAvatar
 import com.example.myapplication.ui.component.ExpandedDraftEditorDialog
 import com.example.myapplication.ui.component.NarraIconButton
+import com.example.myapplication.ui.component.voice.VoiceInputAnchor
+import com.example.myapplication.viewmodel.appendRecognizedText
 
 internal data class RoleplayMentionCandidate(
     val id: String,
@@ -447,6 +449,11 @@ internal fun RoleplayInputBar(
                         }
                     }
                 } else {
+                    VoiceInputAnchor(
+                        onTextRecognized = { recognized ->
+                            onInputChange(appendRecognizedText(input, recognized))
+                        },
+                    )
                     NarraIconButton(
                         onClick = {
                             showActionPanel = false

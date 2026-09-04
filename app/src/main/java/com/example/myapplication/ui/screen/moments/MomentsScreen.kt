@@ -86,6 +86,8 @@ import com.example.myapplication.model.MomentPost
 import com.example.myapplication.model.UserPersonaMask
 import com.example.myapplication.ui.component.AppSnackbarHost
 import com.example.myapplication.ui.component.NarraIconButton
+import com.example.myapplication.ui.component.voice.VoiceInputAnchor
+import com.example.myapplication.viewmodel.appendRecognizedText
 import com.example.myapplication.ui.LocalImagePersister
 import com.example.myapplication.ui.theme.MomentsAccent
 import com.example.myapplication.ui.theme.MomentsAccentSoft
@@ -673,6 +675,19 @@ private fun MomentComposerPage(
                     placeholder = { Text("这一刻的想法…", color = MomentsMutedText()) },
                     shape = RoundedCornerShape(8.dp),
                 )
+            }
+
+            item {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.End,
+                ) {
+                    VoiceInputAnchor(
+                        onTextRecognized = { recognized ->
+                            draft = appendRecognizedText(draft, recognized).take(300)
+                        },
+                    )
+                }
             }
 
             item {
@@ -1571,6 +1586,11 @@ private fun MomentsDetailContent(
                         },
                         singleLine = true,
                         shape = RoundedCornerShape(999.dp),
+                    )
+                    VoiceInputAnchor(
+                        onTextRecognized = { recognized ->
+                            commentInput = appendRecognizedText(commentInput, recognized).take(160)
+                        },
                     )
                     NarraIconButton(
                         onClick = {

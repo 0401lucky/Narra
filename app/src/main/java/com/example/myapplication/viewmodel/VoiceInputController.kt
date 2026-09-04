@@ -48,6 +48,26 @@ data class VoiceInputUiState(
 private const val TICK_INTERVAL_MILLIS = 100L
 
 /**
+ * 把识别结果追加到输入框已有文本末尾。
+ *
+ * 中文之间不该插空格，但英文单词之间必须插，否则会粘成一个词。因此只在
+ * 衔接处两侧都是 ASCII 字母或数字时补一个空格。
+ */
+fun appendRecognizedText(current: String, recognized: String): String {
+    val addition = recognized.trim()
+    if (addition.isEmpty()) return current
+    if (current.isEmpty()) return addition
+    val last = current.last()
+    if (last.isWhitespace()) return current + addition
+    val needsSpace = last.isAsciiWordChar() && addition.first().isAsciiWordChar()
+    return if (needsSpace) "$current $addition" else current + addition
+}
+
+private fun Char.isAsciiWordChar(): Boolean {
+    return this in 'a'..'z' || this in 'A'..'Z' || this in '0'..'9'
+}
+
+/**
  * 录音 + 识别的状态机。
  *
  * 不引用任何 Android UI 类型，因此可在 JVM 单测里完整验证状态流转。

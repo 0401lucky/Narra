@@ -11,6 +11,7 @@ import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.produceState
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.unit.dp
@@ -30,6 +31,7 @@ import com.example.myapplication.ui.theme.ChatAppTheme
 import com.example.myapplication.viewmodel.AppUpdateViewModel
 import com.example.myapplication.viewmodel.ComplianceViewModel
 import com.example.myapplication.viewmodel.SettingsViewModel
+import kotlinx.coroutines.flow.map
 import com.example.myapplication.ui.screen.compliance.ComplianceScreen
 import com.example.myapplication.ui.screen.compliance.ComplianceScreenMode
 
@@ -142,7 +144,19 @@ fun AppRoot(
                 }
 
                 else -> {
-                    CompositionLocalProvider(LocalImagePersister provides appGraph.localImageStore) {
+                    val voiceInputDependencies = remember(appGraph) {
+                        VoiceInputDependencies(
+                            settingsFlow = appGraph.aiSettingsRepository.settingsFlow
+                                .map { it.voiceRecognitionSettings },
+                            systemService = appGraph.systemSpeechRecognitionService,
+                            remoteService = appGraph.remoteSpeechRecognitionService,
+                            audioRecorderFactory = appGraph.audioRecorderFactory,
+                        )
+                    }
+                    CompositionLocalProvider(
+                        LocalImagePersister provides appGraph.localImageStore,
+                        LocalVoiceInput provides voiceInputDependencies,
+                    ) {
                         AppNavHost(
                             appGraph = appGraph,
                             navController = navController,
