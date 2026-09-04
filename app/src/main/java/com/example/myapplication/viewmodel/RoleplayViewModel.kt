@@ -1362,6 +1362,15 @@ class RoleplayViewModel(
     }
 
     /**
+     * 只写当前角色的面具绑定，不碰全局默认面具，也不影响其他角色。
+     * 传空串表示清除角色级绑定，回落到全局默认面具。
+     */
+    fun updateCurrentScenarioUserPersonaMask(maskId: String) {
+        val scenario = resolveWorkingScenario() ?: return
+        upsertScenario(scenario.copy(userPersonaMaskId = maskId.trim()))
+    }
+
+    /**
      * 只覆盖视觉字段；始终基于当前最新 scenario 做 copy，避免相册 IO 期间整行快照 last-writer-wins。
      */
     fun updateCurrentScenarioVisual(

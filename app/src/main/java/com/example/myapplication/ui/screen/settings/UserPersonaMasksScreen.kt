@@ -114,7 +114,7 @@ fun UserPersonaMasksScreen(
             item {
                 SettingsSectionHeader(
                     title = "面具列表",
-                    description = "默认面具会在没有单独绑定时自动生效。",
+                    description = "这里设置的是全局默认面具，只对没有单独绑定面具的角色生效；给某个角色单独绑定，请在该角色的侧边设置里改「本角色面具」。",
                 )
             }
             item {
@@ -234,7 +234,7 @@ private fun PersonaMaskRow(
                     )
                     if (isDefault) {
                         SettingsStatusPill(
-                            text = "默认",
+                            text = "全局默认",
                             containerColor = palette.accentSoft,
                             contentColor = palette.accent,
                         )
@@ -263,7 +263,7 @@ private fun PersonaMaskRow(
                 }
                 Row {
                     IconButton(onClick = onSetDefault, enabled = !isDefault) {
-                        Icon(Icons.Default.Check, contentDescription = "设为默认", tint = palette.body)
+                        Icon(Icons.Default.Check, contentDescription = "设为全局默认", tint = palette.body)
                     }
                     IconButton(onClick = onDelete, enabled = canDelete) {
                         Icon(Icons.Default.Delete, contentDescription = "删除面具", tint = palette.body)

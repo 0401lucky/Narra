@@ -64,6 +64,7 @@ class RoleplaySettingsScreenTest {
                 onUpdateScenarioInteractionMode = {},
                 onUpdateScenarioOnlineReplyRange = { _, _ -> },
                 onUpdateScenarioPresetId = {},
+                onUpdateScenarioUserPersonaMaskId = {},
                 onUpdateScenarioVisual = { _, _, _, _, _ -> },
                 onAddGroupParticipant = {},
                 onToggleGroupParticipantMuted = {},

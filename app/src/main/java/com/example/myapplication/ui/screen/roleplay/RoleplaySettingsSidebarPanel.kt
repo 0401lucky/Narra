@@ -137,6 +137,7 @@ internal fun scenarioVisualSummary(scenario: RoleplayScenario?): String {
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 internal fun RoleplaySettingsSidebarContent(
     activePage: RoleplaySettingsPanelPage,
@@ -174,6 +175,7 @@ internal fun RoleplaySettingsSidebarContent(
     onUpdateScenarioInteractionMode: (RoleplayInteractionMode) -> Unit,
     onUpdateScenarioOnlineReplyRange: (Int, Int) -> Unit,
     onUpdateScenarioPresetId: (String) -> Unit,
+    onUpdateScenarioUserPersonaMaskId: (String) -> Unit,
     onUpdateScenarioVisual: (
         backgroundUri: String,
         userPortraitUri: String,
@@ -202,6 +204,9 @@ internal fun RoleplaySettingsSidebarContent(
     onShowRestartDialog: () -> Unit,
     onShowResetDialog: () -> Unit,
 ) {
+    // 以 scenario id 为 key：切换或离开角色时自动收起，避免重新进入时残留的标志位让弹窗自己冒出来
+    var showMaskSheet by rememberSaveable(scenario?.id) { mutableStateOf(false) }
+    val haptic = LocalHapticFeedback.current
     AnimatedContent(
         targetState = activePage,
         transitionSpec = {
@@ -374,11 +379,11 @@ internal fun RoleplaySettingsSidebarContent(
             item {
                 RoleplayShortcutCard(
                     backdropState = backdropState,
-                    title = "默认面具",
-                    summary = roleplayMaskSummary(settings),
+                    title = "本角色面具",
+                    summary = roleplayScenarioMaskSummary(scenario, settings),
                     icon = Icons.Default.ManageAccounts,
-                    onClick = onOpenUserMasks,
-                    enabled = true,
+                    onClick = { showMaskSheet = true },
+                    enabled = scenario != null,
                 )
             }
             item {
@@ -501,6 +506,83 @@ internal fun RoleplaySettingsSidebarContent(
             }
         }
     }
+    }
+
+    if (showMaskSheet && scenario != null) {
+        val maskSheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+        val masks = settings.normalizedUserPersonaMasks()
+        val boundMaskId = scenario.userPersonaMaskId.trim()
+        val defaultMask = settings.resolvedDefaultUserPersonaMask()
+        val sheetMaxHeight = androidx.compose.ui.platform.LocalConfiguration.current.screenHeightDp.dp * 0.72f
+        ModalBottomSheet(
+            onDismissRequest = { showMaskSheet = false },
+            sheetState = maskSheetState,
+        ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .heightIn(max = sheetMaxHeight)
+                    .padding(bottom = 12.dp),
+            ) {
+                Text(
+                    text = "本角色面具",
+                    style = MaterialTheme.typography.titleLarge,
+                    fontWeight = FontWeight.SemiBold,
+                    modifier = Modifier.padding(horizontal = 20.dp, vertical = 8.dp),
+                )
+                Text(
+                    text = "只影响当前角色，不改动全局默认，也不影响其他角色。",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = RoleplaySettingsPanelBodyColor,
+                    modifier = Modifier.padding(horizontal = 20.dp, vertical = 4.dp),
+                )
+                LazyColumn(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .weight(1f, fill = false),
+                    contentPadding = PaddingValues(bottom = 8.dp),
+                ) {
+                    item(key = "follow_global") {
+                        ScenarioPresetPickRow(
+                            title = "跟随全局默认",
+                            summary = defaultMask
+                                ?.let { "当前全局默认：${it.name}" }
+                                ?: "全局未设置默认面具，将使用个人资料",
+                            selected = masks.none { it.id == boundMaskId },
+                            onClick = {
+                                haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                                onUpdateScenarioUserPersonaMaskId("")
+                                showMaskSheet = false
+                            },
+                        )
+                        HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.45f))
+                    }
+                    items(masks, key = { it.id }) { mask ->
+                        ScenarioPresetPickRow(
+                            title = mask.name.ifBlank { "未命名面具" },
+                            summary = mask.personaPrompt.ifBlank { "未填写身份提示词，仅使用昵称" },
+                            selected = mask.id == boundMaskId,
+                            onClick = {
+                                haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                                onUpdateScenarioUserPersonaMaskId(mask.id)
+                                showMaskSheet = false
+                            },
+                        )
+                    }
+                }
+                TextButton(
+                    onClick = {
+                        showMaskSheet = false
+                        onOpenUserMasks()
+                    },
+                    modifier = Modifier
+                        .align(Alignment.End)
+                        .padding(horizontal = 12.dp, vertical = 8.dp),
+                ) {
+                    Text("管理面具")
+                }
+            }
+        }
     }
 }
 
@@ -1769,13 +1851,24 @@ private fun IdentityMetric(
     }
 }
 
-private fun roleplayMaskSummary(settings: AppSettings): String {
+/** 侧边栏「本角色面具」卡片的摘要：区分角色级绑定与回落到全局默认两种状态。 */
+private fun roleplayScenarioMaskSummary(
+    scenario: RoleplayScenario?,
+    settings: AppSettings,
+): String {
     val masks = settings.normalizedUserPersonaMasks()
+    if (masks.isEmpty()) {
+        return "还没有面具，先去创建不同对话里的“我”"
+    }
+    val boundMask = masks.firstOrNull { it.id == scenario?.userPersonaMaskId?.trim().orEmpty() }
+    if (boundMask != null) {
+        return "本角色使用：${boundMask.name}"
+    }
     val defaultMask = settings.resolvedDefaultUserPersonaMask()
-    return when {
-        masks.isEmpty() -> "还没有默认面具，点击创建不同对话里的“我”"
-        defaultMask != null -> "默认：${defaultMask.name} · 共 ${masks.size} 个身份"
-        else -> "${masks.size} 个身份，未设置默认"
+    return if (defaultMask != null) {
+        "跟随全局默认：${defaultMask.name}"
+    } else {
+        "跟随全局默认 · 当前未设置，使用个人资料"
     }
 }
 

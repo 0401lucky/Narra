@@ -89,6 +89,7 @@ fun RoleplaySettingsScreen(
     onUpdateScenarioInteractionMode: (RoleplayInteractionMode) -> Unit,
     onUpdateScenarioOnlineReplyRange: (Int, Int) -> Unit,
     onUpdateScenarioPresetId: (String) -> Unit,
+    onUpdateScenarioUserPersonaMaskId: (String) -> Unit,
     onUpdateScenarioVisual: (
         backgroundUri: String,
         userPortraitUri: String,
@@ -285,6 +286,7 @@ fun RoleplaySettingsScreen(
                             onUpdateScenarioInteractionMode = onUpdateScenarioInteractionMode,
                             onUpdateScenarioOnlineReplyRange = onUpdateScenarioOnlineReplyRange,
                             onUpdateScenarioPresetId = onUpdateScenarioPresetId,
+                            onUpdateScenarioUserPersonaMaskId = onUpdateScenarioUserPersonaMaskId,
                             onUpdateScenarioVisual = onUpdateScenarioVisual,
                             onAddGroupParticipant = onAddGroupParticipant,
                             onToggleGroupParticipantMuted = onToggleGroupParticipantMuted,

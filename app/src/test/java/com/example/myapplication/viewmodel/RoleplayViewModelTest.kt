@@ -63,6 +63,7 @@ import com.example.myapplication.model.RoleplayOutputFormat
 import com.example.myapplication.model.RoleplayScenario
 import com.example.myapplication.model.RoleplaySuggestionAxis
 import com.example.myapplication.model.RoleplaySession
+import com.example.myapplication.model.UserPersonaMask
 import com.example.myapplication.model.RoleplaySpeaker
 import com.example.myapplication.model.TransferDirection
 import com.example.myapplication.model.TransferStatus
@@ -1398,6 +1399,146 @@ class RoleplayViewModelTest {
         assertEquals("", savedUserMessage.replyToPreview)
         assertEquals("", savedUserMessage.replyToSpeakerName)
     }
+
+    @Test
+    fun updateCurrentScenarioUserPersonaMask_onlyRebindsCurrentScenario() =
+        runTest(mainDispatcherRule.dispatcher.scheduler) {
+            val assistantA = Assistant(id = "assistant-a", name = "甲")
+            val assistantB = Assistant(id = "assistant-b", name = "乙")
+            val scenarioA = RoleplayScenario(id = "scene-a", assistantId = assistantA.id, title = "A 场景")
+            val scenarioB = RoleplayScenario(id = "scene-b", assistantId = assistantB.id, title = "B 场景")
+            val sessionA = RoleplaySession(
+                id = "session-a",
+                scenarioId = scenarioA.id,
+                conversationId = "conv-a",
+                createdAt = 1L,
+                updatedAt = 2L,
+            )
+            val sessionB = RoleplaySession(
+                id = "session-b",
+                scenarioId = scenarioB.id,
+                conversationId = "conv-b",
+                createdAt = 3L,
+                updatedAt = 4L,
+            )
+            val store = FakeConversationStore(
+                conversations = listOf(
+                    Conversation(
+                        id = sessionA.conversationId,
+                        title = "A",
+                        model = "chat-model",
+                        createdAt = 1L,
+                        updatedAt = 2L,
+                        assistantId = assistantA.id,
+                    ),
+                    Conversation(
+                        id = sessionB.conversationId,
+                        title = "B",
+                        model = "chat-model",
+                        createdAt = 3L,
+                        updatedAt = 4L,
+                        assistantId = assistantB.id,
+                    ),
+                ),
+            )
+            val globalDefaultMask = UserPersonaMask(id = "mask-global", name = "全局默认面具")
+            val roleMask = UserPersonaMask(id = "mask-role", name = "角色专属面具")
+            val viewModel = createViewModel(
+                store = store,
+                roleplayRepository = FakeRoleplayRepository(
+                    conversationStore = store,
+                    scenarios = listOf(scenarioA, scenarioB),
+                    sessions = listOf(sessionA, sessionB),
+                ),
+                settings = AppSettings(
+                    assistants = listOf(assistantA, assistantB),
+                    selectedAssistantId = assistantA.id,
+                    userPersonaMasks = listOf(globalDefaultMask, roleMask),
+                    defaultUserPersonaMaskId = globalDefaultMask.id,
+                ),
+                promptContextAssembler = fixedPromptAssembler("提示词上下文"),
+            )
+
+            viewModel.enterScenario(scenarioA.id)
+            advanceUntilIdle()
+
+            viewModel.updateCurrentScenarioUserPersonaMask(roleMask.id)
+            advanceUntilIdle()
+
+            // 当前角色绑上了新面具
+            assertEquals(roleMask.id, viewModel.uiState.value.currentScenario?.userPersonaMaskId)
+            // 其他角色不受影响，仍未绑定
+            assertEquals(
+                "",
+                viewModel.uiState.value.scenarios.first { it.id == scenarioB.id }.userPersonaMaskId,
+            )
+            // 全局默认面具没有被改动——这是本次修复的核心
+            assertEquals(globalDefaultMask.id, viewModel.settings.value.defaultUserPersonaMaskId)
+        }
+
+    @Test
+    fun updateCurrentScenarioUserPersonaMask_blankIdClearsRoleBindingAndFallsBackToGlobalDefault() =
+        runTest(mainDispatcherRule.dispatcher.scheduler) {
+            val assistant = Assistant(id = "assistant-a", name = "甲")
+            val globalDefaultMask = UserPersonaMask(id = "mask-global", name = "全局默认面具")
+            val roleMask = UserPersonaMask(id = "mask-role", name = "角色专属面具")
+            val scenario = RoleplayScenario(
+                id = "scene-a",
+                assistantId = assistant.id,
+                title = "A 场景",
+                userPersonaMaskId = roleMask.id,
+            )
+            val session = RoleplaySession(
+                id = "session-a",
+                scenarioId = scenario.id,
+                conversationId = "conv-a",
+                createdAt = 1L,
+                updatedAt = 2L,
+            )
+            val store = FakeConversationStore(
+                conversations = listOf(
+                    Conversation(
+                        id = session.conversationId,
+                        title = "A",
+                        model = "chat-model",
+                        createdAt = 1L,
+                        updatedAt = 2L,
+                        assistantId = assistant.id,
+                    ),
+                ),
+            )
+            val settings = AppSettings(
+                assistants = listOf(assistant),
+                selectedAssistantId = assistant.id,
+                userPersonaMasks = listOf(globalDefaultMask, roleMask),
+                defaultUserPersonaMaskId = globalDefaultMask.id,
+            )
+            val viewModel = createViewModel(
+                store = store,
+                roleplayRepository = FakeRoleplayRepository(
+                    conversationStore = store,
+                    scenarios = listOf(scenario),
+                    sessions = listOf(session),
+                ),
+                settings = settings,
+                promptContextAssembler = fixedPromptAssembler("提示词上下文"),
+            )
+
+            viewModel.enterScenario(scenario.id)
+            advanceUntilIdle()
+            assertEquals(roleMask.id, viewModel.uiState.value.currentScenario?.userPersonaMaskId)
+
+            viewModel.updateCurrentScenarioUserPersonaMask("")
+            advanceUntilIdle()
+
+            val updatedScenario = viewModel.uiState.value.currentScenario
+            assertEquals("", updatedScenario?.userPersonaMaskId)
+            // 清除角色级绑定后，解析结果回落到全局默认面具
+            assertEquals(
+                globalDefaultMask.id,
+                settings.resolveUserPersona(maskId = updatedScenario?.userPersonaMaskId.orEmpty()).sourceMaskId,
+            )
+        }
 
     @Test
     fun sendMessage_groupChatPreservesQuotedReplyOnUserMessage() = runTest(mainDispatcherRule.dispatcher.scheduler) {
