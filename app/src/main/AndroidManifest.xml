@@ -12,6 +12,18 @@
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PROJECTION" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_SPECIAL_USE" />
     <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" />
+    <uses-permission android:name="android.permission.RECORD_AUDIO" />
+
+    <!--
+      Android 11+ 的包可见性限制：不声明这个 intent，SpeechRecognizer.isRecognitionAvailable()
+      在部分机型会误报不可用，导致系统识别通道无故不能用。
+    -->
+    <queries>
+        <intent>
+            <action android:name="android.speech.RecognitionService" />
+        </intent>
+    </queries>
+
 
     <application
         android:name=".ChatApplication"

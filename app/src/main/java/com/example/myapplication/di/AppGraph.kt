@@ -57,6 +57,10 @@ import com.example.myapplication.data.repository.ai.RoleplayDiaryPromptService
 import com.example.myapplication.data.repository.ai.RoleplayShopPromptService
 import com.example.myapplication.data.repository.ai.RoleplaySuggestionPromptService
 import com.example.myapplication.data.repository.ai.TitleAndChatSuggestionPromptService
+import com.example.myapplication.data.repository.asr.AudioRecorder
+import com.example.myapplication.data.repository.asr.RemoteSpeechRecognitionService
+import com.example.myapplication.data.repository.asr.SpeechRecognitionService
+import com.example.myapplication.data.repository.asr.SystemSpeechRecognitionService
 import com.example.myapplication.data.repository.tts.MimoTtsClient
 import com.example.myapplication.conversation.VoiceSynthesisCoordinator
 import com.example.myapplication.data.repository.ai.tooling.GetConversationSummaryTool
@@ -208,6 +212,17 @@ class AppGraph(
     val voiceCloneSampleCleaner: suspend (String?) -> Boolean = { path ->
         VoiceCloneSampleStorage.deleteIfLocal(application, path)
     }
+
+    val systemSpeechRecognitionService: SpeechRecognitionService by lazy {
+        SystemSpeechRecognitionService(application)
+    }
+
+    val remoteSpeechRecognitionService: SpeechRecognitionService by lazy {
+        RemoteSpeechRecognitionService()
+    }
+
+    /** 录音器非线程安全，按使用点各建一个，不共享单例。 */
+    val audioRecorderFactory: () -> AudioRecorder = { AudioRecorder(application) }
 
     val phoneSnapshotRepository: PhoneSnapshotRepository by lazy {
         RoomPhoneSnapshotRepository(database.phoneSnapshotDao())
