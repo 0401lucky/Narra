@@ -1,15 +1,17 @@
 {
   "app_id": "com.narra.app.dev",
   "channel": "dev",
-  "latest_version_name": "2.2.10-dev",
-  "latest_version_code": 20210,
+  "latest_version_name": "2.2.11-dev",
+  "latest_version_code": 20211,
   "minimum_supported_version_code": 0,
-  "apk_url": "https://download.lsa1230.dpdns.org/dev/2.2.10/Narra-v2.2.10-dev-20210-dev.apk?v=20210-20260904202056",
-  "apk_sha256": "85b6de158ac6b156691adff6696d73c9172b947bf4b0eea60204a670714db7ce",
-  "published_at": "2026-09-04T20:20:56+08:00",
+  "apk_url": "https://download.lsa1230.dpdns.org/dev/Narra-v2.2.11-dev-20211-dev.apk?v=20211",
+  "apk_sha256": "a0f7844a858ec4a6f26e02efd040ab77e7ac1e581b9f5798a8d9f41ed5f4f2eb",
+  "published_at": "2026-09-07T23:29:44+08:00",
   "release_notes": [
-    "修复已授予麦克风权限却仍提示「未获得录音权限」的问题，失败原因现在会说准",
-    "修复从系统设置授予麦克风权限后应用仍认为没有权限的问题",
-    "设置 → 语音识别现在会显示系统识别服务的提供方，便于排查该服务是否可用；本版本更新仍为可选更新"
+    "完成 UI 重设计收口，整理主壳、个人资料、Roleplay 子页与设置，统一主题、说明入口和触控尺寸",
+    "朋友圈完善发布、身份选择、回复与删除确认，快速发布和失败反馈更可靠",
+    "优化查手机分类导航，补齐空态、加载提示与搜索失败重试",
+    "系统悬浮翻译统一应用主题，改善长文阅读、帮助、取消与重译操作",
+    "保留现有数据和个性化设置，本版本仍为可选更新"
   ]
 }
