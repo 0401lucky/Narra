@@ -1,0 +1,4 @@
+{"file":".trellis/spec/guides/code-reuse-thinking-guide.md","reason":"阶段一会整理共享 Compose 组件和视觉令牌，需先检查复用与边界要求。"}
+{"file":".trellis/spec/guides/cross-layer-thinking-guide.md","reason":"页面改造涉及导航和现有状态契约，需确认跨层修改边界。"}
+{"file":".trellis/spec/backend/ui-state-guidelines.md","reason":"以角色扮演实际入口为准，保留页面状态、回调、主题和基准测试边界。"}
+{"file":".trellis/spec/backend/quality-guidelines.md","reason":"Android UI 构建、设备交互、测试及验证限制要求。"}

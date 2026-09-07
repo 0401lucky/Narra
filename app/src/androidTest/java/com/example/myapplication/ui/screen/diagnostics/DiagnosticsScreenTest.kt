@@ -2,11 +2,15 @@ package com.example.myapplication.ui.screen.diagnostics
 
 import androidx.activity.ComponentActivity
 import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.hasContentDescription
+import androidx.compose.ui.test.hasScrollToNodeAction
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
+import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
+import androidx.compose.ui.test.performScrollToNode
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.example.myapplication.system.diagnostics.HistoricalExitQuerySupport
 import com.example.myapplication.ui.theme.ChatAppTheme
@@ -67,6 +71,26 @@ class DiagnosticsScreenTest {
         }
 
         composeRule.onNodeWithText("Android 11 以下不支持历史退出查询")
+            .assertIsDisplayed()
+    }
+
+    @Test
+    fun diagnosticsScreen_keepsPrivacyDetailsBehindAnExplicitHelpAction() {
+        composeRule.setContent {
+            ChatAppTheme {
+                DiagnosticsScreen(
+                    uiState = DiagnosticsUiState(isLoading = false),
+                    onExport = {},
+                    onConsumeMessage = {},
+                    onNavigateBack = {},
+                )
+            }
+        }
+
+        composeRule.onNode(hasScrollToNodeAction())
+            .performScrollToNode(hasContentDescription("隐私边界：查看说明"))
+        composeRule.onNodeWithContentDescription("隐私边界：查看说明").performClick()
+        composeRule.onNodeWithText("不含聊天内容、提示词、API Key", substring = true)
             .assertIsDisplayed()
     }
 }

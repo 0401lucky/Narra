@@ -16,12 +16,6 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.Code
-import androidx.compose.material.icons.filled.Delete
-import androidx.compose.material.icons.filled.Save
-import androidx.compose.material.icons.filled.Security
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
@@ -50,6 +44,12 @@ import com.example.myapplication.viewmodel.RoleplayScriptLabUiState
 import com.example.myapplication.viewmodel.RoleplayScriptTemplate
 import com.example.myapplication.viewmodel.RoleplayScriptTestResult
 import com.example.myapplication.viewmodel.RoleplayScriptTestState
+import com.composables.icons.lucide.Code
+import com.composables.icons.lucide.Lucide
+import com.composables.icons.lucide.Plus
+import com.composables.icons.lucide.Save
+import com.composables.icons.lucide.ShieldCheck
+import com.composables.icons.lucide.Trash2
 
 data class RoleplayScriptBindingOption(
     val scope: RoleplayScriptScope,
@@ -123,7 +123,10 @@ fun RoleplayScriptLabScreen(
                     )
                 }
                 item {
-                    SettingsSectionHeader("快速模板", "")
+                    SettingsSectionHeader(
+                        title = "快速模板",
+                        description = "选择模板会填充脚本内容与默认权限，仍需保存后才会生效。",
+                    )
                 }
                 item {
                     RoleplayScriptTemplateList(
@@ -135,15 +138,18 @@ fun RoleplayScriptLabScreen(
                     NarraFilledTonalButton(
                         onClick = onCreateScript,
                         modifier = Modifier.fillMaxWidth(),
-                        shape = RoundedCornerShape(20.dp),
+                        shape = RoundedCornerShape(8.dp),
                     ) {
-                        Icon(Icons.Default.Add, contentDescription = null, modifier = Modifier.size(18.dp))
+                        Icon(Lucide.Plus, contentDescription = null, modifier = Modifier.size(18.dp))
                         Spacer(Modifier.width(8.dp))
                         Text("新建脚本")
                     }
                 }
                 item {
-                    SettingsSectionHeader("脚本列表", "")
+                    SettingsSectionHeader(
+                        title = "脚本列表",
+                        description = "脚本按作用域参与对应的角色扮演流程。",
+                    )
                 }
                 item {
                     SettingsGroup {
@@ -167,7 +173,10 @@ fun RoleplayScriptLabScreen(
                     }
                 }
                 item {
-                    SettingsSectionHeader("编辑", "")
+                    SettingsSectionHeader(
+                        title = "编辑",
+                        description = "修改脚本前请确认作用域、绑定目标和权限范围。",
+                    )
                 }
                 item {
                     RoleplayScriptEditor(
@@ -186,7 +195,10 @@ fun RoleplayScriptLabScreen(
                     )
                 }
                 item {
-                    SettingsSectionHeader("试运行", "")
+                    SettingsSectionHeader(
+                        title = "试运行",
+                        description = "在保存前检查脚本会追加哪些提示、变量或界面指令。",
+                    )
                 }
                 item {
                     RoleplayScriptTestPanel(
@@ -219,7 +231,7 @@ private fun RoleplayScriptListRow(
     SettingsListRow(
         leadingContent = {
             Icon(
-                imageVector = Icons.Default.Code,
+                imageVector = Lucide.Code,
                 contentDescription = null,
                 tint = palette.title,
             )
@@ -248,7 +260,7 @@ private fun RoleplayScriptTemplateList(
             SettingsListRow(
                 leadingContent = {
                     Icon(
-                        imageVector = Icons.Default.Code,
+                        imageVector = Lucide.Code,
                         contentDescription = null,
                         tint = rememberSettingsPalette().title,
                     )
@@ -258,7 +270,7 @@ private fun RoleplayScriptTemplateList(
                 trailingContent = {
                     NarraOutlinedButton(
                         onClick = { onApplyTemplate(template.id) },
-                        shape = RoundedCornerShape(16.dp),
+                        shape = RoundedCornerShape(8.dp),
                     ) {
                         Text("套用")
                     }
@@ -356,7 +368,7 @@ private fun RoleplayScriptEditor(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
             ) {
-                Icon(Icons.Default.Security, contentDescription = null, tint = palette.title)
+                Icon(Lucide.ShieldCheck, contentDescription = null, tint = palette.title)
                 Text(
                     text = "权限",
                     style = MaterialTheme.typography.titleMedium,
@@ -381,9 +393,9 @@ private fun RoleplayScriptEditor(
                 onClick = onSaveScript,
                 enabled = !isSaving,
                 modifier = Modifier.weight(1f),
-                shape = RoundedCornerShape(18.dp),
+                shape = RoundedCornerShape(8.dp),
             ) {
-                Icon(Icons.Default.Save, contentDescription = null, modifier = Modifier.size(17.dp))
+                Icon(Lucide.Save, contentDescription = null, modifier = Modifier.size(17.dp))
                 Spacer(Modifier.width(8.dp))
                 Text("保存")
             }
@@ -391,9 +403,9 @@ private fun RoleplayScriptEditor(
                 onClick = onDeleteSelectedScript,
                 enabled = hasSelection && !isSaving,
                 modifier = Modifier.weight(1f),
-                shape = RoundedCornerShape(18.dp),
+                shape = RoundedCornerShape(8.dp),
             ) {
-                Icon(Icons.Default.Delete, contentDescription = null, modifier = Modifier.size(17.dp))
+                Icon(Lucide.Trash2, contentDescription = null, modifier = Modifier.size(17.dp))
                 Spacer(Modifier.width(8.dp))
                 Text("删除")
             }
@@ -453,11 +465,11 @@ private fun RoleplayScriptBindingOptionRow(
     Surface(
         modifier = Modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(18.dp)),
+            .clip(RoundedCornerShape(8.dp)),
         color = if (selected) palette.accentSoft.copy(alpha = 0.68f) else palette.surfaceTint,
         border = BorderStroke(1.dp, palette.border.copy(alpha = 0.42f)),
         onClick = onClick,
-        shape = RoundedCornerShape(18.dp),
+        shape = RoundedCornerShape(8.dp),
     ) {
         Row(
             modifier = Modifier.padding(horizontal = 14.dp, vertical = 12.dp),
@@ -554,7 +566,7 @@ private fun RoleplayScriptTestPanel(
                 onClick = onRunScriptTest,
                 enabled = !test.isRunning,
                 modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(18.dp),
+                shape = RoundedCornerShape(8.dp),
             ) {
                 Text(if (test.isRunning) "运行中" else "运行当前脚本")
             }
@@ -691,7 +703,7 @@ private fun RoleplayScriptPermissionRow(
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(18.dp))
+            .clip(RoundedCornerShape(8.dp))
             .padding(vertical = 2.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(12.dp),
@@ -714,13 +726,17 @@ private fun RoleplayScriptPermissionRow(
                 }
             }
             Text(
-                text = permission.storageValue,
+                text = if (checked) "已允许此权限" else "未授予此权限",
                 style = MaterialTheme.typography.bodySmall,
                 color = palette.body,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
             )
         }
+        SettingsHelpButton(
+            title = permission.label(),
+            description = permission.storageValue,
+        )
         Switch(
             checked = checked,
             onCheckedChange = { onToggle() },

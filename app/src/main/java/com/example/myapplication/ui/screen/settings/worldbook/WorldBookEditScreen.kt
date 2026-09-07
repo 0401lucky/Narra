@@ -6,6 +6,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
@@ -28,6 +29,7 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -37,6 +39,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import com.example.myapplication.context.WorldBookHitPreview
@@ -51,11 +54,16 @@ import com.example.myapplication.ui.component.NarraAlertDialog
 import com.example.myapplication.ui.component.worldbook.KeywordChipInput
 import com.example.myapplication.ui.screen.settings.AnimatedSettingButton
 import com.example.myapplication.ui.screen.settings.SettingsGroup
+import com.example.myapplication.ui.screen.settings.SettingsHelpButton
 import com.example.myapplication.ui.screen.settings.SettingsScreenPadding
 import com.example.myapplication.ui.screen.settings.SettingsSectionHeader
 import com.example.myapplication.ui.screen.settings.SettingsTopBar
 import com.example.myapplication.ui.screen.settings.rememberSettingsOutlineColors
 import com.example.myapplication.ui.screen.settings.rememberSettingsPalette
+import com.composables.icons.lucide.Lucide
+import com.composables.icons.lucide.Expand
+import com.composables.icons.lucide.ChevronDown
+import com.composables.icons.lucide.ChevronUp
 
 private val StringListSaver = listSaver<List<String>, String>(
     save = { it.toList() },
@@ -166,10 +174,11 @@ fun WorldBookEditScreen(
     Scaffold(
         topBar = {
             SettingsTopBar(
-                title = if (isNew) "新建世界书" else "编辑世界书",
+                title = if (isNew) "新建条目" else "编辑条目",
                 onNavigateBack = onNavigateBack,
-                actionLabel = if (canSave) "保存" else null,
-                onAction = if (canSave) onSaveClick else null,
+                actionLabel = "保存",
+                onAction = onSaveClick,
+                actionEnabled = canSave,
             )
         },
         containerColor = palette.background,
@@ -177,6 +186,7 @@ fun WorldBookEditScreen(
         LazyColumn(
             modifier = Modifier
                 .fillMaxSize()
+                .testTag("worldbook_editor")
                 .padding(innerPadding),
             contentPadding = PaddingValues(
                 start = SettingsScreenPadding,
@@ -187,6 +197,29 @@ fun WorldBookEditScreen(
             verticalArrangement = Arrangement.spacedBy(14.dp),
         ) {
             item {
+                Text(
+                    text = buildList {
+                        add(if (enabled) "已启用" else "已停用")
+                        add(scopeType.label)
+                        if (alwaysActive) add("常驻注入")
+                    }.joinToString(" · "),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = palette.body,
+                )
+                if (!canSave) {
+                    Text(
+                        text = when {
+                            title.isBlank() || content.isBlank() -> "标题和正文为必填项"
+                            scopeType == WorldBookScopeType.ASSISTANT -> "请选择所属角色"
+                            else -> "请选择所属会话"
+                        },
+                        modifier = Modifier.padding(top = 8.dp),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.error,
+                    )
+                }
+            }
+            item {
                 WorldBookCollapsibleSection(
                     title = "基本信息",
                     description = "标题、正文、所属世界书",
@@ -194,7 +227,7 @@ fun WorldBookEditScreen(
                     onToggle = { expandedStateHolder.value = expandedState.toggleBasicInfo() },
                 ) {
                     Column(
-                        modifier = Modifier.padding(horizontal = 18.dp, vertical = 16.dp),
+                        modifier = Modifier.padding(vertical = 8.dp),
                         verticalArrangement = Arrangement.spacedBy(16.dp),
                     ) {
                         OutlinedTextField(
@@ -203,7 +236,7 @@ fun WorldBookEditScreen(
                             label = { Text("标题") },
                             modifier = Modifier.fillMaxWidth(),
                             singleLine = true,
-                            shape = RoundedCornerShape(16.dp),
+                            shape = RoundedCornerShape(8.dp),
                             colors = outlineColors,
                         )
                         OutlinedTextField(
@@ -214,11 +247,11 @@ fun WorldBookEditScreen(
                                 .fillMaxWidth()
                                 .heightIn(min = 160.dp),
                             maxLines = 12,
-                            shape = RoundedCornerShape(16.dp),
+                            shape = RoundedCornerShape(8.dp),
                             colors = outlineColors,
                             trailingIcon = {
                                 IconButton(onClick = { showContentSheet = true }) {
-                                    Icon(Icons.Outlined.Edit, contentDescription = "全屏编辑正文")
+                                    Icon(Lucide.Expand, contentDescription = "全屏编辑正文")
                                 }
                             },
                         )
@@ -235,19 +268,18 @@ fun WorldBookEditScreen(
             item {
                 WorldBookCollapsibleSection(
                     title = "命中规则",
-                    description = "关键词命中后，该条目会注入到 prompt",
+                    description = "关键词匹配后，条目正文会提供给角色作为参考。输入关键词后用回车或逗号确认，也支持 /pattern/flags 正则。优先级默认为 0，数值越大越优先。",
                     expanded = expandedState.hitRule,
                     onToggle = { expandedStateHolder.value = expandedState.toggleHitRule() },
                 ) {
                     Column(
-                        modifier = Modifier.padding(horizontal = 18.dp, vertical = 16.dp),
+                        modifier = Modifier.padding(vertical = 8.dp),
                         verticalArrangement = Arrangement.spacedBy(16.dp),
                     ) {
                         Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                            Text(
-                                text = "匹配模式",
-                                style = MaterialTheme.typography.titleSmall,
-                                color = palette.title,
+                            SettingsSectionHeader(
+                                "匹配模式",
+                                "子串匹配：任意位置出现关键词即命中。整词匹配：中文按子串匹配，英文要求词边界。正则匹配：将整条关键词作为正则表达式。",
                             )
                             FlowRow(
                                 horizontalArrangement = Arrangement.spacedBy(10.dp),
@@ -255,6 +287,7 @@ fun WorldBookEditScreen(
                             ) {
                                 WorldBookMatchMode.entries.forEach { mode ->
                                     FilterChip(
+                                        modifier = Modifier.heightIn(min = 48.dp),
                                         selected = matchMode == mode,
                                         onClick = { matchMode = mode },
                                         label = { Text(mode.label) },
@@ -265,27 +298,18 @@ fun WorldBookEditScreen(
                                     )
                                 }
                             }
-                            Text(
-                                text = when (matchMode) {
-                                    WorldBookMatchMode.CONTAINS -> "子串匹配，任何出现都算命中"
-                                    WorldBookMatchMode.WORD_CJK -> "CJK 感知整词：中文保持 contains，英文要求词边界"
-                                    WorldBookMatchMode.REGEX -> "关键词整条作为正则直接匹配"
-                                },
-                                style = MaterialTheme.typography.bodySmall,
-                                color = palette.body,
-                            )
                         }
                         KeywordChipInput(
                             label = "主关键词",
                             values = keywords,
                             onValuesChange = { keywords = it },
-                            placeholder = "回车 / 逗号提交；支持 /pattern/flags 正则",
+                            placeholder = "添加关键词",
                         )
                         KeywordChipInput(
                             label = "别名",
                             values = aliases,
                             onValuesChange = { aliases = it },
-                            placeholder = "补充人物简称、地名别称等",
+                            placeholder = "人物简称、地名别称",
                         )
                         OutlinedTextField(
                             value = priorityText,
@@ -293,15 +317,13 @@ fun WorldBookEditScreen(
                             label = { Text("优先级") },
                             modifier = Modifier.fillMaxWidth(),
                             singleLine = true,
-                            shape = RoundedCornerShape(16.dp),
+                            shape = RoundedCornerShape(8.dp),
                             colors = outlineColors,
                             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                            placeholder = { Text("默认 0，越大越优先") },
                         )
-                        SettingsSectionHeader("次级关键词", "selective 打开后，次级关键词也要命中才会注入")
                         ToggleField(
-                            title = "启用次级匹配（selective）",
-                            subtitle = "开启后需主关键词 + 次级关键词同时命中才注入",
+                            title = "次级匹配",
+                            subtitle = "主关键词与次级关键词须同时命中；次级关键词留空时，命中主关键词即可。对应 selective 字段。",
                             checked = selective,
                             onCheckedChange = { selective = it },
                         )
@@ -309,7 +331,7 @@ fun WorldBookEditScreen(
                             label = "次级关键词",
                             values = secondaryKeywords,
                             onValuesChange = { secondaryKeywords = it },
-                            placeholder = "留空则等同主关键词命中即注入",
+                            placeholder = "添加次级关键词",
                             enabled = selective,
                         )
                         ToggleField(
@@ -330,7 +352,7 @@ fun WorldBookEditScreen(
                     onToggle = { expandedStateHolder.value = expandedState.toggleScope() },
                 ) {
                     Column(
-                        modifier = Modifier.padding(horizontal = 18.dp, vertical = 16.dp),
+                        modifier = Modifier.padding(vertical = 8.dp),
                         verticalArrangement = Arrangement.spacedBy(16.dp),
                     ) {
                         FlowRow(
@@ -339,6 +361,7 @@ fun WorldBookEditScreen(
                         ) {
                             WorldBookScopeType.entries.forEach { candidate ->
                                 FilterChip(
+                                    modifier = Modifier.heightIn(min = 48.dp),
                                     selected = scopeType == candidate,
                                     onClick = {
                                         scopeType = candidate
@@ -377,12 +400,16 @@ fun WorldBookEditScreen(
                             }
 
                             WorldBookScopeType.ASSISTANT -> {
+                                if (assistants.isEmpty()) {
+                                    Text("暂无角色", color = palette.body, style = MaterialTheme.typography.bodyMedium)
+                                }
                                 FlowRow(
                                     horizontalArrangement = Arrangement.spacedBy(10.dp),
                                     verticalArrangement = Arrangement.spacedBy(10.dp),
                                 ) {
                                     assistants.forEach { assistant ->
                                         FilterChip(
+                                            modifier = Modifier.heightIn(min = 48.dp),
                                             selected = scopeId == assistant.id,
                                             onClick = { scopeId = assistant.id },
                                             label = {
@@ -418,7 +445,7 @@ fun WorldBookEditScreen(
                     onToggle = { expandedStateHolder.value = expandedState.toggleStatus() },
                 ) {
                     Column(
-                        modifier = Modifier.padding(horizontal = 18.dp, vertical = 16.dp),
+                        modifier = Modifier.padding(vertical = 8.dp),
                         verticalArrangement = Arrangement.spacedBy(16.dp),
                     ) {
                         ToggleField(
@@ -433,34 +460,35 @@ fun WorldBookEditScreen(
                             checked = alwaysActive,
                             onCheckedChange = { alwaysActive = it },
                         )
-                        ToggleField(
-                            title = "展开高级参数",
-                            subtitle = "控制插入顺序等进阶字段",
-                            checked = advancedExpanded,
-                            onCheckedChange = { advancedExpanded = it },
-                        )
+                        TextButton(
+                            onClick = { advancedExpanded = !advancedExpanded },
+                            modifier = Modifier.heightIn(min = 48.dp),
+                        ) {
+                            Text("高级参数", modifier = Modifier.weight(1f))
+                            Icon(if (advancedExpanded) Lucide.ChevronUp else Lucide.ChevronDown, contentDescription = null)
+                        }
                         if (advancedExpanded) {
+                            SettingsSectionHeader("注入控制", "插入顺序（insertionOrder）默认为 0，数值越小越靠前。触发概率（probability）为 0–100，默认为 100，表示每次命中都注入。")
                             OutlinedTextField(
                                 value = insertionOrderText,
                                 onValueChange = { insertionOrderText = filterIntegerInput(it) },
-                                label = { Text("插入顺序 (insertionOrder)") },
+                                label = { Text("插入顺序") },
                                 modifier = Modifier.fillMaxWidth(),
                                 singleLine = true,
-                                shape = RoundedCornerShape(16.dp),
+                                shape = RoundedCornerShape(8.dp),
                                 colors = outlineColors,
                                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                                placeholder = { Text("越小越靠前（默认 0）") },
                             )
                             OutlinedTextField(
                                 value = probabilityText,
                                 onValueChange = { probabilityText = filterIntegerInput(it) },
-                                label = { Text("触发概率 (probability)") },
+                                label = { Text("触发概率 (%)") },
                                 modifier = Modifier.fillMaxWidth(),
                                 singleLine = true,
-                                shape = RoundedCornerShape(16.dp),
+                                shape = RoundedCornerShape(8.dp),
                                 colors = outlineColors,
                                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                                placeholder = { Text("0-100，默认 100 表示每次命中都注入") },
+                                supportingText = { Text("0–100") },
                             )
                         }
                     }
@@ -475,7 +503,7 @@ fun WorldBookEditScreen(
                     onToggle = { expandedStateHolder.value = expandedState.toggleHitPreview() },
                 ) {
                     Column(
-                        modifier = Modifier.padding(horizontal = 18.dp, vertical = 16.dp),
+                        modifier = Modifier.padding(vertical = 8.dp),
                         verticalArrangement = Arrangement.spacedBy(12.dp),
                     ) {
                         OutlinedTextField(
@@ -489,7 +517,7 @@ fun WorldBookEditScreen(
                                 .heightIn(min = 96.dp),
                             label = { Text("待测文本") },
                             placeholder = { Text("例如：我准备去白塔城做生意") },
-                            shape = RoundedCornerShape(16.dp),
+                            shape = RoundedCornerShape(8.dp),
                             colors = outlineColors,
                         )
                         AnimatedSettingButton(
@@ -520,21 +548,19 @@ fun WorldBookEditScreen(
             }
 
             if (!isNew && entry != null) {
-                item { SettingsSectionHeader("危险操作", "删除后无法恢复") }
                 item {
-                    SettingsGroup {
                         Column(
-                            modifier = Modifier.padding(horizontal = 18.dp, vertical = 16.dp),
+                            modifier = Modifier.padding(vertical = 16.dp),
                             verticalArrangement = Arrangement.spacedBy(10.dp),
                         ) {
                             AnimatedSettingButton(
-                                text = "删除这条",
+                                text = "删除条目",
                                 onClick = { showDeleteDialog = true },
                                 enabled = true,
                                 isPrimary = false,
                             )
+                            Text("删除后无法恢复", color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall)
                         }
-                    }
                 }
             }
         }
@@ -574,28 +600,20 @@ private fun ToggleField(
 ) {
     val palette = rememberSettingsPalette()
 
-    Box(modifier = Modifier.fillMaxWidth()) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(end = 72.dp),
-        ) {
+    Column(modifier = Modifier.fillMaxWidth()) {
+        Row(modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp), verticalAlignment = Alignment.CenterVertically) {
             Text(
                 text = title,
+                modifier = Modifier.weight(1f),
                 style = MaterialTheme.typography.titleSmall,
                 color = palette.title,
             )
-            Text(
-                text = subtitle,
-                style = MaterialTheme.typography.bodySmall,
-                color = palette.body,
-            )
-        }
+            SettingsHelpButton(title, subtitle)
         Switch(
             checked = checked,
             onCheckedChange = onCheckedChange,
-            modifier = Modifier.align(Alignment.CenterEnd),
         )
+        }
     }
 }
 
@@ -632,7 +650,7 @@ private fun SourceBookNameDropdown(
                 .fillMaxWidth()
                 .menuAnchor(),
             singleLine = true,
-            shape = RoundedCornerShape(16.dp),
+            shape = RoundedCornerShape(8.dp),
             colors = outlineColors,
             placeholder = { Text("留空则作为独立条目显示") },
             trailingIcon = {
@@ -684,7 +702,7 @@ private fun ConversationScopePicker(
             modifier = Modifier.fillMaxWidth(),
             singleLine = true,
             readOnly = true,
-            shape = RoundedCornerShape(16.dp),
+            shape = RoundedCornerShape(8.dp),
             colors = outlineColors,
             placeholder = { Text("暂无会话，先到会话管理中新建") },
         )
@@ -707,7 +725,7 @@ private fun ConversationScopePicker(
                 .menuAnchor(),
             singleLine = true,
             readOnly = true,
-            shape = RoundedCornerShape(16.dp),
+            shape = RoundedCornerShape(8.dp),
             colors = outlineColors,
             placeholder = { Text("请选择会话") },
             trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },

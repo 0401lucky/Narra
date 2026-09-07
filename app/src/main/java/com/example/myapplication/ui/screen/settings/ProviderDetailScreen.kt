@@ -8,9 +8,7 @@ import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.*
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
@@ -114,10 +112,10 @@ fun ProviderDetailScreen(
                 val modelCount = provider.resolvedModels().size
                 
                 Surface(
-                    shape = RoundedCornerShape(32.dp),
+                    shape = RoundedCornerShape(16.dp),
                     color = palette.surface,
                     border = BorderStroke(1.dp, palette.border.copy(alpha=0.3f)),
-                    shadowElevation = 8.dp,
+                    shadowElevation = 0.dp,
                     modifier = Modifier.padding(bottom = 8.dp)
                 ) {
                     Row(
@@ -128,7 +126,8 @@ fun ProviderDetailScreen(
                         // 左侧的类似于盒子的 Box：点击触发从上游获取模型
                         Box(
                             modifier = Modifier
-                                .clip(RoundedCornerShape(12.dp))
+                                .clip(RoundedCornerShape(8.dp))
+                                .sizeIn(minWidth = 48.dp, minHeight = 48.dp)
                                 .clickable(
                                     enabled = canLoadModels && !isFetching,
                                     onClick = { onLoadModels(provider.id) }
@@ -173,7 +172,7 @@ fun ProviderDetailScreen(
                         // 右侧的添加新模型按钮：点击进行手动添加
                         NarraButton(
                             onClick = { showManualAddDialog = true },
-                            shape = RoundedCornerShape(24.dp),
+                            shape = RoundedCornerShape(12.dp),
                             colors = ButtonDefaults.buttonColors(containerColor = palette.accentStrong, contentColor = palette.accentOnStrong),
                             contentPadding = PaddingValues(horizontal = 24.dp, vertical = 12.dp),
                             elevation = ButtonDefaults.buttonElevation(0.dp,0.dp,0.dp)

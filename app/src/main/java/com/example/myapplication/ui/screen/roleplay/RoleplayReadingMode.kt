@@ -134,10 +134,10 @@ fun RoleplayReadingMode(
             ImmersiveReadingGlassSurface(
                 backdropState = backdropState,
                 modifier = Modifier
-                    .fillMaxWidth(0.91f)
-                    .fillMaxHeight(0.965f)
+                    .fillMaxWidth()
+                    .fillMaxHeight()
                     .padding(vertical = 12.dp),
-                shape = RoundedCornerShape(30.dp),
+                shape = RoundedCornerShape(8.dp),
                 variant = ImmersiveReadingGlassVariant.PANEL,
             ) {
                 LazyColumn(
@@ -159,6 +159,7 @@ fun RoleplayReadingMode(
                             horizontalArrangement = Arrangement.SpaceBetween,
                         ) {
                             Column(
+                                modifier = Modifier.weight(1f),
                                 verticalArrangement = Arrangement.spacedBy(8.dp),
                             ) {
                                 Text(

@@ -1,28 +1,23 @@
 package com.example.myapplication.ui.screen.home
 
-import com.example.myapplication.ui.component.*
-
-import androidx.compose.animation.core.animateDpAsState
-import androidx.compose.animation.core.animateFloatAsState
-import androidx.compose.animation.core.tween
-import androidx.compose.foundation.interaction.MutableInteractionSource
-import androidx.compose.foundation.interaction.collectIsPressedAsState
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.offset
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.PhoneAndroid
-import androidx.compose.material.icons.filled.Settings
-import androidx.compose.material3.ButtonDefaults
+import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -32,25 +27,21 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.shadow
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.graphicsLayer
-import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
+import com.composables.icons.lucide.Lucide
+import com.composables.icons.lucide.Settings
+import com.composables.icons.lucide.Smartphone
 import com.example.myapplication.R
 import com.example.myapplication.model.AppSettings
+import com.example.myapplication.ui.component.NarraButton
+import com.example.myapplication.ui.component.NarraOutlinedButton
+import com.example.myapplication.ui.theme.NarraMinimumTouchTarget
+import com.example.myapplication.ui.theme.NarraUi
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -66,257 +57,176 @@ fun HomeScreen(
         ?: if (storedSettings.hasBaseCredentials()) "旧版连接兜底" else "还没有提供商"
     val modelLabel = activeProvider?.selectedModel?.takeIf { it.isNotBlank() }
         ?: storedSettings.selectedModel.ifBlank { "未选择模型" }
-    val connectionLabel = if (hasRequiredConfig) "已就绪" else "需要配置"
-
-    // Animation state for entry
-    var isVisible by remember { mutableStateOf(false) }
-    LaunchedEffect(Unit) {
-        isVisible = true
-    }
-
-    val slideAnim by animateDpAsState(
-        targetValue = if (isVisible) 0.dp else HomeEnterOffsetY,
-        animationSpec = tween(durationMillis = HomeEnterFadeDurationMillis),
-        label = "slide"
-    )
-    val alphaAnim by animateFloatAsState(
-        targetValue = if (isVisible) 1f else 0f,
-        animationSpec = tween(durationMillis = HomeEnterFadeDurationMillis),
-        label = "alpha"
-    )
 
     Scaffold(
+        modifier = Modifier.testTag("home_screen"),
         topBar = {
             TopAppBar(
                 title = { Text(stringResource(id = R.string.home_top_bar_title)) },
                 colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = Color.Transparent,
-                    scrolledContainerColor = MaterialTheme.colorScheme.surface
-                )
+                    containerColor = MaterialTheme.colorScheme.background,
+                ),
             )
         },
         containerColor = MaterialTheme.colorScheme.background,
     ) { innerPadding ->
+        Box(
+            modifier = Modifier.fillMaxSize().padding(innerPadding),
+            contentAlignment = Alignment.TopCenter,
+        ) {
             Column(
                 modifier = Modifier
+                    .widthIn(max = HomeContentMaxWidth)
                     .fillMaxSize()
-                    .padding(innerPadding)
-                    .padding(horizontal = 24.dp)
-                    .offset { IntOffset(0, slideAnim.roundToPx()) }
-                    .padding(bottom = 16.dp)
-                    .graphicsLayer(alpha = alphaAnim),
-                verticalArrangement = Arrangement.Center,
-                horizontalAlignment = Alignment.CenterHorizontally
+                    .testTag("home_content")
+                    .verticalScroll(rememberScrollState())
+                    .padding(horizontal = NarraUi.pageHorizontal, vertical = NarraUi.pageVertical),
+                verticalArrangement = Arrangement.spacedBy(24.dp),
             ) {
-            HomePhoneEntryCard(
-                assistantCount = assistantCount,
-                hasRequiredConfig = hasRequiredConfig,
-                providerLabel = providerLabel,
-                modelLabel = modelLabel,
-                connectionLabel = connectionLabel,
-                onOpenRoleplay = onOpenRoleplay,
-                onOpenSettings = onOpenSettings,
-            )
-
-            Spacer(modifier = Modifier.height(22.dp))
-
-            Text(
-                text = if (hasRequiredConfig) {
-                    stringResource(id = R.string.home_ready_subtitle)
-                } else {
-                    stringResource(id = R.string.home_missing_config_subtitle)
-                },
-                style = MaterialTheme.typography.bodyLarge,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                textAlign = TextAlign.Center,
-                modifier = Modifier.padding(horizontal = 16.dp)
-            )
-
-            Spacer(modifier = Modifier.height(28.dp))
-
-                AnimatedHoverButton(
-                    text = stringResource(id = R.string.home_open_settings),
-                    icon = Icons.Default.Settings,
+                Text(
+                    text = stringResource(
+                        id = if (hasRequiredConfig) {
+                            R.string.home_ready_subtitle
+                        } else {
+                            R.string.home_missing_config_subtitle
+                        },
+                    ),
+                    style = MaterialTheme.typography.bodyLarge,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                HomePhoneEntryCard(
+                    assistantCount = assistantCount,
+                    hasRequiredConfig = hasRequiredConfig,
+                    providerLabel = providerLabel,
+                    modelLabel = modelLabel,
+                    onOpenRoleplay = onOpenRoleplay,
+                    onOpenSettings = onOpenSettings,
+                )
+                NarraOutlinedButton(
                     onClick = onOpenSettings,
-                    enabled = true,
-                    isPrimary = false,
-                )
-
+                    modifier = Modifier.fillMaxWidth().heightIn(min = NarraMinimumTouchTarget),
+                ) {
+                    Icon(Lucide.Settings, contentDescription = null, modifier = Modifier.size(20.dp))
+                    Spacer(Modifier.width(NarraUi.compactGap))
+                    Text(stringResource(id = R.string.home_open_settings))
+                }
                 if (!hasRequiredConfig) {
-                    Spacer(modifier = Modifier.height(24.dp))
                     Text(
-                    text = stringResource(id = R.string.home_config_hint),
-                    style = MaterialTheme.typography.labelMedium,
-                    color = MaterialTheme.colorScheme.error
-                )
+                        text = stringResource(id = R.string.home_config_hint),
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
             }
         }
     }
 }
 
 @Composable
+@OptIn(ExperimentalLayoutApi::class)
 private fun HomePhoneEntryCard(
     assistantCount: Int,
     hasRequiredConfig: Boolean,
     providerLabel: String,
     modelLabel: String,
-    connectionLabel: String,
     onOpenRoleplay: () -> Unit,
     onOpenSettings: () -> Unit,
 ) {
     Surface(
-        modifier = Modifier
-            .fillMaxWidth()
-            .shadow(
-                HomePrimaryButtonShadowElevation,
-                androidx.compose.foundation.shape.RoundedCornerShape(HomePrimaryCardCornerRadius),
-                ambientColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.14f),
-            ),
-        shape = androidx.compose.foundation.shape.RoundedCornerShape(HomePrimaryCardCornerRadius),
-        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.78f),
-        tonalElevation = 0.dp,
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(NarraUi.cardRadius),
+        color = MaterialTheme.colorScheme.surfaceContainerLow,
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
     ) {
         Column(
-            modifier = Modifier.padding(22.dp),
-            verticalArrangement = Arrangement.spacedBy(18.dp),
+            modifier = Modifier.padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(24.dp),
         ) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(14.dp),
+                horizontalArrangement = Arrangement.spacedBy(16.dp),
             ) {
                 Surface(
-                    modifier = Modifier.size(58.dp),
-                    shape = androidx.compose.foundation.shape.RoundedCornerShape(18.dp),
-                    color = MaterialTheme.colorScheme.primary,
-                    contentColor = MaterialTheme.colorScheme.onPrimary,
+                    modifier = Modifier.size(48.dp),
+                    shape = RoundedCornerShape(NarraUi.smallRadius),
+                    color = MaterialTheme.colorScheme.primaryContainer,
+                    contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
                 ) {
                     Box(contentAlignment = Alignment.Center) {
-                        Icon(Icons.Default.PhoneAndroid, contentDescription = null, modifier = Modifier.size(30.dp))
+                        Icon(Lucide.Smartphone, contentDescription = null, modifier = Modifier.size(24.dp))
                     }
                 }
-                Column(modifier = Modifier.weight(1f)) {
+                Column(
+                    modifier = Modifier.weight(1f),
+                    verticalArrangement = Arrangement.spacedBy(NarraUi.compactGap),
+                ) {
                     Text(
                         text = stringResource(id = R.string.home_private_phone_title),
-                        style = MaterialTheme.typography.headlineSmall,
+                        style = MaterialTheme.typography.titleLarge,
                         color = MaterialTheme.colorScheme.onSurface,
                         fontWeight = FontWeight.SemiBold,
                     )
-                    Text(
-                        text = "$assistantCount 位角色 · $connectionLabel",
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
-                    )
+                    FlowRow(
+                        horizontalArrangement = Arrangement.spacedBy(NarraUi.compactGap),
+                        verticalArrangement = Arrangement.spacedBy(NarraUi.compactGap),
+                    ) {
+                        Text(
+                            text = "$assistantCount 位角色",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            maxLines = 1,
+                        )
+                        Text(
+                            text = if (hasRequiredConfig) "已就绪" else "需要配置",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = if (hasRequiredConfig) {
+                                MaterialTheme.colorScheme.primary
+                            } else {
+                                MaterialTheme.colorScheme.onSurfaceVariant
+                            },
+                            maxLines = 1,
+                        )
+                    }
                 }
             }
-
-            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                HomeStatusPill("提供商", providerLabel)
-                HomeStatusPill("模型", modelLabel)
-            }
-
-            AnimatedHoverButton(
-                text = if (hasRequiredConfig) stringResource(id = R.string.home_open_roleplay) else "配置提供商",
-                icon = if (hasRequiredConfig) Icons.Default.PhoneAndroid else Icons.Default.Settings,
+            HomeConnectionField(label = "提供商", value = providerLabel)
+            HomeConnectionField(label = "模型", value = modelLabel)
+            NarraButton(
                 onClick = if (hasRequiredConfig) onOpenRoleplay else onOpenSettings,
-                enabled = true,
-                isPrimary = true,
-            )
+                modifier = Modifier.fillMaxWidth().heightIn(min = NarraMinimumTouchTarget),
+                elevation = null,
+            ) {
+                Icon(
+                    imageVector = if (hasRequiredConfig) Lucide.Smartphone else Lucide.Settings,
+                    contentDescription = null,
+                    modifier = Modifier.size(20.dp),
+                )
+                Spacer(Modifier.width(NarraUi.compactGap))
+                Text(
+                    text = if (hasRequiredConfig) {
+                        stringResource(id = R.string.home_open_roleplay)
+                    } else {
+                        "配置提供商"
+                    },
+                )
+            }
         }
     }
 }
 
 @Composable
-private fun HomeStatusPill(label: String, value: String) {
-    Surface(
-        modifier = Modifier
-            .fillMaxWidth(),
-        shape = androidx.compose.foundation.shape.RoundedCornerShape(14.dp),
-        color = MaterialTheme.colorScheme.surface.copy(alpha = 0.62f),
-    ) {
-        Row(
-            modifier = Modifier.padding(horizontal = 12.dp, vertical = 9.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(10.dp),
-        ) {
-            Text(
-                text = label,
-                style = MaterialTheme.typography.labelMedium,
-                color = MaterialTheme.colorScheme.primary,
-                modifier = Modifier.width(48.dp),
-            )
-            Text(
-                text = value,
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurface,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-                modifier = Modifier.weight(1f),
-            )
-        }
-    }
-}
-
-@Composable
-fun AnimatedHoverButton(
-    text: String,
-    icon: ImageVector,
-    onClick: () -> Unit,
-    enabled: Boolean,
-    isPrimary: Boolean
-) {
-    val interactionSource = remember { MutableInteractionSource() }
-    val isPressed by interactionSource.collectIsPressedAsState()
-
-    val shadowElevation by animateDpAsState(
-        targetValue = if (isPressed) {
-            HomePrimaryButtonPressedShadowElevation
-        } else {
-            HomePrimaryButtonShadowElevation
-        },
-        animationSpec = tween(durationMillis = HomeEnterFadeDurationMillis / 4),
-        label = "button_shadow"
-    )
-
-    if (isPrimary) {
-        NarraButton(
-            onClick = onClick,
-            enabled = enabled,
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(HomePrimaryButtonHeight)
-                .shadow(
-                    elevation = shadowElevation,
-                    shape = androidx.compose.foundation.shape.RoundedCornerShape(HomePrimaryButtonCornerRadius),
-                    ambientColor = MaterialTheme.colorScheme.primary,
-                    spotColor = MaterialTheme.colorScheme.primary,
-                ),
-            shape = androidx.compose.foundation.shape.RoundedCornerShape(HomePrimaryButtonCornerRadius),
-            colors = ButtonDefaults.buttonColors(
-                containerColor = MaterialTheme.colorScheme.primary,
-                contentColor = MaterialTheme.colorScheme.onPrimary
-            ),
-            interactionSource = interactionSource
-        ) {
-            Icon(icon, contentDescription = null, modifier = Modifier.size(20.dp))
-            Spacer(modifier = Modifier.width(8.dp))
-            Text(text, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
-        }
-    } else {
-        NarraOutlinedButton(
-            onClick = onClick,
-            enabled = enabled,
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(HomePrimaryButtonHeight),
-            shape = androidx.compose.foundation.shape.RoundedCornerShape(HomePrimaryButtonCornerRadius),
-            interactionSource = interactionSource
-        ) {
-            Icon(icon, contentDescription = null, modifier = Modifier.size(20.dp))
-            Spacer(modifier = Modifier.width(8.dp))
-            Text(text, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
-        }
+private fun HomeConnectionField(label: String, value: String) {
+    Column(verticalArrangement = Arrangement.spacedBy(NarraUi.compactGap)) {
+        Text(
+            text = label,
+            style = MaterialTheme.typography.labelMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+        Text(
+            text = value,
+            style = MaterialTheme.typography.bodyLarge,
+            color = MaterialTheme.colorScheme.onSurface,
+        )
     }
 }

@@ -64,7 +64,7 @@ fun ProviderTemplateDialog(
                     .fillMaxWidth()
                     .heightIn(max = 620.dp)
                     .navigationBarsPadding(),
-                shape = RoundedCornerShape(28.dp),
+                shape = RoundedCornerShape(16.dp),
                 color = MaterialTheme.colorScheme.surface,
                 contentColor = MaterialTheme.colorScheme.onSurface,
                 tonalElevation = 4.dp,
@@ -124,7 +124,7 @@ private fun TemplateCard(
         modifier = Modifier
             .fillMaxWidth()
             .bounceClick(interactionSource = interactionSource),
-        shape = RoundedCornerShape(18.dp),
+        shape = RoundedCornerShape(8.dp),
         interactionSource = interactionSource,
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.45f),

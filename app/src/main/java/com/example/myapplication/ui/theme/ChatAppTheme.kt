@@ -3,6 +3,7 @@ package com.example.myapplication.ui.theme
 import android.app.Activity
 import android.os.Build
 import androidx.compose.foundation.isSystemInDarkTheme
+import androidx.compose.material3.ColorScheme
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.dynamicDarkColorScheme
@@ -83,17 +84,10 @@ fun ChatAppTheme(
 ) {
     val context = LocalContext.current
     val view = LocalView.current
-    val colorScheme = when {
-        dynamicColor && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S -> {
-            if (darkTheme) dynamicDarkColorScheme(context) else dynamicLightColorScheme(context)
-        }
-        else -> {
-            when (appColorTheme) {
-                AppColorTheme.MATCHA -> if (darkTheme) MatchaDarkColors else MatchaLightColors
-                AppColorTheme.VANILLA -> if (darkTheme) VanillaDarkColors else VanillaLightColors
-                AppColorTheme.OCEAN -> if (darkTheme) OceanDarkColors else OceanLightColors
-            }
-        }
+    val dynamicColorScheme = if (dynamicColor && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+        if (darkTheme) dynamicDarkColorScheme(context) else dynamicLightColorScheme(context)
+    } else {
+        null
     }
 
     val activity = view.context as? Activity
@@ -107,9 +101,45 @@ fun ChatAppTheme(
     }
 
     MaterialTheme(
-        colorScheme = colorScheme,
+        colorScheme = resolveAppColorScheme(appColorTheme, darkTheme, dynamicColorScheme),
         typography = Typography,
         content = content,
+    )
+}
+
+/** Compose 与系统原生悬浮窗共用同一套主题映射。 */
+fun resolveAppColorScheme(
+    appColorTheme: AppColorTheme,
+    darkTheme: Boolean,
+    dynamicColorScheme: ColorScheme? = null,
+): ColorScheme {
+    val colorScheme = dynamicColorScheme ?: when (appColorTheme) {
+        AppColorTheme.MATCHA -> if (darkTheme) MatchaDarkColors else MatchaLightColors
+        AppColorTheme.VANILLA -> if (darkTheme) VanillaDarkColors else VanillaLightColors
+        AppColorTheme.OCEAN -> if (darkTheme) OceanDarkColors else OceanLightColors
+    }
+    return colorScheme.copy(
+        primary = if (darkTheme || dynamicColorScheme != null) colorScheme.primary else when (appColorTheme) {
+            AppColorTheme.MATCHA -> Color(0xFF326B58)
+            AppColorTheme.VANILLA -> Color(0xFF79552D)
+            AppColorTheme.OCEAN -> Color(0xFF326692)
+        },
+        onPrimary = if (darkTheme) colorScheme.onPrimary else Color.White,
+        background = if (darkTheme) Color(0xFF141617) else Color(0xFFF5F6F7),
+        onBackground = if (darkTheme) Color(0xFFE6E8E9) else Color(0xFF212628),
+        surface = if (darkTheme) Color(0xFF191C1D) else Color.White,
+        onSurface = if (darkTheme) Color(0xFFE6E8E9) else Color(0xFF212628),
+        surfaceVariant = if (darkTheme) Color(0xFF303638) else Color(0xFFE9EDEF),
+        onSurfaceVariant = if (darkTheme) Color(0xFFB9C1C4) else Color(0xFF566267),
+        surfaceContainerLowest = if (darkTheme) Color(0xFF101213) else Color.White,
+        surfaceContainerLow = if (darkTheme) Color(0xFF1D2123) else Color(0xFFF9FAFB),
+        surfaceContainer = if (darkTheme) Color(0xFF222729) else Color(0xFFF0F3F4),
+        surfaceContainerHigh = if (darkTheme) Color(0xFF2A3032) else Color(0xFFE9EDEF),
+        surfaceContainerHighest = if (darkTheme) Color(0xFF343B3D) else Color(0xFFE2E7E9),
+        outline = if (darkTheme) Color(0xFF899498) else Color(0xFF77858B),
+        outlineVariant = if (darkTheme) Color(0xFF3B4448) else Color(0xFFDDE3E6),
+        error = if (darkTheme) Color(0xFFFFB4AB) else Color(0xFFB3261E),
+        onError = if (darkTheme) Color(0xFF690005) else Color.White,
     )
 }
 

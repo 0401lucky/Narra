@@ -138,6 +138,7 @@ fun AssistantExtensionsScreen(
             item {
                 AssistantSubsectionTitle(
                     title = "世界书联动",
+                    subtitle = "条数上限决定每次最多引用多少条世界书内容。扫描深度（scanDepth）表示参与关键词匹配的最近消息条数，默认 2 条。",
                 )
             }
 
@@ -153,20 +154,20 @@ fun AssistantExtensionsScreen(
                             label = { Text("世界书条数上限") },
                             modifier = Modifier.fillMaxWidth(),
                             singleLine = true,
-                            shape = RoundedCornerShape(18.dp),
+                            shape = RoundedCornerShape(8.dp),
                             colors = outlineColors,
                             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                         )
                         OutlinedTextField(
                             value = worldBookScanDepthText,
                             onValueChange = { worldBookScanDepthText = it.filter(Char::isDigit) },
-                            label = { Text("世界书扫描深度（scanDepth）") },
+                            label = { Text("扫描消息条数") },
                             modifier = Modifier.fillMaxWidth(),
                             singleLine = true,
-                            shape = RoundedCornerShape(18.dp),
+                            shape = RoundedCornerShape(8.dp),
                             colors = outlineColors,
                             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                            placeholder = { Text("默认 2，表示拼接最近 N 条消息参与关键词匹配") },
+                            placeholder = { Text("2") },
                         )
                     }
                 }
@@ -253,9 +254,9 @@ fun AssistantExtensionsScreen(
                         modifier = Modifier.padding(horizontal = 18.dp, vertical = 16.dp),
                         verticalArrangement = Arrangement.spacedBy(12.dp),
                     ) {
-                        Text(
-                            text = "按书挂载",
-                            style = MaterialTheme.typography.titleSmall,
+                        SettingsSectionHeader(
+                            title = "按书挂载",
+                            description = "选择整本世界书后，这本世界书下的全部可挂载条目都会对当前角色生效。",
                         )
                         if (attachableBooks.isEmpty()) {
                             Text(
@@ -291,11 +292,6 @@ fun AssistantExtensionsScreen(
                                 }
                             }
                         }
-                        Text(
-                            text = "选择整本世界书后，这本世界书下的全部可挂载条目都会对当前角色生效。",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = palette.body,
-                        )
                     }
                 }
             }
@@ -306,9 +302,9 @@ fun AssistantExtensionsScreen(
                         modifier = Modifier.padding(horizontal = 18.dp, vertical = 16.dp),
                         verticalArrangement = Arrangement.spacedBy(12.dp),
                     ) {
-                        Text(
-                            text = "高级条目控制",
-                            style = MaterialTheme.typography.titleSmall,
+                        SettingsSectionHeader(
+                            title = "单独挂载条目",
+                            description = "可以从未整本挂载的世界书中单独选择条目。原有逐条挂载配置仍会保留；整本挂载后不需要重复勾选其中的条目。",
                         )
                         if (advancedAttachableEntries.isEmpty()) {
                             Text(
@@ -355,11 +351,6 @@ fun AssistantExtensionsScreen(
                                 }
                             }
                         }
-                        Text(
-                            text = "这里保留逐条挂载，用于兼容旧配置和少量精细控制场景；主入口仍建议按书挂载。",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = palette.body,
-                        )
                     }
                 }
             }

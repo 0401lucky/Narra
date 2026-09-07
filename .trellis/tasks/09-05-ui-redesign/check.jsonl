@@ -1,0 +1,4 @@
+{"file":".trellis/spec/guides/code-reuse-thinking-guide.md","reason":"检查共享视觉组件是否重复实现及是否遵循现有模式。"}
+{"file":".trellis/spec/guides/cross-layer-thinking-guide.md","reason":"检查 UI 重构是否意外改变导航、状态或持久化契约。"}
+{"file":".trellis/spec/backend/ui-state-guidelines.md","reason":"检查角色扮演入口、状态、回调及旧 Chat 基准测试导航隔离。"}
+{"file":".trellis/spec/backend/quality-guidelines.md","reason":"验证构建、设备交互、主题兼容和测试证据。"}

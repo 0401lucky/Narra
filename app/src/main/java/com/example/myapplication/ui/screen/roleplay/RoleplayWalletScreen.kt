@@ -4,6 +4,8 @@ package com.example.myapplication.ui.screen.roleplay
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -23,21 +25,19 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.AccountBalanceWallet
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material.icons.filled.CardGiftcard
 import androidx.compose.material.icons.filled.Image
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.ShoppingCart
+import androidx.compose.material.icons.outlined.Info
 import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.AssistChip
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.MaterialTheme
@@ -77,9 +77,11 @@ import com.example.myapplication.model.WalletLedgerEntry
 import com.example.myapplication.model.formatMoneyLabel
 import com.example.myapplication.ui.component.AppSnackbarHost
 import com.example.myapplication.ui.component.NarraButton
+import com.example.myapplication.ui.component.NarraIconButton
 import com.example.myapplication.ui.component.NarraOutlinedButton
 import com.example.myapplication.ui.component.NarraTextButton
 import com.example.myapplication.viewmodel.RoleplayWalletUiState
+import com.example.myapplication.ui.theme.NarraUi
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -217,8 +219,7 @@ private fun RoleplayWalletTopBar(
 ) {
     Surface(
         modifier = Modifier.statusBarsPadding(),
-        tonalElevation = 2.dp,
-        shadowElevation = 1.dp,
+        color = MaterialTheme.colorScheme.background,
     ) {
         Row(
             modifier = Modifier
@@ -227,10 +228,9 @@ private fun RoleplayWalletTopBar(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(8.dp),
         ) {
-            IconButton(onClick = onNavigateBack) {
+            NarraIconButton(onClick = onNavigateBack) {
                 Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "返回")
             }
-            Icon(Icons.Default.AccountBalanceWallet, contentDescription = null)
             Column(modifier = Modifier.weight(1f)) {
                 Text(
                     text = "钱包与商店",
@@ -260,16 +260,16 @@ private fun WalletTab(
         verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
         item {
-            Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                 AccountCard(
                     account = state.userAccount,
                     fallbackName = "我",
-                    modifier = Modifier.weight(1f),
+                    modifier = Modifier.fillMaxWidth(),
                 )
                 AccountCard(
                     account = state.characterAccount,
                     fallbackName = "角色",
-                    modifier = Modifier.weight(1f),
+                    modifier = Modifier.fillMaxWidth(),
                 )
             }
         }
@@ -280,10 +280,9 @@ private fun WalletTab(
             }
         }
         item {
-            Text(
-                text = "最近可用道具会进入角色上下文，购买、赠送和使用都会影响后续剧情反应。",
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            WalletHelpRow(
+                title = "钱包与道具",
+                message = "最近可用道具会进入角色上下文，购买、赠送和使用都会影响后续剧情反应。",
             )
         }
     }
@@ -326,6 +325,40 @@ private fun AccountCard(
 }
 
 @Composable
+private fun WalletHelpRow(
+    title: String,
+    message: String,
+) {
+    var expanded by rememberSaveable(title, message) { mutableStateOf(false) }
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+    ) {
+        Text(
+            text = title,
+            modifier = Modifier.weight(1f),
+            style = MaterialTheme.typography.labelLarge,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+        NarraIconButton(onClick = { expanded = true }) {
+            Icon(Icons.Outlined.Info, contentDescription = "$title 说明")
+        }
+    }
+    if (expanded) {
+        AlertDialog(
+            onDismissRequest = { expanded = false },
+            shape = RoundedCornerShape(NarraUi.cardRadius),
+            title = { Text(title) },
+            text = { Text(message, modifier = Modifier.verticalScroll(rememberScrollState())) },
+            confirmButton = {
+                NarraTextButton(onClick = { expanded = false }) { Text("知道了") }
+            },
+        )
+    }
+}
+
+@Composable
 private fun ShopTab(
     items: List<ShopItem>,
     userAvailableCents: Long,
@@ -350,8 +383,9 @@ private fun ShopTab(
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 Text(
-                    text = "我的余额 ${userAvailableCents.formatMoneyLabel()}",
-                    style = MaterialTheme.typography.titleMedium,
+                    text = "余额 ${userAvailableCents.formatMoneyLabel()}",
+                    modifier = Modifier.weight(1f).padding(end = 12.dp),
+                    style = MaterialTheme.typography.bodyLarge,
                     fontWeight = FontWeight.Bold,
                 )
                 Text(
@@ -381,10 +415,11 @@ private fun ShopTab(
                     } else {
                         Icon(Icons.Default.AutoAwesome, contentDescription = null, modifier = Modifier.size(18.dp))
                     }
-                    Text(if (isGeneratingShop) "正在生成商品" else "生成今日商店（${effectiveStyle.displayName}）")
+                    Spacer(Modifier.size(8.dp))
+                    Text(if (isGeneratingShop) "正在生成商品" else "生成今日商店")
                 }
-                IconButton(onClick = onOpenStyleDialog, enabled = !isGeneratingShop) {
-                    Icon(Icons.Default.Image, contentDescription = "选择图片风格")
+                NarraIconButton(onClick = onOpenStyleDialog, enabled = !isGeneratingShop) {
+                    Icon(Icons.Default.Image, contentDescription = "图片风格：${effectiveStyle.displayName}")
                 }
             }
         }
@@ -407,11 +442,6 @@ private fun ShopTab(
                         text = "货架还空着",
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.SemiBold,
-                    )
-                    Text(
-                        text = "点上方「生成今日商店」，让商品长在你和角色的故事里。",
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                 }
             }
@@ -619,10 +649,9 @@ private fun InventoryItemCard(
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                     if (item.effectPrompt.isNotBlank()) {
-                        Text(
-                            item.effectPrompt,
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.primary,
+                        WalletHelpRow(
+                            title = "道具效果",
+                            message = item.effectPrompt,
                         )
                     }
                 }
@@ -771,24 +800,29 @@ private fun StyleOption(
 
 @Composable
 private fun LabelChip(text: String) {
-    AssistChip(
-        onClick = {},
-        label = { Text(text, maxLines = 1, overflow = TextOverflow.Ellipsis) },
-    )
+    Surface(
+        color = MaterialTheme.colorScheme.surfaceContainerHighest,
+        contentColor = MaterialTheme.colorScheme.onSurfaceVariant,
+        shape = RoundedCornerShape(NarraUi.smallRadius),
+    ) {
+        Text(
+            text = text,
+            modifier = Modifier.padding(horizontal = 8.dp, vertical = 5.dp),
+            style = MaterialTheme.typography.labelSmall,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+        )
+    }
 }
 
 @Composable
 private fun EmptyHint(text: String) {
-    Surface(
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(8.dp),
-        color = MaterialTheme.colorScheme.surfaceContainer,
-    ) {
+    Box(modifier = Modifier.fillMaxWidth().padding(vertical = 48.dp), contentAlignment = Alignment.Center) {
         Text(
             text = text,
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.padding(18.dp),
+            modifier = Modifier.padding(horizontal = NarraUi.pageHorizontal),
         )
     }
 }
@@ -805,7 +839,10 @@ private fun ShopItemDetailSheet(
     onPurchase: () -> Unit,
     onDismiss: () -> Unit,
 ) {
-    ModalBottomSheet(onDismissRequest = onDismiss) {
+    ModalBottomSheet(
+        onDismissRequest = onDismiss,
+        shape = RoundedCornerShape(topStart = NarraUi.cardRadius, topEnd = NarraUi.cardRadius),
+    ) {
         Column(
             modifier = Modifier
                 .fillMaxWidth()
@@ -821,7 +858,7 @@ private fun ShopItemDetailSheet(
                     modifier = Modifier
                         .fillMaxWidth()
                         .aspectRatio(1.6f)
-                        .clip(RoundedCornerShape(12.dp)),
+                        .clip(RoundedCornerShape(NarraUi.cardRadius)),
                 )
             }
             Text(
@@ -875,9 +912,9 @@ private fun rarityVisual(rarity: String): RarityVisual {
     val normalized = rarity.trim()
     return when {
         normalized.contains("珍") || normalized.contains("史诗") || normalized.contains("传说") ->
-            RarityVisual(container = Color(0xFFF6E3B4), content = Color(0xFF6B4E00))
+            RarityVisual(container = scheme.tertiaryContainer, content = scheme.onTertiaryContainer)
         normalized.contains("稀") || normalized.contains("罕") ->
-            RarityVisual(container = Color(0xFFCDE3F5), content = Color(0xFF0B4A6F))
+            RarityVisual(container = scheme.secondaryContainer, content = scheme.onSecondaryContainer)
         else -> RarityVisual(container = scheme.surfaceVariant, content = scheme.onSurfaceVariant)
     }
 }

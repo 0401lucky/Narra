@@ -3,6 +3,8 @@
 package com.example.myapplication.ui.screen.roleplay
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -11,6 +13,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -22,13 +25,20 @@ import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.KeyboardVoice
+import androidx.compose.material.icons.outlined.Info
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Icon
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.runtime.saveable.Saver
 import androidx.compose.runtime.saveable.listSaver
 import androidx.compose.ui.Alignment
@@ -41,7 +51,9 @@ import androidx.compose.ui.unit.dp
 import com.example.myapplication.model.VoiceMessageDraft
 import com.example.myapplication.model.resolveVoiceMessageDurationSeconds
 import com.example.myapplication.ui.component.NarraButton
+import com.example.myapplication.ui.component.NarraIconButton
 import com.example.myapplication.ui.component.NarraTextButton
+import com.example.myapplication.ui.theme.NarraUi
 import kotlin.math.abs
 
 val VoiceMessageDraftSaver: Saver<VoiceMessageDraft, Any> = listSaver(
@@ -68,7 +80,8 @@ internal fun VoiceMessageEditorSheet(
     onConfirm: () -> Unit,
 ) {
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
-    val accentColor = Color(0xFF5B91D7)
+    val accentColor = MaterialTheme.colorScheme.primary
+    var showHelp by rememberSaveable { mutableStateOf(false) }
     val resolvedDuration = resolveVoiceMessageDurationSeconds(
         content = draft.content,
         preferredDurationSeconds = draft.durationSeconds,
@@ -77,65 +90,29 @@ internal fun VoiceMessageEditorSheet(
     ModalBottomSheet(
         onDismissRequest = onDismissRequest,
         sheetState = sheetState,
+        shape = RoundedCornerShape(topStart = NarraUi.cardRadius, topEnd = NarraUi.cardRadius),
     ) {
         LazyColumn(
             modifier = Modifier
                 .fillMaxWidth()
+                .imePadding()
                 .navigationBarsPadding(),
             contentPadding = PaddingValues(horizontal = 20.dp, vertical = 8.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp),
         ) {
             item {
-                Text(
-                    text = "发送语音",
-                    style = MaterialTheme.typography.titleLarge,
-                    fontWeight = FontWeight.SemiBold,
-                )
-            }
-
-            item {
-                Surface(
+                Row(
                     modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(26.dp),
-                    color = Color(0xFFF4F8FF),
+                    verticalAlignment = Alignment.CenterVertically,
                 ) {
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(horizontal = 18.dp, vertical = 16.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(12.dp),
-                    ) {
-                        Box(
-                            modifier = Modifier
-                                .size(44.dp)
-                                .background(
-                                    color = accentColor,
-                                    shape = CircleShape,
-                                ),
-                            contentAlignment = Alignment.Center,
-                        ) {
-                            androidx.compose.material3.Icon(
-                                imageVector = Icons.Default.KeyboardVoice,
-                                contentDescription = null,
-                                tint = Color.White,
-                            )
-                        }
-                        Column(
-                            modifier = Modifier.weight(1f),
-                            verticalArrangement = Arrangement.spacedBy(2.dp),
-                        ) {
-                            Text(
-                                text = "把一句话发成语音条",
-                                style = MaterialTheme.typography.titleMedium,
-                                fontWeight = FontWeight.SemiBold,
-                            )
-                            Text(
-                                text = "先走协议语音，留空秒数时会自动估算。",
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            )
-                        }
+                    Text(
+                        text = "发送语音",
+                        modifier = Modifier.weight(1f),
+                        style = MaterialTheme.typography.titleLarge,
+                        fontWeight = FontWeight.SemiBold,
+                    )
+                    NarraIconButton(onClick = { showHelp = true }) {
+                        Icon(Icons.Outlined.Info, contentDescription = "语音消息说明")
                     }
                 }
             }
@@ -143,14 +120,12 @@ internal fun VoiceMessageEditorSheet(
             item {
                 Surface(
                     modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(30.dp),
-                    color = Color.White,
-                    tonalElevation = 2.dp,
+                    color = Color.Transparent,
                 ) {
                     Column(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(horizontal = 20.dp, vertical = 18.dp),
+                            .padding(vertical = 4.dp),
                         verticalArrangement = Arrangement.spacedBy(16.dp),
                     ) {
                         VoiceSheetField(
@@ -166,9 +141,9 @@ internal fun VoiceMessageEditorSheet(
                             },
                         )
                         VoiceSheetField(
-                            label = "语音时长（秒，可选）",
+                            label = "时长（秒）",
                             value = draft.durationSeconds?.toString().orEmpty(),
-                            placeholder = "留空自动估算，范围 1-60",
+                            placeholder = "自动估算",
                             accentColor = accentColor,
                             keyboardType = KeyboardType.Number,
                             onValueChange = { nextValue ->
@@ -187,14 +162,12 @@ internal fun VoiceMessageEditorSheet(
             item {
                 Surface(
                     modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(26.dp),
-                    color = Color.White,
-                    tonalElevation = 1.dp,
+                    color = Color.Transparent,
                 ) {
                     Column(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(horizontal = 18.dp, vertical = 16.dp),
+                            .padding(vertical = 4.dp),
                         verticalArrangement = Arrangement.spacedBy(12.dp),
                     ) {
                         Text(
@@ -203,7 +176,7 @@ internal fun VoiceMessageEditorSheet(
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
                         VoicePreviewCard(
-                            transcript = draft.content.trim().ifBlank { "语音内容会显示在复制和协议里" },
+                            transcript = draft.content.trim().ifBlank { "" },
                             durationSeconds = resolvedDuration,
                             accentColor = accentColor,
                         )
@@ -216,10 +189,10 @@ internal fun VoiceMessageEditorSheet(
                     onClick = onConfirm,
                     modifier = Modifier.fillMaxWidth(),
                     enabled = !isSending && draft.content.trim().isNotBlank(),
-                    shape = RoundedCornerShape(999.dp),
+                    shape = RoundedCornerShape(NarraUi.smallRadius),
                     colors = ButtonDefaults.buttonColors(
                         containerColor = accentColor,
-                        contentColor = Color.White,
+                        contentColor = MaterialTheme.colorScheme.onPrimary,
                         disabledContainerColor = MaterialTheme.colorScheme.surfaceVariant,
                     ),
                     contentPadding = PaddingValues(vertical = 15.dp),
@@ -242,6 +215,22 @@ internal fun VoiceMessageEditorSheet(
             }
         }
     }
+    if (showHelp) {
+        AlertDialog(
+            onDismissRequest = { showHelp = false },
+            shape = RoundedCornerShape(NarraUi.cardRadius),
+            title = { Text("语音消息说明") },
+            text = {
+                Text(
+                    text = "输入的文字会作为语音消息内容发送，不会录制麦克风声音。时长可填 1 至 60 秒，留空时按内容自动估算。文字内容仍可复制，也会发送给角色。",
+                    modifier = Modifier.verticalScroll(rememberScrollState()),
+                )
+            },
+            confirmButton = {
+                NarraTextButton(onClick = { showHelp = false }) { Text("知道了") }
+            },
+        )
+    }
 }
 
 @Composable
@@ -262,8 +251,8 @@ private fun VoiceSheetField(
         )
         Surface(
             modifier = Modifier.fillMaxWidth(),
-            shape = RoundedCornerShape(22.dp),
-            color = Color(0xFFF8FAFC),
+            shape = RoundedCornerShape(NarraUi.smallRadius),
+            color = MaterialTheme.colorScheme.surfaceContainer,
         ) {
             BasicTextField(
                 value = value,
@@ -272,7 +261,7 @@ private fun VoiceSheetField(
                     .fillMaxWidth()
                     .padding(horizontal = 16.dp, vertical = 14.dp),
                 minLines = minLines,
-                textStyle = MaterialTheme.typography.titleMedium.copy(
+                textStyle = MaterialTheme.typography.bodyLarge.copy(
                     color = MaterialTheme.colorScheme.onSurface,
                 ),
                 cursorBrush = SolidColor(accentColor),
@@ -282,8 +271,8 @@ private fun VoiceSheetField(
                         if (value.isBlank()) {
                             Text(
                                 text = placeholder,
-                                style = MaterialTheme.typography.titleMedium,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.48f),
+                                style = MaterialTheme.typography.bodyLarge,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
                             )
                         }
                         innerTextField()
@@ -304,7 +293,7 @@ private fun VoicePreviewCard(
     Surface(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(22.dp),
-        color = Color(0xFFF5F8FF),
+        color = MaterialTheme.colorScheme.primaryContainer,
     ) {
         Column(
             modifier = Modifier
@@ -328,7 +317,7 @@ private fun VoicePreviewCard(
                     androidx.compose.material3.Icon(
                         imageVector = Icons.Default.KeyboardVoice,
                         contentDescription = null,
-                        tint = Color.White,
+                        tint = MaterialTheme.colorScheme.onPrimary,
                     )
                 }
                 Row(
@@ -355,11 +344,13 @@ private fun VoicePreviewCard(
                     color = MaterialTheme.colorScheme.onSurface,
                 )
             }
-            Text(
-                text = transcript,
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
+            if (transcript.isNotBlank()) {
+                Text(
+                    text = transcript,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onPrimaryContainer,
+                )
+            }
         }
     }
 }

@@ -5,13 +5,22 @@ import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
-import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.SideEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.rememberUpdatedState
+import androidx.compose.runtime.remember
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.composed
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.platform.LocalView
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.WindowInsetsControllerCompat
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
+import androidx.lifecycle.compose.LocalLifecycleOwner
 import com.example.myapplication.model.RoleplayImmersiveMode
 import com.example.myapplication.ui.component.roleplay.ImmersiveBackdropState
 import com.example.myapplication.ui.component.roleplay.calculateBottomRegionLuminance
@@ -29,52 +38,92 @@ import com.example.myapplication.ui.component.roleplay.calculateTopRegionLuminan
 internal fun ApplyRoleplaySystemBars(
     backdropState: ImmersiveBackdropState,
     immersiveMode: RoleplayImmersiveMode,
+    surfaceColor: Color? = null,
+) {
+    val topLuminance = remember(backdropState.imageBitmap, surfaceColor) {
+        surfaceColor?.luminance() ?: calculateTopRegionLuminance(backdropState.imageBitmap)
+    }
+    val bottomLuminance = remember(backdropState.imageBitmap, surfaceColor) {
+        surfaceColor?.luminance() ?: calculateBottomRegionLuminance(backdropState.imageBitmap)
+    }
+    ApplyRoleplayWindowBars(topLuminance > 0.5f, bottomLuminance > 0.5f, immersiveMode)
+}
+
+@Composable
+internal fun ApplyRoleplaySurfaceSystemBars(
+    surfaceColor: Color = MaterialTheme.colorScheme.background,
+    immersiveMode: RoleplayImmersiveMode,
+) {
+    val lightIconsBackground = surfaceColor.luminance() > 0.5f
+    ApplyRoleplayWindowBars(lightIconsBackground, lightIconsBackground, immersiveMode)
+}
+
+@Composable
+private fun ApplyRoleplayWindowBars(
+    lightStatusBar: Boolean,
+    lightNavigationBar: Boolean,
+    immersiveMode: RoleplayImmersiveMode,
 ) {
     val view = LocalView.current
+    val lifecycleOwner = LocalLifecycleOwner.current
+    val themeSurface by rememberUpdatedState(MaterialTheme.colorScheme.background)
+    val currentLightStatus by rememberUpdatedState(lightStatusBar)
+    val currentLightNavigation by rememberUpdatedState(lightNavigationBar)
+    val currentMode by rememberUpdatedState(immersiveMode)
 
-    // 根据背景图顶部/底部区域亮度，自动切换系统栏图标深浅色
-    LaunchedEffect(backdropState.imageBitmap) {
-        val window = (view.context as? Activity)?.window ?: return@LaunchedEffect
+    // 导航过渡会同时组合两页，只有恢复到前台的目的地可以设置窗口。
+    SideEffect {
+        val window = (view.context as? Activity)?.window ?: return@SideEffect
+        if (!lifecycleOwner.lifecycle.currentState.isAtLeast(Lifecycle.State.RESUMED)) return@SideEffect
         val controller = WindowCompat.getInsetsController(window, view)
-        val topLuminance = calculateTopRegionLuminance(backdropState.imageBitmap)
-        val bottomLuminance = calculateBottomRegionLuminance(backdropState.imageBitmap)
-        controller.isAppearanceLightStatusBars = topLuminance > 0.5f
-        controller.isAppearanceLightNavigationBars = bottomLuminance > 0.5f
+        applyRoleplayWindowState(controller, lightStatusBar, lightNavigationBar, immersiveMode)
     }
 
-    // 按沉浸模式控制系统栏显隐
-    DisposableEffect(view, immersiveMode) {
+    DisposableEffect(view, lifecycleOwner) {
         val window = (view.context as? Activity)?.window
         if (window == null) {
             onDispose {}
         } else {
             val controller = WindowCompat.getInsetsController(window, view)
 
-            when (immersiveMode) {
-                // 边到边 / 标准：保持系统栏可见
-                RoleplayImmersiveMode.EDGE_TO_EDGE,
-                RoleplayImmersiveMode.NONE,
-                -> {
-                    controller.show(WindowInsetsCompat.Type.systemBars())
-                    controller.systemBarsBehavior =
-                        WindowInsetsControllerCompat.BEHAVIOR_DEFAULT
-                }
-
-                // 全屏：隐藏系统栏，边缘手势可临时唤出
-                RoleplayImmersiveMode.HIDE_SYSTEM_BARS -> {
-                    controller.hide(WindowInsetsCompat.Type.systemBars())
-                    controller.systemBarsBehavior =
-                        WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
+            fun restoreTheme() {
+                val light = themeSurface.luminance() > 0.5f
+                applyRoleplayWindowState(controller, light, light, RoleplayImmersiveMode.NONE)
+            }
+            val observer = LifecycleEventObserver { _, event ->
+                when (event) {
+                    Lifecycle.Event.ON_RESUME -> applyRoleplayWindowState(
+                        controller, currentLightStatus, currentLightNavigation, currentMode,
+                    )
+                    Lifecycle.Event.ON_PAUSE -> restoreTheme()
+                    else -> Unit
                 }
             }
-
+            lifecycleOwner.lifecycle.addObserver(observer)
             onDispose {
-                // 离开角色扮演页面时恢复系统栏可见
-                controller.show(WindowInsetsCompat.Type.systemBars())
-                controller.systemBarsBehavior =
-                    WindowInsetsControllerCompat.BEHAVIOR_DEFAULT
+                lifecycleOwner.lifecycle.removeObserver(observer)
+                if (lifecycleOwner.lifecycle.currentState.isAtLeast(Lifecycle.State.RESUMED)) {
+                    restoreTheme()
+                }
             }
         }
+    }
+}
+
+private fun applyRoleplayWindowState(
+    controller: WindowInsetsControllerCompat,
+    lightStatusBar: Boolean,
+    lightNavigationBar: Boolean,
+    mode: RoleplayImmersiveMode,
+) {
+    controller.isAppearanceLightStatusBars = lightStatusBar
+    controller.isAppearanceLightNavigationBars = lightNavigationBar
+    if (mode == RoleplayImmersiveMode.HIDE_SYSTEM_BARS) {
+        controller.hide(WindowInsetsCompat.Type.systemBars())
+        controller.systemBarsBehavior = WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
+    } else {
+        controller.show(WindowInsetsCompat.Type.systemBars())
+        controller.systemBarsBehavior = WindowInsetsControllerCompat.BEHAVIOR_DEFAULT
     }
 }
 

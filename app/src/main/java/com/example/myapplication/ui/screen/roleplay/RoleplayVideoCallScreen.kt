@@ -3,31 +3,31 @@ package com.example.myapplication.ui.screen.roleplay
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.asPaddingValues
-import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBars
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.Send
-import androidx.compose.material.icons.filled.CallEnd
-import androidx.compose.material.icons.filled.Close
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButtonDefaults
@@ -43,16 +43,20 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
 import com.example.myapplication.model.AppSettings
@@ -66,14 +70,15 @@ import com.example.myapplication.roleplay.RoleplayConversationSupport
 import com.example.myapplication.ui.component.AppSnackbarHost
 import com.example.myapplication.ui.component.NarraIconButton
 import com.example.myapplication.ui.component.UserAvatarLoadState
+import com.example.myapplication.ui.component.UserProfileAvatar
 import com.example.myapplication.ui.component.rememberSystemHighTextContrastEnabled
 import com.example.myapplication.ui.component.rememberUserProfileAvatarState
-import com.example.myapplication.ui.component.roleplay.ImmersiveBackdropState
-import com.example.myapplication.ui.component.roleplay.ImmersiveGlassSurface
-import com.example.myapplication.ui.component.roleplay.ImmersiveRoleplayColors
-import com.example.myapplication.ui.component.roleplay.RoleplaySceneBackground
 import com.example.myapplication.ui.component.roleplay.rememberImmersiveBackdropState
-import com.example.myapplication.ui.component.roleplay.rememberImmersiveRoleplayColors
+import com.composables.icons.lucide.Lucide
+import com.composables.icons.lucide.PhoneOff
+import com.composables.icons.lucide.Send
+import com.composables.icons.lucide.Square
+import com.composables.icons.lucide.Video
 import kotlinx.coroutines.delay
 
 internal data class VideoCallPresentationState(
@@ -133,11 +138,10 @@ internal fun RoleplayVideoCallScreen(
         backgroundUri = scenario.backgroundUri,
         highContrast = effectiveHighContrast,
     )
-    ApplyRoleplaySystemBars(
-        backdropState = backdropState,
+    ApplyRoleplaySurfaceSystemBars(
         immersiveMode = settings.roleplayImmersiveMode,
     )
-    val colors = rememberImmersiveRoleplayColors(backdropState)
+    val colorScheme = MaterialTheme.colorScheme
     val characterName = remember(scenario.characterDisplayNameOverride, assistant?.name) {
         scenario.characterDisplayNameOverride.trim()
             .ifBlank { assistant?.name?.trim().orEmpty() }
@@ -154,7 +158,7 @@ internal fun RoleplayVideoCallScreen(
         )
     }
     val visibleMessages = presentationState.visibleMessages
-    val transcriptScrollState = rememberScrollState()
+    val transcriptState = rememberLazyListState()
     val immersiveMode = settings.roleplayImmersiveMode
     val statusBarTopPadding = if (immersiveMode == RoleplayImmersiveMode.HIDE_SYSTEM_BARS) {
         0.dp
@@ -162,37 +166,48 @@ internal fun RoleplayVideoCallScreen(
         WindowInsets.statusBars.asPaddingValues().calculateTopPadding()
     }
     val elapsedText = rememberVideoCallElapsedText(activeVideoCallStartedAt)
+    val portraitState = rememberUserProfileAvatarState(
+        avatarUri = scenario.characterPortraitUri,
+        avatarUrl = scenario.characterPortraitUrl,
+        requestSize = IntSize(1080, 1600),
+    )
+    val portrait = portraitState.imageBitmap.takeIf {
+        portraitState.loadState == UserAvatarLoadState.Success
+    }
+    val hasSceneMedia = backdropState.hasImage || portrait != null
 
     LaunchedEffect(visibleMessages.lastOrNull()?.sourceMessageId, visibleMessages.lastOrNull()?.content) {
         if (visibleMessages.isNotEmpty()) {
-            transcriptScrollState.animateScrollTo(transcriptScrollState.maxValue)
+            transcriptState.animateScrollToItem(0)
         }
     }
 
-    Box(modifier = Modifier.fillMaxSize()) {
-        RoleplaySceneBackground(
-            backdropState = backdropState,
-            modifier = Modifier.fillMaxSize(),
-        )
-        VideoCallMainPortrait(
-            scenario = scenario,
-            characterName = characterName,
-            modifier = Modifier.fillMaxSize(),
-        )
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .background(
-                    Brush.verticalGradient(
-                        colors = listOf(
-                            Color.Black.copy(alpha = 0.38f),
-                            Color.Transparent,
-                            Color.Black.copy(alpha = 0.54f),
-                        ),
-                    ),
-                ),
-        )
-
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(colorScheme.background)
+            .testTag("video_call_screen"),
+    ) {
+        backdropState.imageBitmap?.let { background ->
+            Image(
+                bitmap = background,
+                contentDescription = null,
+                modifier = Modifier.fillMaxSize().roleplayImmersivePadding(immersiveMode),
+                contentScale = ContentScale.Crop,
+            )
+        }
+        if (portrait != null) {
+            Image(
+                bitmap = portrait,
+                contentDescription = characterName,
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(top = statusBarTopPadding + 64.dp, bottom = 88.dp)
+                    .testTag("video_call_portrait"),
+                contentScale = ContentScale.Fit,
+                alignment = Alignment.TopCenter,
+            )
+        }
         Column(
             modifier = Modifier
                 .fillMaxSize()
@@ -208,115 +223,123 @@ internal fun RoleplayVideoCallScreen(
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 18.dp)
-                    .padding(top = statusBarTopPadding + 12.dp),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.Top,
+                    .then(
+                        if (hasSceneMedia) {
+                            Modifier.background(
+                                Brush.verticalGradient(
+                                    listOf(colorScheme.background, colorScheme.background.copy(alpha = 0.9f)),
+                                ),
+                            )
+                        } else {
+                            Modifier
+                        },
+                    )
+                    .padding(horizontal = 20.dp)
+                    .padding(top = statusBarTopPadding + 12.dp, bottom = 16.dp),
+                horizontalArrangement = Arrangement.spacedBy(16.dp),
+                verticalAlignment = Alignment.CenterVertically,
             ) {
-                ImmersiveGlassSurface(
-                    backdropState = backdropState,
+                Column(
                     modifier = Modifier.weight(1f),
-                    shape = RoundedCornerShape(24.dp),
-                    blurRadius = 18.dp,
-                    overlayColor = colors.panelBackgroundStrong.copy(alpha = 0.88f),
+                    verticalArrangement = Arrangement.spacedBy(6.dp),
                 ) {
-                    Column(
-                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 14.dp),
-                        verticalArrangement = Arrangement.spacedBy(2.dp),
+                    Text(
+                        text = characterName,
+                        modifier = Modifier.testTag("video_call_character_name"),
+                        style = MaterialTheme.typography.titleLarge,
+                        fontWeight = FontWeight.SemiBold,
+                        color = colorScheme.onBackground,
+                        maxLines = 2,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                    Row(
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        verticalAlignment = Alignment.CenterVertically,
                     ) {
+                        Icon(
+                            imageVector = Lucide.Video,
+                            contentDescription = null,
+                            tint = colorScheme.primary,
+                            modifier = Modifier.size(16.dp),
+                        )
                         Text(
-                            text = characterName,
-                            style = MaterialTheme.typography.titleLarge,
-                            fontWeight = FontWeight.Bold,
-                            color = colors.textPrimary,
+                            text = if (isVideoCallActive) "视频通话  $elapsedText" else "正在接通...",
+                            style = MaterialTheme.typography.labelLarge,
+                            color = colorScheme.onSurfaceVariant,
                             maxLines = 1,
                             overflow = TextOverflow.Ellipsis,
                         )
-                        Text(
-                            text = if (isVideoCallActive) "视频通话中..." else "正在接通视频通话...",
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = colors.textMuted,
-                        )
-                        Text(
-                            text = elapsedText,
-                            style = MaterialTheme.typography.titleMedium,
-                            fontWeight = FontWeight.SemiBold,
-                            color = colors.textPrimary,
-                        )
                     }
                 }
-                VideoCallFloatingPreview(
-                    name = userName,
+                UserProfileAvatar(
+                    displayName = userName,
                     avatarUri = userPersona.avatarUri,
                     avatarUrl = userPersona.avatarUrl,
-                    modifier = Modifier
-                        .padding(start = 12.dp)
-                        .size(width = 96.dp, height = 136.dp),
+                    modifier = Modifier.size(40.dp).testTag("video_call_user_avatar"),
+                    requestSize = IntSize(160, 160),
+                    containerColor = colorScheme.secondaryContainer,
+                    contentColor = colorScheme.onSecondaryContainer,
                 )
             }
 
-            Box(
+            BoxWithConstraints(
                 modifier = Modifier
                     .weight(1f)
-                    .fillMaxWidth()
-                    .padding(top = 20.dp),
+                    .fillMaxWidth(),
             ) {
-                if (!isVideoCallActive && activeVideoCallStartedAt <= 0L) {
-                    Surface(
-                        modifier = Modifier
-                            .align(Alignment.Center)
-                            .padding(horizontal = 24.dp),
-                        color = colors.panelBackgroundStrong.copy(alpha = 0.84f),
-                        shape = RoundedCornerShape(24.dp),
-                    ) {
-                        Row(
-                            modifier = Modifier.padding(horizontal = 18.dp, vertical = 14.dp),
-                            horizontalArrangement = Arrangement.spacedBy(12.dp),
-                            verticalAlignment = Alignment.CenterVertically,
+                val compact = maxHeight < 300.dp
+                Column(modifier = Modifier.fillMaxSize()) {
+                    if (portrait == null && !compact) {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .weight(if (visibleMessages.isEmpty()) 1f else 0.9f),
+                            contentAlignment = Alignment.Center,
                         ) {
-                            CircularProgressIndicator(
-                                modifier = Modifier.size(18.dp),
-                                strokeWidth = 2.dp,
-                                color = colors.characterAccent,
-                            )
-                            Text(
-                                text = "正在接通视频通话...",
-                                color = colors.textPrimary,
-                                style = MaterialTheme.typography.bodyMedium,
+                            VideoCallCharacterAvatar(
+                                characterName = characterName,
+                                assistant = assistant,
+                                size = 128.dp,
                             )
                         }
                     }
-                } else if (visibleMessages.isEmpty()) {
-                    Surface(
+                    Box(
                         modifier = Modifier
-                            .align(Alignment.BottomCenter)
-                            .padding(horizontal = 24.dp, vertical = 20.dp),
-                        color = colors.panelBackgroundStrong.copy(alpha = 0.82f),
-                        shape = RoundedCornerShape(24.dp),
+                            .fillMaxWidth()
+                            .weight(if (portrait != null || compact) 1f else 1.3f),
+                        contentAlignment = Alignment.BottomCenter,
                     ) {
-                        Text(
-                            text = buildVideoCallEmptyHint(
-                                carryoverCount = presentationState.carryoverCount,
-                            ),
-                            modifier = Modifier.padding(horizontal = 18.dp, vertical = 12.dp),
-                            color = colors.textPrimary,
-                            style = MaterialTheme.typography.bodyMedium,
-                        )
+                        if (!isVideoCallActive && activeVideoCallStartedAt <= 0L) {
+                            CircularProgressIndicator(
+                                modifier = Modifier.align(Alignment.Center).size(24.dp),
+                                strokeWidth = 2.dp,
+                            )
+                        } else if (visibleMessages.isEmpty()) {
+                            Text(
+                                text = "通话已接通",
+                                modifier = Modifier
+                                    .padding(24.dp)
+                                    .then(
+                                        if (hasSceneMedia) {
+                                            Modifier.background(colorScheme.surface, RoundedCornerShape(8.dp))
+                                                .padding(12.dp)
+                                        } else {
+                                            Modifier
+                                        },
+                                    ),
+                                color = colorScheme.onSurfaceVariant,
+                                style = MaterialTheme.typography.bodyMedium,
+                            )
+                        } else {
+                            VideoCallTranscript(
+                                messages = visibleMessages,
+                                state = transcriptState,
+                                hasSceneMedia = hasSceneMedia,
+                                modifier = Modifier.fillMaxSize(),
+                            )
+                        }
                     }
-                } else {
-                    VideoCallFloatingTranscript(
-                        messages = visibleMessages,
-                        carryoverCount = presentationState.carryoverCount,
-                        colors = colors,
-                        backdropState = backdropState,
-                        scrollState = transcriptScrollState,
-                        modifier = Modifier
-                            .align(Alignment.BottomCenter)
-                            .fillMaxHeight(0.78f)
-                            .padding(horizontal = 16.dp, vertical = 24.dp),
-                    )
                 }
-
                 AppSnackbarHost(
                     hostState = snackbarHostState,
                     modifier = Modifier
@@ -325,47 +348,15 @@ internal fun RoleplayVideoCallScreen(
                 )
             }
 
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 12.dp, vertical = 12.dp),
-                verticalArrangement = Arrangement.spacedBy(12.dp),
-            ) {
-                VideoCallInputBar(
-                    colors = colors,
-                    backdropState = backdropState,
-                    input = input,
-                    inputFocusToken = inputFocusToken,
-                    isSending = isSending,
-                    onInputChange = onInputChange,
-                    onSend = onSend,
-                    onCancelSending = onCancelSending,
-                )
-                Box(
-                    modifier = Modifier.fillMaxWidth(),
-                    contentAlignment = Alignment.Center,
-                ) {
-                    NarraIconButton(
-                        onClick = onHangup,
-                        modifier = Modifier
-                            .size(68.dp)
-                            .background(
-                                color = Color(0xFFFF4F4F),
-                                shape = CircleShape,
-                            ),
-                        colors = IconButtonDefaults.iconButtonColors(
-                            containerColor = Color.Transparent,
-                            contentColor = Color.White,
-                        ),
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.CallEnd,
-                            contentDescription = "挂断视频通话",
-                            modifier = Modifier.size(28.dp),
-                        )
-                    }
-                }
-            }
+            VideoCallInputBar(
+                input = input,
+                inputFocusToken = inputFocusToken,
+                isSending = isSending,
+                onInputChange = onInputChange,
+                onSend = onSend,
+                onCancelSending = onCancelSending,
+                onHangup = onHangup,
+            )
         }
     }
 }
@@ -390,130 +381,79 @@ internal fun buildVideoCallPresentationState(
     )
 }
 
-private fun buildVideoCallEmptyHint(carryoverCount: Int): String {
-    return if (carryoverCount > 0) {
-        "通话已接通，已承接前面的会话内容，直接接着上一句继续聊。"
-    } else {
-        "通话已接通，你先发一句，TA 才会接着回你。"
-    }
-}
-
 @Composable
-private fun VideoCallFloatingTranscript(
+private fun VideoCallTranscript(
     messages: List<RoleplayMessageUiModel>,
-    carryoverCount: Int,
-    colors: ImmersiveRoleplayColors,
-    backdropState: ImmersiveBackdropState,
-    scrollState: androidx.compose.foundation.ScrollState,
+    state: androidx.compose.foundation.lazy.LazyListState,
+    hasSceneMedia: Boolean,
     modifier: Modifier = Modifier,
 ) {
-    Box(
-        modifier = modifier.fillMaxWidth(),
-        contentAlignment = Alignment.BottomCenter,
+    LazyColumn(
+        state = state,
+        reverseLayout = true,
+        modifier = modifier.testTag("video_call_transcript"),
+        contentPadding = PaddingValues(horizontal = 20.dp, vertical = 16.dp),
+        verticalArrangement = Arrangement.spacedBy(12.dp, Alignment.Bottom),
     ) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .verticalScroll(scrollState),
-            verticalArrangement = Arrangement.spacedBy(10.dp),
-        ) {
-            if (carryoverCount > 0) {
-                Surface(
-                    modifier = Modifier.align(Alignment.CenterHorizontally),
-                    color = colors.panelBackgroundStrong.copy(alpha = 0.72f),
-                    shape = RoundedCornerShape(999.dp),
-                ) {
-                    Text(
-                        text = "已承接通话前 $carryoverCount 条会话内容",
-                        modifier = Modifier.padding(horizontal = 14.dp, vertical = 8.dp),
-                        style = MaterialTheme.typography.labelMedium,
-                        color = colors.textMuted,
-                    )
-                }
-            }
-
-            messages.forEachIndexed { index, message ->
-                val isLatest = index == messages.lastIndex
-                VideoCallFloatingMessageCard(
-                    message = message,
-                    isLatest = isLatest,
-                    colors = colors,
-                    backdropState = backdropState,
-                )
-            }
+        items(messages.asReversed(), key = { it.uiItemId }) { message ->
+            VideoCallMessage(message = message, hasSceneMedia = hasSceneMedia)
         }
     }
 }
 
 @Composable
-private fun VideoCallFloatingMessageCard(
+private fun VideoCallMessage(
     message: RoleplayMessageUiModel,
-    isLatest: Boolean,
-    colors: ImmersiveRoleplayColors,
-    backdropState: ImmersiveBackdropState,
+    hasSceneMedia: Boolean,
 ) {
+    val colorScheme = MaterialTheme.colorScheme
     val isThought = message.contentType == RoleplayContentType.THOUGHT
+    val isUser = message.speaker == RoleplaySpeaker.USER
     val speakerLabel = remember(message.speaker, message.speakerName, message.contentType) {
         resolveVideoCallSpeakerLabel(message)
     }
-    val cardWidthFraction = when {
-        isThought -> 0.76f
-        isLatest -> 0.92f
-        else -> 0.84f
-    }
-    val bubbleAlpha = when {
-        isThought -> 0.76f
-        isLatest -> 0.88f
-        else -> 0.70f
-    }
-    val horizontalArrangement = when {
-        isThought -> Arrangement.Center
-        message.speaker == RoleplaySpeaker.USER -> Arrangement.End
-        message.speaker == RoleplaySpeaker.CHARACTER -> Arrangement.Start
-        else -> Arrangement.Center
-    }
-    val bodyStyle = (if (isLatest) {
-        MaterialTheme.typography.bodyLarge
-    } else {
-        MaterialTheme.typography.bodyMedium
-    }).let { baseStyle ->
+    val bodyStyle = MaterialTheme.typography.bodyLarge.let { baseStyle ->
         if (isThought) {
             baseStyle.copy(fontStyle = FontStyle.Italic)
         } else {
             baseStyle
         }
     }
-    val bodyColor = if (isThought) {
-        colors.thoughtText
-    } else {
-        colors.textPrimary
-    }
-    Row(
+    BoxWithConstraints(
         modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = horizontalArrangement,
+        contentAlignment = when {
+            isThought -> Alignment.Center
+            isUser -> Alignment.CenterEnd
+            else -> Alignment.CenterStart
+        },
     ) {
-        ImmersiveGlassSurface(
-            backdropState = backdropState,
-            modifier = Modifier.fillMaxWidth(cardWidthFraction),
-            shape = RoundedCornerShape(28.dp),
-            blurRadius = 16.dp,
-            overlayColor = colors.panelBackgroundStrong.copy(alpha = bubbleAlpha),
+        Surface(
+            modifier = Modifier.widthIn(max = maxWidth * 0.88f),
+            shape = RoundedCornerShape(8.dp),
+            color = when {
+                isThought && !hasSceneMedia -> Color.Transparent
+                isUser -> colorScheme.secondaryContainer
+                hasSceneMedia -> colorScheme.surface
+                else -> colorScheme.surfaceContainerLow
+            },
         ) {
             Column(
-                modifier = Modifier.padding(horizontal = 16.dp, vertical = 14.dp),
-                verticalArrangement = Arrangement.spacedBy(6.dp),
+                modifier = Modifier.padding(horizontal = 14.dp, vertical = 10.dp),
+                verticalArrangement = Arrangement.spacedBy(4.dp),
             ) {
                 if (speakerLabel.isNotBlank()) {
                     Text(
                         text = speakerLabel,
                         style = MaterialTheme.typography.labelMedium,
-                        color = if (isThought) colors.thoughtText else colors.textMuted,
+                        color = if (isUser) colorScheme.onSecondaryContainer else colorScheme.onSurfaceVariant,
+                        maxLines = 2,
+                        overflow = TextOverflow.Ellipsis,
                     )
                 }
                 Text(
                     text = message.content.trim().ifBlank { message.copyText.trim() },
                     style = bodyStyle,
-                    color = bodyColor,
+                    color = if (isUser) colorScheme.onSecondaryContainer else colorScheme.onSurface,
                 )
             }
         }
@@ -549,92 +489,112 @@ internal fun resolveVideoCallSpeakerLabel(message: RoleplayMessageUiModel): Stri
 
 @Composable
 private fun VideoCallInputBar(
-    colors: ImmersiveRoleplayColors,
-    backdropState: ImmersiveBackdropState,
     input: String,
     inputFocusToken: Long,
     isSending: Boolean,
     onInputChange: (String) -> Unit,
     onSend: () -> Unit,
     onCancelSending: () -> Unit,
+    onHangup: () -> Unit,
 ) {
-    ImmersiveGlassSurface(
-        backdropState = backdropState,
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(32.dp),
-        blurRadius = 18.dp,
-        overlayColor = colors.panelBackgroundStrong.copy(alpha = 0.92f),
+    val colorScheme = MaterialTheme.colorScheme
+    val focusRequester = remember { FocusRequester() }
+    val keyboardController = LocalSoftwareKeyboardController.current
+    LaunchedEffect(inputFocusToken) {
+        if (inputFocusToken > 0L && !isSending) {
+            focusRequester.requestFocus()
+            keyboardController?.show()
+        }
+    }
+    Surface(
+        modifier = Modifier.fillMaxWidth().testTag("video_call_controls"),
+        color = colorScheme.background,
     ) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 14.dp, vertical = 10.dp),
+                .padding(horizontal = 16.dp, vertical = 12.dp),
             verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(10.dp),
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
         ) {
-            BasicTextField(
-                value = input,
-                onValueChange = onInputChange,
-                modifier = Modifier.weight(1f),
-                textStyle = MaterialTheme.typography.bodyLarge.copy(color = colors.textPrimary),
-                cursorBrush = SolidColor(colors.characterAccent),
-                singleLine = true,
-                keyboardOptions = KeyboardOptions(imeAction = ImeAction.Send),
-                keyboardActions = KeyboardActions(
-                    onSend = {
-                        if (isSending) {
-                            onCancelSending()
-                        } else if (input.isNotBlank()) {
-                            onSend()
+            Row(
+                modifier = Modifier
+                    .weight(1f)
+                    .background(colorScheme.surfaceContainerHighest, RoundedCornerShape(8.dp))
+                    .padding(start = 14.dp, end = 4.dp, top = 4.dp, bottom = 4.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                BasicTextField(
+                    value = input,
+                    onValueChange = onInputChange,
+                    modifier = Modifier
+                        .weight(1f)
+                        .heightIn(min = 48.dp)
+                        .focusRequester(focusRequester)
+                        .testTag("video_call_input"),
+                    textStyle = MaterialTheme.typography.bodyLarge.copy(color = colorScheme.onSurface),
+                    cursorBrush = SolidColor(colorScheme.primary),
+                    maxLines = 3,
+                    keyboardOptions = KeyboardOptions(imeAction = ImeAction.Send),
+                    keyboardActions = KeyboardActions(
+                        onSend = {
+                            if (isSending) {
+                                onCancelSending()
+                            } else if (input.isNotBlank()) {
+                                onSend()
+                            }
+                        },
+                    ),
+                    decorationBox = { innerTextField ->
+                        Box(
+                            modifier = Modifier.fillMaxWidth().padding(vertical = 10.dp),
+                            contentAlignment = Alignment.CenterStart,
+                        ) {
+                            if (input.isBlank()) {
+                                Text(
+                                    text = "说点什么...",
+                                    style = MaterialTheme.typography.bodyLarge,
+                                    color = colorScheme.onSurfaceVariant,
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis,
+                                )
+                            }
+                            innerTextField()
                         }
                     },
-                ),
-                decorationBox = { innerTextField ->
-                    Box(
-                        modifier = Modifier.fillMaxWidth(),
-                        contentAlignment = Alignment.CenterStart,
-                    ) {
-                        if (input.isBlank()) {
-                            Text(
-                                text = "直接继续聊...",
-                                style = MaterialTheme.typography.bodyLarge,
-                                color = colors.textMuted,
-                            )
-                        }
-                        innerTextField()
-                    }
-                },
-            )
-            NarraIconButton(
-                onClick = {
-                    if (isSending) {
-                        onCancelSending()
-                    } else {
-                        onSend()
-                    }
-                },
-                enabled = isSending || input.isNotBlank(),
-                modifier = Modifier
-                    .size(42.dp)
-                    .background(
-                        color = if (isSending) {
-                            Color.White.copy(alpha = 0.16f)
-                        } else {
-                            colors.characterAccent.copy(alpha = 0.96f)
-                        },
-                        shape = CircleShape,
+                )
+                NarraIconButton(
+                    onClick = {
+                        if (isSending) onCancelSending() else onSend()
+                    },
+                    enabled = isSending || input.isNotBlank(),
+                    modifier = Modifier.size(48.dp).testTag("video_call_send"),
+                    colors = IconButtonDefaults.iconButtonColors(
+                        contentColor = colorScheme.primary,
+                        disabledContentColor = colorScheme.onSurface.copy(alpha = 0.38f),
                     ),
+                ) {
+                    Icon(
+                        imageVector = if (isSending) Lucide.Square else Lucide.Send,
+                        contentDescription = if (isSending) "取消发送" else "发送消息",
+                        modifier = Modifier.size(22.dp),
+                    )
+                }
+            }
+            NarraIconButton(
+                onClick = onHangup,
+                modifier = Modifier
+                    .size(56.dp)
+                    .background(colorScheme.error, CircleShape)
+                    .testTag("video_call_hangup"),
                 colors = IconButtonDefaults.iconButtonColors(
-                    containerColor = Color.Transparent,
-                    contentColor = Color.White,
-                    disabledContainerColor = Color.Transparent,
-                    disabledContentColor = Color.White.copy(alpha = 0.72f),
+                    contentColor = colorScheme.onError,
                 ),
             ) {
                 Icon(
-                    imageVector = if (isSending) Icons.Default.Close else Icons.AutoMirrored.Filled.Send,
-                    contentDescription = if (isSending) "取消发送" else "发送消息",
-                    modifier = Modifier.size(20.dp),
+                    imageVector = Lucide.PhoneOff,
+                    contentDescription = "挂断视频通话",
+                    modifier = Modifier.size(24.dp),
                 )
             }
         }
@@ -642,97 +602,21 @@ private fun VideoCallInputBar(
 }
 
 @Composable
-private fun VideoCallMainPortrait(
-    scenario: RoleplayScenario,
+private fun VideoCallCharacterAvatar(
     characterName: String,
-    modifier: Modifier = Modifier,
+    assistant: Assistant?,
+    size: Dp,
 ) {
     val density = LocalDensity.current
-    val requestSize = with(density) {
-        IntSize(
-            width = 1080,
-            height = 1920,
-        )
-    }
-    val imageState = rememberUserProfileAvatarState(
-        avatarUri = scenario.characterPortraitUri,
-        avatarUrl = scenario.characterPortraitUrl,
-        requestSize = requestSize,
+    val sizePx = with(density) { size.roundToPx() }
+    UserProfileAvatar(
+        displayName = characterName,
+        avatarUri = assistant?.avatarUri.orEmpty(),
+        avatarUrl = "",
+        modifier = Modifier.size(size).testTag("video_call_character_avatar"),
+        requestSize = IntSize(sizePx, sizePx),
+        textStyle = MaterialTheme.typography.headlineLarge,
     )
-    Box(modifier = modifier) {
-        if (imageState.loadState == UserAvatarLoadState.Success && imageState.imageBitmap != null) {
-            Image(
-                bitmap = imageState.imageBitmap,
-                contentDescription = characterName,
-                modifier = Modifier.fillMaxSize(),
-                contentScale = ContentScale.Crop,
-            )
-        }
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .background(
-                    Brush.verticalGradient(
-                        colors = listOf(
-                            Color.Transparent,
-                            Color.Black.copy(alpha = 0.16f),
-                            Color.Black.copy(alpha = 0.30f),
-                        ),
-                    ),
-                ),
-        )
-    }
-}
-
-@Composable
-private fun VideoCallFloatingPreview(
-    name: String,
-    avatarUri: String,
-    avatarUrl: String,
-    modifier: Modifier = Modifier,
-) {
-    val density = LocalDensity.current
-    val requestSize = with(density) {
-        IntSize(
-            width = 240,
-            height = 320,
-        )
-    }
-    val imageState = rememberUserProfileAvatarState(
-        avatarUri = avatarUri,
-        avatarUrl = avatarUrl,
-        requestSize = requestSize,
-    )
-    Box(
-        modifier = modifier
-            .clip(RoundedCornerShape(24.dp))
-            .background(Color(0xFFAEDCFF).copy(alpha = 0.94f))
-            .padding(4.dp),
-    ) {
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .clip(RoundedCornerShape(20.dp))
-                .background(Color(0xFFB7E3FF)),
-            contentAlignment = Alignment.Center,
-        ) {
-            if (imageState.loadState == UserAvatarLoadState.Success && imageState.imageBitmap != null) {
-                Image(
-                    bitmap = imageState.imageBitmap,
-                    contentDescription = name,
-                    modifier = Modifier.fillMaxSize(),
-                    contentScale = ContentScale.Crop,
-                )
-            } else {
-                Text(
-                    text = name.take(1).ifBlank { "你" },
-                    style = MaterialTheme.typography.displayMedium,
-                    fontWeight = FontWeight.Bold,
-                    color = Color.White,
-                )
-            }
-        }
-    }
 }
 
 @Composable

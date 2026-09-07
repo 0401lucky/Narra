@@ -15,6 +15,7 @@ import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -23,13 +24,6 @@ import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Search
-import androidx.compose.material.icons.filled.Upload
-import androidx.compose.material.icons.outlined.AutoStories
-import androidx.compose.material.icons.outlined.Close
-import androidx.compose.material.icons.outlined.FilterAlt
-import androidx.compose.material.icons.outlined.SearchOff
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.Icon
@@ -50,6 +44,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -60,6 +55,7 @@ import com.example.myapplication.ui.component.TopAppSnackbarHost
 import com.example.myapplication.ui.component.worldbook.looksLikeWorldBookRegexLiteral
 import com.example.myapplication.ui.screen.settings.AnimatedSettingButton
 import com.example.myapplication.ui.screen.settings.SettingsPageIntro
+import com.example.myapplication.ui.screen.settings.SettingsHelpButton
 import com.example.myapplication.ui.screen.settings.SettingsPalette
 import com.example.myapplication.ui.screen.settings.SettingsScreenPadding
 import com.example.myapplication.ui.screen.settings.SettingsSectionHeader
@@ -69,6 +65,12 @@ import com.example.myapplication.ui.screen.settings.rememberSettingsOutlineColor
 import com.example.myapplication.ui.screen.settings.rememberSettingsPalette
 import com.example.myapplication.ui.screen.settings.rememberSettingsSnackbarHostState
 import kotlinx.coroutines.delay
+import com.composables.icons.lucide.BookOpen
+import com.composables.icons.lucide.Lucide
+import com.composables.icons.lucide.Search
+import com.composables.icons.lucide.SlidersHorizontal
+import com.composables.icons.lucide.Upload
+import com.composables.icons.lucide.X
 
 @Composable
 fun WorldBookListScreen(
@@ -104,6 +106,7 @@ fun WorldBookListScreen(
         mutableStateOf(WorldBookListStatusFilter.ALL)
     }
     var bookIdFilter by rememberSaveable { mutableStateOf("") }
+    var showFilters by rememberSaveable { mutableStateOf(false) }
 
     val postFilterEntries = remember(entries, searchQuery, scopeFilter, statusFilter, bookIdFilter) {
         filterEntries(
@@ -147,6 +150,7 @@ fun WorldBookListScreen(
         LazyColumn(
             modifier = Modifier
                 .fillMaxSize()
+                .testTag("worldbook_list")
                 .padding(innerPadding),
             contentPadding = PaddingValues(
                 start = SettingsScreenPadding,
@@ -156,12 +160,6 @@ fun WorldBookListScreen(
             ),
             verticalArrangement = Arrangement.spacedBy(14.dp),
         ) {
-            item(key = "intro") {
-                SettingsPageIntro(
-                    title = "世界书",
-                )
-            }
-
             item(key = "importButton") {
                 AnimatedSettingButton(
                     text = "导入世界书",
@@ -169,7 +167,7 @@ fun WorldBookListScreen(
                     enabled = true,
                     isPrimary = false,
                     leadingIcon = {
-                        Icon(Icons.Default.Upload, contentDescription = null)
+                        Icon(Lucide.Upload, contentDescription = null)
                     },
                 )
             }
@@ -187,17 +185,17 @@ fun WorldBookListScreen(
                         onValueChange = { searchQuery = it },
                         modifier = Modifier.fillMaxWidth(),
                         singleLine = true,
-                        shape = RoundedCornerShape(18.dp),
+                        shape = RoundedCornerShape(8.dp),
                         label = { Text("搜索世界书") },
-                        placeholder = { Text("搜索书名、条目标题、内容或关键词") },
+                        placeholder = { Text("书名、内容或关键词") },
                         leadingIcon = {
-                            Icon(Icons.Default.Search, contentDescription = null)
+                            Icon(Lucide.Search, contentDescription = null)
                         },
                         trailingIcon = {
                             if (searchQuery.isNotEmpty()) {
                                 IconButton(onClick = { searchQuery = "" }) {
                                     Icon(
-                                        imageVector = Icons.Outlined.Close,
+                                        imageVector = Lucide.X,
                                         contentDescription = "清空搜索",
                                     )
                                 }
@@ -205,6 +203,31 @@ fun WorldBookListScreen(
                         },
                         colors = rememberSettingsOutlineColors(),
                     )
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Text(
+                            text = "${postFilterEntries.size} 条条目",
+                            modifier = Modifier.weight(1f),
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = palette.body,
+                        )
+                        TextButton(
+                            onClick = { showFilters = !showFilters },
+                            modifier = Modifier.heightIn(min = 48.dp),
+                        ) {
+                            Icon(Lucide.SlidersHorizontal, contentDescription = null, modifier = Modifier.size(20.dp))
+                            val count = activeFilterCount(scopeFilter, statusFilter, bookIdFilter)
+                            Text(if (count > 0) "筛选 ($count)" else "筛选", modifier = Modifier.padding(start = 8.dp))
+                        }
+                        SettingsHelpButton("世界书", "搜索包含书名、条目标题、正文与关键词。作用域、状态和所属世界书筛选同时生效。")
+                    }
+                }
+            }
+            if (showFilters) {
+                item(key = "filters") {
+                    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     WorldBookFilterChipRow(
                         label = "作用域",
                         options = WorldBookListScopeFilter.values()
@@ -223,6 +246,14 @@ fun WorldBookListScreen(
                             options = allBookOptions.map { (id, name) -> name to (id == bookIdFilter) },
                             onSelect = { bookIdFilter = allBookOptions[it].first },
                         )
+                    }
+                    if (activeFilterCount(scopeFilter, statusFilter, bookIdFilter) > 0) {
+                        TextButton(onClick = {
+                            scopeFilter = WorldBookListScopeFilter.ALL
+                            statusFilter = WorldBookListStatusFilter.ALL
+                            bookIdFilter = ""
+                        }, modifier = Modifier.heightIn(min = 48.dp)) { Text("清除筛选") }
+                    }
                     }
                 }
             }
@@ -320,6 +351,7 @@ private fun WorldBookFilterChipRow(
         LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             itemsIndexed(options) { index, (optionLabel, selected) ->
                 FilterChip(
+                    modifier = Modifier.heightIn(min = 48.dp),
                     selected = selected,
                     onClick = { onSelect(index) },
                     label = { Text(optionLabel) },
@@ -350,7 +382,6 @@ internal fun WorldBookBookCard(
     onClick: () -> Unit,
 ) {
     val palette = rememberSettingsPalette()
-    val spine = bookSpineColor(book.id)
     val enabledCount = book.enabledEntryCount
     val hasRegex = book.regexEntryCount > 0
     val latestUpdate = book.entries.maxOfOrNull { it.updatedAt } ?: 0L
@@ -359,9 +390,9 @@ internal fun WorldBookBookCard(
     Surface(
         modifier = Modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(26.dp))
+            .clip(RoundedCornerShape(8.dp))
             .clickable(onClick = onClick),
-        shape = RoundedCornerShape(26.dp),
+        shape = RoundedCornerShape(8.dp),
         color = palette.surface,
         border = BorderStroke(0.5.dp, palette.border.copy(alpha = 0.4f)),
         shadowElevation = 0.dp,
@@ -371,19 +402,16 @@ internal fun WorldBookBookCard(
                 .fillMaxWidth()
                 .height(IntrinsicSize.Min),
         ) {
-            Box(
-                modifier = Modifier
-                    .padding(vertical = 14.dp)
-                    .padding(start = 14.dp)
-                    .width(6.dp)
-                    .fillMaxHeight()
-                    .clip(RoundedCornerShape(3.dp))
-                    .background(spine),
+            Icon(
+                imageVector = Lucide.BookOpen,
+                contentDescription = null,
+                tint = palette.accent,
+                modifier = Modifier.padding(start = 16.dp, top = 18.dp).size(24.dp),
             )
             Column(
                 modifier = Modifier
                     .padding(start = 12.dp, end = 18.dp, top = 16.dp, bottom = 14.dp)
-                    .fillMaxWidth(),
+                    .weight(1f),
                 verticalArrangement = Arrangement.spacedBy(8.dp),
             ) {
                 Text(
@@ -391,7 +419,7 @@ internal fun WorldBookBookCard(
                     style = MaterialTheme.typography.titleMedium,
                     color = palette.title,
                     fontWeight = FontWeight.SemiBold,
-                    maxLines = 1,
+                    maxLines = 2,
                     overflow = TextOverflow.Ellipsis,
                 )
                 if (book.previewText.isNotBlank()) {
@@ -407,11 +435,7 @@ internal fun WorldBookBookCard(
                     horizontalArrangement = Arrangement.spacedBy(6.dp),
                     verticalArrangement = Arrangement.spacedBy(6.dp),
                 ) {
-                    SettingsStatusPill(
-                        text = "${book.entryCount} 条条目",
-                        containerColor = palette.surfaceTint,
-                        contentColor = palette.body,
-                    )
+                    Text("${book.entryCount} 条条目", style = MaterialTheme.typography.labelMedium, color = palette.body)
                     if (enabledCount != book.entryCount) {
                         SettingsStatusPill(
                             text = "启用 $enabledCount",
@@ -420,11 +444,7 @@ internal fun WorldBookBookCard(
                         )
                     }
                     if (relative.isNotEmpty()) {
-                        SettingsStatusPill(
-                            text = relative,
-                            containerColor = palette.surfaceTint,
-                            contentColor = palette.body,
-                        )
+                        Text(relative, style = MaterialTheme.typography.labelMedium, color = palette.body)
                     }
                     if (hasRegex) {
                         SettingsStatusPill(
@@ -449,9 +469,9 @@ internal fun WorldBookEntryCard(
     Surface(
         modifier = Modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(26.dp))
+            .clip(RoundedCornerShape(8.dp))
             .clickable(onClick = onClick),
-        shape = RoundedCornerShape(26.dp),
+        shape = RoundedCornerShape(8.dp),
         color = palette.surface,
         border = BorderStroke(0.5.dp, palette.border.copy(alpha = 0.4f)),
         shadowElevation = 0.dp,
@@ -465,7 +485,7 @@ internal fun WorldBookEntryCard(
                 style = MaterialTheme.typography.titleMedium,
                 color = palette.title,
                 fontWeight = FontWeight.SemiBold,
-                maxLines = 1,
+                maxLines = 2,
                 overflow = TextOverflow.Ellipsis,
             )
 
@@ -508,10 +528,12 @@ private fun EntryChipRow(
             contentColor = palette.subtleChipContent,
         )
         if (preview != null) {
-            SettingsStatusPill(
+            Text(
                 text = "关键词：$preview",
-                containerColor = palette.surfaceTint,
-                contentColor = palette.body,
+                style = MaterialTheme.typography.labelMedium,
+                color = palette.body,
+                maxLines = 2,
+                overflow = TextOverflow.Ellipsis,
             )
         }
         when {
@@ -603,21 +625,21 @@ private fun WorldBookListEmptyState(
     val palette = rememberSettingsPalette()
     val spec = when (variant) {
         WorldBookEmptyVariant.GLOBAL_EMPTY -> EmptyStateSpec(
-            icon = Icons.Outlined.AutoStories,
+            icon = Lucide.BookOpen,
             title = "还没有世界书",
-            body = "导入一本角色卡或手动新增条目开始使用。",
+            body = "",
             actionLabel = null,
         )
         WorldBookEmptyVariant.FILTERED_EMPTY -> EmptyStateSpec(
-            icon = Icons.Outlined.FilterAlt,
+            icon = Lucide.SlidersHorizontal,
             title = "当前筛选下没有条目",
-            body = "试试换个筛选条件，或清掉筛选。",
+            body = "",
             actionLabel = "清筛选",
         )
         WorldBookEmptyVariant.SEARCH_EMPTY -> EmptyStateSpec(
-            icon = Icons.Outlined.SearchOff,
+            icon = Lucide.Search,
             title = "没有匹配结果",
-            body = "换个关键词试试。",
+            body = "",
             actionLabel = "清空搜索",
         )
     }

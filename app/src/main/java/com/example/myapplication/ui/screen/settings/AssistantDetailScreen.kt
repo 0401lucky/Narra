@@ -1,12 +1,10 @@
 package com.example.myapplication.ui.screen.settings
 
-import androidx.compose.foundation.BorderStroke
-import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -16,17 +14,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
-import androidx.compose.material.icons.automirrored.filled.MenuBook
-import androidx.compose.material.icons.filled.AutoAwesome
-import androidx.compose.material.icons.filled.Face
-import androidx.compose.material.icons.filled.Forum
-import androidx.compose.material.icons.filled.Psychology
-import androidx.compose.material.icons.filled.Tune
-import androidx.compose.material.icons.outlined.Image
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -44,7 +32,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -56,6 +43,15 @@ import com.example.myapplication.model.formatMoneyLabel
 import com.example.myapplication.model.isAssistantPresetFollowingGlobal
 import com.example.myapplication.model.resolveActivePresetId
 import com.example.myapplication.ui.component.AssistantAvatar
+import com.composables.icons.lucide.BookOpen
+import com.composables.icons.lucide.Brain
+import com.composables.icons.lucide.ChevronRight
+import com.composables.icons.lucide.Image
+import com.composables.icons.lucide.Lucide
+import com.composables.icons.lucide.MessageCircleMore
+import com.composables.icons.lucide.NotebookPen
+import com.composables.icons.lucide.SlidersHorizontal
+import com.composables.icons.lucide.UserRound
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -96,7 +92,7 @@ fun AssistantDetailScreen(
     Scaffold(
         topBar = {
             SettingsTopBar(
-                title = assistant.name.ifBlank { "角色" },
+                title = "角色设置",
                 onNavigateBack = onNavigateBack,
             )
         },
@@ -125,21 +121,21 @@ fun AssistantDetailScreen(
             item {
                 SettingsGroup {
                     AssistantEntryRow(
-                        icon = { EntryGlyph(icon = { Icon(Icons.Default.Face, null) }) },
+                        icon = { EntryGlyph(icon = { Icon(Lucide.UserRound, null) }) },
                         title = "基础设定",
                         onClick = onOpenBasic,
                     )
                     SettingsGroupDivider()
                     AssistantEntryRow(
-                        icon = { EntryGlyph(icon = { Icon(Icons.Outlined.Image, null) }) },
+                        icon = { EntryGlyph(icon = { Icon(Lucide.Image, null) }) },
                         title = "角色图工作台",
-                        supporting = "提取角色特性，生成非真人风格头像",
+                        supporting = "",
                         badge = if (assistant.avatarUri.isNotBlank()) "已有头像" else "可生成",
                         onClick = onOpenArtStudio,
                     )
                     SettingsGroupDivider()
                     AssistantEntryRow(
-                        icon = { EntryGlyph(icon = { Icon(Icons.Default.AutoAwesome, null) }) },
+                        icon = { EntryGlyph(icon = { Icon(Lucide.NotebookPen, null) }) },
                         title = "角色人设",
                         supporting = assistant.initialWalletBalanceCents
                             .takeIf { it > 0L }
@@ -149,7 +145,7 @@ fun AssistantDetailScreen(
                     )
                     SettingsGroupDivider()
                     AssistantEntryRow(
-                        icon = { EntryGlyph(icon = { Icon(Icons.Default.Tune, null) }) },
+                        icon = { EntryGlyph(icon = { Icon(Lucide.SlidersHorizontal, null) }) },
                         title = "默认预设",
                         supporting = if (followsGlobalPreset) {
                             activePreset?.name?.let { "$it · 跟随全局" } ?: "跟随全局默认"
@@ -161,14 +157,14 @@ fun AssistantDetailScreen(
                     )
                     SettingsGroupDivider()
                     AssistantEntryRow(
-                        icon = { EntryGlyph(icon = { Icon(Icons.AutoMirrored.Filled.MenuBook, null) }) },
+                        icon = { EntryGlyph(icon = { Icon(Lucide.BookOpen, null) }) },
                         title = "扩展管理",
                         badge = if (linkedWorldBookCount > 0) "$linkedWorldBookCount 项可用" else "无可用",
                         onClick = onOpenExtensions,
                     )
                     SettingsGroupDivider()
                     AssistantEntryRow(
-                        icon = { EntryGlyph(icon = { Icon(Icons.Default.Psychology, null) }) },
+                        icon = { EntryGlyph(icon = { Icon(Lucide.Brain, null) }) },
                         title = "记忆",
                         badge = if (assistant.memoryEnabled) "已启用" else "未启用",
                         onClick = onOpenMemory,
@@ -177,9 +173,13 @@ fun AssistantDetailScreen(
             }
 
             item {
+                SettingsSectionHeader(title = "朋友圈", description = "")
+            }
+
+            item {
                 SettingsGroup {
                     AssistantMomentSwitchRow(
-                        icon = { EntryGlyph(icon = { Icon(Icons.Default.Forum, null) }) },
+                        icon = { EntryGlyph(icon = { Icon(Lucide.MessageCircleMore, null) }) },
                         title = "主动评论朋友圈",
                         supporting = "用户发朋友圈或评论后，角色会按人设参与互动",
                         checked = assistant.momentAutoCommentEnabled,
@@ -189,7 +189,7 @@ fun AssistantDetailScreen(
                     )
                     SettingsGroupDivider()
                     AssistantMomentSwitchRow(
-                        icon = { EntryGlyph(icon = { Icon(Icons.Default.AutoAwesome, null) }) },
+                        icon = { EntryGlyph(icon = { Icon(Lucide.NotebookPen, null) }) },
                         title = "主动发朋友圈",
                         supporting = "后台定时生成角色自己的生活动态",
                         checked = assistant.momentAutoPostEnabled,
@@ -199,7 +199,7 @@ fun AssistantDetailScreen(
                     )
                     SettingsGroupDivider()
                     AssistantMomentSwitchRow(
-                        icon = { EntryGlyph(icon = { Icon(Icons.Outlined.Image, null) }) },
+                        icon = { EntryGlyph(icon = { Icon(Lucide.Image, null) }) },
                         title = "主动朋友圈配图",
                         supporting = "开启后角色发动态时可调用默认生图模型",
                         checked = assistant.momentAutoImageEnabled,
@@ -313,69 +313,37 @@ private fun AssistantHeroPanel(
     linkedWorldBookCount: Int,
 ) {
     val palette = rememberSettingsPalette()
-    // 大 hero 的玻璃渐变：accent → accentSoft → surface 的斜向过渡，模拟毛玻璃高光。
-    val heroGradient = Brush.linearGradient(
-        colors = listOf(
-            palette.accent.copy(alpha = 0.22f),
-            palette.accentSoft.copy(alpha = 0.14f),
-            palette.surface.copy(alpha = 0.95f),
-        ),
-    )
-    // 头像背后的柔光环：径向渐变 + CircleShape 裁剪，营造"发光点"视觉焦点。
-    val haloGradient = Brush.radialGradient(
-        colors = listOf(
-            palette.accent.copy(alpha = 0.38f),
-            palette.accent.copy(alpha = 0.12f),
-            palette.accent.copy(alpha = 0.0f),
-        ),
-    )
-    Box(
+    Column(
         modifier = Modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(32.dp))
-            .background(heroGradient)
-            .border(
-                border = BorderStroke(1.dp, palette.accent.copy(alpha = 0.24f)),
-                shape = RoundedCornerShape(32.dp),
-            ),
+            .padding(vertical = 12.dp),
+        verticalArrangement = Arrangement.spacedBy(16.dp),
     ) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 24.dp, vertical = 28.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(16.dp),
+            verticalAlignment = Alignment.CenterVertically,
         ) {
-            Box(
-                modifier = Modifier.size(124.dp),
-                contentAlignment = Alignment.Center,
-            ) {
-                Box(
-                    modifier = Modifier
-                        .size(124.dp)
-                        .clip(CircleShape)
-                        .background(haloGradient),
-                )
-                AssistantAvatar(
-                    name = assistant.name,
-                    iconName = assistant.iconName,
-                    avatarUri = assistant.avatarUri,
-                    size = 88.dp,
-                    containerColor = palette.accentSoft.copy(alpha = 0.55f),
-                    contentColor = palette.accent,
-                    cornerRadius = 28.dp,
-                )
-            }
-
+            AssistantAvatar(
+                name = assistant.name,
+                iconName = assistant.iconName,
+                avatarUri = assistant.avatarUri,
+                size = 64.dp,
+                containerColor = palette.accentSoft,
+                contentColor = palette.accent,
+                cornerRadius = 32.dp,
+            )
             Column(
-                horizontalAlignment = Alignment.CenterHorizontally,
+                modifier = Modifier.weight(1f),
                 verticalArrangement = Arrangement.spacedBy(6.dp),
             ) {
                 Text(
                     text = assistant.name.ifBlank { "未命名角色" },
-                    style = MaterialTheme.typography.headlineSmall,
+                    style = MaterialTheme.typography.titleLarge,
                     fontWeight = FontWeight.Bold,
                     color = palette.title,
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis,
                 )
                 assistant.description
                     .takeIf { it.isNotBlank() }
@@ -384,31 +352,31 @@ private fun AssistantHeroPanel(
                             text = description,
                             style = MaterialTheme.typography.bodyMedium,
                             color = palette.body,
-                            maxLines = 3,
+                            maxLines = 2,
                             overflow = TextOverflow.Ellipsis,
                         )
                     }
             }
-
-            Row(
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-            ) {
-                SettingsStatusPill(
-                    text = if (assistant.memoryEnabled) "记忆开启" else "记忆关闭",
-                    containerColor = if (assistant.memoryEnabled) palette.accentSoft else palette.surfaceTint,
-                    contentColor = if (assistant.memoryEnabled) palette.accent else palette.body,
-                )
-                SettingsStatusPill(
-                    text = "$assistantMemoryCount 条记忆",
-                    containerColor = palette.subtleChip,
-                    contentColor = palette.subtleChipContent,
-                )
-                SettingsStatusPill(
-                    text = "$linkedWorldBookCount 本可用",
-                    containerColor = palette.surfaceTint,
-                    contentColor = palette.body,
-                )
-            }
+        }
+        FlowRow(
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
+            verticalArrangement = Arrangement.spacedBy(6.dp),
+        ) {
+            Text(
+                text = if (assistant.memoryEnabled) "记忆已开启" else "记忆未开启",
+                style = MaterialTheme.typography.bodySmall,
+                color = if (assistant.memoryEnabled) palette.accent else palette.body,
+            )
+            Text(
+                text = "$assistantMemoryCount 条记忆",
+                style = MaterialTheme.typography.bodySmall,
+                color = palette.body,
+            )
+            Text(
+                text = "$linkedWorldBookCount 本世界书可用",
+                style = MaterialTheme.typography.bodySmall,
+                color = palette.body,
+            )
         }
     }
 }
@@ -425,12 +393,12 @@ private fun AssistantEntryRow(
     Surface(
         modifier = Modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(24.dp))
+            .clip(RoundedCornerShape(8.dp))
             .clickable(onClick = onClick),
         color = androidx.compose.ui.graphics.Color.Transparent,
     ) {
         Row(
-            modifier = Modifier.padding(horizontal = 18.dp, vertical = 18.dp),
+            modifier = Modifier.padding(horizontal = 4.dp, vertical = 16.dp),
             horizontalArrangement = Arrangement.spacedBy(14.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
@@ -439,14 +407,14 @@ private fun AssistantEntryRow(
                 modifier = Modifier.weight(1f),
                 verticalArrangement = Arrangement.spacedBy(6.dp),
             ) {
-                Row(
+                FlowRow(
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    verticalAlignment = Alignment.CenterVertically,
+                    verticalArrangement = Arrangement.spacedBy(4.dp),
                 ) {
                     Text(
                         text = title,
                         style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Bold,
+                        fontWeight = FontWeight.SemiBold,
                         color = palette.title,
                     )
                     badge?.takeIf { it.isNotBlank() }?.let {
@@ -466,7 +434,7 @@ private fun AssistantEntryRow(
                 }
             }
             Icon(
-                imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
+                imageVector = Lucide.ChevronRight,
                 contentDescription = null,
                 tint = palette.accent,
             )
@@ -481,8 +449,8 @@ private fun EntryGlyph(
     val palette = rememberSettingsPalette()
     Surface(
         modifier = Modifier.size(40.dp),
-        shape = RoundedCornerShape(14.dp),
-        color = palette.accentSoft,
+        shape = RoundedCornerShape(8.dp),
+        color = androidx.compose.ui.graphics.Color.Transparent,
         contentColor = palette.accent,
     ) {
         Box(contentAlignment = Alignment.Center) {
@@ -505,8 +473,8 @@ private fun AssistantMomentSwitchRow(
         modifier = Modifier
             .fillMaxWidth()
             .clickable(enabled = enabled) { onCheckedChange(!checked) }
-            .padding(horizontal = 18.dp, vertical = 16.dp),
-        horizontalArrangement = Arrangement.spacedBy(14.dp),
+            .padding(horizontal = 4.dp, vertical = 12.dp),
+        horizontalArrangement = Arrangement.spacedBy(10.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         icon()
@@ -520,12 +488,8 @@ private fun AssistantMomentSwitchRow(
                 fontWeight = FontWeight.Bold,
                 color = if (enabled) palette.title else palette.body,
             )
-            Text(
-                text = supporting,
-                style = MaterialTheme.typography.bodySmall,
-                color = palette.body,
-            )
         }
+        SettingsHelpButton(title = title, description = supporting)
         Switch(
             checked = checked,
             onCheckedChange = onCheckedChange,
@@ -545,12 +509,13 @@ private fun AssistantMomentCycleRow(
         modifier = Modifier
             .fillMaxWidth()
             .clickable(onClick = onClick)
-            .padding(horizontal = 18.dp, vertical = 16.dp),
-        horizontalArrangement = Arrangement.SpaceBetween,
+            .padding(horizontal = 4.dp, vertical = 16.dp),
+        horizontalArrangement = Arrangement.spacedBy(12.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Text(
             text = title,
+            modifier = Modifier.weight(1f),
             style = MaterialTheme.typography.titleSmall,
             fontWeight = FontWeight.Bold,
             color = palette.title,

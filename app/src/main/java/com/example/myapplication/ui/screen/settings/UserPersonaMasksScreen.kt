@@ -4,10 +4,11 @@ import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
@@ -16,12 +17,9 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.Check
-import androidx.compose.material.icons.filled.Delete
-import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -52,6 +50,9 @@ import com.example.myapplication.model.normalized
 import com.example.myapplication.ui.LocalImagePersister
 import com.example.myapplication.ui.component.NarraFilledTonalButton
 import com.example.myapplication.ui.component.UserProfileAvatar
+import com.composables.icons.lucide.EllipsisVertical
+import com.composables.icons.lucide.Image
+import com.composables.icons.lucide.Lucide
 import kotlinx.coroutines.launch
 import java.util.UUID
 
@@ -74,7 +75,6 @@ fun UserPersonaMasksScreen(
         topBar = {
             SettingsTopBar(
                 title = "我的面具",
-                subtitle = "管理不同对话里的“我”",
                 onNavigateBack = onNavigateBack,
                 actionLabel = "新增",
                 onAction = {
@@ -106,15 +106,9 @@ fun UserPersonaMasksScreen(
             verticalArrangement = Arrangement.spacedBy(16.dp),
         ) {
             item {
-                SettingsPageIntro(
-                    title = "身份库",
-                    summary = "每个面具都包含昵称、头像和用户人设。角色场景绑定面具后，会话展示、提示词、日记和手机内容都会使用这套身份。",
-                )
-            }
-            item {
                 SettingsSectionHeader(
-                    title = "面具列表",
-                    description = "这里设置的是全局默认面具，只对没有单独绑定面具的角色生效；给某个角色单独绑定，请在该角色的侧边设置里改「本角色面具」。",
+                    title = "${masks.size} 个面具",
+                    description = "每个面具包含昵称、头像和用户人设，会用于对话、日记和手机内容。全局默认面具只对没有单独绑定面具的角色生效；给某个角色单独绑定，请在该角色的侧边设置里改「本角色面具」。",
                 )
             }
             item {
@@ -122,7 +116,7 @@ fun UserPersonaMasksScreen(
                     if (masks.isEmpty()) {
                         SettingsPlaceholderRow(
                             title = "还没有面具",
-                            subtitle = "点右上角新增，会先用当前全局个人资料生成一张面具草稿。",
+                            subtitle = "添加一个新身份",
                         )
                     } else {
                         masks.forEachIndexed { index, mask ->
@@ -192,20 +186,21 @@ private fun PersonaMaskRow(
     onSetDefault: () -> Unit,
 ) {
     val palette = rememberSettingsPalette()
+    var menuExpanded by remember { mutableStateOf(false) }
     Surface(
         modifier = Modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(18.dp))
+            .clip(RoundedCornerShape(8.dp))
             .clickable(onClick = onEdit),
-        color = if (isDefault) palette.accentSoft.copy(alpha = 0.24f) else palette.surface,
-        shape = RoundedCornerShape(18.dp),
+        color = palette.surface,
+        shape = RoundedCornerShape(8.dp),
     ) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 18.dp, vertical = 14.dp),
+                .padding(horizontal = 4.dp, vertical = 14.dp),
             verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(14.dp),
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
         ) {
             UserProfileAvatar(
                 displayName = mask.name,
@@ -219,19 +214,18 @@ private fun PersonaMaskRow(
                 modifier = Modifier.weight(1f),
                 verticalArrangement = Arrangement.spacedBy(4.dp),
             ) {
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
+                Text(
+                    text = mask.name,
+                    style = androidx.compose.material3.MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.SemiBold,
+                    color = palette.title,
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis,
+                )
+                FlowRow(
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalArrangement = Arrangement.spacedBy(4.dp),
                 ) {
-                    Text(
-                        text = mask.name,
-                        style = androidx.compose.material3.MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.SemiBold,
-                        color = palette.title,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
-                        modifier = Modifier.weight(1f, fill = false),
-                    )
                     if (isDefault) {
                         SettingsStatusPill(
                             text = "全局默认",
@@ -255,19 +249,34 @@ private fun PersonaMaskRow(
                     overflow = TextOverflow.Ellipsis,
                 )
             }
-            Column(
-                horizontalAlignment = Alignment.CenterHorizontally,
-            ) {
-                IconButton(onClick = onEdit) {
-                    Icon(Icons.Default.Edit, contentDescription = "编辑面具", tint = palette.title)
+            Box {
+                IconButton(onClick = { menuExpanded = true }, modifier = Modifier.size(48.dp)) {
+                    Icon(Lucide.EllipsisVertical, contentDescription = "${mask.name}：更多操作", tint = palette.body)
                 }
-                Row {
-                    IconButton(onClick = onSetDefault, enabled = !isDefault) {
-                        Icon(Icons.Default.Check, contentDescription = "设为全局默认", tint = palette.body)
-                    }
-                    IconButton(onClick = onDelete, enabled = canDelete) {
-                        Icon(Icons.Default.Delete, contentDescription = "删除面具", tint = palette.body)
-                    }
+                DropdownMenu(expanded = menuExpanded, onDismissRequest = { menuExpanded = false }) {
+                    DropdownMenuItem(
+                        text = { Text("编辑面具") },
+                        onClick = {
+                            menuExpanded = false
+                            onEdit()
+                        },
+                    )
+                    DropdownMenuItem(
+                        text = { Text(if (isDefault) "已是全局默认" else "设为全局默认") },
+                        enabled = !isDefault,
+                        onClick = {
+                            menuExpanded = false
+                            onSetDefault()
+                        },
+                    )
+                    DropdownMenuItem(
+                        text = { Text(if (canDelete) "删除面具" else "基础面具不可删除") },
+                        enabled = canDelete,
+                        onClick = {
+                            menuExpanded = false
+                            onDelete()
+                        },
+                    )
                 }
             }
         }
@@ -326,36 +335,32 @@ private fun PersonaMaskEditorSheet(
                 )
             }
             item {
-                Surface(
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(24.dp),
-                    color = palette.surface,
-                    border = BorderStroke(0.75.dp, palette.border),
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = 8.dp),
+                    horizontalArrangement = Arrangement.spacedBy(16.dp),
+                    verticalAlignment = Alignment.CenterVertically,
                 ) {
-                    Column(
-                        modifier = Modifier.padding(18.dp),
-                        verticalArrangement = Arrangement.spacedBy(14.dp),
-                        horizontalAlignment = Alignment.CenterHorizontally,
+                    UserProfileAvatar(
+                        displayName = name,
+                        avatarUri = avatarUri,
+                        avatarUrl = avatarUrl,
+                        modifier = Modifier.size(72.dp),
+                        containerColor = palette.subtleChip,
+                        contentColor = palette.subtleChipContent,
+                    )
+                    NarraFilledTonalButton(
+                        onClick = {
+                            avatarLauncher.launch(
+                                PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly),
+                            )
+                        },
+                        shape = RoundedCornerShape(8.dp),
+                        modifier = Modifier.weight(1f),
                     ) {
-                        UserProfileAvatar(
-                            displayName = name,
-                            avatarUri = avatarUri,
-                            avatarUrl = avatarUrl,
-                            modifier = Modifier.size(72.dp),
-                            containerColor = palette.subtleChip,
-                            contentColor = palette.subtleChipContent,
-                        )
-                        NarraFilledTonalButton(
-                            onClick = {
-                                avatarLauncher.launch(
-                                    PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly),
-                                )
-                            },
-                            shape = RoundedCornerShape(16.dp),
-                        ) {
-                            Icon(Icons.Default.Add, contentDescription = null, modifier = Modifier.size(18.dp))
-                            Text("选择头像")
-                        }
+                        Icon(Lucide.Image, contentDescription = null, modifier = Modifier.size(20.dp))
+                        Text("选择头像")
                     }
                 }
             }
@@ -366,7 +371,7 @@ private fun PersonaMaskEditorSheet(
                     modifier = Modifier.fillMaxWidth(),
                     label = { Text("面具昵称") },
                     singleLine = true,
-                    shape = RoundedCornerShape(18.dp),
+                    shape = RoundedCornerShape(8.dp),
                     colors = outlineColors,
                 )
             }
@@ -380,7 +385,7 @@ private fun PersonaMaskEditorSheet(
                     modifier = Modifier.fillMaxWidth(),
                     label = { Text("头像链接") },
                     singleLine = true,
-                    shape = RoundedCornerShape(18.dp),
+                    shape = RoundedCornerShape(8.dp),
                     colors = outlineColors,
                 )
             }
@@ -392,7 +397,7 @@ private fun PersonaMaskEditorSheet(
                     label = { Text("用户人设") },
                     minLines = 4,
                     maxLines = 8,
-                    shape = RoundedCornerShape(18.dp),
+                    shape = RoundedCornerShape(8.dp),
                     colors = outlineColors,
                 )
             }
@@ -404,7 +409,7 @@ private fun PersonaMaskEditorSheet(
                     label = { Text("备注") },
                     minLines = 2,
                     maxLines = 4,
-                    shape = RoundedCornerShape(18.dp),
+                    shape = RoundedCornerShape(8.dp),
                     colors = outlineColors,
                 )
             }
@@ -425,7 +430,7 @@ private fun PersonaMaskEditorSheet(
                     },
                     enabled = name.isNotBlank(),
                     modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(18.dp),
+                    shape = RoundedCornerShape(8.dp),
                 ) {
                     Text("保存面具")
                 }

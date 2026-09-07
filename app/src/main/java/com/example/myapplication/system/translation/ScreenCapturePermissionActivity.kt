@@ -15,6 +15,7 @@ class ScreenCapturePermissionActivity : ComponentActivity() {
             context = this,
             resultCode = result.resultCode,
             dataIntent = result.data,
+            requestId = intent.getLongExtra(EXTRA_REQUEST_ID, 0L),
         )
         finish()
     }
@@ -31,12 +32,15 @@ class ScreenCapturePermissionActivity : ComponentActivity() {
     }
 
     companion object {
+        private const val EXTRA_REQUEST_ID = "screen_capture_request_id"
+
         fun createIntent(activity: Activity): Intent {
             return Intent(activity, ScreenCapturePermissionActivity::class.java)
         }
 
-        fun createIntent(context: android.content.Context): Intent {
+        fun createIntent(context: android.content.Context, requestId: Long = 0L): Intent {
             return Intent(context, ScreenCapturePermissionActivity::class.java)
+                .putExtra(EXTRA_REQUEST_ID, requestId)
         }
     }
 }

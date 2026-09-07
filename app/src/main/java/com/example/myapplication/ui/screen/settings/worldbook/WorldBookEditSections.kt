@@ -6,10 +6,8 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.outlined.KeyboardArrowDown
-import androidx.compose.material.icons.outlined.KeyboardArrowUp
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -22,7 +20,12 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import com.example.myapplication.ui.screen.settings.SettingsGroup
+import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.MaterialTheme
+import com.composables.icons.lucide.ChevronDown
+import com.composables.icons.lucide.ChevronUp
+import com.composables.icons.lucide.Lucide
+import com.example.myapplication.ui.screen.settings.SettingsHelpButton
 import com.example.myapplication.ui.screen.settings.rememberSettingsPalette
 
 /** 编辑页四段折叠态 + 可选的"试命中"预览段，默认展开前两段。 */
@@ -73,7 +76,7 @@ internal fun rememberWorldBookEditExpandedState(): MutableState<WorldBookEditExp
 }
 
 /**
- * 单段折叠卡片：header 可点击切换展开态；body 走 AnimatedVisibility 平滑展开。
+ * 分段表单保留独立的折叠和说明入口，避免整段表单层层套卡。
  */
 @Composable
 internal fun WorldBookCollapsibleSection(
@@ -88,32 +91,31 @@ internal fun WorldBookCollapsibleSection(
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .clickable(onClick = onToggle)
-                .padding(horizontal = 4.dp, vertical = 8.dp),
+                .heightIn(min = 56.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            Column(modifier = Modifier.weight(1f)) {
+            Row(
+                modifier = Modifier.weight(1f).clickable(onClick = onToggle)
+                    .heightIn(min = 56.dp).padding(horizontal = 4.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
                 Text(
                     text = title,
-                    style = androidx.compose.material3.MaterialTheme.typography.titleMedium,
+                    modifier = Modifier.weight(1f),
+                    style = MaterialTheme.typography.titleMedium,
                     color = palette.title,
                 )
-                if (description.isNotBlank()) {
-                    Text(
-                        text = description,
-                        style = androidx.compose.material3.MaterialTheme.typography.bodySmall,
-                        color = palette.body,
-                    )
-                }
+                Icon(
+                    imageVector = if (expanded) Lucide.ChevronUp else Lucide.ChevronDown,
+                    contentDescription = if (expanded) "折叠$title" else "展开$title",
+                    tint = palette.body,
+                )
             }
-            Icon(
-                imageVector = if (expanded) Icons.Outlined.KeyboardArrowUp else Icons.Outlined.KeyboardArrowDown,
-                contentDescription = if (expanded) "折叠" else "展开",
-                tint = palette.body,
-            )
+            SettingsHelpButton(title, description)
         }
         AnimatedVisibility(visible = expanded) {
-            SettingsGroup { body() }
+            body()
         }
+        HorizontalDivider(color = palette.border)
     }
 }

@@ -8,6 +8,7 @@ import android.app.Service
 import android.content.Context
 import android.content.Intent
 import android.content.pm.ServiceInfo
+import android.content.res.Configuration
 import android.os.Build
 import android.os.IBinder
 import android.provider.Settings
@@ -16,27 +17,35 @@ import androidx.core.content.ContextCompat
 import com.example.myapplication.ChatApplication
 import com.example.myapplication.MainActivity
 import com.example.myapplication.R
+import com.example.myapplication.model.AppColorTheme
 import com.example.myapplication.model.ScreenTextBlock
 import com.example.myapplication.model.ScreenTranslationRequest
 import com.example.myapplication.model.ScreenTranslationSettings
+import com.example.myapplication.model.ThemeMode
 import com.example.myapplication.model.TranslationHistoryEntry
 import com.example.myapplication.model.TranslationSourceType
+import com.example.myapplication.system.security.SensitiveTextRedactor
+import com.example.myapplication.ui.theme.resolveAppColorScheme
 import com.example.myapplication.viewmodel.DefaultAutoDetectLanguage
 import com.example.myapplication.viewmodel.TranslationViewModel
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
+import kotlinx.coroutines.currentCoroutineContext
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.isActive
 import kotlinx.coroutines.withContext
 import java.util.UUID
 
 class ScreenTranslatorService : Service() {
     private val serviceScope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
+    private val translationTasks = ScreenTranslationTasks(serviceScope)
     private val app by lazy { application as ChatApplication }
     private val overlayController by lazy {
         FloatingOverlayController(
@@ -66,22 +75,22 @@ class ScreenTranslatorService : Service() {
                 }
 
                 override fun onSelectedTextTranslationConfirmed() {
-                    pendingSelectedText?.let(::translateSelectedText)
+                    pendingSelectedText?.let { translateSelectedText(it) }
                 }
 
                 override fun onTargetLanguageSelected(language: String) {
-                    serviceScope.launch {
-                        persistScreenTranslationSettings(
-                            latestScreenSettings.copy(targetLanguage = language),
-                        )
-                        retranslateLast()
-                    }
+                    retranslateLast(
+                        requestSettings = latestScreenSettings.copy(targetLanguage = language),
+                        persistSettings = true,
+                    )
                 }
 
                 override fun onRetranslateLast() {
-                    serviceScope.launch {
-                        retranslateLast()
-                    }
+                    retranslateLast()
+                }
+
+                override fun onTranslationPanelDismissed() {
+                    translationTasks.cancel()
                 }
             },
         )
@@ -90,7 +99,8 @@ class ScreenTranslatorService : Service() {
     private val screenCaptureEngine: ScreenCaptureEngine by lazy { MediaProjectionCaptureEngine(this) }
 
     private var latestScreenSettings: ScreenTranslationSettings = ScreenTranslationSettings()
-    private var translationJob: Job? = null
+    private var latestAppColorTheme = AppColorTheme.MATCHA
+    private var latestThemeMode = ThemeMode.SYSTEM
     private var pendingSelectedText: SelectedTextPayload? = null
     private var latestInput: CachedTranslationInput? = null
 
@@ -101,11 +111,14 @@ class ScreenTranslatorService : Service() {
         serviceScope.launch {
             app.aiSettingsRepository.settingsFlow.collect { settings ->
                 latestScreenSettings = settings.screenTranslationSettings
+                latestAppColorTheme = settings.appColorTheme
+                latestThemeMode = settings.themeMode
+                updateOverlayTheme()
+                applyOverlayState(settings.screenTranslationSettings)
                 if (!settings.screenTranslationSettings.serviceEnabled) {
                     stopSelf()
                     return@collect
                 }
-                applyOverlayState(settings.screenTranslationSettings)
                 ensureForeground()
             }
         }
@@ -140,6 +153,12 @@ class ScreenTranslatorService : Service() {
             }
 
             ACTION_HANDLE_CAPTURE_RESULT -> {
+                val requestId = intent.getLongExtra(EXTRA_CAPTURE_REQUEST_ID, 0L)
+                if (!translationTasks.consumeCapturePermission(requestId) ||
+                    !latestScreenSettings.serviceEnabled || !hasOverlayPermission()
+                ) {
+                    return START_STICKY
+                }
                 val resultCode = intent.getIntExtra(EXTRA_CAPTURE_RESULT_CODE, -1)
                 val dataIntent = intent.getParcelableExtraCompat<Intent>(EXTRA_CAPTURE_DATA_INTENT)
                 if (resultCode == Activity.RESULT_OK && dataIntent != null) {
@@ -148,12 +167,11 @@ class ScreenTranslatorService : Service() {
                         dataIntent = dataIntent,
                     )
                 } else {
-                    overlayController.showTranslationResult(
+                    overlayController.showErrorPanel(
                         appLabel = "当前屏幕",
                         sourceText = "",
-                        translatedText = "未授予屏幕截取权限，无法识别当前屏幕内容。",
+                        message = "未授予屏幕截取权限。再次轻点悬浮球，可重新请求授权。",
                         targetLanguage = latestScreenSettings.targetLanguage,
-                        availableLanguages = supportedTargetLanguages(),
                         showSourceText = latestScreenSettings.showSourceText,
                         allowRetranslate = false,
                     )
@@ -187,7 +205,7 @@ class ScreenTranslatorService : Service() {
     }
 
     override fun onDestroy() {
-        translationJob?.cancel()
+        translationTasks.cancel()
         overlayController.dismissAll()
         ocrEngine.close()
         screenCaptureEngine.release()
@@ -196,6 +214,21 @@ class ScreenTranslatorService : Service() {
     }
 
     override fun onBind(intent: Intent?): IBinder? = null
+
+    override fun onConfigurationChanged(newConfig: Configuration) {
+        super.onConfigurationChanged(newConfig)
+        updateOverlayTheme()
+        overlayController.onConfigurationChanged()
+    }
+
+    private fun updateOverlayTheme() {
+        val darkTheme = when (latestThemeMode) {
+            ThemeMode.LIGHT -> false
+            ThemeMode.DARK -> true
+            ThemeMode.SYSTEM -> (resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK) == Configuration.UI_MODE_NIGHT_YES
+        }
+        overlayController.updateTheme(resolveAppColorScheme(latestAppColorTheme, darkTheme))
+    }
 
     private fun requestScreenTranslation() {
         if (!latestScreenSettings.serviceEnabled) {
@@ -208,7 +241,11 @@ class ScreenTranslatorService : Service() {
             translateCapturedScreen()
             return
         }
-        val intent = ScreenCapturePermissionActivity.createIntent(this)
+        val requestId = translationTasks.beginCapturePermission() ?: return
+        latestInput = null
+        overlayController.hideResultPanel()
+        overlayController.hideSelectedTextAction()
+        val intent = ScreenCapturePermissionActivity.createIntent(this, requestId)
             .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
         startActivity(intent)
     }
@@ -217,8 +254,10 @@ class ScreenTranslatorService : Service() {
         resultCode: Int? = null,
         dataIntent: Intent? = null,
     ) {
-        translationJob?.cancel()
-        translationJob = serviceScope.launch {
+        val requestSettings = latestScreenSettings
+        latestInput = null
+        overlayController.dismissAll()
+        translationTasks.launch {
             try {
                 if (!screenCaptureEngine.hasActiveSession()) {
                     val safeResultCode = resultCode ?: throw IllegalStateException("缺少屏幕共享授权结果")
@@ -231,28 +270,34 @@ class ScreenTranslatorService : Service() {
                 promoteForMediaProjection()
                 val sourceAppLabel = ForegroundAppSnapshot.appLabel.ifBlank { "当前屏幕" }
                 val sourceAppPackage = ForegroundAppSnapshot.packageName
-                overlayController.showLoadingPanel(
-                    appLabel = sourceAppLabel,
-                    sourceText = "正在识别屏幕文本…",
-                    targetLanguage = latestScreenSettings.targetLanguage,
-                    showSourceText = latestScreenSettings.showSourceText,
-                )
+                // 先让悬浮窗从画面移除，再截取；否则 OCR 会读到上一次译文和加载面板。
+                delay(120)
                 val bitmap = withContext(Dispatchers.IO) {
                     screenCaptureEngine.capture()
                 }
-                val blocks = withContext(Dispatchers.Default) {
-                    ocrEngine.recognize(bitmap)
+                val blocks = try {
+                    applyOverlayState(latestScreenSettings)
+                    ensureActive()
+                    overlayController.showLoadingPanel(
+                        appLabel = sourceAppLabel,
+                        sourceText = "正在识别屏幕文本…",
+                        targetLanguage = requestSettings.targetLanguage,
+                        showSourceText = requestSettings.showSourceText,
+                    )
+                    withContext(Dispatchers.Default) {
+                        ocrEngine.recognize(bitmap)
+                    }
+                } finally {
+                    bitmap.recycle()
                 }
-                bitmap.recycle()
 
                 if (blocks.isEmpty()) {
-                    overlayController.showTranslationResult(
+                    overlayController.showErrorPanel(
                         appLabel = sourceAppLabel,
                         sourceText = "",
-                        translatedText = "未识别到可翻译文本，请尝试切换页面、放大文字或重新截图。",
-                        targetLanguage = latestScreenSettings.targetLanguage,
-                        availableLanguages = supportedTargetLanguages(),
-                        showSourceText = latestScreenSettings.showSourceText,
+                        message = "未识别到可翻译文本。试着放大文字或切换页面，再轻点悬浮球。",
+                        targetLanguage = requestSettings.targetLanguage,
+                        showSourceText = requestSettings.showSourceText,
                         allowRetranslate = false,
                     )
                     return@launch
@@ -262,17 +307,17 @@ class ScreenTranslatorService : Service() {
                     sourceType = TranslationSourceType.SCREEN_CAPTURE,
                     appPackage = sourceAppPackage,
                     appLabel = sourceAppLabel,
-                    targetLanguage = latestScreenSettings.targetLanguage,
+                    targetLanguage = requestSettings.targetLanguage,
                     segments = blocks,
                 )
-                val translationResult = withContext(Dispatchers.IO) {
-                    app.aiTranslationService.translateStructuredSegments(request)
-                }
                 latestInput = CachedTranslationInput.ScreenCapture(
                     appPackage = sourceAppPackage,
                     appLabel = sourceAppLabel,
                     segments = blocks,
                 )
+                val translationResult = withContext(Dispatchers.IO) {
+                    app.aiTranslationService.translateStructuredSegments(request)
+                }
 
                 val sourceText = blocks.joinToString(separator = "\n") { it.text }
                 val translatedText = translationResult.fullTranslation.ifBlank {
@@ -282,9 +327,9 @@ class ScreenTranslatorService : Service() {
                     appLabel = sourceAppLabel,
                     sourceText = sourceText,
                     translatedText = translatedText,
-                    targetLanguage = latestScreenSettings.targetLanguage,
+                    targetLanguage = requestSettings.targetLanguage,
                     availableLanguages = supportedTargetLanguages(),
-                    showSourceText = latestScreenSettings.showSourceText,
+                    showSourceText = requestSettings.showSourceText,
                     allowRetranslate = true,
                 )
                 appendHistoryEntry(
@@ -293,34 +338,41 @@ class ScreenTranslatorService : Service() {
                     sourceType = TranslationSourceType.SCREEN_CAPTURE,
                     sourceAppPackage = sourceAppPackage,
                     sourceAppLabel = sourceAppLabel,
+                    targetLanguage = requestSettings.targetLanguage,
                 )
             } catch (throwable: Throwable) {
                 if (throwable is CancellationException) throw throwable
+                ensureActive()
                 if (throwable.message?.contains("当前没有可用的屏幕共享会话") == true) {
                     screenCaptureEngine.release()
                 }
-                overlayController.showTranslationResult(
+                overlayController.showErrorPanel(
                     appLabel = ForegroundAppSnapshot.appLabel.ifBlank { "当前屏幕" },
                     sourceText = "",
-                    translatedText = throwable.message ?: "屏幕译文失败",
-                    targetLanguage = latestScreenSettings.targetLanguage,
-                    availableLanguages = supportedTargetLanguages(),
-                    showSourceText = latestScreenSettings.showSourceText,
+                    message = SensitiveTextRedactor.throwableMessageForUi(throwable, "屏幕翻译失败，请稍后重试。"),
+                    targetLanguage = requestSettings.targetLanguage,
+                    showSourceText = requestSettings.showSourceText,
                     allowRetranslate = latestInput != null,
                 )
             } finally {
-                if (!screenCaptureEngine.hasActiveSession()) {
-                    ensureForeground()
+                if (isActive) {
+                    applyOverlayState(latestScreenSettings)
+                    if (!screenCaptureEngine.hasActiveSession()) ensureForeground()
                 }
             }
         }
     }
 
-    private fun translateSelectedText(payload: SelectedTextPayload) {
+    private fun translateSelectedText(
+        payload: SelectedTextPayload,
+        requestSettings: ScreenTranslationSettings = latestScreenSettings,
+        persistSettings: Boolean = false,
+    ) {
         overlayController.hideSelectedTextAction()
-        translationJob?.cancel()
-        translationJob = serviceScope.launch {
+        translationTasks.launch {
             try {
+                applyOverlayState(latestScreenSettings)
+                ensureActive()
                 latestInput = CachedTranslationInput.SelectedText(
                     text = payload.text,
                     appPackage = payload.sourceAppPackage,
@@ -329,69 +381,113 @@ class ScreenTranslatorService : Service() {
                 overlayController.showLoadingPanel(
                     appLabel = payload.sourceAppLabel.ifBlank { "当前应用" },
                     sourceText = payload.text,
-                    targetLanguage = latestScreenSettings.targetLanguage,
-                    showSourceText = latestScreenSettings.showSourceText,
+                    targetLanguage = requestSettings.targetLanguage,
+                    showSourceText = requestSettings.showSourceText,
                 )
+                if (persistSettings) persistScreenTranslationSettings(requestSettings)
+                ensureActive()
                 var latestTranslation = ""
                 withContext(Dispatchers.IO) {
                     app.aiTranslationService.translateTextStream(
                         text = payload.text,
-                        targetLanguage = latestScreenSettings.targetLanguage,
+                        targetLanguage = requestSettings.targetLanguage,
                         sourceLanguage = DefaultAutoDetectLanguage,
                     ).collect { translated ->
                         latestTranslation = translated
-                        serviceScope.launch {
-                            overlayController.showTranslationResult(
+                        withContext(Dispatchers.Main.immediate) {
+                            overlayController.showLoadingPanel(
                                 appLabel = payload.sourceAppLabel.ifBlank { "当前应用" },
                                 sourceText = payload.text,
                                 translatedText = translated,
-                                targetLanguage = latestScreenSettings.targetLanguage,
-                                availableLanguages = supportedTargetLanguages(),
-                                showSourceText = latestScreenSettings.showSourceText,
-                                allowRetranslate = true,
+                                targetLanguage = requestSettings.targetLanguage,
+                                showSourceText = requestSettings.showSourceText,
                             )
                         }
                     }
                 }
                 if (latestTranslation.isNotBlank()) {
+                    overlayController.showTranslationResult(
+                        appLabel = payload.sourceAppLabel.ifBlank { "当前应用" },
+                        sourceText = payload.text,
+                        translatedText = latestTranslation,
+                        targetLanguage = requestSettings.targetLanguage,
+                        availableLanguages = supportedTargetLanguages(),
+                        showSourceText = requestSettings.showSourceText,
+                        allowRetranslate = true,
+                    )
                     appendHistoryEntry(
                         sourceText = payload.text,
                         translatedText = latestTranslation,
                         sourceType = TranslationSourceType.SELECTED_TEXT,
                         sourceAppPackage = payload.sourceAppPackage,
                         sourceAppLabel = payload.sourceAppLabel,
+                        targetLanguage = requestSettings.targetLanguage,
+                    )
+                } else {
+                    overlayController.showErrorPanel(
+                        appLabel = payload.sourceAppLabel.ifBlank { "当前应用" },
+                        sourceText = payload.text,
+                        message = "暂未收到译文，请重试。",
+                        targetLanguage = requestSettings.targetLanguage,
+                        showSourceText = requestSettings.showSourceText,
+                        allowRetranslate = true,
                     )
                 }
             } catch (throwable: Throwable) {
                 if (throwable is CancellationException) throw throwable
-                overlayController.showTranslationResult(
+                ensureActive()
+                overlayController.showErrorPanel(
                     appLabel = payload.sourceAppLabel.ifBlank { "当前应用" },
                     sourceText = payload.text,
-                    translatedText = throwable.message ?: "选中文本翻译失败",
-                    targetLanguage = latestScreenSettings.targetLanguage,
-                    availableLanguages = supportedTargetLanguages(),
-                    showSourceText = latestScreenSettings.showSourceText,
+                    message = SensitiveTextRedactor.throwableMessageForUi(throwable, "选中文本翻译失败，请稍后重试。"),
+                    targetLanguage = requestSettings.targetLanguage,
+                    showSourceText = requestSettings.showSourceText,
                     allowRetranslate = true,
                 )
             }
         }
     }
 
-    private suspend fun retranslateLast() {
-        when (val input = latestInput) {
-            is CachedTranslationInput.ScreenCapture -> {
+    private fun retranslateLast(
+        requestSettings: ScreenTranslationSettings = latestScreenSettings,
+        persistSettings: Boolean = false,
+    ) {
+        val input = latestInput ?: return
+        if (input is CachedTranslationInput.SelectedText) {
+            translateSelectedText(
+                SelectedTextPayload(
+                    text = input.text,
+                    sourceAppPackage = input.appPackage,
+                    sourceAppLabel = input.appLabel,
+                ),
+                requestSettings = requestSettings,
+                persistSettings = persistSettings,
+            )
+            return
+        }
+        input as CachedTranslationInput.ScreenCapture
+        translationTasks.launch {
+            val sourceText = input.segments.joinToString(separator = "\n") { it.text }
+            overlayController.showLoadingPanel(
+                appLabel = input.appLabel.ifBlank { "当前屏幕" },
+                sourceText = sourceText,
+                targetLanguage = requestSettings.targetLanguage,
+                showSourceText = requestSettings.showSourceText,
+            )
+            try {
+                if (persistSettings) persistScreenTranslationSettings(requestSettings)
+                ensureActive()
                 val translationResult = withContext(Dispatchers.IO) {
                     app.aiTranslationService.translateStructuredSegments(
                         ScreenTranslationRequest(
                             sourceType = TranslationSourceType.SCREEN_CAPTURE,
                             appPackage = input.appPackage,
                             appLabel = input.appLabel,
-                            targetLanguage = latestScreenSettings.targetLanguage,
+                            targetLanguage = requestSettings.targetLanguage,
                             segments = input.segments,
                         ),
                     )
                 }
-                val sourceText = input.segments.joinToString(separator = "\n") { it.text }
                 val translatedText = translationResult.fullTranslation.ifBlank {
                     translationResult.translatedSegments.joinToString(separator = "\n") { it.translatedText }
                 }
@@ -399,24 +495,23 @@ class ScreenTranslatorService : Service() {
                     appLabel = input.appLabel.ifBlank { "当前屏幕" },
                     sourceText = sourceText,
                     translatedText = translatedText,
-                    targetLanguage = latestScreenSettings.targetLanguage,
+                    targetLanguage = requestSettings.targetLanguage,
                     availableLanguages = supportedTargetLanguages(),
-                    showSourceText = latestScreenSettings.showSourceText,
+                    showSourceText = requestSettings.showSourceText,
+                    allowRetranslate = true,
+                )
+            } catch (throwable: Throwable) {
+                if (throwable is CancellationException) throw throwable
+                ensureActive()
+                overlayController.showErrorPanel(
+                    appLabel = input.appLabel.ifBlank { "当前屏幕" },
+                    sourceText = sourceText,
+                    message = SensitiveTextRedactor.throwableMessageForUi(throwable, "重译失败，请稍后重试。"),
+                    targetLanguage = requestSettings.targetLanguage,
+                    showSourceText = requestSettings.showSourceText,
                     allowRetranslate = true,
                 )
             }
-
-            is CachedTranslationInput.SelectedText -> {
-                translateSelectedText(
-                    SelectedTextPayload(
-                        text = input.text,
-                        sourceAppPackage = input.appPackage,
-                        sourceAppLabel = input.appLabel,
-                    ),
-                )
-            }
-
-            null -> Unit
         }
     }
 
@@ -426,6 +521,7 @@ class ScreenTranslatorService : Service() {
         sourceType: TranslationSourceType,
         sourceAppPackage: String,
         sourceAppLabel: String,
+        targetLanguage: String,
     ) {
         val settings = app.aiSettingsRepository.settingsFlow.first()
         val activeModel = settings.activeProvider()
@@ -437,7 +533,7 @@ class ScreenTranslatorService : Service() {
             sourceText = sourceText,
             translatedText = translatedText,
             sourceLanguage = DefaultAutoDetectLanguage,
-            targetLanguage = latestScreenSettings.targetLanguage,
+            targetLanguage = targetLanguage,
             modelName = activeModel,
             createdAt = System.currentTimeMillis(),
             sourceType = sourceType,
@@ -453,16 +549,17 @@ class ScreenTranslatorService : Service() {
     }
 
     private suspend fun persistScreenTranslationSettings(settings: ScreenTranslationSettings) {
-        latestScreenSettings = settings
         app.aiSettingsEditor.saveScreenTranslationSettings(settings)
+        currentCoroutineContext().ensureActive()
+        latestScreenSettings = settings
         applyOverlayState(settings)
         ensureForeground()
     }
 
     private fun applyOverlayState(settings: ScreenTranslationSettings) {
         if (!settings.serviceEnabled || !hasOverlayPermission()) {
-            overlayController.hideFloatingBall()
-            overlayController.hideSelectedTextAction()
+            translationTasks.cancel()
+            overlayController.dismissAll()
             return
         }
         if (settings.overlayEnabled) {
@@ -618,6 +715,7 @@ class ScreenTranslatorService : Service() {
         const val ACTION_SELECTED_TEXT_DISMISSED = "screen_translation.selected_text_dismissed"
         const val EXTRA_CAPTURE_RESULT_CODE = "extra_capture_result_code"
         const val EXTRA_CAPTURE_DATA_INTENT = "extra_capture_data_intent"
+        private const val EXTRA_CAPTURE_REQUEST_ID = "extra_capture_request_id"
         const val EXTRA_SELECTED_TEXT = "extra_selected_text"
         const val EXTRA_SOURCE_PACKAGE = "extra_source_package"
         const val EXTRA_SOURCE_APP_LABEL = "extra_source_app_label"
@@ -639,12 +737,14 @@ class ScreenTranslatorService : Service() {
             context: Context,
             resultCode: Int,
             dataIntent: Intent?,
+            requestId: Long = 0L,
         ) {
             context.startService(
                 Intent(context, ScreenTranslatorService::class.java)
                     .setAction(ACTION_HANDLE_CAPTURE_RESULT)
                     .putExtra(EXTRA_CAPTURE_RESULT_CODE, resultCode)
-                    .putExtra(EXTRA_CAPTURE_DATA_INTENT, dataIntent),
+                    .putExtra(EXTRA_CAPTURE_DATA_INTENT, dataIntent)
+                    .putExtra(EXTRA_CAPTURE_REQUEST_ID, requestId),
             )
         }
 

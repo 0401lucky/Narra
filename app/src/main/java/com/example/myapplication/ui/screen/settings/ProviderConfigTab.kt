@@ -3,17 +3,20 @@ package com.example.myapplication.ui.screen.settings
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.selection.selectable
+import androidx.compose.foundation.selection.selectableGroup
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Delete
 import androidx.compose.material.icons.outlined.Save
@@ -24,6 +27,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
+import androidx.compose.material3.RadioButton
 import androidx.compose.material3.SegmentedButton
 import androidx.compose.material3.SegmentedButtonDefaults
 import androidx.compose.material3.SingleChoiceSegmentedButtonRow
@@ -40,6 +44,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
@@ -125,7 +131,7 @@ internal fun ConfigTabContent(
                     NarraIconButton(onClick = { showApiKey = !showApiKey }) {
                         Icon(
                             if (showApiKey) Icons.Outlined.VisibilityOff else Icons.Outlined.Visibility,
-                            contentDescription = null,
+                            contentDescription = if (showApiKey) "隐藏密钥" else "显示密钥",
                             tint = palette.accentStrong,
                         )
                     }
@@ -139,31 +145,15 @@ internal fun ConfigTabContent(
                     modifier = Modifier.fillMaxWidth(),
                     verticalArrangement = Arrangement.spacedBy(10.dp),
                 ) {
-                    Text(
-                        text = "接口协议",
-                        style = MaterialTheme.typography.titleSmall,
-                        fontWeight = FontWeight.SemiBold,
-                        color = palette.title,
+                    SettingsSectionHeader(
+                        title = "接口协议",
+                        description = providerProtocolDescription(resolvedApiProtocol),
                     )
-                    SingleChoiceSegmentedButtonRow(
-                        modifier = Modifier.fillMaxWidth(),
-                    ) {
-                        ProviderApiProtocol.entries.forEachIndexed { index, apiProtocol ->
-                            SegmentedButton(
-                                shape = SegmentedButtonDefaults.itemShape(
-                                    index = index,
-                                    count = ProviderApiProtocol.entries.size,
-                                ),
-                                selected = apiProtocol == resolvedApiProtocol,
-                                onClick = { onUpdateProviderApiProtocol(provider.id, apiProtocol) },
-                                label = { Text(apiProtocol.label) },
-                            )
-                        }
-                    }
-                    Text(
-                        text = providerProtocolDescription(resolvedApiProtocol),
-                        style = MaterialTheme.typography.bodySmall,
-                        color = palette.body.copy(alpha = 0.78f),
+                    ProviderProtocolOptions(
+                        options = ProviderApiProtocol.entries,
+                        selected = resolvedApiProtocol,
+                        label = { it.label },
+                        onSelect = { onUpdateProviderApiProtocol(provider.id, it) },
                     )
                 }
             }
@@ -175,34 +165,18 @@ internal fun ConfigTabContent(
                     modifier = Modifier.fillMaxWidth(),
                     verticalArrangement = Arrangement.spacedBy(10.dp),
                 ) {
-                    Text(
-                        text = "文本接口模式",
-                        style = MaterialTheme.typography.titleSmall,
-                        fontWeight = FontWeight.SemiBold,
-                        color = palette.title,
-                    )
-                    SingleChoiceSegmentedButtonRow(
-                        modifier = Modifier.fillMaxWidth(),
-                    ) {
-                        com.example.myapplication.model.OpenAiTextApiMode.entries.forEachIndexed { index, apiMode ->
-                            SegmentedButton(
-                                shape = SegmentedButtonDefaults.itemShape(
-                                    index = index,
-                                    count = com.example.myapplication.model.OpenAiTextApiMode.entries.size,
-                                ),
-                                selected = apiMode == resolvedOpenAiTextApiMode,
-                                onClick = { onUpdateProviderOpenAiTextApiMode(provider.id, apiMode) },
-                                label = { Text(apiMode.label) },
-                            )
-                        }
-                    }
-                    Text(
-                        text = when (resolvedOpenAiTextApiMode) {
-                            com.example.myapplication.model.OpenAiTextApiMode.CHAT_COMPLETIONS -> "默认走 chat/completions，适合绝大多数 OpenAI 兼容接口；如是第三方端点，还可自定义路径。"
-                            com.example.myapplication.model.OpenAiTextApiMode.RESPONSES -> "走 OpenAI /responses，更适合部分新接口或第三方兼容端点；后续功能需要继续验证所有子链路。"
+                    SettingsSectionHeader(
+                        title = "文本接口模式",
+                        description = when (resolvedOpenAiTextApiMode) {
+                            com.example.myapplication.model.OpenAiTextApiMode.CHAT_COMPLETIONS -> "使用 chat/completions，适合大多数 OpenAI 兼容接口。第三方端点可在下方自定义请求路径。"
+                            com.example.myapplication.model.OpenAiTextApiMode.RESPONSES -> "使用 OpenAI /responses，适合支持该协议的服务。部分功能的服务兼容性可能不同。"
                         },
-                        style = MaterialTheme.typography.bodySmall,
-                        color = palette.body.copy(alpha = 0.78f),
+                    )
+                    ProviderProtocolOptions(
+                        options = com.example.myapplication.model.OpenAiTextApiMode.entries,
+                        selected = resolvedOpenAiTextApiMode,
+                        label = { it.label },
+                        onSelect = { onUpdateProviderOpenAiTextApiMode(provider.id, it) },
                     )
                 }
             }
@@ -213,7 +187,7 @@ internal fun ConfigTabContent(
                 value = provider.baseUrl,
                 onValueChange = { onUpdateProviderBaseUrl(provider.id, it) },
                 modifier = Modifier.fillMaxWidth(),
-                label = { Text("API Base Url", fontWeight = FontWeight.Medium) },
+                label = { Text("服务地址", fontWeight = FontWeight.Medium) },
                 placeholder = { Text(baseUrlPlaceholder) },
                 singleLine = true,
                 shape = RoundedCornerShape(12.dp),
@@ -230,7 +204,7 @@ internal fun ConfigTabContent(
                     value = provider.resolvedChatCompletionsPath(),
                     onValueChange = { onUpdateProviderChatCompletionsPath(provider.id, it) },
                     modifier = Modifier.fillMaxWidth(),
-                    label = { Text("Chat Completions Path", fontWeight = FontWeight.Medium) },
+                    label = { Text("请求路径", fontWeight = FontWeight.Medium) },
                     placeholder = { Text(com.example.myapplication.model.DEFAULT_CHAT_COMPLETIONS_PATH) },
                     singleLine = true,
                     shape = RoundedCornerShape(12.dp),
@@ -261,7 +235,7 @@ internal fun ConfigTabContent(
                 ) {
                     Icon(
                         Icons.Outlined.Delete,
-                        contentDescription = "Delete",
+                        contentDescription = "删除提供商",
                         modifier = Modifier.padding(16.dp),
                         tint = if (providerCount > 1) palette.title else palette.body.copy(alpha = 0.3f),
                     )
@@ -269,10 +243,11 @@ internal fun ConfigTabContent(
 
                 NarraButton(
                     onClick = onSave,
+                    enabled = !isSaving,
                     modifier = Modifier
                         .weight(1f)
-                        .height(56.dp),
-                    shape = RoundedCornerShape(20.dp),
+                        .heightIn(min = 56.dp),
+                    shape = RoundedCornerShape(12.dp),
                     colors = ButtonDefaults.buttonColors(
                         containerColor = palette.accentStrong,
                         contentColor = palette.accentOnStrong,
@@ -296,6 +271,55 @@ internal fun ConfigTabContent(
 }
 
 @Composable
+private fun <T> ProviderProtocolOptions(
+    options: List<T>,
+    selected: T,
+    label: (T) -> String,
+    onSelect: (T) -> Unit,
+) {
+    val fontScale = LocalDensity.current.fontScale
+    BoxWithConstraints(modifier = Modifier.fillMaxWidth()) {
+        if (maxWidth < 320.dp || fontScale > 1.15f) {
+            Column(modifier = Modifier.fillMaxWidth().selectableGroup()) {
+                options.forEach { option ->
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .heightIn(min = 48.dp)
+                            .selectable(
+                                selected = option == selected,
+                                role = Role.RadioButton,
+                                onClick = { onSelect(option) },
+                            )
+                            .padding(vertical = 8.dp),
+                        horizontalArrangement = Arrangement.spacedBy(12.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        RadioButton(selected = option == selected, onClick = null)
+                        Text(
+                            text = label(option),
+                            modifier = Modifier.weight(1f),
+                            style = MaterialTheme.typography.bodyLarge,
+                        )
+                    }
+                }
+            }
+        } else {
+            SingleChoiceSegmentedButtonRow(modifier = Modifier.fillMaxWidth()) {
+                options.forEachIndexed { index, option ->
+                    SegmentedButton(
+                        shape = SegmentedButtonDefaults.itemShape(index, options.size),
+                        selected = option == selected,
+                        onClick = { onSelect(option) },
+                        label = { Text(label(option)) },
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
 internal fun SettingSwitchRow(
     title: String,
     checked: Boolean,
@@ -311,6 +335,7 @@ internal fun SettingSwitchRow(
     ) {
         Text(
             title,
+            modifier = Modifier.weight(1f),
             style = MaterialTheme.typography.titleMedium,
             color = palette.title,
             fontWeight = FontWeight.Bold,
@@ -335,7 +360,7 @@ private fun providerProtocolDescription(apiProtocol: ProviderApiProtocol): Strin
             "Anthropic 模式会走 /v1/messages，并自动附带 x-api-key 与 anthropic-version。"
         }
         ProviderApiProtocol.OPENAI_COMPATIBLE -> {
-            "OpenAI 兼容模式会走 /chat/completions，适用于大多数兼容网关与中转站。"
+            "OpenAI 兼容协议适用于大多数兼容网关与中转站。具体请求接口由文本接口模式和请求路径决定。"
         }
     }
 }

@@ -13,8 +13,11 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.imePadding
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -136,7 +139,6 @@ fun RoleplaySettingsScreen(
         mutableStateOf(settings.roleplayLongformTargetChars.toString())
     }
     val scenarioTitle = scenario?.title?.trim().orEmpty().ifBlank { "沉浸扮演" }
-    val palette = backdropState.palette
     val noBackgroundSkinSpec = rememberRoleplayNoBackgroundSkinSpec(settings.roleplayNoBackgroundSkin)
     Box(
         modifier = Modifier
@@ -156,18 +158,21 @@ fun RoleplaySettingsScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .statusBarsPadding()
+                .navigationBarsPadding()
+                .imePadding()
                 .padding(horizontal = 12.dp, vertical = 10.dp),
             contentAlignment = Alignment.CenterEnd,
         ) {
-            val panelWidthFraction = if (maxWidth > 560.dp) 0.66f else 0.84f
+            val panelWidth = (maxWidth * if (maxWidth > 560.dp) 0.66f else 0.94f)
+                .coerceAtMost(480.dp)
             ImmersiveGlassSurface(
                 backdropState = backdropState,
                 modifier = Modifier
                     .fillMaxHeight()
-                    .fillMaxWidth(panelWidthFraction),
-                shape = RoundedCornerShape(34.dp),
+                    .width(panelWidth),
+                shape = RoundedCornerShape(8.dp),
                 blurRadius = 22.dp,
-                overlayColor = Color(0xFFF6F2EC).copy(alpha = 0.92f),
+                overlayColor = MaterialTheme.colorScheme.surface,
             ) {
                 Column(modifier = Modifier.fillMaxSize()) {
                     ImmersiveGlassSurface(
@@ -175,9 +180,9 @@ fun RoleplaySettingsScreen(
                         modifier = Modifier
                             .fillMaxWidth()
                             .padding(horizontal = 10.dp, vertical = 8.dp),
-                        shape = RoundedCornerShape(26.dp),
+                        shape = RoundedCornerShape(8.dp),
                         blurRadius = 16.dp,
-                        overlayColor = Color(0xFFF0ECE6).copy(alpha = 0.85f),
+                        overlayColor = MaterialTheme.colorScheme.surface,
                     ) {
                         Row(
                             modifier = Modifier

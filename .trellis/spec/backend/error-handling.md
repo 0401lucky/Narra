@@ -82,8 +82,9 @@ try {
 
 ## 不要复制的现存问题
 
-- 部分旧代码仍直接使用 `throwable.message`，例如悬浮翻译和部分文件流程；
-  新代码必须先脱敏。
+- 部分旧文件流程仍直接使用 `throwable.message`；新代码必须先脱敏。
+  `ScreenTranslatorService` 已使用 `SensitiveTextRedactor` 和独立错误面板，
+  不能把异常文案当作可复制的译文，也不能把正常取消转为翻译失败。
 - `TranslationViewModel` 等少量 `runCatching` 路径未区分取消；不要把该写法
   当作范例。
 - 解析失败静默回退很多，新增兼容字段时必须明确默认值、日志和用户影响，

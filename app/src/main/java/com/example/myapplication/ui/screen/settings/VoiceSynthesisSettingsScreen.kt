@@ -128,7 +128,7 @@ fun VoiceSynthesisSettingsScreen(
         topBar = {
             SettingsTopBar(
                 title = "MiMo 语音",
-                subtitle = "语音消息真实播放",
+                subtitle = "角色语音与音色",
                 onNavigateBack = {
                     onSaveChanges()
                     onNavigateBack()
@@ -155,16 +155,10 @@ fun VoiceSynthesisSettingsScreen(
                 verticalArrangement = Arrangement.spacedBy(18.dp),
             ) {
                 item {
-                    SettingsNoticeCard(
-                        title = "真实语音消息",
-                        body = "支持 MiMo 官方入口、Token Plan 专属入口和第三方中转。填写 /v1 会自动请求 /chat/completions，失败时仍显示原文字。",
-                        containerColor = palette.accent,
-                        contentColor = palette.accent,
-                    )
-                }
-
-                item {
-                    SettingsGroup(title = "全局配置") {
+                    SettingsGroup(
+                        title = "全局配置",
+                        subtitle = "配置后，角色可自动生成语音；失败时仍保留文字消息。端点、凭据和音色规则可点标题右侧的信息按钮查看。",
+                    ) {
                         VoiceSwitchRow(
                             title = "启用 MiMo TTS",
                             supportingText = if (normalizedSettings.enabled) "后台自动合成角色语音消息" else "关闭时只显示文字语音卡片",
@@ -225,8 +219,14 @@ fun VoiceSynthesisSettingsScreen(
                             singleLine = true,
                             supportingText = {
                                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                                    Text("可填 ${MIMO_TOKEN_PLAN_BASE_URL}，也可填第三方中转的 /v1 或完整 /chat/completions。")
-                                    Text("当前请求：${resolveMimoChatCompletionsEndpoint(normalizedSettings.baseUrl)}")
+                                    Text("可填官方入口或第三方中转地址。")
+                                    if (normalizedSettings.baseUrl.isNotBlank()) {
+                                        SettingsHelpButton(
+                                            title = "Base URL 规则",
+                                            description = "可填 ${MIMO_TOKEN_PLAN_BASE_URL}，也可填第三方中转的 /v1 或完整 /chat/completions。应用会按地址自动解析请求端点。\n\n当前请求：${resolveMimoChatCompletionsEndpoint(normalizedSettings.baseUrl)}",
+                                            modifier = Modifier.align(Alignment.End),
+                                        )
+                                    }
                                     Row(
                                         horizontalArrangement = Arrangement.spacedBy(8.dp),
                                         verticalAlignment = Alignment.CenterVertically,

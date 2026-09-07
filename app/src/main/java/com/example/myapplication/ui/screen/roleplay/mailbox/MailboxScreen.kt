@@ -1,11 +1,6 @@
 package com.example.myapplication.ui.screen.roleplay.mailbox
 
 import androidx.compose.animation.animateColorAsState
-import androidx.compose.animation.core.RepeatMode
-import androidx.compose.animation.core.animateDpAsState
-import androidx.compose.animation.core.animateFloat
-import androidx.compose.animation.core.infiniteRepeatable
-import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
@@ -20,13 +15,12 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.consumeWindowInsets
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.imePadding
-import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -52,11 +46,14 @@ import androidx.compose.material.icons.filled.PhoneAndroid
 import androidx.compose.material.icons.filled.PushPin
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material3.ColorScheme
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExtendedFloatingActionButton
+import androidx.compose.material3.FilterChip
+import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -73,9 +70,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -85,6 +80,8 @@ import com.example.myapplication.model.MailboxLetter
 import com.example.myapplication.model.MailboxProactiveFrequency
 import com.example.myapplication.model.MailboxSenderType
 import com.example.myapplication.ui.component.AppSnackbarHost
+import com.example.myapplication.ui.theme.NarraMinimumTouchTarget
+import com.example.myapplication.ui.theme.NarraUi
 import com.example.myapplication.viewmodel.MailboxScreenMode
 import com.example.myapplication.viewmodel.MailboxUiState
 import java.text.SimpleDateFormat
@@ -131,24 +128,24 @@ data class MailboxCallbacks(
     val onClearError: () -> Unit,
 )
 
-private data class MailboxColors(
-    val backgroundTop: Color = Color(0xFFE8F4EF),
-    val backgroundBottom: Color = Color(0xFFF8F0EA),
-    val surface: Color = Color(0xF7FFFFFF),
-    val paper: Color = Color(0xFFFFFCF4),
-    val title: Color = Color(0xFF14231F),
-    val body: Color = Color(0xFF3C4B46),
-    val muted: Color = Color(0xFF6C7975),
-    val accent: Color = Color(0xFF2E8068),
-    val accentSoft: Color = Color(0xFFD8EFE7),
-    val unread: Color = Color(0xFFE66A59),
-    val unreadSoft: Color = Color(0xFFFFE2D9),
-    val memory: Color = Color(0xFFC79634),
-    val memorySoft: Color = Color(0xFFFFE7A8),
-    val sent: Color = Color(0xFF5E86B8),
-    val sentSoft: Color = Color(0xFFDCEAFF),
-    val border: Color = Color(0x220F2A24),
-)
+private class MailboxColors(scheme: ColorScheme) {
+    val background = scheme.background
+    val surface = scheme.surfaceContainerLow
+    val paper = scheme.surface
+    val title = scheme.onSurface
+    val body = scheme.onSurface
+    val muted = scheme.onSurfaceVariant
+    val accent = scheme.primary
+    val onAccent = scheme.onPrimary
+    val accentSoft = scheme.primaryContainer
+    val unread = scheme.error
+    val unreadSoft = scheme.errorContainer
+    val memory = scheme.tertiary
+    val memorySoft = scheme.tertiaryContainer
+    val sent = scheme.secondary
+    val sentSoft = scheme.secondaryContainer
+    val border = scheme.outlineVariant
+}
 
 @Composable
 fun MailboxScreen(
@@ -156,7 +153,8 @@ fun MailboxScreen(
     callbacks: MailboxCallbacks,
     onNavigateBack: () -> Unit,
 ) {
-    val colors = remember { MailboxColors() }
+    val scheme = MaterialTheme.colorScheme
+    val colors = remember(scheme) { MailboxColors(scheme) }
     val snackbarHostState = remember { SnackbarHostState() }
     LaunchedEffect(uiState.noticeMessage) {
         uiState.noticeMessage?.let {
@@ -174,22 +172,19 @@ fun MailboxScreen(
     if (uiState.pendingMemoryProposal != null) {
         AlertDialog(
             onDismissRequest = callbacks.onRejectMemory,
+            shape = RoundedCornerShape(NarraUi.cardRadius),
             title = { Text("建议记住这封信") },
             text = {
                 Text(
                     text = uiState.pendingMemoryProposal.content,
-                    style = MaterialTheme.typography.bodyMedium,
+                    modifier = Modifier.verticalScroll(rememberScrollState()),
                 )
             },
             confirmButton = {
-                TextButton(onClick = callbacks.onApproveMemory) {
-                    Text("记住")
-                }
+                TextButton(onClick = callbacks.onApproveMemory) { Text("记住") }
             },
             dismissButton = {
-                TextButton(onClick = callbacks.onRejectMemory) {
-                    Text("取消")
-                }
+                TextButton(onClick = callbacks.onRejectMemory) { Text("取消") }
             },
         )
     }
@@ -210,7 +205,8 @@ fun MailboxScreen(
                     icon = { Icon(Icons.Default.Edit, contentDescription = null) },
                     text = { Text("写信") },
                     containerColor = colors.accent,
-                    contentColor = Color.White,
+                    contentColor = colors.onAccent,
+                    shape = RoundedCornerShape(NarraUi.cardRadius),
                 )
             }
         },
@@ -219,14 +215,9 @@ fun MailboxScreen(
         Box(
             modifier = Modifier
                 .fillMaxSize()
-                .background(
-                    Brush.verticalGradient(
-                        listOf(colors.backgroundTop, Color(0xFFFFFBF6), colors.backgroundBottom),
-                    ),
-                )
+                .background(colors.background)
                 .padding(innerPadding)
-                .statusBarsPadding()
-                .navigationBarsPadding()
+                .consumeWindowInsets(innerPadding)
                 .imePadding(),
         ) {
             when {
@@ -285,38 +276,46 @@ private fun MailboxList(
             trailingIcon = Icons.Default.MoreHoriz,
             onTrailingClick = callbacks.onOpenSettings,
         )
-        MailboxHeroCard(
-            uiState = uiState,
-            colors = colors,
-            onCancelGeneration = callbacks.onCancelGeneration,
-        )
-        MailboxBridgeCard(
-            uiState = uiState,
-            colors = colors,
-            onOpenDiary = callbacks.onOpenDiary,
-            onOpenPhoneCheck = callbacks.onOpenPhoneCheck,
-        )
-        MailboxTabs(
-            selectedBox = uiState.selectedBox,
-            unreadCount = uiState.unreadCount,
-            colors = colors,
-            onSelect = callbacks.onSelectBox,
-        )
-        MailboxFilterPanel(
-            uiState = uiState,
-            colors = colors,
-            callbacks = callbacks,
-        )
-        if (uiState.letters.isEmpty()) {
-            MailboxEmptyState(uiState.selectedBox, colors)
-        } else if (uiState.visibleLetters.isEmpty()) {
-            MailboxNoMatchesState(colors)
-        } else {
-            LazyColumn(
-                modifier = Modifier.fillMaxSize(),
-                contentPadding = PaddingValues(bottom = 96.dp),
-                verticalArrangement = Arrangement.spacedBy(12.dp),
-            ) {
+        LazyColumn(
+            modifier = Modifier.weight(1f),
+            contentPadding = PaddingValues(bottom = 96.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp),
+        ) {
+            item {
+                MailboxHeroCard(
+                    uiState = uiState,
+                    colors = colors,
+                    onCancelGeneration = callbacks.onCancelGeneration,
+                )
+            }
+            item {
+                MailboxBridgeCard(
+                    uiState = uiState,
+                    colors = colors,
+                    onOpenDiary = callbacks.onOpenDiary,
+                    onOpenPhoneCheck = callbacks.onOpenPhoneCheck,
+                )
+            }
+            item {
+                MailboxTabs(
+                    selectedBox = uiState.selectedBox,
+                    unreadCount = uiState.unreadCount,
+                    colors = colors,
+                    onSelect = callbacks.onSelectBox,
+                )
+            }
+            item {
+                MailboxFilterPanel(
+                    uiState = uiState,
+                    colors = colors,
+                    callbacks = callbacks,
+                )
+            }
+            if (uiState.letters.isEmpty()) {
+                item { MailboxEmptyState(uiState.selectedBox, colors) }
+            } else if (uiState.visibleLetters.isEmpty()) {
+                item { MailboxNoMatchesState(colors) }
+            } else {
                 items(uiState.visibleLetters, key = { it.id }) { letter ->
                     MailboxLetterCard(
                         letter = letter,
@@ -346,12 +345,10 @@ private fun MailboxBridgeCard(
 ) {
     Surface(
         modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(18.dp),
-        color = Color.White.copy(alpha = 0.62f),
-        border = BorderStroke(1.dp, colors.border),
+        color = Color.Transparent,
     ) {
         Column(
-            modifier = Modifier.padding(12.dp),
+            modifier = Modifier.padding(vertical = 4.dp),
             verticalArrangement = Arrangement.spacedBy(10.dp),
         ) {
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
@@ -399,9 +396,9 @@ private fun MailboxLinkPill(
 ) {
     Surface(
         modifier = modifier
-            .height(38.dp)
+            .heightIn(min = NarraMinimumTouchTarget)
             .clickable(onClick = onClick),
-        shape = RoundedCornerShape(19.dp),
+        shape = RoundedCornerShape(NarraUi.smallRadius),
         color = color.copy(alpha = 0.13f),
     ) {
         Row(
@@ -409,7 +406,7 @@ private fun MailboxLinkPill(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.Center,
         ) {
-            Icon(icon, contentDescription = label, tint = color, modifier = Modifier.size(18.dp))
+            Icon(icon, contentDescription = null, tint = color, modifier = Modifier.size(20.dp))
             Spacer(Modifier.width(6.dp))
             Text(
                 text = label,
@@ -433,12 +430,10 @@ private fun MailboxFilterPanel(
     val hasFilters = uiState.searchQuery.isNotBlank() || uiState.selectedTag.isNotBlank() || uiState.unreadOnly
     Surface(
         modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(20.dp),
-        color = Color.White.copy(alpha = 0.66f),
-        border = BorderStroke(1.dp, colors.border),
+        color = Color.Transparent,
     ) {
         Column(
-            modifier = Modifier.padding(10.dp),
+            modifier = Modifier,
             verticalArrangement = Arrangement.spacedBy(8.dp),
         ) {
             OutlinedTextField(
@@ -455,9 +450,9 @@ private fun MailboxFilterPanel(
                         }
                     }
                 },
-                placeholder = { Text("搜索主题 / 正文 / 标签") },
+                placeholder = { Text("搜索信件") },
                 singleLine = true,
-                shape = RoundedCornerShape(16.dp),
+                shape = RoundedCornerShape(NarraUi.smallRadius),
             )
             FlowRow(
                 horizontalArrangement = Arrangement.spacedBy(7.dp),
@@ -503,21 +498,18 @@ private fun MailboxSelectableChip(
     selectedColor: Color,
     onClick: () -> Unit,
 ) {
-    Surface(
-        modifier = Modifier.clickable(onClick = onClick),
-        shape = RoundedCornerShape(15.dp),
-        color = if (selected) selectedColor else selectedColor.copy(alpha = 0.13f),
-        border = BorderStroke(1.dp, if (selected) Color.Transparent else colors.border),
-    ) {
-        Text(
-            text = label,
-            modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
-            style = MaterialTheme.typography.labelMedium,
-            color = if (selected) Color.White else colors.title,
-            fontWeight = FontWeight.Bold,
-            maxLines = 1,
-        )
-    }
+    FilterChip(
+        selected = selected,
+        onClick = onClick,
+        modifier = Modifier.heightIn(min = NarraMinimumTouchTarget),
+        shape = RoundedCornerShape(NarraUi.smallRadius),
+        colors = FilterChipDefaults.filterChipColors(
+            selectedContainerColor = selectedColor.copy(alpha = 0.14f),
+            selectedLabelColor = selectedColor,
+            labelColor = colors.title,
+        ),
+        label = { Text(label) },
+    )
 }
 
 @OptIn(ExperimentalLayoutApi::class)
@@ -529,10 +521,8 @@ private fun MailboxSettingsDialog(
 ) {
     AlertDialog(
         onDismissRequest = callbacks.onCloseSettings,
-        icon = {
-            Icon(Icons.Default.Settings, contentDescription = null, tint = colors.accent)
-        },
         title = { Text("信箱设置") },
+        shape = RoundedCornerShape(NarraUi.cardRadius),
         text = {
             Column(
                 modifier = Modifier.verticalScroll(rememberScrollState()),
@@ -592,14 +582,19 @@ private fun MailboxSettingsDialog(
                         }
                     },
                     enabled = true,
-                    modifier = Modifier.fillMaxWidth(),
+                    modifier = Modifier.fillMaxWidth().heightIn(min = NarraMinimumTouchTarget),
+                    shape = RoundedCornerShape(NarraUi.smallRadius),
                     colors = ButtonDefaults.buttonColors(
                         containerColor = if (uiState.isGeneratingProactiveLetter || uiState.isGeneratingReply) {
                             colors.unread
                         } else {
                             colors.accent
                         },
-                        contentColor = Color.White,
+                        contentColor = if (uiState.isGeneratingProactiveLetter || uiState.isGeneratingReply) {
+                            MaterialTheme.colorScheme.onError
+                        } else {
+                            colors.onAccent
+                        },
                     ),
                 ) {
                     if (uiState.isGeneratingProactiveLetter || uiState.isGeneratingReply) {
@@ -615,9 +610,7 @@ private fun MailboxSettingsDialog(
             }
         },
         confirmButton = {
-            TextButton(onClick = callbacks.onCloseSettings) {
-                Text("完成")
-            }
+            TextButton(onClick = callbacks.onCloseSettings) { Text("完成") }
         },
     )
 }
@@ -629,31 +622,32 @@ private fun MailboxFrequencyChip(
     colors: MailboxColors,
     onClick: () -> Unit,
 ) {
-    Surface(
-        modifier = Modifier.clickable(onClick = onClick),
-        shape = RoundedCornerShape(16.dp),
-        color = if (selected) colors.accent else colors.accent.copy(alpha = 0.11f),
-        border = BorderStroke(1.dp, if (selected) Color.Transparent else colors.border),
-    ) {
-        Column(
-            modifier = Modifier.padding(horizontal = 11.dp, vertical = 8.dp),
-            verticalArrangement = Arrangement.spacedBy(2.dp),
-        ) {
-            Text(
-                text = frequency.label,
-                color = if (selected) Color.White else colors.title,
-                style = MaterialTheme.typography.labelLarge,
-                fontWeight = FontWeight.Bold,
-                maxLines = 1,
-            )
-            Text(
-                text = frequency.description,
-                color = if (selected) Color.White.copy(alpha = 0.78f) else colors.muted,
-                style = MaterialTheme.typography.labelSmall,
-                maxLines = 1,
-            )
-        }
-    }
+    FilterChip(
+        selected = selected,
+        onClick = onClick,
+        modifier = Modifier.heightIn(min = NarraMinimumTouchTarget),
+        shape = RoundedCornerShape(NarraUi.smallRadius),
+        label = {
+            Column(
+                modifier = Modifier.padding(vertical = 4.dp),
+                verticalArrangement = Arrangement.spacedBy(2.dp),
+            ) {
+                Text(
+                    text = frequency.label,
+                    color = colors.title,
+                    style = MaterialTheme.typography.labelLarge,
+                    fontWeight = FontWeight.Bold,
+                    maxLines = 1,
+                )
+                Text(
+                    text = frequency.description,
+                    color = colors.muted,
+                    style = MaterialTheme.typography.labelSmall,
+                    maxLines = 1,
+                )
+            }
+        },
+    )
 }
 
 @Composable
@@ -670,15 +664,8 @@ private fun MailboxTopBar(
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(10.dp),
     ) {
-        Surface(
-            modifier = Modifier.size(42.dp),
-            shape = CircleShape,
-            color = Color.White.copy(alpha = 0.72f),
-            shadowElevation = 2.dp,
-        ) {
-            IconButton(onClick = onBack) {
-                Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "返回", tint = colors.title)
-            }
+        IconButton(onClick = onBack, modifier = Modifier.size(NarraMinimumTouchTarget)) {
+            Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "返回", tint = colors.title)
         }
         Column(modifier = Modifier.weight(1f)) {
             Text(
@@ -695,19 +682,9 @@ private fun MailboxTopBar(
                 overflow = TextOverflow.Ellipsis,
             )
         }
-        Surface(
-            modifier = Modifier.size(42.dp),
-            shape = CircleShape,
-            color = Color.White.copy(alpha = 0.68f),
-        ) {
-            if (trailingIcon != null) {
-                if (onTrailingClick != null) {
-                    IconButton(onClick = onTrailingClick) {
-                        Icon(trailingIcon, contentDescription = "信箱设置", tint = colors.title)
-                    }
-                } else {
-                    Icon(trailingIcon, contentDescription = null, tint = colors.title, modifier = Modifier.padding(10.dp))
-                }
+        if (trailingIcon != null && onTrailingClick != null) {
+            IconButton(onClick = onTrailingClick, modifier = Modifier.size(NarraMinimumTouchTarget)) {
+                Icon(trailingIcon, contentDescription = "信箱设置", tint = colors.title)
             }
         }
     }
@@ -723,12 +700,10 @@ private fun MailboxHeroCard(
     val isGenerating = uiState.isGeneratingProactiveLetter || uiState.isGeneratingReply
     Surface(
         modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(22.dp),
-        color = colors.surface,
-        shadowElevation = 4.dp,
+        color = Color.Transparent,
     ) {
         Row(
-            modifier = Modifier.padding(16.dp),
+            modifier = Modifier.padding(vertical = 12.dp),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(14.dp),
         ) {
@@ -785,8 +760,8 @@ private fun MailboxTabs(
     val boxes = listOf(MailboxBox.INBOX, MailboxBox.DRAFT, MailboxBox.SENT, MailboxBox.ARCHIVE)
     Surface(
         modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(24.dp),
-        color = Color.White.copy(alpha = 0.70f),
+        shape = RoundedCornerShape(NarraUi.smallRadius),
+        color = colors.surface,
     ) {
         Row(
             modifier = Modifier.padding(5.dp),
@@ -797,10 +772,10 @@ private fun MailboxTabs(
                 Surface(
                     modifier = Modifier
                         .weight(1f)
-                        .height(36.dp)
+                        .heightIn(min = NarraMinimumTouchTarget)
                         .clickable { onSelect(box) },
-                    shape = RoundedCornerShape(18.dp),
-                    color = if (selected) colors.title else Color.Transparent,
+                    shape = RoundedCornerShape(NarraUi.smallRadius),
+                    color = if (selected) colors.accentSoft else Color.Transparent,
                 ) {
                     Box(contentAlignment = Alignment.Center) {
                         Text(
@@ -809,7 +784,7 @@ private fun MailboxTabs(
                             } else {
                                 box.label
                             },
-                            color = if (selected) Color.White else colors.body,
+                            color = if (selected) colors.accent else colors.body,
                             style = MaterialTheme.typography.labelLarge,
                             fontWeight = FontWeight.Bold,
                             maxLines = 1,
@@ -831,18 +806,8 @@ private fun MailboxLetterCard(
     onClick: () -> Unit,
 ) {
     val unread = !letter.isRead && letter.box == MailboxBox.INBOX
-    val unreadPulse = rememberInfiniteTransition(label = "mailboxUnreadPulse")
-    val pulseScale = unreadPulse.animateFloat(
-        initialValue = 1f,
-        targetValue = 1.32f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(durationMillis = 980),
-            repeatMode = RepeatMode.Reverse,
-        ),
-        label = "mailboxUnreadDotScale",
-    )
     val cardColor = animateColorAsState(
-        targetValue = if (unread) Color(0xFFF2FFFB) else colors.surface,
+        targetValue = if (unread) colors.accentSoft.copy(alpha = 0.38f) else colors.surface,
         animationSpec = tween(durationMillis = 260),
         label = "mailboxCardColor",
     )
@@ -850,11 +815,6 @@ private fun MailboxLetterCard(
         targetValue = if (unread) colors.accent.copy(alpha = 0.30f) else colors.border,
         animationSpec = tween(durationMillis = 260),
         label = "mailboxBorderColor",
-    )
-    val elevation = animateDpAsState(
-        targetValue = if (unread) 4.dp else 1.dp,
-        animationSpec = tween(durationMillis = 260),
-        label = "mailboxCardElevation",
     )
     val tint = when {
         letter.box == MailboxBox.SENT -> colors.sent
@@ -866,10 +826,9 @@ private fun MailboxLetterCard(
         modifier = Modifier
             .fillMaxWidth()
             .clickable(onClick = onClick),
-        shape = RoundedCornerShape(18.dp),
+        shape = RoundedCornerShape(NarraUi.cardRadius),
         color = cardColor.value,
         border = BorderStroke(1.dp, borderColor.value),
-        shadowElevation = elevation.value,
     ) {
         Column(
             modifier = Modifier.padding(14.dp),
@@ -903,13 +862,7 @@ private fun MailboxLetterCard(
                 }
                 if (unread) {
                     Surface(
-                        modifier = Modifier
-                            .size(9.dp)
-                            .graphicsLayer {
-                                scaleX = pulseScale.value
-                                scaleY = pulseScale.value
-                                alpha = 0.72f + (pulseScale.value - 1f) * 0.6f
-                            },
+                        modifier = Modifier.size(8.dp),
                         shape = CircleShape,
                         color = colors.unread,
                     ) {
@@ -1010,33 +963,24 @@ private fun MailboxLetterPaper(
 ) {
     Surface(
         modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(22.dp),
-        color = colors.paper,
-        border = androidx.compose.foundation.BorderStroke(1.dp, Color(0x1FC79634)),
-        shadowElevation = 5.dp,
+        color = Color.Transparent,
     ) {
         Column(
-            modifier = Modifier
-                .background(
-                    Brush.linearGradient(
-                        listOf(Color.Transparent, Color(0x18E6D6B5)),
-                    ),
-                )
-                .padding(20.dp),
+            modifier = Modifier.padding(vertical = 20.dp),
             verticalArrangement = Arrangement.spacedBy(14.dp),
         ) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
             ) {
-                Text("From ${senderLabel(letter, characterName, userName)}", color = colors.muted, style = MaterialTheme.typography.labelMedium)
+                Text("来自 ${senderLabel(letter, characterName, userName)}", color = colors.muted, style = MaterialTheme.typography.labelMedium, modifier = Modifier.weight(1f))
                 Text(if (letter.allowMemory) "可沉淀为记忆" else "普通信件", color = colors.muted, style = MaterialTheme.typography.labelMedium)
             }
             Text(
                 text = letter.subject.ifBlank { "未命名的信" },
                 style = MaterialTheme.typography.headlineSmall,
                 color = colors.title,
-                fontWeight = FontWeight.Black,
+                fontWeight = FontWeight.SemiBold,
             )
             Text(
                 text = letter.content,
@@ -1068,8 +1012,7 @@ private fun MailboxActionBar(
 ) {
     Surface(
         modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(20.dp),
-        color = Color.White.copy(alpha = 0.72f),
+        color = Color.Transparent,
     ) {
         FlowRow(
             modifier = Modifier.padding(10.dp),
@@ -1130,7 +1073,7 @@ private fun MailboxComposer(
     ) {
         MailboxTopBar(
             title = "写信",
-            subtitle = "草稿会自动保存在本地",
+            subtitle = uiState.characterName,
             colors = colors,
             onBack = onBack,
             trailingIcon = Icons.Default.Check,
@@ -1143,20 +1086,17 @@ private fun MailboxComposer(
             item {
                 Surface(
                     modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(22.dp),
-                    color = colors.surface,
-                    shadowElevation = 4.dp,
+                    color = Color.Transparent,
                 ) {
                     Column(
-                        modifier = Modifier.padding(16.dp),
+                        modifier = Modifier.padding(vertical = 8.dp),
                         verticalArrangement = Arrangement.spacedBy(14.dp),
                     ) {
                         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                             MailboxAvatar(uiState.characterName, colors, colors.accent, small = true)
                             Surface(
                                 modifier = Modifier.weight(1f),
-                                shape = RoundedCornerShape(16.dp),
-                                color = colors.accentSoft,
+                                color = Color.Transparent,
                             ) {
                                 Text(
                                     text = "${uiState.characterName} · 当前会话",
@@ -1197,7 +1137,8 @@ private fun MailboxComposer(
             Button(
                 onClick = callbacks.onSaveDraft,
                 modifier = Modifier.weight(1f),
-                colors = ButtonDefaults.buttonColors(containerColor = Color.White, contentColor = colors.title),
+                colors = ButtonDefaults.buttonColors(containerColor = colors.surface, contentColor = colors.title),
+                shape = RoundedCornerShape(NarraUi.smallRadius),
                 enabled = !uiState.isSaving,
             ) {
                 Text("存草稿")
@@ -1205,11 +1146,12 @@ private fun MailboxComposer(
             Button(
                 onClick = callbacks.onSend,
                 modifier = Modifier.weight(1f),
-                colors = ButtonDefaults.buttonColors(containerColor = colors.accent, contentColor = Color.White),
+                colors = ButtonDefaults.buttonColors(containerColor = colors.accent, contentColor = colors.onAccent),
+                shape = RoundedCornerShape(NarraUi.smallRadius),
                 enabled = !uiState.isSaving,
             ) {
                 if (uiState.isSaving) {
-                    CircularProgressIndicator(modifier = Modifier.size(18.dp), strokeWidth = 2.dp, color = Color.White)
+                    CircularProgressIndicator(modifier = Modifier.size(18.dp), strokeWidth = 2.dp, color = colors.onAccent)
                 } else {
                     Icon(Icons.AutoMirrored.Filled.Send, contentDescription = null)
                     Spacer(Modifier.width(6.dp))
@@ -1232,7 +1174,7 @@ private fun MailboxSwitchRow(
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.SpaceBetween,
     ) {
-        Text(label, color = colors.body, style = MaterialTheme.typography.bodyMedium)
+        Text(label, color = colors.body, style = MaterialTheme.typography.bodyMedium, modifier = Modifier.weight(1f).padding(end = 12.dp))
         Switch(checked = checked, onCheckedChange = onCheckedChange)
     }
 }
@@ -1249,6 +1191,8 @@ private fun MailboxActionButton(
     Button(
         onClick = onClick,
         enabled = enabled,
+        modifier = Modifier.heightIn(min = NarraMinimumTouchTarget),
+        shape = RoundedCornerShape(NarraUi.smallRadius),
         colors = ButtonDefaults.buttonColors(
             containerColor = tint.copy(alpha = 0.14f),
             contentColor = tint,
@@ -1274,13 +1218,12 @@ private fun MailboxAvatar(
     Surface(
         modifier = Modifier.size(size),
         shape = RoundedCornerShape(if (small) 14.dp else 18.dp),
-        color = tint.copy(alpha = 0.86f),
-        shadowElevation = 2.dp,
+        color = tint.copy(alpha = 0.12f),
     ) {
         Box(contentAlignment = Alignment.Center) {
             Text(
                 text = label.trim().take(1).ifBlank { "信" },
-                color = Color.White,
+                color = tint,
                 style = if (small) MaterialTheme.typography.titleMedium else MaterialTheme.typography.titleLarge,
                 fontWeight = FontWeight.Black,
             )
@@ -1295,7 +1238,7 @@ private fun MailboxChip(
     textColor: Color,
 ) {
     Surface(
-        shape = RoundedCornerShape(14.dp),
+        shape = RoundedCornerShape(NarraUi.smallRadius),
         color = color,
     ) {
         Text(
@@ -1325,8 +1268,7 @@ private fun MailboxEmptyState(
         modifier = Modifier
             .fillMaxWidth()
             .padding(top = 16.dp),
-        shape = RoundedCornerShape(22.dp),
-        color = colors.surface,
+        color = Color.Transparent,
     ) {
         Column(
             modifier = Modifier.padding(26.dp),
@@ -1346,9 +1288,7 @@ private fun MailboxNoMatchesState(colors: MailboxColors) {
         modifier = Modifier
             .fillMaxWidth()
             .padding(top = 10.dp),
-        shape = RoundedCornerShape(22.dp),
-        color = colors.surface,
-        border = BorderStroke(1.dp, colors.border),
+        color = Color.Transparent,
     ) {
         Column(
             modifier = Modifier.padding(24.dp),

@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
@@ -27,10 +28,10 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.Dp
 import com.example.myapplication.R
 import com.example.myapplication.model.AppSettings
 import com.example.myapplication.model.Assistant
@@ -52,6 +53,7 @@ import com.example.myapplication.ui.component.roleplay.ImmersiveGlassPalette
 import com.example.myapplication.ui.component.roleplay.ImmersiveGlassSurface
 import com.example.myapplication.ui.component.modelpicker.ModelPickerSheet
 import com.example.myapplication.ui.screen.settings.SettingsScreenPadding
+import com.example.myapplication.ui.screen.settings.SettingsHelpButton
 
 internal const val TAG_ROLEPLAY_SETTINGS_LIST = "roleplay_settings_list"
 
@@ -121,6 +123,18 @@ internal fun RoleplaySettingsContent(
     onShowRestartDialog: () -> Unit,
     onShowResetDialog: () -> Unit,
 ) {
+    val colors = MaterialTheme.colorScheme
+    // 仅设置控件跟随全局主题；场景背景和气泡预览继续使用原有配置。
+    val settingsBackdropState = backdropState.copy(
+        palette = backdropState.palette.copy(
+            panelTint = colors.surfaceContainerLow,
+            panelTintStrong = colors.surfaceContainerHigh,
+            onGlass = colors.onSurface,
+            onGlassMuted = colors.onSurfaceVariant,
+            characterAccent = colors.primary,
+            userAccent = colors.secondary,
+        ),
+    )
     RoleplaySettingsSidebarContent(
         activePage = activePage,
         scenario = scenario,
@@ -132,7 +146,7 @@ internal fun RoleplaySettingsContent(
         currentModel = currentModel,
         currentProviderId = currentProviderId,
         providerOptions = providerOptions,
-        backdropState = backdropState,
+        backdropState = settingsBackdropState,
         latestPromptDebugDump = latestPromptDebugDump,
         contextGovernance = contextGovernance,
         recentMemoryProposalHistory = recentMemoryProposalHistory,
@@ -288,8 +302,8 @@ internal fun RoleplaySettingsHero(
         backdropState = backdropState,
         modifier = Modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(30.dp)),
-        shape = RoundedCornerShape(30.dp),
+            .clip(RoundedCornerShape(8.dp)),
+        shape = RoundedCornerShape(8.dp),
         overlayColor = Color.White.copy(alpha = 0.1f),
     ) {
         Column(
@@ -307,9 +321,7 @@ internal fun RoleplaySettingsHero(
                 ) {
                     Text(
                         text = scenarioTitle,
-                        style = MaterialTheme.typography.titleLarge.copy(
-                            fontFamily = FontFamily.Cursive,
-                        ),
+                        style = MaterialTheme.typography.titleLarge,
                         fontWeight = FontWeight.SemiBold,
                         color = palette.onGlass,
                         maxLines = 1,
@@ -323,13 +335,13 @@ internal fun RoleplaySettingsHero(
                 }
                 ImmersiveGlassSurface(
                     backdropState = backdropState,
-                    modifier = Modifier.clip(RoundedCornerShape(20.dp)),
-                    shape = RoundedCornerShape(20.dp),
+                    modifier = Modifier.clip(RoundedCornerShape(8.dp)),
+                    shape = RoundedCornerShape(8.dp),
                     overlayColor = Color.White.copy(alpha = 0.1f),
                 ) {
                     Row(
                         modifier = Modifier
-                            .clip(RoundedCornerShape(20.dp))
+                            .clip(RoundedCornerShape(8.dp))
                             .clickable(onClick = onOpenReadingMode)
                             .padding(horizontal = 14.dp, vertical = 12.dp),
                         verticalAlignment = Alignment.CenterVertically,
@@ -394,41 +406,47 @@ internal fun RoleplaySettingSwitchRow(
     icon: @Composable () -> Unit,
     title: String,
     supportingText: String = "",
+    statusText: String = "",
     checked: Boolean,
     switchModifier: Modifier = Modifier,
+    horizontalPadding: Dp = 16.dp,
     onCheckedChange: (Boolean) -> Unit,
 ) {
-    Row(
+    Column(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 18.dp, vertical = 12.dp),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(14.dp),
+            .padding(horizontal = horizontalPadding, vertical = 12.dp),
+        verticalArrangement = Arrangement.spacedBy(8.dp),
     ) {
-        icon()
-        Column(
-            modifier = Modifier.weight(1f),
-            verticalArrangement = Arrangement.spacedBy(2.dp),
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
         ) {
+            icon()
             Text(
                 text = title,
+                modifier = Modifier.weight(1f),
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.SemiBold,
                 color = RoleplaySettingsPanelTitleColor,
             )
             if (supportingText.isNotBlank()) {
-                Text(
-                    text = supportingText,
-                    style = MaterialTheme.typography.bodySmall,
-                    color = RoleplaySettingsPanelBodyColor,
-                )
+                SettingsHelpButton(title = title, description = supportingText)
             }
+            Switch(
+                modifier = switchModifier.heightIn(min = 48.dp),
+                checked = checked,
+                onCheckedChange = onCheckedChange,
+            )
         }
-        Switch(
-            modifier = switchModifier,
-            checked = checked,
-            onCheckedChange = onCheckedChange,
-        )
+        if (statusText.isNotBlank()) {
+            Text(
+                text = statusText,
+                style = MaterialTheme.typography.bodySmall,
+                color = RoleplaySettingsPanelBodyColor,
+            )
+        }
     }
 }
 
@@ -440,8 +458,8 @@ internal fun ImmersiveSettingsCard(
     ImmersiveGlassSurface(
         backdropState = backdropState,
         modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(24.dp),
-        overlayColor = Color(0xFFF2EEE8).copy(alpha = 0.82f),
+        shape = RoundedCornerShape(8.dp),
+        overlayColor = MaterialTheme.colorScheme.surfaceContainerLow,
     ) {
         Column(
             modifier = Modifier.fillMaxWidth(),

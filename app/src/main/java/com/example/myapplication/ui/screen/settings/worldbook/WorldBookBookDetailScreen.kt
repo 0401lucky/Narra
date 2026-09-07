@@ -3,6 +3,8 @@ package com.example.myapplication.ui.screen.settings.worldbook
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -11,6 +13,8 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -20,6 +24,8 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
 import com.example.myapplication.model.WorldBookEntry
@@ -55,6 +61,7 @@ fun WorldBookBookDetailScreen(
     val outlineColors = rememberSettingsOutlineColors()
     var renameText by rememberSaveable(bookName) { mutableStateOf(bookName) }
     var showDeleteDialog by rememberSaveable { mutableStateOf(false) }
+    var showManagement by rememberSaveable { mutableStateOf(false) }
 
     // 书详情页只处理"重命名"关键字的消息；"删除"由列表页显示
     val snackbarHostState = rememberSettingsSnackbarHostState(
@@ -81,8 +88,7 @@ fun WorldBookBookDetailScreen(
     Scaffold(
         topBar = {
             SettingsTopBar(
-                title = bookName.ifBlank { "世界书" },
-                subtitle = "${entries.size} 条条目",
+                title = "世界书详情",
                 onNavigateBack = onNavigateBack,
                 actionLabel = "新增",
                 onAction = onAddEntry,
@@ -94,6 +100,7 @@ fun WorldBookBookDetailScreen(
         LazyColumn(
             modifier = Modifier
                 .fillMaxSize()
+                .testTag("worldbook_detail")
                 .padding(innerPadding),
             contentPadding = PaddingValues(
                 start = SettingsScreenPadding,
@@ -105,21 +112,23 @@ fun WorldBookBookDetailScreen(
         ) {
             item {
                 SettingsPageIntro(
-                    title = "书内条目",
+                    title = bookName.ifBlank { "未命名世界书" },
                 )
             }
 
             item {
-                SettingsSectionHeader(
-                    title = "整本操作",
-                    description = "",
-                )
+                Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                    Text("${entries.size} 条条目", modifier = Modifier.weight(1f), style = MaterialTheme.typography.bodyMedium, color = palette.body)
+                    TextButton(onClick = { showManagement = !showManagement }, modifier = Modifier.heightIn(min = 48.dp)) {
+                        Text(if (showManagement) "收起管理" else "管理世界书")
+                    }
+                }
             }
 
+            if (showManagement) {
             item {
-                SettingsGroup {
                     Column(
-                        modifier = Modifier.padding(horizontal = 18.dp, vertical = 16.dp),
+                        modifier = Modifier.padding(vertical = 8.dp),
                         verticalArrangement = Arrangement.spacedBy(12.dp),
                     ) {
                         OutlinedTextField(
@@ -137,7 +146,7 @@ fun WorldBookBookDetailScreen(
                             colors = outlineColors,
                         )
                         AnimatedSettingButton(
-                            text = if (isSaving) "处理中…" else "重命名整本世界书",
+                            text = if (isSaving) "处理中…" else "保存书名",
                             onClick = { onRenameBook(bookId, trimmedRename) },
                             enabled = canRename,
                             isPrimary = true,
@@ -148,8 +157,9 @@ fun WorldBookBookDetailScreen(
                             enabled = !isSaving && entries.isNotEmpty(),
                             isPrimary = false,
                         )
+                        Text("删除整本会同时移除所有条目，无法恢复。", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.error)
                     }
-                }
+            }
             }
 
             if (entries.isEmpty()) {

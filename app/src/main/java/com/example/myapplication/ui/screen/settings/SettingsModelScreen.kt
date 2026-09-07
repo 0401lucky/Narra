@@ -348,9 +348,9 @@ private fun RoleModelCard(
     Surface(
         modifier = Modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(24.dp))
+            .clip(RoundedCornerShape(8.dp))
             .clickable(onClick = onClick),
-        shape = RoundedCornerShape(24.dp),
+        shape = RoundedCornerShape(8.dp),
         color = palette.surface.copy(alpha = 0.7f),
         border = BorderStroke(0.5.dp, palette.border.copy(alpha = 0.2f)),
         shadowElevation = 0.dp,
@@ -405,30 +405,34 @@ private fun RoleModelCard(
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                Row(
+                Column(
                     modifier = Modifier.weight(1f),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp),
                 ) {
                     ModelModePill(text = statusLabel)
-                    if (currentModelId.isNotBlank()) {
-                        ModelIcon(modelName = currentModelId, size = 20.dp)
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    ) {
+                        if (currentModelId.isNotBlank()) {
+                            ModelIcon(modelName = currentModelId, size = 20.dp)
+                        }
+                        Text(
+                            text = currentModelId.ifBlank { emptyStateText }.let { modelText ->
+                                if (currentModelId.isBlank() || providerName.isBlank()) {
+                                    modelText
+                                } else {
+                                    "$providerName · $modelText"
+                                }
+                            },
+                            style = MaterialTheme.typography.bodyMedium,
+                            fontWeight = FontWeight.Medium,
+                            color = if (currentModelId.isNotBlank()) palette.title else palette.body,
+                            maxLines = 2,
+                            overflow = TextOverflow.Ellipsis,
+                            modifier = Modifier.weight(1f),
+                        )
                     }
-                    Text(
-                        text = currentModelId.ifBlank { emptyStateText }.let { modelText ->
-                            if (currentModelId.isBlank() || providerName.isBlank()) {
-                                modelText
-                            } else {
-                                "$providerName · $modelText"
-                            }
-                        },
-                        style = MaterialTheme.typography.bodyMedium,
-                        fontWeight = FontWeight.Medium,
-                        color = if (currentModelId.isNotBlank()) palette.title else palette.body,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
-                        modifier = Modifier.weight(1f, fill = false),
-                    )
                 }
 
                 Surface(
@@ -567,7 +571,7 @@ private fun ModelPickerDialog(
 ) {
     AlertDialog(
         onDismissRequest = onDismissRequest,
-        shape = RoundedCornerShape(24.dp),
+        shape = RoundedCornerShape(16.dp),
         containerColor = MaterialTheme.colorScheme.surface,
         titleContentColor = MaterialTheme.colorScheme.onSurface,
         textContentColor = MaterialTheme.colorScheme.onSurfaceVariant,

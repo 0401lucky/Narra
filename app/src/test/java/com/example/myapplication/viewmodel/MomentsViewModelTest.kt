@@ -66,6 +66,28 @@ class MomentsViewModelTest {
         assertEquals("mask-b-avatar", post.authorAvatarUri)
         assertEquals("user-mask-mask-b", post.authorId)
         assertEquals("纪念", viewModel.uiState.value.viewerName)
+        assertEquals(post.id, viewModel.uiState.value.lastPublishedPostId)
+        assertEquals(false, viewModel.uiState.value.isPublishing)
+    }
+
+    @Test
+    fun publishUserPost_failureKeepsCompletionMarkerEmptyAndRestoresPublishingState() = runTest(mainDispatcherRule.dispatcher.scheduler) {
+        val backing = FakeMomentsRepository()
+        val repository = object : MomentsRepository by backing {
+            override suspend fun upsertPost(post: MomentPost) {
+                error("保存动态失败")
+            }
+        }
+        val viewModel = createViewModel(repository)
+        advanceUntilIdle()
+
+        viewModel.publishUserPost("未保存的记录")
+        advanceUntilIdle()
+
+        assertEquals("", viewModel.uiState.value.lastPublishedPostId)
+        assertEquals(false, viewModel.uiState.value.isPublishing)
+        assertTrue(backing.posts.isEmpty())
+        assertTrue(viewModel.uiState.value.errorMessage.orEmpty().contains("保存动态失败"))
     }
 
     @Test
@@ -258,7 +280,7 @@ class MomentsViewModelTest {
     }
 
     private fun createViewModel(
-        momentsRepository: FakeMomentsRepository,
+        momentsRepository: MomentsRepository,
         settings: AppSettings = defaultMomentsTestSettings(),
     ): MomentsViewModel {
         val settingsStore = FakeSettingsStore(

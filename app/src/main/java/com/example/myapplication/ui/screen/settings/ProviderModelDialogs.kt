@@ -3,12 +3,13 @@ package com.example.myapplication.ui.screen.settings
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.selection.selectable
+import androidx.compose.foundation.selection.toggleable
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Check
@@ -45,6 +46,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -52,6 +55,7 @@ import com.example.myapplication.model.ModelAbility
 import com.example.myapplication.model.ModelInfo
 import com.example.myapplication.ui.component.ModelIcon
 import com.example.myapplication.ui.component.NarraButton
+import com.example.myapplication.ui.component.NarraIconButton
 import com.example.myapplication.ui.component.NarraOutlinedButton
 import com.example.myapplication.ui.component.NarraTextButton
 import com.example.myapplication.ui.component.NarraAlertDialog
@@ -71,68 +75,75 @@ internal fun PremiumModelCard(
     val border = if (isSelected) palette.accentStrong.copy(alpha = 0.4f) else palette.border.copy(alpha = 0.2f)
 
     Surface(
-        modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(20.dp)).clickable(onClick = onClick),
-        shape = RoundedCornerShape(20.dp),
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(8.dp))
+            .selectable(selected = isSelected, role = Role.RadioButton, onClick = onClick),
+        shape = RoundedCornerShape(8.dp),
         color = bg,
         border = BorderStroke(1.dp, border),
         shadowElevation = 0.dp,
     ) {
-        Row(
-            modifier = Modifier.padding(horizontal = 16.dp, vertical = 20.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(14.dp),
+        Column(
+            modifier = Modifier.padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp),
         ) {
-            Surface(shape = RoundedCornerShape(12.dp), color = brandColor.copy(alpha = 0.2f), modifier = Modifier.size(44.dp)) {
-                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                    ModelIcon(modelName = modelInfo.modelId, size = 24.dp)
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
+            ) {
+                Surface(shape = RoundedCornerShape(8.dp), color = brandColor.copy(alpha = 0.12f), modifier = Modifier.size(40.dp)) {
+                    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                        ModelIcon(modelName = modelInfo.modelId, size = 24.dp)
+                    }
                 }
-            }
-
-            Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
                     Text(
                         text = modelInfo.displayName,
                         style = MaterialTheme.typography.titleMedium,
-                        maxLines = 1,
+                        maxLines = 2,
                         overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
                         color = palette.title,
-                        modifier = Modifier.weight(1f, fill = false),
                     )
+                    if (isSelected) {
+                        Text(
+                            text = "当前模型",
+                            style = MaterialTheme.typography.labelMedium,
+                            color = palette.accentStrong,
+                        )
+                    }
                 }
-
-                FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                    val tertiaryBg = MaterialTheme.colorScheme.tertiaryContainer
-                    val tertiaryFg = MaterialTheme.colorScheme.onTertiaryContainer
-                    Surface(shape = RoundedCornerShape(50), color = tertiaryBg, contentColor = tertiaryFg) {
-                        Text("主会话", modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp), style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold)
-                    }
-
-                    val secondaryBg = MaterialTheme.colorScheme.secondaryContainer
-                    val secondaryFg = MaterialTheme.colorScheme.onSecondaryContainer
-                    val hasVision = modelInfo.abilities.contains(ModelAbility.VISION)
-                    Surface(shape = RoundedCornerShape(50), color = secondaryBg, contentColor = secondaryFg) {
-                        Row(modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-                            Text("T", style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold)
-                            if (hasVision) {
-                                Icon(Icons.Outlined.Image, contentDescription = "Vision", modifier = Modifier.size(12.dp))
-                            }
-                            Text(">", style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold)
-                            Text("T", style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold)
-                        }
-                    }
-
-                    modelInfo.abilities.filter { it != ModelAbility.VISION }.forEach { ability ->
+            }
+            if (modelInfo.abilities.isNotEmpty()) {
+                FlowRow(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .testTag("provider_model_abilities_${modelInfo.modelId}"),
+                    horizontalArrangement = Arrangement.spacedBy(6.dp),
+                    verticalArrangement = Arrangement.spacedBy(6.dp),
+                ) {
+                    modelInfo.abilities.forEach { ability ->
                         ModelAbilityChip(ability = ability)
                     }
                 }
             }
-
-            com.example.myapplication.ui.component.NarraIconButton(onClick = onEditAbilities) {
-                Icon(Icons.Outlined.Settings, contentDescription = "Edit Abilities", tint = palette.title)
-            }
-
-            com.example.myapplication.ui.component.NarraIconButton(onClick = onRemove) {
-                Icon(Icons.Outlined.Close, contentDescription = "移除模型", tint = palette.body.copy(alpha = 0.6f), modifier = Modifier.size(20.dp))
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.End,
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                NarraIconButton(
+                    onClick = onEditAbilities,
+                    modifier = Modifier.size(48.dp),
+                ) {
+                    Icon(Icons.Outlined.Settings, contentDescription = "设置模型能力", tint = palette.body)
+                }
+                NarraIconButton(
+                    onClick = onRemove,
+                    modifier = Modifier.size(48.dp),
+                ) {
+                    Icon(Icons.Outlined.Close, contentDescription = "移除模型", tint = palette.body, modifier = Modifier.size(20.dp))
+                }
             }
         }
     }
@@ -152,34 +163,31 @@ internal fun ModelAbilityOverrideDialog(
         mutableStateOf(modelInfo.abilities)
     }
     val shouldResetToAuto = editedAbilities == autoAbilities
-    // 当前已手动覆盖时，次级按钮文案换成"恢复自动"，点击直接把 abilities 置空让后端走自动推断。
-    val dismissLabel = if (modelInfo.abilitiesCustomized) "恢复自动" else "取消"
-    val handleDismiss: () -> Unit = {
-        if (modelInfo.abilitiesCustomized) {
-            onSave(null)
-        } else {
-            onDismissRequest()
-        }
-    }
-
     com.example.myapplication.ui.component.NarraAlertDialog(
         title = "覆盖模型能力",
         message = if (modelInfo.abilitiesCustomized) "当前已手动覆盖。" else "手动勾选你希望覆盖的能力。",
-        onDismiss = handleDismiss,
+        onDismiss = onDismissRequest,
         onConfirm = { onSave(if (shouldResetToAuto) null else editedAbilities) },
         confirmLabel = "保存",
-        dismissLabel = dismissLabel,
+        dismissLabel = "取消",
         content = {
-            FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                ModelAbility.entries.forEach { ability ->
-                    FilterChip(
-                        selected = ability in editedAbilities,
-                        onClick = {
-                            editedAbilities = if (ability in editedAbilities) editedAbilities - ability else editedAbilities + ability
-                        },
-                        label = { Text(ability.label) },
-                        leadingIcon = { Icon(abilityIcon(ability), contentDescription = null, modifier = Modifier.size(16.dp)) },
-                    )
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    ModelAbility.entries.forEach { ability ->
+                        FilterChip(
+                            selected = ability in editedAbilities,
+                            onClick = {
+                                editedAbilities = if (ability in editedAbilities) editedAbilities - ability else editedAbilities + ability
+                            },
+                            label = { Text(ability.label) },
+                            leadingIcon = { Icon(abilityIcon(ability), contentDescription = null, modifier = Modifier.size(16.dp)) },
+                        )
+                    }
+                }
+                if (modelInfo.abilitiesCustomized) {
+                    NarraTextButton(onClick = { onSave(null) }) {
+                        Text("恢复自动")
+                    }
                 }
             }
         },
@@ -209,13 +217,13 @@ internal fun ModelAbilityChip(ability: ModelAbility) {
 
 @Composable
 private fun abilityColors(ability: ModelAbility): Pair<Color, Color> {
-    val isDark = isSystemInDarkTheme()
+    val colors = MaterialTheme.colorScheme
     return when (ability) {
-        ModelAbility.VISION -> if (isDark) Color(0xFF1B3A2E) to Color(0xFF74D7A8) else Color(0xFFE8F5E9) to Color(0xFF4CAF50)
-        ModelAbility.IMAGE_EDITING -> if (isDark) Color(0xFF253245) to Color(0xFF90CAF9) else Color(0xFFE8F0FE) to Color(0xFF3F51B5)
-        ModelAbility.REASONING -> if (isDark) Color(0xFF1B2A45) to Color(0xFF8AB4F8) else Color(0xFFE3F2FD) to Color(0xFF2196F3)
-        ModelAbility.TOOL -> if (isDark) Color(0xFF3D2810) to Color(0xFFD4956A) else Color(0xFFFFF3E0) to Color(0xFFFF9800)
-        ModelAbility.IMAGE_GENERATION -> if (isDark) Color(0xFF2D1B3D) to Color(0xFFCE93D8) else Color(0xFFF3E5F5) to Color(0xFF9C27B0)
+        ModelAbility.VISION -> colors.secondaryContainer to colors.onSecondaryContainer
+        ModelAbility.IMAGE_EDITING -> colors.tertiaryContainer to colors.onTertiaryContainer
+        ModelAbility.REASONING -> colors.primaryContainer to colors.onPrimaryContainer
+        ModelAbility.TOOL -> colors.surfaceVariant to colors.onSurfaceVariant
+        ModelAbility.IMAGE_GENERATION -> colors.tertiaryContainer to colors.onTertiaryContainer
     }
 }
 
@@ -278,7 +286,7 @@ internal fun FetchedModelSelectionBottomSheet(
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
-                    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                    Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
                         Text(
                             "选择模型",
                             style = MaterialTheme.typography.titleLarge,
@@ -346,15 +354,17 @@ internal fun FetchedModelSelectionBottomSheet(
                             )
                         }
                         if (searchQuery.isNotEmpty()) {
-                            Icon(
-                                Icons.Outlined.Close,
-                                contentDescription = "清除",
-                                tint = palette.body,
-                                modifier = Modifier
-                                    .size(18.dp)
-                                    .clip(CircleShape)
-                                    .clickable { searchQuery = "" },
-                            )
+                            NarraIconButton(
+                                onClick = { searchQuery = "" },
+                                modifier = Modifier.size(48.dp),
+                            ) {
+                                Icon(
+                                    Icons.Outlined.Close,
+                                    contentDescription = "清除",
+                                    tint = palette.body,
+                                    modifier = Modifier.size(20.dp),
+                                )
+                            }
                         }
                     }
                 }
@@ -417,7 +427,7 @@ internal fun FetchedModelSelectionBottomSheet(
                     ) {
                         NarraOutlinedButton(
                             onClick = onDismiss,
-                            modifier = Modifier.weight(1f).height(48.dp),
+                            modifier = Modifier.weight(1f).heightIn(min = 48.dp),
                             shape = RoundedCornerShape(14.dp),
                             border = BorderStroke(1.dp, palette.border),
                         ) {
@@ -428,7 +438,7 @@ internal fun FetchedModelSelectionBottomSheet(
                                 onConfirm(selectedIds)
                                 onDismiss()
                             },
-                            modifier = Modifier.weight(1.5f).height(48.dp),
+                            modifier = Modifier.weight(1.5f).heightIn(min = 48.dp),
                             shape = RoundedCornerShape(14.dp),
                             colors = ButtonDefaults.buttonColors(
                                 containerColor = palette.accentStrong,
@@ -470,7 +480,7 @@ internal fun FetchedModelRow(
         modifier = Modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(14.dp))
-            .clickable(onClick = onToggle),
+            .toggleable(value = isChecked, role = Role.Checkbox, onValueChange = { onToggle() }),
         shape = RoundedCornerShape(14.dp),
         color = bg,
         border = BorderStroke(1.dp, borderColor),
@@ -482,7 +492,7 @@ internal fun FetchedModelRow(
         ) {
             Checkbox(
                 checked = isChecked,
-                onCheckedChange = { onToggle() },
+                onCheckedChange = null,
                 colors = CheckboxDefaults.colors(
                     checkedColor = palette.accentStrong,
                     uncheckedColor = palette.border,
@@ -536,9 +546,8 @@ internal fun FetchedModelRow(
                     horizontalArrangement = Arrangement.spacedBy(5.dp),
                     verticalArrangement = Arrangement.spacedBy(4.dp),
                 ) {
-                    val isDark = isSystemInDarkTheme()
-                    val ioBg = if (isDark) Color(0xFF1B3A2E) else Color(0xFFE8F5E9)
-                    val ioColor = if (isDark) Color(0xFF74D7A8) else Color(0xFF4CAF50)
+                    val ioBg = MaterialTheme.colorScheme.secondaryContainer
+                    val ioColor = MaterialTheme.colorScheme.onSecondaryContainer
                     val hasVision = modelInfo.abilities.contains(ModelAbility.VISION)
 
                     Surface(shape = RoundedCornerShape(50), color = ioBg, contentColor = ioColor) {

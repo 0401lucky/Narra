@@ -397,7 +397,7 @@ private fun RoleplaySceneTopBar(
         modifier = Modifier
             .fillMaxWidth()
             .padding(horizontal = 12.dp, vertical = 6.dp),
-        shape = RoundedCornerShape(24.dp),
+        shape = RoundedCornerShape(8.dp),
         blurRadius = 20.dp,
         overlayColor = palette.panelTintStrong.copy(alpha = 0.72f),
     ) {
@@ -480,7 +480,7 @@ private fun RoleplayChromeHandle(
     ImmersiveGlassSurface(
         backdropState = backdropState,
         modifier = modifier,
-        shape = MaterialTheme.shapes.extraLarge,
+        shape = RoundedCornerShape(8.dp),
         blurRadius = 18.dp,
         overlayColor = backdropState.palette.panelTint.copy(alpha = 0.26f),
     ) {

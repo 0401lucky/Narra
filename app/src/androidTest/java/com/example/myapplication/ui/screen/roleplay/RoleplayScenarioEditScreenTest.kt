@@ -2,6 +2,7 @@ package com.example.myapplication.ui.screen.roleplay
 
 import androidx.activity.ComponentActivity
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsSelected
 import androidx.compose.ui.test.assertTextContains
 import androidx.compose.ui.test.hasTestTag
@@ -172,15 +173,17 @@ class RoleplayScenarioEditScreenTest {
         }
 
         composeRule.onNodeWithTag(TAG_SCENARIO_EDIT_LIST)
-            .performScrollToNode(hasText("绑定角色"))
-        composeRule.onNodeWithText("点击选择")
+            .performScrollToNode(hasText("请选择要绑定的角色"))
+        composeRule.onNodeWithText("请选择要绑定的角色")
+            .assertIsDisplayed()
             .performClick()
         composeRule.onNodeWithText("选择要绑定的角色")
-            .assertExists()
+            .assertIsDisplayed()
         composeRule.onNodeWithText("夜巡者")
             .performClick()
         composeRule.onNodeWithText("夜巡者")
-            .assertExists()
+            .assertIsDisplayed()
+        composeRule.onNodeWithText("选择要绑定的角色").assertDoesNotExist()
 
         composeRule.onNodeWithTag(TAG_SCENARIO_EDIT_LIST)
             .performScrollToNode(hasText("保存会话资料"))

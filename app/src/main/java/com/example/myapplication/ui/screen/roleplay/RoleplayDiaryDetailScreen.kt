@@ -1,6 +1,5 @@
 package com.example.myapplication.ui.screen.roleplay
 
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -8,57 +7,45 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.automirrored.filled.KeyboardArrowLeft
-import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
-import androidx.compose.material.icons.filled.Mail
-import androidx.compose.material3.ButtonDefaults
+import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Brush
-import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.composables.icons.lucide.ChevronLeft
+import com.composables.icons.lucide.ChevronRight
+import com.composables.icons.lucide.Eye
+import com.composables.icons.lucide.EyeOff
+import com.composables.icons.lucide.Lucide
 import com.example.myapplication.model.AppSettings
 import com.example.myapplication.model.RoleplayDiaryEntry
+import com.example.myapplication.model.RoleplayImmersiveMode
 import com.example.myapplication.model.RoleplayScenario
-import com.example.myapplication.ui.component.NarraIconButton
 import com.example.myapplication.ui.component.NarraTextButton
 import com.example.myapplication.ui.component.rememberSystemHighTextContrastEnabled
-import com.example.myapplication.ui.component.roleplay.ImmersiveReadingGlassSurface
-import com.example.myapplication.ui.component.roleplay.ImmersiveReadingGlassVariant
-import com.example.myapplication.ui.component.roleplay.ImmersiveReadingScrimVariant
-import com.example.myapplication.ui.component.roleplay.RoleplaySceneBackground
-import com.example.myapplication.ui.component.roleplay.calculateImmersiveBackdropAmbientLuminance
-import com.example.myapplication.ui.component.roleplay.rememberImmersiveBackdropState
 import com.example.myapplication.ui.component.roleplay.rememberRoleplayDiaryAnnotatedString
-import com.example.myapplication.ui.component.roleplay.resolveImmersiveReadingScrimAlpha
 import com.example.myapplication.ui.component.roleplay.stripRoleplayDiaryMarkers
+import com.example.myapplication.ui.theme.NarraUi
 
-/**
- * 单篇日记全屏阅读页。提供更大的字号/行距、上一篇/下一篇切换，以及涂黑显隐。
- */
 @Composable
 fun RoleplayDiaryDetailScreen(
     scenario: RoleplayScenario?,
@@ -68,277 +55,135 @@ fun RoleplayDiaryDetailScreen(
     onOpenMailbox: () -> Unit,
     onNavigateBack: () -> Unit,
 ) {
-    if (scenario == null) {
-        Box(
-            modifier = Modifier.fillMaxSize(),
-            contentAlignment = Alignment.Center,
-        ) {
-            Text("当前场景不存在")
-        }
-        return
-    }
-    if (diaryEntries.isEmpty()) {
-        Box(
-            modifier = Modifier.fillMaxSize(),
-            contentAlignment = Alignment.Center,
-        ) {
-            Text("日记列表为空")
+    val scheme = MaterialTheme.colorScheme
+    if (scenario == null || diaryEntries.isEmpty()) {
+        Surface(modifier = Modifier.fillMaxSize(), color = scheme.background) {
+            Box(contentAlignment = Alignment.Center) {
+                Text(if (scenario == null) "当前场景不存在" else "日记列表为空")
+            }
         }
         return
     }
 
-    val initialIndex = remember(entryId, diaryEntries) {
-        diaryEntries.indexOfFirst { it.id == entryId }.coerceAtLeast(0)
-    }
-    var currentIndex by rememberSaveable(entryId) { mutableIntStateOf(initialIndex) }
-    val entry = diaryEntries.getOrNull(currentIndex) ?: diaryEntries.first()
+    // 以条目身份保存阅读位置，重新生成或列表缩短时不会使用过期下标。
+    var currentEntryId by rememberSaveable(scenario.id, entryId) { mutableStateOf(entryId) }
+    val currentIndex = diaryEntries.indexOfFirst { it.id == currentEntryId }.coerceAtLeast(0)
+    val entry = diaryEntries[currentIndex]
+    val listState = rememberLazyListState()
+    LaunchedEffect(entry.id) { listState.scrollToItem(0) }
 
-    val effectiveHighContrast = settings.roleplayHighContrast || rememberSystemHighTextContrastEnabled()
-    val backdropState = rememberImmersiveBackdropState(
-        backgroundUri = scenario.backgroundUri,
-        highContrast = effectiveHighContrast,
-    )
-    val palette = backdropState.palette
-    val ambientLuminance = remember(backdropState.imageBitmap, palette) {
-        calculateImmersiveBackdropAmbientLuminance(backdropState)
+    val systemHighContrast = rememberSystemHighTextContrastEnabled()
+    val mutedColor = if (settings.roleplayHighContrast || systemHighContrast) {
+        scheme.onSurface
+    } else {
+        scheme.onSurfaceVariant
     }
-    val scrimAlpha = remember(ambientLuminance) {
-        resolveImmersiveReadingScrimAlpha(
-            backgroundLuminance = ambientLuminance,
-            variant = ImmersiveReadingScrimVariant.DIARY_DETAIL,
-        )
-    }
-    val scrimBrush = remember(scrimAlpha) {
-        Brush.verticalGradient(
-            colorStops = arrayOf(
-                0.0f to Color.Black.copy(alpha = scrimAlpha * 0.20f),
-                0.38f to Color.Black.copy(alpha = scrimAlpha * 0.54f),
-                1.0f to Color.Black.copy(alpha = scrimAlpha),
-            ),
-        )
-    }
-
     var revealMasked by rememberSaveable(entry.id) { mutableStateOf(false) }
     val annotated = rememberRoleplayDiaryAnnotatedString(
         text = entry.content,
         revealMasked = revealMasked,
-        primaryText = palette.onGlass,
-        accent = palette.characterAccent,
+        primaryText = scheme.onSurface,
+        accent = scheme.primary,
     )
     val hasMaskedContent = remember(entry.content) { entry.content.contains("||") }
     val screenReaderContent = remember(entry.content, revealMasked) {
-        stripRoleplayDiaryMarkers(entry.content, revealMasked = revealMasked)
+        stripRoleplayDiaryMarkers(entry.content, revealMasked)
     }
     val effectiveDateLabel = entry.dateLabel.ifBlank { formatFallbackDate(entry.createdAt) }
 
-    Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .statusBarsPadding()
-            .navigationBarsPadding(),
-    ) {
-        RoleplaySceneBackground(
-            backdropState = backdropState,
-            modifier = Modifier.fillMaxSize(),
-        )
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .background(scrimBrush),
-        )
-
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(horizontal = 12.dp, vertical = 8.dp),
-            verticalArrangement = Arrangement.spacedBy(10.dp),
-        ) {
-                ImmersiveReadingGlassSurface(
-                    backdropState = backdropState,
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(26.dp),
-                    variant = ImmersiveReadingGlassVariant.CHROME,
-                ) {
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(horizontal = 12.dp, vertical = 12.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                    ) {
-                        NarraIconButton(onClick = onNavigateBack) {
-                            Icon(
-                                imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                                contentDescription = "返回",
-                                tint = palette.onGlass,
-                            )
-                        }
-                        Column(
-                            modifier = Modifier
-                                .weight(1f)
-                                .padding(horizontal = 4.dp),
-                        ) {
-                            if (effectiveDateLabel.isNotBlank()) {
-                                Text(
-                                    text = effectiveDateLabel,
-                                    style = MaterialTheme.typography.labelMedium.copy(
-                                    ),
-                                    color = palette.onGlassMuted,
-                                )
-                            }
-                            Text(
-                                text = "${currentIndex + 1} / ${diaryEntries.size}",
-                                style = MaterialTheme.typography.labelSmall.copy(
-                                ),
-                                color = palette.onGlassMuted.copy(alpha = 0.84f),
-                            )
-                        }
-                        if (entry.mood.isNotBlank()) {
-                            Surface(
-                                shape = RoundedCornerShape(999.dp),
-                                color = palette.characterAccent.copy(alpha = 0.18f),
-                            ) {
-                                Text(
-                                    text = "· ${entry.mood}",
-                                    modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp),
-                                    style = MaterialTheme.typography.labelMedium.copy(
-                                    ),
-                                    color = palette.onGlass,
-                                    fontWeight = FontWeight.Medium,
-                                )
-                            }
-                        }
-                        NarraIconButton(onClick = onOpenMailbox) {
-                            Icon(
-                                imageVector = Icons.Default.Mail,
-                                contentDescription = "信箱",
-                                tint = palette.onGlass,
-                            )
-                        }
-                    }
-                }
-
-                LazyColumn(
-                    modifier = Modifier
-                        .weight(1f)
-                        .fillMaxWidth(),
-                    contentPadding = PaddingValues(horizontal = 10.dp, vertical = 10.dp),
-                    verticalArrangement = Arrangement.spacedBy(18.dp),
-                ) {
-                    item {
-                        ImmersiveReadingGlassSurface(
-                            backdropState = backdropState,
-                            modifier = Modifier.fillMaxWidth(0.965f),
-                            shape = RoundedCornerShape(30.dp),
-                            variant = ImmersiveReadingGlassVariant.PANEL,
-                        ) {
-                            Column(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(horizontal = 24.dp, vertical = 32.dp),
-                                verticalArrangement = Arrangement.spacedBy(20.dp),
-                            ) {
-                                Text(
-                                    text = entry.title,
-                                    style = MaterialTheme.typography.headlineSmall.copy(
-                                    ),
-                                    fontWeight = FontWeight.Bold,
-                                    color = palette.onGlass,
-                                )
-                                if (entry.weather.isNotBlank() || entry.tags.isNotEmpty()) {
-                                    Row(
-                                        horizontalArrangement = Arrangement.spacedBy(6.dp),
-                                        verticalAlignment = Alignment.CenterVertically,
-                                    ) {
-                                        if (entry.weather.isNotBlank()) {
-                                            Text(
-                                                text = entry.weather,
-                                                style = MaterialTheme.typography.labelMedium.copy(
-                                                ),
-                                                color = palette.onGlassMuted,
-                                            )
-                                        }
-                                        entry.tags.take(5).forEach { tag ->
-                                            Text(
-                                                text = "#$tag",
-                                                style = MaterialTheme.typography.labelMedium.copy(
-                                                ),
-                                                color = palette.characterAccent,
-                                            )
-                                        }
-                                    }
-                                }
-                                Text(
-                                    text = annotated,
-                                    style = MaterialTheme.typography.bodyLarge.copy(
-                                        fontSize = 17.sp,
-                                        lineHeight = 32.sp,
-                                        letterSpacing = 0.3.sp,
-                                    ),
-                                    color = palette.onGlass,
-                                    modifier = Modifier.semantics {
-                                        contentDescription = screenReaderContent
-                                    },
-                                )
-                                if (hasMaskedContent) {
-                                    NarraTextButton(
-                                        onClick = { revealMasked = !revealMasked },
-                                        colors = ButtonDefaults.textButtonColors(
-                                            contentColor = palette.onGlass,
-                                            disabledContentColor = palette.onGlassMuted.copy(alpha = 0.58f),
-                                        ),
-                                    ) {
-                                        Text(if (revealMasked) "隐藏涂黑" else "显示涂黑")
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-
-            ImmersiveReadingGlassSurface(
-                backdropState = backdropState,
-                modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(24.dp),
-                variant = ImmersiveReadingGlassVariant.CHROME,
+    RoleplayDiaryPage(scenario.backgroundUri) {
+        Column(Modifier.fillMaxSize().roleplayImmersivePadding(RoleplayImmersiveMode.NONE)) {
+            RoleplayDiaryTopBar(
+                title = "角色日记",
+                subtitle = effectiveDateLabel,
+                onNavigateBack = onNavigateBack,
+                onOpenMailbox = onOpenMailbox,
+            )
+            Surface(
+                modifier = Modifier.weight(1f).fillMaxWidth(),
+                color = scheme.surface,
             ) {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 8.dp, vertical = 8.dp),
-                    verticalAlignment = Alignment.CenterVertically,
+                LazyColumn(
+                    state = listState,
+                    modifier = Modifier.fillMaxSize().testTag("diary_reader"),
+                    contentPadding = PaddingValues(
+                        horizontal = NarraUi.pageHorizontal,
+                        vertical = NarraUi.sectionGap,
+                    ),
+                    verticalArrangement = Arrangement.spacedBy(NarraUi.sectionGap),
                 ) {
-                    NarraTextButton(
-                        onClick = { if (currentIndex > 0) currentIndex -= 1 },
-                        enabled = currentIndex > 0,
-                        colors = ButtonDefaults.textButtonColors(
-                            contentColor = palette.onGlass,
-                            disabledContentColor = palette.onGlassMuted.copy(alpha = 0.58f),
-                        ),
-                    ) {
-                        Icon(
-                            imageVector = Icons.AutoMirrored.Filled.KeyboardArrowLeft,
-                            contentDescription = null,
-                            modifier = Modifier.size(18.dp),
+                    item(key = "title-${entry.id}") {
+                        Text(
+                            text = entry.title,
+                            style = MaterialTheme.typography.headlineSmall,
+                            fontWeight = FontWeight.SemiBold,
+                            color = scheme.onSurface,
+                            modifier = Modifier.testTag("diary_entry_title"),
                         )
-                        Text("上一篇")
                     }
-                    Box(modifier = Modifier.weight(1f))
-                    NarraTextButton(
-                        onClick = {
-                            if (currentIndex < diaryEntries.lastIndex) currentIndex += 1
-                        },
-                        enabled = currentIndex < diaryEntries.lastIndex,
-                        colors = ButtonDefaults.textButtonColors(
-                            contentColor = palette.onGlass,
-                            disabledContentColor = palette.onGlassMuted.copy(alpha = 0.58f),
-                        ),
-                    ) {
-                        Text("下一篇")
-                        Icon(
-                            imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
-                            contentDescription = null,
-                            modifier = Modifier.size(18.dp),
+                    if (entry.weather.isNotBlank() || entry.mood.isNotBlank() || entry.tags.isNotEmpty()) {
+                        item(key = "metadata-${entry.id}") {
+                            RoleplayDiaryMetadata(entry, mutedColor, tagLimit = 5)
+                        }
+                    }
+                    if (hasMaskedContent) {
+                        item(key = "mask-${entry.id}") {
+                            NarraTextButton(
+                                onClick = { revealMasked = !revealMasked },
+                                contentPadding = PaddingValues(horizontal = 0.dp),
+                            ) {
+                                Icon(
+                                    if (revealMasked) Lucide.EyeOff else Lucide.Eye,
+                                    contentDescription = null,
+                                    modifier = Modifier.padding(end = NarraUi.compactGap).size(18.dp),
+                                )
+                                Text(if (revealMasked) "隐藏涂黑" else "显示涂黑")
+                            }
+                        }
+                    }
+                    item(key = "body-${entry.id}") {
+                        Text(
+                            text = annotated,
+                            style = MaterialTheme.typography.bodyLarge.copy(
+                                fontSize = 17.sp,
+                                lineHeight = 30.sp,
+                                letterSpacing = 0.sp,
+                            ),
+                            color = scheme.onSurface,
+                            modifier = Modifier.testTag("diary_entry_body")
+                                .semantics { contentDescription = screenReaderContent },
                         )
+                    }
+                }
+            }
+            Surface(color = scheme.surface) {
+                Column {
+                    HorizontalDivider(color = scheme.outlineVariant)
+                    Row(
+                        modifier = Modifier.fillMaxWidth().padding(horizontal = NarraUi.compactGap, vertical = 4.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                    ) {
+                        NarraTextButton(
+                            onClick = { diaryEntries.getOrNull(currentIndex - 1)?.let { currentEntryId = it.id } },
+                            enabled = currentIndex > 0,
+                        ) {
+                            Icon(Lucide.ChevronLeft, null, modifier = Modifier.size(18.dp))
+                            Text("上一篇")
+                        }
+                        Text(
+                            text = "${currentIndex + 1} / ${diaryEntries.size}",
+                            style = MaterialTheme.typography.labelMedium,
+                            color = mutedColor,
+                            modifier = Modifier.testTag("diary_page_index"),
+                        )
+                        NarraTextButton(
+                            onClick = { diaryEntries.getOrNull(currentIndex + 1)?.let { currentEntryId = it.id } },
+                            enabled = currentIndex < diaryEntries.lastIndex,
+                        ) {
+                            Text("下一篇")
+                            Icon(Lucide.ChevronRight, null, modifier = Modifier.size(18.dp))
+                        }
                     }
                 }
             }

@@ -200,7 +200,8 @@ class VoiceSynthesisSettingsScreenTest {
 
         composeRule.onNodeWithText("音色测试失败")
             .assertIsDisplayed()
-        composeRule.onNodeWithText("请先填写 MiMo API Key 后再测试音色")
+        composeRule.onAllNodesWithText("请先填写 MiMo API Key 后再测试音色")
+            .get(1)
             .assertIsDisplayed()
     }
 

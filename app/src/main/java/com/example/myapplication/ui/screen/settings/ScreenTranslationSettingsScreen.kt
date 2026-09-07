@@ -11,28 +11,20 @@ import androidx.core.net.toUri
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.BatteryAlert
-import androidx.compose.material.icons.filled.CheckCircle
-import androidx.compose.material.icons.filled.Notifications
-import androidx.compose.material.icons.filled.Translate
-import androidx.compose.material.icons.filled.Visibility
-import androidx.compose.material.icons.filled.Warning
+import androidx.compose.foundation.selection.toggleable
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Switch
@@ -47,12 +39,17 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
-import com.example.myapplication.system.translation.ScreenTranslatorService
+import com.composables.icons.lucide.Battery
+import com.composables.icons.lucide.Bell
+import com.composables.icons.lucide.Eye
+import com.composables.icons.lucide.Languages
+import com.composables.icons.lucide.Lucide
 import com.example.myapplication.system.translation.SelectionAccessibilityService
 import com.example.myapplication.system.translation.resolveVendorBackgroundGuide
 import com.example.myapplication.viewmodel.DefaultAutoDetectLanguage
@@ -113,10 +110,11 @@ fun ScreenTranslationSettingsScreen(
         LazyColumn(
             modifier = Modifier
                 .fillMaxSize()
+                .testTag("screen_translation_settings_list")
                 .padding(innerPadding),
             contentPadding = PaddingValues(
                 start = SettingsScreenPadding,
-                top = 4.dp,
+                top = 8.dp,
                 end = SettingsScreenPadding,
                 bottom = 32.dp,
             ),
@@ -124,8 +122,8 @@ fun ScreenTranslationSettingsScreen(
         ) {
             item {
                 SettingsPageIntro(
-                    title = "悬浮球 · 选中即译 · 后台常驻",
-                    summary = "配置后台翻译服务、悬浮球行为和相关系统权限。更改会在离开页面时自动保存。",
+                    title = "随处翻译",
+                    summary = "轻点悬浮球翻译当前屏幕，拖动可调整位置，长按可隐藏。也可选择其他应用中的文字后翻译。权限仅在你主动前往系统设置时开启；保存后应用当前配置。",
                 )
             }
 
@@ -142,7 +140,7 @@ fun ScreenTranslationSettingsScreen(
                         onAction = {
                             context.startActivity(notificationSettingsIntent(context))
                         },
-                        leadingIcon = Icons.Default.Notifications,
+                        leadingIcon = Lucide.Bell,
                     )
                     SettingsGroupDivider()
                     PermissionRow(
@@ -159,7 +157,7 @@ fun ScreenTranslationSettingsScreen(
                                 ).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK),
                             )
                         },
-                        leadingIcon = Icons.Default.Translate,
+                        leadingIcon = Lucide.Languages,
                     )
                     SettingsGroupDivider()
                     PermissionRow(
@@ -173,7 +171,7 @@ fun ScreenTranslationSettingsScreen(
                                 Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK),
                             )
                         },
-                        leadingIcon = Icons.Default.Visibility,
+                        leadingIcon = Lucide.Eye,
                     )
                     SettingsGroupDivider()
                     PermissionRow(
@@ -185,7 +183,7 @@ fun ScreenTranslationSettingsScreen(
                         onAction = {
                             context.startActivity(batteryOptimizationSettingsIntent(context))
                         },
-                        leadingIcon = Icons.Default.BatteryAlert,
+                        leadingIcon = Lucide.Battery,
                     )
                 }
             }
@@ -242,23 +240,22 @@ fun ScreenTranslationSettingsScreen(
 
             // Vendor Guide
             if (vendorGuide != null && !settings.vendorGuideDismissed) {
-                item { SettingsSectionHeader("厂商适配指引", "") }
+                item {
+                    SettingsSectionHeader(
+                        title = vendorGuide.title,
+                        description = vendorGuide.steps.mapIndexed { index, step -> "${index + 1}. $step" }.joinToString("\n"),
+                    )
+                }
                 item {
                     SettingsHintCard(
                         title = vendorGuide.title,
-                        body = buildString {
-                            append(vendorGuide.summary)
-                            append("\n")
-                            vendorGuide.steps.forEachIndexed { index, step ->
-                                append("${index + 1}. $step\n")
-                            }
-                        },
+                        body = vendorGuide.summary,
                         containerColor = palette.accentSoft,
                         contentColor = palette.accent,
                     )
                     Row(
                         modifier = Modifier.padding(top = 8.dp),
-                        horizontalArrangement = Arrangement.spacedBy(10.dp),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
                     ) {
                         vendorGuide.deepLinkIntent?.let { intent ->
                             AnimatedSettingButton(
@@ -281,17 +278,30 @@ fun ScreenTranslationSettingsScreen(
             // Quick Actions
             item { SettingsSectionHeader("快捷操作", "") }
             item {
-                Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    if (!overlayGranted.value) {
+                        Text(
+                            text = "先允许悬浮窗权限，再启动翻译。",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = palette.body,
+                        )
+                    }
                     AnimatedSettingButton(
                         text = "保存并启动后台服务",
                         onClick = onSaveAndStartService,
-                        enabled = true,
+                        enabled = overlayGranted.value && !uiState.isSaving,
                         isPrimary = true,
                     )
                     AnimatedSettingButton(
                         text = "保存并停止后台服务",
                         onClick = onSaveAndStopService,
-                        enabled = true,
+                        enabled = !uiState.isSaving,
+                        isPrimary = false,
+                    )
+                    AnimatedSettingButton(
+                        text = if (uiState.isSaving) "保存中…" else "保存设置",
+                        onClick = onSaveChanges,
+                        enabled = !uiState.isSaving,
                         isPrimary = false,
                     )
                 }
@@ -304,14 +314,14 @@ fun ScreenTranslationSettingsScreen(
             onDismissRequest = { showLanguageSheet = false },
         ) {
             LazyColumn(
-                modifier = Modifier.fillMaxWidth(),
-                contentPadding = PaddingValues(horizontal = SettingsScreenPadding, vertical = 12.dp),
-                verticalArrangement = Arrangement.spacedBy(10.dp),
+                modifier = Modifier.fillMaxWidth().testTag("screen_translation_languages"),
+                contentPadding = PaddingValues(horizontal = SettingsScreenPadding, vertical = 16.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp),
             ) {
                 items(targetLanguages, key = { it }) { language ->
                     Surface(
-                        modifier = Modifier.fillMaxWidth(),
-                        shape = RoundedCornerShape(18.dp),
+                        modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp),
+                        shape = RoundedCornerShape(8.dp),
                         color = palette.surface,
                         border = BorderStroke(
                             0.5.dp,
@@ -324,7 +334,7 @@ fun ScreenTranslationSettingsScreen(
                         },
                     ) {
                         Row(
-                            modifier = Modifier.padding(horizontal = 16.dp, vertical = 14.dp),
+                            modifier = Modifier.padding(horizontal = 16.dp, vertical = 16.dp),
                             verticalAlignment = Alignment.CenterVertically,
                             horizontalArrangement = Arrangement.SpaceBetween,
                         ) {
@@ -368,14 +378,10 @@ private fun PermissionRow(
             )
         },
         title = title,
-        supportingText = description,
-        onClick = if (granted) null else onAction,
+        supportingText = if (granted) "已就绪 · 管理设置" else actionLabel,
+        onClick = onAction,
         trailingContent = {
-            SettingsStatusPill(
-                text = if (granted) "已就绪" else "未授权",
-                containerColor = if (granted) palette.accentSoft else MaterialTheme.colorScheme.errorContainer,
-                contentColor = if (granted) palette.accent else MaterialTheme.colorScheme.error,
-            )
+            SettingsHelpButton(title = title, description = description)
         },
     )
 }
@@ -391,9 +397,11 @@ private fun TranslationSwitchRow(
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 18.dp, vertical = 16.dp),
+            .heightIn(min = 48.dp)
+            .toggleable(value = checked, role = Role.Switch, onValueChange = onCheckedChange)
+            .padding(horizontal = 16.dp, vertical = 16.dp),
         verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(12.dp),
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
     ) {
         Column(modifier = Modifier.weight(1f)) {
             Text(
@@ -409,7 +417,7 @@ private fun TranslationSwitchRow(
         }
         Switch(
             checked = checked,
-            onCheckedChange = onCheckedChange,
+            onCheckedChange = null,
         )
     }
 }

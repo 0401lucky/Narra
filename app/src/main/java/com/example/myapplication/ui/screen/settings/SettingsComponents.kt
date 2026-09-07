@@ -10,7 +10,6 @@ import com.example.myapplication.ui.component.narraOutlinedButtonColors
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -22,12 +21,15 @@ import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
@@ -51,19 +53,21 @@ import androidx.compose.material3.TextButton
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.myapplication.ui.component.ModelIcon
+import com.composables.icons.lucide.Lucide
+import com.composables.icons.lucide.Info
+import com.composables.icons.lucide.ArrowLeft
+import com.composables.icons.lucide.ChevronRight
 
 internal val SettingsScreenPadding = 20.dp
 
 private val SettingsGroupSpacing = 8.dp
-private val SettingsGroupRadius = 26.dp
+private val SettingsGroupRadius = 8.dp
 private val SettingsAvatarRadius = 16.dp
 
 internal data class SettingsPalette(
@@ -88,39 +92,21 @@ internal data class SettingsPalette(
 @Composable
 internal fun rememberSettingsPalette(): SettingsPalette {
     val colorScheme = MaterialTheme.colorScheme
-    val darkTheme = isSystemInDarkTheme()
-    return remember(colorScheme, darkTheme) {
-        if (darkTheme) {
-            SettingsPalette(
-                background = colorScheme.background,
-                surface = colorScheme.surface,
-                surfaceTint = colorScheme.surfaceVariant,
-                elevatedSurface = colorScheme.surfaceContainerHigh,
-                border = colorScheme.outlineVariant.copy(alpha = 0.5f),
-                title = colorScheme.onSurface,
-                body = colorScheme.onSurfaceVariant,
-                accent = colorScheme.primary,
-                accentSoft = colorScheme.primaryContainer,
-                accentOnStrong = colorScheme.onPrimary,
-                subtleChip = colorScheme.secondaryContainer,
-                subtleChipContent = colorScheme.onSecondaryContainer,
-            )
-        } else {
-            SettingsPalette(
-                background = colorScheme.background,
-                surface = colorScheme.surface,
-                surfaceTint = colorScheme.surfaceVariant,
-                elevatedSurface = colorScheme.surfaceContainerHigh,
-                border = colorScheme.outlineVariant.copy(alpha = 0.5f),
-                title = colorScheme.onSurface,
-                body = colorScheme.onSurfaceVariant,
-                accent = colorScheme.primary,
-                accentSoft = colorScheme.primaryContainer,
-                accentOnStrong = colorScheme.onPrimary,
-                subtleChip = colorScheme.secondaryContainer,
-                subtleChipContent = colorScheme.onSecondaryContainer,
-            )
-        }
+    return remember(colorScheme) {
+        SettingsPalette(
+            background = colorScheme.background,
+            surface = colorScheme.surface,
+            surfaceTint = colorScheme.surfaceVariant,
+            elevatedSurface = colorScheme.surfaceContainerHigh,
+            border = colorScheme.outlineVariant,
+            title = colorScheme.onSurface,
+            body = colorScheme.onSurfaceVariant,
+            accent = colorScheme.primary,
+            accentSoft = colorScheme.primaryContainer,
+            accentOnStrong = colorScheme.onPrimary,
+            subtleChip = colorScheme.secondaryContainer,
+            subtleChipContent = colorScheme.onSecondaryContainer,
+        )
     }
 }
 
@@ -149,7 +135,7 @@ fun SettingsTopBar(
         ) {
             NarraIconButton(onClick = onNavigateBack) {
                 Icon(
-                    imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                    imageVector = Lucide.ArrowLeft,
                     contentDescription = "返回",
                     tint = palette.title,
                 )
@@ -163,11 +149,8 @@ fun SettingsTopBar(
             ) {
                 Text(
                     text = title,
-                    style = MaterialTheme.typography.titleLarge.copy(
-                        fontWeight = FontWeight.SemiBold,
-                        fontFamily = FontFamily.Cursive,
-                        fontSize = 28.sp,
-                    ),
+                    style = MaterialTheme.typography.titleLarge,
+                    fontWeight = FontWeight.SemiBold,
                     color = palette.title,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
@@ -207,46 +190,77 @@ fun SettingsPageIntro(
 ) {
     val palette = rememberSettingsPalette()
 
-    Surface(
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(24.dp),
-        color = palette.surface.copy(alpha = 0.7f),
-        border = BorderStroke(0.5.dp, palette.border.copy(alpha = 0.3f)),
-        shadowElevation = 0.dp,
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 4.dp, vertical = 8.dp),
+        verticalAlignment = Alignment.CenterVertically,
     ) {
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .background(
-                    brush = Brush.linearGradient(
-                        colors = listOf(
-                            palette.accentSoft.copy(alpha = 0.2f),
-                            Color.Transparent,
-                        ),
-                    ),
-                ),
-        ) {
-            Column(
-                modifier = Modifier.padding(horizontal = 24.dp, vertical = 20.dp),
-                verticalArrangement = Arrangement.spacedBy(6.dp),
-            ) {
-                Text(
-                    text = title,
-                    style = MaterialTheme.typography.titleLarge,
-                    fontWeight = FontWeight.ExtraBold,
-                    color = palette.title,
-                )
-                if (summary.isNotBlank()) {
-                    Text(
-                        text = summary,
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = palette.body.copy(alpha = 0.85f),
-                        lineHeight = 20.sp,
-                    )
-                }
-            }
+        Text(
+            text = title,
+            modifier = Modifier.weight(1f),
+            style = MaterialTheme.typography.titleLarge,
+            fontWeight = FontWeight.SemiBold,
+            color = palette.title,
+            maxLines = 2,
+            overflow = TextOverflow.Ellipsis,
+        )
+        if (summary.isNotBlank()) {
+            SettingsHelpButton(title = title, description = summary)
         }
     }
+}
+
+@Composable
+fun SettingsHelpButton(
+    title: String,
+    description: String,
+    modifier: Modifier = Modifier,
+) {
+    if (description.isBlank()) return
+    var showDescription by androidx.compose.runtime.saveable.rememberSaveable(title, description) { mutableStateOf(false) }
+    NarraIconButton(
+        onClick = { showDescription = true },
+        modifier = modifier.size(48.dp),
+    ) {
+        Icon(
+            imageVector = Lucide.Info,
+            contentDescription = "$title：查看说明",
+            modifier = Modifier.size(20.dp),
+            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+    }
+    if (showDescription) {
+        SettingsDescriptionDialog(title, description) { showDescription = false }
+    }
+}
+
+@Composable
+private fun SettingsDescriptionDialog(
+    title: String,
+    description: String,
+    onDismiss: () -> Unit,
+) {
+    val palette = rememberSettingsPalette()
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(text = title, style = MaterialTheme.typography.titleLarge) },
+        text = {
+            Text(
+                text = description,
+                modifier = Modifier
+                    .heightIn(max = 360.dp)
+                    .verticalScroll(rememberScrollState()),
+                style = MaterialTheme.typography.bodyMedium,
+                lineHeight = 20.sp,
+            )
+        },
+        confirmButton = { TextButton(onClick = onDismiss) { Text("知道了") } },
+        containerColor = palette.surface,
+        titleContentColor = palette.title,
+        textContentColor = palette.body,
+        shape = RoundedCornerShape(8.dp),
+    )
 }
 
 @Composable
@@ -255,60 +269,26 @@ fun SettingsSectionHeader(
     description: String,
 ) {
     val palette = rememberSettingsPalette()
-    var showInfoDialog by remember { mutableStateOf(false) }
 
     Row(
-        modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp),
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 4.dp, vertical = 2.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(6.dp),
     ) {
         Text(
             text = title,
-            style = MaterialTheme.typography.titleMedium.copy(
-                fontFamily = FontFamily.Cursive,
-                fontSize = 22.sp,
-            ),
-            fontWeight = FontWeight.Bold,
+            modifier = Modifier.weight(1f),
+            style = MaterialTheme.typography.titleMedium,
+            fontWeight = FontWeight.SemiBold,
             color = palette.accent,
+            maxLines = 2,
+            overflow = TextOverflow.Ellipsis,
         )
         if (description.isNotBlank()) {
-            Icon(
-                imageVector = Icons.Default.Info,
-                contentDescription = "查看说明",
-                modifier = Modifier
-                    .size(16.dp)
-                    .clip(CircleShape)
-                    .clickable { showInfoDialog = true },
-                tint = palette.accent.copy(alpha = 0.7f),
-            )
+            SettingsHelpButton(title, description)
         }
-    }
-
-    if (showInfoDialog && description.isNotBlank()) {
-        AlertDialog(
-            onDismissRequest = { showInfoDialog = false },
-            title = {
-                Text(
-                    text = title,
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold,
-                )
-            },
-            text = {
-                Text(
-                    text = description,
-                    style = MaterialTheme.typography.bodyMedium,
-                )
-            },
-            confirmButton = {
-                TextButton(onClick = { showInfoDialog = false }) {
-                    Text("知道了")
-                }
-            },
-            containerColor = palette.surface,
-            titleContentColor = palette.title,
-            textContentColor = palette.body,
-        )
     }
 }
 
@@ -332,8 +312,8 @@ fun SettingsGroup(
 
     Surface(
         modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(24.dp),
-        color = palette.surface.copy(alpha = 0.96f),
+        shape = RoundedCornerShape(SettingsGroupRadius),
+        color = palette.surface,
         border = BorderStroke(
             width = 0.75.dp,
             color = palette.border.copy(alpha = 0.72f),
@@ -389,7 +369,7 @@ fun SettingsListRow(
     Surface(
         modifier = modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(24.dp))
+            .clip(RoundedCornerShape(SettingsGroupRadius))
             .then(
                 if (enabled && onClick != null) {
                     Modifier.clickable(onClick = onClick)
@@ -401,7 +381,7 @@ fun SettingsListRow(
         contentColor = headlineColor,
     ) {
         Row(
-            modifier = Modifier.padding(horizontal = 20.dp, vertical = 18.dp),
+            modifier = Modifier.heightIn(min = 56.dp).padding(horizontal = 16.dp, vertical = 12.dp),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(14.dp),
         ) {
@@ -416,7 +396,7 @@ fun SettingsListRow(
                     text = title,
                     style = MaterialTheme.typography.titleMedium,
                     color = headlineColor,
-                    maxLines = 1,
+                    maxLines = 2,
                     overflow = TextOverflow.Ellipsis,
                 )
                 if (supportingText.isNotBlank()) {
@@ -432,7 +412,7 @@ fun SettingsListRow(
             when {
                 trailingContent != null -> trailingContent()
                 showArrow -> Icon(
-                    imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
+                    imageVector = Lucide.ChevronRight,
                     contentDescription = null,
                     tint = palette.body.copy(alpha = 0.72f),
                 )
@@ -473,7 +453,7 @@ fun SettingsStatusPill(
 ) {
     Surface(
         shape = RoundedCornerShape(999.dp),
-        color = containerColor.copy(alpha = if (isSystemInDarkTheme()) 0.42f else 0.92f),
+        color = containerColor,
         contentColor = contentColor,
         border = BorderStroke(1.dp, containerColor.copy(alpha = 0.5f)),
     ) {
@@ -497,10 +477,10 @@ fun SettingsHintCard(
 
     Surface(
         modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(24.dp),
+        shape = RoundedCornerShape(8.dp),
         color = palette.surface,
         border = BorderStroke(1.dp, palette.border.copy(alpha = 0.5f)),
-        shadowElevation = 2.dp,
+        shadowElevation = 0.dp,
     ) {
         Row(
             modifier = Modifier
@@ -567,7 +547,7 @@ fun SettingsLetterAvatar(
     Surface(
         modifier = Modifier.size(46.dp),
         shape = RoundedCornerShape(SettingsAvatarRadius),
-        color = containerColor.copy(alpha = if (isSystemInDarkTheme()) 0.46f else 0.72f),
+        color = containerColor,
         contentColor = contentColor,
         border = BorderStroke(1.dp, containerColor.copy(alpha = 0.38f)),
     ) {
@@ -641,7 +621,7 @@ fun AnimatedSettingButton(
     isPrimary: Boolean,
     leadingIcon: @Composable (() -> Unit)? = null,
 ) {
-    val shape = RoundedCornerShape(22.dp)
+    val shape = RoundedCornerShape(8.dp)
     val contentPadding = androidx.compose.foundation.layout.PaddingValues(
         horizontal = 20.dp,
         vertical = 14.dp,
@@ -653,7 +633,7 @@ fun AnimatedSettingButton(
             shape = shape,
             modifier = Modifier
                 .fillMaxWidth()
-                .height(52.dp),
+                .heightIn(min = 52.dp),
             colors = narraButtonColors(),
             contentPadding = contentPadding,
         ) {
@@ -674,7 +654,7 @@ fun AnimatedSettingButton(
             shape = shape,
             modifier = Modifier
                 .fillMaxWidth()
-                .height(52.dp),
+                .heightIn(min = 52.dp),
             colors = narraOutlinedButtonColors(),
             contentPadding = contentPadding,
         ) {

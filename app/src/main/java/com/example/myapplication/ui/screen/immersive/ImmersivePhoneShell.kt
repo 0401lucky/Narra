@@ -138,6 +138,7 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import com.example.myapplication.model.AppSettings
+import com.example.myapplication.BuildConfig
 import com.example.myapplication.model.Assistant
 import com.example.myapplication.model.CharacterShakeFilters
 import com.example.myapplication.model.MessageRole
@@ -149,17 +150,34 @@ import com.example.myapplication.model.isGroupChat
 import com.example.myapplication.ui.component.AppSnackbarHost
 import com.example.myapplication.ui.component.AssistantAvatar
 import com.example.myapplication.ui.component.UserProfileAvatar
+import com.example.myapplication.ui.component.NarraAlertDialog
+import com.example.myapplication.ui.theme.NarraUi
 import com.example.myapplication.viewmodel.CharacterShakeUiState
 import com.composables.icons.lucide.BookUser
 import com.composables.icons.lucide.CircleUserRound
 import com.composables.icons.lucide.Compass
 import com.composables.icons.lucide.Lucide
 import com.composables.icons.lucide.MessageCircleMore
-import dev.chrisbanes.haze.HazeState
-import dev.chrisbanes.haze.HazeStyle
-import dev.chrisbanes.haze.HazeTint
-import dev.chrisbanes.haze.haze
-import dev.chrisbanes.haze.hazeChild
+import com.composables.icons.lucide.ArrowDownUp
+import com.composables.icons.lucide.BookOpen
+import com.composables.icons.lucide.Brain
+import com.composables.icons.lucide.ChevronRight
+import com.composables.icons.lucide.ChevronDown
+import com.composables.icons.lucide.ChevronUp
+import com.composables.icons.lucide.Plus
+import com.composables.icons.lucide.Settings
+import com.composables.icons.lucide.SlidersHorizontal
+import com.composables.icons.lucide.UserRound
+import com.composables.icons.lucide.Users
+import com.composables.icons.lucide.UserRoundPlus
+import com.composables.icons.lucide.Smartphone
+import com.composables.icons.lucide.Mail
+import com.composables.icons.lucide.Wallet
+import com.composables.icons.lucide.Video
+import com.composables.icons.lucide.NotebookPen
+import com.composables.icons.lucide.Shuffle
+import com.composables.icons.lucide.Image
+import com.composables.icons.lucide.Info
 import java.text.Collator
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -214,12 +232,12 @@ private enum class DiscoverTarget(
     val subtitle: String,
     val icon: ImageVector,
 ) {
-    Moments("朋友圈", "生活动态与互动", Icons.Default.Forum),
-    PhoneCheck("查手机", "偷看角色手机", Icons.Default.PhoneAndroid),
-    Diary("日记本", "角色私下记录", Icons.Default.Book),
-    Mailbox("信箱", "来信与回信", Icons.Default.Mail),
-    Wallet("钱包", "余额与商店", Icons.Default.AccountBalanceWallet),
-    VideoCall("视频通话", "面对面连线", Icons.Default.Videocam),
+    Moments("朋友圈", "生活动态", Lucide.MessageCircleMore),
+    PhoneCheck("查手机", "角色的日常", Lucide.Smartphone),
+    Diary("日记本", "私下的记录", Lucide.NotebookPen),
+    Mailbox("信箱", "来信与回信", Lucide.Mail),
+    Wallet("钱包", "余额与商店", Lucide.Wallet),
+    VideoCall("视频通话", "面对面连线", Lucide.Video),
 }
 
 private data class CharacterShakeFilterGroup(
@@ -276,7 +294,6 @@ fun ImmersivePhoneShell(
     callbacks: ImmersivePhoneCallbacks,
 ) {
     val snackbarHostState = remember { SnackbarHostState() }
-    val hazeState = remember { HazeState() }
     var currentTab by rememberSaveable { mutableStateOf(ImmersiveTab.Messages) }
     var plusMenuExpanded by rememberSaveable { mutableStateOf(false) }
     var showNewChatSheet by rememberSaveable { mutableStateOf(false) }
@@ -323,7 +340,6 @@ fun ImmersivePhoneShell(
             if (currentTab != ImmersiveTab.Profile) {
                 ImmersivePhoneTopBar(
                     title = currentTab.label,
-                    showSearch = false,
                     showAdd = currentTab == ImmersiveTab.Messages || currentTab == ImmersiveTab.Contacts,
                     onAdd = {
                         if (currentTab == ImmersiveTab.Messages) {
@@ -350,30 +366,20 @@ fun ImmersivePhoneShell(
             }
         },
         bottomBar = {
-            ImmersiveFloatingBottomBar(
+            ImmersiveBottomBar(
                 currentTab = currentTab,
-                hazeState = hazeState,
                 onTabSelected = { currentTab = it },
             )
         },
         containerColor = MaterialTheme.colorScheme.surface,
     ) { innerPadding ->
-        // 只消费顶部 padding，让内容延伸到底部栏下方穿过毛玻璃；
-        // 底部空隙交给各页面的列表 contentPadding 预留
+        // 各页面列表保留底栏空间，避免最后一项被导航遮挡。
         val bottomPadding = innerPadding.calculateBottomPadding()
         Box(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(top = innerPadding.calculateTopPadding())
-                .haze(hazeState)
-                .background(
-                    Brush.verticalGradient(
-                        listOf(
-                            MaterialTheme.colorScheme.surface,
-                            MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.42f),
-                        ),
-                    ),
-                ),
+                .background(MaterialTheme.colorScheme.background),
         ) {
             AnimatedContent(
                 targetState = currentTab,
@@ -565,67 +571,70 @@ fun ImmersivePhoneShell(
 }
 
 @Composable
-private fun ImmersiveFloatingBottomBar(
+private fun ImmersiveBottomBar(
     currentTab: ImmersiveTab,
-    hazeState: HazeState,
     onTabSelected: (ImmersiveTab) -> Unit,
 ) {
-    val barShape = RoundedCornerShape(999.dp)
-    val selectedShape = RoundedCornerShape(999.dp)
-    val tabCount = ImmersiveTab.entries.size
-    // 用 ordinal 而非像素驱动动画，宽度变化（旋转/状态恢复）时指示器不会漂移
-    val indicatorPosition by animateFloatAsState(
-        targetValue = currentTab.ordinal.toFloat(),
-        animationSpec = spring(dampingRatio = 0.75f, stiffness = 400f),
-        label = "bottom_bar_indicator_position",
-    )
-    var indicatorWidthPx by remember { mutableIntStateOf(0) }
     Box(
         modifier = Modifier
             .fillMaxWidth()
             .navigationBarsPadding()
-            .padding(start = 24.dp, end = 24.dp, top = 8.dp, bottom = 10.dp),
+            .padding(start = 20.dp, end = 20.dp, top = 8.dp, bottom = 10.dp),
         contentAlignment = Alignment.Center,
     ) {
-        Box(
+        Surface(
             modifier = Modifier
                 .fillMaxWidth()
-                .height(64.dp)
-                .shadow(elevation = 8.dp, shape = barShape, clip = false)
-                .clip(barShape)
-                .hazeChild(
-                    state = hazeState,
-                    shape = barShape,
-                    style = HazeStyle(
-                        blurRadius = 24.dp,
-                        backgroundColor = Color.White,
-                        tint = HazeTint(Color.White.copy(alpha = 0.7f)),
-                    ),
-                )
-                .border(BorderStroke(1.dp, Color.White.copy(alpha = 0.55f)), barShape)
-                .padding(horizontal = 6.dp, vertical = 6.dp),
+                .height(60.dp),
+            shape = RoundedCornerShape(999.dp),
+            color = MaterialTheme.colorScheme.surfaceContainer,
+            contentColor = MaterialTheme.colorScheme.onSurface,
+            tonalElevation = 2.dp,
+            border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.65f)),
         ) {
-            Box(
-                modifier = Modifier
-                    .offset { IntOffset((indicatorPosition * indicatorWidthPx).roundToInt(), 0) }
-                    .fillMaxWidth(1f / tabCount)
-                    .fillMaxHeight()
-                    .onSizeChanged { indicatorWidthPx = it.width }
-                    .clip(selectedShape)
-                    .background(MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.92f)),
-            )
             Row(
-                modifier = Modifier.fillMaxSize(),
+                modifier = Modifier.padding(horizontal = 6.dp, vertical = 5.dp),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 ImmersiveTab.entries.forEach { tab ->
-                    ImmersiveFloatingBottomBarItem(
-                        modifier = Modifier.weight(1f),
-                        tab = tab,
-                        selected = currentTab == tab,
-                        selectedShape = selectedShape,
-                        onClick = { onTabSelected(tab) },
-                    )
+                    val selected = currentTab == tab
+                    Box(
+                        modifier = Modifier
+                            .weight(1f)
+                            .fillMaxHeight()
+                            .clip(RoundedCornerShape(999.dp))
+                            .background(
+                                if (selected) MaterialTheme.colorScheme.primaryContainer
+                                else Color.Transparent,
+                            )
+                            .clickable { onTabSelected(tab) },
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        Column(
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                            verticalArrangement = Arrangement.spacedBy(1.dp),
+                        ) {
+                            Icon(
+                                tab.icon,
+                                contentDescription = tab.label,
+                                modifier = Modifier.size(22.dp),
+                                tint = if (selected) {
+                                    MaterialTheme.colorScheme.onPrimaryContainer
+                                } else {
+                                    MaterialTheme.colorScheme.onSurfaceVariant
+                                },
+                            )
+                            Text(
+                                tab.label,
+                                style = MaterialTheme.typography.labelSmall,
+                                color = if (selected) {
+                                    MaterialTheme.colorScheme.onPrimaryContainer
+                                } else {
+                                    MaterialTheme.colorScheme.onSurfaceVariant
+                                },
+                            )
+                        }
+                    }
                 }
             }
         }
@@ -633,65 +642,8 @@ private fun ImmersiveFloatingBottomBar(
 }
 
 @Composable
-private fun ImmersiveFloatingBottomBarItem(
-    modifier: Modifier = Modifier,
-    tab: ImmersiveTab,
-    selected: Boolean,
-    selectedShape: RoundedCornerShape,
-    onClick: () -> Unit,
-) {
-    val activeContentColor = MaterialTheme.colorScheme.onSecondaryContainer
-    val inactiveContentColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.82f)
-    val contentColor by animateColorAsState(
-        targetValue = if (selected) activeContentColor else inactiveContentColor,
-        animationSpec = tween(220),
-        label = "bottom_bar_item_content",
-    )
-    // 低阻尼 spring 让图标落位时先过冲再回弹，产生轻弹一下的手感
-    val iconScale by animateFloatAsState(
-        targetValue = if (selected) 1.08f else 1f,
-        animationSpec = spring(dampingRatio = 0.45f, stiffness = 700f),
-        label = "bottom_bar_item_icon_scale",
-    )
-
-    Box(
-        modifier = modifier
-            .fillMaxHeight()
-            .clip(selectedShape)
-            .clickable(onClick = onClick),
-        contentAlignment = Alignment.Center,
-    ) {
-        Column(
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(2.dp),
-        ) {
-            Icon(
-                imageVector = tab.icon,
-                contentDescription = tab.label,
-                modifier = Modifier
-                    .size(24.dp)
-                    .graphicsLayer {
-                        scaleX = iconScale
-                        scaleY = iconScale
-                    },
-                tint = contentColor,
-            )
-            Text(
-                text = tab.label,
-                style = MaterialTheme.typography.labelMedium,
-                fontWeight = if (selected) FontWeight.Bold else FontWeight.Medium,
-                color = contentColor,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-            )
-        }
-    }
-}
-
-@Composable
 private fun ImmersivePhoneTopBar(
     title: String,
-    showSearch: Boolean,
     showAdd: Boolean,
     onAdd: () -> Unit,
     plusMenuExpanded: Boolean,
@@ -702,34 +654,29 @@ private fun ImmersivePhoneTopBar(
 ) {
     Surface(
         modifier = Modifier.statusBarsPadding(),
-        color = MaterialTheme.colorScheme.surface.copy(alpha = 0.96f),
-        tonalElevation = 2.dp,
+        color = MaterialTheme.colorScheme.background,
+        tonalElevation = 0.dp,
     ) {
         Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .height(56.dp)
-                .padding(horizontal = 8.dp),
+                .height(64.dp)
+                .padding(start = NarraUi.pageHorizontal, end = 8.dp),
         ) {
             Text(
                 text = title,
-                modifier = Modifier.align(Alignment.Center),
-                style = MaterialTheme.typography.titleLarge,
-                fontWeight = FontWeight.Bold,
+                modifier = Modifier.align(Alignment.CenterStart),
+                style = MaterialTheme.typography.headlineSmall,
+                fontWeight = FontWeight.SemiBold,
             )
             Row(
                 modifier = Modifier.align(Alignment.CenterEnd),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                if (showSearch) {
-                    IconButton(onClick = {}) {
-                        Icon(Icons.Default.Search, contentDescription = "搜索")
-                    }
-                }
                 Box {
                     if (showAdd) {
                         IconButton(onClick = onAdd) {
-                            Icon(Icons.Default.Add, contentDescription = "新增")
+                        Icon(Lucide.Plus, contentDescription = "新增")
                         }
                     }
                     DropdownMenu(
@@ -738,17 +685,17 @@ private fun ImmersivePhoneTopBar(
                     ) {
                         DropdownMenuItem(
                             text = { Text("新建会话") },
-                            leadingIcon = { Icon(Icons.AutoMirrored.Filled.Chat, contentDescription = null) },
+                            leadingIcon = { Icon(Lucide.MessageCircleMore, contentDescription = null) },
                             onClick = onOpenNewChat,
                         )
                         DropdownMenuItem(
                             text = { Text("新建群聊") },
-                            leadingIcon = { Icon(Icons.Default.Group, contentDescription = null) },
+                            leadingIcon = { Icon(Lucide.Users, contentDescription = null) },
                             onClick = onOpenNewGroupChat,
                         )
                         DropdownMenuItem(
                             text = { Text("会话管理") },
-                            leadingIcon = { Icon(Icons.Default.Edit, contentDescription = null) },
+                            leadingIcon = { Icon(Lucide.SlidersHorizontal, contentDescription = null) },
                             onClick = onOpenChatManage,
                         )
                     }
@@ -1085,9 +1032,9 @@ private fun ImmersiveContactsPage(
         contentPadding = PaddingValues(bottom = 24.dp + bottomPadding),
     ) {
         item {
-            ContactShortcutRow("新的角色", Icons.Default.PersonAdd, onOpenAssistantCreate)
-            ContactShortcutRow("会话管理", Icons.Default.Group, onOpenChatManage)
-            Divider()
+            PhoneDestinationRow("新的角色", "", Lucide.UserRoundPlus, onOpenAssistantCreate)
+            PhoneDestinationRow("会话管理", "", Lucide.MessageCircleMore, onOpenChatManage)
+            Spacer(Modifier.height(12.dp))
         }
         grouped.forEach { (initial, items) ->
             item(key = "header-$initial") {
@@ -1095,8 +1042,7 @@ private fun ImmersiveContactsPage(
                     text = initial,
                     modifier = Modifier
                         .fillMaxWidth()
-                        .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.8f))
-                        .padding(horizontal = 16.dp, vertical = 6.dp),
+                        .padding(horizontal = NarraUi.pageHorizontal, vertical = 10.dp),
                     style = MaterialTheme.typography.labelMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
@@ -1179,361 +1125,96 @@ private fun ImmersiveDiscoverPage(
     onOpenTarget: (DiscoverTarget) -> Unit,
     bottomPadding: Dp,
 ) {
-    val colorScheme = MaterialTheme.colorScheme
     LazyColumn(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(
-                Brush.verticalGradient(
-                    listOf(
-                        colorScheme.primaryContainer.copy(alpha = 0.22f),
-                        colorScheme.background,
-                        colorScheme.background,
-                    ),
-                ),
-            ),
-        contentPadding = PaddingValues(
-            start = 16.dp,
-            end = 16.dp,
-            top = 12.dp,
-            bottom = 24.dp + bottomPadding,
-        ),
-        verticalArrangement = Arrangement.spacedBy(22.dp),
+        modifier = Modifier.fillMaxSize(),
+        contentPadding = PaddingValues(top = 8.dp, bottom = 24.dp + bottomPadding),
     ) {
         item {
-            Surface(
-                modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(24.dp),
-                color = colorScheme.surface.copy(alpha = 0.92f),
-                tonalElevation = 1.dp,
-                border = BorderStroke(1.dp, colorScheme.primary.copy(alpha = 0.12f)),
-            ) {
-                Box(
-                    modifier = Modifier.background(
-                        Brush.linearGradient(
-                            listOf(
-                                colorScheme.primaryContainer.copy(alpha = 0.55f),
-                                colorScheme.tertiaryContainer.copy(alpha = 0.28f),
-                                Color.Transparent,
-                            ),
-                        ),
-                    ),
-                ) {
-                    Column(
-                        modifier = Modifier.padding(horizontal = 18.dp, vertical = 18.dp),
-                        verticalArrangement = Arrangement.spacedBy(6.dp),
-                    ) {
-                        Text(
-                            text = "发现",
-                            style = MaterialTheme.typography.headlineSmall,
-                            fontWeight = FontWeight.Bold,
-                        )
-                        Text(
-                            text = "创作角色，或潜入他们的日常空间",
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = colorScheme.onSurfaceVariant,
-                        )
-                    }
-                }
-            }
-        }
-        item {
-            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                DiscoverSectionHeader(icon = Icons.Default.AutoAwesome, title = "AI 创作", caption = "快速长出新角色与形象")
-                DiscoverAiTile(
-                    modifier = Modifier.fillMaxWidth(),
-                    icon = Icons.Default.Casino,
-                    title = "摇一摇",
-                    subtitle = "按偏好摇出新角色，自动加入通讯录",
-                    badge = "推荐",
-                    container = colorScheme.primaryContainer,
-                    onContainer = colorScheme.onPrimaryContainer,
-                    accent = colorScheme.primary,
-                    onClick = onOpenCharacterShake,
-                    featured = true,
-                )
-                DiscoverAiTile(
-                    modifier = Modifier.fillMaxWidth(),
-                    icon = Icons.Default.Image,
-                    title = "角色图工作台",
-                    subtitle = "提取特征，生成非真人风格头像",
-                    badge = null,
-                    container = colorScheme.secondaryContainer,
-                    onContainer = colorScheme.onSecondaryContainer,
-                    accent = colorScheme.secondary,
-                    onClick = onOpenCharacterArtStudio,
-                    featured = false,
-                )
-            }
-        }
-        item {
-            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                DiscoverSectionHeader(icon = Icons.Default.Smartphone, title = "角色空间", caption = "沉浸日常的六块入口")
-                DiscoverSpaceGrid(
-                    targets = DiscoverTarget.entries,
-                    onOpenTarget = onOpenTarget,
-                )
-            }
-        }
-    }
-}
-
-@Composable
-private fun DiscoverSectionHeader(
-    icon: ImageVector,
-    title: String,
-    caption: String,
-) {
-    Row(
-        modifier = Modifier.padding(horizontal = 2.dp),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(10.dp),
-    ) {
-        Surface(
-            modifier = Modifier.size(30.dp),
-            shape = RoundedCornerShape(10.dp),
-            color = MaterialTheme.colorScheme.primaryContainer,
-            contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
-        ) {
-            Box(contentAlignment = Alignment.Center) {
-                Icon(icon, contentDescription = null, modifier = Modifier.size(16.dp))
-            }
-        }
-        Column(modifier = Modifier.weight(1f)) {
-            Text(
-                text = title,
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.onSurface,
+            PhoneSectionLabel("创作")
+            PhoneDestinationRow(
+                title = "摇一摇",
+                subtitle = "遇见新角色",
+                icon = Lucide.Shuffle,
+                onClick = onOpenCharacterShake,
             )
-            Text(
-                text = caption,
-                style = MaterialTheme.typography.labelMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            PhoneDestinationRow(
+                title = "角色图工作台",
+                subtitle = "头像与角色形象",
+                icon = Lucide.Image,
+                onClick = onOpenCharacterArtStudio,
+            )
+        }
+        item {
+            Spacer(Modifier.height(NarraUi.sectionGap))
+            PhoneSectionLabel("角色空间")
+        }
+        items(DiscoverTarget.entries, key = { it.name }) { target ->
+            PhoneDestinationRow(
+                title = target.title,
+                subtitle = target.subtitle,
+                icon = target.icon,
+                onClick = { onOpenTarget(target) },
             )
         }
     }
 }
 
 @Composable
-private fun DiscoverAiTile(
-    icon: ImageVector,
+private fun PhoneSectionLabel(title: String) {
+    Text(
+        text = title,
+        modifier = Modifier.padding(horizontal = NarraUi.pageHorizontal, vertical = 12.dp),
+        style = MaterialTheme.typography.labelLarge,
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
+    )
+}
+
+@Composable
+private fun PhoneDestinationRow(
     title: String,
     subtitle: String,
-    badge: String?,
-    container: Color,
-    onContainer: Color,
-    accent: Color,
-    onClick: () -> Unit,
-    featured: Boolean,
-    modifier: Modifier = Modifier,
-) {
-    val interactionSource = remember { MutableInteractionSource() }
-    val pressed by interactionSource.collectIsPressedAsState()
-    val scale by animateFloatAsState(
-        targetValue = if (pressed) 0.98f else 1f,
-        label = "discover_ai_tile_scale",
-    )
-    Surface(
-        modifier = modifier
-            .height(if (featured) 112.dp else 96.dp)
-            .graphicsLayer {
-                scaleX = scale
-                scaleY = scale
-            }
-            .clip(RoundedCornerShape(22.dp))
-            .clickable(
-                interactionSource = interactionSource,
-                indication = null,
-                onClick = onClick,
-            ),
-        shape = RoundedCornerShape(22.dp),
-        color = MaterialTheme.colorScheme.surface,
-        tonalElevation = if (featured) 3.dp else 1.dp,
-        border = BorderStroke(1.dp, accent.copy(alpha = if (featured) 0.28f else 0.16f)),
-    ) {
-        Box(
-            modifier = Modifier.background(
-                Brush.horizontalGradient(
-                    listOf(
-                        container.copy(alpha = 0.62f),
-                        container.copy(alpha = 0.18f),
-                        Color.Transparent,
-                    ),
-                ),
-            ),
-        ) {
-            Row(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(horizontal = 16.dp, vertical = 14.dp),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(14.dp),
-            ) {
-                Surface(
-                    modifier = Modifier.size(if (featured) 52.dp else 46.dp),
-                    shape = RoundedCornerShape(16.dp),
-                    color = container,
-                    contentColor = onContainer,
-                ) {
-                    Box(contentAlignment = Alignment.Center) {
-                        Icon(icon, contentDescription = null, modifier = Modifier.size(24.dp))
-                    }
-                }
-                Column(
-                    modifier = Modifier.weight(1f),
-                    verticalArrangement = Arrangement.spacedBy(4.dp),
-                ) {
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    ) {
-                        Text(
-                            text = title,
-                            style = MaterialTheme.typography.titleMedium,
-                            fontWeight = FontWeight.Bold,
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis,
-                        )
-                        if (!badge.isNullOrBlank()) {
-                            Surface(
-                                shape = RoundedCornerShape(999.dp),
-                                color = accent.copy(alpha = 0.14f),
-                                contentColor = accent,
-                            ) {
-                                Text(
-                                    text = badge,
-                                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp),
-                                    style = MaterialTheme.typography.labelSmall,
-                                    fontWeight = FontWeight.SemiBold,
-                                )
-                            }
-                        }
-                    }
-                    Text(
-                        text = subtitle,
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        maxLines = 2,
-                        overflow = TextOverflow.Ellipsis,
-                    )
-                }
-                Icon(
-                    imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
-                    contentDescription = null,
-                    tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
-                )
-            }
-        }
-    }
-}
-
-@Composable
-private fun DiscoverSpaceGrid(
-    targets: List<DiscoverTarget>,
-    onOpenTarget: (DiscoverTarget) -> Unit,
-) {
-    val scheme = MaterialTheme.colorScheme
-    val palette = listOf(
-        scheme.primaryContainer to scheme.onPrimaryContainer,
-        scheme.secondaryContainer to scheme.onSecondaryContainer,
-        scheme.tertiaryContainer to scheme.onTertiaryContainer,
-        scheme.primaryContainer.copy(alpha = 0.72f) to scheme.onPrimaryContainer,
-        scheme.secondaryContainer.copy(alpha = 0.72f) to scheme.onSecondaryContainer,
-        scheme.tertiaryContainer.copy(alpha = 0.72f) to scheme.onTertiaryContainer,
-    )
-    Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-        targets.chunked(2).forEachIndexed { rowIndex, rowTargets ->
-            Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                rowTargets.forEachIndexed { colIndex, target ->
-                    val colorIndex = rowIndex * 2 + colIndex
-                    val (container, onContainer) = palette[colorIndex % palette.size]
-                    DiscoverSpaceTile(
-                        modifier = Modifier.weight(1f),
-                        target = target,
-                        container = container,
-                        onContainer = onContainer,
-                        onClick = { onOpenTarget(target) },
-                    )
-                }
-                if (rowTargets.size == 1) {
-                    Spacer(modifier = Modifier.weight(1f))
-                }
-            }
-        }
-    }
-}
-
-@Composable
-private fun DiscoverSpaceTile(
-    target: DiscoverTarget,
-    container: Color,
-    onContainer: Color,
+    icon: ImageVector,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    val interactionSource = remember { MutableInteractionSource() }
-    val pressed by interactionSource.collectIsPressedAsState()
-    val scale by animateFloatAsState(
-        targetValue = if (pressed) 0.97f else 1f,
-        label = "discover_space_tile_scale",
-    )
-    Surface(
+    Row(
         modifier = modifier
-            .height(92.dp)
-            .graphicsLayer {
-                scaleX = scale
-                scaleY = scale
-            }
-            .clip(RoundedCornerShape(20.dp))
-            .clickable(
-                interactionSource = interactionSource,
-                indication = null,
-                onClick = onClick,
-            ),
-        shape = RoundedCornerShape(20.dp),
-        color = MaterialTheme.colorScheme.surface,
-        tonalElevation = 1.dp,
-        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f)),
+            .fillMaxWidth()
+            .heightIn(min = 68.dp)
+            .clickable(onClick = onClick)
+            .padding(horizontal = NarraUi.pageHorizontal, vertical = 14.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(16.dp),
     ) {
-        Row(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(horizontal = 14.dp, vertical = 12.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(12.dp),
-        ) {
-            Surface(
-                modifier = Modifier.size(42.dp),
-                shape = RoundedCornerShape(14.dp),
-                color = container,
-                contentColor = onContainer,
-            ) {
-                Box(contentAlignment = Alignment.Center) {
-                    Icon(target.icon, contentDescription = null, modifier = Modifier.size(22.dp))
-                }
-            }
-            Column(
-                modifier = Modifier.weight(1f),
-                verticalArrangement = Arrangement.spacedBy(2.dp),
-            ) {
+        Icon(
+            icon,
+            contentDescription = null,
+            modifier = Modifier.size(23.dp),
+            tint = MaterialTheme.colorScheme.primary,
+        )
+        Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(3.dp)) {
+            Text(title, style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.Medium)
+            if (subtitle.isNotBlank()) {
                 Text(
-                    text = target.title,
-                    style = MaterialTheme.typography.titleSmall,
-                    fontWeight = FontWeight.SemiBold,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                )
-                Text(
-                    text = target.subtitle,
-                    style = MaterialTheme.typography.labelSmall,
+                    subtitle,
+                    style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    maxLines = 1,
+                    maxLines = 2,
                     overflow = TextOverflow.Ellipsis,
                 )
             }
         }
+        Icon(
+            Lucide.ChevronRight,
+            contentDescription = null,
+            modifier = Modifier.size(18.dp),
+            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
     }
+    Divider(
+        modifier = Modifier.padding(start = NarraUi.pageHorizontal + 39.dp, end = NarraUi.pageHorizontal),
+        color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f),
+    )
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -1889,79 +1570,6 @@ private fun CharacterShakeFilters.copyForShakeGroup(
 }
 
 @Composable
-private fun ProfileLibraryRow(
-    title: String,
-    subtitle: String,
-    icon: ImageVector,
-    containerColor: Color,
-    contentColor: Color,
-    onClick: () -> Unit,
-    showDivider: Boolean,
-) {
-    Column {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .clickable(onClick = onClick)
-                .padding(horizontal = 16.dp, vertical = 14.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(12.dp),
-        ) {
-            Surface(
-                modifier = Modifier.size(44.dp),
-                shape = RoundedCornerShape(12.dp),
-                color = containerColor,
-                contentColor = contentColor,
-            ) {
-                Box(contentAlignment = Alignment.Center) {
-                    Icon(icon, contentDescription = null, modifier = Modifier.size(22.dp))
-                }
-            }
-            Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
-                Text(title, fontWeight = FontWeight.SemiBold, style = MaterialTheme.typography.titleSmall)
-                Text(
-                    text = subtitle,
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                )
-            }
-            Icon(
-                imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
-                contentDescription = null,
-                tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.72f),
-            )
-        }
-        if (showDivider) {
-            Divider(
-                modifier = Modifier.padding(start = 72.dp),
-                color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.45f),
-            )
-        }
-    }
-}
-
-@Composable
-private fun ProfileSectionCard(
-    modifier: Modifier = Modifier,
-    content: @Composable () -> Unit,
-) {
-    Surface(
-        modifier = modifier
-            .fillMaxWidth()
-            .padding(horizontal = 16.dp, vertical = 6.dp),
-        shape = RoundedCornerShape(18.dp),
-        color = MaterialTheme.colorScheme.surface,
-        tonalElevation = 2.dp,
-    ) {
-        Column(modifier = Modifier.fillMaxWidth()) {
-            content()
-        }
-    }
-}
-
-@Composable
 private fun ImmersiveProfilePage(
     settings: AppSettings,
     chatCount: Int,
@@ -1980,69 +1588,68 @@ private fun ImmersiveProfilePage(
     val masks = settings.normalizedUserPersonaMasks()
     val defaultMask = settings.resolvedDefaultUserPersonaMask()
     val profileDisplayName = defaultMask?.name ?: settings.resolvedUserDisplayName()
-    val profileAvatarUri = defaultMask?.avatarUri ?: settings.userAvatarUri
-    val profileAvatarUrl = defaultMask?.avatarUrl ?: settings.userAvatarUrl
-    val profileScopeText = if (defaultMask != null) {
-        "默认面具 · $chatCount 个会话 · $assistantCount 位角色"
-    } else {
-        "$chatCount 个会话 · $assistantCount 位角色"
-    }
-    val maskSummary = when {
-        masks.isEmpty() -> "还没有默认面具，未单独绑定的会话会使用全局个人资料"
-        defaultMask != null -> "未单独绑定的会话会使用这个身份"
-        else -> "${masks.size} 个身份，未设置默认"
-    }
-    val libraryContainer = MaterialTheme.colorScheme.secondaryContainer
-    val libraryContent = MaterialTheme.colorScheme.onSecondaryContainer
-    val appContainer = MaterialTheme.colorScheme.surfaceVariant
-    val appContent = MaterialTheme.colorScheme.onSurfaceVariant
     var masksExpanded by rememberSaveable { mutableStateOf(false) }
+    var showMaskHelp by rememberSaveable { mutableStateOf(false) }
+    var showAbout by rememberSaveable { mutableStateOf(false) }
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
-        contentPadding = PaddingValues(top = 18.dp, bottom = 18.dp + bottomPadding),
+        contentPadding = PaddingValues(top = 12.dp, bottom = 24.dp + bottomPadding),
     ) {
         item {
-            Surface(
+            Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 16.dp, vertical = 8.dp),
-                shape = RoundedCornerShape(18.dp),
-                color = MaterialTheme.colorScheme.surface,
-                tonalElevation = 2.dp,
+                    .padding(horizontal = NarraUi.pageHorizontal, vertical = 16.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(18.dp),
             ) {
-                Row(
-                    modifier = Modifier.padding(18.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    Box(
-                        modifier = Modifier.size(60.dp),
-                        contentAlignment = Alignment.Center,
-                    ) {
-                        UserProfileAvatar(
-                            displayName = profileDisplayName,
-                            avatarUri = profileAvatarUri,
-                            avatarUrl = profileAvatarUrl,
-                            modifier = Modifier.fillMaxSize(),
-                            containerColor = MaterialTheme.colorScheme.primaryContainer,
-                            contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
-                        )
-                    }
-                    Spacer(modifier = Modifier.width(14.dp))
-                    Column(modifier = Modifier.weight(1f)) {
-                        Text(profileDisplayName, style = MaterialTheme.typography.titleLarge)
-                        Text(
-                            text = profileScopeText,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        )
-                        Text(
-                            text = maskSummary,
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis,
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.primary,
-                        )
-                    }
+                UserProfileAvatar(
+                    displayName = profileDisplayName,
+                    avatarUri = defaultMask?.avatarUri ?: settings.userAvatarUri,
+                    avatarUrl = defaultMask?.avatarUrl ?: settings.userAvatarUrl,
+                    modifier = Modifier.size(72.dp),
+                    containerColor = MaterialTheme.colorScheme.primaryContainer,
+                    contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
+                )
+                Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                    Text(
+                        profileDisplayName,
+                        style = MaterialTheme.typography.headlineSmall,
+                        maxLines = 2,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                    Text(
+                        if (defaultMask != null) "默认面具" else "个人资料",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
                 }
+            }
+        }
+        item {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = NarraUi.pageHorizontal, vertical = 12.dp),
+            ) {
+                ProfileCount(
+                    value = chatCount,
+                    label = "会话",
+                    modifier = Modifier.weight(1f),
+                    onClick = onOpenChatManage,
+                )
+                ProfileCount(
+                    value = assistantCount,
+                    label = "角色",
+                    modifier = Modifier.weight(1f),
+                    onClick = onOpenAssistantSettings,
+                )
+                ProfileCount(
+                    value = masks.size,
+                    label = "面具",
+                    modifier = Modifier.weight(1f),
+                    onClick = onOpenUserMasks,
+                )
             }
         }
         item {
@@ -2053,106 +1660,60 @@ private fun ImmersiveProfilePage(
                 onToggleExpanded = { masksExpanded = !masksExpanded },
                 onSetDefaultMask = onSetDefaultUserPersonaMask,
                 onOpenUserMasks = onOpenUserMasks,
+                onShowHelp = { showMaskHelp = true },
             )
         }
         item {
-            Text(
-                text = "资料库",
-                modifier = Modifier.padding(horizontal = 28.dp, vertical = 8.dp),
-                style = MaterialTheme.typography.labelLarge,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                fontWeight = FontWeight.SemiBold,
-            )
+            Spacer(Modifier.height(12.dp))
+            PhoneSectionLabel("资料库")
+            PhoneDestinationRow("会话管理", "", Lucide.MessageCircleMore, onOpenChatManage)
+            PhoneDestinationRow("角色资料", "", Lucide.UserRound, onOpenAssistantSettings)
+            PhoneDestinationRow("世界书", "", Lucide.BookOpen, onOpenWorldBookSettings)
+            PhoneDestinationRow("记忆档案", "", Lucide.Brain, onOpenMemorySettings)
+            PhoneDestinationRow("预设库", "", Lucide.SlidersHorizontal, onOpenPresetLibrary)
+            PhoneDestinationRow("资料导入导出", "", Lucide.ArrowDownUp, onOpenContextTransferSettings)
         }
         item {
-            ProfileSectionCard {
-                ProfileLibraryRow(
-                    title = "会话管理",
-                    subtitle = "查看、编辑和删除会话资料",
-                    icon = Icons.AutoMirrored.Filled.Chat,
-                    containerColor = libraryContainer,
-                    contentColor = libraryContent,
-                    onClick = onOpenChatManage,
-                    showDivider = true,
-                )
-                ProfileLibraryRow(
-                    title = "角色资料",
-                    subtitle = "管理角色卡、提示词和扩展能力",
-                    icon = Icons.Default.Person,
-                    containerColor = libraryContainer,
-                    contentColor = libraryContent,
-                    onClick = onOpenAssistantSettings,
-                    showDivider = true,
-                )
-                ProfileLibraryRow(
-                    title = "世界书",
-                    subtitle = "维护角色关系会用到的设定资料",
-                    icon = Icons.AutoMirrored.Filled.LibraryBooks,
-                    containerColor = libraryContainer,
-                    contentColor = libraryContent,
-                    onClick = onOpenWorldBookSettings,
-                    showDivider = true,
-                )
-                ProfileLibraryRow(
-                    title = "记忆档案",
-                    subtitle = "查看长期记忆、摘要和关系线索",
-                    icon = Icons.Default.AutoStories,
-                    containerColor = libraryContainer,
-                    contentColor = libraryContent,
-                    onClick = onOpenMemorySettings,
-                    showDivider = true,
-                )
-                ProfileLibraryRow(
-                    title = "预设库",
-                    subtitle = "Prompt Manager、条目顺序与默认预设",
-                    icon = Icons.AutoMirrored.Filled.LibraryBooks,
-                    containerColor = libraryContainer,
-                    contentColor = libraryContent,
-                    onClick = onOpenPresetLibrary,
-                    showDivider = true,
-                )
-                ProfileLibraryRow(
-                    title = "资料导入导出",
-                    subtitle = "备份和迁移会话、角色与上下文资料",
-                    icon = Icons.Default.ImportExport,
-                    containerColor = libraryContainer,
-                    contentColor = libraryContent,
-                    onClick = onOpenContextTransferSettings,
-                    showDivider = false,
-                )
-            }
+            Spacer(Modifier.height(12.dp))
+            PhoneSectionLabel("应用")
+            PhoneDestinationRow("设置", "", Lucide.Settings, onOpenSettings)
+            PhoneDestinationRow("关于 Narra", "", Lucide.Info, { showAbout = true })
         }
-        item {
-            Text(
-                text = "应用",
-                modifier = Modifier.padding(horizontal = 28.dp, vertical = 8.dp),
-                style = MaterialTheme.typography.labelLarge,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                fontWeight = FontWeight.SemiBold,
-            )
-        }
-        item {
-            ProfileSectionCard {
-                ProfileLibraryRow(
-                    title = "设置",
-                    subtitle = "模型、显示、工具和应用更新",
-                    icon = Icons.Default.Settings,
-                    containerColor = appContainer,
-                    contentColor = appContent,
-                    onClick = onOpenSettings,
-                    showDivider = true,
-                )
-                ProfileLibraryRow(
-                    title = "关于",
-                    subtitle = "Narra 角色手机",
-                    icon = Icons.Default.Info,
-                    containerColor = appContainer,
-                    contentColor = appContent,
-                    onClick = {},
-                    showDivider = false,
-                )
-            }
-        }
+    }
+    if (showMaskHelp) {
+        NarraAlertDialog(
+            onDismiss = { showMaskHelp = false },
+            title = "默认面具",
+            message = "未单独绑定面具的会话会使用默认面具。没有默认面具时，会使用个人资料；已单独绑定的会话不受切换影响。",
+            onConfirm = { showMaskHelp = false },
+            confirmLabel = "知道了",
+            dismissLabel = null,
+        )
+    }
+    if (showAbout) {
+        NarraAlertDialog(
+            onDismiss = { showAbout = false },
+            title = "Narra",
+            message = "版本 ${BuildConfig.VERSION_NAME}",
+            onConfirm = { showAbout = false },
+            confirmLabel = "关闭",
+            dismissLabel = null,
+        )
+    }
+}
+
+@Composable
+private fun ProfileCount(value: Int, label: String, modifier: Modifier, onClick: () -> Unit) {
+    Column(
+        modifier = modifier
+            .heightIn(min = 64.dp)
+            .clickable(onClick = onClick)
+            .padding(vertical = 8.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(4.dp),
+    ) {
+        Text(value.toString(), style = MaterialTheme.typography.titleLarge)
+        Text(label, style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
     }
 }
 
@@ -2164,84 +1725,66 @@ private fun ImmersiveMaskSwitcher(
     onToggleExpanded: () -> Unit,
     onSetDefaultMask: (String) -> Unit,
     onOpenUserMasks: () -> Unit,
+    onShowHelp: () -> Unit,
 ) {
-    val colorScheme = MaterialTheme.colorScheme
-    val summary = when {
-        masks.isEmpty() -> "还没有默认面具，先创建不同对话里的“我”"
-        defaultMask != null -> "默认：${defaultMask.name} · 共 ${masks.size} 个身份"
-        else -> "${masks.size} 个身份，未设置默认"
-    }
-    Surface(
+    val scheme = MaterialTheme.colorScheme
+    Column(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 16.dp, vertical = 6.dp),
-        shape = RoundedCornerShape(18.dp),
-        color = colorScheme.surface,
-        tonalElevation = 2.dp,
+            .padding(horizontal = NarraUi.pageHorizontal)
+            .background(scheme.surfaceContainerLow, RoundedCornerShape(NarraUi.cardRadius)),
     ) {
-        Column(modifier = Modifier.fillMaxWidth()) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .heightIn(min = 68.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
             Row(
                 modifier = Modifier
-                    .fillMaxWidth()
+                    .weight(1f)
+                    .heightIn(min = 68.dp)
                     .clickable(onClick = onToggleExpanded)
-                    .padding(horizontal = 16.dp, vertical = 14.dp),
+                    .padding(start = 16.dp, top = 12.dp, bottom = 12.dp),
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(12.dp),
             ) {
-                Surface(
-                    modifier = Modifier.size(44.dp),
-                    shape = RoundedCornerShape(12.dp),
-                    color = colorScheme.secondaryContainer,
-                    contentColor = colorScheme.onSecondaryContainer,
-                ) {
-                    Box(contentAlignment = Alignment.Center) {
-                        Icon(Icons.Default.ManageAccounts, contentDescription = null)
-                    }
-                }
-                Column(modifier = Modifier.weight(1f)) {
-                    Text("默认面具", fontWeight = FontWeight.SemiBold)
+                Icon(Lucide.CircleUserRound, contentDescription = null, tint = scheme.primary)
+                Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(3.dp)) {
+                    Text("切换面具", style = MaterialTheme.typography.titleSmall)
                     Text(
-                        text = summary,
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = colorScheme.onSurfaceVariant,
-                        maxLines = 1,
+                        defaultMask?.name ?: if (masks.isEmpty()) "尚未创建" else "使用个人资料",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = scheme.onSurfaceVariant,
+                        maxLines = 2,
                         overflow = TextOverflow.Ellipsis,
                     )
                 }
                 Icon(
-                    imageVector = if (expanded) {
-                        Icons.Default.KeyboardArrowUp
-                    } else {
-                        Icons.Default.KeyboardArrowDown
-                    },
-                    contentDescription = null,
-                    tint = colorScheme.onSurfaceVariant,
+                    if (expanded) Lucide.ChevronUp else Lucide.ChevronDown,
+                    contentDescription = if (expanded) "收起面具" else "展开面具",
+                    modifier = Modifier.size(18.dp),
+                    tint = scheme.onSurfaceVariant,
                 )
             }
-            AnimatedVisibility(visible = expanded) {
-                Column(
-                    modifier = Modifier.padding(start = 14.dp, end = 14.dp, bottom = 14.dp),
-                    verticalArrangement = Arrangement.spacedBy(8.dp),
-                ) {
-                    if (masks.isEmpty()) {
-                        Text(
-                            text = "暂无面具。",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = colorScheme.onSurfaceVariant,
-                            modifier = Modifier.padding(horizontal = 4.dp),
-                        )
-                    } else {
-                        masks.forEach { mask ->
-                            ImmersiveMaskOptionRow(
-                                mask = mask,
-                                selected = mask.id == defaultMask?.id,
-                                onClick = { onSetDefaultMask(mask.id) },
-                            )
-                        }
-                    }
-                    TextButton(onClick = onOpenUserMasks, modifier = Modifier.fillMaxWidth()) {
-                        Text("管理面具")
-                    }
+            IconButton(onClick = onShowHelp) {
+                Icon(Lucide.Info, contentDescription = "默认面具说明", modifier = Modifier.size(18.dp))
+            }
+        }
+        AnimatedVisibility(visible = expanded) {
+            Column(
+                modifier = Modifier.padding(start = 8.dp, end = 8.dp, bottom = 8.dp),
+                verticalArrangement = Arrangement.spacedBy(4.dp),
+            ) {
+                masks.forEach { mask ->
+                    ImmersiveMaskOptionRow(
+                        mask = mask,
+                        selected = mask.id == defaultMask?.id,
+                        onClick = { onSetDefaultMask(mask.id) },
+                    )
+                }
+                TextButton(onClick = onOpenUserMasks, modifier = Modifier.fillMaxWidth()) {
+                    Text(if (masks.isEmpty()) "创建面具" else "管理面具")
                 }
             }
         }

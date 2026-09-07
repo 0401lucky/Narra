@@ -4,12 +4,13 @@ import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
@@ -19,7 +20,6 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.outlined.Build
 import androidx.compose.material.icons.outlined.Inventory2
-import androidx.compose.material.icons.outlined.IosShare
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
@@ -29,10 +29,12 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.myapplication.model.ProviderSettings
@@ -45,24 +47,25 @@ internal fun ProviderDetailTopBar(
     onNavigateBack: () -> Unit,
 ) {
     val palette = rememberSettingsPalette()
-    val brandColor = provider.resolvedType().brandColor(isSystemInDarkTheme())
+    val brandColor = provider.resolvedType().brandColor(MaterialTheme.colorScheme.surface.luminance() < 0.5f)
 
     Row(
         modifier = Modifier
             .fillMaxWidth()
             .statusBarsPadding()
-            .padding(horizontal = 24.dp, vertical = 20.dp),
+            .padding(horizontal = 20.dp, vertical = 12.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.SpaceBetween,
     ) {
         Row(
+            modifier = Modifier.weight(1f),
             verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(16.dp),
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
         ) {
-            NarraIconButton(onClick = onNavigateBack, modifier = Modifier.size(32.dp)) {
+            NarraIconButton(onClick = onNavigateBack, modifier = Modifier.size(48.dp)) {
                 Icon(
                     Icons.AutoMirrored.Filled.ArrowBack,
-                    contentDescription = "Back",
+                    contentDescription = "返回",
                     tint = palette.title,
                     modifier = Modifier.size(24.dp),
                 )
@@ -94,18 +97,15 @@ internal fun ProviderDetailTopBar(
                 }
             }
             Text(
-                text = provider.name.ifBlank { "New Provider" },
-                style = MaterialTheme.typography.titleLarge.copy(letterSpacing = 0.5.sp),
-                fontWeight = FontWeight.Bold,
+                text = provider.name.ifBlank { "新提供商" },
+                modifier = Modifier.weight(1f),
+                style = MaterialTheme.typography.titleLarge,
+                fontWeight = FontWeight.SemiBold,
                 color = palette.title,
+                maxLines = 2,
+                overflow = TextOverflow.Ellipsis,
             )
         }
-        Icon(
-            Icons.Outlined.IosShare,
-            contentDescription = "Share",
-            tint = palette.title,
-            modifier = Modifier.size(22.dp),
-        )
     }
 }
 
@@ -117,11 +117,12 @@ internal fun SleekBottomNav(
     val palette = rememberSettingsPalette()
     Surface(
         modifier = Modifier
-            .padding(horizontal = 48.dp, vertical = 24.dp)
+            .navigationBarsPadding()
+            .padding(horizontal = 20.dp, vertical = 12.dp)
             .fillMaxWidth(),
-        shape = RoundedCornerShape(40.dp),
+        shape = RoundedCornerShape(16.dp),
         color = palette.surface,
-        shadowElevation = 8.dp,
+        shadowElevation = 0.dp,
         border = BorderStroke(1.dp, palette.border.copy(alpha = 0.2f)),
     ) {
         Row(
@@ -161,10 +162,11 @@ private fun SleekBottomNavItem(
 
     Box(
         modifier = modifier
-            .clip(RoundedCornerShape(32.dp))
+            .heightIn(min = 48.dp)
+            .clip(RoundedCornerShape(8.dp))
             .clickable(onClick = onClick)
             .background(bg)
-            .padding(vertical = 14.dp),
+            .padding(vertical = 10.dp),
         contentAlignment = Alignment.Center,
     ) {
         Row(

@@ -82,16 +82,6 @@ fun VoiceRecognitionSettingsScreen(
                 verticalArrangement = Arrangement.spacedBy(18.dp),
             ) {
                 item {
-                    SettingsNoticeCard(
-                        title = "两条识别通道",
-                        body = "系统识别免配置、不上传音频，但中文长句准确率一般，部分机型不可用。" +
-                            "大模型识别质量更好，需要联网并填写 API Key，音频会上传到你配置的服务。",
-                        containerColor = palette.accent,
-                        contentColor = palette.accent,
-                    )
-                }
-
-                item {
                     SettingsGroup(title = "开关") {
                         VoiceRecognitionSwitchRow(
                             title = "启用语音识别",
@@ -109,7 +99,11 @@ fun VoiceRecognitionSettingsScreen(
                 }
 
                 item {
-                    SettingsGroup(title = "识别通道") {
+                    SettingsGroup(
+                        title = "识别通道",
+                        subtitle = "系统识别免配置且不上传音频，但是否可用取决于设备服务和录音权限；" +
+                            "大模型识别需要联网和 API Key，松手后会把录音上传到你配置的服务。",
+                    ) {
                         Column(
                             modifier = Modifier
                                 .fillMaxWidth()

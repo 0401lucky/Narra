@@ -4,7 +4,6 @@ import com.example.myapplication.ui.component.*
 
 import android.widget.Toast
 import androidx.compose.foundation.BorderStroke
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -53,8 +52,6 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.platform.LocalClipboard
 import androidx.compose.ui.platform.LocalContext
@@ -197,12 +194,12 @@ fun AssistantPromptScreen(
                                     Toast.makeText(context, "已复制", Toast.LENGTH_SHORT).show()
                                 }
                             },
-                            modifier = Modifier.size(32.dp),
+                            modifier = Modifier.size(48.dp),
                         ) {
                             Icon(
                                 Icons.Outlined.ContentCopy,
                                 contentDescription = "复制",
-                                tint = palette.body.copy(alpha = 0.5f),
+                                tint = palette.body,
                                 modifier = Modifier.size(18.dp),
                             )
                         }
@@ -216,7 +213,7 @@ fun AssistantPromptScreen(
                             .heightIn(min = 160.dp),
                         label = { Text("角色核心人设") },
                         maxLines = 30,
-                        shape = RoundedCornerShape(16.dp),
+                        shape = RoundedCornerShape(8.dp),
                         colors = outlineColors,
                         textStyle = MaterialTheme.typography.bodyMedium.copy(
                             lineHeight = 22.sp,
@@ -230,13 +227,8 @@ fun AssistantPromptScreen(
                 PromptSection(
                     title = "关系与场景",
                     palette = palette,
+                    description = "描述默认关系、时间线、相遇背景和互动起点。",
                 ) {
-                    Text(
-                        text = "描述默认关系、时间线、相遇背景和互动起点。",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = palette.body.copy(alpha = 0.6f),
-                    )
-                    Spacer(Modifier.height(8.dp))
                     OutlinedTextField(
                         value = scenario,
                         onValueChange = { scenario = it },
@@ -244,7 +236,7 @@ fun AssistantPromptScreen(
                             .fillMaxWidth()
                             .heightIn(min = 120.dp),
                         maxLines = 12,
-                        shape = RoundedCornerShape(16.dp),
+                        shape = RoundedCornerShape(8.dp),
                         colors = outlineColors,
                     )
                 }
@@ -255,6 +247,7 @@ fun AssistantPromptScreen(
                 PromptSection(
                     title = "开场预览",
                     palette = palette,
+                    description = "新对话的开场白，留空即不发送。",
                 ) {
                     // Mini chat bubble preview — inspired by RikkaHub
                     if (greeting.isNotBlank()) {
@@ -273,11 +266,6 @@ fun AssistantPromptScreen(
                         fontWeight = FontWeight.Bold,
                         color = palette.title,
                     )
-                    Text(
-                        text = "新对话的开场白，留空即不发送。",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = palette.body.copy(alpha = 0.6f),
-                    )
                     Spacer(Modifier.height(8.dp))
                     OutlinedTextField(
                         value = greeting,
@@ -286,7 +274,7 @@ fun AssistantPromptScreen(
                             .fillMaxWidth()
                             .heightIn(min = 96.dp),
                         maxLines = 8,
-                        shape = RoundedCornerShape(16.dp),
+                        shape = RoundedCornerShape(8.dp),
                         colors = outlineColors,
                     )
                 }
@@ -297,13 +285,8 @@ fun AssistantPromptScreen(
                 PromptSection(
                     title = "示例对话",
                     palette = palette,
-                ) {
-                    Text(
-                        text = "提供多轮对话示例，帮助模型理解风格。",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = palette.body.copy(alpha = 0.6f),
-                    )
-                }
+                    description = "提供多轮对话示例，帮助模型理解风格。",
+                ) {}
             }
 
             // Each example dialogue as a separate mini-card
@@ -322,9 +305,8 @@ fun AssistantPromptScreen(
             item {
                 Surface(
                     modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(20.dp),
-                    color = palette.accentSoft.copy(alpha = 0.5f),
-                    border = BorderStroke(1.dp, palette.accent.copy(alpha = 0.15f)),
+                    shape = RoundedCornerShape(8.dp),
+                    color = palette.accentSoft,
                     onClick = { exampleDialogues.add("") },
                 ) {
                     Box(
@@ -348,13 +330,8 @@ fun AssistantPromptScreen(
                 PromptSection(
                     title = "创作备注",
                     palette = palette,
+                    description = "私密笔记，不会注入对话上下文，适合记录创作意图和玩法边界。",
                 ) {
-                    Text(
-                        text = "私密笔记，不会注入对话上下文，适合记录创作意图和玩法边界。",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = palette.body.copy(alpha = 0.6f),
-                    )
-                    Spacer(Modifier.height(8.dp))
                     OutlinedTextField(
                         value = creatorNotes,
                         onValueChange = { creatorNotes = it },
@@ -362,7 +339,7 @@ fun AssistantPromptScreen(
                             .fillMaxWidth()
                             .heightIn(min = 80.dp),
                         maxLines = 6,
-                        shape = RoundedCornerShape(16.dp),
+                        shape = RoundedCornerShape(8.dp),
                         colors = outlineColors,
                     )
                 }
@@ -372,11 +349,12 @@ fun AssistantPromptScreen(
                 PromptSection(
                     title = "钱包设定",
                     palette = palette,
+                    description = "设置角色首次进入场景钱包时的余额。留空使用默认 ${DEFAULT_ROLE_WALLET_BALANCE_LABEL}，已有钱包不会被自动覆盖。",
                 ) {
                     Text(
-                        text = "设置角色首次进入场景钱包时的余额。留空使用默认 ${DEFAULT_ROLE_WALLET_BALANCE_LABEL}，已有钱包不会被自动覆盖。",
+                        text = "仅影响新钱包，已有余额保持不变。",
                         style = MaterialTheme.typography.bodySmall,
-                        color = palette.body.copy(alpha = 0.6f),
+                        color = palette.body,
                     )
                     Spacer(Modifier.height(8.dp))
                     OutlinedTextField(
@@ -397,7 +375,7 @@ fun AssistantPromptScreen(
                             )
                         },
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
-                        shape = RoundedCornerShape(16.dp),
+                        shape = RoundedCornerShape(8.dp),
                         colors = outlineColors,
                     )
                 }
@@ -407,13 +385,8 @@ fun AssistantPromptScreen(
                 PromptSection(
                     title = "最近消息窗口",
                     palette = palette,
+                    description = "填 0 为自动。需要摘要模型可用时，超出窗口的旧消息会由摘要承接；最近 N 条仍保留原文发送。",
                 ) {
-                    Text(
-                        text = "填 0 为自动。需要摘要模型可用时，超出窗口的旧消息会由摘要承接；最近 N 条仍保留原文发送。",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = palette.body.copy(alpha = 0.6f),
-                    )
-                    Spacer(Modifier.height(8.dp))
                     OutlinedTextField(
                         value = contextMessageSizeText,
                         onValueChange = { raw ->
@@ -422,7 +395,8 @@ fun AssistantPromptScreen(
                         modifier = Modifier.fillMaxWidth(),
                         singleLine = true,
                         label = { Text("消息条数") },
-                        shape = RoundedCornerShape(16.dp),
+                        placeholder = { Text("自动") },
+                        shape = RoundedCornerShape(8.dp),
                         colors = outlineColors,
                     )
                 }
@@ -431,59 +405,35 @@ fun AssistantPromptScreen(
     }
 }
 
-/**
- * 沿用 SettingsGroup 的壳，不再自绘 Surface + border。保留内联标题 + trailing 图标的编排习惯。
- * 标题左侧增加 accent 色装饰柱，让章节边界与"基础 / 扩展 / 记忆"等子页的 AssistantSubsectionTitle 保持视觉一致。
- */
 @Composable
 private fun PromptSection(
     title: String,
     palette: SettingsPalette,
+    description: String = "",
     trailingIcons: @Composable (() -> Unit)? = null,
     content: @Composable () -> Unit,
 ) {
-    SettingsGroup {
-        Column(
-            modifier = Modifier.padding(horizontal = 18.dp, vertical = 16.dp),
+    Column(modifier = Modifier.fillMaxWidth()) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically,
         ) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.SpaceBetween,
-            ) {
-                Row(
-                    modifier = Modifier.weight(1f),
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    Box(
-                        modifier = Modifier
-                            .width(3.dp)
-                            .height(20.dp)
-                            .clip(RoundedCornerShape(2.dp))
-                            .background(
-                                Brush.verticalGradient(
-                                    colors = listOf(
-                                        palette.accent,
-                                        palette.accent.copy(alpha = 0.55f),
-                                    ),
-                                ),
-                            ),
-                    )
-                    Spacer(Modifier.width(10.dp))
-                    Text(
-                        text = title,
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Bold,
-                        color = palette.title,
-                    )
-                }
-                if (trailingIcons != null) {
-                    trailingIcons()
-                }
+            Text(
+                text = title,
+                modifier = Modifier.weight(1f),
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.SemiBold,
+                color = palette.title,
+            )
+            if (description.isNotBlank()) {
+                SettingsHelpButton(title = title, description = description)
             }
-            Spacer(Modifier.height(10.dp))
-            content()
+            if (trailingIcons != null) {
+                trailingIcons()
+            }
         }
+        Spacer(Modifier.height(10.dp))
+        content()
     }
 }
 
@@ -517,7 +467,7 @@ private fun GreetingPreviewBubble(
                 iconName = assistant.iconName,
                 avatarUri = assistant.avatarUri,
                 size = 28.dp,
-                containerColor = palette.accentSoft.copy(alpha = 0.5f),
+                containerColor = palette.accentSoft,
                 contentColor = palette.accentStrong,
                 cornerRadius = 10.dp,
             )
@@ -567,7 +517,7 @@ private fun ExampleDialogueItem(
 ) {
     Surface(
         modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(20.dp),
+        shape = RoundedCornerShape(8.dp),
         color = palette.surface,
         border = BorderStroke(0.5.dp, palette.border.copy(alpha = 0.3f)),
     ) {
@@ -587,12 +537,12 @@ private fun ExampleDialogueItem(
                 )
                 NarraIconButton(
                     onClick = onRemove,
-                    modifier = Modifier.size(28.dp),
+                    modifier = Modifier.size(48.dp),
                 ) {
                     Icon(
                         Icons.Default.Close,
                         contentDescription = "删除",
-                        tint = MaterialTheme.colorScheme.error.copy(alpha = 0.6f),
+                        tint = MaterialTheme.colorScheme.error,
                         modifier = Modifier.size(18.dp),
                     )
                 }
@@ -604,7 +554,7 @@ private fun ExampleDialogueItem(
                     .fillMaxWidth()
                     .heightIn(min = 80.dp),
                 maxLines = 10,
-                shape = RoundedCornerShape(14.dp),
+                shape = RoundedCornerShape(8.dp),
                 colors = outlineColors,
             )
         }

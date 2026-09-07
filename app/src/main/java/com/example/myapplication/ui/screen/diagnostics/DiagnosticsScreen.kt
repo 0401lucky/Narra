@@ -9,9 +9,6 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Download
-import androidx.compose.material.icons.filled.HealthAndSafety
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
@@ -28,15 +25,18 @@ import com.example.myapplication.ui.component.TopAppSnackbarHost
 import com.example.myapplication.ui.screen.settings.AnimatedSettingButton
 import com.example.myapplication.ui.screen.settings.SettingsGroup
 import com.example.myapplication.ui.screen.settings.SettingsGroupDivider
-import com.example.myapplication.ui.screen.settings.SettingsHintCard
 import com.example.myapplication.ui.screen.settings.SettingsListRow
 import com.example.myapplication.ui.screen.settings.SettingsPageIntro
 import com.example.myapplication.ui.screen.settings.SettingsScreenPadding
 import com.example.myapplication.ui.screen.settings.SettingsSectionHeader
+import com.example.myapplication.ui.screen.settings.SettingsHelpButton
 import com.example.myapplication.ui.screen.settings.SettingsTopBar
 import com.example.myapplication.ui.screen.settings.rememberSettingsPalette
 import com.example.myapplication.ui.screen.settings.rememberSettingsSnackbarHostState
 import com.example.myapplication.viewmodel.DiagnosticsUiState
+import com.composables.icons.lucide.Download
+import com.composables.icons.lucide.Lucide
+import com.composables.icons.lucide.ShieldCheck
 import java.io.OutputStream
 import java.text.DateFormat
 import java.util.Date
@@ -148,12 +148,19 @@ fun DiagnosticsScreen(
                     }
                 }
                 item {
-                    SettingsHintCard(
-                        title = "隐私边界",
-                        body = "导出仅含异常类别、时间、应用版本、PSS/RSS 与安全数值；不含聊天内容、提示词、API Key、日志、系统跟踪文件或设备唯一标识。",
-                        containerColor = palette.accentSoft,
-                        contentColor = palette.accent,
-                    )
+                    SettingsGroup {
+                        SettingsListRow(
+                            title = "隐私边界",
+                            supportingText = "仅在你主动选择位置后导出，内容已去除敏感信息",
+                            trailingContent = {
+                                SettingsHelpButton(
+                                    title = "隐私边界",
+                                    description = "导出仅含异常类别、时间、应用版本、PSS/RSS 与安全数值；不含聊天内容、提示词、API Key、日志、系统跟踪文件或设备唯一标识。",
+                                )
+                            },
+                            showArrow = false,
+                        )
+                    }
                 }
                 item {
                     Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
@@ -164,7 +171,7 @@ fun DiagnosticsScreen(
                             isPrimary = true,
                             leadingIcon = {
                                 Icon(
-                                    imageVector = Icons.Default.Download,
+                                    imageVector = Lucide.Download,
                                     contentDescription = null,
                                 )
                             },
@@ -182,13 +189,19 @@ fun DiagnosticsScreen(
                         SettingsListRow(
                             leadingContent = {
                                 Icon(
-                                    imageVector = Icons.Default.HealthAndSafety,
+                                    imageVector = Lucide.ShieldCheck,
                                     contentDescription = null,
                                     tint = palette.accent,
                                 )
                             },
                             title = "默认离线",
-                            supportingText = "不申请额外权限，不接入远程崩溃 SDK，也不安装全局未捕获异常上报器。",
+                            supportingText = "诊断信息默认只保存在本机",
+                            trailingContent = {
+                                SettingsHelpButton(
+                                    title = "默认离线",
+                                    description = "不申请额外权限，不接入远程崩溃 SDK，也不安装全局未捕获异常上报器。",
+                                )
+                            },
                             enabled = false,
                             showArrow = false,
                         )

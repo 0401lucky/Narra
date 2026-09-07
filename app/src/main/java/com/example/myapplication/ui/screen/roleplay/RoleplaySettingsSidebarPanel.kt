@@ -71,7 +71,6 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.platform.testTag
-import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -107,9 +106,12 @@ import com.example.myapplication.ui.screen.settings.SettingsScreenPadding
 import java.net.URI
 import kotlinx.coroutines.launch
 
-internal val RoleplaySettingsPanelTitleColor = Color(0xFF1F2736)
-internal val RoleplaySettingsPanelBodyColor = Color(0xFF697487)
-internal val RoleplaySettingsPanelAccentColor = Color(0xFF586887)
+internal val RoleplaySettingsPanelTitleColor: Color
+    @Composable get() = MaterialTheme.colorScheme.onSurface
+internal val RoleplaySettingsPanelBodyColor: Color
+    @Composable get() = MaterialTheme.colorScheme.onSurfaceVariant
+internal val RoleplaySettingsPanelAccentColor: Color
+    @Composable get() = MaterialTheme.colorScheme.primary
 
 internal enum class RoleplaySettingsPanelPage {
     MAIN,
@@ -1284,7 +1286,7 @@ private fun RoleplaySettingsGroupMembersSection(
         ) {
             Text(
                 text = "群成员（${sortedParticipants.size}）",
-                style = MaterialTheme.typography.titleMedium.copy(fontFamily = FontFamily.Cursive),
+                style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.SemiBold,
                 color = RoleplaySettingsPanelTitleColor,
             )
@@ -1387,7 +1389,7 @@ private fun RoleplayGroupParticipantRow(
                 Text(if (participant.isMuted) "解除" else "禁言")
             }
             TextButton(onClick = { showRemoveConfirm = true }) {
-                Text("移除", color = Color(0xFFD95C5C))
+                Text("移除", color = MaterialTheme.colorScheme.error)
             }
         }
     }
@@ -1403,7 +1405,7 @@ private fun RoleplayGroupParticipantRow(
                         onRemove(participant.id)
                     },
                 ) {
-                    Text("移除", color = Color(0xFFD95C5C))
+                    Text("移除", color = MaterialTheme.colorScheme.error)
                 }
             },
             dismissButton = {
@@ -1512,7 +1514,7 @@ private fun RoleplaySettingsMembersOverviewCard(
             ) {
                 Text(
                     text = "群成员（${sortedParticipants.size}）",
-                    style = MaterialTheme.typography.titleMedium.copy(fontFamily = FontFamily.Cursive),
+                    style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.SemiBold,
                     color = RoleplaySettingsPanelTitleColor,
                 )
@@ -1569,7 +1571,7 @@ private fun RoleplaySettingsMembersOverviewCard(
                     Text(
                         text = displayName,
                         modifier = Modifier.weight(1f),
-                        style = MaterialTheme.typography.titleMedium.copy(fontFamily = FontFamily.Cursive),
+                        style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.SemiBold,
                         color = RoleplaySettingsPanelTitleColor,
                         maxLines = 1,
@@ -1635,7 +1637,7 @@ private fun RoleplayCompactMemberRow(
         ) {
             Text(
                 text = displayName,
-                style = MaterialTheme.typography.titleMedium.copy(fontFamily = FontFamily.Cursive),
+                style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.SemiBold,
                 color = RoleplaySettingsPanelTitleColor,
                 maxLines = 1,
@@ -1676,7 +1678,7 @@ private fun RoleplayCompactMemberRow(
                         onRemove(participant.id)
                     },
                 ) {
-                    Text("移除", color = Color(0xFFD95C5C))
+                    Text("移除", color = MaterialTheme.colorScheme.error)
                 }
             },
             dismissButton = {
@@ -1796,7 +1798,7 @@ private fun RoleplayIdentitySummaryCard(
         ) {
             Text(
                 text = "当前身份概览",
-                style = MaterialTheme.typography.titleMedium.copy(fontFamily = FontFamily.Cursive),
+                style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.SemiBold,
                 color = RoleplaySettingsPanelTitleColor,
             )
@@ -1907,7 +1909,7 @@ private fun DetailIntroCard(
         ) {
             Text(
                 text = title,
-                style = MaterialTheme.typography.titleLarge.copy(fontFamily = FontFamily.Cursive),
+                style = MaterialTheme.typography.titleLarge,
                 fontWeight = FontWeight.SemiBold,
                 color = RoleplaySettingsPanelTitleColor,
             )
@@ -1953,9 +1955,7 @@ private fun GroupLabel(
     Text(
         text = title,
         modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp),
-        style = MaterialTheme.typography.titleMedium.copy(
-            fontFamily = FontFamily.Cursive,
-        ),
+        style = MaterialTheme.typography.titleMedium,
         fontWeight = FontWeight.SemiBold,
         color = RoleplaySettingsPanelTitleColor.copy(alpha = 0.72f),
     )
@@ -1971,13 +1971,15 @@ private fun ExpandableGroupHeader(
         modifier = Modifier
             .fillMaxWidth()
             .clickable(onClick = onToggle)
+            .heightIn(min = 48.dp)
             .padding(horizontal = 8.dp, vertical = 2.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.SpaceBetween,
     ) {
         Text(
             text = title,
-            style = MaterialTheme.typography.titleMedium.copy(fontFamily = FontFamily.Cursive),
+            modifier = Modifier.weight(1f),
+            style = MaterialTheme.typography.titleMedium,
             fontWeight = FontWeight.SemiBold,
             color = RoleplaySettingsPanelTitleColor.copy(alpha = 0.72f),
         )
@@ -2023,26 +2025,23 @@ private fun SummaryLinkRow(
                 modifier = Modifier.size(22.dp),
             )
         }
-        Text(
-            text = title,
-            style = MaterialTheme.typography.bodyLarge,
-            color = if (enabled) contentColor else supportingColor.copy(alpha = 0.6f),
-            fontWeight = FontWeight.Medium,
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis,
-        )
-        if (summary.isNotBlank()) {
+        Column(
+            modifier = Modifier.weight(1f),
+            verticalArrangement = Arrangement.spacedBy(3.dp),
+        ) {
             Text(
-                text = summary,
-                modifier = Modifier.weight(1f),
-                style = MaterialTheme.typography.bodyMedium,
-                color = if (enabled) supportingColor else supportingColor.copy(alpha = 0.55f),
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-                textAlign = androidx.compose.ui.text.style.TextAlign.End,
+                text = title,
+                style = MaterialTheme.typography.bodyLarge,
+                color = if (enabled) contentColor else supportingColor.copy(alpha = 0.6f),
+                fontWeight = FontWeight.Medium,
             )
-        } else {
-            androidx.compose.foundation.layout.Spacer(modifier = Modifier.weight(1f))
+            if (summary.isNotBlank()) {
+                Text(
+                    text = summary,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = if (enabled) supportingColor else supportingColor.copy(alpha = 0.55f),
+                )
+            }
         }
         Icon(
             imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
@@ -2116,8 +2115,8 @@ private fun FooterActionRow(
     ImmersiveGlassSurface(
         backdropState = backdropState,
         modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(24.dp),
-        overlayColor = Color(0xFFF2EEE8).copy(alpha = 0.82f),
+        shape = RoundedCornerShape(8.dp),
+        overlayColor = MaterialTheme.colorScheme.surfaceContainerLow,
     ) {
         Row(
             modifier = Modifier
@@ -2133,7 +2132,7 @@ private fun FooterActionRow(
             )
             FooterActionButton(
                 title = "重置",
-                tint = Color(0xFFD95C5C),
+                tint = MaterialTheme.colorScheme.error,
                 modifier = Modifier.weight(1f),
                 onClick = onShowResetDialog,
             )
@@ -2162,7 +2161,7 @@ private fun FooterActionButton(
         ) {
             Text(
                 text = title,
-                style = MaterialTheme.typography.labelLarge.copy(fontFamily = FontFamily.Cursive),
+                style = MaterialTheme.typography.labelLarge,
                 fontWeight = FontWeight.SemiBold,
             )
         }

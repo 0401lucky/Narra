@@ -3,7 +3,6 @@ package com.example.myapplication.ui.screen.settings
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -57,6 +56,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -97,13 +97,13 @@ internal fun ModelTabContent(
         LazyColumn(
             modifier = Modifier.fillMaxSize(),
             contentPadding = PaddingValues(start = 20.dp, top = 8.dp, end = 20.dp, bottom = 120.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
             if (modelInfos.isEmpty()) {
                 item {
                     SettingsPlaceholderRow(
                         title = "暂无模型",
-                        subtitle = if (provider.hasBaseCredentials()) "点击下方浮动按钮获取模型，然后选择要添加的。" else "先在配置页补全信息，再来获取。",
+                        subtitle = if (provider.hasBaseCredentials()) "尚未添加可用模型。" else "连接信息未配置完整。",
                     )
                 }
             } else {
@@ -115,6 +115,7 @@ internal fun ModelTabContent(
                     ) {
                         Text(
                             text = "已添加模型 (${modelInfos.size})",
+                            modifier = Modifier.weight(1f),
                             style = MaterialTheme.typography.titleMedium,
                             fontWeight = FontWeight.Bold,
                             color = palette.title
@@ -135,7 +136,7 @@ internal fun ModelTabContent(
                     PremiumModelCard(
                         modelInfo = modelInfo,
                         isSelected = modelInfo.modelId == provider.selectedModel,
-                        brandColor = provider.resolvedType().brandColor(isSystemInDarkTheme()),
+                        brandColor = provider.resolvedType().brandColor(MaterialTheme.colorScheme.surface.luminance() < 0.5f),
                         onClick = { onUpdateProviderSelectedModel(provider.id, modelInfo.modelId) },
                         onEditAbilities = { editingModelInfo = modelInfo },
                         onRemove = { onRemoveModel(provider.id, modelInfo.modelId) },

@@ -33,6 +33,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import com.example.myapplication.ui.component.TopAppSnackbarHost
+import com.example.myapplication.system.security.SensitiveTextRedactor
 import com.example.myapplication.viewmodel.ContextImportPreview
 import com.example.myapplication.viewmodel.ContextImportPayload
 import com.example.myapplication.viewmodel.ContextTransferSection
@@ -75,7 +76,12 @@ fun ContextTransferScreen(
                 }.onSuccess {
                     snackbarHostState.showSnackbar("上下文数据已导出")
                 }.onFailure { throwable ->
-                    snackbarHostState.showSnackbar(throwable.message ?: "导出失败")
+                    snackbarHostState.showSnackbar(
+                        SensitiveTextRedactor.throwableMessageForUi(
+                            throwable = throwable,
+                            fallback = "导出失败",
+                        ),
+                    )
                 }
             }
         }
@@ -91,7 +97,12 @@ fun ContextTransferScreen(
             }.onSuccess { payload ->
                 onPreviewImportPayload(payload, pendingImportSection)
             }.onFailure { throwable ->
-                snackbarHostState.showSnackbar(throwable.message ?: "导入失败")
+                snackbarHostState.showSnackbar(
+                    SensitiveTextRedactor.throwableMessageForUi(
+                        throwable = throwable,
+                        fallback = "导入失败",
+                    ),
+                )
             }
         }
     }
@@ -106,7 +117,12 @@ fun ContextTransferScreen(
             }.onSuccess { payload ->
                 onPreviewImportPayload(payload, pendingImportSection)
             }.onFailure { throwable ->
-                snackbarHostState.showSnackbar(throwable.message ?: "导入失败")
+                snackbarHostState.showSnackbar(
+                    SensitiveTextRedactor.throwableMessageForUi(
+                        throwable = throwable,
+                        fallback = "导入失败",
+                    ),
+                )
             }
         }
     }
@@ -339,12 +355,16 @@ private fun TransferSectionGroup(
             modifier = Modifier.padding(horizontal = 18.dp, vertical = 16.dp),
             verticalArrangement = Arrangement.spacedBy(10.dp),
         ) {
-            SettingsListRow(
-                title = title,
-                supportingText = description,
-                enabled = false,
-                showArrow = false,
-            )
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                    Text(title, style = androidx.compose.material3.MaterialTheme.typography.titleMedium)
+                    Text("导出或导入本地文件", style = androidx.compose.material3.MaterialTheme.typography.bodySmall)
+                }
+                SettingsHelpButton(title = title, description = description)
+            }
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(10.dp),

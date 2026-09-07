@@ -16,9 +16,11 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AddAPhoto
@@ -38,6 +40,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.example.myapplication.model.Assistant
@@ -107,13 +110,6 @@ fun AssistantBasicScreen(
             verticalArrangement = Arrangement.spacedBy(20.dp),
         ) {
             item {
-                AssistantSubPageHeader(
-                    assistant = assistant ?: Assistant(name = name, description = description),
-                    overline = if (isNew) "新建角色" else "基础设定",
-                )
-            }
-
-            item {
                 AssistantSubsectionTitle(
                     title = "外观识别",
                 )
@@ -136,19 +132,23 @@ fun AssistantBasicScreen(
                                 size = 72.dp,
                                 containerColor = palette.subtleChip,
                                 contentColor = palette.subtleChipContent,
-                                cornerRadius = 20.dp,
+                                cornerRadius = 36.dp,
                             )
 
-                            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                            Column(
+                                modifier = Modifier.weight(1f),
+                                verticalArrangement = Arrangement.spacedBy(8.dp),
+                            ) {
                                 Surface(
                                     modifier = Modifier
-                                        .clip(RoundedCornerShape(14.dp))
+                                        .heightIn(min = 48.dp)
+                                        .clip(RoundedCornerShape(8.dp))
                                         .clickable {
                                             imagePickerLauncher.launch(
                                                 PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly),
                                             )
                                         },
-                                    shape = RoundedCornerShape(14.dp),
+                                    shape = RoundedCornerShape(8.dp),
                                     color = palette.accentSoft,
                                     border = BorderStroke(1.dp, palette.border.copy(alpha = 0.5f)),
                                 ) {
@@ -175,12 +175,13 @@ fun AssistantBasicScreen(
                                 if (avatarUri.isNotBlank()) {
                                     Surface(
                                         modifier = Modifier
-                                            .clip(RoundedCornerShape(14.dp))
+                                            .heightIn(min = 48.dp)
+                                            .clip(RoundedCornerShape(8.dp))
                                             .clickable {
                                                 avatarUri = ""
                                                 if (iconName.isBlank()) iconName = DEFAULT_ASSISTANT_ICON
                                             },
-                                        shape = RoundedCornerShape(14.dp),
+                                        shape = RoundedCornerShape(8.dp),
                                         color = palette.surfaceTint,
                                     ) {
                                         Row(
@@ -227,12 +228,16 @@ fun AssistantBasicScreen(
                                 Surface(
                                     modifier = Modifier
                                         .size(52.dp)
-                                        .clip(RoundedCornerShape(14.dp))
-                                        .clickable {
-                                            iconName = preset.name
-                                            avatarUri = ""
-                                        },
-                                    shape = RoundedCornerShape(14.dp),
+                                        .clip(RoundedCornerShape(8.dp))
+                                        .selectable(
+                                            selected = isSelected,
+                                            role = Role.RadioButton,
+                                            onClick = {
+                                                iconName = preset.name
+                                                avatarUri = ""
+                                            },
+                                        ),
+                                    shape = RoundedCornerShape(8.dp),
                                     color = containerColor,
                                     border = BorderStroke(borderWidth, borderColor),
                                 ) {
@@ -274,7 +279,7 @@ fun AssistantBasicScreen(
                             label = { Text("名称") },
                             modifier = Modifier.fillMaxWidth(),
                             singleLine = true,
-                            shape = RoundedCornerShape(18.dp),
+                            shape = RoundedCornerShape(8.dp),
                             colors = outlineColors,
                         )
                         OutlinedTextField(
@@ -282,7 +287,7 @@ fun AssistantBasicScreen(
                             onValueChange = { description = it },
                             label = { Text(if (isNew) "简介（可选）" else "描述") },
                             modifier = Modifier.fillMaxWidth(),
-                            shape = RoundedCornerShape(18.dp),
+                            shape = RoundedCornerShape(8.dp),
                             colors = outlineColors,
                             maxLines = 4,
                         )
@@ -292,13 +297,10 @@ fun AssistantBasicScreen(
                                 onValueChange = { corePersona = it },
                                 label = { Text("核心人设（可选）") },
                                 modifier = Modifier.fillMaxWidth(),
-                                shape = RoundedCornerShape(18.dp),
+                                shape = RoundedCornerShape(8.dp),
                                 colors = outlineColors,
                                 minLines = 3,
                                 maxLines = 6,
-                                supportingText = {
-                                    Text("可稍后在角色人设页继续完善；创建后即可开始对话。")
-                                },
                             )
                         }
                         if (!isNew) {
@@ -308,7 +310,7 @@ fun AssistantBasicScreen(
                                 label = { Text("标签") },
                                 modifier = Modifier.fillMaxWidth(),
                                 singleLine = true,
-                                shape = RoundedCornerShape(18.dp),
+                                shape = RoundedCornerShape(8.dp),
                                 colors = outlineColors,
                                 placeholder = { Text("例如：推理, 悬疑") },
                             )

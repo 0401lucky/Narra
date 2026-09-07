@@ -3,33 +3,48 @@ package com.example.myapplication.system.translation
 import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.Context
-import android.graphics.Color
+import android.content.res.ColorStateList
 import android.graphics.PixelFormat
+import android.graphics.Typeface
 import android.graphics.drawable.GradientDrawable
+import android.graphics.drawable.RippleDrawable
 import android.os.Build
-import androidx.core.graphics.toColorInt
 import android.os.Handler
+import android.os.IBinder
 import android.os.Looper
+import android.provider.Settings
+import android.view.GestureDetector
 import android.view.Gravity
 import android.view.MotionEvent
 import android.view.View
+import android.view.ViewConfiguration
+import android.view.WindowInsets
 import android.view.WindowManager
-import android.widget.Button
-import android.widget.LinearLayout
-import android.widget.PopupMenu
-import android.widget.ScrollView
+import android.view.accessibility.AccessibilityManager
 import android.widget.TextView
 import android.widget.Toast
-import androidx.appcompat.widget.AppCompatTextView
+import androidx.compose.material3.ColorScheme
+import androidx.core.graphics.ColorUtils
+import com.example.myapplication.model.AppColorTheme
+import com.example.myapplication.ui.theme.resolveAppColorScheme
 import kotlin.math.abs
 
-class FloatingOverlayController(
+class FloatingOverlayController internal constructor(
     private val context: Context,
     private val callback: Callback,
+    private val windowManager: WindowManager,
+    private val overlayType: Int,
+    private val windowToken: IBinder?,
+    private val canShowOverlays: () -> Boolean,
 ) {
-    private companion object {
-        const val SelectedTextActionAutoHideMillis = 4_000L
-    }
+    constructor(context: Context, callback: Callback) : this(
+        context = context,
+        callback = callback,
+        windowManager = context.getSystemService(WindowManager::class.java),
+        overlayType = WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY,
+        windowToken = null,
+        canShowOverlays = { Settings.canDrawOverlays(context) },
+    )
 
     interface Callback {
         fun onFloatingBallClicked()
@@ -38,55 +53,61 @@ class FloatingOverlayController(
         fun onSelectedTextTranslationConfirmed()
         fun onTargetLanguageSelected(language: String)
         fun onRetranslateLast()
+        fun onTranslationPanelDismissed()
     }
 
-    private val windowManager = context.getSystemService(WindowManager::class.java)
     private val clipboardManager = context.getSystemService(ClipboardManager::class.java)
     private val mainHandler = Handler(Looper.getMainLooper())
-    private val overlayType = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-        WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY
-    } else {
-        @Suppress("DEPRECATION")
-        WindowManager.LayoutParams.TYPE_PHONE
-    }
+    private var colors = FloatingTranslationColors.from(resolveAppColorScheme(AppColorTheme.MATCHA, darkTheme = false))
+    private var floatingBallView: TextView? = null
+    private var selectedTextActionView: FloatingSelectedTextAction? = null
+    private var resultPanelView: FloatingTranslationPanel? = null
+    private var ballPosition = 0.85f to 0.42f
+    private var selectedText: Pair<String, String>? = null
+    private var panelState: FloatingTranslationPanelState? = null
+    private val hideSelectedTextActionRunnable = Runnable { hideSelectedTextAction() }
 
-    private var floatingBallView: View? = null
-    private var selectedTextActionView: View? = null
-    private var resultPanelView: View? = null
-    private val hideSelectedTextActionRunnable = Runnable {
-        hideSelectedTextAction()
-    }
-
-    private class FloatingBallTextView(
-        context: Context,
-        private val onClickAction: () -> Unit,
-    ) : AppCompatTextView(context) {
-        override fun performClick(): Boolean {
-            super.performClick()
-            onClickAction()
-            return true
+    fun updateTheme(colorScheme: ColorScheme) {
+        val updated = FloatingTranslationColors.from(colorScheme)
+        if (colors == updated) return
+        colors = updated
+        floatingBallView?.let(::styleBall)
+        resultPanelView?.applyColors(colors)
+        selectedText?.let { (preview, label) ->
+            hideSelectedTextAction()
+            showSelectedTextAction(preview, label)
         }
     }
 
-    fun showFloatingBall(
-        normalizedX: Float,
-        normalizedY: Float,
-    ) {
-        val view = floatingBallView ?: createFloatingBallView().also {
-            floatingBallView = it
-            windowManager.addView(it, createBallLayoutParams(normalizedX, normalizedY))
-            return
+    fun onConfigurationChanged() {
+        val showBall = floatingBallView != null
+        val selected = selectedText
+        val panel = panelState
+        dismissAll()
+        if (showBall) showFloatingBall(ballPosition.first, ballPosition.second)
+        selected?.let { (preview, label) -> showSelectedTextAction(preview, label) }
+        panel?.let(::showPanel)
+    }
+
+    fun showFloatingBall(normalizedX: Float, normalizedY: Float) {
+        if (!canShowOverlays()) return
+        ballPosition = normalizedX to normalizedY
+        val geometry = geometry()
+        val (x, y) = geometry.ballPosition(normalizedX, normalizedY)
+        val existing = floatingBallView
+        if (existing == null) {
+            val view = createFloatingBallView()
+            val params = layoutParams(geometry.ballSize, geometry.ballSize, Gravity.TOP or Gravity.START).apply {
+                this.x = x
+                this.y = y
+            }
+            if (attach(view, params)) floatingBallView = view
+        } else {
+            val params = existing.layoutParams as WindowManager.LayoutParams
+            params.x = x
+            params.y = y
+            windowManager.updateViewLayout(existing, params)
         }
-        val params = view.layoutParams as WindowManager.LayoutParams
-        val position = resolveBallPosition(
-            normalizedX = normalizedX,
-            normalizedY = normalizedY,
-            viewWidth = view.measuredWidth.takeIf { it > 0 } ?: dp(56),
-            viewHeight = view.measuredHeight.takeIf { it > 0 } ?: dp(56),
-        )
-        params.x = position.first
-        params.y = position.second
-        windowManager.updateViewLayout(view, params)
     }
 
     fun hideFloatingBall() {
@@ -94,36 +115,42 @@ class FloatingOverlayController(
         floatingBallView = null
     }
 
-    fun showSelectedTextAction(
-        previewText: String,
-        appLabel: String,
-    ) {
-        val view = selectedTextActionView ?: createSelectedTextActionView().also {
+    fun showSelectedTextAction(previewText: String, appLabel: String) {
+        if (!canShowOverlays()) return
+        val view = selectedTextActionView ?: FloatingSelectedTextAction(
+            context = context,
+            colors = colors,
+            onTranslate = {
+                hideSelectedTextAction()
+                callback.onSelectedTextTranslationConfirmed()
+            },
+            onDismiss = ::hideSelectedTextAction,
+        ).also {
+            val geometry = geometry()
+            val params = layoutParams(geometry.panelWidth, WindowManager.LayoutParams.WRAP_CONTENT, Gravity.TOP or Gravity.CENTER_HORIZONTAL)
+                .apply { y = geometry.bannerOffset }
+            if (!attach(it, params)) return
             selectedTextActionView = it
-            windowManager.addView(it, createTopBannerLayoutParams())
         }
-        val titleView = view.findViewWithTag<TextView>("selected-title")
-        titleView.text = buildString {
-            append("来自 ")
-            append(appLabel.ifBlank { "当前应用" })
-            append(" 的选中文本")
-            if (previewText.isNotBlank()) {
-                append("：")
-                append(previewText.take(18))
-            }
-        }
-        view.visibility = View.VISIBLE
+        selectedText = previewText to appLabel
+        view.bind(previewText, appLabel)
         mainHandler.removeCallbacks(hideSelectedTextActionRunnable)
-        mainHandler.postDelayed(
-            hideSelectedTextActionRunnable,
-            SelectedTextActionAutoHideMillis,
-        )
+        val timeout = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            context.getSystemService(AccessibilityManager::class.java).getRecommendedTimeoutMillis(
+                SELECTED_TEXT_AUTO_HIDE_MILLIS,
+                AccessibilityManager.FLAG_CONTENT_TEXT or AccessibilityManager.FLAG_CONTENT_CONTROLS,
+            )
+        } else {
+            SELECTED_TEXT_AUTO_HIDE_MILLIS
+        }
+        mainHandler.postDelayed(hideSelectedTextActionRunnable, timeout.toLong())
     }
 
     fun hideSelectedTextAction() {
         mainHandler.removeCallbacks(hideSelectedTextActionRunnable)
         selectedTextActionView?.let(::removeOverlayView)
         selectedTextActionView = null
+        selectedText = null
     }
 
     fun showLoadingPanel(
@@ -131,19 +158,15 @@ class FloatingOverlayController(
         sourceText: String,
         targetLanguage: String,
         showSourceText: Boolean,
-    ) {
-        ensureResultPanel()
-        bindPanel(
-            title = "翻译中",
-            appLabel = appLabel,
-            sourceText = sourceText,
-            translatedText = "正在生成译文…",
-            targetLanguage = targetLanguage,
-            showSourceText = showSourceText,
-            allowRetranslate = false,
-            availableLanguages = emptyList(),
-        )
-    }
+        translatedText: String = "",
+    ) = showPanel(FloatingTranslationPanelState(
+        phase = FloatingTranslationPhase.LOADING,
+        appLabel = appLabel,
+        sourceText = sourceText,
+        translatedText = translatedText,
+        targetLanguage = targetLanguage,
+        showSourceText = showSourceText,
+    ))
 
     fun showTranslationResult(
         appLabel: String,
@@ -153,23 +176,38 @@ class FloatingOverlayController(
         availableLanguages: List<String>,
         showSourceText: Boolean,
         allowRetranslate: Boolean,
-    ) {
-        ensureResultPanel()
-        bindPanel(
-            title = "翻译结果",
-            appLabel = appLabel,
-            sourceText = sourceText,
-            translatedText = translatedText,
-            targetLanguage = targetLanguage,
-            showSourceText = showSourceText,
-            allowRetranslate = allowRetranslate,
-            availableLanguages = availableLanguages,
-        )
-    }
+    ) = showPanel(FloatingTranslationPanelState(
+        phase = FloatingTranslationPhase.RESULT,
+        appLabel = appLabel,
+        sourceText = sourceText,
+        translatedText = translatedText,
+        targetLanguage = targetLanguage,
+        showSourceText = showSourceText,
+        availableLanguages = availableLanguages,
+        allowRetranslate = allowRetranslate,
+    ))
+
+    fun showErrorPanel(
+        appLabel: String,
+        sourceText: String,
+        message: String,
+        targetLanguage: String,
+        showSourceText: Boolean,
+        allowRetranslate: Boolean,
+    ) = showPanel(FloatingTranslationPanelState(
+        phase = FloatingTranslationPhase.ERROR,
+        appLabel = appLabel,
+        sourceText = sourceText,
+        translatedText = message,
+        targetLanguage = targetLanguage,
+        showSourceText = showSourceText,
+        allowRetranslate = allowRetranslate,
+    ))
 
     fun hideResultPanel() {
         resultPanelView?.let(::removeOverlayView)
         resultPanelView = null
+        panelState = null
     }
 
     fun dismissAll() {
@@ -178,92 +216,59 @@ class FloatingOverlayController(
         hideResultPanel()
     }
 
-    private fun ensureResultPanel() {
-        if (resultPanelView != null) {
-            return
-        }
-        val view = createResultPanelView()
-        resultPanelView = view
-        windowManager.addView(view, createResultPanelLayoutParams())
-    }
-
-    private fun bindPanel(
-        title: String,
-        appLabel: String,
-        sourceText: String,
-        translatedText: String,
-        targetLanguage: String,
-        showSourceText: Boolean,
-        allowRetranslate: Boolean,
-        availableLanguages: List<String>,
-    ) {
-        val view = resultPanelView ?: return
-        view.findViewWithTag<TextView>("panel-title").text = title
-        view.findViewWithTag<TextView>("panel-app").text = appLabel.ifBlank { "当前应用" }
-        view.findViewWithTag<TextView>("panel-source").apply {
-            text = sourceText.ifBlank { "无原文内容" }
-            visibility = if (showSourceText) View.VISIBLE else View.GONE
-        }
-        view.findViewWithTag<TextView>("panel-result").text = translatedText.ifBlank { "暂无译文" }
-        view.findViewWithTag<Button>("panel-language").apply {
-            text = targetLanguage
-            setOnClickListener { anchor ->
-                if (availableLanguages.isEmpty()) return@setOnClickListener
-                PopupMenu(context, anchor).apply {
-                    availableLanguages.forEachIndexed { index, language ->
-                        menu.add(0, index, index, language)
-                    }
-                    setOnMenuItemClickListener { item ->
-                        callback.onTargetLanguageSelected(item.title.toString())
-                        true
-                    }
-                }.show()
-            }
-        }
-        view.findViewWithTag<Button>("panel-copy").setOnClickListener {
-            clipboardManager.setPrimaryClip(
-                ClipData.newPlainText("screen-translation", translatedText),
-            )
-            Toast.makeText(context, "译文已复制", Toast.LENGTH_SHORT).show()
-        }
-        view.findViewWithTag<Button>("panel-retry").apply {
-            visibility = if (allowRetranslate) View.VISIBLE else View.GONE
-            setOnClickListener { callback.onRetranslateLast() }
-        }
-        view.findViewWithTag<Button>("panel-close").setOnClickListener {
-            hideResultPanel()
-        }
-    }
-
-    private fun createFloatingBallView(): View {
-        val textView = FloatingBallTextView(
+    private fun showPanel(state: FloatingTranslationPanelState) {
+        if (!canShowOverlays()) return
+        val panel = resultPanelView ?: FloatingTranslationPanel(
             context = context,
-            onClickAction = callback::onFloatingBallClicked,
-        ).apply {
+            colors = colors,
+            onDismiss = {
+                hideResultPanel()
+                callback.onTranslationPanelDismissed()
+            },
+            onCopy = { text ->
+                clipboardManager.setPrimaryClip(ClipData.newPlainText("screen-translation", text))
+                Toast.makeText(context, "译文已复制", Toast.LENGTH_SHORT).show()
+            },
+            onRetry = callback::onRetranslateLast,
+            onLanguageSelected = callback::onTargetLanguageSelected,
+        ).also {
+            val geometry = geometry()
+            if (!attach(it, layoutParams(geometry.panelWidth, geometry.panelHeight, Gravity.CENTER))) return
+            resultPanelView = it
+        }
+        panelState = state
+        panel.bind(state)
+    }
+
+    private fun createFloatingBallView(): TextView {
+        val ball = TextView(context).apply {
+            tag = "translation-ball"
             text = "译"
             gravity = Gravity.CENTER
-            textSize = 18f
-            contentDescription = "屏幕译文悬浮球"
-            setTextColor(Color.WHITE)
-            background = GradientDrawable().apply {
-                shape = GradientDrawable.OVAL
-                setColor("#3B82F6".toColorInt())
+            textSize = 20f
+            typeface = Typeface.create("sans-serif-medium", Typeface.NORMAL)
+            contentDescription = "屏幕翻译，轻点翻译，长按隐藏"
+            elevation = context.overlayDp(8).toFloat()
+            setOnClickListener { callback.onFloatingBallClicked() }
+            setOnLongClickListener {
+                hideFloatingBall()
+                callback.onFloatingBallHidden()
+                true
             }
-            elevation = dp(10).toFloat()
-            layoutParams = LinearLayout.LayoutParams(dp(56), dp(56))
         }
-
+        styleBall(ball)
         var initialX = 0
         var initialY = 0
         var initialTouchX = 0f
         var initialTouchY = 0f
         var moved = false
-
-        textView.setOnLongClickListener {
-            callback.onFloatingBallHidden()
-            true
-        }
-        textView.setOnTouchListener { view, event ->
+        val touchSlop = ViewConfiguration.get(context).scaledTouchSlop
+        val detector = GestureDetector(context, object : GestureDetector.SimpleOnGestureListener() {
+            override fun onDown(event: MotionEvent): Boolean = true
+            override fun onSingleTapUp(event: MotionEvent): Boolean = ball.performClick()
+            override fun onLongPress(event: MotionEvent) { ball.performLongClick() }
+        })
+        ball.setOnTouchListener { view, event ->
             val params = view.layoutParams as? WindowManager.LayoutParams ?: return@setOnTouchListener false
             when (event.actionMasked) {
                 MotionEvent.ACTION_DOWN -> {
@@ -272,251 +277,92 @@ class FloatingOverlayController(
                     initialTouchX = event.rawX
                     initialTouchY = event.rawY
                     moved = false
-                    true
+                    view.isPressed = true
                 }
-
                 MotionEvent.ACTION_MOVE -> {
                     val deltaX = (event.rawX - initialTouchX).toInt()
                     val deltaY = (event.rawY - initialTouchY).toInt()
-                    if (abs(deltaX) > dp(4) || abs(deltaY) > dp(4)) {
-                        moved = true
+                    if (abs(deltaX) > touchSlop || abs(deltaY) > touchSlop) moved = true
+                    if (moved) {
+                        view.isPressed = false
+                        val (x, y) = geometry().clampBall(initialX + deltaX, initialY + deltaY)
+                        params.x = x
+                        params.y = y
+                        if (view.isAttachedToWindow) windowManager.updateViewLayout(view, params)
                     }
-                    params.x = initialX + deltaX
-                    params.y = initialY + deltaY
-                    windowManager.updateViewLayout(view, params)
-                    true
                 }
-
-                MotionEvent.ACTION_UP -> {
-                    if (!moved) {
-                        view.performClick()
-                    } else {
-                        snapBallToEdge(view, params)
+                MotionEvent.ACTION_UP, MotionEvent.ACTION_CANCEL -> {
+                    view.isPressed = false
+                    if (moved && view.isAttachedToWindow) {
+                        ballPosition = geometry().snapBall(params.x, params.y)
+                        showFloatingBall(ballPosition.first, ballPosition.second)
+                        callback.onFloatingBallPositionChanged(ballPosition.first, ballPosition.second)
                     }
-                    true
                 }
-
-                else -> false
             }
+            detector.onTouchEvent(event)
+            true
         }
-        return textView
+        return ball
     }
 
-    private fun snapBallToEdge(
-        view: View,
-        params: WindowManager.LayoutParams,
-    ) {
-        val metrics = context.resources.displayMetrics
-        val viewWidth = view.width.takeIf { it > 0 } ?: dp(56)
-        val viewHeight = view.height.takeIf { it > 0 } ?: dp(56)
-        val maxX = (metrics.widthPixels - viewWidth).coerceAtLeast(0)
-        val maxY = (metrics.heightPixels - viewHeight).coerceAtLeast(0)
-        params.x = if (params.x + viewWidth / 2 >= metrics.widthPixels / 2) {
-            maxX
-        } else {
-            0
-        }
-        params.y = params.y.coerceIn(0, maxY)
-        windowManager.updateViewLayout(view, params)
-        callback.onFloatingBallPositionChanged(
-            normalizedX = if (maxX == 0) 0f else params.x.toFloat() / maxX,
-            normalizedY = if (maxY == 0) 0f else params.y.toFloat() / maxY,
+    private fun styleBall(view: TextView) {
+        view.setTextColor(colors.onPrimary)
+        view.background = RippleDrawable(
+            ColorStateList.valueOf(ColorUtils.setAlphaComponent(colors.onPrimary, 48)),
+            GradientDrawable().apply {
+                shape = GradientDrawable.OVAL
+                setColor(this@FloatingOverlayController.colors.primary)
+            },
+            null,
         )
     }
 
-    private fun createSelectedTextActionView(): View {
-        return LinearLayout(context).apply {
-            orientation = LinearLayout.HORIZONTAL
-            gravity = Gravity.CENTER_VERTICAL
-            setPadding(dp(16), dp(12), dp(16), dp(12))
-            background = GradientDrawable().apply {
-                cornerRadius = dp(20).toFloat()
-                setColor("#0F172A".toColorInt())
-                setStroke(dp(1), "#334155".toColorInt())
-            }
-            elevation = dp(8).toFloat()
-
-            addView(
-                TextView(context).apply {
-                    tag = "selected-title"
-                    setTextColor(Color.WHITE)
-                    textSize = 14f
-                    layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f)
-                },
-            )
-            addView(
-                Button(context).apply {
-                    text = "翻译"
-                    setOnClickListener {
-                        mainHandler.removeCallbacks(hideSelectedTextActionRunnable)
-                        callback.onSelectedTextTranslationConfirmed()
-                    }
-                },
-            )
+    private fun layoutParams(width: Int, height: Int, gravity: Int) = WindowManager.LayoutParams(
+        width, height, overlayType,
+        WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE,
+        PixelFormat.TRANSLUCENT,
+    ).apply {
+        this.gravity = gravity
+        token = windowToken
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+            setFitInsetsTypes(WindowInsets.Type.systemBars() or WindowInsets.Type.displayCutout())
         }
     }
 
-    private fun createResultPanelView(): View {
-        return LinearLayout(context).apply {
-            orientation = LinearLayout.VERTICAL
-            setPadding(dp(18), dp(18), dp(18), dp(18))
-            background = GradientDrawable().apply {
-                cornerRadius = dp(22).toFloat()
-                setColor("#F8FAFC".toColorInt())
-                setStroke(dp(1), "#CBD5E1".toColorInt())
-            }
-            elevation = dp(12).toFloat()
-
-            addView(
-                TextView(context).apply {
-                    tag = "panel-title"
-                    setTextColor("#0F172A".toColorInt())
-                    textSize = 18f
-                },
-            )
-            addView(
-                TextView(context).apply {
-                    tag = "panel-app"
-                    setTextColor("#475569".toColorInt())
-                    textSize = 13f
-                },
-            )
-            addView(
-                ScrollView(context).apply {
-                    layoutParams = LinearLayout.LayoutParams(
-                        LinearLayout.LayoutParams.MATCH_PARENT,
-                        dp(220),
-                    ).apply {
-                        topMargin = dp(12)
-                    }
-                    addView(
-                        LinearLayout(context).apply {
-                            orientation = LinearLayout.VERTICAL
-                            addView(
-                                TextView(context).apply {
-                                    tag = "panel-source"
-                                    setTextColor("#334155".toColorInt())
-                                    textSize = 14f
-                                },
-                            )
-                            addView(
-                                TextView(context).apply {
-                                    tag = "panel-result"
-                                    setTextColor("#0F172A".toColorInt())
-                                    textSize = 16f
-                                    setLineSpacing(0f, 1.16f)
-                                },
-                            )
-                        },
-                    )
-                },
-            )
-            addView(
-                LinearLayout(context).apply {
-                    orientation = LinearLayout.HORIZONTAL
-                    gravity = Gravity.END
-                    layoutParams = LinearLayout.LayoutParams(
-                        LinearLayout.LayoutParams.MATCH_PARENT,
-                        LinearLayout.LayoutParams.WRAP_CONTENT,
-                    ).apply {
-                        topMargin = dp(14)
-                    }
-                    addView(
-                        Button(context).apply {
-                            tag = "panel-language"
-                            text = "简体中文"
-                        },
-                    )
-                    addView(
-                        Button(context).apply {
-                            tag = "panel-copy"
-                            text = "复制"
-                        },
-                    )
-                    addView(
-                        Button(context).apply {
-                            tag = "panel-retry"
-                            text = "重译"
-                        },
-                    )
-                    addView(
-                        Button(context).apply {
-                            tag = "panel-close"
-                            text = "关闭"
-                        },
-                    )
-                },
-            )
-        }
-    }
-
-    private fun createBallLayoutParams(
-        normalizedX: Float,
-        normalizedY: Float,
-    ): WindowManager.LayoutParams {
-        val (x, y) = resolveBallPosition(normalizedX, normalizedY, dp(56), dp(56))
-        return WindowManager.LayoutParams(
-            dp(56),
-            dp(56),
-            overlayType,
-            WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE or
-                WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN,
-            PixelFormat.TRANSLUCENT,
-        ).apply {
-            gravity = Gravity.TOP or Gravity.START
-            this.x = x
-            this.y = y
-        }
-    }
-
-    private fun createTopBannerLayoutParams(): WindowManager.LayoutParams {
+    private fun geometry(): FloatingOverlayGeometry {
         val metrics = context.resources.displayMetrics
-        return WindowManager.LayoutParams(
-            (metrics.widthPixels * 0.82f).toInt(),
-            WindowManager.LayoutParams.WRAP_CONTENT,
-            overlayType,
-            WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE or
-            WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN,
-            PixelFormat.TRANSLUCENT,
-        ).apply {
-            gravity = Gravity.TOP or Gravity.CENTER_HORIZONTAL
-            y = dp(88)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+            val window = windowManager.currentWindowMetrics
+            val insets = window.windowInsets.getInsetsIgnoringVisibility(WindowInsets.Type.systemBars() or WindowInsets.Type.displayCutout())
+            return FloatingOverlayGeometry(
+                width = window.bounds.width() - insets.left - insets.right,
+                height = window.bounds.height() - insets.top - insets.bottom,
+                density = metrics.density,
+            )
         }
+        return FloatingOverlayGeometry(metrics.widthPixels, metrics.heightPixels, metrics.density)
     }
 
-    private fun createResultPanelLayoutParams(): WindowManager.LayoutParams {
-        val metrics = context.resources.displayMetrics
-        return WindowManager.LayoutParams(
-            (metrics.widthPixels * 0.9f).toInt().coerceAtMost(dp(360)),
-            WindowManager.LayoutParams.WRAP_CONTENT,
-            overlayType,
-            WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE or
-                WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN,
-            PixelFormat.TRANSLUCENT,
-        ).apply {
-            gravity = Gravity.CENTER
-        }
-    }
-
-    private fun resolveBallPosition(
-        normalizedX: Float,
-        normalizedY: Float,
-        viewWidth: Int,
-        viewHeight: Int,
-    ): Pair<Int, Int> {
-        val metrics = context.resources.displayMetrics
-        val maxX = (metrics.widthPixels - viewWidth).coerceAtLeast(0)
-        val maxY = (metrics.heightPixels - viewHeight).coerceAtLeast(0)
-        val x = (maxX * normalizedX.coerceIn(0f, 1f)).toInt()
-        val y = (maxY * normalizedY.coerceIn(0f, 1f)).toInt()
-        return x to y
+    private fun attach(view: View, params: WindowManager.LayoutParams): Boolean = try {
+        windowManager.addView(view, params)
+        true
+    } catch (_: WindowManager.BadTokenException) {
+        false
+    } catch (_: SecurityException) {
+        false
     }
 
     private fun removeOverlayView(view: View) {
-        runCatching { windowManager.removeView(view) }
+        try {
+            // addView 后首帧之前也可能收到关闭或主题更新，不能只检查 isAttachedToWindow。
+            windowManager.removeViewImmediate(view)
+        } catch (_: IllegalArgumentException) {
+            // 宿主窗口已销毁。
+        }
     }
 
-    private fun dp(value: Int): Int {
-        return (value * context.resources.displayMetrics.density).toInt()
+    private companion object {
+        const val SELECTED_TEXT_AUTO_HIDE_MILLIS = 4_000
     }
 }

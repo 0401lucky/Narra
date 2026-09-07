@@ -17,10 +17,13 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -35,6 +38,10 @@ import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Tune
 import androidx.compose.material.icons.filled.Upload
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.FilterChip
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
@@ -54,6 +61,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -68,6 +76,22 @@ import com.example.myapplication.model.PresetPromptRole
 import com.example.myapplication.ui.component.NarraFilledTonalButton
 import com.example.myapplication.ui.component.NarraIconButton
 import com.example.myapplication.ui.component.NarraOutlinedButton
+import com.example.myapplication.ui.component.NarraAlertDialog
+import com.example.myapplication.system.security.SensitiveTextRedactor
+import com.composables.icons.lucide.ArrowDown
+import com.composables.icons.lucide.ArrowUp
+import com.composables.icons.lucide.ChevronDown
+import com.composables.icons.lucide.ChevronUp
+import com.composables.icons.lucide.Copy
+import com.composables.icons.lucide.Download
+import com.composables.icons.lucide.EllipsisVertical
+import com.composables.icons.lucide.Lock
+import com.composables.icons.lucide.Lucide
+import com.composables.icons.lucide.Plus
+import com.composables.icons.lucide.Search
+import com.composables.icons.lucide.SlidersHorizontal
+import com.composables.icons.lucide.Trash2
+import com.composables.icons.lucide.Upload
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -119,7 +143,10 @@ fun PresetListScreen(
             }.onSuccess { preset ->
                 pendingImportPreset = preset
             }.onFailure { throwable ->
-                importError = throwable.message ?: "导入失败"
+                importError = SensitiveTextRedactor.throwableMessageForUi(
+                    throwable = throwable,
+                    fallback = "导入失败",
+                )
             }
         }
     }
@@ -137,7 +164,10 @@ fun PresetListScreen(
                     text = tavernPresetAdapter.encodePreset(preset),
                 )
             }.onFailure { throwable ->
-                importError = throwable.message ?: "导出失败"
+                importError = SensitiveTextRedactor.throwableMessageForUi(
+                    throwable = throwable,
+                    fallback = "导出失败",
+                )
             }
         }
     }
@@ -146,7 +176,6 @@ fun PresetListScreen(
         topBar = {
             SettingsTopBar(
                 title = "预设管理",
-                subtitle = "Prompt Manager",
                 onNavigateBack = onNavigateBack,
             )
         },
@@ -155,6 +184,7 @@ fun PresetListScreen(
         LazyColumn(
             modifier = Modifier
                 .fillMaxSize()
+                .testTag("preset_list")
                 .padding(innerPadding),
             contentPadding = PaddingValues(
                 start = SettingsScreenPadding,
@@ -166,7 +196,7 @@ fun PresetListScreen(
         ) {
             item {
                 SettingsPageIntro(
-                    title = "真预设",
+                    title = "提示词预设",
                     summary = "内置预设只读；复制或导入后才能编辑条目、开关和发送顺序。",
                 )
             }
@@ -178,11 +208,11 @@ fun PresetListScreen(
                     NarraOutlinedButton(
                         onClick = { importLauncher.launch(PRESET_IMPORT_MIME_TYPES) },
                         modifier = Modifier.weight(1f),
-                        shape = RoundedCornerShape(18.dp),
+                        shape = RoundedCornerShape(8.dp),
                     ) {
-                        Icon(Icons.Default.Upload, contentDescription = null, modifier = Modifier.size(17.dp))
+                        Icon(Lucide.Upload, contentDescription = null, modifier = Modifier.size(20.dp))
                         Spacer(Modifier.width(8.dp))
-                        Text("导入酒馆 JSON")
+                        Text("导入酒馆预设")
                     }
                 }
             }
@@ -191,20 +221,22 @@ fun PresetListScreen(
                     value = searchQuery,
                     onValueChange = { searchQuery = it },
                     modifier = Modifier.fillMaxWidth(),
-                    leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) },
+                    leadingIcon = { Icon(Lucide.Search, contentDescription = null) },
                     label = { Text("搜索预设") },
                     singleLine = true,
+                    shape = RoundedCornerShape(8.dp),
+                    colors = rememberSettingsOutlineColors(),
                 )
             }
-            item {
-                SettingsGroup {
-                    if (filteredPresets.isEmpty()) {
+            if (filteredPresets.isEmpty()) {
+                item {
                         SettingsPlaceholderRow(
-                            title = "暂无预设",
-                            subtitle = "内置预设会在启动时自动补齐。",
+                            title = if (searchQuery.isBlank()) "暂无预设" else "没有匹配的预设",
+                            subtitle = "",
                         )
-                    } else {
-                        filteredPresets.forEachIndexed { index, preset ->
+                }
+            } else {
+                items(filteredPresets, key = { it.id }) { preset ->
                             PresetListRow(
                                 preset = preset,
                                 isDefault = preset.id == defaultPresetId,
@@ -221,36 +253,20 @@ fun PresetListScreen(
                                     }
                                 },
                             )
-                            if (index != filteredPresets.lastIndex) {
-                                SettingsGroupDivider()
-                            }
-                        }
-                    }
                 }
             }
         }
     }
 
     pendingDelete?.let { preset ->
-        AlertDialog(
-            onDismissRequest = { pendingDelete = null },
-            confirmButton = {
-                TextButton(
-                    onClick = {
-                        onDeletePreset(preset.id)
-                        pendingDelete = null
-                    },
-                ) {
-                    Text("删除")
-                }
-            },
-            dismissButton = {
-                TextButton(onClick = { pendingDelete = null }) {
-                    Text("取消")
-                }
-            },
-            title = { Text("删除预设") },
-            text = { Text("将删除「${preset.name}」。内置预设不会受影响。") },
+        NarraAlertDialog(
+            onDismiss = { pendingDelete = null },
+            onConfirm = { onDeletePreset(preset.id); pendingDelete = null },
+            title = "删除预设",
+            message = "将删除「${preset.name}」，这个操作无法撤销。内置预设不会受影响。",
+            confirmLabel = "确认删除",
+            dismissLabel = "取消",
+            isDestructive = true,
         )
     }
 
@@ -273,7 +289,9 @@ fun PresetListScreen(
                 }
             },
             title = { Text("导入酒馆预设") },
-            text = { Text(buildTavernPresetPreviewText(preset)) },
+            text = { Text(buildTavernPresetPreviewText(preset), modifier = Modifier.verticalScroll(rememberScrollState())) },
+            containerColor = palette.surface,
+            shape = RoundedCornerShape(8.dp),
         )
     }
 
@@ -286,13 +304,15 @@ fun PresetListScreen(
                 }
             },
             title = { Text("预设导入导出") },
-            text = { Text(message) },
+            text = { Text(message, modifier = Modifier.verticalScroll(rememberScrollState())) },
+            containerColor = palette.surface,
+            shape = RoundedCornerShape(8.dp),
         )
     }
 }
 
 @Composable
-private fun PresetListRow(
+internal fun PresetListRow(
     preset: Preset,
     isDefault: Boolean,
     onOpen: () -> Unit,
@@ -302,10 +322,17 @@ private fun PresetListRow(
     onDelete: () -> Unit,
 ) {
     val palette = rememberSettingsPalette()
+    var menuExpanded by remember { mutableStateOf(false) }
+    Surface(
+        shape = RoundedCornerShape(8.dp),
+        color = palette.surface,
+        border = BorderStroke(1.dp, palette.border),
+    ) {
+    Column {
     SettingsListRow(
         leadingContent = {
             Icon(
-                imageVector = if (preset.builtIn) Icons.Default.Lock else Icons.Default.Tune,
+                imageVector = if (preset.builtIn) Lucide.Lock else Lucide.SlidersHorizontal,
                 contentDescription = null,
                 tint = palette.title,
             )
@@ -317,35 +344,45 @@ private fun PresetListRow(
         },
         onClick = onOpen,
         trailingContent = {
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(4.dp),
-            ) {
-                if (isDefault) {
-                    SettingsStatusPill(
-                        text = "默认",
-                        containerColor = palette.accentSoft,
-                        contentColor = palette.accent,
+            Box {
+                NarraIconButton(onClick = { menuExpanded = true }, modifier = Modifier.size(48.dp)) {
+                    Icon(Lucide.EllipsisVertical, contentDescription = "${preset.name}：更多操作", modifier = Modifier.size(20.dp))
+                }
+                DropdownMenu(expanded = menuExpanded, onDismissRequest = { menuExpanded = false }) {
+                    DropdownMenuItem(
+                        text = { Text("复制预设") },
+                        leadingIcon = { Icon(Lucide.Copy, contentDescription = null) },
+                        onClick = { menuExpanded = false; onCopy() },
                     )
-                } else {
-                    TextButton(onClick = onSetDefault) {
-                        Text("设默认")
-                    }
-                }
-                NarraIconButton(onClick = onCopy, modifier = Modifier.size(34.dp)) {
-                    Icon(Icons.Default.ContentCopy, contentDescription = "复制预设", modifier = Modifier.size(17.dp))
-                }
-                NarraIconButton(onClick = onExport, modifier = Modifier.size(34.dp)) {
-                    Icon(Icons.Default.Download, contentDescription = "导出酒馆 JSON", modifier = Modifier.size(17.dp))
-                }
-                if (!preset.builtIn) {
-                    NarraIconButton(onClick = onDelete, modifier = Modifier.size(34.dp)) {
-                        Icon(Icons.Default.Delete, contentDescription = "删除预设", modifier = Modifier.size(17.dp))
+                    DropdownMenuItem(
+                        text = { Text("导出酒馆 JSON") },
+                        leadingIcon = { Icon(Lucide.Download, contentDescription = null) },
+                        onClick = { menuExpanded = false; onExport() },
+                    )
+                    if (!preset.builtIn) {
+                        DropdownMenuItem(
+                            text = { Text("删除预设", color = MaterialTheme.colorScheme.error) },
+                            leadingIcon = { Icon(Lucide.Trash2, contentDescription = null, tint = MaterialTheme.colorScheme.error) },
+                            onClick = { menuExpanded = false; onDelete() },
+                        )
                     }
                 }
             }
         },
     )
+        Row(modifier = Modifier.fillMaxWidth().padding(start = 16.dp, end = 8.dp, bottom = 8.dp), verticalAlignment = Alignment.CenterVertically) {
+            Text(
+                text = if (isDefault) "当前全局默认" else "",
+                modifier = Modifier.weight(1f),
+                style = MaterialTheme.typography.labelMedium,
+                color = palette.accent,
+            )
+            if (!isDefault) {
+                TextButton(onClick = onSetDefault, modifier = Modifier.heightIn(min = 48.dp)) { Text("设为默认") }
+            }
+        }
+    }
+    }
 }
 
 @Composable
@@ -375,7 +412,7 @@ fun PresetEditScreen(
     Scaffold(
         topBar = {
             SettingsTopBar(
-                title = draft.name.ifBlank { "预设" },
+                title = "预设详情",
                 subtitle = if (readOnly) "内置只读" else "我的预设",
                 onNavigateBack = onNavigateBack,
                 actionLabel = if (readOnly) "复制" else "保存",
@@ -393,6 +430,7 @@ fun PresetEditScreen(
         LazyColumn(
             modifier = Modifier
                 .fillMaxSize()
+                .testTag("preset_editor")
                 .padding(innerPadding),
             contentPadding = PaddingValues(
                 start = SettingsScreenPadding,
@@ -414,14 +452,13 @@ fun PresetEditScreen(
             }
 
             item {
-                SettingsGroup {
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     PresetTextFieldRow(
                         label = "名称",
                         value = draft.name,
                         enabled = !readOnly,
                         onValueChange = { value -> draft = draft.copy(name = value) },
                     )
-                    SettingsGroupDivider()
                     PresetTextFieldRow(
                         label = "说明",
                         value = draft.description,
@@ -429,7 +466,6 @@ fun PresetEditScreen(
                         minLines = 2,
                         onValueChange = { value -> draft = draft.copy(description = value) },
                     )
-                    SettingsGroupDivider()
                     SettingsListRow(
                         title = "全局默认",
                         supportingText = if (isGlobalDefault) "当前全局默认预设" else "设为新角色继承的默认预设",
@@ -457,11 +493,13 @@ fun PresetEditScreen(
                         value = searchQuery,
                         onValueChange = { searchQuery = it },
                         modifier = Modifier.weight(1f),
-                        leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) },
+                        leadingIcon = { Icon(Lucide.Search, contentDescription = null) },
                         label = { Text("搜索条目") },
                         singleLine = true,
+                        colors = rememberSettingsOutlineColors(),
+                        shape = RoundedCornerShape(8.dp),
                     )
-                    NarraFilledTonalButton(
+                    NarraIconButton(
                         onClick = {
                             if (!readOnly) {
                                 draft = draft.copy(
@@ -475,16 +513,19 @@ fun PresetEditScreen(
                             }
                         },
                         enabled = !readOnly,
-                        shape = RoundedCornerShape(18.dp),
+                        modifier = Modifier.size(48.dp),
                     ) {
-                        Icon(Icons.Default.Add, contentDescription = null, modifier = Modifier.size(17.dp))
+                        Icon(Lucide.Plus, contentDescription = "新增预设条目", modifier = Modifier.size(24.dp))
                     }
                 }
             }
 
-            item {
-                Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                    visibleEntries.forEach { entry ->
+            if (visibleEntries.isEmpty()) {
+                item {
+                    Text("没有匹配的条目", style = MaterialTheme.typography.bodyMedium, color = palette.body)
+                }
+            }
+            items(visibleEntries, key = { it.id }) { entry ->
                         PresetEntryCard(
                             entry = entry,
                             readOnly = readOnly,
@@ -512,8 +553,6 @@ fun PresetEditScreen(
                                 draft = draft.copy(entries = moveEntry(draft.entries, entry.id, direction))
                             },
                         )
-                    }
-                }
             }
 
             item {
@@ -525,9 +564,9 @@ fun PresetEditScreen(
                     NarraOutlinedButton(
                         onClick = { pendingDelete = true },
                         modifier = Modifier.fillMaxWidth(),
-                        shape = RoundedCornerShape(20.dp),
+                        shape = RoundedCornerShape(8.dp),
                     ) {
-                        Icon(Icons.Default.Delete, contentDescription = null, modifier = Modifier.size(17.dp))
+                        Icon(Lucide.Trash2, contentDescription = null, modifier = Modifier.size(20.dp))
                         Spacer(Modifier.width(8.dp))
                         Text("删除这个预设")
                     }
@@ -537,25 +576,14 @@ fun PresetEditScreen(
     }
 
     if (pendingDelete) {
-        AlertDialog(
-            onDismissRequest = { pendingDelete = false },
-            confirmButton = {
-                TextButton(
-                    onClick = {
-                        onDeletePreset(draft.id)
-                        pendingDelete = false
-                    },
-                ) {
-                    Text("删除")
-                }
-            },
-            dismissButton = {
-                TextButton(onClick = { pendingDelete = false }) {
-                    Text("取消")
-                }
-            },
-            title = { Text("删除预设") },
-            text = { Text("删除后不会影响内置默认预设。") },
+        NarraAlertDialog(
+            onDismiss = { pendingDelete = false },
+            onConfirm = { onDeletePreset(draft.id); pendingDelete = false },
+            title = "删除预设",
+            message = "将删除「${draft.name}」，这个操作无法撤销。内置预设不会受影响。",
+            confirmLabel = "确认删除",
+            dismissLabel = "取消",
+            isDestructive = true,
         )
     }
 }
@@ -569,22 +597,24 @@ private fun PresetTextFieldRow(
     onValueChange: (String) -> Unit,
 ) {
     Column(
-        modifier = Modifier.padding(horizontal = 18.dp, vertical = 14.dp),
+        modifier = Modifier.padding(vertical = 6.dp),
         verticalArrangement = Arrangement.spacedBy(8.dp),
     ) {
-        Text(label, style = MaterialTheme.typography.labelLarge, fontWeight = FontWeight.SemiBold)
         OutlinedTextField(
             value = value,
             onValueChange = onValueChange,
             modifier = Modifier.fillMaxWidth(),
             enabled = enabled,
             minLines = minLines,
+            label = { Text(label) },
+            colors = rememberSettingsOutlineColors(),
+            shape = RoundedCornerShape(8.dp),
         )
     }
 }
 
 @Composable
-private fun PresetEntryCard(
+internal fun PresetEntryCard(
     entry: PresetPromptEntry,
     readOnly: Boolean,
     canMoveUp: Boolean,
@@ -595,10 +625,12 @@ private fun PresetEntryCard(
     onMove: (Int) -> Unit,
 ) {
     val palette = rememberSettingsPalette()
+    var expanded by rememberSaveable(entry.id) { mutableStateOf(false) }
+    var showDeleteConfirmation by rememberSaveable(entry.id) { mutableStateOf(false) }
     Surface(
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(22.dp),
-        color = palette.elevatedSurface,
+        modifier = Modifier.fillMaxWidth().testTag("preset_entry_${entry.id}"),
+        shape = RoundedCornerShape(8.dp),
+        color = palette.surface,
         border = BorderStroke(1.dp, palette.border.copy(alpha = 0.42f)),
     ) {
         Column(
@@ -606,41 +638,56 @@ private fun PresetEntryCard(
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
             Row(
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp),
                 horizontalArrangement = Arrangement.spacedBy(10.dp),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                    OutlinedTextField(
-                        value = entry.title,
-                        onValueChange = { onEntryChange(entry.copy(title = it)) },
-                        enabled = !readOnly && !entry.locked,
-                        modifier = Modifier.fillMaxWidth(),
-                        label = { Text("名称") },
-                        singleLine = true,
+                    Text(
+                        text = entry.title.ifBlank { entry.kind.label },
+                        style = MaterialTheme.typography.titleMedium,
+                        color = palette.title,
+                        maxLines = 2,
+                        overflow = TextOverflow.Ellipsis,
                     )
                     Text(
-                        text = "${entry.kind.label} · ${entry.role.label} · order ${entry.order}",
+                        text = "${entry.role.label} · ${if (entry.enabled) "已启用" else "已关闭"}" + if (entry.locked) " · 锁定名称" else "",
                         style = MaterialTheme.typography.labelSmall,
                         color = palette.body,
                     )
-                    val compatLine = buildPresetEntryCompatLine(entry)
-                    if (compatLine.isNotBlank()) {
-                        Text(
-                            text = compatLine,
-                            style = MaterialTheme.typography.labelSmall,
-                            color = palette.body.copy(alpha = 0.76f),
-                            maxLines = 2,
-                            overflow = TextOverflow.Ellipsis,
-                        )
-                    }
                 }
                 Switch(
                     checked = entry.enabled,
                     enabled = !readOnly,
                     onCheckedChange = { checked -> onEntryChange(entry.copy(enabled = checked)) },
+                    modifier = Modifier.testTag("preset_entry_enabled_${entry.id}"),
                 )
             }
+            TextButton(
+                onClick = { expanded = !expanded },
+                modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp),
+            ) {
+                Text(if (expanded) "收起条目" else "查看条目", modifier = Modifier.weight(1f))
+                Icon(if (expanded) Lucide.ChevronUp else Lucide.ChevronDown, contentDescription = null)
+            }
+            if (expanded) {
+            OutlinedTextField(
+                value = entry.title,
+                onValueChange = { onEntryChange(entry.copy(title = it)) },
+                enabled = !readOnly && !entry.locked,
+                modifier = Modifier.fillMaxWidth(),
+                label = { Text("名称") },
+                colors = rememberSettingsOutlineColors(),
+                shape = RoundedCornerShape(8.dp),
+            )
+            SettingsSectionHeader(
+                "消息身份",
+                buildList {
+                    add("${entry.kind.label} · 顺序 ${entry.order}")
+                    buildPresetEntryCompatLine(entry).takeIf { it.isNotBlank() }?.let { add(it) }
+                    if (entry.locked) add("名称已锁定，不能删除此条目；仍可调整内容、启用状态和顺序。")
+                }.joinToString("\n"),
+            )
 
             Row(
                 modifier = Modifier
@@ -649,21 +696,13 @@ private fun PresetEntryCard(
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
             ) {
                 PresetPromptRole.entries.forEach { role ->
-                    Surface(
-                        shape = RoundedCornerShape(999.dp),
-                        color = if (entry.role == role) palette.accentSoft else palette.surfaceTint,
-                        border = BorderStroke(1.dp, palette.border.copy(alpha = 0.36f)),
-                        modifier = Modifier
-                            .clip(RoundedCornerShape(999.dp))
-                            .clickable(enabled = !readOnly) { onEntryChange(entry.copy(role = role)) },
-                    ) {
-                        Text(
-                            text = role.label,
-                            modifier = Modifier.padding(horizontal = 12.dp, vertical = 7.dp),
-                            style = MaterialTheme.typography.labelMedium,
-                            color = if (entry.role == role) palette.accent else palette.body,
-                        )
-                    }
+                    FilterChip(
+                        selected = entry.role == role,
+                        onClick = { onEntryChange(entry.copy(role = role)) },
+                        enabled = !readOnly,
+                        modifier = Modifier.heightIn(min = 48.dp),
+                        label = { Text(role.label) },
+                    )
                 }
             }
 
@@ -674,6 +713,8 @@ private fun PresetEntryCard(
                 enabled = !readOnly,
                 label = { Text("内容模板") },
                 minLines = 4,
+                colors = rememberSettingsOutlineColors(),
+                shape = RoundedCornerShape(8.dp),
             )
 
             Row(
@@ -685,36 +726,48 @@ private fun PresetEntryCard(
                     NarraIconButton(
                         onClick = { onMove(-1) },
                         enabled = !readOnly && canMoveUp,
-                        modifier = Modifier.size(34.dp),
+                        modifier = Modifier.size(48.dp),
                     ) {
-                        Icon(Icons.Default.KeyboardArrowUp, contentDescription = "上移")
+                        Icon(Lucide.ArrowUp, contentDescription = "上移")
                     }
                     NarraIconButton(
                         onClick = { onMove(1) },
                         enabled = !readOnly && canMoveDown,
-                        modifier = Modifier.size(34.dp),
+                        modifier = Modifier.size(48.dp),
                     ) {
-                        Icon(Icons.Default.KeyboardArrowDown, contentDescription = "下移")
+                        Icon(Lucide.ArrowDown, contentDescription = "下移")
                     }
                 }
                 Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
                     NarraIconButton(
                         onClick = onDuplicate,
                         enabled = !readOnly,
-                        modifier = Modifier.size(34.dp),
+                        modifier = Modifier.size(48.dp),
                     ) {
-                        Icon(Icons.Default.ContentCopy, contentDescription = "复制条目")
+                        Icon(Lucide.Copy, contentDescription = "复制条目")
                     }
                     NarraIconButton(
-                        onClick = onDelete,
+                        onClick = { showDeleteConfirmation = true },
                         enabled = !readOnly && !entry.locked,
-                        modifier = Modifier.size(34.dp),
+                        modifier = Modifier.size(48.dp),
                     ) {
-                        Icon(Icons.Default.Delete, contentDescription = "删除条目")
+                        Icon(Lucide.Trash2, contentDescription = "删除条目", tint = if (readOnly || entry.locked) palette.body else MaterialTheme.colorScheme.error)
                     }
                 }
             }
+            }
         }
+    }
+    if (showDeleteConfirmation) {
+        NarraAlertDialog(
+            title = "删除条目",
+            message = "将从当前预设移除「${entry.title}」，保存预设后生效。",
+            confirmLabel = "确认删除",
+            dismissLabel = "取消",
+            isDestructive = true,
+            onDismiss = { showDeleteConfirmation = false },
+            onConfirm = { showDeleteConfirmation = false; onDelete() },
+        )
     }
 }
 
@@ -723,26 +776,18 @@ private fun PresetPreviewCard(
     entries: List<PresetPromptEntry>,
 ) {
     val palette = rememberSettingsPalette()
-    Surface(
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(24.dp),
-        color = palette.surface,
-        border = BorderStroke(1.dp, palette.border.copy(alpha = 0.42f)),
+    Column(
+        modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
+        verticalArrangement = Arrangement.spacedBy(10.dp),
     ) {
-        Column(
-            modifier = Modifier.padding(18.dp),
-            verticalArrangement = Arrangement.spacedBy(10.dp),
-        ) {
-            Text(
-                text = "最终渲染顺序",
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.Bold,
-                color = palette.title,
+            SettingsSectionHeader(
+                title = "发送顺序",
+                description = "条目按当前顺序发送；近期记录插入点后的条目作为后置指令。关闭的条目不参与发送。",
             )
             entries.sortedBy(PresetPromptEntry::order).forEach { entry ->
                 val enabledLabel = if (entry.enabled) "" else "（关闭）"
                 val line = if (entry.kind == PresetPromptEntryKind.CHAT_HISTORY) {
-                    "──── 近期记录插入点 ────"
+                    "近期记录插入点$enabledLabel"
                 } else {
                     "${entry.role.label} · ${entry.title.ifBlank { entry.kind.label }}$enabledLabel"
                 }
@@ -751,12 +796,11 @@ private fun PresetPreviewCard(
                     style = MaterialTheme.typography.bodySmall,
                     color = if (entry.enabled) palette.body else palette.body.copy(alpha = 0.54f),
                     fontFamily = if (entry.kind == PresetPromptEntryKind.CHAT_HISTORY) FontFamily.Monospace else null,
-                    maxLines = 1,
+                    maxLines = 2,
                     overflow = TextOverflow.Ellipsis,
                 )
             }
         }
-    }
 }
 
 internal fun copyPresetForUser(source: Preset): Preset {

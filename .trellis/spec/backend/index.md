@@ -28,6 +28,7 @@ Store / Room DAO / Retrofit / Android system adapter
 
 - [目录与架构](./directory-structure.md)：模块、包职责、依赖边界与命名。
 - [UI 与状态管理](./ui-state-guidelines.md)：Compose、导航、ViewModel、StateFlow。
+- [系统悬浮翻译 UI](./floating-translation-ui-guidelines.md)：原生窗口、共享主题、授权编号与取消边界。
 - [网络与协议](./network-guidelines.md)：Provider、Retrofit、流式响应与 URL 安全。
 - [持久化规范](./database-guidelines.md)：Room、DataStore、Keystore 与迁移。
 - [错误处理](./error-handling.md)：异常传播、协程取消、UI 反馈与脱敏。
@@ -48,6 +49,7 @@ Store / Room DAO / Retrofit / Android system adapter
 按改动范围继续阅读：
 
 - Compose、导航、ViewModel：`ui-state-guidelines.md`、`error-handling.md`
+- 系统悬浮翻译窗口、服务或截屏授权：`floating-translation-ui-guidelines.md`、`error-handling.md`
 - Room、DataStore、导入导出：`database-guidelines.md`、`error-handling.md`
 - Provider、AI、搜索、更新、TTS：`network-guidelines.md`、
   `logging-guidelines.md`、`error-handling.md`

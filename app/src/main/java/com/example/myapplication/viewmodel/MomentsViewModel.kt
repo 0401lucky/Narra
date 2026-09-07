@@ -46,6 +46,7 @@ data class MomentsUiState(
     val selectedUserPersonaMaskId: String = "",
     val viewerAvatarUri: String = "",
     val errorMessage: String? = null,
+    val lastPublishedPostId: String = "",
 )
 
 class MomentsViewModel(
@@ -128,7 +129,12 @@ class MomentsViewModel(
                     it.copy(errorMessage = throwable.toMomentsUiError("朋友圈发布失败"))
                 }
             }.getOrNull()
-            _uiState.update { it.copy(isPublishing = false) }
+            _uiState.update {
+                it.copy(
+                    isPublishing = false,
+                    lastPublishedPostId = createdPost?.id ?: it.lastPublishedPostId,
+                )
+            }
             if (createdPost != null) {
                 _uiState.update {
                     it.copy(isGeneratingReplies = true, replyingPostId = createdPost.id)

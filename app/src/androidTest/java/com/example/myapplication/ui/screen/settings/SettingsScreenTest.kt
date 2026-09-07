@@ -1,10 +1,12 @@
 package com.example.myapplication.ui.screen.settings
 
 import androidx.activity.ComponentActivity
+import androidx.compose.ui.test.hasScrollToNodeAction
+import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
-import androidx.compose.ui.test.performScrollTo
+import androidx.compose.ui.test.performScrollToNode
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.example.myapplication.R
 import com.example.myapplication.model.AppSettings
@@ -110,9 +112,8 @@ class SettingsScreenTest {
             }
         }
 
-        composeRule.onNodeWithText("本地诊断")
-            .performScrollTo()
-            .performClick()
+        composeRule.onNode(hasScrollToNodeAction()).performScrollToNode(hasText("本地诊断"))
+        composeRule.onNodeWithText("本地诊断").performClick()
         composeRule.runOnIdle {
             assertEquals(1, diagnosticsCalls)
         }

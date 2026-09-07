@@ -4,22 +4,28 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.Assignment
-import androidx.compose.material.icons.filled.Download
-import androidx.compose.material.icons.filled.SystemUpdateAlt
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
+import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.composables.icons.lucide.Check
+import com.composables.icons.lucide.Download
+import com.composables.icons.lucide.Lucide
+import com.composables.icons.lucide.RefreshCw
+import com.composables.icons.lucide.TriangleAlert
 import com.example.myapplication.model.AppUpdateAvailability
 import com.example.myapplication.model.AppUpdateDownloadSnapshot
 import com.example.myapplication.model.AppUpdateDownloadStatus
@@ -43,7 +49,7 @@ fun AppUpdateScreen(
         message = uiState.message,
         onConsumeMessage = onConsumeMessage,
     )
-    val primaryButtonLabel = when (uiState.downloadSnapshot.status) {
+    val primaryButtonLabel = if (uiState.isChecking) "正在检查" else when (uiState.downloadSnapshot.status) {
         AppUpdateDownloadStatus.PENDING,
         AppUpdateDownloadStatus.RUNNING,
         AppUpdateDownloadStatus.PAUSED,
@@ -86,106 +92,102 @@ fun AppUpdateScreen(
                 verticalArrangement = Arrangement.spacedBy(16.dp),
             ) {
                 item {
-                    SettingsPageIntro(
-                        title = "启动自动检查，设置页手动更新",
-                        summary = "当服务器返回更高版本时，可以在这里查看更新说明、下载 APK，并调用系统安装器完成升级。",
-                    )
-                }
-
-                item { SettingsSectionHeader("当前版本", "") }
-                item {
-                    SettingsGroup {
-                        SettingsListRow(
-                            leadingContent = {
-                                Icon(Icons.AutoMirrored.Filled.Assignment, contentDescription = null, tint = palette.title)
-                            },
-                            title = uiState.currentVersionName,
-                            supportingText = "versionCode ${uiState.currentVersionCode} · ${uiState.channel}",
-                            showArrow = false,
+                    Column(
+                        modifier = Modifier.padding(top = 16.dp, bottom = 12.dp),
+                        verticalArrangement = Arrangement.spacedBy(8.dp),
+                    ) {
+                        Text(
+                            text = "当前版本",
+                            style = MaterialTheme.typography.labelLarge,
+                            color = palette.body,
                         )
-                        SettingsGroupDivider()
-                        SettingsListRow(
-                            leadingContent = {
-                                Icon(Icons.Default.SystemUpdateAlt, contentDescription = null, tint = palette.title)
-                            },
-                            title = if (uiState.hasConfiguredSource) "更新源已配置" else "更新源未配置",
-                            supportingText = uiState.metadataBaseUrl.ifBlank { "请先在 Gradle 中配置 APP_UPDATE_METADATA_BASE_URL" },
-                            showArrow = false,
+                        Text(
+                            text = "Narra ${uiState.currentVersionName}",
+                            style = MaterialTheme.typography.headlineSmall,
+                            fontWeight = FontWeight.SemiBold,
+                            color = palette.title,
                         )
-                        SettingsGroupDivider()
-                        SettingsListRow(
-                            leadingContent = {
-                                Icon(Icons.Default.Download, contentDescription = null, tint = palette.title)
+                        Text(
+                            text = if (uiState.lastCheckedAt > 0L) {
+                                "最近检查 ${uiState.lastCheckedAt.formatAsDateTime()}"
+                            } else {
+                                "尚未检查更新"
                             },
-                            title = if (uiState.lastCheckedAt > 0L) "最近检查时间" else "尚未检查更新",
-                            supportingText = uiState.lastCheckedAt.takeIf { it > 0L }?.formatAsDateTime() ?: "点击下方按钮立即检查",
-                            showArrow = false,
+                            style = MaterialTheme.typography.bodySmall,
+                            color = palette.body,
                         )
                     }
                 }
-
-                item { SettingsSectionHeader("检查结果", "") }
+                item { HorizontalDivider(color = palette.border) }
                 item {
-                    SettingsGroup {
-                        SettingsListRow(
-                            title = when (uiState.availability) {
-                                AppUpdateAvailability.DISABLED -> "未启用更新"
-                                AppUpdateAvailability.UNKNOWN -> if (uiState.isChecking) "检查中" else "等待检查"
-                                AppUpdateAvailability.UP_TO_DATE -> "已是最新版本"
-                                AppUpdateAvailability.OPTIONAL -> "发现可选更新"
-                                AppUpdateAvailability.REQUIRED -> "发现必要更新"
-                            },
-                            supportingText = buildString {
-                                val metadata = uiState.latestMetadata
-                                if (metadata != null) {
-                                    append("服务器版本 ${metadata.latestVersionName} (${metadata.latestVersionCode})")
-                                } else {
-                                    append("还没有拿到服务端版本信息")
-                                }
-                            },
-                            showArrow = false,
-                        )
-                        uiState.downloadSnapshot.downloadId?.let { downloadId ->
-                            SettingsGroupDivider()
-                            SettingsListRow(
-                                title = "下载任务 #$downloadId",
-                                supportingText = uiState.downloadSnapshot.describeProgress(),
-                                showArrow = false,
+                    Column(verticalArrangement = Arrangement.spacedBy(14.dp)) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(12.dp),
+                        ) {
+                            Icon(
+                                imageVector = when {
+                                    !uiState.hasConfiguredSource -> Lucide.TriangleAlert
+                                    uiState.availability == AppUpdateAvailability.UP_TO_DATE -> Lucide.Check
+                                    uiState.hasAvailableUpdate -> Lucide.Download
+                                    else -> Lucide.RefreshCw
+                                },
+                                contentDescription = null,
+                                modifier = Modifier.size(24.dp),
+                                tint = palette.accent,
                             )
-                        }
-                    }
-                }
-
-                uiState.latestMetadata?.takeIf { it.releaseNotes.isNotEmpty() }?.let { metadata ->
-                    item { SettingsSectionHeader("更新说明", "") }
-                    item {
-                        SettingsGroup {
                             Column(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(horizontal = 18.dp, vertical = 18.dp),
-                                verticalArrangement = Arrangement.spacedBy(8.dp),
+                                modifier = Modifier.weight(1f),
+                                verticalArrangement = Arrangement.spacedBy(4.dp),
                             ) {
-                                metadata.releaseNotes.forEach { note ->
+                                Text(
+                                    text = if (uiState.isChecking) "正在检查更新" else when (uiState.availability) {
+                                        AppUpdateAvailability.DISABLED -> "此版本暂不支持在线更新"
+                                        AppUpdateAvailability.UNKNOWN -> "等待检查"
+                                        AppUpdateAvailability.UP_TO_DATE -> "已是最新版本"
+                                        AppUpdateAvailability.OPTIONAL,
+                                        AppUpdateAvailability.REQUIRED,
+                                        -> "发现可用更新"
+                                    },
+                                    style = MaterialTheme.typography.titleMedium,
+                                    color = palette.title,
+                                )
+                                uiState.latestMetadata?.let { metadata ->
                                     Text(
-                                        text = "• $note",
+                                        text = "最新版本 ${metadata.latestVersionName}",
                                         style = MaterialTheme.typography.bodyMedium,
-                                        color = palette.body,
-                                    )
-                                }
-                                if (metadata.publishedAt.isNotBlank()) {
-                                    Text(
-                                        text = "发布时间：${metadata.publishedAt}",
-                                        style = MaterialTheme.typography.bodySmall,
                                         color = palette.body,
                                     )
                                 }
                             }
                         }
+                        if (uiState.isChecking) {
+                            LinearProgressIndicator(modifier = Modifier.fillMaxWidth())
+                        }
+                        if (uiState.downloadSnapshot.status != AppUpdateDownloadStatus.IDLE) {
+                            val download = uiState.downloadSnapshot
+                            val failed = download.status == AppUpdateDownloadStatus.FAILED ||
+                                download.status == AppUpdateDownloadStatus.MISSING
+                            Text(
+                                text = download.describeProgress(),
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = if (failed) MaterialTheme.colorScheme.error else palette.body,
+                            )
+                            if (download.status == AppUpdateDownloadStatus.RUNNING && download.totalBytes > 0L) {
+                                LinearProgressIndicator(
+                                    progress = {
+                                        (download.bytesDownloaded.toFloat() / download.totalBytes).coerceIn(0f, 1f)
+                                    },
+                                    modifier = Modifier.fillMaxWidth(),
+                                )
+                            } else if (download.status == AppUpdateDownloadStatus.PENDING ||
+                                download.status == AppUpdateDownloadStatus.RUNNING
+                            ) {
+                                LinearProgressIndicator(modifier = Modifier.fillMaxWidth())
+                            }
+                        }
                     }
                 }
-
-                item { SettingsSectionHeader("快捷操作", "") }
                 item {
                     AnimatedSettingButton(
                         text = primaryButtonLabel,
@@ -200,14 +202,64 @@ fun AppUpdateScreen(
                         },
                         enabled = primaryButtonEnabled,
                         isPrimary = true,
+                        leadingIcon = {
+                            Icon(
+                                imageVector = if (uiState.hasAvailableUpdate) Lucide.Download else Lucide.RefreshCw,
+                                contentDescription = null,
+                                modifier = Modifier.size(20.dp),
+                            )
+                        },
                     )
                 }
+                if (uiState.hasAvailableUpdate || uiState.downloadSnapshot.status != AppUpdateDownloadStatus.IDLE) {
+                    item {
+                        AnimatedSettingButton(
+                            text = "重新检查更新",
+                            onClick = onCheckForUpdates,
+                            enabled = !uiState.isChecking && uiState.hasConfiguredSource,
+                            isPrimary = false,
+                        )
+                    }
+                }
+                uiState.latestMetadata?.takeIf { it.releaseNotes.isNotEmpty() }?.let { metadata ->
+                    item { HorizontalDivider(color = palette.border) }
+                    item { SettingsSectionHeader("更新说明", "") }
+                    items(metadata.releaseNotes.size) { index ->
+                        Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                            Text("•", color = palette.accent, style = MaterialTheme.typography.bodyMedium)
+                            Text(
+                                text = metadata.releaseNotes[index],
+                                modifier = Modifier.weight(1f),
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = palette.title,
+                            )
+                        }
+                    }
+                    if (metadata.publishedAt.isNotBlank()) {
+                        item {
+                            Text(
+                                text = "发布于 ${metadata.publishedAt}",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = palette.body,
+                            )
+                        }
+                    }
+                }
                 item {
-                    AnimatedSettingButton(
-                        text = "重新检查更新",
-                        onClick = onCheckForUpdates,
-                        enabled = !uiState.isChecking && uiState.hasConfiguredSource,
-                        isPrimary = false,
+                    SettingsSectionHeader(
+                        title = "更新信息",
+                        description = buildString {
+                            appendLine("版本编号：${uiState.currentVersionCode}")
+                            appendLine("更新渠道：${uiState.channel}")
+                            appendLine("更新源：${uiState.metadataBaseUrl.ifBlank { "未配置" }}")
+                            uiState.latestMetadata?.let { metadata ->
+                                appendLine("最新版本编号：${metadata.latestVersionCode}")
+                            }
+                            uiState.downloadSnapshot.downloadId?.let { downloadId ->
+                                appendLine("下载任务：$downloadId")
+                            }
+                            append("应用启动时会自动检查更新。下载安装由你决定，安装时会打开系统安装器。")
+                        },
                     )
                 }
             }

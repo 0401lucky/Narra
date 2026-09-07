@@ -1,11 +1,11 @@
 package com.example.myapplication.ui.screen.moments
 
 import android.net.Uri
+import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.Crossfade
-import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
@@ -16,9 +16,11 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.aspectRatio
+import androidx.compose.foundation.layout.consumeWindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -27,23 +29,8 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.automirrored.filled.Send
-import androidx.compose.material.icons.filled.Close
-import androidx.compose.material.icons.filled.Delete
-import androidx.compose.material.icons.filled.ExpandMore
-import androidx.compose.material.icons.filled.Favorite
-import androidx.compose.material.icons.filled.FavoriteBorder
-import androidx.compose.material.icons.filled.Image
-import androidx.compose.material.icons.filled.MoreVert
-import androidx.compose.material.icons.filled.Person
-import androidx.compose.material.icons.filled.PhotoCamera
-import androidx.compose.material.icons.filled.Place
-import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.Checkbox
-import androidx.compose.material3.CheckboxDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
@@ -65,36 +52,53 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Brush
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalHapticFeedback
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import coil3.compose.AsyncImage
+import com.composables.icons.lucide.ArrowLeft
+import com.composables.icons.lucide.Camera
+import com.composables.icons.lucide.ChevronDown
+import com.composables.icons.lucide.Ellipsis
+import com.composables.icons.lucide.Heart
+import com.composables.icons.lucide.Image
+import com.composables.icons.lucide.Lucide
+import com.composables.icons.lucide.MapPin
+import com.composables.icons.lucide.MessageCircleMore
+import com.composables.icons.lucide.Send
+import com.composables.icons.lucide.Trash2
+import com.composables.icons.lucide.UserRound
+import com.composables.icons.lucide.X
 import com.example.myapplication.R
 import com.example.myapplication.model.MomentComment
 import com.example.myapplication.model.MomentMediaStatus
 import com.example.myapplication.model.MomentPost
 import com.example.myapplication.model.UserPersonaMask
 import com.example.myapplication.ui.component.AppSnackbarHost
+import com.example.myapplication.ui.component.NarraAlertDialog
 import com.example.myapplication.ui.component.NarraIconButton
 import com.example.myapplication.ui.component.voice.VoiceInputAnchor
 import com.example.myapplication.viewmodel.appendRecognizedText
 import com.example.myapplication.ui.LocalImagePersister
+import com.example.myapplication.ui.screen.settings.SettingsHelpButton
 import com.example.myapplication.ui.theme.MomentsAccent
 import com.example.myapplication.ui.theme.MomentsAccentSoft
 import com.example.myapplication.ui.theme.MomentsBackground
 import com.example.myapplication.ui.theme.MomentsCardBackground
 import com.example.myapplication.ui.theme.MomentsLikeRed
 import com.example.myapplication.ui.theme.MomentsMutedText
+import com.example.myapplication.ui.theme.NarraMinimumTouchTarget
+import com.example.myapplication.ui.theme.NarraUi
 import com.example.myapplication.viewmodel.MomentsUiState
 import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
@@ -121,15 +125,26 @@ fun MomentsScreen(
     onOpenPhoneCheck: (() -> Unit)? = null,
 ) {
     val snackbarHostState = remember { SnackbarHostState() }
-    var selectedPostId by remember { mutableStateOf<String?>(null) }
-    var showComposer by remember { mutableStateOf(false) }
+    var selectedPostId by rememberSaveable { mutableStateOf<String?>(null) }
+    var showComposer by rememberSaveable { mutableStateOf(false) }
     var showTimelineMenu by remember { mutableStateOf(false) }
     var selectionMode by remember { mutableStateOf(false) }
     var selectedPostIds by remember { mutableStateOf<Set<String>>(emptySet()) }
     var showClearMomentsDialog by remember { mutableStateOf(false) }
     var showDeleteSelectedDialog by remember { mutableStateOf(false) }
-    var composerSubmitPending by remember { mutableStateOf(false) }
-    var composerSawPublishing by remember { mutableStateOf(false) }
+    var composerSubmitPending by rememberSaveable { mutableStateOf(false) }
+    var composerPreviousPublishedId by rememberSaveable { mutableStateOf("") }
+
+    BackHandler(enabled = showComposer || selectionMode || selectedPostId != null) {
+        when {
+            showComposer -> showComposer = false
+            selectionMode -> {
+                selectionMode = false
+                selectedPostIds = emptySet()
+            }
+            else -> selectedPostId = null
+        }
+    }
 
     LaunchedEffect(uiState.errorMessage) {
         uiState.errorMessage?.let {
@@ -138,27 +153,26 @@ fun MomentsScreen(
         }
     }
 
-    LaunchedEffect(showComposer, uiState.isPublishing, uiState.errorMessage) {
+    LaunchedEffect(showComposer, composerSubmitPending, uiState.lastPublishedPostId) {
         if (!showComposer) {
             composerSubmitPending = false
-            composerSawPublishing = false
             return@LaunchedEffect
         }
-        if (composerSubmitPending && uiState.isPublishing) {
-            composerSawPublishing = true
-        }
-        if (composerSubmitPending && composerSawPublishing && !uiState.isPublishing) {
-            if (uiState.errorMessage == null) {
-                showComposer = false
-            }
+        // 快速本地写入可能合并掉 loading 帧，发布成功也不能被后续的回复失败覆盖。
+        if (composerSubmitPending && uiState.lastPublishedPostId.isNotBlank() &&
+            uiState.lastPublishedPostId != composerPreviousPublishedId
+        ) {
+            showComposer = false
             composerSubmitPending = false
-            composerSawPublishing = false
         }
     }
 
     LaunchedEffect(uiState.posts) {
         val existingIds = uiState.posts.map(MomentPost::id).toSet()
         selectedPostIds = selectedPostIds.intersect(existingIds)
+        if (selectedPostId !in existingIds) {
+            selectedPostId = null
+        }
         if (uiState.posts.isEmpty()) {
             selectionMode = false
             showTimelineMenu = false
@@ -193,6 +207,7 @@ fun MomentsScreen(
     }
 
     Scaffold(
+        modifier = Modifier.testTag("moments_screen"),
         topBar = {
             TopAppBar(
                 title = {
@@ -202,7 +217,10 @@ fun MomentsScreen(
                             selectionMode -> "已选 ${selectedPostIds.size} 条"
                             else -> stringResource(R.string.moments_title)
                         },
-                        fontWeight = FontWeight.Bold,
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.SemiBold,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
                     )
                 },
                 navigationIcon = {
@@ -220,7 +238,7 @@ fun MomentsScreen(
                         },
                     ) {
                         Icon(
-                            Icons.AutoMirrored.Filled.ArrowBack,
+                            Lucide.ArrowLeft,
                             contentDescription = stringResource(R.string.common_back),
                         )
                     }
@@ -246,7 +264,7 @@ fun MomentsScreen(
                             enabled = selectedPostIds.isNotEmpty() && !uiState.isDeletingMoments,
                         ) {
                             Icon(
-                                imageVector = Icons.Default.Delete,
+                                imageVector = Lucide.Trash2,
                                 contentDescription = "删除选中朋友圈",
                                 tint = if (selectedPostIds.isNotEmpty()) {
                                     MaterialTheme.colorScheme.error
@@ -260,7 +278,7 @@ fun MomentsScreen(
                             onClick = { showComposer = true },
                             enabled = !uiState.isDeletingMoments,
                         ) {
-                            Icon(Icons.Default.PhotoCamera, contentDescription = "发表朋友圈")
+                            Icon(Lucide.Camera, contentDescription = "发表朋友圈")
                         }
                         if (uiState.posts.isNotEmpty()) {
                             Box {
@@ -268,7 +286,7 @@ fun MomentsScreen(
                                     onClick = { showTimelineMenu = true },
                                     enabled = !uiState.isDeletingMoments,
                                 ) {
-                                    Icon(Icons.Default.MoreVert, contentDescription = "朋友圈更多操作")
+                                    Icon(Lucide.Ellipsis, contentDescription = "朋友圈更多操作")
                                 }
                                 DropdownMenu(
                                     expanded = showTimelineMenu,
@@ -277,7 +295,7 @@ fun MomentsScreen(
                                     DropdownMenuItem(
                                         text = { Text("选择删除") },
                                         leadingIcon = {
-                                            Icon(Icons.Default.Delete, contentDescription = null)
+                                            Icon(Lucide.Trash2, contentDescription = null)
                                         },
                                         onClick = {
                                             showTimelineMenu = false
@@ -289,7 +307,7 @@ fun MomentsScreen(
                                         text = { Text("清空朋友圈") },
                                         leadingIcon = {
                                             Icon(
-                                                imageVector = Icons.Default.Delete,
+                                                imageVector = Lucide.Trash2,
                                                 contentDescription = null,
                                             )
                                         },
@@ -304,7 +322,7 @@ fun MomentsScreen(
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MomentsBackground(),
+                    containerColor = MaterialTheme.colorScheme.surface,
                 ),
             )
         },
@@ -314,15 +332,18 @@ fun MomentsScreen(
         Box(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(innerPadding),
+                .padding(innerPadding)
+                .consumeWindowInsets(innerPadding),
         ) {
             when {
                 uiState.isLoading -> {
-                    Box(
+                    Column(
                         modifier = Modifier.fillMaxSize(),
-                        contentAlignment = Alignment.Center,
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.spacedBy(NarraUi.pageVertical, Alignment.CenterVertically),
                     ) {
                         CircularProgressIndicator(color = MomentsAccent())
+                        Text("正在读取朋友圈", color = MomentsMutedText())
                     }
                 }
 
@@ -332,6 +353,7 @@ fun MomentsScreen(
                         masks = uiState.userPersonaMasks,
                         selectedMaskId = uiState.selectedUserPersonaMaskId,
                         onPublishPost = { content, imageUri, location, maskId ->
+                            composerPreviousPublishedId = uiState.lastPublishedPostId
                             composerSubmitPending = true
                             onPublishPost(content, imageUri, location, maskId)
                         },
@@ -361,6 +383,7 @@ fun MomentsScreen(
                                 onRefresh = onRefreshMoments,
                                 onUpdateCoverImage = onUpdateCoverImage,
                                 onOpenPost = { selectedPostId = it.id },
+                                onCompose = { showComposer = true },
                                 onTogglePostSelected = { postId ->
                                     selectedPostIds = selectedPostIds.toggle(postId)
                                 },
@@ -415,6 +438,7 @@ private fun MomentsTimelineContent(
     onDeletePost: (String) -> Unit,
     onDeleteComment: (String) -> Unit,
     onRetryImage: (String) -> Unit,
+    onCompose: () -> Unit,
     onOpenPhoneCheck: (() -> Unit)?,
 ) {
     val coroutineScope = rememberCoroutineScope()
@@ -453,8 +477,9 @@ private fun MomentsTimelineContent(
         modifier = Modifier.fillMaxSize(),
     ) {
         LazyColumn(
-            modifier = Modifier.fillMaxSize(),
-            contentPadding = PaddingValues(bottom = 12.dp),
+            modifier = Modifier.fillMaxSize().testTag("moments_timeline"),
+            contentPadding = PaddingValues(bottom = NarraUi.pageVertical),
+            verticalArrangement = Arrangement.spacedBy(NarraUi.pageVertical),
         ) {
             item {
                 MomentsCoverHeader(
@@ -470,7 +495,7 @@ private fun MomentsTimelineContent(
             }
             if (posts.isEmpty()) {
                 item {
-                    EmptyMomentsPanel(onOpenPhoneCheck = onOpenPhoneCheck)
+                    EmptyMomentsPanel(onCompose = onCompose, onOpenPhoneCheck = onOpenPhoneCheck)
                 }
             } else {
                 items(posts, key = { it.id }) { post ->
@@ -479,6 +504,7 @@ private fun MomentsTimelineContent(
                         viewerName = viewerName,
                         selectionMode = selectionMode,
                         selected = post.id in selectedPostIds,
+                        enabled = !isDeletingMoments,
                         isRetryingImage = retryingImagePostId == post.id,
                         onOpenPost = { onOpenPost(post) },
                         onToggleSelection = { onTogglePostSelected(post.id) },
@@ -500,89 +526,78 @@ private fun MomentsCoverHeader(
     viewerAvatarUri: String,
     onPickCover: () -> Unit,
 ) {
-    Box(
-        modifier = Modifier
-            .fillMaxWidth()
-            .height(260.dp)
-            .clickable(onClick = onPickCover),
+    Surface(
+        modifier = Modifier.fillMaxWidth().padding(
+            horizontal = NarraUi.pageHorizontal,
+            vertical = NarraUi.pageVertical,
+        ),
+        shape = RoundedCornerShape(NarraUi.cardRadius),
+        color = MomentsCardBackground(),
     ) {
-        if (coverImageUri.isNotBlank()) {
-            AsyncImage(
-                model = coverImageUri,
-                contentDescription = "朋友圈封面",
-                modifier = Modifier.fillMaxSize(),
-                contentScale = ContentScale.Crop,
-            )
-        } else {
+        Column {
             Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .background(
-                        Brush.linearGradient(
-                            colors = listOf(
-                                Color(0xFF88A79E),
-                                Color(0xFF33413F),
-                                Color(0xFF161C1B),
-                            ),
-                        ),
-                    ),
-            )
-        }
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .background(
-                    Brush.verticalGradient(
-                        colors = listOf(
-                            Color.Transparent,
-                            Color.Black.copy(alpha = 0.58f),
-                        ),
-                    ),
-                ),
-        )
-        Row(
-            modifier = Modifier
-                .align(Alignment.BottomEnd)
-                .padding(end = 18.dp, bottom = 18.dp),
-            horizontalArrangement = Arrangement.spacedBy(12.dp),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            Text(
-                text = viewerName.ifBlank { "我" },
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.SemiBold,
-                color = Color.White,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-            )
-            Surface(
-                shape = RoundedCornerShape(10.dp),
-                color = Color.White,
-                shadowElevation = 4.dp,
-                border = BorderStroke(1.dp, Color.White.copy(alpha = 0.8f)),
+                modifier = Modifier.fillMaxWidth().height(144.dp).testTag("moments_cover")
+                    .background(MaterialTheme.colorScheme.secondaryContainer)
+                    .clickable(onClickLabel = "更换朋友圈封面", onClick = onPickCover),
+                contentAlignment = Alignment.Center,
+            ) {
+                if (coverImageUri.isNotBlank()) {
+                    AsyncImage(
+                        model = coverImageUri,
+                        contentDescription = "朋友圈封面",
+                        modifier = Modifier.fillMaxSize(),
+                        contentScale = ContentScale.Crop,
+                    )
+                } else {
+                    Icon(
+                        imageVector = Lucide.Image,
+                        contentDescription = null,
+                        modifier = Modifier.size(32.dp),
+                        tint = MaterialTheme.colorScheme.onSecondaryContainer,
+                    )
+                }
+                Surface(
+                    modifier = Modifier.align(Alignment.TopEnd).padding(NarraUi.compactGap),
+                    color = MaterialTheme.colorScheme.surface.copy(alpha = 0.94f),
+                    shape = RoundedCornerShape(NarraUi.smallRadius),
+                ) {
+                    NarraIconButton(onClick = onPickCover) {
+                        Icon(Lucide.Camera, "更换朋友圈封面", Modifier.size(20.dp))
+                    }
+                }
+            }
+            Row(
+                modifier = Modifier.fillMaxWidth().padding(NarraUi.pageVertical),
+                horizontalArrangement = Arrangement.spacedBy(NarraUi.compactGap),
+                verticalAlignment = Alignment.CenterVertically,
             ) {
                 MomentAvatar(
                     name = viewerName,
                     avatarUri = viewerAvatarUri,
-                    size = 62.dp,
+                    size = 48.dp,
                     fallback = "我",
-                    shape = RoundedCornerShape(8.dp),
+                    shape = RoundedCornerShape(NarraUi.smallRadius),
+                )
+                Column(
+                    modifier = Modifier.weight(1f),
+                    verticalArrangement = Arrangement.spacedBy(NarraUi.compactGap),
+                ) {
+                    Text(
+                        text = viewerName.ifBlank { "我" },
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.SemiBold,
+                        maxLines = 2,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                    Text("我的朋友圈", style = MaterialTheme.typography.bodySmall, color = MomentsMutedText())
+                }
+                SettingsHelpButton(
+                    title = "朋友圈",
+                    description = "发表动态时可以添加配图、位置并选择身份，角色会按各自人设参与互动。" +
+                        "\n\n下拉可刷新动态。点开动态可查看全部评论和回复；长按评论可删除，删除前会再次确认。" +
+                        "\n\n点封面可更换图片，右上角菜单可选择删除或清空朋友圈。",
                 )
             }
-        }
-        Surface(
-            modifier = Modifier
-                .align(Alignment.TopEnd)
-                .padding(14.dp),
-            shape = RoundedCornerShape(999.dp),
-            color = Color.Black.copy(alpha = 0.32f),
-        ) {
-            Icon(
-                imageVector = Icons.Default.PhotoCamera,
-                contentDescription = null,
-                modifier = Modifier.padding(9.dp).size(18.dp),
-                tint = Color.White,
-            )
         }
     }
 }
@@ -597,10 +612,10 @@ private fun MomentComposerPage(
 ) {
     val coroutineScope = rememberCoroutineScope()
     val localImageStore = LocalImagePersister.current
-    var draft by remember { mutableStateOf("") }
-    var imageUri by remember { mutableStateOf("") }
-    var location by remember { mutableStateOf("") }
-    var selectedPersonaMaskId by remember(selectedMaskId, masks) {
+    var draft by rememberSaveable { mutableStateOf("") }
+    var imageUri by rememberSaveable { mutableStateOf("") }
+    var location by rememberSaveable { mutableStateOf("") }
+    var selectedPersonaMaskId by rememberSaveable(selectedMaskId) {
         mutableStateOf(
             selectedMaskId.takeIf { id -> masks.any { it.id == id } }
                 ?: masks.firstOrNull()?.id.orEmpty(),
@@ -620,134 +635,119 @@ private fun MomentComposerPage(
     val selectedMask = masks.firstOrNull { it.id == selectedPersonaMaskId }
 
     Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(MomentsCardBackground())
-            .imePadding(),
+        modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.surface).imePadding(),
     ) {
         Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 16.dp, vertical = 10.dp),
+            modifier = Modifier.fillMaxWidth().padding(
+                horizontal = NarraUi.pageHorizontal,
+                vertical = NarraUi.compactGap,
+            ),
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            TextButton(onClick = onCancel) {
-                Text("取消")
-            }
+            TextButton(
+                onClick = onCancel,
+                modifier = Modifier.heightIn(min = NarraMinimumTouchTarget),
+            ) { Text("取消") }
             Button(
                 onClick = {
-                    onPublishPost(
-                        draft.trim(),
-                        imageUri,
-                        location.trim(),
-                        selectedPersonaMaskId,
-                    )
+                    onPublishPost(draft.trim(), imageUri, location.trim(), selectedPersonaMaskId)
                 },
                 enabled = draft.isNotBlank() && !isPublishing,
-                shape = RoundedCornerShape(999.dp),
+                modifier = Modifier.heightIn(min = NarraMinimumTouchTarget).testTag("moment_publish"),
+                shape = RoundedCornerShape(NarraUi.smallRadius),
             ) {
                 if (isPublishing) {
                     CircularProgressIndicator(
                         modifier = Modifier.size(16.dp),
                         strokeWidth = 2.dp,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
-                    Spacer(Modifier.width(8.dp))
+                    Spacer(Modifier.width(NarraUi.compactGap))
                 }
                 Text(if (isPublishing) "发表中" else "发表")
             }
         }
-
         LazyColumn(
-            modifier = Modifier.fillMaxSize(),
-            contentPadding = PaddingValues(horizontal = 18.dp, vertical = 8.dp),
-            verticalArrangement = Arrangement.spacedBy(18.dp),
+            modifier = Modifier.weight(1f).testTag("moment_composer"),
+            contentPadding = PaddingValues(horizontal = NarraUi.pageHorizontal, vertical = NarraUi.compactGap),
+            verticalArrangement = Arrangement.spacedBy(NarraUi.pageVertical),
         ) {
             item {
                 OutlinedTextField(
                     value = draft,
                     onValueChange = { draft = it.take(300) },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(172.dp),
-                    minLines = 6,
+                    enabled = !isPublishing,
+                    modifier = Modifier.fillMaxWidth().heightIn(min = 160.dp).testTag("moment_draft"),
+                    minLines = 5,
                     maxLines = 8,
-                    placeholder = { Text("这一刻的想法…", color = MomentsMutedText()) },
-                    shape = RoundedCornerShape(8.dp),
+                    placeholder = { Text("这一刻的想法…") },
+                    supportingText = { Text(draft.length.toString() + " / 300") },
+                    shape = RoundedCornerShape(NarraUi.smallRadius),
                 )
             }
-
-            item {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.End,
-                ) {
-                    VoiceInputAnchor(
-                        onTextRecognized = { recognized ->
+            if (!isPublishing) {
+                item {
+                    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
+                        VoiceInputAnchor(onTextRecognized = { recognized ->
                             draft = appendRecognizedText(draft, recognized).take(300)
-                        },
-                    )
+                        })
+                    }
                 }
             }
-
             item {
                 ComposerImagePicker(
                     imageUri = imageUri,
+                    enabled = !isPublishing,
                     onPickImage = {
-                        imagePicker.launch(
-                            PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly),
-                        )
+                        imagePicker.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly))
                     },
                     onClearImage = { imageUri = "" },
                 )
             }
-
             item {
                 ComposerSectionRow(
-                    icon = { Icon(Icons.Default.Place, contentDescription = null) },
+                    icon = { Icon(Lucide.MapPin, contentDescription = null) },
                     title = "所在位置",
                 ) {
                     OutlinedTextField(
                         value = location,
                         onValueChange = { location = it.take(40) },
-                        modifier = Modifier.fillMaxWidth(),
+                        enabled = !isPublishing,
+                        modifier = Modifier.fillMaxWidth().testTag("moment_location"),
                         singleLine = true,
-                        placeholder = { Text("不显示位置", color = MomentsMutedText()) },
-                        shape = RoundedCornerShape(8.dp),
+                        placeholder = { Text("不显示位置") },
+                        shape = RoundedCornerShape(NarraUi.smallRadius),
                     )
                 }
             }
-
             item {
                 ComposerSectionRow(
-                    icon = { Icon(Icons.Default.Person, contentDescription = null) },
+                    icon = { Icon(Lucide.UserRound, contentDescription = null) },
                     title = "选择身份",
                 ) {
                     Box {
                         Surface(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .clickable { showMaskMenu = true },
-                            shape = RoundedCornerShape(8.dp),
-                            color = MomentsBackground(),
+                            modifier = Modifier.fillMaxWidth()
+                                .heightIn(min = NarraMinimumTouchTarget)
+                                .clickable(enabled = !isPublishing) { showMaskMenu = true }
+                                .testTag("moment_identity"),
+                            shape = RoundedCornerShape(NarraUi.smallRadius),
+                            color = MomentsCardBackground(),
                         ) {
                             Row(
-                                modifier = Modifier.padding(horizontal = 12.dp, vertical = 12.dp),
-                                horizontalArrangement = Arrangement.SpaceBetween,
+                                modifier = Modifier.padding(NarraUi.pageVertical),
+                                horizontalArrangement = Arrangement.spacedBy(NarraUi.compactGap),
                                 verticalAlignment = Alignment.CenterVertically,
                             ) {
                                 Text(
                                     text = selectedMask?.name.orEmpty().ifBlank { "当前身份" },
                                     style = MaterialTheme.typography.bodyMedium,
                                     modifier = Modifier.weight(1f),
-                                    maxLines = 1,
+                                    maxLines = 2,
                                     overflow = TextOverflow.Ellipsis,
                                 )
-                                Icon(
-                                    imageVector = Icons.Default.ExpandMore,
-                                    contentDescription = null,
-                                    tint = MomentsMutedText(),
-                                )
+                                Icon(Lucide.ChevronDown, null, Modifier.size(20.dp), tint = MomentsMutedText())
                             }
                         }
                         DropdownMenu(
@@ -765,7 +765,7 @@ private fun MomentComposerPage(
                             } else {
                                 masks.forEach { mask ->
                                     DropdownMenuItem(
-                                        text = { Text(mask.name.ifBlank { "未命名身份" }) },
+                                        text = { Text(mask.name.ifBlank { "未命名身份" }, maxLines = 3) },
                                         onClick = {
                                             selectedPersonaMaskId = mask.id
                                             showMaskMenu = false
@@ -784,24 +784,25 @@ private fun MomentComposerPage(
 @Composable
 private fun ComposerImagePicker(
     imageUri: String,
+    enabled: Boolean,
     onPickImage: () -> Unit,
     onClearImage: () -> Unit,
 ) {
     Box(
-        modifier = Modifier
-            .size(104.dp)
-            .clip(RoundedCornerShape(8.dp))
-            .background(MomentsBackground())
-            .clickable(onClick = onPickImage),
+        modifier = Modifier.size(112.dp)
+            .clip(RoundedCornerShape(NarraUi.smallRadius))
+            .background(MomentsCardBackground())
+            .clickable(enabled = enabled, onClickLabel = "添加配图", onClick = onPickImage),
         contentAlignment = Alignment.Center,
     ) {
         if (imageUri.isBlank()) {
-            Icon(
-                imageVector = Icons.Default.Image,
-                contentDescription = "添加配图",
-                modifier = Modifier.size(30.dp),
-                tint = MomentsMutedText(),
-            )
+            Column(
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.spacedBy(NarraUi.compactGap),
+            ) {
+                Icon(Lucide.Image, null, Modifier.size(24.dp), tint = MomentsMutedText())
+                Text("添加配图", style = MaterialTheme.typography.labelMedium, color = MomentsMutedText())
+            }
         } else {
             AsyncImage(
                 model = imageUri,
@@ -810,19 +811,13 @@ private fun ComposerImagePicker(
                 contentScale = ContentScale.Crop,
             )
             Surface(
-                modifier = Modifier.align(Alignment.TopEnd).padding(4.dp),
-                shape = CircleShape,
-                color = Color.Black.copy(alpha = 0.46f),
+                modifier = Modifier.align(Alignment.TopEnd).padding(NarraUi.compactGap),
+                shape = RoundedCornerShape(NarraUi.smallRadius),
+                color = MaterialTheme.colorScheme.surface.copy(alpha = 0.94f),
             ) {
-                Icon(
-                    imageVector = Icons.Default.Close,
-                    contentDescription = "移除配图",
-                    modifier = Modifier
-                        .size(26.dp)
-                        .clickable(onClick = onClearImage)
-                        .padding(5.dp),
-                    tint = Color.White,
-                )
+                NarraIconButton(onClick = onClearImage, enabled = enabled) {
+                    Icon(Lucide.X, "移除配图", Modifier.size(20.dp))
+                }
             }
         }
     }
@@ -840,7 +835,7 @@ private fun ComposerSectionRow(
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Box(
-                modifier = Modifier.size(22.dp),
+                modifier = Modifier.size(24.dp),
                 contentAlignment = Alignment.Center,
             ) {
                 icon()
@@ -857,35 +852,31 @@ private fun ComposerSectionRow(
 
 @Composable
 private fun EmptyMomentsPanel(
+    onCompose: () -> Unit,
     onOpenPhoneCheck: (() -> Unit)?,
 ) {
     Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 22.dp, vertical = 42.dp),
+        modifier = Modifier.fillMaxWidth().padding(horizontal = NarraUi.pageHorizontal, vertical = 32.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.spacedBy(10.dp),
+        verticalArrangement = Arrangement.spacedBy(NarraUi.pageVertical),
     ) {
-        Icon(
-            imageVector = Icons.Default.Image,
-            contentDescription = null,
-            modifier = Modifier.size(34.dp),
-            tint = MomentsAccent(),
-        )
+        Icon(Lucide.MessageCircleMore, null, Modifier.size(32.dp), tint = MomentsAccent())
+        Text("还没有朋友圈", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
         Text(
-            text = "还没有朋友圈",
-            style = MaterialTheme.typography.titleMedium,
-            fontWeight = FontWeight.Bold,
-        )
-        Text(
-            text = "发一条动态，角色会按各自人设来评论互动。",
+            "分享这一刻，和朋友聊聊天。",
             style = MaterialTheme.typography.bodyMedium,
             color = MomentsMutedText(),
         )
+        Button(
+            onClick = onCompose,
+            modifier = Modifier.heightIn(min = NarraMinimumTouchTarget),
+            shape = RoundedCornerShape(NarraUi.smallRadius),
+        ) { Text("发一条动态") }
         if (onOpenPhoneCheck != null) {
-            TextButton(onClick = onOpenPhoneCheck) {
-                Text("去查手机")
-            }
+            TextButton(
+                onClick = onOpenPhoneCheck,
+                modifier = Modifier.heightIn(min = NarraMinimumTouchTarget),
+            ) { Text("去查手机") }
         }
     }
 }
@@ -896,6 +887,7 @@ private fun MomentPostTimelineItem(
     viewerName: String,
     selectionMode: Boolean,
     selected: Boolean,
+    enabled: Boolean,
     isRetryingImage: Boolean,
     onOpenPost: () -> Unit,
     onToggleSelection: () -> Unit,
@@ -906,7 +898,6 @@ private fun MomentPostTimelineItem(
 ) {
     var showMoreMenu by remember { mutableStateOf(false) }
     var showDeleteDialog by remember { mutableStateOf(false) }
-
     if (showDeleteDialog) {
         MomentDeleteConfirmDialog(
             onConfirm = {
@@ -917,57 +908,48 @@ private fun MomentPostTimelineItem(
         )
     }
 
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .background(MomentsCardBackground())
-            .clickable {
-                if (selectionMode) {
-                    onToggleSelection()
-                } else {
-                    onOpenPost()
-                }
+    Surface(
+        modifier = Modifier.fillMaxWidth().padding(horizontal = NarraUi.pageHorizontal)
+            .clip(RoundedCornerShape(NarraUi.cardRadius))
+            .clickable(enabled = enabled) {
+                if (selectionMode) onToggleSelection() else onOpenPost()
             }
-            .padding(horizontal = 14.dp, vertical = 14.dp),
-        horizontalArrangement = Arrangement.spacedBy(10.dp),
+            .testTag("moment_post_" + post.id),
+        shape = RoundedCornerShape(NarraUi.cardRadius),
+        color = MomentsCardBackground(),
     ) {
-        if (selectionMode) {
-            Checkbox(
-                checked = selected,
-                onCheckedChange = { onToggleSelection() },
-                colors = CheckboxDefaults.colors(
-                    checkedColor = MomentsAccent(),
-                    uncheckedColor = MomentsMutedText(),
-                ),
-            )
-        }
-        MomentAvatar(
-            name = post.authorName,
-            avatarUri = post.authorAvatarUri,
-            size = 44.dp,
-            fallback = "朋",
-        )
         Column(
-            modifier = Modifier.weight(1f),
-            verticalArrangement = Arrangement.spacedBy(7.dp),
+            modifier = Modifier.padding(NarraUi.pageVertical),
+            verticalArrangement = Arrangement.spacedBy(NarraUi.compactGap),
         ) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
+                horizontalArrangement = Arrangement.spacedBy(NarraUi.compactGap),
                 verticalAlignment = Alignment.Top,
             ) {
-                Text(
-                    text = post.authorName.ifBlank { "朋友圈" },
-                    style = MaterialTheme.typography.bodyMedium,
-                    fontWeight = FontWeight.SemiBold,
-                    color = MomentsAccent(),
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                    modifier = Modifier.weight(1f),
-                )
+                if (selectionMode) {
+                    Checkbox(
+                        checked = selected,
+                        onCheckedChange = { onToggleSelection() },
+                        enabled = enabled,
+                        modifier = Modifier.testTag("moment_select_" + post.id),
+                    )
+                }
+                MomentAvatar(post.authorName, post.authorAvatarUri, 40.dp, "朋")
+                Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(NarraUi.compactGap)) {
+                    Text(
+                        text = post.authorName.ifBlank { "朋友圈" },
+                        style = MaterialTheme.typography.titleSmall,
+                        fontWeight = FontWeight.SemiBold,
+                        maxLines = 2,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                    Text(formatMomentTime(post.createdAt), style = MaterialTheme.typography.bodySmall, color = MomentsMutedText())
+                }
                 if (!selectionMode) {
                     MomentMoreMenuButton(
                         expanded = showMoreMenu,
+                        enabled = enabled,
                         onExpandedChange = { showMoreMenu = it },
                         onDeleteClick = {
                             showMoreMenu = false
@@ -976,77 +958,59 @@ private fun MomentPostTimelineItem(
                     )
                 }
             }
-            Text(
-                text = post.content,
-                style = MaterialTheme.typography.bodyMedium,
-            )
+            Text(post.content, style = MaterialTheme.typography.bodyLarge)
             MomentMediaContent(
                 post = post,
                 isRetryingImage = isRetryingImage,
+                enabled = enabled && !selectionMode,
                 onRetryImage = onRetryImage,
             )
             if (post.location.isNotBlank()) {
                 Row(
-                    horizontalArrangement = Arrangement.spacedBy(3.dp),
+                    horizontalArrangement = Arrangement.spacedBy(NarraUi.compactGap),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
-                    Icon(
-                        imageVector = Icons.Default.Place,
-                        contentDescription = null,
-                        modifier = Modifier.size(14.dp),
-                        tint = MomentsMutedText(),
-                    )
+                    Icon(Lucide.MapPin, null, Modifier.size(16.dp), tint = MomentsMutedText())
                     Text(
-                        text = post.location,
+                        post.location,
+                        modifier = Modifier.weight(1f),
                         style = MaterialTheme.typography.bodySmall,
                         color = MomentsMutedText(),
-                        maxLines = 1,
+                        maxLines = 2,
                         overflow = TextOverflow.Ellipsis,
                     )
                 }
             }
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
+                horizontalArrangement = Arrangement.spacedBy(NarraUi.compactGap),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                Text(
-                    text = formatMomentTime(post.createdAt),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MomentsMutedText(),
-                )
                 MomentActionRow(
                     post = post,
                     viewerName = viewerName,
-                    onToggleLike = {
-                        if (selectionMode) {
-                            onToggleSelection()
-                        } else {
-                            onToggleLike()
-                        }
-                    },
+                    enabled = enabled,
+                    onToggleLike = { if (selectionMode) onToggleSelection() else onToggleLike() },
                 )
+                TextButton(
+                    onClick = { if (selectionMode) onToggleSelection() else onOpenPost() },
+                    enabled = enabled,
+                    modifier = Modifier.heightIn(min = NarraMinimumTouchTarget),
+                ) {
+                    Icon(Lucide.MessageCircleMore, null, Modifier.size(20.dp))
+                    Spacer(Modifier.width(NarraUi.compactGap))
+                    Text(if (post.comments.isEmpty()) "评论" else post.comments.size.toString())
+                }
             }
             MomentEngagementBlock(
                 post = post,
-                // 预览行自己接管单击，否则 combinedClickable 会吃掉父 Row 的「打开帖子」点击
-                onCommentPreviewClick = {
-                    if (selectionMode) {
-                        onToggleSelection()
-                    } else {
-                        onOpenPost()
-                    }
-                },
-                onCommentPreviewLongClick = if (selectionMode) null else onRequestDeleteComment,
+                onCommentPreviewClick = if (enabled) {
+                    { if (selectionMode) onToggleSelection() else onOpenPost() }
+                } else null,
+                onCommentPreviewLongClick = if (selectionMode || !enabled) null else onRequestDeleteComment,
             )
         }
     }
-    Box(
-        modifier = Modifier
-            .fillMaxWidth()
-            .height(0.6.dp)
-            .background(MomentsBackground()),
-    )
 }
 
 @Composable
@@ -1054,27 +1018,16 @@ private fun MomentMoreMenuButton(
     expanded: Boolean,
     onExpandedChange: (Boolean) -> Unit,
     onDeleteClick: () -> Unit,
+    enabled: Boolean = true,
 ) {
     Box {
-        NarraIconButton(onClick = { onExpandedChange(true) }) {
-            Icon(
-                imageVector = Icons.Default.MoreVert,
-                contentDescription = "更多操作",
-                tint = MomentsMutedText(),
-            )
+        NarraIconButton(onClick = { onExpandedChange(true) }, enabled = enabled) {
+            Icon(Lucide.Ellipsis, "更多操作", Modifier.size(24.dp), tint = MomentsMutedText())
         }
-        DropdownMenu(
-            expanded = expanded,
-            onDismissRequest = { onExpandedChange(false) },
-        ) {
+        DropdownMenu(expanded = expanded, onDismissRequest = { onExpandedChange(false) }) {
             DropdownMenuItem(
-                text = { Text("删除") },
-                leadingIcon = {
-                    Icon(
-                        imageVector = Icons.Default.Delete,
-                        contentDescription = null,
-                    )
-                },
+                text = { Text("删除", color = MaterialTheme.colorScheme.error) },
+                leadingIcon = { Icon(Lucide.Trash2, null, tint = MaterialTheme.colorScheme.error) },
                 onClick = onDeleteClick,
             )
         }
@@ -1086,20 +1039,13 @@ private fun MomentDeleteConfirmDialog(
     onConfirm: () -> Unit,
     onDismiss: () -> Unit,
 ) {
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = { Text("删除这条朋友圈？") },
-        text = { Text("删除后，这条动态下的评论和配图也会一起移除。") },
-        confirmButton = {
-            TextButton(onClick = onConfirm) {
-                Text("删除", color = MaterialTheme.colorScheme.error)
-            }
-        },
-        dismissButton = {
-            TextButton(onClick = onDismiss) {
-                Text("取消")
-            }
-        },
+    NarraAlertDialog(
+        title = "删除这条朋友圈？",
+        message = "删除后，这条动态下的评论和配图也会一起移除。",
+        confirmLabel = "删除",
+        isDestructive = true,
+        onConfirm = onConfirm,
+        onDismiss = onDismiss,
     )
 }
 
@@ -1109,20 +1055,13 @@ private fun MomentCommentDeleteConfirmDialog(
     onConfirm: () -> Unit,
     onDismiss: () -> Unit,
 ) {
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = { Text("删除这条回复？") },
-        text = { Text("将删除 ${comment.authorName} 的这条回复，删除后无法恢复。") },
-        confirmButton = {
-            TextButton(onClick = onConfirm) {
-                Text("删除", color = MaterialTheme.colorScheme.error)
-            }
-        },
-        dismissButton = {
-            TextButton(onClick = onDismiss) {
-                Text("取消")
-            }
-        },
+    NarraAlertDialog(
+        title = "删除这条回复？",
+        message = "将删除 " + comment.authorName + " 的这条回复，删除后无法恢复。",
+        confirmLabel = "删除",
+        isDestructive = true,
+        onConfirm = onConfirm,
+        onDismiss = onDismiss,
     )
 }
 
@@ -1132,20 +1071,14 @@ private fun MomentsClearConfirmDialog(
     onConfirm: () -> Unit,
     onDismiss: () -> Unit,
 ) {
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = { Text("清空朋友圈？") },
-        text = { Text("将删除当前朋友圈里的 $postCount 条动态，评论和配图也会一起移除。") },
-        confirmButton = {
-            TextButton(onClick = onConfirm) {
-                Text("清空", color = MaterialTheme.colorScheme.error)
-            }
-        },
-        dismissButton = {
-            TextButton(onClick = onDismiss) {
-                Text("取消")
-            }
-        },
+    NarraAlertDialog(
+        title = "清空朋友圈？",
+        message = "将删除当前朋友圈里的 $postCount 条动态，评论和配图也会一起移除。",
+        confirmLabel = "清空",
+        confirmEnabled = postCount > 0,
+        isDestructive = true,
+        onConfirm = onConfirm,
+        onDismiss = onDismiss,
     )
 }
 
@@ -1155,20 +1088,14 @@ private fun MomentsDeleteSelectedConfirmDialog(
     onConfirm: () -> Unit,
     onDismiss: () -> Unit,
 ) {
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = { Text("删除选中的朋友圈？") },
-        text = { Text("将删除已选中的 $selectedCount 条动态，评论和配图也会一起移除。") },
-        confirmButton = {
-            TextButton(onClick = onConfirm) {
-                Text("删除选中", color = MaterialTheme.colorScheme.error)
-            }
-        },
-        dismissButton = {
-            TextButton(onClick = onDismiss) {
-                Text("取消")
-            }
-        },
+    NarraAlertDialog(
+        title = "删除选中的朋友圈？",
+        message = "将删除已选中的 $selectedCount 条动态，评论和配图也会一起移除。",
+        confirmLabel = "删除选中",
+        confirmEnabled = selectedCount > 0,
+        isDestructive = true,
+        onConfirm = onConfirm,
+        onDismiss = onDismiss,
     )
 }
 
@@ -1177,66 +1104,52 @@ private fun MomentMediaContent(
     post: MomentPost,
     isRetryingImage: Boolean,
     onRetryImage: () -> Unit,
+    enabled: Boolean = true,
 ) {
     val media = post.media ?: return
     when (media.status) {
-        MomentMediaStatus.GENERATING -> {
-            Surface(
-                modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(6.dp),
-                color = MomentsAccentSoft(),
+        MomentMediaStatus.GENERATING -> Surface(
+            modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(NarraUi.smallRadius),
+            color = MomentsAccentSoft(),
+        ) {
+            Row(
+                modifier = Modifier.padding(NarraUi.pageVertical),
+                horizontalArrangement = Arrangement.spacedBy(NarraUi.compactGap),
+                verticalAlignment = Alignment.CenterVertically,
             ) {
-                Row(
-                    modifier = Modifier.padding(12.dp),
-                    horizontalArrangement = Arrangement.spacedBy(10.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    CircularProgressIndicator(
-                        modifier = Modifier.size(18.dp),
-                        strokeWidth = 2.dp,
-                        color = MomentsAccent(),
-                    )
-                    Text(
-                        text = "图片生成中",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MomentsAccent(),
-                    )
-                }
+                CircularProgressIndicator(Modifier.size(16.dp), strokeWidth = 2.dp)
+                Text("图片生成中", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onPrimaryContainer)
             }
         }
-
         MomentMediaStatus.SUCCEEDED -> {
             if (media.imageUri.isNotBlank()) {
                 AsyncImage(
                     model = media.imageUri,
                     contentDescription = media.fileName.ifBlank { "朋友圈配图" },
-                    modifier = Modifier
-                        .fillMaxWidth(0.76f)
-                        .aspectRatio(1f)
-                        .clip(RoundedCornerShape(6.dp))
-                        .background(MomentsAccentSoft()),
+                    modifier = Modifier.fillMaxWidth().aspectRatio(1.25f)
+                        .clip(RoundedCornerShape(NarraUi.smallRadius)).background(MomentsAccentSoft()),
                     contentScale = ContentScale.Crop,
                 )
             }
         }
-
-        MomentMediaStatus.FAILED -> {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
+        MomentMediaStatus.FAILED -> Surface(
+            modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(NarraUi.smallRadius),
+            color = MaterialTheme.colorScheme.surfaceContainer,
+        ) {
+            Column(modifier = Modifier.padding(NarraUi.compactGap)) {
                 Text(
-                    text = "配图生成失败",
+                    "配图生成失败",
+                    modifier = Modifier.padding(horizontal = NarraUi.compactGap),
                     style = MaterialTheme.typography.bodySmall,
                     color = MomentsMutedText(),
                 )
                 TextButton(
                     onClick = onRetryImage,
-                    enabled = !isRetryingImage,
-                ) {
-                    Text(if (isRetryingImage) "重试中" else "重试配图")
-                }
+                    enabled = enabled && !isRetryingImage,
+                    modifier = Modifier.heightIn(min = NarraMinimumTouchTarget).testTag("moment_retry_" + post.id),
+                ) { Text(if (isRetryingImage) "重试中" else "重试配图") }
             }
         }
     }
@@ -1247,26 +1160,26 @@ private fun MomentActionRow(
     post: MomentPost,
     viewerName: String,
     onToggleLike: () -> Unit,
+    enabled: Boolean = true,
 ) {
-    Row(
-        modifier = Modifier.clickable(onClick = onToggleLike),
-        horizontalArrangement = Arrangement.spacedBy(4.dp),
-        verticalAlignment = Alignment.CenterVertically,
+    val isLikedByViewer = viewerName in post.likedByNames
+    TextButton(
+        onClick = onToggleLike,
+        enabled = enabled,
+        modifier = Modifier.heightIn(min = NarraMinimumTouchTarget).testTag("moment_like_" + post.id),
+        contentPadding = PaddingValues(horizontal = NarraUi.compactGap, vertical = NarraUi.compactGap),
     ) {
-        val isLikedByViewer = viewerName in post.likedByNames
         Icon(
-            imageVector = if (isLikedByViewer) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
-            contentDescription = null,
-            modifier = Modifier.size(18.dp),
+            imageVector = Lucide.Heart,
+            contentDescription = if (isLikedByViewer) "取消赞" else "赞",
+            modifier = Modifier.size(20.dp),
             tint = if (isLikedByViewer) MomentsLikeRed() else MomentsMutedText(),
         )
-        if (post.likeCount > 0) {
-            Text(
-                text = "${post.likeCount}",
-                style = MaterialTheme.typography.bodySmall,
-                color = MomentsMutedText(),
-            )
-        }
+        Spacer(Modifier.width(NarraUi.compactGap))
+        Text(
+            text = if (post.likeCount > 0) post.likeCount.toString() else "赞",
+            color = if (isLikedByViewer) MomentsLikeRed() else MomentsMutedText(),
+        )
     }
 }
 
@@ -1277,31 +1190,25 @@ private fun MomentEngagementBlock(
     onCommentPreviewClick: (() -> Unit)? = null,
     onCommentPreviewLongClick: ((MomentComment) -> Unit)? = null,
 ) {
-    if (post.likedByNames.isEmpty() && (!showCommentPreview || post.comments.isEmpty())) {
-        return
-    }
+    if (post.likedByNames.isEmpty() && (!showCommentPreview || post.comments.isEmpty())) return
     Surface(
         modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(4.dp),
-        color = MomentsBackground(),
+        shape = RoundedCornerShape(NarraUi.smallRadius),
+        color = MaterialTheme.colorScheme.surfaceContainer,
     ) {
         Column(
-            modifier = Modifier.padding(horizontal = 9.dp, vertical = 7.dp),
-            verticalArrangement = Arrangement.spacedBy(4.dp),
+            modifier = Modifier.padding(NarraUi.compactGap),
+            verticalArrangement = Arrangement.spacedBy(NarraUi.compactGap),
         ) {
             if (post.likedByNames.isNotEmpty()) {
                 Row(
-                    horizontalArrangement = Arrangement.spacedBy(5.dp),
+                    horizontalArrangement = Arrangement.spacedBy(NarraUi.compactGap),
                     verticalAlignment = Alignment.Top,
                 ) {
-                    Icon(
-                        imageVector = Icons.Default.Favorite,
-                        contentDescription = null,
-                        modifier = Modifier.size(15.dp),
-                        tint = MomentsAccent(),
-                    )
+                    Icon(Lucide.Heart, null, Modifier.size(16.dp), tint = MomentsAccent())
                     Text(
                         text = post.likedByNames.joinToString("、"),
+                        modifier = Modifier.weight(1f),
                         style = MaterialTheme.typography.bodySmall,
                         color = MomentsAccent(),
                     )
@@ -1313,10 +1220,10 @@ private fun MomentEngagementBlock(
                     val previewModifier = if (onCommentPreviewClick == null && onCommentPreviewLongClick == null) {
                         Modifier.fillMaxWidth()
                     } else {
-                        Modifier
-                            .fillMaxWidth()
+                        Modifier.fillMaxWidth().heightIn(min = NarraMinimumTouchTarget)
                             .combinedClickable(
                                 onClick = { onCommentPreviewClick?.invoke() },
+                                onLongClickLabel = "删除回复",
                                 onLongClick = onCommentPreviewLongClick?.let { requestDelete ->
                                     {
                                         haptic.performHapticFeedback(HapticFeedbackType.LongPress)
@@ -1326,19 +1233,19 @@ private fun MomentEngagementBlock(
                             )
                     }
                     Text(
-                        text = "${comment.authorName}：${comment.text}",
+                        text = comment.authorName + "：" + comment.text,
                         style = MaterialTheme.typography.bodySmall,
                         maxLines = 2,
                         overflow = TextOverflow.Ellipsis,
-                        modifier = previewModifier,
+                        modifier = previewModifier.padding(vertical = NarraUi.compactGap)
+                            .testTag("moment_comment_preview_" + comment.id),
                     )
                 }
                 if (post.comments.size > 4) {
-                    Text(
-                        text = stringResource(R.string.moments_view_all_comments, post.comments.size),
-                        style = MaterialTheme.typography.labelSmall,
-                        color = MomentsAccent(),
-                    )
+                    TextButton(
+                        onClick = { onCommentPreviewClick?.invoke() },
+                        modifier = Modifier.heightIn(min = NarraMinimumTouchTarget),
+                    ) { Text(stringResource(R.string.moments_view_all_comments, post.comments.size)) }
                 }
             }
         }
@@ -1358,8 +1265,9 @@ private fun MomentsDetailContent(
     onRetryImage: () -> Unit,
 ) {
     val haptic = LocalHapticFeedback.current
-    var commentInput by remember(post.id) { mutableStateOf("") }
-    var replyTarget by remember(post.id) { mutableStateOf<MomentComment?>(null) }
+    var commentInput by rememberSaveable(post.id) { mutableStateOf("") }
+    var replyTargetId by rememberSaveable(post.id) { mutableStateOf<String?>(null) }
+    val replyTarget = post.comments.firstOrNull { it.id == replyTargetId }
     var pendingDeleteComment by remember(post.id) { mutableStateOf<MomentComment?>(null) }
     var showMoreMenu by remember { mutableStateOf(false) }
     var showDeleteDialog by remember { mutableStateOf(false) }
@@ -1373,37 +1281,29 @@ private fun MomentsDetailContent(
             onDismiss = { showDeleteDialog = false },
         )
     }
-
     pendingDeleteComment?.let { comment ->
         MomentCommentDeleteConfirmDialog(
             comment = comment,
             onConfirm = {
                 pendingDeleteComment = null
-                if (replyTarget?.id == comment.id) {
-                    replyTarget = null
-                }
+                if (replyTargetId == comment.id) replyTargetId = null
                 onDeleteComment(comment.id)
             },
             onDismiss = { pendingDeleteComment = null },
         )
     }
 
-    Column(modifier = Modifier.fillMaxSize()) {
+    Column(modifier = Modifier.fillMaxSize().imePadding()) {
         LazyColumn(
-            modifier = Modifier.weight(1f),
-            contentPadding = PaddingValues(horizontal = 14.dp, vertical = 10.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp),
+            modifier = Modifier.weight(1f).testTag("moment_detail_list"),
+            contentPadding = PaddingValues(horizontal = NarraUi.pageHorizontal, vertical = NarraUi.pageVertical),
+            verticalArrangement = Arrangement.spacedBy(NarraUi.pageVertical),
         ) {
             item {
-                Surface(
-                    shape = RoundedCornerShape(8.dp),
-                    color = MomentsCardBackground(),
-                ) {
+                Surface(shape = RoundedCornerShape(NarraUi.cardRadius), color = MomentsCardBackground()) {
                     Column(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(16.dp),
-                        verticalArrangement = Arrangement.spacedBy(12.dp),
+                        modifier = Modifier.fillMaxWidth().padding(NarraUi.pageVertical),
+                        verticalArrangement = Arrangement.spacedBy(NarraUi.pageVertical),
                     ) {
                         MomentAuthorRow(
                             post = post,
@@ -1418,195 +1318,153 @@ private fun MomentsDetailContent(
                                 )
                             },
                         )
-                        Text(
-                            text = post.content,
-                            style = MaterialTheme.typography.bodyLarge,
-                        )
-                        MomentMediaContent(
-                            post = post,
-                            isRetryingImage = isRetryingImage,
-                            onRetryImage = onRetryImage,
-                        )
+                        Text(post.content, style = MaterialTheme.typography.bodyLarge)
+                        MomentMediaContent(post, isRetryingImage, onRetryImage)
                         if (post.location.isNotBlank()) {
-                            Text(
-                                text = post.location,
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MomentsMutedText(),
-                            )
+                            Text(post.location, style = MaterialTheme.typography.bodySmall, color = MomentsMutedText())
                         }
-                        MomentActionRow(
-                            post = post,
-                            viewerName = viewerName,
-                            onToggleLike = onToggleLike,
-                        )
+                        MomentActionRow(post, viewerName, onToggleLike)
                         MomentEngagementBlock(post = post, showCommentPreview = false)
                     }
                 }
             }
-
-            if (post.comments.isNotEmpty() || isGeneratingReplies) {
-                item {
+            item {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(NarraUi.compactGap),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
                     Text(
                         text = stringResource(R.string.moments_comments_title, post.comments.size),
+                        modifier = Modifier.weight(1f),
                         style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Bold,
-                        modifier = Modifier.padding(horizontal = 2.dp),
+                        fontWeight = FontWeight.SemiBold,
+                    )
+                    SettingsHelpButton(
+                        title = "评论互动",
+                        description = "点按一条评论可回复对方。长按评论可删除，确认后无法恢复。\n\n评论发送后，角色会按各自人设回应。",
                     )
                 }
             }
-
+            if (post.comments.isEmpty() && !isGeneratingReplies) {
+                item { Text("还没有评论，聊聊这一刻吧。", color = MomentsMutedText()) }
+            }
             items(post.comments, key = { it.id }) { comment ->
                 Surface(
-                    modifier = Modifier.combinedClickable(
-                        onClick = { replyTarget = comment },
-                        onLongClick = {
-                            haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                            pendingDeleteComment = comment
-                        },
-                    ),
-                    shape = RoundedCornerShape(8.dp),
+                    modifier = Modifier.fillMaxWidth().heightIn(min = NarraMinimumTouchTarget)
+                        .combinedClickable(
+                            onClick = { replyTargetId = comment.id },
+                            onLongClickLabel = "删除回复",
+                            onLongClick = {
+                                haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                                pendingDeleteComment = comment
+                            },
+                        )
+                        .testTag("moment_comment_" + comment.id),
+                    shape = RoundedCornerShape(NarraUi.cardRadius),
                     color = MomentsCardBackground(),
                 ) {
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(14.dp),
-                        horizontalArrangement = Arrangement.spacedBy(10.dp),
+                    Column(
+                        modifier = Modifier.padding(NarraUi.pageVertical),
+                        verticalArrangement = Arrangement.spacedBy(NarraUi.compactGap),
                     ) {
-                        MomentAvatar(
-                            name = comment.authorName,
-                            avatarUri = comment.authorAvatarUri,
-                            size = 32.dp,
-                            fallback = "评",
-                        )
-                        Column(
-                            modifier = Modifier.weight(1f),
-                            verticalArrangement = Arrangement.spacedBy(4.dp),
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(NarraUi.compactGap),
+                            verticalAlignment = Alignment.CenterVertically,
                         ) {
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.SpaceBetween,
-                                verticalAlignment = Alignment.CenterVertically,
-                            ) {
-                                Text(
-                                    text = comment.authorName,
-                                    style = MaterialTheme.typography.labelLarge,
-                                    fontWeight = FontWeight.SemiBold,
-                                    maxLines = 1,
-                                    overflow = TextOverflow.Ellipsis,
-                                    modifier = Modifier.weight(1f),
-                                )
-                                TextButton(onClick = { replyTarget = comment }) {
-                                    Text("回复")
-                                }
-                            }
+                            MomentAvatar(comment.authorName, comment.authorAvatarUri, 32.dp, "评")
                             Text(
-                                text = comment.text,
-                                style = MaterialTheme.typography.bodyMedium,
+                                text = comment.authorName,
+                                modifier = Modifier.weight(1f),
+                                style = MaterialTheme.typography.labelLarge,
+                                fontWeight = FontWeight.SemiBold,
+                                maxLines = 2,
+                                overflow = TextOverflow.Ellipsis,
                             )
+                            TextButton(
+                                onClick = { replyTargetId = comment.id },
+                                modifier = Modifier.heightIn(min = NarraMinimumTouchTarget),
+                            ) { Text("回复") }
                         }
+                        Text(comment.text, style = MaterialTheme.typography.bodyMedium)
                     }
                 }
             }
-
             if (isGeneratingReplies) {
                 item {
-                    Surface(
-                        shape = RoundedCornerShape(8.dp),
-                        color = MomentsCardBackground(),
+                    Row(
+                        modifier = Modifier.fillMaxWidth().padding(NarraUi.pageVertical),
+                        horizontalArrangement = Arrangement.spacedBy(NarraUi.compactGap),
+                        verticalAlignment = Alignment.CenterVertically,
                     ) {
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(14.dp),
-                            horizontalArrangement = Arrangement.spacedBy(10.dp),
-                            verticalAlignment = Alignment.CenterVertically,
-                        ) {
-                            CircularProgressIndicator(
-                                modifier = Modifier.size(20.dp),
-                                strokeWidth = 2.dp,
-                                color = MomentsAccent(),
-                            )
-                            Text(
-                                text = stringResource(R.string.moments_replying_hint),
-                                style = MaterialTheme.typography.bodyMedium,
-                                color = MomentsMutedText(),
-                            )
-                        }
+                        CircularProgressIndicator(Modifier.size(16.dp), strokeWidth = 2.dp)
+                        Text(stringResource(R.string.moments_replying_hint), color = MomentsMutedText())
                     }
                 }
             }
         }
-
-        Surface(
-            modifier = Modifier.imePadding(),
-            color = MomentsCardBackground(),
-            shadowElevation = 4.dp,
-        ) {
+        Surface(color = MaterialTheme.colorScheme.surface) {
             Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 16.dp, vertical = 10.dp),
-                verticalArrangement = Arrangement.spacedBy(8.dp),
+                modifier = Modifier.fillMaxWidth().padding(
+                    horizontal = NarraUi.pageHorizontal,
+                    vertical = NarraUi.compactGap,
+                ),
+                verticalArrangement = Arrangement.spacedBy(NarraUi.compactGap),
             ) {
                 replyTarget?.let { target ->
                     Row(
                         modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
+                        horizontalArrangement = Arrangement.spacedBy(NarraUi.compactGap),
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
                         Text(
-                            text = "回复 ${target.authorName}",
+                            text = "回复 " + target.authorName,
+                            modifier = Modifier.weight(1f).testTag("moment_reply_target"),
                             style = MaterialTheme.typography.labelMedium,
                             color = MomentsAccent(),
-                            maxLines = 1,
+                            maxLines = 2,
                             overflow = TextOverflow.Ellipsis,
-                            modifier = Modifier.weight(1f),
                         )
-                        TextButton(onClick = { replyTarget = null }) {
-                            Text("取消")
+                        NarraIconButton(onClick = { replyTargetId = null }) {
+                            Icon(Lucide.X, "取消回复", Modifier.size(20.dp))
                         }
                     }
                 }
+                OutlinedTextField(
+                    value = commentInput,
+                    onValueChange = { commentInput = it.take(160) },
+                    modifier = Modifier.fillMaxWidth().testTag("moment_comment_input"),
+                    placeholder = { Text(stringResource(R.string.moments_comment_placeholder)) },
+                    maxLines = 3,
+                    shape = RoundedCornerShape(NarraUi.smallRadius),
+                )
                 Row(
                     modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    horizontalArrangement = Arrangement.spacedBy(NarraUi.compactGap, Alignment.End),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
-                    OutlinedTextField(
-                        value = commentInput,
-                        onValueChange = { commentInput = it.take(160) },
-                        modifier = Modifier.weight(1f),
-                        placeholder = {
-                            Text(
-                                text = replyTarget?.let { "回复 ${it.authorName}" }
-                                    ?: stringResource(R.string.moments_comment_placeholder),
-                                color = MomentsMutedText(),
-                            )
-                        },
-                        singleLine = true,
-                        shape = RoundedCornerShape(999.dp),
-                    )
                     VoiceInputAnchor(
+                        modifier = Modifier.weight(1f, fill = false),
                         onTextRecognized = { recognized ->
                             commentInput = appendRecognizedText(commentInput, recognized).take(160)
                         },
                     )
-                    NarraIconButton(
+                    Button(
                         onClick = {
-                            if (commentInput.isNotBlank()) {
+                            if (commentInput.isNotBlank() && !isGeneratingReplies) {
                                 onAddComment(commentInput.trim(), replyTarget?.id.orEmpty())
                                 commentInput = ""
-                                replyTarget = null
+                                replyTargetId = null
                             }
                         },
                         enabled = commentInput.isNotBlank() && !isGeneratingReplies,
+                        modifier = Modifier.heightIn(min = NarraMinimumTouchTarget).testTag("moment_send_comment"),
+                        shape = RoundedCornerShape(NarraUi.smallRadius),
                     ) {
-                        Icon(
-                            imageVector = Icons.AutoMirrored.Filled.Send,
-                            contentDescription = stringResource(R.string.moments_send_comment),
-                            tint = if (commentInput.isNotBlank() && !isGeneratingReplies) MomentsAccent() else MomentsMutedText(),
-                        )
+                        Icon(Lucide.Send, stringResource(R.string.moments_send_comment), Modifier.size(20.dp))
+                        Spacer(Modifier.width(NarraUi.compactGap))
+                        Text("发送")
                     }
                 }
             }
@@ -1621,21 +1479,24 @@ private fun MomentAuthorRow(
 ) {
     Row(
         modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.spacedBy(10.dp),
+        horizontalArrangement = Arrangement.spacedBy(NarraUi.compactGap),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         MomentAvatar(
             name = post.authorName,
             avatarUri = post.authorAvatarUri,
-            size = 42.dp,
+            size = 40.dp,
             fallback = "朋",
         )
-        Column(modifier = Modifier.weight(1f)) {
+        Column(
+            modifier = Modifier.weight(1f),
+            verticalArrangement = Arrangement.spacedBy(NarraUi.compactGap),
+        ) {
             Text(
                 text = post.authorName.ifBlank { "朋友圈" },
                 fontWeight = FontWeight.SemiBold,
                 color = MomentsAccent(),
-                maxLines = 1,
+                maxLines = 2,
                 overflow = TextOverflow.Ellipsis,
             )
             Text(
@@ -1673,7 +1534,7 @@ private fun MomentAvatar(
         } else {
             Text(
                 text = name.take(1).ifBlank { fallback },
-                color = MomentsAccent(),
+                color = MaterialTheme.colorScheme.onPrimaryContainer,
                 style = MaterialTheme.typography.labelSmall,
                 fontWeight = FontWeight.Bold,
             )

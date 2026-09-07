@@ -5,6 +5,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.size
@@ -35,6 +36,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
@@ -44,6 +46,7 @@ import com.example.myapplication.model.TranscriptionProtocol
 import com.example.myapplication.model.VoiceRecognitionSettings
 import com.example.myapplication.model.resolveAsrEndpoint
 import com.example.myapplication.ui.component.NarraButton
+import com.example.myapplication.system.security.SensitiveTextRedactor
 
 /**
  * 语音识别 API 配置页：Base URL / API Key / 模型 / 语言 + 连通性测试。
@@ -104,17 +107,10 @@ fun VoiceRecognitionApiScreen(
                 verticalArrangement = Arrangement.spacedBy(18.dp),
             ) {
                 item {
-                    SettingsNoticeCard(
-                        title = "请求去哪里",
-                        body = "只需填到 /v1，应用会自动请求 /audio/transcriptions；" +
-                            "已经带上这段路径的地址不会被重复拼接。",
-                        containerColor = palette.accent,
-                        contentColor = palette.accent,
-                    )
-                }
-
-                item {
-                    SettingsGroup(title = "接口地址与凭据") {
+                    SettingsGroup(
+                        title = "接口地址与凭据",
+                        subtitle = "填写服务商提供的地址和 Key。完整端点规则与安全要求可点标题右侧的信息按钮查看。",
+                    ) {
                         OutlinedTextField(
                             value = normalized.baseUrl,
                             onValueChange = { baseUrl ->
@@ -126,9 +122,20 @@ fun VoiceRecognitionApiScreen(
                             label = { Text("Base URL") },
                             singleLine = true,
                             supportingText = {
-                                Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                                    Text("必须使用 https://，本机调试地址除外。")
-                                    Text(endpointPreview(normalized.baseUrl, normalized.protocol))
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    verticalAlignment = Alignment.CenterVertically,
+                                ) {
+                                    Text(
+                                        text = "使用 https://；本机调试地址可例外。",
+                                        modifier = Modifier.weight(1f),
+                                    )
+                                    if (normalized.baseUrl.isNotBlank()) {
+                                        SettingsHelpButton(
+                                            title = "请求端点",
+                                            description = "只需填到 /v1，应用会自动补齐对应协议的请求路径；已经带上完整路径的地址不会重复拼接。\n\n${endpointPreview(normalized.baseUrl, normalized.protocol)}",
+                                        )
+                                    }
                                 }
                             },
                             colors = rememberSettingsOutlineColors(),
@@ -176,7 +183,10 @@ fun VoiceRecognitionApiScreen(
                 }
 
                 item {
-                    SettingsGroup(title = "转写协议") {
+                    SettingsGroup(
+                        title = "转写协议",
+                        subtitle = "不同协议对应不同报文格式，请按服务商文档选择。",
+                    ) {
                         Column(
                             modifier = Modifier
                                 .fillMaxWidth()
@@ -199,10 +209,10 @@ fun VoiceRecognitionApiScreen(
                                     }
                                 }
                             }
-                            Text(
-                                text = protocolDescription(normalized.protocol),
-                                style = MaterialTheme.typography.bodySmall,
-                                color = palette.body,
+                            SettingsHelpButton(
+                                title = normalized.protocol.label,
+                                description = protocolDescription(normalized.protocol),
+                                modifier = Modifier.align(Alignment.End),
                             )
                         }
                     }
@@ -221,7 +231,7 @@ fun VoiceRecognitionApiScreen(
                             label = { Text("模型") },
                             singleLine = true,
                             supportingText = {
-                                Text("留空则使用 $DEFAULT_TRANSCRIPTION_MODEL。具体可用模型取决于你的服务商。")
+                                Text("留空使用 $DEFAULT_TRANSCRIPTION_MODEL，具体可用模型取决于服务商。")
                             },
                             trailingIcon = {
                                 if (isLoadingModels) {
@@ -252,7 +262,7 @@ fun VoiceRecognitionApiScreen(
                             label = { Text("语言") },
                             singleLine = true,
                             supportingText = {
-                                Text("如 zh、en。留空则不发送该字段，由服务端自动判断。")
+                                Text("如 zh、en；留空由服务端自动判断。")
                             },
                             colors = rememberSettingsOutlineColors(),
                         )
@@ -363,7 +373,10 @@ private fun endpointPreview(baseUrl: String, protocol: TranscriptionProtocol): S
     }
     return runCatching { "当前请求：${resolveAsrEndpoint(baseUrl, protocol)}" }
         .getOrElse { throwable ->
-            throwable.message?.takeIf { it.isNotBlank() } ?: "地址无效"
+            SensitiveTextRedactor.throwableMessageForUi(
+                throwable = throwable,
+                fallback = "地址无效",
+            )
         }
 }
 

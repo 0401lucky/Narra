@@ -10,7 +10,6 @@ import androidx.compose.foundation.Image
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -51,9 +50,9 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
@@ -194,9 +193,9 @@ fun ProviderSettingsScreen(
                         SettingsPlaceholderRow(
                             title = if (uiState.providers.isEmpty()) "还没有提供商" else "没有匹配的提供商",
                             subtitle = if (uiState.providers.isEmpty()) {
-                                "先新增一个提供商，再填写 Base URL、API Key 和模型。"
+                                "添加提供商后即可选择会话模型。"
                             } else {
-                                "换个关键词试试，可以搜索名称、类型、地址或模型名。"
+                                "没有找到相关结果。"
                             },
                         )
                     }
@@ -204,7 +203,7 @@ fun ProviderSettingsScreen(
                         Card(
                             onClick = openAddProviderDialog,
                             modifier = Modifier.fillMaxWidth(),
-                            shape = RoundedCornerShape(22.dp),
+                            shape = RoundedCornerShape(8.dp),
                             colors = CardDefaults.cardColors(
                                 containerColor = palette.surface.copy(alpha = 0.74f),
                                 contentColor = palette.accentStrong,
@@ -272,12 +271,12 @@ private fun ProviderSearchBar(
         onValueChange = onValueChange,
         placeholder = { Text("搜索提供商", color = palette.body) },
         leadingIcon = {
-            Icon(Icons.Default.Search, contentDescription = "Search", tint = palette.body)
+            Icon(Icons.Default.Search, contentDescription = null, tint = palette.body)
         },
         modifier = Modifier
             .fillMaxWidth()
             .padding(bottom = 8.dp),
-        shape = RoundedCornerShape(24.dp),
+        shape = RoundedCornerShape(8.dp),
         colors = rememberSettingsOutlineColors(),
         singleLine = true
     )
@@ -291,7 +290,7 @@ private fun ProviderCard(
     onClick: () -> Unit,
 ) {
     val palette = rememberSettingsPalette()
-    val isDark = isSystemInDarkTheme()
+    val isDark = MaterialTheme.colorScheme.surface.luminance() < 0.5f
     val providerType = provider.resolvedType()
     val brandColor = providerType.brandColor(isDark)
     val modelCount = provider.resolvedModels().size
@@ -300,7 +299,7 @@ private fun ProviderCard(
         onClick = onClick,
         modifier = Modifier
             .fillMaxWidth(),
-        shape = RoundedCornerShape(24.dp),
+        shape = RoundedCornerShape(8.dp),
         colors = CardDefaults.cardColors(
             containerColor = palette.surface.copy(alpha = 0.7f),
             contentColor = palette.title,
@@ -335,7 +334,7 @@ private fun ProviderCard(
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.Medium,
                 color = palette.title,
-                maxLines = 1,
+                maxLines = 2,
                 overflow = TextOverflow.Ellipsis,
             )
 
@@ -344,18 +343,32 @@ private fun ProviderCard(
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 ConnectionHealthDot(health = health)
-                Text(
-                    text = provider.toCardSubtitle(),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = palette.body,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                )
+                Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                    Text(
+                        text = provider.toCardSubtitle(),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = palette.body,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                    if (health != ConnectionHealth.UNKNOWN) {
+                        Text(
+                            text = when (health) {
+                                ConnectionHealth.CHECKING -> "检查连接中"
+                                ConnectionHealth.HEALTHY -> "连接正常"
+                                ConnectionHealth.UNHEALTHY -> "连接失败"
+                                ConnectionHealth.UNKNOWN -> ""
+                            },
+                            style = MaterialTheme.typography.bodySmall,
+                            color = if (health == ConnectionHealth.UNHEALTHY) MaterialTheme.colorScheme.error else palette.body,
+                        )
+                    }
+                }
             }
 
-            Row(
+            FlowRow(
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
-                verticalAlignment = Alignment.CenterVertically
+                verticalArrangement = Arrangement.spacedBy(8.dp),
             ) {
                 SettingsStatusPill(
                     text = if (provider.enabled) "启用" else "停用",
@@ -452,9 +465,9 @@ private fun ProviderBrandIcon(
 
 private fun ProviderSettings.toCardSubtitle(): String {
     return when {
-        hasRequiredConfig() -> "${baseUrl.toCompactBaseUrl()} · $selectedModel"
-        hasBaseCredentials() -> "${baseUrl.toCompactBaseUrl()} · 未选择模型"
-        else -> "Base URL 和 API Key 还没填完整"
+        hasRequiredConfig() -> selectedModel
+        hasBaseCredentials() -> "未选择模型"
+        else -> "待配置连接"
     }
 }
 
@@ -470,15 +483,4 @@ private fun ProviderSettings.matchesSearch(normalizedQuery: String): Boolean {
         append('\n')
         append(resolvedModelIds().joinToString("\n"))
     }.lowercase().contains(normalizedQuery)
-}
-
-private fun String.toCompactBaseUrl(): String {
-    val normalized = trim()
-        .removePrefix("https://")
-        .removePrefix("http://")
-        .removeSuffix("/")
-    if (normalized.isBlank()) {
-        return "未配置"
-    }
-    return normalized.take(28)
 }

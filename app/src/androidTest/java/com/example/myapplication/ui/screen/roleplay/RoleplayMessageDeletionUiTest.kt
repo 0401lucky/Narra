@@ -10,6 +10,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.longClick
 import androidx.compose.ui.test.onNodeWithTag
@@ -156,7 +157,8 @@ class RoleplayMessageDeletionUiTest {
     }
 
     private fun openRoleplayMessageMenu() {
-        composeRule.onNodeWithTag("roleplay-message")
+        composeRule.onNodeWithTag("roleplay-message", useUnmergedTree = true)
+            .assertIsDisplayed()
             .performTouchInput { longClick() }
     }
 }

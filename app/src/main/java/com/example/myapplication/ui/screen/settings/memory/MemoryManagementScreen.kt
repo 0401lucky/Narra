@@ -64,6 +64,7 @@ import com.example.myapplication.ui.component.AppSnackbarHost
 import com.example.myapplication.ui.component.NarraIconButton
 import com.example.myapplication.ui.component.TopAppSnackbarHost
 import com.example.myapplication.ui.screen.settings.SettingsHintCard
+import com.example.myapplication.ui.screen.settings.SettingsHelpButton
 import com.example.myapplication.ui.screen.settings.SettingsPageIntro
 import com.example.myapplication.ui.screen.settings.SettingsScreenPadding
 import com.example.myapplication.ui.screen.settings.SettingsStatusPill
@@ -71,6 +72,7 @@ import com.example.myapplication.ui.screen.settings.SettingsTopBar
 import com.example.myapplication.ui.screen.settings.rememberSettingsOutlineColors
 import com.example.myapplication.ui.screen.settings.rememberSettingsPalette
 import com.example.myapplication.ui.screen.settings.rememberSettingsSnackbarHostState
+import com.example.myapplication.ui.theme.NarraUi
 import com.example.myapplication.viewmodel.MemoryManagementUiState
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -279,7 +281,7 @@ fun MemoryManagementScreen(
                 item {
                     Surface(
                         modifier = Modifier.fillMaxWidth(),
-                        shape = RoundedCornerShape(26.dp),
+                        shape = RoundedCornerShape(NarraUi.cardRadius),
                         color = palette.surface,
                         border = BorderStroke(0.5.dp, palette.border.copy(alpha = 0.36f)),
                     ) {
@@ -300,7 +302,7 @@ fun MemoryManagementScreen(
                                         modifier = Modifier
                                             .fillMaxWidth()
                                             .clickable { showAssistantMenu = true },
-                                        shape = RoundedCornerShape(18.dp),
+                                        shape = RoundedCornerShape(NarraUi.smallRadius),
                                         color = palette.surfaceTint,
                                         border = BorderStroke(
                                             0.5.dp,
@@ -342,13 +344,13 @@ fun MemoryManagementScreen(
                                     onValueChange = { searchQuery = it },
                                     modifier = Modifier.weight(1f),
                                     singleLine = true,
-                                    shape = RoundedCornerShape(18.dp),
+                                    shape = RoundedCornerShape(NarraUi.smallRadius),
                                     placeholder = { Text(stringResource(R.string.memory_search_placeholder)) },
                                     colors = rememberSettingsOutlineColors(),
                                 )
                                 Surface(
                                     modifier = Modifier.size(48.dp),
-                                    shape = RoundedCornerShape(14.dp),
+                                    shape = RoundedCornerShape(NarraUi.smallRadius),
                                     color = palette.accent,
                                 ) {
                                     Box(contentAlignment = Alignment.Center) {
@@ -577,7 +579,7 @@ fun MemoryManagementScreen(
                 items(assistantOptions, key = { it.id }) { option ->
                     Surface(
                         modifier = Modifier.fillMaxWidth(),
-                        shape = RoundedCornerShape(16.dp),
+                        shape = RoundedCornerShape(NarraUi.smallRadius),
                         color = if (option.id == selectedAssistantId) {
                             MaterialTheme.colorScheme.primaryContainer
                         } else {
@@ -631,7 +633,7 @@ private fun MemoryViewerEmptyState(
     val palette = rememberSettingsPalette()
     Surface(
         modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(28.dp),
+        shape = RoundedCornerShape(NarraUi.cardRadius),
         color = palette.surface,
         border = BorderStroke(0.5.dp, palette.border.copy(alpha = 0.36f)),
     ) {
@@ -711,7 +713,7 @@ private fun MemoryEntryCard(
     var expanded by rememberSaveable(entry.id) { mutableStateOf(false) }
     Surface(
         modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(24.dp),
+        shape = RoundedCornerShape(NarraUi.cardRadius),
         color = palette.surface,
         border = BorderStroke(0.5.dp, palette.border.copy(alpha = 0.4f)),
     ) {
@@ -836,7 +838,7 @@ private fun SummaryCard(
     var expanded by rememberSaveable(summary.conversationId) { mutableStateOf(false) }
     Surface(
         modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(24.dp),
+        shape = RoundedCornerShape(NarraUi.cardRadius),
         color = palette.surface,
         border = BorderStroke(0.5.dp, palette.border.copy(alpha = 0.4f)),
     ) {
@@ -1025,7 +1027,7 @@ private fun MemoryGlobalConfigCard(
 
     Surface(
         modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(26.dp),
+        shape = RoundedCornerShape(NarraUi.cardRadius),
         color = palette.surface,
         border = BorderStroke(0.5.dp, palette.border.copy(alpha = 0.36f)),
     ) {
@@ -1043,6 +1045,7 @@ private fun MemoryGlobalConfigCard(
                 ) {
                     Text(
                         text = "自动记忆提取频率",
+                        modifier = Modifier.weight(1f),
                         style = MaterialTheme.typography.titleSmall,
                         fontWeight = FontWeight.SemiBold,
                         color = palette.title,
@@ -1052,12 +1055,11 @@ private fun MemoryGlobalConfigCard(
                         style = MaterialTheme.typography.titleSmall,
                         color = palette.accent,
                     )
+                    SettingsHelpButton(
+                        title = "自动记忆提取频率",
+                        description = "每 N 条已完成消息触发一次长记忆提取；设置为 0 可关闭自动提取。会话压缩由摘要模型和最近消息窗口负责。",
+                    )
                 }
-                Text(
-                    text = "每 N 条已完成消息触发一次长记忆提取；调到 0 关闭自动提取。会话压缩由摘要模型和最近消息窗口负责。",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = palette.body.copy(alpha = 0.7f),
-                )
                 Slider(
                     value = autoEveryDraft.toFloat(),
                     onValueChange = { autoEveryDraft = it.toInt().coerceIn(MEMORY_AUTO_SUMMARY_EVERY_MIN, MEMORY_AUTO_SUMMARY_EVERY_MAX) },
@@ -1075,6 +1077,7 @@ private fun MemoryGlobalConfigCard(
                 ) {
                     Text(
                         text = "记忆上限",
+                        modifier = Modifier.weight(1f),
                         style = MaterialTheme.typography.titleSmall,
                         fontWeight = FontWeight.SemiBold,
                         color = palette.title,
@@ -1084,12 +1087,11 @@ private fun MemoryGlobalConfigCard(
                         style = MaterialTheme.typography.titleSmall,
                         color = palette.accent,
                     )
+                    SettingsHelpButton(
+                        title = "记忆上限",
+                        description = "全局 store 最多保留 N 条记忆。超出时按置顶、重要性和时间排序，优先保留前面的条目。",
+                    )
                 }
-                Text(
-                    text = "全 store 最多保留 N 条记忆，超出时按 pinned 优先 / 重要性 / 时间倒序剔除尾部。",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = palette.body.copy(alpha = 0.7f),
-                )
                 Slider(
                     value = capacityDraft.toFloat(),
                     onValueChange = { raw ->
@@ -1119,7 +1121,7 @@ private fun MemoryPromptConfigCard(
 
     Surface(
         modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(26.dp),
+        shape = RoundedCornerShape(NarraUi.cardRadius),
         color = palette.surface,
         border = BorderStroke(0.5.dp, palette.border.copy(alpha = 0.36f)),
     ) {
@@ -1136,10 +1138,10 @@ private fun MemoryPromptConfigCard(
                     fontWeight = FontWeight.SemiBold,
                     color = palette.title,
                 )
-                Text(
-                    text = "用于从对话中提取长期记忆。占位符：{{conversation}} 当前对话片段、{{known_memories}} 已知记忆列表、{{user}} 用户名、{{char}} 角色名。留空使用默认。",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = palette.body.copy(alpha = 0.7f),
+                SettingsHelpButton(
+                    title = "记忆总结提示词",
+                    description = "用于从对话中提取长期记忆。可用占位符：{{conversation}}、{{known_memories}}、{{user}}、{{char}}。留空使用默认模板。",
+                    modifier = Modifier.align(Alignment.End),
                 )
                 OutlinedTextField(
                     value = extractionDraft,
@@ -1194,10 +1196,10 @@ private fun MemoryPromptConfigCard(
                     fontWeight = FontWeight.SemiBold,
                     color = palette.title,
                 )
-                Text(
-                    text = "用于把已选记忆注入到上下文。占位符：{{memories}} 记忆条目列表、{{user}} 用户名、{{char}} 角色名。留空使用默认。仅作用于普通对话模式，沉浸剧情模式保持系统模板。",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = palette.body.copy(alpha = 0.7f),
+                SettingsHelpButton(
+                    title = "记忆注入提示词",
+                    description = "用于把已选记忆注入上下文。可用占位符：{{memories}}、{{user}}、{{char}}。留空使用默认模板。沉浸剧情模式使用系统模板。",
+                    modifier = Modifier.align(Alignment.End),
                 )
                 OutlinedTextField(
                     value = injectionDraft,
@@ -1257,7 +1259,7 @@ private fun MemoryInjectionPositionCard(
 
     Surface(
         modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(26.dp),
+        shape = RoundedCornerShape(NarraUi.cardRadius),
         color = palette.surface,
         border = BorderStroke(0.5.dp, palette.border.copy(alpha = 0.36f)),
     ) {
@@ -1273,10 +1275,10 @@ private fun MemoryInjectionPositionCard(
                 fontWeight = FontWeight.SemiBold,
                 color = palette.title,
             )
-            Text(
-                text = "控制长记忆在系统提示词中插入的位置；上下文日志面板会同步反映新顺序。",
-                style = MaterialTheme.typography.bodySmall,
-                color = palette.body.copy(alpha = 0.7f),
+            SettingsHelpButton(
+                title = "注入位置",
+                description = "控制长记忆在系统提示词中插入的位置；上下文日志面板会同步反映新顺序。",
+                modifier = Modifier.align(Alignment.End),
             )
             FlowRow(
                 horizontalArrangement = Arrangement.spacedBy(8.dp),

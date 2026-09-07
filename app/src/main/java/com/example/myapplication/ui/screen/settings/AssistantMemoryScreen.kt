@@ -43,6 +43,7 @@ import com.example.myapplication.model.Assistant
 import com.example.myapplication.model.ConversationSummary
 import com.example.myapplication.model.MemoryEntry
 import com.example.myapplication.model.MemoryScopeType
+import com.example.myapplication.ui.theme.NarraUi
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -194,7 +195,7 @@ fun AssistantMemoryScreen(
                                 onValueChange = { memoryMaxItemsText = it.filter(Char::isDigit) },
                                 modifier = Modifier.fillMaxWidth(0.34f),
                                 singleLine = true,
-                                shape = RoundedCornerShape(16.dp),
+                                shape = RoundedCornerShape(NarraUi.smallRadius),
                                 colors = outlineColors,
                                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                             )
@@ -215,7 +216,7 @@ fun AssistantMemoryScreen(
                                     editingMemoryId = null
                                     memoryDraftContent = ""
                                 },
-                                shape = RoundedCornerShape(14.dp),
+                                shape = RoundedCornerShape(NarraUi.smallRadius),
                                 color = palette.accentSoft,
                             ) {
                                 Row(
@@ -285,7 +286,7 @@ fun AssistantMemoryScreen(
                             AssistantMemorySection.entries.forEach { section ->
                                 Surface(
                                     modifier = Modifier.clickable { selectedSectionName = section.name },
-                                    shape = RoundedCornerShape(14.dp),
+                                    shape = RoundedCornerShape(NarraUi.smallRadius),
                                     color = if (selectedSection == section) {
                                         palette.accentSoft
                                     } else {
@@ -442,7 +443,7 @@ fun AssistantMemoryScreen(
                     label = { Text("记忆内容") },
                     modifier = Modifier.fillMaxWidth(),
                     maxLines = 6,
-                    shape = RoundedCornerShape(16.dp),
+                    shape = RoundedCornerShape(NarraUi.smallRadius),
                     colors = outlineColors,
                 )
             },
@@ -507,7 +508,7 @@ private fun AssistantMemoryArchiveOverviewCard(
     val palette = rememberSettingsPalette()
     Surface(
         modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(24.dp),
+        shape = RoundedCornerShape(NarraUi.cardRadius),
         color = palette.surface,
         border = androidx.compose.foundation.BorderStroke(1.dp, palette.border.copy(alpha = 0.45f)),
     ) {
@@ -659,7 +660,7 @@ private fun AssistantMemorySummaryCard(
     var expanded by rememberSaveable(summary.conversationId) { mutableStateOf(false) }
     Surface(
         modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(24.dp),
+        shape = RoundedCornerShape(NarraUi.cardRadius),
         color = palette.surface,
         border = androidx.compose.foundation.BorderStroke(1.dp, palette.border.copy(alpha = 0.45f)),
     ) {
@@ -738,7 +739,7 @@ private fun AssistantMemoryEntryCard(
     var expanded by rememberSaveable(memory.id) { mutableStateOf(false) }
     Surface(
         modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(24.dp),
+        shape = RoundedCornerShape(NarraUi.cardRadius),
         color = palette.surface,
         border = androidx.compose.foundation.BorderStroke(1.dp, palette.border.copy(alpha = 0.45f)),
     ) {
@@ -788,33 +789,19 @@ private fun AssistantMemoryEntryCard(
                     )
                 }
             }
-            Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(4.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
                 if (shouldShowAssistantMemoryContentToggle(memory.content, collapsedLineCount = 4)) {
-                    Text(
-                        text = if (expanded) "收起" else "展开全文",
-                        color = palette.accent,
-                        modifier = Modifier.clickable { expanded = !expanded },
-                        fontWeight = FontWeight.SemiBold,
-                    )
+                    TextButton(onClick = { expanded = !expanded }) {
+                        Text(if (expanded) "收起" else "展开全文")
+                    }
                 }
-                Text(
-                    text = "编辑",
-                    color = palette.accent,
-                    modifier = Modifier.clickable(onClick = onEdit),
-                    fontWeight = FontWeight.SemiBold,
-                )
-                Text(
-                    text = if (memory.pinned) "取消置顶" else "置顶",
-                    color = palette.accent,
-                    modifier = Modifier.clickable(onClick = onTogglePinned),
-                    fontWeight = FontWeight.SemiBold,
-                )
-                Text(
-                    text = "删除",
-                    color = MaterialTheme.colorScheme.error,
-                    modifier = Modifier.clickable(onClick = onDelete),
-                    fontWeight = FontWeight.SemiBold,
-                )
+                TextButton(onClick = onEdit) { Text("编辑") }
+                TextButton(onClick = onTogglePinned) { Text(if (memory.pinned) "取消置顶" else "置顶") }
+                TextButton(onClick = onDelete) { Text("删除", color = MaterialTheme.colorScheme.error) }
             }
         }
     }

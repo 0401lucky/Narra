@@ -3,12 +3,14 @@ package com.example.myapplication.ui.screen.roleplay
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.widthIn
@@ -60,6 +62,7 @@ import com.example.myapplication.model.RoleplayNoBackgroundSkinSettings
 import com.example.myapplication.model.RoleplayScenario
 import com.example.myapplication.model.normalizedOnlineReplyRange
 import com.example.myapplication.system.performance.BenchmarkActionIds
+import com.example.myapplication.ui.component.NarraIconButton
 import com.example.myapplication.ui.component.roleplay.ImmersiveBackdropState
 import com.example.myapplication.ui.component.roleplay.ImmersiveGlassPalette
 import com.example.myapplication.ui.component.roleplay.ImmersiveTabRow
@@ -375,7 +378,7 @@ internal fun RoleplaySettingsInteractionSection(
                     value = longformCharsText,
                     onValueChange = onLongformCharsTextChange,
                     modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(18.dp),
+                    shape = RoundedCornerShape(8.dp),
                     label = { Text(stringResource(id = R.string.roleplay_settings_longform_default_label)) },
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                     colors = roleplaySettingsOutlinedTextFieldColors(),
@@ -415,7 +418,7 @@ private fun OnlineReplyCountField(
                 commitDraft()
             }
         },
-        shape = RoundedCornerShape(18.dp),
+        shape = RoundedCornerShape(8.dp),
         label = { Text(label) },
         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
         colors = roleplaySettingsOutlinedTextFieldColors(),
@@ -497,10 +500,9 @@ private fun RoleplaySkinPreviewCard(
                 .padding(horizontal = 16.dp, vertical = 14.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
-            Row(
+            Column(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically,
+                verticalArrangement = Arrangement.spacedBy(4.dp),
             ) {
                 Text(
                     text = "实时预览 · 无背景",
@@ -617,12 +619,13 @@ private fun RoleplaySkinPresetTile(
     Surface(
         modifier = modifier
             .testTag("roleplay_skin_preset_${preset.storageValue}")
-            .clickable(onClick = onClick),
-        shape = RoundedCornerShape(16.dp),
-        color = if (selected) spec.panelStrong.copy(alpha = 0.98f) else Color.White.copy(alpha = 0.58f),
+            .selectable(selected = selected, onClick = onClick)
+            .heightIn(min = 64.dp),
+        shape = RoundedCornerShape(8.dp),
+        color = if (selected) MaterialTheme.colorScheme.secondaryContainer else MaterialTheme.colorScheme.surface,
         border = BorderStroke(
             width = if (selected) 1.5.dp else 1.dp,
-            color = if (selected) spec.accent.copy(alpha = 0.62f) else RoleplaySettingsPanelBodyColor.copy(alpha = 0.16f),
+            color = if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outlineVariant,
         ),
     ) {
         Column(
@@ -633,7 +636,7 @@ private fun RoleplaySkinPresetTile(
                 text = preset.displayName,
                 style = MaterialTheme.typography.labelLarge,
                 fontWeight = FontWeight.SemiBold,
-                color = RoleplaySettingsPanelTitleColor,
+                color = if (selected) MaterialTheme.colorScheme.onSecondaryContainer else RoleplaySettingsPanelTitleColor,
             )
             Row(horizontalArrangement = Arrangement.spacedBy(5.dp)) {
                 listOf(spec.userBubble, spec.characterBubble, spec.accent).forEach { color ->
@@ -670,18 +673,14 @@ private fun RoleplaySkinBubbleSection(
                     fontWeight = FontWeight.Bold,
                     color = RoleplaySettingsPanelTitleColor,
                 )
-                Surface(
-                    modifier = Modifier.clickable { onUpdate(RoleplayNoBackgroundSkinSettings()) },
-                    shape = RoundedCornerShape(999.dp),
-                    color = Color.White.copy(alpha = 0.62f),
-                    border = BorderStroke(1.dp, RoleplaySettingsPanelBodyColor.copy(alpha = 0.16f)),
+                NarraIconButton(
+                    onClick = { onUpdate(RoleplayNoBackgroundSkinSettings()) },
+                    modifier = Modifier.size(48.dp),
                 ) {
-                    Text(
-                        text = "重置",
-                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
-                        style = MaterialTheme.typography.labelMedium,
-                        color = RoleplaySettingsPanelAccentColor,
-                        fontWeight = FontWeight.SemiBold,
+                    Icon(
+                        imageVector = Icons.Default.Refresh,
+                        contentDescription = "重置气泡样式",
+                        tint = RoleplaySettingsPanelAccentColor,
                     )
                 }
             }
@@ -729,6 +728,7 @@ private fun RoleplaySkinBubbleSection(
                 title = "显示气泡尾巴",
                 checked = skin.showBubbleTail,
                 switchModifier = Modifier.testTag("roleplay_skin_tail_switch"),
+                horizontalPadding = 0.dp,
                 onCheckedChange = { enabled -> onUpdate(skin.copy(showBubbleTail = enabled)) },
             )
         }
@@ -820,13 +820,14 @@ internal fun RoleplaySettingsReadabilitySection(
                     )
                 },
                 title = stringResource(id = R.string.roleplay_settings_high_contrast_title),
-                supportingText = if (systemHighContrastEnabled && !settings.roleplayHighContrast) {
+                statusText = if (systemHighContrastEnabled && !settings.roleplayHighContrast) {
                     stringResource(id = R.string.roleplay_high_contrast_system_enabled)
                 } else {
                     ""
                 },
                 checked = settings.roleplayHighContrast,
                 switchModifier = Modifier.testTag("roleplay_high_contrast_switch"),
+                horizontalPadding = 0.dp,
                 onCheckedChange = onUpdateRoleplayHighContrast,
             )
             HorizontalDivider(color = RoleplaySettingsPanelBodyColor.copy(alpha = 0.18f))
@@ -884,9 +885,9 @@ internal fun RoleplaySettingsMemoryHistorySection(
                         SettingsStatusPill(
                             text = item.status.label,
                             containerColor = when (item.status) {
-                                MemoryProposalStatus.PENDING -> RoleplaySettingsPanelAccentColor.copy(alpha = 0.24f)
-                                MemoryProposalStatus.APPROVED -> Color(0xFF4CAF50).copy(alpha = 0.24f)
-                                MemoryProposalStatus.REJECTED -> Color(0xFFFF5252).copy(alpha = 0.24f)
+                                MemoryProposalStatus.PENDING -> MaterialTheme.colorScheme.primaryContainer
+                                MemoryProposalStatus.APPROVED -> MaterialTheme.colorScheme.tertiaryContainer
+                                MemoryProposalStatus.REJECTED -> MaterialTheme.colorScheme.errorContainer
                             },
                             contentColor = RoleplaySettingsPanelTitleColor,
                         )
@@ -1005,7 +1006,7 @@ internal fun RoleplaySettingsDangerousSection(
                     Icon(
                         Icons.Default.WarningAmber,
                         contentDescription = null,
-                        tint = Color(0xFFFF5252),
+                        tint = MaterialTheme.colorScheme.error,
                     )
                 },
             )

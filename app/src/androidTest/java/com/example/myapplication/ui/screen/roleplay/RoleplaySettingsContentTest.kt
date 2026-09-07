@@ -1,17 +1,36 @@
 package com.example.myapplication.ui.screen.roleplay
 
 import androidx.activity.ComponentActivity
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
+import androidx.compose.material3.darkColorScheme
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.test.assertHeightIsAtLeast
+import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.assertIsOff
 import androidx.compose.ui.test.assertIsOn
 import androidx.compose.ui.test.assertIsSelected
 import androidx.compose.ui.test.hasTestTag
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.onNodeWithTag
+import androidx.compose.ui.test.onNodeWithContentDescription
+import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.test.performScrollToNode
+import androidx.compose.ui.unit.Density
+import androidx.compose.ui.unit.dp
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import com.example.myapplication.R
 import com.example.myapplication.model.AppSettings
 import com.example.myapplication.model.RoleplayContextStatus
 import com.example.myapplication.model.RoleplayImmersiveMode
@@ -194,10 +213,89 @@ class RoleplaySettingsContentTest {
         }
 
         composeRule.onNodeWithTag("roleplay_skin_preview").assertExists()
-        composeRule.onNodeWithTag("roleplay_skin_preset_imessage").performClick()
+        composeRule.onNodeWithTag("roleplay_skin_preset_imessage")
+            .performScrollTo()
+            .assertIsDisplayed()
+            .performClick()
+            .assertIsSelected()
 
         composeRule.runOnIdle {
             check(settings.roleplayNoBackgroundSkin.preset == RoleplayNoBackgroundSkinPreset.IMESSAGE)
         }
+    }
+
+    @Test
+    fun settingHelp_largeFont_remainsIndependentFromSwitchAndStatus() {
+        var checked by mutableStateOf(false)
+        var switchCalls = 0
+        val helpText = "开启后可提高聊天文字与背景之间的对比度。"
+        val statusText = "系统高对比度已启用"
+
+        composeRule.setContent {
+            val density = LocalDensity.current.density
+            CompositionLocalProvider(LocalDensity provides Density(density, fontScale = 1.6f)) {
+                MaterialTheme(colorScheme = darkColorScheme()) {
+                    Surface(modifier = Modifier.width(280.dp)) {
+                        RoleplaySettingSwitchRow(
+                            palette = roleplayTestBackdropState().palette,
+                            icon = { Box(modifier = Modifier.size(22.dp)) },
+                            title = "高对比度",
+                            supportingText = helpText,
+                            statusText = statusText,
+                            checked = checked,
+                            switchModifier = Modifier.testTag("help_switch"),
+                            onCheckedChange = {
+                                checked = it
+                                switchCalls++
+                            },
+                        )
+                    }
+                }
+            }
+        }
+
+        composeRule.onNodeWithText(helpText).assertDoesNotExist()
+        composeRule.onNodeWithText(statusText).assertIsDisplayed()
+        composeRule.onNodeWithContentDescription("高对比度：查看说明")
+            .assertIsDisplayed()
+            .assertHeightIsAtLeast(48.dp)
+            .performClick()
+        composeRule.onNodeWithText(helpText).assertIsDisplayed()
+        composeRule.runOnIdle { check(switchCalls == 0) }
+        composeRule.onNodeWithText("知道了").assertIsDisplayed().performClick()
+        composeRule.onNodeWithText(helpText).assertDoesNotExist()
+
+        composeRule.onNodeWithTag("help_switch")
+            .assertIsDisplayed()
+            .assertIsOff()
+            .assertHeightIsAtLeast(48.dp)
+            .performClick()
+            .assertIsOn()
+        composeRule.onNodeWithText(statusText).assertIsDisplayed()
+        composeRule.onNodeWithTag("help_switch").assertIsOn()
+        composeRule.runOnIdle { check(switchCalls == 1) }
+    }
+
+    @Test
+    fun systemHighContrastStatus_isVisibleWhileAppSwitchIsOff() {
+        composeRule.setContent {
+            MaterialTheme(colorScheme = darkColorScheme()) {
+                Surface {
+                    RoleplaySettingsReadabilitySection(
+                        backdropState = roleplayTestBackdropState(),
+                        settings = AppSettings(roleplayHighContrast = false),
+                        systemHighContrastEnabled = true,
+                        onUpdateRoleplayImmersiveMode = {},
+                        onUpdateRoleplayHighContrast = {},
+                        onUpdateRoleplayLineHeightScale = {},
+                    )
+                }
+            }
+        }
+
+        composeRule.onNodeWithText(
+            composeRule.activity.getString(R.string.roleplay_high_contrast_system_enabled),
+        ).assertIsDisplayed()
+        composeRule.onNodeWithTag("roleplay_high_contrast_switch").assertIsOff()
     }
 }
