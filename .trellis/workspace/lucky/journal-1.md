@@ -65,3 +65,24 @@
 ### Status
 
 [OK] **Completed**
+
+
+## Session 3: Narra UI 重设计收口与归档
+
+**Date**: 2026-09-07
+**Task**: Narra UI 重设计收口与归档
+**Branch**: `main`
+
+### Summary
+
+Moments、PhoneCheck、系统悬浮翻译及全 App UI 收口完成；1526项JVM和97项设备用例完成验证。用户接受跨应用悬浮/截屏与真实软键盘未实测边界，要求归档并随2.2.11-dev发布。
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `7b7903a1` | (see git log) |
+
+### Status
+
+[OK] **Completed**
