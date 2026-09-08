@@ -27,4 +27,4 @@
 
 ## Planning Artifacts
 
-设计见 [design.md](design.md)，执行和验证见 [implement.md](implement.md)。不依赖 R1；用户已批准完整方案，当前处于实现与验证阶段。
+设计见 [design.md](design.md)，执行和验证见 [implement.md](implement.md)。不依赖 R1，全部实现与验收已完成，现已归档。

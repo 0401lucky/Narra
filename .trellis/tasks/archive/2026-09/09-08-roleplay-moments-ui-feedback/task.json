@@ -3,7 +3,7 @@
   "name": "roleplay-moments-ui-feedback",
   "title": "2.2.12-dev 线上聊天背景气泡与朋友圈评论间距反馈",
   "description": "2.2.12-dev 父任务：线上背景玻璃气泡全局开关默认开启，朋友圈评论预览恢复紧凑布局；负责需求、设计汇总和最终集成验证。",
-  "status": "in_progress",
+  "status": "completed",
   "dev_type": null,
   "scope": null,
   "package": null,
@@ -11,7 +11,7 @@
   "creator": "lucky",
   "assignee": "lucky",
   "createdAt": "2026-09-08",
-  "completedAt": null,
+  "completedAt": "2026-09-08",
   "branch": null,
   "base_branch": "main",
   "worktree_path": null,
@@ -37,7 +37,7 @@
     "app/src/androidTest/java/com/example/myapplication/ui/screen/moments/MomentsScreenTest.kt",
     "版本功能添加/优化.md"
   ],
-  "notes": "2026-09-08：两项功能和全部验收完成。1534 项单测、18 项模拟器测试、编译、Lint、dev 构建、代码审查及六张截图复核通过；规范和 2.2.12-dev 未发布记录已同步，待任务归档。未推送或发布。",
+  "notes": "2026-09-08：两项功能和全部验收完成。1534 项单测、18 项模拟器测试、编译、Lint、dev 构建、代码审查及六张截图复核通过；规范和 2.2.12-dev 未发布记录已同步，任务已归档。未推送或发布。",
   "meta": {
     "version": "2.2.12-dev"
   }

@@ -3,7 +3,7 @@
   "name": "moments-comment-spacing",
   "title": "2.2.12-dev 朋友圈评论预览间距",
   "description": "收紧时间线评论预览留白，保留单击详情、长按删除及多行文字展示。",
-  "status": "in_progress",
+  "status": "completed",
   "dev_type": null,
   "scope": null,
   "package": null,
@@ -11,7 +11,7 @@
   "creator": "lucky",
   "assignee": "lucky",
   "createdAt": "2026-09-08",
-  "completedAt": null,
+  "completedAt": "2026-09-08",
   "branch": null,
   "base_branch": "main",
   "worktree_path": null,
@@ -24,7 +24,7 @@
     "app/src/main/java/com/example/myapplication/ui/screen/moments/MomentsScreen.kt",
     "app/src/androidTest/java/com/example/myapplication/ui/screen/moments/MomentsScreenTest.kt"
   ],
-  "notes": "R2 实现与全部验收完成：紧凑布局、大字体、单击与逐条长按删除设备回归通过，截图复核完成；本地修复提交已记录，待归档。",
+  "notes": "R2 实现与全部验收完成：紧凑布局、大字体、单击与逐条长按删除设备回归通过，截图复核完成；本地修复提交已记录，已归档。",
   "meta": {
     "version": "2.2.12-dev"
   }
