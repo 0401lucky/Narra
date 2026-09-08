@@ -674,7 +674,13 @@ private fun RoleplaySkinBubbleSection(
                     color = RoleplaySettingsPanelTitleColor,
                 )
                 NarraIconButton(
-                    onClick = { onUpdate(RoleplayNoBackgroundSkinSettings()) },
+                    onClick = {
+                        onUpdate(
+                            RoleplayNoBackgroundSkinSettings(
+                                onlineBackgroundGlassEnabled = skin.onlineBackgroundGlassEnabled,
+                            ),
+                        )
+                    },
                     modifier = Modifier.size(48.dp),
                 ) {
                     Icon(
@@ -684,6 +690,24 @@ private fun RoleplaySkinBubbleSection(
                     )
                 }
             }
+            RoleplaySettingSwitchRow(
+                palette = backdropState.palette,
+                icon = {
+                    Icon(
+                        imageVector = Icons.Default.AutoStories,
+                        contentDescription = null,
+                        tint = RoleplaySettingsPanelAccentColor,
+                    )
+                },
+                title = "线上背景玻璃气泡",
+                supportingText = "作用于所有线上聊天；关闭后保留背景图，气泡使用所选主题。",
+                checked = skin.onlineBackgroundGlassEnabled,
+                switchModifier = Modifier.testTag("roleplay_online_background_glass_switch"),
+                horizontalPadding = 0.dp,
+                onCheckedChange = { enabled ->
+                    onUpdate(skin.copy(onlineBackgroundGlassEnabled = enabled))
+                },
+            )
             RoleplaySkinSliderRow(
                 label = "最大宽度",
                 value = skin.maxWidthPercent,

@@ -36,6 +36,7 @@ internal fun OnlinePhoneNarrationBubble(
     colors: ImmersiveRoleplayColors,
     backdropState: ImmersiveBackdropState,
     lineHeightScale: Float,
+    useGlassBubble: Boolean = backdropState.hasImage,
 ) {
     val shape = RoundedCornerShape(22.dp)
     Row(
@@ -59,7 +60,7 @@ internal fun OnlinePhoneNarrationBubble(
                             text = paragraph,
                             narrationColor = colors.textMuted.copy(alpha = 0.92f),
                             dialogueColor = resolveRoleplayDialogueHighlightColor(
-                                hasImage = backdropState.hasImage,
+                                hasImage = useGlassBubble,
                                 colors = colors,
                             ),
                         ),
@@ -83,6 +84,7 @@ internal fun OnlinePhoneThoughtBubble(
     colors: ImmersiveRoleplayColors,
     backdropState: ImmersiveBackdropState,
     lineHeightScale: Float,
+    useGlassBubble: Boolean = backdropState.hasImage,
 ) {
     var expanded by rememberSaveable(
         message.sourceMessageId,
@@ -144,7 +146,7 @@ internal fun OnlinePhoneThoughtBubble(
                                     text = paragraph,
                                     narrationColor = colors.thoughtText,
                                     dialogueColor = resolveRoleplayDialogueHighlightColor(
-                                        hasImage = backdropState.hasImage,
+                                        hasImage = useGlassBubble,
                                         colors = colors,
                                     ),
                                 ),

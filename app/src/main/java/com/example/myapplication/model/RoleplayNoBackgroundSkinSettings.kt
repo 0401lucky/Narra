@@ -7,6 +7,7 @@ data class RoleplayNoBackgroundSkinSettings(
     val bubblePaddingHorizontalDp: Int = ROLEPLAY_SKIN_DEFAULT_PADDING_HORIZONTAL_DP,
     val bubblePaddingVerticalDp: Int = ROLEPLAY_SKIN_DEFAULT_PADDING_VERTICAL_DP,
     val showBubbleTail: Boolean = false,
+    val onlineBackgroundGlassEnabled: Boolean = true,
 ) {
     fun normalized(): RoleplayNoBackgroundSkinSettings {
         return copy(

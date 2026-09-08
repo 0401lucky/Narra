@@ -19,9 +19,12 @@ import com.example.myapplication.model.SearchSourceType
 import com.example.myapplication.model.ThemeMode
 import com.example.myapplication.model.TranslationHistoryEntry
 import com.example.myapplication.model.UserPersonaMask
+import java.io.IOException
 import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertSame
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
@@ -62,6 +65,7 @@ class SettingsPersistenceCoordinatorTest {
             roleplayNoBackgroundSkin = RoleplayNoBackgroundSkinSettings(
                 preset = RoleplayNoBackgroundSkinPreset.IMESSAGE,
                 maxWidthPercent = 76,
+                onlineBackgroundGlassEnabled = false,
             ),
             screenTranslationSettings = ScreenTranslationSettings(
                 serviceEnabled = true,
@@ -101,10 +105,31 @@ class SettingsPersistenceCoordinatorTest {
         assertEquals(RoleplayLineHeightScale.RELAXED, editor.savedRoleplayLineHeightScale)
         assertEquals(RoleplayNoBackgroundSkinPreset.IMESSAGE, editor.savedRoleplayNoBackgroundSkin.preset)
         assertEquals(76, editor.savedRoleplayNoBackgroundSkin.maxWidthPercent)
+        assertFalse(editor.savedRoleplayNoBackgroundSkin.onlineBackgroundGlassEnabled)
         assertEquals("日语", editor.savedScreenTranslationSettings.targetLanguage)
         assertTrue(editor.savedScreenTranslationSettings.serviceEnabled)
         assertEquals(6, editor.savedSearchSettings.defaultResultCount)
         assertEquals("Brave 搜索", editor.savedSearchSettings.sources.single().name)
+    }
+
+    @Test
+    fun saveSettings_backgroundGlassDraft_displayFailurePropagatesWithoutReportingSuccess() = runTest {
+        val failure = IOException("主题设置写入失败")
+        val editor = RecordingSettingsEditor().apply { displaySettingsFailure = failure }
+        val coordinator = SettingsPersistenceCoordinator(editor)
+        val draft = SettingsPreferenceDraftSupport.updateRoleplayNoBackgroundSkin(
+            current = SettingsUiState(),
+            skin = RoleplayNoBackgroundSkinSettings(
+                preset = RoleplayNoBackgroundSkinPreset.WECHAT,
+                onlineBackgroundGlassEnabled = false,
+            ),
+        )
+
+        val result = runCatching { coordinator.saveSettings(draft) }
+
+        assertSame(failure, result.exceptionOrNull())
+        assertFalse(draft.roleplayNoBackgroundSkin.onlineBackgroundGlassEnabled)
+        assertTrue(editor.savedRoleplayNoBackgroundSkin.onlineBackgroundGlassEnabled)
     }
 
     @Test
@@ -247,6 +272,7 @@ class SettingsPersistenceCoordinatorTest {
     }
 
     private class RecordingSettingsEditor : AiSettingsEditor {
+        var displaySettingsFailure: Throwable? = null
         var savedProviders: List<ProviderSettings> = emptyList()
         var savedSelectedProviderId: String = ""
         var savedThemeMode: ThemeMode = ThemeMode.SYSTEM
@@ -314,6 +340,7 @@ class SettingsPersistenceCoordinatorTest {
             roleplayLineHeightScale: RoleplayLineHeightScale,
             roleplayNoBackgroundSkin: RoleplayNoBackgroundSkinSettings,
         ) {
+            displaySettingsFailure?.let { throw it }
             savedThemeMode = themeMode
             savedAppColorTheme = appColorTheme
             savedMessageTextScale = messageTextScale

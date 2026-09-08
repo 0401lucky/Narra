@@ -51,6 +51,15 @@ internal val DefaultRoleplayDialogueBubbleStyle = RoleplayDialogueBubbleStyle(
     showTail = true,
 )
 
+internal fun shouldUseRoleplayGlassBubble(
+    hasBackgroundImage: Boolean,
+    bubbleMode: RoleplayMessageBubbleMode,
+    onlineBackgroundGlassEnabled: Boolean,
+): Boolean {
+    return hasBackgroundImage &&
+        (bubbleMode != RoleplayMessageBubbleMode.ONLINE_PHONE || onlineBackgroundGlassEnabled)
+}
+
 @Composable
 internal fun rememberRoleplayNoBackgroundSkinSpec(
     settings: RoleplayNoBackgroundSkinSettings,
@@ -75,8 +84,13 @@ internal fun rememberRoleplayDialogueBubbleStyle(
     bubbleMode: RoleplayMessageBubbleMode,
 ): RoleplayDialogueBubbleStyle {
     val skinSpec = rememberRoleplayNoBackgroundSkinSpec(settings)
-    return remember(backdropState.hasImage, skinSpec, bubbleMode) {
-        if (!backdropState.hasImage) {
+    val useGlassBubble = shouldUseRoleplayGlassBubble(
+        hasBackgroundImage = backdropState.hasImage,
+        bubbleMode = bubbleMode,
+        onlineBackgroundGlassEnabled = settings.onlineBackgroundGlassEnabled,
+    )
+    return remember(useGlassBubble, skinSpec, bubbleMode) {
+        if (!useGlassBubble) {
             RoleplayDialogueBubbleStyle(
                 maxWidthFraction = skinSpec.maxWidthFraction,
                 radius = skinSpec.radius,

@@ -14,6 +14,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.test.assertHeightIsAtLeast
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsOff
@@ -27,6 +28,7 @@ import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.test.performScrollToNode
+import androidx.compose.ui.test.performSemanticsAction
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.dp
 import androidx.test.ext.junit.runners.AndroidJUnit4
@@ -36,6 +38,11 @@ import com.example.myapplication.model.RoleplayContextStatus
 import com.example.myapplication.model.RoleplayImmersiveMode
 import com.example.myapplication.model.RoleplayLineHeightScale
 import com.example.myapplication.model.RoleplayNoBackgroundSkinPreset
+import com.example.myapplication.model.RoleplayNoBackgroundSkinSettings
+import com.example.myapplication.viewmodel.SettingsPreferenceDraftSupport
+import com.example.myapplication.viewmodel.SettingsUiState
+import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -150,10 +157,21 @@ class RoleplaySettingsContentTest {
     }
 
     @Test
-    fun selectingNoBackgroundSkinPreset_updatesPreviewState() {
-        var settings by mutableStateOf(AppSettings())
+    fun onlineBackgroundGlassSwitch_themeChangesAndReset_preserveDraftChoice() {
+        var draft by mutableStateOf(
+            SettingsUiState(
+                roleplayNoBackgroundSkin = RoleplayNoBackgroundSkinSettings(
+                    maxWidthPercent = 90,
+                    bubbleRadiusDp = 24,
+                    bubblePaddingHorizontalDp = 20,
+                    bubblePaddingVerticalDp = 16,
+                    showBubbleTail = true,
+                ),
+            ),
+        )
 
         composeRule.setContent {
+            val settings = AppSettings(roleplayNoBackgroundSkin = draft.roleplayNoBackgroundSkin)
             RoleplaySettingsContent(
                 activePage = RoleplaySettingsPanelPage.THEME,
                 scenario = null,
@@ -189,7 +207,7 @@ class RoleplaySettingsContentTest {
                 onUpdateRoleplayHighContrast = {},
                 onUpdateRoleplayLineHeightScale = {},
                 onUpdateRoleplayNoBackgroundSkin = { skin ->
-                    settings = settings.copy(roleplayNoBackgroundSkin = skin)
+                    draft = SettingsPreferenceDraftSupport.updateRoleplayNoBackgroundSkin(draft, skin)
                 },
                 onUpdateShowOnlineRoleplayNarration = {},
                 onUpdateRoleplayLongformTargetChars = {},
@@ -213,6 +231,16 @@ class RoleplaySettingsContentTest {
         }
 
         composeRule.onNodeWithTag("roleplay_skin_preview").assertExists()
+        composeRule.onNodeWithTag("roleplay_online_background_glass_switch")
+            .performScrollTo()
+            .assertIsOn()
+            .assertHeightIsAtLeast(48.dp)
+            .performClick()
+            .assertIsOff()
+        composeRule.onNodeWithContentDescription("线上背景玻璃气泡：查看说明").performClick()
+        composeRule.onNodeWithText("作用于所有线上聊天；关闭后保留背景图，气泡使用所选主题。")
+            .assertIsDisplayed()
+        composeRule.onNodeWithText("知道了").performClick()
         composeRule.onNodeWithTag("roleplay_skin_preset_imessage")
             .performScrollTo()
             .assertIsDisplayed()
@@ -220,8 +248,32 @@ class RoleplaySettingsContentTest {
             .assertIsSelected()
 
         composeRule.runOnIdle {
-            check(settings.roleplayNoBackgroundSkin.preset == RoleplayNoBackgroundSkinPreset.IMESSAGE)
+            assertEquals(RoleplayNoBackgroundSkinPreset.IMESSAGE, draft.roleplayNoBackgroundSkin.preset)
+            assertEquals(90, draft.roleplayNoBackgroundSkin.maxWidthPercent)
+            assertFalse(draft.roleplayNoBackgroundSkin.onlineBackgroundGlassEnabled)
         }
+
+        composeRule.onNodeWithTag("roleplay_skin_radius_slider")
+            .performScrollTo()
+            .performSemanticsAction(SemanticsActions.SetProgress) { it(10f) }
+        composeRule.runOnIdle {
+            assertEquals(10, draft.roleplayNoBackgroundSkin.bubbleRadiusDp)
+            assertFalse(draft.roleplayNoBackgroundSkin.onlineBackgroundGlassEnabled)
+        }
+        composeRule.onNodeWithContentDescription("重置气泡样式")
+            .performScrollTo()
+            .performClick()
+        composeRule.runOnIdle {
+            assertEquals(
+                RoleplayNoBackgroundSkinSettings(onlineBackgroundGlassEnabled = false),
+                draft.roleplayNoBackgroundSkin,
+            )
+        }
+        composeRule.onNodeWithTag("roleplay_online_background_glass_switch")
+            .performScrollTo()
+            .assertIsOff()
+            .performClick()
+            .assertIsOn()
     }
 
     @Test

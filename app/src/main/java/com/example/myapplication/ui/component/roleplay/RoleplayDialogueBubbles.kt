@@ -18,6 +18,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -33,9 +34,11 @@ internal fun UserDialogueBubbleContent(
     onOpenQuotedMessage: ((String) -> Unit)?,
     fillWidth: Boolean,
     bubbleStyle: RoleplayDialogueBubbleStyle = DefaultRoleplayDialogueBubbleStyle,
+    useGlassBubble: Boolean = backdropState.hasImage,
 ) {
     val shape = bubbleStyle.shape(isUser = true)
-    val bubbleModifier = if (fillWidth) Modifier.fillMaxWidth() else Modifier
+    val bubbleModifier = (if (fillWidth) Modifier.fillMaxWidth() else Modifier)
+        .testTag("roleplay_dialogue_bubble_${message.uiItemId}")
     val content: @Composable () -> Unit = {
         Column(
             modifier = Modifier
@@ -78,7 +81,7 @@ internal fun UserDialogueBubbleContent(
             }
         }
     }
-    if (!backdropState.hasImage) {
+    if (!useGlassBubble) {
         Surface(
             modifier = bubbleModifier,
             shape = shape,
@@ -111,15 +114,17 @@ internal fun CharacterDialogueBubbleContent(
     isError: Boolean,
     fillWidth: Boolean,
     bubbleStyle: RoleplayDialogueBubbleStyle = DefaultRoleplayDialogueBubbleStyle,
+    useGlassBubble: Boolean = backdropState.hasImage,
 ) {
     val shape = bubbleStyle.shape(isUser = false)
-    val bubbleModifier = if (fillWidth) Modifier.fillMaxWidth() else Modifier
+    val bubbleModifier = (if (fillWidth) Modifier.fillMaxWidth() else Modifier)
+        .testTag("roleplay_dialogue_bubble_${message.uiItemId}")
     val bubbleColor = if (isError) colors.errorBackground else colors.characterBubbleBackground
     val dialogueHighlightColor = if (isError) {
         colors.errorText
     } else {
         resolveRoleplayDialogueHighlightColor(
-            hasImage = backdropState.hasImage,
+            hasImage = useGlassBubble,
             colors = colors,
         )
     }
@@ -151,7 +156,7 @@ internal fun CharacterDialogueBubbleContent(
             if (message.isStreaming) {
                 StreamingLogText(
                     content = message.content,
-                    textColor = colors.textPrimary,
+                    textColor = if (isError) colors.errorText else colors.textPrimary,
                     accentColor = dialogueHighlightColor,
                     lineHeightScale = lineHeightScale,
                 )
@@ -159,7 +164,7 @@ internal fun CharacterDialogueBubbleContent(
                 val paragraphs = remember(message.content) { message.content.toLongformParagraphs() }
                 Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                     paragraphs.forEach { paragraph ->
-                        val rendered = remember(paragraph, colors, isError) {
+                        val rendered = remember(paragraph, colors, isError, dialogueHighlightColor) {
                             buildCharacterDialogueAnnotatedString(
                                 text = paragraph,
                                 narrationColor = if (isError) colors.errorText.copy(alpha = 0.84f) else colors.textPrimary.copy(alpha = 0.78f),
@@ -179,7 +184,7 @@ internal fun CharacterDialogueBubbleContent(
             }
         }
     }
-    if (!backdropState.hasImage) {
+    if (!useGlassBubble) {
         Surface(
             modifier = bubbleModifier,
             shape = shape,

@@ -101,6 +101,7 @@ import com.example.myapplication.ui.component.roleplay.rememberRoleplayNoBackgro
 import com.example.myapplication.ui.component.roleplay.rememberRoleplayAutoFollowScrollConnection
 import com.example.myapplication.ui.component.roleplay.rememberRoleplayStreamingAutoScrollState
 import com.example.myapplication.ui.component.roleplay.roleplayLazyContentType
+import com.example.myapplication.ui.component.roleplay.shouldUseRoleplayGlassBubble
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -180,6 +181,16 @@ internal fun RoleplayOnlinePhoneContent(
     val colors = rememberOnlinePhoneColors(
         backdropState = backdropState,
         noBackgroundSkin = settings.roleplayNoBackgroundSkin,
+    )
+    val useGlassBubble = shouldUseRoleplayGlassBubble(
+        hasBackgroundImage = backdropState.hasImage,
+        bubbleMode = RoleplayMessageBubbleMode.ONLINE_PHONE,
+        onlineBackgroundGlassEnabled = settings.roleplayNoBackgroundSkin.onlineBackgroundGlassEnabled,
+    )
+    val messageColors = rememberOnlinePhoneColors(
+        backdropState = backdropState,
+        noBackgroundSkin = settings.roleplayNoBackgroundSkin,
+        useGlassColors = useGlassBubble,
     )
     val noBackgroundSkinSpec = rememberRoleplayNoBackgroundSkinSpec(settings.roleplayNoBackgroundSkin)
     val palette = backdropState.palette
@@ -591,29 +602,29 @@ internal fun RoleplayOnlinePhoneContent(
                             }
                         }
                         RoleplayMessageItem(
-                        message = message,
-                        colors = colors,
-                        backdropState = backdropState,
-                        onRetryTurn = onRetryTurn,
-                        onRetryAiPhoto = onRetryAiPhoto,
-                        onEditUserMessage = onEditUserMessage,
-                        onQuoteMessage = onQuoteMessage,
-                        onPokeMessageAvatar = onPokeMessageAvatar,
-                        onRecallMessage = onRecallMessage,
-                        onDeleteMessage = onDeleteMessage,
-                        onOpenQuotedMessage = { quotedMessageId ->
-                            val targetIndex = visibleMessages.indexOfFirst { it.sourceMessageId == quotedMessageId }
-                            if (targetIndex >= 0) {
-                                scope.launch {
-                                    listState.animateScrollToItem(targetIndex)
+                            message = message,
+                            colors = messageColors,
+                            backdropState = backdropState,
+                            onRetryTurn = onRetryTurn,
+                            onRetryAiPhoto = onRetryAiPhoto,
+                            onEditUserMessage = onEditUserMessage,
+                            onQuoteMessage = onQuoteMessage,
+                            onPokeMessageAvatar = onPokeMessageAvatar,
+                            onRecallMessage = onRecallMessage,
+                            onDeleteMessage = onDeleteMessage,
+                            onOpenQuotedMessage = { quotedMessageId ->
+                                val targetIndex = visibleMessages.indexOfFirst { it.sourceMessageId == quotedMessageId }
+                                if (targetIndex >= 0) {
+                                    scope.launch {
+                                        listState.animateScrollToItem(targetIndex)
+                                    }
                                 }
-                            }
-                        },
-                        onConfirmTransferReceipt = onConfirmTransferReceipt,
-                        onOpenVideoCall = onOpenVideoCall,
-                        bubbleMode = RoleplayMessageBubbleMode.ONLINE_PHONE,
-                        noBackgroundSkin = settings.roleplayNoBackgroundSkin,
-                    )
+                            },
+                            onConfirmTransferReceipt = onConfirmTransferReceipt,
+                            onOpenVideoCall = onOpenVideoCall,
+                            bubbleMode = RoleplayMessageBubbleMode.ONLINE_PHONE,
+                            noBackgroundSkin = settings.roleplayNoBackgroundSkin,
+                        )
                     }
                 }
             }
@@ -1060,39 +1071,39 @@ private fun formatOnlineTime(timestamp: Long): String {
 private fun rememberOnlinePhoneColors(
     backdropState: ImmersiveBackdropState,
     noBackgroundSkin: com.example.myapplication.model.RoleplayNoBackgroundSkinSettings,
+    useGlassColors: Boolean = backdropState.hasImage,
 ): ImmersiveRoleplayColors {
     val palette = backdropState.palette
-    val hasImage = backdropState.hasImage
     val skinSpec = rememberRoleplayNoBackgroundSkinSpec(noBackgroundSkin)
-    return remember(palette, hasImage, skinSpec) {
+    return remember(palette, useGlassColors, skinSpec) {
         ImmersiveRoleplayColors(
-            textPrimary = if (hasImage) palette.onGlass else skinSpec.characterText,
-            userText = if (hasImage) palette.onGlass else skinSpec.userText,
-            textMuted = if (hasImage) palette.onGlassMuted else skinSpec.mutedText,
-            characterAccent = if (hasImage) palette.characterAccent else skinSpec.accent,
-            userAccent = if (hasImage) palette.userAccent else skinSpec.userAccent,
-            thoughtText = if (hasImage) palette.thoughtText else skinSpec.mutedText,
-            panelBackground = if (hasImage) {
+            textPrimary = if (useGlassColors) palette.onGlass else skinSpec.characterText,
+            userText = if (useGlassColors) palette.onGlass else skinSpec.userText,
+            textMuted = if (useGlassColors) palette.onGlassMuted else skinSpec.mutedText,
+            characterAccent = if (useGlassColors) palette.characterAccent else skinSpec.accent,
+            userAccent = if (useGlassColors) palette.userAccent else skinSpec.userAccent,
+            thoughtText = if (useGlassColors) palette.thoughtText else skinSpec.mutedText,
+            panelBackground = if (useGlassColors) {
                 palette.panelTintStrong.copy(alpha = 0.22f)
             } else {
                 skinSpec.panel.copy(alpha = skinSpec.panel.alpha.coerceAtLeast(0.86f))
             },
-            panelBackgroundStrong = if (hasImage) {
+            panelBackgroundStrong = if (useGlassColors) {
                 palette.readingSurface.copy(alpha = 0.30f)
             } else {
                 skinSpec.panelStrong.copy(alpha = skinSpec.panelStrong.alpha.coerceAtLeast(0.94f))
             },
-            panelBorder = if (hasImage) {
+            panelBorder = if (useGlassColors) {
                 palette.panelBorder.copy(alpha = 0.28f)
             } else {
                 skinSpec.border.copy(alpha = skinSpec.border.alpha.coerceAtLeast(0.22f))
             },
             errorText = Color(0xFFB3261E),
-            errorBackground = Color(0xFFFFE9E8).copy(alpha = if (hasImage) 0.74f else 1f),
-            errorBackgroundStrong = Color(0xFFFFDAD6).copy(alpha = if (hasImage) 0.86f else 1f),
-            userBubbleBackground = if (hasImage) palette.userAccent.copy(alpha = 0.12f) else skinSpec.userBubble,
-            characterBubbleBackground = if (hasImage) palette.readingSurface.copy(alpha = 0.16f) else skinSpec.characterBubble,
-            narrationBubbleBackground = if (hasImage) palette.readingSurface.copy(alpha = 0.10f) else skinSpec.narrationBubble.copy(alpha = skinSpec.narrationBubble.alpha.coerceAtLeast(0.72f)),
+            errorBackground = Color(0xFFFFE9E8).copy(alpha = if (useGlassColors) 0.74f else 1f),
+            errorBackgroundStrong = Color(0xFFFFDAD6).copy(alpha = if (useGlassColors) 0.86f else 1f),
+            userBubbleBackground = if (useGlassColors) palette.userAccent.copy(alpha = 0.12f) else skinSpec.userBubble,
+            characterBubbleBackground = if (useGlassColors) palette.readingSurface.copy(alpha = 0.16f) else skinSpec.characterBubble,
+            narrationBubbleBackground = if (useGlassColors) palette.readingSurface.copy(alpha = 0.10f) else skinSpec.narrationBubble.copy(alpha = skinSpec.narrationBubble.alpha.coerceAtLeast(0.72f)),
         )
     }
 }

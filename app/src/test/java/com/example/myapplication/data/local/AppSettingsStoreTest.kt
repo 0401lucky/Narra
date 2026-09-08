@@ -6,6 +6,9 @@ import androidx.datastore.preferences.core.emptyPreferences
 import androidx.datastore.preferences.core.mutablePreferencesOf
 import androidx.datastore.preferences.core.stringPreferencesKey
 import com.example.myapplication.model.AppSettings
+import com.example.myapplication.model.RoleplayNoBackgroundSkinPreset
+import com.example.myapplication.model.RoleplayNoBackgroundSkinSettings
+import com.google.gson.JsonParser
 import java.io.IOException
 import java.util.concurrent.Executors
 import kotlinx.coroutines.CoroutineScope
@@ -35,6 +38,135 @@ class AppSettingsStoreTest {
     private companion object {
         /** 单次 Preferences emission 触发的安全存储读取次数；新增加密字段时同步更新。 */
         const val SECURE_READS_PER_EMISSION = 5
+    }
+
+    @Test
+    fun settingsFlow_backgroundGlassFlag_preservesThemeForLegacyAndInvalidFields() = runTest {
+        val cases = listOf(
+            null to true,
+            "true" to true,
+            "false" to false,
+            "null" to true,
+            "\"false\"" to true,
+            "0" to true,
+            "[]" to true,
+            "{}" to true,
+        )
+        for ((rawFlag, expectedEnabled) in cases) {
+            val skinJson = JsonParser.parseString(
+                """{
+                    "preset": "qq",
+                    "maxWidthPercent": 84,
+                    "bubbleRadiusDp": 12,
+                    "bubblePaddingHorizontalDp": 16,
+                    "bubblePaddingVerticalDp": 8,
+                    "showBubbleTail": true
+                }""",
+            ).asJsonObject
+            if (rawFlag != null) {
+                skinJson.add("onlineBackgroundGlassEnabled", JsonParser.parseString(rawFlag))
+            }
+            val dataStore = MutablePreferencesDataStore(replay = 1)
+            dataStore.emit(
+                mutablePreferencesOf(
+                    stringPreferencesKey("roleplay_no_background_skin_json") to skinJson.toString(),
+                ),
+            )
+            val testDispatcher = StandardTestDispatcher(testScheduler)
+            val sharingScope = CoroutineScope(SupervisorJob() + testDispatcher)
+            val store = AppSettingsStore(
+                dataStore = dataStore,
+                secureValueStore = RecordingSecureValueStore(),
+                sharingScope = sharingScope,
+                settingsDispatcher = testDispatcher,
+            )
+
+            try {
+                val restored = store.settingsFlow.first().roleplayNoBackgroundSkin
+
+                assertEquals(
+                    "onlineBackgroundGlassEnabled=$rawFlag",
+                    RoleplayNoBackgroundSkinSettings(
+                        preset = RoleplayNoBackgroundSkinPreset.QQ,
+                        maxWidthPercent = 84,
+                        bubbleRadiusDp = 12,
+                        bubblePaddingHorizontalDp = 16,
+                        bubblePaddingVerticalDp = 8,
+                        showBubbleTail = true,
+                        onlineBackgroundGlassEnabled = expectedEnabled,
+                    ),
+                    restored,
+                )
+            } finally {
+                sharingScope.cancel()
+            }
+        }
+    }
+
+    @Test
+    fun saveDisplaySettings_disabledBackgroundGlass_roundTripsWithOtherBubbleValues() = runTest {
+        val dataStore = MutablePreferencesDataStore(replay = 1)
+        dataStore.emit(emptyPreferences())
+        val secureStore = RecordingSecureValueStore()
+        val testDispatcher = StandardTestDispatcher(testScheduler)
+        val sharingScope = CoroutineScope(SupervisorJob() + testDispatcher)
+        val store = AppSettingsStore(
+            dataStore = dataStore,
+            secureValueStore = secureStore,
+            sharingScope = sharingScope,
+            settingsDispatcher = testDispatcher,
+        )
+        val defaults = AppSettings()
+        val expectedSkin = RoleplayNoBackgroundSkinSettings(
+            preset = RoleplayNoBackgroundSkinPreset.NOIR,
+            maxWidthPercent = 88,
+            bubbleRadiusDp = 9,
+            bubblePaddingHorizontalDp = 17,
+            bubblePaddingVerticalDp = 7,
+            showBubbleTail = true,
+            onlineBackgroundGlassEnabled = false,
+        )
+
+        try {
+            store.saveDisplaySettings(
+                themeMode = defaults.themeMode,
+                appColorTheme = defaults.appColorTheme,
+                messageTextScale = defaults.messageTextScale,
+                reasoningExpandedByDefault = defaults.reasoningExpandedByDefault,
+                showThinkingContent = defaults.showThinkingContent,
+                autoCollapseThinking = defaults.autoCollapseThinking,
+                autoPreviewImages = defaults.autoPreviewImages,
+                codeBlockAutoWrap = defaults.codeBlockAutoWrap,
+                codeBlockAutoCollapse = defaults.codeBlockAutoCollapse,
+                showRoleplayAiHelper = defaults.showRoleplayAiHelper,
+                roleplayLongformTargetChars = defaults.roleplayLongformTargetChars,
+                showRoleplayPresenceStrip = defaults.showRoleplayPresenceStrip,
+                showRoleplayStatusStrip = defaults.showRoleplayStatusStrip,
+                showOnlineRoleplayNarration = defaults.showOnlineRoleplayNarration,
+                enableRoleplayNetMeme = defaults.enableRoleplayNetMeme,
+                roleplayImmersiveMode = defaults.roleplayImmersiveMode,
+                roleplayHighContrast = defaults.roleplayHighContrast,
+                roleplayLineHeightScale = defaults.roleplayLineHeightScale,
+                roleplayNoBackgroundSkin = expectedSkin,
+            )
+            advanceUntilIdle()
+
+            val storedJson = dataStore.data.first()[
+                stringPreferencesKey("roleplay_no_background_skin_json"),
+            ].orEmpty()
+            assertFalse(
+                JsonParser.parseString(storedJson).asJsonObject["onlineBackgroundGlassEnabled"].asBoolean,
+            )
+            val reopenedStore = AppSettingsStore(
+                dataStore = dataStore,
+                secureValueStore = secureStore,
+                sharingScope = sharingScope,
+                settingsDispatcher = testDispatcher,
+            )
+            assertEquals(expectedSkin, reopenedStore.settingsFlow.first().roleplayNoBackgroundSkin)
+        } finally {
+            sharingScope.cancel()
+        }
     }
 
     @Test
@@ -192,14 +324,18 @@ private class MutablePreferencesDataStore(
     replay: Int = 0,
 ) : DataStore<Preferences> {
     private val upstream = MutableSharedFlow<Preferences>(replay = replay)
+    private var current: Preferences = emptyPreferences()
     override val data: Flow<Preferences> = upstream
 
     suspend fun emit(preferences: Preferences) {
+        current = preferences
         upstream.emit(preferences)
     }
 
     override suspend fun updateData(transform: suspend (t: Preferences) -> Preferences): Preferences {
-        error("本测试不应写入 DataStore")
+        val updated = transform(current)
+        emit(updated)
+        return updated
     }
 }
 

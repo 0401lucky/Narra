@@ -23,6 +23,8 @@ import com.example.myapplication.model.ImageGenerationRequest
 import com.example.myapplication.model.ImageGenerationResponse
 import com.example.myapplication.model.ResponseApiRequest
 import com.example.myapplication.model.ResponseApiResponse
+import com.example.myapplication.model.RoleplayNoBackgroundSkinPreset
+import com.example.myapplication.model.RoleplayNoBackgroundSkinSettings
 import com.example.myapplication.model.ThemeMode
 import com.example.myapplication.model.VoiceProfile
 import com.example.myapplication.model.VoiceProfileMode
@@ -657,6 +659,68 @@ class SettingsViewModelTest {
         assertTrue(!stored.showRoleplayPresenceStrip)
         assertTrue(stored.showRoleplayStatusStrip)
     }
+
+    @Test
+    fun saveSettings_disabledOnlineBackgroundGlass_persistsDraftAndCallsOnSaved() =
+        runTest(mainDispatcherRule.dispatcher.scheduler) {
+            val viewModel = createViewModel(settings = AppSettings())
+            var savedCalls = 0
+            advanceUntilIdle()
+            val skin = RoleplayNoBackgroundSkinSettings(
+                preset = RoleplayNoBackgroundSkinPreset.TELEGRAM,
+                maxWidthPercent = 86,
+                showBubbleTail = true,
+                onlineBackgroundGlassEnabled = false,
+            )
+
+            viewModel.updateRoleplayNoBackgroundSkin(skin)
+            assertTrue(viewModel.uiState.value.hasDraftChanges())
+            viewModel.saveSettings { savedCalls += 1 }
+            advanceUntilIdle()
+
+            assertEquals(skin, viewModel.storedSettings.value.roleplayNoBackgroundSkin)
+            assertEquals(skin, viewModel.uiState.value.roleplayNoBackgroundSkin)
+            assertFalse(viewModel.uiState.value.hasDraftChanges())
+            assertEquals("设置已保存", viewModel.uiState.value.message)
+            assertEquals(1, savedCalls)
+        }
+
+    @Test
+    fun saveSettings_backgroundGlassDraft_failureKeepsDraftAndDoesNotExitSettings() =
+        runTest(mainDispatcherRule.dispatcher.scheduler) {
+            val services = createTestAiServices(
+                settings = AppSettings(),
+                dispatcher = mainDispatcherRule.dispatcher,
+            )
+            val failingEditor = object : AiSettingsEditor by services.settingsEditor {
+                override suspend fun saveProviderSettings(
+                    providers: List<ProviderSettings>,
+                    selectedProviderId: String,
+                ) {
+                    error("设置写入失败")
+                }
+            }
+            val viewModel = SettingsViewModel(
+                settingsRepository = services.settingsRepository,
+                settingsEditor = failingEditor,
+                modelCatalogRepository = services.modelCatalogRepository,
+            )
+            var savedCalls = 0
+            advanceUntilIdle()
+            viewModel.updateRoleplayNoBackgroundSkin(
+                viewModel.uiState.value.roleplayNoBackgroundSkin.copy(onlineBackgroundGlassEnabled = false),
+            )
+
+            viewModel.saveSettings { savedCalls += 1 }
+            advanceUntilIdle()
+
+            assertFalse(viewModel.uiState.value.roleplayNoBackgroundSkin.onlineBackgroundGlassEnabled)
+            assertTrue(viewModel.uiState.value.hasDraftChanges())
+            assertTrue(viewModel.storedSettings.value.roleplayNoBackgroundSkin.onlineBackgroundGlassEnabled)
+            assertFalse(viewModel.uiState.value.isSaving)
+            assertEquals("设置写入失败", viewModel.uiState.value.message)
+            assertEquals(0, savedCalls)
+        }
 
     @Test
     fun saveSettings_persistsOnlineRoleplayNarrationVisibility() = runTest(mainDispatcherRule.dispatcher.scheduler) {

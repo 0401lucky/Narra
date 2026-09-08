@@ -110,6 +110,11 @@ private fun RoleplayMessageItemContent(
     bubbleMode: RoleplayMessageBubbleMode = RoleplayMessageBubbleMode.DEFAULT,
     noBackgroundSkin: RoleplayNoBackgroundSkinSettings = RoleplayNoBackgroundSkinSettings(),
 ) {
+    val useGlassBubble = shouldUseRoleplayGlassBubble(
+        hasBackgroundImage = backdropState.hasImage,
+        bubbleMode = bubbleMode,
+        onlineBackgroundGlassEnabled = noBackgroundSkin.onlineBackgroundGlassEnabled,
+    )
     val bubbleStyle = rememberRoleplayDialogueBubbleStyle(
         backdropState = backdropState,
         settings = noBackgroundSkin,
@@ -123,6 +128,7 @@ private fun RoleplayMessageItemContent(
                     colors = colors,
                     backdropState = backdropState,
                     lineHeightScale = lineHeightScale,
+                    useGlassBubble = useGlassBubble,
                 )
             } else {
                 Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.Center) {
@@ -171,6 +177,7 @@ private fun RoleplayMessageItemContent(
                     colors = colors,
                     backdropState = backdropState,
                     lineHeightScale = lineHeightScale,
+                    useGlassBubble = useGlassBubble,
                 )
             } else {
                 Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.Center) {
@@ -215,7 +222,7 @@ private fun RoleplayMessageItemContent(
         RoleplayContentType.DIALOGUE -> {
             if (message.speaker == RoleplaySpeaker.USER) {
                 val maxWidthFraction = resolveDialogueMaxWidthFraction(
-                    hasImage = backdropState.hasImage,
+                    useGlassBubble = useGlassBubble,
                     bubbleMode = bubbleMode,
                     isUser = true,
                     noBackgroundFraction = bubbleStyle.maxWidthFraction,
@@ -253,6 +260,7 @@ private fun RoleplayMessageItemContent(
                                         onOpenQuotedMessage = onOpenQuotedMessage,
                                         fillWidth = false,
                                         bubbleStyle = bubbleStyle,
+                                        useGlassBubble = useGlassBubble,
                                     )
                                 }
                             }
@@ -286,6 +294,7 @@ private fun RoleplayMessageItemContent(
                                     onOpenQuotedMessage = onOpenQuotedMessage,
                                     fillWidth = false,
                                     bubbleStyle = bubbleStyle,
+                                    useGlassBubble = useGlassBubble,
                                 )
                             }
                         }
@@ -294,7 +303,7 @@ private fun RoleplayMessageItemContent(
             } else {
                 val isError = message.messageStatus == MessageStatus.ERROR
                 val maxWidthFraction = resolveDialogueMaxWidthFraction(
-                    hasImage = backdropState.hasImage,
+                    useGlassBubble = useGlassBubble,
                     bubbleMode = bubbleMode,
                     isUser = false,
                     noBackgroundFraction = bubbleStyle.maxWidthFraction,
@@ -339,6 +348,7 @@ private fun RoleplayMessageItemContent(
                                         isError = isError,
                                         fillWidth = false,
                                         bubbleStyle = bubbleStyle,
+                                        useGlassBubble = useGlassBubble,
                                     )
                                 }
                             }
@@ -367,6 +377,7 @@ private fun RoleplayMessageItemContent(
                                     isError = isError,
                                     fillWidth = false,
                                     bubbleStyle = bubbleStyle,
+                                    useGlassBubble = useGlassBubble,
                                 )
                             }
                         }
@@ -403,7 +414,7 @@ private fun RoleplayMessageItemContent(
                                 colors.errorText
                             } else {
                                 resolveRoleplayDialogueHighlightColor(
-                                    hasImage = backdropState.hasImage,
+                                    hasImage = useGlassBubble,
                                     colors = colors,
                                 )
                             },
@@ -591,12 +602,12 @@ private fun RoleplayMessageItemContent(
 }
 
 private fun resolveDialogueMaxWidthFraction(
-    hasImage: Boolean,
+    useGlassBubble: Boolean,
     bubbleMode: RoleplayMessageBubbleMode,
     isUser: Boolean,
     noBackgroundFraction: Float,
 ): Float {
-    if (!hasImage) {
+    if (!useGlassBubble) {
         return noBackgroundFraction
     }
     return when (bubbleMode) {

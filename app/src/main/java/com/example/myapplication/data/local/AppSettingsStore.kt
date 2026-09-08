@@ -916,6 +916,12 @@ class AppSettingsStore internal constructor(
                     ?: com.example.myapplication.model.ROLEPLAY_SKIN_DEFAULT_PADDING_VERTICAL_DP,
                 showBubbleTail = jsonObject.get("showBubbleTail")?.asBoolean
                     ?: RoleplayNoBackgroundSkinSettings().showBubbleTail,
+                onlineBackgroundGlassEnabled = jsonObject.get("onlineBackgroundGlassEnabled")
+                    ?.takeIf { it.isJsonPrimitive }
+                    ?.asJsonPrimitive
+                    ?.takeIf { it.isBoolean }
+                    ?.asBoolean
+                    ?: true,
             ).normalized()
         }.logFailure(TAG) { "decodeRoleplayNoBackgroundSkin fromJson failed, raw.len=${rawJson.length}" }
             .getOrDefault(RoleplayNoBackgroundSkinSettings())
