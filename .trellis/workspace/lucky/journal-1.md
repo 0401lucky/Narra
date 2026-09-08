@@ -86,3 +86,41 @@ Moments、PhoneCheck、系统悬浮翻译及全 App UI 收口完成；1526项JVM
 ### Status
 
 [OK] **Completed**
+
+
+## Session 4: 2.2.12-dev 线上气泡开关与朋友圈评论间距
+
+**Date**: 2026-09-08
+**Task**: 2.2.12-dev 线上气泡开关与朋友圈评论间距
+**Branch**: `main`
+
+### Summary
+
+完成全局线上背景玻璃气泡开关和朋友圈评论预览间距修复，三个任务已归档。
+
+### Main Changes
+
+- 新增默认开启的线上背景玻璃气泡偏好，旧配置兼容，关闭后保留背景与主题气泡。
+- 评论预览改为自然行高、上下各 2dp 内边距及 4dp 条目间距，保留单击和长按交互。
+- 同步主题配置规范、版本记录及归档后的上下文路径。
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `b35cc403e12f3a13d645aa145fe0e9a20d562356` | (see git log) |
+| `4f24dc80bb71ea256ac176efdf6f0feb43d7ebc0` | (see git log) |
+| `0eb14782646620182c59dbd4176d1822f08e3714` | (see git log) |
+
+### Testing
+
+- [OK] 1534 项 JVM 测试通过；主源码和 AndroidTest 编译、Lint、dev 构建通过。
+- [OK] Android 16/API 36 模拟器 18 项界面测试通过；定向复跑 5 项取回六张截图并完成视觉复核。
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- 2.2.12-dev 尚未发布；需要发包时按既有 dev 发版流程另行执行。
