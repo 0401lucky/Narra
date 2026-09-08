@@ -1,17 +1,15 @@
 {
   "app_id": "com.narra.app.dev",
   "channel": "dev",
-  "latest_version_name": "2.2.11-dev",
-  "latest_version_code": 20211,
+  "latest_version_name": "2.2.12-dev",
+  "latest_version_code": 20212,
   "minimum_supported_version_code": 0,
-  "apk_url": "https://download.lsa1230.dpdns.org/dev/Narra-v2.2.11-dev-20211-dev.apk?v=20211",
-  "apk_sha256": "a0f7844a858ec4a6f26e02efd040ab77e7ac1e581b9f5798a8d9f41ed5f4f2eb",
-  "published_at": "2026-09-07T23:29:44+08:00",
+  "apk_url": "https://download.lsa1230.dpdns.org/dev/Narra-v2.2.12-dev-20212-dev.apk?v=20212",
+  "apk_sha256": "3f6b31b3ad42d9e5a5574f8a6824c3d18d7dec639113b3bd3ab9d87c7a031a46",
+  "published_at": "2026-09-08T21:12:41+08:00",
   "release_notes": [
-    "完成 UI 重设计收口，整理主壳、个人资料、Roleplay 子页与设置，统一主题、说明入口和触控尺寸",
-    "朋友圈完善发布、身份选择、回复与删除确认，快速发布和失败反馈更可靠",
-    "优化查手机分类导航，补齐空态、加载提示与搜索失败重试",
-    "系统悬浮翻译统一应用主题，改善长文阅读、帮助、取消与重译操作",
-    "保留现有数据和个性化设置，本版本仍为可选更新"
+    "线上聊天新增玻璃气泡开关，更换背景时可保留原主题气泡，线下保持原样",
+    "收紧朋友圈评论间距，保留查看详情、长按删除和大字体显示",
+    "保留已有数据与设置，本版本仍为可选更新"
   ]
 }
