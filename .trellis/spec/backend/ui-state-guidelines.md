@@ -106,6 +106,10 @@ val uiState: StateFlow<FeatureUiState> = _uiState.asStateFlow()
 
 ## 附属页面与确认弹窗
 
+- 朋友圈时间线评论预览按文字自然增高，行内上下各 2dp、条目间距 4dp；不把按钮的
+  `NarraMinimumTouchTarget` 直接用作每条短评论的视觉行高。保留 Compose 触控扩展、
+  单击详情与逐条长按删除，并用 `MomentsScreenTest` 验证密度、大字体和相邻行命中。
+  点赞、查看全部等按钮的既有触控尺寸保持原样。
 - Moments 发布成功以 `MomentsUiState.lastPublishedPostId` 的新值为准；它是瞬时 UI 状态，
   不写入数据库。不能依靠先观察到 `isPublishing=true` 再变为 false 来关闭编辑器：
   本地发布可能在两帧之间完成。发布失败保留正文、配图、位置与身份，后续角色回复失败

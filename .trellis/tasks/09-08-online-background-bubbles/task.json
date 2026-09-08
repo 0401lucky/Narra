@@ -1,0 +1,41 @@
+{
+  "id": "online-background-bubbles",
+  "name": "online-background-bubbles",
+  "title": "2.2.12-dev 线上背景玻璃气泡开关",
+  "description": "全局作用于线上聊天，默认开启；关闭后保留背景图与所选主题气泡，线下不受影响。",
+  "status": "in_progress",
+  "dev_type": null,
+  "scope": null,
+  "package": null,
+  "priority": "P2",
+  "creator": "lucky",
+  "assignee": "lucky",
+  "createdAt": "2026-09-08",
+  "completedAt": null,
+  "branch": null,
+  "base_branch": "main",
+  "worktree_path": null,
+  "commit": "b35cc403e12f3a13d645aa145fe0e9a20d562356",
+  "pr_url": null,
+  "subtasks": [],
+  "children": [],
+  "parent": "09-08-roleplay-moments-ui-feedback",
+  "relatedFiles": [
+    "app/src/main/java/com/example/myapplication/model/RoleplayNoBackgroundSkinSettings.kt",
+    "app/src/main/java/com/example/myapplication/data/local/AppSettingsStore.kt",
+    "app/src/main/java/com/example/myapplication/ui/screen/roleplay/RoleplaySettingsSections.kt",
+    "app/src/main/java/com/example/myapplication/ui/screen/roleplay/RoleplayOnlinePhoneContent.kt",
+    "app/src/main/java/com/example/myapplication/ui/component/roleplay/RoleplayNoBackgroundSkin.kt",
+    "app/src/main/java/com/example/myapplication/ui/component/roleplay/RoleplayMessageBubbles.kt",
+    "app/src/main/java/com/example/myapplication/ui/component/roleplay/RoleplayDialogueBubbles.kt",
+    "app/src/test/java/com/example/myapplication/model/RoleplayNoBackgroundSkinSettingsTest.kt",
+    "app/src/test/java/com/example/myapplication/data/local/AppSettingsStoreTest.kt",
+    "app/src/test/java/com/example/myapplication/viewmodel/SettingsPersistenceCoordinatorTest.kt",
+    "app/src/androidTest/java/com/example/myapplication/ui/screen/roleplay/RoleplaySettingsContentTest.kt",
+    "app/src/androidTest/java/com/example/myapplication/ui/screen/roleplay/RoleplaySceneContentTest.kt"
+  ],
+  "notes": "R1 实现与全部验收完成：配置兼容、保存、视觉策略和设备回归通过，代码审查及六张截图复核完成；本地功能提交已记录，待归档。未发布。",
+  "meta": {
+    "version": "2.2.12-dev"
+  }
+}

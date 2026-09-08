@@ -1,0 +1,44 @@
+{
+  "id": "roleplay-moments-ui-feedback",
+  "name": "roleplay-moments-ui-feedback",
+  "title": "2.2.12-dev 线上聊天背景气泡与朋友圈评论间距反馈",
+  "description": "2.2.12-dev 父任务：线上背景玻璃气泡全局开关默认开启，朋友圈评论预览恢复紧凑布局；负责需求、设计汇总和最终集成验证。",
+  "status": "in_progress",
+  "dev_type": null,
+  "scope": null,
+  "package": null,
+  "priority": "P2",
+  "creator": "lucky",
+  "assignee": "lucky",
+  "createdAt": "2026-09-08",
+  "completedAt": null,
+  "branch": null,
+  "base_branch": "main",
+  "worktree_path": null,
+  "commit": "4f24dc80bb71ea256ac176efdf6f0feb43d7ebc0",
+  "pr_url": null,
+  "subtasks": [],
+  "children": [
+    "09-08-online-background-bubbles",
+    "09-08-moments-comment-spacing"
+  ],
+  "parent": null,
+  "relatedFiles": [
+    "app/src/main/java/com/example/myapplication/ui/screen/roleplay/RoleplayOnlinePhoneContent.kt",
+    "app/src/main/java/com/example/myapplication/ui/component/roleplay/RoleplayNoBackgroundSkin.kt",
+    "app/src/main/java/com/example/myapplication/ui/component/roleplay/RoleplayDialogueBubbles.kt",
+    "app/src/main/java/com/example/myapplication/ui/component/roleplay/RoleplayMessageBubbles.kt",
+    "app/src/main/java/com/example/myapplication/data/local/AppSettingsStore.kt",
+    "app/src/main/java/com/example/myapplication/model/AppSettings.kt",
+    "app/src/main/java/com/example/myapplication/model/RoleplayNoBackgroundSkinSettings.kt",
+    "app/src/main/java/com/example/myapplication/ui/screen/roleplay/RoleplaySettingsSections.kt",
+    "app/src/main/java/com/example/myapplication/ui/screen/moments/MomentsScreen.kt",
+    "app/src/main/java/com/example/myapplication/ui/theme/UiTokens.kt",
+    "app/src/androidTest/java/com/example/myapplication/ui/screen/moments/MomentsScreenTest.kt",
+    "版本功能添加/优化.md"
+  ],
+  "notes": "2026-09-08：两项功能和全部验收完成。1534 项单测、18 项模拟器测试、编译、Lint、dev 构建、代码审查及六张截图复核通过；规范和 2.2.12-dev 未发布记录已同步，待任务归档。未推送或发布。",
+  "meta": {
+    "version": "2.2.12-dev"
+  }
+}
