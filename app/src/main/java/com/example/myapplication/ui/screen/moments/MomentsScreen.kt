@@ -1198,7 +1198,7 @@ private fun MomentEngagementBlock(
     ) {
         Column(
             modifier = Modifier.padding(NarraUi.compactGap),
-            verticalArrangement = Arrangement.spacedBy(NarraUi.compactGap),
+            verticalArrangement = Arrangement.spacedBy(4.dp),
         ) {
             if (post.likedByNames.isNotEmpty()) {
                 Row(
@@ -1220,7 +1220,7 @@ private fun MomentEngagementBlock(
                     val previewModifier = if (onCommentPreviewClick == null && onCommentPreviewLongClick == null) {
                         Modifier.fillMaxWidth()
                     } else {
-                        Modifier.fillMaxWidth().heightIn(min = NarraMinimumTouchTarget)
+                        Modifier.fillMaxWidth()
                             .combinedClickable(
                                 onClick = { onCommentPreviewClick?.invoke() },
                                 onLongClickLabel = "删除回复",
@@ -1237,7 +1237,7 @@ private fun MomentEngagementBlock(
                         style = MaterialTheme.typography.bodySmall,
                         maxLines = 2,
                         overflow = TextOverflow.Ellipsis,
-                        modifier = previewModifier.padding(vertical = NarraUi.compactGap)
+                        modifier = previewModifier.padding(vertical = 2.dp)
                             .testTag("moment_comment_preview_" + comment.id),
                     )
                 }

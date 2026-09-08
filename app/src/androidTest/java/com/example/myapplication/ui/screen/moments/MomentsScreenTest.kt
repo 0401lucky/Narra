@@ -11,17 +11,22 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asAndroidBitmap
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.graphics.toPixelMap
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.test.assertHeightIsAtLeast
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsEnabled
 import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.assertTextContains
+import androidx.compose.ui.test.assertTextEquals
 import androidx.compose.ui.test.captureToImage
+import androidx.compose.ui.test.click
+import androidx.compose.ui.test.getUnclippedBoundsInRoot
 import androidx.compose.ui.test.hasTestTag
 import androidx.compose.ui.test.isDialog
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
@@ -30,13 +35,17 @@ import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.test.performScrollToNode
+import androidx.compose.ui.test.performSemanticsAction
 import androidx.compose.ui.test.performTextInput
 import androidx.compose.ui.test.performTouchInput
+import androidx.compose.ui.text.TextLayoutResult
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.dp
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
+import com.example.myapplication.R
 import com.example.myapplication.data.repository.LocalImageStore
 import com.example.myapplication.model.AppColorTheme
 import com.example.myapplication.model.MomentComment
@@ -49,6 +58,8 @@ import com.example.myapplication.ui.theme.ChatAppTheme
 import com.example.myapplication.viewmodel.MomentsUiState
 import java.io.File
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
+import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -252,13 +263,146 @@ class MomentsScreenTest {
         composeRule.runOnIdle { assertEquals(listOf("post-1"), retried) }
         scrollTimelineTo("moment_comment_preview_comment-1")
         composeRule.onNodeWithTag("moment_comment_preview_comment-1")
-            .assertHeightIsAtLeast(48.dp).performTouchInput { longClick() }
+            .assertIsDisplayed().performTouchInput { longClick() }
         composeRule.onNodeWithText("删除这条回复？").assertIsDisplayed()
         composeRule.onNodeWithText("取消").performClick()
         composeRule.runOnIdle { assertEquals(0, deletedComments.size) }
         composeRule.onNodeWithTag("moment_comment_preview_comment-1").performTouchInput { longClick() }
         composeRule.onNodeWithText("删除").performClick()
         composeRule.runOnIdle { assertEquals(listOf("comment-1"), deletedComments) }
+    }
+
+    @Test
+    fun commentPreviews_fourShortRows_areCompactAndViewAllOpensRemainingComments() {
+        val lastComment = shortComments.last().copy(id = "preview-5", authorName = "嘉木", text = "记得带伞")
+        val comments = shortComments + lastComment
+        showMoments(
+            state = { MomentsUiState(isLoading = false, posts = listOf(testPost.copy(comments = comments))) },
+        )
+        scrollTimelineTo("moment_comment_preview_" + shortComments.last().id)
+        val bounds = shortComments.map { comment ->
+            previewNode(comment).assertIsDisplayed()
+                .assertTextEquals(comment.authorName + "：" + comment.text)
+                .getUnclippedBoundsInRoot()
+        }
+        val layouts = shortComments.map(::previewTextLayout)
+        layouts.forEach { layout ->
+            assertEquals(1, layout.lineCount)
+            assertFalse(layout.hasVisualOverflow)
+        }
+        bounds.zipWithNext().forEach { (previous, next) ->
+            assertTrue("相邻短评论之间应保留间隔", previous.bottom < next.top)
+        }
+        // 使用视觉布局和文字行高，不把触控扩展或受最小高度约束的 Text 高度当成文字高度。
+        val textHeight = layouts.fold(0.dp) { height, layout ->
+            height + with(layout.layoutInput.density) {
+                (layout.getLineBottom(0) - layout.getLineTop(0)).toDp()
+            }
+        }
+        val previewHeight = bounds.last().bottom - bounds.first().top
+        assertTrue(
+            "四条短评论的文字应占预览区域一半以上，实际预览高度为 " + previewHeight,
+            previewHeight < textHeight * 2,
+        )
+        previewNode(lastComment).assertDoesNotExist()
+        captureReviewImage("moments-four-compact-comments")
+
+        val viewAllLabel = composeRule.activity.getString(R.string.moments_view_all_comments, comments.size)
+        composeRule.onNodeWithText(viewAllLabel).performScrollTo().assertIsDisplayed().assertHeightIsAtLeast(48.dp)
+            .performTouchInput { click() }
+        composeRule.onNodeWithTag("moment_detail_list")
+            .performScrollToNode(hasTestTag("moment_comment_" + lastComment.id))
+        composeRule.onNodeWithTag("moment_comment_" + lastComment.id).assertIsDisplayed()
+    }
+
+    @Test
+    fun commentPreviews_largeFont_wrapAndGrowWithoutOverlapping() {
+        val comments = shortComments.mapIndexed { index, comment ->
+            when (index) {
+                1 -> comment.copy(text = "风很舒服。\n下次一起去。")
+                2 -> comment.copy(text = "沿着河边慢慢走，把今天的风景和书店里遇见的故事分享给你。".repeat(4))
+                else -> comment
+            }
+        }
+        showMoments(
+            state = { MomentsUiState(isLoading = false, posts = listOf(testPost.copy(comments = comments))) },
+            fontScale = 1.6f,
+        )
+        scrollTimelineTo("moment_comment_preview_" + comments.last().id)
+        val bounds = comments.map { comment ->
+            previewNode(comment).assertIsDisplayed()
+                .assertTextEquals(comment.authorName + "：" + comment.text)
+                .getUnclippedBoundsInRoot()
+        }
+        val rowHeights = bounds.map { it.bottom - it.top }
+        val layouts = comments.map(::previewTextLayout)
+        assertEquals(listOf(1, 2, 2, 1), layouts.map { it.lineCount })
+        assertFalse("两行短文字应完整显示", layouts[1].hasVisualOverflow)
+        assertTrue("更长的评论仍应限制为两行预览", layouts[2].isLineEllipsized(1))
+        listOf(1, 2).forEach { index ->
+            assertTrue("多行预览应随内容自然增高", rowHeights[index] > rowHeights.first())
+        }
+        layouts.forEachIndexed { index, layout ->
+            val textHeight = with(layout.layoutInput.density) {
+                (layout.getLineBottom(layout.lineCount - 1) - layout.getLineTop(0)).toDp()
+            }
+            assertTrue("预览应容纳全部可见文字行", rowHeights[index] >= textHeight)
+        }
+        bounds.zipWithNext().forEach { (previous, next) ->
+            assertTrue("大字体相邻评论不能重叠", previous.bottom < next.top)
+        }
+        captureReviewImage("moments-comments-large-font")
+    }
+
+    @Test
+    fun commentPreviews_adjacentRows_keepTheirOwnLongPressAndTapActions() {
+        var state by mutableStateOf(
+            MomentsUiState(isLoading = false, posts = listOf(testPost.copy(comments = shortComments))),
+        )
+        val deletedComments = mutableListOf<String>()
+        showMoments(
+            state = { state },
+            onDeleteComment = { commentId ->
+                deletedComments += commentId
+                state = state.copy(
+                    posts = state.posts.map { post ->
+                        post.copy(comments = post.comments.filterNot { it.id == commentId })
+                    },
+                )
+            },
+        )
+        scrollTimelineTo("moment_comment_preview_" + shortComments.last().id)
+        shortComments.forEach { comment ->
+            val preview = previewNode(comment)
+            val layout = previewTextLayout(comment)
+            val textCenterX = (layout.getLineLeft(0) + layout.getLineRight(0)) / 2
+            // 在可见文字内注入真实手势，验证紧凑行没有误命中相邻评论。
+            preview.performTouchInput { longClick(Offset(textCenterX, center.y)) }
+            composeRule.onNodeWithText("删除这条回复？").assertIsDisplayed()
+            composeRule.onNodeWithText("将删除 " + comment.authorName + " 的这条回复，删除后无法恢复。")
+                .assertIsDisplayed()
+            composeRule.onNodeWithTag("moment_comment_input").assertDoesNotExist()
+            composeRule.onNodeWithText("取消").performClick()
+            composeRule.runOnIdle { assertTrue(deletedComments.isEmpty()) }
+            preview.assertIsDisplayed().performTouchInput { click(Offset(textCenterX, center.y)) }
+            composeRule.onNodeWithTag("moment_detail_list").assertIsDisplayed()
+            composeRule.onNodeWithTag("moment_comment_input").assertIsDisplayed()
+            composeRule.runOnIdle { composeRule.activity.onBackPressedDispatcher.onBackPressed() }
+            scrollTimelineTo("moment_comment_preview_" + shortComments.last().id)
+        }
+
+        shortComments.forEachIndexed { index, comment ->
+            val layout = previewTextLayout(comment)
+            val textCenterX = (layout.getLineLeft(0) + layout.getLineRight(0)) / 2
+            previewNode(comment).assertIsDisplayed().performTouchInput { longClick(Offset(textCenterX, center.y)) }
+            composeRule.onNodeWithText("将删除 " + comment.authorName + " 的这条回复，删除后无法恢复。")
+                .assertIsDisplayed()
+            composeRule.onNodeWithText("删除").performClick()
+            composeRule.runOnIdle {
+                assertEquals(shortComments.take(index + 1).map { it.id }, deletedComments)
+            }
+            previewNode(comment).assertDoesNotExist()
+        }
     }
 
     @Test
@@ -296,6 +440,15 @@ class MomentsScreenTest {
 
     private fun scrollComposerTo(tag: String) {
         composeRule.onNodeWithTag("moment_composer").performScrollToNode(hasTestTag(tag))
+    }
+
+    private fun previewNode(comment: MomentComment) =
+        composeRule.onNodeWithTag("moment_comment_preview_" + comment.id)
+
+    private fun previewTextLayout(comment: MomentComment): TextLayoutResult {
+        val layouts = mutableListOf<TextLayoutResult>()
+        previewNode(comment).performSemanticsAction(SemanticsActions.GetTextLayoutResult) { it(layouts) }
+        return layouts.single()
     }
 
     private fun showMoments(
@@ -353,6 +506,15 @@ class MomentsScreenTest {
         val directory = File(composeRule.activity.getExternalFilesDir(null), "ui-review").apply { mkdirs() }
         val bitmap = node.captureToImage().asAndroidBitmap()
         File(directory, "$name.png").outputStream().use { bitmap.compress(Bitmap.CompressFormat.PNG, 100, it) }
+    }
+
+    private val shortComments = listOf(
+        "季望" to "风景真好",
+        "陆星" to "下次一起",
+        "小满" to "等你回来",
+        "阿澄" to "路上小心",
+    ).mapIndexed { index, (author, text) ->
+        MomentComment(id = "preview-" + (index + 1), postId = "post-1", authorName = author, text = text)
     }
 
     private val testPost = MomentPost(
