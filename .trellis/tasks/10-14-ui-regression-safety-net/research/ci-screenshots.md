@@ -79,6 +79,7 @@ record 模式额外上传 `app/src/test/snapshots/**` 为 `screenshot-candidate-
 - 第二次 run [38573095548](https://github.com/0401lucky/Narra/actions/runs/38573095548)（commit 073dba6c）全部通过：
   - `screenshots`：verify 命令 → `finalizeTestRoborazziDebug` → BUILD SUCCESSFUL（5m18s，job 13:35:49–13:41:49 UTC）。78 张 Windows 基准在 ubuntu-24.04 + JDK 17 下零阈值比较全部通过，首次实测确认两宿主渲染一致；`screenshot-diagnostics` artifact（346 KB，191 文件，含 79 个 Roborazzi 结果 JSON）成功上传。
   - `quality`：assembleDebug（5m56s）/ testDebugUnitTest（1m31s）/ lintDebug（4m15s）全部 BUILD SUCCESSFUL。
+- 后续文档提交 563af80e 的 run [38575432534](https://github.com/0401lucky/Narra/actions/runs/38575432534) 复跑同样通过（`screenshots` + `quality`）。
 - 结论：基准已提交并在两个宿主同为有效门禁；无需为 CI 宿主另生成 record 候选。
 
 ## 8. 与 quality job 的交互（本机实测）

@@ -56,6 +56,7 @@
 - 新增 `screenshots` job：`ubuntu-24.04` + JDK 17；push/PR 只运行 verify（`testDebugUnitTest --tests "...ui.screenshot.*" -Proborazzi.test.verify=true`），失败仍以 `if: always()` 上传差异报告；`workflow_dispatch` 的 record 模式仅手动、只产出候选基准 artifact、绝不自动提交，且全流程禁用 `verifyAndRecord`。
 - run 38572287401（commit `c5835620`）：`quality` 与 `screenshots` 均失败于 “Set up Android SDK”——setup-android 默认 packages 中的旧 `tools` 包已从 SDK 仓库下架（外部漂移，与截图内容无关）；截图 verify 未执行。修复见 `073dba6c`。
 - run 38573095548（commit `073dba6c`）通过：`screenshots` 5m18s（`screenshot-diagnostics` artifact 成功上传）；`quality` assembleDebug 5m56s / testDebugUnitTest 1m31s / lintDebug 4m15s。**78 张 Windows 基准在 ubuntu-24.04 下零阈值全部一致**，无需为 CI 宿主另生成候选基准。
+- run 38575432534（commit `563af80e`，文档提交）复跑同样通过：`screenshots` 与 `quality` 均 success。
 - 若未来宿主偏移（runner 镜像/字体变化）导致 verify 失败：按 `research/ci-screenshots.md` 流程在 CI record 候选 → 人工确认 → 单独提交基准。
 
 ## 性能与设备核验

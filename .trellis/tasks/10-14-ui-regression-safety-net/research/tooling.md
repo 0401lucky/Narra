@@ -1,13 +1,13 @@
 # 截图工具接入依据与实测结果（2026-10-14）
 
-本文件区分「已实测通过（Windows 本机）」与「待 CI 宿主验证」。命令与结果均来自实际执行；原始 Gradle 日志保存在 `%TEMP%\narra-screenshot-smoke-evidence\01..10-*.log`。
+本文件区分「已实测通过（Windows 本机）」与「CI 宿主复验（2026-10-14 run 38573095548）」。命令与结果均来自实际执行；原始 Gradle 日志保存在 `%TEMP%\narra-screenshot-smoke-evidence\01..10-*.log`。
 
 ## 本地事实
 
 - 仓库 D:\code\AndroidStudioprojects\MyApplication（分支 main，HEAD 276825b），Windows 11 + PowerShell。
 - 本机 JDK：Temurin 21.0.9（JAVA_HOME 已设，`org.gradle.java.installations.auto-detect=false`），Gradle wrapper 9.3.1。
 - AGP 9.1.0（Groovy DSL），Kotlin/Compose Compiler 2.2.10，Compose BOM 2026.02.01，compileSdk 36 / targetSdk 36 / minSdk 26，configuration cache 开启。
-- CI 对照宿主：`.github/workflows/android-quality.yml`（ubuntu-latest + JDK 17，现有 assembleDebug / testDebugUnitTest / lintDebug 三项）。
+- CI 对照宿主：`.github/workflows/android-quality.yml`（ubuntu-latest + JDK 17 的 quality 三项，另有 ubuntu-24.04 的 screenshots job；见 research/ci-screenshots.md）。
 - 本机无 adb 设备、无模拟器；WSL 无 JDK/Android SDK；Docker 未启动。结论：本机只验证「链路可跑」，基准按宿主分开，不混用 PNG。
 
 ## 官方资料（2026-10-14 检索）
@@ -109,10 +109,10 @@ Roborazzi 1.76.0 实际任务名（`:app:tasks --all` 核对）：`recordRoboraz
 - verify 不修改任何基准，诊断只落 app/build（含 results-summary.json 与 Roborazzi HTML 报告）；
 - 全过程未运行 record / verifyAndRecord。
 
-待 CI 复核（ubuntu-24.04 + JDK 17；远端 run 尚未触发）：
-- 同一 verify 入口在 CI 宿主首次运行需先通过（含 Robolectric android-all 下载与缓存）；
-- 跨宿主像素一致性未验证：Windows 生成的 78 张候选基准不得直接当作 CI 基准；
-- 注入/缺失负向场景是否在 CI 宿主重放由门禁评审决定，当前证据只覆盖本机。
+CI 复核结果（ubuntu-24.04 + JDK 17，run 38573095548，2026-10-14）：
+- 同一 verify 入口在 CI 宿主通过（含 Robolectric android-all 下载与依赖缓存）；
+- 跨宿主像素一致性已实测：78 张 Windows 基准零阈值全部一致，可作为 CI 基准；
+- 注入/缺失负向场景未在 CI 宿主重放（本机证据充分；如需 CI 级证明，另行临时分支演练）。
 
 ## 负向门禁抽验（第三轮：调色板来源修复后的定向重录基准，Windows 本机 2026-10-14）
 
@@ -126,7 +126,7 @@ Roborazzi 1.76.0 实际任务名（`:app:tasks --all` 核对）：`recordRoboraz
 | 恢复备份后重验 | 同上 | 0 | 真实执行；恢复后 SHA-256 与重录后清单一致（401F76CC…） |
 | 完整性审计 | 全量 SHA-256 清单（78 PNG + manifest.md，共 79 文件） | - | 重录前后清单、抽验恢复后与重录清单均 0 差异；verify 不改基准 |
 
-结论：调色板来源修复后的新基准仍保持零阈值门禁有效（单像素变化非零退出、恢复后真实通过）；基准状态仍为 Windows 候选、待 CI 宿主复验与人工确认。
+结论：调色板来源修复后的新基准仍保持零阈值门禁有效（单像素变化非零退出、恢复后真实通过）；基准状态已升级为「已确认」——2026-10-14 用户视觉确认，且 CI 宿主 run 38573095548 零阈值复验一致。
 
 ## 宿主能力结论（Windows 本机）
 
@@ -138,9 +138,9 @@ Roborazzi 1.76.0 实际任务名（`:app:tasks --all` 核对）：`recordRoboraz
 - 网络：首次运行需下载 Robolectric `android-all-instrumented`（SDK 35，约 100MB+，耗时较长）；Maven Central 偶发 TLS handshake 失败，重试即可。
 - `ui-test-manifest` 保持 debugImplementation 即可被 `testDebugUnitTest` 使用（debug variant 合并清单含 ComponentActivity），无需新增 test 依赖。
 
-## 待 CI 宿主验证（不得宣称已通过）
+## CI 宿主验证结论（2026-10-14，run 38573095548 已闭环）
 
-1. ubuntu-24.04 + JDK 17 下复跑 record/verify 两条链路（record 仅限手动 dispatch），确认退出码与渲染行为一致（当前结论只证明 Windows + JDK 21 宿主可跑；quality job 仍为 ubuntu-latest，不受影响）。
-2. 基准必须由 CI 宿主生成或经 CI 宿主复现后再人工确认；当前 78 张基准均为本机 Windows 产物，仅用于本机链路验证，不得直接作为 CI 基准（设计约定：宿主分离）。
-3. CI 首次运行需允许下载 Robolectric android-all 与 Gradle 依赖，缓存策略待定。
-4. 零测试/缺场景防呆（ScreenshotBaselineGuardTest）与完整矩阵（78 张基准）已在实施第 2、3 节完成；其在 CI 宿主的行为仍待本清单第 1、2 项验证。
+1. ubuntu-24.04 + JDK 17 下 verify 已复跑通过（BUILD SUCCESSFUL 5m18s）；record 在 CI 未执行——无需候选基准（见 2）。
+2. 78 张 Windows 基准经 CI 宿主零阈值复验逐像素一致，两宿主共同有效；若未来发生宿主偏移，再按 ci-screenshots.md 流程 record 候选。
+3. 首次运行已完成 Robolectric android-all 与 Gradle 依赖下载；setup-java 的 Gradle 缓存生效。
+4. 计数守卫与完整矩阵在 CI 随截图包运行并通过；本清单原第 1、2 项已闭环。
