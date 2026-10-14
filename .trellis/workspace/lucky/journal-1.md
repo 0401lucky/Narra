@@ -164,3 +164,44 @@ Moments、PhoneCheck、系统悬浮翻译及全 App UI 收口完成；1526项JVM
 
 - 78 张基准已人工确认（2026-10-14）并随 c5835620 提交；远端 CI 已通过（run 38573095548）。
 - 连接固定真机后补录 D01 与 S0–S3/F1–F3/N1，再更新 performance-baseline.md。
+
+
+## Session 6: v2.3 视觉回归安全网：CI 接入、基准确认与归档
+
+**Date**: 2026-10-14
+**Task**: v2.3 视觉回归安全网：CI 接入、基准确认与归档
+**Branch**: `main`
+
+### Summary
+
+接入 Roborazzi/Robolectric 截图安全网并在远端 CI 验证通过，修复 setup-android 外部漂移，基准升级为已确认；真机项移交用户后续自测后归档任务。
+
+### Main Changes
+
+- Roborazzi 1.76.0 + Robolectric 4.17 安全网与 78 张基准提交（Windows 生成，ubuntu-24.04 零阈值复验一致）
+- 修复 CI setup-android 默认安装已下架 tools 包导致的门禁失败（两 job 显式 packages: platform-tools），远端 run 38573095548 及后续复跑全部通过
+- 基准状态升级为「已确认」（manifest/screenshot-matrix/tooling/prd）；真机 D01 与 A6 移交用户后续自测并归档任务
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `c5835620` | (see git log) |
+| `073dba6c` | (see git log) |
+| `563af80e` | (see git log) |
+| `01afe0ea` | (see git log) |
+| `df87925a` | (see git log) |
+
+### Testing
+
+- [OK] 本地 verify --rerun-tasks 真实通过（78/78 哈希零差异）与负向门禁（1px 注入/缺基准 exit 1）
+- [OK] 远端 CI：screenshots 5m18s 通过 + quality assemble/1613 项单测/lint 通过
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- 用户真机自测 D01 与性能项（S0–S3/F1–F3/N1）后更新 performance-baseline
+- 启动后续令牌与无障碍试点（10-14-ui-token-accessibility-pilot，仍为 planning）
