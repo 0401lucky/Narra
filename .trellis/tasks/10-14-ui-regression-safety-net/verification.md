@@ -11,8 +11,8 @@
 | A2 / S2–S3 首批确定性用例连续两次通过 | 已通过（Windows 宿主） | 76 个登记用例 + 2 冒烟；verify 两次真实通过（第二次 `--rerun-tasks`，35 tasks 全量执行）；无网络、无真实数据、无随机时间 |
 | A3 / S4 1px 差异与缺基准真实失败 | 已通过（Windows 宿主） | 冒烟轮与全量轮各执行一次：1px 注入 exit 1 + compare/actual 产物；缺失基准 exit 1（verify 与计数守卫均失败）；恢复后通过且基准哈希不变 |
 | A4 / S5 CI 门禁 | 已通过（远端 run 38573095548） | `screenshots` job（ubuntu-24.04 + JDK 17）零阈值 verify 全部通过（5m18s）；`quality` job assembleDebug / testDebugUnitTest / lintDebug 全部 BUILD SUCCESSFUL。首次 run 38572287401 因 setup-android 默认安装已下架 `tools` 包在 setup 步骤失败（外部漂移），已由 `073dba6c` 修复（两 job 显式 `packages: platform-tools`，步骤内容不变） |
-| A5 / S2、S7 初始基准人工确认 | 已完成视觉确认（2026-10-14 用户确认）；CI 宿主已复验一致；代表设备效果待 D01 | 78 张 PNG 位于 `app/src/test/snapshots/`，`manifest.md` 已登记人工确认；run 38573095548 在 ubuntu-24.04 下零阈值复验一致；D01 设备效果仍待做 |
-| A6 / S6–S7 性能证据 | 未完成（保持） | 无真机；现有归档全部为合成 fixture（见 `research/performance-baseline.md`）；未运行 S0–S3/F1–F3/N1；不给任何性能结论 |
+| A5 / S2、S7 初始基准人工确认 | 已完成视觉确认（2026-10-14 用户确认）；CI 宿主已复验一致；代表设备效果移交用户后续真机自测 | 78 张 PNG 位于 `app/src/test/snapshots/`，`manifest.md` 已登记人工确认；run 38573095548 在 ubuntu-24.04 下零阈值复验一致；D01 设备效果移交用户后续真机自测（2026-10-14 决定） |
+| A6 / S6–S7 性能证据 | 未完成（保持；移交用户后续真机自测） | 无真机；现有归档全部为合成 fixture（见 `research/performance-baseline.md`）；未运行 S0–S3/F1–F3/N1；不给任何性能结论 |
 | A7 质量门禁与范围 | 已通过 | 全量 1613 项 JVM 测试 0 失败/0 跳过、`lintDebug`、`assembleDebug` 通过；产品外观、入口与发布配置无业务变化 |
 
 ## 固定环境（唯一运行清单见 `app/src/test/snapshots/manifest.md`）
@@ -63,7 +63,7 @@
 
 - `adb devices -l` 无物理设备；AVD（Codex_Pixel_7_Large / Pixel_7 / Pixel_9_Pro）仅记录，未启动。
 - `baselineprofile/build/outputs/narra-benchmark-runs/`：5 个目录中 a/b/c 为空；d/e 为合成 fixture（commit `d089e0bd` ≠ HEAD、`decidable=false`、仅 `f1ChatScroll`、metrics 为空、perfetto 为 62B 文本）→ 只可作框架自测参考。
-- S0–S3 / F1–F3 / N1 与 D01 未执行；**A6 保持未完成**，本任务不给出任何性能回归结论。
+- S0–S3 / F1–F3 / N1 与 D01 未执行；**A6 保持未完成**，本任务不给出任何性能回归结论。（2026-10-14 用户决定真机相关项移交用户后续自测；任务归档时保持未完成状态，不写成通过）
 
 ## 未覆盖 / 转 D01 设备矩阵
 

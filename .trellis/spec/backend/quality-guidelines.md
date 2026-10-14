@@ -120,6 +120,10 @@ CI 固定门禁：
 
 后台单元测试最大等待 60 秒；超时只能报告“未取得结果”，不能写成通过。
 
+CI 工作流中的 `Set up Android SDK`（android-actions/setup-android@v3）必须显式
+`packages: platform-tools`：动作默认值包含已从 SDK 仓库下架的旧 `tools` 包，
+会在 setup 步骤直接失败（2026-10-14 实测，quality 与 screenshots 同时触发）。
+
 ## 审查清单
 
 - 依赖方向是否仍是 UI → ViewModel → Repository/Domain → Store/API。
