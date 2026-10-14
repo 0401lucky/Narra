@@ -31,9 +31,9 @@
 - [x] 严格零阈值验证：同样输入连续两次通过。（2026-10-14 首轮：verify 两次，第二次 --rerun-tasks 全量真实通过；见 manifest.md 第 2 节）
 - [x] 在临时副本注入 1px 差异，真实 verify 非零；缺失一张基准也非零；恢复后通过且基准哈希不变。（2026-10-14 第二轮登记用例实测：H01 注入/恢复、H02 缺失/恢复、守卫失败；78 张 PNG 前后 0 差异；见 tooling.md「负向门禁/验证机制」）
 - [x] 用例清单与结果计数相符，零测试、缺场景不能被当成成功。（ScreenshotBaselineGuardTest 冻结分族计数；缺基准实测失败；--tests 过滤为空时 Gradle 直接失败）
-- [x] 新增 screenshots CI job，保留原 quality job，失败也上传合成数据产生的差异报告。（android-quality.yml：ubuntu-24.04，verify + if: always() 诊断产物；YAML 解析通过；远端未触发）
-- [x] 记录基准生成/人工接受/验证命令，确认 CI 不自动 record。（research/ci-screenshots.md：record 仅限手动 workflow_dispatch，不提交、不使用 verifyAndRecord；人工确认流程已写明，实际确认与 CI 宿主复现仍待进行）
-- [ ] 记录远端 CI run；尚未触发时明确写未执行，不将本地或 YAML 检查替代远端结果。（未执行：未 push，远端 run 尚未触发；本机 YAML 解析与本地验证不能替代远端结果）
+- [x] 新增 screenshots CI job，保留原 quality job，失败也上传合成数据产生的差异报告。（android-quality.yml：ubuntu-24.04，verify + if: always() 诊断产物；YAML 解析通过；远端首发失败于 setup-android 外部漂移，修复后 run 38573095548 通过）
+- [x] 记录基准生成/人工接受/验证命令，确认 CI 不自动 record。（research/ci-screenshots.md：record 仅限手动 workflow_dispatch，不提交、不使用 verifyAndRecord；人工确认与 CI 宿主复现已完成——run 38573095548 零阈值通过）
+- [x] 记录远端 CI run：run 38572287401（`c5835620`）两 job 于 setup-android 外部漂移失败，修复后 run 38573095548（`073dba6c`）screenshots 与 quality 全部通过；详见 verification.md 与 research/ci-screenshots.md。
 
 ### 4. 设备与性能证据
 
@@ -48,12 +48,12 @@
 - [x] 运行相关测试与既有三项质量门禁，必要时编译 AndroidTest。（2026-10-14 主会话：assembleDebug / testDebugUnitTest 1613 项 0 失败 0 跳过 / lintDebug / :app:compileDebugAndroidTestKotlin 全部通过；截图 verify --rerun-tasks 真实执行通过且 78/78 基准哈希不变）
 - [x] trellis-check 代理审查代码、真实用例、负向门禁及兼容边界；相关失败修复后复验。（2026-10-14 全范围检查完成：守卫增加 @Test 数量校验、更正覆盖归因、新增质量规范截图回归（Roborazzi）小节；随后调色板 fixture 修复轮重录 19 张并复验通过）
 - [x] 主会话更新验证记录、版本记录和必要规范，审阅实际 diff。（verification.md、版本功能添加/优化.md、quality-guidelines.md 与 research/* 已更新；产品代码唯一改动为 deriveImmersiveGlassPalette 可见性 private 改 internal）
-- [x] 仅安全网完成范围可登记完成；未通过的人工、设备、CI、性能项保留状态。（A5 视觉确认已于 2026-10-14 由用户完成；远端 CI 首次运行、A6 真机性能、D01 设备效果仍保持未完成/未执行，未写成通过）
+- [x] 仅安全网完成范围可登记完成；未通过的人工、设备、CI、性能项保留状态。（A5 视觉确认与远端 CI 首次运行已于 2026-10-14 完成；A6 真机性能与 D01 设备效果仍保持未完成/未执行，未写成通过）
 - [x] 把可审阅基准交给令牌试点，后续任务独立完成视觉决策和实施批准。（基准已于 2026-10-14 人工确认，位于 app/src/test/snapshots/，可直接作为令牌试点对照；试点任务保持 planning，待用户启动）
 
 ## Validation Commands
 
-以下截图命令已于 2026-10-14 在 Roborazzi 1.76.0 下核对任务名并实测（Windows 本机，见 research/tooling.md）；CI 宿主尚未复跑。PowerShell 中 `-P` 参数必须整体加引号；插件任务默认依赖该 variant 全部单测，必须带 `--tests` 过滤。已核对任务名：recordRoborazziDebug / verifyRoborazziDebug / compareRoborazziDebug / verifyAndRecordRoborazziDebug / clearRoborazziDebug / finalizeTestRoborazziDebug。
+以下截图命令已于 2026-10-14 在 Roborazzi 1.76.0 下核对任务名并实测（Windows 本机，见 research/tooling.md）；CI 宿主已于同日复跑通过（run 38573095548）。PowerShell 中 `-P` 参数必须整体加引号；插件任务默认依赖该 variant 全部单测，必须带 `--tests` 过滤。已核对任务名：recordRoborazziDebug / verifyRoborazziDebug / compareRoborazziDebug / verifyAndRecordRoborazziDebug / clearRoborazziDebug / finalizeTestRoborazziDebug。
 
 ~~~powershell
 python ./.trellis/scripts/task.py validate .trellis/tasks/10-14-ui-regression-safety-net

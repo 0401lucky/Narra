@@ -134,25 +134,27 @@ Moments、PhoneCheck、系统悬浮翻译及全 App UI 收口完成；1526项JVM
 
 ### Summary
 
-接入 Roborazzi + Robolectric，落地首批 76 个截图用例与 78 张候选基准、负向门禁与 CI 截图门禁；性能与设备项保持未验收。
+接入 Roborazzi + Robolectric，落地首批 76 个截图用例与 78 张基准（人工确认 + CI 复验一致）、负向门禁与 CI 截图门禁；性能与设备项保持未验收。
 
 ### Main Changes
 
 - 接入 Roborazzi 1.76.0 + Robolectric 4.17：固定 API 35、零像素阈值、固定时钟/字体/图片/尺寸，基准位于 app/src/test/snapshots。
-- 首批 76 个用例（H01–H04、B01–B04、C01）与 78 张候选基准、用例登记表 ScreenshotCases 与计数守卫 ScreenshotBaselineGuardTest、manifest 运行清单。
+- 首批 76 个用例（H01–H04、B01–B04、C01）与 78 张基准（人工确认 + CI 复验一致）、用例登记表 ScreenshotCases 与计数守卫 ScreenshotBaselineGuardTest、manifest 运行清单。
 - fixture 调色板改为调用生产 deriveImmersiveGlassPalette（仅可见性 private→internal），19 张 P03/B02 基准按生产派生路径定向重录。
-- CI 新增独立 screenshots 门禁（ubuntu-24.04、push/PR 只 verify、record 仅手动 dispatch、失败上传差异报告）；同步更新质量规范与任务研究文档。
+- CI 新增独立 screenshots 门禁（ubuntu-24.04、push/PR 只 verify、record 仅手动 dispatch、失败上传差异报告）；远端 run 38573095548 全部通过（含 setup-android 外部漂移修复 073dba6c）；同步更新质量规范与任务研究文档。
 
 ### Git Commits
 
-(No commits - planning session)
+- `c5835620` test(screenshot): 接入 v2.3 视觉回归安全网与 78 张已确认基线
+- `073dba6c` fix(ci): 修复 setup-android 安装已下架 tools 包导致的门禁失败
 
 ### Testing
 
 - [OK] record 1 次 + verify 连续两次真实通过（--rerun-tasks 35 tasks 全量执行）；78/78 基准 SHA-256 前后零差异。
 - [OK] 负向门禁三轮：1px 差异与缺失基准均真实失败（exit 1 + compare/actual 产物），恢复后通过。
 - [OK] 全量 1613 项 JVM 单测 0 失败/0 跳过；assembleDebug 与 lintDebug 通过。
-- [OK] 无真机：性能归档核验为合成 fixture（decidable=false），A6 与 D01 保持未完成；远端 CI 未触发。
+- [OK] 远端 CI 已触发：run 38572287401 因 setup-android 外部漂移失败（修复 073dba6c）；run 38573095548 screenshots（零阈值，78 张基准两宿主一致）与 quality（assemble/单测/lint）全部通过。
+- [OK] 无真机：性能归档核验为合成 fixture（decidable=false），A6 与 D01 保持未完成。
 
 ### Status
 
@@ -160,6 +162,5 @@ Moments、PhoneCheck、系统悬浮翻译及全 App UI 收口完成；1526项JVM
 
 ### Next Steps
 
-- 人工确认 78 张候选基准（app/src/test/snapshots），push 后记录远端 CI 首次运行结果。
-- 若 ubuntu-24.04 渲染与 Windows 候选不一致，按 research/ci-screenshots.md 在 CI record 候选后人工确认并单独提交。
+- 78 张基准已人工确认（2026-10-14）并随 c5835620 提交；远端 CI 已通过（run 38573095548）。
 - 连接固定真机后补录 D01 与 S0–S3/F1–F3/N1，再更新 performance-baseline.md。

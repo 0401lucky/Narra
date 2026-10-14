@@ -1,10 +1,11 @@
-# 首批截图基准运行清单（Windows 候选）
+# 首批截图基准运行清单
 
-> **状态：已人工确认（2026-10-14 用户确认图片可接受）；CI 宿主复跑待做。**
+> **状态：已人工确认（2026-10-14 用户确认图片可接受）；CI 宿主已复跑并通过（run 38573095548）。**
 > 76 张首批基准由 Windows 11 宿主上的 Roborazzi record 生成一次（2026-10-14 因 fixture 调色板来源
 > 修复，对 19 张受影响的 P03/背景基准定向重录一次，见第 7 节），并在本机 verify 连续两次真实通过
-> （第二次 --rerun-tasks 全量执行；重录后全量 verify 亦通过）。CI（ubuntu-24.04 + JDK 17）与真机尚未复跑，
-> 基准内容已获用户视觉确认，可提交；CI（ubuntu-24.04 + JDK 17）首次 verify 仍是指定宿主的唯一依据，首次复跑即验证与 Windows 候选的一致性。
+> （第二次 --rerun-tasks 全量执行；重录后全量 verify 亦通过）。
+> 2026-10-14 远端 CI（ubuntu-24.04 + JDK 17，run 38573095548）零阈值 verify 全部通过：
+> 本清单中的 78 张 PNG 在 Windows 与 CI 宿主逐像素一致，基准对两个宿主共同有效；真机（D01 设备效果）待复跑。
 
 ## 1. 环境清单
 
@@ -35,6 +36,8 @@
 | `.\gradlew.bat :app:recordRoborazziDebug --tests "com.example.myapplication.ui.screenshot.*" --console=plain` | 0 | 79 tests / 0 failed；生成全部 78 张 PNG |
 | `.\gradlew.bat :app:verifyRoborazziDebug --tests "com.example.myapplication.ui.screenshot.*" --console=plain` | 0 | 79 tests / 0 failed（真实执行，非 UP-TO-DATE） |
 | `.\gradlew.bat :app:verifyRoborazziDebug --tests "com.example.myapplication.ui.screenshot.*" --rerun-tasks --console=plain` | 0 | 79 tests / 0 failed；35 tasks 全部真实执行（1m44s） |
+
+CI 宿主对应运行（2026-10-14，run 38573095548，ubuntu-24.04 + JDK 17）：`./gradlew :app:testDebugUnitTest --tests "com.example.myapplication.ui.screenshot.*" -Proborazzi.test.verify=true` → BUILD SUCCESSFUL（5m18s），78 张基准零阈值全部一致，无 actual/compare 产物。
 
 ## 3. 用例登记与覆盖
 

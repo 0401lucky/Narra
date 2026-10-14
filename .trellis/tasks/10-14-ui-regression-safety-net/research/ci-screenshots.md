@@ -1,7 +1,7 @@
 # 截图 CI 门禁：job 结构、命令与分工（2026-10-14）
 
 本文件记录 `.github/workflows/android-quality.yml` 的截图门禁接入现状。
-结论区分「本机（Windows）已验证」与「远端 CI 未执行」。
+结论区分「本机（Windows）已验证」与「远端 CI 已执行」（2026-10-14 首次运行、修复后通过）。
 
 ## 1. Job 结构
 
@@ -57,8 +57,9 @@ record 模式额外上传 `app/src/test/snapshots/**` 为 `screenshot-candidate-
 3. 确认后作为独立提交把 PNG 放进 `app/src/test/snapshots/` 并更新 manifest.md。
 4. 之后 push/PR 只运行 verify；更新基准同样需要预期差异 + 确认人记录。
 
-当前仓库中的 78 张 PNG 是 Windows 本机候选（见 app/src/test/snapshots/manifest.md），
-尚未经 CI 宿主复现，不得当作 CI 宿主“已确认”基准。
+仓库中的 78 张 PNG 生成于 Windows 本机（见 app/src/test/snapshots/manifest.md）。
+2026-10-14 run 38573095548 已在 CI 宿主（ubuntu-24.04 + JDK 17）零阈值 verify 全部通过，
+即两宿主渲染逐像素一致，基准对 CI 宿主同样有效；后续更新基准仍需预期差异 + 确认人记录。
 
 ## 6. YAML 校验（本机，2026-10-14）
 
@@ -69,12 +70,16 @@ record 模式额外上传 `app/src/test/snapshots/**` 为 `screenshot-candidate-
   诊断上传路径集合正确且 `if: always()`；候选基准路径 `app/src/test/snapshots/**`；
   所有 `run:` 步骤不含 verifyAndRecord。
 - 该校验只是本地语法/结构解析，不替代 GitHub Actions 语义校验与远端运行。
+- 2026-10-14 修复 commit 073dba6c 后再次解析通过：两个 job 的 setup 步骤均为 `packages: platform-tools`。
 
-## 7. 远端状态
+## 7. 远端运行记录（2026-10-14）
 
-- **远端 CI 尚未触发**：本地未 push，无任何 run 链接。不得写“CI 已通过”。
-- 首次远端触发后需记录：run URL、两个 job 结果、screenshots job 首次 verify 在 ubuntu-24.04 + JDK 17 下的行为（含 Robolectric android-all 下载与缓存）。
-- 若首次 verify 失败，先按“宿主差异”排查（渲染/字体差异），失败产物用 artifact 审阅，不得直接 record 覆盖。
+- 首次 run [38572287401](https://github.com/0401lucky/Narra/actions/runs/38572287401)（commit c5835620）：`quality` 与 `screenshots` 均在 “Set up Android SDK” 失败——android-actions/setup-android@v3 默认安装 `tools platform-tools`，其中旧 `tools` 包已从 SDK 仓库下架（`Failed to find package 'tools'`，外部漂移，与截图内容无关）。截图 verify 未执行，无 artifact。
+- 修复 commit 073dba6c：两个 job 显式 `packages: platform-tools`，构建/单测/lint 与截图步骤内容不变。
+- 第二次 run [38573095548](https://github.com/0401lucky/Narra/actions/runs/38573095548)（commit 073dba6c）全部通过：
+  - `screenshots`：verify 命令 → `finalizeTestRoborazziDebug` → BUILD SUCCESSFUL（5m18s，job 13:35:49–13:41:49 UTC）。78 张 Windows 基准在 ubuntu-24.04 + JDK 17 下零阈值比较全部通过，首次实测确认两宿主渲染一致；`screenshot-diagnostics` artifact（346 KB，191 文件，含 79 个 Roborazzi 结果 JSON）成功上传。
+  - `quality`：assembleDebug（5m56s）/ testDebugUnitTest（1m31s）/ lintDebug（4m15s）全部 BUILD SUCCESSFUL。
+- 结论：基准已提交并在两个宿主同为有效门禁；无需为 CI 宿主另生成 record 候选。
 
 ## 8. 与 quality job 的交互（本机实测）
 
@@ -85,5 +90,5 @@ quality job 行为保持原样；计数守卫在 None 模式仍强制基准存�
 
 ## 9. 待办
 
-- [ ] 触发远端 CI（push 后）并记录 run URL 与结果。
-- [ ] CI 宿主首次 record 候选 → 人工确认 → 更新基准（Windows 候选仅限本机）。
+- [x] 触发远端 CI（push 后）并记录 run URL 与结果（2026-10-14：run 38573095548 通过；首发 38572287401 因 setup-android 外部漂移失败，修复后通过）。
+- [x] CI 宿主复验：无需 record 候选——首次 verify 即与 Windows 基准零阈值一致（run 38573095548）；若未来出现宿主偏移，按第 5 节流程重新 record 候选。
