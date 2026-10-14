@@ -720,7 +720,7 @@ private fun AlignedBlurredBackdropSlice(
     }
 }
 
-private fun deriveImmersiveGlassPalette(
+internal fun deriveImmersiveGlassPalette(
     imageBitmap: ImageBitmap?,
     colorScheme: ColorScheme,
     highContrast: Boolean = false,

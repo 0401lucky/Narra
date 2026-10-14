@@ -64,6 +64,20 @@
   断言；回调最终值在 `runOnIdle` 中检查。
 - `ExampleInstrumentedTest.kt` 是生成样例，不是新测试范例。
 
+### 截图回归（Roborazzi）
+
+- UI 外观基准位于 `app/src/test/snapshots/`；用例登记表为
+  `ui/screenshot/ScreenshotCases.kt`，宿主与参数记录见同目录 `manifest.md`。
+- 改动聊天首页、角色列表、线上扮演或气泡外观后运行截图 verify（仅筛选
+  `com.example.myapplication.ui.screenshot.*`）；它只比较、不生成基准，
+  普通 `testDebugUnitTest` 不比较截图。
+- 禁止在验证前 record，也禁止使用 `verifyAndRecordRoborazziDebug`；新增或
+  更新基准必须人工确认后单独提交。
+- 基准按宿主分离：Windows 本机与 CI（ubuntu-24.04）产物不得混用；未在
+  目标宿主复跑并人工确认前，新基准只能是“候选”。
+- 计数守卫 `ScreenshotBaselineGuardTest` 校验登记表 ↔ 测试类 ↔ PNG 三者
+  一致；零测试、删用例、缺失或未登记基准都会失败。
+
 ### 性能
 
 - `baselineprofile` 覆盖启动、历史和设置主路径。
@@ -97,6 +111,11 @@ CI 固定门禁：
 # baseline
 .\gradlew.bat assembleBaseline --console=plain
 .\gradlew.bat app:generateBaselineProfile --console=plain
+
+# 截图基准验证（仅比较，不生成基准）
+.\gradlew.bat :app:verifyRoborazziDebug `
+  --tests "com.example.myapplication.ui.screenshot.*" `
+  --console=plain
 ```
 
 后台单元测试最大等待 60 秒；超时只能报告“未取得结果”，不能写成通过。
@@ -111,6 +130,7 @@ CI 固定门禁：
 - 数据库改动是否具备连续迁移和真实旧库验证。
 - 网络改动是否覆盖协议、URL 安全、错误体、取消和密钥脱敏。
 - 新逻辑是否有成功、异常、边界和状态切换测试。
+- UI 外观改动是否运行截图 verify；新增/变更基准是否经人工确认后单独提交。
 - 是否只修改任务范围文件，未夹带临时截图、日志或无关工作区改动。
 
 ## 禁止模式

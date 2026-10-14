@@ -6,6 +6,19 @@ on:
     branches:
       - main
       - master
+  # 手动触发：默认 verify；只有在手动选择 record 时才生成“候选基准” artifact。
+  # 初始基准必须由该固定 CI 宿主生成候选后，经人工查看确认，再作为独立提交合入仓库；
+  # push / PR 永远只走 verify，绝不自动 record，也绝不使用 verifyAndRecord。
+  workflow_dispatch:
+    inputs:
+      screenshot_mode:
+        description: "截图基准模式：verify（比较）或 record（仅生成候选基准，需人工确认后另行提交）"
+        required: false
+        default: verify
+        type: choice
+        options:
+          - verify
+          - record
 
 jobs:
   quality:
@@ -36,3 +49,62 @@ jobs:
 
       - name: Run lint
         run: ./gradlew lintDebug --console=plain
+
+  # 截图回归门禁：Roborazzi 1.76 + Robolectric 合成 fixture，零像素阈值比较。
+  # 约定与边界：
+  # - push / PR 只运行 verify（testDebugUnitTest + -Proborazzi.test.verify=true），与本地记录的验证入口一致；
+  # - record 只允许 workflow_dispatch 手动选择，产出候选基准 artifact，绝不自动提交；
+  # - 禁止使用 verifyAndRecord（会静默接受变化），也不允许在 verify 前先 record；
+  # - 失败时仍以 if: always() 上传差异报告与测试结果，产物只来自合成 fixture，不含用户数据；
+  # - 待 CI 宿主首次复跑后，才能把该宿主生成的基准标记为“已确认”。
+  screenshots:
+    runs-on: ubuntu-24.04
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+          cache: gradle
+
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Grant Gradle execute permission
+        run: chmod +x gradlew
+
+      # 真实 verify 入口：只筛选截图包，不改变原有 JVM 单测集合。
+      - name: Verify screenshot baselines
+        if: github.event_name != 'workflow_dispatch' || github.event.inputs.screenshot_mode != 'record'
+        run: ./gradlew :app:testDebugUnitTest --tests "com.example.myapplication.ui.screenshot.*" -Proborazzi.test.verify=true --console=plain
+
+      # 仅手动 record 模式：生成候选基准，不提交、不 verifyAndRecord。
+      - name: Record candidate baselines
+        if: github.event_name == 'workflow_dispatch' && github.event.inputs.screenshot_mode == 'record'
+        run: ./gradlew :app:recordRoborazziDebug --tests "com.example.myapplication.ui.screenshot.*" --console=plain
+
+      - name: Upload screenshot diagnostics
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: screenshot-diagnostics
+          path: |
+            app/build/outputs/roborazzi/**
+            app/build/test-results/testDebugUnitTest/**
+            app/build/reports/tests/testDebugUnitTest/**
+            app/build/test-results/roborazzi/**
+            app/build/reports/roborazzi/**
+          if-no-files-found: ignore
+
+      # 候选基准（record 模式）：供人工审阅确认，不代表已批准基准。
+      - name: Upload candidate baselines
+        if: github.event_name == 'workflow_dispatch' && github.event.inputs.screenshot_mode == 'record'
+        uses: actions/upload-artifact@v4
+        with:
+          name: screenshot-candidate-baselines
+          path: app/src/test/snapshots/**
+          if-no-files-found: error

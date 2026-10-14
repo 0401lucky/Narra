@@ -11,6 +11,7 @@ plugins {
     alias(libs.plugins.baselineprofile)
     alias(libs.plugins.compose.compiler)
     alias(libs.plugins.ksp)
+    alias(libs.plugins.roborazzi)
 }
 
 def localProperties = new Properties()
@@ -148,6 +149,34 @@ android {
         compose true
         resValues true
     }
+
+    testOptions {
+        unitTests {
+            includeAndroidResources = true
+            all { test ->
+                // Robolectric 4.17 在 JDK 17+ 需要开发模块访问；PixelCopy 硬件渲染用于截图一致性。
+                test.systemProperty "robolectric.pixelCopyRenderMode", "hardware"
+                // 基准目录显式注入，截图计数守卫不依赖测试运行目录猜测。
+                test.systemProperty "narra.screenshot.snapshotDir", file("src/test/snapshots").absolutePath
+                test.jvmArgs += [
+                        "--add-opens=java.base/java.lang=ALL-UNNAMED",
+                        "--add-opens=java.base/java.util=ALL-UNNAMED",
+                        "--add-opens=java.base/java.io=ALL-UNNAMED",
+                        "--add-opens=java.base/java.net=ALL-UNNAMED",
+                        "--add-opens=java.base/java.security=ALL-UNNAMED",
+                        "--add-opens=java.base/java.text=ALL-UNNAMED",
+                        "--add-opens=java.base/jdk.internal.access=ALL-UNNAMED",
+                        "--add-opens=java.desktop/java.awt.font=ALL-UNNAMED",
+                        "--add-opens=jdk.compiler/com.sun.tools.javac.api=ALL-UNNAMED",
+                ]
+            }
+        }
+    }
+}
+
+// Roborazzi 基准图提交到源码树：record/verify、CI 与本地共用一个目录。
+roborazzi {
+    outputDir.set(file("src/test/snapshots"))
 }
 
 def requestedComposeArchiveVariants = gradle.startParameter.taskNames.collectMany { taskName ->
@@ -620,6 +649,12 @@ dependencies {
     testImplementation libs.okhttp.mockwebserver
     testImplementation libs.androidx.room.testing
     testImplementation libs.kotlinx.coroutines.test
+    testImplementation libs.roborazzi
+    testImplementation libs.roborazzi.compose
+    testImplementation libs.robolectric
+    testImplementation libs.androidx.junit
+    testImplementation platform(libs.androidx.compose.bom)
+    testImplementation libs.androidx.compose.ui.test.junit4
 
     androidTestImplementation libs.androidx.junit
     androidTestImplementation libs.androidx.espresso.core

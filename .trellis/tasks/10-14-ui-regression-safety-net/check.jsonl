@@ -1,0 +1,11 @@
+{"file":".trellis/spec/backend/index.md","reason":"检查：项目层级入口与实际 Android 约定"}
+{"file":".trellis/spec/backend/directory-structure.md","reason":"检查：依赖方向、源码与测试责任"}
+{"file":".trellis/spec/backend/quality-guidelines.md","reason":"检查：真实质量门禁与结果诚实性"}
+{"file":".trellis/spec/backend/ui-state-guidelines.md","reason":"检查：实际产品入口、可测性、评论密度与交互兼容"}
+{"file":".trellis/spec/backend/roleplay-theme-settings.md","reason":"检查：背景、玻璃、自定义尺寸及旧配置兼容"}
+{"file":".trellis/spec/backend/performance-benchmark-guidelines.md","reason":"检查：固定真机、现有基准与原始结果"}
+{"file":".trellis/spec/guides/code-reuse-thinking-guide.md","reason":"检查：先复用现有组件和测试 Fake"}
+{"file":".trellis/tasks/10-14-narra-experience-consistency/research/current-state.md","reason":"检查：本轮源码证据、统计口径及历史承诺"}
+{"file":".trellis/tasks/10-14-ui-regression-safety-net/research/tooling.md","reason":"检查：官方截图接口与待验证兼容性"}
+{"file":".trellis/tasks/10-14-ui-regression-safety-net/research/screenshot-matrix.md","reason":"检查：首批矩阵、确定性输入及设备边界"}
+{"file":".trellis/tasks/10-14-ui-regression-safety-net/research/performance-baseline.md","reason":"检查：性能证据状态及缺测处理"}
