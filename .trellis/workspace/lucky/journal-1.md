@@ -205,3 +205,25 @@ Moments、PhoneCheck、系统悬浮翻译及全 App UI 收口完成；1526项JVM
 
 - 用户真机自测 D01 与性能项（S0–S3/F1–F3/N1）后更新 performance-baseline
 - 启动后续令牌与无障碍试点（10-14-ui-token-accessibility-pilot，仍为 planning）
+
+
+## Session 7: v2.3 令牌与无障碍试点提交归档
+
+**Date**: 2026-10-21
+**Task**: v2.3 令牌与无障碍试点提交归档
+**Branch**: `main`
+
+### Summary
+
+恢复后核对暂存区与历史，按已批准清单完成两批提交；manifest仅提交新增接纳记录，原有并发历史段落保留。归档当前试点并修正引用，其他旧任务搬移及用户文件未纳入。沿用1642项JVM、AndroidTest编译、Lint、dev构建及79/79截图的已通过结果，本轮复核78个基准哈希，未重复完整测试。新视觉CI、D01与物理性能待补；未推送、未发包，构建配置仍2.2.12-dev。下一步仅规划v2.3扩面。
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `67ed7dfb` | (see git log) |
+| `ce710003` | (see git log) |
+
+### Status
+
+[OK] **Completed**
