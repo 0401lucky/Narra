@@ -45,7 +45,7 @@ def main():
     parser.add_argument("--since", type=float, default=0, help="只使用本轮开始后写入的 actual 输出")
     args = parser.parse_args()
     root = args.root.resolve()
-    task = root / ".trellis/tasks/10-21-ui-token-accessibility-pilot"
+    task = Path(__file__).resolve().parent.parent
     baseline = root / "app/src/test/snapshots"
     original_hashes = json.loads(
         (task / "research/baseline-sha256-before.json").read_text(encoding="utf-8")

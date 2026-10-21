@@ -1,6 +1,6 @@
-# 本轮提交计划（待批准）
+# 本轮提交计划（已批准并执行）
 
-代码与截图人工接纳已完成，本轮仍未提交、推送或归档。以下两项 work commit 后，按现有工作流单独归档当前试点与记录 journal。
+用户已在上一会话批准本清单；恢复后确认暂存区为空且两批尚未提交，已依次完成 `67ed7dfb`、`ce710003`，没有 amend 或推送。下列路径保留为提交时的历史清单；当前任务已搬到 `archive/2026-10/10-21-ui-token-accessibility-pilot/`，归档与 journal 单独记录。
 
 ## 1. feat(ui): 统一v2.3试点令牌与无障碍行为
 
@@ -412,4 +412,4 @@
 
 只归档当前10-21试点并记录journal，不归档/更新其他历史任务，不推送
 
-manifest 的 index 补丁已保存为 `research/manifest-acceptance-only.patch`，仅新增接纳段落；待批准后执行时重新核对工作区与 index。
+manifest 的 index 补丁保存在 `research/manifest-acceptance-only.patch`。执行时重新核对并通过 `--cached --check --unidiff-zero`；临时副本仅规范化 CRLF 为 LF，index 内容验证为“新增 12 行 + 原 HEAD”，工作区原有并发修改的哈希保持不变。

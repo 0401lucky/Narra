@@ -5,6 +5,6 @@
 {"file":".trellis/spec/backend/roleplay-theme-settings.md","reason":"真实背景/玻璃谓词、保存回读和旧配置行为"}
 {"file":".trellis/spec/backend/quality-guidelines.md","reason":"完整定向测试、截图门禁、人工确认与不伪造通过"}
 {"file":".trellis/spec/guides/code-reuse-thinking-guide.md","reason":"检查主题/语义角色与按钮实现是否重复或漂移"}
-{"file":".trellis/tasks/10-21-ui-token-accessibility-pilot/research/contracts-and-scope.md","reason":"检查统一默认路径真实迁移、缓存输入、精确例外和旧 78 图保护"}
+{"file":".trellis/tasks/archive/2026-10/10-21-ui-token-accessibility-pilot/research/contracts-and-scope.md","reason":"检查统一默认路径真实迁移、缓存输入、精确例外和旧 78 图保护"}
 {"file":".trellis/tasks/archive/2026-10/10-14-ui-regression-safety-net/research/screenshot-matrix.md","reason":"按现有用例边界审查新增视觉差异和大字体缺陷"}
 {"file":".trellis/tasks/archive/2026-10/10-14-ui-regression-safety-net/research/performance-baseline.md","reason":"历史性能数据不可比；设备/性能缺测不能写成通过"}

@@ -13,8 +13,8 @@
 ## Confirmed facts
 
 - 归属 v2.3；2026-10-21 用户授权创建当前任务，随后选择“统一吧”，并在完整规划摘要与实施批准问题后回复“继续”，批准按该摘要实施。
-- [旧试点草案](../archive/2026-10/10-14-ui-token-accessibility-pilot/prd.md) 与 [路线图](../archive/2026-10/10-14-narra-experience-consistency/prd.md) 为来源；当前任务承接旧试点，旧任务及其他性能任务本轮不改状态。
-- [基准清单](../../../app/src/test/snapshots/manifest.md) 实际登记 76 个矩阵用例和 2 张冒烟图，共 78 张 PNG，2026-10-14 人工确认且 CI run 38573095548 复验一致；用例覆盖与现状缺陷详见 [research/initial-state.md](research/initial-state.md)。
+- [旧试点草案](../10-14-ui-token-accessibility-pilot/prd.md) 与 [路线图](../10-14-narra-experience-consistency/prd.md) 为来源；当前任务承接旧试点，旧任务及其他性能任务本轮不改状态。
+- [基准清单](../../../../../app/src/test/snapshots/manifest.md) 实际登记 76 个矩阵用例和 2 张冒烟图，共 78 张 PNG，2026-10-14 人工确认且 CI run 38573095548 复验一致；用例覆盖与现状缺陷详见 [research/initial-state.md](research/initial-state.md)。
 - 现有 `NarraUi`、`ChatAppTheme`、皮肤与玻璃解析均可复用；皮肤设置没有“用户是否手调”的标志，不能用数值等于旧默认值来推断用户意图。具体源码锚点和共享影响见 [research/contracts-and-scope.md](research/contracts-and-scope.md)。
 
 ## Requirements
@@ -56,4 +56,4 @@
 
 统一方向和最终规划摘要均已由用户批准；`design.md` 和 `implement.md` 明确具体映射、文件所有权、检查与回退。实施从冻结原有工作区和截图基准开始，视觉候选接纳仍需人工确认。
 
-代码实施和检查已完成：1642 项单测、AndroidTest 编译、Lint 与 dev 构建通过。用户确认[78 张完整审阅图](review/index.html)后已接纳 75 张变化基准，79 项截图复验全部通过，A6 完成。提交与归档待 Phase 3.4 收口；设备 / 性能及本轮新视觉 CI 仍按 [verification.md](verification.md) 单独登记。
+代码实施和检查已完成：1642 项单测、AndroidTest 编译、Lint 与 dev 构建通过。用户确认[78 张完整审阅图](review/index.html)后已接纳 75 张变化基准，79 项截图复验全部通过，A6 完成。2026-10-21 按已批准清单完成工作提交 `67ed7dfb`、`ce710003` 并归档；设备 / 性能及本轮新视觉 CI 仍按 [verification.md](verification.md) 单独登记。未推送、未发布。

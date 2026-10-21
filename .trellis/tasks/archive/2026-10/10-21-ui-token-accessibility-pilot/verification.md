@@ -2,7 +2,15 @@
 
 ## 当前状态
 
-2026-10-21 用户已批准统一方案及完整实施摘要，任务已进入 `in_progress`。实现与检查按本任务 PRD / design / implement 执行；最终视觉基准接纳、真机效果和性能结论分别登记。
+2026-10-21 当前试点实现、人工视觉接纳与本机验收完成，已按用户批准的两批清单提交并归档为 `completed`。最终视觉基准接纳、真机效果和性能结论分别登记。
+
+## 提交与归档
+
+- `67ed7dfb`：`feat(ui): 统一v2.3试点令牌与无障碍行为`，320 个清单文件。
+- `ce710003`：`test(screenshot): 接纳v2.3统一试点视觉基准`，75 张 PNG 与 manifest 新增的 12 行接纳记录；原有并发历史段落修改仍未暂存。
+- 已核验 78 个接纳后哈希及暂存范围；本次仅做提交与文档收尾，没有重复运行已通过的完整测试。归档目录为 `.trellis/tasks/archive/2026-10/10-21-ui-token-accessibility-pilot/`，归档引用同步修正。
+- 归档脚本默认会暂存整个 archive，因此使用 `--no-commit`，再只提交当前试点搬移及引用修正；其他旧任务搬移、用户文件保持原状。
+- 未推送、未发包、未修改发布版本或 `dev.json`。当前构建配置仍为 2.2.12-dev；新视觉 CI、D01 与物理性能保持待补。
 
 ## 实施前冻结
 
@@ -53,7 +61,7 @@
 - 对审阅图与冻结原始基准逐项比对后，仅替换 75 张变化的 PNG，3 张一致图不动；没有重新 record，没有改变 ID、数量、参数或像素阈值。原始图仍保留在 `review/before/`，接纳结果和全部新哈希见 `research/baseline-acceptance.json`。
 - 命令 `:app:verifyRoborazziDebug --tests "com.example.myapplication.ui.screenshot.*" --console=plain`：退出 0，`BUILD SUCCESSFUL in 45s`，79 项检查，0 失败 / 错误 / 跳过；测试任务真实执行，78 个新基准哈希在复验前后一致。证据 `research/verify-accepted-baselines.log`、`research/accepted-verify-result.json`。
 - 更新 manifest 时只增加本轮当前接纳记录，原有并发修改的历史段落未恢复或覆盖。本轮新视觉的远端 CI 尚未运行，不能借用旧基准的 CI 结果。
-- 当前试点实现 / 宿主验收完成；仅待提交与归档流程，D01 / 物理性能缺测和后续页面扩面继续单列。
+- 当前试点实现 / 宿主验收完成，工作提交与归档见上节；D01 / 物理性能缺测和后续页面扩面继续单列。
 
 ## 结果边界
 

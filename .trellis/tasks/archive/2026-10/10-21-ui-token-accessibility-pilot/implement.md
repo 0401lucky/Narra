@@ -48,9 +48,9 @@
 
 - [x] 主会话更新 `版本功能添加/优化.md` 的 v2.3 实施状态、验证边界与扩面清单。
 - [x] 评估并更新相关 `.trellis/spec/` 主题 / 无障碍 / 质量契约；没有新通用规则时记录判断。（新增 `backend/ui-token-contract.md` 并接入 index，最终审查复核实现一致性）
-- [x] 输出 A1–A7 验收表，区分通过、待人工确认、待设备和未取得结果。（`verification.md`，A6 视觉接纳未完成）
-- [x] 只就本次文件给出提交方案；其他原有改动保持不动，未经用户同意不提交 / 推送。（`commit-plan.md` / `.json` 已列两批具体路径；manifest 只暂存本轮新增段落，补丁 check 通过，待用户确认执行）
-- [ ] 完成代码、视觉和所需检查后再归档 / journal；D01 / 性能不足保持独立待验收记录。
+- [x] 输出 A1–A7 验收表，区分通过、待人工确认、待设备和未取得结果。（`verification.md`，A6 已接纳并复验通过）
+- [x] 只就本次文件给出提交方案；其他原有改动保持不动。（用户已批准；工作提交 `67ed7dfb`、`ce710003`，manifest 仅新增 12 行接纳记录，原有并发修改未暂存；未推送）
+- [x] 完成代码、视觉和所需检查后归档当前试点；journal 随收尾记录工作提交。归档使用 `--no-commit` 后按当前任务源 / 目标文件清单提交，避开脚本对整个 archive 的暂存；D01 / 性能不足保持独立待验收记录。
 
 ## 文件所有权
 
@@ -70,7 +70,7 @@
 按批次运行相关类；最后的全范围命令只在集成完成后执行一次，新的修改 / 失败再定向复验。
 
 ```powershell
-python .trellis/scripts/task.py validate .trellis/tasks/10-21-ui-token-accessibility-pilot
+python .trellis/scripts/task.py validate .trellis/tasks/archive/2026-10/10-21-ui-token-accessibility-pilot
 .\gradlew.bat :app:testDebugUnitTest --tests "com.example.myapplication.ui.theme.*" --tests "com.example.myapplication.ui.component.roleplay.*" --tests "com.example.myapplication.model.RoleplayNoBackgroundSkinSettingsTest" --console=plain
 .\gradlew.bat :app:compileDebugAndroidTestKotlin --console=plain
 .\gradlew.bat :app:verifyRoborazziDebug --tests "com.example.myapplication.ui.screenshot.*" --console=plain

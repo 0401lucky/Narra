@@ -4,6 +4,6 @@
 {"file":".trellis/spec/backend/roleplay-theme-settings.md","reason":"玻璃开关、真实背景、线上/线下材质和用户几何配置兼容"}
 {"file":".trellis/spec/backend/quality-guidelines.md","reason":"截图 verify、人工接纳、单测/Lint/构建和真实结果要求"}
 {"file":".trellis/spec/guides/code-reuse-thinking-guide.md","reason":"复用现有 NarraUi、颜色模型、按钮和测试入口"}
-{"file":".trellis/tasks/10-21-ui-token-accessibility-pilot/research/initial-state.md","reason":"旧试点和安全网的已验证范围、未验收设备项"}
-{"file":".trellis/tasks/10-21-ui-token-accessibility-pilot/research/contracts-and-scope.md","reason":"统一方向后的源码锚点、数值来源、精确例外与候选图输出限制"}
+{"file":".trellis/tasks/archive/2026-10/10-21-ui-token-accessibility-pilot/research/initial-state.md","reason":"旧试点和安全网的已验证范围、未验收设备项"}
+{"file":".trellis/tasks/archive/2026-10/10-21-ui-token-accessibility-pilot/research/contracts-and-scope.md","reason":"统一方向后的源码锚点、数值来源、精确例外与候选图输出限制"}
 {"file":".trellis/tasks/archive/2026-10/10-14-ui-regression-safety-net/research/screenshot-matrix.md","reason":"H01-H04/B01-B04/C01 的真实生产入口和边界覆盖"}
