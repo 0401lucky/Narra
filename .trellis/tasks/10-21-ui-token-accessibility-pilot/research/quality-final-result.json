@@ -1,0 +1,25 @@
+{
+  "command": "gradlew.bat testDebugUnitTest :app:compileDebugAndroidTestKotlin lintDebug assembleDebug --console=plain",
+  "exit_code": 0,
+  "elapsed": "4m51s",
+  "tasks_executed": 14,
+  "tasks_up_to_date": 55,
+  "unit": {
+    "tests": 1642,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "androidTest_compile": "passed",
+  "device_tests": "not_run_no_device",
+  "lintDebug": "passed",
+  "assembleDebug": "passed",
+  "apk": "app/build/outputs/apk/debug/Narra-v2.2.12-dev-20212-dev.apk",
+  "apk_sha256": "49b773298445cf7df2cfb67f58d419512a36494aa22e84625f1bb0fa2cdf8870",
+  "old_baselines_unchanged": 78,
+  "visual_status": "awaiting_human_acceptance_75_changed",
+  "lint_counts": {
+    "Hint": 3,
+    "Warning": 55
+  }
+}

@@ -41,6 +41,7 @@ import androidx.core.graphics.get
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.asAndroidBitmap
 import androidx.compose.ui.graphics.asComposeRenderEffect
+import androidx.compose.ui.graphics.compositeOver
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.graphics.luminance
@@ -65,8 +66,34 @@ import kotlinx.coroutines.withContext
 // 调色板缓存：LRU 驱逐，避免热点场景被随机移除。
 // androidx.collection.LruCache 内置线程安全且语义更贴 Android 生态。
 private val paletteCache =
-    androidx.collection.LruCache<String, ImmersiveGlassPalette>(ImmersivePaletteCacheMaxEntries)
+    androidx.collection.LruCache<ImmersivePaletteCacheKey, ImmersiveGlassPalette>(ImmersivePaletteCacheMaxEntries)
 private const val ImmersiveBackdropMaxDecodeSidePx = 1600
+
+internal data class ImmersivePaletteCacheKey(
+    val backgroundUri: String,
+    val imageIdentity: Int?,
+    val imageGeneration: Int?,
+    val imageSize: IntSize,
+    val colorScheme: ColorScheme,
+    val highContrast: Boolean,
+)
+
+internal fun immersivePaletteCacheKey(
+    backgroundUri: String,
+    imageBitmap: ImageBitmap?,
+    colorScheme: ColorScheme,
+    highContrast: Boolean,
+): ImmersivePaletteCacheKey {
+    val bitmap = imageBitmap?.asAndroidBitmap()
+    return ImmersivePaletteCacheKey(
+        backgroundUri = backgroundUri,
+        imageIdentity = bitmap?.let(System::identityHashCode),
+        imageGeneration = bitmap?.generationId,
+        imageSize = imageBitmap?.let { IntSize(it.width, it.height) } ?: IntSize.Zero,
+        colorScheme = colorScheme,
+        highContrast = highContrast,
+    )
+}
 
 @Immutable
 data class ImmersiveGlassPalette(
@@ -149,9 +176,8 @@ fun rememberImmersiveBackdropState(
     )
 
     // 异步计算调色板，带缓存
-    val cacheKey = backgroundState.imageBitmap?.let {
-        "${backgroundUri}_${it.width}_${it.height}_$highContrast"
-    } ?: "fallback_${colorScheme.primary.toArgb()}_${colorScheme.secondary.toArgb()}_$highContrast"
+    val loadedBitmap = backgroundState.imageBitmap.takeIf { backgroundState.loadState == UserAvatarLoadState.Success }
+    val cacheKey = immersivePaletteCacheKey(backgroundUri, loadedBitmap, colorScheme, highContrast)
 
     val palette by produceState<ImmersiveGlassPalette>(
         initialValue = readPaletteCache(cacheKey) ?: deriveImmersiveGlassPalette(
@@ -196,12 +222,12 @@ fun rememberImmersiveBackdropState(
     }
 }
 
-private fun readPaletteCache(key: String): ImmersiveGlassPalette? {
+private fun readPaletteCache(key: ImmersivePaletteCacheKey): ImmersiveGlassPalette? {
     return paletteCache.get(key)
 }
 
 private fun writePaletteCache(
-    key: String,
+    key: ImmersivePaletteCacheKey,
     palette: ImmersiveGlassPalette,
 ) {
     paletteCache.put(key, palette)
@@ -438,6 +464,7 @@ internal fun ImmersiveReadingGlassSurface(
     overlayColor: Color? = null,
     contentDarkenAlpha: Float? = null,
     blurRadius: Dp? = null,
+    minimumOverlayAlpha: Float = 0f,
     content: @Composable BoxScope.() -> Unit,
 ) {
     val palette = backdropState.palette
@@ -450,12 +477,12 @@ internal fun ImmersiveReadingGlassSurface(
         variant = variant,
         alpha = spec.overlayAlpha,
     )
-    val effectiveOverlayColor = remember(baseOverlayColor, backgroundLuminance, variant) {
+    val effectiveOverlayColor = remember(baseOverlayColor, backgroundLuminance, variant, minimumOverlayAlpha) {
         adjustImmersiveReadingOverlayColor(
             baseColor = baseOverlayColor,
             backgroundLuminance = backgroundLuminance,
             variant = variant,
-        )
+        ).let { it.copy(alpha = max(it.alpha, minimumOverlayAlpha)) }
     }
     val effectiveBorderAlpha = remember(backgroundLuminance, spec.borderAlpha, variant) {
         adjustImmersiveReadingBorderAlpha(
@@ -505,6 +532,36 @@ internal fun ImmersiveReadingGlassSurface(
         ) {
             content()
         }
+    }
+}
+
+/** 与消息玻璃的 scrim、底层光泽、承载面、sheen 和正文加深顺序一致。 */
+internal fun roleplayDialogueReadingSurfaces(
+    backdropState: ImmersiveBackdropState,
+    overlayColor: Color,
+): List<Color> {
+    val palette = backdropState.palette
+    val bitmap = backdropState.imageBitmap
+    val backing = bitmap?.let(::sampleAverageColor) ?: palette.panelTint.copy(alpha = 1f)
+    val luminance = calculateImmersiveBackdropAmbientLuminance(backdropState)
+    val variant = ImmersiveReadingGlassVariant.DIALOGUE
+    val spec = resolveImmersiveReadingGlassSpec(variant)
+    val overlay = adjustImmersiveReadingOverlayColor(overlayColor, luminance, variant)
+        .let { it.copy(alpha = max(it.alpha, RoleplayDialogueReadingMinimumAlpha)) }
+    val darken = adjustImmersiveReadingContentDarkenAlpha(spec.contentDarkenAlpha, luminance, variant)
+    return listOf(backing, Color.Black, Color.White).flatMap { sample ->
+      listOf(0f, 0.14f, 0.21f, 0.28f).flatMap { scrimAlpha ->
+        val scrimmed = Color.Black.copy(alpha = scrimAlpha).compositeOver(sample)
+        listOf(
+            palette.panelHighlight.copy(alpha = spec.highlightAlpha),
+            Color.Transparent,
+            palette.shadowColor.copy(alpha = spec.highlightAlpha * 0.35f),
+        ).map { sheen ->
+            val underlay = palette.panelHighlight.copy(alpha = 0.06f).compositeOver(scrimmed)
+            val surface = sheen.compositeOver(overlay.compositeOver(underlay))
+            Color.Black.copy(alpha = darken).compositeOver(surface)
+        }
+      }
     }
 }
 
@@ -930,7 +987,7 @@ private fun colorFromHsl(
     )
 }
 
-private fun sampleAverageColor(
+internal fun sampleAverageColor(
     imageBitmap: ImageBitmap,
 ): Color {
     val bitmap = imageBitmap.asAndroidBitmap()

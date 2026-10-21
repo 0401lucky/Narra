@@ -1,0 +1,4 @@
+{
+  "started_epoch": 1792565597.578367,
+  "command": "gradlew.bat :app:verifyRoborazziDebug --tests com.example.myapplication.ui.screenshot.* --console=plain"
+}

@@ -21,7 +21,7 @@ class RoleplayDialogueHighlightColorTest {
     }
 
     @Test
-    fun resolveRoleplayDialogueHighlightColor_withImageKeepsGlassHighlight() {
+    fun resolveRoleplayDialogueHighlightColor_withImageUsesResolvedReadableAccent() {
         val colors = testRoleplayColors(textPrimary = Color(0xFF3A2130))
 
         val resolved = resolveRoleplayDialogueHighlightColor(
@@ -29,7 +29,7 @@ class RoleplayDialogueHighlightColorTest {
             colors = colors,
         )
 
-        assertEquals(RoleplayQuotedDialogueHighlightColor, resolved)
+        assertEquals(colors.characterAccent, resolved)
     }
 
     @Test

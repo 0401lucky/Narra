@@ -20,6 +20,9 @@ internal val RoleplayInteractiveIconButtonSize = 48.dp
 // Palette 缓存容量
 internal const val ImmersivePaletteCacheMaxEntries = 20
 
+// 消息正文的玻璃承载面保留透底，并保证文字不依赖任意背景图片的局部明暗。
+internal const val RoleplayDialogueReadingMinimumAlpha = 0.9f
+
 /**
  * 沉浸式玻璃态设计令牌集合。
  *

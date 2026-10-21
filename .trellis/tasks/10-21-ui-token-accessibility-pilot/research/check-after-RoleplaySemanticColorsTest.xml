@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.myapplication.ui.component.roleplay.RoleplaySemanticColorsTest" tests="4" skipped="0" failures="0" errors="0" timestamp="2026-10-21T06:52:21.177Z" hostname="LUCKY" time="0.08">
+  <properties/>
+  <testcase name="narra_usesActualThemeRoles_inAllAppAndFixedDynamicSchemes" classname="com.example.myapplication.ui.component.roleplay.RoleplaySemanticColorsTest" time="0.066"/>
+  <testcase name="lowContrastTransparentText_isCorrectedAgainstCompositedSurface" classname="com.example.myapplication.ui.component.roleplay.RoleplaySemanticColorsTest" time="0.002"/>
+  <testcase name="geometryOverrides_includingHistoricalDefaults_areNeverSnappedToTokens" classname="com.example.myapplication.ui.component.roleplay.RoleplaySemanticColorsTest" time="0.001"/>
+  <testcase name="allBrandSkins_keepBrandBubble_andReadablePairs_inLightAndDark" classname="com.example.myapplication.ui.component.roleplay.RoleplaySemanticColorsTest" time="0.01"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

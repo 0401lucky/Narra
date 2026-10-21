@@ -1,15 +1,23 @@
 package com.example.myapplication.ui.component.roleplay
 
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.ColorScheme
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.compositeOver
 import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.example.myapplication.model.RoleplayNoBackgroundSkinPreset
 import com.example.myapplication.model.RoleplayNoBackgroundSkinSettings
+import com.example.myapplication.ui.theme.NarraUi
+import com.example.myapplication.ui.theme.RoleplaySkinPalette
+import com.example.myapplication.ui.theme.readableRoleplayText
+import com.example.myapplication.ui.theme.readableRoleplayTextOnSurfaces
+import com.example.myapplication.ui.theme.roleplayBrandSkinPalette
 
 @Immutable
 internal data class RoleplayNoBackgroundSkinSpec(
@@ -45,9 +53,9 @@ internal data class RoleplayDialogueBubbleStyle(
 
 internal val DefaultRoleplayDialogueBubbleStyle = RoleplayDialogueBubbleStyle(
     maxWidthFraction = 0.82f,
-    radius = 22.dp,
-    paddingHorizontal = 18.dp,
-    paddingVertical = 16.dp,
+    radius = NarraUi.radiusLarge,
+    paddingHorizontal = NarraUi.space16,
+    paddingVertical = NarraUi.space16,
     showTail = true,
 )
 
@@ -65,15 +73,9 @@ internal fun rememberRoleplayNoBackgroundSkinSpec(
     settings: RoleplayNoBackgroundSkinSettings,
 ): RoleplayNoBackgroundSkinSpec {
     val normalized = settings.normalized()
-    return remember(normalized) {
-        val preset = resolveRoleplayNoBackgroundPresetSpec(normalized.preset)
-        preset.copy(
-            maxWidthFraction = normalized.maxWidthPercent.coerceIn(64, 92) / 100f,
-            radius = normalized.bubbleRadiusDp.dp,
-            paddingHorizontal = normalized.bubblePaddingHorizontalDp.dp,
-            paddingVertical = normalized.bubblePaddingVerticalDp.dp,
-            showTail = normalized.showBubbleTail,
-        )
+    val colorScheme = MaterialTheme.colorScheme
+    return remember(normalized, colorScheme) {
+        resolveRoleplayNoBackgroundSkinSpec(normalized, colorScheme)
     }
 }
 
@@ -106,7 +108,7 @@ internal fun rememberRoleplayDialogueBubbleStyle(
 }
 
 internal fun RoleplayDialogueBubbleStyle.shape(isUser: Boolean): RoundedCornerShape {
-    val tailCorner = if (showTail) 8.dp else radius
+    val tailCorner = if (showTail) NarraUi.radiusSmall else radius
     return if (isUser) {
         RoundedCornerShape(
             topStart = radius,
@@ -124,296 +126,65 @@ internal fun RoleplayDialogueBubbleStyle.shape(isUser: Boolean): RoundedCornerSh
     }
 }
 
-private fun resolveRoleplayNoBackgroundPresetSpec(
-    preset: RoleplayNoBackgroundSkinPreset,
+internal fun resolveRoleplayNoBackgroundSkinSpec(
+    settings: RoleplayNoBackgroundSkinSettings,
+    colorScheme: ColorScheme,
 ): RoleplayNoBackgroundSkinSpec {
-    return when (preset) {
-        RoleplayNoBackgroundSkinPreset.NARRA -> skin(
-            preset = preset,
-            background = Color(0xFFF4F9F4),
-            panel = Color(0xFFFFFFFF).copy(alpha = 0.86f),
-            panelStrong = Color(0xFFFFFFFF).copy(alpha = 0.96f),
-            border = Color(0xFFA5D6A7),
-            accent = Color(0xFF8CC28A),
-            userBubble = Color(0xFFDDEEDD),
-            characterBubble = Color(0xFFFFFFFF),
-            userText = Color(0xFF2D4A2B),
-            characterText = Color(0xFF1A1C19),
-            mutedText = Color(0xFF546B50),
-            maxWidth = 78,
-            radius = 18,
-            paddingX = 14,
-            paddingY = 10,
-            showTail = false,
+    val normalized = settings.normalized()
+    val brand = roleplayBrandSkinPalette(normalized.preset)
+    val isDark = colorScheme.surface.luminance() < 0.5f
+    val preserveDarkBrand = normalized.preset == RoleplayNoBackgroundSkinPreset.NOIR
+    val isLiquid = normalized.preset == RoleplayNoBackgroundSkinPreset.LIQUID_GLASS
+    val palette = if (brand == null) {
+        RoleplaySkinPalette(
+            background = colorScheme.background,
+            panel = colorScheme.surfaceContainerLow,
+            panelStrong = colorScheme.surfaceContainerHigh,
+            border = colorScheme.outlineVariant,
+            accent = colorScheme.primary,
+            userBubble = colorScheme.primaryContainer,
+            characterBubble = colorScheme.surfaceContainerLow,
+            userText = colorScheme.onPrimaryContainer,
+            characterText = colorScheme.onSurface,
+            mutedText = colorScheme.onSurfaceVariant,
         )
-
-        RoleplayNoBackgroundSkinPreset.WECHAT -> skin(
-            preset = preset,
-            background = Color(0xFFEDEDED),
-            panel = Color.White,
-            panelStrong = Color.White,
-            border = Color(0xFFDADDE3),
-            accent = Color(0xFF07C160),
-            userBubble = Color(0xFF95EC69),
-            characterBubble = Color.White,
-            userText = Color(0xFF111111),
-            characterText = Color(0xFF111111),
-            mutedText = Color(0xFF6D7784),
-            maxWidth = 82,
-            radius = 8,
-            paddingX = 12,
-            paddingY = 9,
-            showTail = true,
+    } else if (isDark && !preserveDarkBrand) {
+        brand.copy(
+            background = colorScheme.background,
+            panel = colorScheme.surfaceContainerLow.copy(alpha = brand.panel.alpha),
+            panelStrong = colorScheme.surfaceContainerHigh.copy(alpha = brand.panelStrong.alpha),
+            characterBubble = colorScheme.surfaceContainerLow.copy(alpha = brand.characterBubble.alpha),
+            userBubble = if (isLiquid) colorScheme.surfaceContainerHigh.copy(alpha = brand.userBubble.alpha) else brand.userBubble,
+            characterText = colorScheme.onSurface,
+            mutedText = colorScheme.onSurfaceVariant,
         )
-
-        RoleplayNoBackgroundSkinPreset.QQ -> skin(
-            preset = preset,
-            background = Color(0xFFEAF3FF),
-            panel = Color.White,
-            panelStrong = Color.White,
-            border = Color(0xFFD5E4F7),
-            accent = Color(0xFF0099FF),
-            userBubble = Color(0xFF0099FF),
-            characterBubble = Color.White,
-            userText = Color.White,
-            characterText = Color(0xFF1D2530),
-            mutedText = Color(0xFF69768A),
-            maxWidth = 78,
-            radius = 16,
-            paddingX = 12,
-            paddingY = 9,
-            showTail = false,
-        )
-
-        RoleplayNoBackgroundSkinPreset.TELEGRAM -> skin(
-            preset = preset,
-            background = Color(0xFFE6F3FA),
-            panel = Color(0xFFF9FDFF),
-            panelStrong = Color.White,
-            border = Color(0xFFCFE1EA),
-            accent = Color(0xFF2AABEE),
-            userBubble = Color(0xFFD8F2FF),
-            characterBubble = Color.White,
-            userText = Color(0xFF102635),
-            characterText = Color(0xFF102635),
-            mutedText = Color(0xFF607685),
-            maxWidth = 76,
-            radius = 16,
-            paddingX = 12,
-            paddingY = 8,
-            showTail = true,
-        )
-
-        RoleplayNoBackgroundSkinPreset.KAKAO -> skin(
-            preset = preset,
-            background = Color(0xFFBACEDE),
-            panel = Color(0xFFF8FBFE),
-            panelStrong = Color.White,
-            border = Color(0xFF9FB4C8),
-            accent = Color(0xFFFEE500),
-            userBubble = Color(0xFFFEE500),
-            characterBubble = Color.White,
-            userText = Color(0xFF191600),
-            characterText = Color(0xFF18212B),
-            mutedText = Color(0xFF596D80),
-            maxWidth = 82,
-            radius = 10,
-            paddingX = 12,
-            paddingY = 9,
-            showTail = true,
-        )
-
-        RoleplayNoBackgroundSkinPreset.RETRO -> skin(
-            preset = preset,
-            background = Color(0xFFE9EEF5),
-            panel = Color(0xFFFFFCF6),
-            panelStrong = Color.White,
-            border = Color(0xFFBCC7D3),
-            accent = Color(0xFF5CA7F8),
-            userBubble = Color(0xFF5CA7F8),
-            characterBubble = Color(0xFFFFFCF6),
-            userText = Color.White,
-            characterText = Color(0xFF263241),
-            mutedText = Color(0xFF687585),
-            maxWidth = 82,
-            radius = 14,
-            paddingX = 12,
-            paddingY = 9,
-            showTail = true,
-        )
-
-        RoleplayNoBackgroundSkinPreset.POLKADOT -> skin(
-            preset = preset,
-            background = Color(0xFFF5E6CF),
-            panel = Color(0xFFFFF8EE),
-            panelStrong = Color(0xFFFFFBF4),
-            border = Color(0xFFE5C9A7),
-            accent = Color(0xFFD85A50),
-            userBubble = Color(0xFFD85A50),
-            characterBubble = Color(0xFFFFF8EE),
-            userText = Color.White,
-            characterText = Color(0xFF3A2D25),
-            mutedText = Color(0xFF8A6F5C),
-            maxWidth = 82,
-            radius = 16,
-            paddingX = 12,
-            paddingY = 9,
-            showTail = false,
-        )
-
-        RoleplayNoBackgroundSkinPreset.PIXEL -> skin(
-            preset = preset,
-            background = Color(0xFFECEAF3),
-            panel = Color(0xFFFFFBF0),
-            panelStrong = Color.White,
-            border = Color(0xFF4D5D79),
-            accent = Color(0xFF4B7BD7),
-            userBubble = Color(0xFF4B7BD7),
-            characterBubble = Color(0xFFFFFBF0),
-            userText = Color.White,
-            characterText = Color(0xFF172033),
-            mutedText = Color(0xFF5C6880),
-            maxWidth = 78,
-            radius = 10,
-            paddingX = 12,
-            paddingY = 9,
-            showTail = false,
-        )
-
-        RoleplayNoBackgroundSkinPreset.ROSE -> skin(
-            preset = preset,
-            background = Color(0xFFFFEDF4),
-            panel = Color.White,
-            panelStrong = Color.White,
-            border = Color(0xFFF2C8D7),
-            accent = Color(0xFFE58BAD),
-            userBubble = Color(0xFFF5DDE6),
-            characterBubble = Color.White,
-            userText = Color(0xFF3A2130),
-            characterText = Color(0xFF3A2130),
-            mutedText = Color(0xFF9A667A),
-            maxWidth = 80,
-            radius = 18,
-            paddingX = 12,
-            paddingY = 9,
-            showTail = false,
-        )
-
-        RoleplayNoBackgroundSkinPreset.NOIR -> skin(
-            preset = preset,
-            background = Color(0xFF0E0B14),
-            panel = Color(0xFF171120),
-            panelStrong = Color(0xFF21172F),
-            border = Color(0xFF5D4C70),
-            accent = Color(0xFFB7A0D6),
-            userBubble = Color(0xFF21172F),
-            characterBubble = Color(0xFF171120),
-            userText = Color(0xFFF4EDFF),
-            characterText = Color(0xFFF4EDFF),
-            mutedText = Color(0xFFC1B3D5),
-            maxWidth = 79,
-            radius = 8,
-            paddingX = 12,
-            paddingY = 9,
-            showTail = false,
-        )
-
-        RoleplayNoBackgroundSkinPreset.Y2K -> skin(
-            preset = preset,
-            background = Color(0xFFF5F8FF),
-            panel = Color.White,
-            panelStrong = Color.White,
-            border = Color(0xFFCFE0FF),
-            accent = Color(0xFF4E9DFF),
-            userBubble = Color(0xFFCCE4FF),
-            characterBubble = Color.White,
-            userText = Color(0xFF122641),
-            characterText = Color(0xFF122641),
-            mutedText = Color(0xFF6B7C98),
-            maxWidth = 82,
-            radius = 6,
-            paddingX = 12,
-            paddingY = 9,
-            showTail = false,
-        )
-
-        RoleplayNoBackgroundSkinPreset.IMESSAGE -> skin(
-            preset = preset,
-            background = Color(0xFFF2F2F7),
-            panel = Color.White,
-            panelStrong = Color.White,
-            border = Color(0xFFD7D7DF),
-            accent = Color(0xFF0A84FF),
-            userBubble = Color(0xFF0A84FF),
-            characterBubble = Color(0xFFE5E5EA),
-            userText = Color.White,
-            characterText = Color(0xFF111111),
-            mutedText = Color(0xFF6E6E73),
-            maxWidth = 76,
-            radius = 20,
-            paddingX = 14,
-            paddingY = 10,
-            showTail = false,
-        )
-
-        RoleplayNoBackgroundSkinPreset.LIQUID_GLASS -> skin(
-            preset = preset,
-            background = Color(0xFFEAF0F7),
-            panel = Color.White.copy(alpha = 0.78f),
-            panelStrong = Color.White.copy(alpha = 0.9f),
-            border = Color.White.copy(alpha = 0.72f),
-            accent = Color(0xFF7CA7D9),
-            userBubble = Color.White.copy(alpha = 0.64f),
-            characterBubble = Color.White.copy(alpha = 0.58f),
-            userText = Color(0xFF1E314A),
-            characterText = Color(0xFF1E314A),
-            mutedText = Color(0xFF62748A),
-            maxWidth = 78,
-            radius = 18,
-            paddingX = 14,
-            paddingY = 10,
-            showTail = false,
-        )
+    } else {
+        brand
     }
-}
-
-private fun skin(
-    preset: RoleplayNoBackgroundSkinPreset,
-    background: Color,
-    panel: Color,
-    panelStrong: Color,
-    border: Color,
-    accent: Color,
-    userBubble: Color,
-    characterBubble: Color,
-    userText: Color,
-    characterText: Color,
-    mutedText: Color,
-    maxWidth: Int,
-    radius: Int,
-    paddingX: Int,
-    paddingY: Int,
-    showTail: Boolean,
-): RoleplayNoBackgroundSkinSpec {
+    val backing = palette.background
+    val narrationBubble = if (brand == null) colorScheme.surfaceContainerHighest else palette.panelStrong
+    val characterText = readableRoleplayText(palette.characterText, palette.characterBubble, backing)
+    val userText = readableRoleplayText(palette.userText, palette.userBubble, backing)
     return RoleplayNoBackgroundSkinSpec(
-        preset = preset,
-        displayName = preset.displayName,
-        background = background,
-        panel = panel,
-        panelStrong = panelStrong,
-        border = border,
-        accent = accent,
-        userAccent = if (userBubble.luminance() < 0.45f) userText else accent,
-        userBubble = userBubble,
-        characterBubble = characterBubble,
-        narrationBubble = panelStrong,
+        preset = normalized.preset,
+        displayName = normalized.preset.displayName,
+        background = backing,
+        panel = palette.panel,
+        panelStrong = palette.panelStrong,
+        border = palette.border,
+        accent = readableRoleplayText(palette.accent, palette.characterBubble, backing),
+        userAccent = readableRoleplayText(palette.accent, palette.userBubble, backing),
+        userBubble = palette.userBubble,
+        characterBubble = palette.characterBubble,
+        narrationBubble = narrationBubble,
         userText = userText,
         characterText = characterText,
-        mutedText = mutedText,
-        maxWidthFraction = maxWidth / 100f,
-        radius = radius.dp,
-        paddingHorizontal = paddingX.dp,
-        paddingVertical = paddingY.dp,
-        showTail = showTail,
+        mutedText = readableRoleplayTextOnSurfaces(palette.mutedText, listOf(narrationBubble.compositeOver(backing), backing)),
+        // 所有已有设置（包括仍等于旧默认的值）具有优先权，不推测用户是否手调。
+        maxWidthFraction = normalized.maxWidthPercent / 100f,
+        radius = normalized.bubbleRadiusDp.dp,
+        paddingHorizontal = normalized.bubblePaddingHorizontalDp.dp,
+        paddingVertical = normalized.bubblePaddingVerticalDp.dp,
+        showTail = normalized.showBubbleTail,
     )
 }

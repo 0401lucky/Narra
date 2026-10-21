@@ -1,0 +1,38 @@
+Calculating task graph as no cached configuration is available for tasks: :app:compileDebugKotlin
+
+> Configure project :app
+WARNING: The option setting 'android.disallowKotlinSourceSets=false' is experimental.
+The current default is 'true'.
+Narra release signing 未配置，assembleRelease 仍会生成未签名包。请在 local.properties、环境变量或 -P 参数中配置 NARRA_RELEASE_*。
+
+> Task :app:preBuild UP-TO-DATE
+> Task :app:preDebugBuild UP-TO-DATE
+> Task :app:generateDebugBuildConfig UP-TO-DATE
+> Task :app:generateDebugResValues UP-TO-DATE
+> Task :app:generateDebugResources UP-TO-DATE
+> Task :app:processDebugNavigationResources UP-TO-DATE
+> Task :app:packageDebugResources UP-TO-DATE
+> Task :app:parseDebugLocalResources UP-TO-DATE
+> Task :app:generateDebugRFile UP-TO-DATE
+> Task :app:kspDebugKotlin
+> Task :app:compileDebugKotlin
+w: file:///D:/code/AndroidStudioprojects/MyApplication/app/src/main/java/com/example/myapplication/ui/component/roleplay/ImmersiveGlass.kt:327:31 'fun Modifier.hazeChild(state: HazeState, shape: Shape, style: HazeStyle): Modifier' is deprecated. Shape clipping is no longer necessary with Haze. You can use `Modifier.clip` or similar.
+w: file:///D:/code/AndroidStudioprojects/MyApplication/app/src/main/java/com/example/myapplication/ui/screen/immersive/ImmersivePhoneShell.kt:1024:5 'fun Divider(modifier: Modifier = ..., thickness: Dp = ..., color: Color = ...): Unit' is deprecated. Renamed to HorizontalDivider.
+w: file:///D:/code/AndroidStudioprojects/MyApplication/app/src/main/java/com/example/myapplication/ui/screen/immersive/ImmersivePhoneShell.kt:1128:5 'fun Divider(modifier: Modifier = ..., thickness: Dp = ..., color: Color = ...): Unit' is deprecated. Renamed to HorizontalDivider.
+w: file:///D:/code/AndroidStudioprojects/MyApplication/app/src/main/java/com/example/myapplication/ui/screen/immersive/ImmersivePhoneShell.kt:1224:5 'fun Divider(modifier: Modifier = ..., thickness: Dp = ..., color: Color = ...): Unit' is deprecated. Renamed to HorizontalDivider.
+w: file:///D:/code/AndroidStudioprojects/MyApplication/app/src/main/java/com/example/myapplication/ui/component/roleplay/ImmersiveGlass.kt:327:31 'fun Modifier.hazeChild(state: HazeState, shape: Shape, style: HazeStyle): Modifier' is deprecated. Shape clipping is no longer necessary with Haze. You can use `Modifier.clip` or similar.
+w: file:///D:/code/AndroidStudioprojects/MyApplication/app/src/main/java/com/example/myapplication/ui/screen/immersive/ImmersivePhoneShell.kt:1024:5 'fun Divider(modifier: Modifier = ..., thickness: Dp = ..., color: Color = ...): Unit' is deprecated. Renamed to HorizontalDivider.
+w: file:///D:/code/AndroidStudioprojects/MyApplication/app/src/main/java/com/example/myapplication/ui/screen/immersive/ImmersivePhoneShell.kt:1128:5 'fun Divider(modifier: Modifier = ..., thickness: Dp = ..., color: Color = ...): Unit' is deprecated. Renamed to HorizontalDivider.
+w: file:///D:/code/AndroidStudioprojects/MyApplication/app/src/main/java/com/example/myapplication/ui/screen/immersive/ImmersivePhoneShell.kt:1224:5 'fun Divider(modifier: Modifier = ..., thickness: Dp = ..., color: Color = ...): Unit' is deprecated. Renamed to HorizontalDivider.
+
+[Incubating] Problems report is available at: file:///D:/code/AndroidStudioprojects/MyApplication/build/reports/problems/problems-report.html
+
+Deprecated Gradle features were used in this build, making it incompatible with Gradle 10.
+
+You can use '--warning-mode all' to show the individual deprecation warnings and determine if they come from your own scripts or plugins.
+
+For more on this, please refer to https://docs.gradle.org/9.3.1/userguide/command_line_interface.html#sec:command_line_warnings in the Gradle documentation.
+
+BUILD SUCCESSFUL in 42s
+9 actionable tasks: 2 executed, 7 up-to-date
+Configuration cache entry stored.

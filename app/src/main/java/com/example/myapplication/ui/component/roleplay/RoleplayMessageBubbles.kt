@@ -1,5 +1,7 @@
 package com.example.myapplication.ui.component.roleplay
 
+import com.example.myapplication.ui.theme.NarraShapes
+import com.example.myapplication.ui.theme.NarraUi
 import android.widget.Toast
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
@@ -22,6 +24,7 @@ import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -135,14 +138,14 @@ private fun RoleplayMessageItemContent(
                     ImmersiveGlassSurface(
                         backdropState = backdropState,
                         modifier = Modifier.fillMaxWidth(0.92f),
-                        shape = RoundedCornerShape(22.dp),
+                        shape = NarraShapes.large,
                         blurRadius = 18.dp,
                         overlayColor = colors.narrationBubbleBackground,
                     ) {
                         Column(
                             modifier = Modifier
-                                .padding(horizontal = 18.dp, vertical = 16.dp),
-                            verticalArrangement = Arrangement.spacedBy(12.dp),
+                                .padding(horizontal = NarraUi.space16, vertical = NarraUi.space16),
+                            verticalArrangement = Arrangement.spacedBy(NarraUi.space12),
                         ) {
                             val paragraphs = remember(message.content) { message.content.toLongformParagraphs() }
                             paragraphs.forEach { paragraph ->
@@ -184,14 +187,14 @@ private fun RoleplayMessageItemContent(
                     ImmersiveGlassSurface(
                         backdropState = backdropState,
                         modifier = Modifier.fillMaxWidth(0.82f),
-                        shape = RoundedCornerShape(22.dp),
+                        shape = NarraShapes.large,
                         blurRadius = 18.dp,
                         overlayColor = colors.narrationBubbleBackground,
                     ) {
                         Column(
                             modifier = Modifier
-                                .padding(horizontal = 18.dp, vertical = 16.dp),
-                            verticalArrangement = Arrangement.spacedBy(12.dp),
+                                .padding(horizontal = NarraUi.space16, vertical = NarraUi.space16),
+                            verticalArrangement = Arrangement.spacedBy(NarraUi.space12),
                         ) {
                             val paragraphs = remember(message.content) { message.content.toLongformParagraphs() }
                             paragraphs.forEach { paragraph ->
@@ -241,9 +244,9 @@ private fun RoleplayMessageItemContent(
                             Column(
                                 modifier = Modifier.widthIn(max = messageMaxWidth * maxWidthFraction),
                                 horizontalAlignment = Alignment.End,
-                                verticalArrangement = Arrangement.spacedBy(4.dp),
+                                verticalArrangement = Arrangement.spacedBy(NarraUi.space4),
                             ) {
-                                RoleplaySpeakerNameLabel(message = message, isUser = true)
+                                RoleplaySpeakerNameLabel(message = message, isUser = true, colors = colors)
                                 RoleplayMessageMenuWrapper(
                                     message = message,
                                     onRetryTurn = onRetryTurn,
@@ -268,16 +271,16 @@ private fun RoleplayMessageItemContent(
                                 message = message,
                                 colors = colors,
                                 onPokeMessageAvatar = onPokeMessageAvatar,
-                                modifier = Modifier.padding(start = 8.dp),
+                                modifier = Modifier.padding(start = NarraUi.space8),
                             )
                         }
                     } else {
                         Column(
                             modifier = Modifier.widthIn(max = messageMaxWidth * maxWidthFraction),
                             horizontalAlignment = Alignment.End,
-                            verticalArrangement = Arrangement.spacedBy(4.dp),
+                            verticalArrangement = Arrangement.spacedBy(NarraUi.space4),
                         ) {
-                            RoleplaySpeakerNameLabel(message = message, isUser = true)
+                            RoleplaySpeakerNameLabel(message = message, isUser = true, colors = colors)
                             RoleplayMessageMenuWrapper(
                                 message = message,
                                 onRetryTurn = onRetryTurn,
@@ -323,14 +326,14 @@ private fun RoleplayMessageItemContent(
                                 message = message,
                                 colors = colors,
                                 onPokeMessageAvatar = onPokeMessageAvatar,
-                                modifier = Modifier.padding(end = 8.dp),
+                                modifier = Modifier.padding(end = NarraUi.space8),
                             )
                             Column(
                                 modifier = Modifier.widthIn(max = messageMaxWidth * maxWidthFraction),
                                 horizontalAlignment = Alignment.Start,
-                                verticalArrangement = Arrangement.spacedBy(4.dp),
+                                verticalArrangement = Arrangement.spacedBy(NarraUi.space4),
                             ) {
-                                RoleplaySpeakerNameLabel(message = message, isUser = false)
+                                RoleplaySpeakerNameLabel(message = message, isUser = false, colors = colors)
                                 RoleplayMessageMenuWrapper(
                                     message = message,
                                     onRetryTurn = onRetryTurn,
@@ -357,9 +360,9 @@ private fun RoleplayMessageItemContent(
                         Column(
                             modifier = Modifier.widthIn(max = messageMaxWidth * maxWidthFraction),
                             horizontalAlignment = Alignment.Start,
-                            verticalArrangement = Arrangement.spacedBy(4.dp),
+                            verticalArrangement = Arrangement.spacedBy(NarraUi.space4),
                         ) {
-                            RoleplaySpeakerNameLabel(message = message, isUser = false)
+                            RoleplaySpeakerNameLabel(message = message, isUser = false, colors = colors)
                             RoleplayMessageMenuWrapper(
                                 message = message,
                                 onRetryTurn = onRetryTurn,
@@ -391,14 +394,15 @@ private fun RoleplayMessageItemContent(
             Column(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalAlignment = if (message.speaker == RoleplaySpeaker.USER) Alignment.End else Alignment.Start,
-                verticalArrangement = Arrangement.spacedBy(4.dp),
+                verticalArrangement = Arrangement.spacedBy(NarraUi.space4),
             ) {
                 RoleplaySpeakerNameLabel(
                     message = message,
                     isUser = message.speaker == RoleplaySpeaker.USER,
+                    colors = colors,
                 )
                 RoleplayMessageMenuWrapper(message, onRetryTurn, onEditUserMessage, onQuoteMessage = onQuoteMessage, onRecallMessage = onRecallMessage, onDeleteMessage = onDeleteMessage) {
-                    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Column(verticalArrangement = Arrangement.spacedBy(NarraUi.space8)) {
                         if (isError) {
                             FailedTurnHint(colors = colors)
                         }
@@ -409,7 +413,7 @@ private fun RoleplayMessageItemContent(
                             backdropState = backdropState,
                             containerColor = if (isError) colors.errorBackground else colors.panelBackground,
                             titleColor = if (isError) colors.errorText else colors.characterAccent,
-                            bodyColor = if (isError) colors.errorText.copy(alpha = 0.88f) else colors.textPrimary.copy(alpha = 0.94f),
+                            bodyColor = if (isError) colors.errorText else colors.textPrimary,
                             accentColor = if (isError) {
                                 colors.errorText
                             } else {
@@ -455,7 +459,7 @@ private fun RoleplayMessageItemContent(
                                 message = message,
                                 colors = colors,
                                 onPokeMessageAvatar = onPokeMessageAvatar,
-                                modifier = Modifier.padding(end = 8.dp),
+                                modifier = Modifier.padding(end = NarraUi.space8),
                             )
                         }
                         RoleplayMessageMenuWrapper(
@@ -487,7 +491,7 @@ private fun RoleplayMessageItemContent(
                                 message = message,
                                 colors = colors,
                                 onPokeMessageAvatar = onPokeMessageAvatar,
-                                modifier = Modifier.padding(start = 8.dp),
+                                modifier = Modifier.padding(start = NarraUi.space8),
                             )
                         }
                     }
@@ -541,7 +545,7 @@ private fun RoleplayMessageItemContent(
                                 message = message,
                                 colors = colors,
                                 onPokeMessageAvatar = onPokeMessageAvatar,
-                                modifier = Modifier.padding(end = 8.dp),
+                                modifier = Modifier.padding(end = NarraUi.space8),
                             )
                         }
                         RoleplayMessageMenuWrapper(
@@ -564,7 +568,7 @@ private fun RoleplayMessageItemContent(
                                 message = message,
                                 colors = colors,
                                 onPokeMessageAvatar = onPokeMessageAvatar,
-                                modifier = Modifier.padding(start = 8.dp),
+                                modifier = Modifier.padding(start = NarraUi.space8),
                             )
                         }
                     }
@@ -616,24 +620,25 @@ private fun resolveDialogueMaxWidthFraction(
     }
 }
 
-private val RoleplaySpeakerNameColor = Color(0xFF3F4652)
-
 @Composable
 private fun RoleplaySpeakerNameLabel(
     message: RoleplayMessageUiModel,
     isUser: Boolean,
+    colors: ImmersiveRoleplayColors,
 ) {
     val displayName = message.speakerName.trim()
         .ifBlank { if (isUser) "我" else "角色" }
+    Surface(shape = NarraShapes.small, color = colors.systemBackground) {
     Text(
         text = displayName,
-        modifier = Modifier.padding(horizontal = 4.dp),
+        modifier = Modifier.padding(horizontal = NarraUi.space4),
         style = MaterialTheme.typography.labelMedium,
-        color = RoleplaySpeakerNameColor,
+        color = colors.systemText,
         fontWeight = FontWeight.SemiBold,
         maxLines = 1,
         overflow = TextOverflow.Ellipsis,
     )
+    }
 }
 
 @Composable
@@ -668,7 +673,7 @@ private fun RoleplayMessageAvatar(
             colors.characterAccent.copy(alpha = 0.16f)
         },
         contentColor = if (isUser) colors.userAccent else colors.characterAccent,
-        cornerRadius = 18.dp,
+        cornerRadius = NarraUi.radiusMedium,
     )
 }
 

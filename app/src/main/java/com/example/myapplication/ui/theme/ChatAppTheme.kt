@@ -103,6 +103,7 @@ fun ChatAppTheme(
     MaterialTheme(
         colorScheme = resolveAppColorScheme(appColorTheme, darkTheme, dynamicColorScheme),
         typography = Typography,
+        shapes = NarraShapes.material,
         content = content,
     )
 }

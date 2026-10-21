@@ -1,6 +1,11 @@
 package com.example.myapplication.ui.screenshot
 
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.material3.ColorScheme
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.State
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -24,6 +29,11 @@ import com.example.myapplication.testutil.createTestAiServices
 import com.example.myapplication.ui.component.roleplay.RoleplayMessageBubbleMode
 import com.example.myapplication.ui.component.roleplay.RoleplayMessageItem
 import com.example.myapplication.ui.component.roleplay.rememberImmersiveRoleplayColors
+import com.example.myapplication.ui.component.roleplay.rememberRoleplayNoBackgroundSkinSpec
+import com.example.myapplication.ui.component.roleplay.shouldUseRoleplayGlassBubble
+import com.example.myapplication.ui.component.roleplay.RoleplaySceneBackground
+import com.example.myapplication.ui.screen.roleplay.roleplayOnlineBackdropScrim
+import com.example.myapplication.ui.theme.NarraUi
 import com.example.myapplication.ui.screen.immersive.ImmersivePhoneCallbacks
 import com.example.myapplication.ui.screen.immersive.ImmersivePhoneShell
 import com.example.myapplication.ui.screen.roleplay.RoleplayOnlinePhoneContent
@@ -45,6 +55,7 @@ abstract class ScreenshotRenderTest : ScreenshotStageTest() {
         appColorTheme: AppColorTheme,
         darkTheme: Boolean,
         summaries: List<RoleplayChatSummary> = ScreenshotFixture.ChatSummaries,
+        callbacks: ImmersivePhoneCallbacks = noOpPhoneCallbacks(),
     ) {
         setStage(case, appColorTheme, darkTheme) {
             ImmersivePhoneShell(
@@ -55,7 +66,7 @@ abstract class ScreenshotRenderTest : ScreenshotStageTest() {
                 errorMessage = null,
                 onClearNoticeMessage = {},
                 onClearErrorMessage = {},
-                callbacks = noOpPhoneCallbacks(),
+                callbacks = callbacks,
             )
         }
     }
@@ -96,14 +107,24 @@ abstract class ScreenshotRenderTest : ScreenshotStageTest() {
         backdropImage: ImageBitmap? = null,
         skin: RoleplayNoBackgroundSkinSettings = RoleplayNoBackgroundSkinSettings(),
         isSending: Boolean = false,
+        colorScheme: ColorScheme? = null,
+        colorSchemeState: State<ColorScheme>? = null,
+        inputState: State<String>? = null,
+        showAiHelper: Boolean = false,
+        onInputChange: (String) -> Unit = {},
+        onSend: () -> Unit = {},
+        onCancel: () -> Unit = {},
+        onNavigateBack: () -> Unit = {},
+        onOpenSettings: () -> Unit = {},
+        onOpenWallet: () -> Unit = {},
     ) {
         val assistant = ScreenshotFixture.Assistants.firstOrNull { it.id == scenario.assistantId }
         val settings = AppSettings(
             appColorTheme = appColorTheme,
             roleplayNoBackgroundSkin = skin,
-            showRoleplayAiHelper = false,
+            showRoleplayAiHelper = showAiHelper,
         )
-        setStage(case, appColorTheme, darkTheme) {
+        val page: @Composable () -> Unit = {
             val backdropState = ScreenshotFixture.backdropState(
                 image = backdropImage,
                 widthPx = case.stageWidthDp * 2,
@@ -119,7 +140,7 @@ abstract class ScreenshotRenderTest : ScreenshotStageTest() {
                 groupParticipants = emptyList<RoleplayGroupParticipant>(),
                 messages = messages,
                 suggestions = emptyList<RoleplaySuggestionUiModel>(),
-                input = "",
+                input = inputState?.value.orEmpty(),
                 inputFocusToken = 0L,
                 replyToMessageId = "",
                 replyToPreview = "",
@@ -129,7 +150,7 @@ abstract class ScreenshotRenderTest : ScreenshotStageTest() {
                 suggestionErrorMessage = null,
                 pendingMemoryProposal = null,
                 snackbarHostState = snackbarHostState,
-                onInputChange = { _ -> },
+                onInputChange = onInputChange,
                 onGenerateSuggestions = {},
                 onApplySuggestion = { _ -> },
                 onClearSuggestions = {},
@@ -150,27 +171,30 @@ abstract class ScreenshotRenderTest : ScreenshotStageTest() {
                 onOpenTaskPlay = {},
                 onOpenPunishPlay = {},
                 onConfirmTransferReceipt = { _ -> },
-                onSend = {},
+                onSend = onSend,
                 pendingImageParts = emptyList<ChatMessagePart>(),
                 onRemovePendingImagePart = { _ -> },
                 onRequestGroupParticipantReply = { _ -> },
-                onCancelSending = {},
+                onCancelSending = onCancel,
                 onApprovePendingMemoryProposal = {},
                 onRejectPendingMemoryProposal = {},
                 onOpenPhoneCheck = {},
                 onOpenMoments = {},
                 onOpenVideoCall = {},
                 onOpenMailbox = {},
-                onOpenWallet = {},
-                onOpenSettings = {},
-                onNavigateBack = {},
+                onOpenWallet = onOpenWallet,
+                onOpenSettings = onOpenSettings,
+                onNavigateBack = onNavigateBack,
             )
         }
+        if (colorSchemeState != null) setColorSchemeStateStage(case, colorSchemeState, page)
+        else if (colorScheme == null) setStage(case, appColorTheme, darkTheme, page)
+        else setColorSchemeStage(case, colorScheme, page)
     }
 
     /**
      * 气泡组件级入口：真实 [RoleplayMessageItem] + 真实 [rememberImmersiveRoleplayColors]。
-     * 组件舞台复刻线上消息列表既有内边距（横向 12dp、纵向 14dp、间距 10dp），
+     * 组件舞台复用生产主题/背景、玻璃谓词与令牌，
      * 避免“组件贴边”这种真实列表里不存在的构图差异。
      */
     internal fun renderBubbleStage(
@@ -191,12 +215,20 @@ abstract class ScreenshotRenderTest : ScreenshotStageTest() {
             val colors = rememberImmersiveRoleplayColors(
                 backdropState = backdropState,
                 noBackgroundSkin = skin,
+                useGlassColors = shouldUseRoleplayGlassBubble(backdropState.hasImage, bubbleMode, skin.onlineBackgroundGlassEnabled),
             )
+            val skinSpec = rememberRoleplayNoBackgroundSkinSpec(skin)
+            Box(Modifier.fillMaxSize()) {
+                RoleplaySceneBackground(
+                    backdropState = backdropState,
+                    fallbackBackgroundColor = skinSpec.background.takeIf { !backdropState.hasImage },
+                )
+                Box(Modifier.fillMaxSize().background(roleplayOnlineBackdropScrim(backdropState)))
             Column(
                 modifier = Modifier
                     .fillMaxSize()
-                    .padding(horizontal = 12.dp, vertical = 14.dp),
-                verticalArrangement = Arrangement.spacedBy(10.dp),
+                    .padding(horizontal = NarraUi.space12, vertical = NarraUi.space16),
+                verticalArrangement = Arrangement.spacedBy(NarraUi.space8),
             ) {
                 messages.forEach { message ->
                     Column(modifier = Modifier.fillMaxWidth()) {
@@ -214,6 +246,7 @@ abstract class ScreenshotRenderTest : ScreenshotStageTest() {
                     }
                 }
             }
+            }
         }
     }
 
@@ -223,7 +256,7 @@ abstract class ScreenshotRenderTest : ScreenshotStageTest() {
         selectedAssistantId = ScreenshotFixture.SuwanAssistant.id,
     )
 
-    private fun noOpPhoneCallbacks() = ImmersivePhoneCallbacks(
+    protected fun noOpPhoneCallbacks() = ImmersivePhoneCallbacks(
         onNavigateBack = {},
         onOpenChat = { _ -> },
         onOpenChatManage = {},

@@ -1,5 +1,7 @@
 package com.example.myapplication.ui.component.roleplay
 
+import com.example.myapplication.ui.theme.NarraShapes
+import com.example.myapplication.ui.theme.NarraUi
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -47,7 +49,7 @@ internal fun UserDialogueBubbleContent(
                     horizontal = bubbleStyle.paddingHorizontal,
                     vertical = bubbleStyle.paddingVertical,
                 ),
-            verticalArrangement = Arrangement.spacedBy(8.dp),
+            verticalArrangement = Arrangement.spacedBy(NarraUi.space8),
         ) {
             if (message.replyToPreview.isNotBlank()) {
                 RoleplayReplyPreview(
@@ -65,7 +67,7 @@ internal fun UserDialogueBubbleContent(
                 )
             } else {
                 val paragraphs = remember(message.content) { message.content.toLongformParagraphs() }
-                Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                Column(verticalArrangement = Arrangement.spacedBy(NarraUi.space12)) {
                     paragraphs.forEach { paragraph ->
                         Text(
                             paragraph,
@@ -98,6 +100,7 @@ internal fun UserDialogueBubbleContent(
             shape = shape,
             variant = ImmersiveReadingGlassVariant.DIALOGUE,
             overlayColor = colors.userBubbleBackground,
+            minimumOverlayAlpha = RoleplayDialogueReadingMinimumAlpha,
         ) {
             content()
         }
@@ -134,7 +137,7 @@ internal fun CharacterDialogueBubbleContent(
                 horizontal = bubbleStyle.paddingHorizontal,
                 vertical = bubbleStyle.paddingVertical,
             ),
-            verticalArrangement = Arrangement.spacedBy(8.dp),
+            verticalArrangement = Arrangement.spacedBy(NarraUi.space8),
         ) {
             if (message.replyToPreview.isNotBlank()) {
                 RoleplayReplyPreview(
@@ -162,12 +165,12 @@ internal fun CharacterDialogueBubbleContent(
                 )
             } else {
                 val paragraphs = remember(message.content) { message.content.toLongformParagraphs() }
-                Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                Column(verticalArrangement = Arrangement.spacedBy(NarraUi.space12)) {
                     paragraphs.forEach { paragraph ->
                         val rendered = remember(paragraph, colors, isError, dialogueHighlightColor) {
                             buildCharacterDialogueAnnotatedString(
                                 text = paragraph,
-                                narrationColor = if (isError) colors.errorText.copy(alpha = 0.84f) else colors.textPrimary.copy(alpha = 0.78f),
+                                narrationColor = if (isError) colors.errorText else colors.textPrimary,
                                 dialogueColor = dialogueHighlightColor,
                             )
                         }
@@ -184,7 +187,7 @@ internal fun CharacterDialogueBubbleContent(
             }
         }
     }
-    if (!useGlassBubble) {
+    if (!useGlassBubble || isError) {
         Surface(
             modifier = bubbleModifier,
             shape = shape,
@@ -201,6 +204,7 @@ internal fun CharacterDialogueBubbleContent(
             shape = shape,
             variant = ImmersiveReadingGlassVariant.DIALOGUE,
             overlayColor = bubbleColor,
+            minimumOverlayAlpha = RoleplayDialogueReadingMinimumAlpha,
         ) {
             content()
         }
@@ -219,28 +223,28 @@ internal fun RoleplayReplyPreview(
         } else {
             Modifier
         },
-        shape = RoundedCornerShape(8.dp),
-        color = colors.panelBackground.copy(alpha = 0.78f),
+        shape = NarraShapes.small,
+        color = colors.systemBackground,
     ) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 9.dp, vertical = 7.dp),
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                .padding(horizontal = NarraUi.space8, vertical = NarraUi.space8),
+            horizontalArrangement = Arrangement.spacedBy(NarraUi.space8),
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Surface(
                 modifier = Modifier
                     .width(3.dp)
                     .height(32.dp),
-                shape = RoundedCornerShape(999.dp),
+                shape = NarraShapes.pill,
                 color = colors.characterAccent.copy(alpha = 0.62f),
             ) {}
-            Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+            Column(verticalArrangement = Arrangement.spacedBy(NarraUi.space4)) {
                 Text(
                     text = message.replyToSpeakerName.ifBlank { "\u5F15\u7528\u6D88\u606F" },
                     style = MaterialTheme.typography.labelSmall,
-                    color = colors.characterAccent,
+                    color = colors.systemText,
                     fontWeight = FontWeight.SemiBold,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
@@ -248,7 +252,7 @@ internal fun RoleplayReplyPreview(
                 Text(
                     text = message.replyToPreview,
                     style = MaterialTheme.typography.bodySmall,
-                    color = colors.textMuted,
+                    color = colors.systemText,
                     maxLines = 2,
                     overflow = TextOverflow.Ellipsis,
                 )

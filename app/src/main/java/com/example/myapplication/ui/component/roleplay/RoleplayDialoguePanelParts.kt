@@ -23,6 +23,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.ColorScheme
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -35,6 +36,8 @@ import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.compositeOver
+import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalView
@@ -51,6 +54,8 @@ import com.example.myapplication.R
 import com.example.myapplication.model.RoleplaySuggestionUiModel
 import com.example.myapplication.model.RoleplayNoBackgroundSkinSettings
 import com.example.myapplication.ui.component.NarraTextButton
+import com.example.myapplication.ui.theme.readableRoleplayText
+import com.example.myapplication.ui.theme.readableRoleplayTextOnSurfaces
 
 internal data class ImmersiveRoleplayColors(
     val textPrimary: Color,
@@ -68,6 +73,11 @@ internal data class ImmersiveRoleplayColors(
     val userBubbleBackground: Color,
     val characterBubbleBackground: Color,
     val narrationBubbleBackground: Color,
+    val panelText: Color = textPrimary,
+    val panelMutedText: Color = textMuted,
+    val narrationText: Color = textMuted,
+    val systemText: Color = textPrimary,
+    val systemBackground: Color = panelBackgroundStrong,
 )
 
 internal enum class RoleplayMessageBubbleMode {
@@ -87,7 +97,7 @@ internal fun resolveRoleplayDialogueHighlightColor(
     colors: ImmersiveRoleplayColors,
 ): Color {
     return if (hasImage) {
-        RoleplayQuotedDialogueHighlightColor
+        colors.characterAccent
     } else {
         colors.textPrimary
     }
@@ -97,48 +107,73 @@ internal fun resolveRoleplayDialogueHighlightColor(
 internal fun rememberImmersiveRoleplayColors(
     backdropState: ImmersiveBackdropState,
     noBackgroundSkin: RoleplayNoBackgroundSkinSettings = RoleplayNoBackgroundSkinSettings(),
+    useGlassColors: Boolean = backdropState.hasImage,
+): ImmersiveRoleplayColors {
+    val skinSpec = rememberRoleplayNoBackgroundSkinSpec(noBackgroundSkin)
+    val colorScheme = MaterialTheme.colorScheme
+    return remember(backdropState, skinSpec, colorScheme, useGlassColors) {
+        resolveImmersiveRoleplayColors(backdropState, skinSpec, colorScheme, useGlassColors)
+    }
+}
+
+internal fun resolveImmersiveRoleplayColors(
+    backdropState: ImmersiveBackdropState,
+    skinSpec: RoleplayNoBackgroundSkinSpec,
+    colorScheme: ColorScheme,
+    useGlassColors: Boolean,
 ): ImmersiveRoleplayColors {
     val palette = backdropState.palette
-    val errorText = Color(0xFFFFB4AB)
-    val skinSpec = rememberRoleplayNoBackgroundSkinSpec(noBackgroundSkin)
-    return remember(palette, errorText, backdropState.hasImage, skinSpec) {
-        if (!backdropState.hasImage) {
-            return@remember ImmersiveRoleplayColors(
-                textPrimary = skinSpec.characterText,
-                userText = skinSpec.userText,
-                textMuted = skinSpec.mutedText,
-                characterAccent = skinSpec.accent,
-                userAccent = skinSpec.userAccent,
-                thoughtText = skinSpec.mutedText.copy(alpha = 0.92f),
-                panelBackground = skinSpec.panel.copy(alpha = skinSpec.panel.alpha.coerceAtLeast(0.86f)),
-                panelBackgroundStrong = skinSpec.panelStrong.copy(alpha = skinSpec.panelStrong.alpha.coerceAtLeast(0.92f)),
-                panelBorder = skinSpec.border.copy(alpha = skinSpec.border.alpha.coerceAtLeast(0.18f)),
-                errorText = Color(0xFFB3261E),
-                errorBackground = Color(0xFFFFEDEA).copy(alpha = 0.94f),
-                errorBackgroundStrong = Color(0xFFFFDAD6).copy(alpha = 0.96f),
-                userBubbleBackground = skinSpec.userBubble,
-                characterBubbleBackground = skinSpec.characterBubble,
-                narrationBubbleBackground = skinSpec.narrationBubble.copy(alpha = skinSpec.narrationBubble.alpha.coerceAtLeast(0.82f)),
+    val backing = backdropState.imageBitmap?.let(::sampleAverageColor) ?: skinSpec.background
+    val themeBackings = if (!useGlassColors && backdropState.hasImage) {
+        val scrimTop = palette.scrimTop.copy(alpha = 0.14f)
+        val scrimBottom = palette.scrimBottom.copy(alpha = 0.28f)
+        // 关闭消息玻璃仍保留页面遮罩；透明皮肤必须针对实际透底面选字色。
+        listOf(scrimTop, lerp(scrimTop, scrimBottom, 0.5f), scrimBottom).flatMap { scrim ->
+            val surface = scrim.compositeOver(backing)
+            listOf(
+                surface,
+                palette.panelHighlight.copy(alpha = 0.06f).compositeOver(surface),
+                palette.shadowColor.copy(alpha = 0.02f).compositeOver(surface),
             )
         }
-        ImmersiveRoleplayColors(
-            textPrimary = palette.onGlass,
-            userText = palette.onGlass,
-            textMuted = palette.onGlassMuted,
-            characterAccent = palette.characterAccent,
-            userAccent = palette.userAccent,
-            thoughtText = palette.thoughtText,
-            panelBackground = palette.panelTint.copy(alpha = if (backdropState.hasImage) 0.22f else 0.86f),
-            panelBackgroundStrong = palette.panelTintStrong.copy(alpha = if (backdropState.hasImage) 0.28f else 0.94f),
-            panelBorder = palette.panelBorder.copy(alpha = 0.22f),
-            errorText = errorText,
-            errorBackground = errorText.copy(alpha = 0.18f),
-            errorBackgroundStrong = errorText.copy(alpha = 0.26f),
-            userBubbleBackground = palette.panelTintStrong.copy(alpha = if (backdropState.hasImage) 0.26f else 0.92f),
-            characterBubbleBackground = palette.panelTint.copy(alpha = if (backdropState.hasImage) 0.24f else 0.88f),
-            narrationBubbleBackground = palette.panelTint.copy(alpha = if (backdropState.hasImage) 0.2f else 0.84f),
-        )
+    } else {
+        listOf(backing)
     }
+    val panel = if (useGlassColors) palette.panelTintStrong.copy(alpha = 0.92f) else skinSpec.panel
+    val panelStrong = if (useGlassColors) palette.readingSurface.copy(alpha = 0.94f) else skinSpec.panelStrong
+    val userBubble = if (useGlassColors) palette.userAccent.copy(alpha = 0.26f) else skinSpec.userBubble
+    val characterBubble = if (useGlassColors) palette.readingSurface.copy(alpha = 0.24f) else skinSpec.characterBubble
+    val narrationBubble = if (useGlassColors) palette.readingSurface.copy(alpha = 0.30f) else skinSpec.narrationBubble
+    fun readable(preferred: Color, surface: Color, readingGlass: Boolean = false): Color {
+        if (useGlassColors && readingGlass) {
+            return readableRoleplayTextOnSurfaces(preferred, roleplayDialogueReadingSurfaces(backdropState, surface))
+        }
+        return readableRoleplayTextOnSurfaces(preferred, themeBackings.map(surface::compositeOver))
+    }
+    val primaryText = readable(if (useGlassColors) palette.onGlass else skinSpec.characterText, characterBubble, true)
+    val narrationText = readable(if (useGlassColors) palette.onGlassMuted else skinSpec.mutedText, narrationBubble, true)
+    return ImmersiveRoleplayColors(
+        textPrimary = primaryText,
+        userText = readable(if (useGlassColors) palette.onGlass else skinSpec.userText, userBubble, true),
+        textMuted = narrationText,
+        characterAccent = readable(if (useGlassColors) palette.characterAccent else skinSpec.accent, characterBubble, true),
+        userAccent = readable(if (useGlassColors) palette.userAccent else skinSpec.userAccent, userBubble, true),
+        thoughtText = narrationText,
+        panelBackground = panel,
+        panelBackgroundStrong = panelStrong,
+        panelBorder = if (useGlassColors) palette.panelBorder else skinSpec.border,
+        errorText = readableRoleplayText(colorScheme.onErrorContainer, colorScheme.errorContainer, backing),
+        errorBackground = colorScheme.errorContainer,
+        errorBackgroundStrong = colorScheme.errorContainer,
+        userBubbleBackground = userBubble,
+        characterBubbleBackground = characterBubble,
+        narrationBubbleBackground = narrationBubble,
+        panelText = readable(if (useGlassColors) palette.onGlass else skinSpec.characterText, panelStrong),
+        panelMutedText = readable(if (useGlassColors) palette.onGlassMuted else colorScheme.onSurfaceVariant, panelStrong),
+        narrationText = narrationText,
+        systemText = readableRoleplayText(colorScheme.onSecondaryContainer, colorScheme.secondaryContainer, backing),
+        systemBackground = colorScheme.secondaryContainer,
+    )
 }
 
 @Composable

@@ -1,5 +1,6 @@
 package com.example.myapplication.ui.screen.immersive
 
+import com.example.myapplication.ui.theme.NarraShapes
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.SizeTransform
@@ -34,6 +35,7 @@ import androidx.compose.foundation.gestures.Orientation
 import androidx.compose.foundation.gestures.draggable
 import androidx.compose.foundation.gestures.rememberDraggableState
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -132,8 +134,12 @@ import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
@@ -151,6 +157,8 @@ import com.example.myapplication.ui.component.AppSnackbarHost
 import com.example.myapplication.ui.component.AssistantAvatar
 import com.example.myapplication.ui.component.UserProfileAvatar
 import com.example.myapplication.ui.component.NarraAlertDialog
+import com.example.myapplication.ui.component.NarraIconButton
+import com.example.myapplication.ui.theme.NarraMinimumTouchTarget
 import com.example.myapplication.ui.theme.NarraUi
 import com.example.myapplication.viewmodel.CharacterShakeUiState
 import com.composables.icons.lucide.BookUser
@@ -579,21 +587,21 @@ private fun ImmersiveBottomBar(
         modifier = Modifier
             .fillMaxWidth()
             .navigationBarsPadding()
-            .padding(start = 20.dp, end = 20.dp, top = 8.dp, bottom = 10.dp),
+            .padding(start = NarraUi.space24, end = NarraUi.space24, top = NarraUi.space8, bottom = NarraUi.space8),
         contentAlignment = Alignment.Center,
     ) {
         Surface(
             modifier = Modifier
                 .fillMaxWidth()
-                .height(60.dp),
-            shape = RoundedCornerShape(999.dp),
+                .testTag("phone_bottom_bar"),
+            shape = NarraShapes.pill,
             color = MaterialTheme.colorScheme.surfaceContainer,
             contentColor = MaterialTheme.colorScheme.onSurface,
             tonalElevation = 2.dp,
             border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.65f)),
         ) {
             Row(
-                modifier = Modifier.padding(horizontal = 6.dp, vertical = 5.dp),
+                modifier = Modifier.padding(horizontal = NarraUi.space8, vertical = NarraUi.space4),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 ImmersiveTab.entries.forEach { tab ->
@@ -601,22 +609,25 @@ private fun ImmersiveBottomBar(
                     Box(
                         modifier = Modifier
                             .weight(1f)
-                            .fillMaxHeight()
-                            .clip(RoundedCornerShape(999.dp))
+                            .heightIn(min = NarraMinimumTouchTarget)
+                            .clip(NarraShapes.pill)
                             .background(
                                 if (selected) MaterialTheme.colorScheme.primaryContainer
                                 else Color.Transparent,
                             )
-                            .clickable { onTabSelected(tab) },
+                            .testTag("phone_tab_${tab.name}")
+                            .semantics(mergeDescendants = true) {}
+                            .selectable(selected = selected, role = Role.Tab) { onTabSelected(tab) }
+                            .padding(vertical = NarraUi.space4),
                         contentAlignment = Alignment.Center,
                     ) {
                         Column(
                             horizontalAlignment = Alignment.CenterHorizontally,
-                            verticalArrangement = Arrangement.spacedBy(1.dp),
+                            verticalArrangement = Arrangement.spacedBy(NarraUi.space4),
                         ) {
                             Icon(
                                 tab.icon,
-                                contentDescription = tab.label,
+                                contentDescription = null,
                                 modifier = Modifier.size(22.dp),
                                 tint = if (selected) {
                                     MaterialTheme.colorScheme.onPrimaryContainer
@@ -626,6 +637,8 @@ private fun ImmersiveBottomBar(
                             )
                             Text(
                                 tab.label,
+                                modifier = Modifier.fillMaxWidth(),
+                                textAlign = TextAlign.Center,
                                 style = MaterialTheme.typography.labelSmall,
                                 color = if (selected) {
                                     MaterialTheme.colorScheme.onPrimaryContainer
@@ -657,25 +670,25 @@ private fun ImmersivePhoneTopBar(
         color = MaterialTheme.colorScheme.background,
         tonalElevation = 0.dp,
     ) {
-        Box(
+        Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .height(64.dp)
-                .padding(start = NarraUi.pageHorizontal, end = 8.dp),
+                .heightIn(min = 64.dp)
+                .padding(start = NarraUi.space24, end = NarraUi.space8),
+            verticalAlignment = Alignment.CenterVertically,
         ) {
             Text(
                 text = title,
-                modifier = Modifier.align(Alignment.CenterStart),
+                modifier = Modifier.weight(1f),
                 style = MaterialTheme.typography.headlineSmall,
                 fontWeight = FontWeight.SemiBold,
             )
             Row(
-                modifier = Modifier.align(Alignment.CenterEnd),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 Box {
                     if (showAdd) {
-                        IconButton(onClick = onAdd) {
+                        NarraIconButton(onClick = onAdd) {
                         Icon(Lucide.Plus, contentDescription = "新增")
                         }
                     }
@@ -727,7 +740,7 @@ private fun ImmersiveMessagesPage(
     var revealedScenarioId by rememberSaveable { mutableStateOf<String?>(null) }
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
-        contentPadding = PaddingValues(top = 8.dp, bottom = 8.dp + bottomPadding),
+        contentPadding = PaddingValues(top = NarraUi.space8, bottom = NarraUi.space8 + bottomPadding),
     ) {
         items(summaries, key = { it.scenario.id }) { summary ->
             val scenarioId = summary.scenario.id
@@ -870,7 +883,7 @@ private fun SwipeActions(
                 contentColor = MaterialTheme.colorScheme.onError,
                 onClick = { runWithHaptic(onDelete) },
             )
-            Spacer(modifier = Modifier.width(8.dp))
+            Spacer(modifier = Modifier.width(NarraUi.space8))
         }
     }
 }
@@ -886,8 +899,8 @@ private fun SwipeActionButton(
         modifier = Modifier
             .width(ChatSwipeActionButtonWidth)
             .fillMaxSize()
-            .padding(vertical = 10.dp, horizontal = 2.dp)
-            .clip(RoundedCornerShape(12.dp))
+            .padding(vertical = NarraUi.space8, horizontal = NarraUi.space4)
+            .clip(NarraShapes.medium)
             .background(containerColor)
             .clickable(onClick = onClick),
         contentAlignment = Alignment.Center,
@@ -949,13 +962,13 @@ private fun ChatSummaryRow(
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 16.dp, vertical = 12.dp),
+                .padding(horizontal = NarraUi.space16, vertical = NarraUi.space12),
             verticalAlignment = Alignment.CenterVertically,
         ) {
             if (isGroupChat) {
                 Surface(
                     modifier = Modifier.size(52.dp),
-                    shape = RoundedCornerShape(12.dp),
+                    shape = NarraShapes.medium,
                     color = MaterialTheme.colorScheme.secondaryContainer,
                     contentColor = MaterialTheme.colorScheme.onSecondaryContainer,
                 ) {
@@ -969,11 +982,11 @@ private fun ChatSummaryRow(
                     iconName = assistant?.iconName.orEmpty(),
                     avatarUri = scenario.characterPortraitUri.ifBlank { assistant?.avatarUri.orEmpty() },
                     size = 52.dp,
-                    cornerRadius = 12.dp,
+                    cornerRadius = NarraUi.radiusMedium,
                 )
             }
-            Spacer(modifier = Modifier.width(12.dp))
-            Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+            Spacer(modifier = Modifier.width(NarraUi.space12))
+            Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(NarraUi.space4)) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Text(
                         text = displayName,
@@ -991,7 +1004,7 @@ private fun ChatSummaryRow(
                 }
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(4.dp),
+                    horizontalArrangement = Arrangement.spacedBy(NarraUi.space4),
                 ) {
                     Text(
                         text = latest,
@@ -1029,12 +1042,12 @@ private fun ImmersiveContactsPage(
     }
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
-        contentPadding = PaddingValues(bottom = 24.dp + bottomPadding),
+        contentPadding = PaddingValues(bottom = NarraUi.space24 + bottomPadding),
     ) {
         item {
             PhoneDestinationRow("新的角色", "", Lucide.UserRoundPlus, onOpenAssistantCreate)
             PhoneDestinationRow("会话管理", "", Lucide.MessageCircleMore, onOpenChatManage)
-            Spacer(Modifier.height(12.dp))
+            Spacer(Modifier.height(NarraUi.space12))
         }
         grouped.forEach { (initial, items) ->
             item(key = "header-$initial") {
@@ -1042,7 +1055,7 @@ private fun ImmersiveContactsPage(
                     text = initial,
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(horizontal = NarraUi.pageHorizontal, vertical = 10.dp),
+                        .padding(horizontal = NarraUi.space24, vertical = NarraUi.space8),
                     style = MaterialTheme.typography.labelMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
@@ -1057,7 +1070,7 @@ private fun ImmersiveContactsPage(
                 text = "${assistants.size} 位角色",
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(20.dp),
+                    .padding(NarraUi.space24),
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
@@ -1077,7 +1090,7 @@ private fun ContactShortcutRow(
         leadingContent = {
             Surface(
                 modifier = Modifier.size(40.dp),
-                shape = RoundedCornerShape(10.dp),
+                shape = NarraShapes.small,
                 color = MaterialTheme.colorScheme.primaryContainer,
                 contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
             ) {
@@ -1111,7 +1124,7 @@ private fun ContactRow(
                 iconName = assistant.iconName,
                 avatarUri = assistant.avatarUri,
                 size = 46.dp,
-                cornerRadius = 12.dp,
+                cornerRadius = NarraUi.radiusMedium,
             )
         },
     )
@@ -1127,7 +1140,7 @@ private fun ImmersiveDiscoverPage(
 ) {
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
-        contentPadding = PaddingValues(top = 8.dp, bottom = 24.dp + bottomPadding),
+        contentPadding = PaddingValues(top = NarraUi.space8, bottom = NarraUi.space24 + bottomPadding),
     ) {
         item {
             PhoneSectionLabel("创作")
@@ -1163,7 +1176,7 @@ private fun ImmersiveDiscoverPage(
 private fun PhoneSectionLabel(title: String) {
     Text(
         text = title,
-        modifier = Modifier.padding(horizontal = NarraUi.pageHorizontal, vertical = 12.dp),
+        modifier = Modifier.padding(horizontal = NarraUi.space24, vertical = NarraUi.space12),
         style = MaterialTheme.typography.labelLarge,
         color = MaterialTheme.colorScheme.onSurfaceVariant,
     )
@@ -1182,9 +1195,9 @@ private fun PhoneDestinationRow(
             .fillMaxWidth()
             .heightIn(min = 68.dp)
             .clickable(onClick = onClick)
-            .padding(horizontal = NarraUi.pageHorizontal, vertical = 14.dp),
+            .padding(horizontal = NarraUi.space24, vertical = NarraUi.space16),
         verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(16.dp),
+        horizontalArrangement = Arrangement.spacedBy(NarraUi.space16),
     ) {
         Icon(
             icon,
@@ -1192,7 +1205,7 @@ private fun PhoneDestinationRow(
             modifier = Modifier.size(23.dp),
             tint = MaterialTheme.colorScheme.primary,
         )
-        Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(3.dp)) {
+        Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(NarraUi.space4)) {
             Text(title, style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.Medium)
             if (subtitle.isNotBlank()) {
                 Text(
@@ -1212,7 +1225,7 @@ private fun PhoneDestinationRow(
         )
     }
     Divider(
-        modifier = Modifier.padding(start = NarraUi.pageHorizontal + 39.dp, end = NarraUi.pageHorizontal),
+        modifier = Modifier.padding(start = NarraUi.space24 + 39.dp, end = NarraUi.space24),
         color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f),
     )
 }
@@ -1240,7 +1253,7 @@ private fun CharacterShakeSheet(
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(end = 8.dp),
+                    .padding(end = NarraUi.space8),
                 horizontalArrangement = Arrangement.End,
             ) {
                 IconButton(onClick = onDismiss) {
@@ -1251,8 +1264,8 @@ private fun CharacterShakeSheet(
                 modifier = Modifier
                     .fillMaxWidth()
                     .weight(1f),
-                contentPadding = PaddingValues(start = 20.dp, end = 20.dp, top = 4.dp, bottom = 20.dp),
-                verticalArrangement = Arrangement.spacedBy(14.dp),
+                contentPadding = PaddingValues(start = NarraUi.space24, end = NarraUi.space24, top = NarraUi.space4, bottom = NarraUi.space24),
+                verticalArrangement = Arrangement.spacedBy(NarraUi.space16),
             ) {
                 item {
                     ShakeHeroButton(
@@ -1269,7 +1282,7 @@ private fun CharacterShakeSheet(
                     }
                 }
                 item {
-                    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                    Column(verticalArrangement = Arrangement.spacedBy(NarraUi.space12)) {
                         ShakePreferenceToggle(
                             expanded = preferencesExpanded,
                             summary = uiState.filters.selectedSummary(),
@@ -1279,7 +1292,7 @@ private fun CharacterShakeSheet(
                             onReset = onResetFilters,
                         )
                         AnimatedVisibility(visible = preferencesExpanded) {
-                            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                            Column(verticalArrangement = Arrangement.spacedBy(NarraUi.space12)) {
                                 CharacterShakeFilterGroups.forEach { group ->
                                     CharacterShakeFilterGroupCard(
                                         group = group,
@@ -1322,12 +1335,12 @@ private fun ShakeHeroButton(
     Surface(
         modifier = Modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(24.dp))
+            .clip(NarraShapes.large)
             .clickable(enabled = !uiState.isGenerating) {
                 haptic.performHapticFeedback(HapticFeedbackType.LongPress)
                 onShake()
             },
-        shape = RoundedCornerShape(24.dp),
+        shape = NarraShapes.large,
         color = MaterialTheme.colorScheme.surface,
         border = BorderStroke(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.28f)),
     ) {
@@ -1344,9 +1357,9 @@ private fun ShakeHeroButton(
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(vertical = 28.dp, horizontal = 20.dp),
+                    .padding(vertical = NarraUi.space24, horizontal = NarraUi.space24),
                 horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.spacedBy(12.dp),
+                verticalArrangement = Arrangement.spacedBy(NarraUi.space12),
             ) {
                 Surface(
                     modifier = Modifier.size(72.dp),
@@ -1387,11 +1400,11 @@ private fun ShakePreferenceToggle(
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(14.dp))
+            .clip(NarraShapes.medium)
             .clickable(onClick = onToggle)
-            .padding(horizontal = 14.dp, vertical = 12.dp),
+            .padding(horizontal = NarraUi.space16, vertical = NarraUi.space12),
         verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        horizontalArrangement = Arrangement.spacedBy(NarraUi.space8),
     ) {
         Column(modifier = Modifier.weight(1f)) {
             Text("偏好设置", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.SemiBold)
@@ -1425,19 +1438,19 @@ private fun CharacterShakeFilterGroupCard(
 ) {
     Surface(
         modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(8.dp),
+        shape = NarraShapes.small,
         color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.28f),
         tonalElevation = 1.dp,
         border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.45f)),
     ) {
         Column(
-            modifier = Modifier.padding(horizontal = 14.dp, vertical = 12.dp),
-            verticalArrangement = Arrangement.spacedBy(10.dp),
+            modifier = Modifier.padding(horizontal = NarraUi.space16, vertical = NarraUi.space12),
+            verticalArrangement = Arrangement.spacedBy(NarraUi.space8),
         ) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                horizontalArrangement = Arrangement.spacedBy(NarraUi.space8),
             ) {
                 Text(
                     text = group.title,
@@ -1454,8 +1467,8 @@ private fun CharacterShakeFilterGroupCard(
                 )
             }
             FlowRow(
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                verticalArrangement = Arrangement.spacedBy(8.dp),
+                horizontalArrangement = Arrangement.spacedBy(NarraUi.space8),
+                verticalArrangement = Arrangement.spacedBy(NarraUi.space8),
             ) {
                 group.options.forEach { option ->
                     val label = option.ifBlank { "不限" }
@@ -1470,7 +1483,7 @@ private fun CharacterShakeFilterGroupCard(
                             onFiltersChange(filters.copyForShakeGroup(group.key, option))
                         },
                         label = { Text(label, maxLines = 1, overflow = TextOverflow.Ellipsis) },
-                        shape = RoundedCornerShape(8.dp),
+                        shape = NarraShapes.small,
                     )
                 }
             }
@@ -1485,25 +1498,25 @@ private fun GeneratedAssistantResultCard(
 ) {
     Surface(
         modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(8.dp),
+        shape = NarraShapes.small,
         color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.62f),
         contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
         border = BorderStroke(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.22f)),
     ) {
         Column(
-            modifier = Modifier.padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp),
+            modifier = Modifier.padding(NarraUi.space16),
+            verticalArrangement = Arrangement.spacedBy(NarraUi.space12),
         ) {
             Row(
                 verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(12.dp),
+                horizontalArrangement = Arrangement.spacedBy(NarraUi.space12),
             ) {
                 AssistantAvatar(
                     name = assistant.name,
                     iconName = assistant.iconName,
                     avatarUri = assistant.avatarUri,
                     size = 52.dp,
-                    cornerRadius = 8.dp,
+                    cornerRadius = NarraUi.radiusSmall,
                 )
                 Column(modifier = Modifier.weight(1f)) {
                     Text(
@@ -1593,15 +1606,15 @@ private fun ImmersiveProfilePage(
     var showAbout by rememberSaveable { mutableStateOf(false) }
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
-        contentPadding = PaddingValues(top = 12.dp, bottom = 24.dp + bottomPadding),
+        contentPadding = PaddingValues(top = NarraUi.space12, bottom = NarraUi.space24 + bottomPadding),
     ) {
         item {
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = NarraUi.pageHorizontal, vertical = 16.dp),
+                    .padding(horizontal = NarraUi.space24, vertical = NarraUi.space16),
                 verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(18.dp),
+                horizontalArrangement = Arrangement.spacedBy(NarraUi.space16),
             ) {
                 UserProfileAvatar(
                     displayName = profileDisplayName,
@@ -1611,7 +1624,7 @@ private fun ImmersiveProfilePage(
                     containerColor = MaterialTheme.colorScheme.primaryContainer,
                     contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
                 )
-                Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(NarraUi.space8)) {
                     Text(
                         profileDisplayName,
                         style = MaterialTheme.typography.headlineSmall,
@@ -1630,7 +1643,7 @@ private fun ImmersiveProfilePage(
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = NarraUi.pageHorizontal, vertical = 12.dp),
+                    .padding(horizontal = NarraUi.space24, vertical = NarraUi.space12),
             ) {
                 ProfileCount(
                     value = chatCount,
@@ -1664,7 +1677,7 @@ private fun ImmersiveProfilePage(
             )
         }
         item {
-            Spacer(Modifier.height(12.dp))
+            Spacer(Modifier.height(NarraUi.space12))
             PhoneSectionLabel("资料库")
             PhoneDestinationRow("会话管理", "", Lucide.MessageCircleMore, onOpenChatManage)
             PhoneDestinationRow("角色资料", "", Lucide.UserRound, onOpenAssistantSettings)
@@ -1674,7 +1687,7 @@ private fun ImmersiveProfilePage(
             PhoneDestinationRow("资料导入导出", "", Lucide.ArrowDownUp, onOpenContextTransferSettings)
         }
         item {
-            Spacer(Modifier.height(12.dp))
+            Spacer(Modifier.height(NarraUi.space12))
             PhoneSectionLabel("应用")
             PhoneDestinationRow("设置", "", Lucide.Settings, onOpenSettings)
             PhoneDestinationRow("关于 Narra", "", Lucide.Info, { showAbout = true })
@@ -1708,9 +1721,9 @@ private fun ProfileCount(value: Int, label: String, modifier: Modifier, onClick:
         modifier = modifier
             .heightIn(min = 64.dp)
             .clickable(onClick = onClick)
-            .padding(vertical = 8.dp),
+            .padding(vertical = NarraUi.space8),
         horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.spacedBy(4.dp),
+        verticalArrangement = Arrangement.spacedBy(NarraUi.space4),
     ) {
         Text(value.toString(), style = MaterialTheme.typography.titleLarge)
         Text(label, style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
@@ -1731,7 +1744,7 @@ private fun ImmersiveMaskSwitcher(
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = NarraUi.pageHorizontal)
+            .padding(horizontal = NarraUi.space24)
             .background(scheme.surfaceContainerLow, RoundedCornerShape(NarraUi.cardRadius)),
     ) {
         Row(
@@ -1745,12 +1758,12 @@ private fun ImmersiveMaskSwitcher(
                     .weight(1f)
                     .heightIn(min = 68.dp)
                     .clickable(onClick = onToggleExpanded)
-                    .padding(start = 16.dp, top = 12.dp, bottom = 12.dp),
+                    .padding(start = NarraUi.space16, top = NarraUi.space12, bottom = NarraUi.space12),
                 verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(12.dp),
+                horizontalArrangement = Arrangement.spacedBy(NarraUi.space12),
             ) {
                 Icon(Lucide.CircleUserRound, contentDescription = null, tint = scheme.primary)
-                Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(3.dp)) {
+                Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(NarraUi.space4)) {
                     Text("切换面具", style = MaterialTheme.typography.titleSmall)
                     Text(
                         defaultMask?.name ?: if (masks.isEmpty()) "尚未创建" else "使用个人资料",
@@ -1773,8 +1786,8 @@ private fun ImmersiveMaskSwitcher(
         }
         AnimatedVisibility(visible = expanded) {
             Column(
-                modifier = Modifier.padding(start = 8.dp, end = 8.dp, bottom = 8.dp),
-                verticalArrangement = Arrangement.spacedBy(4.dp),
+                modifier = Modifier.padding(start = NarraUi.space8, end = NarraUi.space8, bottom = NarraUi.space8),
+                verticalArrangement = Arrangement.spacedBy(NarraUi.space4),
             ) {
                 masks.forEach { mask ->
                     ImmersiveMaskOptionRow(
@@ -1801,9 +1814,9 @@ private fun ImmersiveMaskOptionRow(
     Surface(
         modifier = Modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(14.dp))
+            .clip(NarraShapes.medium)
             .clickable(onClick = onClick),
-        shape = RoundedCornerShape(14.dp),
+        shape = NarraShapes.medium,
         color = if (selected) {
             colorScheme.secondaryContainer.copy(alpha = 0.72f)
         } else {
@@ -1811,9 +1824,9 @@ private fun ImmersiveMaskOptionRow(
         },
     ) {
         Row(
-            modifier = Modifier.padding(horizontal = 12.dp, vertical = 10.dp),
+            modifier = Modifier.padding(horizontal = NarraUi.space12, vertical = NarraUi.space8),
             verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(10.dp),
+            horizontalArrangement = Arrangement.spacedBy(NarraUi.space8),
         ) {
             UserProfileAvatar(
                 displayName = mask.name,
@@ -1858,8 +1871,8 @@ private fun NewChatSheet(
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(20.dp),
-            verticalArrangement = Arrangement.spacedBy(14.dp),
+                .padding(NarraUi.space24),
+            verticalArrangement = Arrangement.spacedBy(NarraUi.space16),
         ) {
             Text("新建会话", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
             if (selectedAssistant == null) {
@@ -1880,21 +1893,21 @@ private fun NewChatSheet(
                         modifier = Modifier
                             .fillMaxWidth()
                             .clickable { selectedAssistant = null },
-                        shape = RoundedCornerShape(18.dp),
+                        shape = NarraShapes.medium,
                         color = MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.72f),
                         contentColor = MaterialTheme.colorScheme.onSecondaryContainer,
                     ) {
                         Row(
-                            modifier = Modifier.padding(horizontal = 14.dp, vertical = 12.dp),
+                            modifier = Modifier.padding(horizontal = NarraUi.space16, vertical = NarraUi.space12),
                             verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(12.dp),
+                            horizontalArrangement = Arrangement.spacedBy(NarraUi.space12),
                         ) {
                             AssistantAvatar(
                                 name = assistant.name,
                                 iconName = assistant.iconName,
                                 avatarUri = assistant.avatarUri,
                                 size = 40.dp,
-                                cornerRadius = 12.dp,
+                                cornerRadius = NarraUi.radiusMedium,
                             )
                             Column(modifier = Modifier.weight(1f)) {
                                 Text(
@@ -1930,7 +1943,7 @@ private fun NewChatSheet(
                     )
                 }
             }
-            Spacer(modifier = Modifier.height(12.dp))
+            Spacer(modifier = Modifier.height(NarraUi.space12))
         }
     }
 }
@@ -1964,8 +1977,8 @@ private fun NewGroupChatSheet(
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(20.dp),
-            verticalArrangement = Arrangement.spacedBy(14.dp),
+                .padding(NarraUi.space24),
+            verticalArrangement = Arrangement.spacedBy(NarraUi.space16),
         ) {
             Text("新建群聊", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
             Text(
@@ -1990,7 +2003,7 @@ private fun NewGroupChatSheet(
             } else {
                 LazyColumn(
                     modifier = Modifier.heightIn(max = 420.dp),
-                    verticalArrangement = Arrangement.spacedBy(6.dp),
+                    verticalArrangement = Arrangement.spacedBy(NarraUi.space8),
                 ) {
                     items(assistants, key = { it.id }) { assistant ->
                         val selected = assistant.id in selectedAssistantIds
@@ -2009,7 +2022,7 @@ private fun NewGroupChatSheet(
             ) {
                 Text(if (selectedAssistantIds.size >= 2) "创建群聊" else "至少选择 2 位角色")
             }
-            Spacer(modifier = Modifier.height(12.dp))
+            Spacer(modifier = Modifier.height(NarraUi.space12))
         }
     }
 }
@@ -2022,7 +2035,7 @@ private fun GroupAssistantPickRow(
 ) {
     ListItem(
         modifier = Modifier
-            .clip(RoundedCornerShape(14.dp))
+            .clip(NarraShapes.medium)
             .clickable(onClick = onClick),
         leadingContent = {
             AssistantAvatar(
@@ -2030,7 +2043,7 @@ private fun GroupAssistantPickRow(
                 iconName = assistant.iconName,
                 avatarUri = assistant.avatarUri,
                 size = 46.dp,
-                cornerRadius = 12.dp,
+                cornerRadius = NarraUi.radiusMedium,
             )
         },
         headlineContent = {
@@ -2100,8 +2113,8 @@ private fun ContactCardSheet(
             modifier = Modifier
                 .fillMaxWidth()
                 .heightIn(max = 680.dp),
-            contentPadding = PaddingValues(start = 20.dp, end = 20.dp, bottom = 28.dp),
-            verticalArrangement = Arrangement.spacedBy(14.dp),
+            contentPadding = PaddingValues(start = NarraUi.space24, end = NarraUi.space24, bottom = NarraUi.space24),
+            verticalArrangement = Arrangement.spacedBy(NarraUi.space16),
         ) {
             item {
                 Row(verticalAlignment = Alignment.CenterVertically) {
@@ -2110,9 +2123,9 @@ private fun ContactCardSheet(
                         iconName = assistant.iconName,
                         avatarUri = assistant.avatarUri,
                         size = 68.dp,
-                        cornerRadius = 18.dp,
+                        cornerRadius = NarraUi.radiusMedium,
                     )
-                    Spacer(modifier = Modifier.width(14.dp))
+                    Spacer(modifier = Modifier.width(NarraUi.space16))
                     Column(modifier = Modifier.weight(1f)) {
                         Text(assistant.name.ifBlank { "未命名角色" }, style = MaterialTheme.typography.titleLarge)
                         Text(
@@ -2131,7 +2144,7 @@ private fun ContactCardSheet(
                     modifier = Modifier
                         .fillMaxWidth()
                         .horizontalScroll(rememberScrollState()),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    horizontalArrangement = Arrangement.spacedBy(NarraUi.space8),
                 ) {
                     ContactMetricPill("${summaries.size}", "会话")
                     ContactMetricPill(if (assistant.memoryEnabled) "开" else "关", "长记忆")
@@ -2158,7 +2171,7 @@ private fun ContactCardSheet(
                         modifier = Modifier
                             .fillMaxWidth()
                             .horizontalScroll(rememberScrollState()),
-                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        horizontalArrangement = Arrangement.spacedBy(NarraUi.space8),
                     ) {
                         assistant.tags.forEach { tag ->
                             AssistChip(
@@ -2175,7 +2188,7 @@ private fun ContactCardSheet(
                     modifier = Modifier
                         .fillMaxWidth()
                         .horizontalScroll(rememberScrollState()),
-                    horizontalArrangement = Arrangement.spacedBy(10.dp),
+                    horizontalArrangement = Arrangement.spacedBy(NarraUi.space8),
                 ) {
                     Button(
                         onClick = {
@@ -2200,7 +2213,7 @@ private fun ContactCardSheet(
                     modifier = Modifier
                         .fillMaxWidth()
                         .horizontalScroll(rememberScrollState()),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    horizontalArrangement = Arrangement.spacedBy(NarraUi.space8),
                 ) {
                     ContactActionChip("人设提示词", Icons.Default.AutoStories) {
                         onOpenAssistantPrompt(assistant.id)
@@ -2223,7 +2236,7 @@ private fun ContactCardSheet(
                         modifier = Modifier
                             .fillMaxWidth()
                             .horizontalScroll(rememberScrollState()),
-                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        horizontalArrangement = Arrangement.spacedBy(NarraUi.space8),
                     ) {
                         ContactActionChip("写信", Icons.Default.Mail) { onOpenMailbox(summary.scenario.id) }
                         ContactActionChip("查手机", Icons.Default.PhoneAndroid) { onOpenPhoneCheck(summary.scenario.id) }
@@ -2250,7 +2263,7 @@ private fun ContactCardSheet(
                 items(summaries, key = { it.scenario.id }) { summary ->
                     ListItem(
                         modifier = Modifier
-                            .clip(RoundedCornerShape(12.dp))
+                            .clip(NarraShapes.medium)
                             .clickable { onOpenChat(summary.scenario.id) },
                         headlineContent = {
                             Text(
@@ -2280,11 +2293,11 @@ private fun ContactMetricPill(
     label: String,
 ) {
     Surface(
-        shape = RoundedCornerShape(14.dp),
+        shape = NarraShapes.medium,
         color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.74f),
     ) {
         Column(
-            modifier = Modifier.padding(horizontal = 14.dp, vertical = 9.dp),
+            modifier = Modifier.padding(horizontal = NarraUi.space16, vertical = NarraUi.space8),
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
             Text(value, style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.SemiBold)
@@ -2318,7 +2331,7 @@ private fun ModeOptionCard(
         onClick = onClick,
         modifier = Modifier.fillMaxWidth(),
         label = {
-            Column(modifier = Modifier.padding(vertical = 6.dp)) {
+            Column(modifier = Modifier.padding(vertical = NarraUi.space8)) {
                 Text(option.title, fontWeight = FontWeight.SemiBold)
                 Text(option.subtitle, style = MaterialTheme.typography.bodySmall)
             }
@@ -2340,8 +2353,8 @@ private fun ChatPickerSheet(
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(20.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp),
+                .padding(NarraUi.space24),
+            verticalArrangement = Arrangement.spacedBy(NarraUi.space12),
         ) {
             Text("选择会话 · $title", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
             if (summaries.isEmpty()) {
@@ -2349,7 +2362,7 @@ private fun ChatPickerSheet(
             } else {
                 LazyColumn(
                     modifier = Modifier.heightIn(max = 520.dp),
-                    verticalArrangement = Arrangement.spacedBy(10.dp),
+                    verticalArrangement = Arrangement.spacedBy(NarraUi.space8),
                 ) {
                     items(summaries, key = { it.scenario.id }) { summary ->
                         val assistant = assistants.firstOrNull { it.id == summary.scenario.assistantId }
@@ -2357,7 +2370,7 @@ private fun ChatPickerSheet(
                     }
                 }
             }
-            Spacer(modifier = Modifier.height(12.dp))
+            Spacer(modifier = Modifier.height(NarraUi.space12))
         }
     }
 }
@@ -2372,7 +2385,7 @@ private fun ChatPickerRow(
     val name = scenario.characterDisplayNameOverride.ifBlank { assistant?.name.orEmpty() }.ifBlank { "角色" }
     ListItem(
         modifier = Modifier
-            .clip(RoundedCornerShape(12.dp))
+            .clip(NarraShapes.medium)
             .clickable(onClick = onClick),
         headlineContent = { Text(name) },
         supportingContent = {
@@ -2388,7 +2401,7 @@ private fun ChatPickerRow(
                 iconName = assistant?.iconName.orEmpty(),
                 avatarUri = scenario.characterPortraitUri.ifBlank { assistant?.avatarUri.orEmpty() },
                 size = 44.dp,
-                cornerRadius = 12.dp,
+                cornerRadius = NarraUi.radiusMedium,
             )
         },
     )
@@ -2429,9 +2442,9 @@ private fun EmptyState(
 ) {
     Box(modifier = modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
         Column(
-            modifier = Modifier.padding(28.dp),
+            modifier = Modifier.padding(NarraUi.space24),
             horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(12.dp),
+            verticalArrangement = Arrangement.spacedBy(NarraUi.space12),
         ) {
             Surface(
                 modifier = Modifier.size(72.dp),

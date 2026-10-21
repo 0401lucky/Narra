@@ -1,0 +1,59 @@
+Reusing configuration cache.
+> Task :app:preBuild UP-TO-DATE
+> Task :app:generateDebugAssets UP-TO-DATE
+> Task :app:preDebugUnitTestBuild UP-TO-DATE
+> Task :app:preDebugBuild UP-TO-DATE
+> Task :app:ensureDebugAnnotationProcessorList
+> Task :app:createDebugCompatibleScreenManifests
+> Task :app:processDebugNavigationResources
+> Task :app:generateDebugBuildConfig
+> Task :app:javaPreCompileDebugUnitTest
+> Task :app:generateDebugResValues
+> Task :app:extractDeepLinksDebug
+> Task :app:generateDebugResources
+> Task :app:mapDebugSourceSetPaths
+> Task :app:javaPreCompileDebug
+> Task :app:compileDebugNavigationResources
+> Task :app:checkDebugAarMetadata
+> Task :app:mergeDebugAssets
+> Task :app:packageDebugResources
+> Task :app:processDebugMainManifest
+> Task :app:parseDebugLocalResources
+> Task :app:generateDebugRFile
+> Task :app:processDebugUnitTestManifest
+> Task :app:processDebugManifest
+> Task :app:processDebugManifestForPackage
+> Task :app:mergeDebugResources
+> Task :app:processDebugResources
+> Task :app:packageDebugUnitTestForUnitTest
+> Task :app:generateDebugUnitTestConfig
+> Task :app:kspDebugKotlin
+> Task :app:compileDebugKotlin
+w: file:///D:/code/AndroidStudioprojects/MyApplication/app/src/main/java/com/example/myapplication/context/PromptContextAssembler.kt:287:74 Condition is always 'true'.
+w: file:///D:/code/AndroidStudioprojects/MyApplication/app/src/main/java/com/example/myapplication/system/performance/PerformanceTracing.kt:4:8 'class TraceCompat : Any' is deprecated. Deprecated in Java.
+w: file:///D:/code/AndroidStudioprojects/MyApplication/app/src/main/java/com/example/myapplication/ui/component/GlassMessageContainer.kt:57:21 'fun Modifier.hazeChild(state: HazeState, shape: Shape, style: HazeStyle): Modifier' is deprecated. Shape clipping is no longer necessary with Haze. You can use `Modifier.clip` or similar.
+w: file:///D:/code/AndroidStudioprojects/MyApplication/app/src/main/java/com/example/myapplication/ui/component/ReasoningTimelineCard.kt:304:102 'val Icons.Filled.KeyboardArrowRight: ImageVector' is deprecated. Use the AutoMirrored version at Icons.AutoMirrored.Filled.KeyboardArrowRight.
+w: file:///D:/code/AndroidStudioprojects/MyApplication/app/src/main/java/com/example/myapplication/ui/component/roleplay/ImmersiveGlass.kt:311:31 'fun Modifier.hazeChild(state: HazeState, shape: Shape, style: HazeStyle): Modifier' is deprecated. Shape clipping is no longer necessary with Haze. You can use `Modifier.clip` or similar.
+w: file:///D:/code/AndroidStudioprojects/MyApplication/app/src/main/java/com/example/myapplication/ui/screen/immersive/ImmersivePhoneShell.kt:1014:5 'fun Divider(modifier: Modifier = ..., thickness: Dp = ..., color: Color = ...): Unit' is deprecated. Renamed to HorizontalDivider.
+w: file:///D:/code/AndroidStudioprojects/MyApplication/app/src/main/java/com/example/myapplication/ui/screen/immersive/ImmersivePhoneShell.kt:1118:5 'fun Divider(modifier: Modifier = ..., thickness: Dp = ..., color: Color = ...): Unit' is deprecated. Renamed to HorizontalDivider.
+w: file:///D:/code/AndroidStudioprojects/MyApplication/app/src/main/java/com/example/myapplication/ui/screen/immersive/ImmersivePhoneShell.kt:1214:5 'fun Divider(modifier: Modifier = ..., thickness: Dp = ..., color: Color = ...): Unit' is deprecated. Renamed to HorizontalDivider.
+w: file:///D:/code/AndroidStudioprojects/MyApplication/app/src/main/java/com/example/myapplication/ui/screen/roleplay/RoleplayWalletScreen.kt:147:13 'fun TabRow(selectedTabIndex: Int, modifier: Modifier = ..., containerColor: Color = ..., contentColor: Color = ..., indicator: @Composable() ComposableFunction1<@ParameterName(...) List<TabPosition>, Unit> = ..., divider: @Composable() ComposableFunction0<Unit> = ..., tabs: @Composable() ComposableFunction0<Unit>): Unit' is deprecated. Replaced with PrimaryTabRow and SecondaryTabRow.
+
+> Task :app:processDebugJavaRes
+> Task :app:compileDebugJavaWithJavac
+> Task :app:bundleDebugClassesToCompileJar
+> Task :app:bundleDebugClassesToRuntimeJar
+> Task :app:kspDebugUnitTestKotlin
+> Task :app:compileDebugUnitTestKotlin
+w: file:///D:/code/AndroidStudioprojects/MyApplication/app/src/test/java/com/example/myapplication/system/diagnostics/LocalExitDiagnosticsTest.kt:66:9 This declaration needs opt-in. Its usage should be marked with '@kotlinx.coroutines.ExperimentalCoroutinesApi' or '@OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)'
+w: file:///D:/code/AndroidStudioprojects/MyApplication/app/src/test/java/com/example/myapplication/system/diagnostics/LocalExitDiagnosticsTest.kt:71:9 This declaration needs opt-in. Its usage should be marked with '@kotlinx.coroutines.ExperimentalCoroutinesApi' or '@OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)'
+
+> Task :app:compileDebugUnitTestJavaWithJavac NO-SOURCE
+> Task :app:processDebugUnitTestJavaRes
+> Task :app:testDebugUnitTest
+> Task :app:verifyRoborazziDebug
+> Task :app:finalizeTestRoborazziDebug
+
+BUILD SUCCESSFUL in 5m 2s
+35 actionable tasks: 35 executed
+Configuration cache entry reused.

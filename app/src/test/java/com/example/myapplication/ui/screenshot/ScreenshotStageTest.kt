@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.size
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.State
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.asImageBitmap
@@ -23,6 +24,7 @@ import com.dropbox.differ.SimpleImageComparator
 import com.example.myapplication.model.AppColorTheme
 import com.example.myapplication.ui.theme.ChatAppTheme
 import com.example.myapplication.ui.theme.Typography
+import com.example.myapplication.ui.theme.NarraShapes
 import androidx.compose.material3.ColorScheme
 import com.github.takahirom.roborazzi.RoborazziOptions
 import com.github.takahirom.roborazzi.ThresholdValidator
@@ -130,8 +132,22 @@ abstract class ScreenshotStageTest {
             MaterialTheme(
                 colorScheme = colorScheme,
                 typography = Typography,
+                shapes = NarraShapes.material,
             ) {
                 StageBox(case = case, backgroundColor = colorScheme.background, content = content)
+            }
+        }
+    }
+
+    protected fun setColorSchemeStateStage(
+        case: ScreenshotCase,
+        colorScheme: State<ColorScheme>,
+        content: @Composable () -> Unit,
+    ) {
+        composeRule.setContent {
+            val scheme = colorScheme.value
+            MaterialTheme(colorScheme = scheme, typography = Typography, shapes = NarraShapes.material) {
+                StageBox(case, scheme.background, content)
             }
         }
     }

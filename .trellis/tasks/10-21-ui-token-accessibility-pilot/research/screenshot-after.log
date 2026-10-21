@@ -1,0 +1,284 @@
+Reusing configuration cache.
+> Task :app:preBuild UP-TO-DATE
+> Task :app:generateDebugAssets UP-TO-DATE
+> Task :app:preDebugBuild UP-TO-DATE
+> Task :app:preDebugUnitTestBuild UP-TO-DATE
+> Task :app:ensureDebugAnnotationProcessorList UP-TO-DATE
+> Task :app:generateDebugResValues UP-TO-DATE
+> Task :app:generateDebugBuildConfig UP-TO-DATE
+> Task :app:createDebugCompatibleScreenManifests UP-TO-DATE
+> Task :app:javaPreCompileDebugUnitTest UP-TO-DATE
+> Task :app:generateDebugResources UP-TO-DATE
+> Task :app:extractDeepLinksDebug UP-TO-DATE
+> Task :app:javaPreCompileDebug UP-TO-DATE
+> Task :app:mapDebugSourceSetPaths UP-TO-DATE
+> Task :app:packageDebugResources UP-TO-DATE
+> Task :app:processDebugNavigationResources UP-TO-DATE
+> Task :app:mergeDebugAssets UP-TO-DATE
+> Task :app:checkDebugAarMetadata UP-TO-DATE
+> Task :app:compileDebugNavigationResources UP-TO-DATE
+> Task :app:mergeDebugResources UP-TO-DATE
+> Task :app:parseDebugLocalResources UP-TO-DATE
+> Task :app:generateDebugRFile UP-TO-DATE
+> Task :app:processDebugMainManifest UP-TO-DATE
+> Task :app:processDebugManifest UP-TO-DATE
+> Task :app:processDebugManifestForPackage UP-TO-DATE
+> Task :app:processDebugUnitTestManifest UP-TO-DATE
+> Task :app:processDebugResources UP-TO-DATE
+> Task :app:packageDebugUnitTestForUnitTest UP-TO-DATE
+> Task :app:generateDebugUnitTestConfig UP-TO-DATE
+> Task :app:kspDebugKotlin UP-TO-DATE
+> Task :app:compileDebugKotlin UP-TO-DATE
+> Task :app:processDebugJavaRes UP-TO-DATE
+> Task :app:compileDebugJavaWithJavac UP-TO-DATE
+> Task :app:bundleDebugClassesToCompileJar UP-TO-DATE
+> Task :app:bundleDebugClassesToRuntimeJar UP-TO-DATE
+> Task :app:kspDebugUnitTestKotlin UP-TO-DATE
+> Task :app:compileDebugUnitTestKotlin UP-TO-DATE
+> Task :app:compileDebugUnitTestJavaWithJavac NO-SOURCE
+> Task :app:processDebugUnitTestJavaRes UP-TO-DATE
+
+> Task :app:testDebugUnitTest
+
+BubbleScreenshotB02Test > b02_p03_background_load_failed FAILED
+    java.lang.AssertionError at BubbleScreenshotB02Test.kt:60
+
+BubbleScreenshotB02Test > b02_p03_background_glass_on FAILED
+    java.lang.AssertionError at BubbleScreenshotB02Test.kt:36
+
+BubbleScreenshotB02Test > b02_p03_no_background FAILED
+    java.lang.AssertionError at BubbleScreenshotB02Test.kt:27
+
+BubbleScreenshotB02Test > b02_p03_background_glass_off FAILED
+    java.lang.AssertionError at BubbleScreenshotB02Test.kt:45
+
+BubbleScreenshotB03Test > b03_tail_on FAILED
+    java.lang.AssertionError at BubbleScreenshotB03Test.kt:96
+
+BubbleScreenshotB03Test > b03_padding_horizontal_max FAILED
+    java.lang.AssertionError at BubbleScreenshotB03Test.kt:96
+
+BubbleScreenshotB03Test > b03_padding_horizontal_min FAILED
+    java.lang.AssertionError at BubbleScreenshotB03Test.kt:96
+
+BubbleScreenshotB03Test > b03_padding_vertical_max FAILED
+    java.lang.AssertionError at BubbleScreenshotB03Test.kt:96
+
+BubbleScreenshotB03Test > b03_padding_vertical_min FAILED
+    java.lang.AssertionError at BubbleScreenshotB03Test.kt:96
+
+BubbleScreenshotB03Test > b03_radius_max FAILED
+    java.lang.AssertionError at BubbleScreenshotB03Test.kt:96
+
+BubbleScreenshotB03Test > b03_radius_min FAILED
+    java.lang.AssertionError at BubbleScreenshotB03Test.kt:96
+
+BubbleScreenshotB03Test > b03_width_max FAILED
+    java.lang.AssertionError at BubbleScreenshotB03Test.kt:96
+
+BubbleScreenshotB03Test > b03_width_min FAILED
+    java.lang.AssertionError at BubbleScreenshotB03Test.kt:96
+
+BubbleScreenshotB03Test > b03_tail_off FAILED
+    java.lang.AssertionError at BubbleScreenshotB03Test.kt:96
+
+BubbleScreenshotB04Test > b04_offline_no_background FAILED
+    java.lang.AssertionError at BubbleScreenshotB04Test.kt:86
+
+BubbleScreenshotB04Test > b04_online_glass_on FAILED
+    java.lang.AssertionError at BubbleScreenshotB04Test.kt:37
+
+BubbleScreenshotB04Test > b04_online_glass_off FAILED
+    java.lang.AssertionError at BubbleScreenshotB04Test.kt:54
+
+BubbleScreenshotB04Test > b04_offline_background FAILED
+    java.lang.AssertionError at BubbleScreenshotB04Test.kt:70
+
+MessageBubbleScreenshotTest > roleplayCharacterBubble_glassWithLoadedBackdrop_rendersContentAndMatchesBaseline FAILED
+    java.lang.AssertionError at MessageBubbleScreenshotTest.kt:184
+
+PageScreenshotH01Test > h01_p02_assistants_matcha_dark FAILED
+    java.lang.AssertionError at PageScreenshotH01Test.kt:99
+
+PageScreenshotH01Test > h01_p02_assistants_vanilla_light FAILED
+    java.lang.AssertionError at PageScreenshotH01Test.kt:99
+
+PageScreenshotH01Test > h01_p01_messages_vanilla_dark FAILED
+    java.lang.AssertionError at PageScreenshotH01Test.kt:83
+
+PageScreenshotH01Test > h01_p03_online_play_matcha_dark FAILED
+    java.lang.AssertionError at PageScreenshotH01Test.kt:117
+
+PageScreenshotH01Test > h01_p01_messages_matcha_light FAILED
+    java.lang.AssertionError at PageScreenshotH01Test.kt:83
+
+PageScreenshotH01Test > h01_p01_messages_vanilla_light FAILED
+    java.lang.AssertionError at PageScreenshotH01Test.kt:83
+
+PageScreenshotH01Test > h01_p01_messages_ocean_light FAILED
+    java.lang.AssertionError at PageScreenshotH01Test.kt:83
+
+PageScreenshotH01Test > h01_p01_messages_ocean_dark FAILED
+    java.lang.AssertionError at PageScreenshotH01Test.kt:83
+
+PageScreenshotH01Test > h01_p02_assistants_vanilla_dark FAILED
+    java.lang.AssertionError at PageScreenshotH01Test.kt:99
+
+PageScreenshotH01Test > h01_p01_messages_matcha_dark FAILED
+    java.lang.AssertionError at PageScreenshotH01Test.kt:83
+
+PageScreenshotH01Test > h01_p02_assistants_matcha_light FAILED
+    java.lang.AssertionError at PageScreenshotH01Test.kt:99
+
+PageScreenshotH01Test > h01_p03_online_play_vanilla_dark FAILED
+    java.lang.AssertionError at PageScreenshotH01Test.kt:117
+
+PageScreenshotH01Test > h01_p02_assistants_ocean_dark FAILED
+    java.lang.AssertionError at PageScreenshotH01Test.kt:99
+
+PageScreenshotH01Test > h01_p03_online_play_matcha_light FAILED
+    java.lang.AssertionError at PageScreenshotH01Test.kt:117
+
+PageScreenshotH01Test > h01_p02_assistants_ocean_light FAILED
+    java.lang.AssertionError at PageScreenshotH01Test.kt:99
+
+PageScreenshotH01Test > h01_p03_online_play_vanilla_light FAILED
+    java.lang.AssertionError at PageScreenshotH01Test.kt:117
+
+PageScreenshotH01Test > h01_p03_online_play_ocean_light FAILED
+    java.lang.AssertionError at PageScreenshotH01Test.kt:117
+
+PageScreenshotH01Test > h01_p03_online_play_ocean_dark FAILED
+    java.lang.AssertionError at PageScreenshotH01Test.kt:117
+
+PageScreenshotH02Test > h02_p03_online_empty_session FAILED
+    java.lang.AssertionError at PageScreenshotH02Test.kt:59
+
+PageScreenshotH02Test > h02_p01_messages_empty_state FAILED
+    java.lang.AssertionError at PageScreenshotH02Test.kt:30
+
+PageScreenshotH02Test > h02_p02_assistants_no_search_result FAILED
+    java.lang.AssertionError at PageScreenshotH02Test.kt:44
+
+PageScreenshotH03Test > h03_p03_online_long_reply FAILED
+    java.lang.AssertionError at PageScreenshotH03Test.kt:30
+
+PageScreenshotH03Test > h03_p03_online_streaming_frame FAILED
+    java.lang.AssertionError at PageScreenshotH03Test.kt:48
+
+PageScreenshotH03Test > h03_p03_online_error_message FAILED
+    java.lang.AssertionError at PageScreenshotH03Test.kt:62
+
+PageScreenshotH04Test > h04_p02_assistants_narrow_light FAILED
+    java.lang.AssertionError at PageScreenshotH04Test.kt:61
+
+PageScreenshotH04Test > h04_p01_messages_narrow_dark FAILED
+    java.lang.AssertionError at PageScreenshotH04Test.kt:48
+
+PageScreenshotH04Test > h04_p03_online_narrow_light FAILED
+    java.lang.AssertionError at PageScreenshotH04Test.kt:83
+
+PageScreenshotH04Test > h04_p03_online_narrow_dark FAILED
+    java.lang.AssertionError at PageScreenshotH04Test.kt:83
+
+PageScreenshotH04Test > h04_p02_assistants_narrow_dark FAILED
+    java.lang.AssertionError at PageScreenshotH04Test.kt:61
+
+PageScreenshotH04Test > h04_p01_messages_narrow_light FAILED
+    java.lang.AssertionError at PageScreenshotH04Test.kt:48
+
+SkinScreenshotB01Test > b01_noir_bubbles_light FAILED
+    java.lang.AssertionError at SkinScreenshotB01Test.kt:111
+
+SkinScreenshotB01Test > b01_y2k_bubbles_dark FAILED
+    java.lang.AssertionError at SkinScreenshotB01Test.kt:111
+
+SkinScreenshotB01Test > b01_wechat_bubbles_dark FAILED
+    java.lang.AssertionError at SkinScreenshotB01Test.kt:111
+
+SkinScreenshotB01Test > b01_liquidglass_bubbles_light FAILED
+    java.lang.AssertionError at SkinScreenshotB01Test.kt:111
+
+SkinScreenshotB01Test > b01_kakao_bubbles_light FAILED
+    java.lang.AssertionError at SkinScreenshotB01Test.kt:111
+
+SkinScreenshotB01Test > b01_wechat_bubbles_light FAILED
+    java.lang.AssertionError at SkinScreenshotB01Test.kt:111
+
+SkinScreenshotB01Test > b01_noir_bubbles_dark FAILED
+    java.lang.AssertionError at SkinScreenshotB01Test.kt:111
+
+SkinScreenshotB01Test > b01_imessage_bubbles_light FAILED
+    java.lang.AssertionError at SkinScreenshotB01Test.kt:111
+
+SkinScreenshotB01Test > b01_kakao_bubbles_dark FAILED
+    java.lang.AssertionError at SkinScreenshotB01Test.kt:111
+
+SkinScreenshotB01Test > b01_telegram_bubbles_dark FAILED
+    java.lang.AssertionError at SkinScreenshotB01Test.kt:111
+
+SkinScreenshotB01Test > b01_narra_bubbles_dark FAILED
+    java.lang.AssertionError at SkinScreenshotB01Test.kt:111
+
+SkinScreenshotB01Test > b01_polkadot_bubbles_light FAILED
+    java.lang.AssertionError at SkinScreenshotB01Test.kt:111
+
+SkinScreenshotB01Test > b01_telegram_bubbles_light FAILED
+    java.lang.AssertionError at SkinScreenshotB01Test.kt:111
+
+SkinScreenshotB01Test > b01_rose_bubbles_light FAILED
+    java.lang.AssertionError at SkinScreenshotB01Test.kt:111
+
+SkinScreenshotB01Test > b01_rose_bubbles_dark FAILED
+    java.lang.AssertionError at SkinScreenshotB01Test.kt:111
+
+SkinScreenshotB01Test > b01_polkadot_bubbles_dark FAILED
+    java.lang.AssertionError at SkinScreenshotB01Test.kt:111
+
+SkinScreenshotB01Test > b01_qq_bubbles_light FAILED
+    java.lang.AssertionError at SkinScreenshotB01Test.kt:111
+
+SkinScreenshotB01Test > b01_retro_bubbles_light FAILED
+    java.lang.AssertionError at SkinScreenshotB01Test.kt:111
+
+SkinScreenshotB01Test > b01_liquidglass_bubbles_dark FAILED
+    java.lang.AssertionError at SkinScreenshotB01Test.kt:111
+
+SkinScreenshotB01Test > b01_retro_bubbles_dark FAILED
+    java.lang.AssertionError at SkinScreenshotB01Test.kt:111
+
+SkinScreenshotB01Test > b01_pixel_bubbles_dark FAILED
+    java.lang.AssertionError at SkinScreenshotB01Test.kt:111
+
+SkinScreenshotB01Test > b01_qq_bubbles_dark FAILED
+    java.lang.AssertionError at SkinScreenshotB01Test.kt:111
+
+SkinScreenshotB01Test > b01_narra_bubbles_light FAILED
+    java.lang.AssertionError at SkinScreenshotB01Test.kt:111
+
+SkinScreenshotB01Test > b01_y2k_bubbles_light FAILED
+    java.lang.AssertionError at SkinScreenshotB01Test.kt:111
+
+SkinScreenshotB01Test > b01_pixel_bubbles_light FAILED
+    java.lang.AssertionError at SkinScreenshotB01Test.kt:111
+
+SkinScreenshotB01Test > b01_imessage_bubbles_dark FAILED
+    java.lang.AssertionError at SkinScreenshotB01Test.kt:111
+
+79 tests completed, 75 failed
+
+> Task :app:testDebugUnitTest FAILED
+> Task :app:finalizeTestRoborazziDebug
+
+FAILURE: Build failed with an exception.
+
+* What went wrong:
+Execution failed for task ':app:testDebugUnitTest'.
+> There were failing tests. See the report at: file:///D:/code/AndroidStudioprojects/MyApplication/app/build/reports/tests/testDebugUnitTest/index.html
+
+* Try:
+> Run with --scan to get full insights from a Build Scan (powered by Develocity).
+
+BUILD FAILED in 1m 6s
+35 actionable tasks: 2 executed, 33 up-to-date
+Configuration cache entry reused.

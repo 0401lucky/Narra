@@ -57,6 +57,9 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.Dp
+import com.example.myapplication.ui.theme.NarraUi
+import com.example.myapplication.ui.theme.NarraShapes
 import androidx.compose.ui.unit.sp
 import com.example.myapplication.ui.component.ModelIcon
 import com.composables.icons.lucide.Lucide
@@ -119,6 +122,7 @@ fun SettingsTopBar(
     actionLabel: String? = null,
     onAction: (() -> Unit)? = null,
     actionEnabled: Boolean = true,
+    horizontalPadding: Dp = SettingsScreenPadding,
 ) {
     val palette = rememberSettingsPalette()
 
@@ -130,7 +134,7 @@ fun SettingsTopBar(
             modifier = Modifier
                 .fillMaxWidth()
                 .statusBarsPadding()
-                .padding(start = 8.dp, end = SettingsScreenPadding, top = 8.dp, bottom = 4.dp),
+                .padding(start = NarraUi.space8, end = horizontalPadding, top = NarraUi.space8, bottom = NarraUi.space4),
             verticalAlignment = Alignment.CenterVertically,
         ) {
             NarraIconButton(onClick = onNavigateBack) {
@@ -144,7 +148,7 @@ fun SettingsTopBar(
             Column(
                 modifier = Modifier
                     .weight(1f)
-                    .padding(start = 4.dp),
+                    .padding(start = NarraUi.space4),
                 verticalArrangement = Arrangement.spacedBy(2.dp),
             ) {
                 Text(
@@ -170,7 +174,7 @@ fun SettingsTopBar(
                 NarraFilledTonalButton(
                     onClick = onAction,
                     enabled = actionEnabled,
-                    shape = RoundedCornerShape(16.dp),
+                    shape = NarraShapes.medium,
                 ) {
                     Text(
                         text = actionLabel,

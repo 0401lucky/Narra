@@ -1,15 +1,21 @@
 package com.example.myapplication.ui.screen.roleplay
 
+import com.example.myapplication.ui.theme.NarraShapes
+import com.example.myapplication.ui.theme.NarraUi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -65,6 +71,8 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalView
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -98,6 +106,8 @@ import com.example.myapplication.ui.component.roleplay.RoleplayMessageBubbleMode
 import com.example.myapplication.ui.component.roleplay.RoleplayStreamingAutoScrollEffect
 import com.example.myapplication.ui.component.roleplay.RoleplayStreamingScrollSignal
 import com.example.myapplication.ui.component.roleplay.rememberRoleplayNoBackgroundSkinSpec
+import com.example.myapplication.ui.component.roleplay.rememberImmersiveRoleplayColors
+import com.example.myapplication.ui.theme.NarraMinimumTouchTarget
 import com.example.myapplication.ui.component.roleplay.rememberRoleplayAutoFollowScrollConnection
 import com.example.myapplication.ui.component.roleplay.rememberRoleplayStreamingAutoScrollState
 import com.example.myapplication.ui.component.roleplay.roleplayLazyContentType
@@ -107,12 +117,7 @@ import java.util.Date
 import java.util.Locale
 import kotlinx.coroutines.launch
 
-private val OnlineAccent = Color(0xFF5B91D7)
-private val OnlineGiftAccent = Color(0xFFE77F93)
-private val OnlineTaskAccent = Color(0xFFD78B31)
-private val OnlinePunishAccent = Color(0xFFD55C73)
-private val OnlineVideoAccent = Color(0xFF6C84FF)
-private val OnlinePhoneJumpButtonSize = 42.dp
+private val OnlinePhoneJumpButtonSize = NarraMinimumTouchTarget
 private const val OnlinePhoneJumpButtonMessageThreshold = 4
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -173,6 +178,7 @@ internal fun RoleplayOnlinePhoneContent(
     onOpenSettings: () -> Unit,
     onNavigateBack: () -> Unit,
 ) {
+    val colorScheme = MaterialTheme.colorScheme
     val immersiveMode = settings.roleplayImmersiveMode
     ApplyRoleplaySystemBars(
         backdropState = backdropState,
@@ -209,14 +215,7 @@ internal fun RoleplayOnlinePhoneContent(
             alpha = if (backdropState.hasImage) 0.72f else 0.92f,
         )
     }
-    val onlineBackdropScrim = remember(backdropState.hasImage, palette) {
-        Brush.verticalGradient(
-            colors = listOf(
-                palette.scrimTop.copy(alpha = if (backdropState.hasImage) 0.14f else 0.08f),
-                palette.scrimBottom.copy(alpha = if (backdropState.hasImage) 0.28f else 0.14f),
-            ),
-        )
-    }
+    val onlineBackdropScrim = remember(backdropState) { roleplayOnlineBackdropScrim(backdropState) }
     val listState = rememberLazyListState()
     val autoScrollState = rememberRoleplayStreamingAutoScrollState(scenario.id)
     val autoFollowScrollConnection = rememberRoleplayAutoFollowScrollConnection(autoScrollState)
@@ -224,6 +223,7 @@ internal fun RoleplayOnlinePhoneContent(
     var showMenu by remember { mutableStateOf(false) }
     var showAiHelperPanel by remember { mutableStateOf(false) }
     val quickActions = remember(
+        colorScheme,
         onOpenVoiceMessage,
         onOpenDiary,
         onOpenPhoneCheck,
@@ -242,7 +242,7 @@ internal fun RoleplayOnlinePhoneContent(
                 RoleplayInputQuickAction(
                     label = "日记",
                     icon = Icons.Default.AutoStories,
-                    accentColor = Color(0xFFC78A38),
+                    accentColor = colorScheme.secondary,
                     onClick = onOpenDiary,
                 ),
             )
@@ -250,7 +250,7 @@ internal fun RoleplayOnlinePhoneContent(
                 RoleplayInputQuickAction(
                     label = "语音",
                     icon = Icons.Default.KeyboardVoice,
-                    accentColor = OnlineAccent,
+                    accentColor = colorScheme.primary,
                     onClick = onOpenVoiceMessage,
                 ),
             )
@@ -258,7 +258,7 @@ internal fun RoleplayOnlinePhoneContent(
                 RoleplayInputQuickAction(
                     label = "查手机",
                     icon = Icons.Default.Visibility,
-                    accentColor = OnlineAccent,
+                    accentColor = colorScheme.primary,
                     onClick = onOpenPhoneCheck,
                 ),
             )
@@ -266,7 +266,7 @@ internal fun RoleplayOnlinePhoneContent(
                 RoleplayInputQuickAction(
                     label = "转账",
                     icon = Icons.Default.Share,
-                    accentColor = Color(0xFF07C160),
+                    accentColor = colorScheme.primary,
                     onClick = onOpenTransferPlay,
                 ),
             )
@@ -274,7 +274,7 @@ internal fun RoleplayOnlinePhoneContent(
                 RoleplayInputQuickAction(
                     label = "邀约",
                     icon = Icons.Default.Event,
-                    accentColor = OnlineAccent,
+                    accentColor = colorScheme.primary,
                     onClick = onOpenInvitePlay,
                 ),
             )
@@ -282,7 +282,7 @@ internal fun RoleplayOnlinePhoneContent(
                 RoleplayInputQuickAction(
                     label = "礼物",
                     icon = Icons.Default.CardGiftcard,
-                    accentColor = OnlineGiftAccent,
+                    accentColor = colorScheme.tertiary,
                     onClick = onOpenGiftPlay,
                 ),
             )
@@ -290,7 +290,7 @@ internal fun RoleplayOnlinePhoneContent(
                 RoleplayInputQuickAction(
                     label = "委托",
                     icon = Icons.AutoMirrored.Filled.Assignment,
-                    accentColor = OnlineTaskAccent,
+                    accentColor = colorScheme.secondary,
                     onClick = onOpenTaskPlay,
                 ),
             )
@@ -298,7 +298,7 @@ internal fun RoleplayOnlinePhoneContent(
                 RoleplayInputQuickAction(
                     label = "惩罚",
                     icon = Icons.Default.Gavel,
-                    accentColor = OnlinePunishAccent,
+                    accentColor = colorScheme.error,
                     onClick = onOpenPunishPlay,
                 ),
             )
@@ -306,7 +306,7 @@ internal fun RoleplayOnlinePhoneContent(
                 RoleplayInputQuickAction(
                     label = "动态",
                     icon = Icons.Default.Forum,
-                    accentColor = Color(0xFF7C93F6),
+                    accentColor = colorScheme.tertiary,
                     onClick = onOpenMoments,
                 ),
             )
@@ -314,7 +314,7 @@ internal fun RoleplayOnlinePhoneContent(
                 RoleplayInputQuickAction(
                     label = "信箱",
                     icon = Icons.Default.Mail,
-                    accentColor = Color(0xFF2E8068),
+                    accentColor = colorScheme.primary,
                     onClick = onOpenMailbox,
                 ),
             )
@@ -322,7 +322,7 @@ internal fun RoleplayOnlinePhoneContent(
                 RoleplayInputQuickAction(
                     label = "钱包",
                     icon = Icons.Default.AccountBalanceWallet,
-                    accentColor = Color(0xFF2E8068),
+                    accentColor = colorScheme.primary,
                     onClick = onOpenWallet,
                 ),
             )
@@ -330,7 +330,7 @@ internal fun RoleplayOnlinePhoneContent(
                 RoleplayInputQuickAction(
                     label = "视频",
                     icon = Icons.Default.Videocam,
-                    accentColor = OnlineVideoAccent,
+                    accentColor = colorScheme.primary,
                     onClick = onOpenVideoCall,
                 ),
             )
@@ -412,10 +412,11 @@ internal fun RoleplayOnlinePhoneContent(
     val showAiHelperEntry = settings.showRoleplayAiHelper
     val showAiHelperContent = showAiHelperEntry && showAiHelperPanel
 
-    Box(
+    BoxWithConstraints(
         modifier = Modifier
             .fillMaxSize()
     ) {
+        val expandedPanelMaxHeight = maxHeight / 3
         RoleplaySceneBackground(
             backdropState = backdropState,
             modifier = Modifier.fillMaxSize(),
@@ -433,23 +434,22 @@ internal fun RoleplayOnlinePhoneContent(
                 .imePadding()
                 .roleplayNavigationBarPadding(immersiveMode),
         ) {
-            Box(modifier = Modifier.fillMaxWidth()) {
+            BoxWithConstraints(modifier = Modifier.fillMaxWidth().testTag("roleplay_online_header")) {
+                val compactHeader = maxWidth < NarraMinimumTouchTarget * 7 || LocalDensity.current.fontScale >= 1.5f
                 ImmersiveGlassSurface(
                     backdropState = backdropState,
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(horizontal = 12.dp)
-                        .padding(top = statusBarTopPadding + 6.dp, bottom = 6.dp),
-                    shape = RoundedCornerShape(28.dp),
+                        .padding(horizontal = NarraUi.space12)
+                        .padding(top = statusBarTopPadding + NarraUi.space8, bottom = NarraUi.space8),
+                    shape = NarraShapes.large,
                     blurRadius = 22.dp,
-                    overlayColor = palette.panelTintStrong.copy(
-                        alpha = if (backdropState.hasImage) 0.82f else 0.94f,
-                    ),
+                    overlayColor = chromeSurfaceColor,
                 ) {
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(horizontal = 10.dp, vertical = 8.dp),
+                            .padding(horizontal = NarraUi.space8, vertical = NarraUi.space8),
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
                         OnlinePhoneHeaderButton(
@@ -461,15 +461,15 @@ internal fun RoleplayOnlinePhoneContent(
                         Column(
                             modifier = Modifier
                                 .weight(1f)
-                                .padding(horizontal = 10.dp),
-                            verticalArrangement = Arrangement.spacedBy(2.dp),
+                                .padding(horizontal = NarraUi.space8),
+                            verticalArrangement = Arrangement.spacedBy(NarraUi.space4),
                         ) {
                             Text(
                                 text = characterName,
                                 style = MaterialTheme.typography.titleMedium,
                                 fontWeight = FontWeight.Bold,
-                                color = colors.textPrimary,
-                                maxLines = 1,
+                                color = colors.panelText,
+                                maxLines = 2,
                                 overflow = TextOverflow.Ellipsis,
                             )
                             Text(
@@ -483,11 +483,12 @@ internal fun RoleplayOnlinePhoneContent(
                                     }
                                 },
                                 style = MaterialTheme.typography.bodySmall,
-                                color = colors.textMuted,
-                                maxLines = 1,
+                                color = colors.panelMutedText,
+                                maxLines = 2,
                                 overflow = TextOverflow.Ellipsis,
                             )
                         }
+                        if (!compactHeader) {
                         OnlinePhoneHeaderButton(
                             onClick = onOpenMoments,
                             icon = Icons.Default.Forum,
@@ -500,6 +501,7 @@ internal fun RoleplayOnlinePhoneContent(
                             contentDescription = "查手机",
                             colors = colors,
                         )
+                        }
                         if (isSending) {
                             OnlinePhoneHeaderButton(
                                 onClick = onCancelSending,
@@ -518,6 +520,16 @@ internal fun RoleplayOnlinePhoneContent(
                                 colors = colors,
                             )
                             DropdownMenu(expanded = showMenu, onDismissRequest = { showMenu = false }) {
+                                if (compactHeader) {
+                                    DropdownMenuItem(text = { Text("动态") }, onClick = {
+                                        showMenu = false
+                                        onOpenMoments()
+                                    })
+                                    DropdownMenuItem(text = { Text("查手机") }, onClick = {
+                                        showMenu = false
+                                        onOpenPhoneCheck()
+                                    })
+                                }
                                 DropdownMenuItem(
                                     text = { Text("截取会话") },
                                     onClick = {
@@ -542,17 +554,17 @@ internal fun RoleplayOnlinePhoneContent(
             Surface(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 12.dp, vertical = 10.dp),
+                    .padding(horizontal = NarraUi.space12, vertical = NarraUi.space8),
                 color = chromeSurfaceColor,
-                shape = RoundedCornerShape(18.dp),
+                shape = NarraShapes.medium,
             ) {
                 Column(
-                    modifier = Modifier.padding(14.dp),
-                    verticalArrangement = Arrangement.spacedBy(8.dp),
+                    modifier = Modifier.padding(NarraUi.space16),
+                    verticalArrangement = Arrangement.spacedBy(NarraUi.space8),
                 ) {
                     Text("建议记住一条长期设定", fontWeight = FontWeight.SemiBold, color = colors.characterAccent)
                     Text(proposal.content, color = colors.textPrimary)
-                    Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                    Row(horizontalArrangement = Arrangement.spacedBy(NarraUi.space8)) {
                         androidx.compose.material3.TextButton(onClick = onApprovePendingMemoryProposal) { Text("记住") }
                         androidx.compose.material3.TextButton(onClick = onRejectPendingMemoryProposal) { Text("忽略") }
                     }
@@ -569,9 +581,10 @@ internal fun RoleplayOnlinePhoneContent(
                 state = listState,
                 modifier = Modifier
                     .fillMaxSize()
+                    .testTag("roleplay_online_message_list")
                     .nestedScroll(autoFollowScrollConnection),
-                contentPadding = PaddingValues(horizontal = 12.dp, vertical = 14.dp),
-                verticalArrangement = Arrangement.spacedBy(10.dp),
+                contentPadding = PaddingValues(horizontal = NarraUi.space12, vertical = NarraUi.space16),
+                verticalArrangement = Arrangement.spacedBy(NarraUi.space8),
             ) {
                 itemsIndexed(
                     items = visibleMessages,
@@ -589,14 +602,14 @@ internal fun RoleplayOnlinePhoneContent(
                                 contentAlignment = Alignment.Center,
                             ) {
                                 Surface(
-                                    color = timestampSurfaceColor,
-                                    shape = RoundedCornerShape(999.dp),
+                                    color = colors.systemBackground,
+                                    shape = NarraShapes.pill,
                                 ) {
                                     Text(
                                         text = formatOnlineTime(message.createdAt),
-                                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp),
+                                        modifier = Modifier.padding(horizontal = NarraUi.space8, vertical = NarraUi.space4),
                                         style = MaterialTheme.typography.labelSmall,
-                                        color = colors.textMuted,
+                                        color = colors.systemText,
                                     )
                                 }
                             }
@@ -638,7 +651,7 @@ internal fun RoleplayOnlinePhoneContent(
                     },
                     modifier = Modifier
                         .align(Alignment.TopEnd)
-                        .padding(top = 8.dp, end = 10.dp)
+                        .padding(top = NarraUi.space8, end = NarraUi.space8)
                         .size(OnlinePhoneJumpButtonSize),
                     colors = IconButtonDefaults.iconButtonColors(
                         containerColor = colors.panelBackgroundStrong.copy(alpha = 0.92f),
@@ -667,11 +680,11 @@ internal fun RoleplayOnlinePhoneContent(
                     },
                     modifier = Modifier
                         .align(Alignment.BottomEnd)
-                        .padding(end = 10.dp, bottom = 12.dp)
+                        .padding(end = NarraUi.space8, bottom = NarraUi.space12)
                         .size(OnlinePhoneJumpButtonSize),
                     colors = IconButtonDefaults.iconButtonColors(
-                        containerColor = colors.characterAccent.copy(alpha = 0.88f),
-                        contentColor = Color.Black.copy(alpha = 0.88f),
+                        containerColor = colorScheme.primary,
+                        contentColor = colorScheme.onPrimary,
                     ),
                 ) {
                     Icon(
@@ -686,13 +699,16 @@ internal fun RoleplayOnlinePhoneContent(
                 hostState = snackbarHostState,
                 modifier = Modifier
                     .align(Alignment.BottomCenter)
-                    .padding(bottom = 8.dp),
+                    .padding(bottom = NarraUi.space8),
             )
             }
 
         if (showAiHelperContent) {
             RoleplayOnlineAiHelperBar(
-                modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
+                modifier = Modifier
+                    .padding(horizontal = NarraUi.space12, vertical = NarraUi.space8)
+                    .heightIn(max = expandedPanelMaxHeight)
+                    .verticalScroll(rememberScrollState()),
                 backdropState = backdropState,
                 colors = colors,
                 suggestions = suggestions,
@@ -712,28 +728,28 @@ internal fun RoleplayOnlinePhoneContent(
             Surface(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 12.dp, vertical = 6.dp),
+                    .padding(horizontal = NarraUi.space12, vertical = NarraUi.space8),
                 color = chromeSurfaceColor,
-                shape = RoundedCornerShape(16.dp),
+                shape = NarraShapes.medium,
             ) {
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(horizontal = 12.dp, vertical = 10.dp),
+                        .padding(horizontal = NarraUi.space12, vertical = NarraUi.space8),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
                     Surface(
                         modifier = Modifier
                             .width(3.dp)
                             .height(36.dp),
-                        shape = RoundedCornerShape(999.dp),
+                        shape = NarraShapes.pill,
                         color = colors.characterAccent.copy(alpha = 0.68f),
                     ) {}
                     Column(
                         modifier = Modifier
                             .weight(1f)
-                            .padding(start = 10.dp),
-                        verticalArrangement = Arrangement.spacedBy(4.dp),
+                            .padding(start = NarraUi.space8),
+                        verticalArrangement = Arrangement.spacedBy(NarraUi.space4),
                     ) {
                         Text(
                             text = "回复 ${replyToSpeakerName.ifBlank { "对方" }}",
@@ -759,7 +775,8 @@ internal fun RoleplayOnlinePhoneContent(
         Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 12.dp, vertical = 8.dp),
+                .testTag("roleplay_online_input")
+                .padding(horizontal = NarraUi.space12, vertical = NarraUi.space8),
         ) {
             RoleplayInputBar(
                 colors = colors,
@@ -797,6 +814,7 @@ internal fun RoleplayOnlinePhoneContent(
                 pendingImageParts = pendingImageParts,
                 onPickImage = onPickImage,
                 onRemovePendingImagePart = onRemovePendingImagePart,
+                expandedPanelMaxHeight = expandedPanelMaxHeight,
             )
         }
     }
@@ -805,6 +823,13 @@ internal fun RoleplayOnlinePhoneContent(
 
 }
 
+internal fun roleplayOnlineBackdropScrim(backdropState: ImmersiveBackdropState): Brush = Brush.verticalGradient(
+    colors = listOf(
+        backdropState.palette.scrimTop.copy(alpha = if (backdropState.hasImage) 0.14f else 0f),
+        backdropState.palette.scrimBottom.copy(alpha = if (backdropState.hasImage) 0.28f else 0f),
+    ),
+)
+
 @Composable
 private fun OnlinePhoneHeaderButton(
     onClick: () -> Unit,
@@ -812,11 +837,11 @@ private fun OnlinePhoneHeaderButton(
     contentDescription: String,
     colors: ImmersiveRoleplayColors,
     containerColor: Color = Color.Transparent,
-    contentColor: Color = colors.textPrimary,
+    contentColor: Color = colors.panelText,
 ) {
     NarraIconButton(
         onClick = onClick,
-        modifier = Modifier.size(36.dp),
+        modifier = Modifier.size(NarraMinimumTouchTarget),
         colors = IconButtonDefaults.iconButtonColors(
             containerColor = containerColor,
             contentColor = contentColor,
@@ -846,7 +871,7 @@ private fun RoleplayOnlineAiHelperBar(
     val showPanel = suggestions.isNotEmpty() || isGeneratingSuggestions || !suggestionErrorMessage.isNullOrBlank()
     val actionEnabled = !isSending && !isGeneratingSuggestions
     val view = LocalView.current
-    val shape = RoundedCornerShape(24.dp)
+    val shape = NarraShapes.large
     ImmersiveGlassSurface(
         backdropState = backdropState,
         modifier = modifier.fillMaxWidth(),
@@ -857,8 +882,8 @@ private fun RoleplayOnlineAiHelperBar(
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 14.dp, vertical = 12.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp),
+                .padding(horizontal = NarraUi.space16, vertical = NarraUi.space12),
+            verticalArrangement = Arrangement.spacedBy(NarraUi.space12),
         ) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
@@ -868,8 +893,8 @@ private fun RoleplayOnlineAiHelperBar(
                 Column(
                     modifier = Modifier
                         .weight(1f)
-                        .padding(end = 12.dp),
-                    verticalArrangement = Arrangement.spacedBy(4.dp),
+                        .padding(end = NarraUi.space12),
+                    verticalArrangement = Arrangement.spacedBy(NarraUi.space4),
                 ) {
                     Text(
                         text = "AI 帮写",
@@ -888,7 +913,7 @@ private fun RoleplayOnlineAiHelperBar(
                     )
                 }
                 Row(
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    horizontalArrangement = Arrangement.spacedBy(NarraUi.space8),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
                     if (showPanel) {
@@ -918,7 +943,7 @@ private fun RoleplayOnlineAiHelperBar(
             if (showPanel) {
                 if (isGeneratingSuggestions) {
                     Row(
-                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        horizontalArrangement = Arrangement.spacedBy(NarraUi.space8),
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
                         CircularProgressIndicator(
@@ -964,27 +989,31 @@ private fun OnlineAiHelperPrimaryAction(
     colors: ImmersiveRoleplayColors,
     onClick: () -> Unit,
 ) {
+    val scheme = MaterialTheme.colorScheme
     Box(
         modifier = Modifier
+            .heightIn(min = NarraMinimumTouchTarget)
+            .testTag("roleplay_ai_helper_primary_action")
             .background(
                 color = if (enabled) {
-                    colors.characterAccent.copy(alpha = 0.92f)
+                    scheme.primary
                 } else {
                     colors.panelBackground.copy(alpha = 0.88f)
                 },
-                shape = RoundedCornerShape(999.dp),
+                shape = NarraShapes.pill,
             )
             .clickable(enabled = enabled, onClick = onClick)
-            .padding(horizontal = 14.dp, vertical = 8.dp),
+            .padding(horizontal = NarraUi.space16, vertical = NarraUi.space8),
+        contentAlignment = Alignment.Center,
     ) {
         Text(
             text = text,
             style = MaterialTheme.typography.labelLarge,
             fontWeight = FontWeight.Bold,
             color = if (enabled) {
-                Color.Black.copy(alpha = 0.88f)
+                scheme.onPrimary
             } else {
-                colors.textMuted
+                colors.panelMutedText
             },
         )
     }
@@ -998,7 +1027,7 @@ private fun RoleplayOnlineSuggestionCard(
     enabled: Boolean,
     onClick: () -> Unit,
 ) {
-    val shape = RoundedCornerShape(18.dp)
+    val shape = NarraShapes.medium
     ImmersiveGlassSurface(
         backdropState = backdropState,
         modifier = Modifier.fillMaxWidth(),
@@ -1010,11 +1039,11 @@ private fun RoleplayOnlineSuggestionCard(
             modifier = Modifier
                 .fillMaxWidth()
                 .clickable(enabled = enabled, onClick = onClick)
-                .padding(horizontal = 12.dp, vertical = 12.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp),
+                .padding(horizontal = NarraUi.space12, vertical = NarraUi.space12),
+            verticalArrangement = Arrangement.spacedBy(NarraUi.space8),
         ) {
             Row(
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                horizontalArrangement = Arrangement.spacedBy(NarraUi.space8),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 RoleplayEmotionChip(
@@ -1072,38 +1101,8 @@ private fun rememberOnlinePhoneColors(
     backdropState: ImmersiveBackdropState,
     noBackgroundSkin: com.example.myapplication.model.RoleplayNoBackgroundSkinSettings,
     useGlassColors: Boolean = backdropState.hasImage,
-): ImmersiveRoleplayColors {
-    val palette = backdropState.palette
-    val skinSpec = rememberRoleplayNoBackgroundSkinSpec(noBackgroundSkin)
-    return remember(palette, useGlassColors, skinSpec) {
-        ImmersiveRoleplayColors(
-            textPrimary = if (useGlassColors) palette.onGlass else skinSpec.characterText,
-            userText = if (useGlassColors) palette.onGlass else skinSpec.userText,
-            textMuted = if (useGlassColors) palette.onGlassMuted else skinSpec.mutedText,
-            characterAccent = if (useGlassColors) palette.characterAccent else skinSpec.accent,
-            userAccent = if (useGlassColors) palette.userAccent else skinSpec.userAccent,
-            thoughtText = if (useGlassColors) palette.thoughtText else skinSpec.mutedText,
-            panelBackground = if (useGlassColors) {
-                palette.panelTintStrong.copy(alpha = 0.22f)
-            } else {
-                skinSpec.panel.copy(alpha = skinSpec.panel.alpha.coerceAtLeast(0.86f))
-            },
-            panelBackgroundStrong = if (useGlassColors) {
-                palette.readingSurface.copy(alpha = 0.30f)
-            } else {
-                skinSpec.panelStrong.copy(alpha = skinSpec.panelStrong.alpha.coerceAtLeast(0.94f))
-            },
-            panelBorder = if (useGlassColors) {
-                palette.panelBorder.copy(alpha = 0.28f)
-            } else {
-                skinSpec.border.copy(alpha = skinSpec.border.alpha.coerceAtLeast(0.22f))
-            },
-            errorText = Color(0xFFB3261E),
-            errorBackground = Color(0xFFFFE9E8).copy(alpha = if (useGlassColors) 0.74f else 1f),
-            errorBackgroundStrong = Color(0xFFFFDAD6).copy(alpha = if (useGlassColors) 0.86f else 1f),
-            userBubbleBackground = if (useGlassColors) palette.userAccent.copy(alpha = 0.12f) else skinSpec.userBubble,
-            characterBubbleBackground = if (useGlassColors) palette.readingSurface.copy(alpha = 0.16f) else skinSpec.characterBubble,
-            narrationBubbleBackground = if (useGlassColors) palette.readingSurface.copy(alpha = 0.10f) else skinSpec.narrationBubble.copy(alpha = skinSpec.narrationBubble.alpha.coerceAtLeast(0.72f)),
-        )
-    }
-}
+): ImmersiveRoleplayColors = rememberImmersiveRoleplayColors(
+    backdropState = backdropState,
+    noBackgroundSkin = noBackgroundSkin,
+    useGlassColors = useGlassColors,
+)

@@ -1,9 +1,12 @@
 package com.example.myapplication.ui.screen.settings
 
+import com.example.myapplication.ui.theme.NarraShapes
+import com.example.myapplication.ui.theme.NarraUi
 import com.example.myapplication.ui.component.*
 
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -13,6 +16,9 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.text.font.FontWeight
@@ -26,6 +32,7 @@ import com.example.myapplication.viewmodel.SettingsViewModel
 import com.composables.icons.lucide.EllipsisVertical
 import com.composables.icons.lucide.Lucide
 import com.composables.icons.lucide.Search
+import com.example.myapplication.ui.theme.NarraMinimumTouchTarget
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -46,7 +53,8 @@ fun AssistantListScreen(
         else assistants.filter { it.name.contains(searchQuery, ignoreCase = true) }
     }
 
-    val palette = rememberSettingsPalette()
+    val scheme = MaterialTheme.colorScheme
+    val palette = rememberSettingsPalette().copy(surface = scheme.surfaceContainerLow)
 
     Scaffold(
         containerColor = palette.background,
@@ -56,17 +64,18 @@ fun AssistantListScreen(
                 onNavigateBack = onNavigateBack,
                 actionLabel = "新增",
                 onAction = { onNavigateToAssistantConfig(null) },
+                horizontalPadding = NarraUi.space24,
             )
         }
     ) { paddingValues ->
         LazyColumn(
             contentPadding = PaddingValues(
                 top = paddingValues.calculateTopPadding(),
-                bottom = paddingValues.calculateBottomPadding() + 40.dp,
-                start = SettingsScreenPadding,
-                end = SettingsScreenPadding,
+                bottom = paddingValues.calculateBottomPadding() + NarraUi.space32,
+                start = NarraUi.space24,
+                end = NarraUi.space24,
             ),
-            verticalArrangement = Arrangement.spacedBy(8.dp),
+            verticalArrangement = Arrangement.spacedBy(NarraUi.space8),
             modifier = Modifier.fillMaxSize()
         ) {
             item {
@@ -83,14 +92,16 @@ fun AssistantListScreen(
                     leadingIcon = {
                         Icon(
                             imageVector = Lucide.Search,
-                            contentDescription = "搜索",
+                            contentDescription = null,
                             tint = palette.body,
                         )
                     },
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(bottom = 8.dp),
-                    shape = RoundedCornerShape(8.dp),
+                        .testTag("assistant_search")
+                        .semantics { contentDescription = "搜索角色" }
+                        .padding(bottom = NarraUi.space8),
+                    shape = NarraShapes.small,
                     colors = searchColors,
                     singleLine = true,
                 )
@@ -98,10 +109,15 @@ fun AssistantListScreen(
 
             if (filteredAssistants.isEmpty() && searchQuery.isNotBlank()) {
                 item {
-                    SettingsPlaceholderRow(
-                        title = "没有匹配的角色",
-                        subtitle = "试试其他关键词，或者新增一个角色。",
-                    )
+                    Surface(shape = NarraShapes.medium, color = palette.surface) {
+                        Column(
+                            modifier = Modifier.padding(NarraUi.space16),
+                            verticalArrangement = Arrangement.spacedBy(NarraUi.space8),
+                        ) {
+                            Text("没有匹配的角色", style = MaterialTheme.typography.titleMedium, color = palette.title)
+                            Text("试试其他关键词，或者新增一个角色。", color = palette.body)
+                        }
+                    }
                 }
             }
 
@@ -151,10 +167,10 @@ internal fun AssistantCardMinimal(
     Surface(
         modifier = Modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(8.dp))
-            .semantics { selected = isSelected }
-            .clickable(onClick = onClick),
-        shape = RoundedCornerShape(8.dp),
+            .clip(NarraShapes.medium)
+            .testTag("assistant_card_${assistant.id}")
+            .selectable(selected = isSelected, role = Role.RadioButton, onClick = onClick),
+        shape = NarraShapes.medium,
         color = palette.surface,
         border = BorderStroke(1.dp, if (isSelected) palette.accent else palette.border),
         shadowElevation = 0.dp,
@@ -162,9 +178,9 @@ internal fun AssistantCardMinimal(
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(vertical = 14.dp, horizontal = 12.dp),
+                .padding(vertical = NarraUi.space16, horizontal = NarraUi.space12),
             verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(12.dp),
+            horizontalArrangement = Arrangement.spacedBy(NarraUi.space12),
         ) {
             AssistantAvatar(
                 name = assistant.name,
@@ -172,8 +188,8 @@ internal fun AssistantCardMinimal(
                 avatarUri = assistant.avatarUri,
                 size = 48.dp,
                 containerColor = palette.accentSoft,
-                contentColor = palette.accentStrong,
-                cornerRadius = 24.dp,
+                contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
+                cornerRadius = NarraUi.radiusLarge,
             )
 
             Column(modifier = Modifier.weight(1f)) {
@@ -186,9 +202,9 @@ internal fun AssistantCardMinimal(
                     overflow = TextOverflow.Ellipsis,
                 )
                 FlowRow(
-                    modifier = Modifier.padding(top = 6.dp),
-                    horizontalArrangement = Arrangement.spacedBy(6.dp),
-                    verticalArrangement = Arrangement.spacedBy(4.dp),
+                    modifier = Modifier.padding(top = NarraUi.space8),
+                    horizontalArrangement = Arrangement.spacedBy(NarraUi.space8),
+                    verticalArrangement = Arrangement.spacedBy(NarraUi.space4),
                 ) {
                     if (isSelected) {
                         SettingsStatusPill(
@@ -213,7 +229,7 @@ internal fun AssistantCardMinimal(
                 }.trimEnd(' ', '·')
                 
                 if (descriptionOrTags.isNotEmpty()) {
-                    Spacer(modifier = Modifier.height(6.dp))
+                    Spacer(modifier = Modifier.height(NarraUi.space8))
                     Text(
                         text = descriptionOrTags,
                         style = MaterialTheme.typography.labelSmall,
@@ -227,7 +243,7 @@ internal fun AssistantCardMinimal(
             Box {
                 NarraIconButton(
                     onClick = { menuExpanded = true },
-                    modifier = Modifier.size(48.dp),
+                    modifier = Modifier.size(NarraMinimumTouchTarget),
                 ) {
                     Icon(
                         imageVector = Lucide.EllipsisVertical,

@@ -1,0 +1,33 @@
+{
+  "id": "ui-token-accessibility-pilot",
+  "name": "ui-token-accessibility-pilot",
+  "title": "v2.3 设计令牌与无障碍试点",
+  "description": "承接旧 v2.3 试点，按用户选择统一 P01/P02/P03 默认形状、间距与语义色，保留用户配置和精确品牌例外，补齐无障碍及视觉回归。",
+  "status": "in_progress",
+  "dev_type": "frontend",
+  "scope": "ui",
+  "package": null,
+  "priority": "P1",
+  "creator": "lucky",
+  "assignee": "lucky",
+  "createdAt": "2026-10-21",
+  "completedAt": null,
+  "branch": null,
+  "base_branch": "main",
+  "worktree_path": null,
+  "commit": null,
+  "pr_url": null,
+  "subtasks": [],
+  "children": [],
+  "parent": null,
+  "relatedFiles": [],
+  "notes": "2026-10-21：1642项JVM、AndroidTest编译、Lint与dev构建通过；用户回复ok确认视觉后接纳75张变化基准，79项截图真实复验全部通过。实现/宿主验收完成，等待Phase3.4提交与归档，未发布。旧任务与原有外部manifest段落保持。",
+  "meta": {
+    "version": "2.3",
+    "source_task": ".trellis/tasks/archive/2026-10/10-14-ui-token-accessibility-pilot",
+    "roadmap_task": ".trellis/tasks/archive/2026-10/10-14-narra-experience-consistency",
+    "strategy": "unified_defaults_with_explicit_overrides",
+    "review_status": "accepted_and_verified",
+    "review_artifact": ".trellis/tasks/10-21-ui-token-accessibility-pilot/review/index.html"
+  }
+}

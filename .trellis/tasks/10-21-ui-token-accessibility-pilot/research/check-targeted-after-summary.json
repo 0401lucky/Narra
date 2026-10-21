@@ -1,0 +1,42 @@
+{
+  "command": ":app:testDebugUnitTest --tests RoleplayThemeSwitchUiTest --tests PageScreenshotH04Test --tests UiTokenSourceGuardTest --tests RoleplaySemanticColorsTest",
+  "exitCode": 0,
+  "tests": 29,
+  "failures": 0,
+  "errors": 0,
+  "skipped": 0,
+  "suites": [
+    {
+      "name": "com.example.myapplication.ui.component.roleplay.RoleplayThemeSwitchUiTest",
+      "tests": "7",
+      "failures": "0",
+      "errors": "0",
+      "skipped": "0",
+      "time": "14.721"
+    },
+    {
+      "name": "com.example.myapplication.ui.component.roleplay.RoleplaySemanticColorsTest",
+      "tests": "4",
+      "failures": "0",
+      "errors": "0",
+      "skipped": "0",
+      "time": "0.08"
+    },
+    {
+      "name": "com.example.myapplication.ui.screenshot.PageScreenshotH04Test",
+      "tests": "6",
+      "failures": "0",
+      "errors": "0",
+      "skipped": "0",
+      "time": "2.412"
+    },
+    {
+      "name": "com.example.myapplication.ui.theme.UiTokenSourceGuardTest",
+      "tests": "12",
+      "failures": "0",
+      "errors": "0",
+      "skipped": "0",
+      "time": "0.271"
+    }
+  ]
+}

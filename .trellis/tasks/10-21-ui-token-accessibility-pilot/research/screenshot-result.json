@@ -1,0 +1,549 @@
+{
+  "started_epoch": 1792565597.578367,
+  "command": "gradlew.bat :app:verifyRoborazziDebug --tests com.example.myapplication.ui.screenshot.* --console=plain",
+  "exit_code": 1,
+  "elapsed": "1m6s",
+  "summary": {
+    "tests": 79,
+    "failures": 75,
+    "errors": 0,
+    "skipped": 0
+  },
+  "suites": [
+    {
+      "name": "com.example.myapplication.ui.screenshot.BubbleScreenshotB02Test",
+      "tests": 4,
+      "failures": 4,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "name": "com.example.myapplication.ui.screenshot.BubbleScreenshotB03Test",
+      "tests": 10,
+      "failures": 10,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "name": "com.example.myapplication.ui.screenshot.BubbleScreenshotB04Test",
+      "tests": 4,
+      "failures": 4,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "name": "com.example.myapplication.ui.screenshot.MessageBubbleScreenshotTest",
+      "tests": 2,
+      "failures": 1,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "name": "com.example.myapplication.ui.screenshot.PageScreenshotH01Test",
+      "tests": 18,
+      "failures": 18,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "name": "com.example.myapplication.ui.screenshot.PageScreenshotH02Test",
+      "tests": 3,
+      "failures": 3,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "name": "com.example.myapplication.ui.screenshot.PageScreenshotH03Test",
+      "tests": 3,
+      "failures": 3,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "name": "com.example.myapplication.ui.screenshot.PageScreenshotH04Test",
+      "tests": 6,
+      "failures": 6,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "name": "com.example.myapplication.ui.screenshot.ScreenshotBaselineGuardTest",
+      "tests": 1,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "name": "com.example.myapplication.ui.screenshot.SkinScreenshotB01Test",
+      "tests": 26,
+      "failures": 26,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "name": "com.example.myapplication.ui.screenshot.ThemeScreenshotC01Test",
+      "tests": 2,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    }
+  ],
+  "failure_details": [
+    {
+      "suite": "com.example.myapplication.ui.screenshot.BubbleScreenshotB02Test",
+      "test": "b02_p03_background_load_failed",
+      "message": "java.lang.AssertionError: Roborazzi: D:\\code\\AndroidStudioprojects\\MyApplication\\app\\src\\test\\snapshots\\BubbleScreenshotB02Test\\B02_p03-background-load-failed.png is changed.\nSee the compare image at D:\\code\\AndroidStudioprojects\\MyApplication\\app\\build\\outputs\\roborazzi\\B02_p03-background-load-failed_compare.png",
+      "is_pixel_difference": true
+    },
+    {
+      "suite": "com.example.myapplication.ui.screenshot.BubbleScreenshotB02Test",
+      "test": "b02_p03_background_glass_on",
+      "message": "java.lang.AssertionError: Roborazzi: D:\\code\\AndroidStudioprojects\\MyApplication\\app\\src\\test\\snapshots\\BubbleScreenshotB02Test\\B02_p03-background-glass-on.png is changed.\nSee the compare image at D:\\code\\AndroidStudioprojects\\MyApplication\\app\\build\\outputs\\roborazzi\\B02_p03-background-glass-on_compare.png",
+      "is_pixel_difference": true
+    },
+    {
+      "suite": "com.example.myapplication.ui.screenshot.BubbleScreenshotB02Test",
+      "test": "b02_p03_no_background",
+      "message": "java.lang.AssertionError: Roborazzi: D:\\code\\AndroidStudioprojects\\MyApplication\\app\\src\\test\\snapshots\\BubbleScreenshotB02Test\\B02_p03-no-background.png is changed.\nSee the compare image at D:\\code\\AndroidStudioprojects\\MyApplication\\app\\build\\outputs\\roborazzi\\B02_p03-no-background_compare.png",
+      "is_pixel_difference": true
+    },
+    {
+      "suite": "com.example.myapplication.ui.screenshot.BubbleScreenshotB02Test",
+      "test": "b02_p03_background_glass_off",
+      "message": "java.lang.AssertionError: Roborazzi: D:\\code\\AndroidStudioprojects\\MyApplication\\app\\src\\test\\snapshots\\BubbleScreenshotB02Test\\B02_p03-background-glass-off.png is changed.\nSee the compare image at D:\\code\\AndroidStudioprojects\\MyApplication\\app\\build\\outputs\\roborazzi\\B02_p03-background-glass-off_compare.png",
+      "is_pixel_difference": true
+    },
+    {
+      "suite": "com.example.myapplication.ui.screenshot.BubbleScreenshotB03Test",
+      "test": "b03_tail_on",
+      "message": "java.lang.AssertionError: Roborazzi: D:\\code\\AndroidStudioprojects\\MyApplication\\app\\src\\test\\snapshots\\BubbleScreenshotB03Test\\B03_tail-on.png is changed.\nSee the compare image at D:\\code\\AndroidStudioprojects\\MyApplication\\app\\build\\outputs\\roborazzi\\B03_tail-on_compare.png",
+      "is_pixel_difference": true
+    },
+    {
+      "suite": "com.example.myapplication.ui.screenshot.BubbleScreenshotB03Test",
+      "test": "b03_padding_horizontal_max",
+      "message": "java.lang.AssertionError: Roborazzi: D:\\code\\AndroidStudioprojects\\MyApplication\\app\\src\\test\\snapshots\\BubbleScreenshotB03Test\\B03_padding-horizontal-max.png is changed.\nSee the compare image at D:\\code\\AndroidStudioprojects\\MyApplication\\app\\build\\outputs\\roborazzi\\B03_padding-horizontal-max_compare.png",
+      "is_pixel_difference": true
+    },
+    {
+      "suite": "com.example.myapplication.ui.screenshot.BubbleScreenshotB03Test",
+      "test": "b03_padding_horizontal_min",
+      "message": "java.lang.AssertionError: Roborazzi: D:\\code\\AndroidStudioprojects\\MyApplication\\app\\src\\test\\snapshots\\BubbleScreenshotB03Test\\B03_padding-horizontal-min.png is changed.\nSee the compare image at D:\\code\\AndroidStudioprojects\\MyApplication\\app\\build\\outputs\\roborazzi\\B03_padding-horizontal-min_compare.png",
+      "is_pixel_difference": true
+    },
+    {
+      "suite": "com.example.myapplication.ui.screenshot.BubbleScreenshotB03Test",
+      "test": "b03_padding_vertical_max",
+      "message": "java.lang.AssertionError: Roborazzi: D:\\code\\AndroidStudioprojects\\MyApplication\\app\\src\\test\\snapshots\\BubbleScreenshotB03Test\\B03_padding-vertical-max.png is changed.\nSee the compare image at D:\\code\\AndroidStudioprojects\\MyApplication\\app\\build\\outputs\\roborazzi\\B03_padding-vertical-max_compare.png",
+      "is_pixel_difference": true
+    },
+    {
+      "suite": "com.example.myapplication.ui.screenshot.BubbleScreenshotB03Test",
+      "test": "b03_padding_vertical_min",
+      "message": "java.lang.AssertionError: Roborazzi: D:\\code\\AndroidStudioprojects\\MyApplication\\app\\src\\test\\snapshots\\BubbleScreenshotB03Test\\B03_padding-vertical-min.png is changed.\nSee the compare image at D:\\code\\AndroidStudioprojects\\MyApplication\\app\\build\\outputs\\roborazzi\\B03_padding-vertical-min_compare.png",
+      "is_pixel_difference": true
+    },
+    {
+      "suite": "com.example.myapplication.ui.screenshot.BubbleScreenshotB03Test",
+      "test": "b03_radius_max",
+      "message": "java.lang.AssertionError: Roborazzi: D:\\code\\AndroidStudioprojects\\MyApplication\\app\\src\\test\\snapshots\\BubbleScreenshotB03Test\\B03_radius-max.png is changed.\nSee the compare image at D:\\code\\AndroidStudioprojects\\MyApplication\\app\\build\\outputs\\roborazzi\\B03_radius-max_compare.png",
+      "is_pixel_difference": true
+    },
+    {
+      "suite": "com.example.myapplication.ui.screenshot.BubbleScreenshotB03Test",
+      "test": "b03_radius_min",
+      "message": "java.lang.AssertionError: Roborazzi: D:\\code\\AndroidStudioprojects\\MyApplication\\app\\src\\test\\snapshots\\BubbleScreenshotB03Test\\B03_radius-min.png is changed.\nSee the compare image at D:\\code\\AndroidStudioprojects\\MyApplication\\app\\build\\outputs\\roborazzi\\B03_radius-min_compare.png",
+      "is_pixel_difference": true
+    },
+    {
+      "suite": "com.example.myapplication.ui.screenshot.BubbleScreenshotB03Test",
+      "test": "b03_width_max",
+      "message": "java.lang.AssertionError: Roborazzi: D:\\code\\AndroidStudioprojects\\MyApplication\\app\\src\\test\\snapshots\\BubbleScreenshotB03Test\\B03_width-max.png is changed.\nSee the compare image at D:\\code\\AndroidStudioprojects\\MyApplication\\app\\build\\outputs\\roborazzi\\B03_width-max_compare.png",
+      "is_pixel_difference": true
+    },
+    {
+      "suite": "com.example.myapplication.ui.screenshot.BubbleScreenshotB03Test",
+      "test": "b03_width_min",
+      "message": "java.lang.AssertionError: Roborazzi: D:\\code\\AndroidStudioprojects\\MyApplication\\app\\src\\test\\snapshots\\BubbleScreenshotB03Test\\B03_width-min.png is changed.\nSee the compare image at D:\\code\\AndroidStudioprojects\\MyApplication\\app\\build\\outputs\\roborazzi\\B03_width-min_compare.png",
+      "is_pixel_difference": true
+    },
+    {
+      "suite": "com.example.myapplication.ui.screenshot.BubbleScreenshotB03Test",
+      "test": "b03_tail_off",
+      "message": "java.lang.AssertionError: Roborazzi: D:\\code\\AndroidStudioprojects\\MyApplication\\app\\src\\test\\snapshots\\BubbleScreenshotB03Test\\B03_tail-off.png is changed.\nSee the compare image at D:\\code\\AndroidStudioprojects\\MyApplication\\app\\build\\outputs\\roborazzi\\B03_tail-off_compare.png",
+      "is_pixel_difference": true
+    },
+    {
+      "suite": "com.example.myapplication.ui.screenshot.BubbleScreenshotB04Test",
+      "test": "b04_offline_no_background",
+      "message": "java.lang.AssertionError: Roborazzi: D:\\code\\AndroidStudioprojects\\MyApplication\\app\\src\\test\\snapshots\\BubbleScreenshotB04Test\\B04_offline-no-background.png is changed.\nSee the compare image at D:\\code\\AndroidStudioprojects\\MyApplication\\app\\build\\outputs\\roborazzi\\B04_offline-no-background_compare.png",
+      "is_pixel_difference": true
+    },
+    {
+      "suite": "com.example.myapplication.ui.screenshot.BubbleScreenshotB04Test",
+      "test": "b04_online_glass_on",
+      "message": "java.lang.AssertionError: Roborazzi: D:\\code\\AndroidStudioprojects\\MyApplication\\app\\src\\test\\snapshots\\BubbleScreenshotB04Test\\B04_online-glass-on.png is changed.\nSee the compare image at D:\\code\\AndroidStudioprojects\\MyApplication\\app\\build\\outputs\\roborazzi\\B04_online-glass-on_compare.png",
+      "is_pixel_difference": true
+    },
+    {
+      "suite": "com.example.myapplication.ui.screenshot.BubbleScreenshotB04Test",
+      "test": "b04_online_glass_off",
+      "message": "java.lang.AssertionError: Roborazzi: D:\\code\\AndroidStudioprojects\\MyApplication\\app\\src\\test\\snapshots\\BubbleScreenshotB04Test\\B04_online-glass-off.png is changed.\nSee the compare image at D:\\code\\AndroidStudioprojects\\MyApplication\\app\\build\\outputs\\roborazzi\\B04_online-glass-off_compare.png",
+      "is_pixel_difference": true
+    },
+    {
+      "suite": "com.example.myapplication.ui.screenshot.BubbleScreenshotB04Test",
+      "test": "b04_offline_background",
+      "message": "java.lang.AssertionError: Roborazzi: D:\\code\\AndroidStudioprojects\\MyApplication\\app\\src\\test\\snapshots\\BubbleScreenshotB04Test\\B04_offline-background.png is changed.\nSee the compare image at D:\\code\\AndroidStudioprojects\\MyApplication\\app\\build\\outputs\\roborazzi\\B04_offline-background_compare.png",
+      "is_pixel_difference": true
+    },
+    {
+      "suite": "com.example.myapplication.ui.screenshot.MessageBubbleScreenshotTest",
+      "test": "roleplayCharacterBubble_glassWithLoadedBackdrop_rendersContentAndMatchesBaseline",
+      "message": "java.lang.AssertionError: Roborazzi: D:\\code\\AndroidStudioprojects\\MyApplication\\app\\src\\test\\snapshots\\MessageBubbleScreenshotTest\\roleplay-character-bubble-glass.png is changed.\nSee the compare image at D:\\code\\AndroidStudioprojects\\MyApplication\\app\\build\\outputs\\roborazzi\\roleplay-character-bubble-glass_compare.png",
+      "is_pixel_difference": true
+    },
+    {
+      "suite": "com.example.myapplication.ui.screenshot.PageScreenshotH01Test",
+      "test": "h01_p02_assistants_matcha_dark",
+      "message": "java.lang.AssertionError: Roborazzi: D:\\code\\AndroidStudioprojects\\MyApplication\\app\\src\\test\\snapshots\\PageScreenshotH01Test\\H01_p02-assistants-matcha-dark.png is changed.\nSee the compare image at D:\\code\\AndroidStudioprojects\\MyApplication\\app\\build\\outputs\\roborazzi\\H01_p02-assistants-matcha-dark_compare.png",
+      "is_pixel_difference": true
+    },
+    {
+      "suite": "com.example.myapplication.ui.screenshot.PageScreenshotH01Test",
+      "test": "h01_p02_assistants_vanilla_light",
+      "message": "java.lang.AssertionError: Roborazzi: D:\\code\\AndroidStudioprojects\\MyApplication\\app\\src\\test\\snapshots\\PageScreenshotH01Test\\H01_p02-assistants-vanilla-light.png is changed.\nSee the compare image at D:\\code\\AndroidStudioprojects\\MyApplication\\app\\build\\outputs\\roborazzi\\H01_p02-assistants-vanilla-light_compare.png",
+      "is_pixel_difference": true
+    },
+    {
+      "suite": "com.example.myapplication.ui.screenshot.PageScreenshotH01Test",
+      "test": "h01_p01_messages_vanilla_dark",
+      "message": "java.lang.AssertionError: Roborazzi: D:\\code\\AndroidStudioprojects\\MyApplication\\app\\src\\test\\snapshots\\PageScreenshotH01Test\\H01_p01-messages-vanilla-dark.png is changed.\nSee the compare image at D:\\code\\AndroidStudioprojects\\MyApplication\\app\\build\\outputs\\roborazzi\\H01_p01-messages-vanilla-dark_compare.png",
+      "is_pixel_difference": true
+    },
+    {
+      "suite": "com.example.myapplication.ui.screenshot.PageScreenshotH01Test",
+      "test": "h01_p03_online_play_matcha_dark",
+      "message": "java.lang.AssertionError: Roborazzi: D:\\code\\AndroidStudioprojects\\MyApplication\\app\\src\\test\\snapshots\\PageScreenshotH01Test\\H01_p03-online-roleplay-matcha-dark.png is changed.\nSee the compare image at D:\\code\\AndroidStudioprojects\\MyApplication\\app\\build\\outputs\\roborazzi\\H01_p03-online-roleplay-matcha-dark_compare.png",
+      "is_pixel_difference": true
+    },
+    {
+      "suite": "com.example.myapplication.ui.screenshot.PageScreenshotH01Test",
+      "test": "h01_p01_messages_matcha_light",
+      "message": "java.lang.AssertionError: Roborazzi: D:\\code\\AndroidStudioprojects\\MyApplication\\app\\src\\test\\snapshots\\PageScreenshotH01Test\\H01_p01-messages-matcha-light.png is changed.\nSee the compare image at D:\\code\\AndroidStudioprojects\\MyApplication\\app\\build\\outputs\\roborazzi\\H01_p01-messages-matcha-light_compare.png",
+      "is_pixel_difference": true
+    },
+    {
+      "suite": "com.example.myapplication.ui.screenshot.PageScreenshotH01Test",
+      "test": "h01_p01_messages_vanilla_light",
+      "message": "java.lang.AssertionError: Roborazzi: D:\\code\\AndroidStudioprojects\\MyApplication\\app\\src\\test\\snapshots\\PageScreenshotH01Test\\H01_p01-messages-vanilla-light.png is changed.\nSee the compare image at D:\\code\\AndroidStudioprojects\\MyApplication\\app\\build\\outputs\\roborazzi\\H01_p01-messages-vanilla-light_compare.png",
+      "is_pixel_difference": true
+    },
+    {
+      "suite": "com.example.myapplication.ui.screenshot.PageScreenshotH01Test",
+      "test": "h01_p01_messages_ocean_light",
+      "message": "java.lang.AssertionError: Roborazzi: D:\\code\\AndroidStudioprojects\\MyApplication\\app\\src\\test\\snapshots\\PageScreenshotH01Test\\H01_p01-messages-ocean-light.png is changed.\nSee the compare image at D:\\code\\AndroidStudioprojects\\MyApplication\\app\\build\\outputs\\roborazzi\\H01_p01-messages-ocean-light_compare.png",
+      "is_pixel_difference": true
+    },
+    {
+      "suite": "com.example.myapplication.ui.screenshot.PageScreenshotH01Test",
+      "test": "h01_p01_messages_ocean_dark",
+      "message": "java.lang.AssertionError: Roborazzi: D:\\code\\AndroidStudioprojects\\MyApplication\\app\\src\\test\\snapshots\\PageScreenshotH01Test\\H01_p01-messages-ocean-dark.png is changed.\nSee the compare image at D:\\code\\AndroidStudioprojects\\MyApplication\\app\\build\\outputs\\roborazzi\\H01_p01-messages-ocean-dark_compare.png",
+      "is_pixel_difference": true
+    },
+    {
+      "suite": "com.example.myapplication.ui.screenshot.PageScreenshotH01Test",
+      "test": "h01_p02_assistants_vanilla_dark",
+      "message": "java.lang.AssertionError: Roborazzi: D:\\code\\AndroidStudioprojects\\MyApplication\\app\\src\\test\\snapshots\\PageScreenshotH01Test\\H01_p02-assistants-vanilla-dark.png is changed.\nSee the compare image at D:\\code\\AndroidStudioprojects\\MyApplication\\app\\build\\outputs\\roborazzi\\H01_p02-assistants-vanilla-dark_compare.png",
+      "is_pixel_difference": true
+    },
+    {
+      "suite": "com.example.myapplication.ui.screenshot.PageScreenshotH01Test",
+      "test": "h01_p01_messages_matcha_dark",
+      "message": "java.lang.AssertionError: Roborazzi: D:\\code\\AndroidStudioprojects\\MyApplication\\app\\src\\test\\snapshots\\PageScreenshotH01Test\\H01_p01-messages-matcha-dark.png is changed.\nSee the compare image at D:\\code\\AndroidStudioprojects\\MyApplication\\app\\build\\outputs\\roborazzi\\H01_p01-messages-matcha-dark_compare.png",
+      "is_pixel_difference": true
+    },
+    {
+      "suite": "com.example.myapplication.ui.screenshot.PageScreenshotH01Test",
+      "test": "h01_p02_assistants_matcha_light",
+      "message": "java.lang.AssertionError: Roborazzi: D:\\code\\AndroidStudioprojects\\MyApplication\\app\\src\\test\\snapshots\\PageScreenshotH01Test\\H01_p02-assistants-matcha-light.png is changed.\nSee the compare image at D:\\code\\AndroidStudioprojects\\MyApplication\\app\\build\\outputs\\roborazzi\\H01_p02-assistants-matcha-light_compare.png",
+      "is_pixel_difference": true
+    },
+    {
+      "suite": "com.example.myapplication.ui.screenshot.PageScreenshotH01Test",
+      "test": "h01_p03_online_play_vanilla_dark",
+      "message": "java.lang.AssertionError: Roborazzi: D:\\code\\AndroidStudioprojects\\MyApplication\\app\\src\\test\\snapshots\\PageScreenshotH01Test\\H01_p03-online-roleplay-vanilla-dark.png is changed.\nSee the compare image at D:\\code\\AndroidStudioprojects\\MyApplication\\app\\build\\outputs\\roborazzi\\H01_p03-online-roleplay-vanilla-dark_compare.png",
+      "is_pixel_difference": true
+    },
+    {
+      "suite": "com.example.myapplication.ui.screenshot.PageScreenshotH01Test",
+      "test": "h01_p02_assistants_ocean_dark",
+      "message": "java.lang.AssertionError: Roborazzi: D:\\code\\AndroidStudioprojects\\MyApplication\\app\\src\\test\\snapshots\\PageScreenshotH01Test\\H01_p02-assistants-ocean-dark.png is changed.\nSee the compare image at D:\\code\\AndroidStudioprojects\\MyApplication\\app\\build\\outputs\\roborazzi\\H01_p02-assistants-ocean-dark_compare.png",
+      "is_pixel_difference": true
+    },
+    {
+      "suite": "com.example.myapplication.ui.screenshot.PageScreenshotH01Test",
+      "test": "h01_p03_online_play_matcha_light",
+      "message": "java.lang.AssertionError: Roborazzi: D:\\code\\AndroidStudioprojects\\MyApplication\\app\\src\\test\\snapshots\\PageScreenshotH01Test\\H01_p03-online-roleplay-matcha-light.png is changed.\nSee the compare image at D:\\code\\AndroidStudioprojects\\MyApplication\\app\\build\\outputs\\roborazzi\\H01_p03-online-roleplay-matcha-light_compare.png",
+      "is_pixel_difference": true
+    },
+    {
+      "suite": "com.example.myapplication.ui.screenshot.PageScreenshotH01Test",
+      "test": "h01_p02_assistants_ocean_light",
+      "message": "java.lang.AssertionError: Roborazzi: D:\\code\\AndroidStudioprojects\\MyApplication\\app\\src\\test\\snapshots\\PageScreenshotH01Test\\H01_p02-assistants-ocean-light.png is changed.\nSee the compare image at D:\\code\\AndroidStudioprojects\\MyApplication\\app\\build\\outputs\\roborazzi\\H01_p02-assistants-ocean-light_compare.png",
+      "is_pixel_difference": true
+    },
+    {
+      "suite": "com.example.myapplication.ui.screenshot.PageScreenshotH01Test",
+      "test": "h01_p03_online_play_vanilla_light",
+      "message": "java.lang.AssertionError: Roborazzi: D:\\code\\AndroidStudioprojects\\MyApplication\\app\\src\\test\\snapshots\\PageScreenshotH01Test\\H01_p03-online-roleplay-vanilla-light.png is changed.\nSee the compare image at D:\\code\\AndroidStudioprojects\\MyApplication\\app\\build\\outputs\\roborazzi\\H01_p03-online-roleplay-vanilla-light_compare.png",
+      "is_pixel_difference": true
+    },
+    {
+      "suite": "com.example.myapplication.ui.screenshot.PageScreenshotH01Test",
+      "test": "h01_p03_online_play_ocean_light",
+      "message": "java.lang.AssertionError: Roborazzi: D:\\code\\AndroidStudioprojects\\MyApplication\\app\\src\\test\\snapshots\\PageScreenshotH01Test\\H01_p03-online-roleplay-ocean-light.png is changed.\nSee the compare image at D:\\code\\AndroidStudioprojects\\MyApplication\\app\\build\\outputs\\roborazzi\\H01_p03-online-roleplay-ocean-light_compare.png",
+      "is_pixel_difference": true
+    },
+    {
+      "suite": "com.example.myapplication.ui.screenshot.PageScreenshotH01Test",
+      "test": "h01_p03_online_play_ocean_dark",
+      "message": "java.lang.AssertionError: Roborazzi: D:\\code\\AndroidStudioprojects\\MyApplication\\app\\src\\test\\snapshots\\PageScreenshotH01Test\\H01_p03-online-roleplay-ocean-dark.png is changed.\nSee the compare image at D:\\code\\AndroidStudioprojects\\MyApplication\\app\\build\\outputs\\roborazzi\\H01_p03-online-roleplay-ocean-dark_compare.png",
+      "is_pixel_difference": true
+    },
+    {
+      "suite": "com.example.myapplication.ui.screenshot.PageScreenshotH02Test",
+      "test": "h02_p03_online_empty_session",
+      "message": "java.lang.AssertionError: Roborazzi: D:\\code\\AndroidStudioprojects\\MyApplication\\app\\src\\test\\snapshots\\PageScreenshotH02Test\\H02_p03-online-empty-session.png is changed.\nSee the compare image at D:\\code\\AndroidStudioprojects\\MyApplication\\app\\build\\outputs\\roborazzi\\H02_p03-online-empty-session_compare.png",
+      "is_pixel_difference": true
+    },
+    {
+      "suite": "com.example.myapplication.ui.screenshot.PageScreenshotH02Test",
+      "test": "h02_p01_messages_empty_state",
+      "message": "java.lang.AssertionError: Roborazzi: D:\\code\\AndroidStudioprojects\\MyApplication\\app\\src\\test\\snapshots\\PageScreenshotH02Test\\H02_p01-messages-empty.png is changed.\nSee the compare image at D:\\code\\AndroidStudioprojects\\MyApplication\\app\\build\\outputs\\roborazzi\\H02_p01-messages-empty_compare.png",
+      "is_pixel_difference": true
+    },
+    {
+      "suite": "com.example.myapplication.ui.screenshot.PageScreenshotH02Test",
+      "test": "h02_p02_assistants_no_search_result",
+      "message": "java.lang.AssertionError: Roborazzi: D:\\code\\AndroidStudioprojects\\MyApplication\\app\\src\\test\\snapshots\\PageScreenshotH02Test\\H02_p02-assistants-no-search-result.png is changed.\nSee the compare image at D:\\code\\AndroidStudioprojects\\MyApplication\\app\\build\\outputs\\roborazzi\\H02_p02-assistants-no-search-result_compare.png",
+      "is_pixel_difference": true
+    },
+    {
+      "suite": "com.example.myapplication.ui.screenshot.PageScreenshotH03Test",
+      "test": "h03_p03_online_long_reply",
+      "message": "java.lang.AssertionError: Roborazzi: D:\\code\\AndroidStudioprojects\\MyApplication\\app\\src\\test\\snapshots\\PageScreenshotH03Test\\H03_p03-online-long-reply.png is changed.\nSee the compare image at D:\\code\\AndroidStudioprojects\\MyApplication\\app\\build\\outputs\\roborazzi\\H03_p03-online-long-reply_compare.png",
+      "is_pixel_difference": true
+    },
+    {
+      "suite": "com.example.myapplication.ui.screenshot.PageScreenshotH03Test",
+      "test": "h03_p03_online_streaming_frame",
+      "message": "java.lang.AssertionError: Roborazzi: D:\\code\\AndroidStudioprojects\\MyApplication\\app\\src\\test\\snapshots\\PageScreenshotH03Test\\H03_p03-online-streaming-frame.png is changed.\nSee the compare image at D:\\code\\AndroidStudioprojects\\MyApplication\\app\\build\\outputs\\roborazzi\\H03_p03-online-streaming-frame_compare.png",
+      "is_pixel_difference": true
+    },
+    {
+      "suite": "com.example.myapplication.ui.screenshot.PageScreenshotH03Test",
+      "test": "h03_p03_online_error_message",
+      "message": "java.lang.AssertionError: Roborazzi: D:\\code\\AndroidStudioprojects\\MyApplication\\app\\src\\test\\snapshots\\PageScreenshotH03Test\\H03_p03-online-error-message.png is changed.\nSee the compare image at D:\\code\\AndroidStudioprojects\\MyApplication\\app\\build\\outputs\\roborazzi\\H03_p03-online-error-message_compare.png",
+      "is_pixel_difference": true
+    },
+    {
+      "suite": "com.example.myapplication.ui.screenshot.PageScreenshotH04Test",
+      "test": "h04_p02_assistants_narrow_light",
+      "message": "java.lang.AssertionError: Roborazzi: D:\\code\\AndroidStudioprojects\\MyApplication\\app\\src\\test\\snapshots\\PageScreenshotH04Test\\H04_p02-assistants-narrow-light.png is changed.\nSee the compare image at D:\\code\\AndroidStudioprojects\\MyApplication\\app\\build\\outputs\\roborazzi\\H04_p02-assistants-narrow-light_compare.png",
+      "is_pixel_difference": true
+    },
+    {
+      "suite": "com.example.myapplication.ui.screenshot.PageScreenshotH04Test",
+      "test": "h04_p01_messages_narrow_dark",
+      "message": "java.lang.AssertionError: Roborazzi: D:\\code\\AndroidStudioprojects\\MyApplication\\app\\src\\test\\snapshots\\PageScreenshotH04Test\\H04_p01-messages-narrow-dark.png is changed.\nSee the compare image at D:\\code\\AndroidStudioprojects\\MyApplication\\app\\build\\outputs\\roborazzi\\H04_p01-messages-narrow-dark_compare.png",
+      "is_pixel_difference": true
+    },
+    {
+      "suite": "com.example.myapplication.ui.screenshot.PageScreenshotH04Test",
+      "test": "h04_p03_online_narrow_light",
+      "message": "java.lang.AssertionError: Roborazzi: D:\\code\\AndroidStudioprojects\\MyApplication\\app\\src\\test\\snapshots\\PageScreenshotH04Test\\H04_p03-online-narrow-light.png is changed.\nSee the compare image at D:\\code\\AndroidStudioprojects\\MyApplication\\app\\build\\outputs\\roborazzi\\H04_p03-online-narrow-light_compare.png",
+      "is_pixel_difference": true
+    },
+    {
+      "suite": "com.example.myapplication.ui.screenshot.PageScreenshotH04Test",
+      "test": "h04_p03_online_narrow_dark",
+      "message": "java.lang.AssertionError: Roborazzi: D:\\code\\AndroidStudioprojects\\MyApplication\\app\\src\\test\\snapshots\\PageScreenshotH04Test\\H04_p03-online-narrow-dark.png is changed.\nSee the compare image at D:\\code\\AndroidStudioprojects\\MyApplication\\app\\build\\outputs\\roborazzi\\H04_p03-online-narrow-dark_compare.png",
+      "is_pixel_difference": true
+    },
+    {
+      "suite": "com.example.myapplication.ui.screenshot.PageScreenshotH04Test",
+      "test": "h04_p02_assistants_narrow_dark",
+      "message": "java.lang.AssertionError: Roborazzi: D:\\code\\AndroidStudioprojects\\MyApplication\\app\\src\\test\\snapshots\\PageScreenshotH04Test\\H04_p02-assistants-narrow-dark.png is changed.\nSee the compare image at D:\\code\\AndroidStudioprojects\\MyApplication\\app\\build\\outputs\\roborazzi\\H04_p02-assistants-narrow-dark_compare.png",
+      "is_pixel_difference": true
+    },
+    {
+      "suite": "com.example.myapplication.ui.screenshot.PageScreenshotH04Test",
+      "test": "h04_p01_messages_narrow_light",
+      "message": "java.lang.AssertionError: Roborazzi: D:\\code\\AndroidStudioprojects\\MyApplication\\app\\src\\test\\snapshots\\PageScreenshotH04Test\\H04_p01-messages-narrow-light.png is changed.\nSee the compare image at D:\\code\\AndroidStudioprojects\\MyApplication\\app\\build\\outputs\\roborazzi\\H04_p01-messages-narrow-light_compare.png",
+      "is_pixel_difference": true
+    },
+    {
+      "suite": "com.example.myapplication.ui.screenshot.SkinScreenshotB01Test",
+      "test": "b01_noir_bubbles_light",
+      "message": "java.lang.AssertionError: Roborazzi: D:\\code\\AndroidStudioprojects\\MyApplication\\app\\src\\test\\snapshots\\SkinScreenshotB01Test\\B01_noir-bubbles-light.png is changed.\nSee the compare image at D:\\code\\AndroidStudioprojects\\MyApplication\\app\\build\\outputs\\roborazzi\\B01_noir-bubbles-light_compare.png",
+      "is_pixel_difference": true
+    },
+    {
+      "suite": "com.example.myapplication.ui.screenshot.SkinScreenshotB01Test",
+      "test": "b01_y2k_bubbles_dark",
+      "message": "java.lang.AssertionError: Roborazzi: D:\\code\\AndroidStudioprojects\\MyApplication\\app\\src\\test\\snapshots\\SkinScreenshotB01Test\\B01_y2k-bubbles-dark.png is changed.\nSee the compare image at D:\\code\\AndroidStudioprojects\\MyApplication\\app\\build\\outputs\\roborazzi\\B01_y2k-bubbles-dark_compare.png",
+      "is_pixel_difference": true
+    },
+    {
+      "suite": "com.example.myapplication.ui.screenshot.SkinScreenshotB01Test",
+      "test": "b01_wechat_bubbles_dark",
+      "message": "java.lang.AssertionError: Roborazzi: D:\\code\\AndroidStudioprojects\\MyApplication\\app\\src\\test\\snapshots\\SkinScreenshotB01Test\\B01_wechat-bubbles-dark.png is changed.\nSee the compare image at D:\\code\\AndroidStudioprojects\\MyApplication\\app\\build\\outputs\\roborazzi\\B01_wechat-bubbles-dark_compare.png",
+      "is_pixel_difference": true
+    },
+    {
+      "suite": "com.example.myapplication.ui.screenshot.SkinScreenshotB01Test",
+      "test": "b01_liquidglass_bubbles_light",
+      "message": "java.lang.AssertionError: Roborazzi: D:\\code\\AndroidStudioprojects\\MyApplication\\app\\src\\test\\snapshots\\SkinScreenshotB01Test\\B01_liquidglass-bubbles-light.png is changed.\nSee the compare image at D:\\code\\AndroidStudioprojects\\MyApplication\\app\\build\\outputs\\roborazzi\\B01_liquidglass-bubbles-light_compare.png",
+      "is_pixel_difference": true
+    },
+    {
+      "suite": "com.example.myapplication.ui.screenshot.SkinScreenshotB01Test",
+      "test": "b01_kakao_bubbles_light",
+      "message": "java.lang.AssertionError: Roborazzi: D:\\code\\AndroidStudioprojects\\MyApplication\\app\\src\\test\\snapshots\\SkinScreenshotB01Test\\B01_kakao-bubbles-light.png is changed.\nSee the compare image at D:\\code\\AndroidStudioprojects\\MyApplication\\app\\build\\outputs\\roborazzi\\B01_kakao-bubbles-light_compare.png",
+      "is_pixel_difference": true
+    },
+    {
+      "suite": "com.example.myapplication.ui.screenshot.SkinScreenshotB01Test",
+      "test": "b01_wechat_bubbles_light",
+      "message": "java.lang.AssertionError: Roborazzi: D:\\code\\AndroidStudioprojects\\MyApplication\\app\\src\\test\\snapshots\\SkinScreenshotB01Test\\B01_wechat-bubbles-light.png is changed.\nSee the compare image at D:\\code\\AndroidStudioprojects\\MyApplication\\app\\build\\outputs\\roborazzi\\B01_wechat-bubbles-light_compare.png",
+      "is_pixel_difference": true
+    },
+    {
+      "suite": "com.example.myapplication.ui.screenshot.SkinScreenshotB01Test",
+      "test": "b01_noir_bubbles_dark",
+      "message": "java.lang.AssertionError: Roborazzi: D:\\code\\AndroidStudioprojects\\MyApplication\\app\\src\\test\\snapshots\\SkinScreenshotB01Test\\B01_noir-bubbles-dark.png is changed.\nSee the compare image at D:\\code\\AndroidStudioprojects\\MyApplication\\app\\build\\outputs\\roborazzi\\B01_noir-bubbles-dark_compare.png",
+      "is_pixel_difference": true
+    },
+    {
+      "suite": "com.example.myapplication.ui.screenshot.SkinScreenshotB01Test",
+      "test": "b01_imessage_bubbles_light",
+      "message": "java.lang.AssertionError: Roborazzi: D:\\code\\AndroidStudioprojects\\MyApplication\\app\\src\\test\\snapshots\\SkinScreenshotB01Test\\B01_imessage-bubbles-light.png is changed.\nSee the compare image at D:\\code\\AndroidStudioprojects\\MyApplication\\app\\build\\outputs\\roborazzi\\B01_imessage-bubbles-light_compare.png",
+      "is_pixel_difference": true
+    },
+    {
+      "suite": "com.example.myapplication.ui.screenshot.SkinScreenshotB01Test",
+      "test": "b01_kakao_bubbles_dark",
+      "message": "java.lang.AssertionError: Roborazzi: D:\\code\\AndroidStudioprojects\\MyApplication\\app\\src\\test\\snapshots\\SkinScreenshotB01Test\\B01_kakao-bubbles-dark.png is changed.\nSee the compare image at D:\\code\\AndroidStudioprojects\\MyApplication\\app\\build\\outputs\\roborazzi\\B01_kakao-bubbles-dark_compare.png",
+      "is_pixel_difference": true
+    },
+    {
+      "suite": "com.example.myapplication.ui.screenshot.SkinScreenshotB01Test",
+      "test": "b01_telegram_bubbles_dark",
+      "message": "java.lang.AssertionError: Roborazzi: D:\\code\\AndroidStudioprojects\\MyApplication\\app\\src\\test\\snapshots\\SkinScreenshotB01Test\\B01_telegram-bubbles-dark.png is changed.\nSee the compare image at D:\\code\\AndroidStudioprojects\\MyApplication\\app\\build\\outputs\\roborazzi\\B01_telegram-bubbles-dark_compare.png",
+      "is_pixel_difference": true
+    },
+    {
+      "suite": "com.example.myapplication.ui.screenshot.SkinScreenshotB01Test",
+      "test": "b01_narra_bubbles_dark",
+      "message": "java.lang.AssertionError: Roborazzi: D:\\code\\AndroidStudioprojects\\MyApplication\\app\\src\\test\\snapshots\\SkinScreenshotB01Test\\B01_narra-bubbles-dark.png is changed.\nSee the compare image at D:\\code\\AndroidStudioprojects\\MyApplication\\app\\build\\outputs\\roborazzi\\B01_narra-bubbles-dark_compare.png",
+      "is_pixel_difference": true
+    },
+    {
+      "suite": "com.example.myapplication.ui.screenshot.SkinScreenshotB01Test",
+      "test": "b01_polkadot_bubbles_light",
+      "message": "java.lang.AssertionError: Roborazzi: D:\\code\\AndroidStudioprojects\\MyApplication\\app\\src\\test\\snapshots\\SkinScreenshotB01Test\\B01_polkadot-bubbles-light.png is changed.\nSee the compare image at D:\\code\\AndroidStudioprojects\\MyApplication\\app\\build\\outputs\\roborazzi\\B01_polkadot-bubbles-light_compare.png",
+      "is_pixel_difference": true
+    },
+    {
+      "suite": "com.example.myapplication.ui.screenshot.SkinScreenshotB01Test",
+      "test": "b01_telegram_bubbles_light",
+      "message": "java.lang.AssertionError: Roborazzi: D:\\code\\AndroidStudioprojects\\MyApplication\\app\\src\\test\\snapshots\\SkinScreenshotB01Test\\B01_telegram-bubbles-light.png is changed.\nSee the compare image at D:\\code\\AndroidStudioprojects\\MyApplication\\app\\build\\outputs\\roborazzi\\B01_telegram-bubbles-light_compare.png",
+      "is_pixel_difference": true
+    },
+    {
+      "suite": "com.example.myapplication.ui.screenshot.SkinScreenshotB01Test",
+      "test": "b01_rose_bubbles_light",
+      "message": "java.lang.AssertionError: Roborazzi: D:\\code\\AndroidStudioprojects\\MyApplication\\app\\src\\test\\snapshots\\SkinScreenshotB01Test\\B01_rose-bubbles-light.png is changed.\nSee the compare image at D:\\code\\AndroidStudioprojects\\MyApplication\\app\\build\\outputs\\roborazzi\\B01_rose-bubbles-light_compare.png",
+      "is_pixel_difference": true
+    },
+    {
+      "suite": "com.example.myapplication.ui.screenshot.SkinScreenshotB01Test",
+      "test": "b01_rose_bubbles_dark",
+      "message": "java.lang.AssertionError: Roborazzi: D:\\code\\AndroidStudioprojects\\MyApplication\\app\\src\\test\\snapshots\\SkinScreenshotB01Test\\B01_rose-bubbles-dark.png is changed.\nSee the compare image at D:\\code\\AndroidStudioprojects\\MyApplication\\app\\build\\outputs\\roborazzi\\B01_rose-bubbles-dark_compare.png",
+      "is_pixel_difference": true
+    },
+    {
+      "suite": "com.example.myapplication.ui.screenshot.SkinScreenshotB01Test",
+      "test": "b01_polkadot_bubbles_dark",
+      "message": "java.lang.AssertionError: Roborazzi: D:\\code\\AndroidStudioprojects\\MyApplication\\app\\src\\test\\snapshots\\SkinScreenshotB01Test\\B01_polkadot-bubbles-dark.png is changed.\nSee the compare image at D:\\code\\AndroidStudioprojects\\MyApplication\\app\\build\\outputs\\roborazzi\\B01_polkadot-bubbles-dark_compare.png",
+      "is_pixel_difference": true
+    },
+    {
+      "suite": "com.example.myapplication.ui.screenshot.SkinScreenshotB01Test",
+      "test": "b01_qq_bubbles_light",
+      "message": "java.lang.AssertionError: Roborazzi: D:\\code\\AndroidStudioprojects\\MyApplication\\app\\src\\test\\snapshots\\SkinScreenshotB01Test\\B01_qq-bubbles-light.png is changed.\nSee the compare image at D:\\code\\AndroidStudioprojects\\MyApplication\\app\\build\\outputs\\roborazzi\\B01_qq-bubbles-light_compare.png",
+      "is_pixel_difference": true
+    },
+    {
+      "suite": "com.example.myapplication.ui.screenshot.SkinScreenshotB01Test",
+      "test": "b01_retro_bubbles_light",
+      "message": "java.lang.AssertionError: Roborazzi: D:\\code\\AndroidStudioprojects\\MyApplication\\app\\src\\test\\snapshots\\SkinScreenshotB01Test\\B01_retro-bubbles-light.png is changed.\nSee the compare image at D:\\code\\AndroidStudioprojects\\MyApplication\\app\\build\\outputs\\roborazzi\\B01_retro-bubbles-light_compare.png",
+      "is_pixel_difference": true
+    },
+    {
+      "suite": "com.example.myapplication.ui.screenshot.SkinScreenshotB01Test",
+      "test": "b01_liquidglass_bubbles_dark",
+      "message": "java.lang.AssertionError: Roborazzi: D:\\code\\AndroidStudioprojects\\MyApplication\\app\\src\\test\\snapshots\\SkinScreenshotB01Test\\B01_liquidglass-bubbles-dark.png is changed.\nSee the compare image at D:\\code\\AndroidStudioprojects\\MyApplication\\app\\build\\outputs\\roborazzi\\B01_liquidglass-bubbles-dark_compare.png",
+      "is_pixel_difference": true
+    },
+    {
+      "suite": "com.example.myapplication.ui.screenshot.SkinScreenshotB01Test",
+      "test": "b01_retro_bubbles_dark",
+      "message": "java.lang.AssertionError: Roborazzi: D:\\code\\AndroidStudioprojects\\MyApplication\\app\\src\\test\\snapshots\\SkinScreenshotB01Test\\B01_retro-bubbles-dark.png is changed.\nSee the compare image at D:\\code\\AndroidStudioprojects\\MyApplication\\app\\build\\outputs\\roborazzi\\B01_retro-bubbles-dark_compare.png",
+      "is_pixel_difference": true
+    },
+    {
+      "suite": "com.example.myapplication.ui.screenshot.SkinScreenshotB01Test",
+      "test": "b01_pixel_bubbles_dark",
+      "message": "java.lang.AssertionError: Roborazzi: D:\\code\\AndroidStudioprojects\\MyApplication\\app\\src\\test\\snapshots\\SkinScreenshotB01Test\\B01_pixel-bubbles-dark.png is changed.\nSee the compare image at D:\\code\\AndroidStudioprojects\\MyApplication\\app\\build\\outputs\\roborazzi\\B01_pixel-bubbles-dark_compare.png",
+      "is_pixel_difference": true
+    },
+    {
+      "suite": "com.example.myapplication.ui.screenshot.SkinScreenshotB01Test",
+      "test": "b01_qq_bubbles_dark",
+      "message": "java.lang.AssertionError: Roborazzi: D:\\code\\AndroidStudioprojects\\MyApplication\\app\\src\\test\\snapshots\\SkinScreenshotB01Test\\B01_qq-bubbles-dark.png is changed.\nSee the compare image at D:\\code\\AndroidStudioprojects\\MyApplication\\app\\build\\outputs\\roborazzi\\B01_qq-bubbles-dark_compare.png",
+      "is_pixel_difference": true
+    },
+    {
+      "suite": "com.example.myapplication.ui.screenshot.SkinScreenshotB01Test",
+      "test": "b01_narra_bubbles_light",
+      "message": "java.lang.AssertionError: Roborazzi: D:\\code\\AndroidStudioprojects\\MyApplication\\app\\src\\test\\snapshots\\SkinScreenshotB01Test\\B01_narra-bubbles-light.png is changed.\nSee the compare image at D:\\code\\AndroidStudioprojects\\MyApplication\\app\\build\\outputs\\roborazzi\\B01_narra-bubbles-light_compare.png",
+      "is_pixel_difference": true
+    },
+    {
+      "suite": "com.example.myapplication.ui.screenshot.SkinScreenshotB01Test",
+      "test": "b01_y2k_bubbles_light",
+      "message": "java.lang.AssertionError: Roborazzi: D:\\code\\AndroidStudioprojects\\MyApplication\\app\\src\\test\\snapshots\\SkinScreenshotB01Test\\B01_y2k-bubbles-light.png is changed.\nSee the compare image at D:\\code\\AndroidStudioprojects\\MyApplication\\app\\build\\outputs\\roborazzi\\B01_y2k-bubbles-light_compare.png",
+      "is_pixel_difference": true
+    },
+    {
+      "suite": "com.example.myapplication.ui.screenshot.SkinScreenshotB01Test",
+      "test": "b01_pixel_bubbles_light",
+      "message": "java.lang.AssertionError: Roborazzi: D:\\code\\AndroidStudioprojects\\MyApplication\\app\\src\\test\\snapshots\\SkinScreenshotB01Test\\B01_pixel-bubbles-light.png is changed.\nSee the compare image at D:\\code\\AndroidStudioprojects\\MyApplication\\app\\build\\outputs\\roborazzi\\B01_pixel-bubbles-light_compare.png",
+      "is_pixel_difference": true
+    },
+    {
+      "suite": "com.example.myapplication.ui.screenshot.SkinScreenshotB01Test",
+      "test": "b01_imessage_bubbles_dark",
+      "message": "java.lang.AssertionError: Roborazzi: D:\\code\\AndroidStudioprojects\\MyApplication\\app\\src\\test\\snapshots\\SkinScreenshotB01Test\\B01_imessage-bubbles-dark.png is changed.\nSee the compare image at D:\\code\\AndroidStudioprojects\\MyApplication\\app\\build\\outputs\\roborazzi\\B01_imessage-bubbles-dark_compare.png",
+      "is_pixel_difference": true
+    }
+  ],
+  "baseline_hashes_unchanged": true,
+  "pixel_unchanged_baselines": [
+    "MessageBubbleScreenshotTest/chat-user-message-matcha-light.png",
+    "ThemeScreenshotC01Test/C01_dynamic-dark.png",
+    "ThemeScreenshotC01Test/C01_dynamic-light.png"
+  ]
+}
