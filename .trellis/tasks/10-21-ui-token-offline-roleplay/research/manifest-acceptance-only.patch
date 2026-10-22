@@ -1,0 +1,16 @@
+diff --git a/app/src/test/snapshots/manifest.md b/app/src/test/snapshots/manifest.md
+--- a/app/src/test/snapshots/manifest.md
++++ b/app/src/test/snapshots/manifest.md
+@@ -0,0 +1,12 @@
++# v2.3 P04 线下扮演与会话阅读基准接纳（2026-10-22）
++
++> **当前状态：用户已接纳P04的14张新增候选，Windows宿主真实verify 93/93通过；新视觉远端CI待复跑。**
++
++- 用户在14张前后对照与接纳问题后回复“可以，还有任务吗？”，批准接纳本批候选。
++- 仅复制已审阅actual新增14张E04基准，旧78张PNG保持原SHA-256；现有90个矩阵用例及2张冒烟图，共92张PNG。没有record、删除用例或放宽零像素阈值。
++- 接纳后运行 `.\gradlew.bat :app:verifyRoborazziDebug --tests "com.example.myapplication.ui.screenshot.*" --console=plain`：退出0，32秒，93项实际检查全部通过，0失败 / 错误 / 跳过；92张PNG哈希复验前后一致。
++- 本批修复线下大字体组合布局、立绘状态重叠、阅读长文关闭入口和实际承载面低对比；13皮肤、用户几何 / 尾角 / 玻璃开关、原保存 / 发送 / 滚动契约保留。
++- 旧78张及本批14张的远端新视觉CI、D01真机 / IME / 系统栏 / 实际材质与物理性能结果仍待取得，本机通过不代表设备或性能通过。
++
++以下为已接纳试点及更早基准的历史记录，原有并发文字保持；当前本机状态以上节为准。
++

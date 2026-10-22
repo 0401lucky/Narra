@@ -1,0 +1,42 @@
+# v2.3 设计令牌与无障碍扩面：执行编排
+
+## 本轮停止点
+
+2026-10-21 用户在最终摘要后回复“可以”，已批准四批方案并先启动 P04。父任务只协调，保持 `planning`；本轮启动第一个交付子任务，其他批次等待前序独立验收。新视觉接纳和具体提交清单仍分别审阅。
+
+## 规划交付
+
+- [x] 试点两批提交、归档和 journal 已完成；引用已校验。
+- [x] 创建父任务及 P04/P05/P10/P11 四个 planning 子任务；其他历史任务和后续队列不接手。
+- [x] 汇总三个研究文件、公共截图研究，完成 PRD 收敛与每批可独立验收规划（14 / 18 / 16 / 32 张候选，共 80 张）。
+- [x] 校验全部 JSONL 与 Markdown 链接、子任务关系和产品工作区未变；独立规划审阅无阻断，[最终摘要](planning-summary.md) 随本轮答复交用户审阅。
+- [x] 用户在最终摘要后回复“可以”，批准四批方案，先进入 P04 实施。
+
+## 获批后的批次流程
+
+1. 主会话重新核对工作区和最新任务文档，`task.py start` 启动批次 1 子任务，不启动父任务；按 design 的顺序逐个推进。
+2. 派发 `trellis-implement`，提示首行为 `Active task: <当前子任务路径>`；优先注入 JSONL，缺少原生注入时代理按 JSONL → PRD → design → implement 顺序自行加载。明确仅拥有本批代码 / 测试范围，不回滚他人修改，也不派实现 / 检查孙代理。
+3. 冻结当前已接纳 PNG 哈希，搭建真实页面 / 窗口 fixture，先验证新增用例捕获，再保存迁移前证据。产品迁移、行为 / 守卫测试、候选整理按子任务检查点串行。
+4. 派发 `trellis-check` 检查同一子任务范围，可定向自修；不得自动接纳基准、record 或弱化守卫。主会话整理前后 / 差异与设备缺口，人工视觉确认后接纳对应图。
+5. 运行最终截图 verify 与受影响检查，更新必要 spec / 版本记录；该批提交清单再走 Phase 3.4。扩面规划批准不自动批准未来具体提交清单。按 finish-work 归档已完成子任务、记录工作提交，修正引用，再开始下一批。
+6. 四批完成后父任务做跨批验收与剩余队列更新；只有四个子任务及父验收满足后，才收尾父任务。真机 / CI 缺测状态必须保留。
+
+## 验证策略
+
+本轮只有文档和任务元数据，运行 `task.py validate`、路径 / 引用 / 结构检查和定向 `git diff --check`，不重复试点的 JVM、Lint、构建或截图全套。
+
+实施阶段每批先运行对应行为测试与源码守卫。现有共享消费者的 JVM 测试按改动选择，不添加常量镜像测试；改动生产 Kotlin 后按规范执行 Lint、dev 构建，设备测试改动执行 AndroidTest 编译。新增页面基准接纳后运行整个截图包，确保旧基准和已完成批次都通过；完整 JVM 集成在共享修改完成、接纳门禁齐备时运行一次，新失败 / 代码变化才重跑。
+
+```powershell
+# 示例：实际子任务路径以本轮活动子任务为准
+python .trellis/scripts/task.py validate .trellis/tasks/10-21-ui-token-offline-roleplay
+.\gradlew.bat :app:testDebugUnitTest --tests "com.example.myapplication.ui.theme.UiTokenSourceGuardTest" --console=plain
+.\gradlew.bat :app:compileDebugAndroidTestKotlin lintDebug assembleDebug --console=plain
+.\gradlew.bat :app:verifyRoborazziDebug --tests "com.example.myapplication.ui.screenshot.*" --console=plain
+```
+
+命令结果记录真实测试数、退出码、是否实际执行及基准前后哈希；UP-TO-DATE 不冒充实际比较，缺图 / 预期差异失败与行为失败分开。等待单次不超过 60 秒，继续读取已有进程而非因未返回重新启动。
+
+## 统一禁区
+
+不使用 `git add .`、amend、push，不改发布版本 / `dev.json`，不发包。共享文件单批独占，截图接纳需另行人工确认；不恢复旧任务、不把其他窗口的 manifest 段落或用户文件纳入提交。归档时先检查脚本暂存范围，当前脚本需要 `--no-commit` 后精确暂存目标任务搬移与引用，不能暂存整个 archive。

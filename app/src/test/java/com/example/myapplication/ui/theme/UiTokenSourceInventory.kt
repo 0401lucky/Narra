@@ -21,6 +21,15 @@ internal object UiTokenSourceInventory {
         Scope("screen/immersive/ImmersivePhoneShell.kt", setOf("ImmersivePhoneShell", "ImmersiveBottomBar", "ChatSummaryRow")),
         Scope("screen/settings/AssistantListScreen.kt", setOf("AssistantListScreen", "AssistantCardMinimal")),
         Scope("screen/roleplay/RoleplayOnlinePhoneContent.kt", setOf("RoleplayOnlinePhoneContent", "rememberOnlinePhoneColors")),
+        Scope("screen/roleplay/RoleplayScreen.kt", setOf("RoleplayScreen")),
+        Scope("screen/roleplay/RoleplayScreenCallbacks.kt", setOf("RoleplayScreenCallbacks")),
+        Scope("screen/roleplay/RoleplayReadingMode.kt", setOf("RoleplayReadingMode", "ReadingModeColors", "resolveReadingModeColors")),
+        Scope("component/roleplay/RoleplayDialoguePanel.kt", setOf("RoleplayDialoguePanel")),
+        Scope("component/roleplay/RoleplayPortraitLayer.kt", setOf("RoleplayPortraitLayer", "PortraitCard")),
+        Scope("screen/roleplay/RoleplayScreenContent.kt",
+            scannedDeclarations = setOf("RoleplaySceneContent", "PendingMemoryProposalCard", "RoleplaySceneTopBar",
+                "RoleplayChromeHandle", "RoleplayPresenceStrip", "resolveMoodAccentColor"),
+            legacyDeclarations = setOf("RoleplaySpecialPlayOverlays", "RoleplayAssistantMismatchDialog")),
         Scope(
             "component/roleplay/ImmersiveGlass.kt",
             scannedDeclarations = setOf(
@@ -75,6 +84,20 @@ internal object UiTokenSourceInventory {
         Exception("component/roleplay/ImmersiveGlass.kt", "roleplayDialogueReadingSurfaces", Rule.COLOR, "Color.White", "局部全白背景的最差对比候选端点"),
         Exception("component/roleplay/ImmersiveGlass.kt", "roleplayDialogueReadingSurfaces", Rule.COLOR, "Color.Transparent", "复算真实 sheen 的透明端点"),
         Exception("screen/settings/SettingsComponents.kt", "SettingsTopBar", Rule.COLOR, "Color.Transparent", "共享顶栏保留父级阅读表面的透明背景"),
+        Exception("screen/roleplay/RoleplayScreenContent.kt", "RoleplaySceneContent", Rule.COLOR, "Color.Transparent", "实际场景scrim的透明渐变端点", 3),
+        Exception("screen/roleplay/RoleplayScreenContent.kt", "resolveMoodAccentColor", Rule.COLOR, "Color(0xFFD7E7FF)", "平稳氛围装饰与既有场景遮罩色，不用作阅读文字"),
+        Exception("screen/roleplay/RoleplayScreenContent.kt", "resolveMoodAccentColor", Rule.COLOR, "Color(0xFFF8C97E)", "温暖氛围装饰与既有场景遮罩色"),
+        Exception("screen/roleplay/RoleplayScreenContent.kt", "resolveMoodAccentColor", Rule.COLOR, "Color(0xFF86B2FF)", "紧张氛围装饰与既有场景遮罩色"),
+        Exception("screen/roleplay/RoleplayScreenContent.kt", "resolveMoodAccentColor", Rule.COLOR, "Color(0xFFFF8A8A)", "激烈氛围装饰与既有场景遮罩色"),
+        Exception("screen/roleplay/RoleplayScreenContent.kt", "resolveMoodAccentColor", Rule.COLOR, "Color(0xFFC7BEEB)", "低落氛围装饰与既有场景遮罩色"),
+        Exception("component/roleplay/RoleplayPortraitLayer.kt", "RoleplayPortraitLayer", Rule.COLOR, "Color.Unspecified", "未传立绘强调色时沿用Material容器角色", 4),
+        Exception("component/roleplay/RoleplayPortraitLayer.kt", "PortraitCard", Rule.COLOR, "Color.Transparent", "立绘图像承载层与渐变透明端点", 2),
+        Exception("screen/roleplay/RoleplayReadingMode.kt", "RoleplayReadingMode", Rule.COLOR, "Color.Black", "阅读页实际背景scrim三档透明度", 3),
+        Exception("screen/roleplay/RoleplayReadingMode.kt", "DialogueReadingBlock", Rule.COLOR, "Color.Transparent", "情绪标签继承已验证的对白阅读面"),
+        Exception("screen/roleplay/RoleplayReadingMode.kt", "LongformReadingBlock", Rule.COLOR, "Color.Transparent", "长文卡沿用独立阅读玻璃材质"),
+        Exception("screen/roleplay/RoleplayReadingMode.kt", "resolveReadingModeColors", Rule.COLOR, "Color.Transparent", "复算实际玻璃sheen透明端点"),
+        Exception("screen/roleplay/RoleplayReadingMode.kt", "resolveReadingModeColors", Rule.COLOR, "Color.Black", "复算实际正文加深与背景最暗端点", 2),
+        Exception("screen/roleplay/RoleplayReadingMode.kt", "resolveReadingModeColors", Rule.COLOR, "Color.White", "复算背景最亮端点"),
     ) + colors("theme/ChatAppTheme.kt", "resolveAppColorScheme", """
         FF326B58 FF79552D FF326692 FF141617 FFF5F6F7 FFE6E8E9 FF212628 FF191C1D
         FFE6E8E9 FF212628 FF303638 FFE9EDEF FFB9C1C4 FF566267 FF101213 FF1D2123
@@ -113,28 +136,7 @@ internal object UiTokenSourceInventory {
         FFF5F8FF FFCFE0FF FF4E9DFF FFCCE4FF FF122641 FF122641 FF6B7C98
         FFF2F2F7 FFD7D7DF FF0A84FF FF0A84FF FFE5E5EA FF111111 FF6E6E73
         FFEAF0F7 FF7CA7D9 FF1E314A FF1E314A FF62748A
-    """, "用户明确选择的 12 套品牌皮肤调色；Narra 不在固定品牌表内，阅读对比另由行为测试验证") + legacyLayout(
-        "RoleplaySuggestionSection", """
-            RoundedCornerShape(16.dp)
-            padding(horizontal = 14.dp, vertical = 10.dp)
-            RoundedCornerShape(18.dp)
-            padding(horizontal = 12.dp, vertical = 10.dp)
-            spacedBy(8.dp)
-            spacedBy(8.dp)
-            spacedBy(6.dp)
-            RoundedCornerShape(14.dp)
-            padding(horizontal = 12.dp, vertical = 10.dp)
-            spacedBy(4.dp)
-            spacedBy(8.dp)
-        """,
-    ) + legacyLayout(
-        "EmptyDialogueState", """
-            padding(horizontal = 32.dp, vertical = 24.dp)
-            spacedBy(12.dp)
-            RoundedCornerShape(2.dp)
-            RoundedCornerShape(1.dp)
-        """,
-    )
+    """, "用户明确选择的 12 套品牌皮肤调色；Narra 不在固定品牌表内，阅读对比另由行为测试验证")
 
     /** 每个十六进制值生成准确 Color 调用，重复值仅允许列出的次数，不按文件总数量放行。 */
     private fun colors(
@@ -146,12 +148,4 @@ internal object UiTokenSourceInventory {
         Exception(path, declaration, Rule.COLOR, "Color(0x$value)", reason, count)
     }
 
-    private fun legacyLayout(declaration: String, expressions: String): List<Exception> =
-        expressions.lineSequence().map(String::trim).filter(String::isNotEmpty).groupingBy { it }.eachCount().map { (expression, count) ->
-            Exception(
-                "component/roleplay/RoleplayDialoguePanelParts.kt", declaration,
-                if (expression.startsWith("RoundedCornerShape")) Rule.SHAPE else Rule.SPACING,
-                expression, "仅由线下 RoleplayDialoguePanel 使用的旧布局；本轮保留原值并精确冻结，不代表已迁移", count,
-            )
-        }
 }

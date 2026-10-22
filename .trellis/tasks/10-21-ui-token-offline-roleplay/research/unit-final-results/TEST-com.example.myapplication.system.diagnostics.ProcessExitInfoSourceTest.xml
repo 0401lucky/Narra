@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.myapplication.system.diagnostics.ProcessExitInfoSourceTest" tests="3" skipped="0" failures="0" errors="0" timestamp="2026-10-22T05:09:55.927Z" hostname="LUCKY" time="0.002">
+  <properties/>
+  <testcase name="api30ReaderForSdk_api29DoesNotConstructSupportedReader" classname="com.example.myapplication.system.diagnostics.ProcessExitInfoSourceTest" time="0.0"/>
+  <testcase name="query_api29ReturnsUnsupportedWithoutCallingPlatformReader" classname="com.example.myapplication.system.diagnostics.ProcessExitInfoSourceTest" time="0.001"/>
+  <testcase name="query_api30ReturnsOnlyReaderProvidedAllowlistSnapshot" classname="com.example.myapplication.system.diagnostics.ProcessExitInfoSourceTest" time="0.001"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

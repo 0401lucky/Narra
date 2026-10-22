@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.myapplication.ui.screenshot.BubbleScreenshotB02Test" tests="4" skipped="0" failures="0" errors="0" timestamp="2026-10-22T05:06:28.574Z" hostname="LUCKY" time="10.766">
+  <properties/>
+  <testcase name="b02_p03_background_load_failed" classname="com.example.myapplication.ui.screenshot.BubbleScreenshotB02Test" time="9.151"/>
+  <testcase name="b02_p03_background_glass_on" classname="com.example.myapplication.ui.screenshot.BubbleScreenshotB02Test" time="0.328"/>
+  <testcase name="b02_p03_no_background" classname="com.example.myapplication.ui.screenshot.BubbleScreenshotB02Test" time="0.247"/>
+  <testcase name="b02_p03_background_glass_off" classname="com.example.myapplication.ui.screenshot.BubbleScreenshotB02Test" time="0.218"/>
+  <system-out><![CDATA[Roborazzi: B02_p03-background-load-failed.png The differ result :ComparisonResult(pixelDifferences=0, pixelCount=1152000, width=720, height=1600) changed:false
+Roborazzi: B02_p03-background-glass-on.png The differ result :ComparisonResult(pixelDifferences=0, pixelCount=1152000, width=720, height=1600) changed:false
+Roborazzi: B02_p03-no-background.png The differ result :ComparisonResult(pixelDifferences=0, pixelCount=1152000, width=720, height=1600) changed:false
+Roborazzi: B02_p03-background-glass-off.png The differ result :ComparisonResult(pixelDifferences=0, pixelCount=1152000, width=720, height=1600) changed:false
+]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

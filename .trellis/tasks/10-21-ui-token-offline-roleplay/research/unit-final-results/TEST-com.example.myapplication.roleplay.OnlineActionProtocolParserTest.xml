@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.myapplication.roleplay.OnlineActionProtocolParserTest" tests="34" skipped="0" failures="0" errors="0" timestamp="2026-10-22T05:09:55.612Z" hostname="LUCKY" time="0.01">
+  <properties/>
+  <testcase name="parseGroupTextOnlyWithFallback_keepsVoiceAndPhotoButDropsThoughts" classname="com.example.myapplication.roleplay.OnlineActionProtocolParserTest" time="0.0"/>
+  <testcase name="extractFallbackStreamingPreview_returnsEmptyForJsonPatchPrefix" classname="com.example.myapplication.roleplay.OnlineActionProtocolParserTest" time="0.0"/>
+  <testcase name="parse_acceptsHyphenatedPhotoAndSpecialPlayObjects" classname="com.example.myapplication.roleplay.OnlineActionProtocolParserTest" time="0.001"/>
+  <testcase name="extractStreamingPreview_includesTransferActionDirectiveText" classname="com.example.myapplication.roleplay.OnlineActionProtocolParserTest" time="0.0"/>
+  <testcase name="parse_extractsProtocolArrayFromWrappedExplanationText" classname="com.example.myapplication.roleplay.OnlineActionProtocolParserTest" time="0.0"/>
+  <testcase name="parse_stripsReferenceIdPrefixFromReplyToContent" classname="com.example.myapplication.roleplay.OnlineActionProtocolParserTest" time="0.0"/>
+  <testcase name="parseWithFallback_stripsMalformedProtocolFragmentsFromPlainText" classname="com.example.myapplication.roleplay.OnlineActionProtocolParserTest" time="0.001"/>
+  <testcase name="parseWithFallback_dropsBareNtkAnalysisTail" classname="com.example.myapplication.roleplay.OnlineActionProtocolParserTest" time="0.0"/>
+  <testcase name="parseWithFallback_stripsSpecialPlayTagsFromPlainText" classname="com.example.myapplication.roleplay.OnlineActionProtocolParserTest" time="0.0"/>
+  <testcase name="parse_invalidJsonReturnsNull" classname="com.example.myapplication.roleplay.OnlineActionProtocolParserTest" time="0.0"/>
+  <testcase name="parseWithFallback_keepsVisibleTextBeforeVariablePatchArtifact" classname="com.example.myapplication.roleplay.OnlineActionProtocolParserTest" time="0.0"/>
+  <testcase name="isProtocolResidualText_treatsLooseTransferReceiptAsResidual" classname="com.example.myapplication.roleplay.OnlineActionProtocolParserTest" time="0.0"/>
+  <testcase name="extractStreamingPreview_readsCompletedPrefixBeforeWholeArrayCloses" classname="com.example.myapplication.roleplay.OnlineActionProtocolParserTest" time="0.001"/>
+  <testcase name="parse_stringElementWithBracketThoughtPrefix_createsThoughtPart" classname="com.example.myapplication.roleplay.OnlineActionProtocolParserTest" time="0.0"/>
+  <testcase name="extractFallbackStreamingPreview_dropsBareSpecialPlayAttributeLines" classname="com.example.myapplication.roleplay.OnlineActionProtocolParserTest" time="0.0"/>
+  <testcase name="parse_pokeLegacyNoFieldsStillValid" classname="com.example.myapplication.roleplay.OnlineActionProtocolParserTest" time="0.0"/>
+  <testcase name="parse_stringElementWithColonThoughtPrefix_createsThoughtPart" classname="com.example.myapplication.roleplay.OnlineActionProtocolParserTest" time="0.0"/>
+  <testcase name="parse_convertsStructuredContentIntoReadableText" classname="com.example.myapplication.roleplay.OnlineActionProtocolParserTest" time="0.0"/>
+  <testcase name="parse_recallPreviousProducesDirective" classname="com.example.myapplication.roleplay.OnlineActionProtocolParserTest" time="0.0"/>
+  <testcase name="parse_mixedJsonArrayBuildsOrderedParts" classname="com.example.myapplication.roleplay.OnlineActionProtocolParserTest" time="0.001"/>
+  <testcase name="parse_pokeWithTargetAndSuffixExtractsMetadata" classname="com.example.myapplication.roleplay.OnlineActionProtocolParserTest" time="0.0"/>
+  <testcase name="parseWithFallback_dropsBareSpecialPlayAttributeLines" classname="com.example.myapplication.roleplay.OnlineActionProtocolParserTest" time="0.001"/>
+  <testcase name="parseWithFallback_dropsVariablePatchArtifactOnly" classname="com.example.myapplication.roleplay.OnlineActionProtocolParserTest" time="0.0"/>
+  <testcase name="parse_pokeWithSelfTargetExtractsMetadata" classname="com.example.myapplication.roleplay.OnlineActionProtocolParserTest" time="0.001"/>
+  <testcase name="parse_transferActionProducesReceiptDirective" classname="com.example.myapplication.roleplay.OnlineActionProtocolParserTest" time="0.0"/>
+  <testcase name="parse_narrationBracketTextPreservedAsIs" classname="com.example.myapplication.roleplay.OnlineActionProtocolParserTest" time="0.0"/>
+  <testcase name="parse_looseTransferReceiptTextProducesDirective" classname="com.example.myapplication.roleplay.OnlineActionProtocolParserTest" time="0.0"/>
+  <testcase name="parse_stripsReferenceIdPrefixFromDialogueText" classname="com.example.myapplication.roleplay.OnlineActionProtocolParserTest" time="0.0"/>
+  <testcase name="parse_repairsLooseJsonAliasesAndSingleQuotedValues" classname="com.example.myapplication.roleplay.OnlineActionProtocolParserTest" time="0.002"/>
+  <testcase name="parse_voiceMessageAcceptsOptionalDurationKeys" classname="com.example.myapplication.roleplay.OnlineActionProtocolParserTest" time="0.0"/>
+  <testcase name="parse_dedupesRepeatedAiPhotoDescriptions" classname="com.example.myapplication.roleplay.OnlineActionProtocolParserTest" time="0.0"/>
+  <testcase name="extractStreamingPreview_returnsEmptyForIncompleteFirstItem" classname="com.example.myapplication.roleplay.OnlineActionProtocolParserTest" time="0.0"/>
+  <testcase name="parseWithFallback_splitsLongSingleLineIntoNaturalBubbles" classname="com.example.myapplication.roleplay.OnlineActionProtocolParserTest" time="0.001"/>
+  <testcase name="parse_supportsThoughtObjectAndTrailingCommaRepair" classname="com.example.myapplication.roleplay.OnlineActionProtocolParserTest" time="0.0"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

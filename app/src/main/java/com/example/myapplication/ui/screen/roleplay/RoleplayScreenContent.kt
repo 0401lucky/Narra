@@ -8,8 +8,9 @@ import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.MoreVert
@@ -32,6 +33,9 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -43,7 +47,6 @@ import com.example.myapplication.model.ChatSpecialPlayDraft
 import com.example.myapplication.model.ChatMessagePart
 import com.example.myapplication.model.ChatSpecialType
 import com.example.myapplication.model.PendingMemoryProposal
-import com.example.myapplication.model.RoleplayImmersiveMode
 import com.example.myapplication.model.RoleplayMessageUiModel
 import com.example.myapplication.model.RoleplayScenario
 import com.example.myapplication.model.RoleplaySpeaker
@@ -66,6 +69,10 @@ import com.example.myapplication.ui.component.specialplay.SpecialPlayEditorSheet
 import com.example.myapplication.ui.component.specialplay.SpecialPlaySheet
 import com.example.myapplication.ui.performance.benchmarkActionTag
 import com.example.myapplication.viewmodel.RoleplayOfflineReplayPhase
+import com.example.myapplication.ui.theme.NarraUi
+import com.example.myapplication.ui.theme.NarraShapes
+import com.example.myapplication.ui.theme.NarraMinimumTouchTarget
+import com.example.myapplication.ui.theme.readableRoleplayText
 
 @Composable
 internal fun RoleplaySceneContent(
@@ -199,105 +206,111 @@ internal fun RoleplaySceneContent(
                 ),
         )
 
-        Column(
+        BoxWithConstraints(
             modifier = Modifier
                 .fillMaxSize()
                 .roleplayImmersivePadding(immersiveMode)
                 .imePadding(),
         ) {
-            AnimatedVisibility(
-                visible = chromeVisible,
-                enter = fadeIn() + slideInVertically(initialOffsetY = { -it / 2 }),
-                exit = fadeOut() + slideOutVertically(targetOffsetY = { -it / 2 }),
-            ) {
-                Column {
-                    RoleplaySceneTopBar(
-                        characterName = characterName,
-                        sceneMoodState = sceneMoodState,
-                        sceneMoodColor = sceneMoodColor,
-                        backdropState = backdropState,
-                        onOpenSettings = onOpenSettings,
-                        onNavigateBack = onNavigateBack,
-                        onToggleChrome = { chromeVisible = false },
-                        benchmarkBackActionId = benchmarkBackActionId,
-                        benchmarkSettingsActionId = benchmarkSettingsActionId,
-                    )
-
-                    if (settings.showRoleplayPresenceStrip) {
-                        RoleplayPresenceStrip(
-                            userPortrait = userPortrait,
-                            characterPortrait = characterPortrait,
-                            highlightedSpeaker = highlightedSpeaker,
-                            autoHighlightSpeaker = scenario.autoHighlightSpeaker,
+            val presenceMaxHeight = maxHeight * 0.20f
+            Column(Modifier.fillMaxSize()) {
+                AnimatedVisibility(
+                    visible = chromeVisible,
+                    enter = fadeIn() + slideInVertically(initialOffsetY = { -it / 2 }),
+                    exit = fadeOut() + slideOutVertically(targetOffsetY = { -it / 2 }),
+                ) {
+                    Column {
+                        RoleplaySceneTopBar(
+                            characterName = characterName,
+                            sceneMoodState = sceneMoodState,
                             sceneMoodColor = sceneMoodColor,
-                            isSending = isSending,
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .height(120.dp)
-                                .padding(horizontal = 12.dp, vertical = 2.dp),
+                            backdropState = backdropState,
+                            onOpenSettings = onOpenSettings,
+                            onNavigateBack = onNavigateBack,
+                            onToggleChrome = { chromeVisible = false },
+                            benchmarkBackActionId = benchmarkBackActionId,
+                            benchmarkSettingsActionId = benchmarkSettingsActionId,
                         )
-                    }
 
-                    if (pendingMemoryProposal != null) {
-                        PendingMemoryProposalCard(
-                            proposal = pendingMemoryProposal,
-                            onApprove = onApprovePendingMemoryProposal,
-                            onReject = onRejectPendingMemoryProposal,
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(horizontal = 12.dp, vertical = 6.dp),
-                        )
+                        // 次要场景信息共享有界滚动区，给对话与输入保留实际高度。
+                        Column(Modifier.heightIn(max = presenceMaxHeight).verticalScroll(rememberScrollState())) {
+                            if (settings.showRoleplayPresenceStrip) {
+                                RoleplayPresenceStrip(
+                                    userPortrait = userPortrait,
+                                    characterPortrait = characterPortrait,
+                                    highlightedSpeaker = highlightedSpeaker,
+                                    autoHighlightSpeaker = scenario.autoHighlightSpeaker,
+                                    sceneMoodColor = sceneMoodColor,
+                                    isSending = isSending,
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .heightIn(min = 120.dp)
+                                        .padding(horizontal = NarraUi.space12, vertical = NarraUi.space4),
+                                )
+                            }
+
+                            if (pendingMemoryProposal != null) {
+                                PendingMemoryProposalCard(
+                                    proposal = pendingMemoryProposal,
+                                    onApprove = onApprovePendingMemoryProposal,
+                                    onReject = onRejectPendingMemoryProposal,
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(horizontal = NarraUi.space12, vertical = NarraUi.space8),
+                                )
+                            }
+                        }
                     }
                 }
-            }
 
-            if (!chromeVisible) {
-                RoleplayChromeHandle(
+                if (!chromeVisible) {
+                    RoleplayChromeHandle(
+                        backdropState = backdropState,
+                        modifier = Modifier
+                            .align(Alignment.CenterHorizontally)
+                            .padding(top = NarraUi.space8, bottom = NarraUi.space4),
+                        onClick = { chromeVisible = true },
+                    )
+                }
+
+                RoleplayDialoguePanel(
+                    conversationIdentity = scenario.id,
                     backdropState = backdropState,
+                    messages = messages,
+                    suggestions = suggestions,
+                    isGeneratingSuggestions = isGeneratingSuggestions,
+                    suggestionErrorMessage = suggestionErrorMessage,
+                    showAiHelper = settings.showRoleplayAiHelper,
+                    input = input,
+                    inputFocusToken = inputFocusToken,
+                    isSending = isSending,
+                    onInputChange = onInputChange,
+                    onGenerateSuggestions = onGenerateSuggestions,
+                    onApplySuggestion = onApplySuggestion,
+                    onClearSuggestions = onClearSuggestions,
+                    onRetryTurn = onRetryTurn,
+                    onRetryAiPhoto = onRetryAiPhoto,
+                    onEditUserMessage = onEditUserMessage,
+                    onDeleteMessage = onDeleteMessage,
+                    onOpenSpecialPlay = onOpenSpecialPlay,
+                    quickActions = quickActions,
+                    pendingImageParts = pendingImageParts,
+                    onPickImage = onPickImage,
+                    onRemovePendingImagePart = onRemovePendingImagePart,
+                    onConfirmTransferReceipt = onConfirmTransferReceipt,
+                    onSend = onSend,
+                    onCancel = onCancelSending,
+                    offlineReplayPhase = offlineReplayPhase,
+                    isOfflineReplayFixtureReady = isOfflineReplayFixtureReady,
+                    onStartOfflineReplay = onStartOfflineReplay,
+                    lineHeightScale = settings.roleplayLineHeightScale.scaleFactor,
+                    noBackgroundSkin = settings.roleplayNoBackgroundSkin,
+                    onToggleTopBar = { chromeVisible = !chromeVisible },
                     modifier = Modifier
-                        .align(Alignment.CenterHorizontally)
-                        .padding(top = 6.dp, bottom = 4.dp),
-                    onClick = { chromeVisible = true },
+                        .fillMaxWidth()
+                        .weight(1f),
                 )
             }
-
-            RoleplayDialoguePanel(
-                conversationIdentity = scenario.id,
-                backdropState = backdropState,
-                messages = messages,
-                suggestions = suggestions,
-                isGeneratingSuggestions = isGeneratingSuggestions,
-                suggestionErrorMessage = suggestionErrorMessage,
-                showAiHelper = settings.showRoleplayAiHelper,
-                input = input,
-                inputFocusToken = inputFocusToken,
-                isSending = isSending,
-                onInputChange = onInputChange,
-                onGenerateSuggestions = onGenerateSuggestions,
-                onApplySuggestion = onApplySuggestion,
-                onClearSuggestions = onClearSuggestions,
-                onRetryTurn = onRetryTurn,
-                onRetryAiPhoto = onRetryAiPhoto,
-                onEditUserMessage = onEditUserMessage,
-                onDeleteMessage = onDeleteMessage,
-                onOpenSpecialPlay = onOpenSpecialPlay,
-                quickActions = quickActions,
-                pendingImageParts = pendingImageParts,
-                onPickImage = onPickImage,
-                onRemovePendingImagePart = onRemovePendingImagePart,
-                onConfirmTransferReceipt = onConfirmTransferReceipt,
-                onSend = onSend,
-                onCancel = onCancelSending,
-                offlineReplayPhase = offlineReplayPhase,
-                isOfflineReplayFixtureReady = isOfflineReplayFixtureReady,
-                onStartOfflineReplay = onStartOfflineReplay,
-                lineHeightScale = settings.roleplayLineHeightScale.scaleFactor,
-                noBackgroundSkin = settings.roleplayNoBackgroundSkin,
-                onToggleTopBar = { chromeVisible = !chromeVisible },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .weight(1f),
-            )
         }
 
         AppSnackbarHost(
@@ -330,13 +343,13 @@ private fun PendingMemoryProposalCard(
 ) {
     Surface(
         modifier = modifier,
-        shape = MaterialTheme.shapes.large,
-        color = MaterialTheme.colorScheme.surface.copy(alpha = 0.92f),
+        shape = NarraShapes.large,
+        color = MaterialTheme.colorScheme.surface,
         tonalElevation = 4.dp,
     ) {
         Column(
-            modifier = Modifier.padding(horizontal = 16.dp, vertical = 14.dp),
-            verticalArrangement = Arrangement.spacedBy(10.dp),
+            modifier = Modifier.padding(NarraUi.space16),
+            verticalArrangement = Arrangement.spacedBy(NarraUi.space8),
         ) {
             Text(
                 text = "建议记住一条长期设定",
@@ -365,8 +378,8 @@ private fun PendingMemoryProposalCard(
                 style = MaterialTheme.typography.labelMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
-            Row(
-                horizontalArrangement = Arrangement.spacedBy(12.dp),
+            FlowRow(
+                horizontalArrangement = Arrangement.spacedBy(NarraUi.space12),
             ) {
                 NarraTextButton(onClick = onApprove) {
                     Text("记住")
@@ -392,21 +405,23 @@ private fun RoleplaySceneTopBar(
     benchmarkSettingsActionId: String?,
 ) {
     val palette = backdropState.palette
+    val surface = palette.panelTintStrong.copy(alpha = 1f)
+    val contentColor = readableRoleplayText(palette.onGlass, surface, surface)
+    val mutedColor = readableRoleplayText(palette.onGlassMuted, surface, surface)
     ImmersiveGlassSurface(
         backdropState = backdropState,
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 12.dp, vertical = 6.dp),
-        shape = RoundedCornerShape(8.dp),
+            .testTag("roleplay_scene_header")
+            .padding(horizontal = NarraUi.space12, vertical = NarraUi.space8),
+        shape = NarraShapes.small,
         blurRadius = 20.dp,
-        overlayColor = palette.panelTintStrong.copy(alpha = 0.72f),
+        overlayColor = surface,
     ) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .testTag("roleplay_scene_title")
-                .clickable(onClick = onToggleChrome)
-                .padding(horizontal = 10.dp, vertical = 10.dp),
+                .padding(NarraUi.space8),
             verticalAlignment = Alignment.CenterVertically,
         ) {
             NarraIconButton(
@@ -418,37 +433,41 @@ private fun RoleplaySceneTopBar(
                 Icon(
                     Icons.AutoMirrored.Filled.ArrowBack,
                     contentDescription = stringResource(id = R.string.common_back),
-                    tint = palette.onGlass,
+                    tint = contentColor,
                 )
             }
 
             Column(
                 modifier = Modifier
                     .weight(1f)
-                    .padding(horizontal = 8.dp),
+                    .heightIn(min = NarraMinimumTouchTarget)
+                    .testTag("roleplay_scene_title")
+                    .clickable(role = Role.Button, onClickLabel = "收起标题栏", onClick = onToggleChrome)
+                    .semantics { contentDescription = "$characterName，${sceneMoodState.label}" }
+                    .padding(horizontal = NarraUi.space8),
             ) {
                 Text(
                     text = characterName,
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold,
-                    color = palette.onGlass,
+                    color = contentColor,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
                 )
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(4.dp),
+                    horizontalArrangement = Arrangement.spacedBy(NarraUi.space4),
                 ) {
                     // 氛围圆点
                     Box(
                         modifier = Modifier
                             .size(8.dp)
-                            .background(color = sceneMoodColor, shape = RoundedCornerShape(4.dp)),
+                            .background(color = sceneMoodColor, shape = NarraShapes.pill),
                     )
                     Text(
                         text = sceneMoodState.label,
                         style = MaterialTheme.typography.bodySmall,
-                        color = palette.onGlassMuted,
+                        color = mutedColor,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis,
                     )
@@ -464,7 +483,7 @@ private fun RoleplaySceneTopBar(
                 Icon(
                     Icons.Default.MoreVert,
                     contentDescription = stringResource(id = R.string.roleplay_settings_button),
-                    tint = palette.onGlass,
+                    tint = contentColor,
                 )
             }
         }
@@ -477,33 +496,36 @@ private fun RoleplayChromeHandle(
     modifier: Modifier = Modifier,
     onClick: () -> Unit,
 ) {
+    val surface = backdropState.palette.panelTintStrong.copy(alpha = 1f)
+    val contentColor = readableRoleplayText(backdropState.palette.onGlassMuted, surface, surface)
     ImmersiveGlassSurface(
         backdropState = backdropState,
         modifier = modifier,
-        shape = RoundedCornerShape(8.dp),
+        shape = NarraShapes.small,
         blurRadius = 18.dp,
-        overlayColor = backdropState.palette.panelTint.copy(alpha = 0.26f),
+        overlayColor = surface,
     ) {
         Row(
             modifier = Modifier
-                .clickable(onClick = onClick)
+                .heightIn(min = NarraMinimumTouchTarget)
+                .clickable(role = Role.Button, onClickLabel = "展开标题栏", onClick = onClick)
                 .testTag("roleplay_chrome_handle")
-                .padding(horizontal = 14.dp, vertical = 8.dp),
+                .padding(horizontal = NarraUi.space16, vertical = NarraUi.space8),
             verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            horizontalArrangement = Arrangement.spacedBy(NarraUi.space8),
         ) {
             Box(
                 modifier = Modifier
                     .size(width = 18.dp, height = 4.dp)
                     .background(
-                        color = backdropState.palette.onGlassMuted.copy(alpha = 0.72f),
+                        color = contentColor,
                         shape = MaterialTheme.shapes.extraSmall,
                     ),
             )
             Text(
                 text = stringResource(id = R.string.roleplay_show_title_bar),
                 style = MaterialTheme.typography.labelMedium,
-                color = backdropState.palette.onGlassMuted,
+                color = contentColor,
             )
         }
     }
@@ -524,7 +546,7 @@ internal fun RoleplayPresenceStrip(
         character = characterPortrait,
         highlightedSpeaker = highlightedSpeaker,
         autoHighlightSpeaker = autoHighlightSpeaker,
-        userAccentColor = Color(0xFFD8E6FF),
+        userAccentColor = MaterialTheme.colorScheme.primary,
         characterAccentColor = sceneMoodColor,
         isSpeaking = isSending,
         modifier = modifier,

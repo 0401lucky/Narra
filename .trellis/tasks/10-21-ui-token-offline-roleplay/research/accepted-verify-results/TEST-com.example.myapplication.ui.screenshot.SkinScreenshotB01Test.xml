@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.myapplication.ui.screenshot.SkinScreenshotB01Test" tests="26" skipped="0" failures="0" errors="0" timestamp="2026-10-22T05:06:51.321Z" hostname="LUCKY" time="3.287">
+  <properties/>
+  <testcase name="b01_noir_bubbles_light" classname="com.example.myapplication.ui.screenshot.SkinScreenshotB01Test" time="0.124"/>
+  <testcase name="b01_y2k_bubbles_dark" classname="com.example.myapplication.ui.screenshot.SkinScreenshotB01Test" time="0.108"/>
+  <testcase name="b01_wechat_bubbles_dark" classname="com.example.myapplication.ui.screenshot.SkinScreenshotB01Test" time="0.117"/>
+  <testcase name="b01_liquidglass_bubbles_light" classname="com.example.myapplication.ui.screenshot.SkinScreenshotB01Test" time="0.119"/>
+  <testcase name="b01_kakao_bubbles_light" classname="com.example.myapplication.ui.screenshot.SkinScreenshotB01Test" time="0.116"/>
+  <testcase name="b01_wechat_bubbles_light" classname="com.example.myapplication.ui.screenshot.SkinScreenshotB01Test" time="0.119"/>
+  <testcase name="b01_noir_bubbles_dark" classname="com.example.myapplication.ui.screenshot.SkinScreenshotB01Test" time="0.125"/>
+  <testcase name="b01_imessage_bubbles_light" classname="com.example.myapplication.ui.screenshot.SkinScreenshotB01Test" time="0.127"/>
+  <testcase name="b01_kakao_bubbles_dark" classname="com.example.myapplication.ui.screenshot.SkinScreenshotB01Test" time="0.169"/>
+  <testcase name="b01_telegram_bubbles_dark" classname="com.example.myapplication.ui.screenshot.SkinScreenshotB01Test" time="0.138"/>
+  <testcase name="b01_narra_bubbles_dark" classname="com.example.myapplication.ui.screenshot.SkinScreenshotB01Test" time="0.123"/>
+  <testcase name="b01_polkadot_bubbles_light" classname="com.example.myapplication.ui.screenshot.SkinScreenshotB01Test" time="0.145"/>
+  <testcase name="b01_telegram_bubbles_light" classname="com.example.myapplication.ui.screenshot.SkinScreenshotB01Test" time="0.162"/>
+  <testcase name="b01_rose_bubbles_light" classname="com.example.myapplication.ui.screenshot.SkinScreenshotB01Test" time="0.124"/>
+  <testcase name="b01_rose_bubbles_dark" classname="com.example.myapplication.ui.screenshot.SkinScreenshotB01Test" time="0.115"/>
+  <testcase name="b01_polkadot_bubbles_dark" classname="com.example.myapplication.ui.screenshot.SkinScreenshotB01Test" time="0.112"/>
+  <testcase name="b01_qq_bubbles_light" classname="com.example.myapplication.ui.screenshot.SkinScreenshotB01Test" time="0.109"/>
+  <testcase name="b01_retro_bubbles_light" classname="com.example.myapplication.ui.screenshot.SkinScreenshotB01Test" time="0.11"/>
+  <testcase name="b01_liquidglass_bubbles_dark" classname="com.example.myapplication.ui.screenshot.SkinScreenshotB01Test" time="0.108"/>
+  <testcase name="b01_retro_bubbles_dark" classname="com.example.myapplication.ui.screenshot.SkinScreenshotB01Test" time="0.11"/>
+  <testcase name="b01_pixel_bubbles_dark" classname="com.example.myapplication.ui.screenshot.SkinScreenshotB01Test" time="0.11"/>
+  <testcase name="b01_qq_bubbles_dark" classname="com.example.myapplication.ui.screenshot.SkinScreenshotB01Test" time="0.155"/>
+  <testcase name="b01_narra_bubbles_light" classname="com.example.myapplication.ui.screenshot.SkinScreenshotB01Test" time="0.14"/>
+  <testcase name="b01_y2k_bubbles_light" classname="com.example.myapplication.ui.screenshot.SkinScreenshotB01Test" time="0.121"/>
+  <testcase name="b01_pixel_bubbles_light" classname="com.example.myapplication.ui.screenshot.SkinScreenshotB01Test" time="0.132"/>
+  <testcase name="b01_imessage_bubbles_dark" classname="com.example.myapplication.ui.screenshot.SkinScreenshotB01Test" time="0.142"/>
+  <system-out><![CDATA[Roborazzi: B01_noir-bubbles-light.png The differ result :ComparisonResult(pixelDifferences=0, pixelCount=1152000, width=720, height=1600) changed:false
+Roborazzi: B01_y2k-bubbles-dark.png The differ result :ComparisonResult(pixelDifferences=0, pixelCount=1152000, width=720, height=1600) changed:false
+Roborazzi: B01_wechat-bubbles-dark.png The differ result :ComparisonResult(pixelDifferences=0, pixelCount=1152000, width=720, height=1600) changed:false
+Roborazzi: B01_liquidglass-bubbles-light.png The differ result :ComparisonResult(pixelDifferences=0, pixelCount=1152000, width=720, height=1600) changed:false
+Roborazzi: B01_kakao-bubbles-light.png The differ result :ComparisonResult(pixelDifferences=0, pixelCount=1152000, width=720, height=1600) changed:false
+Roborazzi: B01_wechat-bubbles-light.png The differ result :ComparisonResult(pixelDifferences=0, pixelCount=1152000, width=720, height=1600) changed:false
+Roborazzi: B01_noir-bubbles-dark.png The differ result :ComparisonResult(pixelDifferences=0, pixelCount=1152000, width=720, height=1600) changed:false
+Roborazzi: B01_imessage-bubbles-light.png The differ result :ComparisonResult(pixelDifferences=0, pixelCount=1152000, width=720, height=1600) changed:false
+Roborazzi: B01_kakao-bubbles-dark.png The differ result :ComparisonResult(pixelDifferences=0, pixelCount=1152000, width=720, height=1600) changed:false
+Roborazzi: B01_telegram-bubbles-dark.png The differ result :ComparisonResult(pixelDifferences=0, pixelCount=1152000, width=720, height=1600) changed:false
+Roborazzi: B01_narra-bubbles-dark.png The differ result :ComparisonResult(pixelDifferences=0, pixelCount=1152000, width=720, height=1600) changed:false
+Roborazzi: B01_polkadot-bubbles-light.png The differ result :ComparisonResult(pixelDifferences=0, pixelCount=1152000, width=720, height=1600) changed:false
+Roborazzi: B01_telegram-bubbles-light.png The differ result :ComparisonResult(pixelDifferences=0, pixelCount=1152000, width=720, height=1600) changed:false
+Roborazzi: B01_rose-bubbles-light.png The differ result :ComparisonResult(pixelDifferences=0, pixelCount=1152000, width=720, height=1600) changed:false
+Roborazzi: B01_rose-bubbles-dark.png The differ result :ComparisonResult(pixelDifferences=0, pixelCount=1152000, width=720, height=1600) changed:false
+Roborazzi: B01_polkadot-bubbles-dark.png The differ result :ComparisonResult(pixelDifferences=0, pixelCount=1152000, width=720, height=1600) changed:false
+Roborazzi: B01_qq-bubbles-light.png The differ result :ComparisonResult(pixelDifferences=0, pixelCount=1152000, width=720, height=1600) changed:false
+Roborazzi: B01_retro-bubbles-light.png The differ result :ComparisonResult(pixelDifferences=0, pixelCount=1152000, width=720, height=1600) changed:false
+Roborazzi: B01_liquidglass-bubbles-dark.png The differ result :ComparisonResult(pixelDifferences=0, pixelCount=1152000, width=720, height=1600) changed:false
+Roborazzi: B01_retro-bubbles-dark.png The differ result :ComparisonResult(pixelDifferences=0, pixelCount=1152000, width=720, height=1600) changed:false
+Roborazzi: B01_pixel-bubbles-dark.png The differ result :ComparisonResult(pixelDifferences=0, pixelCount=1152000, width=720, height=1600) changed:false
+Roborazzi: B01_qq-bubbles-dark.png The differ result :ComparisonResult(pixelDifferences=0, pixelCount=1152000, width=720, height=1600) changed:false
+Roborazzi: B01_narra-bubbles-light.png The differ result :ComparisonResult(pixelDifferences=0, pixelCount=1152000, width=720, height=1600) changed:false
+Roborazzi: B01_y2k-bubbles-light.png The differ result :ComparisonResult(pixelDifferences=0, pixelCount=1152000, width=720, height=1600) changed:false
+Roborazzi: B01_pixel-bubbles-light.png The differ result :ComparisonResult(pixelDifferences=0, pixelCount=1152000, width=720, height=1600) changed:false
+Roborazzi: B01_imessage-bubbles-dark.png The differ result :ComparisonResult(pixelDifferences=0, pixelCount=1152000, width=720, height=1600) changed:false
+]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

@@ -25,7 +25,7 @@ data class ScreenshotCase(
 }
 
 /**
- * 首批矩阵用例的单一登记表（research/screenshot-matrix.md 的 H01–H04、B01–B04、C01）。
+ * 截图矩阵的单一登记表：H01–H04、B01–B04、C01 及扩面 E04。
  *
  * 测试、基准计数守卫与运行清单都从这里取数据；新增/删除用例必须同步更新
  * [expectedFamilyCounts]，守卫会在数量不符时失败。
@@ -56,6 +56,7 @@ object ScreenshotCases {
     private const val B03Class = "BubbleScreenshotB03Test"
     private const val B04Class = "BubbleScreenshotB04Test"
     private const val C01Class = "ThemeScreenshotC01Test"
+    private const val E04Class = "OfflineRoleplayScreenshotE04Test"
 
     private val h01Cases: List<ScreenshotCase> = buildList {
         themeTokens.forEach { theme ->
@@ -178,10 +179,27 @@ object ScreenshotCases {
         case(C01Class, "C01_dynamic-dark.png", "固定动态 ColorScheme · 深色解析"),
     )
 
-    val all: List<ScreenshotCase> = h01Cases + h02Cases + h03Cases + h04Cases +
-        b01Cases + b02Cases + b03Cases + b04Cases + c01Cases
+    private val e04Cases: List<ScreenshotCase> = buildList {
+        themeTokens.forEach { theme -> shadeTokens.forEach { shade ->
+            add(case(E04Class, "E04_scene-$theme-$shade.png", "P04 线下对白整页 · $theme · $shade"))
+        } }
+        add(case(E04Class, "E04_scene-empty.png", "P04 线下空态 · 固定动画帧"))
+        add(case(E04Class, "E04_scene-narrow-light.png", "P04 长名与展开建议 · 200%",
+            NarrowWidthDp, NarrowHeightDp, ScreenshotFixture.NarrowFontScale))
+        add(case(E04Class, "E04_scene-narrow-dark.png", "P04 长文发送与立绘 · 200%",
+            NarrowWidthDp, NarrowHeightDp, ScreenshotFixture.NarrowFontScale))
+        add(case(E04Class, "E04_scene-background.png", "P04 实际场景遮罩与玻璃"))
+        add(case(E04Class, "E04_scene-suggestions.png", "P04 常规长建议与标签"))
+        add(case(E04Class, "E04_reading-mixed-background.png", "会话阅读混排与实际背景"))
+        add(case(E04Class, "E04_reading-empty-dark.png", "会话阅读深色空态"))
+        add(case(E04Class, "E04_reading-narrow-dark.png", "会话阅读长标题长文 · 200%",
+            NarrowWidthDp, NarrowHeightDp, ScreenshotFixture.NarrowFontScale))
+    }
 
-    /** 冻结的首批用例数量：缺场景、零测试或静默删减都会让守卫失败。 */
+    val all: List<ScreenshotCase> = h01Cases + h02Cases + h03Cases + h04Cases +
+        b01Cases + b02Cases + b03Cases + b04Cases + c01Cases + e04Cases
+
+    /** 冻结的分族数量：缺场景、零测试或静默删减都会让守卫失败。 */
     val expectedFamilyCounts: Map<String, Int> = mapOf(
         "H01" to 18,
         "H02" to 3,
@@ -192,6 +210,7 @@ object ScreenshotCases {
         "B03" to 10,
         "B04" to 4,
         "C01" to 2,
+        "E04" to 14,
     )
 
     private val byId: Map<String, ScreenshotCase> = all.associateBy { it.id }

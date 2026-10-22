@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.myapplication.system.performance.LegacyUpgradeFixtureContractTest" tests="3" skipped="0" failures="0" errors="0" timestamp="2026-10-22T05:09:55.982Z" hostname="LUCKY" time="0.007">
+  <properties/>
+  <testcase name="fixtureBuilder_doesNotMigrateSnapshotBeforeMeasuredMainProcessLaunch" classname="com.example.myapplication.system.performance.LegacyUpgradeFixtureContractTest" time="0.001"/>
+  <testcase name="s3UpgradeContract_measuresSchema47To48InMainProcess" classname="com.example.myapplication.system.performance.LegacyUpgradeFixtureContractTest" time="0.0"/>
+  <testcase name="schema47Asset_matchesExportedRoomSchemaAndDeclaredSha256" classname="com.example.myapplication.system.performance.LegacyUpgradeFixtureContractTest" time="0.006"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

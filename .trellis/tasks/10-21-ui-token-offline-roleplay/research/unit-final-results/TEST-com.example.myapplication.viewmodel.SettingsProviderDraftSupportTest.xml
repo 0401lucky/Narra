@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.myapplication.viewmodel.SettingsProviderDraftSupportTest" tests="6" skipped="0" failures="0" errors="0" timestamp="2026-10-22T05:10:31.412Z" hostname="LUCKY" time="0.001">
+  <properties/>
+  <testcase name="toggleProviderEnabled_flipsEnabledFlag" classname="com.example.myapplication.viewmodel.SettingsProviderDraftSupportTest" time="0.0"/>
+  <testcase name="applyFetchedModelSelection_keepsExistingOverridesAndBuildsMessage" classname="com.example.myapplication.viewmodel.SettingsProviderDraftSupportTest" time="0.001"/>
+  <testcase name="deleteProvider_removesTargetAndResolvesNewSelection" classname="com.example.myapplication.viewmodel.SettingsProviderDraftSupportTest" time="0.0"/>
+  <testcase name="removeModelFromProvider_dropsModelAndFallsBackSelection" classname="com.example.myapplication.viewmodel.SettingsProviderDraftSupportTest" time="0.0"/>
+  <testcase name="normalizeProviders_trimsFieldsAndEnsuresFallbackName" classname="com.example.myapplication.viewmodel.SettingsProviderDraftSupportTest" time="0.0"/>
+  <testcase name="updateProviderModelAbilities_preservesOverride" classname="com.example.myapplication.viewmodel.SettingsProviderDraftSupportTest" time="0.0"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

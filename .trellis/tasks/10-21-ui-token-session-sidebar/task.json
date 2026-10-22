@@ -1,0 +1,32 @@
+{
+  "id": "ui-token-session-sidebar",
+  "name": "ui-token-session-sidebar",
+  "title": "v2.3 扩面二：会话设置侧栏",
+  "description": "P05实际侧栏路由、表单和现有Sheet/Dialog的令牌与无障碍迁移。",
+  "status": "planning",
+  "dev_type": "frontend",
+  "scope": "ui",
+  "package": null,
+  "priority": "P1",
+  "creator": "lucky",
+  "assignee": "lucky",
+  "createdAt": "2026-10-21",
+  "completedAt": null,
+  "branch": null,
+  "base_branch": "main",
+  "worktree_path": null,
+  "commit": null,
+  "pr_url": null,
+  "subtasks": [],
+  "children": [],
+  "parent": "10-21-ui-token-accessibility-expansion",
+  "relatedFiles": [],
+  "notes": "四批摘要已由2026-10-21用户回复“可以”批准；P04独立验收后再启动P05，本体为route面板，内部窗口须真实捕获。",
+  "meta": {
+    "version": "2.3",
+    "batch": "2",
+    "review_status": "approved_awaiting_predecessor",
+    "predecessor": "10-21-ui-token-offline-roleplay",
+    "planned_new_screenshots": 18
+  }
+}

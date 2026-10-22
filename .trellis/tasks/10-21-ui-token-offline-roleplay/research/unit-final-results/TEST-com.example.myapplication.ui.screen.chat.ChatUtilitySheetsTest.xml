@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.myapplication.ui.screen.chat.ChatUtilitySheetsTest" tests="10" skipped="0" failures="0" errors="0" timestamp="2026-10-22T05:10:19.430Z" hostname="LUCKY" time="0.008">
+  <properties/>
+  <testcase name="buildMessageMarkdown_includesReasoningStepsAndCitations" classname="com.example.myapplication.ui.screen.chat.ChatUtilitySheetsTest" time="0.004"/>
+  <testcase name="resolveMessageActionAvailability_marksPureImageAssistantMessageAsPreviewableImage" classname="com.example.myapplication.ui.screen.chat.ChatUtilitySheetsTest" time="0.001"/>
+  <testcase name="buildConversationMarkdown_includesReasoningAndModelWhenEnabled" classname="com.example.myapplication.ui.screen.chat.ChatUtilitySheetsTest" time="0.0"/>
+  <testcase name="resolveMessageActionAvailability_allowsEditOnlyForUserMessage" classname="com.example.myapplication.ui.screen.chat.ChatUtilitySheetsTest" time="0.0"/>
+  <testcase name="buildSearchResultPreviewPayload_parsesItemsAndAnswer" classname="com.example.myapplication.ui.screen.chat.ChatUtilitySheetsTest" time="0.001"/>
+  <testcase name="buildSearchResultPreviewPayload_returnsNullForNormalMessage" classname="com.example.myapplication.ui.screen.chat.ChatUtilitySheetsTest" time="0.0"/>
+  <testcase name="resolvePreviewImages_includesReadyAiPhotoImage" classname="com.example.myapplication.ui.screen.chat.ChatUtilitySheetsTest" time="0.0"/>
+  <testcase name="messageHasPreviewableText_returnsFalseForPureImageMessage" classname="com.example.myapplication.ui.screen.chat.ChatUtilitySheetsTest" time="0.0"/>
+  <testcase name="buildConversationPlainText_omitsOptionalSectionsWhenDisabled" classname="com.example.myapplication.ui.screen.chat.ChatUtilitySheetsTest" time="0.0"/>
+  <testcase name="buildImagePreviewPayload_returnsOrderedImagesAndInitialIndex" classname="com.example.myapplication.ui.screen.chat.ChatUtilitySheetsTest" time="0.0"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

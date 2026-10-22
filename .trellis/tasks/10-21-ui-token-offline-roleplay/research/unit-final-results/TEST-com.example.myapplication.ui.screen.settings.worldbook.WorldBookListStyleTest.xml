@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.myapplication.ui.screen.settings.worldbook.WorldBookListStyleTest" tests="24" skipped="0" failures="0" errors="0" timestamp="2026-10-22T05:10:19.480Z" hostname="LUCKY" time="0.007">
+  <properties/>
+  <testcase name="formatRelativeTime_minutes" classname="com.example.myapplication.ui.screen.settings.worldbook.WorldBookListStyleTest" time="0.002"/>
+  <testcase name="filterEntries_bookIdFilterMatchesResolvedBookId" classname="com.example.myapplication.ui.screen.settings.worldbook.WorldBookListStyleTest" time="0.003"/>
+  <testcase name="filterEntries_scopeGlobalOnly" classname="com.example.myapplication.ui.screen.settings.worldbook.WorldBookListStyleTest" time="0.0"/>
+  <testcase name="filterEntries_returnsAllWhenNoFilters" classname="com.example.myapplication.ui.screen.settings.worldbook.WorldBookListStyleTest" time="0.0"/>
+  <testcase name="formatRelativeTime_fallsBackToDateBeyondSevenDays" classname="com.example.myapplication.ui.screen.settings.worldbook.WorldBookListStyleTest" time="0.0"/>
+  <testcase name="firstRealKeywords_returnsEmptyWhenNothingAvailable" classname="com.example.myapplication.ui.screen.settings.worldbook.WorldBookListStyleTest" time="0.001"/>
+  <testcase name="activeFilterCount_countsOnlyNonDefaults" classname="com.example.myapplication.ui.screen.settings.worldbook.WorldBookListStyleTest" time="0.0"/>
+  <testcase name="filterEntries_statusEnabledAndAlwaysActive" classname="com.example.myapplication.ui.screen.settings.worldbook.WorldBookListStyleTest" time="0.0"/>
+  <testcase name="filterEntries_statusHasRegexScansAllKeywordLists" classname="com.example.myapplication.ui.screen.settings.worldbook.WorldBookListStyleTest" time="0.0"/>
+  <testcase name="firstRealKeywords_keepsRegexLiteralIntact" classname="com.example.myapplication.ui.screen.settings.worldbook.WorldBookListStyleTest" time="0.0"/>
+  <testcase name="filterEntries_searchMatchesTitleContentOrKeywords" classname="com.example.myapplication.ui.screen.settings.worldbook.WorldBookListStyleTest" time="0.0"/>
+  <testcase name="formatRelativeTime_hours" classname="com.example.myapplication.ui.screen.settings.worldbook.WorldBookListStyleTest" time="0.0"/>
+  <testcase name="firstRealKeywords_respectsLimit" classname="com.example.myapplication.ui.screen.settings.worldbook.WorldBookListStyleTest" time="0.0"/>
+  <testcase name="bookSpineColor_isStableForSameBookId" classname="com.example.myapplication.ui.screen.settings.worldbook.WorldBookListStyleTest" time="0.0"/>
+  <testcase name="formatRelativeTime_justNow_underOneMinute" classname="com.example.myapplication.ui.screen.settings.worldbook.WorldBookListStyleTest" time="0.0"/>
+  <testcase name="filterEntries_combinesAllFiltersWithAndLogic" classname="com.example.myapplication.ui.screen.settings.worldbook.WorldBookListStyleTest" time="0.0"/>
+  <testcase name="firstRealKeywords_fallsThroughToAliasesThenSecondary" classname="com.example.myapplication.ui.screen.settings.worldbook.WorldBookListStyleTest" time="0.001"/>
+  <testcase name="formatRelativeTime_emptyForZeroOrNegative" classname="com.example.myapplication.ui.screen.settings.worldbook.WorldBookListStyleTest" time="0.0"/>
+  <testcase name="formatRelativeTime_days" classname="com.example.myapplication.ui.screen.settings.worldbook.WorldBookListStyleTest" time="0.0"/>
+  <testcase name="formatRelativeTime_justNow_forFutureClockSkew" classname="com.example.myapplication.ui.screen.settings.worldbook.WorldBookListStyleTest" time="0.0"/>
+  <testcase name="bookSpineColor_differsBetweenDistinctBookIds" classname="com.example.myapplication.ui.screen.settings.worldbook.WorldBookListStyleTest" time="0.0"/>
+  <testcase name="bookSpineColor_handlesBlankIdWithoutCrash" classname="com.example.myapplication.ui.screen.settings.worldbook.WorldBookListStyleTest" time="0.0"/>
+  <testcase name="firstRealKeywords_deduplicatesAndTrims" classname="com.example.myapplication.ui.screen.settings.worldbook.WorldBookListStyleTest" time="0.0"/>
+  <testcase name="firstRealKeywords_picksFromKeywordsFirst" classname="com.example.myapplication.ui.screen.settings.worldbook.WorldBookListStyleTest" time="0.0"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

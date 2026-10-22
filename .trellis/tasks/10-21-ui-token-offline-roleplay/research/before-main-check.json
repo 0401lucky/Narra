@@ -1,0 +1,28 @@
+{
+  "before_cases": 14,
+  "before_sha256": {
+    "E04_reading-empty-dark": "960f9fb0973709c8131f18aeefcde9f98adb2c0eabc53c2faa8984d08b15774f",
+    "E04_reading-mixed-background": "bfc82fce660d71d84001e151ada12baa5e6af8aca7a5fe1b1cd78163178f9335",
+    "E04_reading-narrow-dark": "6f68dd44092935cd112dde22a533b5a38302ffa1eee1c990515518e599b93706",
+    "E04_scene-background": "81e48593f9ba14d37b0c45873d45d334f5f7bcde7f3b6a779022e516f6da0a8f",
+    "E04_scene-empty": "26ddcad21b965f9825acfd1ddf889808908dadae306ead0d9982c0e507bbc2c5",
+    "E04_scene-matcha-dark": "d6f49703f5d1c7d7186c90e83448284004225d1ae2cab1e3a438155cfc8af897",
+    "E04_scene-matcha-light": "05062c7563cf745c5731118dc12c48eab7700bba4a5ef0001325e22568ecd30d",
+    "E04_scene-narrow-dark": "c312bb9a22a07ac22e62daf75105868408b9dd3302a895b41a2681ddd7c0237f",
+    "E04_scene-narrow-light": "eaa23cda32066a2b1759f1373266066637768cad078a44c06dc15f95516eba56",
+    "E04_scene-ocean-dark": "3dfbe7d4e726e234c607fb0afa42b763c9c4db6a3e64ca7eaa1c92abeee64e30",
+    "E04_scene-ocean-light": "9ffcbfc924eea4a8166734ee2a491ce756eb57de73b643dea474f40bf045326b",
+    "E04_scene-suggestions": "0957ab6bb6fd790526de46d896239d4ba9604c8ba3a9b58f9bcd43b99e8c54c9",
+    "E04_scene-vanilla-dark": "051a15708daad7b2884a5e4653c2f61f9e67a2b375b529d635fb6aa3c05de4f2",
+    "E04_scene-vanilla-light": "31c8eb1b715aaff4c6e241662b343886513a9e524a280114c8a5f32595107c4c"
+  },
+  "fixed_stage_parameters_verified": true,
+  "before_verify": {
+    "tests": 14,
+    "failures": 14,
+    "classification": "expected Roborazzi original file missing only"
+  },
+  "old_baselines_hashes_unchanged": 78,
+  "initial_fallback_preserved": true,
+  "layout_negative_evidence": true
+}

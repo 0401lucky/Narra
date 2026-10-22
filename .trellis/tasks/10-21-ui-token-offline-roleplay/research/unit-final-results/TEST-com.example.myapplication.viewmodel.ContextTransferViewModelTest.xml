@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.myapplication.viewmodel.ContextTransferViewModelTest" tests="16" skipped="0" failures="0" errors="0" timestamp="2026-10-22T05:10:29.587Z" hostname="LUCKY" time="0.13">
+  <properties/>
+  <testcase name="confirmImport_tavernImageCardImportsWorldBookAndAvatar" classname="com.example.myapplication.viewmodel.ContextTransferViewModelTest" time="0.025"/>
+  <testcase name="confirmImport_tavernAssistantSectionAlsoImportsScopedWorldBookEntries" classname="com.example.myapplication.viewmodel.ContextTransferViewModelTest" time="0.006"/>
+  <testcase name="previewImportJson_detectsConflictAndSupportsTavernSource" classname="com.example.myapplication.viewmodel.ContextTransferViewModelTest" time="0.005"/>
+  <testcase name="previewImportPayload_worldBookSectionSupportsTavernPngExtraction" classname="com.example.myapplication.viewmodel.ContextTransferViewModelTest" time="0.004"/>
+  <testcase name="exportBundleJson_assistantSectionIncludesCustomAssistants" classname="com.example.myapplication.viewmodel.ContextTransferViewModelTest" time="0.003"/>
+  <testcase name="confirmImport_standaloneLorebookCreatesAttachableEntries" classname="com.example.myapplication.viewmodel.ContextTransferViewModelTest" time="0.002"/>
+  <testcase name="importBundleJson_normalizesNarraBackupBeforePersisting" classname="com.example.myapplication.viewmodel.ContextTransferViewModelTest" time="0.038"/>
+  <testcase name="importBundleJson_mergesAssistantsWorldBookMemoryAndSummaries" classname="com.example.myapplication.viewmodel.ContextTransferViewModelTest" time="0.006"/>
+  <testcase name="previewImportJson_presetsSectionSupportsSillyTavernPreset" classname="com.example.myapplication.viewmodel.ContextTransferViewModelTest" time="0.004"/>
+  <testcase name="previewImportJson_supportsStandaloneLorebookJson" classname="com.example.myapplication.viewmodel.ContextTransferViewModelTest" time="0.004"/>
+  <testcase name="previewImportPayload_supportsTavernImageCard" classname="com.example.myapplication.viewmodel.ContextTransferViewModelTest" time="0.004"/>
+  <testcase name="previewImportPayload_supportsBracketWrappedTavernImageCard" classname="com.example.myapplication.viewmodel.ContextTransferViewModelTest" time="0.006"/>
+  <testcase name="importBundleJson_skipsSummarySegmentsWithMissingConversation" classname="com.example.myapplication.viewmodel.ContextTransferViewModelTest" time="0.006"/>
+  <testcase name="exportBundleJson_memorySectionIncludesSummarySegments" classname="com.example.myapplication.viewmodel.ContextTransferViewModelTest" time="0.006"/>
+  <testcase name="exportAndImportPresetPack_roundTripsCustomPresetsOnly" classname="com.example.myapplication.viewmodel.ContextTransferViewModelTest" time="0.007"/>
+  <testcase name="exportBundleJson_worldBookSectionOnlyIncludesWorldBookEntries" classname="com.example.myapplication.viewmodel.ContextTransferViewModelTest" time="0.003"/>
+  <system-out><![CDATA[TavernCharacterAdapter: 解析到世界书条目数: 2
+TavernCharacterAdapter: 解析到世界书条目数: 2
+TavernCharacterAdapter: 解析到世界书条目数: 0
+TavernCharacterAdapter: 解析到世界书条目数: 1
+TavernCharacterAdapter: 解析到世界书条目数: 0
+TavernCharacterAdapter: 解析到世界书条目数: 0
+]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

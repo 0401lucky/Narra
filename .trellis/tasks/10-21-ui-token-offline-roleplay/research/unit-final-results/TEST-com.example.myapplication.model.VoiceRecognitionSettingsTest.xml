@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.myapplication.model.VoiceRecognitionSettingsTest" tests="12" skipped="0" failures="0" errors="0" timestamp="2026-10-22T05:09:55.600Z" hostname="LUCKY" time="0.001">
+  <properties/>
+  <testcase name="resolveChatCompletionsEndpointForAsr_appendsPathOnlyWhenMissing" classname="com.example.myapplication.model.VoiceRecognitionSettingsTest" time="0.0"/>
+  <testcase name="isReadyForInput_requiresEnabledFlagEvenForSystemEngine" classname="com.example.myapplication.model.VoiceRecognitionSettingsTest" time="0.0"/>
+  <testcase name="hasUsableCredential_remoteEngineRequiresBothKeyAndBaseUrl" classname="com.example.myapplication.model.VoiceRecognitionSettingsTest" time="0.0"/>
+  <testcase name="requireSecureVoiceRecognitionBaseUrl_rejectsBlankMissingSchemeAndInsecureUrl" classname="com.example.myapplication.model.VoiceRecognitionSettingsTest" time="0.001"/>
+  <testcase name="hasUsableCredential_systemEngineNeedsNoCredential" classname="com.example.myapplication.model.VoiceRecognitionSettingsTest" time="0.0"/>
+  <testcase name="resolveAsrEndpoint_followsSelectedProtocol" classname="com.example.myapplication.model.VoiceRecognitionSettingsTest" time="0.0"/>
+  <testcase name="resolveTranscriptionEndpoint_appendsPathOnlyWhenMissing" classname="com.example.myapplication.model.VoiceRecognitionSettingsTest" time="0.0"/>
+  <testcase name="requireSecureVoiceRecognitionBaseUrl_allowsLoopbackHttpForLocalDebugging" classname="com.example.myapplication.model.VoiceRecognitionSettingsTest" time="0.0"/>
+  <testcase name="stripSensitiveFields_removesApiKeyAndKeepsRest" classname="com.example.myapplication.model.VoiceRecognitionSettingsTest" time="0.0"/>
+  <testcase name="normalized_trimsFieldsAndFallsBackToDefaultModel" classname="com.example.myapplication.model.VoiceRecognitionSettingsTest" time="0.0"/>
+  <testcase name="engineFromStorageValue_isCaseInsensitiveAndFallsBackToSystem" classname="com.example.myapplication.model.VoiceRecognitionSettingsTest" time="0.0"/>
+  <testcase name="protocolFromStorageValue_isCaseInsensitiveAndFallsBackToTranscription" classname="com.example.myapplication.model.VoiceRecognitionSettingsTest" time="0.0"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

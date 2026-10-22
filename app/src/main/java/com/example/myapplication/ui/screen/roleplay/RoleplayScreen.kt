@@ -23,6 +23,7 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -35,7 +36,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.Row
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import com.example.myapplication.R
@@ -382,7 +382,9 @@ fun RoleplayScreen(
         voiceDraft = VoiceMessageDraft()
     }
 
+    val colorScheme = MaterialTheme.colorScheme
     val offlineQuickActions = remember(
+        colorScheme,
         onOpenDiary,
         onOpenMoments,
         onOpenVideoCall,
@@ -394,7 +396,7 @@ fun RoleplayScreen(
                 RoleplayInputQuickAction(
                     label = "日记",
                     icon = Icons.Default.AutoStories,
-                    accentColor = Color(0xFFC78A38),
+                    accentColor = colorScheme.secondary,
                     onClick = onOpenDiary,
                 ),
             )
@@ -402,7 +404,7 @@ fun RoleplayScreen(
                 RoleplayInputQuickAction(
                     label = "语音",
                     icon = Icons.Default.KeyboardVoice,
-                    accentColor = Color(0xFF5B91D7),
+                    accentColor = colorScheme.primary,
                     onClick = { showVoiceMessageSheet = true },
                 ),
             )
@@ -410,7 +412,7 @@ fun RoleplayScreen(
                 RoleplayInputQuickAction(
                     label = "查手机",
                     icon = Icons.Default.Visibility,
-                    accentColor = Color(0xFF5B91D7),
+                    accentColor = colorScheme.primary,
                     onClick = { showPhoneOwnerPicker = true },
                 ),
             )
@@ -418,7 +420,7 @@ fun RoleplayScreen(
                 RoleplayInputQuickAction(
                     label = "转账",
                     icon = Icons.Default.Share,
-                    accentColor = Color(0xFF07C160),
+                    accentColor = colorScheme.tertiary,
                     onClick = {
                         primeSpecialPlayDraft(ChatSpecialType.TRANSFER)
                         activeSpecialPlayTypeName = ChatSpecialType.TRANSFER.name
@@ -429,7 +431,7 @@ fun RoleplayScreen(
                 RoleplayInputQuickAction(
                     label = "邀约",
                     icon = Icons.Default.Event,
-                    accentColor = Color(0xFF5B91D7),
+                    accentColor = colorScheme.primary,
                     onClick = {
                         primeSpecialPlayDraft(ChatSpecialType.INVITE)
                         activeSpecialPlayTypeName = ChatSpecialType.INVITE.name
@@ -440,7 +442,7 @@ fun RoleplayScreen(
                 RoleplayInputQuickAction(
                     label = "礼物",
                     icon = Icons.Default.CardGiftcard,
-                    accentColor = Color(0xFFE77F93),
+                    accentColor = colorScheme.tertiary,
                     onClick = {
                         primeSpecialPlayDraft(ChatSpecialType.GIFT)
                         activeSpecialPlayTypeName = ChatSpecialType.GIFT.name
@@ -451,7 +453,7 @@ fun RoleplayScreen(
                 RoleplayInputQuickAction(
                     label = "委托",
                     icon = Icons.AutoMirrored.Filled.Assignment,
-                    accentColor = Color(0xFFD78B31),
+                    accentColor = colorScheme.secondary,
                     onClick = {
                         primeSpecialPlayDraft(ChatSpecialType.TASK)
                         activeSpecialPlayTypeName = ChatSpecialType.TASK.name
@@ -462,7 +464,7 @@ fun RoleplayScreen(
                 RoleplayInputQuickAction(
                     label = "惩罚",
                     icon = Icons.Default.Gavel,
-                    accentColor = Color(0xFFD55C73),
+                    accentColor = colorScheme.error,
                     onClick = {
                         primeSpecialPlayDraft(ChatSpecialType.PUNISH)
                         activeSpecialPlayTypeName = ChatSpecialType.PUNISH.name
@@ -473,7 +475,7 @@ fun RoleplayScreen(
                 RoleplayInputQuickAction(
                     label = "动态",
                     icon = Icons.Default.Forum,
-                    accentColor = Color(0xFF7C93F6),
+                    accentColor = colorScheme.secondary,
                     onClick = onOpenMoments,
                 ),
             )
@@ -481,7 +483,7 @@ fun RoleplayScreen(
                 RoleplayInputQuickAction(
                     label = "信箱",
                     icon = Icons.Default.Mail,
-                    accentColor = Color(0xFF2E8068),
+                    accentColor = colorScheme.tertiary,
                     onClick = onOpenMailbox,
                 ),
             )
@@ -489,7 +491,7 @@ fun RoleplayScreen(
                 RoleplayInputQuickAction(
                     label = "钱包",
                     icon = Icons.Default.AccountBalanceWallet,
-                    accentColor = Color(0xFF2E8068),
+                    accentColor = colorScheme.tertiary,
                     onClick = onOpenWallet,
                 ),
             )
@@ -497,7 +499,7 @@ fun RoleplayScreen(
                 RoleplayInputQuickAction(
                     label = "视频",
                     icon = Icons.Default.Videocam,
-                    accentColor = Color(0xFF6C84FF),
+                    accentColor = colorScheme.primary,
                     onClick = onOpenVideoCall,
                 ),
             )

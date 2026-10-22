@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.myapplication.data.repository.context.TavernCharacterImageAdapterTest" tests="2" skipped="0" failures="0" errors="0" timestamp="2026-10-22T05:09:42.240Z" hostname="LUCKY" time="0.004">
+  <properties/>
+  <testcase name="decodeAsBundle_readsBracketWrappedPngTextChunk" classname="com.example.myapplication.data.repository.context.TavernCharacterImageAdapterTest" time="0.002"/>
+  <testcase name="decodeAsBundle_readsPngCharaChunk" classname="com.example.myapplication.data.repository.context.TavernCharacterImageAdapterTest" time="0.001"/>
+  <system-out><![CDATA[TavernCharacterAdapter: 解析到世界书条目数: 0
+TavernCharacterAdapter: 解析到世界书条目数: 0
+]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

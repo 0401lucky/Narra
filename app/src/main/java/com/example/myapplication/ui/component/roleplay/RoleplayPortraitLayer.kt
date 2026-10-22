@@ -15,11 +15,10 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -33,6 +32,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -42,6 +42,9 @@ import com.example.myapplication.model.RoleplaySpeaker
 import com.example.myapplication.R
 import com.example.myapplication.ui.component.UserAvatarLoadState
 import com.example.myapplication.ui.component.rememberUserProfileAvatarState
+import com.example.myapplication.ui.theme.NarraUi
+import com.example.myapplication.ui.theme.NarraShapes
+import com.example.myapplication.ui.theme.readableRoleplayText
 
 data class RoleplayPortraitSpec(
     val name: String,
@@ -82,7 +85,7 @@ fun RoleplayPortraitLayer(
             spec = user,
             modifier = Modifier
                 .width(RoleplayPortraitCardWidth)
-                .fillMaxHeight(),
+                .heightIn(min = 120.dp),
             emphasized = !autoHighlightSpeaker || highlightedSpeaker == RoleplaySpeaker.USER,
             isSpeaking = false,
             onClick = onUserPortraitClick,
@@ -96,7 +99,7 @@ fun RoleplayPortraitLayer(
             spec = character,
             modifier = Modifier
                 .width(RoleplayPortraitCardWidth)
-                .fillMaxHeight(),
+                .heightIn(min = 120.dp),
             emphasized = !autoHighlightSpeaker || highlightedSpeaker == RoleplaySpeaker.CHARACTER,
             isSpeaking = isSpeaking,
             onClick = onCharacterPortraitClick,
@@ -160,10 +163,7 @@ private fun PortraitCard(
         label = "glow_pulse",
     )
 
-    val shape = RoundedCornerShape(
-        topStart = 30.dp, topEnd = 30.dp,
-        bottomStart = 24.dp, bottomEnd = 24.dp,
-    )
+    val shape = NarraShapes.large
     val borderWidth = if (emphasized) 2.dp else 1.dp
     val borderColor = if (emphasized) {
         accentColor.copy(alpha = glowAlpha)
@@ -183,7 +183,8 @@ private fun PortraitCard(
         Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .fillMaxHeight()
+                .heightIn(min = 120.dp)
+                .testTag("roleplay_portrait_${spec.fallbackLabel}")
                 .clip(shape)
                 .clickable(onClick = onClick)
                 .background(Brush.verticalGradient(gradientColors))
@@ -195,7 +196,7 @@ private fun PortraitCard(
                 Image(
                     bitmap = imageState.imageBitmap,
                     contentDescription = portraitDescription,
-                    modifier = Modifier.fillMaxHeight(),
+                    modifier = Modifier.matchParentSize(),
                     contentScale = ContentScale.Crop,
                 )
             }
@@ -217,8 +218,8 @@ private fun PortraitCard(
             Column(
                 modifier = Modifier
                     .align(Alignment.BottomStart)
-                    .padding(16.dp),
-                verticalArrangement = Arrangement.spacedBy(6.dp),
+                    .padding(NarraUi.space12),
+                verticalArrangement = Arrangement.spacedBy(NarraUi.space8),
             ) {
                 Text(
                     text = spec.name.ifBlank { spec.fallbackLabel },
@@ -235,24 +236,21 @@ private fun PortraitCard(
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                 }
-            }
-
-            // Speaking indicator badge
-            if (isSpeaking) {
-                Surface(
-                    modifier = Modifier
-                        .align(Alignment.BottomEnd)
-                        .padding(12.dp),
-                    shape = RoundedCornerShape(12.dp),
-                    color = accentColor.copy(alpha = 0.88f),
-                ) {
-                    Text(
-                        text = stringResource(id = R.string.roleplay_speaking),
-                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp),
-                        style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.onPrimary,
-                        fontWeight = FontWeight.Medium,
-                    )
+                // 状态随文字排版，避免大字体覆盖姓名或角色标签。
+                if (isSpeaking) {
+                    val statusSurface = accentColor.copy(alpha = 1f)
+                    Surface(
+                        shape = NarraShapes.small,
+                        color = statusSurface,
+                    ) {
+                        Text(
+                            text = stringResource(id = R.string.roleplay_speaking),
+                            modifier = Modifier.padding(horizontal = NarraUi.space8, vertical = NarraUi.space4),
+                            style = MaterialTheme.typography.labelSmall,
+                            color = readableRoleplayText(MaterialTheme.colorScheme.onPrimary, statusSurface, statusSurface),
+                            fontWeight = FontWeight.Medium,
+                        )
+                    }
                 }
             }
         }

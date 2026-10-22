@@ -68,7 +68,7 @@
 
 - UI 外观基准位于 `app/src/test/snapshots/`；用例登记表为
   `ui/screenshot/ScreenshotCases.kt`，宿主与参数记录见同目录 `manifest.md`。
-- 改动聊天首页、角色列表、线上扮演或气泡外观后运行截图 verify（仅筛选
+- 改动消息首页、角色列表、线上 / 线下扮演、会话阅读或气泡外观后运行截图 verify（仅筛选
   `com.example.myapplication.ui.screenshot.*`）；它只比较、不生成基准，
   普通 `testDebugUnitTest` 不比较截图。
 - 禁止在验证前 record，也禁止使用 `verifyAndRecordRoborazziDebug`；新增或
@@ -77,6 +77,9 @@
   目标宿主复跑并人工确认前，新基准只能是“候选”。
 - 计数守卫 `ScreenshotBaselineGuardTest` 校验登记表 ↔ 测试类 ↔ PNG 三者
   一致；零测试、删用例、缺失或未登记基准都会失败。
+- 新增页面无基准时，先用 verify 的缺图 actual 保存修改产品前的真实画面、参数与哈希；
+  再保存迁移后候选供人工审阅。接纳前新增项及计数守卫应继续缺图失败，不能暂时豁免；
+  将这类失败与旧图差异 / 行为失败分开报告。确认后仅接纳审阅过的图再最终 verify。
 
 ### 性能
 

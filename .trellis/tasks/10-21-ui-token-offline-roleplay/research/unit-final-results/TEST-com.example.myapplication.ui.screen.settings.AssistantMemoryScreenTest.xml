@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.myapplication.ui.screen.settings.AssistantMemoryScreenTest" tests="3" skipped="0" failures="0" errors="0" timestamp="2026-10-22T05:10:19.449Z" hostname="LUCKY" time="0.005">
+  <properties/>
+  <testcase name="shouldShowAssistantMemoryContentToggle_returnsFalseForShortContent" classname="com.example.myapplication.ui.screen.settings.AssistantMemoryScreenTest" time="0.005"/>
+  <testcase name="shouldShowAssistantMemoryContentToggle_returnsTrueForLongContent" classname="com.example.myapplication.ui.screen.settings.AssistantMemoryScreenTest" time="0.0"/>
+  <testcase name="shouldShowAssistantMemoryContentToggle_returnsTrueForManyLines" classname="com.example.myapplication.ui.screen.settings.AssistantMemoryScreenTest" time="0.0"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
@@ -21,11 +22,11 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ColorScheme
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -41,6 +42,8 @@ import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalView
+import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.text
@@ -49,6 +52,7 @@ import androidx.compose.ui.text.TextLayoutResult
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.unit.Dp
 import androidx.core.view.HapticFeedbackConstantsCompat
 import com.example.myapplication.R
 import com.example.myapplication.model.RoleplaySuggestionUiModel
@@ -56,6 +60,9 @@ import com.example.myapplication.model.RoleplayNoBackgroundSkinSettings
 import com.example.myapplication.ui.component.NarraTextButton
 import com.example.myapplication.ui.theme.readableRoleplayText
 import com.example.myapplication.ui.theme.readableRoleplayTextOnSurfaces
+import com.example.myapplication.ui.theme.NarraUi
+import com.example.myapplication.ui.theme.NarraShapes
+import com.example.myapplication.ui.theme.NarraMinimumTouchTarget
 
 internal data class ImmersiveRoleplayColors(
     val textPrimary: Color,
@@ -187,6 +194,7 @@ internal fun RoleplaySuggestionSection(
     onGenerateSuggestions: () -> Unit,
     onApplySuggestion: (String) -> Unit,
     onClearSuggestions: () -> Unit,
+    maxHeight: Dp,
 ) {
     val view = LocalView.current
     val showPanel = suggestions.isNotEmpty() || isGeneratingSuggestions || !suggestionErrorMessage.isNullOrBlank()
@@ -194,37 +202,40 @@ internal fun RoleplaySuggestionSection(
         ImmersiveGlassSurface(
             backdropState = backdropState,
             modifier = Modifier.fillMaxWidth(),
-            shape = RoundedCornerShape(16.dp),
+            shape = NarraShapes.medium,
             blurRadius = 18.dp,
-            overlayColor = colors.panelBackground,
+            overlayColor = colors.panelBackgroundStrong,
         ) {
             Row(
                 modifier = Modifier
+                    .fillMaxWidth()
+                    .heightIn(min = NarraMinimumTouchTarget)
                     .combinedClickable(
                         enabled = !isSending,
+                        role = Role.Button,
+                        onClickLabel = "生成建议",
                         onClick = onGenerateSuggestions,
-                        onLongClick = {},
                     )
-                    .padding(horizontal = 14.dp, vertical = 10.dp),
+                    .padding(horizontal = NarraUi.space16, vertical = NarraUi.space8),
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-            Text(
-                stringResource(id = R.string.roleplay_ai_helper_title),
-                style = MaterialTheme.typography.labelMedium,
-                color = colors.characterAccent,
-                fontWeight = FontWeight.SemiBold,
-            )
-            Text(
-                text = if (isSending) {
-                    stringResource(id = R.string.roleplay_sending)
-                } else {
-                    stringResource(id = R.string.roleplay_generate)
-                },
-                style = MaterialTheme.typography.labelSmall,
-                color = if (isSending) colors.textMuted else colors.characterAccent,
-            )
-        }
+                Text(
+                    stringResource(id = R.string.roleplay_ai_helper_title),
+                    style = MaterialTheme.typography.labelMedium,
+                    color = colors.panelText,
+                    fontWeight = FontWeight.SemiBold,
+                )
+                Text(
+                    text = if (isSending) {
+                        stringResource(id = R.string.roleplay_sending)
+                    } else {
+                        stringResource(id = R.string.roleplay_generate)
+                    },
+                    style = MaterialTheme.typography.labelSmall,
+                    color = colors.panelMutedText,
+                )
+            }
         }
         return
     }
@@ -233,118 +244,124 @@ internal fun RoleplaySuggestionSection(
     ImmersiveGlassSurface(
         backdropState = backdropState,
         modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(18.dp),
+        shape = NarraShapes.medium,
         blurRadius = 18.dp,
         overlayColor = colors.panelBackgroundStrong,
     ) {
-    Column(
-        modifier = Modifier.padding(horizontal = 12.dp, vertical = 10.dp),
-        verticalArrangement = Arrangement.spacedBy(8.dp),
-    ) {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically,
+        LazyColumn(
+            state = suggestionListState,
+            modifier = Modifier.fillMaxWidth().heightIn(max = maxHeight).testTag("roleplay_scene_suggestions"),
+            contentPadding = androidx.compose.foundation.layout.PaddingValues(NarraUi.space12),
+            verticalArrangement = Arrangement.spacedBy(NarraUi.space8),
         ) {
-            Text(
-                stringResource(id = R.string.roleplay_ai_helper_title),
-                style = MaterialTheme.typography.labelMedium,
-                color = colors.characterAccent,
-                fontWeight = FontWeight.SemiBold,
-            )
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                NarraTextButton(onClick = {
-                    view.performHapticFeedback(HapticFeedbackConstantsCompat.SEGMENT_FREQUENT_TICK)
-                    onGenerateSuggestions()
-                }, enabled = !isSending && !isGeneratingSuggestions) {
+            item(key = "suggestion-actions") {
+                FlowRow(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(NarraUi.space8),
+                ) {
                     Text(
-                        text = if (suggestions.isEmpty()) {
-                            stringResource(id = R.string.common_retry)
-                        } else {
-                            stringResource(id = R.string.roleplay_refresh_suggestions)
-                        },
-                        color = colors.characterAccent,
+                        stringResource(id = R.string.roleplay_ai_helper_title),
+                        style = MaterialTheme.typography.labelMedium,
+                        modifier = Modifier.align(Alignment.CenterVertically),
+                        color = colors.panelText,
+                        fontWeight = FontWeight.SemiBold,
                     )
-                }
-                NarraTextButton(onClick = onClearSuggestions) {
-                    Text(
-                        text = if (isGeneratingSuggestions) {
-                            stringResource(id = R.string.common_cancel)
-                        } else {
-                            stringResource(id = R.string.common_collapse)
-                        },
-                        color = if (isGeneratingSuggestions) colors.errorText else colors.textMuted,
-                    )
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        NarraTextButton(onClick = {
+                            view.performHapticFeedback(HapticFeedbackConstantsCompat.SEGMENT_FREQUENT_TICK)
+                            onGenerateSuggestions()
+                        }, enabled = !isSending && !isGeneratingSuggestions) {
+                            Text(
+                                text = if (suggestions.isEmpty()) {
+                                    stringResource(id = R.string.common_retry)
+                                } else {
+                                    stringResource(id = R.string.roleplay_refresh_suggestions)
+                                },
+                                color = colors.panelText,
+                            )
+                        }
+                        NarraTextButton(onClick = onClearSuggestions) {
+                            Text(
+                                text = if (isGeneratingSuggestions) {
+                                    stringResource(id = R.string.common_cancel)
+                                } else {
+                                    stringResource(id = R.string.common_collapse)
+                                },
+                                color = colors.panelMutedText,
+                            )
+                        }
+                    }
                 }
             }
-        }
-        if (isGeneratingSuggestions) {
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
-                CircularProgressIndicator(modifier = Modifier.size(16.dp), strokeWidth = 2.dp, color = colors.characterAccent)
-                Text(
-                    text = stringResource(id = R.string.roleplay_generating_suggestions),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = colors.textMuted,
-                )
+            if (isGeneratingSuggestions) {
+                item(key = "suggestion-loading") {
+                    Row(horizontalArrangement = Arrangement.spacedBy(NarraUi.space8), verticalAlignment = Alignment.CenterVertically) {
+                        CircularProgressIndicator(modifier = Modifier.size(16.dp), strokeWidth = 2.dp, color = colors.panelText)
+                        Text(
+                            text = stringResource(id = R.string.roleplay_generating_suggestions),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = colors.panelMutedText,
+                        )
+                    }
+                }
             }
-        }
-        if (!suggestionErrorMessage.isNullOrBlank()) {
-            Text(suggestionErrorMessage, style = MaterialTheme.typography.bodySmall, color = colors.errorText)
-        }
-        if (suggestions.isNotEmpty()) {
-            LazyColumn(
-                state = suggestionListState,
-                modifier = Modifier.fillMaxWidth().heightIn(max = 280.dp),
-                verticalArrangement = Arrangement.spacedBy(6.dp),
-            ) {
-                items(suggestions, key = { it.id }) { suggestion ->
-                    ImmersiveGlassSurface(
-                        backdropState = backdropState,
-                        modifier = Modifier.fillMaxWidth(),
-                        shape = RoundedCornerShape(14.dp),
-                        overlayColor = colors.panelBackground,
-                    ) {
+            if (!suggestionErrorMessage.isNullOrBlank()) {
+                item(key = "suggestion-error") {
+                    Surface(color = colors.errorBackground, shape = NarraShapes.small) {
+                        Text(suggestionErrorMessage, modifier = Modifier.padding(NarraUi.space8),
+                            style = MaterialTheme.typography.bodySmall, color = colors.errorText)
+                    }
+                }
+            }
+            items(suggestions, key = { it.id }) { suggestion ->
+                ImmersiveGlassSurface(
+                    backdropState = backdropState,
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = NarraShapes.medium,
+                    overlayColor = colors.panelBackgroundStrong,
+                ) {
                     Column(
                         modifier = Modifier
+                            .fillMaxWidth()
+                            .heightIn(min = NarraMinimumTouchTarget)
+                            .testTag("roleplay_suggestion_${suggestion.id}")
                             .combinedClickable(
                                 enabled = !isSending,
+                                role = Role.Button,
+                                onClickLabel = "使用建议：${suggestion.label}",
                                 onClick = {
                                     view.performHapticFeedback(HapticFeedbackConstantsCompat.SEGMENT_FREQUENT_TICK)
                                     onApplySuggestion(suggestion.text)
                                 },
-                                onLongClick = {},
                             )
-                            .padding(horizontal = 12.dp, vertical = 10.dp),
-                        verticalArrangement = Arrangement.spacedBy(4.dp),
+                            .padding(horizontal = NarraUi.space12, vertical = NarraUi.space8),
+                        verticalArrangement = Arrangement.spacedBy(NarraUi.space4),
                     ) {
-                        Row(
-                            horizontalArrangement = Arrangement.spacedBy(8.dp),
-                            verticalAlignment = Alignment.CenterVertically,
+                        FlowRow(
+                            horizontalArrangement = Arrangement.spacedBy(NarraUi.space8),
                         ) {
                             Text(
                                 text = suggestion.axis.toReadableLabel(),
                                 style = MaterialTheme.typography.labelSmall,
-                                color = colors.characterAccent.copy(alpha = 0.82f),
+                                color = colors.panelMutedText,
                                 fontWeight = FontWeight.SemiBold,
                             )
                             Text(
                                 suggestion.label,
                                 style = MaterialTheme.typography.labelSmall,
-                                color = colors.characterAccent,
+                                color = colors.panelText,
                                 fontWeight = FontWeight.SemiBold,
                             )
                         }
                         Text(
                             suggestion.text,
                             style = MaterialTheme.typography.bodySmall.copy(lineHeight = 20.sp),
-                            color = colors.textPrimary,
+                            color = colors.panelText,
                         )
-                    }
                     }
                 }
             }
         }
-    }
     }
 }
 
@@ -384,42 +401,44 @@ internal fun EmptyDialogueState(
                 ),
         )
 
-        Column(
-            modifier = Modifier.padding(horizontal = 32.dp, vertical = 24.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(12.dp),
-        ) {
-            Box(
-                modifier = Modifier
-                    .width(60.dp)
-                    .height(2.dp)
-                    .background(
-                        colors.characterAccent.copy(alpha = 0.4f),
-                        androidx.compose.foundation.shape.RoundedCornerShape(2.dp),
-                    ),
-            )
+        Surface(color = colors.panelBackgroundStrong, shape = NarraShapes.medium) {
+            Column(
+                modifier = Modifier.padding(horizontal = NarraUi.space32, vertical = NarraUi.space24),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.spacedBy(NarraUi.space12),
+            ) {
+                Box(
+                    modifier = Modifier
+                        .width(60.dp)
+                        .height(2.dp)
+                        .background(
+                            colors.characterAccent.copy(alpha = 0.4f),
+                            NarraShapes.pill,
+                        ),
+                )
 
-            androidx.compose.material3.Text(
-                text = stringResource(id = R.string.roleplay_empty_state_title),
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.SemiBold,
-                color = colors.textPrimary,
-            )
-            androidx.compose.material3.Text(
-                text = stringResource(id = R.string.roleplay_empty_state_subtitle),
-                style = MaterialTheme.typography.bodyMedium,
-                color = colors.textMuted.copy(alpha = 0.75f),
-            )
+                androidx.compose.material3.Text(
+                    text = stringResource(id = R.string.roleplay_empty_state_title),
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.SemiBold,
+                    color = colors.panelText,
+                )
+                androidx.compose.material3.Text(
+                    text = stringResource(id = R.string.roleplay_empty_state_subtitle),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = colors.panelMutedText,
+                )
 
-            Box(
-                modifier = Modifier
-                    .width(40.dp)
-                    .height(1.dp)
-                    .background(
-                        colors.textMuted.copy(alpha = 0.25f),
-                        androidx.compose.foundation.shape.RoundedCornerShape(1.dp),
-                    ),
-            )
+                Box(
+                    modifier = Modifier
+                        .width(40.dp)
+                        .height(1.dp)
+                        .background(
+                            colors.textMuted.copy(alpha = 0.25f),
+                            NarraShapes.pill,
+                        ),
+                )
+            }
         }
     }
 }

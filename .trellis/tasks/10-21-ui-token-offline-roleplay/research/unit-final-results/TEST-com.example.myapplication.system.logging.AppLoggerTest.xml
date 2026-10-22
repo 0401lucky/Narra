@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.myapplication.system.logging.AppLoggerTest" tests="6" skipped="0" failures="0" errors="0" timestamp="2026-10-22T05:09:55.930Z" hostname="LUCKY" time="0.004">
+  <properties/>
+  <testcase name="logFailure_lazyMessageOnlyEvaluatedOnFailure" classname="com.example.myapplication.system.logging.AppLoggerTest" time="0.001"/>
+  <testcase name="warn_forwardsMessageAndThrowableToSink" classname="com.example.myapplication.system.logging.AppLoggerTest" time="0.002"/>
+  <testcase name="logFailure_doesNothingOnSuccess" classname="com.example.myapplication.system.logging.AppLoggerTest" time="0.0"/>
+  <testcase name="logFailure_skipsCancellationException" classname="com.example.myapplication.system.logging.AppLoggerTest" time="0.0"/>
+  <testcase name="d_noThrowable" classname="com.example.myapplication.system.logging.AppLoggerTest" time="0.001"/>
+  <testcase name="logFailure_logsOnFailureAndKeepsResultIntact" classname="com.example.myapplication.system.logging.AppLoggerTest" time="0.0"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.myapplication.data.repository.ai.AiPromptExtrasServiceTest" tests="39" skipped="0" failures="0" errors="0" timestamp="2026-10-22T05:09:40.848Z" hostname="LUCKY" time="0.443">
+  <properties/>
+  <testcase name="generatePhoneSnapshotSections_chatPromptOmitsRoleplaySampling" classname="com.example.myapplication.data.repository.ai.AiPromptExtrasServiceTest" time="0.018"/>
+  <testcase name="generateRoleplayMemoryEntries_parsesStructuredJson" classname="com.example.myapplication.data.repository.ai.AiPromptExtrasServiceTest" time="0.018"/>
+  <testcase name="generatePhoneSearchDetail_parsesJsonObject" classname="com.example.myapplication.data.repository.ai.AiPromptExtrasServiceTest" time="0.017"/>
+  <testcase name="generateRoleplaySuggestions_fallsBackWhenProviderRejectsSamplingParameters" classname="com.example.myapplication.data.repository.ai.AiPromptExtrasServiceTest" time="0.012"/>
+  <testcase name="generateRoleplayDiaries_extractsJsonArrayFromSurroundingTextAndCodeFence" classname="com.example.myapplication.data.repository.ai.AiPromptExtrasServiceTest" time="0.008"/>
+  <testcase name="generateConversationSummary_returnsContent" classname="com.example.myapplication.data.repository.ai.AiPromptExtrasServiceTest" time="0.016"/>
+  <testcase name="generateShakeAssistantCard_buildsFilterPromptAndParsesAssistantJson" classname="com.example.myapplication.data.repository.ai.AiPromptExtrasServiceTest" time="0.008"/>
+  <testcase name="generateRoleplaySuggestions_parsesJsonArrayResponse" classname="com.example.myapplication.data.repository.ai.AiPromptExtrasServiceTest" time="0.006"/>
+  <testcase name="generateMomentCommentReplies_doesNotTreatAssistantPostSecondPersonAsUserAnchor" classname="com.example.myapplication.data.repository.ai.AiPromptExtrasServiceTest" time="0.009"/>
+  <testcase name="generatePhoneSnapshotSections_throwsWhenModelReturnsInvalidJson" classname="com.example.myapplication.data.repository.ai.AiPromptExtrasServiceTest" time="0.006"/>
+  <testcase name="generateRoleplaySuggestions_fallsBackFromCodeFenceAndPlainTextLines" classname="com.example.myapplication.data.repository.ai.AiPromptExtrasServiceTest" time="0.005"/>
+  <testcase name="generateMomentPost_parsesLikesSeedCommentsAndLifeSharingPrompt" classname="com.example.myapplication.data.repository.ai.AiPromptExtrasServiceTest" time="0.017"/>
+  <testcase name="generateMemoryEntries_appendsConversationWhenOverrideMissesPlaceholder" classname="com.example.myapplication.data.repository.ai.AiPromptExtrasServiceTest" time="0.005"/>
+  <testcase name="generateTitle_trimsLongTitle" classname="com.example.myapplication.data.repository.ai.AiPromptExtrasServiceTest" time="0.016"/>
+  <testcase name="generatePhoneSnapshotSections_parsesStructuredJson" classname="com.example.myapplication.data.repository.ai.AiPromptExtrasServiceTest" time="0.017"/>
+  <testcase name="generateAiPhotoImagePrompt_requestsNsfwSanitizationInsteadOfRefusal" classname="com.example.myapplication.data.repository.ai.AiPromptExtrasServiceTest" time="0.016"/>
+  <testcase name="condenseRoleplayMemories_mergesMultipleItemsIntoCompactList" classname="com.example.myapplication.data.repository.ai.AiPromptExtrasServiceTest" time="0.006"/>
+  <testcase name="generatePhoneSearchDetail_throwsWhenModelReturnsInvalidJson" classname="com.example.myapplication.data.repository.ai.AiPromptExtrasServiceTest" time="0.006"/>
+  <testcase name="generateMomentCommentReplies_filtersMisaddressedAssistantPostReplies" classname="com.example.myapplication.data.repository.ai.AiPromptExtrasServiceTest" time="0.006"/>
+  <testcase name="sanitizeAiPhotoPromptTextForImageModel_removesUnsafeSegmentsAndKeepsSafeContext" classname="com.example.myapplication.data.repository.ai.AiPromptExtrasServiceTest" time="0.001"/>
+  <testcase name="generateChatSuggestions_trimsAndFiltersLines" classname="com.example.myapplication.data.repository.ai.AiPromptExtrasServiceTest" time="0.005"/>
+  <testcase name="generateRoleplayDiaries_acceptsWrappedObjectAndChineseFields" classname="com.example.myapplication.data.repository.ai.AiPromptExtrasServiceTest" time="0.016"/>
+  <testcase name="generateMemoryEntries_rendersUserOverridePlaceholders" classname="com.example.myapplication.data.repository.ai.AiPromptExtrasServiceTest" time="0.005"/>
+  <testcase name="generateMomentCommentReplies_filtersUserTalkWhenAssistantPostHasNoUserAnchor" classname="com.example.myapplication.data.repository.ai.AiPromptExtrasServiceTest" time="0.006"/>
+  <testcase name="generateRoleplayConversationSummary_buildsStructuredPrompt" classname="com.example.myapplication.data.repository.ai.AiPromptExtrasServiceTest" time="0.015"/>
+  <testcase name="generateMomentCommentReplies_allowsNamedNpcAndRejectsPlaceholderNpc" classname="com.example.myapplication.data.repository.ai.AiPromptExtrasServiceTest" time="0.017"/>
+  <testcase name="generateRoleplaySuggestions_retriesWhenSuggestionsAreTooSimilar" classname="com.example.myapplication.data.repository.ai.AiPromptExtrasServiceTest" time="0.018"/>
+  <testcase name="generateMemoryEntries_parsesJsonArrayResponse" classname="com.example.myapplication.data.repository.ai.AiPromptExtrasServiceTest" time="0.004"/>
+  <testcase name="generatePhoneSearchDetail_userPhonePromptKeepsUserSearchSemantics" classname="com.example.myapplication.data.repository.ai.AiPromptExtrasServiceTest" time="0.004"/>
+  <testcase name="generatePhoneSnapshotSections_extractsJsonObjectFromSurroundingText" classname="com.example.myapplication.data.repository.ai.AiPromptExtrasServiceTest" time="0.016"/>
+  <testcase name="generateTitle_supportsResponsesApiMode" classname="com.example.myapplication.data.repository.ai.AiPromptExtrasServiceTest" time="0.016"/>
+  <testcase name="generatePhoneSnapshotSections_parsesJsonObjectWrappedInMarkdownCodeFence" classname="com.example.myapplication.data.repository.ai.AiPromptExtrasServiceTest" time="0.016"/>
+  <testcase name="generatePhoneSearchDetail_parsesJsonObjectWrappedInMarkdownCodeFence" classname="com.example.myapplication.data.repository.ai.AiPromptExtrasServiceTest" time="0.015"/>
+  <testcase name="generatePhoneSnapshotSections_userPhonePromptKeepsUserAsOwner" classname="com.example.myapplication.data.repository.ai.AiPromptExtrasServiceTest" time="0.008"/>
+  <testcase name="generateRoleplayDiaries_throwsWhenNoJsonArrayCanBeExtracted" classname="com.example.myapplication.data.repository.ai.AiPromptExtrasServiceTest" time="0.015"/>
+  <testcase name="generateMomentCommentReplies_filtersOverPersonalAssistantToAssistantReplies" classname="com.example.myapplication.data.repository.ai.AiPromptExtrasServiceTest" time="0.016"/>
+  <testcase name="generateMemoryEntries_usesDefaultPromptWhenOverrideBlank" classname="com.example.myapplication.data.repository.ai.AiPromptExtrasServiceTest" time="0.015"/>
+  <testcase name="generatePhoneSearchDetail_extractsJsonObjectFromSurroundingText" classname="com.example.myapplication.data.repository.ai.AiPromptExtrasServiceTest" time="0.004"/>
+  <testcase name="generateChatSuggestions_usesCustomChatCompletionsPathWhenConfigured" classname="com.example.myapplication.data.repository.ai.AiPromptExtrasServiceTest" time="0.015"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

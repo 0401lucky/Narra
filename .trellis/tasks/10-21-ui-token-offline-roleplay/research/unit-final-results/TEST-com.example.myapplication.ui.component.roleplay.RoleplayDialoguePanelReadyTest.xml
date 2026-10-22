@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.myapplication.ui.component.roleplay.RoleplayDialoguePanelReadyTest" tests="3" skipped="0" failures="0" errors="0" timestamp="2026-10-22T05:10:12.487Z" hostname="LUCKY" time="0.004">
+  <properties/>
+  <testcase name="offlineReplayViewportReady_仍可下滚_返回未就绪" classname="com.example.myapplication.ui.component.roleplay.RoleplayDialoguePanelReadyTest" time="0.004"/>
+  <testcase name="offlineReplayViewportReady_末项不可见或仍在滚动_返回未就绪" classname="com.example.myapplication.ui.component.roleplay.RoleplayDialoguePanelReadyTest" time="0.0"/>
+  <testcase name="offlineReplayViewportReady_末项可见且已停止到底_返回就绪" classname="com.example.myapplication.ui.component.roleplay.RoleplayDialoguePanelReadyTest" time="0.0"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

@@ -1,0 +1,100 @@
+{
+  "command": ".\\gradlew.bat :app:verifyRoborazziDebug --tests \"com.example.myapplication.ui.screenshot.*\" --console=plain",
+  "exit_code": 0,
+  "elapsed": "32s",
+  "summary": {
+    "tests": 93,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "suites": [
+    {
+      "suite": "com.example.myapplication.ui.screenshot.BubbleScreenshotB02Test",
+      "tests": 4,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "suite": "com.example.myapplication.ui.screenshot.BubbleScreenshotB03Test",
+      "tests": 10,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "suite": "com.example.myapplication.ui.screenshot.BubbleScreenshotB04Test",
+      "tests": 4,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "suite": "com.example.myapplication.ui.screenshot.MessageBubbleScreenshotTest",
+      "tests": 2,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "suite": "com.example.myapplication.ui.screenshot.OfflineRoleplayScreenshotE04Test",
+      "tests": 14,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "suite": "com.example.myapplication.ui.screenshot.PageScreenshotH01Test",
+      "tests": 18,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "suite": "com.example.myapplication.ui.screenshot.PageScreenshotH02Test",
+      "tests": 3,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "suite": "com.example.myapplication.ui.screenshot.PageScreenshotH03Test",
+      "tests": 3,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "suite": "com.example.myapplication.ui.screenshot.PageScreenshotH04Test",
+      "tests": 6,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "suite": "com.example.myapplication.ui.screenshot.ScreenshotBaselineGuardTest",
+      "tests": 1,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "suite": "com.example.myapplication.ui.screenshot.SkinScreenshotB01Test",
+      "tests": 26,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "suite": "com.example.myapplication.ui.screenshot.ThemeScreenshotC01Test",
+      "tests": 2,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    }
+  ],
+  "task_actually_executed": true,
+  "baseline_png_count": 92,
+  "accepted_hashes_unchanged": true
+}

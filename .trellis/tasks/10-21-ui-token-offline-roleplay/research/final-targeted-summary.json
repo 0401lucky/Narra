@@ -1,0 +1,80 @@
+{
+  "tests": 63,
+  "failures": 0,
+  "errors": 0,
+  "skipped": 0,
+  "suites": {
+    "com.example.myapplication.ui.component.roleplay.OfflineRoleplayAccessibilityTest": {
+      "tests": 9,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    "com.example.myapplication.ui.component.roleplay.OfflineRoleplayColorsTest": {
+      "tests": 5,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    "com.example.myapplication.ui.component.roleplay.PilotAccessibilityTest": {
+      "tests": 6,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    "com.example.myapplication.ui.component.roleplay.RoleplayDialoguePanelReadyTest": {
+      "tests": 3,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    "com.example.myapplication.ui.component.roleplay.RoleplayGlassBubblePolicyTest": {
+      "tests": 2,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    "com.example.myapplication.ui.component.roleplay.RoleplayReadingModeAccessibilityTest": {
+      "tests": 4,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    "com.example.myapplication.ui.component.roleplay.RoleplayReadingModeColorsTest": {
+      "tests": 3,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    "com.example.myapplication.ui.component.roleplay.RoleplaySemanticColorsTest": {
+      "tests": 4,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    "com.example.myapplication.ui.component.roleplay.RoleplayStreamingAutoScrollTest": {
+      "tests": 6,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    "com.example.myapplication.ui.component.roleplay.RoleplayThemeSwitchUiTest": {
+      "tests": 7,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    "com.example.myapplication.ui.screen.roleplay.RoleplayOnlinePhoneMessageListKeyTest": {
+      "tests": 2,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    "com.example.myapplication.ui.theme.UiTokenSourceGuardTest": {
+      "tests": 12,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    }
+  }
+}

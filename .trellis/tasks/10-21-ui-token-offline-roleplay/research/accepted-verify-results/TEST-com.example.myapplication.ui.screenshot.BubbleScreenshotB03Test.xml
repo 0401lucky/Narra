@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.myapplication.ui.screenshot.BubbleScreenshotB03Test" tests="10" skipped="0" failures="0" errors="0" timestamp="2026-10-22T05:06:39.344Z" hostname="LUCKY" time="1.624">
+  <properties/>
+  <testcase name="b03_tail_on" classname="com.example.myapplication.ui.screenshot.BubbleScreenshotB03Test" time="0.174"/>
+  <testcase name="b03_padding_horizontal_max" classname="com.example.myapplication.ui.screenshot.BubbleScreenshotB03Test" time="0.177"/>
+  <testcase name="b03_padding_horizontal_min" classname="com.example.myapplication.ui.screenshot.BubbleScreenshotB03Test" time="0.169"/>
+  <testcase name="b03_padding_vertical_max" classname="com.example.myapplication.ui.screenshot.BubbleScreenshotB03Test" time="0.176"/>
+  <testcase name="b03_padding_vertical_min" classname="com.example.myapplication.ui.screenshot.BubbleScreenshotB03Test" time="0.149"/>
+  <testcase name="b03_radius_max" classname="com.example.myapplication.ui.screenshot.BubbleScreenshotB03Test" time="0.153"/>
+  <testcase name="b03_radius_min" classname="com.example.myapplication.ui.screenshot.BubbleScreenshotB03Test" time="0.158"/>
+  <testcase name="b03_width_max" classname="com.example.myapplication.ui.screenshot.BubbleScreenshotB03Test" time="0.161"/>
+  <testcase name="b03_width_min" classname="com.example.myapplication.ui.screenshot.BubbleScreenshotB03Test" time="0.159"/>
+  <testcase name="b03_tail_off" classname="com.example.myapplication.ui.screenshot.BubbleScreenshotB03Test" time="0.14"/>
+  <system-out><![CDATA[Roborazzi: B03_tail-on.png The differ result :ComparisonResult(pixelDifferences=0, pixelCount=1152000, width=720, height=1600) changed:false
+Roborazzi: B03_padding-horizontal-max.png The differ result :ComparisonResult(pixelDifferences=0, pixelCount=1152000, width=720, height=1600) changed:false
+Roborazzi: B03_padding-horizontal-min.png The differ result :ComparisonResult(pixelDifferences=0, pixelCount=1152000, width=720, height=1600) changed:false
+Roborazzi: B03_padding-vertical-max.png The differ result :ComparisonResult(pixelDifferences=0, pixelCount=1152000, width=720, height=1600) changed:false
+Roborazzi: B03_padding-vertical-min.png The differ result :ComparisonResult(pixelDifferences=0, pixelCount=1152000, width=720, height=1600) changed:false
+Roborazzi: B03_radius-max.png The differ result :ComparisonResult(pixelDifferences=0, pixelCount=1152000, width=720, height=1600) changed:false
+Roborazzi: B03_radius-min.png The differ result :ComparisonResult(pixelDifferences=0, pixelCount=1152000, width=720, height=1600) changed:false
+Roborazzi: B03_width-max.png The differ result :ComparisonResult(pixelDifferences=0, pixelCount=1152000, width=720, height=1600) changed:false
+Roborazzi: B03_width-min.png The differ result :ComparisonResult(pixelDifferences=0, pixelCount=1152000, width=720, height=1600) changed:false
+Roborazzi: B03_tail-off.png The differ result :ComparisonResult(pixelDifferences=0, pixelCount=1152000, width=720, height=1600) changed:false
+]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

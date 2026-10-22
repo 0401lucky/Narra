@@ -1,0 +1,11 @@
+{"file":".trellis/spec/backend/index.md","reason":"Android层规范与修改前消费者清点"}
+{"file":".trellis/spec/backend/directory-structure.md","reason":"UI导航状态及测试源集职责"}
+{"file":".trellis/spec/backend/ui-token-contract.md","reason":"默认令牌用户原值真实承载面对比及人工接纳"}
+{"file":".trellis/spec/backend/ui-state-guidelines.md","reason":"真实入口回调保存和弹窗行为"}
+{"file":".trellis/spec/backend/error-handling.md","reason":"保存抓取健康状态失败脱敏与取消边界"}
+{"file":".trellis/spec/backend/network-guidelines.md","reason":"保持Provider协议URL认证归属测试隔离真实网络"}
+{"file":".trellis/spec/backend/logging-guidelines.md","reason":"API Key及Provider错误不得泄漏到日志或候选图"}
+{"file":".trellis/spec/backend/quality-guidelines.md","reason":"最小充分验证截图守卫和结果诚实性"}
+{"file":".trellis/spec/guides/code-reuse-thinking-guide.md","reason":"共享修改先枚举定义与全部消费者"}
+{"file":".trellis/tasks/10-21-ui-token-accessibility-expansion/research/settings-provider-entry.md","reason":"本批真实入口共享所有者覆盖缺口与候选矩阵"}
+{"file":".trellis/tasks/10-21-ui-token-accessibility-expansion/research/coverage-and-queue.md","reason":"真实窗口捕获before-after接纳及后续队列边界"}

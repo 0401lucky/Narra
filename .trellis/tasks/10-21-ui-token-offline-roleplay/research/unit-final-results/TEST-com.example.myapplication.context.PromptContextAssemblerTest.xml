@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.myapplication.context.PromptContextAssemblerTest" tests="26" skipped="0" failures="0" errors="0" timestamp="2026-10-22T05:09:38.398Z" hostname="LUCKY" time="0.19">
+  <properties/>
+  <testcase name="assemble_roleplayAddsSummaryFallbackWhenPresetHasNoSummarySlot" classname="com.example.myapplication.context.PromptContextAssemblerTest" time="0.073"/>
+  <testcase name="assemble_returnsEmptyPromptWhenAssistantMissing" classname="com.example.myapplication.context.PromptContextAssemblerTest" time="0.002"/>
+  <testcase name="assemble_withMarkUsageFalseDoesNotMarkMemoriesUsed" classname="com.example.myapplication.context.PromptContextAssemblerTest" time="0.007"/>
+  <testcase name="assemble_roleplayUnaffectedByInjectionPromptOverride" classname="com.example.myapplication.context.PromptContextAssemblerTest" time="0.007"/>
+  <testcase name="assemble_memoryInjectionPosition_afterWorldBookKeepsLegacyOrder" classname="com.example.myapplication.context.PromptContextAssemblerTest" time="0.004"/>
+  <testcase name="assemble_treatsDollarMacrosInWorldBookBlockAsLiteralText" classname="com.example.myapplication.context.PromptContextAssemblerTest" time="0.018"/>
+  <testcase name="assemble_replacesTavernStylePlaceholders" classname="com.example.myapplication.context.PromptContextAssemblerTest" time="0.003"/>
+  <testcase name="assemble_includesConversationSummary" classname="com.example.myapplication.context.PromptContextAssemblerTest" time="0.004"/>
+  <testcase name="assemble_includesSelectedMemoriesWhenEnabled" classname="com.example.myapplication.context.PromptContextAssemblerTest" time="0.004"/>
+  <testcase name="assemble_blankInjectionPromptFallsBackToDefaultTemplate" classname="com.example.myapplication.context.PromptContextAssemblerTest" time="0.003"/>
+  <testcase name="assemble_treatsDollarMacrosInMemoryBlockAsLiteralText" classname="com.example.myapplication.context.PromptContextAssemblerTest" time="0.003"/>
+  <testcase name="assemble_usesUserInjectionPromptWhenProvided" classname="com.example.myapplication.context.PromptContextAssemblerTest" time="0.003"/>
+  <testcase name="assemble_roleplayMemorySectionAddsStrictConsistencyInstruction" classname="com.example.myapplication.context.PromptContextAssemblerTest" time="0.005"/>
+  <testcase name="assemble_roleplayChatHistorySectionsReflectProvidedRecentWindowOnly" classname="com.example.myapplication.context.PromptContextAssemblerTest" time="0.003"/>
+  <testcase name="assemble_defaultMarksSelectedMemoriesUsed" classname="com.example.myapplication.context.PromptContextAssemblerTest" time="0.003"/>
+  <testcase name="assemble_roleplayIncludesGlobalUserPersonaPrompt" classname="com.example.myapplication.context.PromptContextAssemblerTest" time="0.002"/>
+  <testcase name="assemble_memoryInjectionPosition_beforePromptMovesMemoryEarly" classname="com.example.myapplication.context.PromptContextAssemblerTest" time="0.003"/>
+  <testcase name="assemble_qwenLightPresetKeepsRoleContextAndModeBridge" classname="com.example.myapplication.context.PromptContextAssemblerTest" time="0.006"/>
+  <testcase name="assemble_roleplayIncludesDescriptionAndSkipsCreatorNotes" classname="com.example.myapplication.context.PromptContextAssemblerTest" time="0.003"/>
+  <testcase name="assemble_memoryInjectionPosition_atEndMovesMemoryLast" classname="com.example.myapplication.context.PromptContextAssemblerTest" time="0.004"/>
+  <testcase name="assemble_includesRecentSummarySegmentsInPromptAndContextLog" classname="com.example.myapplication.context.PromptContextAssemblerTest" time="0.003"/>
+  <testcase name="assemble_blankAssistantPresetUsesGlobalDefaultPreset" classname="com.example.myapplication.context.PromptContextAssemblerTest" time="0.002"/>
+  <testcase name="assemble_withPresetShowsDynamicContentOnlyUnderOriginalSources" classname="com.example.myapplication.context.PromptContextAssemblerTest" time="0.008"/>
+  <testcase name="assemble_appendsMemoriesWhenInjectionPromptHasNoPlaceholder" classname="com.example.myapplication.context.PromptContextAssemblerTest" time="0.002"/>
+  <testcase name="assemble_appendsScenarioAfterSystemPrompt" classname="com.example.myapplication.context.PromptContextAssemblerTest" time="0.002"/>
+  <testcase name="assemble_includesMatchedWorldBookEntries" classname="com.example.myapplication.context.PromptContextAssemblerTest" time="0.008"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

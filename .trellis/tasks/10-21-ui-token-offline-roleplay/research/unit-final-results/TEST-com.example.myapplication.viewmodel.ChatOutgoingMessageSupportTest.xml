@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.myapplication.viewmodel.ChatOutgoingMessageSupportTest" tests="14" skipped="0" failures="0" errors="0" timestamp="2026-10-22T05:10:28.875Z" hostname="LUCKY" time="0.016">
+  <properties/>
+  <testcase name="resolveTransferPlay_rejectsImageGenerationModel" classname="com.example.myapplication.viewmodel.ChatOutgoingMessageSupportTest" time="0.004"/>
+  <testcase name="resolveTransferPlay_usesAssistantNameAsCounterpartyFallback" classname="com.example.myapplication.viewmodel.ChatOutgoingMessageSupportTest" time="0.003"/>
+  <testcase name="resolveSpecialPlay_buildsInviteWithAssistantFallback" classname="com.example.myapplication.viewmodel.ChatOutgoingMessageSupportTest" time="0.001"/>
+  <testcase name="resolveSpecialPlay_requiresPunishMethodAndCount" classname="com.example.myapplication.viewmodel.ChatOutgoingMessageSupportTest" time="0.005"/>
+  <testcase name="resolveTextMessage_allowsImageForEditableImageGenerationModel" classname="com.example.myapplication.viewmodel.ChatOutgoingMessageSupportTest" time="0.0"/>
+  <testcase name="resolveTextMessage_rejectsImageWhenModelHasNoVision" classname="com.example.myapplication.viewmodel.ChatOutgoingMessageSupportTest" time="0.001"/>
+  <testcase name="resolveTransferPlay_returnsErrorWhenAmountBlank" classname="com.example.myapplication.viewmodel.ChatOutgoingMessageSupportTest" time="0.0"/>
+  <testcase name="resolveSpecialPlay_requiresTaskTitleAndObjective" classname="com.example.myapplication.viewmodel.ChatOutgoingMessageSupportTest" time="0.0"/>
+  <testcase name="resolveTextMessage_rejectsAttachmentsWhenModelIsImageGeneration" classname="com.example.myapplication.viewmodel.ChatOutgoingMessageSupportTest" time="0.0"/>
+  <testcase name="resolveSpecialPlay_buildsGiftCard" classname="com.example.myapplication.viewmodel.ChatOutgoingMessageSupportTest" time="0.001"/>
+  <testcase name="resolveTextMessage_buildsPlanAndClearsDrafts" classname="com.example.myapplication.viewmodel.ChatOutgoingMessageSupportTest" time="0.0"/>
+  <testcase name="resolveTextMessage_returnsErrorWhenNoTextOrAttachments" classname="com.example.myapplication.viewmodel.ChatOutgoingMessageSupportTest" time="0.0"/>
+  <testcase name="resolveSpecialPlay_requiresInvitePlaceAndTime" classname="com.example.myapplication.viewmodel.ChatOutgoingMessageSupportTest" time="0.0"/>
+  <testcase name="resolveSpecialPlay_buildsPunishCard" classname="com.example.myapplication.viewmodel.ChatOutgoingMessageSupportTest" time="0.0"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

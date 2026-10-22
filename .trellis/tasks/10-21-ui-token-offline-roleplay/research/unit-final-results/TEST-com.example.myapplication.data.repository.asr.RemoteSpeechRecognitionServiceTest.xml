@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.myapplication.data.repository.asr.RemoteSpeechRecognitionServiceTest" tests="23" skipped="0" failures="0" errors="0" timestamp="2026-10-22T05:09:41.526Z" hostname="LUCKY" time="0.629">
+  <properties/>
+  <testcase name="recognize_missingTextFieldFailsWithChineseMessage" classname="com.example.myapplication.data.repository.asr.RemoteSpeechRecognitionServiceTest" time="0.014"/>
+  <testcase name="recognize_readTimeoutFailsWithoutThrowing" classname="com.example.myapplication.data.repository.asr.RemoteSpeechRecognitionServiceTest" time="0.31"/>
+  <testcase name="multimodalProtocol_postsAudioToChatCompletionsAndParsesContent" classname="com.example.myapplication.data.repository.asr.RemoteSpeechRecognitionServiceTest" time="0.021"/>
+  <testcase name="testConnection_blankKeyOrInvalidUrlFailsBeforeAnyRequest" classname="com.example.myapplication.data.repository.asr.RemoteSpeechRecognitionServiceTest" time="0.005"/>
+  <testcase name="recognize_missingAudioFileFailsBeforeAnyRequest" classname="com.example.myapplication.data.repository.asr.RemoteSpeechRecognitionServiceTest" time="0.005"/>
+  <testcase name="recognize_blankLanguageOmitsLanguageField" classname="com.example.myapplication.data.repository.asr.RemoteSpeechRecognitionServiceTest" time="0.011"/>
+  <testcase name="recognize_successReturnsTrimmedTextAndSendsExpectedMultipartFields" classname="com.example.myapplication.data.repository.asr.RemoteSpeechRecognitionServiceTest" time="0.02"/>
+  <testcase name="testConnection_successfulResponseIsAlsoReachable" classname="com.example.myapplication.data.repository.asr.RemoteSpeechRecognitionServiceTest" time="0.021"/>
+  <testcase name="recognize_unauthorizedReportsCredentialProblem" classname="com.example.myapplication.data.repository.asr.RemoteSpeechRecognitionServiceTest" time="0.014"/>
+  <testcase name="testConnection_treatsMissingFileRejectionAsReachableEndpoint" classname="com.example.myapplication.data.repository.asr.RemoteSpeechRecognitionServiceTest" time="0.029"/>
+  <testcase name="recognize_blankApiKeyFailsBeforeAnyRequest" classname="com.example.myapplication.data.repository.asr.RemoteSpeechRecognitionServiceTest" time="0.008"/>
+  <testcase name="recognize_serverErrorReportsServiceProblem" classname="com.example.myapplication.data.repository.asr.RemoteSpeechRecognitionServiceTest" time="0.011"/>
+  <testcase name="testConnection_neverUploadsAudioFile" classname="com.example.myapplication.data.repository.asr.RemoteSpeechRecognitionServiceTest" time="0.02"/>
+  <testcase name="isAvailable_followsCredentialCompleteness" classname="com.example.myapplication.data.repository.asr.RemoteSpeechRecognitionServiceTest" time="0.003"/>
+  <testcase name="multimodalProtocol_emptyContentIsTreatedAsFailure" classname="com.example.myapplication.data.repository.asr.RemoteSpeechRecognitionServiceTest" time="0.012"/>
+  <testcase name="recognize_insecureBaseUrlFailsWithChineseMessage" classname="com.example.myapplication.data.repository.asr.RemoteSpeechRecognitionServiceTest" time="0.006"/>
+  <testcase name="testConnection_serverErrorSurfacesHttpDetail" classname="com.example.myapplication.data.repository.asr.RemoteSpeechRecognitionServiceTest" time="0.008"/>
+  <testcase name="testConnection_unauthorizedAndNotFoundAreDistinguished" classname="com.example.myapplication.data.repository.asr.RemoteSpeechRecognitionServiceTest" time="0.021"/>
+  <testcase name="recognize_notFoundReportsBaseUrlProblem" classname="com.example.myapplication.data.repository.asr.RemoteSpeechRecognitionServiceTest" time="0.01"/>
+  <testcase name="multimodalProtocol_unsupportedResponseHintsAudioOrFormatProblem" classname="com.example.myapplication.data.repository.asr.RemoteSpeechRecognitionServiceTest" time="0.022"/>
+  <testcase name="recognize_malformedJsonFailsInsteadOfCrashing" classname="com.example.myapplication.data.repository.asr.RemoteSpeechRecognitionServiceTest" time="0.013"/>
+  <testcase name="transcriptionProtocol_notImplementedSuggestsSwitchingToMultimodal" classname="com.example.myapplication.data.repository.asr.RemoteSpeechRecognitionServiceTest" time="0.01"/>
+  <testcase name="testConnection_multimodalProtocolProbesChatCompletions" classname="com.example.myapplication.data.repository.asr.RemoteSpeechRecognitionServiceTest" time="0.033"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

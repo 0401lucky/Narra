@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.myapplication.viewmodel.ChatViewModelTest" tests="36" skipped="0" failures="0" errors="0" timestamp="2026-10-22T05:10:28.916Z" hostname="LUCKY" time="0.646">
+  <properties/>
+  <testcase name="init_createsDefaultConversationWhenStoreIsEmpty" classname="com.example.myapplication.viewmodel.ChatViewModelTest" time="0.058"/>
+  <testcase name="sendSpecialPlay_withoutGiftImageModelShowsNoticeAndKeepsPlainGiftCard" classname="com.example.myapplication.viewmodel.ChatViewModelTest" time="0.099"/>
+  <testcase name="selectConversation_clearsImmediatelyThenLoadsTargetMessages" classname="com.example.myapplication.viewmodel.ChatViewModelTest" time="0.01"/>
+  <testcase name="retryMessage_regeneratesCompletedAssistantMessage" classname="com.example.myapplication.viewmodel.ChatViewModelTest" time="0.019"/>
+  <testcase name="toggleMessageMemory_addsAndRemovesAssistantScopedMemory" classname="com.example.myapplication.viewmodel.ChatViewModelTest" time="0.013"/>
+  <testcase name="confirmTransferReceipt_updatesAssistantTransferCardStatus" classname="com.example.myapplication.viewmodel.ChatViewModelTest" time="0.009"/>
+  <testcase name="rapidAssistantSwitching_doesNotCrashOrLoseState" classname="com.example.myapplication.viewmodel.ChatViewModelTest" time="0.011"/>
+  <testcase name="sendMessage_withStaleConversationSummary_keepsIntermediateMessages" classname="com.example.myapplication.viewmodel.ChatViewModelTest" time="0.031"/>
+  <testcase name="sendMessage_withProviderImageAbilityOverrideCallsImagesEndpoint" classname="com.example.myapplication.viewmodel.ChatViewModelTest" time="0.025"/>
+  <testcase name="sendMessage_whenAssistantMemoryEnabled_generatesAutomaticMemory" classname="com.example.myapplication.viewmodel.ChatViewModelTest" time="0.025"/>
+  <testcase name="sendSpecialPlay_generatesGiftImageAndKeepsSingleGiftMessage" classname="com.example.myapplication.viewmodel.ChatViewModelTest" time="0.041"/>
+  <testcase name="sendMessage_injectsScenarioIntoSystemPrompt" classname="com.example.myapplication.viewmodel.ChatViewModelTest" time="0.016"/>
+  <testcase name="deleteMessage_loadingMessageIsRejectedBeforeRepositoryCall" classname="com.example.myapplication.viewmodel.ChatViewModelTest" time="0.009"/>
+  <testcase name="retryMessage_retriesFailedMessageViaStream" classname="com.example.myapplication.viewmodel.ChatViewModelTest" time="0.033"/>
+  <testcase name="sendMessage_rejectsSendingWhileConversationIsSwitching" classname="com.example.myapplication.viewmodel.ChatViewModelTest" time="0.009"/>
+  <testcase name="translateDraftInput_updatesTranslationState" classname="com.example.myapplication.viewmodel.ChatViewModelTest" time="0.014"/>
+  <testcase name="rapidConversationSwitching_maintainsConsistentState" classname="com.example.myapplication.viewmodel.ChatViewModelTest" time="0.01"/>
+  <testcase name="sendMessage_whenSharedMemoryEnabled_writesCondensedGlobalMemory" classname="com.example.myapplication.viewmodel.ChatViewModelTest" time="0.02"/>
+  <testcase name="deleteMessage_inProgressBlocksSendRetryAndEditUntilCommit" classname="com.example.myapplication.viewmodel.ChatViewModelTest" time="0.017"/>
+  <testcase name="sendMessage_streamsReasoningIntoAssistantMessage" classname="com.example.myapplication.viewmodel.ChatViewModelTest" time="0.015"/>
+  <testcase name="sendMessage_streamsImagePartsIntoAssistantMessage" classname="com.example.myapplication.viewmodel.ChatViewModelTest" time="0.022"/>
+  <testcase name="sendTransferPlay_createsTransferCardUserMessage" classname="com.example.myapplication.viewmodel.ChatViewModelTest" time="0.011"/>
+  <testcase name="sendMessage_withConversationSummaryTrimsRequestMessages" classname="com.example.myapplication.viewmodel.ChatViewModelTest" time="0.015"/>
+  <testcase name="sendSpecialPlay_sendsPunishCardAndReceivesAssistantReply" classname="com.example.myapplication.viewmodel.ChatViewModelTest" time="0.014"/>
+  <testcase name="sendMessage_failureMarksAssistantMessageAsError" classname="com.example.myapplication.viewmodel.ChatViewModelTest" time="0.013"/>
+  <testcase name="sendMessage_streamsReplyAndUpdatesConversationTitle" classname="com.example.myapplication.viewmodel.ChatViewModelTest" time="0.013"/>
+  <testcase name="deleteMessage_repositoryFailureKeepsMessageAndUsesSafeError" classname="com.example.myapplication.viewmodel.ChatViewModelTest" time="0.007"/>
+  <testcase name="refreshConversationSummary_rebuildsContextGovernanceImmediately" classname="com.example.myapplication.viewmodel.ChatViewModelTest" time="0.013"/>
+  <testcase name="createConversation_switchesToNewConversation" classname="com.example.myapplication.viewmodel.ChatViewModelTest" time="0.005"/>
+  <testcase name="sendMessage_withReferenceImageAndImageGenerationModelCallsEditImage" classname="com.example.myapplication.viewmodel.ChatViewModelTest" time="0.009"/>
+  <testcase name="toggleMessageMemory_usesGlobalScopeWhenAssistantEnablesSharedMemory" classname="com.example.myapplication.viewmodel.ChatViewModelTest" time="0.006"/>
+  <testcase name="sendMessage_withPendingImagePartStoresUserParts" classname="com.example.myapplication.viewmodel.ChatViewModelTest" time="0.006"/>
+  <testcase name="sendMessage_withImageGenerationModelCallsImagesEndpoint" classname="com.example.myapplication.viewmodel.ChatViewModelTest" time="0.007"/>
+  <testcase name="editUserMessage_rewindsConversationAndRestoresInput" classname="com.example.myapplication.viewmodel.ChatViewModelTest" time="0.006"/>
+  <testcase name="deleteCurrentConversation_switchesToRemainingConversation" classname="com.example.myapplication.viewmodel.ChatViewModelTest" time="0.006"/>
+  <testcase name="deleteMessage_completedMessageRemovesTargetAndUpdatesObservedList" classname="com.example.myapplication.viewmodel.ChatViewModelTest" time="0.006"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

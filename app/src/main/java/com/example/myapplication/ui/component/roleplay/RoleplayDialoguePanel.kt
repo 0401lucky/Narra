@@ -58,6 +58,7 @@ import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.platform.LocalClipboard
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.SpanStyle
@@ -87,6 +88,9 @@ import com.example.myapplication.ui.performance.benchmarkActionTag
 import com.example.myapplication.ui.performance.benchmarkReadyTag
 import com.example.myapplication.ui.component.TransferPlayCard
 import com.example.myapplication.viewmodel.RoleplayOfflineReplayPhase
+import com.example.myapplication.ui.theme.NarraUi
+import com.example.myapplication.ui.theme.NarraShapes
+import com.example.myapplication.ui.theme.NarraMinimumTouchTarget
 
 private enum class RoleplayJumpIndicator {
     TOP,
@@ -262,216 +266,226 @@ internal fun RoleplayDialoguePanel(
         }
     }
     val scrollScope = rememberCoroutineScope()
-    Column(
-        modifier = modifier
-            .fillMaxWidth()
-            .padding(start = 14.dp, top = 0.dp, end = 14.dp, bottom = 10.dp),
-        verticalArrangement = Arrangement.spacedBy(6.dp),
-    ) {
-        if (storyMessages.isEmpty()) {
-            // 空白区域点击切换顶栏，避免手势实现停留在占位状态
-            Box(
-                modifier = Modifier
-                    .weight(1f, fill = true)
-                    .pointerInput(Unit) {
-                        detectTapGestures(
-                            onTap = { onToggleTopBar() },
-                            onDoubleTap = { onToggleTopBar() },
+    BoxWithConstraints(modifier = modifier.fillMaxWidth()) {
+        val suggestionMaxHeight = (maxHeight * 0.30f).coerceAtLeast(NarraMinimumTouchTarget)
+        val actionMaxHeight = (maxHeight * 0.18f).coerceAtLeast(NarraMinimumTouchTarget)
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(start = NarraUi.space16, end = NarraUi.space16, bottom = NarraUi.space8),
+            verticalArrangement = Arrangement.spacedBy(NarraUi.space8),
+        ) {
+            if (storyMessages.isEmpty()) {
+                // 空白区域点击切换顶栏，避免手势实现停留在占位状态
+                Box(
+                    modifier = Modifier
+                        .testTag("roleplay_scene_message_list")
+                        .weight(1f, fill = true)
+                        .pointerInput(Unit) {
+                            detectTapGestures(
+                                onTap = { onToggleTopBar() },
+                                onDoubleTap = { onToggleTopBar() },
+                            )
+                        },
+                ) {
+                    EmptyDialogueState(
+                        colors = colors,
+                        modifier = Modifier.matchParentSize(),
+                    )
+                }
+            } else {
+                Box(
+                    modifier = Modifier
+                        .testTag("roleplay_scene_message_viewport")
+                        .fillMaxWidth()
+                        .weight(1f, fill = true)
+                        .nestedScroll(scrollHintConnection)
+                        .benchmarkReadyTag(
+                            readyId = BenchmarkReadyIds.ROLEPLAY_LIST_TOP_READY,
+                            ready = isRoleplayScrollFixtureReady && isAtTop,
                         )
-                    },
-            ) {
-                EmptyDialogueState(
+                        .benchmarkReadyTag(
+                            readyId = BenchmarkReadyIds.ROLEPLAY_LIST_BOTTOM_READY,
+                            ready = isRoleplayScrollFixtureReady && isAtBottomExact,
+                        ),
+                ) {
+                    LazyColumn(
+                        state = listState,
+                        modifier = Modifier.fillMaxSize().testTag("roleplay_scene_message_list"),
+                        contentPadding = PaddingValues(bottom = NarraUi.space8),
+                        verticalArrangement = Arrangement.spacedBy(NarraUi.space4),
+                    ) {
+                        itemsIndexed(
+                            items = storyMessages,
+                            key = { _, message -> message.uiItemId },
+                            contentType = { _, message -> roleplayLazyContentType(message) },
+                        ) { _, message ->
+                            RoleplayMessageItem(
+                                message = message,
+                                colors = colors,
+                                backdropState = backdropState,
+                                onRetryTurn = onRetryTurn,
+                                onRetryAiPhoto = onRetryAiPhoto,
+                                onEditUserMessage = onEditUserMessage,
+                                onDeleteMessage = onDeleteMessage,
+                                onConfirmTransferReceipt = onConfirmTransferReceipt,
+                                lineHeightScale = lineHeightScale,
+                                noBackgroundSkin = noBackgroundSkin,
+                            )
+                        }
+                    }
+
+                    if (jumpIndicator == RoleplayJumpIndicator.TOP && !isAtTop) {
+                        NarraIconButton(
+                            onClick = {
+                                scrollScope.launch {
+                                    listState.animateScrollToItem(0)
+                                }
+                            },
+                            modifier = Modifier
+                                .align(Alignment.TopEnd)
+                                .padding(top = NarraUi.space8, end = NarraUi.space8)
+                                .size(RoleplayInteractiveIconButtonSize),
+                            colors = IconButtonDefaults.iconButtonColors(
+                                containerColor = colors.panelBackgroundStrong,
+                                contentColor = colors.panelText,
+                            ),
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.ArrowUpward,
+                                contentDescription = stringResource(id = R.string.roleplay_jump_to_top),
+                                modifier = Modifier.size(18.dp),
+                            )
+                        }
+                    }
+
+                    if (jumpIndicator == RoleplayJumpIndicator.BOTTOM && !isAtBottomExact) {
+                        NarraIconButton(
+                            onClick = {
+                                scrollScope.launch {
+                                    autoScrollState.scrollToEnd(
+                                        listState = listState,
+                                        lastIndex = storyMessages.lastIndex,
+                                        animated = true,
+                                        resumeAutoFollow = true,
+                                    )
+                                }
+                            },
+                            modifier = Modifier
+                                .align(Alignment.BottomEnd)
+                                .padding(end = NarraUi.space8, bottom = NarraUi.space12)
+                                .size(RoleplayInteractiveIconButtonSize),
+                            colors = IconButtonDefaults.iconButtonColors(
+                                containerColor = MaterialTheme.colorScheme.primaryContainer,
+                                contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
+                            ),
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.ArrowDownward,
+                                contentDescription = stringResource(id = R.string.roleplay_jump_to_bottom),
+                                modifier = Modifier.size(20.dp),
+                            )
+                        }
+                    }
+                }
+            }
+            if (showAiHelper) {
+                RoleplaySuggestionSection(
                     colors = colors,
-                    modifier = Modifier.matchParentSize(),
+                    backdropState = backdropState,
+                    suggestions = suggestions,
+                    isGeneratingSuggestions = isGeneratingSuggestions,
+                    suggestionErrorMessage = suggestionErrorMessage,
+                    isSending = isSending,
+                    onGenerateSuggestions = onGenerateSuggestions,
+                    onApplySuggestion = onApplySuggestion,
+                    onClearSuggestions = onClearSuggestions,
+                    maxHeight = suggestionMaxHeight,
                 )
             }
-        } else {
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .weight(1f, fill = true)
-                    .nestedScroll(scrollHintConnection)
-                    .benchmarkReadyTag(
-                        readyId = BenchmarkReadyIds.ROLEPLAY_LIST_TOP_READY,
-                        ready = isRoleplayScrollFixtureReady && isAtTop,
-                    )
-                    .benchmarkReadyTag(
-                        readyId = BenchmarkReadyIds.ROLEPLAY_LIST_BOTTOM_READY,
-                        ready = isRoleplayScrollFixtureReady && isAtBottomExact,
-                    ),
-            ) {
-                LazyColumn(
-                    state = listState,
-                    modifier = Modifier.fillMaxSize(),
-                    contentPadding = PaddingValues(bottom = 8.dp),
-                    verticalArrangement = Arrangement.spacedBy(4.dp),
+            if (isOfflineReplayActionInstalled || (isSending && onCancel != null)) {
+                ImmersiveGlassSurface(
+                    backdropState = backdropState,
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = NarraShapes.medium,
+                    blurRadius = 16.dp,
+                    overlayColor = colors.panelBackgroundStrong,
                 ) {
-                    itemsIndexed(
-                        items = storyMessages,
-                        key = { _, message -> message.uiItemId },
-                        contentType = { _, message -> roleplayLazyContentType(message) },
-                    ) { _, message ->
-                        RoleplayMessageItem(
-                            message = message,
-                            colors = colors,
-                            backdropState = backdropState,
-                            onRetryTurn = onRetryTurn,
-                            onRetryAiPhoto = onRetryAiPhoto,
-                            onEditUserMessage = onEditUserMessage,
-                            onDeleteMessage = onDeleteMessage,
-                            onConfirmTransferReceipt = onConfirmTransferReceipt,
-                            lineHeightScale = lineHeightScale,
-                            noBackgroundSkin = noBackgroundSkin,
-                        )
-                    }
-                }
-
-                if (jumpIndicator == RoleplayJumpIndicator.TOP && !isAtTop) {
-                    NarraIconButton(
-                        onClick = {
-                            scrollScope.launch {
-                                listState.animateScrollToItem(0)
-                            }
-                        },
-                        modifier = Modifier
-                            .align(Alignment.TopEnd)
-                            .padding(top = 8.dp, end = 6.dp)
-                            .size(RoleplayInteractiveIconButtonSize),
-                        colors = IconButtonDefaults.iconButtonColors(
-                            containerColor = colors.panelBackgroundStrong,
-                            contentColor = colors.textPrimary,
-                        ),
+                    Row(
+                        modifier = Modifier.padding(horizontal = NarraUi.space16, vertical = NarraUi.space8),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(NarraUi.space8),
                     ) {
-                        Icon(
-                            imageVector = Icons.Default.ArrowUpward,
-                            contentDescription = stringResource(id = R.string.roleplay_jump_to_top),
-                            modifier = Modifier.size(18.dp),
+                        CircularProgressIndicator(
+                            modifier = Modifier.size(16.dp),
+                            strokeWidth = 2.dp,
+                            color = colors.panelText,
                         )
-                    }
-                }
-
-                if (jumpIndicator == RoleplayJumpIndicator.BOTTOM && !isAtBottomExact) {
-                    NarraIconButton(
-                        onClick = {
-                            scrollScope.launch {
-                                autoScrollState.scrollToEnd(
-                                    listState = listState,
-                                    lastIndex = storyMessages.lastIndex,
-                                    animated = true,
-                                    resumeAutoFollow = true,
+                        Text(
+                            text = if (isOfflineReplayActionInstalled) {
+                                "离线流式重放已就绪"
+                            } else {
+                                stringResource(id = R.string.roleplay_sending)
+                            },
+                            color = colors.panelMutedText,
+                            style = MaterialTheme.typography.bodySmall,
+                            modifier = Modifier
+                                .weight(1f)
+                                .benchmarkReadyTag(
+                                    readyId = BenchmarkReadyIds.ROLEPLAY_STREAM_READY,
+                                    ready = isOfflineReplayInitialReady,
                                 )
-                            }
-                        },
-                        modifier = Modifier
-                            .align(Alignment.BottomEnd)
-                            .padding(end = 6.dp, bottom = 12.dp)
-                            .size(RoleplayInteractiveIconButtonSize),
-                        colors = IconButtonDefaults.iconButtonColors(
-                            containerColor = colors.characterAccent.copy(alpha = 0.88f),
-                            contentColor = Color.Black.copy(alpha = 0.88f),
-                        ),
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.ArrowDownward,
-                            contentDescription = stringResource(id = R.string.roleplay_jump_to_bottom),
-                            modifier = Modifier.size(20.dp),
-                        )
-                    }
-                }
-            }
-        }
-        if (showAiHelper) {
-            RoleplaySuggestionSection(
-                colors = colors,
-                backdropState = backdropState,
-                suggestions = suggestions,
-                isGeneratingSuggestions = isGeneratingSuggestions,
-                suggestionErrorMessage = suggestionErrorMessage,
-                isSending = isSending,
-                onGenerateSuggestions = onGenerateSuggestions,
-                onApplySuggestion = onApplySuggestion,
-                onClearSuggestions = onClearSuggestions,
-            )
-        }
-        if (isOfflineReplayActionInstalled || (isSending && onCancel != null)) {
-            ImmersiveGlassSurface(
-                backdropState = backdropState,
-                modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(16.dp),
-                blurRadius = 16.dp,
-                overlayColor = colors.panelBackgroundStrong,
-            ) {
-                Row(
-                    modifier = Modifier.padding(horizontal = 14.dp, vertical = 9.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(10.dp),
-                ) {
-                    CircularProgressIndicator(
-                        modifier = Modifier.size(16.dp),
-                        strokeWidth = 2.dp,
-                        color = colors.characterAccent,
-                    )
-                    Text(
-                        text = if (isOfflineReplayActionInstalled) {
-                            "离线流式重放已就绪"
-                        } else {
-                            stringResource(id = R.string.roleplay_sending)
-                        },
-                        color = colors.textMuted,
-                        style = MaterialTheme.typography.bodySmall,
-                        modifier = Modifier
-                            .weight(1f)
-                            .benchmarkReadyTag(
-                                readyId = BenchmarkReadyIds.ROLEPLAY_STREAM_READY,
-                                ready = isOfflineReplayInitialReady,
-                            )
-                            .benchmarkReadyTag(
-                                readyId = BenchmarkReadyIds.ROLEPLAY_STREAM_COMPLETE_READY,
-                                ready = isOfflineReplayCompleteReady,
-                            ),
-                    )
-                    if (isOfflineReplayActionInstalled) {
-                        onStartOfflineReplay?.let { startOfflineReplay ->
-                            NarraTextButton(
-                                onClick = startOfflineReplay,
-                                modifier = Modifier.benchmarkActionTag(
-                                    BenchmarkActionIds.START_OFFLINE_REPLAY,
+                                .benchmarkReadyTag(
+                                    readyId = BenchmarkReadyIds.ROLEPLAY_STREAM_COMPLETE_READY,
+                                    ready = isOfflineReplayCompleteReady,
                                 ),
-                            ) {
-                                Text(
-                                    text = "开始离线重放",
-                                    color = colors.characterAccent,
-                                )
+                        )
+                        if (isOfflineReplayActionInstalled) {
+                            onStartOfflineReplay?.let { startOfflineReplay ->
+                                NarraTextButton(
+                                    onClick = startOfflineReplay,
+                                    modifier = Modifier.benchmarkActionTag(
+                                        BenchmarkActionIds.START_OFFLINE_REPLAY,
+                                    ),
+                                ) {
+                                    Text(
+                                        text = "开始离线重放",
+                                        color = colors.panelText,
+                                    )
+                                }
                             }
-                        }
-                    } else {
-                        onCancel?.let { cancel ->
-                            NarraTextButton(onClick = cancel) {
-                                Text(
-                                    text = stringResource(id = R.string.common_cancel),
-                                    color = colors.errorText,
-                                )
+                        } else {
+                            onCancel?.let { cancel ->
+                                NarraTextButton(onClick = cancel) {
+                                    Text(
+                                        text = stringResource(id = R.string.common_cancel),
+                                        color = colors.panelText,
+                                    )
+                                }
                             }
                         }
                     }
                 }
             }
+            Box(Modifier.testTag("roleplay_scene_input")) {
+                RoleplayInputBar(
+                    colors = colors,
+                    backdropState = backdropState,
+                    input = input,
+                    inputFocusToken = inputFocusToken,
+                    isSending = isSending,
+                    onInputChange = onInputChange,
+                    onSend = onSend,
+                    onCancel = onCancel,
+                    onOpenSpecialPlay = onOpenSpecialPlay,
+                    quickActions = quickActions,
+                    pendingImageParts = pendingImageParts,
+                    onPickImage = onPickImage,
+                    onRemovePendingImagePart = onRemovePendingImagePart,
+                    expandedPanelMaxHeight = actionMaxHeight,
+                )
+            }
         }
-        RoleplayInputBar(
-            colors = colors,
-            backdropState = backdropState,
-            input = input,
-            inputFocusToken = inputFocusToken,
-            isSending = isSending,
-            onInputChange = onInputChange,
-            onSend = onSend,
-            onCancel = onCancel,
-            onOpenSpecialPlay = onOpenSpecialPlay,
-            quickActions = quickActions,
-            pendingImageParts = pendingImageParts,
-            onPickImage = onPickImage,
-            onRemovePendingImagePart = onRemovePendingImagePart,
-        )
     }
 }
 

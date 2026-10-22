@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.myapplication.roleplay.RoleplayPromptDecoratorTest" tests="12" skipped="0" failures="0" errors="0" timestamp="2026-10-22T05:09:55.707Z" hostname="LUCKY" time="0.004">
+  <properties/>
+  <testcase name="decorate_onlineModeRequiresJsonArrayProtocol" classname="com.example.myapplication.roleplay.RoleplayPromptDecoratorTest" time="0.001"/>
+  <testcase name="decorate_onlineModeWithoutNarrationKeepsPureChatReminder" classname="com.example.myapplication.roleplay.RoleplayPromptDecoratorTest" time="0.0"/>
+  <testcase name="decorate_replacesScenarioPlaceholders" classname="com.example.myapplication.roleplay.RoleplayPromptDecoratorTest" time="0.0"/>
+  <testcase name="decorate_longformIncludesRoleLockAndParagraphRules" classname="com.example.myapplication.roleplay.RoleplayPromptDecoratorTest" time="0.0"/>
+  <testcase name="decorate_longformModeIgnoresStaleVideoCallState" classname="com.example.myapplication.roleplay.RoleplayPromptDecoratorTest" time="0.001"/>
+  <testcase name="decorate_onlineModeUsesScenarioReplyRangeAndSpecialPlayWhitelist" classname="com.example.myapplication.roleplay.RoleplayPromptDecoratorTest" time="0.0"/>
+  <testcase name="decorate_protocolIncludesRespondThenAdvanceRule" classname="com.example.myapplication.roleplay.RoleplayPromptDecoratorTest" time="0.0"/>
+  <testcase name="buildRuntimeDecoration_returnsDecorationWithoutBaseSystemPrompt" classname="com.example.myapplication.roleplay.RoleplayPromptDecoratorTest" time="0.001"/>
+  <testcase name="decorate_skipsScenarioDescriptionWhenPromptToggleOff" classname="com.example.myapplication.roleplay.RoleplayPromptDecoratorTest" time="0.0"/>
+  <testcase name="decorate_videoCallModeAddsRealtimeConstraints" classname="com.example.myapplication.roleplay.RoleplayPromptDecoratorTest" time="0.0"/>
+  <testcase name="decorate_groupOnlineModeAddsModeRoutingAndGroupBoundary" classname="com.example.myapplication.roleplay.RoleplayPromptDecoratorTest" time="0.001"/>
+  <testcase name="decorate_onlineModeWithUserPersonaOverrideIncludesSceneSpecificUserPrompt" classname="com.example.myapplication.roleplay.RoleplayPromptDecoratorTest" time="0.0"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

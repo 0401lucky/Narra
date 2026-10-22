@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.myapplication.model.PresetSelectionTest" tests="5" skipped="0" failures="0" errors="0" timestamp="2026-10-22T05:09:55.588Z" hostname="LUCKY" time="0.001">
+  <properties/>
+  <testcase name="isScenarioPresetFollowingAssistant_whenBlank" classname="com.example.myapplication.model.PresetSelectionTest" time="0.0"/>
+  <testcase name="resolve_prefersScenarioThenAssistantThenGlobal" classname="com.example.myapplication.model.PresetSelectionTest" time="0.0"/>
+  <testcase name="resolveChain_includesFallbackLevelsForMissingPresetLookup" classname="com.example.myapplication.model.PresetSelectionTest" time="0.0"/>
+  <testcase name="scenarioPresetSummary_coversSourcesAndMissingPreset" classname="com.example.myapplication.model.PresetSelectionTest" time="0.0"/>
+  <testcase name="isAssistantPresetFollowingGlobal_unchanged" classname="com.example.myapplication.model.PresetSelectionTest" time="0.0"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

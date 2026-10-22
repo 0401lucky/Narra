@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.myapplication.ui.component.MessageBubbleReasoningStateTest" tests="5" skipped="0" failures="0" errors="0" timestamp="2026-10-22T05:09:56.021Z" hostname="LUCKY" time="0.004">
+  <properties/>
+  <testcase name="extractReasoningStepTitle_returnsNullWhenNoStandaloneBoldLine" classname="com.example.myapplication.ui.component.MessageBubbleReasoningStateTest" time="0.003"/>
+  <testcase name="resolveReasoningCardDisplayState_returnsPreviewDuringReasoningPhase" classname="com.example.myapplication.ui.component.MessageBubbleReasoningStateTest" time="0.001"/>
+  <testcase name="visibleReasoningTimelineSteps_keepsLastTwoWhenCollapsed" classname="com.example.myapplication.ui.component.MessageBubbleReasoningStateTest" time="0.0"/>
+  <testcase name="extractReasoningStepTitle_returnsLastStandaloneBoldLine" classname="com.example.myapplication.ui.component.MessageBubbleReasoningStateTest" time="0.0"/>
+  <testcase name="resolveReasoningCardDisplayState_returnsCollapsedAfterReasoningWhenAutoCollapseEnabled" classname="com.example.myapplication.ui.component.MessageBubbleReasoningStateTest" time="0.0"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

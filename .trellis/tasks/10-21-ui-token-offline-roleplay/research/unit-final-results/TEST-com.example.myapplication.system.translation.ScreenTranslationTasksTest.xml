@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.myapplication.system.translation.ScreenTranslationTasksTest" tests="5" skipped="0" failures="0" errors="0" timestamp="2026-10-22T05:09:56.002Z" hostname="LUCKY" time="0.017">
+  <properties/>
+  <testcase name="close_duringLanguageSave_doesNotStartRetranslation" classname="com.example.myapplication.system.translation.ScreenTranslationTasksTest" time="0.005"/>
+  <testcase name="selectedTextTranslation_invalidatesPendingScreenCapture" classname="com.example.myapplication.system.translation.ScreenTranslationTasksTest" time="0.003"/>
+  <testcase name="capturePermission_duplicateRequestIsIgnored_andClosedResultIsRejected" classname="com.example.myapplication.system.translation.ScreenTranslationTasksTest" time="0.002"/>
+  <testcase name="newCapture_cancelsCurrentStream_andCloseCancelsLatestTask" classname="com.example.myapplication.system.translation.ScreenTranslationTasksTest" time="0.004"/>
+  <testcase name="nextTranslation_cancelsOldProducerBeforeItCanPublish" classname="com.example.myapplication.system.translation.ScreenTranslationTasksTest" time="0.003"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

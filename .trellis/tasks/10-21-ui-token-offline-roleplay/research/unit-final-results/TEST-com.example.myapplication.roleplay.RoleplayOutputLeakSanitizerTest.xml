@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.myapplication.roleplay.RoleplayOutputLeakSanitizerTest" tests="6" skipped="0" failures="0" errors="0" timestamp="2026-10-22T05:09:55.697Z" hostname="LUCKY" time="0.0">
+  <properties/>
+  <testcase name="sanitize_doesNotTouchOnlinePhoneJson" classname="com.example.myapplication.roleplay.RoleplayOutputLeakSanitizerTest" time="0.0"/>
+  <testcase name="sanitize_keepsNormalLongformMarkup" classname="com.example.myapplication.roleplay.RoleplayOutputLeakSanitizerTest" time="0.0"/>
+  <testcase name="sanitizeParts_removesBlankTextPartAfterLeakCleanup" classname="com.example.myapplication.roleplay.RoleplayOutputLeakSanitizerTest" time="0.0"/>
+  <testcase name="sanitize_removesLongformFormatReminderLeak" classname="com.example.myapplication.roleplay.RoleplayOutputLeakSanitizerTest" time="0.0"/>
+  <testcase name="sanitize_removesReasoningThinkBlocksWithoutTouchingThoughtMarkup" classname="com.example.myapplication.roleplay.RoleplayOutputLeakSanitizerTest" time="0.0"/>
+  <testcase name="sanitize_removesDanglingReasoningThinkBlockDuringStreaming" classname="com.example.myapplication.roleplay.RoleplayOutputLeakSanitizerTest" time="0.0"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

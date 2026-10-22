@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.myapplication.viewmodel.MemoryExtractionGateTest" tests="6" skipped="0" failures="0" errors="0" timestamp="2026-10-22T05:10:29.851Z" hostname="LUCKY" time="0.0">
+  <properties/>
+  <testcase name="shouldExtract_tracksWatermarkPerConversation" classname="com.example.myapplication.viewmodel.MemoryExtractionGateTest" time="0.0"/>
+  <testcase name="shouldExtract_returnsFalseForZeroCompleted" classname="com.example.myapplication.viewmodel.MemoryExtractionGateTest" time="0.0"/>
+  <testcase name="shouldExtract_returnsFalseForNonPositiveWindow" classname="com.example.myapplication.viewmodel.MemoryExtractionGateTest" time="0.0"/>
+  <testcase name="shouldExtract_doesNotReExtractSameSegmentBeforeNextWindow" classname="com.example.myapplication.viewmodel.MemoryExtractionGateTest" time="0.0"/>
+  <testcase name="shouldExtract_triggersEvenWhenCountSkipsOverWindowMultiple" classname="com.example.myapplication.viewmodel.MemoryExtractionGateTest" time="0.0"/>
+  <testcase name="shouldExtract_triggersWhenNewlyCompletedReachesWindow" classname="com.example.myapplication.viewmodel.MemoryExtractionGateTest" time="0.0"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

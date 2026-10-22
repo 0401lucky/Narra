@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.myapplication.context.WorldBookMatcherTest" tests="32" skipped="0" failures="0" errors="0" timestamp="2026-10-22T05:09:38.593Z" hostname="LUCKY" time="0.018">
+  <properties/>
+  <testcase name="match_respectsZeroProbabilityAfterKeywordHit" classname="com.example.myapplication.context.WorldBookMatcherTest" time="0.001"/>
+  <testcase name="passesProbability_seedIncludesConversationId_differentConversationFlipsResult" classname="com.example.myapplication.context.WorldBookMatcherTest" time="0.0"/>
+  <testcase name="match_scanDepthTwo_includesPreviousAssistantMessage" classname="com.example.myapplication.context.WorldBookMatcherTest" time="0.001"/>
+  <testcase name="match_attachableEntryOnlyHitsWhenExplicitlyLinked" classname="com.example.myapplication.context.WorldBookMatcherTest" time="0.0"/>
+  <testcase name="previewHit_primaryKeywordMatches_returnsMatched" classname="com.example.myapplication.context.WorldBookMatcherTest" time="0.001"/>
+  <testcase name="match_scanDepthOne_onlyIncludesLatestMessage" classname="com.example.myapplication.context.WorldBookMatcherTest" time="0.001"/>
+  <testcase name="match_regexWithCaseSensitiveTrue_staysCaseSensitive" classname="com.example.myapplication.context.WorldBookMatcherTest" time="0.002"/>
+  <testcase name="match_matchModeRegex_rejectsNestedQuantifierPattern" classname="com.example.myapplication.context.WorldBookMatcherTest" time="0.0"/>
+  <testcase name="match_hitsKeywordAndAlwaysActiveEntries" classname="com.example.myapplication.context.WorldBookMatcherTest" time="0.0"/>
+  <testcase name="match_supportsRegexAndSelectiveSecondaryKeywords" classname="com.example.myapplication.context.WorldBookMatcherTest" time="0.002"/>
+  <testcase name="passesProbability_sameConversation_isStableAcrossCalls" classname="com.example.myapplication.context.WorldBookMatcherTest" time="0.0"/>
+  <testcase name="match_regexExplicitFlagIOverridesEntryCaseSensitivity" classname="com.example.myapplication.context.WorldBookMatcherTest" time="0.0"/>
+  <testcase name="match_filtersByScope" classname="com.example.myapplication.context.WorldBookMatcherTest" time="0.001"/>
+  <testcase name="match_scanDepthZero_onlyConsidersCurrentInput" classname="com.example.myapplication.context.WorldBookMatcherTest" time="0.0"/>
+  <testcase name="match_matchModeRegex_treatsKeywordAsRegex" classname="com.example.myapplication.context.WorldBookMatcherTest" time="0.0"/>
+  <testcase name="match_matchModeWordCjk_requiresBoundaryForLatin" classname="com.example.myapplication.context.WorldBookMatcherTest" time="0.001"/>
+  <testcase name="match_matchModeRegex_rejectsOverlongPattern" classname="com.example.myapplication.context.WorldBookMatcherTest" time="0.0"/>
+  <testcase name="previewHit_selectiveWithSecondaryHit_returnsMatched" classname="com.example.myapplication.context.WorldBookMatcherTest" time="0.001"/>
+  <testcase name="previewHit_withEmptySourceText_returnsNotMatchedWithReason" classname="com.example.myapplication.context.WorldBookMatcherTest" time="0.0"/>
+  <testcase name="previewHit_alwaysActiveBypassesPrimaryKeywordMiss" classname="com.example.myapplication.context.WorldBookMatcherTest" time="0.0"/>
+  <testcase name="match_respectsAssistantLimitAndPriority" classname="com.example.myapplication.context.WorldBookMatcherTest" time="0.0"/>
+  <testcase name="match_regexLiteral_rejectsDangerousPattern" classname="com.example.myapplication.context.WorldBookMatcherTest" time="0.0"/>
+  <testcase name="previewHit_selectiveWithoutSecondaryHit_returnsNotMatched" classname="com.example.myapplication.context.WorldBookMatcherTest" time="0.001"/>
+  <testcase name="previewHit_noPrimaryMatch_returnsMissReason" classname="com.example.myapplication.context.WorldBookMatcherTest" time="0.0"/>
+  <testcase name="match_regexWithCaseSensitiveFalse_autoAddsIgnoreCase" classname="com.example.myapplication.context.WorldBookMatcherTest" time="0.0"/>
+  <testcase name="match_dropsPreviousHitWhenLatestUserInputNoLongerMatches" classname="com.example.myapplication.context.WorldBookMatcherTest" time="0.0"/>
+  <testcase name="previewHit_alwaysActiveOverridesSelectiveSecondaryMiss" classname="com.example.myapplication.context.WorldBookMatcherTest" time="0.0"/>
+  <testcase name="match_scanDepthOne_doesNotIncludeEarlierMessages" classname="com.example.myapplication.context.WorldBookMatcherTest" time="0.001"/>
+  <testcase name="match_supportsCommaSeparatedTavernKeywordsAndPrefersLatestUserInput" classname="com.example.myapplication.context.WorldBookMatcherTest" time="0.0"/>
+  <testcase name="match_matchModeContains_keepsSubstringBehavior" classname="com.example.myapplication.context.WorldBookMatcherTest" time="0.0"/>
+  <testcase name="match_attachableEntryHitsWhenBookIsLinked" classname="com.example.myapplication.context.WorldBookMatcherTest" time="0.001"/>
+  <testcase name="passesProbability_full100AlwaysTrue_zeroAlwaysFalse" classname="com.example.myapplication.context.WorldBookMatcherTest" time="0.0"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

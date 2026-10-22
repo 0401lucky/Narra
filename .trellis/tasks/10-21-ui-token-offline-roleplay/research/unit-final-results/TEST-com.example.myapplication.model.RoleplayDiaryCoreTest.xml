@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.myapplication.model.RoleplayDiaryCoreTest" tests="8" skipped="0" failures="0" errors="0" timestamp="2026-10-22T05:09:55.593Z" hostname="LUCKY" time="0.001">
+  <properties/>
+  <testcase name="toDraft on entry copies only core fields" classname="com.example.myapplication.model.RoleplayDiaryCoreTest" time="0.001"/>
+  <testcase name="draft implements core and exposes same fields" classname="com.example.myapplication.model.RoleplayDiaryCoreTest" time="0.0"/>
+  <testcase name="toDraft preserves tag list content without sharing mutability" classname="com.example.myapplication.model.RoleplayDiaryCoreTest" time="0.0"/>
+  <testcase name="toEntry fills persistence fields without mutating content fields" classname="com.example.myapplication.model.RoleplayDiaryCoreTest" time="0.0"/>
+  <testcase name="round trip draft to entry and back is lossless" classname="com.example.myapplication.model.RoleplayDiaryCoreTest" time="0.0"/>
+  <testcase name="toDraft on draft returns same instance" classname="com.example.myapplication.model.RoleplayDiaryCoreTest" time="0.0"/>
+  <testcase name="entry implements core and exposes content fields" classname="com.example.myapplication.model.RoleplayDiaryCoreTest" time="0.0"/>
+  <testcase name="toEntry honours explicit updatedAt override" classname="com.example.myapplication.model.RoleplayDiaryCoreTest" time="0.0"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

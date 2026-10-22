@@ -1,0 +1,67 @@
+{
+  "passed": 78,
+  "suites": {
+    "com.example.myapplication.ui.screenshot.BubbleScreenshotB02Test": {
+      "errors": 0,
+      "failures": 0,
+      "tests": 4
+    },
+    "com.example.myapplication.ui.screenshot.BubbleScreenshotB03Test": {
+      "errors": 0,
+      "failures": 0,
+      "tests": 10
+    },
+    "com.example.myapplication.ui.screenshot.BubbleScreenshotB04Test": {
+      "errors": 0,
+      "failures": 0,
+      "tests": 4
+    },
+    "com.example.myapplication.ui.screenshot.MessageBubbleScreenshotTest": {
+      "errors": 0,
+      "failures": 0,
+      "tests": 2
+    },
+    "com.example.myapplication.ui.screenshot.OfflineRoleplayScreenshotE04Test": {
+      "errors": 0,
+      "failures": 14,
+      "tests": 14
+    },
+    "com.example.myapplication.ui.screenshot.PageScreenshotH01Test": {
+      "errors": 0,
+      "failures": 0,
+      "tests": 18
+    },
+    "com.example.myapplication.ui.screenshot.PageScreenshotH02Test": {
+      "errors": 0,
+      "failures": 0,
+      "tests": 3
+    },
+    "com.example.myapplication.ui.screenshot.PageScreenshotH03Test": {
+      "errors": 0,
+      "failures": 0,
+      "tests": 3
+    },
+    "com.example.myapplication.ui.screenshot.PageScreenshotH04Test": {
+      "errors": 0,
+      "failures": 0,
+      "tests": 6
+    },
+    "com.example.myapplication.ui.screenshot.ScreenshotBaselineGuardTest": {
+      "errors": 0,
+      "failures": 1,
+      "tests": 1
+    },
+    "com.example.myapplication.ui.screenshot.SkinScreenshotB01Test": {
+      "errors": 0,
+      "failures": 0,
+      "tests": 26
+    },
+    "com.example.myapplication.ui.screenshot.ThemeScreenshotC01Test": {
+      "errors": 0,
+      "failures": 0,
+      "tests": 2
+    }
+  },
+  "failures": 15,
+  "tests": 93
+}
