@@ -227,3 +227,25 @@ Moments、PhoneCheck、系统悬浮翻译及全 App UI 收口完成；1526项JVM
 ### Status
 
 [OK] **Completed**
+
+
+## Session 8: v2.3 P04线下扮演与阅读提交归档
+
+**Date**: 2026-10-22
+**Task**: v2.3 P04线下扮演与阅读提交归档
+**Branch**: `main`
+
+### Summary
+
+按用户确认的两批清单提交P04，448个实现/测试/规范/规划与证据文件、14个新增PNG及manifest本批12行；原有并发内容与106项范围外状态保持。当前P04归档并修正父任务/版本记录/审阅与证据引用，父任务1/4完成，P05/P10/P11仍planning。本批已接纳视觉、93/93真实截图与1677/1677完整JVM、AndroidTest编译/Lint/dev构建通过，独立check无代码问题；本轮仅复核范围与哈希，未重复整套测试。新视觉远端CI、D01与物理性能待补，构建仍2.2.12-dev；未amend、推送或发包。
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `4c93ae27` | (see git log) |
+| `2cf55f1f` | (see git log) |
+
+### Status
+
+[OK] **Completed**
