@@ -65,7 +65,7 @@ def contact_sheet(rows, output, filename):
 
 def main():
     task = Path(__file__).resolve().parent.parent
-    root = task.parents[2]
+    root = next(parent for parent in task.parents if (parent / ".trellis").is_dir())
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--before", type=Path, default=task / "research/before")
     parser.add_argument("--after", type=Path, default=task / "research/after")

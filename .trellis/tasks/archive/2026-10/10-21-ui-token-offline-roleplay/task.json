@@ -3,7 +3,7 @@
   "name": "ui-token-offline-roleplay",
   "title": "v2.3 扩面一：线下扮演与会话阅读",
   "description": "P04真实线下页面及会话阅读的令牌与无障碍迁移；与P03共享组件回归。",
-  "status": "in_progress",
+  "status": "completed",
   "dev_type": "frontend",
   "scope": "ui",
   "package": null,
@@ -11,22 +11,23 @@
   "creator": "lucky",
   "assignee": "lucky",
   "createdAt": "2026-10-21",
-  "completedAt": null,
+  "completedAt": "2026-10-22",
   "branch": null,
   "base_branch": "main",
   "worktree_path": null,
-  "commit": null,
+  "commit": "2cf55f1f",
   "pr_url": null,
   "subtasks": [],
   "children": [],
   "parent": "10-21-ui-token-accessibility-expansion",
   "relatedFiles": [],
-  "notes": "2026-10-22 用户接纳P04的14张候选，旧78图保持；93/93真实截图、1677/1677完整JVM、AndroidTest编译/Lint/dev构建通过，独立check无代码问题。OA1-OA6满足，等待具体提交清单确认与工作提交/归档；P05待前序收尾，未推送/发布。",
+  "notes": "2026-10-22 P04已按用户批准清单完成4c93ae27与2cf55f1f并归档；14张候选已接纳，旧78图保持，93/93真实截图、1677/1677完整JVM、AndroidTest编译/Lint/dev构建通过，独立check无代码问题。P05尚未实施，真机/性能/远端新视觉CI待补；未推送/发布。",
   "meta": {
     "version": "2.3",
     "batch": "1",
     "review_status": "accepted_and_verified",
     "planned_new_screenshots": 14,
-    "review_artifact": ".trellis/tasks/10-21-ui-token-offline-roleplay/review/index.html"
+    "review_artifact": ".trellis/tasks/archive/2026-10/10-21-ui-token-offline-roleplay/review/index.html",
+    "work_commits": ["4c93ae27", "2cf55f1f"]
   }
 }

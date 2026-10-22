@@ -2,7 +2,15 @@
 
 ## 状态与授权
 
-2026-10-21 用户在四批最终规划摘要后回复“可以”，批准方案并先启动本批。2026-10-22 实施与独立检查完成后，用户回复“可以，还有任务吗？”接纳14张候选；接纳后93/93真实截图、1677/1677完整JVM通过。当前待具体提交清单审阅及提交 / 归档，任务保持 `in_progress`；父任务仅协调，P05等子任务待前序收尾，未发布本批。
+2026-10-21 用户在四批最终规划摘要后回复“可以”，批准方案并先启动本批。2026-10-22 用户接纳14张候选后93/93真实截图、1677/1677完整JVM通过，随后回复“可以，提交归档吧”批准具体清单。两批工作提交已完成，本批已归档为`completed`；父任务仅协调，P05等子任务尚未实施，未推送或发布。
+
+## 工作提交与归档
+
+- `4c93ae27`：`feat(ui): 统一v2.3线下扮演与阅读无障碍行为`，448个清单文件。
+- `2cf55f1f`：`test(screenshot): 接纳v2.3线下扮演与阅读视觉基准`，14张PNG及manifest新增12行；index逐字节验证为“新增段落 + 原HEAD”，工作区原有并发后缀哈希未变。
+- 当前任务归档至`.trellis/tasks/archive/2026-10/10-21-ui-token-offline-roleplay/`，父任务 / 版本记录 / JSONL / 审阅资料引用同步核对；原提交清单和冻结状态保留提交时路径作为历史证据。
+- 归档脚本默认暂存整个archive，因此使用`--no-commit`后只按本任务源 / 目标文件及引用修正清单提交。其他旧任务搬移、用户内容及4份未纳入清单的本地Gradle二进制缓存不提交、不回滚。
+- 本轮只做提交与文档收尾，复核冻结哈希和范围，不重复已通过的完整测试。journal引用上述两项工作提交；没有amend、push、发包或改版本 / dev.json。
 
 ## 实施前冻结
 
@@ -25,7 +33,7 @@
 | OA3 会话阅读 | 宿主及独立审查通过 | 空 / 混排 / 长文、固定关闭与实际配色；进入保存门槛未改 |
 | OA4 共享 / 个性化兼容 | 定向及旧截图通过 | P03、13 皮肤、用户原值与材质 / 稳定 key / 滚动规则；旧78图一致 |
 | OA5 14 张 E04 视觉 / 质量 | 已人工接纳并通过 | 用户接纳14图后93/93真实verify、1677/1677完整JVM通过；AndroidTest编译 / Lint / dev构建通过 |
-| OA6 交付与边界 | 已整理 | 独立check、spec / 版本记录和审阅材料齐备；待提交 / 归档，真机 / 性能 / 远端CI缺口保留 |
+| OA6 交付与边界 | 已整理并归档 | 独立check、spec / 版本记录和审阅材料齐备；两批工作提交完成，真机 / 性能 / 远端CI缺口保留 |
 
 ## P04.1 实施与定向验证过程
 
@@ -68,8 +76,8 @@
 - 实际运行 `:app:verifyRoborazziDebug --tests "com.example.myapplication.ui.screenshot.*" --console=plain`：退出0、32秒，93项全部通过，0失败 / 错误 / 跳过；测试任务实际执行，92张PNG哈希复验前后一致。证据：`research/verify-accepted-baselines.log`、`research/accepted-verify-result.json`、`research/accepted-verify-results/`。
 - 门禁齐备后按父计划执行一次完整 `testDebugUnitTest --console=plain`：退出0、1分1秒，1677项全部通过，0失败 / 错误 / 跳过，测试任务实际执行；92图哈希保持。普通JVM不比较像素，结果与上项截图verify分别登记。证据：`research/unit-final-after-acceptance.log`、`research/unit-final-result.json`、`research/unit-final-results/`。
 - `manifest.md` 仅新增本批12行当前接纳记录，原有并发后缀原字节哈希保持；`research/manifest-acceptance-only.patch` 通过 `git apply --cached --check --unidiff-zero`，此时未暂存。完整接受清单及92图哈希见 `research/baseline-acceptance.json`。
-- OA1–OA6已满足，后续按具体提交清单完成工作提交、当前P04归档及journal；暂不推送，不归档其他历史任务。P05仍待本批提交 / 归档后开始。
-- [提交清单](commit-plan.md) / `commit-plan.json` 已整理两批精确路径：第一批448个实现 / 测试 / 规范 / 已批准规划及证据文件，第二批14个新增PNG与manifest本批12行局部补丁；原有106个范围外状态项和4份任务内Gradle二进制缓存排除。等待本清单一次确认，暂存区为空，没有执行提交。
+- OA1–OA6已满足；具体提交清单由用户批准后执行，两批工作提交与当前P04归档见上节，其他历史任务保持。
+- [提交清单](commit-plan.md) / `commit-plan.json` 保留两批精确历史路径：第一批448个实现 / 测试 / 规范 / 已批准规划及证据文件，第二批14个新增PNG与manifest本批12行局部补丁；原有106个范围外状态项和4份任务内Gradle二进制缓存均排除。
 
 ## 结果边界
 

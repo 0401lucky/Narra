@@ -29,7 +29,7 @@
 
 ```powershell
 # 示例：实际子任务路径以本轮活动子任务为准
-python .trellis/scripts/task.py validate .trellis/tasks/10-21-ui-token-offline-roleplay
+python .trellis/scripts/task.py validate .trellis/tasks/archive/2026-10/10-21-ui-token-offline-roleplay
 .\gradlew.bat :app:testDebugUnitTest --tests "com.example.myapplication.ui.theme.UiTokenSourceGuardTest" --console=plain
 .\gradlew.bat :app:compileDebugAndroidTestKotlin lintDebug assembleDebug --console=plain
 .\gradlew.bat :app:verifyRoborazziDebug --tests "com.example.myapplication.ui.screenshot.*" --console=plain
@@ -40,3 +40,7 @@ python .trellis/scripts/task.py validate .trellis/tasks/10-21-ui-token-offline-r
 ## 统一禁区
 
 不使用 `git add .`、amend、push，不改发布版本 / `dev.json`，不发包。共享文件单批独占，截图接纳需另行人工确认；不恢复旧任务、不把其他窗口的 manifest 段落或用户文件纳入提交。归档时先检查脚本暂存范围，当前脚本需要 `--no-commit` 后精确暂存目标任务搬移与引用，不能暂存整个 archive。
+
+## 当前进度（2026-10-22）
+
+P04已按批准计划实现、检查、接纳并完成`4c93ae27`、`2cf55f1f`两项工作提交与归档，完整JVM1677/1677、真实截图93/93通过。父任务为1/4子任务完成；P05会话设置侧栏是下一批，P10 / P11继续等待前序。三个后续子任务仍为planning，没有在本轮提交归档中启动实现。

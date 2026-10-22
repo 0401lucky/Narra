@@ -10,85 +10,85 @@
   "accepted": [
     {
       "id": "E04_reading-empty-dark",
-      "source": ".trellis/tasks/10-21-ui-token-offline-roleplay/research/after/E04_reading-empty-dark.png",
+      "source": ".trellis/tasks/archive/2026-10/10-21-ui-token-offline-roleplay/research/after/E04_reading-empty-dark.png",
       "target": "app/src/test/snapshots/OfflineRoleplayScreenshotE04Test/E04_reading-empty-dark.png",
       "sha256": "e084e1438f521e01a8b737d55230d47dbd012b7f5235cf96264c7d2e005960b5"
     },
     {
       "id": "E04_reading-mixed-background",
-      "source": ".trellis/tasks/10-21-ui-token-offline-roleplay/research/after/E04_reading-mixed-background.png",
+      "source": ".trellis/tasks/archive/2026-10/10-21-ui-token-offline-roleplay/research/after/E04_reading-mixed-background.png",
       "target": "app/src/test/snapshots/OfflineRoleplayScreenshotE04Test/E04_reading-mixed-background.png",
       "sha256": "74d93a861d637382d91c9826cdd2f7c664077ef6dd0aa11cb812931311b8675e"
     },
     {
       "id": "E04_reading-narrow-dark",
-      "source": ".trellis/tasks/10-21-ui-token-offline-roleplay/research/after/E04_reading-narrow-dark.png",
+      "source": ".trellis/tasks/archive/2026-10/10-21-ui-token-offline-roleplay/research/after/E04_reading-narrow-dark.png",
       "target": "app/src/test/snapshots/OfflineRoleplayScreenshotE04Test/E04_reading-narrow-dark.png",
       "sha256": "cfb1cd4413480389562bbc778227f94f9f9f6c7a4e717de3e365ddb046ccb82b"
     },
     {
       "id": "E04_scene-background",
-      "source": ".trellis/tasks/10-21-ui-token-offline-roleplay/research/after/E04_scene-background.png",
+      "source": ".trellis/tasks/archive/2026-10/10-21-ui-token-offline-roleplay/research/after/E04_scene-background.png",
       "target": "app/src/test/snapshots/OfflineRoleplayScreenshotE04Test/E04_scene-background.png",
       "sha256": "d7cc6367a086210fd84521c497ab1cd466062cf4a8c9b246f00c29f3ceb60d4b"
     },
     {
       "id": "E04_scene-empty",
-      "source": ".trellis/tasks/10-21-ui-token-offline-roleplay/research/after/E04_scene-empty.png",
+      "source": ".trellis/tasks/archive/2026-10/10-21-ui-token-offline-roleplay/research/after/E04_scene-empty.png",
       "target": "app/src/test/snapshots/OfflineRoleplayScreenshotE04Test/E04_scene-empty.png",
       "sha256": "84892994e1f19c1c9e329f1ef1ed089edac7aebe6c93fdf463b54da026c7711a"
     },
     {
       "id": "E04_scene-matcha-dark",
-      "source": ".trellis/tasks/10-21-ui-token-offline-roleplay/research/after/E04_scene-matcha-dark.png",
+      "source": ".trellis/tasks/archive/2026-10/10-21-ui-token-offline-roleplay/research/after/E04_scene-matcha-dark.png",
       "target": "app/src/test/snapshots/OfflineRoleplayScreenshotE04Test/E04_scene-matcha-dark.png",
       "sha256": "91549f66c7cfd8778537d31532189f287e112b58916b691d6dfa5f7b66c40191"
     },
     {
       "id": "E04_scene-matcha-light",
-      "source": ".trellis/tasks/10-21-ui-token-offline-roleplay/research/after/E04_scene-matcha-light.png",
+      "source": ".trellis/tasks/archive/2026-10/10-21-ui-token-offline-roleplay/research/after/E04_scene-matcha-light.png",
       "target": "app/src/test/snapshots/OfflineRoleplayScreenshotE04Test/E04_scene-matcha-light.png",
       "sha256": "cfe6c693ba8d767a47f36cedb5c12f1c265daebf64b0c84afe7dfdf0b4f32c86"
     },
     {
       "id": "E04_scene-narrow-dark",
-      "source": ".trellis/tasks/10-21-ui-token-offline-roleplay/research/after/E04_scene-narrow-dark.png",
+      "source": ".trellis/tasks/archive/2026-10/10-21-ui-token-offline-roleplay/research/after/E04_scene-narrow-dark.png",
       "target": "app/src/test/snapshots/OfflineRoleplayScreenshotE04Test/E04_scene-narrow-dark.png",
       "sha256": "88fb27dd1c009e6027972c1d007afc724c900f554b638097997a1d471a9cdbb4"
     },
     {
       "id": "E04_scene-narrow-light",
-      "source": ".trellis/tasks/10-21-ui-token-offline-roleplay/research/after/E04_scene-narrow-light.png",
+      "source": ".trellis/tasks/archive/2026-10/10-21-ui-token-offline-roleplay/research/after/E04_scene-narrow-light.png",
       "target": "app/src/test/snapshots/OfflineRoleplayScreenshotE04Test/E04_scene-narrow-light.png",
       "sha256": "3058b184596b1dd32dc649af68340f76d2275155b8c9fe0efddec6d0ae1f54bc"
     },
     {
       "id": "E04_scene-ocean-dark",
-      "source": ".trellis/tasks/10-21-ui-token-offline-roleplay/research/after/E04_scene-ocean-dark.png",
+      "source": ".trellis/tasks/archive/2026-10/10-21-ui-token-offline-roleplay/research/after/E04_scene-ocean-dark.png",
       "target": "app/src/test/snapshots/OfflineRoleplayScreenshotE04Test/E04_scene-ocean-dark.png",
       "sha256": "8a334ccecaa6a16788643a53ba8805d3e414ba51ad8226f3052decf10686e93d"
     },
     {
       "id": "E04_scene-ocean-light",
-      "source": ".trellis/tasks/10-21-ui-token-offline-roleplay/research/after/E04_scene-ocean-light.png",
+      "source": ".trellis/tasks/archive/2026-10/10-21-ui-token-offline-roleplay/research/after/E04_scene-ocean-light.png",
       "target": "app/src/test/snapshots/OfflineRoleplayScreenshotE04Test/E04_scene-ocean-light.png",
       "sha256": "fcc33cf2e497cd154d07b7aeeac8019709a054d760cccfd361f79f22e1c5fd74"
     },
     {
       "id": "E04_scene-suggestions",
-      "source": ".trellis/tasks/10-21-ui-token-offline-roleplay/research/after/E04_scene-suggestions.png",
+      "source": ".trellis/tasks/archive/2026-10/10-21-ui-token-offline-roleplay/research/after/E04_scene-suggestions.png",
       "target": "app/src/test/snapshots/OfflineRoleplayScreenshotE04Test/E04_scene-suggestions.png",
       "sha256": "e359e582773c8ae72a443955b27bd6e08d513345526f3f7bac24d2cec0572ad9"
     },
     {
       "id": "E04_scene-vanilla-dark",
-      "source": ".trellis/tasks/10-21-ui-token-offline-roleplay/research/after/E04_scene-vanilla-dark.png",
+      "source": ".trellis/tasks/archive/2026-10/10-21-ui-token-offline-roleplay/research/after/E04_scene-vanilla-dark.png",
       "target": "app/src/test/snapshots/OfflineRoleplayScreenshotE04Test/E04_scene-vanilla-dark.png",
       "sha256": "4e60e2b119ae6f4d7be160ca3ed0096e25f0348758dca24d864ca448b80af064"
     },
     {
       "id": "E04_scene-vanilla-light",
-      "source": ".trellis/tasks/10-21-ui-token-offline-roleplay/research/after/E04_scene-vanilla-light.png",
+      "source": ".trellis/tasks/archive/2026-10/10-21-ui-token-offline-roleplay/research/after/E04_scene-vanilla-light.png",
       "target": "app/src/test/snapshots/OfflineRoleplayScreenshotE04Test/E04_scene-vanilla-light.png",
       "sha256": "f97ce092c85e549ac711da0c5f17e441c4b8c28d76f208de7fbbd2e00967d327"
     }
@@ -199,5 +199,5 @@
   "post_verify_hashes_unchanged": true,
   "manifest_acceptance_added_lines": 12,
   "manifest_original_suffix_unchanged": true,
-  "manifest_acceptance_only_patch": ".trellis/tasks/10-21-ui-token-offline-roleplay/research/manifest-acceptance-only.patch"
+  "manifest_acceptance_only_patch": ".trellis/tasks/archive/2026-10/10-21-ui-token-offline-roleplay/research/manifest-acceptance-only.patch"
 }

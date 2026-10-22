@@ -2,11 +2,11 @@
 
 ## Goal
 
-将真实线下扮演及既有会话阅读入口扩入 v2.3 默认令牌和无障碍契约，使大字体、读屏与日常操作可用；保留线上试点和个性化行为。归属 [扩面父任务](../10-21-ui-token-accessibility-expansion/prd.md)，2026-10-21 用户在最终摘要后回复“可以”，批准先实施本批。
+将真实线下扮演及既有会话阅读入口扩入 v2.3 默认令牌和无障碍契约，使大字体、读屏与日常操作可用；保留线上试点和个性化行为。归属 [扩面父任务](../../../10-21-ui-token-accessibility-expansion/prd.md)，2026-10-21 用户在最终摘要后回复“可以”，批准先实施本批。
 
 ## Background
 
-真实入口及源码锚点见 [P04 研究](../10-21-ui-token-accessibility-expansion/research/offline-entry.md)：相同 `roleplay/play/{scenarioId}` 路由按 ONLINE_PHONE 与线下分支选择内容，线下包括 OFFLINE_DIALOGUE / OFFLINE_LONGFORM；会话阅读是既有独立路由，不是 P14 日记。B04 线下两张只有组件覆盖，尚无本批整页 / 阅读基准。研究未运行测试，源码风险尚待实际测量。
+真实入口及源码锚点见 [P04 研究](../../../10-21-ui-token-accessibility-expansion/research/offline-entry.md)：相同 `roleplay/play/{scenarioId}` 路由按 ONLINE_PHONE 与线下分支选择内容，线下包括 OFFLINE_DIALOGUE / OFFLINE_LONGFORM；会话阅读是既有独立路由，不是 P14 日记。研究阶段B04线下两张只有组件覆盖，本批新增E04整页 / 阅读基准并完成接纳；运行结果见 [验证记录](verification.md)。
 
 ## Requirements
 
@@ -33,4 +33,4 @@
 
 ## Planning status
 
-最终摘要已获用户批准；2026-10-22 P04.1 / P04.2 实施及独立检查完成，用户回复“可以，还有任务吗？”接纳[14对候选](review/index.html)。旧78图不变，新增14图后93/93真实截图、1677/1677完整JVM、AndroidTest编译 / Lint / dev构建通过，OA1–OA6满足。本批等待具体提交清单审阅、提交与归档，保持in_progress；设备 / 物理性能 / 新视觉远端CI待补，未发布。
+最终摘要已获用户批准；2026-10-22 P04.1 / P04.2 实施及独立检查完成，用户回复“可以，还有任务吗？”接纳[14对候选](review/index.html)。旧78图不变，新增14图后93/93真实截图、1677/1677完整JVM、AndroidTest编译 / Lint / dev构建通过，OA1–OA6满足。用户随后批准提交归档，工作提交`4c93ae27`、`2cf55f1f`已完成，本批归档为completed；设备 / 物理性能 / 新视觉远端CI待补，未推送、未发布。

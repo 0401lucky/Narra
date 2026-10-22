@@ -26,7 +26,7 @@
   ],
   "parent": null,
   "relatedFiles": [],
-  "notes": "四批方案已批准，P04于2026-10-22接纳14候选，93/93真实截图与1677/1677完整JVM、编译/Lint/dev构建通过，待具体提交清单确认后收尾。父任务只协调保持planning，0/4子任务归档完成；P05/P10/P11等待前序提交归档。",
+  "notes": "四批方案已批准；P04于2026-10-22完成4c93ae27与2cf55f1f两项工作提交并归档，14新图接纳，93/93真实截图与1677/1677完整JVM、编译/Lint/dev构建通过。父任务只协调保持planning，1/4子任务完成；P05/P10/P11仍planning，下一批P05。",
   "meta": {
     "version": "2.3",
     "source_task": ".trellis/tasks/archive/2026-10/10-21-ui-token-accessibility-pilot",

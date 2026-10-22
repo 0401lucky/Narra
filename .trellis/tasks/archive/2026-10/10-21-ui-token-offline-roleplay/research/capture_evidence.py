@@ -6,7 +6,7 @@ import shutil
 import sys
 import xml.etree.ElementTree as ET
 
-repo = Path(__file__).resolve().parents[4]
+repo = next(parent for parent in Path(__file__).resolve().parents if (parent / ".trellis").is_dir())
 research = Path(__file__).resolve().parent
 phase = sys.argv[1]
 assert phase in ("before", "after")

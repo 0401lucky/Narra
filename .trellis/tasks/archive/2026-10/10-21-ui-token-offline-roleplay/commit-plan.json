@@ -1,5 +1,7 @@
 {
-  "status": "awaiting_user_confirmation",
+  "status": "executed",
+  "work_commits": ["4c93ae27", "2cf55f1f"],
+  "archived_task": ".trellis/tasks/archive/2026-10/10-21-ui-token-offline-roleplay",
   "version": "2.3",
   "task": ".trellis/tasks/10-21-ui-token-offline-roleplay",
   "commits": [

@@ -12,7 +12,7 @@
 
 定向检查优先 `RoleplaySceneContentTest` / `RoleplayScreenQuickActionsTest` 对应宿主覆盖、新增阅读与 P04 无障碍测试、`RoleplaySemanticColorsTest`、`RoleplayThemeSwitchUiTest`、`UiTokenSourceGuardTest`；未改的玻璃 / 滚动算法只复用原回归，不写常量镜像测试。
 
-最终命令与停止 / 回退规则以 [父执行编排](../10-21-ui-token-accessibility-expansion/implement.md) 为准；新增截图类建议 `OfflineRoleplayScreenshotE04Test`，每登记一图对应一个 `@Test` 方法。没有实际执行前不写通过；失败先定向复验，完整试点结果不重复用作本批结论。
+最终命令与停止 / 回退规则以 [父执行编排](../../../10-21-ui-token-accessibility-expansion/implement.md) 为准；新增截图类为 `OfflineRoleplayScreenshotE04Test`，每登记一图对应一个 `@Test` 方法。没有实际执行前不写通过；失败先定向复验，完整试点结果不重复用作本批结论。
 
 ## 2026-10-22 交付状态
 
@@ -22,4 +22,4 @@
 - [x] AndroidTest编译、Lint与dev构建通过；独立trellis-check无代码问题，复核XML和before/after各14及旧78的哈希一致。
 - [x] 主会话更新必要spec / 版本记录 / 验证记录并准备14对审阅图；资料见 [verification.md](verification.md) 与 [check-report.md](research/check-report.md)。
 - [x] 用户回复“可以，还有任务吗？”接纳14张候选；只新增已审阅14张PNG、manifest新增12行，旧78图不变。真实verify 93/93通过，接纳后完整JVM 1677/1677通过，0失败 / 错误 / 跳过，92图哈希不变。
-- [ ] 最终验证通过后审阅本批具体提交清单，完成提交 / 归档 / journal；此后才能开始P05。设备 / 远端CI缺口继续单列。
+- [x] 用户批准具体提交清单，已完成`4c93ae27`、`2cf55f1f`，归档当前P04并修正引用；journal随本轮收尾记录。归档使用`--no-commit`后精确暂存，排除其他旧任务搬移和本任务4份Gradle二进制缓存。P05仍为下一批；设备 / 远端CI缺口继续单列。
