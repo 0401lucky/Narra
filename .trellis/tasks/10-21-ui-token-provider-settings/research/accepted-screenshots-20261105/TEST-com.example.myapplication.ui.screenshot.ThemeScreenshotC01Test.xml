@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.myapplication.ui.screenshot.ThemeScreenshotC01Test" tests="2" skipped="0" failures="0" errors="0" timestamp="2026-11-05T09:57:48.416Z" hostname="LUCKY" time="0.176">
+  <properties/>
+  <testcase name="c01_dynamic_light" classname="com.example.myapplication.ui.screenshot.ThemeScreenshotC01Test" time="0.096"/>
+  <testcase name="c01_dynamic_dark" classname="com.example.myapplication.ui.screenshot.ThemeScreenshotC01Test" time="0.076"/>
+  <system-out><![CDATA[Roborazzi: C01_dynamic-light.png The differ result :ComparisonResult(pixelDifferences=0, pixelCount=1152000, width=720, height=1600) changed:false
+Roborazzi: C01_dynamic-dark.png The differ result :ComparisonResult(pixelDifferences=0, pixelCount=1152000, width=720, height=1600) changed:false
+]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

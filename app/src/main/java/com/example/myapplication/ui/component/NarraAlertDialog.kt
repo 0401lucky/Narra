@@ -27,6 +27,8 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
@@ -63,6 +65,8 @@ fun NarraAlertDialog(
     dismissLabel: String? = "取消",
     confirmEnabled: Boolean = true,
     isDestructive: Boolean = false,
+    shape: Shape = RoundedCornerShape(NarraUi.cardRadius),
+    actionContentColor: Color = MaterialTheme.colorScheme.primary,
     content: (@Composable () -> Unit)? = null,
 ) {
     val visibleState = remember { MutableTransitionState(false).apply { targetState = true } }
@@ -84,15 +88,15 @@ fun NarraAlertDialog(
                 .widthIn(max = maxWidth)
                 .heightIn(max = maxHeight),
             enter = fadeIn(animationSpec = tween(150, easing = EaseOutCubic)) +
-                scaleIn(
-                    animationSpec = tween(180, easing = EaseOutCubic),
-                    initialScale = 0.92f,
-                ),
+                    scaleIn(
+                        animationSpec = tween(180, easing = EaseOutCubic),
+                        initialScale = 0.92f,
+                    ),
             exit = fadeOut(animationSpec = tween(120)) + scaleOut(targetScale = 0.96f),
         ) {
             Surface(
                 modifier = modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(NarraUi.cardRadius),
+                shape = shape,
                 color = MaterialTheme.colorScheme.surfaceContainerHigh,
                 tonalElevation = 0.dp,
                 shadowElevation = 4.dp,
@@ -128,13 +132,17 @@ fun NarraAlertDialog(
                     }
                     FlowRow(
                         modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(NarraUi.compactGap, Alignment.End),
+                        horizontalArrangement = Arrangement.spacedBy(
+                            NarraUi.compactGap,
+                            Alignment.End
+                        ),
                         verticalArrangement = Arrangement.spacedBy(NarraUi.compactGap),
                     ) {
                         if (dismissLabel != null) {
                             NarraTextButton(
                                 onClick = onDismiss,
                                 modifier = Modifier.heightIn(min = NarraMinimumTouchTarget),
+                                colors = ButtonDefaults.textButtonColors(contentColor = actionContentColor),
                             ) {
                                 Text(dismissLabel)
                             }
@@ -147,7 +155,7 @@ fun NarraAlertDialog(
                                 contentColor = if (isDestructive) {
                                     MaterialTheme.colorScheme.error
                                 } else {
-                                    MaterialTheme.colorScheme.primary
+                                    actionContentColor
                                 },
                             ),
                         ) {

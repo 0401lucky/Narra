@@ -1,0 +1,135 @@
+{
+  "checked_at_utc": "2026-11-05T06:47:41.546044+00:00",
+  "reviewer": "p11_check",
+  "independent_audit": "passed",
+  "before_source_proof": {
+    "app/src/main/java/com/example/myapplication/ui/screen/settings/ProviderSettingsScreen.kt": {
+      "frozen_raw_sha256": "4dbed475081e0931445d1fff04cec6feafafa22f6c515c9bd001ef5edd66928c",
+      "start_worktree_hash_matches": true,
+      "clean_in_recorded_initial_git_status": true,
+      "git_blob": "0acb96075c0c7cf393fdfe521ef45638959f94e4",
+      "direct_raw_matches": []
+    },
+    "app/src/main/java/com/example/myapplication/ui/screen/settings/ProviderDetailScreen.kt": {
+      "frozen_raw_sha256": "799459c57cf8fa349b5ad693c65b3fccf921117b80d8ce1f2a21aab2a0b6fc53",
+      "start_worktree_hash_matches": true,
+      "clean_in_recorded_initial_git_status": true,
+      "git_blob": "29b4a155899add7cb3da7e03d4370d484d3a40fb",
+      "direct_raw_matches": [
+        "git_bytes",
+        "lf"
+      ]
+    },
+    "app/src/main/java/com/example/myapplication/ui/screen/settings/ProviderDetailChrome.kt": {
+      "frozen_raw_sha256": "56d48510d29e1089f953df3cec4480b3f62277791e0bcbebbce6d153a6b16c14",
+      "start_worktree_hash_matches": true,
+      "clean_in_recorded_initial_git_status": true,
+      "git_blob": "cfbce2691dd8b20f7c79e03cef143556f8d93bad",
+      "direct_raw_matches": [
+        "git_bytes",
+        "lf"
+      ]
+    },
+    "app/src/main/java/com/example/myapplication/ui/screen/settings/ProviderConfigTab.kt": {
+      "frozen_raw_sha256": "98d1020ff3eeb06f9e17f2c0a45753823b2bddfe46a87ab2bb293f65f2edf9c6",
+      "start_worktree_hash_matches": true,
+      "clean_in_recorded_initial_git_status": true,
+      "git_blob": "7bf4d045dafe4179da7088296ca5f675fe6098cf",
+      "direct_raw_matches": [
+        "git_bytes",
+        "lf"
+      ]
+    },
+    "app/src/main/java/com/example/myapplication/ui/screen/settings/ProviderModelTab.kt": {
+      "frozen_raw_sha256": "3971e45cbdec0b76dc78a419b3dc090063d53f7a9f760baf9b102c2164f8f39d",
+      "start_worktree_hash_matches": true,
+      "clean_in_recorded_initial_git_status": true,
+      "git_blob": "55f69eb270ff81a837d174fff0e2087675615688",
+      "direct_raw_matches": [
+        "git_bytes",
+        "lf"
+      ]
+    },
+    "app/src/main/java/com/example/myapplication/ui/screen/settings/ProviderModelDialogs.kt": {
+      "frozen_raw_sha256": "56794f8abd58d4c9a8b82c5c501936b569f0b3a6f74c17328f95fda278c33bd7",
+      "start_worktree_hash_matches": true,
+      "clean_in_recorded_initial_git_status": true,
+      "git_blob": "723358c7f22f83b721f23b3cec4623f6967518c9",
+      "direct_raw_matches": [
+        "git_bytes",
+        "lf"
+      ]
+    },
+    "app/src/main/java/com/example/myapplication/ui/screen/settings/ProviderTemplateDialog.kt": {
+      "frozen_raw_sha256": "dcd5fea6b4b917295647d822c45ac4c8c75e9436436acdc856c36d0ebaaa3dc2",
+      "start_worktree_hash_matches": true,
+      "clean_in_recorded_initial_git_status": true,
+      "git_blob": "7a971106edd59f51610342b5b6b3a1ba32543f46",
+      "direct_raw_matches": [
+        "git_bytes",
+        "lf"
+      ]
+    },
+    "app/src/main/java/com/example/myapplication/ui/screen/settings/SettingsComponents.kt": {
+      "frozen_raw_sha256": "0cc7071dd63eb056c4b4ac6d6ff1812b414debdc344f20a01374cc3fc6ba6842",
+      "start_worktree_hash_matches": true,
+      "clean_in_recorded_initial_git_status": true,
+      "git_blob": "50fd0c84ba8935d9b246a9d4dae165c9057f43d6",
+      "direct_raw_matches": []
+    }
+  },
+  "source_sha256": {
+    "app/src/main/java/com/example/myapplication/ui/screen/settings/ProviderSettingsScreen.kt": "050f342299b9a694c362ec400b8cb4507ee888a41ef99c0f7e63c9436f0b7286",
+    "app/src/main/java/com/example/myapplication/ui/screen/settings/ProviderDetailScreen.kt": "d7ff4f26eda6228473b70d162d573f90c42c605bc135f2d545df1e74fd06b205",
+    "app/src/main/java/com/example/myapplication/ui/screen/settings/ProviderDetailChrome.kt": "205a7984f3165b1629a76ec4866844b1acc104358d7c09f0afb8437f7c5dd7ae",
+    "app/src/main/java/com/example/myapplication/ui/screen/settings/ProviderConfigTab.kt": "5c578614781a4a6330372c278210e4e67e67aeed85b36d0b2f590444d66eb9d7",
+    "app/src/main/java/com/example/myapplication/ui/screen/settings/ProviderModelTab.kt": "c3a83127f0b7e242f01443bc1ebd523b3bb87da7a25656f56ca0a53278ac17e1",
+    "app/src/main/java/com/example/myapplication/ui/screen/settings/ProviderModelDialogs.kt": "4543513e738ae7120ab56e4f9645848d0601e9e2945650d1307771ed76f14a23",
+    "app/src/main/java/com/example/myapplication/ui/screen/settings/ProviderTemplateDialog.kt": "770b1572c5e177bcad7936e46706ea489bee793f0b4d6f37757d9e41c3018f04",
+    "app/src/main/java/com/example/myapplication/ui/screen/settings/SettingsComponents.kt": "0cc7071dd63eb056c4b4ac6d6ff1812b414debdc344f20a01374cc3fc6ba6842",
+    "app/src/main/java/com/example/myapplication/ui/component/NarraAlertDialog.kt": "5739bf4fb8ad023de5393ecef9e1de05315b9173018aff14f0f335582855a592"
+  },
+  "accepted_pngs_unchanged": 126,
+  "phases": {
+    "before": {
+      "pngs": 32,
+      "windows": 12,
+      "manifest_sha256": "d8a9e849084bf478a4ac76fbfe4195bc7ffe6f3537466a2a5e1f581110f4ce3f"
+    },
+    "after": {
+      "pngs": 32,
+      "windows": 12,
+      "manifest_sha256": "add1fb170e0174f565f8a230445656089eacbf18c9f11971268a938179017b90"
+    }
+  },
+  "provider_junit": {
+    "suites": 9,
+    "tests": 52,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "screenshot_junit": {
+    "suites": 15,
+    "tests": 159,
+    "failures": 33,
+    "errors": 0,
+    "skipped": 0
+  },
+  "targeted_distinct_latest_passed": 144,
+  "lint": {
+    "Warning": 55,
+    "Hint": 3
+  },
+  "lint_added_removed_issues": 0,
+  "apk_sha256": "bd8a84f3fc000a608a040887d6090a70c1f0ad291d14932bb7d24a02050a8e54",
+  "scope_protections_unchanged": true,
+  "new_gradle_runs_in_this_audit": 0,
+  "device_tests_executed": false,
+  "human_visual_acceptance": false,
+  "unchanged_settings_components_eol": {
+    "crlf": 597,
+    "lf_total": 728
+  },
+  "source_note": "Frozen worktree raw SHA equals the recorded clean start; six before files match Git LF bytes directly. ProviderSettingsScreen and SettingsComponents raw hashes are worktree-byte hashes, not claimed to equal Git blob bytes. Unchanged SettingsComponents normalizes exactly to ac22bb27 and contains mixed line endings."
+}

@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.myapplication.data.repository.ai.tooling.MemoryWriteServiceTest" tests="3" skipped="0" failures="0" errors="0" timestamp="2026-11-05T09:47:32.207Z" hostname="LUCKY" time="0.026">
+  <properties/>
+  <testcase name="proposeAndApprovePersistentMemory_writesToAssistantScope" classname="com.example.myapplication.data.repository.ai.tooling.MemoryWriteServiceTest" time="0.013"/>
+  <testcase name="saveSceneMemory_respectsSceneScopeLimitWithoutOverCondensing" classname="com.example.myapplication.data.repository.ai.tooling.MemoryWriteServiceTest" time="0.01"/>
+  <testcase name="saveSceneMemory_deduplicatesWithinConversationScope" classname="com.example.myapplication.data.repository.ai.tooling.MemoryWriteServiceTest" time="0.002"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

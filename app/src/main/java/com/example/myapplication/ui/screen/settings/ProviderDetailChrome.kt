@@ -2,8 +2,8 @@ package com.example.myapplication.ui.screen.settings
 
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.ScrollState
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
@@ -14,8 +14,9 @@ import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
-import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.selection.selectable
+import androidx.compose.foundation.selection.selectableGroup
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.outlined.Build
@@ -25,6 +26,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -33,13 +35,20 @@ import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalWindowInfo
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.heading
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.myapplication.model.ProviderSettings
 import com.example.myapplication.model.brandColor
 import com.example.myapplication.ui.component.NarraIconButton
+import com.example.myapplication.ui.theme.NarraMinimumTouchTarget
+import com.example.myapplication.ui.theme.NarraShapes
+import com.example.myapplication.ui.theme.NarraUi
 
 @Composable
 internal fun ProviderDetailTopBar(
@@ -47,22 +56,31 @@ internal fun ProviderDetailTopBar(
     onNavigateBack: () -> Unit,
 ) {
     val palette = rememberSettingsPalette()
-    val brandColor = provider.resolvedType().brandColor(MaterialTheme.colorScheme.surface.luminance() < 0.5f)
+    val brandColor =
+        provider.resolvedType().brandColor(MaterialTheme.colorScheme.surface.luminance() < 0.5f)
+    val titleScroll = remember(provider.id) { ScrollState(0) }
+    // 超长名称自身滚动，为表单和底栏保留可用高度，返回始终独立可达。
+    val windowHeight = with(LocalDensity.current) { LocalWindowInfo.current.containerSize.height.toDp() }
+    val maxTitleHeight = (windowHeight * 0.4f)
+        .coerceAtLeast(NarraMinimumTouchTarget)
 
     Row(
         modifier = Modifier
             .fillMaxWidth()
             .statusBarsPadding()
-            .padding(horizontal = 20.dp, vertical = 12.dp),
+            .padding(horizontal = NarraUi.space16, vertical = NarraUi.space8),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.SpaceBetween,
     ) {
         Row(
             modifier = Modifier.weight(1f),
             verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(12.dp),
+            horizontalArrangement = Arrangement.spacedBy(NarraUi.space12),
         ) {
-            NarraIconButton(onClick = onNavigateBack, modifier = Modifier.size(48.dp)) {
+            NarraIconButton(
+                onClick = onNavigateBack,
+                modifier = Modifier.size(NarraMinimumTouchTarget)
+            ) {
                 Icon(
                     Icons.AutoMirrored.Filled.ArrowBack,
                     contentDescription = "返回",
@@ -70,8 +88,8 @@ internal fun ProviderDetailTopBar(
                     modifier = Modifier.size(24.dp),
                 )
             }
-            Surface(
-                shape = CircleShape,
+            if (LocalDensity.current.fontScale <= 1.15f) Surface(
+                shape = NarraShapes.pill,
                 color = brandColor.copy(alpha = 0.15f),
                 modifier = Modifier.size(38.dp),
             ) {
@@ -81,7 +99,7 @@ internal fun ProviderDetailTopBar(
                         painter = painterResource(id = iconRes),
                         contentDescription = null,
                         modifier = Modifier
-                            .padding(8.dp)
+                            .padding(NarraUi.space8)
                             .fillMaxSize(),
                         contentScale = ContentScale.Fit,
                     )
@@ -89,22 +107,25 @@ internal fun ProviderDetailTopBar(
                     Box(contentAlignment = Alignment.Center) {
                         Text(
                             provider.name.firstOrNull()?.uppercase() ?: "?",
-                            color = brandColor,
+                            color = palette.title,
                             fontWeight = FontWeight.Bold,
                             fontSize = 18.sp,
                         )
                     }
                 }
             }
-            Text(
-                text = provider.name.ifBlank { "新提供商" },
-                modifier = Modifier.weight(1f),
-                style = MaterialTheme.typography.titleLarge,
-                fontWeight = FontWeight.SemiBold,
-                color = palette.title,
-                maxLines = 2,
-                overflow = TextOverflow.Ellipsis,
-            )
+            Box(
+                modifier = Modifier.weight(1f).heightIn(max = maxTitleHeight)
+                    .verticalScroll(titleScroll),
+            ) {
+                Text(
+                    text = provider.name.ifBlank { "新提供商" },
+                    modifier = Modifier.semantics { heading() },
+                    style = MaterialTheme.typography.titleLarge,
+                    fontWeight = FontWeight.SemiBold,
+                    color = palette.title,
+                )
+            }
         }
     }
 }
@@ -118,15 +139,15 @@ internal fun SleekBottomNav(
     Surface(
         modifier = Modifier
             .navigationBarsPadding()
-            .padding(horizontal = 20.dp, vertical = 12.dp)
+            .padding(horizontal = NarraUi.space16, vertical = NarraUi.space12)
             .fillMaxWidth(),
-        shape = RoundedCornerShape(16.dp),
+        shape = NarraShapes.medium,
         color = palette.surface,
         shadowElevation = 0.dp,
         border = BorderStroke(1.dp, palette.border.copy(alpha = 0.2f)),
     ) {
         Row(
-            modifier = Modifier.padding(6.dp),
+            modifier = Modifier.padding(NarraUi.space4).selectableGroup(),
             horizontalArrangement = Arrangement.SpaceEvenly,
             verticalAlignment = Alignment.CenterVertically,
         ) {
@@ -158,22 +179,27 @@ private fun SleekBottomNavItem(
 ) {
     val palette = rememberSettingsPalette()
     val bg = if (selected) palette.accentSoft else Color.Transparent
-    val contentColor = if (selected) palette.accentStrong else palette.body.copy(alpha = 0.7f)
+    val contentColor = if (selected) MaterialTheme.colorScheme.onPrimaryContainer else palette.body
 
     Box(
         modifier = modifier
-            .heightIn(min = 48.dp)
-            .clip(RoundedCornerShape(8.dp))
-            .clickable(onClick = onClick)
+            .heightIn(min = NarraMinimumTouchTarget)
+            .clip(NarraShapes.small)
+            .selectable(selected = selected, role = Role.Tab, onClick = onClick)
             .background(bg)
-            .padding(vertical = 10.dp),
+            .padding(vertical = NarraUi.space12),
         contentAlignment = Alignment.Center,
     ) {
         Row(
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            horizontalArrangement = Arrangement.spacedBy(NarraUi.space8),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            Icon(icon, contentDescription = null, tint = contentColor, modifier = Modifier.size(22.dp))
+            Icon(
+                icon,
+                contentDescription = null,
+                tint = contentColor,
+                modifier = Modifier.size(22.dp)
+            )
             Text(
                 label,
                 color = contentColor,

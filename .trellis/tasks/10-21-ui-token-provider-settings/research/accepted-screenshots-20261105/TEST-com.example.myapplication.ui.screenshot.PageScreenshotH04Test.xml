@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.myapplication.ui.screenshot.PageScreenshotH04Test" tests="6" skipped="0" failures="0" errors="0" timestamp="2026-11-05T09:57:18.416Z" hostname="LUCKY" time="1.736">
+  <properties/>
+  <testcase name="h04_p02_assistants_narrow_light" classname="com.example.myapplication.ui.screenshot.PageScreenshotH04Test" time="0.258"/>
+  <testcase name="h04_p01_messages_narrow_dark" classname="com.example.myapplication.ui.screenshot.PageScreenshotH04Test" time="0.298"/>
+  <testcase name="h04_p03_online_narrow_light" classname="com.example.myapplication.ui.screenshot.PageScreenshotH04Test" time="0.306"/>
+  <testcase name="h04_p03_online_narrow_dark" classname="com.example.myapplication.ui.screenshot.PageScreenshotH04Test" time="0.31"/>
+  <testcase name="h04_p02_assistants_narrow_dark" classname="com.example.myapplication.ui.screenshot.PageScreenshotH04Test" time="0.275"/>
+  <testcase name="h04_p01_messages_narrow_light" classname="com.example.myapplication.ui.screenshot.PageScreenshotH04Test" time="0.282"/>
+  <system-out><![CDATA[Roborazzi: H04_p02-assistants-narrow-light.png The differ result :ComparisonResult(pixelDifferences=0, pixelCount=819200, width=640, height=1280) changed:false
+Roborazzi: H04_p01-messages-narrow-dark.png The differ result :ComparisonResult(pixelDifferences=0, pixelCount=819200, width=640, height=1280) changed:false
+Roborazzi: H04_p03-online-narrow-light.png The differ result :ComparisonResult(pixelDifferences=0, pixelCount=819200, width=640, height=1280) changed:false
+Roborazzi: H04_p03-online-narrow-dark.png The differ result :ComparisonResult(pixelDifferences=0, pixelCount=819200, width=640, height=1280) changed:false
+Roborazzi: H04_p02-assistants-narrow-dark.png The differ result :ComparisonResult(pixelDifferences=0, pixelCount=819200, width=640, height=1280) changed:false
+Roborazzi: H04_p01-messages-narrow-light.png The differ result :ComparisonResult(pixelDifferences=0, pixelCount=819200, width=640, height=1280) changed:false
+]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.myapplication.ui.screenshot.PageScreenshotH03Test" tests="3" skipped="0" failures="0" errors="0" timestamp="2026-11-05T06:16:36.297Z" hostname="LUCKY" time="0.651">
+  <properties/>
+  <testcase name="h03_p03_online_long_reply" classname="com.example.myapplication.ui.screenshot.PageScreenshotH03Test" time="0.183"/>
+  <testcase name="h03_p03_online_streaming_frame" classname="com.example.myapplication.ui.screenshot.PageScreenshotH03Test" time="0.209"/>
+  <testcase name="h03_p03_online_error_message" classname="com.example.myapplication.ui.screenshot.PageScreenshotH03Test" time="0.256"/>
+  <system-out><![CDATA[Roborazzi: H03_p03-online-long-reply.png The differ result :ComparisonResult(pixelDifferences=0, pixelCount=1152000, width=720, height=1600) changed:false
+Roborazzi: H03_p03-online-streaming-frame.png The differ result :ComparisonResult(pixelDifferences=0, pixelCount=1152000, width=720, height=1600) changed:false
+Roborazzi: H03_p03-online-error-message.png The differ result :ComparisonResult(pixelDifferences=0, pixelCount=1152000, width=720, height=1600) changed:false
+]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

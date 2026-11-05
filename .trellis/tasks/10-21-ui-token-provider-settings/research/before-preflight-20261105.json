@@ -1,0 +1,56 @@
+{
+  "checked_at_utc": "2026-11-05T05:01:10.737324+00:00",
+  "base_commit": "ac22bb271007c814b6ef49b8499858acc815661c",
+  "before_manifest_sha256": "d8a9e849084bf478a4ac76fbfe4195bc7ffe6f3537466a2a5e1f581110f4ce3f",
+  "unique_screenshots": 32,
+  "independent_windows": 12,
+  "product_and_shared_files_unchanged": 8,
+  "accepted_pngs_unchanged": 126,
+  "junit": {
+    "tests": 33,
+    "failures": 33,
+    "errors": 0,
+    "skipped": 0
+  },
+  "failure_classification": "32 missing E11 baselines + 1 missing-baseline inventory guard",
+  "actual_scrolls": {
+    "E11_config-save-narrow-dark": {
+      "value": 2509.0,
+      "maximum": 2509.0,
+      "entire_operation_bounds": "pageScroll=2509.0/2509.0\npageViewport=Rect.fromLTRB(0.0, 241.0, 640.0, 1091.0)\nsave=Rect.fromLTRB(192.0, 736.0, 592.0, 851.0)\nsaveUnclipped=Rect.fromLTRB(192.0, 736.0, 592.0, 851.0)\ndelete=Rect.fromLTRB(48.0, 738.0, 160.0, 850.0)\ndeleteUnclipped=Rect.fromLTRB(48.0, 738.0, 160.0, 850.0)"
+    },
+    "E11_config-save-narrow-light": {
+      "value": 2509.0,
+      "maximum": 2509.0,
+      "entire_operation_bounds": "pageScroll=2509.0/2509.0\npageViewport=Rect.fromLTRB(0.0, 241.0, 640.0, 1091.0)\nsave=Rect.fromLTRB(192.0, 736.0, 592.0, 851.0)\nsaveUnclipped=Rect.fromLTRB(192.0, 736.0, 592.0, 851.0)\ndelete=Rect.fromLTRB(48.0, 738.0, 160.0, 850.0)\ndeleteUnclipped=Rect.fromLTRB(48.0, 738.0, 160.0, 850.0)"
+    },
+    "E11_list-narrow-dark": {
+      "value": 662.0,
+      "maximum": 662.0,
+      "entire_operation_bounds": "pageScroll=662.0/662.0\npageViewport=Rect.fromLTRB(0.0, 133.0, 640.0, 1280.0)\nlastProvider=Rect.fromLTRB(40.0, 654.0, 600.0, 1224.0)\nlastProviderUnclipped=Rect.fromLTRB(40.0, 654.0, 600.0, 1224.0)"
+    },
+    "E11_list-narrow-light": {
+      "value": 662.0,
+      "maximum": 662.0,
+      "entire_operation_bounds": "pageScroll=662.0/662.0\npageViewport=Rect.fromLTRB(0.0, 133.0, 640.0, 1280.0)\nlastProvider=Rect.fromLTRB(40.0, 654.0, 600.0, 1224.0)\nlastProviderUnclipped=Rect.fromLTRB(40.0, 654.0, 600.0, 1224.0)"
+    },
+    "E11_models-tail-narrow-dark": {
+      "value": 2219.0,
+      "maximum": 2219.0,
+      "entire_operation_bounds": "pageScroll=2219.0/2219.0\npageViewport=Rect.fromLTRB(0.0, 241.0, 640.0, 1091.0)\nlastModelEdit=Rect.fromLTRB(376.0, 723.0, 472.0, 819.0)\nlastModelEditUnclipped=Rect.fromLTRB(376.0, 723.0, 472.0, 819.0)\nlastModelRemove=Rect.fromLTRB(472.0, 723.0, 568.0, 819.0)\nlastModelRemoveUnclipped=Rect.fromLTRB(472.0, 723.0, 568.0, 819.0)\nlastModelCard=Rect.fromLTRB(40.0, 418.0, 600.0, 851.0)\nlastModelCardUnclipped=Rect.fromLTRB(40.0, 418.0, 600.0, 851.0)\naddModel=Rect.fromLTRB(180.0, 902.0, 588.0, 1027.0)\naddModelUnclipped=Rect.fromLTRB(180.0, 902.0, 588.0, 1027.0)\nfetchModels=Rect.fromLTRB(52.0, 917.0, 148.0, 1013.0)\nfetchModelsUnclipped=Rect.fromLTRB(52.0, 917.0, 148.0, 1013.0)\nmodelsTab=Rect.fromLTRB(320.0, 1127.0, 588.0, 1244.0)\nmodelsTabUnclipped=Rect.fromLTRB(320.0, 1127.0, 588.0, 1244.0)"
+    },
+    "E11_models-tail-narrow-light": {
+      "value": 2219.0,
+      "maximum": 2219.0,
+      "entire_operation_bounds": "pageScroll=2219.0/2219.0\npageViewport=Rect.fromLTRB(0.0, 241.0, 640.0, 1091.0)\nlastModelEdit=Rect.fromLTRB(376.0, 723.0, 472.0, 819.0)\nlastModelEditUnclipped=Rect.fromLTRB(376.0, 723.0, 472.0, 819.0)\nlastModelRemove=Rect.fromLTRB(472.0, 723.0, 568.0, 819.0)\nlastModelRemoveUnclipped=Rect.fromLTRB(472.0, 723.0, 568.0, 819.0)\nlastModelCard=Rect.fromLTRB(40.0, 418.0, 600.0, 851.0)\nlastModelCardUnclipped=Rect.fromLTRB(40.0, 418.0, 600.0, 851.0)\naddModel=Rect.fromLTRB(180.0, 902.0, 588.0, 1027.0)\naddModelUnclipped=Rect.fromLTRB(180.0, 902.0, 588.0, 1027.0)\nfetchModels=Rect.fromLTRB(52.0, 917.0, 148.0, 1013.0)\nfetchModelsUnclipped=Rect.fromLTRB(52.0, 917.0, 148.0, 1013.0)\nmodelsTab=Rect.fromLTRB(320.0, 1127.0, 588.0, 1244.0)\nmodelsTabUnclipped=Rect.fromLTRB(320.0, 1127.0, 588.0, 1244.0)"
+    }
+  },
+  "full_size_images_visually_checked": [
+    "E11_list-matcha-light",
+    "E11_config-save-narrow-light",
+    "E11_models-tail-narrow-light",
+    "E11_ability-dialog-light",
+    "E11_fetched-sheet-light"
+  ],
+  "implementation_checkpoint": "cleared; preserve frozen before and use identical after capture parameters"
+}

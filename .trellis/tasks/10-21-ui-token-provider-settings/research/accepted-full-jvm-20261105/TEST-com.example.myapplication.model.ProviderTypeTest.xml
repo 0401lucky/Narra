@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.myapplication.model.ProviderTypeTest" tests="19" skipped="0" failures="0" errors="0" timestamp="2026-11-05T09:47:47.704Z" hostname="LUCKY" time="0.001">
+  <properties/>
+  <testcase name="fromBaseUrl_detectsAnthropic" classname="com.example.myapplication.model.ProviderTypeTest" time="0.0"/>
+  <testcase name="providerSettings_resolvedApiProtocol_defaultsToOpenAiCompatibleForCustomProxy" classname="com.example.myapplication.model.ProviderTypeTest" time="0.0"/>
+  <testcase name="providerSettings_resolvedType_usesExplicitType" classname="com.example.myapplication.model.ProviderTypeTest" time="0.0"/>
+  <testcase name="providerSettings_resolvedOpenAiTextApiMode_defaultsToChatCompletions" classname="com.example.myapplication.model.ProviderTypeTest" time="0.0"/>
+  <testcase name="providerSettings_resolvedType_infersFromBaseUrlWhenTypeIsNull" classname="com.example.myapplication.model.ProviderTypeTest" time="0.0"/>
+  <testcase name="providerSettings_resolvedApiProtocol_infersAnthropicFromOfficialBaseUrl" classname="com.example.myapplication.model.ProviderTypeTest" time="0.0"/>
+  <testcase name="fromBaseUrl_detectsGoogle" classname="com.example.myapplication.model.ProviderTypeTest" time="0.0"/>
+  <testcase name="anthropicDefaultBaseUrl_pointsToOfficialMessagesEndpointBase" classname="com.example.myapplication.model.ProviderTypeTest" time="0.0"/>
+  <testcase name="fromBaseUrl_detectsOpenAI" classname="com.example.myapplication.model.ProviderTypeTest" time="0.0"/>
+  <testcase name="fromBaseUrl_detectsMoonshot" classname="com.example.myapplication.model.ProviderTypeTest" time="0.0"/>
+  <testcase name="fromBaseUrl_detectsGrok" classname="com.example.myapplication.model.ProviderTypeTest" time="0.0"/>
+  <testcase name="fromBaseUrl_detectsQwen" classname="com.example.myapplication.model.ProviderTypeTest" time="0.0"/>
+  <testcase name="fromBaseUrl_ignoresCaseWhenDetecting" classname="com.example.myapplication.model.ProviderTypeTest" time="0.0"/>
+  <testcase name="providerSettings_resolvedChatCompletionsPath_normalizesCustomPath" classname="com.example.myapplication.model.ProviderTypeTest" time="0.001"/>
+  <testcase name="fromBaseUrl_returnsCustomForBlankUrl" classname="com.example.myapplication.model.ProviderTypeTest" time="0.0"/>
+  <testcase name="fromBaseUrl_detectsMistral" classname="com.example.myapplication.model.ProviderTypeTest" time="0.0"/>
+  <testcase name="fromBaseUrl_detectsDeepSeek" classname="com.example.myapplication.model.ProviderTypeTest" time="0.0"/>
+  <testcase name="fromBaseUrl_returnsCustomForUnknownUrl" classname="com.example.myapplication.model.ProviderTypeTest" time="0.0"/>
+  <testcase name="fromBaseUrl_detectsZhipu" classname="com.example.myapplication.model.ProviderTypeTest" time="0.0"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

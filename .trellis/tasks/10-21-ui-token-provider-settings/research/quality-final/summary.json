@@ -1,0 +1,134 @@
+{
+  "command": ".\\gradlew.bat :app:lintDebug :app:assembleDebug :app:compileDebugAndroidTestKotlin --console=plain",
+  "commandExitCode": 0,
+  "completedBuildLines": [
+    "BUILD SUCCESSFUL in 5m 24s",
+    "60 actionable tasks: 13 executed, 47 up-to-date"
+  ],
+  "taskLines": [
+    "> Task :app:preBuild UP-TO-DATE",
+    "> Task :app:generateDebugAssets UP-TO-DATE",
+    "> Task :app:preDebugUnitTestBuild UP-TO-DATE",
+    "> Task :app:preDebugAndroidTestBuild SKIPPED",
+    "> Task :app:preDebugBuild UP-TO-DATE",
+    "> Task :app:ensureDebugAnnotationProcessorList UP-TO-DATE",
+    "> Task :app:extractProguardFiles UP-TO-DATE",
+    "> Task :app:generateDebugResValues UP-TO-DATE",
+    "> Task :app:generateDebugAndroidTestResValues UP-TO-DATE",
+    "> Task :app:generateDebugBuildConfig UP-TO-DATE",
+    "> Task :app:createDebugCompatibleScreenManifests UP-TO-DATE",
+    "> Task :app:mergeDebugNativeDebugMetadata NO-SOURCE",
+    "> Task :app:desugarDebugFileDependencies UP-TO-DATE",
+    "> Task :app:mapDebugSourceSetPaths UP-TO-DATE",
+    "> Task :app:javaPreCompileDebug UP-TO-DATE",
+    "> Task :app:mergeDebugJniLibFolders UP-TO-DATE",
+    "> Task :app:validateSigningDebug UP-TO-DATE",
+    "> Task :app:extractDeepLinksDebug UP-TO-DATE",
+    "> Task :app:writeDebugAppMetadata UP-TO-DATE",
+    "> Task :app:generateDebugResources UP-TO-DATE",
+    "> Task :app:writeDebugSigningConfigVersions UP-TO-DATE",
+    "> Task :app:processDebugAndroidTestNavigationResources UP-TO-DATE",
+    "> Task :app:generateDebugAndroidTestResources UP-TO-DATE",
+    "> Task :app:packageDebugResources UP-TO-DATE",
+    "> Task :app:packageDebugAndroidTestResources UP-TO-DATE",
+    "> Task :app:mergeDebugAssets UP-TO-DATE",
+    "> Task :app:compressDebugAssets UP-TO-DATE",
+    "> Task :app:checkDebugAarMetadata UP-TO-DATE",
+    "> Task :app:processDebugNavigationResources UP-TO-DATE",
+    "> Task :app:parseDebugAndroidTestLocalResources UP-TO-DATE",
+    "> Task :app:compileDebugNavigationResources UP-TO-DATE",
+    "> Task :app:parseDebugLocalResources UP-TO-DATE",
+    "> Task :app:generateDebugAndroidTestRFile UP-TO-DATE",
+    "> Task :app:mergeDebugResources UP-TO-DATE",
+    "> Task :app:generateDebugRFile UP-TO-DATE",
+    "> Task :app:processDebugMainManifest UP-TO-DATE",
+    "> Task :app:processDebugManifest UP-TO-DATE",
+    "> Task :app:processDebugManifestForPackage UP-TO-DATE",
+    "> Task :app:checkDebugDuplicateClasses UP-TO-DATE",
+    "> Task :app:mergeLibDexDebug UP-TO-DATE",
+    "> Task :app:processDebugAndroidTestManifest UP-TO-DATE",
+    "> Task :app:generateDebugAndroidTestBuildConfig UP-TO-DATE",
+    "> Task :app:mergeDebugNativeLibs UP-TO-DATE",
+    "> Task :app:processDebugResources UP-TO-DATE",
+    "> Task :app:stripDebugDebugSymbols UP-TO-DATE",
+    "> Task :app:kspDebugKotlin UP-TO-DATE",
+    "> Task :app:mergeExtDexDebug UP-TO-DATE",
+    "> Task :app:compileDebugKotlin UP-TO-DATE",
+    "> Task :app:processDebugJavaRes UP-TO-DATE",
+    "> Task :app:compileDebugJavaWithJavac UP-TO-DATE",
+    "> Task :app:bundleDebugClassesToCompileJar UP-TO-DATE",
+    "> Task :app:mergeDebugJavaResource UP-TO-DATE",
+    "> Task :app:generateDebugAndroidTestLintModel",
+    "> Task :app:generateDebugLintReportModel",
+    "> Task :app:generateDebugUnitTestLintModel",
+    "> Task :app:dexBuilderDebug",
+    "> Task :app:kspDebugAndroidTestKotlin",
+    "> Task :app:mergeProjectDexDebug",
+    "> Task :app:compileDebugAndroidTestKotlin",
+    "> Task :app:packageDebug",
+    "> Task :app:assembleDebug",
+    "> Task :app:createDebugApkListingFileRedirect UP-TO-DATE",
+    "> Task :app:lintAnalyzeDebugAndroidTest",
+    "> Task :app:lintAnalyzeDebugUnitTest",
+    "> Task :app:lintAnalyzeDebug",
+    "> Task :app:lintReportDebug",
+    "> Task :app:lintDebug"
+  ],
+  "deviceTestsExecuted": false,
+  "deviceTestsNote": "AndroidTest Kotlin compilation only; no connected test, TalkBack, IME, system-bar or physical-performance run.",
+  "lint": {
+    "severities": {
+      "Warning": 58,
+      "Hint": 3
+    },
+    "addedIssues": [
+      {
+        "id": "ConfigurationScreenWidthHeight",
+        "severity": "Warning",
+        "message": "Using Configuration.screenHeightDp instead of LocalWindowInfo.current.containerSize",
+        "files": [
+          "D:/code/AndroidStudioprojects/MyApplication/app/src/main/java/com/example/myapplication/ui/screen/settings/ProviderDetailChrome.kt"
+        ],
+        "count": 1
+      },
+      {
+        "id": "ConfigurationScreenWidthHeight",
+        "severity": "Warning",
+        "message": "Using Configuration.screenWidthDp instead of LocalWindowInfo.current.containerSize",
+        "files": [
+          "D:/code/AndroidStudioprojects/MyApplication/app/src/main/java/com/example/myapplication/ui/screen/settings/ProviderTemplateDialog.kt"
+        ],
+        "count": 1
+      },
+      {
+        "id": "ConfigurationScreenWidthHeight",
+        "severity": "Warning",
+        "message": "Using Configuration.screenHeightDp instead of LocalWindowInfo.current.containerSize",
+        "files": [
+          "D:/code/AndroidStudioprojects/MyApplication/app/src/main/java/com/example/myapplication/ui/screen/settings/ProviderTemplateDialog.kt"
+        ],
+        "count": 1
+      }
+    ],
+    "removedIssues": []
+  },
+  "apk": {
+    "file": "app/build/outputs/apk/debug/Narra-v2.2.12-dev-20212-dev.apk",
+    "size": 82095203,
+    "sha256": "6c620c5c7928921952bc7fb6809ccda8203a3e1cd9913f1532be22db43f3feec",
+    "versionName": "2.2.12-dev",
+    "versionCode": 20212,
+    "published": false
+  },
+  "sourceSha256": {
+    "app/src/main/java/com/example/myapplication/ui/screen/settings/ProviderSettingsScreen.kt": "050f342299b9a694c362ec400b8cb4507ee888a41ef99c0f7e63c9436f0b7286",
+    "app/src/main/java/com/example/myapplication/ui/screen/settings/ProviderDetailScreen.kt": "d7ff4f26eda6228473b70d162d573f90c42c605bc135f2d545df1e74fd06b205",
+    "app/src/main/java/com/example/myapplication/ui/screen/settings/ProviderDetailChrome.kt": "a461cb6d3427a0d856a7317eb92ba9e07bbf5955fe39688535182ed4f7d39c71",
+    "app/src/main/java/com/example/myapplication/ui/screen/settings/ProviderConfigTab.kt": "5c578614781a4a6330372c278210e4e67e67aeed85b36d0b2f590444d66eb9d7",
+    "app/src/main/java/com/example/myapplication/ui/screen/settings/ProviderModelTab.kt": "c3a83127f0b7e242f01443bc1ebd523b3bb87da7a25656f56ca0a53278ac17e1",
+    "app/src/main/java/com/example/myapplication/ui/screen/settings/ProviderModelDialogs.kt": "4543513e738ae7120ab56e4f9645848d0601e9e2945650d1307771ed76f14a23",
+    "app/src/main/java/com/example/myapplication/ui/screen/settings/ProviderTemplateDialog.kt": "29df1a9da253e4471be82196928242f72cb4be0d06748ab0e44eedfe5419af94",
+    "app/src/main/java/com/example/myapplication/ui/screen/settings/SettingsComponents.kt": "0cc7071dd63eb056c4b4ac6d6ff1812b414debdc344f20a01374cc3fc6ba6842",
+    "app/src/main/java/com/example/myapplication/ui/component/NarraAlertDialog.kt": "5739bf4fb8ad023de5393ecef9e1de05315b9173018aff14f0f335582855a592"
+  }
+}

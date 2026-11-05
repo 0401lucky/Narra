@@ -9,3 +9,6 @@
 {"file":".trellis/spec/guides/code-reuse-thinking-guide.md","reason":"审查：共享修改先枚举定义与全部消费者"}
 {"file":".trellis/tasks/10-21-ui-token-accessibility-expansion/research/settings-provider-entry.md","reason":"审查：本批真实入口共享所有者覆盖缺口与候选矩阵"}
 {"file":".trellis/tasks/10-21-ui-token-accessibility-expansion/research/coverage-and-queue.md","reason":"审查：真实窗口捕获before-after接纳及后续队列边界"}
+{"file":".trellis/tasks/archive/2026-11/10-21-ui-token-settings-home/verification.md","reason":"审查P10前置和最终接纳状态，不挪用其结果作为P11证据"}
+{"file":".trellis/tasks/archive/2026-11/10-21-ui-token-settings-home/research/check-summary-20261105.md","reason":"审查真实touch bounds、完整末项捕获及精确重载守卫"}
+{"file":".trellis/tasks/archive/2026-11/10-21-ui-token-settings-home/research/implementation-summary-20261105.md","reason":"核对P10实际共享接口；最新验收以verification和最终check为准"}

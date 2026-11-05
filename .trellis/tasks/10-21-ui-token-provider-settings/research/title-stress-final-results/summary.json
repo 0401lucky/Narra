@@ -1,0 +1,10 @@
+{
+  "command": ".\\gradlew.bat :app:testDebugUnitTest --tests com.example.myapplication.ui.screen.settings.ProviderConfigAccessibilityTest.veryLongProviderTitle_keepsTheFormUsable_andCanScrollItsCompleteName --console=plain",
+  "commandExitCode": 0,
+  "suites": 1,
+  "tests": 1,
+  "failures": 0,
+  "errors": 0,
+  "skipped": 0,
+  "failureDetails": []
+}

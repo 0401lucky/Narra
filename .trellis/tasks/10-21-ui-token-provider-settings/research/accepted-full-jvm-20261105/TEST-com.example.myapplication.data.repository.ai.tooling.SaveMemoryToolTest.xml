@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.myapplication.data.repository.ai.tooling.SaveMemoryToolTest" tests="8" skipped="0" failures="0" errors="0" timestamp="2026-11-05T09:47:32.253Z" hostname="LUCKY" time="0.031">
+  <properties/>
+  <testcase name="execute_savesSceneStateMemoryDirectly" classname="com.example.myapplication.data.repository.ai.tooling.SaveMemoryToolTest" time="0.007"/>
+  <testcase name="execute_returnsErrorWhenImportanceTypeInvalid" classname="com.example.myapplication.data.repository.ai.tooling.SaveMemoryToolTest" time="0.003"/>
+  <testcase name="execute_proposesPersistentMemoryForConfirmation" classname="com.example.myapplication.data.repository.ai.tooling.SaveMemoryToolTest" time="0.004"/>
+  <testcase name="execute_redactsSecretBeforeWritingMemory" classname="com.example.myapplication.data.repository.ai.tooling.SaveMemoryToolTest" time="0.003"/>
+  <testcase name="execute_rejectsOverlongMemoryContent" classname="com.example.myapplication.data.repository.ai.tooling.SaveMemoryToolTest" time="0.003"/>
+  <testcase name="execute_returnsErrorWhenMemoryTypeTypeInvalid" classname="com.example.myapplication.data.repository.ai.tooling.SaveMemoryToolTest" time="0.004"/>
+  <testcase name="execute_usesDefaultImportanceWhenArgumentTypeInvalid" classname="com.example.myapplication.data.repository.ai.tooling.SaveMemoryToolTest" time="0.003"/>
+  <testcase name="execute_returnsErrorWhenArgumentUnknown" classname="com.example.myapplication.data.repository.ai.tooling.SaveMemoryToolTest" time="0.004"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

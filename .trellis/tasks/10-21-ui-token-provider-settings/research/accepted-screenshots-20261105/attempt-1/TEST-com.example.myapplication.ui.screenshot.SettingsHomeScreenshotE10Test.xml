@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.myapplication.ui.screenshot.SettingsHomeScreenshotE10Test" tests="16" skipped="0" failures="0" errors="0" timestamp="2026-11-05T07:31:33.973Z" hostname="LUCKY" time="5.487">
+  <properties/>
+  <testcase name="e10_display_sheet_light" classname="com.example.myapplication.ui.screenshot.SettingsHomeScreenshotE10Test" time="0.628"/>
+  <testcase name="e10_home_ocean_light" classname="com.example.myapplication.ui.screenshot.SettingsHomeScreenshotE10Test" time="0.178"/>
+  <testcase name="e10_home_dynamic_light" classname="com.example.myapplication.ui.screenshot.SettingsHomeScreenshotE10Test" time="0.107"/>
+  <testcase name="e10_home_matcha_dark" classname="com.example.myapplication.ui.screenshot.SettingsHomeScreenshotE10Test" time="0.121"/>
+  <testcase name="e10_theme_sheet_light" classname="com.example.myapplication.ui.screenshot.SettingsHomeScreenshotE10Test" time="0.61"/>
+  <testcase name="e10_home_vanilla_dark" classname="com.example.myapplication.ui.screenshot.SettingsHomeScreenshotE10Test" time="0.141"/>
+  <testcase name="e10_theme_sheet_dark" classname="com.example.myapplication.ui.screenshot.SettingsHomeScreenshotE10Test" time="0.594"/>
+  <testcase name="e10_home_narrow_dark" classname="com.example.myapplication.ui.screenshot.SettingsHomeScreenshotE10Test" time="0.378"/>
+  <testcase name="e10_mode_sheet_dark" classname="com.example.myapplication.ui.screenshot.SettingsHomeScreenshotE10Test" time="0.588"/>
+  <testcase name="e10_home_matcha_light" classname="com.example.myapplication.ui.screenshot.SettingsHomeScreenshotE10Test" time="0.169"/>
+  <testcase name="e10_display_sheet_dark" classname="com.example.myapplication.ui.screenshot.SettingsHomeScreenshotE10Test" time="0.615"/>
+  <testcase name="e10_home_ocean_dark" classname="com.example.myapplication.ui.screenshot.SettingsHomeScreenshotE10Test" time="0.141"/>
+  <testcase name="e10_mode_sheet_light" classname="com.example.myapplication.ui.screenshot.SettingsHomeScreenshotE10Test" time="0.558"/>
+  <testcase name="e10_home_narrow_light" classname="com.example.myapplication.ui.screenshot.SettingsHomeScreenshotE10Test" time="0.418"/>
+  <testcase name="e10_home_dynamic_dark" classname="com.example.myapplication.ui.screenshot.SettingsHomeScreenshotE10Test" time="0.128"/>
+  <testcase name="e10_home_vanilla_light" classname="com.example.myapplication.ui.screenshot.SettingsHomeScreenshotE10Test" time="0.102"/>
+  <system-out><![CDATA[Roborazzi: It seems that there are multiple windows.We capture all windows using captureScreenRoboImage(). We can add a flag to disable this behavior so please let us know if you need it.
+Roborazzi: E10_display-sheet-light.png The differ result :ComparisonResult(pixelDifferences=0, pixelCount=819200, width=640, height=1280) changed:false
+Roborazzi: E10_home-ocean-light.png The differ result :ComparisonResult(pixelDifferences=0, pixelCount=1152000, width=720, height=1600) changed:false
+Roborazzi: E10_home-dynamic-light.png The differ result :ComparisonResult(pixelDifferences=0, pixelCount=1152000, width=720, height=1600) changed:false
+Roborazzi: E10_home-matcha-dark.png The differ result :ComparisonResult(pixelDifferences=0, pixelCount=1152000, width=720, height=1600) changed:false
+Roborazzi: It seems that there are multiple windows.We capture all windows using captureScreenRoboImage(). We can add a flag to disable this behavior so please let us know if you need it.
+Roborazzi: E10_theme-sheet-light.png The differ result :ComparisonResult(pixelDifferences=0, pixelCount=819200, width=640, height=1280) changed:false
+Roborazzi: E10_home-vanilla-dark.png The differ result :ComparisonResult(pixelDifferences=0, pixelCount=1152000, width=720, height=1600) changed:false
+Roborazzi: It seems that there are multiple windows.We capture all windows using captureScreenRoboImage(). We can add a flag to disable this behavior so please let us know if you need it.
+Roborazzi: E10_theme-sheet-dark.png The differ result :ComparisonResult(pixelDifferences=0, pixelCount=819200, width=640, height=1280) changed:false
+Roborazzi: E10_home-narrow-dark.png The differ result :ComparisonResult(pixelDifferences=0, pixelCount=819200, width=640, height=1280) changed:false
+Roborazzi: It seems that there are multiple windows.We capture all windows using captureScreenRoboImage(). We can add a flag to disable this behavior so please let us know if you need it.
+Roborazzi: E10_mode-sheet-dark.png The differ result :ComparisonResult(pixelDifferences=0, pixelCount=819200, width=640, height=1280) changed:false
+Roborazzi: E10_home-matcha-light.png The differ result :ComparisonResult(pixelDifferences=0, pixelCount=1152000, width=720, height=1600) changed:false
+Roborazzi: It seems that there are multiple windows.We capture all windows using captureScreenRoboImage(). We can add a flag to disable this behavior so please let us know if you need it.
+Roborazzi: E10_display-sheet-dark.png The differ result :ComparisonResult(pixelDifferences=0, pixelCount=819200, width=640, height=1280) changed:false
+Roborazzi: E10_home-ocean-dark.png The differ result :ComparisonResult(pixelDifferences=0, pixelCount=1152000, width=720, height=1600) changed:false
+Roborazzi: It seems that there are multiple windows.We capture all windows using captureScreenRoboImage(). We can add a flag to disable this behavior so please let us know if you need it.
+Roborazzi: E10_mode-sheet-light.png The differ result :ComparisonResult(pixelDifferences=0, pixelCount=819200, width=640, height=1280) changed:false
+Roborazzi: E10_home-narrow-light.png The differ result :ComparisonResult(pixelDifferences=0, pixelCount=819200, width=640, height=1280) changed:false
+Roborazzi: E10_home-dynamic-dark.png The differ result :ComparisonResult(pixelDifferences=0, pixelCount=1152000, width=720, height=1600) changed:false
+Roborazzi: E10_home-vanilla-light.png The differ result :ComparisonResult(pixelDifferences=0, pixelCount=1152000, width=720, height=1600) changed:false
+]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

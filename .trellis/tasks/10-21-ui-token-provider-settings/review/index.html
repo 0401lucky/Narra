@@ -1,0 +1,349 @@
+<!doctype html><html lang="zh-CN"><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Narra v2.3 提供商配置前后对照</title><style>
+*{box-sizing:border-box}body{margin:0;background:#edf1ef;color:#243b30;font:16px/1.6 system-ui,sans-serif}
+header{padding:18px 24px;background:white;border-bottom:1px solid #ccd9d0}h1{font-size:22px;margin:0}header p{margin:6px 0}
+input,select{font:inherit;padding:8px 12px;min-height:48px;border:1px solid #83998b;border-radius:8px;max-width:100%}
+input{width:360px}main{max-width:1280px;margin:auto;padding:16px}
+article{background:white;border:1px solid #ccd9d0;border-radius:16px;padding:16px;margin:16px 0}
+h2{font-size:16px;overflow-wrap:anywhere;margin:0}.images{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+details{margin:8px 0 16px}summary{cursor:pointer;min-height:48px;padding:10px 0}pre{white-space:pre-wrap;overflow-wrap:anywhere;font-size:13px}
+figure{margin:0}figcaption{margin-bottom:8px}img{width:100%;height:auto;border:1px solid #ccd9d0}article[hidden]{display:none}
+@media(max-width:640px){main{padding:6px}article{padding:8px}.images{gap:5px}figcaption{font-size:12px}}
+</style><header><h1>Narra v2.3 提供商配置前后对照</h1>
+<p>32组真实迁移前后截图，已于2026-11-05由用户接纳；126张旧PNG保持不变。点击图片查看原尺寸。</p>
+<p>提供商列表、Config / Models、固定动态色、320×640dp / 200%字体，以及六类弹层浅深共12个真实窗口。</p>
+<p>窗口尺寸变化时，差异图仅补透明画布对齐，原图不裁切或拉伸。设备、物理性能和新视觉远端CI证据见验证记录。</p>
+<p><a href="../verification.md">验证记录</a> · <a href="review-data.json">完整参数与SHA-256</a></p>
+<label for="search">筛选用例 </label><input id="search" placeholder="config、models、narrow、dialog…">
+<label for="group">场景 </label><select id="group"><option value="">全部32组</option value="regular">常规页面</option>
+<option value="large">窄屏大字体</option><option value="window">真实弹层</option></select></header>
+<main><article data-id="E11_ability-dialog-dark 覆盖模型能力 · 深色" data-group="window"><h2>覆盖模型能力 · 深色</h2><code>E11_ability-dialog-dark</code><p>已人工接纳 · 真实弹层 · 变化 152,427 像素（18.61%） · 字体 200%</p><details><summary>窗口与操作区捕获证据</summary><pre>迁移前：
+title=覆盖模型能力
+operation=保存
+fontScale=2.0
+bounds=Rect.fromLTRB(0.0, 0.0, 544.0, 910.0)
+pageScroll=2219.0/2219.0
+pageViewport=Rect.fromLTRB(0.0, 241.0, 640.0, 1091.0)
+abilityEntry=Rect.fromLTRB(376.0, 723.0, 472.0, 819.0)
+abilityEntryUnclipped=Rect.fromLTRB(376.0, 723.0, 472.0, 819.0)
+operation=Rect.fromLTRB(344.0, 753.0, 496.0, 862.0)
+operationUnclipped=Rect.fromLTRB(344.0, 753.0, 496.0, 862.0)
+
+迁移后：
+title=覆盖模型能力
+operation=保存
+fontScale=2.0
+bounds=Rect.fromLTRB(0.0, 0.0, 544.0, 910.0)
+pageScroll=2273.0/2273.0
+pageViewport=Rect.fromLTRB(0.0, 315.0, 640.0, 1091.0)
+abilityEntry=Rect.fromLTRB(384.0, 743.0, 480.0, 839.0)
+abilityEntryUnclipped=Rect.fromLTRB(384.0, 743.0, 480.0, 839.0)
+operation=Rect.fromLTRB(344.0, 753.0, 496.0, 862.0)
+operationUnclipped=Rect.fromLTRB(344.0, 753.0, 496.0, 862.0)</pre></details><div class="images"><figure><figcaption>迁移前</figcaption><a href="before/E11_ability-dialog-dark.png" target="_blank"><img src="before/E11_ability-dialog-dark.png" loading="lazy" alt="E11_ability-dialog-dark 迁移前"></a></figure><figure><figcaption>迁移后</figcaption><a href="after/E11_ability-dialog-dark.png" target="_blank"><img src="after/E11_ability-dialog-dark.png" loading="lazy" alt="E11_ability-dialog-dark 迁移后"></a></figure><figure><figcaption>变化位置（粉色）</figcaption><a href="diff/E11_ability-dialog-dark.png" target="_blank"><img src="diff/E11_ability-dialog-dark.png" loading="lazy" alt="E11_ability-dialog-dark 变化位置（粉色）"></a></figure></div></article>
+<article data-id="E11_ability-dialog-light 覆盖模型能力 · 浅色" data-group="window"><h2>覆盖模型能力 · 浅色</h2><code>E11_ability-dialog-light</code><p>已人工接纳 · 真实弹层 · 变化 154,037 像素（18.80%） · 字体 200%</p><details><summary>窗口与操作区捕获证据</summary><pre>迁移前：
+title=覆盖模型能力
+operation=保存
+fontScale=2.0
+bounds=Rect.fromLTRB(0.0, 0.0, 544.0, 910.0)
+pageScroll=2219.0/2219.0
+pageViewport=Rect.fromLTRB(0.0, 241.0, 640.0, 1091.0)
+abilityEntry=Rect.fromLTRB(376.0, 723.0, 472.0, 819.0)
+abilityEntryUnclipped=Rect.fromLTRB(376.0, 723.0, 472.0, 819.0)
+operation=Rect.fromLTRB(344.0, 753.0, 496.0, 862.0)
+operationUnclipped=Rect.fromLTRB(344.0, 753.0, 496.0, 862.0)
+
+迁移后：
+title=覆盖模型能力
+operation=保存
+fontScale=2.0
+bounds=Rect.fromLTRB(0.0, 0.0, 544.0, 910.0)
+pageScroll=2273.0/2273.0
+pageViewport=Rect.fromLTRB(0.0, 315.0, 640.0, 1091.0)
+abilityEntry=Rect.fromLTRB(384.0, 743.0, 480.0, 839.0)
+abilityEntryUnclipped=Rect.fromLTRB(384.0, 743.0, 480.0, 839.0)
+operation=Rect.fromLTRB(344.0, 753.0, 496.0, 862.0)
+operationUnclipped=Rect.fromLTRB(344.0, 753.0, 496.0, 862.0)</pre></details><div class="images"><figure><figcaption>迁移前</figcaption><a href="before/E11_ability-dialog-light.png" target="_blank"><img src="before/E11_ability-dialog-light.png" loading="lazy" alt="E11_ability-dialog-light 迁移前"></a></figure><figure><figcaption>迁移后</figcaption><a href="after/E11_ability-dialog-light.png" target="_blank"><img src="after/E11_ability-dialog-light.png" loading="lazy" alt="E11_ability-dialog-light 迁移后"></a></figure><figure><figcaption>变化位置（粉色）</figcaption><a href="diff/E11_ability-dialog-light.png" target="_blank"><img src="diff/E11_ability-dialog-light.png" loading="lazy" alt="E11_ability-dialog-light 变化位置（粉色）"></a></figure></div></article>
+<article data-id="E11_clear-dialog-dark 清空模型确认 · 深色" data-group="window"><h2>清空模型确认 · 深色</h2><code>E11_clear-dialog-dark</code><p>已人工接纳 · 真实弹层 · 变化 110,875 像素（13.53%） · 字体 200%</p><details><summary>窗口与操作区捕获证据</summary><pre>迁移前：
+title=清空模型
+operation=确认清空
+fontScale=2.0
+bounds=Rect.fromLTRB(0.0, 0.0, 544.0, 808.0)
+operation=Rect.fromLTRB(240.0, 651.0, 496.0, 760.0)
+operationUnclipped=Rect.fromLTRB(240.0, 651.0, 496.0, 760.0)
+
+迁移后：
+title=清空模型
+operation=确认清空
+fontScale=2.0
+bounds=Rect.fromLTRB(0.0, 0.0, 544.0, 808.0)
+operation=Rect.fromLTRB(240.0, 651.0, 496.0, 760.0)
+operationUnclipped=Rect.fromLTRB(240.0, 651.0, 496.0, 760.0)</pre></details><div class="images"><figure><figcaption>迁移前</figcaption><a href="before/E11_clear-dialog-dark.png" target="_blank"><img src="before/E11_clear-dialog-dark.png" loading="lazy" alt="E11_clear-dialog-dark 迁移前"></a></figure><figure><figcaption>迁移后</figcaption><a href="after/E11_clear-dialog-dark.png" target="_blank"><img src="after/E11_clear-dialog-dark.png" loading="lazy" alt="E11_clear-dialog-dark 迁移后"></a></figure><figure><figcaption>变化位置（粉色）</figcaption><a href="diff/E11_clear-dialog-dark.png" target="_blank"><img src="diff/E11_clear-dialog-dark.png" loading="lazy" alt="E11_clear-dialog-dark 变化位置（粉色）"></a></figure></div></article>
+<article data-id="E11_clear-dialog-light 清空模型确认 · 浅色" data-group="window"><h2>清空模型确认 · 浅色</h2><code>E11_clear-dialog-light</code><p>已人工接纳 · 真实弹层 · 变化 112,305 像素（13.71%） · 字体 200%</p><details><summary>窗口与操作区捕获证据</summary><pre>迁移前：
+title=清空模型
+operation=确认清空
+fontScale=2.0
+bounds=Rect.fromLTRB(0.0, 0.0, 544.0, 808.0)
+operation=Rect.fromLTRB(240.0, 651.0, 496.0, 760.0)
+operationUnclipped=Rect.fromLTRB(240.0, 651.0, 496.0, 760.0)
+
+迁移后：
+title=清空模型
+operation=确认清空
+fontScale=2.0
+bounds=Rect.fromLTRB(0.0, 0.0, 544.0, 808.0)
+operation=Rect.fromLTRB(240.0, 651.0, 496.0, 760.0)
+operationUnclipped=Rect.fromLTRB(240.0, 651.0, 496.0, 760.0)</pre></details><div class="images"><figure><figcaption>迁移前</figcaption><a href="before/E11_clear-dialog-light.png" target="_blank"><img src="before/E11_clear-dialog-light.png" loading="lazy" alt="E11_clear-dialog-light 迁移前"></a></figure><figure><figcaption>迁移后</figcaption><a href="after/E11_clear-dialog-light.png" target="_blank"><img src="after/E11_clear-dialog-light.png" loading="lazy" alt="E11_clear-dialog-light 迁移后"></a></figure><figure><figcaption>变化位置（粉色）</figcaption><a href="diff/E11_clear-dialog-light.png" target="_blank"><img src="diff/E11_clear-dialog-light.png" loading="lazy" alt="E11_clear-dialog-light 变化位置（粉色）"></a></figure></div></article>
+<article data-id="E11_config-dark Config 配置表单 · 深色" data-group="regular"><h2>Config 配置表单 · 深色</h2><code>E11_config-dark</code><p>已人工接纳 · 常规页面 · 变化 440,155 像素（38.21%） · 字体 100%</p><div class="images"><figure><figcaption>迁移前</figcaption><a href="before/E11_config-dark.png" target="_blank"><img src="before/E11_config-dark.png" loading="lazy" alt="E11_config-dark 迁移前"></a></figure><figure><figcaption>迁移后</figcaption><a href="after/E11_config-dark.png" target="_blank"><img src="after/E11_config-dark.png" loading="lazy" alt="E11_config-dark 迁移后"></a></figure><figure><figcaption>变化位置（粉色）</figcaption><a href="diff/E11_config-dark.png" target="_blank"><img src="diff/E11_config-dark.png" loading="lazy" alt="E11_config-dark 变化位置（粉色）"></a></figure></div></article>
+<article data-id="E11_config-dynamic-dark Config · 固定动态色 · 深色" data-group="regular"><h2>Config · 固定动态色 · 深色</h2><code>E11_config-dynamic-dark</code><p>已人工接纳 · 常规页面 · 变化 440,153 像素（38.21%） · 字体 100%</p><div class="images"><figure><figcaption>迁移前</figcaption><a href="before/E11_config-dynamic-dark.png" target="_blank"><img src="before/E11_config-dynamic-dark.png" loading="lazy" alt="E11_config-dynamic-dark 迁移前"></a></figure><figure><figcaption>迁移后</figcaption><a href="after/E11_config-dynamic-dark.png" target="_blank"><img src="after/E11_config-dynamic-dark.png" loading="lazy" alt="E11_config-dynamic-dark 迁移后"></a></figure><figure><figcaption>变化位置（粉色）</figcaption><a href="diff/E11_config-dynamic-dark.png" target="_blank"><img src="diff/E11_config-dynamic-dark.png" loading="lazy" alt="E11_config-dynamic-dark 变化位置（粉色）"></a></figure></div></article>
+<article data-id="E11_config-dynamic-light Config · 固定动态色 · 浅色" data-group="regular"><h2>Config · 固定动态色 · 浅色</h2><code>E11_config-dynamic-light</code><p>已人工接纳 · 常规页面 · 变化 439,908 像素（38.19%） · 字体 100%</p><div class="images"><figure><figcaption>迁移前</figcaption><a href="before/E11_config-dynamic-light.png" target="_blank"><img src="before/E11_config-dynamic-light.png" loading="lazy" alt="E11_config-dynamic-light 迁移前"></a></figure><figure><figcaption>迁移后</figcaption><a href="after/E11_config-dynamic-light.png" target="_blank"><img src="after/E11_config-dynamic-light.png" loading="lazy" alt="E11_config-dynamic-light 迁移后"></a></figure><figure><figcaption>变化位置（粉色）</figcaption><a href="diff/E11_config-dynamic-light.png" target="_blank"><img src="diff/E11_config-dynamic-light.png" loading="lazy" alt="E11_config-dynamic-light 变化位置（粉色）"></a></figure></div></article>
+<article data-id="E11_config-light Config 配置表单 · 浅色" data-group="regular"><h2>Config 配置表单 · 浅色</h2><code>E11_config-light</code><p>已人工接纳 · 常规页面 · 变化 439,908 像素（38.19%） · 字体 100%</p><div class="images"><figure><figcaption>迁移前</figcaption><a href="before/E11_config-light.png" target="_blank"><img src="before/E11_config-light.png" loading="lazy" alt="E11_config-light 迁移前"></a></figure><figure><figcaption>迁移后</figcaption><a href="after/E11_config-light.png" target="_blank"><img src="after/E11_config-light.png" loading="lazy" alt="E11_config-light 迁移后"></a></figure><figure><figcaption>变化位置（粉色）</figcaption><a href="diff/E11_config-light.png" target="_blank"><img src="diff/E11_config-light.png" loading="lazy" alt="E11_config-light 变化位置（粉色）"></a></figure></div></article>
+<article data-id="E11_config-save-narrow-dark 窄屏大字体 · 保存区 · 深色" data-group="large"><h2>窄屏大字体 · 保存区 · 深色</h2><code>E11_config-save-narrow-dark</code><p>已人工接纳 · 窄屏大字体 · 变化 298,738 像素（36.47%） · 字体 200%</p><details><summary>窗口与操作区捕获证据</summary><pre>迁移前：
+pageScroll=2509.0/2509.0
+pageViewport=Rect.fromLTRB(0.0, 241.0, 640.0, 1091.0)
+save=Rect.fromLTRB(192.0, 736.0, 592.0, 851.0)
+saveUnclipped=Rect.fromLTRB(192.0, 736.0, 592.0, 851.0)
+delete=Rect.fromLTRB(48.0, 738.0, 160.0, 850.0)
+deleteUnclipped=Rect.fromLTRB(48.0, 738.0, 160.0, 850.0)
+
+迁移后：
+pageScroll=2199.0/2199.0
+pageViewport=Rect.fromLTRB(0.0, 315.0, 640.0, 1091.0)
+save=Rect.fromLTRB(160.0, 912.0, 608.0, 1043.0)
+saveUnclipped=Rect.fromLTRB(160.0, 912.0, 608.0, 1043.0)
+delete=Rect.fromLTRB(32.0, 930.0, 128.0, 1026.0)
+deleteUnclipped=Rect.fromLTRB(32.0, 930.0, 128.0, 1026.0)</pre></details><div class="images"><figure><figcaption>迁移前</figcaption><a href="before/E11_config-save-narrow-dark.png" target="_blank"><img src="before/E11_config-save-narrow-dark.png" loading="lazy" alt="E11_config-save-narrow-dark 迁移前"></a></figure><figure><figcaption>迁移后</figcaption><a href="after/E11_config-save-narrow-dark.png" target="_blank"><img src="after/E11_config-save-narrow-dark.png" loading="lazy" alt="E11_config-save-narrow-dark 迁移后"></a></figure><figure><figcaption>变化位置（粉色）</figcaption><a href="diff/E11_config-save-narrow-dark.png" target="_blank"><img src="diff/E11_config-save-narrow-dark.png" loading="lazy" alt="E11_config-save-narrow-dark 变化位置（粉色）"></a></figure></div></article>
+<article data-id="E11_config-save-narrow-light 窄屏大字体 · 保存区 · 浅色" data-group="large"><h2>窄屏大字体 · 保存区 · 浅色</h2><code>E11_config-save-narrow-light</code><p>已人工接纳 · 窄屏大字体 · 变化 297,828 像素（36.36%） · 字体 200%</p><details><summary>窗口与操作区捕获证据</summary><pre>迁移前：
+pageScroll=2509.0/2509.0
+pageViewport=Rect.fromLTRB(0.0, 241.0, 640.0, 1091.0)
+save=Rect.fromLTRB(192.0, 736.0, 592.0, 851.0)
+saveUnclipped=Rect.fromLTRB(192.0, 736.0, 592.0, 851.0)
+delete=Rect.fromLTRB(48.0, 738.0, 160.0, 850.0)
+deleteUnclipped=Rect.fromLTRB(48.0, 738.0, 160.0, 850.0)
+
+迁移后：
+pageScroll=2199.0/2199.0
+pageViewport=Rect.fromLTRB(0.0, 315.0, 640.0, 1091.0)
+save=Rect.fromLTRB(160.0, 912.0, 608.0, 1043.0)
+saveUnclipped=Rect.fromLTRB(160.0, 912.0, 608.0, 1043.0)
+delete=Rect.fromLTRB(32.0, 930.0, 128.0, 1026.0)
+deleteUnclipped=Rect.fromLTRB(32.0, 930.0, 128.0, 1026.0)</pre></details><div class="images"><figure><figcaption>迁移前</figcaption><a href="before/E11_config-save-narrow-light.png" target="_blank"><img src="before/E11_config-save-narrow-light.png" loading="lazy" alt="E11_config-save-narrow-light 迁移前"></a></figure><figure><figcaption>迁移后</figcaption><a href="after/E11_config-save-narrow-light.png" target="_blank"><img src="after/E11_config-save-narrow-light.png" loading="lazy" alt="E11_config-save-narrow-light 迁移后"></a></figure><figure><figcaption>变化位置（粉色）</figcaption><a href="diff/E11_config-save-narrow-light.png" target="_blank"><img src="diff/E11_config-save-narrow-light.png" loading="lazy" alt="E11_config-save-narrow-light 变化位置（粉色）"></a></figure></div></article>
+<article data-id="E11_fetched-sheet-dark 抓取后的模型选择 · 深色" data-group="window"><h2>抓取后的模型选择 · 深色</h2><code>E11_fetched-sheet-dark</code><p>已人工接纳 · 真实弹层 · 变化 340,435 像素（41.56%） · 字体 200%</p><details><summary>窗口与操作区捕获证据</summary><pre>迁移前：
+title=选择模型
+operation=确认选择
+fontScale=2.0
+bounds=Rect.fromLTRB(0.0, 0.0, 640.0, 1280.0)
+operation=Rect.fromLTRB(280.0, 1064.0, 592.0, 1248.0)
+operationUnclipped=Rect.fromLTRB(280.0, 1064.0, 592.0, 1248.0)
+
+迁移后：
+title=选择模型
+operation=确认选择
+fontScale=2.0
+bounds=Rect.fromLTRB(0.0, 0.0, 640.0, 1280.0)
+operation=Rect.fromLTRB(277.0, 1123.0, 608.0, 1248.0)
+operationUnclipped=Rect.fromLTRB(277.0, 1123.0, 608.0, 1248.0)</pre></details><div class="images"><figure><figcaption>迁移前</figcaption><a href="before/E11_fetched-sheet-dark.png" target="_blank"><img src="before/E11_fetched-sheet-dark.png" loading="lazy" alt="E11_fetched-sheet-dark 迁移前"></a></figure><figure><figcaption>迁移后</figcaption><a href="after/E11_fetched-sheet-dark.png" target="_blank"><img src="after/E11_fetched-sheet-dark.png" loading="lazy" alt="E11_fetched-sheet-dark 迁移后"></a></figure><figure><figcaption>变化位置（粉色）</figcaption><a href="diff/E11_fetched-sheet-dark.png" target="_blank"><img src="diff/E11_fetched-sheet-dark.png" loading="lazy" alt="E11_fetched-sheet-dark 变化位置（粉色）"></a></figure></div></article>
+<article data-id="E11_fetched-sheet-light 抓取后的模型选择 · 浅色" data-group="window"><h2>抓取后的模型选择 · 浅色</h2><code>E11_fetched-sheet-light</code><p>已人工接纳 · 真实弹层 · 变化 343,068 像素（41.88%） · 字体 200%</p><details><summary>窗口与操作区捕获证据</summary><pre>迁移前：
+title=选择模型
+operation=确认选择
+fontScale=2.0
+bounds=Rect.fromLTRB(0.0, 0.0, 640.0, 1280.0)
+operation=Rect.fromLTRB(280.0, 1064.0, 592.0, 1248.0)
+operationUnclipped=Rect.fromLTRB(280.0, 1064.0, 592.0, 1248.0)
+
+迁移后：
+title=选择模型
+operation=确认选择
+fontScale=2.0
+bounds=Rect.fromLTRB(0.0, 0.0, 640.0, 1280.0)
+operation=Rect.fromLTRB(277.0, 1123.0, 608.0, 1248.0)
+operationUnclipped=Rect.fromLTRB(277.0, 1123.0, 608.0, 1248.0)</pre></details><div class="images"><figure><figcaption>迁移前</figcaption><a href="before/E11_fetched-sheet-light.png" target="_blank"><img src="before/E11_fetched-sheet-light.png" loading="lazy" alt="E11_fetched-sheet-light 迁移前"></a></figure><figure><figcaption>迁移后</figcaption><a href="after/E11_fetched-sheet-light.png" target="_blank"><img src="after/E11_fetched-sheet-light.png" loading="lazy" alt="E11_fetched-sheet-light 迁移后"></a></figure><figure><figcaption>变化位置（粉色）</figcaption><a href="diff/E11_fetched-sheet-light.png" target="_blank"><img src="diff/E11_fetched-sheet-light.png" loading="lazy" alt="E11_fetched-sheet-light 变化位置（粉色）"></a></figure></div></article>
+<article data-id="E11_list-matcha-dark 提供商列表 · 抹茶 · 深色" data-group="regular"><h2>提供商列表 · 抹茶 · 深色</h2><code>E11_list-matcha-dark</code><p>已人工接纳 · 常规页面 · 变化 606,980 像素（52.69%） · 字体 100%</p><div class="images"><figure><figcaption>迁移前</figcaption><a href="before/E11_list-matcha-dark.png" target="_blank"><img src="before/E11_list-matcha-dark.png" loading="lazy" alt="E11_list-matcha-dark 迁移前"></a></figure><figure><figcaption>迁移后</figcaption><a href="after/E11_list-matcha-dark.png" target="_blank"><img src="after/E11_list-matcha-dark.png" loading="lazy" alt="E11_list-matcha-dark 迁移后"></a></figure><figure><figcaption>变化位置（粉色）</figcaption><a href="diff/E11_list-matcha-dark.png" target="_blank"><img src="diff/E11_list-matcha-dark.png" loading="lazy" alt="E11_list-matcha-dark 变化位置（粉色）"></a></figure></div></article>
+<article data-id="E11_list-matcha-light 提供商列表 · 抹茶 · 浅色" data-group="regular"><h2>提供商列表 · 抹茶 · 浅色</h2><code>E11_list-matcha-light</code><p>已人工接纳 · 常规页面 · 变化 606,927 像素（52.68%） · 字体 100%</p><div class="images"><figure><figcaption>迁移前</figcaption><a href="before/E11_list-matcha-light.png" target="_blank"><img src="before/E11_list-matcha-light.png" loading="lazy" alt="E11_list-matcha-light 迁移前"></a></figure><figure><figcaption>迁移后</figcaption><a href="after/E11_list-matcha-light.png" target="_blank"><img src="after/E11_list-matcha-light.png" loading="lazy" alt="E11_list-matcha-light 迁移后"></a></figure><figure><figcaption>变化位置（粉色）</figcaption><a href="diff/E11_list-matcha-light.png" target="_blank"><img src="diff/E11_list-matcha-light.png" loading="lazy" alt="E11_list-matcha-light 变化位置（粉色）"></a></figure></div></article>
+<article data-id="E11_list-narrow-dark 窄屏大字体 · 列表末项 · 深色" data-group="large"><h2>窄屏大字体 · 列表末项 · 深色</h2><code>E11_list-narrow-dark</code><p>已人工接纳 · 窄屏大字体 · 变化 585,994 像素（71.53%） · 字体 200%</p><details><summary>窗口与操作区捕获证据</summary><pre>迁移前：
+pageScroll=662.0/662.0
+pageViewport=Rect.fromLTRB(0.0, 133.0, 640.0, 1280.0)
+lastProvider=Rect.fromLTRB(40.0, 654.0, 600.0, 1224.0)
+lastProviderUnclipped=Rect.fromLTRB(40.0, 654.0, 600.0, 1224.0)
+
+迁移后：
+pageScroll=646.0/646.0
+pageViewport=Rect.fromLTRB(0.0, 133.0, 640.0, 1280.0)
+lastProvider=Rect.fromLTRB(32.0, 660.0, 608.0, 1216.0)
+lastProviderUnclipped=Rect.fromLTRB(32.0, 660.0, 608.0, 1216.0)</pre></details><div class="images"><figure><figcaption>迁移前</figcaption><a href="before/E11_list-narrow-dark.png" target="_blank"><img src="before/E11_list-narrow-dark.png" loading="lazy" alt="E11_list-narrow-dark 迁移前"></a></figure><figure><figcaption>迁移后</figcaption><a href="after/E11_list-narrow-dark.png" target="_blank"><img src="after/E11_list-narrow-dark.png" loading="lazy" alt="E11_list-narrow-dark 迁移后"></a></figure><figure><figcaption>变化位置（粉色）</figcaption><a href="diff/E11_list-narrow-dark.png" target="_blank"><img src="diff/E11_list-narrow-dark.png" loading="lazy" alt="E11_list-narrow-dark 变化位置（粉色）"></a></figure></div></article>
+<article data-id="E11_list-narrow-light 窄屏大字体 · 列表末项 · 浅色" data-group="large"><h2>窄屏大字体 · 列表末项 · 浅色</h2><code>E11_list-narrow-light</code><p>已人工接纳 · 窄屏大字体 · 变化 585,732 像素（71.50%） · 字体 200%</p><details><summary>窗口与操作区捕获证据</summary><pre>迁移前：
+pageScroll=662.0/662.0
+pageViewport=Rect.fromLTRB(0.0, 133.0, 640.0, 1280.0)
+lastProvider=Rect.fromLTRB(40.0, 654.0, 600.0, 1224.0)
+lastProviderUnclipped=Rect.fromLTRB(40.0, 654.0, 600.0, 1224.0)
+
+迁移后：
+pageScroll=646.0/646.0
+pageViewport=Rect.fromLTRB(0.0, 133.0, 640.0, 1280.0)
+lastProvider=Rect.fromLTRB(32.0, 660.0, 608.0, 1216.0)
+lastProviderUnclipped=Rect.fromLTRB(32.0, 660.0, 608.0, 1216.0)</pre></details><div class="images"><figure><figcaption>迁移前</figcaption><a href="before/E11_list-narrow-light.png" target="_blank"><img src="before/E11_list-narrow-light.png" loading="lazy" alt="E11_list-narrow-light 迁移前"></a></figure><figure><figcaption>迁移后</figcaption><a href="after/E11_list-narrow-light.png" target="_blank"><img src="after/E11_list-narrow-light.png" loading="lazy" alt="E11_list-narrow-light 迁移后"></a></figure><figure><figcaption>变化位置（粉色）</figcaption><a href="diff/E11_list-narrow-light.png" target="_blank"><img src="diff/E11_list-narrow-light.png" loading="lazy" alt="E11_list-narrow-light 变化位置（粉色）"></a></figure></div></article>
+<article data-id="E11_list-no-result-light 提供商搜索无结果 · 浅色" data-group="regular"><h2>提供商搜索无结果 · 浅色</h2><code>E11_list-no-result-light</code><p>已人工接纳 · 常规页面 · 变化 139,958 像素（12.15%） · 字体 100%</p><div class="images"><figure><figcaption>迁移前</figcaption><a href="before/E11_list-no-result-light.png" target="_blank"><img src="before/E11_list-no-result-light.png" loading="lazy" alt="E11_list-no-result-light 迁移前"></a></figure><figure><figcaption>迁移后</figcaption><a href="after/E11_list-no-result-light.png" target="_blank"><img src="after/E11_list-no-result-light.png" loading="lazy" alt="E11_list-no-result-light 迁移后"></a></figure><figure><figcaption>变化位置（粉色）</figcaption><a href="diff/E11_list-no-result-light.png" target="_blank"><img src="diff/E11_list-no-result-light.png" loading="lazy" alt="E11_list-no-result-light 变化位置（粉色）"></a></figure></div></article>
+<article data-id="E11_list-ocean-dark 提供商列表 · 海洋 · 深色" data-group="regular"><h2>提供商列表 · 海洋 · 深色</h2><code>E11_list-ocean-dark</code><p>已人工接纳 · 常规页面 · 变化 606,980 像素（52.69%） · 字体 100%</p><div class="images"><figure><figcaption>迁移前</figcaption><a href="before/E11_list-ocean-dark.png" target="_blank"><img src="before/E11_list-ocean-dark.png" loading="lazy" alt="E11_list-ocean-dark 迁移前"></a></figure><figure><figcaption>迁移后</figcaption><a href="after/E11_list-ocean-dark.png" target="_blank"><img src="after/E11_list-ocean-dark.png" loading="lazy" alt="E11_list-ocean-dark 迁移后"></a></figure><figure><figcaption>变化位置（粉色）</figcaption><a href="diff/E11_list-ocean-dark.png" target="_blank"><img src="diff/E11_list-ocean-dark.png" loading="lazy" alt="E11_list-ocean-dark 变化位置（粉色）"></a></figure></div></article>
+<article data-id="E11_list-ocean-light 提供商列表 · 海洋 · 浅色" data-group="regular"><h2>提供商列表 · 海洋 · 浅色</h2><code>E11_list-ocean-light</code><p>已人工接纳 · 常规页面 · 变化 606,954 像素（52.69%） · 字体 100%</p><div class="images"><figure><figcaption>迁移前</figcaption><a href="before/E11_list-ocean-light.png" target="_blank"><img src="before/E11_list-ocean-light.png" loading="lazy" alt="E11_list-ocean-light 迁移前"></a></figure><figure><figcaption>迁移后</figcaption><a href="after/E11_list-ocean-light.png" target="_blank"><img src="after/E11_list-ocean-light.png" loading="lazy" alt="E11_list-ocean-light 迁移后"></a></figure><figure><figcaption>变化位置（粉色）</figcaption><a href="diff/E11_list-ocean-light.png" target="_blank"><img src="diff/E11_list-ocean-light.png" loading="lazy" alt="E11_list-ocean-light 变化位置（粉色）"></a></figure></div></article>
+<article data-id="E11_list-vanilla-dark 提供商列表 · 香草 · 深色" data-group="regular"><h2>提供商列表 · 香草 · 深色</h2><code>E11_list-vanilla-dark</code><p>已人工接纳 · 常规页面 · 变化 606,980 像素（52.69%） · 字体 100%</p><div class="images"><figure><figcaption>迁移前</figcaption><a href="before/E11_list-vanilla-dark.png" target="_blank"><img src="before/E11_list-vanilla-dark.png" loading="lazy" alt="E11_list-vanilla-dark 迁移前"></a></figure><figure><figcaption>迁移后</figcaption><a href="after/E11_list-vanilla-dark.png" target="_blank"><img src="after/E11_list-vanilla-dark.png" loading="lazy" alt="E11_list-vanilla-dark 迁移后"></a></figure><figure><figcaption>变化位置（粉色）</figcaption><a href="diff/E11_list-vanilla-dark.png" target="_blank"><img src="diff/E11_list-vanilla-dark.png" loading="lazy" alt="E11_list-vanilla-dark 变化位置（粉色）"></a></figure></div></article>
+<article data-id="E11_list-vanilla-light 提供商列表 · 香草 · 浅色" data-group="regular"><h2>提供商列表 · 香草 · 浅色</h2><code>E11_list-vanilla-light</code><p>已人工接纳 · 常规页面 · 变化 606,948 像素（52.69%） · 字体 100%</p><div class="images"><figure><figcaption>迁移前</figcaption><a href="before/E11_list-vanilla-light.png" target="_blank"><img src="before/E11_list-vanilla-light.png" loading="lazy" alt="E11_list-vanilla-light 迁移前"></a></figure><figure><figcaption>迁移后</figcaption><a href="after/E11_list-vanilla-light.png" target="_blank"><img src="after/E11_list-vanilla-light.png" loading="lazy" alt="E11_list-vanilla-light 迁移后"></a></figure><figure><figcaption>变化位置（粉色）</figcaption><a href="diff/E11_list-vanilla-light.png" target="_blank"><img src="diff/E11_list-vanilla-light.png" loading="lazy" alt="E11_list-vanilla-light 变化位置（粉色）"></a></figure></div></article>
+<article data-id="E11_manual-error-dialog-dark 手工添加 · 空ID错误 · 深色" data-group="window"><h2>手工添加 · 空ID错误 · 深色</h2><code>E11_manual-error-dialog-dark</code><p>已人工接纳 · 真实弹层 · 变化 185,270 像素（22.62%） · 字体 200%</p><details><summary>窗口与操作区捕获证据</summary><pre>迁移前：
+title=手动添加模型
+operation=添加
+fontScale=2.0
+bounds=Rect.fromLTRB(0.0, 0.0, 544.0, 1179.0)
+operation=Rect.fromLTRB(344.0, 1022.0, 496.0, 1131.0)
+operationUnclipped=Rect.fromLTRB(344.0, 1022.0, 496.0, 1131.0)
+
+迁移后：
+title=手动添加模型
+operation=添加
+fontScale=2.0
+bounds=Rect.fromLTRB(0.0, 0.0, 544.0, 1178.0)
+operation=Rect.fromLTRB(344.0, 1021.0, 496.0, 1130.0)
+operationUnclipped=Rect.fromLTRB(344.0, 1021.0, 496.0, 1130.0)</pre></details><div class="images"><figure><figcaption>迁移前</figcaption><a href="before/E11_manual-error-dialog-dark.png" target="_blank"><img src="before/E11_manual-error-dialog-dark.png" loading="lazy" alt="E11_manual-error-dialog-dark 迁移前"></a></figure><figure><figcaption>迁移后</figcaption><a href="after/E11_manual-error-dialog-dark.png" target="_blank"><img src="after/E11_manual-error-dialog-dark.png" loading="lazy" alt="E11_manual-error-dialog-dark 迁移后"></a></figure><figure><figcaption>变化位置（粉色）</figcaption><a href="diff/E11_manual-error-dialog-dark.png" target="_blank"><img src="diff/E11_manual-error-dialog-dark.png" loading="lazy" alt="E11_manual-error-dialog-dark 变化位置（粉色）"></a></figure></div></article>
+<article data-id="E11_manual-error-dialog-light 手工添加 · 空ID错误 · 浅色" data-group="window"><h2>手工添加 · 空ID错误 · 浅色</h2><code>E11_manual-error-dialog-light</code><p>已人工接纳 · 真实弹层 · 变化 169,834 像素（20.73%） · 字体 200%</p><details><summary>窗口与操作区捕获证据</summary><pre>迁移前：
+title=手动添加模型
+operation=添加
+fontScale=2.0
+bounds=Rect.fromLTRB(0.0, 0.0, 544.0, 1179.0)
+operation=Rect.fromLTRB(344.0, 1022.0, 496.0, 1131.0)
+operationUnclipped=Rect.fromLTRB(344.0, 1022.0, 496.0, 1131.0)
+
+迁移后：
+title=手动添加模型
+operation=添加
+fontScale=2.0
+bounds=Rect.fromLTRB(0.0, 0.0, 544.0, 1178.0)
+operation=Rect.fromLTRB(344.0, 1021.0, 496.0, 1130.0)
+operationUnclipped=Rect.fromLTRB(344.0, 1021.0, 496.0, 1130.0)</pre></details><div class="images"><figure><figcaption>迁移前</figcaption><a href="before/E11_manual-error-dialog-light.png" target="_blank"><img src="before/E11_manual-error-dialog-light.png" loading="lazy" alt="E11_manual-error-dialog-light 迁移前"></a></figure><figure><figcaption>迁移后</figcaption><a href="after/E11_manual-error-dialog-light.png" target="_blank"><img src="after/E11_manual-error-dialog-light.png" loading="lazy" alt="E11_manual-error-dialog-light 迁移后"></a></figure><figure><figcaption>变化位置（粉色）</figcaption><a href="diff/E11_manual-error-dialog-light.png" target="_blank"><img src="diff/E11_manual-error-dialog-light.png" loading="lazy" alt="E11_manual-error-dialog-light 变化位置（粉色）"></a></figure></div></article>
+<article data-id="E11_models-dark Models 模型列表 · 深色" data-group="regular"><h2>Models 模型列表 · 深色</h2><code>E11_models-dark</code><p>已人工接纳 · 常规页面 · 变化 200,234 像素（17.38%） · 字体 100%</p><div class="images"><figure><figcaption>迁移前</figcaption><a href="before/E11_models-dark.png" target="_blank"><img src="before/E11_models-dark.png" loading="lazy" alt="E11_models-dark 迁移前"></a></figure><figure><figcaption>迁移后</figcaption><a href="after/E11_models-dark.png" target="_blank"><img src="after/E11_models-dark.png" loading="lazy" alt="E11_models-dark 迁移后"></a></figure><figure><figcaption>变化位置（粉色）</figcaption><a href="diff/E11_models-dark.png" target="_blank"><img src="diff/E11_models-dark.png" loading="lazy" alt="E11_models-dark 变化位置（粉色）"></a></figure></div></article>
+<article data-id="E11_models-empty-dark 模型空态 · 深色" data-group="regular"><h2>模型空态 · 深色</h2><code>E11_models-empty-dark</code><p>已人工接纳 · 常规页面 · 变化 116,730 像素（10.13%） · 字体 100%</p><div class="images"><figure><figcaption>迁移前</figcaption><a href="before/E11_models-empty-dark.png" target="_blank"><img src="before/E11_models-empty-dark.png" loading="lazy" alt="E11_models-empty-dark 迁移前"></a></figure><figure><figcaption>迁移后</figcaption><a href="after/E11_models-empty-dark.png" target="_blank"><img src="after/E11_models-empty-dark.png" loading="lazy" alt="E11_models-empty-dark 迁移后"></a></figure><figure><figcaption>变化位置（粉色）</figcaption><a href="diff/E11_models-empty-dark.png" target="_blank"><img src="diff/E11_models-empty-dark.png" loading="lazy" alt="E11_models-empty-dark 变化位置（粉色）"></a></figure></div></article>
+<article data-id="E11_models-light Models 模型列表 · 浅色" data-group="regular"><h2>Models 模型列表 · 浅色</h2><code>E11_models-light</code><p>已人工接纳 · 常规页面 · 变化 199,916 像素（17.35%） · 字体 100%</p><div class="images"><figure><figcaption>迁移前</figcaption><a href="before/E11_models-light.png" target="_blank"><img src="before/E11_models-light.png" loading="lazy" alt="E11_models-light 迁移前"></a></figure><figure><figcaption>迁移后</figcaption><a href="after/E11_models-light.png" target="_blank"><img src="after/E11_models-light.png" loading="lazy" alt="E11_models-light 迁移后"></a></figure><figure><figcaption>变化位置（粉色）</figcaption><a href="diff/E11_models-light.png" target="_blank"><img src="diff/E11_models-light.png" loading="lazy" alt="E11_models-light 变化位置（粉色）"></a></figure></div></article>
+<article data-id="E11_models-tail-narrow-dark 窄屏大字体 · 模型末项 · 深色" data-group="large"><h2>窄屏大字体 · 模型末项 · 深色</h2><code>E11_models-tail-narrow-dark</code><p>已人工接纳 · 窄屏大字体 · 变化 245,575 像素（29.98%） · 字体 200%</p><details><summary>窗口与操作区捕获证据</summary><pre>迁移前：
+pageScroll=2219.0/2219.0
+pageViewport=Rect.fromLTRB(0.0, 241.0, 640.0, 1091.0)
+lastModelEdit=Rect.fromLTRB(376.0, 723.0, 472.0, 819.0)
+lastModelEditUnclipped=Rect.fromLTRB(376.0, 723.0, 472.0, 819.0)
+lastModelRemove=Rect.fromLTRB(472.0, 723.0, 568.0, 819.0)
+lastModelRemoveUnclipped=Rect.fromLTRB(472.0, 723.0, 568.0, 819.0)
+lastModelCard=Rect.fromLTRB(40.0, 418.0, 600.0, 851.0)
+lastModelCardUnclipped=Rect.fromLTRB(40.0, 418.0, 600.0, 851.0)
+addModel=Rect.fromLTRB(180.0, 902.0, 588.0, 1027.0)
+addModelUnclipped=Rect.fromLTRB(180.0, 902.0, 588.0, 1027.0)
+fetchModels=Rect.fromLTRB(52.0, 917.0, 148.0, 1013.0)
+fetchModelsUnclipped=Rect.fromLTRB(52.0, 917.0, 148.0, 1013.0)
+modelsTab=Rect.fromLTRB(320.0, 1127.0, 588.0, 1244.0)
+modelsTabUnclipped=Rect.fromLTRB(320.0, 1127.0, 588.0, 1244.0)
+
+迁移后：
+pageScroll=2273.0/2273.0
+pageViewport=Rect.fromLTRB(0.0, 315.0, 640.0, 1091.0)
+lastModelEdit=Rect.fromLTRB(384.0, 743.0, 480.0, 839.0)
+lastModelEditUnclipped=Rect.fromLTRB(384.0, 743.0, 480.0, 839.0)
+lastModelRemove=Rect.fromLTRB(480.0, 743.0, 576.0, 839.0)
+lastModelRemoveUnclipped=Rect.fromLTRB(480.0, 743.0, 576.0, 839.0)
+lastModelCard=Rect.fromLTRB(32.0, 438.0, 608.0, 871.0)
+lastModelCardUnclipped=Rect.fromLTRB(32.0, 438.0, 608.0, 871.0)
+addModel=Rect.fromLTRB(128.0, 895.0, 624.0, 1020.0)
+addModelUnclipped=Rect.fromLTRB(128.0, 895.0, 624.0, 1020.0)
+fetchModels=Rect.fromLTRB(16.0, 887.0, 112.0, 1027.0)
+fetchModelsUnclipped=Rect.fromLTRB(16.0, 887.0, 112.0, 1027.0)
+modelsTab=Rect.fromLTRB(320.0, 1123.0, 600.0, 1248.0)
+modelsTabUnclipped=Rect.fromLTRB(320.0, 1123.0, 600.0, 1248.0)</pre></details><div class="images"><figure><figcaption>迁移前</figcaption><a href="before/E11_models-tail-narrow-dark.png" target="_blank"><img src="before/E11_models-tail-narrow-dark.png" loading="lazy" alt="E11_models-tail-narrow-dark 迁移前"></a></figure><figure><figcaption>迁移后</figcaption><a href="after/E11_models-tail-narrow-dark.png" target="_blank"><img src="after/E11_models-tail-narrow-dark.png" loading="lazy" alt="E11_models-tail-narrow-dark 迁移后"></a></figure><figure><figcaption>变化位置（粉色）</figcaption><a href="diff/E11_models-tail-narrow-dark.png" target="_blank"><img src="diff/E11_models-tail-narrow-dark.png" loading="lazy" alt="E11_models-tail-narrow-dark 变化位置（粉色）"></a></figure></div></article>
+<article data-id="E11_models-tail-narrow-light 窄屏大字体 · 模型末项 · 浅色" data-group="large"><h2>窄屏大字体 · 模型末项 · 浅色</h2><code>E11_models-tail-narrow-light</code><p>已人工接纳 · 窄屏大字体 · 变化 245,191 像素（29.93%） · 字体 200%</p><details><summary>窗口与操作区捕获证据</summary><pre>迁移前：
+pageScroll=2219.0/2219.0
+pageViewport=Rect.fromLTRB(0.0, 241.0, 640.0, 1091.0)
+lastModelEdit=Rect.fromLTRB(376.0, 723.0, 472.0, 819.0)
+lastModelEditUnclipped=Rect.fromLTRB(376.0, 723.0, 472.0, 819.0)
+lastModelRemove=Rect.fromLTRB(472.0, 723.0, 568.0, 819.0)
+lastModelRemoveUnclipped=Rect.fromLTRB(472.0, 723.0, 568.0, 819.0)
+lastModelCard=Rect.fromLTRB(40.0, 418.0, 600.0, 851.0)
+lastModelCardUnclipped=Rect.fromLTRB(40.0, 418.0, 600.0, 851.0)
+addModel=Rect.fromLTRB(180.0, 902.0, 588.0, 1027.0)
+addModelUnclipped=Rect.fromLTRB(180.0, 902.0, 588.0, 1027.0)
+fetchModels=Rect.fromLTRB(52.0, 917.0, 148.0, 1013.0)
+fetchModelsUnclipped=Rect.fromLTRB(52.0, 917.0, 148.0, 1013.0)
+modelsTab=Rect.fromLTRB(320.0, 1127.0, 588.0, 1244.0)
+modelsTabUnclipped=Rect.fromLTRB(320.0, 1127.0, 588.0, 1244.0)
+
+迁移后：
+pageScroll=2273.0/2273.0
+pageViewport=Rect.fromLTRB(0.0, 315.0, 640.0, 1091.0)
+lastModelEdit=Rect.fromLTRB(384.0, 743.0, 480.0, 839.0)
+lastModelEditUnclipped=Rect.fromLTRB(384.0, 743.0, 480.0, 839.0)
+lastModelRemove=Rect.fromLTRB(480.0, 743.0, 576.0, 839.0)
+lastModelRemoveUnclipped=Rect.fromLTRB(480.0, 743.0, 576.0, 839.0)
+lastModelCard=Rect.fromLTRB(32.0, 438.0, 608.0, 871.0)
+lastModelCardUnclipped=Rect.fromLTRB(32.0, 438.0, 608.0, 871.0)
+addModel=Rect.fromLTRB(128.0, 895.0, 624.0, 1020.0)
+addModelUnclipped=Rect.fromLTRB(128.0, 895.0, 624.0, 1020.0)
+fetchModels=Rect.fromLTRB(16.0, 887.0, 112.0, 1027.0)
+fetchModelsUnclipped=Rect.fromLTRB(16.0, 887.0, 112.0, 1027.0)
+modelsTab=Rect.fromLTRB(320.0, 1123.0, 600.0, 1248.0)
+modelsTabUnclipped=Rect.fromLTRB(320.0, 1123.0, 600.0, 1248.0)</pre></details><div class="images"><figure><figcaption>迁移前</figcaption><a href="before/E11_models-tail-narrow-light.png" target="_blank"><img src="before/E11_models-tail-narrow-light.png" loading="lazy" alt="E11_models-tail-narrow-light 迁移前"></a></figure><figure><figcaption>迁移后</figcaption><a href="after/E11_models-tail-narrow-light.png" target="_blank"><img src="after/E11_models-tail-narrow-light.png" loading="lazy" alt="E11_models-tail-narrow-light 迁移后"></a></figure><figure><figcaption>变化位置（粉色）</figcaption><a href="diff/E11_models-tail-narrow-light.png" target="_blank"><img src="diff/E11_models-tail-narrow-light.png" loading="lazy" alt="E11_models-tail-narrow-light 变化位置（粉色）"></a></figure></div></article>
+<article data-id="E11_protocol-dialog-dark 协议说明 · 深色" data-group="window"><h2>协议说明 · 深色</h2><code>E11_protocol-dialog-dark</code><p>已人工接纳 · 真实弹层 · 变化 591,139 像素（72.16%） · 字体 200%</p><details><summary>窗口与操作区捕获证据</summary><pre>迁移前：
+title=接口协议
+operation=知道了
+fontScale=2.0
+bounds=Rect.fromLTRB(0.0, 0.0, 640.0, 765.0)
+operation=Rect.fromLTRB(388.0, 608.0, 592.0, 717.0)
+operationUnclipped=Rect.fromLTRB(388.0, 608.0, 592.0, 717.0)
+
+迁移后：
+title=接口协议
+operation=知道了
+fontScale=2.0
+bounds=Rect.fromLTRB(0.0, 0.0, 544.0, 808.0)
+operation=Rect.fromLTRB(292.0, 651.0, 496.0, 760.0)
+operationUnclipped=Rect.fromLTRB(292.0, 651.0, 496.0, 760.0)</pre></details><div class="images"><figure><figcaption>迁移前</figcaption><a href="before/E11_protocol-dialog-dark.png" target="_blank"><img src="before/E11_protocol-dialog-dark.png" loading="lazy" alt="E11_protocol-dialog-dark 迁移前"></a></figure><figure><figcaption>迁移后</figcaption><a href="after/E11_protocol-dialog-dark.png" target="_blank"><img src="after/E11_protocol-dialog-dark.png" loading="lazy" alt="E11_protocol-dialog-dark 迁移后"></a></figure><figure><figcaption>变化位置（粉色）</figcaption><a href="diff/E11_protocol-dialog-dark.png" target="_blank"><img src="diff/E11_protocol-dialog-dark.png" loading="lazy" alt="E11_protocol-dialog-dark 变化位置（粉色）"></a></figure></div></article>
+<article data-id="E11_protocol-dialog-light 协议说明 · 浅色" data-group="window"><h2>协议说明 · 浅色</h2><code>E11_protocol-dialog-light</code><p>已人工接纳 · 真实弹层 · 变化 591,089 像素（72.15%） · 字体 200%</p><details><summary>窗口与操作区捕获证据</summary><pre>迁移前：
+title=接口协议
+operation=知道了
+fontScale=2.0
+bounds=Rect.fromLTRB(0.0, 0.0, 640.0, 765.0)
+operation=Rect.fromLTRB(388.0, 608.0, 592.0, 717.0)
+operationUnclipped=Rect.fromLTRB(388.0, 608.0, 592.0, 717.0)
+
+迁移后：
+title=接口协议
+operation=知道了
+fontScale=2.0
+bounds=Rect.fromLTRB(0.0, 0.0, 544.0, 808.0)
+operation=Rect.fromLTRB(292.0, 651.0, 496.0, 760.0)
+operationUnclipped=Rect.fromLTRB(292.0, 651.0, 496.0, 760.0)</pre></details><div class="images"><figure><figcaption>迁移前</figcaption><a href="before/E11_protocol-dialog-light.png" target="_blank"><img src="before/E11_protocol-dialog-light.png" loading="lazy" alt="E11_protocol-dialog-light 迁移前"></a></figure><figure><figcaption>迁移后</figcaption><a href="after/E11_protocol-dialog-light.png" target="_blank"><img src="after/E11_protocol-dialog-light.png" loading="lazy" alt="E11_protocol-dialog-light 迁移后"></a></figure><figure><figcaption>变化位置（粉色）</figcaption><a href="diff/E11_protocol-dialog-light.png" target="_blank"><img src="diff/E11_protocol-dialog-light.png" loading="lazy" alt="E11_protocol-dialog-light 变化位置（粉色）"></a></figure></div></article>
+<article data-id="E11_template-dialog-dark 选择提供商模板 · 深色" data-group="window"><h2>选择提供商模板 · 深色</h2><code>E11_template-dialog-dark</code><p>已人工接纳 · 真实弹层 · 变化 733,137 像素（89.49%） · 字体 200%</p><details><summary>窗口与操作区捕获证据</summary><pre>迁移前：
+title=选择提供商模板
+operation=取消
+fontScale=2.0
+bounds=Rect.fromLTRB(0.0, 0.0, 640.0, 1280.0)
+operation=Rect.fromLTRB(424.0, 1099.0, 576.0, 1208.0)
+operationUnclipped=Rect.fromLTRB(424.0, 1099.0, 576.0, 1208.0)
+
+迁移后：
+title=选择提供商模板
+operation=取消
+fontScale=2.0
+bounds=Rect.fromLTRB(0.0, 0.0, 576.0, 1184.0)
+operation=Rect.fromLTRB(400.0, 1059.0, 552.0, 1168.0)
+operationUnclipped=Rect.fromLTRB(400.0, 1059.0, 552.0, 1168.0)</pre></details><div class="images"><figure><figcaption>迁移前</figcaption><a href="before/E11_template-dialog-dark.png" target="_blank"><img src="before/E11_template-dialog-dark.png" loading="lazy" alt="E11_template-dialog-dark 迁移前"></a></figure><figure><figcaption>迁移后</figcaption><a href="after/E11_template-dialog-dark.png" target="_blank"><img src="after/E11_template-dialog-dark.png" loading="lazy" alt="E11_template-dialog-dark 迁移后"></a></figure><figure><figcaption>变化位置（粉色）</figcaption><a href="diff/E11_template-dialog-dark.png" target="_blank"><img src="diff/E11_template-dialog-dark.png" loading="lazy" alt="E11_template-dialog-dark 变化位置（粉色）"></a></figure></div></article>
+<article data-id="E11_template-dialog-light 选择提供商模板 · 浅色" data-group="window"><h2>选择提供商模板 · 浅色</h2><code>E11_template-dialog-light</code><p>已人工接纳 · 真实弹层 · 变化 763,497 像素（93.20%） · 字体 200%</p><details><summary>窗口与操作区捕获证据</summary><pre>迁移前：
+title=选择提供商模板
+operation=取消
+fontScale=2.0
+bounds=Rect.fromLTRB(0.0, 0.0, 640.0, 1280.0)
+operation=Rect.fromLTRB(424.0, 1099.0, 576.0, 1208.0)
+operationUnclipped=Rect.fromLTRB(424.0, 1099.0, 576.0, 1208.0)
+
+迁移后：
+title=选择提供商模板
+operation=取消
+fontScale=2.0
+bounds=Rect.fromLTRB(0.0, 0.0, 576.0, 1184.0)
+operation=Rect.fromLTRB(400.0, 1059.0, 552.0, 1168.0)
+operationUnclipped=Rect.fromLTRB(400.0, 1059.0, 552.0, 1168.0)</pre></details><div class="images"><figure><figcaption>迁移前</figcaption><a href="before/E11_template-dialog-light.png" target="_blank"><img src="before/E11_template-dialog-light.png" loading="lazy" alt="E11_template-dialog-light 迁移前"></a></figure><figure><figcaption>迁移后</figcaption><a href="after/E11_template-dialog-light.png" target="_blank"><img src="after/E11_template-dialog-light.png" loading="lazy" alt="E11_template-dialog-light 迁移后"></a></figure><figure><figcaption>变化位置（粉色）</figcaption><a href="diff/E11_template-dialog-light.png" target="_blank"><img src="diff/E11_template-dialog-light.png" loading="lazy" alt="E11_template-dialog-light 变化位置（粉色）"></a></figure></div></article></main><script>
+const search=document.getElementById('search'),group=document.getElementById('group');
+function filter(){const term=search.value.toLowerCase();document.querySelectorAll('article').forEach(a=>{
+a.hidden=!a.dataset.id.toLowerCase().includes(term)||(group.value&&a.dataset.group!==group.value);});}
+search.addEventListener('input',filter);group.addEventListener('change',filter);
+</script></html>

@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.myapplication.viewmodel.SimpleMemoryEditorViewModelTest" tests="6" skipped="0" failures="0" errors="0" timestamp="2026-11-05T09:49:06.909Z" hostname="LUCKY" time="0.04">
+  <properties/>
+  <testcase name="save_inserts_new_and_deletes_missing" classname="com.example.myapplication.viewmodel.SimpleMemoryEditorViewModelTest" time="0.024"/>
+  <testcase name="initializesDraftFromFirstRepositoryEmission" classname="com.example.myapplication.viewmodel.SimpleMemoryEditorViewModelTest" time="0.005"/>
+  <testcase name="save_uses_global_scope_when_assistant_prefers_global" classname="com.example.myapplication.viewmodel.SimpleMemoryEditorViewModelTest" time="0.004"/>
+  <testcase name="parseDraft_strips_list_markers_and_dedupes" classname="com.example.myapplication.viewmodel.SimpleMemoryEditorViewModelTest" time="0.001"/>
+  <testcase name="composeDraft_pinned_first" classname="com.example.myapplication.viewmodel.SimpleMemoryEditorViewModelTest" time="0.0"/>
+  <testcase name="save_with_conversation_scene_keeps_core_and_scene_separate" classname="com.example.myapplication.viewmodel.SimpleMemoryEditorViewModelTest" time="0.005"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

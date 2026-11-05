@@ -1,0 +1,23 @@
+{
+  "command": ".\\gradlew.bat :app:testDebugUnitTest --tests com.example.myapplication.ui.screen.settings.ProviderConfigAccessibilityTest.veryLongProviderTitle_keepsTheFormUsable_andCanScrollItsCompleteName --tests com.example.myapplication.ui.theme.UiTokenSourceGuardTest --console=plain",
+  "commandExitCode": 1,
+  "suites": 2,
+  "tests": 15,
+  "failures": 2,
+  "errors": 0,
+  "skipped": 0,
+  "failureDetails": [
+    {
+      "suite": "com.example.myapplication.ui.screen.settings.ProviderConfigAccessibilityTest",
+      "test": "veryLongProviderTitle_keepsTheFormUsable_andCanScrollItsCompleteName",
+      "message": "java.lang.AssertionError: 整个操作触控区必须可见：Rect.fromLTRB(160.0, 987.0, 608.0, 1043.0) / Rect.fromLTRB(0.0, 1035.0, 640.0, 1091.0)",
+      "category": "behavior-or-infrastructure"
+    },
+    {
+      "suite": "com.example.myapplication.ui.theme.UiTokenSourceGuardTest",
+      "test": "providerSources_eachRejectsNewLiteralWithoutFileLevelExemption",
+      "message": "java.lang.AssertionError: helper 内新增默认不能逃过扫描：ProviderSearchBar",
+      "category": "behavior-or-infrastructure"
+    }
+  ]
+}

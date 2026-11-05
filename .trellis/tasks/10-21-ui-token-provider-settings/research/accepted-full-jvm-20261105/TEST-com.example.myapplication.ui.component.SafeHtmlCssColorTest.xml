@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.myapplication.ui.component.SafeHtmlCssColorTest" tests="4" skipped="0" failures="0" errors="0" timestamp="2026-11-05T09:47:48.196Z" hostname="LUCKY" time="0.0">
+  <properties/>
+  <testcase name="eightDigitHexParsesRrggbbaaAsArgb" classname="com.example.myapplication.ui.component.SafeHtmlCssColorTest" time="0.0"/>
+  <testcase name="threeDigitHexExpandsToOpaque" classname="com.example.myapplication.ui.component.SafeHtmlCssColorTest" time="0.0"/>
+  <testcase name="sixDigitHexStaysOpaque" classname="com.example.myapplication.ui.component.SafeHtmlCssColorTest" time="0.0"/>
+  <testcase name="eightDigitHexKeepsHighAlpha" classname="com.example.myapplication.ui.component.SafeHtmlCssColorTest" time="0.0"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

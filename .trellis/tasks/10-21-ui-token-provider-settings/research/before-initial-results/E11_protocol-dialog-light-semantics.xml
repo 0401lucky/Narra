@@ -1,0 +1,27 @@
+<semantics id="E11_protocol-dialog-light" fontScale="2.0"><![CDATA[Printing with useUnmergedTree = 'true'
+Node #596 at (l=0.0, t=0.0, r=640.0, b=765.0)px
+ |-Node #597 at (l=0.0, t=0.0, r=640.0, b=765.0)px
+   [IsDialog]
+    |-Node #598 at (l=0.0, t=0.0, r=640.0, b=765.0)px
+      PaneTitle = '对话框'
+       |-Node #599 at (l=0.0, t=0.0, r=640.0, b=765.0)px
+         IsContainer = 'true'
+         Shape = 'RoundedCornerShape(topStart = CornerSize(size = 8.0.dp), topEnd = CornerSize(size = 8.0.dp), bottomEnd = CornerSize(size = 8.0.dp), bottomStart = CornerSize(size = 8.0.dp))'
+          |-Node #602 at (l=48.0, t=48.0, r=328.0, b=151.0)px
+          | Text = '[接口协议]'
+          | Actions = [ClearTextSubstitution, GetTextLayoutResult, SetTextSubstitution, ShowTextSubstitution]
+          |-Node #604 at (l=48.0, t=183.0, r=592.0, b=560.0)px
+          | IsTraversalGroup = 'true'
+          | Shape = 'androidx.compose.foundation.VerticalScrollableClipShape@53ae7a45'
+          | Text = '[OpenAI 兼容协议适用于大多数兼容网关与中转站。具体请求接口由文本接口模式和请求路径决定。]'
+          | VerticalScrollAxisRange = 'ScrollAxisRange(value=0.0, maxValue=0.0, reverseScrolling=false)'
+          | Actions = [ClearTextSubstitution, GetTextLayoutResult, ScrollBy, ScrollByOffset, SetTextSubstitution, ShowTextSubstitution]
+          |-Node #607 at (l=388.0, t=608.0, r=592.0, b=717.0)px
+            Focused = 'false'
+            Role = 'Button'
+            Shape = 'RoundedCornerShape(topStart = CornerSize(size = 50.0%), topEnd = CornerSize(size = 50.0%), bottomEnd = CornerSize(size = 50.0%), bottomStart = CornerSize(size = 50.0%))'
+            Actions = [OnClick, RequestFocus]
+            MergeDescendants = 'true'
+             |-Node #609 at (l=412.0, t=624.0, r=568.0, b=701.0)px
+               Text = '[知道了]'
+               Actions = [ClearTextSubstitution, GetTextLayoutResult, SetTextSubstitution, ShowTextSubstitution]]]></semantics>

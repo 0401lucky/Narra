@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.myapplication.conversation.ConversationAssistantRoundTripRunnerTest" tests="3" skipped="0" failures="0" errors="0" timestamp="2026-11-05T09:47:27.892Z" hostname="LUCKY" time="0.1">
+  <properties/>
+  <testcase name="execute_skipsCompletedPersistenceWhenRequestIsInactive" classname="com.example.myapplication.conversation.ConversationAssistantRoundTripRunnerTest" time="0.071"/>
+  <testcase name="execute_failedFallbackRedactsThrowableMessage" classname="com.example.myapplication.conversation.ConversationAssistantRoundTripRunnerTest" time="0.02"/>
+  <testcase name="execute_postCommitTransferFailureKeepsCompletedMessage" classname="com.example.myapplication.conversation.ConversationAssistantRoundTripRunnerTest" time="0.009"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

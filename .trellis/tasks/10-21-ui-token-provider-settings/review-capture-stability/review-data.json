@@ -1,0 +1,66 @@
+{
+  "accepted": true,
+  "production_change": false,
+  "changed_count": 5,
+  "unchanged_previously_accepted_e11": 27,
+  "baseline_pngs_unchanged": 153,
+  "before_manifest_sha256": "908cb617b036c1890e3c4d587ff25492c1314632834f960ba23d735a919a5264",
+  "after_manifest_sha256": "b3a0d374cd94ac97ce7aa48220ad68abb35459b0570e0a7587ebab155dd6bbc6",
+  "cases": [
+    {
+      "id": "E11_models-dark",
+      "label": "Models 模型列表 · 深色",
+      "previous_sha256": "7df1fb3b1ce9927d7fab9d5ccedfd62f4f4c14f9305c96309160497f7af5b91f",
+      "stable_sha256": "02886a00f0336b4f75fa4870b7b9f41ace30692c704af98eb283aec1c7b63805",
+      "changed_pixels": 984,
+      "changed_ratio": 0.0008541666666666667,
+      "previous": "previous/E11_models-dark.png",
+      "stable": "stable/E11_models-dark.png",
+      "diff": "diff/E11_models-dark.png"
+    },
+    {
+      "id": "E11_models-empty-dark",
+      "label": "模型空态 · 深色",
+      "previous_sha256": "735b5e5a142ce5ddd83b98498c0afbdb54f3bd2732f82eca33476d3ee21982c6",
+      "stable_sha256": "074067538ffda31ddaf5b812e60db8cdbf33e03a4415e0f27a48d6ab1fc1294e",
+      "changed_pixels": 832,
+      "changed_ratio": 0.0007222222222222222,
+      "previous": "previous/E11_models-empty-dark.png",
+      "stable": "stable/E11_models-empty-dark.png",
+      "diff": "diff/E11_models-empty-dark.png"
+    },
+    {
+      "id": "E11_models-light",
+      "label": "Models 模型列表 · 浅色",
+      "previous_sha256": "f31c9f9ba45ee3f53cd2e480b1af4070c872981a722d633bc527de5955735a47",
+      "stable_sha256": "42e4274461d0baee9f8ff7f6622fbbc6a3137615a1b393ad930fdeea679ce1f9",
+      "changed_pixels": 3306,
+      "changed_ratio": 0.0028697916666666668,
+      "previous": "previous/E11_models-light.png",
+      "stable": "stable/E11_models-light.png",
+      "diff": "diff/E11_models-light.png"
+    },
+    {
+      "id": "E11_models-tail-narrow-dark",
+      "label": "窄屏大字体 · 模型末项 · 深色",
+      "previous_sha256": "aeaee5cc52fbeeb3c9e2049eec6a249b9983343fc14f2ccf761a35a5752e0071",
+      "stable_sha256": "665d9a929bf1373ea7997b11834b124d0c6b6128e5eaaf194dc2aa6edec1dc2e",
+      "changed_pixels": 5624,
+      "changed_ratio": 0.006865234375,
+      "previous": "previous/E11_models-tail-narrow-dark.png",
+      "stable": "stable/E11_models-tail-narrow-dark.png",
+      "diff": "diff/E11_models-tail-narrow-dark.png"
+    },
+    {
+      "id": "E11_models-tail-narrow-light",
+      "label": "窄屏大字体 · 模型末项 · 浅色",
+      "previous_sha256": "2dcbadbd566387f60f5c9fd213d42423ee385234a55a5d1247710862da704d13",
+      "stable_sha256": "89dd37efa34989e993af4e027c56a7d6be6e9998ea91e9a8743e4baf7045f6ce",
+      "changed_pixels": 11321,
+      "changed_ratio": 0.013819580078125,
+      "previous": "previous/E11_models-tail-narrow-light.png",
+      "stable": "stable/E11_models-tail-narrow-light.png",
+      "diff": "diff/E11_models-tail-narrow-light.png"
+    }
+  ]
+}

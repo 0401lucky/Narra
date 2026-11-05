@@ -25,7 +25,7 @@ data class ScreenshotCase(
 }
 
 /**
- * 截图矩阵的单一登记表：H01–H04、B01–B04、C01 及扩面 E04 / E05 / E10。
+ * 截图矩阵的单一登记表：H01–H04、B01–B04、C01 及扩面 E04 / E05 / E10 / E11。
  *
  * 测试、基准计数守卫与运行清单都从这里取数据；新增/删除用例必须同步更新
  * [expectedFamilyCounts]，守卫会在数量不符时失败。
@@ -229,8 +229,34 @@ object ScreenshotCases {
         }
     }
 
+    private val e11Cases: List<ScreenshotCase> = buildList {
+        themeTokens.forEach { theme ->
+            shadeTokens.forEach { shade ->
+                add(case("ProviderSettingsScreenshotE11Test", "E11_list-$theme-$shade.png",
+                    "P11 提供商列表、长名称与连接状态 · $theme · $shade"))
+            }
+        }
+        shadeTokens.forEach { shade ->
+            listOf("config", "models", "config-dynamic").forEach { scene ->
+                add(case("ProviderSettingsScreenshotE11Test", "E11_$scene-$shade.png",
+                    "P11 提供商详情 · $scene · $shade"))
+            }
+            listOf("list-narrow", "config-save-narrow", "models-tail-narrow",
+                "template-dialog", "fetched-sheet", "manual-error-dialog", "ability-dialog",
+                "clear-dialog", "protocol-dialog").forEach { scene ->
+                add(case("ProviderSettingsScreenshotE11Test", "E11_$scene-$shade.png",
+                    "P11 真实页面 / 独立窗口 · $scene · $shade · 200%",
+                    NarrowWidthDp, NarrowHeightDp, ScreenshotFixture.NarrowFontScale))
+            }
+        }
+        add(case("ProviderSettingsScreenshotE11Test", "E11_list-no-result-light.png",
+            "P11 提供商搜索无结果 · light"))
+        add(case("ProviderSettingsScreenshotE11Test", "E11_models-empty-dark.png",
+            "P11 提供商模型空态 · dark"))
+    }
+
     val all: List<ScreenshotCase> = h01Cases + h02Cases + h03Cases + h04Cases +
-        b01Cases + b02Cases + b03Cases + b04Cases + c01Cases + e04Cases + e05Cases + e10Cases
+        b01Cases + b02Cases + b03Cases + b04Cases + c01Cases + e04Cases + e05Cases + e10Cases + e11Cases
 
     /** 冻结的分族数量：缺场景、零测试或静默删减都会让守卫失败。 */
     val expectedFamilyCounts: Map<String, Int> = mapOf(
@@ -246,6 +272,7 @@ object ScreenshotCases {
         "E04" to 14,
         "E05" to 18,
         "E10" to 16,
+        "E11" to 32,
     )
 
     private val byId: Map<String, ScreenshotCase> = all.associateBy { it.id }

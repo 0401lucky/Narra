@@ -1,16 +1,11 @@
 package com.example.myapplication.ui.screen.settings
 
 import androidx.compose.foundation.BorderStroke
-import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.selection.toggleable
-import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.outlined.Build
@@ -21,17 +16,18 @@ import androidx.compose.material.icons.outlined.Psychology
 import androidx.compose.material.icons.outlined.Search
 import androidx.compose.material.icons.outlined.Settings
 import androidx.compose.material.icons.outlined.Visibility
-import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.BottomSheetDefaults
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.CheckboxDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
+import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.rememberModalBottomSheetState
@@ -48,6 +44,8 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.error
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -59,6 +57,9 @@ import com.example.myapplication.ui.component.NarraIconButton
 import com.example.myapplication.ui.component.NarraOutlinedButton
 import com.example.myapplication.ui.component.NarraTextButton
 import com.example.myapplication.ui.component.NarraAlertDialog
+import com.example.myapplication.ui.theme.NarraMinimumTouchTarget
+import com.example.myapplication.ui.theme.NarraShapes
+import com.example.myapplication.ui.theme.NarraUi
 
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
@@ -72,44 +73,53 @@ internal fun PremiumModelCard(
 ) {
     val palette = rememberSettingsPalette()
     val bg = if (isSelected) palette.accentSoft else palette.surface
-    val border = if (isSelected) palette.accentStrong.copy(alpha = 0.4f) else palette.border.copy(alpha = 0.2f)
+    val titleColor = if (isSelected) MaterialTheme.colorScheme.onPrimaryContainer else palette.title
+    val bodyColor = if (isSelected) MaterialTheme.colorScheme.onPrimaryContainer else palette.body
+    val border =
+        if (isSelected) palette.accentStrong.copy(alpha = 0.4f) else palette.border.copy(alpha = 0.2f)
 
     Surface(
         modifier = Modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(8.dp))
+            .clip(NarraShapes.medium)
             .selectable(selected = isSelected, role = Role.RadioButton, onClick = onClick),
-        shape = RoundedCornerShape(8.dp),
+        shape = NarraShapes.medium,
         color = bg,
+        contentColor = titleColor,
         border = BorderStroke(1.dp, border),
         shadowElevation = 0.dp,
     ) {
         Column(
-            modifier = Modifier.padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp),
+            modifier = Modifier.padding(NarraUi.space16),
+            verticalArrangement = Arrangement.spacedBy(NarraUi.space8),
         ) {
             Row(
                 verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(12.dp),
+                horizontalArrangement = Arrangement.spacedBy(NarraUi.space12),
             ) {
-                Surface(shape = RoundedCornerShape(8.dp), color = brandColor.copy(alpha = 0.12f), modifier = Modifier.size(40.dp)) {
+                Surface(
+                    shape = NarraShapes.small,
+                    color = brandColor.copy(alpha = 0.12f),
+                    modifier = Modifier.size(40.dp)
+                ) {
                     Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                         ModelIcon(modelName = modelInfo.modelId, size = 24.dp)
                     }
                 }
-                Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                Column(
+                    modifier = Modifier.weight(1f),
+                    verticalArrangement = Arrangement.spacedBy(NarraUi.space4)
+                ) {
                     Text(
                         text = modelInfo.displayName,
                         style = MaterialTheme.typography.titleMedium,
-                        maxLines = 2,
-                        overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
-                        color = palette.title,
+                        color = titleColor,
                     )
                     if (isSelected) {
                         Text(
                             text = "当前模型",
                             style = MaterialTheme.typography.labelMedium,
-                            color = palette.accentStrong,
+                            color = bodyColor,
                         )
                     }
                 }
@@ -119,8 +129,8 @@ internal fun PremiumModelCard(
                     modifier = Modifier
                         .fillMaxWidth()
                         .testTag("provider_model_abilities_${modelInfo.modelId}"),
-                    horizontalArrangement = Arrangement.spacedBy(6.dp),
-                    verticalArrangement = Arrangement.spacedBy(6.dp),
+                    horizontalArrangement = Arrangement.spacedBy(NarraUi.space8),
+                    verticalArrangement = Arrangement.spacedBy(NarraUi.space8),
                 ) {
                     modelInfo.abilities.forEach { ability ->
                         ModelAbilityChip(ability = ability)
@@ -134,15 +144,24 @@ internal fun PremiumModelCard(
             ) {
                 NarraIconButton(
                     onClick = onEditAbilities,
-                    modifier = Modifier.size(48.dp),
+                    modifier = Modifier.size(NarraMinimumTouchTarget),
                 ) {
-                    Icon(Icons.Outlined.Settings, contentDescription = "设置模型能力", tint = palette.body)
+                    Icon(
+                        Icons.Outlined.Settings,
+                        contentDescription = "设置模型能力",
+                        tint = bodyColor
+                    )
                 }
                 NarraIconButton(
                     onClick = onRemove,
-                    modifier = Modifier.size(48.dp),
+                    modifier = Modifier.size(NarraMinimumTouchTarget),
                 ) {
-                    Icon(Icons.Outlined.Close, contentDescription = "移除模型", tint = palette.body, modifier = Modifier.size(20.dp))
+                    Icon(
+                        Icons.Outlined.Close,
+                        contentDescription = "移除模型",
+                        tint = bodyColor,
+                        modifier = Modifier.size(20.dp)
+                    )
                 }
             }
         }
@@ -159,7 +178,11 @@ internal fun ModelAbilityOverrideDialog(
     val autoAbilities = remember(modelInfo.modelId) {
         com.example.myapplication.model.inferModelAbilities(modelInfo.modelId)
     }
-    var editedAbilities by remember(modelInfo.modelId, modelInfo.abilitiesCustomized, modelInfo.abilities) {
+    var editedAbilities by remember(
+        modelInfo.modelId,
+        modelInfo.abilitiesCustomized,
+        modelInfo.abilities
+    ) {
         mutableStateOf(modelInfo.abilities)
     }
     val shouldResetToAuto = editedAbilities == autoAbilities
@@ -170,22 +193,45 @@ internal fun ModelAbilityOverrideDialog(
         onConfirm = { onSave(if (shouldResetToAuto) null else editedAbilities) },
         confirmLabel = "保存",
         dismissLabel = "取消",
+        shape = NarraShapes.large,
+        actionContentColor = MaterialTheme.colorScheme.onSurface,
         content = {
-            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            Column(verticalArrangement = Arrangement.spacedBy(NarraUi.space8)) {
+                FlowRow(
+                    horizontalArrangement = Arrangement.spacedBy(NarraUi.space8),
+                    verticalArrangement = Arrangement.spacedBy(NarraUi.space8)
+                ) {
                     ModelAbility.entries.forEach { ability ->
                         FilterChip(
                             selected = ability in editedAbilities,
+                            modifier = Modifier.heightIn(min = NarraMinimumTouchTarget),
+                            shape = NarraShapes.pill,
+                            colors = FilterChipDefaults.filterChipColors(
+                                containerColor = MaterialTheme.colorScheme.surface,
+                                labelColor = MaterialTheme.colorScheme.onSurface,
+                                selectedContainerColor = MaterialTheme.colorScheme.secondaryContainer,
+                                selectedLabelColor = MaterialTheme.colorScheme.onSecondaryContainer,
+                            ),
                             onClick = {
-                                editedAbilities = if (ability in editedAbilities) editedAbilities - ability else editedAbilities + ability
+                                editedAbilities =
+                                    if (ability in editedAbilities) editedAbilities - ability else editedAbilities + ability
                             },
                             label = { Text(ability.label) },
-                            leadingIcon = { Icon(abilityIcon(ability), contentDescription = null, modifier = Modifier.size(16.dp)) },
+                            leadingIcon = {
+                                Icon(
+                                    abilityIcon(ability),
+                                    contentDescription = null,
+                                    modifier = Modifier.size(16.dp)
+                                )
+                            },
                         )
                     }
                 }
                 if (modelInfo.abilitiesCustomized) {
-                    NarraTextButton(onClick = { onSave(null) }) {
+                    NarraTextButton(
+                        onClick = { onSave(null) },
+                        colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.onSurface),
+                    ) {
                         Text("恢复自动")
                     }
                 }
@@ -200,16 +246,35 @@ internal fun ModelAbilityChip(ability: ModelAbility) {
     val icon = abilityIcon(ability)
 
     if (ability == ModelAbility.TOOL || ability == ModelAbility.REASONING) {
-        Surface(shape = CircleShape, color = chipColor, contentColor = chipContentColor) {
-            Box(modifier = Modifier.padding(6.dp), contentAlignment = Alignment.Center) {
-                Icon(imageVector = icon, contentDescription = ability.label, modifier = Modifier.size(14.dp), tint = chipContentColor)
+        Surface(shape = NarraShapes.pill, color = chipColor, contentColor = chipContentColor) {
+            Box(modifier = Modifier.padding(NarraUi.space8), contentAlignment = Alignment.Center) {
+                Icon(
+                    imageVector = icon,
+                    contentDescription = ability.label,
+                    modifier = Modifier.size(14.dp),
+                    tint = chipContentColor
+                )
             }
         }
     } else {
-        Surface(shape = RoundedCornerShape(50), color = chipColor, contentColor = chipContentColor) {
-            Row(modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-                Icon(imageVector = icon, contentDescription = ability.label, modifier = Modifier.size(13.dp), tint = chipContentColor)
-                Text(text = ability.label, style = MaterialTheme.typography.labelSmall, color = chipContentColor, fontWeight = FontWeight.Bold)
+        Surface(shape = NarraShapes.pill, color = chipColor, contentColor = chipContentColor) {
+            Row(
+                modifier = Modifier.padding(horizontal = NarraUi.space8, vertical = NarraUi.space4),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(NarraUi.space4)
+            ) {
+                Icon(
+                    imageVector = icon,
+                    contentDescription = null,
+                    modifier = Modifier.size(13.dp),
+                    tint = chipContentColor
+                )
+                Text(
+                    text = ability.label,
+                    style = MaterialTheme.typography.labelSmall,
+                    color = chipContentColor,
+                    fontWeight = FontWeight.Bold
+                )
             }
         }
     }
@@ -257,7 +322,9 @@ internal fun FetchedModelSelectionBottomSheet(
     val filteredModels = remember(fetchedModels, searchQuery) {
         val query = searchQuery.trim().lowercase()
         if (query.isBlank()) fetchedModels
-        else fetchedModels.filter { it.modelId.lowercase().contains(query) || it.displayName.lowercase().contains(query) }
+        else fetchedModels.filter {
+            it.modelId.lowercase().contains(query) || it.displayName.lowercase().contains(query)
+        }
     }
 
     val newSelectedCount = selectedIds.count { it !in existingModelIds }
@@ -268,6 +335,7 @@ internal fun FetchedModelSelectionBottomSheet(
     ModalBottomSheet(
         onDismissRequest = onDismiss,
         sheetState = sheetState,
+        shape = NarraShapes.large,
         containerColor = palette.background,
         dragHandle = { BottomSheetDefaults.DragHandle(color = palette.border) },
         contentWindowInsets = { androidx.compose.foundation.layout.WindowInsets(0, 0, 0, 0) },
@@ -277,16 +345,19 @@ internal fun FetchedModelSelectionBottomSheet(
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 24.dp)
-                    .padding(bottom = 12.dp),
-                verticalArrangement = Arrangement.spacedBy(12.dp),
+                    .padding(horizontal = NarraUi.space16)
+                    .padding(bottom = NarraUi.space12),
+                verticalArrangement = Arrangement.spacedBy(NarraUi.space12),
             ) {
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
-                    Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                    Column(
+                        modifier = Modifier.weight(1f),
+                        verticalArrangement = Arrangement.spacedBy(NarraUi.space4)
+                    ) {
                         Text(
                             "选择模型",
                             style = MaterialTheme.typography.titleLarge,
@@ -312,51 +383,34 @@ internal fun FetchedModelSelectionBottomSheet(
                     }) {
                         Text(
                             if (selectedIds.size == fetchedModels.size) "取消全选" else "全选",
-                            color = palette.accentStrong,
+                            color = palette.title,
                             fontWeight = FontWeight.Bold,
                             style = MaterialTheme.typography.labelLarge,
                         )
                     }
                 }
 
-                Surface(
-                    shape = RoundedCornerShape(14.dp),
-                    color = palette.surface,
-                    border = BorderStroke(1.dp, palette.border),
-                ) {
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(horizontal = 16.dp, vertical = 12.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(12.dp),
-                    ) {
+                OutlinedTextField(
+                    value = searchQuery,
+                    onValueChange = { searchQuery = it },
+                    modifier = Modifier.fillMaxWidth(),
+                    label = { Text("搜索模型") },
+                    shape = NarraShapes.medium,
+                    colors = providerTextFieldColors(palette.surfaceTint),
+                    singleLine = true,
+                    leadingIcon = {
                         Icon(
                             Icons.Outlined.Search,
-                            contentDescription = "搜索",
+                            contentDescription = null,
                             tint = palette.body,
                             modifier = Modifier.size(20.dp),
                         )
-                        Box(modifier = Modifier.weight(1f)) {
-                            if (searchQuery.isEmpty()) {
-                                Text(
-                                    "搜索模型名称...",
-                                    style = MaterialTheme.typography.bodyMedium,
-                                    color = palette.body.copy(alpha = 0.6f),
-                                )
-                            }
-                            BasicTextField(
-                                value = searchQuery,
-                                onValueChange = { searchQuery = it },
-                                textStyle = MaterialTheme.typography.bodyMedium.copy(color = palette.title),
-                                modifier = Modifier.fillMaxWidth(),
-                                singleLine = true,
-                            )
-                        }
+                    },
+                    trailingIcon = {
                         if (searchQuery.isNotEmpty()) {
                             NarraIconButton(
                                 onClick = { searchQuery = "" },
-                                modifier = Modifier.size(48.dp),
+                                modifier = Modifier.size(NarraMinimumTouchTarget),
                             ) {
                                 Icon(
                                     Icons.Outlined.Close,
@@ -366,8 +420,8 @@ internal fun FetchedModelSelectionBottomSheet(
                                 )
                             }
                         }
-                    }
-                }
+                    },
+                )
             }
 
             HorizontalDivider(color = palette.border.copy(alpha = 0.4f))
@@ -375,13 +429,17 @@ internal fun FetchedModelSelectionBottomSheet(
             Box(modifier = Modifier.weight(1f)) {
                 LazyColumn(
                     modifier = Modifier.fillMaxSize(),
-                    contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 8.dp, bottom = 8.dp),
-                    verticalArrangement = Arrangement.spacedBy(4.dp),
+                    contentPadding = PaddingValues(
+                        horizontal = NarraUi.space16,
+                        vertical = NarraUi.space8
+                    ),
+                    verticalArrangement = Arrangement.spacedBy(NarraUi.space4),
                 ) {
                     if (filteredModels.isEmpty()) {
                         item {
                             Box(
-                                modifier = Modifier.fillMaxWidth().padding(vertical = 48.dp),
+                                modifier = Modifier.fillMaxWidth()
+                                    .padding(vertical = NarraUi.space32),
                                 contentAlignment = Alignment.Center,
                             ) {
                                 Text(
@@ -421,15 +479,20 @@ internal fun FetchedModelSelectionBottomSheet(
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(horizontal = 24.dp, vertical = 16.dp),
-                        horizontalArrangement = Arrangement.spacedBy(12.dp),
+                            .padding(horizontal = NarraUi.space16, vertical = NarraUi.space16),
+                        horizontalArrangement = Arrangement.spacedBy(NarraUi.space12),
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
                         NarraOutlinedButton(
                             onClick = onDismiss,
-                            modifier = Modifier.weight(1f).heightIn(min = 48.dp),
-                            shape = RoundedCornerShape(14.dp),
+                            modifier = Modifier.weight(1f).heightIn(min = NarraMinimumTouchTarget),
+                            contentPadding = PaddingValues(
+                                horizontal = NarraUi.space8,
+                                vertical = NarraUi.space12
+                            ),
+                            shape = NarraShapes.medium,
                             border = BorderStroke(1.dp, palette.border),
+                            colors = ButtonDefaults.outlinedButtonColors(contentColor = palette.title),
                         ) {
                             Text("取消", fontWeight = FontWeight.Bold)
                         }
@@ -438,18 +501,27 @@ internal fun FetchedModelSelectionBottomSheet(
                                 onConfirm(selectedIds)
                                 onDismiss()
                             },
-                            modifier = Modifier.weight(1.5f).heightIn(min = 48.dp),
-                            shape = RoundedCornerShape(14.dp),
+                            modifier = Modifier.weight(1.5f)
+                                .heightIn(min = NarraMinimumTouchTarget),
+                            contentPadding = PaddingValues(
+                                horizontal = NarraUi.space8,
+                                vertical = NarraUi.space12
+                            ),
+                            shape = NarraShapes.medium,
                             colors = ButtonDefaults.buttonColors(
                                 containerColor = palette.accentStrong,
                                 contentColor = palette.accentOnStrong,
                             ),
                         ) {
                             Row(
-                                horizontalArrangement = Arrangement.spacedBy(6.dp),
+                                horizontalArrangement = Arrangement.spacedBy(NarraUi.space8),
                                 verticalAlignment = Alignment.CenterVertically,
                             ) {
-                                Icon(Icons.Default.Check, contentDescription = null, modifier = Modifier.size(18.dp))
+                                Icon(
+                                    Icons.Default.Check,
+                                    contentDescription = null,
+                                    modifier = Modifier.size(18.dp)
+                                )
                                 Text(
                                     "确认选择",
                                     fontWeight = FontWeight.Bold,
@@ -474,21 +546,24 @@ internal fun FetchedModelRow(
 ) {
     val palette = rememberSettingsPalette()
     val bg = if (isChecked) palette.accentSoft else Color.Transparent
+    val contentColor =
+        if (isChecked) MaterialTheme.colorScheme.onPrimaryContainer else palette.title
     val borderColor = if (isChecked) palette.accentStrong.copy(alpha = 0.3f) else Color.Transparent
 
     Surface(
         modifier = Modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(14.dp))
+            .heightIn(min = NarraMinimumTouchTarget)
+            .clip(NarraShapes.medium)
             .toggleable(value = isChecked, role = Role.Checkbox, onValueChange = { onToggle() }),
-        shape = RoundedCornerShape(14.dp),
+        shape = NarraShapes.medium,
         color = bg,
         border = BorderStroke(1.dp, borderColor),
     ) {
         Row(
-            modifier = Modifier.padding(horizontal = 12.dp, vertical = 14.dp),
+            modifier = Modifier.padding(horizontal = NarraUi.space12, vertical = NarraUi.space12),
             verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(12.dp),
+            horizontalArrangement = Arrangement.spacedBy(NarraUi.space12),
         ) {
             Checkbox(
                 checked = isChecked,
@@ -502,7 +577,7 @@ internal fun FetchedModelRow(
             )
 
             Surface(
-                shape = RoundedCornerShape(10.dp),
+                shape = NarraShapes.small,
                 color = palette.surfaceTint,
                 border = BorderStroke(1.dp, palette.border.copy(alpha = 0.3f)),
                 modifier = Modifier.size(36.dp),
@@ -512,56 +587,76 @@ internal fun FetchedModelRow(
                 }
             }
 
-            Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                ) {
-                    Text(
-                        text = modelInfo.displayName,
-                        style = MaterialTheme.typography.bodyMedium,
-                        fontWeight = if (isChecked) FontWeight.SemiBold else FontWeight.Normal,
-                        maxLines = 1,
-                        overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
-                        color = palette.title,
-                        modifier = Modifier.weight(1f, fill = false),
-                    )
-                    if (isExisting) {
-                        Surface(
-                            shape = RoundedCornerShape(50),
-                            color = palette.subtleChip,
-                            contentColor = palette.subtleChipContent,
-                        ) {
-                            Text(
-                                "已有",
-                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp),
-                                style = MaterialTheme.typography.labelSmall,
-                                fontWeight = FontWeight.Medium,
-                            )
-                        }
+            Column(
+                modifier = Modifier.weight(1f),
+                verticalArrangement = Arrangement.spacedBy(NarraUi.space8)
+            ) {
+                Text(
+                    text = modelInfo.displayName,
+                    style = MaterialTheme.typography.bodyMedium,
+                    fontWeight = if (isChecked) FontWeight.SemiBold else FontWeight.Normal,
+                    color = contentColor,
+                )
+                if (isExisting) {
+                    Surface(
+                        shape = NarraShapes.pill,
+                        color = palette.subtleChip,
+                        contentColor = palette.subtleChipContent,
+                    ) {
+                        Text(
+                            "已有",
+                            modifier = Modifier.padding(
+                                horizontal = NarraUi.space8,
+                                vertical = NarraUi.space4
+                            ),
+                            style = MaterialTheme.typography.labelSmall,
+                            fontWeight = FontWeight.Medium,
+                        )
                     }
                 }
 
                 FlowRow(
-                    horizontalArrangement = Arrangement.spacedBy(5.dp),
-                    verticalArrangement = Arrangement.spacedBy(4.dp),
+                    horizontalArrangement = Arrangement.spacedBy(NarraUi.space4),
+                    verticalArrangement = Arrangement.spacedBy(NarraUi.space4),
                 ) {
                     val ioBg = MaterialTheme.colorScheme.secondaryContainer
                     val ioColor = MaterialTheme.colorScheme.onSecondaryContainer
                     val hasVision = modelInfo.abilities.contains(ModelAbility.VISION)
 
-                    Surface(shape = RoundedCornerShape(50), color = ioBg, contentColor = ioColor) {
+                    Surface(shape = NarraShapes.pill, color = ioBg, contentColor = ioColor) {
                         Row(
-                            modifier = Modifier.padding(horizontal = 7.dp, vertical = 2.dp),
+                            modifier = Modifier.padding(
+                                horizontal = NarraUi.space8,
+                                vertical = NarraUi.space4
+                            ),
                             verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(3.dp),
+                            horizontalArrangement = Arrangement.spacedBy(NarraUi.space4),
                         ) {
-                            Text("T", style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold, fontSize = 10.sp)
+                            Text(
+                                "T",
+                                style = MaterialTheme.typography.labelSmall,
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 10.sp
+                            )
                             if (hasVision) {
-                                Icon(Icons.Outlined.Image, contentDescription = "Vision", modifier = Modifier.size(9.dp))
+                                Icon(
+                                    Icons.Outlined.Image,
+                                    contentDescription = "Vision",
+                                    modifier = Modifier.size(9.dp)
+                                )
                             }
-                            Text(">", style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold, fontSize = 10.sp)
-                            Text("T", style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold, fontSize = 10.sp)
+                            Text(
+                                ">",
+                                style = MaterialTheme.typography.labelSmall,
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 10.sp
+                            )
+                            Text(
+                                "T",
+                                style = MaterialTheme.typography.labelSmall,
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 10.sp
+                            )
                         }
                     }
 
@@ -579,7 +674,7 @@ internal fun ManualAddModelDialog(
     onDismissRequest: () -> Unit,
     onConfirm: (modelId: String, displayName: String) -> Unit,
 ) {
-    val palette = rememberSettingsPalette()
+    val inputColors = providerTextFieldColors(MaterialTheme.colorScheme.surfaceVariant)
     var modelId by remember { mutableStateOf("") }
     var displayName by remember { mutableStateOf("") }
     var errorText by remember { mutableStateOf<String?>(null) }
@@ -599,68 +694,34 @@ internal fun ManualAddModelDialog(
         },
         confirmLabel = "添加",
         dismissLabel = "取消",
+        shape = NarraShapes.large,
+        actionContentColor = MaterialTheme.colorScheme.onSurface,
         content = {
             Column(
-                modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
-                verticalArrangement = Arrangement.spacedBy(12.dp)
+                modifier = Modifier.fillMaxWidth().padding(vertical = NarraUi.space8),
+                verticalArrangement = Arrangement.spacedBy(NarraUi.space12),
             ) {
-                Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                    Text(
-                        "模型 ID *",
-                        style = MaterialTheme.typography.labelMedium,
-                        color = palette.body,
-                        fontWeight = FontWeight.Bold
-                    )
-                    Surface(
-                        shape = RoundedCornerShape(10.dp),
-                        color = palette.surface,
-                        border = BorderStroke(1.dp, if (errorText != null) MaterialTheme.colorScheme.error else palette.border),
-                    ) {
-                        BasicTextField(
-                            value = modelId,
-                            onValueChange = {
-                                modelId = it
-                                errorText = null
-                            },
-                            textStyle = MaterialTheme.typography.bodyMedium.copy(color = palette.title),
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(horizontal = 12.dp, vertical = 10.dp),
-                            singleLine = true,
-                        )
-                    }
-                    if (errorText != null) {
-                        Text(
-                            errorText!!,
-                            color = MaterialTheme.colorScheme.error,
-                            style = MaterialTheme.typography.labelSmall
-                        )
-                    }
-                }
-
-                Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                    Text(
-                        "显示名称",
-                        style = MaterialTheme.typography.labelMedium,
-                        color = palette.body,
-                        fontWeight = FontWeight.Bold
-                    )
-                    Surface(
-                        shape = RoundedCornerShape(10.dp),
-                        color = palette.surface,
-                        border = BorderStroke(1.dp, palette.border),
-                    ) {
-                        BasicTextField(
-                            value = displayName,
-                            onValueChange = { displayName = it },
-                            textStyle = MaterialTheme.typography.bodyMedium.copy(color = palette.title),
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(horizontal = 12.dp, vertical = 10.dp),
-                            singleLine = true,
-                        )
-                    }
-                }
+                OutlinedTextField(
+                    value = modelId,
+                    onValueChange = { modelId = it; errorText = null },
+                    modifier = Modifier.fillMaxWidth().heightIn(min = NarraMinimumTouchTarget)
+                        .semantics { errorText?.let { error(it) } },
+                    label = { Text("模型 ID *") },
+                    isError = errorText != null,
+                    supportingText = { errorText?.let { Text(it) } },
+                    colors = inputColors,
+                    shape = NarraShapes.medium,
+                    singleLine = true,
+                )
+                OutlinedTextField(
+                    value = displayName,
+                    onValueChange = { displayName = it },
+                    modifier = Modifier.fillMaxWidth().heightIn(min = NarraMinimumTouchTarget),
+                    label = { Text("显示名称") },
+                    colors = inputColors,
+                    shape = NarraShapes.medium,
+                    singleLine = true,
+                )
             }
         }
     )

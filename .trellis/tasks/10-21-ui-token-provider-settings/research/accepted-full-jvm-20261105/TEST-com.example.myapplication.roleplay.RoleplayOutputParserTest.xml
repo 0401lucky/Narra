@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.myapplication.roleplay.RoleplayOutputParserTest" tests="17" skipped="0" failures="0" errors="0" timestamp="2026-11-05T09:47:47.827Z" hostname="LUCKY" time="0.008">
+  <properties/>
+  <testcase name="stripMarkup_normalizesNarrativeAliasAndMalformedProtocolForStreaming" classname="com.example.myapplication.roleplay.RoleplayOutputParserTest" time="0.001"/>
+  <testcase name="parseAssistantOutput_treatsUntaggedNarrationAroundDialogueTagsAsNarration" classname="com.example.myapplication.roleplay.RoleplayOutputParserTest" time="0.001"/>
+  <testcase name="parseAssistantOutput_fallsBackToSingleDialogueWhenNoTagsPresent" classname="com.example.myapplication.roleplay.RoleplayOutputParserTest" time="0.0"/>
+  <testcase name="parseAssistantOutput_keepsInlineQuotedWordInsideNarrationFlow" classname="com.example.myapplication.roleplay.RoleplayOutputParserTest" time="0.0"/>
+  <testcase name="stripMarkup_dropsBareSpecialPlayProtocolFragments" classname="com.example.myapplication.roleplay.RoleplayOutputParserTest" time="0.001"/>
+  <testcase name="parseAssistantOutput_acceptsLooseDialogueAttributes" classname="com.example.myapplication.roleplay.RoleplayOutputParserTest" time="0.0"/>
+  <testcase name="parseAssistantOutput_recognizesThoughtSegments" classname="com.example.myapplication.roleplay.RoleplayOutputParserTest" time="0.0"/>
+  <testcase name="parseAssistantOutput_dropsMalformedProtocolAttributesFromBody" classname="com.example.myapplication.roleplay.RoleplayOutputParserTest" time="0.001"/>
+  <testcase name="stripMarkup_removesLlMControlTokensFromVisibleText" classname="com.example.myapplication.roleplay.RoleplayOutputParserTest" time="0.0"/>
+  <testcase name="stripMarkup_dropsStandaloneJsonPatchArtifact" classname="com.example.myapplication.roleplay.RoleplayOutputParserTest" time="0.0"/>
+  <testcase name="parseAssistantOutput_splitsQuotedDialogueFromPlainNarration" classname="com.example.myapplication.roleplay.RoleplayOutputParserTest" time="0.001"/>
+  <testcase name="parseAssistantOutput_keepsEmbeddedQuotedSpeechAsSeparateDialogue" classname="com.example.myapplication.roleplay.RoleplayOutputParserTest" time="0.0"/>
+  <testcase name="parseAssistantOutput_dropsVariableUpdateArtifactsAfterVisibleText" classname="com.example.myapplication.roleplay.RoleplayOutputParserTest" time="0.0"/>
+  <testcase name="parseAssistantOutput_splitsStarActionAndPlainDialogue" classname="com.example.myapplication.roleplay.RoleplayOutputParserTest" time="0.0"/>
+  <testcase name="parseAssistantOutput_splitsNarrationAndDialogueSegments" classname="com.example.myapplication.roleplay.RoleplayOutputParserTest" time="0.0"/>
+  <testcase name="parseAssistantOutput_splitsNarrationMixedInsideDialogueTag" classname="com.example.myapplication.roleplay.RoleplayOutputParserTest" time="0.001"/>
+  <testcase name="parseAssistantOutput_acceptsCaseInsensitiveTagsAndChineseQuotedAttributes" classname="com.example.myapplication.roleplay.RoleplayOutputParserTest" time="0.0"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

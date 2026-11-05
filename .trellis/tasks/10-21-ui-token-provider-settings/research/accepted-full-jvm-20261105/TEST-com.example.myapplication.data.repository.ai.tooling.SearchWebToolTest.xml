@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.myapplication.data.repository.ai.tooling.SearchWebToolTest" tests="6" skipped="0" failures="0" errors="0" timestamp="2026-11-05T09:47:32.285Z" hostname="LUCKY" time="0.013">
+  <properties/>
+  <testcase name="execute_redactsSearchFailureMessage" classname="com.example.myapplication.data.repository.ai.tooling.SearchWebToolTest" time="0.004"/>
+  <testcase name="execute_supportsMapArguments" classname="com.example.myapplication.data.repository.ai.tooling.SearchWebToolTest" time="0.002"/>
+  <testcase name="execute_returnsErrorPayloadWhenSearchFails" classname="com.example.myapplication.data.repository.ai.tooling.SearchWebToolTest" time="0.003"/>
+  <testcase name="execute_supportsJsonArguments" classname="com.example.myapplication.data.repository.ai.tooling.SearchWebToolTest" time="0.002"/>
+  <testcase name="execute_returnsErrorPayloadWhenQueryHasInvalidType" classname="com.example.myapplication.data.repository.ai.tooling.SearchWebToolTest" time="0.001"/>
+  <testcase name="execute_returnsErrorPayloadWhenQueryMissing" classname="com.example.myapplication.data.repository.ai.tooling.SearchWebToolTest" time="0.001"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

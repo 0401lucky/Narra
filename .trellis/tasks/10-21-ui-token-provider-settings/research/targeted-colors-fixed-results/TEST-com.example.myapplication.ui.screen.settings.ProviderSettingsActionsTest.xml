@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.myapplication.ui.screen.settings.ProviderSettingsActionsTest" tests="6" skipped="0" failures="0" errors="0" timestamp="2026-11-05T05:37:12.905Z" hostname="LUCKY" time="1.673">
+  <properties/>
+  <testcase name="template_waitsForTheReturnedDraftId_andNavigatesExactlyOnce" classname="com.example.myapplication.ui.screen.settings.ProviderSettingsActionsTest" time="0.339"/>
+  <testcase name="missingProvider_keepsExistingNoticeAndBackCallback" classname="com.example.myapplication.ui.screen.settings.ProviderSettingsActionsTest" time="0.268"/>
+  <testcase name="list_largeFontSearchAndBothProviderCards_remainReachableWithIndependentNavigation" classname="com.example.myapplication.ui.screen.settings.ProviderSettingsActionsTest" time="0.353"/>
+  <testcase name="emptyDraftList_requestsExistingEnsureCallback_withoutCreatingAService" classname="com.example.myapplication.ui.screen.settings.ProviderSettingsActionsTest" time="0.056"/>
+  <testcase name="healthRequests_followOriginalCredentialsKey_andRemainLocal" classname="com.example.myapplication.ui.screen.settings.ProviderSettingsActionsTest" time="0.31"/>
+  <testcase name="template_cancelOnlyDismisses_andMissingWindowsCannotFallbackToStage" classname="com.example.myapplication.ui.screen.settings.ProviderSettingsActionsTest" time="0.341"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

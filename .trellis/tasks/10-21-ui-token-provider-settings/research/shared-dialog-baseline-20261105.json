@@ -1,0 +1,27 @@
+{
+  "frozen_at_utc": "2026-11-05T05:02:16.850723+00:00",
+  "base_commit": "ac22bb271007c814b6ef49b8499858acc815661c",
+  "file": "app/src/main/java/com/example/myapplication/ui/component/NarraAlertDialog.kt",
+  "sha256": "ec483dbe2ecd1d5d6314c12894f9abcc6b008b5c58d1bb160286e93fb59defb6",
+  "git_blob": "b1b89ffbf3e5e137413179a8351c8ffd996221b3",
+  "matches_base_commit_except_line_endings": true,
+  "reason": "Add optional shape; preserve RoundedCornerShape(NarraUi.cardRadius) default, existing layout and dismissal semantics. P11 uses NarraShapes.large.",
+  "consumers_at_start": [
+    "app/src/androidTest\\java\\com\\example\\myapplication\\ui\\component\\NarraAlertDialogTest.kt",
+    "app/src/main\\java\\com\\example\\myapplication\\ui\\screen\\settings\\worldbook\\WorldBookEditScreen.kt",
+    "app/src/main\\java\\com\\example\\myapplication\\ui\\screen\\settings\\worldbook\\WorldBookBookDetailScreen.kt",
+    "app/src/main\\java\\com\\example\\myapplication\\ui\\screen\\settings\\VoiceSynthesisSettingsScreen.kt",
+    "app/src/main\\java\\com\\example\\myapplication\\ui\\screen\\settings\\ProviderModelTab.kt",
+    "app/src/main\\java\\com\\example\\myapplication\\ui\\screen\\settings\\ProviderModelDialogs.kt",
+    "app/src/main\\java\\com\\example\\myapplication\\ui\\screen\\settings\\PresetManagerScreens.kt",
+    "app/src/main\\java\\com\\example\\myapplication\\ui\\screen\\settings\\contextlog\\ContextLogScreen.kt",
+    "app/src/main\\java\\com\\example\\myapplication\\ui\\screen\\settings\\AssistantDeleteConfirmDialog.kt",
+    "app/src/main\\java\\com\\example\\myapplication\\ui\\screen\\moments\\MomentsScreen.kt",
+    "app/src/main\\java\\com\\example\\myapplication\\ui\\screen\\immersive\\ImmersivePhoneShell.kt",
+    "app/src/main\\java\\com\\example\\myapplication\\ui\\screen\\phone\\PhoneComponents.kt",
+    "app/src/main\\java\\com\\example\\myapplication\\ui\\screen\\roleplay\\RoleplayScreen.kt",
+    "app/src/main\\java\\com\\example\\myapplication\\ui\\screen\\roleplay\\RoleplaySettingsContent.kt",
+    "app/src/main\\java\\com\\example\\myapplication\\ui\\screen\\chat\\ChatScreenOverlays.kt",
+    "app/src/main\\java\\com\\example\\myapplication\\ui\\component\\NarraAlertDialog.kt"
+  ]
+}

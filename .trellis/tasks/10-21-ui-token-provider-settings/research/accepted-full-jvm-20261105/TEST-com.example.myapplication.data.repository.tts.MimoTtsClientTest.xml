@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.myapplication.data.repository.tts.MimoTtsClientTest" tests="12" skipped="0" failures="0" errors="0" timestamp="2026-11-05T09:47:33.423Z" hostname="LUCKY" time="14.239">
+  <properties/>
+  <testcase name="synthesize_sendsAuthHeadersAndParsesAudioData" classname="com.example.myapplication.data.repository.tts.MimoTtsClientTest" time="0.021"/>
+  <testcase name="voiceCloneRequest_usesSampleDataUriAsVoice" classname="com.example.myapplication.data.repository.tts.MimoTtsClientTest" time="0.001"/>
+  <testcase name="voiceDesignRequest_usesUserPromptAndAssistantText" classname="com.example.myapplication.data.repository.tts.MimoTtsClientTest" time="0.0"/>
+  <testcase name="synthesize_acceptsFullChatCompletionsEndpoint" classname="com.example.myapplication.data.repository.tts.MimoTtsClientTest" time="0.03"/>
+  <testcase name="synthesize_usesCustomCompatibleBaseUrl" classname="com.example.myapplication.data.repository.tts.MimoTtsClientTest" time="0.009"/>
+  <testcase name="presetRequest_usesAssistantMessageAndPresetVoice" classname="com.example.myapplication.data.repository.tts.MimoTtsClientTest" time="0.0"/>
+  <testcase name="synthesize_cancellationCancelsOkHttpCallDuringBodyRead" classname="com.example.myapplication.data.repository.tts.MimoTtsClientTest" time="14.082"/>
+  <testcase name="synthesize_missingAudioDataThrowsFailure" classname="com.example.myapplication.data.repository.tts.MimoTtsClientTest" time="0.009"/>
+  <testcase name="synthesize_rejectsRemoteHttpBaseUrl" classname="com.example.myapplication.data.repository.tts.MimoTtsClientTest" time="0.005"/>
+  <testcase name="synthesize_voiceDesignDoesNotSendPresetVoice" classname="com.example.myapplication.data.repository.tts.MimoTtsClientTest" time="0.019"/>
+  <testcase name="synthesize_rejectsResponseBodyAboveConfiguredLimit" classname="com.example.myapplication.data.repository.tts.MimoTtsClientTest" time="0.032"/>
+  <testcase name="synthesize_redactsSensitiveHttpErrorBody" classname="com.example.myapplication.data.repository.tts.MimoTtsClientTest" time="0.03"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

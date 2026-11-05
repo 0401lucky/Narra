@@ -1,0 +1,13 @@
+{
+  "repeatExactMatches": 32,
+  "changedAgainstApproved": {
+    "E11_models-dark": "02886a00f0336b4f75fa4870b7b9f41ace30692c704af98eb283aec1c7b63805",
+    "E11_models-empty-dark": "074067538ffda31ddaf5b812e60db8cdbf33e03a4415e0f27a48d6ab1fc1294e",
+    "E11_models-light": "42e4274461d0baee9f8ff7f6622fbbc6a3137615a1b393ad930fdeea679ce1f9",
+    "E11_models-tail-narrow-dark": "665d9a929bf1373ea7997b11834b124d0c6b6128e5eaaf194dc2aa6edec1dc2e",
+    "E11_models-tail-narrow-light": "89dd37efa34989e993af4e027c56a7d6be6e9998ea91e9a8743e4baf7045f6ce"
+  },
+  "unchangedAgainstApproved": 27,
+  "mainProductsChanged": false,
+  "mainAcceptedPngsUnchanged": 158
+}

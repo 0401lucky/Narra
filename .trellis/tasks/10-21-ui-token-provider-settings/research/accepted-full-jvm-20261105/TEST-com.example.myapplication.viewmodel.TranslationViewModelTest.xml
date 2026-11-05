@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.myapplication.viewmodel.TranslationViewModelTest" tests="4" skipped="0" failures="0" errors="0" timestamp="2026-11-05T09:49:06.952Z" hostname="LUCKY" time="0.036">
+  <properties/>
+  <testcase name="translate_showsClearMessageWhenTranslationModelDisabled" classname="com.example.myapplication.viewmodel.TranslationViewModelTest" time="0.01"/>
+  <testcase name="useHistoryItem_restoresTranslationState" classname="com.example.myapplication.viewmodel.TranslationViewModelTest" time="0.007"/>
+  <testcase name="translate_savesHistoryEntry" classname="com.example.myapplication.viewmodel.TranslationViewModelTest" time="0.012"/>
+  <testcase name="updateInputText_updatesDetectedLanguageLabel" classname="com.example.myapplication.viewmodel.TranslationViewModelTest" time="0.007"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

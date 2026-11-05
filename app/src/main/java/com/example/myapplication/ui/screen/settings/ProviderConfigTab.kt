@@ -1,6 +1,7 @@
 package com.example.myapplication.ui.screen.settings
 
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.BoxWithConstraints
@@ -13,12 +14,12 @@ import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.selection.selectableGroup
+import androidx.compose.foundation.selection.toggleable
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Delete
+import androidx.compose.material.icons.outlined.Info
 import androidx.compose.material.icons.outlined.Save
 import androidx.compose.material.icons.outlined.Visibility
 import androidx.compose.material.icons.outlined.VisibilityOff
@@ -46,6 +47,9 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.heading
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
@@ -54,6 +58,10 @@ import com.example.myapplication.model.ProviderApiProtocol
 import com.example.myapplication.model.ProviderSettings
 import com.example.myapplication.ui.component.NarraButton
 import com.example.myapplication.ui.component.NarraIconButton
+import com.example.myapplication.ui.component.NarraAlertDialog
+import com.example.myapplication.ui.theme.NarraMinimumTouchTarget
+import com.example.myapplication.ui.theme.NarraShapes
+import com.example.myapplication.ui.theme.NarraUi
 
 @Composable
 internal fun ConfigTabContent(
@@ -82,20 +90,15 @@ internal fun ConfigTabContent(
         ProviderApiProtocol.ANTHROPIC -> "https://api.anthropic.com/v1/"
     }
 
-    val outlineColors = OutlinedTextFieldDefaults.colors(
-        focusedBorderColor = palette.accentStrong,
-        unfocusedBorderColor = palette.border.copy(alpha = 0.8f),
-        focusedLabelColor = palette.accentStrong,
-        unfocusedLabelColor = palette.body,
-        unfocusedContainerColor = palette.surface,
-        focusedContainerColor = palette.surface,
-        cursorColor = palette.accentStrong,
-    )
+    val outlineColors = providerTextFieldColors()
 
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
-        contentPadding = PaddingValues(start = 24.dp, top = 8.dp, end = 24.dp, bottom = 120.dp),
-        verticalArrangement = Arrangement.spacedBy(20.dp),
+        contentPadding = PaddingValues(
+            start = NarraUi.space16, top = NarraUi.space8,
+            end = NarraUi.space16, bottom = NarraUi.space24
+        ),
+        verticalArrangement = Arrangement.spacedBy(NarraUi.space16),
     ) {
         item {
             SettingSwitchRow(
@@ -112,7 +115,7 @@ internal fun ConfigTabContent(
                 modifier = Modifier.fillMaxWidth(),
                 label = { Text("名称", fontWeight = FontWeight.Medium) },
                 singleLine = true,
-                shape = RoundedCornerShape(12.dp),
+                shape = NarraShapes.medium,
                 colors = outlineColors,
             )
         }
@@ -125,7 +128,7 @@ internal fun ConfigTabContent(
                 label = { Text("API Key", fontWeight = FontWeight.Medium) },
                 singleLine = true,
                 visualTransformation = if (showApiKey) VisualTransformation.None else PasswordVisualTransformation(),
-                shape = RoundedCornerShape(12.dp),
+                shape = NarraShapes.medium,
                 colors = outlineColors,
                 trailingIcon = {
                     NarraIconButton(onClick = { showApiKey = !showApiKey }) {
@@ -143,9 +146,9 @@ internal fun ConfigTabContent(
             item {
                 Column(
                     modifier = Modifier.fillMaxWidth(),
-                    verticalArrangement = Arrangement.spacedBy(10.dp),
+                    verticalArrangement = Arrangement.spacedBy(NarraUi.space8),
                 ) {
-                    SettingsSectionHeader(
+                    ProviderSectionHeader(
                         title = "接口协议",
                         description = providerProtocolDescription(resolvedApiProtocol),
                     )
@@ -163,9 +166,9 @@ internal fun ConfigTabContent(
             item {
                 Column(
                     modifier = Modifier.fillMaxWidth(),
-                    verticalArrangement = Arrangement.spacedBy(10.dp),
+                    verticalArrangement = Arrangement.spacedBy(NarraUi.space8),
                 ) {
-                    SettingsSectionHeader(
+                    ProviderSectionHeader(
                         title = "文本接口模式",
                         description = when (resolvedOpenAiTextApiMode) {
                             com.example.myapplication.model.OpenAiTextApiMode.CHAT_COMPLETIONS -> "使用 chat/completions，适合大多数 OpenAI 兼容接口。第三方端点可在下方自定义请求路径。"
@@ -190,7 +193,7 @@ internal fun ConfigTabContent(
                 label = { Text("服务地址", fontWeight = FontWeight.Medium) },
                 placeholder = { Text(baseUrlPlaceholder) },
                 singleLine = true,
-                shape = RoundedCornerShape(12.dp),
+                shape = NarraShapes.medium,
                 colors = outlineColors,
             )
         }
@@ -207,7 +210,7 @@ internal fun ConfigTabContent(
                     label = { Text("请求路径", fontWeight = FontWeight.Medium) },
                     placeholder = { Text(com.example.myapplication.model.DEFAULT_CHAT_COMPLETIONS_PATH) },
                     singleLine = true,
-                    shape = RoundedCornerShape(12.dp),
+                    shape = NarraShapes.medium,
                     colors = outlineColors,
                 )
             }
@@ -217,18 +220,21 @@ internal fun ConfigTabContent(
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(top = 24.dp),
-                horizontalArrangement = Arrangement.spacedBy(16.dp),
+                    .padding(top = NarraUi.space8),
+                horizontalArrangement = Arrangement.spacedBy(NarraUi.space16),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 Surface(
-                    shape = CircleShape,
+                    shape = NarraShapes.pill,
                     color = palette.surfaceTint,
                     border = BorderStroke(1.dp, palette.border.copy(alpha = 0.4f)),
                     modifier = Modifier
-                        .size(56.dp)
-                        .clip(CircleShape)
-                        .clickable(enabled = providerCount > 1) {
+                        .size(NarraMinimumTouchTarget)
+                        .clip(NarraShapes.pill)
+                        .semantics {
+                            if (providerCount <= 1) stateDescription = "至少保留一个提供商"
+                        }
+                        .clickable(enabled = providerCount > 1, role = Role.Button) {
                             onDeleteProvider(provider.id)
                             onNavigateBack()
                         },
@@ -236,8 +242,8 @@ internal fun ConfigTabContent(
                     Icon(
                         Icons.Outlined.Delete,
                         contentDescription = "删除提供商",
-                        modifier = Modifier.padding(16.dp),
-                        tint = if (providerCount > 1) palette.title else palette.body.copy(alpha = 0.3f),
+                        modifier = Modifier.padding(NarraUi.space12),
+                        tint = if (providerCount > 1) palette.title else palette.body,
                     )
                 }
 
@@ -246,18 +252,29 @@ internal fun ConfigTabContent(
                     enabled = !isSaving,
                     modifier = Modifier
                         .weight(1f)
-                        .heightIn(min = 56.dp),
-                    shape = RoundedCornerShape(12.dp),
+                        .heightIn(min = NarraMinimumTouchTarget)
+                        .semantics { if (isSaving) stateDescription = "正在保存设置" },
+                    shape = NarraShapes.medium,
+                    contentPadding = PaddingValues(
+                        horizontal = NarraUi.space12,
+                        vertical = NarraUi.space12
+                    ),
                     colors = ButtonDefaults.buttonColors(
                         containerColor = palette.accentStrong,
                         contentColor = palette.accentOnStrong,
+                        disabledContainerColor = palette.surfaceTint,
+                        disabledContentColor = palette.body,
                     ),
                 ) {
                     Row(
-                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        horizontalArrangement = Arrangement.spacedBy(NarraUi.space8),
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
-                        Icon(Icons.Outlined.Save, contentDescription = null, modifier = Modifier.size(20.dp))
+                        Icon(
+                            Icons.Outlined.Save,
+                            contentDescription = null,
+                            modifier = Modifier.size(20.dp)
+                        )
                         Text(
                             if (isSaving) "保存中..." else "保存设置",
                             style = MaterialTheme.typography.titleMedium,
@@ -271,6 +288,20 @@ internal fun ConfigTabContent(
 }
 
 @Composable
+internal fun providerTextFieldColors(containerColor: Color = MaterialTheme.colorScheme.surface) =
+    OutlinedTextFieldDefaults.colors(
+        focusedBorderColor = MaterialTheme.colorScheme.primary,
+        unfocusedBorderColor = MaterialTheme.colorScheme.outlineVariant,
+        focusedLabelColor = MaterialTheme.colorScheme.onSurface,
+        unfocusedLabelColor = MaterialTheme.colorScheme.onSurfaceVariant,
+        focusedTextColor = MaterialTheme.colorScheme.onSurface,
+        unfocusedTextColor = MaterialTheme.colorScheme.onSurface,
+        unfocusedContainerColor = containerColor,
+        focusedContainerColor = containerColor,
+        cursorColor = MaterialTheme.colorScheme.onSurface,
+    )
+
+@Composable
 private fun <T> ProviderProtocolOptions(
     options: List<T>,
     selected: T,
@@ -278,6 +309,7 @@ private fun <T> ProviderProtocolOptions(
     onSelect: (T) -> Unit,
 ) {
     val fontScale = LocalDensity.current.fontScale
+    val colors = MaterialTheme.colorScheme
     BoxWithConstraints(modifier = Modifier.fillMaxWidth()) {
         if (maxWidth < 320.dp || fontScale > 1.15f) {
             Column(modifier = Modifier.fillMaxWidth().selectableGroup()) {
@@ -285,14 +317,16 @@ private fun <T> ProviderProtocolOptions(
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .heightIn(min = 48.dp)
+                            .heightIn(min = NarraMinimumTouchTarget)
+                            .clip(NarraShapes.small)
+                            .background(if (option == selected) colors.primaryContainer else colors.surface)
                             .selectable(
                                 selected = option == selected,
                                 role = Role.RadioButton,
                                 onClick = { onSelect(option) },
                             )
-                            .padding(vertical = 8.dp),
-                        horizontalArrangement = Arrangement.spacedBy(12.dp),
+                            .padding(horizontal = NarraUi.space8, vertical = NarraUi.space8),
+                        horizontalArrangement = Arrangement.spacedBy(NarraUi.space12),
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
                         RadioButton(selected = option == selected, onClick = null)
@@ -300,6 +334,7 @@ private fun <T> ProviderProtocolOptions(
                             text = label(option),
                             modifier = Modifier.weight(1f),
                             style = MaterialTheme.typography.bodyLarge,
+                            color = if (option == selected) colors.onPrimaryContainer else colors.onSurface,
                         )
                     }
                 }
@@ -308,7 +343,12 @@ private fun <T> ProviderProtocolOptions(
             SingleChoiceSegmentedButtonRow(modifier = Modifier.fillMaxWidth()) {
                 options.forEachIndexed { index, option ->
                     SegmentedButton(
-                        shape = SegmentedButtonDefaults.itemShape(index, options.size),
+                        shape = SegmentedButtonDefaults.itemShape(
+                            index,
+                            options.size,
+                            baseShape = NarraShapes.medium
+                        ),
+                        modifier = Modifier.heightIn(min = NarraMinimumTouchTarget),
                         selected = option == selected,
                         onClick = { onSelect(option) },
                         label = { Text(label(option)) },
@@ -329,7 +369,9 @@ internal fun SettingSwitchRow(
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(vertical = 12.dp),
+            .heightIn(min = NarraMinimumTouchTarget)
+            .toggleable(value = checked, role = Role.Switch, onValueChange = onCheckedChange)
+            .padding(vertical = NarraUi.space12),
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically,
     ) {
@@ -342,14 +384,49 @@ internal fun SettingSwitchRow(
         )
         Switch(
             checked = checked,
-            onCheckedChange = onCheckedChange,
+            onCheckedChange = null,
             colors = SwitchDefaults.colors(
-                checkedThumbColor = palette.surface,
+                checkedThumbColor = palette.accentOnStrong,
                 checkedTrackColor = palette.accentStrong,
-                uncheckedThumbColor = palette.body.copy(alpha = 0.6f),
+                uncheckedThumbColor = palette.body,
                 uncheckedBorderColor = Color.Transparent,
                 uncheckedTrackColor = palette.surfaceTint,
             ),
+        )
+    }
+}
+
+@Composable
+private fun ProviderSectionHeader(title: String, description: String) {
+    var showDescription by rememberSaveable(title, description) { mutableStateOf(false) }
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(NarraUi.space8),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Text(
+            text = title,
+            modifier = Modifier.weight(1f).semantics { heading() },
+            style = MaterialTheme.typography.titleSmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+        NarraIconButton(onClick = { showDescription = true }) {
+            Icon(
+                Icons.Outlined.Info, contentDescription = "$title：查看说明",
+                tint = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.size(20.dp)
+            )
+        }
+    }
+    if (showDescription) {
+        NarraAlertDialog(
+            title = title,
+            message = description,
+            onDismiss = { showDescription = false },
+            onConfirm = { showDescription = false },
+            confirmLabel = "知道了",
+            dismissLabel = null,
+            shape = NarraShapes.large,
+            actionContentColor = MaterialTheme.colorScheme.onSurface,
         )
     }
 }
@@ -359,6 +436,7 @@ private fun providerProtocolDescription(apiProtocol: ProviderApiProtocol): Strin
         ProviderApiProtocol.ANTHROPIC -> {
             "Anthropic 模式会走 /v1/messages，并自动附带 x-api-key 与 anthropic-version。"
         }
+
         ProviderApiProtocol.OPENAI_COMPATIBLE -> {
             "OpenAI 兼容协议适用于大多数兼容网关与中转站。具体请求接口由文本接口模式和请求路径决定。"
         }

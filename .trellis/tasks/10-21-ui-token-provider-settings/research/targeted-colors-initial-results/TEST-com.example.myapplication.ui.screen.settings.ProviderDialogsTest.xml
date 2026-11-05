@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.myapplication.ui.screen.settings.ProviderDialogsTest" tests="7" skipped="0" failures="0" errors="0" timestamp="2026-11-05T05:25:44.499Z" hostname="LUCKY" time="2.65">
+  <properties/>
+  <testcase name="abilityCancel_keepsOverrides_andRestoreAutoIsAnExplicitAction" classname="com.example.myapplication.ui.screen.settings.ProviderDialogsTest" time="0.42"/>
+  <testcase name="manualCancel_dropsOnlyDialogState_andBlankDisplayNameUsesId" classname="com.example.myapplication.ui.screen.settings.ProviderDialogsTest" time="0.399"/>
+  <testcase name="abilitySave_returnsTheChosenOverride_withoutSelectingOrRemovingModel" classname="com.example.myapplication.ui.screen.settings.ProviderDialogsTest" time="0.321"/>
+  <testcase name="fetchedModels_searchSelectionAndConfirmation_keepExistingIdsAndUseCurrentProvider" classname="com.example.myapplication.ui.screen.settings.ProviderDialogsTest" time="0.421"/>
+  <testcase name="protocolHelp_usesRealWindowAndOnlyCloses_withReadableContent" classname="com.example.myapplication.ui.screen.settings.ProviderDialogsTest" time="0.313"/>
+  <testcase name="manualInput_emptyIdIsAssociatedWithError_andValidValuesAreTrimmed" classname="com.example.myapplication.ui.screen.settings.ProviderDialogsTest" time="0.424"/>
+  <testcase name="fetchedSelectAllAndCancel_doNotCommitSelection" classname="com.example.myapplication.ui.screen.settings.ProviderDialogsTest" time="0.345"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

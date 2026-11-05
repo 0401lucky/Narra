@@ -1,0 +1,23 @@
+{
+  "command": ".\\gradlew.bat :app:testDebugUnitTest --tests com.example.myapplication.ui.screen.settings.ProviderSettingsActionsTest --tests com.example.myapplication.ui.screen.settings.ProviderConfigAccessibilityTest --tests com.example.myapplication.ui.theme.UiTokenSourceGuardTest --console=plain",
+  "commandExitCode": 1,
+  "suites": 3,
+  "tests": 26,
+  "failures": 2,
+  "errors": 0,
+  "skipped": 0,
+  "failureDetails": [
+    {
+      "suite": "com.example.myapplication.ui.screen.settings.ProviderConfigAccessibilityTest",
+      "test": "tabsAndKeyVisibility_areKeyedByProviderId",
+      "message": "java.lang.AssertionError: Failed to assert the following: (Password is NOT defined)\nSemantics of the node:\nNode #205 at (l=32.0, t=706.0, r=608.0, b=882.0)px\nContentDataType = 'AndroidContentDataType(androidAutofillType=1)'\nEditableText = 'fixture-placeholder-only'\nFillableData = 'androidx.compose.ui.autofill.AndroidFillableData@e3feb6e'\nFocused = 'false'\nImeAction = 'Default'\nInputText = 'fixture-placeholder-only'\nIsEditable = 'true'\nText = '[API Key]'\nTextSelectionRange = 'TextRange(0, 0)'\n[Password]\nActions = [ClearTextSubstitution, GetTextLayoutResult, InsertTextAtCursor, OnClick, OnFillData, OnLongClick, PasteText, PerformImeAction, RequestFocus, ScrollBy, ScrollByOffset, SetSelection, SetText, SetTextSubstitution, ShowTextSubstitution]\nMergeDescendants = 'true'\nHas 1 child, 5 siblings\nSelector used: (((Text + InputText + EditableText contains 'API Key' (ignoreCase: false)) && (SetText is defined)) && (hasAnyAncestorThat(TestTag = 'screenshot_stage')))\n",
+      "category": "behavior-or-infrastructure"
+    },
+    {
+      "suite": "com.example.myapplication.ui.theme.UiTokenSourceGuardTest",
+      "test": "migratedSources_haveNoUnapprovedDefaultsOrStaleExceptions",
+      "message": "java.lang.AssertionError: 例外未精确消费（实际 2，登记 3）：Key(path=screen/settings/ProviderModelDialogs.kt, declaration=FetchedModelRow, rule=COLOR, expression=Color.Transparent)；未选择的抓取项继承Sheet表面且无描边",
+      "category": "behavior-or-infrastructure"
+    }
+  ]
+}

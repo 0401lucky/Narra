@@ -12,24 +12,26 @@ import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalWindowInfo
+import androidx.compose.ui.semantics.heading
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
@@ -39,12 +41,18 @@ import com.example.myapplication.model.BUILT_IN_TEMPLATES
 import com.example.myapplication.model.ProviderTemplate
 import com.example.myapplication.ui.component.NarraTextButton
 import com.example.myapplication.ui.component.bounceClick
+import com.example.myapplication.ui.theme.NarraShapes
+import com.example.myapplication.ui.theme.NarraUi
 
 @Composable
 fun ProviderTemplateDialog(
     onSelectTemplate: (ProviderTemplate) -> Unit,
     onDismiss: () -> Unit,
 ) {
+    val windowSize = LocalWindowInfo.current.containerSize
+    val density = LocalDensity.current
+    val dialogWidth = (with(density) { windowSize.width.toDp() } - NarraUi.space32).coerceIn(0.dp, 560.dp)
+    val dialogHeight = (with(density) { windowSize.height.toDp() } - NarraUi.space24 * 2).coerceIn(0.dp, 620.dp)
     Dialog(
         onDismissRequest = onDismiss,
         properties = DialogProperties(
@@ -53,59 +61,62 @@ fun ProviderTemplateDialog(
             usePlatformDefaultWidth = false,
         ),
     ) {
-        Box(
+        Surface(
             modifier = Modifier
-                .fillMaxSize()
-                .padding(horizontal = 20.dp, vertical = 24.dp),
-            contentAlignment = Alignment.Center,
+                .widthIn(max = dialogWidth)
+                .heightIn(max = dialogHeight)
+                .navigationBarsPadding(),
+            shape = NarraShapes.large,
+            color = MaterialTheme.colorScheme.surface,
+            contentColor = MaterialTheme.colorScheme.onSurface,
+            tonalElevation = 0.dp,
+            shadowElevation = 6.dp,
         ) {
-            Surface(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .heightIn(max = 620.dp)
-                    .navigationBarsPadding(),
-                shape = RoundedCornerShape(16.dp),
-                color = MaterialTheme.colorScheme.surface,
-                contentColor = MaterialTheme.colorScheme.onSurface,
-                tonalElevation = 4.dp,
-                shadowElevation = 6.dp,
-            ) {
-                Column {
-                    Text(
-                        text = "选择提供商模板",
-                        modifier = Modifier.padding(horizontal = 24.dp, vertical = 20.dp),
-                        style = MaterialTheme.typography.titleLarge,
-                        fontWeight = FontWeight.Bold,
+            Column(modifier = Modifier.fillMaxWidth()) {
+                Text(
+                    text = "选择提供商模板",
+                    modifier = Modifier.padding(
+                        horizontal = NarraUi.space16,
+                        vertical = NarraUi.space16
                     )
-                    Text(
-                        text = "快速填充配置参数。",
-                        modifier = Modifier.padding(horizontal = 24.dp),
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                    LazyColumn(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .weight(1f, fill = false),
-                        contentPadding = PaddingValues(horizontal = 16.dp, vertical = 16.dp),
-                        verticalArrangement = Arrangement.spacedBy(12.dp),
-                    ) {
-                        items(BUILT_IN_TEMPLATES) { template ->
-                            TemplateCard(
-                                template = template,
-                                onClick = { onSelectTemplate(template) },
-                            )
-                        }
+                        .semantics { heading() },
+                    style = MaterialTheme.typography.titleLarge,
+                    fontWeight = FontWeight.Bold,
+                )
+                Text(
+                    text = "快速填充配置参数。",
+                    modifier = Modifier.padding(horizontal = NarraUi.space16),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                LazyColumn(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .weight(1f, fill = false),
+                    contentPadding = PaddingValues(
+                        horizontal = NarraUi.space16,
+                        vertical = NarraUi.space16
+                    ),
+                    verticalArrangement = Arrangement.spacedBy(NarraUi.space12),
+                ) {
+                    items(BUILT_IN_TEMPLATES) { template ->
+                        TemplateCard(
+                            template = template,
+                            onClick = { onSelectTemplate(template) },
+                        )
                     }
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(horizontal = 12.dp, vertical = 12.dp),
-                        horizontalArrangement = Arrangement.End,
+                }
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = NarraUi.space12, vertical = NarraUi.space8),
+                    horizontalArrangement = Arrangement.End,
+                ) {
+                    NarraTextButton(
+                        onClick = onDismiss,
+                        colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.onSurface),
                     ) {
-                        NarraTextButton(onClick = onDismiss) {
-                            Text("取消")
-                        }
+                        Text("取消")
                     }
                 }
             }
@@ -124,36 +135,32 @@ private fun TemplateCard(
         modifier = Modifier
             .fillMaxWidth()
             .bounceClick(interactionSource = interactionSource),
-        shape = RoundedCornerShape(8.dp),
+        shape = NarraShapes.medium,
         interactionSource = interactionSource,
         colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.45f),
+            containerColor = MaterialTheme.colorScheme.surfaceContainer,
             contentColor = MaterialTheme.colorScheme.onSurface,
         ),
         elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
     ) {
         Row(
-            modifier = Modifier.padding(horizontal = 14.dp, vertical = 14.dp),
+            modifier = Modifier.padding(horizontal = NarraUi.space16, vertical = NarraUi.space16),
             verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(14.dp),
+            horizontalArrangement = Arrangement.spacedBy(NarraUi.space12),
         ) {
             TemplateIcon(template)
             Column(
                 modifier = Modifier.weight(1f),
-                verticalArrangement = Arrangement.spacedBy(2.dp),
+                verticalArrangement = Arrangement.spacedBy(NarraUi.space4),
             ) {
                 Text(
                     text = template.name,
                     style = MaterialTheme.typography.titleMedium,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
                 )
                 Text(
                     text = template.description,
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    maxLines = 2,
-                    overflow = TextOverflow.Ellipsis,
                 )
             }
         }
@@ -165,18 +172,18 @@ private fun TemplateIcon(template: ProviderTemplate) {
     val iconRes = template.type.iconRes
     Surface(
         modifier = Modifier.size(40.dp),
-        shape = CircleShape,
+        shape = NarraShapes.pill,
         color = MaterialTheme.colorScheme.secondaryContainer,
         contentColor = MaterialTheme.colorScheme.onSecondaryContainer,
     ) {
         if (iconRes != null) {
             Image(
                 painter = painterResource(id = iconRes),
-                contentDescription = template.name,
+                contentDescription = null,
                 modifier = Modifier
                     .fillMaxSize()
-                    .padding(8.dp)
-                    .clip(CircleShape),
+                    .padding(NarraUi.space8)
+                    .clip(NarraShapes.pill),
                 contentScale = ContentScale.Fit,
             )
         } else {

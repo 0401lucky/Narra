@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.myapplication.ui.screenshot.ProviderSettingsScreenshotE11Test" tests="32" skipped="0" failures="0" errors="0" timestamp="2026-11-05T09:47:05.997Z" hostname="LUCKY" time="21.489">
+  <properties/>
+  <testcase name="e11_models_dark" classname="com.example.myapplication.ui.screenshot.ProviderSettingsScreenshotE11Test" time="10.339"/>
+  <testcase name="e11_fetched_sheet_light" classname="com.example.myapplication.ui.screenshot.ProviderSettingsScreenshotE11Test" time="0.978"/>
+  <testcase name="e11_protocol_dialog_light" classname="com.example.myapplication.ui.screenshot.ProviderSettingsScreenshotE11Test" time="0.409"/>
+  <testcase name="e11_ability_dialog_dark" classname="com.example.myapplication.ui.screenshot.ProviderSettingsScreenshotE11Test" time="0.601"/>
+  <testcase name="e11_template_dialog_dark" classname="com.example.myapplication.ui.screenshot.ProviderSettingsScreenshotE11Test" time="0.512"/>
+  <testcase name="e11_protocol_dialog_dark" classname="com.example.myapplication.ui.screenshot.ProviderSettingsScreenshotE11Test" time="0.381"/>
+  <testcase name="e11_list_no_result_light" classname="com.example.myapplication.ui.screenshot.ProviderSettingsScreenshotE11Test" time="0.393"/>
+  <testcase name="e11_ability_dialog_light" classname="com.example.myapplication.ui.screenshot.ProviderSettingsScreenshotE11Test" time="0.462"/>
+  <testcase name="e11_config_save_narrow_dark" classname="com.example.myapplication.ui.screenshot.ProviderSettingsScreenshotE11Test" time="0.379"/>
+  <testcase name="e11_models_tail_narrow_light" classname="com.example.myapplication.ui.screenshot.ProviderSettingsScreenshotE11Test" time="0.409"/>
+  <testcase name="e11_models_light" classname="com.example.myapplication.ui.screenshot.ProviderSettingsScreenshotE11Test" time="0.23"/>
+  <testcase name="e11_list_vanilla_dark" classname="com.example.myapplication.ui.screenshot.ProviderSettingsScreenshotE11Test" time="0.135"/>
+  <testcase name="e11_models_tail_narrow_dark" classname="com.example.myapplication.ui.screenshot.ProviderSettingsScreenshotE11Test" time="0.442"/>
+  <testcase name="e11_fetched_sheet_dark" classname="com.example.myapplication.ui.screenshot.ProviderSettingsScreenshotE11Test" time="0.508"/>
+  <testcase name="e11_list_ocean_light" classname="com.example.myapplication.ui.screenshot.ProviderSettingsScreenshotE11Test" time="0.131"/>
+  <testcase name="e11_list_matcha_light" classname="com.example.myapplication.ui.screenshot.ProviderSettingsScreenshotE11Test" time="0.134"/>
+  <testcase name="e11_config_light" classname="com.example.myapplication.ui.screenshot.ProviderSettingsScreenshotE11Test" time="0.201"/>
+  <testcase name="e11_models_empty_dark" classname="com.example.myapplication.ui.screenshot.ProviderSettingsScreenshotE11Test" time="0.179"/>
+  <testcase name="e11_config_dynamic_dark" classname="com.example.myapplication.ui.screenshot.ProviderSettingsScreenshotE11Test" time="0.178"/>
+  <testcase name="e11_clear_dialog_dark" classname="com.example.myapplication.ui.screenshot.ProviderSettingsScreenshotE11Test" time="0.344"/>
+  <testcase name="e11_config_dynamic_light" classname="com.example.myapplication.ui.screenshot.ProviderSettingsScreenshotE11Test" time="0.15"/>
+  <testcase name="e11_config_save_narrow_light" classname="com.example.myapplication.ui.screenshot.ProviderSettingsScreenshotE11Test" time="0.35"/>
+  <testcase name="e11_list_vanilla_light" classname="com.example.myapplication.ui.screenshot.ProviderSettingsScreenshotE11Test" time="0.111"/>
+  <testcase name="e11_manual_error_dialog_dark" classname="com.example.myapplication.ui.screenshot.ProviderSettingsScreenshotE11Test" time="0.365"/>
+  <testcase name="e11_manual_error_dialog_light" classname="com.example.myapplication.ui.screenshot.ProviderSettingsScreenshotE11Test" time="0.338"/>
+  <testcase name="e11_template_dialog_light" classname="com.example.myapplication.ui.screenshot.ProviderSettingsScreenshotE11Test" time="0.308"/>
+  <testcase name="e11_list_matcha_dark" classname="com.example.myapplication.ui.screenshot.ProviderSettingsScreenshotE11Test" time="0.111"/>
+  <testcase name="e11_config_dark" classname="com.example.myapplication.ui.screenshot.ProviderSettingsScreenshotE11Test" time="0.141"/>
+  <testcase name="e11_list_narrow_light" classname="com.example.myapplication.ui.screenshot.ProviderSettingsScreenshotE11Test" time="0.349"/>
+  <testcase name="e11_list_narrow_dark" classname="com.example.myapplication.ui.screenshot.ProviderSettingsScreenshotE11Test" time="0.418"/>
+  <testcase name="e11_list_ocean_dark" classname="com.example.myapplication.ui.screenshot.ProviderSettingsScreenshotE11Test" time="0.123"/>
+  <testcase name="e11_clear_dialog_light" classname="com.example.myapplication.ui.screenshot.ProviderSettingsScreenshotE11Test" time="0.374"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

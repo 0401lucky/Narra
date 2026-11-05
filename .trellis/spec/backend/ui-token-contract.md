@@ -2,7 +2,7 @@
 
 ## 1. 适用范围
 
-v2.3 试点迁移消息手机主壳、角色列表和线上扮演，P04 扩面覆盖线下场景 / 建议 / 空态及会话阅读，P05 扩面覆盖会话设置侧栏及其实际弹层，P10扩面覆盖设置首页及三类外观Sheet。修改默认形状 / 间距、皮肤语义色、玻璃配色缓存或相关无障碍时阅读本文件。代码覆盖不等于视觉接纳或全 App 完成，实际扫描范围以测试 `UiTokenSourceInventory` 为准，验收状态以对应任务记录为准。
+v2.3 试点迁移消息手机主壳、角色列表和线上扮演，P04 扩面覆盖线下场景 / 建议 / 空态及会话阅读，P05 扩面覆盖会话设置侧栏及其实际弹层，P10扩面覆盖设置首页及三类外观Sheet，P11扩面覆盖提供商列表、Config / Models及其真实弹层。修改默认形状 / 间距、皮肤语义色、玻璃配色缓存或相关无障碍时阅读本文件。代码覆盖不等于视觉接纳或全 App 完成，实际扫描范围以测试 `UiTokenSourceInventory` 为准，验收状态以对应任务记录为准。
 
 ## 2. 所有者与签名
 
@@ -15,6 +15,9 @@ v2.3 试点迁移消息手机主壳、角色列表和线上扮演，P04 扩面�
 - `RoleplayReadingMode.kt`：`RoleplayReadingMode(messages, scenarioTitle, backgroundUri, lineHeightScale, highContrast, onDismiss)` 保持原入口；局部 `resolveReadingModeColors(backdropState)` 与实际阅读层配对，`roleplay_reading_header` 独立于 `roleplay_reading_list`。
 - `RoleplaySettingsScreen.kt` → `RoleplaySettingsContent.kt` → `RoleplaySettingsSidebarPanel.kt`：普通路由中的自适应右侧面板，保留 94% / 66%、最大 480dp 及系统 Insets；`ImmersiveTabRow.kt` 由本侧栏的模式 / 沉浸 / 行高选项消费。内部 Sheet / Dialog 属于独立窗口，不在主页面 `StageTag` 内。
 - `SettingsComponents.kt`：`SettingsTopBar`允许显式传`titleMaxLines`和`titleIsHeading=false`这一局部标题语义选项；`SettingsGroup`的两个重载都透传`shape`、`contentPadding`；`SettingsGroupDivider`允许显式padding；`SettingsListRow`允许显式shape、padding、横向/文字间距、标题/摘要行数。默认保持历史外观与语义，P10由`SettingsScreen.kt`的局部组合显式消费令牌。
+- `ui/component/NarraAlertDialog.kt`：`NarraAlertDialog(..., shape: Shape = RoundedCornerShape(NarraUi.cardRadius), actionContentColor: Color = MaterialTheme.colorScheme.primary, content)`显式配置外壳形状和普通动作文字色；默认仍为历史8dp/primary，破坏性确认继续优先error，`NarraInfoDialog`及未传参数的调用方保持原样。P11局部传`NarraShapes.large`和实际`onSurface`，不改变共享滚动、操作区、动画、Insets与平台关闭语义。
+- `ProviderDetailScreen.kt`测量模型浮动操作区实际高度，转换为dp并加`NarraUi.space24`传给`ModelTabContent(..., bottomContentPadding: Dp)`；留白随大字体下操作区高度变化，不以任意固定间距替代功能避让。
+- `ProviderDetailChrome.kt`的超长标题限制在实际窗口高度40%内独立滚动，状态按provider ID隔离，返回动作位于标题滚动区域之外。窗口约束从`LocalWindowInfo.containerSize`像素按当前density换算。完整换行不能挤空Config / Models主视口；长标题压力验证需实际量到可用字段区域并滚到保存操作。
 
 ## 3. 优先级与输入契约
 
@@ -33,6 +36,8 @@ v2.3 试点迁移消息手机主壳、角色列表和线上扮演，P04 扩面�
 - 设置共享组件按调用方显式启用新布局，不改`SettingsScreenPadding=20dp`等旧默认，不引入全局迁移开关。Group带标题重载必须把shape/padding继续传给无标题重载；新增参数不能在包装层丢失。其他页面未传参数时保持原尺寸、行数及回调。
 - 设置首页仅迁移真实可见入口及主题色调/颜色模式/显示三个Sheet。选择面上的文字使用实际`primaryContainer/onPrimaryContainer`配对，主题色块保留品牌展示作用。整行Switch只有一个状态更新回调；大字体下主要操作可滚动到达。显式保存和保存中禁用沿用原状态，导航返回仍为调用保存后立即pop，不能把P05的成功保存后返回保证扩写到P10。
 - Slider等非NarraButton控件仍须测量实际触控边界，不能仅凭Material控件类型推定已满足48dp；外层`heightIn`不一定扩大内部语义区。P10局部为`SliderDefaults.Thumb`显式设置最小48dp高度，使Slider实际测量及触控边界满足要求，并通过窄屏大字体下的真实touch bounds验证。
+- 提供商配置保留`pendingProviderDetailId`等待对应草稿真正出现后单次导航、按`providerId`键控Tab与按`provider.id`键控密钥显隐、`pendingFetchProviderId`归属。启用行持有唯一toggle回调，子Switch只绘制；模型选择、编辑、移除分别命中。显式保存失败保稿且不调用成功回调，导航返回仍在调用保存后立即pop；不把这两种行为混写。
+- Provider测试使用纯UiState/本地回调或显式Test API；`createTestAiServices`的默认API factory不等于网络隔离。列表自动健康检测的生产触发条件保持原样，测试通过固定最终健康状态或显式Fake隔离。能力取消仅关闭、恢复自动显式提交null、清空仅确认、最后一个提供商不可删、手工空ID不提交。
 
 ## 4. 验证与错误矩阵
 
@@ -53,7 +58,9 @@ v2.3 试点迁移消息手机主壳、角色列表和线上扮演，P04 扩面�
 | 生产帮助文案不足以滚动 | 如实保留该窗口证据；长文滚尾与固定关闭用合成长文宿主另测，不能伪造生产文案或宣称已经滚动 |
 | 共享设置组件新增布局参数 | 两个Group重载均透传，旧调用默认不变；P02/P05旧图出现意外差异时先修复兼容接口 |
 | 同名声明有合法重载 | `UiTokenSourceGuard.Scope.expectedDeclarationCounts`只对明确声明配置数量；默认仍为1，数量必须精确匹配且全部重载都扫描 |
-| 截图要求展示列表末项 | 不能只对末项Text执行scrollTo并断言部分可见；应核对实际滚动值到max及整个操作触控区位于窗口内，再捕获 |
+| 截图要求展示列表末项 | 不能只对末项Text执行scrollTo并断言部分可见；应核对实际滚动值到max，将操作绑定实际末项的ID或卡片，核对`getUnclippedBoundsInRoot()`与`touchBoundsInRoot`都完整位于视口内且不被FAB/底栏遮挡，再捕获 |
+| 局部弹层选择新shape或动作色 | `NarraAlertDialog`仅由当前迁移调用显式传值；默认保留，真实默认/显式形状与颜色、破坏性error优先级及取消/确认回调受测，已有消费者截图不得意外变化 |
+| 固定动态深色保留偏暗primary | 焦点标签、文字按钮不能直接假定primary可读；以实际TextLayout前景和对应像素承载面测量，局部选择onSurface等内容角色，主要实底按钮仍按primary/onPrimary配对，不借机修改全局scheme |
 
 ## 5. 正常、基线与异常样例
 
@@ -72,9 +79,12 @@ v2.3 试点迁移消息手机主壳、角色列表和线上扮演，P04 扩面�
 - `OfflineRoleplayAccessibilityTest` / `OfflineRoleplayColorsTest`：真实线下两种模式、辅助组合、首行正文、滚动、独立动作与实际建议 / 错误承载面；保留共享P03、皮肤 / 用户几何与玻璃谓词回归。
 - `RoleplayReadingModeAccessibilityTest` / `RoleplayReadingModeColorsTest`：长文到底后的固定关闭、空 / 混排、实际引号span前景与承载面、主题切换 / 动态色、行高与高对比；采样避开文字 / 边框，不能拿未被使用的 Text 默认色代替实际 span 颜色。
 - `UiTokenSourceGuardTest`：新硬编码失败、合法图标 / Insets / 用户值通过、准确品牌例外与陈旧 / 移位清单失败。该守卫只覆盖登记语法，不追踪全部 Kotlin 别名，人工 diff 审查仍须检查规避。
+- `UiTokenSourceGuard.Scope.requiredDeclarations`校验声明存在及数量，不是扫描白名单；`scannedDeclarations=null`时扫描整个登记文件，只有显式设置后才按声明缩小范围。新增局部UI声明需保持实际扫描，并按需要加入精确存在/数量约束；不得把整文件扫描误解为整文件豁免。
 - 截图沿用 H01–H04 / B01–B04 / C01，P04 新增 E04 14项真实整页 / 阅读候选，保留原有 PNG 计数守卫；人工确认前保持原文件哈希。背景用例必须等待生产页面实际绘出图片 / palette，测试Loader限定合成URI并在安装后恢复；旁路probe成功不能代替页面已绘出。设备编译不等于真机运行，宿主交互不能替代 D01 与物理性能。
 - P05 的 `SessionSidebarScreenshotE05Test` 登记 18 项，其中 5 项由 `SessionSidebarRenderTest.windowRoot(title)` 捕获独立窗口；`SessionSidebarWindowGuardTest` 断言未打开窗口时失败。`before/after` 参数与哈希、92 张原基准冻结清单和人工接纳状态分别记录在本批任务中；候选缺原图时 verify 的失败不能当作产品行为失败，也不能豁免缺图守卫。
 - P10的`SettingsHomeScreenshotE10Test`登记16项，其中6项为三类Sheet浅深的真实独立窗口。整页行为覆盖长摘要、200%字体/48dp、主壳设置与各入口回调、保存/会话/欢迎动作、保存中禁用及消息消费；共享组件需验证未传参数与显式新参数的区别。源码守卫对SettingsGroup显式登记2个重载，分别在任一重载注入硬编码都应失败，数量漂移或陈旧映射不得静默通过。
+- P11的`ProviderSettingsScreenshotE11Test`登记32项，12项捕获六类弹层的真实独立root；`ProviderSettingsRenderTest`记录滚动值/max、未裁切布局和真实touch bounds，并按具体末项卡定位。`ProviderColorsTest`读取八种生产解析scheme下的实际TextLayout与像素承载面，包含焦点标签、状态、选中卡和窗口动作；`ProviderSharedDialogCompatibilityTest`检验默认/显式形状与颜色、破坏性色优先级和取消回调。`ProviderPersistenceTest`用真实VM+Fake验证成功/失败；`ProviderNavigationTest`用真实路由证明保存尚未完成时已pop、随后失败仍保稿。人工接纳前新增图和计数守卫仍须缺图失败，不以这些宿主结果替代设备或远端CI。
+- E11的模型页签截图使用本测试类私有`selectModelsForCapture`调用真实Tab语义OnClick，避免按压水波进入基准；共用宿主与行为测试仍走真实触控。捕获策略变化须在原始提交隔离副本同步重取before，重复after确认32张逐字节稳定，保留原接纳记录并仅重审实际变化的图。
 
 ## 7. 错误与正确处理
 

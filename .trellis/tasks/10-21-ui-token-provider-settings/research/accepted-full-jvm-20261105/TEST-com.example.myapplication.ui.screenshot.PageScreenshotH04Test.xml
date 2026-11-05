@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.myapplication.ui.screenshot.PageScreenshotH04Test" tests="6" skipped="0" failures="0" errors="0" timestamp="2026-11-05T09:48:49.225Z" hostname="LUCKY" time="1.492">
+  <properties/>
+  <testcase name="h04_p02_assistants_narrow_light" classname="com.example.myapplication.ui.screenshot.PageScreenshotH04Test" time="0.212"/>
+  <testcase name="h04_p01_messages_narrow_dark" classname="com.example.myapplication.ui.screenshot.PageScreenshotH04Test" time="0.255"/>
+  <testcase name="h04_p03_online_narrow_light" classname="com.example.myapplication.ui.screenshot.PageScreenshotH04Test" time="0.27"/>
+  <testcase name="h04_p03_online_narrow_dark" classname="com.example.myapplication.ui.screenshot.PageScreenshotH04Test" time="0.273"/>
+  <testcase name="h04_p02_assistants_narrow_dark" classname="com.example.myapplication.ui.screenshot.PageScreenshotH04Test" time="0.242"/>
+  <testcase name="h04_p01_messages_narrow_light" classname="com.example.myapplication.ui.screenshot.PageScreenshotH04Test" time="0.237"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

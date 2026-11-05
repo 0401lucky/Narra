@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.myapplication.ui.screen.roleplay.SessionSidebarAccessibilityTest" tests="8" skipped="0" failures="0" errors="0" timestamp="2026-11-05T05:54:59.807Z" hostname="LUCKY" time="3.513">
+  <properties/>
+  <testcase name="allEightPages_narrowLargeFont_keepLastContentAndHeaderBackReachable" classname="com.example.myapplication.ui.screen.roleplay.SessionSidebarAccessibilityTest" time="1.379"/>
+  <testcase name="readabilityTabs_narrowLargeFont_updateSelectionAndCallbacksForEveryOption" classname="com.example.myapplication.ui.screen.roleplay.SessionSidebarAccessibilityTest" time="0.406"/>
+  <testcase name="visualFields_existingImages_narrowLargeFont_keepNamesAndSeparateActionsReachable" classname="com.example.myapplication.ui.screen.roleplay.SessionSidebarAccessibilityTest" time="0.335"/>
+  <testcase name="syntheticLongHelp_narrowLargeFont_scrollsToEndWithFixedCloseAndIndependentRow" classname="com.example.myapplication.ui.screen.roleplay.SessionSidebarAccessibilityTest" time="0.258"/>
+  <testcase name="mainAdvancedGroup_narrowLargeFont_exposesExpandedStateAndNamedMemorySwitch" classname="com.example.myapplication.ui.screen.roleplay.SessionSidebarAccessibilityTest" time="0.293"/>
+  <testcase name="sceneSwitches_narrowLargeFont_exposeTheirNamesRolesAndTouchTargets" classname="com.example.myapplication.ui.screen.roleplay.SessionSidebarAccessibilityTest" time="0.237"/>
+  <testcase name="interactionTabs_narrowLargeFont_exposeSelectionAndSendOneExactModeCallback" classname="com.example.myapplication.ui.screen.roleplay.SessionSidebarAccessibilityTest" time="0.262"/>
+  <testcase name="themeSwitchAndHelp_narrowLargeFont_keepTextHelpAndSwitchClicksIndependent" classname="com.example.myapplication.ui.screen.roleplay.SessionSidebarAccessibilityTest" time="0.328"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

@@ -1,0 +1,2 @@
+operation=Rect.fromLTRB(344.0, 1022.0, 496.0, 1131.0)
+operationUnclipped=Rect.fromLTRB(344.0, 1022.0, 496.0, 1131.0)

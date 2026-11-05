@@ -1,0 +1,6 @@
+pageScroll=2509.0/2509.0
+pageViewport=Rect.fromLTRB(0.0, 241.0, 640.0, 1091.0)
+save=Rect.fromLTRB(192.0, 736.0, 592.0, 851.0)
+saveUnclipped=Rect.fromLTRB(192.0, 736.0, 592.0, 851.0)
+delete=Rect.fromLTRB(48.0, 738.0, 160.0, 850.0)
+deleteUnclipped=Rect.fromLTRB(48.0, 738.0, 160.0, 850.0)

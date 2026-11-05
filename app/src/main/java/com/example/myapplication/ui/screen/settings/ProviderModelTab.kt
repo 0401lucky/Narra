@@ -1,80 +1,42 @@
 package com.example.myapplication.ui.screen.settings
 
-import androidx.compose.foundation.BorderStroke
-import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.navigationBarsPadding
-import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.text.BasicTextField
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Check
-import androidx.compose.material.icons.outlined.Build
-import androidx.compose.material.icons.outlined.Close
-import androidx.compose.material.icons.outlined.Image
-import androidx.compose.material.icons.outlined.Psychology
-import androidx.compose.material.icons.outlined.Search
-import androidx.compose.material.icons.outlined.Settings
-import androidx.compose.material.icons.outlined.Visibility
-import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.BottomSheetDefaults
-import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.Checkbox
-import androidx.compose.material3.CheckboxDefaults
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.FilterChip
-import androidx.compose.material3.HorizontalDivider
-import androidx.compose.material3.Icon
+import androidx.compose.foundation.selection.selectableGroup
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.ModalBottomSheet
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.luminance
-import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
+import androidx.compose.ui.semantics.heading
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.unit.Dp
 import com.example.myapplication.model.ModelAbility
 import com.example.myapplication.model.ModelInfo
 import com.example.myapplication.model.ProviderSettings
 import com.example.myapplication.model.brandColor
 import com.example.myapplication.model.sortedForModelListDisplay
-import com.example.myapplication.ui.component.ModelIcon
-import com.example.myapplication.ui.component.NarraButton
-import com.example.myapplication.ui.component.NarraIconButton
-import com.example.myapplication.ui.component.NarraOutlinedButton
 import com.example.myapplication.ui.component.NarraTextButton
 import com.example.myapplication.ui.component.NarraAlertDialog
+import com.example.myapplication.ui.theme.NarraShapes
+import com.example.myapplication.ui.theme.NarraUi
 import com.example.myapplication.viewmodel.SettingsUiState
 
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 internal fun ModelTabContent(
     provider: ProviderSettings,
@@ -85,19 +47,23 @@ internal fun ModelTabContent(
     onClearAllModels: (String) -> Unit,
     onConfirmFetchedModels: (String, Set<String>) -> Unit,
     onDismissFetchedModels: () -> Unit,
+    bottomContentPadding: Dp,
 ) {
     val palette = rememberSettingsPalette()
     val modelInfos = provider.resolvedModels().sortedForModelListDisplay()
     var editingModelInfo by remember(provider.id) { mutableStateOf<ModelInfo?>(null) }
     var showClearConfirm by remember { mutableStateOf(false) }
     val showFetchedDialog = uiState.pendingFetchedModels.isNotEmpty() &&
-        uiState.pendingFetchProviderId == provider.id
+            uiState.pendingFetchProviderId == provider.id
 
     Box(modifier = Modifier.fillMaxSize()) {
         LazyColumn(
-            modifier = Modifier.fillMaxSize(),
-            contentPadding = PaddingValues(start = 20.dp, top = 8.dp, end = 20.dp, bottom = 120.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp),
+            modifier = Modifier.fillMaxSize().selectableGroup(),
+            contentPadding = PaddingValues(
+                start = NarraUi.space16, top = NarraUi.space8,
+                end = NarraUi.space16, bottom = bottomContentPadding
+            ),
+            verticalArrangement = Arrangement.spacedBy(NarraUi.space12),
         ) {
             if (modelInfos.isEmpty()) {
                 item {
@@ -108,26 +74,27 @@ internal fun ModelTabContent(
                 }
             } else {
                 item {
-                    Row(
-                        modifier = Modifier.fillMaxWidth().padding(horizontal = 4.dp, vertical = 4.dp),
+                    FlowRow(
+                        modifier = Modifier.fillMaxWidth().padding(vertical = NarraUi.space4),
                         horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
+                        verticalArrangement = Arrangement.spacedBy(NarraUi.space4),
                     ) {
                         Text(
                             text = "已添加模型 (${modelInfos.size})",
-                            modifier = Modifier.weight(1f),
+                            modifier = Modifier.align(Alignment.CenterVertically)
+                                .semantics { heading() },
                             style = MaterialTheme.typography.titleMedium,
                             fontWeight = FontWeight.Bold,
-                            color = palette.title
+                            color = palette.title,
                         )
                         NarraTextButton(
-                            onClick = { showClearConfirm = true }
+                            onClick = { showClearConfirm = true },
                         ) {
                             Text(
                                 "清空已添加",
                                 color = MaterialTheme.colorScheme.error,
                                 fontWeight = FontWeight.Bold,
-                                style = MaterialTheme.typography.labelLarge
+                                style = MaterialTheme.typography.labelLarge,
                             )
                         }
                     }
@@ -136,7 +103,8 @@ internal fun ModelTabContent(
                     PremiumModelCard(
                         modelInfo = modelInfo,
                         isSelected = modelInfo.modelId == provider.selectedModel,
-                        brandColor = provider.resolvedType().brandColor(MaterialTheme.colorScheme.surface.luminance() < 0.5f),
+                        brandColor = provider.resolvedType()
+                            .brandColor(MaterialTheme.colorScheme.surface.luminance() < 0.5f),
                         onClick = { onUpdateProviderSelectedModel(provider.id, modelInfo.modelId) },
                         onEditAbilities = { editingModelInfo = modelInfo },
                         onRemove = { onRemoveModel(provider.id, modelInfo.modelId) },
@@ -153,6 +121,8 @@ internal fun ModelTabContent(
             confirmLabel = "确认清空",
             dismissLabel = "取消",
             isDestructive = true,
+            shape = NarraShapes.large,
+            actionContentColor = MaterialTheme.colorScheme.onSurface,
             onDismiss = { showClearConfirm = false },
             onConfirm = {
                 onClearAllModels(provider.id)

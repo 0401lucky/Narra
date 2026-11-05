@@ -1,0 +1,1116 @@
+{
+  "expected_new_cases": 32,
+  "complete_pairs": 32,
+  "changed_pairs": 32,
+  "old_baselines_unchanged": 126,
+  "independent_windows_per_phase": 12,
+  "before_source_sha256": {
+    "app/src/main/java/com/example/myapplication/ui/screen/settings/ProviderSettingsScreen.kt": "dadfa986ccb95ec85e8a5d6e89e841468071a8f13303bba106ca276434688736",
+    "app/src/main/java/com/example/myapplication/ui/screen/settings/ProviderDetailScreen.kt": "464afec0f679696598074b1e73e4adaf4c8e99474e0d52edab59075c14c8fcda",
+    "app/src/main/java/com/example/myapplication/ui/screen/settings/ProviderDetailChrome.kt": "8be63154be87a6ae43b66071a80b38da5b2fe6e91e55030fbbb8995051b37448",
+    "app/src/main/java/com/example/myapplication/ui/screen/settings/ProviderConfigTab.kt": "cd4c5890c7ed8cab2f0b1adc4b28bde8a8e44a08a33991f960611cf1db5d192e",
+    "app/src/main/java/com/example/myapplication/ui/screen/settings/ProviderModelTab.kt": "6698e4463e28e2e58143f0dea1bc0885ae268d0db7a6333364f607a8e8b5accf",
+    "app/src/main/java/com/example/myapplication/ui/screen/settings/ProviderModelDialogs.kt": "ee58344803b19994d5ddb099461cb5239b9abff23d9b940252ef60be1b7cf4b0",
+    "app/src/main/java/com/example/myapplication/ui/screen/settings/ProviderTemplateDialog.kt": "5a75d71d95004256093089c0a376acdf70bc996d87872fe1b07c8df6c1476d79",
+    "app/src/main/java/com/example/myapplication/ui/screen/settings/SettingsComponents.kt": "e94e1198764735adb579a4b6dfed4705203ee89518520020223591272a4871af",
+    "app/src/main/java/com/example/myapplication/ui/component/NarraAlertDialog.kt": "119528054aac17de593615c98e7f45dfcca88cb21608c2a81e69dfad98128f38"
+  },
+  "supplementary_before_source": {
+    "frozen_at_utc": "2026-11-05T05:02:16.850723+00:00",
+    "base_commit": "ac22bb271007c814b6ef49b8499858acc815661c",
+    "file": "app/src/main/java/com/example/myapplication/ui/component/NarraAlertDialog.kt",
+    "sha256": "ec483dbe2ecd1d5d6314c12894f9abcc6b008b5c58d1bb160286e93fb59defb6",
+    "git_blob": "b1b89ffbf3e5e137413179a8351c8ffd996221b3",
+    "matches_base_commit_except_line_endings": true,
+    "reason": "Add optional shape; preserve RoundedCornerShape(NarraUi.cardRadius) default, existing layout and dismissal semantics. P11 uses NarraShapes.large.",
+    "consumers_at_start": [
+      "app/src/androidTest\\java\\com\\example\\myapplication\\ui\\component\\NarraAlertDialogTest.kt",
+      "app/src/main\\java\\com\\example\\myapplication\\ui\\screen\\settings\\worldbook\\WorldBookEditScreen.kt",
+      "app/src/main\\java\\com\\example\\myapplication\\ui\\screen\\settings\\worldbook\\WorldBookBookDetailScreen.kt",
+      "app/src/main\\java\\com\\example\\myapplication\\ui\\screen\\settings\\VoiceSynthesisSettingsScreen.kt",
+      "app/src/main\\java\\com\\example\\myapplication\\ui\\screen\\settings\\ProviderModelTab.kt",
+      "app/src/main\\java\\com\\example\\myapplication\\ui\\screen\\settings\\ProviderModelDialogs.kt",
+      "app/src/main\\java\\com\\example\\myapplication\\ui\\screen\\settings\\PresetManagerScreens.kt",
+      "app/src/main\\java\\com\\example\\myapplication\\ui\\screen\\settings\\contextlog\\ContextLogScreen.kt",
+      "app/src/main\\java\\com\\example\\myapplication\\ui\\screen\\settings\\AssistantDeleteConfirmDialog.kt",
+      "app/src/main\\java\\com\\example\\myapplication\\ui\\screen\\moments\\MomentsScreen.kt",
+      "app/src/main\\java\\com\\example\\myapplication\\ui\\screen\\immersive\\ImmersivePhoneShell.kt",
+      "app/src/main\\java\\com\\example\\myapplication\\ui\\screen\\phone\\PhoneComponents.kt",
+      "app/src/main\\java\\com\\example\\myapplication\\ui\\screen\\roleplay\\RoleplayScreen.kt",
+      "app/src/main\\java\\com\\example\\myapplication\\ui\\screen\\roleplay\\RoleplaySettingsContent.kt",
+      "app/src/main\\java\\com\\example\\myapplication\\ui\\screen\\chat\\ChatScreenOverlays.kt",
+      "app/src/main\\java\\com\\example\\myapplication\\ui\\component\\NarraAlertDialog.kt"
+    ]
+  },
+  "after_source_sha256": {
+    "app/src/main/java/com/example/myapplication/ui/screen/settings/ProviderSettingsScreen.kt": "050f342299b9a694c362ec400b8cb4507ee888a41ef99c0f7e63c9436f0b7286",
+    "app/src/main/java/com/example/myapplication/ui/screen/settings/ProviderDetailScreen.kt": "d7ff4f26eda6228473b70d162d573f90c42c605bc135f2d545df1e74fd06b205",
+    "app/src/main/java/com/example/myapplication/ui/screen/settings/ProviderDetailChrome.kt": "205a7984f3165b1629a76ec4866844b1acc104358d7c09f0afb8437f7c5dd7ae",
+    "app/src/main/java/com/example/myapplication/ui/screen/settings/ProviderConfigTab.kt": "5c578614781a4a6330372c278210e4e67e67aeed85b36d0b2f590444d66eb9d7",
+    "app/src/main/java/com/example/myapplication/ui/screen/settings/ProviderModelTab.kt": "c3a83127f0b7e242f01443bc1ebd523b3bb87da7a25656f56ca0a53278ac17e1",
+    "app/src/main/java/com/example/myapplication/ui/screen/settings/ProviderModelDialogs.kt": "4543513e738ae7120ab56e4f9645848d0601e9e2945650d1307771ed76f14a23",
+    "app/src/main/java/com/example/myapplication/ui/screen/settings/ProviderTemplateDialog.kt": "770b1572c5e177bcad7936e46706ea489bee793f0b4d6f37757d9e41c3018f04",
+    "app/src/main/java/com/example/myapplication/ui/screen/settings/SettingsComponents.kt": "0cc7071dd63eb056c4b4ac6d6ff1812b414debdc344f20a01374cc3fc6ba6842",
+    "app/src/main/java/com/example/myapplication/ui/component/NarraAlertDialog.kt": "5739bf4fb8ad023de5393ecef9e1de05315b9173018aff14f0f335582855a592"
+  },
+  "accepted": true,
+  "capture_revision": "capture-stability-20261105",
+  "cases": [
+    {
+      "id": "E11_ability-dialog-dark",
+      "label": "覆盖模型能力 · 深色",
+      "group": "window",
+      "status": "已人工接纳",
+      "before_size_px": [
+        640,
+        1280
+      ],
+      "after_size_px": [
+        640,
+        1280
+      ],
+      "before_source": ".trellis/tasks/10-21-ui-token-provider-settings/research/capture-stability-20261105/before/E11_ability-dialog-dark_actual.png",
+      "after_source": ".trellis/tasks/10-21-ui-token-provider-settings/research/capture-stability-20261105/after/E11_ability-dialog-dark_actual.png",
+      "before_sha256": "9fc49fab1ff5a619e88a3777d50b0a4274f391ab58b594f08e3dc1454ffb32dd",
+      "after_sha256": "6fba7cbd34c6b6c5928c76f93ea52e51194a968e451f4f5336d5c263284a304c",
+      "stage_dp": [
+        320,
+        640
+      ],
+      "font_scale": 2,
+      "capture_target": "independent-dialog-root",
+      "before_window": "title=覆盖模型能力\noperation=保存\nfontScale=2.0\nbounds=Rect.fromLTRB(0.0, 0.0, 544.0, 910.0)\n",
+      "after_window": "title=覆盖模型能力\noperation=保存\nfontScale=2.0\nbounds=Rect.fromLTRB(0.0, 0.0, 544.0, 910.0)\n",
+      "before_measurements": "pageScroll=2219.0/2219.0\npageViewport=Rect.fromLTRB(0.0, 241.0, 640.0, 1091.0)\nabilityEntry=Rect.fromLTRB(376.0, 723.0, 472.0, 819.0)\nabilityEntryUnclipped=Rect.fromLTRB(376.0, 723.0, 472.0, 819.0)\noperation=Rect.fromLTRB(344.0, 753.0, 496.0, 862.0)\noperationUnclipped=Rect.fromLTRB(344.0, 753.0, 496.0, 862.0)",
+      "after_measurements": "pageScroll=2273.0/2273.0\npageViewport=Rect.fromLTRB(0.0, 315.0, 640.0, 1091.0)\nabilityEntry=Rect.fromLTRB(384.0, 743.0, 480.0, 839.0)\nabilityEntryUnclipped=Rect.fromLTRB(384.0, 743.0, 480.0, 839.0)\noperation=Rect.fromLTRB(344.0, 753.0, 496.0, 862.0)\noperationUnclipped=Rect.fromLTRB(344.0, 753.0, 496.0, 862.0)",
+      "changed_pixels": 152427,
+      "changed_ratio": 0.186068115234375,
+      "before": "before/E11_ability-dialog-dark.png",
+      "after": "after/E11_ability-dialog-dark.png",
+      "diff": "diff/E11_ability-dialog-dark.png"
+    },
+    {
+      "id": "E11_ability-dialog-light",
+      "label": "覆盖模型能力 · 浅色",
+      "group": "window",
+      "status": "已人工接纳",
+      "before_size_px": [
+        640,
+        1280
+      ],
+      "after_size_px": [
+        640,
+        1280
+      ],
+      "before_source": ".trellis/tasks/10-21-ui-token-provider-settings/research/capture-stability-20261105/before/E11_ability-dialog-light_actual.png",
+      "after_source": ".trellis/tasks/10-21-ui-token-provider-settings/research/capture-stability-20261105/after/E11_ability-dialog-light_actual.png",
+      "before_sha256": "d78b6906c1039fc217c61906f9e206c44c04e835917a9196b60356c28e864ce7",
+      "after_sha256": "59099caa05144a3fd3e60b56c1e71a7c9187d7656a5c7adbc0ac19c12e3762f4",
+      "stage_dp": [
+        320,
+        640
+      ],
+      "font_scale": 2,
+      "capture_target": "independent-dialog-root",
+      "before_window": "title=覆盖模型能力\noperation=保存\nfontScale=2.0\nbounds=Rect.fromLTRB(0.0, 0.0, 544.0, 910.0)\n",
+      "after_window": "title=覆盖模型能力\noperation=保存\nfontScale=2.0\nbounds=Rect.fromLTRB(0.0, 0.0, 544.0, 910.0)\n",
+      "before_measurements": "pageScroll=2219.0/2219.0\npageViewport=Rect.fromLTRB(0.0, 241.0, 640.0, 1091.0)\nabilityEntry=Rect.fromLTRB(376.0, 723.0, 472.0, 819.0)\nabilityEntryUnclipped=Rect.fromLTRB(376.0, 723.0, 472.0, 819.0)\noperation=Rect.fromLTRB(344.0, 753.0, 496.0, 862.0)\noperationUnclipped=Rect.fromLTRB(344.0, 753.0, 496.0, 862.0)",
+      "after_measurements": "pageScroll=2273.0/2273.0\npageViewport=Rect.fromLTRB(0.0, 315.0, 640.0, 1091.0)\nabilityEntry=Rect.fromLTRB(384.0, 743.0, 480.0, 839.0)\nabilityEntryUnclipped=Rect.fromLTRB(384.0, 743.0, 480.0, 839.0)\noperation=Rect.fromLTRB(344.0, 753.0, 496.0, 862.0)\noperationUnclipped=Rect.fromLTRB(344.0, 753.0, 496.0, 862.0)",
+      "changed_pixels": 154037,
+      "changed_ratio": 0.188033447265625,
+      "before": "before/E11_ability-dialog-light.png",
+      "after": "after/E11_ability-dialog-light.png",
+      "diff": "diff/E11_ability-dialog-light.png"
+    },
+    {
+      "id": "E11_clear-dialog-dark",
+      "label": "清空模型确认 · 深色",
+      "group": "window",
+      "status": "已人工接纳",
+      "before_size_px": [
+        640,
+        1280
+      ],
+      "after_size_px": [
+        640,
+        1280
+      ],
+      "before_source": ".trellis/tasks/10-21-ui-token-provider-settings/research/capture-stability-20261105/before/E11_clear-dialog-dark_actual.png",
+      "after_source": ".trellis/tasks/10-21-ui-token-provider-settings/research/capture-stability-20261105/after/E11_clear-dialog-dark_actual.png",
+      "before_sha256": "486a6a1091181b536b73f9084c87a526092de4a1718f67084ef77d1e5a2d7751",
+      "after_sha256": "fbb8e3f20030307a36606d4da14ad1a01aa507dc9732b38b025d0a633cef836c",
+      "stage_dp": [
+        320,
+        640
+      ],
+      "font_scale": 2,
+      "capture_target": "independent-dialog-root",
+      "before_window": "title=清空模型\noperation=确认清空\nfontScale=2.0\nbounds=Rect.fromLTRB(0.0, 0.0, 544.0, 808.0)\n",
+      "after_window": "title=清空模型\noperation=确认清空\nfontScale=2.0\nbounds=Rect.fromLTRB(0.0, 0.0, 544.0, 808.0)\n",
+      "before_measurements": "operation=Rect.fromLTRB(240.0, 651.0, 496.0, 760.0)\noperationUnclipped=Rect.fromLTRB(240.0, 651.0, 496.0, 760.0)",
+      "after_measurements": "operation=Rect.fromLTRB(240.0, 651.0, 496.0, 760.0)\noperationUnclipped=Rect.fromLTRB(240.0, 651.0, 496.0, 760.0)",
+      "changed_pixels": 110875,
+      "changed_ratio": 0.135345458984375,
+      "before": "before/E11_clear-dialog-dark.png",
+      "after": "after/E11_clear-dialog-dark.png",
+      "diff": "diff/E11_clear-dialog-dark.png"
+    },
+    {
+      "id": "E11_clear-dialog-light",
+      "label": "清空模型确认 · 浅色",
+      "group": "window",
+      "status": "已人工接纳",
+      "before_size_px": [
+        640,
+        1280
+      ],
+      "after_size_px": [
+        640,
+        1280
+      ],
+      "before_source": ".trellis/tasks/10-21-ui-token-provider-settings/research/capture-stability-20261105/before/E11_clear-dialog-light_actual.png",
+      "after_source": ".trellis/tasks/10-21-ui-token-provider-settings/research/capture-stability-20261105/after/E11_clear-dialog-light_actual.png",
+      "before_sha256": "692dc7848caa01bf566d7d1a9fa6c9e054dfe8efe9b8409fe3a9f7d12f2cdccf",
+      "after_sha256": "aeb99b232d21f2a4a3c44ce0c0730ac15303af903d7bde710b22f6f974a0b35d",
+      "stage_dp": [
+        320,
+        640
+      ],
+      "font_scale": 2,
+      "capture_target": "independent-dialog-root",
+      "before_window": "title=清空模型\noperation=确认清空\nfontScale=2.0\nbounds=Rect.fromLTRB(0.0, 0.0, 544.0, 808.0)\n",
+      "after_window": "title=清空模型\noperation=确认清空\nfontScale=2.0\nbounds=Rect.fromLTRB(0.0, 0.0, 544.0, 808.0)\n",
+      "before_measurements": "operation=Rect.fromLTRB(240.0, 651.0, 496.0, 760.0)\noperationUnclipped=Rect.fromLTRB(240.0, 651.0, 496.0, 760.0)",
+      "after_measurements": "operation=Rect.fromLTRB(240.0, 651.0, 496.0, 760.0)\noperationUnclipped=Rect.fromLTRB(240.0, 651.0, 496.0, 760.0)",
+      "changed_pixels": 112305,
+      "changed_ratio": 0.137091064453125,
+      "before": "before/E11_clear-dialog-light.png",
+      "after": "after/E11_clear-dialog-light.png",
+      "diff": "diff/E11_clear-dialog-light.png"
+    },
+    {
+      "id": "E11_config-dark",
+      "label": "Config 配置表单 · 深色",
+      "group": "regular",
+      "status": "已人工接纳",
+      "before_size_px": [
+        720,
+        1600
+      ],
+      "after_size_px": [
+        720,
+        1600
+      ],
+      "before_source": ".trellis/tasks/10-21-ui-token-provider-settings/research/capture-stability-20261105/before/E11_config-dark_actual.png",
+      "after_source": ".trellis/tasks/10-21-ui-token-provider-settings/research/capture-stability-20261105/after/E11_config-dark_actual.png",
+      "before_sha256": "2d9633a549262f8a1f974167f8c9ecc70555f91edcc81eaf3449a13abb7d548f",
+      "after_sha256": "dc89cd85653006e445f88c32ca61e19e94aac60b23a2364c5a78db46acdf7c90",
+      "stage_dp": [
+        360,
+        800
+      ],
+      "font_scale": 1,
+      "capture_target": "screenshot_stage",
+      "before_window": null,
+      "after_window": null,
+      "before_measurements": "",
+      "after_measurements": "",
+      "changed_pixels": 440155,
+      "changed_ratio": 0.38207899305555554,
+      "before": "before/E11_config-dark.png",
+      "after": "after/E11_config-dark.png",
+      "diff": "diff/E11_config-dark.png"
+    },
+    {
+      "id": "E11_config-dynamic-dark",
+      "label": "Config · 固定动态色 · 深色",
+      "group": "regular",
+      "status": "已人工接纳",
+      "before_size_px": [
+        720,
+        1600
+      ],
+      "after_size_px": [
+        720,
+        1600
+      ],
+      "before_source": ".trellis/tasks/10-21-ui-token-provider-settings/research/capture-stability-20261105/before/E11_config-dynamic-dark_actual.png",
+      "after_source": ".trellis/tasks/10-21-ui-token-provider-settings/research/capture-stability-20261105/after/E11_config-dynamic-dark_actual.png",
+      "before_sha256": "e607169c489997d37bfcd25f8963e2af78487cc3867ff1e48479c33eea532cee",
+      "after_sha256": "e165dabb54c702864e45cb7114cf1af6d1f3fea994bc29d60fa9e39ed40a4212",
+      "stage_dp": [
+        360,
+        800
+      ],
+      "font_scale": 1,
+      "capture_target": "screenshot_stage",
+      "before_window": null,
+      "after_window": null,
+      "before_measurements": "",
+      "after_measurements": "",
+      "changed_pixels": 440153,
+      "changed_ratio": 0.38207725694444444,
+      "before": "before/E11_config-dynamic-dark.png",
+      "after": "after/E11_config-dynamic-dark.png",
+      "diff": "diff/E11_config-dynamic-dark.png"
+    },
+    {
+      "id": "E11_config-dynamic-light",
+      "label": "Config · 固定动态色 · 浅色",
+      "group": "regular",
+      "status": "已人工接纳",
+      "before_size_px": [
+        720,
+        1600
+      ],
+      "after_size_px": [
+        720,
+        1600
+      ],
+      "before_source": ".trellis/tasks/10-21-ui-token-provider-settings/research/capture-stability-20261105/before/E11_config-dynamic-light_actual.png",
+      "after_source": ".trellis/tasks/10-21-ui-token-provider-settings/research/capture-stability-20261105/after/E11_config-dynamic-light_actual.png",
+      "before_sha256": "ac25437ccab3c80b0913f19c52e7e3a6e8db1e717b3ec0000b3918089ecaef5c",
+      "after_sha256": "6fac9025c3656a2f6caa6909c47ded3574bfb3620a3e8f14817102a86843417f",
+      "stage_dp": [
+        360,
+        800
+      ],
+      "font_scale": 1,
+      "capture_target": "screenshot_stage",
+      "before_window": null,
+      "after_window": null,
+      "before_measurements": "",
+      "after_measurements": "",
+      "changed_pixels": 439908,
+      "changed_ratio": 0.38186458333333334,
+      "before": "before/E11_config-dynamic-light.png",
+      "after": "after/E11_config-dynamic-light.png",
+      "diff": "diff/E11_config-dynamic-light.png"
+    },
+    {
+      "id": "E11_config-light",
+      "label": "Config 配置表单 · 浅色",
+      "group": "regular",
+      "status": "已人工接纳",
+      "before_size_px": [
+        720,
+        1600
+      ],
+      "after_size_px": [
+        720,
+        1600
+      ],
+      "before_source": ".trellis/tasks/10-21-ui-token-provider-settings/research/capture-stability-20261105/before/E11_config-light_actual.png",
+      "after_source": ".trellis/tasks/10-21-ui-token-provider-settings/research/capture-stability-20261105/after/E11_config-light_actual.png",
+      "before_sha256": "cc92f560e815e7d4a847757eb47a02cfb00c0ae0ea772373ae7016b1cfd6f293",
+      "after_sha256": "a1f51e992c47e7e8b7b521839f2a8c81341fe014b22f2b464602b022ac287a72",
+      "stage_dp": [
+        360,
+        800
+      ],
+      "font_scale": 1,
+      "capture_target": "screenshot_stage",
+      "before_window": null,
+      "after_window": null,
+      "before_measurements": "",
+      "after_measurements": "",
+      "changed_pixels": 439908,
+      "changed_ratio": 0.38186458333333334,
+      "before": "before/E11_config-light.png",
+      "after": "after/E11_config-light.png",
+      "diff": "diff/E11_config-light.png"
+    },
+    {
+      "id": "E11_config-save-narrow-dark",
+      "label": "窄屏大字体 · 保存区 · 深色",
+      "group": "large",
+      "status": "已人工接纳",
+      "before_size_px": [
+        640,
+        1280
+      ],
+      "after_size_px": [
+        640,
+        1280
+      ],
+      "before_source": ".trellis/tasks/10-21-ui-token-provider-settings/research/capture-stability-20261105/before/E11_config-save-narrow-dark_actual.png",
+      "after_source": ".trellis/tasks/10-21-ui-token-provider-settings/research/capture-stability-20261105/after/E11_config-save-narrow-dark_actual.png",
+      "before_sha256": "b39b87a4573cb2e066c8acb84ea4178db21af1f98589020e1aa24a1dbbc3921f",
+      "after_sha256": "e70d2cc8ff8350532f54eb6564b7cc0a27e75f3186c389e797df7ddaadb903e3",
+      "stage_dp": [
+        320,
+        640
+      ],
+      "font_scale": 2,
+      "capture_target": "screenshot_stage",
+      "before_window": null,
+      "after_window": null,
+      "before_measurements": "pageScroll=2509.0/2509.0\npageViewport=Rect.fromLTRB(0.0, 241.0, 640.0, 1091.0)\nsave=Rect.fromLTRB(192.0, 736.0, 592.0, 851.0)\nsaveUnclipped=Rect.fromLTRB(192.0, 736.0, 592.0, 851.0)\ndelete=Rect.fromLTRB(48.0, 738.0, 160.0, 850.0)\ndeleteUnclipped=Rect.fromLTRB(48.0, 738.0, 160.0, 850.0)",
+      "after_measurements": "pageScroll=2199.0/2199.0\npageViewport=Rect.fromLTRB(0.0, 315.0, 640.0, 1091.0)\nsave=Rect.fromLTRB(160.0, 912.0, 608.0, 1043.0)\nsaveUnclipped=Rect.fromLTRB(160.0, 912.0, 608.0, 1043.0)\ndelete=Rect.fromLTRB(32.0, 930.0, 128.0, 1026.0)\ndeleteUnclipped=Rect.fromLTRB(32.0, 930.0, 128.0, 1026.0)",
+      "changed_pixels": 298738,
+      "changed_ratio": 0.36467041015625,
+      "before": "before/E11_config-save-narrow-dark.png",
+      "after": "after/E11_config-save-narrow-dark.png",
+      "diff": "diff/E11_config-save-narrow-dark.png"
+    },
+    {
+      "id": "E11_config-save-narrow-light",
+      "label": "窄屏大字体 · 保存区 · 浅色",
+      "group": "large",
+      "status": "已人工接纳",
+      "before_size_px": [
+        640,
+        1280
+      ],
+      "after_size_px": [
+        640,
+        1280
+      ],
+      "before_source": ".trellis/tasks/10-21-ui-token-provider-settings/research/capture-stability-20261105/before/E11_config-save-narrow-light_actual.png",
+      "after_source": ".trellis/tasks/10-21-ui-token-provider-settings/research/capture-stability-20261105/after/E11_config-save-narrow-light_actual.png",
+      "before_sha256": "d3aa2fb35fd9ce8b805e4c3efd791c6d35d504739c4dca2c94c59b977fd7b035",
+      "after_sha256": "0199a8c8e5192a094d69e768b0f4952cb1924f5d29055632ce0247a6dd257160",
+      "stage_dp": [
+        320,
+        640
+      ],
+      "font_scale": 2,
+      "capture_target": "screenshot_stage",
+      "before_window": null,
+      "after_window": null,
+      "before_measurements": "pageScroll=2509.0/2509.0\npageViewport=Rect.fromLTRB(0.0, 241.0, 640.0, 1091.0)\nsave=Rect.fromLTRB(192.0, 736.0, 592.0, 851.0)\nsaveUnclipped=Rect.fromLTRB(192.0, 736.0, 592.0, 851.0)\ndelete=Rect.fromLTRB(48.0, 738.0, 160.0, 850.0)\ndeleteUnclipped=Rect.fromLTRB(48.0, 738.0, 160.0, 850.0)",
+      "after_measurements": "pageScroll=2199.0/2199.0\npageViewport=Rect.fromLTRB(0.0, 315.0, 640.0, 1091.0)\nsave=Rect.fromLTRB(160.0, 912.0, 608.0, 1043.0)\nsaveUnclipped=Rect.fromLTRB(160.0, 912.0, 608.0, 1043.0)\ndelete=Rect.fromLTRB(32.0, 930.0, 128.0, 1026.0)\ndeleteUnclipped=Rect.fromLTRB(32.0, 930.0, 128.0, 1026.0)",
+      "changed_pixels": 297828,
+      "changed_ratio": 0.3635595703125,
+      "before": "before/E11_config-save-narrow-light.png",
+      "after": "after/E11_config-save-narrow-light.png",
+      "diff": "diff/E11_config-save-narrow-light.png"
+    },
+    {
+      "id": "E11_fetched-sheet-dark",
+      "label": "抓取后的模型选择 · 深色",
+      "group": "window",
+      "status": "已人工接纳",
+      "before_size_px": [
+        640,
+        1280
+      ],
+      "after_size_px": [
+        640,
+        1280
+      ],
+      "before_source": ".trellis/tasks/10-21-ui-token-provider-settings/research/capture-stability-20261105/before/E11_fetched-sheet-dark_actual.png",
+      "after_source": ".trellis/tasks/10-21-ui-token-provider-settings/research/capture-stability-20261105/after/E11_fetched-sheet-dark_actual.png",
+      "before_sha256": "3e2252bf9e062c2a9f5a1506e5eac87c2b6c0f4948aeb8f3f9d436b0466a8585",
+      "after_sha256": "9e7a37cddda6cf2c72fecd5943facb3e6954220e4e90007ee2ce00f1683aa7a5",
+      "stage_dp": [
+        320,
+        640
+      ],
+      "font_scale": 2,
+      "capture_target": "independent-dialog-root",
+      "before_window": "title=选择模型\noperation=确认选择\nfontScale=2.0\nbounds=Rect.fromLTRB(0.0, 0.0, 640.0, 1280.0)\n",
+      "after_window": "title=选择模型\noperation=确认选择\nfontScale=2.0\nbounds=Rect.fromLTRB(0.0, 0.0, 640.0, 1280.0)\n",
+      "before_measurements": "operation=Rect.fromLTRB(280.0, 1064.0, 592.0, 1248.0)\noperationUnclipped=Rect.fromLTRB(280.0, 1064.0, 592.0, 1248.0)",
+      "after_measurements": "operation=Rect.fromLTRB(277.0, 1123.0, 608.0, 1248.0)\noperationUnclipped=Rect.fromLTRB(277.0, 1123.0, 608.0, 1248.0)",
+      "changed_pixels": 340435,
+      "changed_ratio": 0.415570068359375,
+      "before": "before/E11_fetched-sheet-dark.png",
+      "after": "after/E11_fetched-sheet-dark.png",
+      "diff": "diff/E11_fetched-sheet-dark.png"
+    },
+    {
+      "id": "E11_fetched-sheet-light",
+      "label": "抓取后的模型选择 · 浅色",
+      "group": "window",
+      "status": "已人工接纳",
+      "before_size_px": [
+        640,
+        1280
+      ],
+      "after_size_px": [
+        640,
+        1280
+      ],
+      "before_source": ".trellis/tasks/10-21-ui-token-provider-settings/research/capture-stability-20261105/before/E11_fetched-sheet-light_actual.png",
+      "after_source": ".trellis/tasks/10-21-ui-token-provider-settings/research/capture-stability-20261105/after/E11_fetched-sheet-light_actual.png",
+      "before_sha256": "f959255b3c303c56eb8022824082808e263982f56c9d4353639d3a0e913b256f",
+      "after_sha256": "e28a822ebd8a4b25bfbad684e4286e50cb3a3aca38efcacbcbf4386e5719cef1",
+      "stage_dp": [
+        320,
+        640
+      ],
+      "font_scale": 2,
+      "capture_target": "independent-dialog-root",
+      "before_window": "title=选择模型\noperation=确认选择\nfontScale=2.0\nbounds=Rect.fromLTRB(0.0, 0.0, 640.0, 1280.0)\n",
+      "after_window": "title=选择模型\noperation=确认选择\nfontScale=2.0\nbounds=Rect.fromLTRB(0.0, 0.0, 640.0, 1280.0)\n",
+      "before_measurements": "operation=Rect.fromLTRB(280.0, 1064.0, 592.0, 1248.0)\noperationUnclipped=Rect.fromLTRB(280.0, 1064.0, 592.0, 1248.0)",
+      "after_measurements": "operation=Rect.fromLTRB(277.0, 1123.0, 608.0, 1248.0)\noperationUnclipped=Rect.fromLTRB(277.0, 1123.0, 608.0, 1248.0)",
+      "changed_pixels": 343068,
+      "changed_ratio": 0.4187841796875,
+      "before": "before/E11_fetched-sheet-light.png",
+      "after": "after/E11_fetched-sheet-light.png",
+      "diff": "diff/E11_fetched-sheet-light.png"
+    },
+    {
+      "id": "E11_list-matcha-dark",
+      "label": "提供商列表 · 抹茶 · 深色",
+      "group": "regular",
+      "status": "已人工接纳",
+      "before_size_px": [
+        720,
+        1600
+      ],
+      "after_size_px": [
+        720,
+        1600
+      ],
+      "before_source": ".trellis/tasks/10-21-ui-token-provider-settings/research/capture-stability-20261105/before/E11_list-matcha-dark_actual.png",
+      "after_source": ".trellis/tasks/10-21-ui-token-provider-settings/research/capture-stability-20261105/after/E11_list-matcha-dark_actual.png",
+      "before_sha256": "df49ce3f06a202adada919035778b90271fab7d38898d891419d6b6b520d9c0b",
+      "after_sha256": "a40691b0457804d6a36b46920573c6f81233ce334d314b7af3d98300bb270693",
+      "stage_dp": [
+        360,
+        800
+      ],
+      "font_scale": 1,
+      "capture_target": "screenshot_stage",
+      "before_window": null,
+      "after_window": null,
+      "before_measurements": "",
+      "after_measurements": "",
+      "changed_pixels": 606980,
+      "changed_ratio": 0.5268923611111112,
+      "before": "before/E11_list-matcha-dark.png",
+      "after": "after/E11_list-matcha-dark.png",
+      "diff": "diff/E11_list-matcha-dark.png"
+    },
+    {
+      "id": "E11_list-matcha-light",
+      "label": "提供商列表 · 抹茶 · 浅色",
+      "group": "regular",
+      "status": "已人工接纳",
+      "before_size_px": [
+        720,
+        1600
+      ],
+      "after_size_px": [
+        720,
+        1600
+      ],
+      "before_source": ".trellis/tasks/10-21-ui-token-provider-settings/research/capture-stability-20261105/before/E11_list-matcha-light_actual.png",
+      "after_source": ".trellis/tasks/10-21-ui-token-provider-settings/research/capture-stability-20261105/after/E11_list-matcha-light_actual.png",
+      "before_sha256": "d18d858149730bb6d80a058f6ca071b631b9e56f1223ff589dcc7b9837e4c6c7",
+      "after_sha256": "0e60aee3ecce96c12cb7d6b6c3533d1cc8b67eba57b06e8324580292bdf75371",
+      "stage_dp": [
+        360,
+        800
+      ],
+      "font_scale": 1,
+      "capture_target": "screenshot_stage",
+      "before_window": null,
+      "after_window": null,
+      "before_measurements": "",
+      "after_measurements": "",
+      "changed_pixels": 606927,
+      "changed_ratio": 0.5268463541666667,
+      "before": "before/E11_list-matcha-light.png",
+      "after": "after/E11_list-matcha-light.png",
+      "diff": "diff/E11_list-matcha-light.png"
+    },
+    {
+      "id": "E11_list-narrow-dark",
+      "label": "窄屏大字体 · 列表末项 · 深色",
+      "group": "large",
+      "status": "已人工接纳",
+      "before_size_px": [
+        640,
+        1280
+      ],
+      "after_size_px": [
+        640,
+        1280
+      ],
+      "before_source": ".trellis/tasks/10-21-ui-token-provider-settings/research/capture-stability-20261105/before/E11_list-narrow-dark_actual.png",
+      "after_source": ".trellis/tasks/10-21-ui-token-provider-settings/research/capture-stability-20261105/after/E11_list-narrow-dark_actual.png",
+      "before_sha256": "da5db4d44471a845089db3980dfa6063911d1ca09cd2542f54f9ece726a2e659",
+      "after_sha256": "4ea9c1f28cb7a26a063e8376c591e6914bf824b1c49b4027005aab3b0f6dea66",
+      "stage_dp": [
+        320,
+        640
+      ],
+      "font_scale": 2,
+      "capture_target": "screenshot_stage",
+      "before_window": null,
+      "after_window": null,
+      "before_measurements": "pageScroll=662.0/662.0\npageViewport=Rect.fromLTRB(0.0, 133.0, 640.0, 1280.0)\nlastProvider=Rect.fromLTRB(40.0, 654.0, 600.0, 1224.0)\nlastProviderUnclipped=Rect.fromLTRB(40.0, 654.0, 600.0, 1224.0)",
+      "after_measurements": "pageScroll=646.0/646.0\npageViewport=Rect.fromLTRB(0.0, 133.0, 640.0, 1280.0)\nlastProvider=Rect.fromLTRB(32.0, 660.0, 608.0, 1216.0)\nlastProviderUnclipped=Rect.fromLTRB(32.0, 660.0, 608.0, 1216.0)",
+      "changed_pixels": 585994,
+      "changed_ratio": 0.71532470703125,
+      "before": "before/E11_list-narrow-dark.png",
+      "after": "after/E11_list-narrow-dark.png",
+      "diff": "diff/E11_list-narrow-dark.png"
+    },
+    {
+      "id": "E11_list-narrow-light",
+      "label": "窄屏大字体 · 列表末项 · 浅色",
+      "group": "large",
+      "status": "已人工接纳",
+      "before_size_px": [
+        640,
+        1280
+      ],
+      "after_size_px": [
+        640,
+        1280
+      ],
+      "before_source": ".trellis/tasks/10-21-ui-token-provider-settings/research/capture-stability-20261105/before/E11_list-narrow-light_actual.png",
+      "after_source": ".trellis/tasks/10-21-ui-token-provider-settings/research/capture-stability-20261105/after/E11_list-narrow-light_actual.png",
+      "before_sha256": "d61c3f51f621a0c548a58266a4adc2946d8c922739bdb7b8f223856ecea18879",
+      "after_sha256": "c4c4392b4d6379c04712c455e506757c53bba622dd9a9828bfefacbd8c240297",
+      "stage_dp": [
+        320,
+        640
+      ],
+      "font_scale": 2,
+      "capture_target": "screenshot_stage",
+      "before_window": null,
+      "after_window": null,
+      "before_measurements": "pageScroll=662.0/662.0\npageViewport=Rect.fromLTRB(0.0, 133.0, 640.0, 1280.0)\nlastProvider=Rect.fromLTRB(40.0, 654.0, 600.0, 1224.0)\nlastProviderUnclipped=Rect.fromLTRB(40.0, 654.0, 600.0, 1224.0)",
+      "after_measurements": "pageScroll=646.0/646.0\npageViewport=Rect.fromLTRB(0.0, 133.0, 640.0, 1280.0)\nlastProvider=Rect.fromLTRB(32.0, 660.0, 608.0, 1216.0)\nlastProviderUnclipped=Rect.fromLTRB(32.0, 660.0, 608.0, 1216.0)",
+      "changed_pixels": 585732,
+      "changed_ratio": 0.7150048828125,
+      "before": "before/E11_list-narrow-light.png",
+      "after": "after/E11_list-narrow-light.png",
+      "diff": "diff/E11_list-narrow-light.png"
+    },
+    {
+      "id": "E11_list-no-result-light",
+      "label": "提供商搜索无结果 · 浅色",
+      "group": "regular",
+      "status": "已人工接纳",
+      "before_size_px": [
+        720,
+        1600
+      ],
+      "after_size_px": [
+        720,
+        1600
+      ],
+      "before_source": ".trellis/tasks/10-21-ui-token-provider-settings/research/capture-stability-20261105/before/E11_list-no-result-light_actual.png",
+      "after_source": ".trellis/tasks/10-21-ui-token-provider-settings/research/capture-stability-20261105/after/E11_list-no-result-light_actual.png",
+      "before_sha256": "b543602da042ae06076afc5ab5ac2b9a8395b05e8d0f0d09bf713d3ebd96eca4",
+      "after_sha256": "7e6a26c7c934a677a19325b2777db20abfa929ad946c393f515e2604cc8e522b",
+      "stage_dp": [
+        360,
+        800
+      ],
+      "font_scale": 1,
+      "capture_target": "screenshot_stage",
+      "before_window": null,
+      "after_window": null,
+      "before_measurements": "",
+      "after_measurements": "",
+      "changed_pixels": 139958,
+      "changed_ratio": 0.12149131944444444,
+      "before": "before/E11_list-no-result-light.png",
+      "after": "after/E11_list-no-result-light.png",
+      "diff": "diff/E11_list-no-result-light.png"
+    },
+    {
+      "id": "E11_list-ocean-dark",
+      "label": "提供商列表 · 海洋 · 深色",
+      "group": "regular",
+      "status": "已人工接纳",
+      "before_size_px": [
+        720,
+        1600
+      ],
+      "after_size_px": [
+        720,
+        1600
+      ],
+      "before_source": ".trellis/tasks/10-21-ui-token-provider-settings/research/capture-stability-20261105/before/E11_list-ocean-dark_actual.png",
+      "after_source": ".trellis/tasks/10-21-ui-token-provider-settings/research/capture-stability-20261105/after/E11_list-ocean-dark_actual.png",
+      "before_sha256": "da45e6e70f77daf3ca07eadbc33444fc29828ffade05011b9821719eec350287",
+      "after_sha256": "2c71dae3653f0b2fd9f3953ba5336b1639a0c83db99ae18f15970300f2002245",
+      "stage_dp": [
+        360,
+        800
+      ],
+      "font_scale": 1,
+      "capture_target": "screenshot_stage",
+      "before_window": null,
+      "after_window": null,
+      "before_measurements": "",
+      "after_measurements": "",
+      "changed_pixels": 606980,
+      "changed_ratio": 0.5268923611111112,
+      "before": "before/E11_list-ocean-dark.png",
+      "after": "after/E11_list-ocean-dark.png",
+      "diff": "diff/E11_list-ocean-dark.png"
+    },
+    {
+      "id": "E11_list-ocean-light",
+      "label": "提供商列表 · 海洋 · 浅色",
+      "group": "regular",
+      "status": "已人工接纳",
+      "before_size_px": [
+        720,
+        1600
+      ],
+      "after_size_px": [
+        720,
+        1600
+      ],
+      "before_source": ".trellis/tasks/10-21-ui-token-provider-settings/research/capture-stability-20261105/before/E11_list-ocean-light_actual.png",
+      "after_source": ".trellis/tasks/10-21-ui-token-provider-settings/research/capture-stability-20261105/after/E11_list-ocean-light_actual.png",
+      "before_sha256": "c52e58f812507e1bef5fb47a0fa24b40ed6b8a033cbe9a6c0cfcec569bf2001d",
+      "after_sha256": "04a5fd835a81c9a8d84dc1ffb9dee414cadefa181741591413798451e06f2e18",
+      "stage_dp": [
+        360,
+        800
+      ],
+      "font_scale": 1,
+      "capture_target": "screenshot_stage",
+      "before_window": null,
+      "after_window": null,
+      "before_measurements": "",
+      "after_measurements": "",
+      "changed_pixels": 606954,
+      "changed_ratio": 0.5268697916666667,
+      "before": "before/E11_list-ocean-light.png",
+      "after": "after/E11_list-ocean-light.png",
+      "diff": "diff/E11_list-ocean-light.png"
+    },
+    {
+      "id": "E11_list-vanilla-dark",
+      "label": "提供商列表 · 香草 · 深色",
+      "group": "regular",
+      "status": "已人工接纳",
+      "before_size_px": [
+        720,
+        1600
+      ],
+      "after_size_px": [
+        720,
+        1600
+      ],
+      "before_source": ".trellis/tasks/10-21-ui-token-provider-settings/research/capture-stability-20261105/before/E11_list-vanilla-dark_actual.png",
+      "after_source": ".trellis/tasks/10-21-ui-token-provider-settings/research/capture-stability-20261105/after/E11_list-vanilla-dark_actual.png",
+      "before_sha256": "70261040e9aebef6d6096436a871032ba099a679c7ff32b71a24277866bddec4",
+      "after_sha256": "d165a8c17a13c136ba9216b9ed34656206b0a0aea8fbbce708bb584b21a1e4ec",
+      "stage_dp": [
+        360,
+        800
+      ],
+      "font_scale": 1,
+      "capture_target": "screenshot_stage",
+      "before_window": null,
+      "after_window": null,
+      "before_measurements": "",
+      "after_measurements": "",
+      "changed_pixels": 606980,
+      "changed_ratio": 0.5268923611111112,
+      "before": "before/E11_list-vanilla-dark.png",
+      "after": "after/E11_list-vanilla-dark.png",
+      "diff": "diff/E11_list-vanilla-dark.png"
+    },
+    {
+      "id": "E11_list-vanilla-light",
+      "label": "提供商列表 · 香草 · 浅色",
+      "group": "regular",
+      "status": "已人工接纳",
+      "before_size_px": [
+        720,
+        1600
+      ],
+      "after_size_px": [
+        720,
+        1600
+      ],
+      "before_source": ".trellis/tasks/10-21-ui-token-provider-settings/research/capture-stability-20261105/before/E11_list-vanilla-light_actual.png",
+      "after_source": ".trellis/tasks/10-21-ui-token-provider-settings/research/capture-stability-20261105/after/E11_list-vanilla-light_actual.png",
+      "before_sha256": "df3334a22aef0f73a88e434c0006294066884ddccd01cc26a5d36b59c5c13959",
+      "after_sha256": "8250dfe7ebe903e99eb2562472a70631c4b1f51c9f718e9984c2c1c0f924ee60",
+      "stage_dp": [
+        360,
+        800
+      ],
+      "font_scale": 1,
+      "capture_target": "screenshot_stage",
+      "before_window": null,
+      "after_window": null,
+      "before_measurements": "",
+      "after_measurements": "",
+      "changed_pixels": 606948,
+      "changed_ratio": 0.5268645833333333,
+      "before": "before/E11_list-vanilla-light.png",
+      "after": "after/E11_list-vanilla-light.png",
+      "diff": "diff/E11_list-vanilla-light.png"
+    },
+    {
+      "id": "E11_manual-error-dialog-dark",
+      "label": "手工添加 · 空ID错误 · 深色",
+      "group": "window",
+      "status": "已人工接纳",
+      "before_size_px": [
+        640,
+        1280
+      ],
+      "after_size_px": [
+        640,
+        1280
+      ],
+      "before_source": ".trellis/tasks/10-21-ui-token-provider-settings/research/capture-stability-20261105/before/E11_manual-error-dialog-dark_actual.png",
+      "after_source": ".trellis/tasks/10-21-ui-token-provider-settings/research/capture-stability-20261105/after/E11_manual-error-dialog-dark_actual.png",
+      "before_sha256": "1fafce879bead3ed7c4ff15acef8029b455073db57521ed6c8386a5c5b89ca0b",
+      "after_sha256": "3d7f06469aa4b239f17e1504f517e01b7089552690aa803aeba9dcbb764fcae8",
+      "stage_dp": [
+        320,
+        640
+      ],
+      "font_scale": 2,
+      "capture_target": "independent-dialog-root",
+      "before_window": "title=手动添加模型\noperation=添加\nfontScale=2.0\nbounds=Rect.fromLTRB(0.0, 0.0, 544.0, 1179.0)\n",
+      "after_window": "title=手动添加模型\noperation=添加\nfontScale=2.0\nbounds=Rect.fromLTRB(0.0, 0.0, 544.0, 1178.0)\n",
+      "before_measurements": "operation=Rect.fromLTRB(344.0, 1022.0, 496.0, 1131.0)\noperationUnclipped=Rect.fromLTRB(344.0, 1022.0, 496.0, 1131.0)",
+      "after_measurements": "operation=Rect.fromLTRB(344.0, 1021.0, 496.0, 1130.0)\noperationUnclipped=Rect.fromLTRB(344.0, 1021.0, 496.0, 1130.0)",
+      "changed_pixels": 185270,
+      "changed_ratio": 0.22615966796875,
+      "before": "before/E11_manual-error-dialog-dark.png",
+      "after": "after/E11_manual-error-dialog-dark.png",
+      "diff": "diff/E11_manual-error-dialog-dark.png"
+    },
+    {
+      "id": "E11_manual-error-dialog-light",
+      "label": "手工添加 · 空ID错误 · 浅色",
+      "group": "window",
+      "status": "已人工接纳",
+      "before_size_px": [
+        640,
+        1280
+      ],
+      "after_size_px": [
+        640,
+        1280
+      ],
+      "before_source": ".trellis/tasks/10-21-ui-token-provider-settings/research/capture-stability-20261105/before/E11_manual-error-dialog-light_actual.png",
+      "after_source": ".trellis/tasks/10-21-ui-token-provider-settings/research/capture-stability-20261105/after/E11_manual-error-dialog-light_actual.png",
+      "before_sha256": "c9e88add86e8d6a91019230b95188527d9db717efe862cada1b05f464df31cf7",
+      "after_sha256": "4c980d5aca49470d7a38d169cabe1739c87998e853a579f4da59b7212c1c7a8a",
+      "stage_dp": [
+        320,
+        640
+      ],
+      "font_scale": 2,
+      "capture_target": "independent-dialog-root",
+      "before_window": "title=手动添加模型\noperation=添加\nfontScale=2.0\nbounds=Rect.fromLTRB(0.0, 0.0, 544.0, 1179.0)\n",
+      "after_window": "title=手动添加模型\noperation=添加\nfontScale=2.0\nbounds=Rect.fromLTRB(0.0, 0.0, 544.0, 1178.0)\n",
+      "before_measurements": "operation=Rect.fromLTRB(344.0, 1022.0, 496.0, 1131.0)\noperationUnclipped=Rect.fromLTRB(344.0, 1022.0, 496.0, 1131.0)",
+      "after_measurements": "operation=Rect.fromLTRB(344.0, 1021.0, 496.0, 1130.0)\noperationUnclipped=Rect.fromLTRB(344.0, 1021.0, 496.0, 1130.0)",
+      "changed_pixels": 169834,
+      "changed_ratio": 0.20731689453125,
+      "before": "before/E11_manual-error-dialog-light.png",
+      "after": "after/E11_manual-error-dialog-light.png",
+      "diff": "diff/E11_manual-error-dialog-light.png"
+    },
+    {
+      "id": "E11_models-dark",
+      "label": "Models 模型列表 · 深色",
+      "group": "regular",
+      "status": "已人工接纳",
+      "before_size_px": [
+        720,
+        1600
+      ],
+      "after_size_px": [
+        720,
+        1600
+      ],
+      "before_source": ".trellis/tasks/10-21-ui-token-provider-settings/research/capture-stability-20261105/before/E11_models-dark_actual.png",
+      "after_source": ".trellis/tasks/10-21-ui-token-provider-settings/research/capture-stability-20261105/after/E11_models-dark_actual.png",
+      "before_sha256": "07bbf675e95e58dfac6a9d5dc3368547d3b55f738f5706bb8199c4d69fb77a2c",
+      "after_sha256": "02886a00f0336b4f75fa4870b7b9f41ace30692c704af98eb283aec1c7b63805",
+      "stage_dp": [
+        360,
+        800
+      ],
+      "font_scale": 1,
+      "capture_target": "screenshot_stage",
+      "before_window": null,
+      "after_window": null,
+      "before_measurements": "",
+      "after_measurements": "",
+      "changed_pixels": 200234,
+      "changed_ratio": 0.1738142361111111,
+      "before": "before/E11_models-dark.png",
+      "after": "after/E11_models-dark.png",
+      "diff": "diff/E11_models-dark.png"
+    },
+    {
+      "id": "E11_models-empty-dark",
+      "label": "模型空态 · 深色",
+      "group": "regular",
+      "status": "已人工接纳",
+      "before_size_px": [
+        720,
+        1600
+      ],
+      "after_size_px": [
+        720,
+        1600
+      ],
+      "before_source": ".trellis/tasks/10-21-ui-token-provider-settings/research/capture-stability-20261105/before/E11_models-empty-dark_actual.png",
+      "after_source": ".trellis/tasks/10-21-ui-token-provider-settings/research/capture-stability-20261105/after/E11_models-empty-dark_actual.png",
+      "before_sha256": "197bbecbacc7dfa2042e1ce879367852393738e3832202368789a076cb1a4480",
+      "after_sha256": "074067538ffda31ddaf5b812e60db8cdbf33e03a4415e0f27a48d6ab1fc1294e",
+      "stage_dp": [
+        360,
+        800
+      ],
+      "font_scale": 1,
+      "capture_target": "screenshot_stage",
+      "before_window": null,
+      "after_window": null,
+      "before_measurements": "",
+      "after_measurements": "",
+      "changed_pixels": 116730,
+      "changed_ratio": 0.101328125,
+      "before": "before/E11_models-empty-dark.png",
+      "after": "after/E11_models-empty-dark.png",
+      "diff": "diff/E11_models-empty-dark.png"
+    },
+    {
+      "id": "E11_models-light",
+      "label": "Models 模型列表 · 浅色",
+      "group": "regular",
+      "status": "已人工接纳",
+      "before_size_px": [
+        720,
+        1600
+      ],
+      "after_size_px": [
+        720,
+        1600
+      ],
+      "before_source": ".trellis/tasks/10-21-ui-token-provider-settings/research/capture-stability-20261105/before/E11_models-light_actual.png",
+      "after_source": ".trellis/tasks/10-21-ui-token-provider-settings/research/capture-stability-20261105/after/E11_models-light_actual.png",
+      "before_sha256": "7422895d8b50c5c2195bba0724b6faec7fc5ce27b76c8fef3329b7ce5612201b",
+      "after_sha256": "42e4274461d0baee9f8ff7f6622fbbc6a3137615a1b393ad930fdeea679ce1f9",
+      "stage_dp": [
+        360,
+        800
+      ],
+      "font_scale": 1,
+      "capture_target": "screenshot_stage",
+      "before_window": null,
+      "after_window": null,
+      "before_measurements": "",
+      "after_measurements": "",
+      "changed_pixels": 199916,
+      "changed_ratio": 0.17353819444444443,
+      "before": "before/E11_models-light.png",
+      "after": "after/E11_models-light.png",
+      "diff": "diff/E11_models-light.png"
+    },
+    {
+      "id": "E11_models-tail-narrow-dark",
+      "label": "窄屏大字体 · 模型末项 · 深色",
+      "group": "large",
+      "status": "已人工接纳",
+      "before_size_px": [
+        640,
+        1280
+      ],
+      "after_size_px": [
+        640,
+        1280
+      ],
+      "before_source": ".trellis/tasks/10-21-ui-token-provider-settings/research/capture-stability-20261105/before/E11_models-tail-narrow-dark_actual.png",
+      "after_source": ".trellis/tasks/10-21-ui-token-provider-settings/research/capture-stability-20261105/after/E11_models-tail-narrow-dark_actual.png",
+      "before_sha256": "c408f7895edda4c716434eb7fc83a6775027fd8588610c076c2843bbe97231e8",
+      "after_sha256": "665d9a929bf1373ea7997b11834b124d0c6b6128e5eaaf194dc2aa6edec1dc2e",
+      "stage_dp": [
+        320,
+        640
+      ],
+      "font_scale": 2,
+      "capture_target": "screenshot_stage",
+      "before_window": null,
+      "after_window": null,
+      "before_measurements": "pageScroll=2219.0/2219.0\npageViewport=Rect.fromLTRB(0.0, 241.0, 640.0, 1091.0)\nlastModelEdit=Rect.fromLTRB(376.0, 723.0, 472.0, 819.0)\nlastModelEditUnclipped=Rect.fromLTRB(376.0, 723.0, 472.0, 819.0)\nlastModelRemove=Rect.fromLTRB(472.0, 723.0, 568.0, 819.0)\nlastModelRemoveUnclipped=Rect.fromLTRB(472.0, 723.0, 568.0, 819.0)\nlastModelCard=Rect.fromLTRB(40.0, 418.0, 600.0, 851.0)\nlastModelCardUnclipped=Rect.fromLTRB(40.0, 418.0, 600.0, 851.0)\naddModel=Rect.fromLTRB(180.0, 902.0, 588.0, 1027.0)\naddModelUnclipped=Rect.fromLTRB(180.0, 902.0, 588.0, 1027.0)\nfetchModels=Rect.fromLTRB(52.0, 917.0, 148.0, 1013.0)\nfetchModelsUnclipped=Rect.fromLTRB(52.0, 917.0, 148.0, 1013.0)\nmodelsTab=Rect.fromLTRB(320.0, 1127.0, 588.0, 1244.0)\nmodelsTabUnclipped=Rect.fromLTRB(320.0, 1127.0, 588.0, 1244.0)",
+      "after_measurements": "pageScroll=2273.0/2273.0\npageViewport=Rect.fromLTRB(0.0, 315.0, 640.0, 1091.0)\nlastModelEdit=Rect.fromLTRB(384.0, 743.0, 480.0, 839.0)\nlastModelEditUnclipped=Rect.fromLTRB(384.0, 743.0, 480.0, 839.0)\nlastModelRemove=Rect.fromLTRB(480.0, 743.0, 576.0, 839.0)\nlastModelRemoveUnclipped=Rect.fromLTRB(480.0, 743.0, 576.0, 839.0)\nlastModelCard=Rect.fromLTRB(32.0, 438.0, 608.0, 871.0)\nlastModelCardUnclipped=Rect.fromLTRB(32.0, 438.0, 608.0, 871.0)\naddModel=Rect.fromLTRB(128.0, 895.0, 624.0, 1020.0)\naddModelUnclipped=Rect.fromLTRB(128.0, 895.0, 624.0, 1020.0)\nfetchModels=Rect.fromLTRB(16.0, 887.0, 112.0, 1027.0)\nfetchModelsUnclipped=Rect.fromLTRB(16.0, 887.0, 112.0, 1027.0)\nmodelsTab=Rect.fromLTRB(320.0, 1123.0, 600.0, 1248.0)\nmodelsTabUnclipped=Rect.fromLTRB(320.0, 1123.0, 600.0, 1248.0)",
+      "changed_pixels": 245575,
+      "changed_ratio": 0.299774169921875,
+      "before": "before/E11_models-tail-narrow-dark.png",
+      "after": "after/E11_models-tail-narrow-dark.png",
+      "diff": "diff/E11_models-tail-narrow-dark.png"
+    },
+    {
+      "id": "E11_models-tail-narrow-light",
+      "label": "窄屏大字体 · 模型末项 · 浅色",
+      "group": "large",
+      "status": "已人工接纳",
+      "before_size_px": [
+        640,
+        1280
+      ],
+      "after_size_px": [
+        640,
+        1280
+      ],
+      "before_source": ".trellis/tasks/10-21-ui-token-provider-settings/research/capture-stability-20261105/before/E11_models-tail-narrow-light_actual.png",
+      "after_source": ".trellis/tasks/10-21-ui-token-provider-settings/research/capture-stability-20261105/after/E11_models-tail-narrow-light_actual.png",
+      "before_sha256": "606fb816262022941c8fc2e00156e87fda5d25a1b100e047c5c72cb38c8c6a58",
+      "after_sha256": "89dd37efa34989e993af4e027c56a7d6be6e9998ea91e9a8743e4baf7045f6ce",
+      "stage_dp": [
+        320,
+        640
+      ],
+      "font_scale": 2,
+      "capture_target": "screenshot_stage",
+      "before_window": null,
+      "after_window": null,
+      "before_measurements": "pageScroll=2219.0/2219.0\npageViewport=Rect.fromLTRB(0.0, 241.0, 640.0, 1091.0)\nlastModelEdit=Rect.fromLTRB(376.0, 723.0, 472.0, 819.0)\nlastModelEditUnclipped=Rect.fromLTRB(376.0, 723.0, 472.0, 819.0)\nlastModelRemove=Rect.fromLTRB(472.0, 723.0, 568.0, 819.0)\nlastModelRemoveUnclipped=Rect.fromLTRB(472.0, 723.0, 568.0, 819.0)\nlastModelCard=Rect.fromLTRB(40.0, 418.0, 600.0, 851.0)\nlastModelCardUnclipped=Rect.fromLTRB(40.0, 418.0, 600.0, 851.0)\naddModel=Rect.fromLTRB(180.0, 902.0, 588.0, 1027.0)\naddModelUnclipped=Rect.fromLTRB(180.0, 902.0, 588.0, 1027.0)\nfetchModels=Rect.fromLTRB(52.0, 917.0, 148.0, 1013.0)\nfetchModelsUnclipped=Rect.fromLTRB(52.0, 917.0, 148.0, 1013.0)\nmodelsTab=Rect.fromLTRB(320.0, 1127.0, 588.0, 1244.0)\nmodelsTabUnclipped=Rect.fromLTRB(320.0, 1127.0, 588.0, 1244.0)",
+      "after_measurements": "pageScroll=2273.0/2273.0\npageViewport=Rect.fromLTRB(0.0, 315.0, 640.0, 1091.0)\nlastModelEdit=Rect.fromLTRB(384.0, 743.0, 480.0, 839.0)\nlastModelEditUnclipped=Rect.fromLTRB(384.0, 743.0, 480.0, 839.0)\nlastModelRemove=Rect.fromLTRB(480.0, 743.0, 576.0, 839.0)\nlastModelRemoveUnclipped=Rect.fromLTRB(480.0, 743.0, 576.0, 839.0)\nlastModelCard=Rect.fromLTRB(32.0, 438.0, 608.0, 871.0)\nlastModelCardUnclipped=Rect.fromLTRB(32.0, 438.0, 608.0, 871.0)\naddModel=Rect.fromLTRB(128.0, 895.0, 624.0, 1020.0)\naddModelUnclipped=Rect.fromLTRB(128.0, 895.0, 624.0, 1020.0)\nfetchModels=Rect.fromLTRB(16.0, 887.0, 112.0, 1027.0)\nfetchModelsUnclipped=Rect.fromLTRB(16.0, 887.0, 112.0, 1027.0)\nmodelsTab=Rect.fromLTRB(320.0, 1123.0, 600.0, 1248.0)\nmodelsTabUnclipped=Rect.fromLTRB(320.0, 1123.0, 600.0, 1248.0)",
+      "changed_pixels": 245191,
+      "changed_ratio": 0.299305419921875,
+      "before": "before/E11_models-tail-narrow-light.png",
+      "after": "after/E11_models-tail-narrow-light.png",
+      "diff": "diff/E11_models-tail-narrow-light.png"
+    },
+    {
+      "id": "E11_protocol-dialog-dark",
+      "label": "协议说明 · 深色",
+      "group": "window",
+      "status": "已人工接纳",
+      "before_size_px": [
+        640,
+        1280
+      ],
+      "after_size_px": [
+        640,
+        1280
+      ],
+      "before_source": ".trellis/tasks/10-21-ui-token-provider-settings/research/capture-stability-20261105/before/E11_protocol-dialog-dark_actual.png",
+      "after_source": ".trellis/tasks/10-21-ui-token-provider-settings/research/capture-stability-20261105/after/E11_protocol-dialog-dark_actual.png",
+      "before_sha256": "4185d048264f061abd0a3b05b944fb4d0334cdb3aff21e6f566dcb22b5adf766",
+      "after_sha256": "82be42b85ce5cbbee98b26ff2681c2632d9457ec5b3b099a53e0208bef5313ce",
+      "stage_dp": [
+        320,
+        640
+      ],
+      "font_scale": 2,
+      "capture_target": "independent-dialog-root",
+      "before_window": "title=接口协议\noperation=知道了\nfontScale=2.0\nbounds=Rect.fromLTRB(0.0, 0.0, 640.0, 765.0)\n",
+      "after_window": "title=接口协议\noperation=知道了\nfontScale=2.0\nbounds=Rect.fromLTRB(0.0, 0.0, 544.0, 808.0)\n",
+      "before_measurements": "operation=Rect.fromLTRB(388.0, 608.0, 592.0, 717.0)\noperationUnclipped=Rect.fromLTRB(388.0, 608.0, 592.0, 717.0)",
+      "after_measurements": "operation=Rect.fromLTRB(292.0, 651.0, 496.0, 760.0)\noperationUnclipped=Rect.fromLTRB(292.0, 651.0, 496.0, 760.0)",
+      "changed_pixels": 591139,
+      "changed_ratio": 0.721605224609375,
+      "before": "before/E11_protocol-dialog-dark.png",
+      "after": "after/E11_protocol-dialog-dark.png",
+      "diff": "diff/E11_protocol-dialog-dark.png"
+    },
+    {
+      "id": "E11_protocol-dialog-light",
+      "label": "协议说明 · 浅色",
+      "group": "window",
+      "status": "已人工接纳",
+      "before_size_px": [
+        640,
+        1280
+      ],
+      "after_size_px": [
+        640,
+        1280
+      ],
+      "before_source": ".trellis/tasks/10-21-ui-token-provider-settings/research/capture-stability-20261105/before/E11_protocol-dialog-light_actual.png",
+      "after_source": ".trellis/tasks/10-21-ui-token-provider-settings/research/capture-stability-20261105/after/E11_protocol-dialog-light_actual.png",
+      "before_sha256": "e7223781f928d783924529e1aa354c9b5b4cad462d9eb5e680e7438aedcea45b",
+      "after_sha256": "394faea9f79a460036d305abfe2242486a3f7e7d8385785f8ed16f0f1fc70b92",
+      "stage_dp": [
+        320,
+        640
+      ],
+      "font_scale": 2,
+      "capture_target": "independent-dialog-root",
+      "before_window": "title=接口协议\noperation=知道了\nfontScale=2.0\nbounds=Rect.fromLTRB(0.0, 0.0, 640.0, 765.0)\n",
+      "after_window": "title=接口协议\noperation=知道了\nfontScale=2.0\nbounds=Rect.fromLTRB(0.0, 0.0, 544.0, 808.0)\n",
+      "before_measurements": "operation=Rect.fromLTRB(388.0, 608.0, 592.0, 717.0)\noperationUnclipped=Rect.fromLTRB(388.0, 608.0, 592.0, 717.0)",
+      "after_measurements": "operation=Rect.fromLTRB(292.0, 651.0, 496.0, 760.0)\noperationUnclipped=Rect.fromLTRB(292.0, 651.0, 496.0, 760.0)",
+      "changed_pixels": 591089,
+      "changed_ratio": 0.721544189453125,
+      "before": "before/E11_protocol-dialog-light.png",
+      "after": "after/E11_protocol-dialog-light.png",
+      "diff": "diff/E11_protocol-dialog-light.png"
+    },
+    {
+      "id": "E11_template-dialog-dark",
+      "label": "选择提供商模板 · 深色",
+      "group": "window",
+      "status": "已人工接纳",
+      "before_size_px": [
+        640,
+        1280
+      ],
+      "after_size_px": [
+        640,
+        1280
+      ],
+      "before_source": ".trellis/tasks/10-21-ui-token-provider-settings/research/capture-stability-20261105/before/E11_template-dialog-dark_actual.png",
+      "after_source": ".trellis/tasks/10-21-ui-token-provider-settings/research/capture-stability-20261105/after/E11_template-dialog-dark_actual.png",
+      "before_sha256": "f82efc6fd1e0ad61dac3d6dd1c99e6700ae449a331825c04e68bd57b2f9e033d",
+      "after_sha256": "f1c8c36e2d864bae7263c8faf241666b444a6e274e55abed9f09e21fa252ac52",
+      "stage_dp": [
+        320,
+        640
+      ],
+      "font_scale": 2,
+      "capture_target": "independent-dialog-root",
+      "before_window": "title=选择提供商模板\noperation=取消\nfontScale=2.0\nbounds=Rect.fromLTRB(0.0, 0.0, 640.0, 1280.0)\n",
+      "after_window": "title=选择提供商模板\noperation=取消\nfontScale=2.0\nbounds=Rect.fromLTRB(0.0, 0.0, 576.0, 1184.0)\n",
+      "before_measurements": "operation=Rect.fromLTRB(424.0, 1099.0, 576.0, 1208.0)\noperationUnclipped=Rect.fromLTRB(424.0, 1099.0, 576.0, 1208.0)",
+      "after_measurements": "operation=Rect.fromLTRB(400.0, 1059.0, 552.0, 1168.0)\noperationUnclipped=Rect.fromLTRB(400.0, 1059.0, 552.0, 1168.0)",
+      "changed_pixels": 733137,
+      "changed_ratio": 0.894942626953125,
+      "before": "before/E11_template-dialog-dark.png",
+      "after": "after/E11_template-dialog-dark.png",
+      "diff": "diff/E11_template-dialog-dark.png"
+    },
+    {
+      "id": "E11_template-dialog-light",
+      "label": "选择提供商模板 · 浅色",
+      "group": "window",
+      "status": "已人工接纳",
+      "before_size_px": [
+        640,
+        1280
+      ],
+      "after_size_px": [
+        640,
+        1280
+      ],
+      "before_source": ".trellis/tasks/10-21-ui-token-provider-settings/research/capture-stability-20261105/before/E11_template-dialog-light_actual.png",
+      "after_source": ".trellis/tasks/10-21-ui-token-provider-settings/research/capture-stability-20261105/after/E11_template-dialog-light_actual.png",
+      "before_sha256": "5f414a533b76bec6496d10c08987c4bebe8a425cd1147f3e8d457a3bf6434664",
+      "after_sha256": "6f989b8d44d50d67285b5d95308ae52a0b03587186fb67a46e7f2da7374bae02",
+      "stage_dp": [
+        320,
+        640
+      ],
+      "font_scale": 2,
+      "capture_target": "independent-dialog-root",
+      "before_window": "title=选择提供商模板\noperation=取消\nfontScale=2.0\nbounds=Rect.fromLTRB(0.0, 0.0, 640.0, 1280.0)\n",
+      "after_window": "title=选择提供商模板\noperation=取消\nfontScale=2.0\nbounds=Rect.fromLTRB(0.0, 0.0, 576.0, 1184.0)\n",
+      "before_measurements": "operation=Rect.fromLTRB(424.0, 1099.0, 576.0, 1208.0)\noperationUnclipped=Rect.fromLTRB(424.0, 1099.0, 576.0, 1208.0)",
+      "after_measurements": "operation=Rect.fromLTRB(400.0, 1059.0, 552.0, 1168.0)\noperationUnclipped=Rect.fromLTRB(400.0, 1059.0, 552.0, 1168.0)",
+      "changed_pixels": 763497,
+      "changed_ratio": 0.932003173828125,
+      "before": "before/E11_template-dialog-light.png",
+      "after": "after/E11_template-dialog-light.png",
+      "diff": "diff/E11_template-dialog-light.png"
+    }
+  ]
+}

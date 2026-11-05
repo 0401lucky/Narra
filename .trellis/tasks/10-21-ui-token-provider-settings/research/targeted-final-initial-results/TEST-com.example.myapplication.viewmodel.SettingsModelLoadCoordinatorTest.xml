@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.myapplication.viewmodel.SettingsModelLoadCoordinatorTest" tests="2" skipped="0" failures="0" errors="0" timestamp="2026-11-05T05:55:28.321Z" hostname="LUCKY" time="0.014">
+  <properties/>
+  <testcase name="loadModelsForProvider_persistsMergedModelsWhenRequested" classname="com.example.myapplication.viewmodel.SettingsModelLoadCoordinatorTest" time="0.01"/>
+  <testcase name="loadModelsForProvider_returnsPendingFetchedModelsWhenNotPersisting" classname="com.example.myapplication.viewmodel.SettingsModelLoadCoordinatorTest" time="0.004"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.myapplication.data.repository.ConversationRepositoryTest" tests="19" skipped="0" failures="0" errors="0" timestamp="2026-11-05T09:47:29.533Z" hostname="LUCKY" time="0.053">
+  <properties/>
+  <testcase name="ensureActiveConversation_createsDefaultConversationWhenStoreIsEmpty" classname="com.example.myapplication.data.repository.ConversationRepositoryTest" time="0.004"/>
+  <testcase name="deleteMessage_returnsNotFoundWithoutCallingStoreWhenConversationIsMissing" classname="com.example.myapplication.data.repository.ConversationRepositoryTest" time="0.002"/>
+  <testcase name="deleteConversation_createsNewConversationWhenLastOneRemoved" classname="com.example.myapplication.data.repository.ConversationRepositoryTest" time="0.004"/>
+  <testcase name="clearConversation_onlyClearsCurrentMessagesAndResetsTitle" classname="com.example.myapplication.data.repository.ConversationRepositoryTest" time="0.003"/>
+  <testcase name="deleteMessage_deletesThroughAtomicStoreAndPreservesConversationMetadata" classname="com.example.myapplication.data.repository.ConversationRepositoryTest" time="0.004"/>
+  <testcase name="upsertMessages_doesNotReadExistingMessagesOnHotPath" classname="com.example.myapplication.data.repository.ConversationRepositoryTest" time="0.002"/>
+  <testcase name="replaceConversationSnapshot_replacesSnapshotWhenMessagesAreRewound" classname="com.example.myapplication.data.repository.ConversationRepositoryTest" time="0.004"/>
+  <testcase name="deleteMessage_propagatesAtomicStoreFailure" classname="com.example.myapplication.data.repository.ConversationRepositoryTest" time="0.004"/>
+  <testcase name="applyTransferUpdates_skipsWriteWhenMessageStateDoesNotChange" classname="com.example.myapplication.data.repository.ConversationRepositoryTest" time="0.003"/>
+  <testcase name="deleteConversation_deletesPhoneSnapshot" classname="com.example.myapplication.data.repository.ConversationRepositoryTest" time="0.003"/>
+  <testcase name="appendMessages_doesNotReadExistingMessagesOnHotPath" classname="com.example.myapplication.data.repository.ConversationRepositoryTest" time="0.002"/>
+  <testcase name="replaceConversationSnapshot_updatesTitleAndModel" classname="com.example.myapplication.data.repository.ConversationRepositoryTest" time="0.002"/>
+  <testcase name="appendMessages_appendsIncrementallyWithoutReplacingSnapshot" classname="com.example.myapplication.data.repository.ConversationRepositoryTest" time="0.002"/>
+  <testcase name="deleteMessage_returnsNotFoundWithoutUpdatingConversationWhenTargetIsMissing" classname="com.example.myapplication.data.repository.ConversationRepositoryTest" time="0.002"/>
+  <testcase name="ensureActiveConversation_treatsLegacyBlankAssistantAsDefaultAssistant" classname="com.example.myapplication.data.repository.ConversationRepositoryTest" time="0.002"/>
+  <testcase name="createConversation_persistsWithDefaultTitle" classname="com.example.myapplication.data.repository.ConversationRepositoryTest" time="0.002"/>
+  <testcase name="clearConversation_deletesPhoneSnapshot" classname="com.example.myapplication.data.repository.ConversationRepositoryTest" time="0.001"/>
+  <testcase name="deleteConversation_returnsRemainingConversation" classname="com.example.myapplication.data.repository.ConversationRepositoryTest" time="0.003"/>
+  <testcase name="applyTransferUpdates_readsCurrentMessagesAsSingleException" classname="com.example.myapplication.data.repository.ConversationRepositoryTest" time="0.003"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

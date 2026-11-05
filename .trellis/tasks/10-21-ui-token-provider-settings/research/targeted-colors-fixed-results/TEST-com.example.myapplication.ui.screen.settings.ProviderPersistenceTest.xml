@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.myapplication.ui.screen.settings.ProviderPersistenceTest" tests="2" skipped="0" failures="0" errors="0" timestamp="2026-11-05T05:37:12.189Z" hostname="LUCKY" time="0.711">
+  <properties/>
+  <testcase name="explicitSave_failureKeepsProviderAndOverrides_withoutSuccessCallback" classname="com.example.myapplication.ui.screen.settings.ProviderPersistenceTest" time="0.353"/>
+  <testcase name="explicitSave_successPersistsDraftThenCallsSuccessOnce" classname="com.example.myapplication.ui.screen.settings.ProviderPersistenceTest" time="0.353"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

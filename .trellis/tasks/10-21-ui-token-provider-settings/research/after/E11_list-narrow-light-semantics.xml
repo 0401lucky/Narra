@@ -1,0 +1,65 @@
+<semantics id="E11_list-narrow-light" fontScale="2.0"><![CDATA[Printing with useUnmergedTree = 'false'
+Node #9772 at (l=0.0, t=0.0, r=640.0, b=1280.0)px, Tag: 'screenshot_stage'
+Shape = 'RectangleShape'
+ |-Node #9773 at (l=0.0, t=0.0, r=640.0, b=1280.0)px
+   IsContainer = 'true'
+   Shape = 'RectangleShape'
+    |-Node #9795 at (l=0.0, t=133.0, r=640.0, b=1280.0)px
+    | CollectionInfo = 'CollectionInfo(rowCount=-1, columnCount=-1)'
+    | IsTraversalGroup = 'true'
+    | Shape = 'androidx.compose.foundation.VerticalScrollableClipShape@1b3c8914'
+    | VerticalScrollAxisRange = 'ScrollAxisRange(value=646.0, maxValue=646.0, reverseScrolling=false)'
+    | Actions = [GetScrollViewportLength, IndexForKey, ScrollBy, ScrollByOffset, ScrollToIndex]
+    |  |-Node #9811 at (l=32.0, t=-5.0, r=608.0, b=628.0)px
+    |  | Focused = 'false'
+    |  | IsContainer = 'true'
+    |  | LiveRegion = 'Polite'
+    |  | Role = 'Button'
+    |  | Shape = 'RoundedCornerShape(topStart = CornerSize(size = 16.0.dp), topEnd = CornerSize(size = 16.0.dp), bottomEnd = CornerSize(size = 16.0.dp), bottomStart = CornerSize(size = 16.0.dp))'
+    |  | Text = '[合, 合成提供商：长篇叙事与多语言服务, fixture-model-1, 连接正常, 启用, 5 个模型]'
+    |  | [Heading]
+    |  | Actions = [ClearTextSubstitution, GetTextLayoutResult, OnClick, RequestFocus, SetTextSubstitution, ShowTextSubstitution]
+    |  | MergeDescendants = 'true'
+    |  |-Node #9832 at (l=32.0, t=660.0, r=608.0, b=1216.0)px
+    |  | Focused = 'false'
+    |  | IsContainer = 'true'
+    |  | LiveRegion = 'Polite'
+    |  | Role = 'Button'
+    |  | Shape = 'RoundedCornerShape(topStart = CornerSize(size = 16.0.dp), topEnd = CornerSize(size = 16.0.dp), bottomEnd = CornerSize(size = 16.0.dp), bottomStart = CornerSize(size = 16.0.dp))'
+    |  | Text = '[合成备用服务, fixture-model-1, 连接失败, 停用, 2 个模型]'
+    |  | [Heading]
+    |  | Actions = [ClearTextSubstitution, GetTextLayoutResult, OnClick, RequestFocus, SetTextSubstitution, ShowTextSubstitution]
+    |  | MergeDescendants = 'true'
+    |  |-Node #9798 at (l=32.0, t=141.0, r=608.0, b=317.0)px
+    |    ContentDataType = 'AndroidContentDataType(androidAutofillType=1)'
+    |    EditableText = ''
+    |    FillableData = 'androidx.compose.ui.autofill.AndroidFillableData@1144ecae'
+    |    Focused = 'false'
+    |    ImeAction = 'Default'
+    |    InputText = ''
+    |    IsEditable = 'true'
+    |    Text = '[搜索提供商]'
+    |    TextSelectionRange = 'TextRange(0, 0)'
+    |    Actions = [ClearTextSubstitution, GetTextLayoutResult, InsertTextAtCursor, OnClick, OnFillData, OnLongClick, PasteText, PerformImeAction, RequestFocus, SetSelection, SetText, SetTextSubstitution, ShowTextSubstitution]
+    |    MergeDescendants = 'true'
+    |-Node #9777 at (l=0.0, t=0.0, r=640.0, b=133.0)px
+      IsContainer = 'true'
+      Shape = 'RectangleShape'
+       |-Node #9779 at (l=16.0, t=23.0, r=112.0, b=119.0)px
+       | ContentDescription = '[返回]'
+       | Focused = 'false'
+       | Role = 'Button'
+       | Shape = 'RoundedCornerShape(topStart = CornerSize(size = 50.0%), topEnd = CornerSize(size = 50.0%), bottomEnd = CornerSize(size = 50.0%), bottomStart = CornerSize(size = 50.0%))'
+       | Actions = [OnClick, RequestFocus]
+       | MergeDescendants = 'true'
+       |-Node #9782 at (l=120.0, t=19.0, r=330.0, b=122.0)px
+       | Text = '[提供商]'
+       | [Heading]
+       | Actions = [ClearTextSubstitution, GetTextLayoutResult, SetTextSubstitution, ShowTextSubstitution]
+       |-Node #9783 at (l=408.0, t=16.0, r=608.0, b=125.0)px
+         Focused = 'false'
+         Role = 'Button'
+         Shape = 'RoundedCornerShape(topStart = CornerSize(size = 16.0.dp), topEnd = CornerSize(size = 16.0.dp), bottomEnd = CornerSize(size = 16.0.dp), bottomStart = CornerSize(size = 16.0.dp))'
+         Text = '[新增]'
+         Actions = [ClearTextSubstitution, GetTextLayoutResult, OnClick, RequestFocus, SetTextSubstitution, ShowTextSubstitution]
+         MergeDescendants = 'true']]></semantics>

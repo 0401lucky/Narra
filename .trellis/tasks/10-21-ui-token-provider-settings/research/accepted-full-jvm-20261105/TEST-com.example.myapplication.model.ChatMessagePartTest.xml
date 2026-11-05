@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.myapplication.model.ChatMessagePartTest" tests="8" skipped="0" failures="0" errors="0" timestamp="2026-11-05T09:47:47.690Z" hostname="LUCKY" time="0.001">
+  <properties/>
+  <testcase name="voiceAudioStateHelpers_updateVoiceMetadata" classname="com.example.myapplication.model.ChatMessagePartTest" time="0.0"/>
+  <testcase name="toPlainText_decodesOnlineThoughtMarker" classname="com.example.myapplication.model.ChatMessagePartTest" time="0.0"/>
+  <testcase name="toContentMirror_returnsInviteFallback" classname="com.example.myapplication.model.ChatMessagePartTest" time="0.0"/>
+  <testcase name="giftImageStateHelpers_updateGiftMetadata" classname="com.example.myapplication.model.ChatMessagePartTest" time="0.0"/>
+  <testcase name="toContentMirror_returnsPunishFallback" classname="com.example.myapplication.model.ChatMessagePartTest" time="0.0"/>
+  <testcase name="toSpecialPlayCopyText_includesPunishPayload" classname="com.example.myapplication.model.ChatMessagePartTest" time="0.001"/>
+  <testcase name="toSpecialPlayCopyText_includesGiftPayload" classname="com.example.myapplication.model.ChatMessagePartTest" time="0.0"/>
+  <testcase name="normalizeChatMessageParts_trimsTaskMetadata" classname="com.example.myapplication.model.ChatMessagePartTest" time="0.0"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

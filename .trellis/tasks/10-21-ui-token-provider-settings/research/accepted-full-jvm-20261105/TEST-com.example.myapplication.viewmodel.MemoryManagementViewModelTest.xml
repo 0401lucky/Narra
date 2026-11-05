@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.myapplication.viewmodel.MemoryManagementViewModelTest" tests="1" skipped="0" failures="0" errors="0" timestamp="2026-11-05T09:49:04.632Z" hostname="LUCKY" time="0.01">
+  <properties/>
+  <testcase name="togglePinned_updatesMemoryAndDeleteSummary_removesSummary" classname="com.example.myapplication.viewmodel.MemoryManagementViewModelTest" time="0.01"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

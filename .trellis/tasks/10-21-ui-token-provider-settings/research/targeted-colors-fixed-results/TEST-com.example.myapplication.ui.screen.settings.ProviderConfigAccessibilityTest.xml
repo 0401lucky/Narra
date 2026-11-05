@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.myapplication.ui.screen.settings.ProviderConfigAccessibilityTest" tests="6" skipped="0" failures="0" errors="0" timestamp="2026-11-05T05:37:04.653Z" hostname="LUCKY" time="1.947">
+  <properties/>
+  <testcase name="protocolAndMode_largeFontOptions_changeOnlyTheirOwnFields" classname="com.example.myapplication.ui.screen.settings.ProviderConfigAccessibilityTest" time="0.407"/>
+  <testcase name="tabsAndKeyVisibility_areKeyedByProviderId" classname="com.example.myapplication.ui.screen.settings.ProviderConfigAccessibilityTest" time="0.314"/>
+  <testcase name="lastProviderCannotBeDeleted_otherProvidersKeepExplicitDeleteAndBackOrder" classname="com.example.myapplication.ui.screen.settings.ProviderConfigAccessibilityTest" time="0.286"/>
+  <testcase name="saveWhileInFlight_isDisabledAndDoesNotRepeatCallback" classname="com.example.myapplication.ui.screen.settings.ProviderConfigAccessibilityTest" time="0.269"/>
+  <testcase name="configuration_largeFontLabelsValuesAndCallbacks_preserveProviderIdentity" classname="com.example.myapplication.ui.screen.settings.ProviderConfigAccessibilityTest" time="0.397"/>
+  <testcase name="longHeaderAndSaveArea_largeFont_remainAboveTabsWithFullTouchTargets" classname="com.example.myapplication.ui.screen.settings.ProviderConfigAccessibilityTest" time="0.267"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

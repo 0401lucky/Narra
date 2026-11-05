@@ -1,0 +1,81 @@
+title=选择提供商模板
+operation=取消
+fontScale=2.0
+bounds=Rect.fromLTRB(0.0, 0.0, 576.0, 1184.0)
+Printing with useUnmergedTree = 'true'
+Node #6307 at (l=32.0, t=0.0, r=608.0, b=1184.0)px
+ |-Node #6308 at (l=32.0, t=0.0, r=608.0, b=1184.0)px
+   [IsDialog]
+    |-Node #6309 at (l=32.0, t=0.0, r=608.0, b=1184.0)px
+      IsContainer = 'true'
+      Shape = 'RoundedCornerShape(topStart = CornerSize(size = 24.0.dp), topEnd = CornerSize(size = 24.0.dp), bottomEnd = CornerSize(size = 24.0.dp), bottomStart = CornerSize(size = 24.0.dp))'
+       |-Node #6311 at (l=64.0, t=32.0, r=554.0, b=135.0)px
+       | Text = '[选择提供商模板]'
+       | [Heading]
+       | Actions = [ClearTextSubstitution, GetTextLayoutResult, SetTextSubstitution, ShowTextSubstitution]
+       |-Node #6312 at (l=64.0, t=167.0, r=532.0, b=244.0)px
+       | Text = '[快速填充配置参数。]'
+       | Actions = [ClearTextSubstitution, GetTextLayoutResult, SetTextSubstitution, ShowTextSubstitution]
+       |-Node #6313 at (l=32.0, t=244.0, r=608.0, b=1043.0)px
+       | CollectionInfo = 'CollectionInfo(rowCount=10, columnCount=1)'
+       | IsTraversalGroup = 'true'
+       | Shape = 'androidx.compose.foundation.VerticalScrollableClipShape@1b3c8914'
+       | VerticalScrollAxisRange = 'ScrollAxisRange(value=0.0, maxValue=100.0, reverseScrolling=false)'
+       | Actions = [GetScrollViewportLength, IndexForKey, ScrollBy, ScrollByOffset, ScrollToIndex]
+       |  |-Node #6319 at (l=64.0, t=276.0, r=576.0, b=599.0)px
+       |  | Focused = 'false'
+       |  | Shape = 'RoundedCornerShape(topStart = CornerSize(size = 16.0.dp), topEnd = CornerSize(size = 16.0.dp), bottomEnd = CornerSize(size = 16.0.dp), bottomStart = CornerSize(size = 16.0.dp))'
+       |  | Actions = [OnClick, RequestFocus]
+       |  | MergeDescendants = 'true'
+       |  |  |-Node #6322 at (l=96.0, t=398.0, r=176.0, b=478.0)px
+       |  |  | IsContainer = 'true'
+       |  |  | Shape = 'RoundedCornerShape(topStart = CornerSize(size = 50.0%), topEnd = CornerSize(size = 50.0%), bottomEnd = CornerSize(size = 50.0%), bottomStart = CornerSize(size = 50.0%))'
+       |  |  |  |-Node #6323 at (l=112.0, t=414.0, r=160.0, b=462.0)px
+       |  |  |    Shape = 'RoundedCornerShape(topStart = CornerSize(size = 50.0%), topEnd = CornerSize(size = 50.0%), bottomEnd = CornerSize(size = 50.0%), bottomStart = CornerSize(size = 50.0%))'
+       |  |  |-Node #6325 at (l=200.0, t=308.0, r=385.0, b=374.0)px
+       |  |  | Text = '[OpenAI]'
+       |  |  | Actions = [ClearTextSubstitution, GetTextLayoutResult, SetTextSubstitution, ShowTextSubstitution]
+       |  |  |-Node #6326 at (l=200.0, t=382.0, r=544.0, b=567.0)px
+       |  |    Text = '[GPT-4o / o3 / o4-mini 等系列模型]'
+       |  |    Actions = [ClearTextSubstitution, GetTextLayoutResult, SetTextSubstitution, ShowTextSubstitution]
+       |  |-Node #6328 at (l=64.0, t=623.0, r=576.0, b=882.0)px
+       |  | Focused = 'false'
+       |  | Shape = 'RoundedCornerShape(topStart = CornerSize(size = 16.0.dp), topEnd = CornerSize(size = 16.0.dp), bottomEnd = CornerSize(size = 16.0.dp), bottomStart = CornerSize(size = 16.0.dp))'
+       |  | Actions = [OnClick, RequestFocus]
+       |  | MergeDescendants = 'true'
+       |  |  |-Node #6331 at (l=96.0, t=713.0, r=176.0, b=793.0)px
+       |  |  | IsContainer = 'true'
+       |  |  | Shape = 'RoundedCornerShape(topStart = CornerSize(size = 50.0%), topEnd = CornerSize(size = 50.0%), bottomEnd = CornerSize(size = 50.0%), bottomStart = CornerSize(size = 50.0%))'
+       |  |  |  |-Node #6332 at (l=112.0, t=729.0, r=160.0, b=777.0)px
+       |  |  |    Shape = 'RoundedCornerShape(topStart = CornerSize(size = 50.0%), topEnd = CornerSize(size = 50.0%), bottomEnd = CornerSize(size = 50.0%), bottomStart = CornerSize(size = 50.0%))'
+       |  |  |-Node #6334 at (l=200.0, t=655.0, r=452.0, b=721.0)px
+       |  |  | Text = '[DeepSeek]'
+       |  |  | Actions = [ClearTextSubstitution, GetTextLayoutResult, SetTextSubstitution, ShowTextSubstitution]
+       |  |  |-Node #6335 at (l=200.0, t=729.0, r=544.0, b=850.0)px
+       |  |    Text = '[DeepSeek-V3 / R1 等系列模型]'
+       |  |    Actions = [ClearTextSubstitution, GetTextLayoutResult, SetTextSubstitution, ShowTextSubstitution]
+       |  |-Node #6337 at (l=64.0, t=906.0, r=576.0, b=1370.0)px
+       |    Focused = 'false'
+       |    Shape = 'RoundedCornerShape(topStart = CornerSize(size = 16.0.dp), topEnd = CornerSize(size = 16.0.dp), bottomEnd = CornerSize(size = 16.0.dp), bottomStart = CornerSize(size = 16.0.dp))'
+       |    Actions = [OnClick, RequestFocus]
+       |    MergeDescendants = 'true'
+       |     |-Node #6340 at (l=96.0, t=1098.0, r=176.0, b=1178.0)px
+       |     | IsContainer = 'true'
+       |     | Shape = 'RoundedCornerShape(topStart = CornerSize(size = 50.0%), topEnd = CornerSize(size = 50.0%), bottomEnd = CornerSize(size = 50.0%), bottomStart = CornerSize(size = 50.0%))'
+       |     |  |-Node #6341 at (l=112.0, t=1114.0, r=160.0, b=1162.0)px
+       |     |    Shape = 'RoundedCornerShape(topStart = CornerSize(size = 50.0%), topEnd = CornerSize(size = 50.0%), bottomEnd = CornerSize(size = 50.0%), bottomStart = CornerSize(size = 50.0%))'
+       |     |-Node #6343 at (l=200.0, t=938.0, r=544.0, b=1081.0)px
+       |     | Text = '[Google Gemini]'
+       |     | Actions = [ClearTextSubstitution, GetTextLayoutResult, SetTextSubstitution, ShowTextSubstitution]
+       |     |-Node #6344 at (l=200.0, t=1089.0, r=544.0, b=1338.0)px
+       |       Text = '[Gemini 3.5 Flash / 2.5 Pro / Flash 等系列模型]'
+       |       Actions = [ClearTextSubstitution, GetTextLayoutResult, SetTextSubstitution, ShowTextSubstitution]
+       |-Node #6315 at (l=432.0, t=1059.0, r=584.0, b=1168.0)px
+         Focused = 'false'
+         Role = 'Button'
+         Shape = 'RoundedCornerShape(topStart = CornerSize(size = 50.0%), topEnd = CornerSize(size = 50.0%), bottomEnd = CornerSize(size = 50.0%), bottomStart = CornerSize(size = 50.0%))'
+         Actions = [OnClick, RequestFocus]
+         MergeDescendants = 'true'
+          |-Node #6317 at (l=456.0, t=1075.0, r=560.0, b=1152.0)px
+            Text = '[取消]'
+            Actions = [ClearTextSubstitution, GetTextLayoutResult, SetTextSubstitution, ShowTextSubstitution]

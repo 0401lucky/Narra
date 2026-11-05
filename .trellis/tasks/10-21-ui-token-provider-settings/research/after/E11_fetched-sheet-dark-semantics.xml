@@ -1,0 +1,192 @@
+<semantics id="E11_fetched-sheet-dark" fontScale="2.0"><![CDATA[Printing with useUnmergedTree = 'true'
+Node #7880 at (l=0.0, t=0.0, r=640.0, b=1280.0)px
+ |-Node #7881 at (l=0.0, t=0.0, r=640.0, b=1280.0)px
+   [IsDialog]
+    |-Node #7882 at (l=0.0, t=0.0, r=640.0, b=1280.0)px
+      IsTraversalGroup = 'true'
+       |-Node #7883 at (l=0.0, t=0.0, r=640.0, b=1280.0)px
+       | ContentDescription = '[关闭工作表]'
+       | TraversalIndex = '1.0'
+       | Actions = [OnClick]
+       | MergeDescendants = 'true'
+       |-Node #7884 at (l=0.0, t=0.0, r=640.0, b=1280.0)px
+         IsContainer = 'true'
+         PaneTitle = '底部动作条'
+         Shape = 'RoundedCornerShape(topStart = CornerSize(size = 24.0.dp), topEnd = CornerSize(size = 24.0.dp), bottomEnd = CornerSize(size = 24.0.dp), bottomStart = CornerSize(size = 24.0.dp))'
+         TraversalIndex = '0.0'
+          |-Node #7885 at (l=0.0, t=0.0, r=640.0, b=1280.0)px
+             |-Node #7888 at (l=288.0, t=0.0, r=352.0, b=96.0)px
+             | Actions = [OnLongClick]
+             | MergeDescendants = 'true'
+             |  |-Node #7890 at (l=288.0, t=0.0, r=352.0, b=96.0)px
+             |    Focused = 'false'
+             |    Actions = [Dismiss, OnClick, RequestFocus]
+             |    MergeDescendants = 'true'
+             |     |-Node #7891 at (l=288.0, t=44.0, r=352.0, b=52.0)px
+             |       ContentDescription = '[拖动手柄]'
+             |       IsContainer = 'true'
+             |       Shape = 'RoundedCornerShape(topStart = CornerSize(size = 24.0.dp), topEnd = CornerSize(size = 24.0.dp), bottomEnd = CornerSize(size = 24.0.dp), bottomStart = CornerSize(size = 24.0.dp))'
+             |-Node #7897 at (l=32.0, t=96.0, r=312.0, b=199.0)px
+             | Text = '[选择模型]'
+             | Actions = [ClearTextSubstitution, GetTextLayoutResult, SetTextSubstitution, ShowTextSubstitution]
+             |-Node #7898 at (l=32.0, t=207.0, r=241.0, b=278.0)px
+             | Text = '[已选 5/12]'
+             | Actions = [ClearTextSubstitution, GetTextLayoutResult, SetTextSubstitution, ShowTextSubstitution]
+             |-Node #7899 at (l=456.0, t=133.0, r=608.0, b=242.0)px
+             | Focused = 'false'
+             | Role = 'Button'
+             | Shape = 'RoundedCornerShape(topStart = CornerSize(size = 50.0%), topEnd = CornerSize(size = 50.0%), bottomEnd = CornerSize(size = 50.0%), bottomStart = CornerSize(size = 50.0%))'
+             | Actions = [OnClick, RequestFocus]
+             | MergeDescendants = 'true'
+             |  |-Node #7901 at (l=480.0, t=149.0, r=584.0, b=226.0)px
+             |    Text = '[全选]'
+             |    Actions = [ClearTextSubstitution, GetTextLayoutResult, SetTextSubstitution, ShowTextSubstitution]
+             |-Node #7902 at (l=32.0, t=302.0, r=608.0, b=478.0)px
+             | ContentDataType = 'AndroidContentDataType(androidAutofillType=1)'
+             | EditableText = ''
+             | FillableData = 'androidx.compose.ui.autofill.AndroidFillableData@16256146'
+             | Focused = 'false'
+             | ImeAction = 'Default'
+             | InputText = ''
+             | IsEditable = 'true'
+             | TextSelectionRange = 'TextRange(0, 0)'
+             | Actions = [GetTextLayoutResult, InsertTextAtCursor, OnClick, OnFillData, OnLongClick, PasteText, PerformImeAction, RequestFocus, SetSelection, SetText]
+             | MergeDescendants = 'true'
+             |  |-Node #7906 at (l=32.0, t=330.0, r=608.0, b=478.0)px
+             |  | Shape = 'RoundedCornerShape(topStart = CornerSize(size = 16.0.dp), topEnd = CornerSize(size = 16.0.dp), bottomEnd = CornerSize(size = 16.0.dp), bottomStart = CornerSize(size = 16.0.dp))'
+             |  |-Node #7914 at (l=136.0, t=362.0, r=360.0, b=446.0)px
+             |  | Text = '[搜索模型]'
+             |  | Actions = [ClearTextSubstitution, GetTextLayoutResult, SetTextSubstitution, ShowTextSubstitution]
+             |  |-Node #7911 at (l=136.0, t=372.0, r=504.0, b=456.0)px
+             |    Shape = 'RectangleShape'
+             |-Node #7917 at (l=0.0, t=504.0, r=640.0, b=1091.0)px
+             | CollectionInfo = 'CollectionInfo(rowCount=12, columnCount=1)'
+             | IsTraversalGroup = 'true'
+             | Shape = 'androidx.compose.foundation.VerticalScrollableClipShape@1b3c8914'
+             | VerticalScrollAxisRange = 'ScrollAxisRange(value=0.0, maxValue=100.0, reverseScrolling=false)'
+             | Actions = [GetScrollViewportLength, IndexForKey, ScrollBy, ScrollByOffset, ScrollToIndex]
+             |  |-Node #7930 at (l=32.0, t=520.0, r=608.0, b=896.0)px
+             |  | ContentDataType = 'AndroidContentDataType(androidAutofillType=2)'
+             |  | FillableData = 'androidx.compose.ui.autofill.AndroidFillableData@77fd98ee'
+             |  | Focused = 'false'
+             |  | IsContainer = 'true'
+             |  | Role = 'Checkbox'
+             |  | Shape = 'RoundedCornerShape(topStart = CornerSize(size = 16.0.dp), topEnd = CornerSize(size = 16.0.dp), bottomEnd = CornerSize(size = 16.0.dp), bottomStart = CornerSize(size = 16.0.dp))'
+             |  | ToggleableState = 'On'
+             |  | Actions = [OnClick, OnFillData, RequestFocus]
+             |  | MergeDescendants = 'true'
+             |  |  |-Node #7933 at (l=124.0, t=672.0, r=196.0, b=744.0)px
+             |  |  | IsContainer = 'true'
+             |  |  | Shape = 'RoundedCornerShape(topStart = CornerSize(size = 8.0.dp), topEnd = CornerSize(size = 8.0.dp), bottomEnd = CornerSize(size = 8.0.dp), bottomStart = CornerSize(size = 8.0.dp))'
+             |  |  |  |-Node #7935 at (l=140.0, t=688.0, r=180.0, b=728.0)px
+             |  |  |    IsContainer = 'true'
+             |  |  |    Shape = 'RoundedCornerShape(topStart = CornerSize(size = 50.0%), topEnd = CornerSize(size = 50.0%), bottomEnd = CornerSize(size = 50.0%), bottomStart = CornerSize(size = 50.0%))'
+             |  |  |     |-Node #7937 at (l=148.0, t=688.0, r=172.0, b=728.0)px
+             |  |  |       Text = '[F]'
+             |  |  |       Actions = [ClearTextSubstitution, GetTextLayoutResult, SetTextSubstitution, ShowTextSubstitution]
+             |  |  |-Node #7939 at (l=220.0, t=544.0, r=584.0, b=696.0)px
+             |  |  | Text = '[长篇叙事与多语言理解模型]'
+             |  |  | Actions = [ClearTextSubstitution, GetTextLayoutResult, SetTextSubstitution, ShowTextSubstitution]
+             |  |  |-Node #7940 at (l=220.0, t=712.0, r=340.0, b=793.0)px
+             |  |  | IsContainer = 'true'
+             |  |  | Shape = 'RoundedCornerShape(topStart = CornerSize(size = 50.0%), topEnd = CornerSize(size = 50.0%), bottomEnd = CornerSize(size = 50.0%), bottomStart = CornerSize(size = 50.0%))'
+             |  |  |  |-Node #7941 at (l=236.0, t=720.0, r=324.0, b=785.0)px
+             |  |  |    Text = '[已有]'
+             |  |  |    Actions = [ClearTextSubstitution, GetTextLayoutResult, SetTextSubstitution, ShowTextSubstitution]
+             |  |  |-Node #7944 at (l=220.0, t=809.0, r=365.0, b=872.0)px
+             |  |  | IsContainer = 'true'
+             |  |  | Shape = 'RoundedCornerShape(topStart = CornerSize(size = 50.0%), topEnd = CornerSize(size = 50.0%), bottomEnd = CornerSize(size = 50.0%), bottomStart = CornerSize(size = 50.0%))'
+             |  |  |  |-Node #7946 at (l=236.0, t=817.0, r=261.0, b=864.0)px
+             |  |  |  | Text = '[T]'
+             |  |  |  | Actions = [ClearTextSubstitution, GetTextLayoutResult, SetTextSubstitution, ShowTextSubstitution]
+             |  |  |  |-Node #7947 at (l=269.0, t=832.0, r=287.0, b=850.0)px
+             |  |  |  | ContentDescription = '[Vision]'
+             |  |  |  | Role = 'Image'
+             |  |  |  |-Node #7948 at (l=295.0, t=817.0, r=316.0, b=864.0)px
+             |  |  |  | Text = '[>]'
+             |  |  |  | Actions = [ClearTextSubstitution, GetTextLayoutResult, SetTextSubstitution, ShowTextSubstitution]
+             |  |  |  |-Node #7949 at (l=324.0, t=817.0, r=349.0, b=864.0)px
+             |  |  |    Text = '[T]'
+             |  |  |    Actions = [ClearTextSubstitution, GetTextLayoutResult, SetTextSubstitution, ShowTextSubstitution]
+             |  |  |-Node #7950 at (l=373.0, t=809.0, r=433.0, b=869.0)px
+             |  |  | IsContainer = 'true'
+             |  |  | Shape = 'RoundedCornerShape(topStart = CornerSize(size = 50.0%), topEnd = CornerSize(size = 50.0%), bottomEnd = CornerSize(size = 50.0%), bottomStart = CornerSize(size = 50.0%))'
+             |  |  |  |-Node #7952 at (l=389.0, t=825.0, r=417.0, b=853.0)px
+             |  |  |    ContentDescription = '[推理]'
+             |  |  |    Role = 'Image'
+             |  |  |-Node #7953 at (l=441.0, t=809.0, r=501.0, b=869.0)px
+             |  |    IsContainer = 'true'
+             |  |    Shape = 'RoundedCornerShape(topStart = CornerSize(size = 50.0%), topEnd = CornerSize(size = 50.0%), bottomEnd = CornerSize(size = 50.0%), bottomStart = CornerSize(size = 50.0%))'
+             |  |     |-Node #7955 at (l=457.0, t=825.0, r=485.0, b=853.0)px
+             |  |       ContentDescription = '[工具]'
+             |  |       Role = 'Image'
+             |  |-Node #7957 at (l=32.0, t=904.0, r=608.0, b=1205.0)px
+             |    ContentDataType = 'AndroidContentDataType(androidAutofillType=2)'
+             |    FillableData = 'androidx.compose.ui.autofill.AndroidFillableData@5b0b2724'
+             |    Focused = 'false'
+             |    IsContainer = 'true'
+             |    Role = 'Checkbox'
+             |    Shape = 'RoundedCornerShape(topStart = CornerSize(size = 16.0.dp), topEnd = CornerSize(size = 16.0.dp), bottomEnd = CornerSize(size = 16.0.dp), bottomStart = CornerSize(size = 16.0.dp))'
+             |    ToggleableState = 'On'
+             |    Actions = [OnClick, OnFillData, RequestFocus]
+             |    MergeDescendants = 'true'
+             |     |-Node #7960 at (l=124.0, t=1019.0, r=196.0, b=1091.0)px
+             |     | IsContainer = 'true'
+             |     | Shape = 'RoundedCornerShape(topStart = CornerSize(size = 8.0.dp), topEnd = CornerSize(size = 8.0.dp), bottomEnd = CornerSize(size = 8.0.dp), bottomStart = CornerSize(size = 8.0.dp))'
+             |     |  |-Node #7962 at (l=140.0, t=1035.0, r=180.0, b=1075.0)px
+             |     |    IsContainer = 'true'
+             |     |    Shape = 'RoundedCornerShape(topStart = CornerSize(size = 50.0%), topEnd = CornerSize(size = 50.0%), bottomEnd = CornerSize(size = 50.0%), bottomStart = CornerSize(size = 50.0%))'
+             |     |     |-Node #7964 at (l=148.0, t=1035.0, r=172.0, b=1075.0)px
+             |     |       Text = '[F]'
+             |     |       Actions = [ClearTextSubstitution, GetTextLayoutResult, SetTextSubstitution, ShowTextSubstitution]
+             |     |-Node #7966 at (l=220.0, t=928.0, r=471.0, b=1005.0)px
+             |     | Text = '[合成模型 2]'
+             |     | Actions = [ClearTextSubstitution, GetTextLayoutResult, SetTextSubstitution, ShowTextSubstitution]
+             |     |-Node #7967 at (l=220.0, t=1021.0, r=340.0, b=1102.0)px
+             |     | IsContainer = 'true'
+             |     | Shape = 'RoundedCornerShape(topStart = CornerSize(size = 50.0%), topEnd = CornerSize(size = 50.0%), bottomEnd = CornerSize(size = 50.0%), bottomStart = CornerSize(size = 50.0%))'
+             |     |  |-Node #7968 at (l=236.0, t=1029.0, r=324.0, b=1094.0)px
+             |     |    Text = '[已有]'
+             |     |    Actions = [ClearTextSubstitution, GetTextLayoutResult, SetTextSubstitution, ShowTextSubstitution]
+             |     |-Node #7971 at (l=220.0, t=1118.0, r=365.0, b=1181.0)px
+             |     | IsContainer = 'true'
+             |     | Shape = 'RoundedCornerShape(topStart = CornerSize(size = 50.0%), topEnd = CornerSize(size = 50.0%), bottomEnd = CornerSize(size = 50.0%), bottomStart = CornerSize(size = 50.0%))'
+             |     |  |-Node #7973 at (l=236.0, t=1126.0, r=261.0, b=1173.0)px
+             |     |  | Text = '[T]'
+             |     |  | Actions = [ClearTextSubstitution, GetTextLayoutResult, SetTextSubstitution, ShowTextSubstitution]
+             |     |  |-Node #7974 at (l=269.0, t=1141.0, r=287.0, b=1159.0)px
+             |     |  | ContentDescription = '[Vision]'
+             |     |  | Role = 'Image'
+             |     |  |-Node #7975 at (l=295.0, t=1126.0, r=316.0, b=1173.0)px
+             |     |  | Text = '[>]'
+             |     |  | Actions = [ClearTextSubstitution, GetTextLayoutResult, SetTextSubstitution, ShowTextSubstitution]
+             |     |  |-Node #7976 at (l=324.0, t=1126.0, r=349.0, b=1173.0)px
+             |     |    Text = '[T]'
+             |     |    Actions = [ClearTextSubstitution, GetTextLayoutResult, SetTextSubstitution, ShowTextSubstitution]
+             |     |-Node #7977 at (l=373.0, t=1118.0, r=433.0, b=1178.0)px
+             |       IsContainer = 'true'
+             |       Shape = 'RoundedCornerShape(topStart = CornerSize(size = 50.0%), topEnd = CornerSize(size = 50.0%), bottomEnd = CornerSize(size = 50.0%), bottomStart = CornerSize(size = 50.0%))'
+             |        |-Node #7979 at (l=389.0, t=1134.0, r=417.0, b=1162.0)px
+             |          ContentDescription = '[工具]'
+             |          Role = 'Image'
+             |-Node #7918 at (l=0.0, t=1091.0, r=640.0, b=1280.0)px
+               IsContainer = 'true'
+               Shape = 'RectangleShape'
+                |-Node #7921 at (l=32.0, t=1123.0, r=253.0, b=1248.0)px
+                | Focused = 'false'
+                | Role = 'Button'
+                | Shape = 'RoundedCornerShape(topStart = CornerSize(size = 16.0.dp), topEnd = CornerSize(size = 16.0.dp), bottomEnd = CornerSize(size = 16.0.dp), bottomStart = CornerSize(size = 16.0.dp))'
+                | Actions = [OnClick, RequestFocus]
+                | MergeDescendants = 'true'
+                |  |-Node #7923 at (l=91.0, t=1147.0, r=195.0, b=1224.0)px
+                |    Text = '[取消]'
+                |    Actions = [ClearTextSubstitution, GetTextLayoutResult, SetTextSubstitution, ShowTextSubstitution]
+                |-Node #7924 at (l=277.0, t=1123.0, r=608.0, b=1248.0)px
+                  Focused = 'false'
+                  Role = 'Button'
+                  Shape = 'RoundedCornerShape(topStart = CornerSize(size = 16.0.dp), topEnd = CornerSize(size = 16.0.dp), bottomEnd = CornerSize(size = 16.0.dp), bottomStart = CornerSize(size = 16.0.dp))'
+                  Actions = [OnClick, RequestFocus]
+                  MergeDescendants = 'true'
+                   |-Node #7928 at (l=365.0, t=1147.0, r=573.0, b=1224.0)px
+                     Text = '[确认选择]'
+                     Actions = [ClearTextSubstitution, GetTextLayoutResult, SetTextSubstitution, ShowTextSubstitution]]]></semantics>

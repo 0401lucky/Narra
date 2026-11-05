@@ -229,6 +229,37 @@ class UiTokenSourceGuardTest {
 
     private fun scan(source: String) = UiTokenSourceGuard.scan(Path, source)
 
+    @Test
+    fun providerSources_eachRejectsNewLiteralWithoutFileLevelExemption() {
+        val root = listOf(File("src/main/java/com/example/myapplication/ui"),
+            File("app/src/main/java/com/example/myapplication/ui")).first { it.isDirectory }
+        val sources = UiTokenSourceInventory.scopes.associate { it.path to File(root, it.path).readText() }
+        val providerScopes = UiTokenSourceInventory.scopes.filter {
+            it.path.startsWith("screen/settings/Provider") || it.path == "component/NarraAlertDialog.kt"
+        }
+        assertEquals(8, providerScopes.size)
+        providerScopes.forEach { scope ->
+            val changed = sources + (scope.path to (sources.getValue(scope.path) +
+                "\nprivate fun UnapprovedDefault() { Modifier.padding(7.dp) }"))
+            val issues = UiTokenSourceGuard.audit(changed, UiTokenSourceInventory.scopes, UiTokenSourceInventory.exceptions)
+            assertTrue("新增硬编码不得绕过 ${scope.path}", issues.any {
+                scope.path in it && "UnapprovedDefault" in it && "新增硬编码" in it
+            })
+        }
+        val path = "screen/settings/ProviderSettingsScreen.kt"
+        listOf("ProviderSearchBar", "ProviderBrandIcon", "ProviderStatusPill").forEach { declaration ->
+            val source = sources.getValue(path)
+            val start = source.indexOf("fun $declaration(")
+            assertTrue("精确声明必须存在：$declaration", start >= 0)
+            val body = source.indexOf('{', start)
+            val changed = source.substring(0, body + 1) + "\n    val unapproved = RoundedCornerShape(7.dp)\n" + source.substring(body + 1)
+            val issues = UiTokenSourceGuard.audit(sources + (path to changed), UiTokenSourceInventory.scopes, UiTokenSourceInventory.exceptions)
+            assertTrue("helper 内新增默认不能逃过扫描：$declaration", issues.any {
+                path in it && declaration in it && "新增硬编码" in it
+            })
+        }
+    }
+
     private fun audit(source: String, exceptions: List<UiTokenSourceGuard.Exception> = emptyList()) =
         UiTokenSourceGuard.audit(mapOf(Path to source), listOf(UiTokenSourceGuard.Scope(Path)), exceptions)
 

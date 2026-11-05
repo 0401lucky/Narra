@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.myapplication.ui.screen.settings.ProviderColorsTest" tests="8" skipped="0" failures="0" errors="0" timestamp="2026-11-05T05:36:41.725Z" hostname="LUCKY" time="22.92">
+  <properties/>
+  <testcase name="config_selectedProtocolTabAndSave_pairWithRenderedSurfacesAcrossEightSchemes" classname="com.example.myapplication.ui.screen.settings.ProviderColorsTest" time="12.614"/>
+  <testcase name="fetchedRows_selectedAndUnselectedText_pairWithTheirRealWindowAcrossEightSchemes" classname="com.example.myapplication.ui.screen.settings.ProviderColorsTest" time="3.129"/>
+  <testcase name="configFocusedInputLabels_areReadableOnTheActualFieldSurfaceAcrossEightSchemes" classname="com.example.myapplication.ui.screen.settings.ProviderColorsTest" time="0.753"/>
+  <testcase name="models_selectedAndOrdinaryNames_pairWithActualCardsAcrossEightSchemes" classname="com.example.myapplication.ui.screen.settings.ProviderColorsTest" time="1.161"/>
+  <testcase name="providerCards_statusAndHealthText_followActualContainersAcrossEightSchemes" classname="com.example.myapplication.ui.screen.settings.ProviderColorsTest" time="0.816"/>
+  <testcase name="templateWindow_namesDescriptionsAndCancel_followActualSurfacesAcrossEightSchemes" classname="com.example.myapplication.ui.screen.settings.ProviderColorsTest" time="1.168"/>
+  <testcase name="abilityDialog_selectedChips_useRenderedSemanticColorsAcrossEightSchemes" classname="com.example.myapplication.ui.screen.settings.ProviderColorsTest" time="0.926"/>
+  <testcase name="manualDialog_errorAndActions_useRealSurfaceContrastsAcrossEightSchemes" classname="com.example.myapplication.ui.screen.settings.ProviderColorsTest" time="1.37"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

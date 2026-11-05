@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.myapplication.system.performance.FixtureSpecTest" tests="8" skipped="0" failures="0" errors="0" timestamp="2026-11-05T09:47:48.092Z" hostname="LUCKY" time="0.008">
+  <properties/>
+  <testcase name="generatedFixture_containsNoSecretAttachmentOrRemoteUrl" classname="com.example.myapplication.system.performance.FixtureSpecTest" time="0.003"/>
+  <testcase name="offlineReplaySpec_isFixedAtFortyEightMilliseconds" classname="com.example.myapplication.system.performance.FixtureSpecTest" time="0.001"/>
+  <testcase name="scenarioMatrix_mapsFrameNavigationAndProfileToPopulatedFixture" classname="com.example.myapplication.system.performance.FixtureSpecTest" time="0.0"/>
+  <testcase name="offlineReplaySpec_matchesOnlyFixedRoleplayFixtureAndOneHundredPersistedMessages" classname="com.example.myapplication.system.performance.FixtureSpecTest" time="0.0"/>
+  <testcase name="populatedFixture_containsExactlyOneHundredMessagesPerPath_andIsIdempotent" classname="com.example.myapplication.system.performance.FixtureSpecTest" time="0.002"/>
+  <testcase name="safeSummary_dependsOnIdentityOrderRoleAndLength_notMessageBody" classname="com.example.myapplication.system.performance.FixtureSpecTest" time="0.001"/>
+  <testcase name="supportedUpgradeFixture_declaresMainProcessSourceSchema47" classname="com.example.myapplication.system.performance.FixtureSpecTest" time="0.0"/>
+  <testcase name="roleplayMessageIdMatcher_acceptsOnlyDeterministicFixtureIds" classname="com.example.myapplication.system.performance.FixtureSpecTest" time="0.001"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

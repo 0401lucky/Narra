@@ -1,0 +1,112 @@
+{
+  "baseCommit": "ac22bb271007c814b6ef49b8499858acc815661c",
+  "isolationPath": "D:\\p11-capture-stability\\20261105",
+  "captureOverrides": {
+    "app/src/test/java/com/example/myapplication/ui/screenshot/ProviderSettingsScreenshotE11Test.kt": "2447109a7be819fc27bd15276eac28e9e0a54a9dc62c7e3b689a2afdb93c018e",
+    "app/src/test/java/com/example/myapplication/ui/screenshot/ProviderSettingsRenderTest.kt": "1c1829f02757c22953f0ebfc7bdfc0a64a8ba1bb8473d3a6053d1238ddae4d53",
+    "app/src/test/java/com/example/myapplication/ui/screenshot/ScreenshotCases.kt": "18ac691d3d79b351e2d5317076c6a7b1a6831760bf5e760955b7e53ddc228b29"
+  },
+  "beforeOriginalSources": {
+    "app/src/main/java/com/example/myapplication/ui/screen/settings/ProviderSettingsScreen.kt": {
+      "raw_sha256": "dadfa986ccb95ec85e8a5d6e89e841468071a8f13303bba106ca276434688736",
+      "git_blob": "0acb96075c0c7cf393fdfe521ef45638959f94e4"
+    },
+    "app/src/main/java/com/example/myapplication/ui/screen/settings/ProviderDetailScreen.kt": {
+      "raw_sha256": "464afec0f679696598074b1e73e4adaf4c8e99474e0d52edab59075c14c8fcda",
+      "git_blob": "29b4a155899add7cb3da7e03d4370d484d3a40fb"
+    },
+    "app/src/main/java/com/example/myapplication/ui/screen/settings/ProviderDetailChrome.kt": {
+      "raw_sha256": "8be63154be87a6ae43b66071a80b38da5b2fe6e91e55030fbbb8995051b37448",
+      "git_blob": "cfbce2691dd8b20f7c79e03cef143556f8d93bad"
+    },
+    "app/src/main/java/com/example/myapplication/ui/screen/settings/ProviderConfigTab.kt": {
+      "raw_sha256": "cd4c5890c7ed8cab2f0b1adc4b28bde8a8e44a08a33991f960611cf1db5d192e",
+      "git_blob": "7bf4d045dafe4179da7088296ca5f675fe6098cf"
+    },
+    "app/src/main/java/com/example/myapplication/ui/screen/settings/ProviderModelTab.kt": {
+      "raw_sha256": "6698e4463e28e2e58143f0dea1bc0885ae268d0db7a6333364f607a8e8b5accf",
+      "git_blob": "55f69eb270ff81a837d174fff0e2087675615688"
+    },
+    "app/src/main/java/com/example/myapplication/ui/screen/settings/ProviderModelDialogs.kt": {
+      "raw_sha256": "ee58344803b19994d5ddb099461cb5239b9abff23d9b940252ef60be1b7cf4b0",
+      "git_blob": "723358c7f22f83b721f23b3cec4623f6967518c9"
+    },
+    "app/src/main/java/com/example/myapplication/ui/screen/settings/ProviderTemplateDialog.kt": {
+      "raw_sha256": "5a75d71d95004256093089c0a376acdf70bc996d87872fe1b07c8df6c1476d79",
+      "git_blob": "7a971106edd59f51610342b5b6b3a1ba32543f46"
+    },
+    "app/src/main/java/com/example/myapplication/ui/screen/settings/SettingsComponents.kt": {
+      "raw_sha256": "e94e1198764735adb579a4b6dfed4705203ee89518520020223591272a4871af",
+      "git_blob": "50fd0c84ba8935d9b246a9d4dae165c9057f43d6"
+    },
+    "app/src/main/java/com/example/myapplication/ui/component/NarraAlertDialog.kt": {
+      "raw_sha256": "119528054aac17de593615c98e7f45dfcca88cb21608c2a81e69dfad98128f38",
+      "git_blob": "b1b89ffbf3e5e137413179a8351c8ffd996221b3"
+    }
+  },
+  "copiedLocalPropertiesKeys": [
+    "sdk.dir"
+  ],
+  "isolatedAcceptedPngs": 126,
+  "mainAcceptedPngs": 158,
+  "afterProductionOverlays": {
+    "app/src/main/java/com/example/myapplication/ui/screen/settings/ProviderSettingsScreen.kt": {
+      "sha256": "050f342299b9a694c362ec400b8cb4507ee888a41ef99c0f7e63c9436f0b7286",
+      "reason": "current P11 production source"
+    },
+    "app/src/main/java/com/example/myapplication/ui/screen/settings/ProviderDetailScreen.kt": {
+      "sha256": "d7ff4f26eda6228473b70d162d573f90c42c605bc135f2d545df1e74fd06b205",
+      "reason": "current P11 production source"
+    },
+    "app/src/main/java/com/example/myapplication/ui/screen/settings/ProviderDetailChrome.kt": {
+      "sha256": "205a7984f3165b1629a76ec4866844b1acc104358d7c09f0afb8437f7c5dd7ae",
+      "reason": "current P11 production source"
+    },
+    "app/src/main/java/com/example/myapplication/ui/screen/settings/ProviderConfigTab.kt": {
+      "sha256": "5c578614781a4a6330372c278210e4e67e67aeed85b36d0b2f590444d66eb9d7",
+      "reason": "current P11 production source"
+    },
+    "app/src/main/java/com/example/myapplication/ui/screen/settings/ProviderModelTab.kt": {
+      "sha256": "c3a83127f0b7e242f01443bc1ebd523b3bb87da7a25656f56ca0a53278ac17e1",
+      "reason": "current P11 production source"
+    },
+    "app/src/main/java/com/example/myapplication/ui/screen/settings/ProviderModelDialogs.kt": {
+      "sha256": "4543513e738ae7120ab56e4f9645848d0601e9e2945650d1307771ed76f14a23",
+      "reason": "current P11 production source"
+    },
+    "app/src/main/java/com/example/myapplication/ui/screen/settings/ProviderTemplateDialog.kt": {
+      "sha256": "770b1572c5e177bcad7936e46706ea489bee793f0b4d6f37757d9e41c3018f04",
+      "reason": "current P11 production source"
+    },
+    "app/src/main/java/com/example/myapplication/ui/screen/settings/SettingsComponents.kt": {
+      "sha256": "0cc7071dd63eb056c4b4ac6d6ff1812b414debdc344f20a01374cc3fc6ba6842",
+      "reason": "unchanged SettingsComponents raw-byte parity only; normalized ac22bb27 content"
+    },
+    "app/src/main/java/com/example/myapplication/ui/component/NarraAlertDialog.kt": {
+      "sha256": "5739bf4fb8ad023de5393ecef9e1de05315b9173018aff14f0f335582855a592",
+      "reason": "current P11 production source"
+    }
+  },
+  "mainProductsAnd158BaselinesUntouched": true,
+  "stableAfterRepeatMatchesAll32": true,
+  "changedAgainstApproved": {
+    "E11_models-dark": "02886a00f0336b4f75fa4870b7b9f41ace30692c704af98eb283aec1c7b63805",
+    "E11_models-empty-dark": "074067538ffda31ddaf5b812e60db8cdbf33e03a4415e0f27a48d6ab1fc1294e",
+    "E11_models-light": "42e4274461d0baee9f8ff7f6622fbbc6a3137615a1b393ad930fdeea679ce1f9",
+    "E11_models-tail-narrow-dark": "665d9a929bf1373ea7997b11834b124d0c6b6128e5eaaf194dc2aa6edec1dc2e",
+    "E11_models-tail-narrow-light": "89dd37efa34989e993af4e027c56a7d6be6e9998ea91e9a8743e4baf7045f6ce"
+  },
+  "unchangedApprovedE11": 27,
+  "phaseManifestSha256": {
+    "before": "908cb617b036c1890e3c4d587ff25492c1314632834f960ba23d735a919a5264",
+    "after": "b3a0d374cd94ac97ce7aa48220ad68abb35459b0570e0a7587ebab155dd6bbc6",
+    "after-repeat": "e68c13e0279cce3d5a410fd7eeb72e2a9fefbd446234af52d45d9892a4a55dfa"
+  },
+  "cleanup": {
+    "completedAtUtc": "2026-11-05T09:54:59.849820+00:00",
+    "resolvedTarget": "D:/p11-capture-stability/20261105",
+    "directoryRemoved": true,
+    "gitRegistryRemoved": true,
+    "all96CapturedPngsVerifiedBeforeCleanup": true
+  }
+}

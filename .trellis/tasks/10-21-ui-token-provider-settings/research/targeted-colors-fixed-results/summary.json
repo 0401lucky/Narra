@@ -1,0 +1,10 @@
+{
+  "command": ".\\gradlew.bat :app:testDebugUnitTest --tests com.example.myapplication.ui.screen.settings.Provider*Test --tests com.example.myapplication.ui.theme.UiTokenSourceGuardTest --console=plain",
+  "commandExitCode": 0,
+  "suites": 9,
+  "tests": 51,
+  "failures": 0,
+  "errors": 0,
+  "skipped": 0,
+  "failureDetails": []
+}

@@ -1,0 +1,30 @@
+{
+  "acceptedPngs": 158,
+  "inventorySha256": "b31439fd162a2323a62edc0fea0bc289b827635a15dbc45d3cd6899f2c7e1ec7",
+  "sourceSha256": {
+    "app/src/main/java/com/example/myapplication/ui/screen/settings/ProviderSettingsScreen.kt": "050f342299b9a694c362ec400b8cb4507ee888a41ef99c0f7e63c9436f0b7286",
+    "app/src/main/java/com/example/myapplication/ui/screen/settings/ProviderDetailScreen.kt": "d7ff4f26eda6228473b70d162d573f90c42c605bc135f2d545df1e74fd06b205",
+    "app/src/main/java/com/example/myapplication/ui/screen/settings/ProviderDetailChrome.kt": "205a7984f3165b1629a76ec4866844b1acc104358d7c09f0afb8437f7c5dd7ae",
+    "app/src/main/java/com/example/myapplication/ui/screen/settings/ProviderConfigTab.kt": "5c578614781a4a6330372c278210e4e67e67aeed85b36d0b2f590444d66eb9d7",
+    "app/src/main/java/com/example/myapplication/ui/screen/settings/ProviderModelTab.kt": "c3a83127f0b7e242f01443bc1ebd523b3bb87da7a25656f56ca0a53278ac17e1",
+    "app/src/main/java/com/example/myapplication/ui/screen/settings/ProviderModelDialogs.kt": "4543513e738ae7120ab56e4f9645848d0601e9e2945650d1307771ed76f14a23",
+    "app/src/main/java/com/example/myapplication/ui/screen/settings/ProviderTemplateDialog.kt": "770b1572c5e177bcad7936e46706ea489bee793f0b4d6f37757d9e41c3018f04",
+    "app/src/main/java/com/example/myapplication/ui/screen/settings/SettingsComponents.kt": "0cc7071dd63eb056c4b4ac6d6ff1812b414debdc344f20a01374cc3fc6ba6842",
+    "app/src/main/java/com/example/myapplication/ui/component/NarraAlertDialog.kt": "5739bf4fb8ad023de5393ecef9e1de05315b9173018aff14f0f335582855a592"
+  },
+  "captureTestSourceSha256": {
+    "app/src/test/java/com/example/myapplication/ui/screenshot/ProviderSettingsScreenshotE11Test.kt": "2447109a7be819fc27bd15276eac28e9e0a54a9dc62c7e3b689a2afdb93c018e",
+    "app/src/test/java/com/example/myapplication/ui/screenshot/ProviderSettingsRenderTest.kt": "1c1829f02757c22953f0ebfc7bdfc0a64a8ba1bb8473d3a6053d1238ddae4d53",
+    "app/src/test/java/com/example/myapplication/ui/screenshot/ScreenshotCases.kt": "18ac691d3d79b351e2d5317076c6a7b1a6831760bf5e760955b7e53ddc228b29"
+  },
+  "protectedSha256": {
+    "gradle.properties": "eb455746f9a9e4c5882c0aab957715c3321e6580d8ca18a765ede07a51b45667",
+    "app/build.gradle": "cd272a6c8769bfafa391c328ab9e7183c1c4e0631ffa6dfdf89d4ba05bc6d16f",
+    "docs/updates/dev.json": "bfbb8d97279e6eda1a4b1e5a7005d27f0345e464cfca68d6d29494ee72541963"
+  },
+  "manifestSha256": "c912193b13662ec5b7cb0f75755d86ba4c0ffe6ab8d81da8fea8b444b688f5d3",
+  "manifestOriginalTailSha256": "0a17d6a5b3385774affc42e2434fde617d0903c88e1c964c5ba0b7b732028f8f",
+  "apkSha256": "bd8a84f3fc000a608a040887d6090a70c1f0ad291d14932bb7d24a02050a8e54",
+  "correctedPngs": 5,
+  "unchangedPngs": 153
+}

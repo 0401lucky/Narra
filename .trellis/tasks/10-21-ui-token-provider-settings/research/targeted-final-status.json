@@ -1,0 +1,876 @@
+{
+  "uniqueTests": 144,
+  "latestFailures": 0,
+  "note": "144 distinct affected tests are resolved across scoped runs: 143 passed in the first 144-test run; its single locator failure passed in a one-test rerun. Following the local window-size API fix, all 52 P11 and source-guard tests passed again. This is not a single 144/144 all-green run. The shared dialog and out-of-P11 consumers did not change after their regression run.",
+  "runs": [
+    "targeted-final-initial-results/summary.json",
+    "title-stress-final-results/summary.json",
+    "provider-final-results/summary.json"
+  ],
+  "results": [
+    {
+      "suite": "com.example.myapplication.ui.component.roleplay.PilotAccessibilityTest",
+      "name": "onlineNarrowLargeFont_stopRemainsNamedAndReachable",
+      "passed": true,
+      "source": "targeted-final-initial-results/TEST-com.example.myapplication.ui.component.roleplay.PilotAccessibilityTest.xml"
+    },
+    {
+      "suite": "com.example.myapplication.ui.component.roleplay.PilotAccessibilityTest",
+      "name": "assistantsNarrowLargeFont_searchSelectionAndMoreMenu_workOnRealViewModel",
+      "passed": true,
+      "source": "targeted-final-initial-results/TEST-com.example.myapplication.ui.component.roleplay.PilotAccessibilityTest.xml"
+    },
+    {
+      "suite": "com.example.myapplication.ui.component.roleplay.PilotAccessibilityTest",
+      "name": "phoneNarrowLargeFont_tabsFitAndExposeSelection_andNewConversationRemainsReachable",
+      "passed": true,
+      "source": "targeted-final-initial-results/TEST-com.example.myapplication.ui.component.roleplay.PilotAccessibilityTest.xml"
+    },
+    {
+      "suite": "com.example.myapplication.ui.component.roleplay.PilotAccessibilityTest",
+      "name": "onlineAiHelper_primaryActionUsesAccessibleTouchTarget_whenExpandedAtLargeFont",
+      "passed": true,
+      "source": "targeted-final-initial-results/TEST-com.example.myapplication.ui.component.roleplay.PilotAccessibilityTest.xml"
+    },
+    {
+      "suite": "com.example.myapplication.ui.component.roleplay.PilotAccessibilityTest",
+      "name": "onlineJumpActions_scrollToRealFirstAndLastMessages_withAccessibleTargets",
+      "passed": true,
+      "source": "targeted-final-initial-results/TEST-com.example.myapplication.ui.component.roleplay.PilotAccessibilityTest.xml"
+    },
+    {
+      "suite": "com.example.myapplication.ui.component.roleplay.PilotAccessibilityTest",
+      "name": "onlineNarrowLargeFont_headerMessagesAndInputDoNotOverlap_andActionsStillWork",
+      "passed": true,
+      "source": "targeted-final-initial-results/TEST-com.example.myapplication.ui.component.roleplay.PilotAccessibilityTest.xml"
+    },
+    {
+      "suite": "com.example.myapplication.ui.screen.roleplay.SessionSidebarAccessibilityTest",
+      "name": "allEightPages_narrowLargeFont_keepLastContentAndHeaderBackReachable",
+      "passed": true,
+      "source": "targeted-final-initial-results/TEST-com.example.myapplication.ui.screen.roleplay.SessionSidebarAccessibilityTest.xml"
+    },
+    {
+      "suite": "com.example.myapplication.ui.screen.roleplay.SessionSidebarAccessibilityTest",
+      "name": "readabilityTabs_narrowLargeFont_updateSelectionAndCallbacksForEveryOption",
+      "passed": true,
+      "source": "targeted-final-initial-results/TEST-com.example.myapplication.ui.screen.roleplay.SessionSidebarAccessibilityTest.xml"
+    },
+    {
+      "suite": "com.example.myapplication.ui.screen.roleplay.SessionSidebarAccessibilityTest",
+      "name": "visualFields_existingImages_narrowLargeFont_keepNamesAndSeparateActionsReachable",
+      "passed": true,
+      "source": "targeted-final-initial-results/TEST-com.example.myapplication.ui.screen.roleplay.SessionSidebarAccessibilityTest.xml"
+    },
+    {
+      "suite": "com.example.myapplication.ui.screen.roleplay.SessionSidebarAccessibilityTest",
+      "name": "syntheticLongHelp_narrowLargeFont_scrollsToEndWithFixedCloseAndIndependentRow",
+      "passed": true,
+      "source": "targeted-final-initial-results/TEST-com.example.myapplication.ui.screen.roleplay.SessionSidebarAccessibilityTest.xml"
+    },
+    {
+      "suite": "com.example.myapplication.ui.screen.roleplay.SessionSidebarAccessibilityTest",
+      "name": "mainAdvancedGroup_narrowLargeFont_exposesExpandedStateAndNamedMemorySwitch",
+      "passed": true,
+      "source": "targeted-final-initial-results/TEST-com.example.myapplication.ui.screen.roleplay.SessionSidebarAccessibilityTest.xml"
+    },
+    {
+      "suite": "com.example.myapplication.ui.screen.roleplay.SessionSidebarAccessibilityTest",
+      "name": "sceneSwitches_narrowLargeFont_exposeTheirNamesRolesAndTouchTargets",
+      "passed": true,
+      "source": "targeted-final-initial-results/TEST-com.example.myapplication.ui.screen.roleplay.SessionSidebarAccessibilityTest.xml"
+    },
+    {
+      "suite": "com.example.myapplication.ui.screen.roleplay.SessionSidebarAccessibilityTest",
+      "name": "interactionTabs_narrowLargeFont_exposeSelectionAndSendOneExactModeCallback",
+      "passed": true,
+      "source": "targeted-final-initial-results/TEST-com.example.myapplication.ui.screen.roleplay.SessionSidebarAccessibilityTest.xml"
+    },
+    {
+      "suite": "com.example.myapplication.ui.screen.roleplay.SessionSidebarAccessibilityTest",
+      "name": "themeSwitchAndHelp_narrowLargeFont_keepTextHelpAndSwitchClicksIndependent",
+      "passed": true,
+      "source": "targeted-final-initial-results/TEST-com.example.myapplication.ui.screen.roleplay.SessionSidebarAccessibilityTest.xml"
+    },
+    {
+      "suite": "com.example.myapplication.ui.screen.roleplay.SessionSidebarColorsTest",
+      "name": "skinTiles_useActualMaterialSurfaceAndTextAcrossThemeChanges",
+      "passed": true,
+      "source": "targeted-final-initial-results/TEST-com.example.myapplication.ui.screen.roleplay.SessionSidebarColorsTest.xml"
+    },
+    {
+      "suite": "com.example.myapplication.ui.screen.roleplay.SessionSidebarPersistenceTest",
+      "name": "reading_successPersistsCompleteDraftBeforeOpening",
+      "passed": true,
+      "source": "targeted-final-initial-results/TEST-com.example.myapplication.ui.screen.roleplay.SessionSidebarPersistenceTest.xml"
+    },
+    {
+      "suite": "com.example.myapplication.ui.screen.roleplay.SessionSidebarPersistenceTest",
+      "name": "reading_failureKeepsDraftAndDoesNotOpen",
+      "passed": true,
+      "source": "targeted-final-initial-results/TEST-com.example.myapplication.ui.screen.roleplay.SessionSidebarPersistenceTest.xml"
+    },
+    {
+      "suite": "com.example.myapplication.ui.screen.roleplay.SessionSidebarPersistenceTest",
+      "name": "thirteenSkins_preserveHistoricalGeometryTailAndGlassUntilExplicitReset",
+      "passed": true,
+      "source": "targeted-final-initial-results/TEST-com.example.myapplication.ui.screen.roleplay.SessionSidebarPersistenceTest.xml"
+    },
+    {
+      "suite": "com.example.myapplication.ui.screen.roleplay.SessionSidebarPersistenceTest",
+      "name": "topBack_successPersistsCompleteDraftAndCallsNavigationOnce",
+      "passed": true,
+      "source": "targeted-final-initial-results/TEST-com.example.myapplication.ui.screen.roleplay.SessionSidebarPersistenceTest.xml"
+    },
+    {
+      "suite": "com.example.myapplication.ui.screen.roleplay.SessionSidebarPersistenceTest",
+      "name": "topBack_failureKeepsDraftAndDoesNotNavigate",
+      "passed": true,
+      "source": "targeted-final-initial-results/TEST-com.example.myapplication.ui.screen.roleplay.SessionSidebarPersistenceTest.xml"
+    },
+    {
+      "suite": "com.example.myapplication.ui.screen.roleplay.SessionSidebarWindowGuardTest",
+      "name": "unopenedWindow_failsInsteadOfCapturingStage",
+      "passed": true,
+      "source": "targeted-final-initial-results/TEST-com.example.myapplication.ui.screen.roleplay.SessionSidebarWindowGuardTest.xml"
+    },
+    {
+      "suite": "com.example.myapplication.ui.screen.roleplay.SessionSidebarWindowsTest",
+      "name": "longformDigits_editSanitizesAndCallsUpdateOnce",
+      "passed": true,
+      "source": "targeted-final-initial-results/TEST-com.example.myapplication.ui.screen.roleplay.SessionSidebarWindowsTest.xml"
+    },
+    {
+      "suite": "com.example.myapplication.ui.screen.roleplay.SessionSidebarWindowsTest",
+      "name": "modelSheet_providerAndModelCallbacks_preserveSelectionTiming",
+      "passed": true,
+      "source": "targeted-final-initial-results/TEST-com.example.myapplication.ui.screen.roleplay.SessionSidebarWindowsTest.xml"
+    },
+    {
+      "suite": "com.example.myapplication.ui.screen.roleplay.SessionSidebarWindowsTest",
+      "name": "reset_cancelDoesNothingAndConfirmWaitsForSuccessCallback",
+      "passed": true,
+      "source": "targeted-final-initial-results/TEST-com.example.myapplication.ui.screen.roleplay.SessionSidebarWindowsTest.xml"
+    },
+    {
+      "suite": "com.example.myapplication.ui.screen.roleplay.SessionSidebarWindowsTest",
+      "name": "maskSheet_lastChoiceAndManageAndDismiss_doNotSaveGlobalSettings",
+      "passed": true,
+      "source": "targeted-final-initial-results/TEST-com.example.myapplication.ui.screen.roleplay.SessionSidebarWindowsTest.xml"
+    },
+    {
+      "suite": "com.example.myapplication.ui.screen.roleplay.SessionSidebarWindowsTest",
+      "name": "presetSheet_selectLastAndManageAndDismiss_haveSeparateCallbacks",
+      "passed": true,
+      "source": "targeted-final-initial-results/TEST-com.example.myapplication.ui.screen.roleplay.SessionSidebarWindowsTest.xml"
+    },
+    {
+      "suite": "com.example.myapplication.ui.screen.roleplay.SessionSidebarWindowsTest",
+      "name": "groupMuteAndRemove_cancelAndConfirmOnlyAffectNamedMember",
+      "passed": true,
+      "source": "targeted-final-initial-results/TEST-com.example.myapplication.ui.screen.roleplay.SessionSidebarWindowsTest.xml"
+    },
+    {
+      "suite": "com.example.myapplication.ui.screen.roleplay.SessionSidebarWindowsTest",
+      "name": "addMember_actualDialogCancelAndSelection_areIndependent",
+      "passed": true,
+      "source": "targeted-final-initial-results/TEST-com.example.myapplication.ui.screen.roleplay.SessionSidebarWindowsTest.xml"
+    },
+    {
+      "suite": "com.example.myapplication.ui.screen.roleplay.SessionSidebarWindowsTest",
+      "name": "restart_cancelDoesNothingAndConfirmWaitsForSuccessCallback",
+      "passed": true,
+      "source": "targeted-final-initial-results/TEST-com.example.myapplication.ui.screen.roleplay.SessionSidebarWindowsTest.xml"
+    },
+    {
+      "suite": "com.example.myapplication.ui.screen.roleplay.SessionSidebarWindowsTest",
+      "name": "portraitUrl_keepsImmediateScenarioCallbackAndGlobalDraftUntouched",
+      "passed": true,
+      "source": "targeted-final-initial-results/TEST-com.example.myapplication.ui.screen.roleplay.SessionSidebarWindowsTest.xml"
+    },
+    {
+      "suite": "com.example.myapplication.ui.screen.settings.ProviderColorsTest",
+      "name": "config_selectedProtocolTabAndSave_pairWithRenderedSurfacesAcrossEightSchemes",
+      "passed": true,
+      "source": "provider-final-results/TEST-com.example.myapplication.ui.screen.settings.ProviderColorsTest.xml"
+    },
+    {
+      "suite": "com.example.myapplication.ui.screen.settings.ProviderColorsTest",
+      "name": "fetchedRows_selectedAndUnselectedText_pairWithTheirRealWindowAcrossEightSchemes",
+      "passed": true,
+      "source": "provider-final-results/TEST-com.example.myapplication.ui.screen.settings.ProviderColorsTest.xml"
+    },
+    {
+      "suite": "com.example.myapplication.ui.screen.settings.ProviderColorsTest",
+      "name": "configFocusedInputLabels_areReadableOnTheActualFieldSurfaceAcrossEightSchemes",
+      "passed": true,
+      "source": "provider-final-results/TEST-com.example.myapplication.ui.screen.settings.ProviderColorsTest.xml"
+    },
+    {
+      "suite": "com.example.myapplication.ui.screen.settings.ProviderColorsTest",
+      "name": "models_selectedAndOrdinaryNames_pairWithActualCardsAcrossEightSchemes",
+      "passed": true,
+      "source": "provider-final-results/TEST-com.example.myapplication.ui.screen.settings.ProviderColorsTest.xml"
+    },
+    {
+      "suite": "com.example.myapplication.ui.screen.settings.ProviderColorsTest",
+      "name": "providerCards_statusAndHealthText_followActualContainersAcrossEightSchemes",
+      "passed": true,
+      "source": "provider-final-results/TEST-com.example.myapplication.ui.screen.settings.ProviderColorsTest.xml"
+    },
+    {
+      "suite": "com.example.myapplication.ui.screen.settings.ProviderColorsTest",
+      "name": "templateWindow_namesDescriptionsAndCancel_followActualSurfacesAcrossEightSchemes",
+      "passed": true,
+      "source": "provider-final-results/TEST-com.example.myapplication.ui.screen.settings.ProviderColorsTest.xml"
+    },
+    {
+      "suite": "com.example.myapplication.ui.screen.settings.ProviderColorsTest",
+      "name": "abilityDialog_selectedChips_useRenderedSemanticColorsAcrossEightSchemes",
+      "passed": true,
+      "source": "provider-final-results/TEST-com.example.myapplication.ui.screen.settings.ProviderColorsTest.xml"
+    },
+    {
+      "suite": "com.example.myapplication.ui.screen.settings.ProviderColorsTest",
+      "name": "manualDialog_errorAndActions_useRealSurfaceContrastsAcrossEightSchemes",
+      "passed": true,
+      "source": "provider-final-results/TEST-com.example.myapplication.ui.screen.settings.ProviderColorsTest.xml"
+    },
+    {
+      "suite": "com.example.myapplication.ui.screen.settings.ProviderConfigAccessibilityTest",
+      "name": "protocolAndMode_largeFontOptions_changeOnlyTheirOwnFields",
+      "passed": true,
+      "source": "provider-final-results/TEST-com.example.myapplication.ui.screen.settings.ProviderConfigAccessibilityTest.xml"
+    },
+    {
+      "suite": "com.example.myapplication.ui.screen.settings.ProviderConfigAccessibilityTest",
+      "name": "tabsAndKeyVisibility_areKeyedByProviderId",
+      "passed": true,
+      "source": "provider-final-results/TEST-com.example.myapplication.ui.screen.settings.ProviderConfigAccessibilityTest.xml"
+    },
+    {
+      "suite": "com.example.myapplication.ui.screen.settings.ProviderConfigAccessibilityTest",
+      "name": "lastProviderCannotBeDeleted_otherProvidersKeepExplicitDeleteAndBackOrder",
+      "passed": true,
+      "source": "provider-final-results/TEST-com.example.myapplication.ui.screen.settings.ProviderConfigAccessibilityTest.xml"
+    },
+    {
+      "suite": "com.example.myapplication.ui.screen.settings.ProviderConfigAccessibilityTest",
+      "name": "saveWhileInFlight_isDisabledAndDoesNotRepeatCallback",
+      "passed": true,
+      "source": "provider-final-results/TEST-com.example.myapplication.ui.screen.settings.ProviderConfigAccessibilityTest.xml"
+    },
+    {
+      "suite": "com.example.myapplication.ui.screen.settings.ProviderConfigAccessibilityTest",
+      "name": "configuration_largeFontLabelsValuesAndCallbacks_preserveProviderIdentity",
+      "passed": true,
+      "source": "provider-final-results/TEST-com.example.myapplication.ui.screen.settings.ProviderConfigAccessibilityTest.xml"
+    },
+    {
+      "suite": "com.example.myapplication.ui.screen.settings.ProviderConfigAccessibilityTest",
+      "name": "longHeaderAndSaveArea_largeFont_remainAboveTabsWithFullTouchTargets",
+      "passed": true,
+      "source": "provider-final-results/TEST-com.example.myapplication.ui.screen.settings.ProviderConfigAccessibilityTest.xml"
+    },
+    {
+      "suite": "com.example.myapplication.ui.screen.settings.ProviderConfigAccessibilityTest",
+      "name": "veryLongProviderTitle_keepsTheFormUsable_andCanScrollItsCompleteName",
+      "passed": true,
+      "source": "provider-final-results/TEST-com.example.myapplication.ui.screen.settings.ProviderConfigAccessibilityTest.xml"
+    },
+    {
+      "suite": "com.example.myapplication.ui.screen.settings.ProviderDialogsTest",
+      "name": "abilityCancel_keepsOverrides_andRestoreAutoIsAnExplicitAction",
+      "passed": true,
+      "source": "provider-final-results/TEST-com.example.myapplication.ui.screen.settings.ProviderDialogsTest.xml"
+    },
+    {
+      "suite": "com.example.myapplication.ui.screen.settings.ProviderDialogsTest",
+      "name": "manualCancel_dropsOnlyDialogState_andBlankDisplayNameUsesId",
+      "passed": true,
+      "source": "provider-final-results/TEST-com.example.myapplication.ui.screen.settings.ProviderDialogsTest.xml"
+    },
+    {
+      "suite": "com.example.myapplication.ui.screen.settings.ProviderDialogsTest",
+      "name": "abilitySave_returnsTheChosenOverride_withoutSelectingOrRemovingModel",
+      "passed": true,
+      "source": "provider-final-results/TEST-com.example.myapplication.ui.screen.settings.ProviderDialogsTest.xml"
+    },
+    {
+      "suite": "com.example.myapplication.ui.screen.settings.ProviderDialogsTest",
+      "name": "fetchedModels_searchSelectionAndConfirmation_keepExistingIdsAndUseCurrentProvider",
+      "passed": true,
+      "source": "provider-final-results/TEST-com.example.myapplication.ui.screen.settings.ProviderDialogsTest.xml"
+    },
+    {
+      "suite": "com.example.myapplication.ui.screen.settings.ProviderDialogsTest",
+      "name": "protocolHelp_usesRealWindowAndOnlyCloses_withReadableContent",
+      "passed": true,
+      "source": "provider-final-results/TEST-com.example.myapplication.ui.screen.settings.ProviderDialogsTest.xml"
+    },
+    {
+      "suite": "com.example.myapplication.ui.screen.settings.ProviderDialogsTest",
+      "name": "manualInput_emptyIdIsAssociatedWithError_andValidValuesAreTrimmed",
+      "passed": true,
+      "source": "provider-final-results/TEST-com.example.myapplication.ui.screen.settings.ProviderDialogsTest.xml"
+    },
+    {
+      "suite": "com.example.myapplication.ui.screen.settings.ProviderDialogsTest",
+      "name": "fetchedSelectAllAndCancel_doNotCommitSelection",
+      "passed": true,
+      "source": "provider-final-results/TEST-com.example.myapplication.ui.screen.settings.ProviderDialogsTest.xml"
+    },
+    {
+      "suite": "com.example.myapplication.ui.screen.settings.ProviderModelsAccessibilityTest",
+      "name": "loadingAndMissingCredentials_disableOnlyFetch_andExposeLoadingSemantics",
+      "passed": true,
+      "source": "provider-final-results/TEST-com.example.myapplication.ui.screen.settings.ProviderModelsAccessibilityTest.xml"
+    },
+    {
+      "suite": "com.example.myapplication.ui.screen.settings.ProviderModelsAccessibilityTest",
+      "name": "finalModel_largeFontActionsRemainUnclippedAndDoNotSelectTheCard",
+      "passed": true,
+      "source": "provider-final-results/TEST-com.example.myapplication.ui.screen.settings.ProviderModelsAccessibilityTest.xml"
+    },
+    {
+      "suite": "com.example.myapplication.ui.screen.settings.ProviderModelsAccessibilityTest",
+      "name": "clearModels_cancelDoesNotMutate_andConfirmRunsExactlyOnce",
+      "passed": true,
+      "source": "provider-final-results/TEST-com.example.myapplication.ui.screen.settings.ProviderModelsAccessibilityTest.xml"
+    },
+    {
+      "suite": "com.example.myapplication.ui.screen.settings.ProviderModelsAccessibilityTest",
+      "name": "pendingFetch_belongsToItsProvider_onlyThatDetailCanConfirmIt",
+      "passed": true,
+      "source": "provider-final-results/TEST-com.example.myapplication.ui.screen.settings.ProviderModelsAccessibilityTest.xml"
+    },
+    {
+      "suite": "com.example.myapplication.ui.screen.settings.ProviderNavigationTest",
+      "name": "detailBack_startsSaveThenPopsImmediately_evenWhenWriteLaterFails",
+      "passed": true,
+      "source": "provider-final-results/TEST-com.example.myapplication.ui.screen.settings.ProviderNavigationTest.xml"
+    },
+    {
+      "suite": "com.example.myapplication.ui.screen.settings.ProviderNavigationTest",
+      "name": "listBack_startsSaveThenPopsImmediately_evenWhenWriteLaterFails",
+      "passed": true,
+      "source": "provider-final-results/TEST-com.example.myapplication.ui.screen.settings.ProviderNavigationTest.xml"
+    },
+    {
+      "suite": "com.example.myapplication.ui.screen.settings.ProviderPersistenceTest",
+      "name": "explicitSave_failureKeepsProviderAndOverrides_withoutSuccessCallback",
+      "passed": true,
+      "source": "provider-final-results/TEST-com.example.myapplication.ui.screen.settings.ProviderPersistenceTest.xml"
+    },
+    {
+      "suite": "com.example.myapplication.ui.screen.settings.ProviderPersistenceTest",
+      "name": "explicitSave_successPersistsDraftThenCallsSuccessOnce",
+      "passed": true,
+      "source": "provider-final-results/TEST-com.example.myapplication.ui.screen.settings.ProviderPersistenceTest.xml"
+    },
+    {
+      "suite": "com.example.myapplication.ui.screen.settings.ProviderSettingsActionsTest",
+      "name": "template_waitsForTheReturnedDraftId_andNavigatesExactlyOnce",
+      "passed": true,
+      "source": "provider-final-results/TEST-com.example.myapplication.ui.screen.settings.ProviderSettingsActionsTest.xml"
+    },
+    {
+      "suite": "com.example.myapplication.ui.screen.settings.ProviderSettingsActionsTest",
+      "name": "missingProvider_keepsExistingNoticeAndBackCallback",
+      "passed": true,
+      "source": "provider-final-results/TEST-com.example.myapplication.ui.screen.settings.ProviderSettingsActionsTest.xml"
+    },
+    {
+      "suite": "com.example.myapplication.ui.screen.settings.ProviderSettingsActionsTest",
+      "name": "list_largeFontSearchAndBothProviderCards_remainReachableWithIndependentNavigation",
+      "passed": true,
+      "source": "provider-final-results/TEST-com.example.myapplication.ui.screen.settings.ProviderSettingsActionsTest.xml"
+    },
+    {
+      "suite": "com.example.myapplication.ui.screen.settings.ProviderSettingsActionsTest",
+      "name": "emptyDraftList_requestsExistingEnsureCallback_withoutCreatingAService",
+      "passed": true,
+      "source": "provider-final-results/TEST-com.example.myapplication.ui.screen.settings.ProviderSettingsActionsTest.xml"
+    },
+    {
+      "suite": "com.example.myapplication.ui.screen.settings.ProviderSettingsActionsTest",
+      "name": "healthRequests_followOriginalCredentialsKey_andRemainLocal",
+      "passed": true,
+      "source": "provider-final-results/TEST-com.example.myapplication.ui.screen.settings.ProviderSettingsActionsTest.xml"
+    },
+    {
+      "suite": "com.example.myapplication.ui.screen.settings.ProviderSettingsActionsTest",
+      "name": "template_cancelOnlyDismisses_andMissingWindowsCannotFallbackToStage",
+      "passed": true,
+      "source": "provider-final-results/TEST-com.example.myapplication.ui.screen.settings.ProviderSettingsActionsTest.xml"
+    },
+    {
+      "suite": "com.example.myapplication.ui.screen.settings.ProviderSharedDialogCompatibilityTest",
+      "name": "optionalActionColor_keepsDefaultPrimary_andDestructiveConfirmationKeepsErrorPriority",
+      "passed": true,
+      "source": "provider-final-results/TEST-com.example.myapplication.ui.screen.settings.ProviderSharedDialogCompatibilityTest.xml"
+    },
+    {
+      "suite": "com.example.myapplication.ui.screen.settings.ProviderSharedDialogCompatibilityTest",
+      "name": "optionalShape_changesOnlyCorners_oldDefaultAndCancelContractRemainIntact",
+      "passed": true,
+      "source": "provider-final-results/TEST-com.example.myapplication.ui.screen.settings.ProviderSharedDialogCompatibilityTest.xml"
+    },
+    {
+      "suite": "com.example.myapplication.ui.screen.settings.SettingsHomeActionsTest",
+      "name": "message_isShownConsumedOnceAndDoesNotReturnOnUnrelatedRecomposition",
+      "passed": true,
+      "source": "targeted-final-initial-results/TEST-com.example.myapplication.ui.screen.settings.SettingsHomeActionsTest.xml"
+    },
+    {
+      "suite": "com.example.myapplication.ui.screen.settings.SettingsHomeActionsTest",
+      "name": "primaryAction_draftSavingSavedAndUnconfigured_useOnlyTheCurrentCallback",
+      "passed": true,
+      "source": "targeted-final-initial-results/TEST-com.example.myapplication.ui.screen.settings.SettingsHomeActionsTest.xml"
+    },
+    {
+      "suite": "com.example.myapplication.ui.screen.settings.SettingsHomeSharedCompatibilityTest",
+      "name": "legacyTopBar_keepsSingleLineWhileOptInTitleWrapsAndActionsRemainIndependent",
+      "passed": true,
+      "source": "targeted-final-initial-results/TEST-com.example.myapplication.ui.screen.settings.SettingsHomeSharedCompatibilityTest.xml"
+    },
+    {
+      "suite": "com.example.myapplication.ui.screen.settings.SettingsHomeSharedCompatibilityTest",
+      "name": "legacyRow_keepsTwoLineLimitWhileExplicitLayoutCanShowCompleteText",
+      "passed": true,
+      "source": "targeted-final-initial-results/TEST-com.example.myapplication.ui.screen.settings.SettingsHomeSharedCompatibilityTest.xml"
+    },
+    {
+      "suite": "com.example.myapplication.ui.screen.settings.SettingsHomeSharedCompatibilityTest",
+      "name": "bothGroupOverloads_forwardOptInShapeAndPaddingWhileOldDefaultsRemainVisible",
+      "passed": true,
+      "source": "targeted-final-initial-results/TEST-com.example.myapplication.ui.screen.settings.SettingsHomeSharedCompatibilityTest.xml"
+    },
+    {
+      "suite": "com.example.myapplication.ui.theme.UiTokenSourceGuardTest",
+      "name": "audit_removedOrDuplicateExceptions_failInsteadOfSilentlyExpandingWhitelist",
+      "passed": true,
+      "source": "provider-final-results/TEST-com.example.myapplication.ui.theme.UiTokenSourceGuardTest.xml"
+    },
+    {
+      "suite": "com.example.myapplication.ui.theme.UiTokenSourceGuardTest",
+      "name": "audit_brandPalette_requiresExactPathDeclarationValueAndMultiplicity",
+      "passed": true,
+      "source": "provider-final-results/TEST-com.example.myapplication.ui.theme.UiTokenSourceGuardTest.xml"
+    },
+    {
+      "suite": "com.example.myapplication.ui.theme.UiTokenSourceGuardTest",
+      "name": "audit_preciseGeometryException_doesNotApproveOtherLayoutInSameDeclaration",
+      "passed": true,
+      "source": "provider-final-results/TEST-com.example.myapplication.ui.theme.UiTokenSourceGuardTest.xml"
+    },
+    {
+      "suite": "com.example.myapplication.ui.theme.UiTokenSourceGuardTest",
+      "name": "scan_multilineAndQualifiedCallsAndArithmetic_areReported",
+      "passed": true,
+      "source": "provider-final-results/TEST-com.example.myapplication.ui.theme.UiTokenSourceGuardTest.xml"
+    },
+    {
+      "suite": "com.example.myapplication.ui.theme.UiTokenSourceGuardTest",
+      "name": "audit_relocatedDefaultsAndNewHelpers_cannotEscapeRegisteredScope",
+      "passed": true,
+      "source": "provider-final-results/TEST-com.example.myapplication.ui.theme.UiTokenSourceGuardTest.xml"
+    },
+    {
+      "suite": "com.example.myapplication.ui.theme.UiTokenSourceGuardTest",
+      "name": "scan_commentsEscapedStringsRawStringsAndCharacters_areIgnored",
+      "passed": true,
+      "source": "provider-final-results/TEST-com.example.myapplication.ui.theme.UiTokenSourceGuardTest.xml"
+    },
+    {
+      "suite": "com.example.myapplication.ui.theme.UiTokenSourceGuardTest",
+      "name": "scan_tokensUserGeometryIconBorderWidthAndSystemInsets_areAllowed",
+      "passed": true,
+      "source": "provider-final-results/TEST-com.example.myapplication.ui.theme.UiTokenSourceGuardTest.xml"
+    },
+    {
+      "suite": "com.example.myapplication.ui.theme.UiTokenSourceGuardTest",
+      "name": "providerSources_eachRejectsNewLiteralWithoutFileLevelExemption",
+      "passed": true,
+      "source": "provider-final-results/TEST-com.example.myapplication.ui.theme.UiTokenSourceGuardTest.xml"
+    },
+    {
+      "suite": "com.example.myapplication.ui.theme.UiTokenSourceGuardTest",
+      "name": "scan_fixedRgbDecimalAndNamedColors_failWhileUserArgbAndChannelsAreAllowed",
+      "passed": true,
+      "source": "provider-final-results/TEST-com.example.myapplication.ui.theme.UiTokenSourceGuardTest.xml"
+    },
+    {
+      "suite": "com.example.myapplication.ui.theme.UiTokenSourceGuardTest",
+      "name": "migratedSources_haveNoUnapprovedDefaultsOrStaleExceptions",
+      "passed": true,
+      "source": "provider-final-results/TEST-com.example.myapplication.ui.theme.UiTokenSourceGuardTest.xml"
+    },
+    {
+      "suite": "com.example.myapplication.ui.theme.UiTokenSourceGuardTest",
+      "name": "sourceRegistration_componentAndThemeHelpersRequireInventory",
+      "passed": true,
+      "source": "provider-final-results/TEST-com.example.myapplication.ui.theme.UiTokenSourceGuardTest.xml"
+    },
+    {
+      "suite": "com.example.myapplication.ui.theme.UiTokenSourceGuardTest",
+      "name": "audit_missingDuplicateDeclarationsAndMissingOrNewFiles_fail",
+      "passed": true,
+      "source": "provider-final-results/TEST-com.example.myapplication.ui.theme.UiTokenSourceGuardTest.xml"
+    },
+    {
+      "suite": "com.example.myapplication.ui.theme.UiTokenSourceGuardTest",
+      "name": "audit_explicitOverloads_scanEitherBodyAndRejectMissingExtraOrStaleCount",
+      "passed": true,
+      "source": "provider-final-results/TEST-com.example.myapplication.ui.theme.UiTokenSourceGuardTest.xml"
+    },
+    {
+      "suite": "com.example.myapplication.ui.theme.UiTokenSourceGuardTest",
+      "name": "scan_literalDefaultShapesColorsAndLayoutExpressions_areReported",
+      "passed": true,
+      "source": "provider-final-results/TEST-com.example.myapplication.ui.theme.UiTokenSourceGuardTest.xml"
+    },
+    {
+      "suite": "com.example.myapplication.viewmodel.SettingsDraftStateSupportTest",
+      "name": "syncStoredSettings_overwritesDraftWhenNoLocalChanges",
+      "passed": true,
+      "source": "targeted-final-initial-results/TEST-com.example.myapplication.viewmodel.SettingsDraftStateSupportTest.xml"
+    },
+    {
+      "suite": "com.example.myapplication.viewmodel.SettingsDraftStateSupportTest",
+      "name": "addProviderFromTemplate_appendsProviderAndClosesDialog",
+      "passed": true,
+      "source": "targeted-final-initial-results/TEST-com.example.myapplication.viewmodel.SettingsDraftStateSupportTest.xml"
+    },
+    {
+      "suite": "com.example.myapplication.viewmodel.SettingsDraftStateSupportTest",
+      "name": "addProviderFromTemplate_preservesSavedProvidersWhenDraftListStillEmpty",
+      "passed": true,
+      "source": "targeted-final-initial-results/TEST-com.example.myapplication.viewmodel.SettingsDraftStateSupportTest.xml"
+    },
+    {
+      "suite": "com.example.myapplication.viewmodel.SettingsDraftStateSupportTest",
+      "name": "syncStoredSettings_hydratesProvidersEvenWhenOtherDraftChangesExist",
+      "passed": true,
+      "source": "targeted-final-initial-results/TEST-com.example.myapplication.viewmodel.SettingsDraftStateSupportTest.xml"
+    },
+    {
+      "suite": "com.example.myapplication.viewmodel.SettingsDraftStateSupportTest",
+      "name": "ensureProviderDrafts_injectsDefaultProviderWhenDraftsAreEmpty",
+      "passed": true,
+      "source": "targeted-final-initial-results/TEST-com.example.myapplication.viewmodel.SettingsDraftStateSupportTest.xml"
+    },
+    {
+      "suite": "com.example.myapplication.viewmodel.SettingsDraftStateSupportTest",
+      "name": "syncStoredSettings_preservesTemplateDialogWhileRefreshingStoredSettings",
+      "passed": true,
+      "source": "targeted-final-initial-results/TEST-com.example.myapplication.viewmodel.SettingsDraftStateSupportTest.xml"
+    },
+    {
+      "suite": "com.example.myapplication.viewmodel.SettingsDraftStateSupportTest",
+      "name": "updateScreenTranslationSettings_updatesDraftAndClearsMessage",
+      "passed": true,
+      "source": "targeted-final-initial-results/TEST-com.example.myapplication.viewmodel.SettingsDraftStateSupportTest.xml"
+    },
+    {
+      "suite": "com.example.myapplication.viewmodel.SettingsHealthCoordinatorTest",
+      "name": "checkProviderHealth_redactsSensitiveFailureMessage",
+      "passed": true,
+      "source": "targeted-final-initial-results/TEST-com.example.myapplication.viewmodel.SettingsHealthCoordinatorTest.xml"
+    },
+    {
+      "suite": "com.example.myapplication.viewmodel.SettingsHealthCoordinatorTest",
+      "name": "checkProviderHealth_returnsHealthyWhenFetchSucceeds",
+      "passed": true,
+      "source": "targeted-final-initial-results/TEST-com.example.myapplication.viewmodel.SettingsHealthCoordinatorTest.xml"
+    },
+    {
+      "suite": "com.example.myapplication.viewmodel.SettingsHealthCoordinatorTest",
+      "name": "checkProviderHealth_returnsUnhealthyWhenFetchFails",
+      "passed": true,
+      "source": "targeted-final-initial-results/TEST-com.example.myapplication.viewmodel.SettingsHealthCoordinatorTest.xml"
+    },
+    {
+      "suite": "com.example.myapplication.viewmodel.SettingsHealthCoordinatorTest",
+      "name": "checkProviderHealth_returnsReadableMessageForUnsupportedOfficialEndpoint",
+      "passed": true,
+      "source": "targeted-final-initial-results/TEST-com.example.myapplication.viewmodel.SettingsHealthCoordinatorTest.xml"
+    },
+    {
+      "suite": "com.example.myapplication.viewmodel.SettingsModelLoadCoordinatorTest",
+      "name": "loadModelsForProvider_persistsMergedModelsWhenRequested",
+      "passed": true,
+      "source": "targeted-final-initial-results/TEST-com.example.myapplication.viewmodel.SettingsModelLoadCoordinatorTest.xml"
+    },
+    {
+      "suite": "com.example.myapplication.viewmodel.SettingsModelLoadCoordinatorTest",
+      "name": "loadModelsForProvider_returnsPendingFetchedModelsWhenNotPersisting",
+      "passed": true,
+      "source": "targeted-final-initial-results/TEST-com.example.myapplication.viewmodel.SettingsModelLoadCoordinatorTest.xml"
+    },
+    {
+      "suite": "com.example.myapplication.viewmodel.SettingsPersistenceCoordinatorTest",
+      "name": "saveSelectedModel_prefersCurrentSelectedDraftProviderWhenSavedSettingsStillStale",
+      "passed": true,
+      "source": "targeted-final-initial-results/TEST-com.example.myapplication.viewmodel.SettingsPersistenceCoordinatorTest.xml"
+    },
+    {
+      "suite": "com.example.myapplication.viewmodel.SettingsPersistenceCoordinatorTest",
+      "name": "saveSettings_persistsProvidersDisplayAndScreenTranslation",
+      "passed": true,
+      "source": "targeted-final-initial-results/TEST-com.example.myapplication.viewmodel.SettingsPersistenceCoordinatorTest.xml"
+    },
+    {
+      "suite": "com.example.myapplication.viewmodel.SettingsPersistenceCoordinatorTest",
+      "name": "saveSelectedModel_updatesDraftProvidersForCurrentSelection",
+      "passed": true,
+      "source": "targeted-final-initial-results/TEST-com.example.myapplication.viewmodel.SettingsPersistenceCoordinatorTest.xml"
+    },
+    {
+      "suite": "com.example.myapplication.viewmodel.SettingsPersistenceCoordinatorTest",
+      "name": "saveSelectedProvider_prefersDraftProvidersWhenSavedSettingsStillStale",
+      "passed": true,
+      "source": "targeted-final-initial-results/TEST-com.example.myapplication.viewmodel.SettingsPersistenceCoordinatorTest.xml"
+    },
+    {
+      "suite": "com.example.myapplication.viewmodel.SettingsPersistenceCoordinatorTest",
+      "name": "saveUserProfile_delegatesToEditor",
+      "passed": true,
+      "source": "targeted-final-initial-results/TEST-com.example.myapplication.viewmodel.SettingsPersistenceCoordinatorTest.xml"
+    },
+    {
+      "suite": "com.example.myapplication.viewmodel.SettingsPersistenceCoordinatorTest",
+      "name": "saveUserPersonaMasks_delegatesToEditor",
+      "passed": true,
+      "source": "targeted-final-initial-results/TEST-com.example.myapplication.viewmodel.SettingsPersistenceCoordinatorTest.xml"
+    },
+    {
+      "suite": "com.example.myapplication.viewmodel.SettingsPersistenceCoordinatorTest",
+      "name": "saveSettings_backgroundGlassDraft_displayFailurePropagatesWithoutReportingSuccess",
+      "passed": true,
+      "source": "targeted-final-initial-results/TEST-com.example.myapplication.viewmodel.SettingsPersistenceCoordinatorTest.xml"
+    },
+    {
+      "suite": "com.example.myapplication.viewmodel.SettingsProviderDraftSupportTest",
+      "name": "toggleProviderEnabled_flipsEnabledFlag",
+      "passed": true,
+      "source": "targeted-final-initial-results/TEST-com.example.myapplication.viewmodel.SettingsProviderDraftSupportTest.xml"
+    },
+    {
+      "suite": "com.example.myapplication.viewmodel.SettingsProviderDraftSupportTest",
+      "name": "applyFetchedModelSelection_keepsExistingOverridesAndBuildsMessage",
+      "passed": true,
+      "source": "targeted-final-initial-results/TEST-com.example.myapplication.viewmodel.SettingsProviderDraftSupportTest.xml"
+    },
+    {
+      "suite": "com.example.myapplication.viewmodel.SettingsProviderDraftSupportTest",
+      "name": "deleteProvider_removesTargetAndResolvesNewSelection",
+      "passed": true,
+      "source": "targeted-final-initial-results/TEST-com.example.myapplication.viewmodel.SettingsProviderDraftSupportTest.xml"
+    },
+    {
+      "suite": "com.example.myapplication.viewmodel.SettingsProviderDraftSupportTest",
+      "name": "removeModelFromProvider_dropsModelAndFallsBackSelection",
+      "passed": true,
+      "source": "targeted-final-initial-results/TEST-com.example.myapplication.viewmodel.SettingsProviderDraftSupportTest.xml"
+    },
+    {
+      "suite": "com.example.myapplication.viewmodel.SettingsProviderDraftSupportTest",
+      "name": "normalizeProviders_trimsFieldsAndEnsuresFallbackName",
+      "passed": true,
+      "source": "targeted-final-initial-results/TEST-com.example.myapplication.viewmodel.SettingsProviderDraftSupportTest.xml"
+    },
+    {
+      "suite": "com.example.myapplication.viewmodel.SettingsProviderDraftSupportTest",
+      "name": "updateProviderModelAbilities_preservesOverride",
+      "passed": true,
+      "source": "targeted-final-initial-results/TEST-com.example.myapplication.viewmodel.SettingsProviderDraftSupportTest.xml"
+    },
+    {
+      "suite": "com.example.myapplication.viewmodel.SettingsUiMutationSupportTest",
+      "name": "deleteProvider_updatesSelectionAndClearsMessage",
+      "passed": true,
+      "source": "targeted-final-initial-results/TEST-com.example.myapplication.viewmodel.SettingsUiMutationSupportTest.xml"
+    },
+    {
+      "suite": "com.example.myapplication.viewmodel.SettingsUiMutationSupportTest",
+      "name": "beginSaving_setsSavingAndClearsMessage",
+      "passed": true,
+      "source": "targeted-final-initial-results/TEST-com.example.myapplication.viewmodel.SettingsUiMutationSupportTest.xml"
+    },
+    {
+      "suite": "com.example.myapplication.viewmodel.SettingsUiMutationSupportTest",
+      "name": "applyLoadModelsSuccess_updatesPendingModelsAndMessage",
+      "passed": true,
+      "source": "targeted-final-initial-results/TEST-com.example.myapplication.viewmodel.SettingsUiMutationSupportTest.xml"
+    },
+    {
+      "suite": "com.example.myapplication.viewmodel.SettingsUiMutationSupportTest",
+      "name": "applyMessageError_setsFailureMessage",
+      "passed": true,
+      "source": "targeted-final-initial-results/TEST-com.example.myapplication.viewmodel.SettingsUiMutationSupportTest.xml"
+    },
+    {
+      "suite": "com.example.myapplication.viewmodel.SettingsUiMutationSupportTest",
+      "name": "applyPersistenceSuccess_updatesProvidersAndSelectionWhenPresent",
+      "passed": true,
+      "source": "targeted-final-initial-results/TEST-com.example.myapplication.viewmodel.SettingsUiMutationSupportTest.xml"
+    },
+    {
+      "suite": "com.example.myapplication.viewmodel.SettingsViewModelTest",
+      "name": "saveSettings_disabledOnlineBackgroundGlass_persistsDraftAndCallsOnSaved",
+      "passed": true,
+      "source": "targeted-final-initial-results/TEST-com.example.myapplication.viewmodel.SettingsViewModelTest.xml"
+    },
+    {
+      "suite": "com.example.myapplication.viewmodel.SettingsViewModelTest",
+      "name": "saveSettings_backgroundGlassDraft_failureKeepsDraftAndDoesNotExitSettings",
+      "passed": true,
+      "source": "targeted-final-initial-results/TEST-com.example.myapplication.viewmodel.SettingsViewModelTest.xml"
+    },
+    {
+      "suite": "com.example.myapplication.viewmodel.SettingsViewModelTest",
+      "name": "updateProviderModelAbilities_updatesDraftModelInfo",
+      "passed": true,
+      "source": "targeted-final-initial-results/TEST-com.example.myapplication.viewmodel.SettingsViewModelTest.xml"
+    },
+    {
+      "suite": "com.example.myapplication.viewmodel.SettingsViewModelTest",
+      "name": "saveSelectedModel_supportsNewlyAddedDraftProviderBeforeFlowSync",
+      "passed": true,
+      "source": "targeted-final-initial-results/TEST-com.example.myapplication.viewmodel.SettingsViewModelTest.xml"
+    },
+    {
+      "suite": "com.example.myapplication.viewmodel.SettingsViewModelTest",
+      "name": "addProviderFromTemplate_selectsNewProviderAndKeepsExistingDrafts",
+      "passed": true,
+      "source": "targeted-final-initial-results/TEST-com.example.myapplication.viewmodel.SettingsViewModelTest.xml"
+    },
+    {
+      "suite": "com.example.myapplication.viewmodel.SettingsViewModelTest",
+      "name": "saveSettings_persistsScreenTranslationPreferences",
+      "passed": true,
+      "source": "targeted-final-initial-results/TEST-com.example.myapplication.viewmodel.SettingsViewModelTest.xml"
+    },
+    {
+      "suite": "com.example.myapplication.viewmodel.SettingsViewModelTest",
+      "name": "saveSettings_persistsOnlineRoleplayNarrationVisibility",
+      "passed": true,
+      "source": "targeted-final-initial-results/TEST-com.example.myapplication.viewmodel.SettingsViewModelTest.xml"
+    },
+    {
+      "suite": "com.example.myapplication.viewmodel.SettingsViewModelTest",
+      "name": "saveSelectedProvider_persistsTargetProviderAsChatActiveProvider",
+      "passed": true,
+      "source": "targeted-final-initial-results/TEST-com.example.myapplication.viewmodel.SettingsViewModelTest.xml"
+    },
+    {
+      "suite": "com.example.myapplication.viewmodel.SettingsViewModelTest",
+      "name": "saveSettings_persistsRoleplayAiHelperVisibility",
+      "passed": true,
+      "source": "targeted-final-initial-results/TEST-com.example.myapplication.viewmodel.SettingsViewModelTest.xml"
+    },
+    {
+      "suite": "com.example.myapplication.viewmodel.SettingsViewModelTest",
+      "name": "saveSelectedModelForProvider_updatesModelAndSwitchesActiveProvider",
+      "passed": true,
+      "source": "targeted-final-initial-results/TEST-com.example.myapplication.viewmodel.SettingsViewModelTest.xml"
+    },
+    {
+      "suite": "com.example.myapplication.viewmodel.SettingsViewModelTest",
+      "name": "initialization_usesSingleSettingsSubscriptionAndSyncsThemePreview",
+      "passed": true,
+      "source": "targeted-final-initial-results/TEST-com.example.myapplication.viewmodel.SettingsViewModelTest.xml"
+    },
+    {
+      "suite": "com.example.myapplication.viewmodel.SettingsViewModelTest",
+      "name": "saveSelectedProvider_rejectsDisabledProvider",
+      "passed": true,
+      "source": "targeted-final-initial-results/TEST-com.example.myapplication.viewmodel.SettingsViewModelTest.xml"
+    },
+    {
+      "suite": "com.example.myapplication.viewmodel.SettingsViewModelTest",
+      "name": "saveSettings_persistsDisplayPreferences",
+      "passed": true,
+      "source": "targeted-final-initial-results/TEST-com.example.myapplication.viewmodel.SettingsViewModelTest.xml"
+    },
+    {
+      "suite": "com.example.myapplication.viewmodel.SettingsViewModelTest",
+      "name": "saveSettings_cleansReplacedVoiceCloneSampleOnlyAfterPersistenceSucceeds",
+      "passed": true,
+      "source": "targeted-final-initial-results/TEST-com.example.myapplication.viewmodel.SettingsViewModelTest.xml"
+    },
+    {
+      "suite": "com.example.myapplication.viewmodel.SettingsViewModelTest",
+      "name": "updateProviderApiKey_clearsExistingConnectionHealthResult",
+      "passed": true,
+      "source": "targeted-final-initial-results/TEST-com.example.myapplication.viewmodel.SettingsViewModelTest.xml"
+    },
+    {
+      "suite": "com.example.myapplication.viewmodel.SettingsViewModelTest",
+      "name": "updateProviderFunctionModel_doesNotSwitchActiveChatProvider",
+      "passed": true,
+      "source": "targeted-final-initial-results/TEST-com.example.myapplication.viewmodel.SettingsViewModelTest.xml"
+    },
+    {
+      "suite": "com.example.myapplication.viewmodel.SettingsViewModelTest",
+      "name": "addAssistant_whenPersistenceFails_setsErrorMessage",
+      "passed": true,
+      "source": "targeted-final-initial-results/TEST-com.example.myapplication.viewmodel.SettingsViewModelTest.xml"
+    },
+    {
+      "suite": "com.example.myapplication.viewmodel.SettingsViewModelTest",
+      "name": "removeAssistant_ignoresBuiltinAssistant",
+      "passed": true,
+      "source": "targeted-final-initial-results/TEST-com.example.myapplication.viewmodel.SettingsViewModelTest.xml"
+    },
+    {
+      "suite": "com.example.myapplication.viewmodel.SettingsViewModelTest",
+      "name": "saveDefaultPresetId_migratesLegacyDefaultAssistantsToFollowGlobal",
+      "passed": true,
+      "source": "targeted-final-initial-results/TEST-com.example.myapplication.viewmodel.SettingsViewModelTest.xml"
+    },
+    {
+      "suite": "com.example.myapplication.viewmodel.SettingsViewModelTest",
+      "name": "saveSettings_persistsRoleplayImmersivePreferences",
+      "passed": true,
+      "source": "targeted-final-initial-results/TEST-com.example.myapplication.viewmodel.SettingsViewModelTest.xml"
+    },
+    {
+      "suite": "com.example.myapplication.viewmodel.SettingsViewModelTest",
+      "name": "removeAssistant_deletesCustomAssistantAndFallsBackToDefaultSelection",
+      "passed": true,
+      "source": "targeted-final-initial-results/TEST-com.example.myapplication.viewmodel.SettingsViewModelTest.xml"
+    },
+    {
+      "suite": "com.example.myapplication.viewmodel.SettingsViewModelTest",
+      "name": "saveSettings_afterAddProviderFromTemplate_persistsExistingAndNewProviders",
+      "passed": true,
+      "source": "targeted-final-initial-results/TEST-com.example.myapplication.viewmodel.SettingsViewModelTest.xml"
+    },
+    {
+      "suite": "com.example.myapplication.viewmodel.SettingsViewModelTest",
+      "name": "initializesDraftProvidersFromPersistedSettings",
+      "passed": true,
+      "source": "targeted-final-initial-results/TEST-com.example.myapplication.viewmodel.SettingsViewModelTest.xml"
+    },
+    {
+      "suite": "com.example.myapplication.viewmodel.SettingsViewModelTest",
+      "name": "saveDefaultPresetId_preservesExplicitNarraPresetAfterGlobalWasCustomized",
+      "passed": true,
+      "source": "targeted-final-initial-results/TEST-com.example.myapplication.viewmodel.SettingsViewModelTest.xml"
+    },
+    {
+      "suite": "com.example.myapplication.viewmodel.SettingsViewModelTest",
+      "name": "saveSelectedModelForProvider_supportsNewlyAddedDraftProviderBeforeFlowSync",
+      "passed": true,
+      "source": "targeted-final-initial-results/TEST-com.example.myapplication.viewmodel.SettingsViewModelTest.xml"
+    },
+    {
+      "suite": "com.example.myapplication.viewmodel.SettingsViewModelTest",
+      "name": "saveSelectedModelForProvider_thenSaveSettingsImmediately_keepsLatestModel",
+      "passed": true,
+      "source": "targeted-final-initial-results/TEST-com.example.myapplication.viewmodel.SettingsViewModelTest.xml"
+    }
+  ]
+}

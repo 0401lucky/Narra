@@ -9,7 +9,6 @@ import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -25,11 +24,8 @@ import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.GridItemSpan
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
-import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
-import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -55,13 +51,21 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.semantics.LiveRegionMode
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.heading
+import androidx.compose.ui.semantics.liveRegion
+import androidx.compose.ui.semantics.role
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.example.myapplication.model.ConnectionHealth
 import com.example.myapplication.model.ProviderSettings
 import com.example.myapplication.model.ProviderTemplate
 import com.example.myapplication.model.brandColor
+import com.example.myapplication.ui.theme.NarraShapes
+import com.example.myapplication.ui.theme.NarraUi
 import com.example.myapplication.viewmodel.SettingsUiState
 
 @Composable
@@ -160,6 +164,9 @@ fun ProviderSettingsScreen(
                 onNavigateBack = onNavigateBack,
                 actionLabel = "新增",
                 onAction = openAddProviderDialog,
+                horizontalPadding = NarraUi.space16,
+                titleMaxLines = Int.MAX_VALUE,
+                titleIsHeading = true,
             )
         },
         containerColor = palette.background,
@@ -173,13 +180,13 @@ fun ProviderSettingsScreen(
                 columns = GridCells.Adaptive(minSize = 154.dp),
                 modifier = Modifier.fillMaxSize(),
                 contentPadding = PaddingValues(
-                    start = 20.dp,
-                    top = 4.dp,
-                    end = 20.dp,
-                    bottom = 28.dp,
+                    start = NarraUi.space16,
+                    top = NarraUi.space4,
+                    end = NarraUi.space16,
+                    bottom = NarraUi.space32,
                 ),
-                horizontalArrangement = Arrangement.spacedBy(14.dp),
-                verticalArrangement = Arrangement.spacedBy(14.dp),
+                horizontalArrangement = Arrangement.spacedBy(NarraUi.space16),
+                verticalArrangement = Arrangement.spacedBy(NarraUi.space16),
             ) {
                 item(span = { GridItemSpan(maxLineSpan) }) {
                     ProviderSearchBar(
@@ -203,10 +210,10 @@ fun ProviderSettingsScreen(
                         Card(
                             onClick = openAddProviderDialog,
                             modifier = Modifier.fillMaxWidth(),
-                            shape = RoundedCornerShape(8.dp),
+                            shape = NarraShapes.medium,
                             colors = CardDefaults.cardColors(
-                                containerColor = palette.surface.copy(alpha = 0.74f),
-                                contentColor = palette.accentStrong,
+                                containerColor = palette.surface,
+                                contentColor = palette.title,
                             ),
                             border = BorderStroke(1.dp, palette.border.copy(alpha = 0.3f)),
                             elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
@@ -214,7 +221,10 @@ fun ProviderSettingsScreen(
                             Row(
                                 modifier = Modifier
                                     .fillMaxWidth()
-                                    .padding(horizontal = 18.dp, vertical = 16.dp),
+                                    .padding(
+                                        horizontal = NarraUi.space16,
+                                        vertical = NarraUi.space16
+                                    ),
                                 horizontalArrangement = Arrangement.Center,
                                 verticalAlignment = Alignment.CenterVertically,
                             ) {
@@ -222,7 +232,7 @@ fun ProviderSettingsScreen(
                                     text = "新增提供商",
                                     style = MaterialTheme.typography.titleMedium,
                                     fontWeight = FontWeight.SemiBold,
-                                    color = palette.accentStrong,
+                                    color = palette.title,
                                 )
                             }
                         }
@@ -231,7 +241,8 @@ fun ProviderSettingsScreen(
                     items(filteredProviders, key = { it.id }) { provider ->
                         ProviderCard(
                             provider = provider,
-                            health = uiState.connectionHealthMap[provider.id] ?: ConnectionHealth.UNKNOWN,
+                            health = uiState.connectionHealthMap[provider.id]
+                                ?: ConnectionHealth.UNKNOWN,
                             onClick = {
                                 onOpenProviderDetail(provider.id)
                             },
@@ -269,16 +280,16 @@ private fun ProviderSearchBar(
     OutlinedTextField(
         value = value,
         onValueChange = onValueChange,
-        placeholder = { Text("搜索提供商", color = palette.body) },
+        label = { Text("搜索提供商") },
         leadingIcon = {
             Icon(Icons.Default.Search, contentDescription = null, tint = palette.body)
         },
         modifier = Modifier
             .fillMaxWidth()
-            .padding(bottom = 8.dp),
-        shape = RoundedCornerShape(8.dp),
-        colors = rememberSettingsOutlineColors(),
-        singleLine = true
+            .padding(bottom = NarraUi.space8),
+        shape = NarraShapes.medium,
+        colors = providerTextFieldColors(palette.surfaceTint),
+        singleLine = true,
     )
 }
 
@@ -298,10 +309,11 @@ private fun ProviderCard(
     Card(
         onClick = onClick,
         modifier = Modifier
-            .fillMaxWidth(),
-        shape = RoundedCornerShape(8.dp),
+            .fillMaxWidth()
+            .semantics { role = Role.Button },
+        shape = NarraShapes.medium,
         colors = CardDefaults.cardColors(
-            containerColor = palette.surface.copy(alpha = 0.7f),
+            containerColor = palette.surface,
             contentColor = palette.title,
         ),
         border = BorderStroke(0.5.dp, palette.border.copy(alpha = 0.2f)),
@@ -310,8 +322,8 @@ private fun ProviderCard(
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp),
+                .padding(NarraUi.space16),
+            verticalArrangement = Arrangement.spacedBy(NarraUi.space16),
         ) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
@@ -324,32 +336,32 @@ private fun ProviderCard(
                 )
                 Icon(
                     imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
-                    contentDescription = "详情",
+                    contentDescription = null,
                     tint = palette.body.copy(alpha = 0.6f),
                 )
             }
 
             Text(
                 text = provider.name.ifBlank { providerType.displayName },
+                modifier = Modifier.semantics { heading() },
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.Medium,
                 color = palette.title,
-                maxLines = 2,
-                overflow = TextOverflow.Ellipsis,
             )
 
             Row(
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                horizontalArrangement = Arrangement.spacedBy(NarraUi.space8),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 ConnectionHealthDot(health = health)
-                Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                Column(
+                    modifier = Modifier.weight(1f),
+                    verticalArrangement = Arrangement.spacedBy(NarraUi.space4)
+                ) {
                     Text(
                         text = provider.toCardSubtitle(),
                         style = MaterialTheme.typography.bodySmall,
                         color = palette.body,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
                     )
                     if (health != ConnectionHealth.UNKNOWN) {
                         Text(
@@ -360,6 +372,7 @@ private fun ProviderCard(
                                 ConnectionHealth.UNKNOWN -> ""
                             },
                             style = MaterialTheme.typography.bodySmall,
+                            modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite },
                             color = if (health == ConnectionHealth.UNHEALTHY) MaterialTheme.colorScheme.error else palette.body,
                         )
                     }
@@ -367,25 +380,48 @@ private fun ProviderCard(
             }
 
             FlowRow(
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                verticalArrangement = Arrangement.spacedBy(8.dp),
+                horizontalArrangement = Arrangement.spacedBy(NarraUi.space8),
+                verticalArrangement = Arrangement.spacedBy(NarraUi.space8),
             ) {
-                SettingsStatusPill(
+                ProviderStatusPill(
                     text = if (provider.enabled) "启用" else "停用",
                     containerColor = if (provider.enabled) palette.accentSoft else palette.surfaceTint,
-                    contentColor = if (provider.enabled) palette.accent else palette.body,
+                    contentColor = if (provider.enabled) MaterialTheme.colorScheme.onPrimaryContainer else palette.body,
+                    modifier = Modifier.testTag("provider_status_${provider.id}"),
                 )
-                SettingsStatusPill(
+                ProviderStatusPill(
                     text = "$modelCount 个模型",
                     containerColor = palette.subtleChip,
                     contentColor = palette.subtleChipContent,
+                    modifier = Modifier.testTag("provider_count_${provider.id}"),
                 )
             }
         }
     }
 }
 
-/** 8dp 圆点信号灯，CHECKING 状态带脉冲动画。 */
+@Composable
+private fun ProviderStatusPill(
+    text: String,
+    containerColor: Color,
+    contentColor: Color,
+    modifier: Modifier = Modifier,
+) {
+    Surface(
+        modifier = modifier,
+        shape = NarraShapes.pill,
+        color = containerColor,
+        contentColor = contentColor
+    ) {
+        Text(
+            text = text,
+            modifier = Modifier.padding(horizontal = NarraUi.space8, vertical = NarraUi.space4),
+            style = MaterialTheme.typography.labelSmall,
+        )
+    }
+}
+
+/** 9dp 状态圆点与文字共同呈现连接状态，CHECKING 保留脉冲动画。 */
 @Composable
 fun ConnectionHealthDot(
     health: ConnectionHealth,
@@ -393,9 +429,9 @@ fun ConnectionHealthDot(
 ) {
     val color = when (health) {
         ConnectionHealth.UNKNOWN -> MaterialTheme.colorScheme.outlineVariant
-        ConnectionHealth.CHECKING -> Color(0xFFFFC107)
-        ConnectionHealth.HEALTHY -> Color(0xFF4CAF50)
-        ConnectionHealth.UNHEALTHY -> Color(0xFFEF5350)
+        ConnectionHealth.CHECKING -> MaterialTheme.colorScheme.tertiary
+        ConnectionHealth.HEALTHY -> MaterialTheme.colorScheme.primary
+        ConnectionHealth.UNHEALTHY -> MaterialTheme.colorScheme.error
     }
 
     val alpha = if (health == ConnectionHealth.CHECKING) {
@@ -418,7 +454,7 @@ fun ConnectionHealthDot(
         modifier = modifier
             .size(9.dp)
             .graphicsLayer { this.alpha = alpha }
-            .clip(CircleShape)
+            .clip(NarraShapes.pill)
             .background(color),
     )
 }
@@ -434,18 +470,18 @@ private fun ProviderBrandIcon(
 
     Surface(
         modifier = Modifier.size(48.dp),
-        shape = CircleShape,
+        shape = NarraShapes.pill,
         color = brandColor.copy(alpha = 0.15f),
         contentColor = palette.title,
     ) {
         if (iconRes != null) {
             Image(
                 painter = painterResource(id = iconRes),
-                contentDescription = providerType.displayName,
+                contentDescription = null,
                 modifier = Modifier
                     .fillMaxSize()
-                    .padding(10.dp)
-                    .clip(CircleShape),
+                    .padding(NarraUi.space8)
+                    .clip(NarraShapes.pill),
                 contentScale = ContentScale.Fit,
             )
         } else {
@@ -456,7 +492,7 @@ private fun ProviderBrandIcon(
                 Text(
                     text = provider.name.firstOrNull()?.uppercase() ?: "?",
                     style = MaterialTheme.typography.titleMedium,
-                    color = brandColor,
+                    color = palette.title,
                 )
             }
         }

@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.myapplication.viewmodel.ChatStateSupportTest" tests="6" skipped="0" failures="0" errors="0" timestamp="2026-11-05T09:49:03.252Z" hostname="LUCKY" time="0.001">
+  <properties/>
+  <testcase name="applyConversationSelection_updatesConversationPointers" classname="com.example.myapplication.viewmodel.ChatStateSupportTest" time="0.001"/>
+  <testcase name="beginTranslation_marksSheetVisibleAndLoading" classname="com.example.myapplication.viewmodel.ChatStateSupportTest" time="0.0"/>
+  <testcase name="applyContextGovernance_updatesSnapshotAndDebugDump" classname="com.example.myapplication.viewmodel.ChatStateSupportTest" time="0.0"/>
+  <testcase name="activateConversation_resetsConversationScopedUiState" classname="com.example.myapplication.viewmodel.ChatStateSupportTest" time="0.0"/>
+  <testcase name="applySettings_updatesSettingsAndAssistant" classname="com.example.myapplication.viewmodel.ChatStateSupportTest" time="0.0"/>
+  <testcase name="finishSending_resetsSendingState" classname="com.example.myapplication.viewmodel.ChatStateSupportTest" time="0.0"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

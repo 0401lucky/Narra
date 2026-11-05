@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.myapplication.data.repository.ChatImageGallerySaverTest" tests="8" skipped="0" failures="0" errors="0" timestamp="2026-11-05T09:47:29.260Z" hostname="LUCKY" time="0.271">
+  <properties/>
+  <testcase name="save_readsLocalFileAndWritesToGallery" classname="com.example.myapplication.data.repository.ChatImageGallerySaverTest" time="0.009"/>
+  <testcase name="save_rejectsLoadedImageAboveLimitWithoutWriting" classname="com.example.myapplication.data.repository.ChatImageGallerySaverTest" time="0.006"/>
+  <testcase name="save_returnsWriterFailureWhenGalleryWriteFails" classname="com.example.myapplication.data.repository.ChatImageGallerySaverTest" time="0.002"/>
+  <testcase name="save_returnsFriendlyFailureWhenRemoteDownloadFails" classname="com.example.myapplication.data.repository.ChatImageGallerySaverTest" time="0.003"/>
+  <testcase name="save_decodesDataImageAndKeepsDisplayName" classname="com.example.myapplication.data.repository.ChatImageGallerySaverTest" time="0.004"/>
+  <testcase name="save_readsContentUriAndFallsBackToGeneratedFileName" classname="com.example.myapplication.data.repository.ChatImageGallerySaverTest" time="0.002"/>
+  <testcase name="save_rejectsDataImageAboveLimit" classname="com.example.myapplication.data.repository.ChatImageGallerySaverTest" time="0.241"/>
+  <testcase name="save_downloadsRemoteImageBeforeWriting" classname="com.example.myapplication.data.repository.ChatImageGallerySaverTest" time="0.004"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

@@ -1,0 +1,83 @@
+<semantics id="E11_models-empty-dark" fontScale="1.0"><![CDATA[Printing with useUnmergedTree = 'false'
+Node #2940 at (l=0.0, t=0.0, r=720.0, b=1600.0)px, Tag: 'screenshot_stage'
+Shape = 'RectangleShape'
+ |-Node #2941 at (l=0.0, t=0.0, r=720.0, b=1600.0)px
+   IsContainer = 'true'
+   Shape = 'RectangleShape'
+    |-Node #3095 at (l=0.0, t=153.0, r=720.0, b=1440.0)px
+    |  |-Node #3097 at (l=0.0, t=153.0, r=720.0, b=1440.0)px
+    |    CollectionInfo = 'CollectionInfo(rowCount=1, columnCount=1)'
+    |    IsTraversalGroup = 'true'
+    |    Shape = 'androidx.compose.foundation.VerticalScrollableClipShape@14cea459'
+    |    VerticalScrollAxisRange = 'ScrollAxisRange(value=0.0, maxValue=0.0, reverseScrolling=false)'
+    |    [SelectableGroup]
+    |    Actions = [GetScrollViewportLength, IndexForKey, ScrollBy, ScrollByOffset, ScrollToIndex]
+    |     |-Node #3100 at (l=68.0, t=201.0, r=196.0, b=248.0)px
+    |     | Text = '[暂无模型]'
+    |     | Actions = [ClearTextSubstitution, GetTextLayoutResult, SetTextSubstitution, ShowTextSubstitution]
+    |     |-Node #3101 at (l=68.0, t=260.0, r=320.0, b=301.0)px
+    |       Text = '[尚未添加可用模型。]'
+    |       Actions = [ClearTextSubstitution, GetTextLayoutResult, SetTextSubstitution, ShowTextSubstitution]
+    |-Node #2947 at (l=32.0, t=29.0, r=128.0, b=125.0)px
+    | ContentDescription = '[返回]'
+    | Focused = 'false'
+    | Role = 'Button'
+    | Shape = 'RoundedCornerShape(topStart = CornerSize(size = 50.0%), topEnd = CornerSize(size = 50.0%), bottomEnd = CornerSize(size = 50.0%), bottomStart = CornerSize(size = 50.0%))'
+    | Actions = [OnClick, RequestFocus]
+    | MergeDescendants = 'true'
+    |-Node #2949 at (l=152.0, t=39.0, r=228.0, b=115.0)px
+    | IsContainer = 'true'
+    | Shape = 'RoundedCornerShape(topStart = CornerSize(size = 50.0%), topEnd = CornerSize(size = 50.0%), bottomEnd = CornerSize(size = 50.0%), bottomStart = CornerSize(size = 50.0%))'
+    |  |-Node #2951 at (l=172.0, t=50.0, r=208.0, b=104.0)px
+    |    Text = '[合]'
+    |    Actions = [ClearTextSubstitution, GetTextLayoutResult, SetTextSubstitution, ShowTextSubstitution]
+    |-Node #2952 at (l=252.0, t=16.0, r=688.0, b=137.0)px
+    | IsTraversalGroup = 'true'
+    | Shape = 'androidx.compose.foundation.VerticalScrollableClipShape@14cea459'
+    | VerticalScrollAxisRange = 'ScrollAxisRange(value=0.0, maxValue=0.0, reverseScrolling=false)'
+    | Actions = [ScrollBy, ScrollByOffset]
+    |  |-Node #2953 at (l=252.0, t=16.0, r=688.0, b=137.0)px
+    |    Text = '[合成提供商：长篇叙事与多语言服务]'
+    |    [Heading]
+    |    Actions = [ClearTextSubstitution, GetTextLayoutResult, SetTextSubstitution, ShowTextSubstitution]
+    |-Node #2960 at (l=32.0, t=1464.0, r=688.0, b=1576.0)px
+    | IsContainer = 'true'
+    | Shape = 'RoundedCornerShape(topStart = CornerSize(size = 16.0.dp), topEnd = CornerSize(size = 16.0.dp), bottomEnd = CornerSize(size = 16.0.dp), bottomStart = CornerSize(size = 16.0.dp))'
+    |  |-Node #2961 at (l=40.0, t=1472.0, r=680.0, b=1568.0)px
+    |    [SelectableGroup]
+    |     |-Node #2962 at (l=40.0, t=1472.0, r=360.0, b=1568.0)px
+    |     | Focused = 'false'
+    |     | Role = 'Tab'
+    |     | Selected = 'false'
+    |     | Shape = 'RoundedCornerShape(topStart = CornerSize(size = 8.0.dp), topEnd = CornerSize(size = 8.0.dp), bottomEnd = CornerSize(size = 8.0.dp), bottomStart = CornerSize(size = 8.0.dp))'
+    |     | Text = '[配置]'
+    |     | Actions = [ClearTextSubstitution, GetTextLayoutResult, OnClick, RequestFocus, SetTextSubstitution, ShowTextSubstitution]
+    |     | MergeDescendants = 'true'
+    |     |-Node #2966 at (l=360.0, t=1472.0, r=680.0, b=1568.0)px
+    |       Focused = 'false'
+    |       Role = 'Tab'
+    |       Selected = 'true'
+    |       Shape = 'RoundedCornerShape(topStart = CornerSize(size = 8.0.dp), topEnd = CornerSize(size = 8.0.dp), bottomEnd = CornerSize(size = 8.0.dp), bottomStart = CornerSize(size = 8.0.dp))'
+    |       Text = '[模型]'
+    |       Actions = [ClearTextSubstitution, GetTextLayoutResult, OnClick, RequestFocus, SetTextSubstitution, ShowTextSubstitution]
+    |       MergeDescendants = 'true'
+    |-Node #3084 at (l=0.0, t=1247.0, r=720.0, b=1408.0)px
+       |-Node #3085 at (l=0.0, t=1247.0, r=720.0, b=1392.0)px
+         IsContainer = 'true'
+         Shape = 'RoundedCornerShape(topStart = CornerSize(size = 16.0.dp), topEnd = CornerSize(size = 16.0.dp), bottomEnd = CornerSize(size = 16.0.dp), bottomStart = CornerSize(size = 16.0.dp))'
+          |-Node #3087 at (l=16.0, t=1263.0, r=112.0, b=1376.0)px
+          | ContentDescription = '[获取模型]'
+          | Focused = 'false'
+          | Role = 'Button'
+          | Shape = 'RoundedCornerShape(topStart = CornerSize(size = 8.0.dp), topEnd = CornerSize(size = 8.0.dp), bottomEnd = CornerSize(size = 8.0.dp), bottomStart = CornerSize(size = 8.0.dp))'
+          | StateDescription = '已有 0 个模型'
+          | Text = '[0]'
+          | Actions = [ClearTextSubstitution, GetTextLayoutResult, OnClick, RequestFocus, SetTextSubstitution, ShowTextSubstitution]
+          | MergeDescendants = 'true'
+          |-Node #3090 at (l=128.0, t=1272.0, r=704.0, b=1368.0)px
+            Focused = 'false'
+            Role = 'Button'
+            Shape = 'RoundedCornerShape(topStart = CornerSize(size = 16.0.dp), topEnd = CornerSize(size = 16.0.dp), bottomEnd = CornerSize(size = 16.0.dp), bottomStart = CornerSize(size = 16.0.dp))'
+            Text = '[添加新模型]'
+            Actions = [ClearTextSubstitution, GetTextLayoutResult, OnClick, RequestFocus, SetTextSubstitution, ShowTextSubstitution]
+            MergeDescendants = 'true']]></semantics>

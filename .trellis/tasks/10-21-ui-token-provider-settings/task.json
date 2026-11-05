@@ -3,7 +3,7 @@
   "name": "ui-token-provider-settings",
   "title": "v2.3 扩面四：提供商配置",
   "description": "P11提供商列表、详情双页签及实际可达弹层；保留草稿、协议、密钥与保存行为。",
-  "status": "planning",
+  "status": "in_progress",
   "dev_type": "frontend",
   "scope": "ui",
   "package": null,
@@ -21,11 +21,11 @@
   "children": [],
   "parent": "10-21-ui-token-accessibility-expansion",
   "relatedFiles": [],
-  "notes": "四批摘要已由2026-10-21用户回复“可以”批准；P10接口与验收稳定后迁移provider局部，保留返回立即pop和全部领域行为。",
+  "notes": "四批摘要已由2026-10-21用户回复“可以”批准；2026-11-05 P10已提交归档，用户明确授权启动现有P11并进入实现。以main/ac22bb27开始，126张已接纳PNG已冻结，保留返回立即pop和全部领域行为；新视觉接纳与具体提交清单分别审阅。",
   "meta": {
     "version": "2.3",
     "batch": "4",
-    "review_status": "approved_awaiting_predecessor",
+    "review_status": "accepted_and_verified_pending_commit_review",
     "predecessor": "10-21-ui-token-settings-home",
     "planned_new_screenshots": 32
   }

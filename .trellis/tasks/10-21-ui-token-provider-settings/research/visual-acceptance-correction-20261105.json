@@ -1,0 +1,22 @@
+{
+  "accepted": true,
+  "date": "2026-11-05",
+  "acceptedAtUtc": "2026-11-05T09:53:51.619087+00:00",
+  "userReply": "接纳这5张修正（推荐）",
+  "reason": "Stable E11 semantic Tab capture removes transient ripple only; production and touch behavior unchanged.",
+  "reviewDataSha256AtApproval": "e61e32d97a7af64101df125b022fefcdb9e0d25fd7cf1acff1f6c727eae6ed89",
+  "captureRevision": "capture-stability-20261105",
+  "beforeManifestSha256": "908cb617b036c1890e3c4d587ff25492c1314632834f960ba23d735a919a5264",
+  "afterManifestSha256": "b3a0d374cd94ac97ce7aa48220ad68abb35459b0570e0a7587ebab155dd6bbc6",
+  "candidates": {
+    "E11_models-dark": "02886a00f0336b4f75fa4870b7b9f41ace30692c704af98eb283aec1c7b63805",
+    "E11_models-empty-dark": "074067538ffda31ddaf5b812e60db8cdbf33e03a4415e0f27a48d6ab1fc1294e",
+    "E11_models-light": "42e4274461d0baee9f8ff7f6622fbbc6a3137615a1b393ad930fdeea679ce1f9",
+    "E11_models-tail-narrow-dark": "665d9a929bf1373ea7997b11834b124d0c6b6128e5eaaf194dc2aa6edec1dc2e",
+    "E11_models-tail-narrow-light": "89dd37efa34989e993af4e027c56a7d6be6e9998ea91e9a8743e4baf7045f6ce"
+  },
+  "unchangedE11": 27,
+  "unchangedOtherBaselines": 126,
+  "totalBaselines": 158,
+  "recordUsed": false
+}

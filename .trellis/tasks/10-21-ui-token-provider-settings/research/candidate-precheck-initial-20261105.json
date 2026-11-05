@@ -1,0 +1,28 @@
+{
+  "checked_at_utc": "2026-11-05T06:26:09.980839+00:00",
+  "status": "assistant precheck only; independent check and human acceptance pending",
+  "review_data_sha256": "c5327e702eb135767dcadf14033ac0ad912e58f7739ce53969b627bb7fb170e0",
+  "before_manifest_sha256": "d8a9e849084bf478a4ac76fbfe4195bc7ffe6f3537466a2a5e1f581110f4ce3f",
+  "after_manifest_sha256": "add1fb170e0174f565f8a230445656089eacbf18c9f11971268a938179017b90",
+  "pairs": 32,
+  "changed_pairs": 32,
+  "independent_windows_per_phase": 12,
+  "baseline_pngs_unchanged": 126,
+  "current_sources_match_after": true,
+  "montages_inspected": [
+    "regular-1.png",
+    "regular-2.png",
+    "regular-3.png",
+    "large-1.png",
+    "window-1.png",
+    "window-2.png"
+  ],
+  "additional_full_size_after_inspected": [
+    "E11_models-tail-narrow-light"
+  ],
+  "notes": [
+    "Normal 360dp provider grid now has two columns; 320dp/200% remains one column.",
+    "All six narrow cases reach the recorded actual maximum; operation bounds retained in both manifests.",
+    "No accepted PNG was copied or recorded."
+  ]
+}

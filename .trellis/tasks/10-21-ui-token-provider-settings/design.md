@@ -6,6 +6,10 @@
 
 本批拥有 settings 包下 `ProviderSettingsScreen.kt`、`ProviderDetailScreen.kt`、`ProviderDetailChrome.kt`、`ProviderConfigTab.kt`、`ProviderModelTab.kt`、`ProviderModelDialogs.kt`、`ProviderTemplateDialog.kt` 及相关测试。消费 P10 的 opt-in 参数，不并行修改 SettingsComponents；若还缺必要公共参数，由同一共享所有者集中处理并复验全部消费者。
 
+2026-11-05实现核对：P10已有SettingsComponents接口足够，无需追加参数。`NarraAlertDialog`按父设计允许的必要共享扩展，由同一实现所有者增加可选`shape`，默认仍为历史`RoundedCornerShape(NarraUi.cardRadius)`，P11显式传`NarraShapes.large`。随后实际颜色测试证明fixed dynamic-dark的primary作为普通动作文字时对比仅约2.08–2.82；同一所有者再增加`actionContentColor: Color = MaterialTheme.colorScheme.primary`，P11显式传`onSurface`，破坏性确认仍优先`error`。不修改共享布局、动画、Insets或关闭契约，其他调用与`NarraInfoDialog`默认不变。
+
+原源码、Git blob及16个生产/测试消费者已在产品修改前补冻于[共享弹窗来源](research/shared-dialog-baseline-20261105.json)，before保持冻结；独立检查须覆盖旧默认/显式shape与动作颜色、破坏性色优先级及真实关闭行为。协议帮助只在Provider局部组合复用原文案与“知道了”动作，不改变共享SettingsSectionHeader。焦点标签、抓取/模板/恢复自动等局部普通动作使用实际表面内容色，主要实底按钮保留`primary/onPrimary`配对，不修改全局scheme。
+
 保持列表 pending 新 provider 等待、provider.id 键控 tab / 密钥显隐、pending fetch 的归属及现有模型排序 / override。Config 的协议 / mode 显示已有窄屏纵向分支，优先复用。表单 / 列表的 120dp 底部留白先测量与浮动控件关系，不把功能避让空间按任意 spacing 删除。
 
 状态圆点属于状态呈现，优先使用现有 Material 语义角色，保留检查 / 正常 / 失败文字与禁用 / loading 语义；不把 9dp 装饰点改成 48dp 视觉块。独立输入的标签与错误关联到真正文本输入语义，tab / 开关只触发一次原回调。

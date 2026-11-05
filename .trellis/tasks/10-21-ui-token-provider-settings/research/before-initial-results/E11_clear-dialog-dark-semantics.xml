@@ -1,0 +1,37 @@
+<semantics id="E11_clear-dialog-dark" fontScale="2.0"><![CDATA[Printing with useUnmergedTree = 'true'
+Node #3073 at (l=48.0, t=0.0, r=592.0, b=808.0)px
+ |-Node #3074 at (l=48.0, t=0.0, r=592.0, b=808.0)px
+   [IsDialog]
+    |-Node #3075 at (l=48.0, t=0.0, r=592.0, b=808.0)px
+       |-Node #3076 at (l=48.0, t=0.0, r=592.0, b=808.0)px
+         IsContainer = 'true'
+         Shape = 'RoundedCornerShape(topStart = CornerSize(size = 8.0.dp), topEnd = CornerSize(size = 8.0.dp), bottomEnd = CornerSize(size = 8.0.dp), bottomStart = CornerSize(size = 8.0.dp))'
+          |-Node #3078 at (l=96.0, t=48.0, r=544.0, b=635.0)px, Tag: 'narra_alert_dialog_content'
+          | IsTraversalGroup = 'true'
+          | Shape = 'androidx.compose.foundation.VerticalScrollableClipShape@53ae7a45'
+          | VerticalScrollAxisRange = 'ScrollAxisRange(value=0.0, maxValue=0.0, reverseScrolling=false)'
+          | Actions = [ScrollBy, ScrollByOffset]
+          |  |-Node #3079 at (l=96.0, t=48.0, r=376.0, b=151.0)px
+          |  | Text = '[清空模型]'
+          |  | Actions = [ClearTextSubstitution, GetTextLayoutResult, SetTextSubstitution, ShowTextSubstitution]
+          |  |-Node #3080 at (l=96.0, t=183.0, r=544.0, b=635.0)px
+          |    Text = '[确定要清空该提供商下的所有已添加模型吗？该操作不会影响云端模型，你可以随时重新获取。]'
+          |    Actions = [ClearTextSubstitution, GetTextLayoutResult, SetTextSubstitution, ShowTextSubstitution]
+          |-Node #3083 at (l=120.0, t=651.0, r=272.0, b=760.0)px
+          | Focused = 'false'
+          | Role = 'Button'
+          | Shape = 'RoundedCornerShape(topStart = CornerSize(size = 50.0%), topEnd = CornerSize(size = 50.0%), bottomEnd = CornerSize(size = 50.0%), bottomStart = CornerSize(size = 50.0%))'
+          | Actions = [OnClick, RequestFocus]
+          | MergeDescendants = 'true'
+          |  |-Node #3085 at (l=144.0, t=667.0, r=248.0, b=744.0)px
+          |    Text = '[取消]'
+          |    Actions = [ClearTextSubstitution, GetTextLayoutResult, SetTextSubstitution, ShowTextSubstitution]
+          |-Node #3086 at (l=288.0, t=651.0, r=544.0, b=760.0)px
+            Focused = 'false'
+            Role = 'Button'
+            Shape = 'RoundedCornerShape(topStart = CornerSize(size = 50.0%), topEnd = CornerSize(size = 50.0%), bottomEnd = CornerSize(size = 50.0%), bottomStart = CornerSize(size = 50.0%))'
+            Actions = [OnClick, RequestFocus]
+            MergeDescendants = 'true'
+             |-Node #3088 at (l=312.0, t=667.0, r=520.0, b=744.0)px
+               Text = '[确认清空]'
+               Actions = [ClearTextSubstitution, GetTextLayoutResult, SetTextSubstitution, ShowTextSubstitution]]]></semantics>

@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.myapplication.di.AppStartupTaskSchedulerTest" tests="6" skipped="0" failures="0" errors="0" timestamp="2026-11-05T09:47:47.665Z" hostname="LUCKY" time="0.021">
+  <properties/>
+  <testcase name="sensitiveMigrationFailure_logsStableTaskNameAndRedactsThrowable" classname="com.example.myapplication.di.AppStartupTaskSchedulerTest" time="0.006"/>
+  <testcase name="allTasksSucceed_runsEveryTaskAndEmitsStableTraceNames" classname="com.example.myapplication.di.AppStartupTaskSchedulerTest" time="0.004"/>
+  <testcase name="contextLogSettingsFailure_logsStableTaskNameAndRedactsThrowable" classname="com.example.myapplication.di.AppStartupTaskSchedulerTest" time="0.003"/>
+  <testcase name="eachTaskFailure_doesNotStopSiblingTasks" classname="com.example.myapplication.di.AppStartupTaskSchedulerTest" time="0.003"/>
+  <testcase name="ensurePresetsFailure_logsStableTaskNameAndRedactsThrowable" classname="com.example.myapplication.di.AppStartupTaskSchedulerTest" time="0.001"/>
+  <testcase name="cancellation_isRethrownWithoutFailureLogAndSiblingStillRuns" classname="com.example.myapplication.di.AppStartupTaskSchedulerTest" time="0.004"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

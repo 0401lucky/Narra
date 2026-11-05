@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.myapplication.system.performance.F3BenchmarkAiDependencyPolicyTest" tests="3" skipped="0" failures="0" errors="0" timestamp="2026-11-05T09:47:48.076Z" hostname="LUCKY" time="0.013">
+  <properties/>
+  <testcase name="resolve_nonF3OrNull_evaluatesAndReturnsRealProviders" classname="com.example.myapplication.system.performance.F3BenchmarkAiDependencyPolicyTest" time="0.006"/>
+  <testcase name="resolve_f3Session_doesNotEvaluateRealProviders" classname="com.example.myapplication.system.performance.F3BenchmarkAiDependencyPolicyTest" time="0.002"/>
+  <testcase name="f3Gateway_parseRemainsLocal_butExternalCallsCountAndThrow" classname="com.example.myapplication.system.performance.F3BenchmarkAiDependencyPolicyTest" time="0.005"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

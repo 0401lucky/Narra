@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.myapplication.viewmodel.SettingsPersistenceCoordinatorTest" tests="7" skipped="0" failures="0" errors="0" timestamp="2026-11-05T05:55:28.337Z" hostname="LUCKY" time="0.067">
+  <properties/>
+  <testcase name="saveSelectedModel_prefersCurrentSelectedDraftProviderWhenSavedSettingsStillStale" classname="com.example.myapplication.viewmodel.SettingsPersistenceCoordinatorTest" time="0.004"/>
+  <testcase name="saveSettings_persistsProvidersDisplayAndScreenTranslation" classname="com.example.myapplication.viewmodel.SettingsPersistenceCoordinatorTest" time="0.003"/>
+  <testcase name="saveSelectedModel_updatesDraftProvidersForCurrentSelection" classname="com.example.myapplication.viewmodel.SettingsPersistenceCoordinatorTest" time="0.001"/>
+  <testcase name="saveSelectedProvider_prefersDraftProvidersWhenSavedSettingsStillStale" classname="com.example.myapplication.viewmodel.SettingsPersistenceCoordinatorTest" time="0.002"/>
+  <testcase name="saveUserProfile_delegatesToEditor" classname="com.example.myapplication.viewmodel.SettingsPersistenceCoordinatorTest" time="0.002"/>
+  <testcase name="saveUserPersonaMasks_delegatesToEditor" classname="com.example.myapplication.viewmodel.SettingsPersistenceCoordinatorTest" time="0.003"/>
+  <testcase name="saveSettings_backgroundGlassDraft_displayFailurePropagatesWithoutReportingSuccess" classname="com.example.myapplication.viewmodel.SettingsPersistenceCoordinatorTest" time="0.051"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

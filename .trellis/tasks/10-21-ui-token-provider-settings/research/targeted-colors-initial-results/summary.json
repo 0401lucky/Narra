@@ -1,0 +1,41 @@
+{
+  "command": ".\\gradlew.bat :app:testDebugUnitTest --tests com.example.myapplication.ui.screen.settings.Provider*Test --tests com.example.myapplication.ui.theme.UiTokenSourceGuardTest --console=plain",
+  "commandExitCode": 1,
+  "suites": 8,
+  "tests": 48,
+  "failures": 5,
+  "errors": 0,
+  "skipped": 0,
+  "failureDetails": [
+    {
+      "suite": "com.example.myapplication.ui.screen.settings.ProviderColorsTest",
+      "test": "fetchedRows_selectedAndUnselectedText_pairWithTheirRealWindowAcrossEightSchemes",
+      "message": "java.lang.AssertionError: 实际文字与承载面对比必须至少4.5：Color(0.40392157, 0.3137255, 0.6431373, 1.0, sRGB IEC61966-2.1) / Color(0.078431375, 0.08627451, 0.09019608, 1.0, sRGB IEC61966-2.1)",
+      "category": "behavior-or-infrastructure"
+    },
+    {
+      "suite": "com.example.myapplication.ui.screen.settings.ProviderColorsTest",
+      "test": "configFocusedInputLabels_areReadableOnTheActualFieldSurfaceAcrossEightSchemes",
+      "message": "java.lang.AssertionError: 实际文字与承载面对比必须至少4.5：Color(0.40392157, 0.3137255, 0.6431373, 1.0, sRGB IEC61966-2.1) / Color(0.078431375, 0.08627451, 0.09019608, 1.0, sRGB IEC61966-2.1)",
+      "category": "behavior-or-infrastructure"
+    },
+    {
+      "suite": "com.example.myapplication.ui.screen.settings.ProviderColorsTest",
+      "test": "templateWindow_namesDescriptionsAndCancel_followActualSurfacesAcrossEightSchemes",
+      "message": "java.lang.AssertionError: 实际文字与承载面对比必须至少4.5：Color(0.40392157, 0.3137255, 0.6431373, 1.0, sRGB IEC61966-2.1) / Color(0.09803922, 0.10980392, 0.11372549, 1.0, sRGB IEC61966-2.1)",
+      "category": "behavior-or-infrastructure"
+    },
+    {
+      "suite": "com.example.myapplication.ui.screen.settings.ProviderColorsTest",
+      "test": "abilityDialog_selectedChips_useRenderedSemanticColorsAcrossEightSchemes",
+      "message": "java.lang.AssertionError: 实际文字与承载面对比必须至少4.5：Color(0.40392157, 0.3137255, 0.6431373, 1.0, sRGB IEC61966-2.1) / Color(0.16470589, 0.1882353, 0.19607843, 1.0, sRGB IEC61966-2.1)",
+      "category": "behavior-or-infrastructure"
+    },
+    {
+      "suite": "com.example.myapplication.ui.screen.settings.ProviderColorsTest",
+      "test": "manualDialog_errorAndActions_useRealSurfaceContrastsAcrossEightSchemes",
+      "message": "java.lang.AssertionError: 实际文字与承载面对比必须至少4.5：Color(0.40392157, 0.3137255, 0.6431373, 1.0, sRGB IEC61966-2.1) / Color(0.16470589, 0.1882353, 0.19607843, 1.0, sRGB IEC61966-2.1)",
+      "category": "behavior-or-infrastructure"
+    }
+  ]
+}

@@ -1,0 +1,17 @@
+{
+  "command": ".\\gradlew.bat :app:testDebugUnitTest --tests com.example.myapplication.ui.screen.settings.Provider*Test --tests com.example.myapplication.ui.screen.settings.SettingsHomeSharedCompatibilityTest --tests com.example.myapplication.ui.screen.settings.SettingsHomeActionsTest --tests com.example.myapplication.ui.screen.roleplay.SessionSidebar*Test --tests com.example.myapplication.ui.component.roleplay.PilotAccessibilityTest --tests com.example.myapplication.ui.theme.UiTokenSourceGuardTest --tests com.example.myapplication.viewmodel.SettingsViewModelTest --tests com.example.myapplication.viewmodel.SettingsDraftStateSupportTest --tests com.example.myapplication.viewmodel.SettingsProviderDraftSupportTest --tests com.example.myapplication.viewmodel.SettingsModelLoadCoordinatorTest --tests com.example.myapplication.viewmodel.SettingsHealthCoordinatorTest --tests com.example.myapplication.viewmodel.SettingsPersistenceCoordinatorTest --tests com.example.myapplication.viewmodel.SettingsUiMutationSupportTest --console=plain",
+  "commandExitCode": 1,
+  "suites": 24,
+  "tests": 144,
+  "failures": 1,
+  "errors": 0,
+  "skipped": 0,
+  "failureDetails": [
+    {
+      "suite": "com.example.myapplication.ui.screen.settings.ProviderConfigAccessibilityTest",
+      "test": "veryLongProviderTitle_keepsTheFormUsable_andCanScrollItsCompleteName",
+      "message": "java.lang.AssertionError: Failed to perform ScrollBy action.\nReason: Expected exactly '1' node but found '2' nodes that satisfy: ((ScrollBy is defined) && (hasAnyDescendantThat(Text + InputText + EditableText contains '合成提供商：长篇叙事与多语言服务合成提供商：长篇叙事与多语言服务合成提供商：长篇叙事与多语言服务合成提供商：长篇叙事与多语言服务' (ignoreCase: false))))\nNodes found:\n1) Node #932 at (l=0.0, t=544.0, r=640.0, b=1091.0)px\nCollectionInfo = 'CollectionInfo(rowCount=8, columnCount=1)'\nIsTraversalGroup = 'true'\nShape = 'androidx.compose.foundation.VerticalScrollableClipShape@6da28ceb'\nVerticalScrollAxisRange = 'ScrollAxisRange(value=2588.0, maxValue=2588.0, reverseScrolling=false)'\nActions = [GetScrollViewportLength, IndexForKey, ScrollBy, ScrollByOffset, ScrollToIndex]\nHas 13 children\n2) Node #909 at (l=152.0, t=16.0, r=608.0, b=528.0)px\nIsTraversalGroup = 'true'\nShape = 'androidx.compose.foundation.VerticalScrollableClipShape@6da28ceb'\nVerticalScrollAxisRange = 'ScrollAxisRange(value=0.0, maxValue=491.0, reverseScrolling=false)'\nActions = [ScrollBy, ScrollByOffset]\nHas 1 child, 3 siblings\n",
+      "category": "behavior-or-infrastructure"
+    }
+  ]
+}

@@ -1,0 +1,193 @@
+<semantics id="E11_models-tail-narrow-dark" fontScale="2.0"><![CDATA[Printing with useUnmergedTree = 'false'
+Node #2166 at (l=0.0, t=0.0, r=640.0, b=1280.0)px, Tag: 'screenshot_stage'
+Shape = 'RectangleShape'
+ |-Node #2167 at (l=0.0, t=0.0, r=640.0, b=1280.0)px
+   IsContainer = 'true'
+   Shape = 'RectangleShape'
+    |-Node #2259 at (l=0.0, t=241.0, r=640.0, b=1091.0)px
+    |  |-Node #2261 at (l=0.0, t=241.0, r=640.0, b=1091.0)px
+    |    CollectionInfo = 'CollectionInfo(rowCount=6, columnCount=1)'
+    |    IsTraversalGroup = 'true'
+    |    Shape = 'androidx.compose.foundation.VerticalScrollableClipShape@6de197b4'
+    |    VerticalScrollAxisRange = 'ScrollAxisRange(value=2219.0, maxValue=2219.0, reverseScrolling=false)'
+    |    Actions = [GetScrollViewportLength, IndexForKey, ScrollBy, ScrollByOffset, ScrollToIndex]
+    |     |-Node #2348 at (l=40.0, t=38.0, r=600.0, b=394.0)px
+    |     | ContentDescription = '[视觉, 工具]'
+    |     | Focused = 'false'
+    |     | IsContainer = 'true'
+    |     | Role = 'RadioButton'
+    |     | Selected = 'false'
+    |     | Shape = 'RoundedCornerShape(topStart = CornerSize(size = 8.0.dp), topEnd = CornerSize(size = 8.0.dp), bottomEnd = CornerSize(size = 8.0.dp), bottomStart = CornerSize(size = 8.0.dp))'
+    |     | Text = '[F, 合成模型 4, 视觉]'
+    |     | Actions = [ClearTextSubstitution, GetTextLayoutResult, OnClick, RequestFocus, SetTextSubstitution, ShowTextSubstitution]
+    |     | MergeDescendants = 'true'
+    |     |  |-Node #2368 at (l=376.0, t=266.0, r=472.0, b=362.0)px
+    |     |  | ContentDescription = '[设置模型能力]'
+    |     |  | Focused = 'false'
+    |     |  | Role = 'Button'
+    |     |  | Shape = 'RoundedCornerShape(topStart = CornerSize(size = 50.0%), topEnd = CornerSize(size = 50.0%), bottomEnd = CornerSize(size = 50.0%), bottomStart = CornerSize(size = 50.0%))'
+    |     |  | Actions = [OnClick, RequestFocus]
+    |     |  | MergeDescendants = 'true'
+    |     |  |-Node #2370 at (l=472.0, t=266.0, r=568.0, b=362.0)px
+    |     |    ContentDescription = '[移除模型]'
+    |     |    Focused = 'false'
+    |     |    Role = 'Button'
+    |     |    Shape = 'RoundedCornerShape(topStart = CornerSize(size = 50.0%), topEnd = CornerSize(size = 50.0%), bottomEnd = CornerSize(size = 50.0%), bottomStart = CornerSize(size = 50.0%))'
+    |     |    Actions = [OnClick, RequestFocus]
+    |     |    MergeDescendants = 'true'
+    |     |-Node #2373 at (l=40.0, t=418.0, r=600.0, b=851.0)px
+    |     | ContentDescription = '[视觉, 工具]'
+    |     | Focused = 'false'
+    |     | IsContainer = 'true'
+    |     | Role = 'RadioButton'
+    |     | Selected = 'false'
+    |     | Shape = 'RoundedCornerShape(topStart = CornerSize(size = 8.0.dp), topEnd = CornerSize(size = 8.0.dp), bottomEnd = CornerSize(size = 8.0.dp), bottomStart = CornerSize(size = 8.0.dp))'
+    |     | Text = '[F, 末项：长上下文与细腻情绪模型, 视觉]'
+    |     | Actions = [ClearTextSubstitution, GetTextLayoutResult, OnClick, RequestFocus, SetTextSubstitution, ShowTextSubstitution]
+    |     | MergeDescendants = 'true'
+    |     |  |-Node #2393 at (l=376.0, t=723.0, r=472.0, b=819.0)px
+    |     |  | ContentDescription = '[设置模型能力]'
+    |     |  | Focused = 'false'
+    |     |  | Role = 'Button'
+    |     |  | Shape = 'RoundedCornerShape(topStart = CornerSize(size = 50.0%), topEnd = CornerSize(size = 50.0%), bottomEnd = CornerSize(size = 50.0%), bottomStart = CornerSize(size = 50.0%))'
+    |     |  | Actions = [OnClick, RequestFocus]
+    |     |  | MergeDescendants = 'true'
+    |     |  |-Node #2395 at (l=472.0, t=723.0, r=568.0, b=819.0)px
+    |     |    ContentDescription = '[移除模型]'
+    |     |    Focused = 'false'
+    |     |    Role = 'Button'
+    |     |    Shape = 'RoundedCornerShape(topStart = CornerSize(size = 50.0%), topEnd = CornerSize(size = 50.0%), bottomEnd = CornerSize(size = 50.0%), bottomStart = CornerSize(size = 50.0%))'
+    |     |    Actions = [OnClick, RequestFocus]
+    |     |    MergeDescendants = 'true'
+    |     |-Node #2264 at (l=48.0, t=265.0, r=284.0, b=425.0)px
+    |     | Text = '[已添加模型 (5)]'
+    |     | Actions = [ClearTextSubstitution, GetTextLayoutResult, SetTextSubstitution, ShowTextSubstitution]
+    |     |-Node #2265 at (l=284.0, t=291.0, r=592.0, b=400.0)px
+    |     | Focused = 'false'
+    |     | Role = 'Button'
+    |     | Shape = 'RoundedCornerShape(topStart = CornerSize(size = 50.0%), topEnd = CornerSize(size = 50.0%), bottomEnd = CornerSize(size = 50.0%), bottomStart = CornerSize(size = 50.0%))'
+    |     | Text = '[清空已添加]'
+    |     | Actions = [ClearTextSubstitution, GetTextLayoutResult, OnClick, RequestFocus, SetTextSubstitution, ShowTextSubstitution]
+    |     | MergeDescendants = 'true'
+    |     |-Node #2269 at (l=40.0, t=457.0, r=600.0, b=969.0)px
+    |     | ContentDescription = '[视觉, 推理, 工具]'
+    |     | Focused = 'false'
+    |     | IsContainer = 'true'
+    |     | Role = 'RadioButton'
+    |     | Selected = 'true'
+    |     | Shape = 'RoundedCornerShape(topStart = CornerSize(size = 8.0.dp), topEnd = CornerSize(size = 8.0.dp), bottomEnd = CornerSize(size = 8.0.dp), bottomStart = CornerSize(size = 8.0.dp))'
+    |     | Text = '[F, 长篇叙事与多语言理解模型, 当前模型, 视觉]'
+    |     | Actions = [ClearTextSubstitution, GetTextLayoutResult, OnClick, RequestFocus, SetTextSubstitution, ShowTextSubstitution]
+    |     | MergeDescendants = 'true'
+    |     |  |-Node #2293 at (l=376.0, t=841.0, r=472.0, b=937.0)px
+    |     |  | ContentDescription = '[设置模型能力]'
+    |     |  | Focused = 'false'
+    |     |  | Role = 'Button'
+    |     |  | Shape = 'RoundedCornerShape(topStart = CornerSize(size = 50.0%), topEnd = CornerSize(size = 50.0%), bottomEnd = CornerSize(size = 50.0%), bottomStart = CornerSize(size = 50.0%))'
+    |     |  | Actions = [OnClick, RequestFocus]
+    |     |  | MergeDescendants = 'true'
+    |     |  |-Node #2295 at (l=472.0, t=841.0, r=568.0, b=937.0)px
+    |     |    ContentDescription = '[移除模型]'
+    |     |    Focused = 'false'
+    |     |    Role = 'Button'
+    |     |    Shape = 'RoundedCornerShape(topStart = CornerSize(size = 50.0%), topEnd = CornerSize(size = 50.0%), bottomEnd = CornerSize(size = 50.0%), bottomStart = CornerSize(size = 50.0%))'
+    |     |    Actions = [OnClick, RequestFocus]
+    |     |    MergeDescendants = 'true'
+    |     |-Node #2298 at (l=40.0, t=993.0, r=600.0, b=1349.0)px
+    |     | ContentDescription = '[视觉, 工具]'
+    |     | Focused = 'false'
+    |     | IsContainer = 'true'
+    |     | Role = 'RadioButton'
+    |     | Selected = 'false'
+    |     | Shape = 'RoundedCornerShape(topStart = CornerSize(size = 8.0.dp), topEnd = CornerSize(size = 8.0.dp), bottomEnd = CornerSize(size = 8.0.dp), bottomStart = CornerSize(size = 8.0.dp))'
+    |     | Text = '[F, 合成模型 2, 视觉]'
+    |     | Actions = [ClearTextSubstitution, GetTextLayoutResult, OnClick, RequestFocus, SetTextSubstitution, ShowTextSubstitution]
+    |     | MergeDescendants = 'true'
+    |     |  |-Node #2318 at (l=376.0, t=1221.0, r=472.0, b=1317.0)px
+    |     |  | ContentDescription = '[设置模型能力]'
+    |     |  | Focused = 'false'
+    |     |  | Role = 'Button'
+    |     |  | Shape = 'RoundedCornerShape(topStart = CornerSize(size = 50.0%), topEnd = CornerSize(size = 50.0%), bottomEnd = CornerSize(size = 50.0%), bottomStart = CornerSize(size = 50.0%))'
+    |     |  | Actions = [OnClick, RequestFocus]
+    |     |  | MergeDescendants = 'true'
+    |     |  |-Node #2320 at (l=472.0, t=1221.0, r=568.0, b=1317.0)px
+    |     |    ContentDescription = '[移除模型]'
+    |     |    Focused = 'false'
+    |     |    Role = 'Button'
+    |     |    Shape = 'RoundedCornerShape(topStart = CornerSize(size = 50.0%), topEnd = CornerSize(size = 50.0%), bottomEnd = CornerSize(size = 50.0%), bottomStart = CornerSize(size = 50.0%))'
+    |     |    Actions = [OnClick, RequestFocus]
+    |     |    MergeDescendants = 'true'
+    |     |-Node #2323 at (l=0.0, t=241.0, r=560.0, b=597.0)px
+    |       ContentDescription = '[视觉, 工具]'
+    |       Focused = 'false'
+    |       IsContainer = 'true'
+    |       Role = 'RadioButton'
+    |       Selected = 'false'
+    |       Shape = 'RoundedCornerShape(topStart = CornerSize(size = 8.0.dp), topEnd = CornerSize(size = 8.0.dp), bottomEnd = CornerSize(size = 8.0.dp), bottomStart = CornerSize(size = 8.0.dp))'
+    |       Text = '[F, 合成模型 3, 视觉]'
+    |       Actions = [ClearTextSubstitution, GetTextLayoutResult, OnClick, RequestFocus, SetTextSubstitution, ShowTextSubstitution]
+    |       MergeDescendants = 'true'
+    |        |-Node #2343 at (l=0.0, t=241.0, r=96.0, b=337.0)px
+    |        | ContentDescription = '[设置模型能力]'
+    |        | Focused = 'false'
+    |        | Role = 'Button'
+    |        | Shape = 'RoundedCornerShape(topStart = CornerSize(size = 50.0%), topEnd = CornerSize(size = 50.0%), bottomEnd = CornerSize(size = 50.0%), bottomStart = CornerSize(size = 50.0%))'
+    |        | Actions = [OnClick, RequestFocus]
+    |        | MergeDescendants = 'true'
+    |        |-Node #2345 at (l=0.0, t=241.0, r=96.0, b=337.0)px
+    |          ContentDescription = '[移除模型]'
+    |          Focused = 'false'
+    |          Role = 'Button'
+    |          Shape = 'RoundedCornerShape(topStart = CornerSize(size = 50.0%), topEnd = CornerSize(size = 50.0%), bottomEnd = CornerSize(size = 50.0%), bottomStart = CornerSize(size = 50.0%))'
+    |          Actions = [OnClick, RequestFocus]
+    |          MergeDescendants = 'true'
+    |-Node #2173 at (l=40.0, t=73.0, r=136.0, b=169.0)px
+    | ContentDescription = '[返回]'
+    | Focused = 'false'
+    | Role = 'Button'
+    | Shape = 'RoundedCornerShape(topStart = CornerSize(size = 50.0%), topEnd = CornerSize(size = 50.0%), bottomEnd = CornerSize(size = 50.0%), bottomStart = CornerSize(size = 50.0%))'
+    | Actions = [OnClick, RequestFocus]
+    | MergeDescendants = 'true'
+    |-Node #2175 at (l=160.0, t=83.0, r=236.0, b=159.0)px
+    | IsContainer = 'true'
+    | Shape = 'RoundedCornerShape(topStart = CornerSize(size = 50.0%), topEnd = CornerSize(size = 50.0%), bottomEnd = CornerSize(size = 50.0%), bottomStart = CornerSize(size = 50.0%))'
+    |  |-Node #2177 at (l=168.0, t=83.0, r=228.0, b=159.0)px
+    |    Text = '[合]'
+    |    Actions = [ClearTextSubstitution, GetTextLayoutResult, SetTextSubstitution, ShowTextSubstitution]
+    |-Node #2178 at (l=260.0, t=24.0, r=600.0, b=217.0)px
+    | Text = '[合成提供商：长篇叙事与多语言服务]'
+    | Actions = [ClearTextSubstitution, GetTextLayoutResult, SetTextSubstitution, ShowTextSubstitution]
+    |-Node #2185 at (l=40.0, t=1115.0, r=600.0, b=1256.0)px
+    | IsContainer = 'true'
+    | Shape = 'RoundedCornerShape(topStart = CornerSize(size = 16.0.dp), topEnd = CornerSize(size = 16.0.dp), bottomEnd = CornerSize(size = 16.0.dp), bottomStart = CornerSize(size = 16.0.dp))'
+    |  |-Node #2187 at (l=52.0, t=1127.0, r=320.0, b=1244.0)px
+    |  | Focused = 'false'
+    |  | Shape = 'RoundedCornerShape(topStart = CornerSize(size = 8.0.dp), topEnd = CornerSize(size = 8.0.dp), bottomEnd = CornerSize(size = 8.0.dp), bottomStart = CornerSize(size = 8.0.dp))'
+    |  | Text = '[配置]'
+    |  | Actions = [ClearTextSubstitution, GetTextLayoutResult, OnClick, RequestFocus, SetTextSubstitution, ShowTextSubstitution]
+    |  | MergeDescendants = 'true'
+    |  |-Node #2191 at (l=320.0, t=1127.0, r=588.0, b=1244.0)px
+    |    Focused = 'false'
+    |    Shape = 'RoundedCornerShape(topStart = CornerSize(size = 8.0.dp), topEnd = CornerSize(size = 8.0.dp), bottomEnd = CornerSize(size = 8.0.dp), bottomStart = CornerSize(size = 8.0.dp))'
+    |    Text = '[模型]'
+    |    Actions = [ClearTextSubstitution, GetTextLayoutResult, OnClick, RequestFocus, SetTextSubstitution, ShowTextSubstitution]
+    |    MergeDescendants = 'true'
+    |-Node #2247 at (l=36.0, t=886.0, r=604.0, b=1059.0)px
+       |-Node #2248 at (l=36.0, t=886.0, r=604.0, b=1043.0)px
+         IsContainer = 'true'
+         Shape = 'RoundedCornerShape(topStart = CornerSize(size = 16.0.dp), topEnd = CornerSize(size = 16.0.dp), bottomEnd = CornerSize(size = 16.0.dp), bottomStart = CornerSize(size = 16.0.dp))'
+          |-Node #2250 at (l=52.0, t=917.0, r=148.0, b=1013.0)px
+          | ContentDescription = '[获取模型]'
+          | Focused = 'false'
+          | IsContainer = 'true'
+          | Shape = 'RoundedCornerShape(topStart = CornerSize(size = 8.0.dp), topEnd = CornerSize(size = 8.0.dp), bottomEnd = CornerSize(size = 8.0.dp), bottomStart = CornerSize(size = 8.0.dp))'
+          | Text = '[5]'
+          | Actions = [ClearTextSubstitution, GetTextLayoutResult, OnClick, RequestFocus, SetTextSubstitution, ShowTextSubstitution]
+          | MergeDescendants = 'true'
+          |-Node #2254 at (l=180.0, t=902.0, r=588.0, b=1027.0)px
+            Focused = 'false'
+            Role = 'Button'
+            Shape = 'RoundedCornerShape(topStart = CornerSize(size = 12.0.dp), topEnd = CornerSize(size = 12.0.dp), bottomEnd = CornerSize(size = 12.0.dp), bottomStart = CornerSize(size = 12.0.dp))'
+            Text = '[添加新模型]'
+            Actions = [ClearTextSubstitution, GetTextLayoutResult, OnClick, RequestFocus, SetTextSubstitution, ShowTextSubstitution]
+            MergeDescendants = 'true']]></semantics>

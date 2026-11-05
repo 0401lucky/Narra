@@ -1,0 +1,27 @@
+{
+  "exitCode": 1,
+  "tests": 32,
+  "failures": 5,
+  "details": [
+    {
+      "test": "e11_models_dark",
+      "message": "java.lang.AssertionError: Roborazzi: D:\\code\\AndroidStudioprojects\\MyApplication\\app\\src\\test\\snapshots\\ProviderSettingsScreenshotE11Test\\E11_models-dark.png is changed.\nSee the compare image at D:\\code\\AndroidStudioprojects\\MyApplication\\app\\build\\outputs\\roborazzi\\E11_models-dark_compare.png"
+    },
+    {
+      "test": "e11_models_tail_narrow_light",
+      "message": "java.lang.AssertionError: Roborazzi: D:\\code\\AndroidStudioprojects\\MyApplication\\app\\src\\test\\snapshots\\ProviderSettingsScreenshotE11Test\\E11_models-tail-narrow-light.png is changed.\nSee the compare image at D:\\code\\AndroidStudioprojects\\MyApplication\\app\\build\\outputs\\roborazzi\\E11_models-tail-narrow-light_compare.png"
+    },
+    {
+      "test": "e11_models_light",
+      "message": "java.lang.AssertionError: Roborazzi: D:\\code\\AndroidStudioprojects\\MyApplication\\app\\src\\test\\snapshots\\ProviderSettingsScreenshotE11Test\\E11_models-light.png is changed.\nSee the compare image at D:\\code\\AndroidStudioprojects\\MyApplication\\app\\build\\outputs\\roborazzi\\E11_models-light_compare.png"
+    },
+    {
+      "test": "e11_models_tail_narrow_dark",
+      "message": "java.lang.AssertionError: Roborazzi: D:\\code\\AndroidStudioprojects\\MyApplication\\app\\src\\test\\snapshots\\ProviderSettingsScreenshotE11Test\\E11_models-tail-narrow-dark.png is changed.\nSee the compare image at D:\\code\\AndroidStudioprojects\\MyApplication\\app\\build\\outputs\\roborazzi\\E11_models-tail-narrow-dark_compare.png"
+    },
+    {
+      "test": "e11_models_empty_dark",
+      "message": "java.lang.AssertionError: Roborazzi: D:\\code\\AndroidStudioprojects\\MyApplication\\app\\src\\test\\snapshots\\ProviderSettingsScreenshotE11Test\\E11_models-empty-dark.png is changed.\nSee the compare image at D:\\code\\AndroidStudioprojects\\MyApplication\\app\\build\\outputs\\roborazzi\\E11_models-empty-dark_compare.png"
+    }
+  ]
+}

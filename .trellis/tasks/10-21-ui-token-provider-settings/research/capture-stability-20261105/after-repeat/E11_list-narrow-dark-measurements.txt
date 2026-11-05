@@ -1,0 +1,4 @@
+pageScroll=646.0/646.0
+pageViewport=Rect.fromLTRB(0.0, 133.0, 640.0, 1280.0)
+lastProvider=Rect.fromLTRB(32.0, 660.0, 608.0, 1216.0)
+lastProviderUnclipped=Rect.fromLTRB(32.0, 660.0, 608.0, 1216.0)

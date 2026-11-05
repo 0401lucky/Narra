@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.myapplication.system.performance.BenchmarkSessionContractTest" tests="10" skipped="0" failures="0" errors="0" timestamp="2026-11-05T09:47:48.070Z" hostname="LUCKY" time="0.004">
+  <properties/>
+  <testcase name="validate_scenarioPhaseMismatchOrPrepare_returnsInvalidPhase" classname="com.example.myapplication.system.performance.BenchmarkSessionContractTest" time="0.001"/>
+  <testcase name="codec_roundTripPreservesDescriptor_andRejectsUnknownScenario" classname="com.example.myapplication.system.performance.BenchmarkSessionContractTest" time="0.001"/>
+  <testcase name="ttlConstants_keepExactMeasureAndProfileBoundaries" classname="com.example.myapplication.system.performance.BenchmarkSessionContractTest" time="0.0"/>
+  <testcase name="validate_measureSessionAtDefaultTtl_acceptsBoundaryAndRejectsOverflow" classname="com.example.myapplication.system.performance.BenchmarkSessionContractTest" time="0.0"/>
+  <testcase name="resolver_devAndRelease_doNotReadSessionFile" classname="com.example.myapplication.system.performance.BenchmarkSessionContractTest" time="0.002"/>
+  <testcase name="fixtureProcessPredicate_requiresExactProcessName" classname="com.example.myapplication.system.performance.BenchmarkSessionContractTest" time="0.0"/>
+  <testcase name="validate_profileSessionAtMaxTtl_acceptsBoundaryAndRejectsOverflow" classname="com.example.myapplication.system.performance.BenchmarkSessionContractTest" time="0.0"/>
+  <testcase name="resolve_baselineExplicitValidSession_activatesIsolationPolicy" classname="com.example.myapplication.system.performance.BenchmarkSessionContractTest" time="0.0"/>
+  <testcase name="validate_expiredFutureOrWrongSchema_returnsPreciseRejection" classname="com.example.myapplication.system.performance.BenchmarkSessionContractTest" time="0.0"/>
+  <testcase name="resolve_devReleaseMissingOrMismatchedSession_neverActivates" classname="com.example.myapplication.system.performance.BenchmarkSessionContractTest" time="0.0"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

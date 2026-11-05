@@ -1,0 +1,81 @@
+title=手动添加模型
+operation=添加
+fontScale=2.0
+bounds=Rect.fromLTRB(0.0, 0.0, 544.0, 1178.0)
+Printing with useUnmergedTree = 'true'
+Node #9389 at (l=48.0, t=0.0, r=592.0, b=1178.0)px
+ |-Node #9390 at (l=48.0, t=0.0, r=592.0, b=1178.0)px
+   [IsDialog]
+    |-Node #9391 at (l=48.0, t=0.0, r=592.0, b=1178.0)px
+       |-Node #9392 at (l=48.0, t=0.0, r=592.0, b=1178.0)px
+         IsContainer = 'true'
+         Shape = 'RoundedCornerShape(topStart = CornerSize(size = 24.0.dp), topEnd = CornerSize(size = 24.0.dp), bottomEnd = CornerSize(size = 24.0.dp), bottomStart = CornerSize(size = 24.0.dp))'
+          |-Node #9394 at (l=96.0, t=48.0, r=544.0, b=1005.0)px, Tag: 'narra_alert_dialog_content'
+          | IsTraversalGroup = 'true'
+          | Shape = 'androidx.compose.foundation.VerticalScrollableClipShape@1b3c8914'
+          | VerticalScrollAxisRange = 'ScrollAxisRange(value=0.0, maxValue=0.0, reverseScrolling=false)'
+          | Actions = [ScrollBy, ScrollByOffset]
+          |  |-Node #9395 at (l=96.0, t=48.0, r=516.0, b=151.0)px
+          |  | Text = '[手动添加模型]'
+          |  | Actions = [ClearTextSubstitution, GetTextLayoutResult, SetTextSubstitution, ShowTextSubstitution]
+          |  |-Node #9396 at (l=96.0, t=183.0, r=544.0, b=485.0)px
+          |  | Text = '[手动输入模型 ID 和显示名称。适用于未暴露获取接口的提供商。]'
+          |  | Actions = [ClearTextSubstitution, GetTextLayoutResult, SetTextSubstitution, ShowTextSubstitution]
+          |  |-Node #9398 at (l=96.0, t=533.0, r=544.0, b=789.0)px
+          |  | ContentDataType = 'AndroidContentDataType(androidAutofillType=1)'
+          |  | EditableText = ''
+          |  | Error = '模型 ID 不能为空'
+          |  | FillableData = 'androidx.compose.ui.autofill.AndroidFillableData@1eb018bd'
+          |  | Focused = 'false'
+          |  | ImeAction = 'Default'
+          |  | InputText = ''
+          |  | IsEditable = 'true'
+          |  | TextSelectionRange = 'TextRange(0, 0)'
+          |  | Actions = [GetTextLayoutResult, InsertTextAtCursor, OnClick, OnFillData, OnLongClick, PasteText, PerformImeAction, RequestFocus, SetSelection, SetText]
+          |  | MergeDescendants = 'true'
+          |  |  |-Node #9402 at (l=96.0, t=561.0, r=544.0, b=709.0)px
+          |  |  | Shape = 'RoundedCornerShape(topStart = CornerSize(size = 16.0.dp), topEnd = CornerSize(size = 16.0.dp), bottomEnd = CornerSize(size = 16.0.dp), bottomStart = CornerSize(size = 16.0.dp))'
+          |  |  |-Node #9407 at (l=128.0, t=593.0, r=344.0, b=677.0)px
+          |  |  | Text = '[模型 ID *]'
+          |  |  | Actions = [ClearTextSubstitution, GetTextLayoutResult, SetTextSubstitution, ShowTextSubstitution]
+          |  |  |-Node #9404 at (l=128.0, t=603.0, r=512.0, b=687.0)px
+          |  |  | Shape = 'RectangleShape'
+          |  |  |-Node #9427 at (l=128.0, t=717.0, r=485.0, b=789.0)px
+          |  |    Text = '[模型 ID 不能为空]'
+          |  |    Actions = [ClearTextSubstitution, GetTextLayoutResult, SetTextSubstitution, ShowTextSubstitution]
+          |  |-Node #9409 at (l=96.0, t=813.0, r=544.0, b=989.0)px
+          |    ContentDataType = 'AndroidContentDataType(androidAutofillType=1)'
+          |    EditableText = ''
+          |    FillableData = 'androidx.compose.ui.autofill.AndroidFillableData@3f5330e3'
+          |    Focused = 'false'
+          |    ImeAction = 'Default'
+          |    InputText = ''
+          |    IsEditable = 'true'
+          |    TextSelectionRange = 'TextRange(0, 0)'
+          |    Actions = [GetTextLayoutResult, InsertTextAtCursor, OnClick, OnFillData, OnLongClick, PasteText, PerformImeAction, RequestFocus, SetSelection, SetText]
+          |    MergeDescendants = 'true'
+          |     |-Node #9413 at (l=96.0, t=841.0, r=544.0, b=989.0)px
+          |     | Shape = 'RoundedCornerShape(topStart = CornerSize(size = 16.0.dp), topEnd = CornerSize(size = 16.0.dp), bottomEnd = CornerSize(size = 16.0.dp), bottomStart = CornerSize(size = 16.0.dp))'
+          |     |-Node #9418 at (l=128.0, t=873.0, r=352.0, b=957.0)px
+          |     | Text = '[显示名称]'
+          |     | Actions = [ClearTextSubstitution, GetTextLayoutResult, SetTextSubstitution, ShowTextSubstitution]
+          |     |-Node #9415 at (l=128.0, t=883.0, r=512.0, b=967.0)px
+          |       Shape = 'RectangleShape'
+          |-Node #9421 at (l=224.0, t=1021.0, r=376.0, b=1130.0)px
+          | Focused = 'false'
+          | Role = 'Button'
+          | Shape = 'RoundedCornerShape(topStart = CornerSize(size = 50.0%), topEnd = CornerSize(size = 50.0%), bottomEnd = CornerSize(size = 50.0%), bottomStart = CornerSize(size = 50.0%))'
+          | Actions = [OnClick, RequestFocus]
+          | MergeDescendants = 'true'
+          |  |-Node #9423 at (l=248.0, t=1037.0, r=352.0, b=1114.0)px
+          |    Text = '[取消]'
+          |    Actions = [ClearTextSubstitution, GetTextLayoutResult, SetTextSubstitution, ShowTextSubstitution]
+          |-Node #9424 at (l=392.0, t=1021.0, r=544.0, b=1130.0)px
+            Focused = 'false'
+            Role = 'Button'
+            Shape = 'RoundedCornerShape(topStart = CornerSize(size = 50.0%), topEnd = CornerSize(size = 50.0%), bottomEnd = CornerSize(size = 50.0%), bottomStart = CornerSize(size = 50.0%))'
+            Actions = [OnClick, RequestFocus]
+            MergeDescendants = 'true'
+             |-Node #9426 at (l=416.0, t=1037.0, r=520.0, b=1114.0)px
+               Text = '[添加]'
+               Actions = [ClearTextSubstitution, GetTextLayoutResult, SetTextSubstitution, ShowTextSubstitution]

@@ -1,0 +1,28 @@
+<semantics id="E11_protocol-dialog-light" fontScale="2.0"><![CDATA[Printing with useUnmergedTree = 'true'
+Node #5927 at (l=48.0, t=0.0, r=592.0, b=808.0)px
+ |-Node #5928 at (l=48.0, t=0.0, r=592.0, b=808.0)px
+   [IsDialog]
+    |-Node #5929 at (l=48.0, t=0.0, r=592.0, b=808.0)px
+       |-Node #5930 at (l=48.0, t=0.0, r=592.0, b=808.0)px
+         IsContainer = 'true'
+         Shape = 'RoundedCornerShape(topStart = CornerSize(size = 24.0.dp), topEnd = CornerSize(size = 24.0.dp), bottomEnd = CornerSize(size = 24.0.dp), bottomStart = CornerSize(size = 24.0.dp))'
+          |-Node #5932 at (l=96.0, t=48.0, r=544.0, b=635.0)px, Tag: 'narra_alert_dialog_content'
+          | IsTraversalGroup = 'true'
+          | Shape = 'androidx.compose.foundation.VerticalScrollableClipShape@1b3c8914'
+          | VerticalScrollAxisRange = 'ScrollAxisRange(value=0.0, maxValue=0.0, reverseScrolling=false)'
+          | Actions = [ScrollBy, ScrollByOffset]
+          |  |-Node #5933 at (l=96.0, t=48.0, r=376.0, b=151.0)px
+          |  | Text = '[接口协议]'
+          |  | Actions = [ClearTextSubstitution, GetTextLayoutResult, SetTextSubstitution, ShowTextSubstitution]
+          |  |-Node #5934 at (l=96.0, t=183.0, r=544.0, b=635.0)px
+          |    Text = '[OpenAI 兼容协议适用于大多数兼容网关与中转站。具体请求接口由文本接口模式和请求路径决定。]'
+          |    Actions = [ClearTextSubstitution, GetTextLayoutResult, SetTextSubstitution, ShowTextSubstitution]
+          |-Node #5937 at (l=340.0, t=651.0, r=544.0, b=760.0)px
+            Focused = 'false'
+            Role = 'Button'
+            Shape = 'RoundedCornerShape(topStart = CornerSize(size = 50.0%), topEnd = CornerSize(size = 50.0%), bottomEnd = CornerSize(size = 50.0%), bottomStart = CornerSize(size = 50.0%))'
+            Actions = [OnClick, RequestFocus]
+            MergeDescendants = 'true'
+             |-Node #5939 at (l=364.0, t=667.0, r=520.0, b=744.0)px
+               Text = '[知道了]'
+               Actions = [ClearTextSubstitution, GetTextLayoutResult, SetTextSubstitution, ShowTextSubstitution]]]></semantics>

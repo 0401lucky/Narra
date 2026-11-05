@@ -1,0 +1,9 @@
+{
+  "commandExitCode": 1,
+  "tests": 4,
+  "failures": 4,
+  "errors": 0,
+  "skipped": 0,
+  "actualExecution": "26 seconds, 2 tasks executed / 33 up-to-date",
+  "codeChangedSinceFirstAttempt": false
+}
