@@ -3,8 +3,8 @@
 > **当前状态：用户已接纳32张E11及其中5张稳定帧修正，共158张PNG；159/159真实截图、1826/1826完整JVM通过。**
 
 - 用户回复“接纳这32组效果（推荐）”。仅从已审阅after按精确SHA-256新增32张E11；原126张PNG不变，未record或降低比较阈值。
-- 接纳后识别出模型页签瞬态水波纹。仅E11截图改为真实Tab语义点击，并在ac22bb27隔离副本补before、以两轮32张after字节一致证明稳定。用户随后回复“接纳这5张修正（推荐）”，只替换5张，其他153张不变；[修正对照](../../../../.trellis/tasks/10-21-ui-token-provider-settings/review-capture-stability/index.html)与两次接纳记录均保留，产品动画和行为触控未改。
-- 覆盖提供商列表、Config / Models、固定动态浅深、320×640dp / 200%字体和六类真实弹层浅深。见[32组前后对照](../../../../.trellis/tasks/10-21-ui-token-provider-settings/review/index.html)、[接纳记录](../../../../.trellis/tasks/10-21-ui-token-provider-settings/research/visual-acceptance.json)及[158张接纳哈希](../../../../.trellis/tasks/10-21-ui-token-provider-settings/research/accepted-png-hashes-20261105.txt)。
+- 接纳后识别出模型页签瞬态水波纹。仅E11截图改为真实Tab语义点击，并在ac22bb27隔离副本补before、以两轮32张after字节一致证明稳定。用户随后回复“接纳这5张修正（推荐）”，只替换5张，其他153张不变；[修正对照](../../../../.trellis/tasks/archive/2026-11/10-21-ui-token-provider-settings/review-capture-stability/index.html)与两次接纳记录均保留，产品动画和行为触控未改。
+- 覆盖提供商列表、Config / Models、固定动态浅深、320×640dp / 200%字体和六类真实弹层浅深。见[32组前后对照](../../../../.trellis/tasks/archive/2026-11/10-21-ui-token-provider-settings/review/index.html)、[接纳记录](../../../../.trellis/tasks/archive/2026-11/10-21-ui-token-provider-settings/research/visual-acceptance.json)及[158张接纳哈希](../../../../.trellis/tasks/archive/2026-11/10-21-ui-token-provider-settings/research/accepted-png-hashes-20261105.txt)。
 - 独立代码/证据检查已通过；真实截图159/159（15 suites、63秒）与完整JVM1826/1826（245 suites、129秒）均退出0、无失败/错误/跳过，158张PNG哈希未变。必要Lint仍为55条旧warnings/3 hints，无新增；dev及AndroidTest编译通过。真机读屏、系统返回/窗外触控、IME/系统栏、实际材质、物理性能及新视觉远端CI仍待补。
 
 以下P10及更早章节保留历史状态，当前接纳情况以上节为准。

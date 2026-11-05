@@ -9,7 +9,7 @@
 | 1 | [P04 线下扮演与会话阅读（已归档）](../archive/2026-10/10-21-ui-token-offline-roleplay/prd.md) | 相同roleplay/play路由下的线下分支，以及既有会话阅读入口；不包含P14日记 | 两个检查点及共享P03回归已通过，14张E04已接纳，工作提交与归档完成 |
 | 2 | [P05 会话设置侧栏](../archive/2026-11/10-21-ui-token-session-sidebar/prd.md) | 实际设置路由及内部已有 Sheet / Dialog | 侧栏布局 / 语义、成功与失败回调兼容、真实弹层窗口、E05 视觉集 |
 | 3 | [P10 设置首页](../archive/2026-11/10-21-ui-token-settings-home/prd.md) | SettingsScreen 及首页直接弹层 | 首页 / 长文字 / 三种选择弹层、共享设置组件兼容、E10 视觉集 |
-| 4 | [P11 提供商配置](../10-21-ui-token-provider-settings/prd.md) | 提供商列表、详情 Config / Models 页签及其实际弹层 | 列表 / 表单 / 模型操作、草稿和回调兼容、E11 视觉集 |
+| 4 | [P11 提供商配置](../archive/2026-11/10-21-ui-token-provider-settings/prd.md) | 提供商列表、详情 Config / Models 页签及其实际弹层 | 列表 / 表单 / 模型操作、草稿和回调兼容、E11 视觉集 |
 
 独立验收不表示并行修改共享文件。P04 先稳定共享输入 / 气泡，P05 建立真实窗口截图能力，P10 显式接入设置样式，P11 复用其结果。任一批未通过检查或尚待视觉接纳，暂停该批实施流，不用下一批掩盖失败。
 

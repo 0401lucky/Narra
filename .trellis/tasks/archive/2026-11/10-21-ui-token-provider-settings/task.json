@@ -1,0 +1,38 @@
+{
+  "id": "ui-token-provider-settings",
+  "name": "ui-token-provider-settings",
+  "title": "v2.3 扩面四：提供商配置",
+  "description": "P11提供商列表、详情双页签及实际可达弹层；保留草稿、协议、密钥与保存行为。",
+  "status": "completed",
+  "dev_type": "frontend",
+  "scope": "ui",
+  "package": null,
+  "priority": "P1",
+  "creator": "lucky",
+  "assignee": "lucky",
+  "createdAt": "2026-10-21",
+  "completedAt": "2026-11-05",
+  "branch": null,
+  "base_branch": "main",
+  "worktree_path": null,
+  "commit": "ce7eb322",
+  "pr_url": null,
+  "subtasks": [],
+  "children": [],
+  "parent": "10-21-ui-token-accessibility-expansion",
+  "relatedFiles": [],
+  "notes": "用户回复“可以没问题。提交归档吧”确认具体清单，已完成75b9a28d、ce7eb322两笔本地工作提交。159/159截图、1826/1826完整JVM和必要Lint通过，无新增警告；158张基准哈希一致，原126张未变。32组视觉及5张稳定帧修正已接纳，隔离副本已清理。本批已归档，父任务四批总验收继续收口；v2.3未发布，构建/更新保持2.2.12-dev，未推送发包，设备/性能/新视觉CI待补。",
+  "meta": {
+    "version": "2.3",
+    "batch": "4",
+    "review_status": "accepted_and_verified",
+    "predecessor": "10-21-ui-token-settings-home",
+    "planned_new_screenshots": 32,
+    "work_commits": [
+      "75b9a28d",
+      "ce7eb322"
+    ],
+    "visual_acceptance": "2026-11-05 用户分别接纳32组效果和5张稳定帧修正",
+    "review_artifact": ".trellis/tasks/archive/2026-11/10-21-ui-token-provider-settings/review/index.html"
+  }
+}

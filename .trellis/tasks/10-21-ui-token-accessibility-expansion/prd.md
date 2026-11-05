@@ -29,7 +29,7 @@
 | 1 [P04 线下扮演与会话阅读（已归档）](../archive/2026-10/10-21-ui-token-offline-roleplay/prd.md) | 场景 / 建议与阅读两个检查点，OA1–OA6满足；共享P03 / 材质兼容，已提交 | 14 |
 | 2 [P05 会话设置侧栏（已归档）](../archive/2026-11/10-21-ui-token-session-sidebar/prd.md) | 八页面板、实际窗口、保存 / 个性化，SA1–SA5满足；已提交 | 18 |
 | 3 [P10 设置首页（已归档）](../archive/2026-11/10-21-ui-token-settings-home/prd.md) | 首页 / 三 Sheet、设置组件 opt-in 兼容，HA1–HA4满足；已提交 | 16 |
-| 4 [P11 提供商配置](../10-21-ui-token-provider-settings/prd.md) | 列表 / 双页签 / 弹层、草稿与模型回调，PA1–PA5 | 32 |
+| 4 [P11 提供商配置（已归档）](../archive/2026-11/10-21-ui-token-provider-settings/prd.md) | 列表 / 双页签 / 弹层、草稿与模型回调，PA1–PA5满足；已提交 | 32 |
 
 依赖顺序写入各子任务，父子关系不充当依赖执行器。未创建世界书等后续实现子任务；候选数量因真实捕获问题需调整时，先显式更新登记和规划，不能静默删减。
 

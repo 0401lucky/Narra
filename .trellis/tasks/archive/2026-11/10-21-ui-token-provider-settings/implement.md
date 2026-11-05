@@ -10,7 +10,7 @@
 6. 派 `trellis-check` 检查 / 定向修复；展示 32 个 after / diff 与共享旧图变化，人工确认后才接纳 PNG / manifest。
 7. 全包已接纳截图 verify、所需单测、Lint / dev 构建与 AndroidTest 编译。主会话更新版本记录 / spec，审阅具体提交后独立归档 / journal，再由父任务跨批收口。
 
-建议截图类 `ProviderSettingsScreenshotE11Test`，每图独立 `@Test`。不在图中录真实 key / key 明文，不以更改自动检测触发条件换确定性。其他验证命令、失败 / 回退与设备 / CI / 性能边界见 [父计划](../10-21-ui-token-accessibility-expansion/implement.md)。
+建议截图类 `ProviderSettingsScreenshotE11Test`，每图独立 `@Test`。不在图中录真实 key / key 明文，不以更改自动检测触发条件换确定性。其他验证命令、失败 / 回退与设备 / CI / 性能边界见 [父计划](../../../10-21-ui-token-accessibility-expansion/implement.md)。
 
 ## 执行记录（2026-11-05）
 
@@ -28,3 +28,4 @@
 - 用户明确回复“接纳这32组效果（推荐）”。已按审阅after精确新增32张E11，原126张未变，共158张，接纳清单SHA为`6178162c6955c476905de98897e0ffdc81ea8726c2808ae6882844ee58d31c49`；未record。检查代理现串行执行接纳后完整截图与无selector完整JVM，报告逐轮保存；具体工作提交清单等待质量通过后单独审阅。
 - 接纳后首轮159截图中155通过，4项差异仅在Models底部Tab水波纹区域，页面/FAB其余像素一致；保留旧158基准与失败actual/compare，检查代理修复捕获稳定性。若修正后图不同，按原始提交隔离补before并只审阅变化图，不以after充before、不record、不改产品动画或阈值。完整JVM和提交仍待最终截图门禁收口。
 - 稳定捕获已通过两轮32图SHA一致，用户明确接纳5张修正，其他153张不变。最终159/159截图、1826/1826完整JVM和必要Lint通过，无新增警告；源码/158图/保护文件与来源一致，隔离目录已清理。现已回到Phase3.4准备具体工作提交清单，获批后先两笔工作提交，再独立归档/journal和父任务总验收。
+- 用户确认具体清单后已完成`75b9a28d`、`ce7eb322`，本P11已按`--no-commit`精确归档流程移动至本目录；保留无关历史与manifest旧CI差异。父任务进入四批总验收，随后独立收尾和journal，不启动父任务、不推送发包。
