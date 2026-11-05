@@ -8,8 +8,8 @@
 
 <!-- @@@auto:current-status -->
 - **Active File**: `journal-1.md`
-- **Total Sessions**: 8
-- **Last Active**: 2026-10-22
+- **Total Sessions**: 9
+- **Last Active**: 2026-11-05
 <!-- @@@/auto:current-status -->
 
 ---
@@ -19,7 +19,7 @@
 <!-- @@@auto:active-documents -->
 | File | Lines | Status |
 |------|-------|--------|
-| `journal-1.md` | ~251 | Active |
+| `journal-1.md` | ~282 | Active |
 <!-- @@@/auto:active-documents -->
 
 ---
@@ -29,6 +29,7 @@
 <!-- @@@auto:session-history -->
 | # | Date | Title | Commits | Branch |
 |---|------|-------|---------|--------|
+| 9 | 2026-11-05 | v2.3 P05会话设置侧栏接纳与归档 | `4d32dabf`, `0c272255` | `main` |
 | 8 | 2026-10-22 | v2.3 P04线下扮演与阅读提交归档 | `4c93ae27`, `2cf55f1f` | `main` |
 | 7 | 2026-10-21 | v2.3 令牌与无障碍试点提交归档 | `67ed7dfb`, `ce710003` | `main` |
 | 6 | 2026-10-14 | v2.3 视觉回归安全网：CI 接入、基准确认与归档 | `c5835620`, `073dba6c`, `563af80e`, `01afe0ea`, `df87925a` | `main` |

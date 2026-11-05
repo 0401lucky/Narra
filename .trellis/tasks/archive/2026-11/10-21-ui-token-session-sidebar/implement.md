@@ -24,6 +24,6 @@
 - [x] 独立 Trellis check、18 张 after 候选和前后对照；最终119项相关测试、Lint、dev构建及AndroidTest编译通过，92旧截图通过，新增候选待人工接纳。
 - [x] 2026-11-05用户接纳18组视觉；新增18张E05基准逐项匹配已审阅SHA-256，旧92张不变，共110张PNG。
 - [x] 最终111/111截图与1719/1719完整JVM真实执行通过；Lint/构建/AndroidTest编译复用有效产物，独立收尾检查无代码遗留，110张PNG哈希不变。
-- [ ] Phase 3.4具体提交确认与归档 / journal，然后启动已批准的P10。
+- [x] Phase 3.4具体清单获用户确认，完成`4d32dabf`、`0c272255`，归档为`78d2a230`并记录journal；接着启动已批准的P10。
 
 2026-10-23 恢复记录见 [本日核对](research/session-resume-20261023.md)。新增 `SessionSidebarAccessibilityTest`、`SessionSidebarPersistenceTest`、`SessionSidebarWindowsTest` 和 `SessionSidebarColorsTest`，以真实 Screen 验证八页、三组选项、13 皮肤与完整对象保存、实际窗口与即时场景回调。原始未打开窗口负向和源码守卫保留；行为测试不写基准。
